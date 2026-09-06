@@ -4,6 +4,8 @@ import { buildActionDataContract } from "@/lib/actions/data-contract";
 const fetchCachedUnifiedActionContractsMock = vi.hoisted(() => vi.fn());
 const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
 const rpcMock = vi.hoisted(() => vi.fn());
+const storageListMock = vi.hoisted(() => vi.fn());
+const storagePublicUrlMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/actions/unified-source/unified-source-cache", () => ({
   fetchCachedUnifiedActionContracts: fetchCachedUnifiedActionContractsMock,
@@ -12,7 +14,15 @@ vi.mock("@/lib/public-surface-snapshot-service", () => ({
   loadOrRefreshPublicSurfaceSnapshot: loadOrRefreshPublicSurfaceSnapshotMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({
-  getSupabaseServerClient: () => ({ rpc: rpcMock }),
+  getSupabaseServerClient: () => ({
+    rpc: rpcMock,
+    storage: {
+      from: () => ({
+        list: storageListMock,
+        getPublicUrl: storagePublicUrlMock,
+      }),
+    },
+  }),
 }));
 
 import {
@@ -65,6 +75,8 @@ describe("landing summary loading", () => {
         warnings: [],
       },
     });
+    storageListMock.mockResolvedValue({ data: [], error: null });
+    storagePublicUrlMock.mockReturnValue({ data: { publicUrl: "" } });
     loadOrRefreshPublicSurfaceSnapshotMock.mockImplementation(
       async (params: { buildPayload: () => Promise<unknown> }) => ({
         payload: await params.buildPayload(),
@@ -73,6 +85,14 @@ describe("landing summary loading", () => {
   });
 
   it("uses the bounded action preview and the dedicated 60-minute snapshot", async () => {
+    storageListMock.mockResolvedValue({
+      data: [{ name: "2026-08-27-photo.jpg" }],
+      error: null,
+    });
+    storagePublicUrlMock.mockReturnValue({
+      data: { publicUrl: "https://storage.example/action-photo.jpg" },
+    });
+
     const summary = await loadLandingSummary();
 
     expect(summary.counters).toMatchObject({
@@ -84,6 +104,11 @@ describe("landing summary loading", () => {
       visibleActions: 12,
       distinctLocations: 4,
       items: [{ id: "landing-action" }],
+    });
+    expect(summary.activity.items[0]?.image).toMatchObject({
+      source: "userProvidedImage",
+      url: "https://storage.example/action-photo.jpg",
+      isFallback: false,
     });
     expect(fetchCachedUnifiedActionContractsMock).toHaveBeenCalledWith({
       limit: 3,

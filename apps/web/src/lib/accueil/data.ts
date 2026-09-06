@@ -6,6 +6,32 @@ import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
 import type { HomeCounters } from "./config";
+import {
+  getUserProvidedActionImageUrl,
+  selectActionFallback,
+} from "./action-fallbacks";
+
+export type HomeCommunityActivityImage =
+  | {
+      source: "userProvidedImage";
+      url: string;
+      alt: string;
+      isFallback: false;
+    }
+  | {
+      source: "fallbackImage";
+      url: string;
+      alt: string;
+      isFallback: true;
+      syntheticImage: true;
+      mustNeverBePresentedAsFieldEvidence: true;
+    }
+  | {
+      source: "none";
+      url: null;
+      alt: "";
+      isFallback: false;
+    };
 
 export type HomeCommunityActivityItem = {
   id: string;
@@ -18,7 +44,7 @@ export type HomeCommunityActivityItem = {
   timeLabel: string;
   dateLabel: string;
   statusLabel: string;
-  imageUrl: string | null;
+  image: HomeCommunityActivityImage;
   tone: "cyan" | "emerald" | "blue" | "amber";
 };
 
@@ -40,7 +66,7 @@ export type LandingSummary = {
 };
 
 export const LANDING_SUMMARY_SNAPSHOT_KEY = "cleanmymap-landing-summary";
-export const LANDING_SUMMARY_SNAPSHOT_VERSION = "landing-summary-2026.08-v1";
+export const LANDING_SUMMARY_SNAPSHOT_VERSION = "landing-summary-2026.09-v1";
 export const LANDING_SUMMARY_SNAPSHOT_TTL_MINUTES = 60;
 
 export const ACCUEIL_TEST_MARKERS = [
@@ -167,6 +193,39 @@ function getActionSummary(contract: ActionDataContract): string {
   );
 }
 
+function getActivityImage(
+  contract: ActionDataContract,
+): HomeCommunityActivityImage {
+  const userProvidedImageUrl = getUserProvidedActionImageUrl(contract);
+  if (userProvidedImageUrl) {
+    return {
+      source: "userProvidedImage",
+      url: userProvidedImageUrl,
+      alt: `Photo fournie par l'utilisateur pour ${getActionTitle(contract)}`,
+      isFallback: false,
+    };
+  }
+
+  const fallback = selectActionFallback(contract);
+  if (!fallback) {
+    return {
+      source: "none",
+      url: null,
+      alt: "",
+      isFallback: false,
+    };
+  }
+
+  return {
+    source: "fallbackImage",
+    url: fallback.publicPath,
+    alt: fallback.alt,
+    isFallback: true,
+    syntheticImage: true,
+    mustNeverBePresentedAsFieldEvidence: true,
+  };
+}
+
 async function resolveActionPreviewImageUrl(
   actionId: string,
 ): Promise<string | null> {
@@ -261,7 +320,7 @@ export function buildHomeCommunityActivity(
         timeLabel: formatRelativeDay(contract.dates.observedAt),
         dateLabel: contract.dates.observedAt,
         statusLabel: contract.status === "approved" ? "Vérifiée" : "À vérifier",
-        imageUrl: null,
+        image: getActivityImage(contract),
         tone: tones[index % tones.length],
       };
     });
@@ -284,7 +343,14 @@ async function attachActionPreviewImages(
     ...activity,
     items: activity.items.map((item, index) => ({
       ...item,
-      imageUrl: imageUrls[index] ?? null,
+      image: imageUrls[index]
+        ? {
+            source: "userProvidedImage" as const,
+            url: imageUrls[index] as string,
+            alt: `Photo fournie par l'utilisateur pour ${item.title}`,
+            isFallback: false as const,
+          }
+        : item.image,
     })),
   };
 }

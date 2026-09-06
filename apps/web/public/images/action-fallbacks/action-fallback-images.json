@@ -1,0 +1,371 @@
+{
+  "schemaVersion": 1,
+  "intendedRepositoryDirectory": "apps/web/public/images/action-fallbacks/",
+  "publicUrlPrefix": "/images/action-fallbacks/",
+  "purpose": "Fallback imagery for actions that have no user-provided photo.",
+  "selectionRules": {
+    "priority": [
+      "Always use a real user-provided action photo when one exists.",
+      "Fallback images are synthetic presentation assets and must never be presented as field evidence.",
+      "Filter candidates by the action's canonical environment/context before random selection.",
+      "Never select a clearly incompatible environment (for example beach for an urban action).",
+      "When several compatible candidates remain, choose randomly among them.",
+      "If no specific environment can be resolved, prefer an item with isNeutral=true.",
+      "Do not infer a context from free text when a canonical location/category field already exists."
+    ],
+    "recommendedEnvironmentValues": [
+      "urban",
+      "park",
+      "forest",
+      "riverside",
+      "canal",
+      "lake",
+      "beach",
+      "village",
+      "countryside"
+    ],
+    "recommendedActionKindValues": [
+      "cleanup",
+      "sorting",
+      "cigarette_butts",
+      "mixed_waste"
+    ]
+  },
+  "assets": [
+    {
+      "id": "cleanup-park-01",
+      "file": "cleanup-park-01.png",
+      "publicPath": "/images/action-fallbacks/cleanup-park-01.png",
+      "environment": "park",
+      "compatibleEnvironments": [
+        "park",
+        "urban"
+      ],
+      "actionKinds": [
+        "cleanup",
+        "mixed_waste"
+      ],
+      "hasPeople": true,
+      "waterContext": false,
+      "isNeutral": false,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Bénévoles ramassant des déchets dans un parc verdoyant.",
+      "sha256": "a5bcb85f90e58a28ac2ad43f9488ee79de36ce2a385db6b9989bfe27414f223c"
+    },
+    {
+      "id": "cleanup-riverside-01",
+      "file": "cleanup-riverside-01.png",
+      "publicPath": "/images/action-fallbacks/cleanup-riverside-01.png",
+      "environment": "riverside",
+      "compatibleEnvironments": [
+        "riverside",
+        "urban"
+      ],
+      "actionKinds": [
+        "cleanup",
+        "mixed_waste"
+      ],
+      "hasPeople": true,
+      "waterContext": true,
+      "isNeutral": false,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Ramassage de déchets sur un chemin en bord de rivière.",
+      "sha256": "2b98651a5602543e558149d8ccd79e61327cd9d22e65c29e4ffc2721c855921f"
+    },
+    {
+      "id": "cleanup-forest-01",
+      "file": "cleanup-forest-01.png",
+      "publicPath": "/images/action-fallbacks/cleanup-forest-01.png",
+      "environment": "forest",
+      "compatibleEnvironments": [
+        "forest"
+      ],
+      "actionKinds": [
+        "cleanup",
+        "mixed_waste"
+      ],
+      "hasPeople": false,
+      "waterContext": false,
+      "isNeutral": false,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Sacs de déchets collectés et pince de ramassage sur un sentier forestier.",
+      "sha256": "f45b9c20db6c39b9a0e5bb19786d7ccfc4bca7bdbfc9e7b0a03a97a7b15a0617"
+    },
+    {
+      "id": "cleanup-canal-01",
+      "file": "cleanup-canal-01.png",
+      "publicPath": "/images/action-fallbacks/cleanup-canal-01.png",
+      "environment": "canal",
+      "compatibleEnvironments": [
+        "canal",
+        "urban",
+        "riverside"
+      ],
+      "actionKinds": [
+        "cleanup",
+        "mixed_waste"
+      ],
+      "hasPeople": true,
+      "waterContext": true,
+      "isNeutral": false,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Bénévoles ramassant des déchets au bord d'un canal urbain.",
+      "sha256": "a98dddcc690bb4fa771a6e350829ccf8138f664c22fab38bb2703ea9eab96497"
+    },
+    {
+      "id": "cleanup-beach-01",
+      "file": "cleanup-beach-01.png",
+      "publicPath": "/images/action-fallbacks/cleanup-beach-01.png",
+      "environment": "beach",
+      "compatibleEnvironments": [
+        "beach"
+      ],
+      "actionKinds": [
+        "cleanup",
+        "mixed_waste"
+      ],
+      "hasPeople": true,
+      "waterContext": true,
+      "isNeutral": false,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Groupe de bénévoles ramassant des déchets sur une plage.",
+      "sha256": "f8035f5b3bd79385830b3a907e71276ff188b02d8c97eaaa68648cd0bcfc1892"
+    },
+    {
+      "id": "cleanup-park-02",
+      "file": "cleanup-park-02.png",
+      "publicPath": "/images/action-fallbacks/cleanup-park-02.png",
+      "environment": "park",
+      "compatibleEnvironments": [
+        "park",
+        "urban"
+      ],
+      "actionKinds": [
+        "cleanup",
+        "mixed_waste"
+      ],
+      "hasPeople": true,
+      "waterContext": false,
+      "isNeutral": false,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Familles et bénévoles participant à un ramassage de déchets dans un parc.",
+      "sha256": "3d14124a9bc078b7852a695f4205b3f7e64cdaf6a74b4f7e3427c55d350cf674"
+    },
+    {
+      "id": "cleanup-countryside-01",
+      "file": "cleanup-countryside-01.png",
+      "publicPath": "/images/action-fallbacks/cleanup-countryside-01.png",
+      "environment": "countryside",
+      "compatibleEnvironments": [
+        "countryside",
+        "village"
+      ],
+      "actionKinds": [
+        "cleanup",
+        "mixed_waste"
+      ],
+      "hasPeople": true,
+      "waterContext": false,
+      "isNeutral": false,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Deux bénévoles ramassant des déchets le long d'un chemin rural.",
+      "sha256": "20f7abee96c7cc9642a5ebe8cef32fbd1fc090638ce44da6d6a159b10f36365f"
+    },
+    {
+      "id": "cleanup-lake-01",
+      "file": "cleanup-lake-01.png",
+      "publicPath": "/images/action-fallbacks/cleanup-lake-01.png",
+      "environment": "lake",
+      "compatibleEnvironments": [
+        "lake",
+        "riverside",
+        "park"
+      ],
+      "actionKinds": [
+        "cleanup",
+        "mixed_waste"
+      ],
+      "hasPeople": true,
+      "waterContext": true,
+      "isNeutral": false,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Sacs collectés et bénévoles nettoyant les abords d'un lac.",
+      "sha256": "9c7de794bb0b898f41e8193d2e5d51af1d7636f56a4d7f32a602edfb7b1c54e8"
+    },
+    {
+      "id": "cleanup-riverside-02",
+      "file": "cleanup-riverside-02.png",
+      "publicPath": "/images/action-fallbacks/cleanup-riverside-02.png",
+      "environment": "riverside",
+      "compatibleEnvironments": [
+        "riverside",
+        "urban"
+      ],
+      "actionKinds": [
+        "cleanup",
+        "mixed_waste"
+      ],
+      "hasPeople": true,
+      "waterContext": true,
+      "isNeutral": false,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Bénévoles collectant des déchets sous un pont en bord d'eau.",
+      "sha256": "8bbd4568c302d163938208873e8abd62cc94c8f9263c035284def01c79c8138f"
+    },
+    {
+      "id": "cleanup-urban-01",
+      "file": "cleanup-urban-01.png",
+      "publicPath": "/images/action-fallbacks/cleanup-urban-01.png",
+      "environment": "urban",
+      "compatibleEnvironments": [
+        "urban",
+        "village"
+      ],
+      "actionKinds": [
+        "cleanup",
+        "mixed_waste"
+      ],
+      "hasPeople": true,
+      "waterContext": false,
+      "isNeutral": false,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Équipe de bénévoles avec des sacs de déchets sur une grande place urbaine.",
+      "sha256": "29deaf864006dfe1b1b222f2d0f5cb70b92daccad6f5ee08c6b188437f2341a5"
+    },
+    {
+      "id": "cleanup-lake-02",
+      "file": "cleanup-lake-02.png",
+      "publicPath": "/images/action-fallbacks/cleanup-lake-02.png",
+      "environment": "lake",
+      "compatibleEnvironments": [
+        "lake",
+        "riverside",
+        "park"
+      ],
+      "actionKinds": [
+        "cleanup",
+        "mixed_waste"
+      ],
+      "hasPeople": false,
+      "waterContext": true,
+      "isNeutral": false,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Sacs de déchets collectés et pince de ramassage près d'un plan d'eau.",
+      "sha256": "60a202c91fdb7b3dbca81a1aaa5196e90e27b2fd8da9cb0a9272607d7d586549"
+    },
+    {
+      "id": "sorting-park-01",
+      "file": "sorting-park-01.png",
+      "publicPath": "/images/action-fallbacks/sorting-park-01.png",
+      "environment": "park",
+      "compatibleEnvironments": [
+        "park",
+        "urban",
+        "riverside"
+      ],
+      "actionKinds": [
+        "sorting",
+        "cleanup"
+      ],
+      "hasPeople": false,
+      "waterContext": true,
+      "isNeutral": true,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Sacs de déchets et bacs de tri installés dans un parc au bord de l'eau.",
+      "sha256": "bd36bc5847a4422f8e13f659458cbcaad80b5437bdbba6517f0e9d5694349daf"
+    },
+    {
+      "id": "cleanup-forest-lake-01",
+      "file": "cleanup-forest-lake-01.png",
+      "publicPath": "/images/action-fallbacks/cleanup-forest-lake-01.png",
+      "environment": "forest",
+      "compatibleEnvironments": [
+        "forest",
+        "lake"
+      ],
+      "actionKinds": [
+        "cleanup",
+        "mixed_waste"
+      ],
+      "hasPeople": false,
+      "waterContext": true,
+      "isNeutral": false,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Sacs de déchets collectés sur un sentier forestier proche d'un lac.",
+      "sha256": "f03ffcb00b7a320479df37dfb8eab96b17d8737714de0d9284f6c180dba904bb"
+    },
+    {
+      "id": "cleanup-canal-02",
+      "file": "cleanup-canal-02.png",
+      "publicPath": "/images/action-fallbacks/cleanup-canal-02.png",
+      "environment": "canal",
+      "compatibleEnvironments": [
+        "canal",
+        "urban",
+        "riverside"
+      ],
+      "actionKinds": [
+        "cleanup",
+        "mixed_waste"
+      ],
+      "hasPeople": false,
+      "waterContext": true,
+      "isNeutral": false,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Sacs de déchets et pince de ramassage posés au bord d'un canal urbain.",
+      "sha256": "59961efedd1e0cf73400e4f76deee7fe58321e491dd31ee9f7f7fb21470344a8"
+    },
+    {
+      "id": "cleanup-village-01",
+      "file": "cleanup-village-01.png",
+      "publicPath": "/images/action-fallbacks/cleanup-village-01.png",
+      "environment": "village",
+      "compatibleEnvironments": [
+        "village",
+        "urban",
+        "countryside"
+      ],
+      "actionKinds": [
+        "cleanup",
+        "sorting",
+        "mixed_waste"
+      ],
+      "hasPeople": false,
+      "waterContext": false,
+      "isNeutral": true,
+      "syntheticImage": true,
+      "provenance": "CleanMyMap generated fallback asset",
+      "mustNeverBePresentedAsFieldEvidence": true,
+      "alt": "Sacs de déchets collectés sur une place de village.",
+      "sha256": "559138b0d19b669e70ff5eddd60e00f382f8fbd784b4a8e51fb0205c55c6c4fe"
+    }
+  ]
+}
