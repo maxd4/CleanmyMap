@@ -81,3 +81,19 @@ npm run test -w apps/web -- src/app/api
 
 Ajouter le test de la route modifiée lorsque le contrat ou la protection
 change ; ne pas remplacer les tests AuthZ par une vérification UI.
+
+## Invariants des domaines Actions et Chat
+
+- les routes Actions réutilisent les propriétaires de
+  `apps/web/src/lib/actions` pour les contrats de données, permissions,
+  stockage, validation, participation, modération et géométrie ; elles ne
+  dupliquent pas cette sémantique dans les handlers ;
+- préserver les flux Actions publics et l'ordre des effets associés aux
+  participants, organisateurs, audits de modération, métadonnées et
+  persistance, avec leurs scopes, validations et réponses HTTP propres ;
+- les routes Chat conservent l'AuthN/AuthZ par canal et conversation pour les
+  lectures, écritures, recherches, inbox et votes, sans élargir la visibilité
+  par défaut ;
+- préserver les contrats Chat de pagination, recherche, sondages, pièces
+  jointes, notifications, curseurs, déduplication, filtres et ciblage, en
+  réutilisant les propriétaires canoniques de `apps/web/src/lib/chat`.
