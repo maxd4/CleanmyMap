@@ -65,6 +65,43 @@ function withZones(zones: ParisPressureZone[]): ParisPressureSnapshot {
 }
 
 describe("predicted route targets", () => {
+  it("ne transmet pas une prédiction sans preuve de sécurité au planner bénévole", () => {
+    const built = buildPredictedRouteCandidates({
+      snapshot: withZones([zone("unknown-safety", 48.8568, 2.3522)]),
+      origin: { latitude: 48.8566, longitude: 2.3522 },
+      travelBudgetMinutes: 60,
+    });
+    expect(built.candidates[0]?.volunteerSafety?.status).toBe("unknown");
+    expect(built.candidates[0]?.volunteerAdditionality).toBeNull();
+    const pool = buildRoutePlannerCandidatePool({
+      observedCandidates: [],
+      predictedCandidates: built.candidates,
+      maxCandidates: 8,
+    });
+    expect(pool.candidates).toEqual([]);
+  });
+
+  it("conserve la trace d'additionnalité lorsque la sécurité est explicitement sûre", () => {
+    const built = buildPredictedRouteCandidates({
+      snapshot: withZones([zone("safe-zone", 48.8568, 2.3522)]),
+      origin: { latitude: 48.8566, longitude: 2.3522 },
+      travelBudgetMinutes: 60,
+      volunteerSafetyByZone: new Map([
+        ["safe-zone", { status: "safe", suitability: 1, confidence: 1 }],
+      ]),
+    });
+    expect(built.candidates[0]).toEqual(expect.objectContaining({
+      volunteerSafety: expect.objectContaining({ status: "safe" }),
+      pollutionPriority: expect.any(Number),
+      finalPlannerContribution: expect.any(Number),
+    }));
+    expect(built.candidates[0]?.evidence).toEqual(expect.objectContaining({
+      pollutionPriority: expect.any(Number),
+      finalPlannerContribution: expect.any(Number),
+      volunteerAdditionality: expect.any(Number),
+    }));
+  });
+
   it("keeps the family predicted and preserves zone geometry/evidence", () => {
     const snapshot = withZones([zone("near", 48.8568, 2.3522)]);
     const result = buildPredictedRouteCandidates({

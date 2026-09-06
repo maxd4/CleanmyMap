@@ -102,6 +102,7 @@ export async function POST(request: Request) {
       origin,
       spatialCandidates: candidateData.spatialCandidates,
       parisPressureSnapshot: candidateData.parisPressureSnapshot,
+      municipalCleaningSnapshot: candidateData.municipalCleaningSnapshot,
       travelBudgetMinutes: options.travelBudgetMinutes,
       maxStops: options.maxStops,
       priorityVsTravel,

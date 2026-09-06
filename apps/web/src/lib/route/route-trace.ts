@@ -25,6 +25,7 @@ import type {
   RoutePredictionSummary,
   RouteTargetEvidence,
 } from "./route-predicted-targets";
+import type { VolunteerAdditionalityResult } from "@/lib/geo/volunteer-additionality-contract";
 
 export type RouteTraceExclusionReason =
   | "not_admissible"
@@ -51,6 +52,12 @@ export type RouteTraceSelectedStop = {
     travel: number;
   };
   combinedScore: number;
+  pollutionPriority?: number;
+  volunteerAdditionality?: number | null;
+  finalPlannerContribution?: number;
+  volunteerAdditionalityConfidence?: number | null;
+  additionalityWeight?: number;
+  additionality?: VolunteerAdditionalityResult;
   incrementalDistanceKm: number;
   incrementalTravelMinutes: number;
   cumulativeTravelMinutes: number;
@@ -270,6 +277,12 @@ function selectionForStop(
       travel: selection.normalizedTravel,
     },
     combinedScore: selection.combinedScore,
+    pollutionPriority: selection.pollutionPriority ?? stop.candidate.pollutionPriority ?? stop.candidate.score,
+    volunteerAdditionality: selection.volunteerAdditionality ?? stop.candidate.volunteerAdditionality ?? null,
+    finalPlannerContribution: selection.finalPlannerContribution ?? stop.candidate.finalPlannerContribution ?? stop.candidate.score,
+    volunteerAdditionalityConfidence: stop.candidate.volunteerAdditionalityConfidence ?? null,
+    additionalityWeight: stop.candidate.additionalityWeight ?? 0,
+    additionality: stop.candidate.additionality,
     incrementalDistanceKm: selection.incrementalDistanceKm,
     incrementalTravelMinutes: selection.incrementalTravelMinutes,
     cumulativeTravelMinutes: selection.cumulativeTravelMinutes,

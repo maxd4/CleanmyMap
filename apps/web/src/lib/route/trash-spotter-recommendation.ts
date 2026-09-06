@@ -6,6 +6,8 @@ import type { TrashSpotterActionableCandidate } from "@/lib/actions/trash-spotte
 import { formatScorePercent } from "@/lib/formatters/score";
 import type { RouteEventCandidatePressure } from "./route-event-pressure";
 import type { RouteObservedEvidence } from "./route-predicted-targets";
+import type { ParisPressureAtPoint } from "@/lib/geo/paris-pressure-lookup";
+import type { RoutePlannerContribution } from "./route-additionality";
 
 export type TrashSpotterRouteCandidate =
   TrashSpotterActionableCandidate & {
@@ -16,7 +18,8 @@ export type TrashSpotterRouteCandidate =
     baseScore: number;
     eventPressure: RouteEventCandidatePressure | null;
     eventScoreContribution: number;
-  };
+    parisPressure?: ParisPressureAtPoint | null;
+  } & Partial<RoutePlannerContribution>;
 
 export function distanceKm(
   a: { latitude: number; longitude: number },

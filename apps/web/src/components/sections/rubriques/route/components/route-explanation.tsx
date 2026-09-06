@@ -102,7 +102,7 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
             <div>
               <h4 className="text-sm font-bold text-white">Critères retenus</h4>
               <p className="mt-1 text-xs text-slate-400">
-                Score de priorité et coût de déplacement incrémental, puis départage déterministe par score combiné, priorité, déplacement incrémental et identifiant.
+                La priorité pollution reste la base ; une additionnalité bénévole disponible et suffisamment confiante peut modifier la contribution finale avec un poids borné, puis le coût de déplacement est arbitré dans le budget. Départage déterministe par score combiné, priorité, déplacement incrémental et identifiant.
               </p>
             </div>
             {trace.selectedStops.length > 0 ? (

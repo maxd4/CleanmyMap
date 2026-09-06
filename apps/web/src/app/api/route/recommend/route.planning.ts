@@ -1,5 +1,6 @@
 import { createFallbackRouteGeometry } from "@/lib/geo/osrm-routing";
 import type { ParisPressureSnapshot } from "@/lib/geo/paris-pressure-contract";
+import type { MunicipalCleaningServiceabilitySnapshot } from "@/lib/geo/municipal-cleaning-serviceability-contract";
 import { routePolylineThroughFossgisFoot } from "@/lib/route/fossgis-foot-routing";
 import {
   applyRoutePredictionFinalRoutingBudgetAudit,
@@ -54,6 +55,7 @@ export async function planRouteRecommendation(input: {
   origin: RoutePlannerOrigin;
   spatialCandidates: TrashSpotterRouteCandidate[];
   parisPressureSnapshot: ParisPressureSnapshot | null;
+  municipalCleaningSnapshot?: MunicipalCleaningServiceabilitySnapshot | null;
   travelBudgetMinutes: number;
   maxStops: number;
   priorityVsTravel: number;
@@ -70,6 +72,7 @@ export async function planRouteRecommendation(input: {
   });
   const predictionBuild = buildPredictedRouteCandidates({
     snapshot: input.parisPressureSnapshot,
+    municipalCleaningSnapshot: input.municipalCleaningSnapshot,
     origin: input.origin,
     corridor: {
       points: [

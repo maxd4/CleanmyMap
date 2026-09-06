@@ -1,6 +1,11 @@
 import { buildTrashSpotterActionableCandidates } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { loadParisPressureSnapshot } from "@/lib/geo/paris-pressure-loader";
+import { loadMunicipalCleaningServiceabilitySnapshot } from "@/lib/geo/municipal-cleaning-serviceability-loader";
 import { applyParisPressureToCandidates } from "@/lib/route/paris-pressure-route-adapter";
+import {
+  evidenceWithContribution,
+  observedCandidateContribution,
+} from "@/lib/route/route-additionality";
 import {
   defaultRouteRecommendationFloorDate,
   loadCachedEventPressureByArrondissement,
@@ -66,6 +71,7 @@ export async function loadRouteCandidateData(
   spatialCandidates: ReturnType<typeof buildTrashSpotterRouteCandidates>;
   actionableCandidates: ReturnType<typeof buildTrashSpotterActionableCandidates>;
   parisPressureSnapshot: ReturnType<typeof loadParisPressureSnapshot>;
+  municipalCleaningSnapshot?: ReturnType<typeof loadMunicipalCleaningServiceabilitySnapshot>;
   dataStatus: ReturnType<typeof resolveRouteDataStatus>;
   routeEventSignalContext: RouteEventSignalContext;
 }> {
@@ -94,9 +100,32 @@ export async function loadRouteCandidateData(
     routeEventSignalContext.candidatePressureById,
   );
   const parisPressureSnapshot = loadParisPressureSnapshot();
-  const spatialCandidates = parisPressureSnapshot
+  const municipalCleaningSnapshot = loadMunicipalCleaningServiceabilitySnapshot();
+  const pressureCandidates = parisPressureSnapshot
     ? applyParisPressureToCandidates(candidates, parisPressureSnapshot)
     : candidates;
+  const spatialCandidates = pressureCandidates.map((candidate) => {
+    if (!candidate.evidence && !candidate.safety) return candidate;
+    const contribution = observedCandidateContribution({
+      candidate,
+      pressureSnapshot: parisPressureSnapshot,
+      municipalCleaningSnapshot,
+    });
+    return {
+      ...candidate,
+      score: contribution.finalPlannerContribution,
+      pollutionPriority: contribution.pollutionPriority,
+      volunteerAdditionality: contribution.volunteerAdditionality,
+      finalPlannerContribution: contribution.finalPlannerContribution,
+      volunteerAdditionalityConfidence: contribution.volunteerAdditionalityConfidence,
+      additionalityWeight: contribution.additionalityWeight,
+      ...(contribution.additionality ? { additionality: contribution.additionality } : {}),
+      volunteerSafety: contribution.volunteerSafety,
+      ...(candidate.evidence
+        ? { evidence: evidenceWithContribution(candidate.evidence, contribution) }
+        : {}),
+    };
+  });
   const dataStatus = resolveRouteDataStatus({
     candidateCount: candidates.length,
     isTruncated,
@@ -111,6 +140,7 @@ export async function loadRouteCandidateData(
     spatialCandidates,
     actionableCandidates,
     parisPressureSnapshot,
+    municipalCleaningSnapshot,
     dataStatus,
     routeEventSignalContext,
   };

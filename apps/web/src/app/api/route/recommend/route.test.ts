@@ -29,6 +29,7 @@ const planRouteMock = vi.hoisted(() => vi.fn());
 const longestNetworkPrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
 const fallbackRoutePrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
 const loadParisPressureSnapshotMock = vi.hoisted(() => vi.fn());
+const loadMunicipalCleaningServiceabilitySnapshotMock = vi.hoisted(() => vi.fn());
 const applyParisPressureToCandidatesMock = vi.hoisted(() => vi.fn());
 const buildPredictedRouteCandidatesMock = vi.hoisted(() => vi.fn());
 const buildRoutePlannerCandidatePoolMock = vi.hoisted(() => vi.fn());
@@ -90,6 +91,9 @@ vi.mock("@/lib/route/route-event-centered-loader", () => ({
 }));
 vi.mock("@/lib/geo/paris-pressure-loader", () => ({
   loadParisPressureSnapshot: loadParisPressureSnapshotMock,
+}));
+vi.mock("@/lib/geo/municipal-cleaning-serviceability-loader", () => ({
+  loadMunicipalCleaningServiceabilitySnapshot: loadMunicipalCleaningServiceabilitySnapshotMock,
 }));
 vi.mock("@/lib/route/paris-pressure-route-adapter", () => ({
   applyParisPressureToCandidates: applyParisPressureToCandidatesMock,

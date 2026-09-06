@@ -15,6 +15,7 @@ import {
   type RoutePlannerInput,
   type RoutePlannerOrigin,
 } from "./route-planner";
+import { finalPlannerContribution } from "./route-additionality";
 
 function origin(latitude = 0, longitude = 0): RoutePlannerOrigin {
   return { latitude, longitude, source: "browser" };
@@ -85,6 +86,63 @@ function fallbackGeometry(
 }
 
 describe("route planner V1", () => {
+  it("arbitre deux pollutions proches avec une additionnalité bornée et confiante", () => {
+    const municipal = candidate("municipal-frequent", 0.001, 0, 92);
+    const complementary = candidate("complementary", 0.001, 0, 84);
+    const first = {
+      ...municipal,
+      pollutionPriority: 92,
+      volunteerAdditionality: 10,
+      finalPlannerContribution: finalPlannerContribution({
+        pollutionPriority: 92,
+        volunteerAdditionality: 10,
+        confidence: 1,
+      }),
+    };
+    const second = {
+      ...complementary,
+      pollutionPriority: 84,
+      volunteerAdditionality: 100,
+      finalPlannerContribution: finalPlannerContribution({
+        pollutionPriority: 84,
+        volunteerAdditionality: 100,
+        confidence: 1,
+      }),
+    };
+
+    expect(second.finalPlannerContribution).toBeGreaterThan(first.finalPlannerContribution);
+    expect(planRoute(plannerInput({ candidates: [first, second], maxStops: 1 })).stops[0]?.candidate.id).toBe("complementary");
+    expect(second.finalPlannerContribution).toBeLessThanOrEqual(100);
+  });
+
+  it("neutre l'additionnalité inconnue sans la transformer en absence de nettoyage", () => {
+    const spot = candidate("unknown-coverage", 0.001, 0, 72);
+    const contribution = finalPlannerContribution({
+      pollutionPriority: spot.score,
+      volunteerAdditionality: null,
+      confidence: null,
+    });
+    expect(contribution).toBe(72);
+  });
+
+  it("la sécurité exclut une zone dangereuse même avec une additionnalité maximale", () => {
+    const dangerous = {
+      ...candidate("dangerous", 0.001, 0, 99),
+      pollutionPriority: 99,
+      volunteerAdditionality: 100,
+      finalPlannerContribution: 100,
+      volunteerSafety: {
+        status: "excluded" as const,
+        suitability: 1,
+        confidence: 1,
+        exclusionReasons: ["active_roadway" as const],
+      },
+    };
+    const result = planRoute(plannerInput({ candidates: [dangerous], maxStops: 1 }));
+    expect(result.stops).toHaveLength(0);
+    expect(result.diagnostics.excludedUnsafe).toBe(1);
+  });
+
   it("accepte les prédictions sans les convertir en observations et départage l'observé à égalité", () => {
     const predicted = {
       family: "predicted" as const,

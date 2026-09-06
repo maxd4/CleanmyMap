@@ -4,6 +4,7 @@ import {
 } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { RouteGeometry, RouteGeometryLeg } from "./route-contract";
 import type { RoutePredictedCandidate } from "./route-predicted-targets";
+import type { RoutePlannerContribution } from "./route-additionality";
 
 export const ROUTE_PLANNER_ENGINE_VERSION = "route-planner-v1" as const;
 export const WALKING_SPEED_KM_PER_HOUR = 4.5;
@@ -20,7 +21,7 @@ export type RoutePlannerCandidate =
       reason: string;
       family: "observed";
       evidence: import("./route-predicted-targets").RouteObservedEvidence;
-    })
+    } & Partial<RoutePlannerContribution>)
   | RoutePredictedCandidate;
 
 export type PlannedRouteStop = {
@@ -57,6 +58,10 @@ export type RoutePlannerCandidateEvaluation = {
   normalizedPriority: number;
   normalizedTravel: number;
   combinedScore: number;
+  pollutionPriority?: number;
+  volunteerAdditionality?: number | null;
+  finalPlannerContribution?: number;
+  additionalityWeight?: number;
   feasible: boolean;
 };
 
@@ -76,6 +81,21 @@ export type RoutePlannerInput = {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
+}
+
+function plannerContribution(candidate: RoutePlannerCandidate): number {
+  return clamp(
+    candidate.finalPlannerContribution ?? candidate.score,
+    0,
+    100,
+  );
+}
+
+function isPlannerSafetyExcluded(candidate: RoutePlannerCandidate): boolean {
+  return candidate.volunteerSafety?.status === "excluded" ||
+    (candidate.family === "predicted" &&
+      candidate.volunteerSafety !== undefined &&
+      candidate.volunteerSafety.status !== "safe");
 }
 
 function toRadians(value: number): number {
@@ -108,8 +128,8 @@ function compareCandidates(
   priorityWeight: number,
   budgetMinutes: number,
 ): number {
-  const leftPriority = clamp(left.candidate.score / 100, 0, 1);
-  const rightPriority = clamp(right.candidate.score / 100, 0, 1);
+  const leftPriority = clamp(plannerContribution(left.candidate) / 100, 0, 1);
+  const rightPriority = clamp(plannerContribution(right.candidate) / 100, 0, 1);
   const leftProximity = clamp(
     1 - left.incrementalTravelMinutes / budgetMinutes,
     0,
@@ -152,7 +172,8 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
   const priorityWeight = clamp(input.priorityVsTravel, 0, 100) / 100;
   const safeCandidates = input.candidates.filter(
     (candidate) =>
-      candidate.family === "predicted" || isVolunteerRouteEligible(candidate),
+      !isPlannerSafetyExcluded(candidate) &&
+      (candidate.family === "predicted" || isVolunteerRouteEligible(candidate)),
   );
   const remaining = [...safeCandidates];
   const stops: PlannedRouteStop[] = [];
@@ -169,7 +190,8 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
         const incrementalTravelMinutes = travelMinutesForDistance(
           incrementalDistanceKm,
         );
-        const normalizedPriority = clamp(candidate.score / 100, 0, 1);
+        const finalPlannerContribution = plannerContribution(candidate);
+        const normalizedPriority = clamp(finalPlannerContribution / 100, 0, 1);
         const normalizedTravel = clamp(
           1 - incrementalTravelMinutes / Math.max(1, budgetMinutes),
           0,
@@ -186,6 +208,10 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
           combinedScore:
             priorityWeight * normalizedPriority +
             (1 - priorityWeight) * normalizedTravel,
+          pollutionPriority: clamp(candidate.pollutionPriority ?? candidate.score, 0, 100),
+          volunteerAdditionality: candidate.volunteerAdditionality ?? null,
+          finalPlannerContribution,
+          additionalityWeight: candidate.additionalityWeight ?? 0,
           feasible:
             cumulativeTravelMinutes + incrementalTravelMinutes <=
             budgetMinutes + 1e-9,
