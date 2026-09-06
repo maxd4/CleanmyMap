@@ -2,6 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 
+const DEFAULT_BATCH_CONTENT_TARGET_BYTES = 32 * 1024 * 1024;
+const BATCH_OUTPUT_MARGIN_BYTES = 1024;
+
 export function normalizeRepositoryPath(relativePath) {
   return String(relativePath ?? "")
     .replaceAll("\\", "/")
@@ -115,44 +118,82 @@ export function createFilesystemRepositoryView(root = process.cwd()) {
   });
 }
 
+export function partitionGitBlobBatches(blobEntries, targetBytes = DEFAULT_BATCH_CONTENT_TARGET_BYTES) {
+  if (!Number.isSafeInteger(targetBytes) || targetBytes <= 0) {
+    throw new Error(`Git blob batch target must be a positive safe integer: ${targetBytes}`);
+  }
+
+  const batches = [];
+  let currentEntries = [];
+  let currentContentBytes = 0;
+
+  const flush = () => {
+    if (currentEntries.length === 0) return;
+    batches.push({ entries: currentEntries, contentBytes: currentContentBytes });
+    currentEntries = [];
+    currentContentBytes = 0;
+  };
+
+  for (const entry of blobEntries) {
+    if (!entry || typeof entry.objectId !== "string" || !Number.isSafeInteger(entry.size) || entry.size < 0) {
+      throw new Error(`Invalid Git blob entry: ${JSON.stringify(entry)}`);
+    }
+
+    if (entry.size > targetBytes) {
+      flush();
+      batches.push({ entries: [entry], contentBytes: entry.size });
+      continue;
+    }
+
+    if (currentEntries.length > 0 && currentContentBytes + entry.size > targetBytes) {
+      flush();
+    }
+
+    currentEntries.push(entry);
+    currentContentBytes += entry.size;
+  }
+
+  flush();
+  return batches;
+}
+
+function readGitBlob(repositoryRoot, objectId, size) {
+  return execFileSync("git", ["cat-file", "blob", objectId], {
+    cwd: repositoryRoot,
+    maxBuffer: size + BATCH_OUTPUT_MARGIN_BYTES,
+  });
+}
+
 export function createGitRepositoryView(ref, root = process.cwd()) {
   if (!ref) {
     throw new Error("A Git ref is required for a Git repository view.");
   }
 
   const repositoryRoot = path.resolve(root);
-  const treeOutput = execFileSync("git", ["ls-tree", "--full-tree", "-r", "-z", ref, "--"], {
+  const treeOutput = execFileSync("git", ["ls-tree", "--full-tree", "-r", "-l", "-z", ref, "--"], {
     cwd: repositoryRoot,
   });
   const objectByPath = new Map();
+  const sizeByObject = new Map();
   for (const record of treeOutput.toString("utf8").split("\0").filter(Boolean)) {
     const separator = record.indexOf("\t");
-    const header = record.slice(0, separator).split(" ");
+    const header = record.slice(0, separator).split(/\s+/);
     const relativePath = normalizeRepositoryPath(record.slice(separator + 1));
     if (header[1] === "blob") {
       objectByPath.set(relativePath, header[2]);
+      const size = Number(header[3]);
+      if (!Number.isSafeInteger(size) || size < 0) {
+        throw new Error(`Invalid Git tree blob size for ${relativePath}: ${header[3]}`);
+      }
+      const knownSize = sizeByObject.get(header[2]);
+      if (knownSize !== undefined && knownSize !== size) {
+        throw new Error(`Git blob size mismatch for ${header[2]}`);
+      }
+      sizeByObject.set(header[2], size);
     }
   }
 
-  const batchInput = `${[...new Set(objectByPath.values())].join("\n")}\n`;
-  const batchOutput = execFileSync("git", ["cat-file", "--batch"], {
-    cwd: repositoryRoot,
-    input: batchInput,
-    maxBuffer: 64 * 1024 * 1024,
-  });
   const blobsByObject = new Map();
-  let offset = 0;
-  while (offset < batchOutput.length) {
-    const headerEnd = batchOutput.indexOf(10, offset);
-    if (headerEnd < 0) break;
-    const header = batchOutput.toString("utf8", offset, headerEnd).split(" ");
-    offset = headerEnd + 1;
-    if (header[1] !== "blob") continue;
-    const size = Number(header[2]);
-    const content = Buffer.from(batchOutput.subarray(offset, offset + size));
-    blobsByObject.set(header[0], content);
-    offset += size + 1;
-  }
 
   const files = [...objectByPath.keys()];
 
@@ -162,8 +203,11 @@ export function createGitRepositoryView(ref, root = process.cwd()) {
     readBinary(relativePath) {
       const normalizedPath = normalizeRepositoryPath(relativePath);
       const objectId = objectByPath.get(normalizedPath);
-      if (!objectId || !blobsByObject.has(objectId)) {
+      if (!objectId) {
         throw new Error(`Git repository view file is missing: ${normalizedPath}`);
+      }
+      if (!blobsByObject.has(objectId)) {
+        blobsByObject.set(objectId, readGitBlob(repositoryRoot, objectId, sizeByObject.get(objectId)));
       }
       return blobsByObject.get(objectId);
     },
