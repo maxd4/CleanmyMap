@@ -37,3 +37,14 @@ internals report-model ──► builders / metrics / formatters / math / helper
 Les tests internes importent directement le module qu'ils vérifient. Le check
 `npm run check:report-model-boundary` empêche les imports internes vers la
 façade ou vers `./index`.
+
+## Invariants des restitutions
+
+- ne jamais inventer une métrique ni transformer une donnée absente,
+  indisponible ou inconnue en `0` ; conserver les distinctions entre valeur
+  mesurée, valeur calculée, absence et non-disponibilité ;
+- les restitutions PDF, HTML, CSV, UI et master-pack formatent le modèle
+  canonique sans recalcul divergent et préservent ses unités, arrondis,
+  scopes et règles de disponibilité ;
+- maintenir les tests du modèle, de sa disponibilité, des page-data,
+  exports/CSV, payloads, historiques et analytics.
