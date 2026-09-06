@@ -40,6 +40,8 @@ vi.mock("./hooks/use-route-data", () => ({
     hasRoute: false,
     fr: true,
     recommendationRequested: false,
+    planningMode: { type: "free" },
+    setPlanningMode: vi.fn(),
     originMode: "map",
     setOriginMode: vi.fn(),
     mapOrigin: null,
