@@ -125,6 +125,58 @@ describe("accueil data", () => {
     );
   });
 
+  it("keeps the real place separate from the generic title when no action title exists", () => {
+    const activity = buildHomeCommunityActivity(
+      [
+        buildActionDataContract({
+          id: "without-action-title",
+          type: "action",
+          status: "approved",
+          source: "actions",
+          observedAt: "2026-04-10",
+          createdAt: "2026-04-10T08:00:00.000Z",
+          locationLabel: "Forêt de Meudon, 92360 Meudon",
+          latitude: 48.8,
+          longitude: 2.2,
+          actorName: "Bénévole",
+          volunteersCount: 3,
+        }),
+      ],
+      "2026-01-01",
+    );
+
+    expect(activity.items[0]).toMatchObject({
+      title: "Action de dépollution",
+      location: "Forêt de Meudon, 92360 Meudon",
+    });
+  });
+
+  it("keeps a route location readable without presenting the itinerary as the title", () => {
+    const activity = buildHomeCommunityActivity(
+      [
+        buildActionDataContract({
+          id: "route-location",
+          type: "action",
+          status: "approved",
+          source: "actions",
+          observedAt: "2026-04-10",
+          createdAt: "2026-04-10T08:00:00.000Z",
+          locationLabel: "Rue de la Paix, 75002 Paris → Jardin des Tuileries, 75001 Paris",
+          latitude: 48.86,
+          longitude: 2.33,
+          actorName: "Bénévole",
+          volunteersCount: 3,
+        }),
+      ],
+      "2026-01-01",
+    );
+
+    expect(activity.items[0]).toMatchObject({
+      title: "Action de dépollution",
+      location: "Rue de la Paix, 75002 Paris",
+    });
+  });
+
   it("excludes approved spots and clean places from recent community activity", () => {
     const activity = buildHomeCommunityActivity(
       [

@@ -181,9 +181,17 @@ function formatActionLabel(contract: ActionDataContract): string {
 function getActionTitle(contract: ActionDataContract): string {
   return (
     contract.metadata.preparationData?.actionTitle?.trim() ||
-    contract.location.label.trim() ||
-    "Action terrain"
+    "Action de dépollution"
   );
+}
+
+function getActionLocation(contract: ActionDataContract): string {
+  const location = contract.location.label.trim();
+  if (!location) {
+    return "Lieu non précisé";
+  }
+
+  return location.split(/\s*(?:→|->|—)\s*/u)[0]?.trim() || location;
 }
 
 function getActionSummary(contract: ActionDataContract): string {
@@ -316,7 +324,7 @@ export function buildHomeCommunityActivity(
         action: formatActionLabel(contract),
         title: getActionTitle(contract),
         summary: getActionSummary(contract),
-        location: contract.location.label.trim() || "Lieu non précisé",
+        location: getActionLocation(contract),
         timeLabel: formatRelativeDay(contract.dates.observedAt),
         dateLabel: contract.dates.observedAt,
         statusLabel: contract.status === "approved" ? "Vérifiée" : "À vérifier",
