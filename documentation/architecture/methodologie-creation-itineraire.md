@@ -125,6 +125,56 @@ Le planner applique les contraintes suivantes :
   le routage ;
 - les états de disponibilité, de complétude et de dégradation des sources.
 
+La priorité de pollution est construite à partir de plusieurs signaux
+disponibles, dans le respect de leur provenance et de leur état de confiance.
+Elle peut tenir compte du contexte urbain, de la proximité du trajet, des
+événements, de l’historique disponible et du coût de déplacement. Le planner
+conserve séparément `pollutionPriority`, `volunteerAdditionality` et
+`finalPlannerContribution` : l’additionnalité modifie le classement dans une
+pondération bornée, mais ne remplace ni la pression déchets/mégots, ni les
+événements, ni le budget, ni la sécurité.
+`volunteerAdditionality` estime la valeur complémentaire d’une action bénévole
+à partir du besoin probable, de la couverture municipale relative et de
+l’aptitude bénévole. Le calcul reste borné et dépendant de la confiance : une
+donnée municipale documentée prévaut sur une inférence, tandis qu’une donnée
+absente rapproche le facteur de son neutre et réduit la confiance globale.
+Une difficulté mécanique peut contribuer à l’additionnalité, mais ne constitue
+jamais à elle seule une preuve de faible couverture municipale.
+
+Une intervention municipale forte ou imminente, lorsqu’elle est documentée,
+réduit l’additionnalité. La surface et les obstacles décrivent des indices de
+nettoyabilité ; ils ne constituent pas une observation de tournée.
+  événement (`planningMode: "free"` ou `"event-centered"`) ;
+En mode event-centered, le contexte événementiel et l’ancrage sont conservés
+dans la trace : événement, statut temporel, rayon, poids d’ancrage, candidats
+favorisés et impacts par candidat. Cet ancrage reste soumis au budget et aux
+contraintes de sécurité.
+
+- la pression événementielle et le mode `planningMode` libre ou
+  event-centered, avec ancrage événementiel et trace ;
+- le snapshot `municipal-cleaning-serviceability`, chargé hors requête et
+  consommé par `volunteerAdditionality` ;
+- le calcul de `volunteerAdditionality`, sa pondération bornée dépendante de la
+  confiance et sa contribution distincte au classement du planner ;
+- la séparation explicite de `pollutionPriority`,
+  `volunteerAdditionality` et `finalPlannerContribution`, avec exclusion des
+  prédictions sans sécurité explicite du planner bénévole ;
+- la trace et la surface `Comprendre cet itinéraire`, qui exposent la
+  pollution, l’additionnalité, la couverture, la complexité, la sécurité et la
+  confiance sans recalcul côté frontend ;
+Le mode event-centered ne transforme pas un événement en observation de
+pollution ; il ajoute un contexte d’ancrage traçable à la décision du planner.
+Les fondations suivantes bornent la capacité actuelle sans devenir des
+affirmations métier supplémentaires :
+- le snapshot `municipal-cleaning-serviceability` est versionné et chargé
+  localement ; il n’est pas rafraîchi en temps réel pendant chaque calcul et
+  sa couverture reste partielle ;
+- les fréquences municipales et les opérations programmées ne sont utilisées
+  que lorsqu’elles sont documentées dans le snapshot ou le contexte fourni ;
+- les proxies géométriques, la complexité de surface et l’accessibilité
+  mécanisée ne mesurent pas une tournée municipale ;
+- la disponibilité d’un événement, d’une preuve municipale ou d’une preuve de
+  sécurité dépend de la complétude du snapshot et du contrat d’entrée.
 Ces contraintes peuvent empêcher la sélection d’une zone pourtant prioritaire.
 Le résultat doit alors conserver la décision et la raison de l’exclusion dans
 la trace lorsque le contrat le permet.

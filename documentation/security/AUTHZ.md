@@ -32,6 +32,76 @@ alias entrant ; les trois termes ont strictement les mêmes permissions.
 
 ## 1. Glossaire Technique
 
+Règle de vocabulaire : **IMU = rôle interne `max`**. Le rôle `max` est accordé
+uniquement par l'identité Clerk immuable présente dans `CLERK_MAX_USER_IDS` ou
+par une metadata serveur canonique `role=max`. Le rôle `admin` provient de
+`CLERK_ADMIN_USER_IDS` ou d'une metadata serveur canonique `role=admin`.
+Les adresses email primaire et secondaire sont des attributs de contact et de
+connexion mutables ; elles ne sont jamais une source d'AuthZ. `CREATOR_INBOX_EMAIL`
+reste réservé au contact et aux notifications internes. `activeRole`,
+`activeProfile` et la ligne Supabase `profiles.role_label` ne peuvent jamais
+accorder un privilège.
+
+Les alias historiques (`owner`, `godmode`, `creator`, `super_admin`, etc.) sont
+acceptés seulement comme valeurs d'entrée legacy et sont ignorés pour
+l'autorisation IMU lorsqu'ils ne correspondent pas à l'identité propriétaire.
+Le bypass `dev-max` est une identité synthétique réservée à `NODE_ENV=development`
+sur `localhost`, `127.0.0.1` ou `[::1]`; il ne peut pas fonctionner sur Preview,
+Production ou un hôte distant. `dev-admin` couvre le test admin sans utiliser
+l'identité IMU.
+
+## Attribution des rôles privilégiés
+
+`elu` et `admin` sont des niveaux obtenus (`GRANTED_ROLE`), jamais des rôles
+self-service. Les rôles ouverts ne contiennent que `benevole`, `coordinateur`,
+`scientifique` et `entreprise`; `activeRole` ne peut jamais augmenter le rôle
+obtenu.
+
+Les seuls parcours d'attribution sont :
+
+- une demande authentifiée `elu` ou `admin`, créée avec le statut
+  `pending_owner_review` et sans nouveau droit;
+- une décision de l'IMU actif pour accepter/refuser la demande, ou attribuer/
+  révoquer directement `elu` ou `admin` dans `/api/admin/role-accounts`.
+
+Les deux décisions synchronisent Clerk vers Supabase et sont auditées. La
+surface directe exige `ACTIVE_ROLE=max`; un `admin` ou un `elu` ne peut donc pas
+attribuer ces rôles. Aucune route ne peut attribuer `max`. `CLERK_ADMIN_USER_IDS`
+reste une source canonique de résolution du rôle `admin`, tandis que les
+écritures Clerk `role`/`profile` sont limitées à ces parcours.
+### GRANTED_ROLE et ACTIVE_ROLE
+
+L'identité serveur expose deux niveaux distincts :
+
+| Champ | Contrat |
+| :--- | :--- |
+| `identity.role` (**GRANTED_ROLE**) | niveau réellement obtenu (`benevole`, `coordinateur`, `scientifique`, `entreprise`, `elu`, `admin` ou `max`). Il ne peut pas être modifié par le menu utilisateur. |
+| `identity.activeRole` (**ACTIVE_ROLE**) | rôle actuellement utilisé ; il détermine les capacités effectives de la requête. |
+| `identity.activeProfile` | alias de compatibilité pour l'UX ; il ne constitue jamais une source d'AuthZ. |
+
+Les rôles ouverts sont `benevole`, `coordinateur`, `scientifique` et
+`entreprise`. Un compte `elu` peut activer ces rôles ou `elu`, un compte
+`admin` peut aussi activer `admin`, et seul un compte `max` peut activer `max`.
+Un changement d'`ACTIVE_ROLE` ne change jamais le `GRANTED_ROLE` ; un retour
+vers le rôle obtenu reste possible via le même contrat.
+
+Les capacités serveur doivent toujours être calculées depuis
+`activeRole`/`EffectiveAccess`, jamais depuis le rôle obtenu seul. La route
+`/api/account/active-profile` conserve son nom historique mais ne persiste que
+`publicMetadata.activeRole`. Elle ne peut ni attribuer ni élever un rôle.
+
+| **Role / GRANTED_ROLE** | Niveau métier réellement obtenu et autorité d'attribution ; il ne doit pas être confondu avec le rôle actif. |
+| **ACTIVE_ROLE** | Rôle sélectionné pour la session UX et la décision des capacités effectives. |
+| **Parcours** | (ou **Profile**) Projection UX de l'`ACTIVE_ROLE` (priorité des menus, CTAs, dashboard). |
+| **EffectiveAccess** | Décision serveur issue de l'identité, de la capacité, du rôle compatible, du scope ou ownership et de l'état métier. |
+## 2. Repères d'accès (`EffectiveAccess`)
+| Accès app protégée | AuthN puis parcours UX adapté |
+## 3. Parcours Utilisateur (UX)
+Chaque rôle est associé à un **Parcours** (ou Profil) qui définit ce que l'utilisateur voit en priorité. La configuration complète est dans `apps/web/src/lib/profiles.ts`.
+## 4. Implémentation dans le Code
+Utiliser le hook de session ou les fonctions de `lib/authz` si nécessaire.
+Les pages de profil (`/profil/[role]`) sont protégées par des gardes serveur pour éviter qu'un utilisateur n'accède à une vue ne correspondant pas à son rôle effectif (ex: un bénévole voyant le parcours admin).
+*Dernière mise à jour : Avril 2026*
 | Terme | Définition |
 | :--- | :--- |
 | **Role** | Attribution métier technique (`admin`, `benevole`, etc.) utilisée par le serveur pour les permissions réelles. |
