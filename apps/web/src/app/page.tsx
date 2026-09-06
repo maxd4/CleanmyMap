@@ -124,7 +124,7 @@ export default async function HomePage() {
     items: [],
   };
   return (
-    <main className="relative isolate min-h-screen overflow-hidden bg-[radial-gradient(circle_at_72%_10%,rgba(196,181,253,0.42),transparent_24%),radial-gradient(circle_at_32%_48%,rgba(110,231,183,0.52),transparent_34%),linear-gradient(135deg,#005743_0%,#0a936b_42%,#b9f3dc_100%)] font-sans text-[#082f24]">
+    <main className="relative isolate -mx-2 min-h-screen w-[calc(100%+1rem)] overflow-hidden bg-[radial-gradient(circle_at_72%_10%,rgba(196,181,253,0.42),transparent_24%),radial-gradient(circle_at_32%_48%,rgba(110,231,183,0.52),transparent_34%),linear-gradient(135deg,#005743_0%,#0a936b_42%,#b9f3dc_100%)] font-sans text-[#082f24] sm:-mx-4 sm:w-[calc(100%+2rem)]">
       <div className="pointer-events-none absolute -right-28 top-24 h-96 w-96 rounded-full bg-violet-300/30 blur-[100px]" />
       <div className="pointer-events-none absolute -left-40 top-[34rem] h-96 w-96 rounded-full bg-emerald-200/45 blur-[110px]" />
       <div className="relative z-10">
