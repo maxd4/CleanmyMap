@@ -25,17 +25,65 @@ const SECTION_TITLE_STYLE = {
   fontSize: "clamp(2.05rem, 3vw, 3.35rem)",
   lineHeight: 0.94,
   letterSpacing: "-0.055em",
+  fontWeight: 900,
 } as const;
 
-const ACTION_TONE_STYLES: Record<
-  HomeCommunityActivitySummary["items"][number]["tone"],
-  string
-> = {
-  amber: "bg-amber-100 text-amber-800",
-  blue: "bg-sky-100 text-sky-800",
-  cyan: "bg-cyan-100 text-cyan-800",
-  emerald: "bg-emerald-100 text-emerald-800",
-};
+function SectionLandscape({
+  variant,
+}: {
+  variant: "community" | "credibility";
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={`pointer-events-none absolute right-[-1.5rem] top-[-1rem] h-48 w-64 opacity-60 sm:h-56 sm:w-80 ${
+        variant === "credibility" ? "text-violet-200/80" : "text-emerald-200/90"
+      }`}
+      fill="none"
+      focusable="false"
+      viewBox="0 0 320 220"
+    >
+      <circle cx="258" cy="42" fill="currentColor" opacity="0.48" r="30" />
+      <path
+        d="M0 183c42-38 76-45 112-23 35 21 55-8 87-22 35-15 70-10 121 26v56H0v-37Z"
+        fill="currentColor"
+        opacity="0.32"
+      />
+      <path
+        d="M26 182c32-47 67-49 102-8 25 29 47 28 70 5 24-24 48-30 76-15 18 10 31 17 46 20"
+        stroke="currentColor"
+        strokeDasharray="4 7"
+        strokeLinecap="round"
+        strokeWidth="2"
+        opacity="0.72"
+      />
+      <path
+        d="M245 145 262 98l17 47h-10v35h-14v-35h-10Zm35 35 16-42 16 42h-9v28h-14v-28h-9Z"
+        fill="currentColor"
+        opacity="0.58"
+      />
+      {variant === "credibility" ? (
+        <path
+          d="m188 82 16-10 16 10-16 10-16-10Zm5 7v14c7 5 15 5 22 0V89"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="3"
+          opacity="0.7"
+        />
+      ) : (
+        <path
+          d="M165 94c20-16 43-5 46 17-22 9-38 2-46-17Zm14 7c-8 8-13 17-14 28"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="3"
+          opacity="0.68"
+        />
+      )}
+    </svg>
+  );
+}
 
 function ActionPreview({
   image,
@@ -47,7 +95,7 @@ function ActionPreview({
   return (
     <div
       aria-label={hasImage ? image.alt : "Aucune image disponible"}
-      className="h-20 w-24 shrink-0 overflow-hidden rounded-[1.05rem] border border-emerald-100/70 bg-white/80 sm:h-[5.5rem] sm:w-[7.6rem]"
+      className="h-20 w-24 shrink-0 overflow-hidden rounded-[1.05rem] border border-emerald-100/70 bg-white/80 sm:h-[5.25rem] sm:w-[8.5rem]"
       role={hasImage ? "img" : undefined}
       style={
         hasImage
@@ -70,31 +118,31 @@ function CommunityActivityCard({
   return (
     <article
       data-gsap-reveal
-      className="flex items-center gap-3 rounded-[1.25rem] border border-white/90 bg-white/80 px-3 py-3 shadow-[0_14px_26px_-24px_rgba(4,78,58,0.6)] transition-transform hover:-translate-y-0.5 sm:gap-4 sm:px-3.5"
+      className="flex items-start gap-3 rounded-[1.25rem] border border-white/90 bg-white/80 px-3 py-3 shadow-[0_14px_26px_-24px_rgba(4,78,58,0.45)] transition-transform hover:-translate-y-0.5 sm:gap-4 sm:px-3.5"
     >
       <ActionPreview image={item.image} />
-      <div className="min-w-0 flex-1 self-stretch py-0.5">
-        <div className="flex items-start justify-between gap-2">
+      <div className="flex min-w-0 flex-1 items-start gap-3 self-stretch py-0.5">
+        <div className="min-w-0 flex-1">
           <h3 className="line-clamp-2 text-[13px] font-black leading-tight text-[#082d35] sm:text-sm">
             {item.title}
           </h3>
+          <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-[#315c67] sm:text-[13px]">
+            {item.summary}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <span className="line-clamp-1 max-w-full rounded-full bg-[#e8f1f0] px-2.5 py-1 text-[10px] font-bold text-[#315c67]">
+              {item.location}
+            </span>
+          </div>
+        </div>
+        <div className="flex w-[4.75rem] shrink-0 flex-col items-end justify-between gap-2 self-stretch">
           <time
-            className="shrink-0 whitespace-nowrap text-[10px] font-semibold text-[#476c76] sm:text-[11px]"
+            className="whitespace-nowrap text-[10px] font-semibold text-[#476c76] sm:text-[11px]"
             dateTime={item.dateLabel}
           >
             {item.timeLabel}
           </time>
-        </div>
-        <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-[#315c67] sm:text-[13px]">
-          {item.summary}
-        </p>
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <span
-            className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${ACTION_TONE_STYLES[item.tone]}`}
-          >
-            {item.location}
-          </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-800">
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-800">
             <CheckCircle2 size={12} />
             {item.statusLabel}
           </span>
@@ -121,10 +169,12 @@ export function HomeCommunityCredibility({
   return (
     <section
       ref={sectionRef}
-      className="relative overflow-hidden bg-transparent py-8 sm:py-10 lg:py-12"
+      className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_15%_22%,rgba(255,255,255,0.72),transparent_28%),radial-gradient(circle_at_82%_64%,rgba(196,181,253,0.22),transparent_30%),linear-gradient(135deg,#d9faef_0%,#c4f4e2_48%,#e8f8f3_100%)] py-8 sm:py-10 lg:py-12"
     >
-      <div className="mx-auto grid w-full max-w-[1800px] gap-5 px-3 sm:px-6 lg:grid-cols-2 lg:px-8">
-        <div className="flex min-w-0 flex-col rounded-[2.25rem] border border-white/75 bg-white/48 p-5 shadow-[0_28px_70px_-50px_rgba(7,95,71,0.55)] backdrop-blur-xl sm:p-7 lg:p-8 xl:p-9">
+      <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:radial-gradient(circle_at_20%_88%,rgba(16,185,129,0.2),transparent_24%),radial-gradient(circle_at_74%_8%,rgba(129,140,248,0.16),transparent_20%)]" />
+      <div className="relative mx-auto grid w-full max-w-[1800px] items-stretch gap-4 px-3 sm:px-6 lg:grid-cols-2 lg:gap-5 lg:px-8">
+        <div className="relative isolate flex min-w-0 flex-col overflow-hidden rounded-[2.25rem] border border-white/85 bg-white/58 p-5 shadow-[0_28px_70px_-50px_rgba(7,95,71,0.42)] backdrop-blur-xl sm:p-7 lg:min-h-[760px] lg:p-7 xl:p-8">
+          <SectionLandscape variant="community" />
           <div data-gsap-reveal className="flex items-start gap-4">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-emerald-200 bg-white/75 text-emerald-700 shadow-[0_16px_30px_-22px_rgba(6,95,70,0.55)]">
               <Users size={26} />
@@ -134,7 +184,7 @@ export function HomeCommunityCredibility({
                 Communauté
               </p>
               <h2
-                className="mt-2 max-w-[15ch] text-[#063840]"
+                className="relative mt-2 max-w-[14ch] text-[#063840]"
                 style={SECTION_TITLE_STYLE}
               >
                 Une communauté vivante et engagée
@@ -189,9 +239,10 @@ export function HomeCommunityCredibility({
             </p>
             <CmmButton
               href="/actions/history"
-              tone="secondary"
-              variant="pill"
-              className="h-9 gap-2 px-3 text-[11px] font-black text-emerald-700"
+              tone="tertiary"
+              variant="ghost"
+              size="sm"
+              className="h-auto min-h-0 gap-1 rounded-none px-0 py-1 text-[11px] font-black text-emerald-700 hover:bg-transparent hover:text-emerald-900"
             >
               Voir toutes les actions
               <ArrowRight size={14} />
@@ -246,7 +297,8 @@ export function HomeCommunityCredibility({
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-col rounded-[2.25rem] border border-white/75 bg-white/48 p-5 shadow-[0_28px_70px_-50px_rgba(7,95,71,0.55)] backdrop-blur-xl sm:p-7 lg:p-8 xl:p-9">
+        <div className="relative isolate flex min-w-0 flex-col overflow-hidden rounded-[2.25rem] border border-white/85 bg-white/58 p-5 shadow-[0_28px_70px_-50px_rgba(7,95,71,0.42)] backdrop-blur-xl sm:p-7 lg:min-h-[760px] lg:p-7 xl:p-8">
+          <SectionLandscape variant="credibility" />
           <div data-gsap-reveal className="flex items-start gap-4">
             <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-emerald-200 bg-white/75 text-emerald-700 shadow-[0_16px_30px_-22px_rgba(6,95,70,0.55)]">
               <Leaf size={26} />
@@ -256,7 +308,7 @@ export function HomeCommunityCredibility({
                 Crédibilité
               </p>
               <h2
-                className="mt-2 max-w-[14ch] text-[#063840]"
+                className="relative mt-2 max-w-[13ch] text-[#063840]"
                 style={SECTION_TITLE_STYLE}
               >
                 Origine, terrain et crédibilité
@@ -275,7 +327,7 @@ export function HomeCommunityCredibility({
 
           <article
             data-gsap-reveal
-            className="mt-6 rounded-[1.65rem] border border-emerald-100/10 bg-[linear-gradient(145deg,#078060_0%,#075d4a_100%)] p-5 text-white shadow-[0_24px_48px_-32px_rgba(4,76,54,0.85)] sm:p-6 lg:p-7"
+            className="mt-6 flex flex-1 flex-col rounded-[1.65rem] border border-emerald-100/20 bg-[linear-gradient(145deg,#128b70_0%,#08715b_100%)] p-5 text-white shadow-[0_24px_48px_-32px_rgba(4,76,54,0.62)] sm:p-6 lg:p-7"
           >
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-emerald-100">
@@ -305,7 +357,7 @@ export function HomeCommunityCredibility({
 
           <article
             data-gsap-reveal
-            className="mt-3 rounded-[1.65rem] border border-white/20 bg-[linear-gradient(135deg,#078060_0%,#08735d_43%,#7166d8_100%)] p-5 text-white shadow-[0_24px_52px_-30px_rgba(50,45,143,0.56)] sm:p-6 lg:p-7"
+            className="mt-3 flex flex-1 flex-col rounded-[1.65rem] border border-white/25 bg-[linear-gradient(135deg,#128b70_0%,#08735d_43%,#7569d8_100%)] p-5 text-white shadow-[0_24px_52px_-30px_rgba(50,45,143,0.42)] sm:p-6 lg:p-7"
           >
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
@@ -332,7 +384,7 @@ export function HomeCommunityCredibility({
             </div>
           </article>
 
-          <div data-gsap-reveal className="mt-6 grid gap-3 sm:grid-cols-2">
+          <div data-gsap-reveal className="mt-6 grid gap-3 sm:grid-cols-2 lg:mt-6">
             <CmmButton
               href="/actions/map"
               tone="primary"
