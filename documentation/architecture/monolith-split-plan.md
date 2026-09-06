@@ -1,6 +1,6 @@
 # Plan de découpage monolithes
 
-**Mis à jour :** 2026-09-05 | **Portée :** `apps/web/src` | **Source :** `npm run analyze:heavy-files` | **Seuil radar informatif :** > 7 KB | **Seuil d'alerte enforcement :** > 1000 lignes ou > 50 KB
+**Mis à jour :** 2026-09-06 | **Portée :** `apps/web/src` | **Source :** `npm run analyze:heavy-files` | **Seuil radar informatif :** > 7 KB | **Seuil d'alerte enforcement :** > 1000 lignes ou > 50 KB
 
 ## Objectif
 
@@ -43,6 +43,24 @@ Règle : **un lot structurel par cible principale**, **API publique inchangée**
 | 🔴 CRITIQUE | 729 lignes / 25,6 KB | `components/reports/web-document/reports-web-document.shared.tsx` | Séparer modèle et rendu |
 
 Le scan du 5 septembre identifie 503 fichiers au-dessus du seuil informatif de 7 KB.
+
+### Résorption post-scan — `quiz-bank-admin-view.tsx`
+
+Le lot du 6 septembre a clôturé la cible `components/admin/quiz-bank-admin-view.tsx`,
+qui figurait encore dans la photographie du 5 septembre :
+
+- le shell est passé de 655 lignes / 27,7 KB à 147 lignes / 6,3 KB ;
+- `quiz-bank-admin-view.question-card.tsx` porte `QuestionCard`, `CmmDisclosure` et le rendu de la traçabilité, des corrections et des badges ;
+- `quiz-bank-admin-view.filters.tsx` porte le panneau de revue éditoriale, les modes, les sélecteurs, le compteur et le reset ;
+- `quiz-bank-admin-view.presentation.ts` porte les helpers de labels, tons, troncature et difficulté/piège ;
+- `lib/learning/quiz/quiz-bank-admin.ts` porte désormais les filtres par défaut et le filtrage pur des questions ;
+- `QuizBankAdminView`, son caller, l'AuthZ admin, les données pédagogiques et le contrat de disclosure restent inchangés.
+
+Le radar du 5 septembre reste volontairement conservé comme historique. Un scan
+du worktree du 6 septembre (dirty et soumis à des changements parallèles) ne
+doit pas être interprété comme une nouvelle baseline `origin/main` ; la ligne
+ci-dessus sera retirée ou requalifiée lors de la prochaine régénération globale
+sur une référence candidate propre.
 Le fichier le plus long fait 991 lignes et le plus volumineux 34,5 KB. Le seuil enforcement ne signale
 donc aucun fichier au-dessus de 1000 lignes ou 50 KB, et le baseline
 `scripts/checks/heavy-files-baseline.json` reste vide (`allowed: []`). La liste
@@ -252,6 +270,30 @@ Ces fichiers ont déjà été partiellement découpés lors du plan d'avril. Vé
 
 ---
 
+## LOT 8 — `quiz-bank-admin-view.tsx` ✅ (2026-09-06)
+
+**Nature :** Vue admin en lecture seule mêlant shell, filtres éditoriaux,
+présentation des questions et garde de disclosure.
+
+### État réel
+
+- façade `QuizBankAdminView` maintenue dans `quiz-bank-admin-view.tsx` ;
+- carte autonome dans `quiz-bank-admin-view.question-card.tsx` ;
+- filtres autonomes dans `quiz-bank-admin-view.filters.tsx` ;
+- helpers de présentation locaux dans `quiz-bank-admin-view.presentation.ts` ;
+- logique pure convergée vers `lib/learning/quiz/quiz-bank-admin.ts`, sans second modèle métier ;
+- caller `app/(app)/admin/quiz-bank/page.tsx` inchangé ;
+- `check-disclosure-governance.mjs` réaligné sur le propriétaire réel de `QuestionCard`.
+
+### Validation
+
+- contrat public `quiz-bank-admin.test.ts` et rendu `quiz-bank-admin-view.test.tsx` verts ;
+- garde disclosure vert ;
+- ESLint ciblé, typecheck web et `git diff --check` verts sur le candidat exact ;
+- `check-top-heavy-files --top=25` vert dans le worktree ; l'équivalent candidat a rencontré `spawnSync git ENOBUFS` dans l'environnement hôte et reste classé `HOST_ENVIRONMENT`.
+
+---
+
 ## Séquence d'exécution recommandée
 
 ```
@@ -262,7 +304,9 @@ LOT 4 (data pure, risque zéro)
 → LOT 5 (carte, complexité Mapbox)
 → LOT 6 (clôture des shells déjà extraits)
 → LOT 7 (complétion du travail d'avril)
-→ résiduel prioritaire: `app/api/actions/group-join/route.test.ts` puis les autres monolithes du radar
+→ LOT 8 (vue admin quiz, clôturé)
+→ régénérer et requalifier le radar global sur une référence candidate propre
+→ décider des refactors réellement indispensables restants
 ```
 
 ---
