@@ -1,4 +1,9 @@
 import type { JoinableActionItem } from "@/lib/actions/participation/group-participation";
+import { getActionDisplayStatus } from "./rejoindre-un-formulaire-section.status";
+
+export type LocationFilter = "all" | "ile-de-france" | "autres";
+
+export type PeriodFilter = "all" | "seven-days" | "thirty-days" | "ninety-days";
 
 export type JoinableActionJoinFilter = "all" | "available" | "joined";
 
@@ -11,6 +16,69 @@ export type JoinableActionQuery = {
   focusActionId: string | null;
   locale: "fr" | "en";
 };
+
+export function getLocationFilterBucket(label: string): LocationFilter {
+  const normalized = label
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (
+    normalized.includes("paris") ||
+    normalized.includes("meudon") ||
+    normalized.includes("belleville") ||
+    normalized.includes("seine") ||
+    normalized.includes("ile-de-france")
+  ) {
+    return "ile-de-france";
+  }
+
+  return "autres";
+}
+
+export function isWithinPeriod(actionDate: string, period: PeriodFilter): boolean {
+  if (period === "all") {
+    return true;
+  }
+
+  const parsedActionDate = new Date(`${actionDate}T12:00:00Z`);
+  if (Number.isNaN(parsedActionDate.getTime())) {
+    return true;
+  }
+
+  const now = new Date();
+  const diffInDays = (parsedActionDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+  switch (period) {
+    case "seven-days":
+      return diffInDays <= 7;
+    case "thirty-days":
+      return diffInDays <= 30;
+    case "ninety-days":
+      return diffInDays <= 90;
+    default:
+      return true;
+  }
+}
+
+export function sortItemsByStatusRank(items: JoinableActionItem[]): JoinableActionItem[] {
+  return [...items].sort((left, right) => {
+    const leftRank = getActionDisplayStatus(left) === "open"
+      ? 0
+      : getActionDisplayStatus(left) === "pending"
+        ? 1
+        : getActionDisplayStatus(left) === "confirmed"
+          ? 2
+          : 3;
+    const rightRank = getActionDisplayStatus(right) === "open"
+      ? 0
+      : getActionDisplayStatus(right) === "pending"
+        ? 1
+        : getActionDisplayStatus(right) === "confirmed"
+          ? 2
+          : 3;
+    return leftRank - rightRank;
+  });
+}
 
 function normalizeSearchText(value: string): string {
   return value
