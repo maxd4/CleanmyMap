@@ -71,6 +71,66 @@ export type QuizBankAdminSnapshot = {
   byMode: Record<QuizAccessTypeId, number>;
 };
 
+export const DEFAULT_QUIZ_BANK_ADMIN_FILTERS: QuizBankAdminFilters = {
+  mode: "all",
+  pedagogicalType: "all",
+  skill: "all",
+  difficulty: "all",
+  trapLevel: "all",
+  sourceType: "all",
+  sourceState: "all",
+  needsReview: "all",
+};
+
+function matchesStringFilter(value: string | undefined, selected: string): boolean {
+  return selected === "all" || value === selected;
+}
+
+export function filterQuizBankAdminQuestions(
+  questions: readonly QuizBankAdminQuestion[],
+  filters: QuizBankAdminFilters,
+): QuizBankAdminQuestion[] {
+  return questions.filter((question) => {
+    if (filters.mode !== "all" && !question.accessTypeIds.includes(filters.mode)) {
+      return false;
+    }
+
+    if (!matchesStringFilter(question.pedagogicalType, filters.pedagogicalType)) {
+      return false;
+    }
+
+    if (!matchesStringFilter(question.skill, filters.skill)) {
+      return false;
+    }
+
+    if (!matchesStringFilter(question.difficulty, filters.difficulty)) {
+      return false;
+    }
+
+    if (!matchesStringFilter(question.trapLevel, filters.trapLevel)) {
+      return false;
+    }
+
+    if (!matchesStringFilter(question.sourceType, filters.sourceType)) {
+      return false;
+    }
+
+    if (filters.sourceState !== "all" && question.sourceState !== filters.sourceState) {
+      return false;
+    }
+
+    if (filters.needsReview === "only" && !question.needsReview) {
+      return false;
+    }
+
+    if (filters.needsReview === "excluded" && question.needsReview) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
 const QUALITY_REASON_LABELS: Partial<Record<string, string>> = {
   "interet-pedagogique": "Intérêt pédagogique à renforcer",
   "niveau-de-reflexion": "Niveau de réflexion trop faible",

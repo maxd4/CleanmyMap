@@ -9,7 +9,7 @@ const files = {
   legal: "apps/web/src/app/conditions-generales-utilisation/legal-accordion.tsx",
   map: "apps/web/src/app/(app)/actions/map/_components/map-legend.tsx",
   vision: "apps/web/src/components/actions/action-declaration/form/action-declaration-form.vision-fields.tsx",
-  quiz: "apps/web/src/components/admin/quiz-bank-admin-view.tsx",
+  quiz: "apps/web/src/components/admin/quiz-bank-admin-view.question-card.tsx",
   documentation: "documentation/design-system/DISCLOSURE_ACCORDIONS.md",
 };
 
@@ -104,7 +104,7 @@ const consumerScopes = {
   legal: extractScope(sources.legal, "export function LegalAccordion"),
   map: extractScope(sources.map, "export function MapLegend"),
   vision: extractScope(sources.vision, "export function ActionDeclarationVisionFields"),
-  quiz: extractScope(sources.quiz, "function QuestionCard", "export function QuizBankAdminView"),
+  quiz: extractScope(sources.quiz, "export function QuestionCard"),
 };
 
 for (const [key, scope] of Object.entries(consumerScopes)) {
