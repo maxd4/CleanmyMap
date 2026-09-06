@@ -15,31 +15,21 @@ médias et rapports présents sous `scripts/`.
 
 ## Coordinateur local des chantiers
 
-Le script `scripts/dev/workspace-coordination.mjs` conserve uniquement des
-métadonnées runtime sous `.artifacts/coordination/`. Son cycle est
-`init` → `start` → `claim` → `publication-acquire` → staging/validation →
-`publication-release`/`release`. `init` migre les chemins déjà dirty vers
-`LEGACY_UNOWNED` sans les modifier ni les revendiquer ; une adoption doit être
-explicitement demandée. Un `claim` représente exclusivement une intention
+`workspace-coordination.mjs` conserve uniquement des métadonnées runtime sous
+`.artifacts/coordination/`. Un `claim` représente exclusivement une intention
 d'écriture future : un fichier dirty, staged ou simplement présent dans
-`LEGACY_UNOWNED` n'est pas un ownership et ne doit pas être adopté par un run
-qui ne prévoit pas de le modifier. Une lecture seule reste donc dans
-`LEGACY_UNOWNED`. Les claims sont atomiques, relatifs au dépôt et
-protégés contre la traversée ; le domaine `AUTHZ_SECURITY` est sérialisé et un
-verrou stale est signalé, pas nettoyé automatiquement.
+`LEGACY_UNOWNED` ne constitue jamais une preuve d'ownership et ne doit pas
+être adopté par un run qui ne prévoit pas de le modifier. La lecture seule
+reste donc dans `LEGACY_UNOWNED`.
 
+Une adoption explicite d'un futur chemin d'écriture est suivie dans les
+métadonnées du run via `adoptedLegacyPaths`. Si cette intention est abandonnée,
 `unclaim --run-id <RUN_ID> [--return-legacy] -- <paths>` retire uniquement les
-chemins effectivement possédés par le run, refuse les locks étrangers et les
-chemins staged sous publication, et ne modifie ni le fichier, ni l'index, ni
-`HEAD`. Un chemin adopté encore dirty revient au legacy avant le `release` du
-run.
-
-Le coordinateur ne remplace pas les contrôles Git : le pré-commit vérifie la
-portée `STAGED` et exige que le détenteur du verrou de publication possède tous
-les chemins staged. Le stale-check refetch `origin/main` et compare uniquement
-les chemins du run depuis son `baseSha`. Les commandes `status --compact` et
-`status --json` exposent des métadonnées et des chemins, jamais le contenu des
-fichiers ; aucun snapshot global et aucun `git add -A` ne sont acceptés.
+chemins effectivement possédés par ce run ; il refuse les locks étrangers et
+les chemins staged sous publication. `--return-legacy` enregistre d'abord le
+retour dans `LEGACY_UNOWNED`. Lors du `release`, un chemin adopté encore dirty
+est conservativement rendu au legacy avant la suppression de son lock. Aucun
+de ces mécanismes ne modifie le fichier, l'index ou `HEAD`.
 
 ## Portée Git des contrôles
 

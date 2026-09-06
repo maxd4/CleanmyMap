@@ -97,18 +97,15 @@ documentation/security/authz-authn-regles.md
 documentation/security/authorization-capabilities.md
 ```
 
-Rappel de vocabulaire et d'autorité :
+Rappel de vocabulaire :
 
 ```text
-max = identifiant technique canonique, réservé à l'owner Clerk de l'instance
+max = identifiant technique canonique
 IMU = libellé produit
-super-admin = alias legacy d'entrée, jamais une preuve d'autorisation
+super-admin = alias de max
 ```
 
-L'owner IMU exige l'ID Clerk configuré et l'email principal vérifié
-correspondant. `GRANTED_ROLE=max` est dérivé de cette identité uniquement ;
-`ACTIVE_ROLE`/`activeProfile`, les métadonnées et Supabase ne peuvent pas
-l'accorder. `service_role` reste une identité technique serveur distincte.
+Ces termes désignent le même rôle utilisateur. `service_role` reste une identité technique serveur distincte.
 
 ## Règles de placement
 

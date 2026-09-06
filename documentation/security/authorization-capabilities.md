@@ -164,9 +164,8 @@ max
 Conserver la distinction :
 
 ```txt
-Role        = GRANTED_ROLE, attribution métier réellement obtenue
-ACTIVE_ROLE = rôle actuellement utilisé pour les capacités
-Parcours    = projection UX de l'ACTIVE_ROLE
+Role        = attribution métier
+Parcours    = projection UX du rôle
 Capability  = action métier autorisable
 Scope       = périmètre dans lequel cette capacité peut s'exercer
 Ownership   = relation directe utilisateur ↔ ressource
@@ -177,23 +176,18 @@ Un `Parcours` ne constitue jamais une permission serveur.
 
 ### Identité canonique du rôle IMU
 
-La règle de nommage est : **IMU = rôle interne `max`**.
+La règle de nommage est : **IMU = super-admin = rôle interne `max`**.
 
 - `max` est l'identifiant technique canonique utilisé par le code et les
   données ;
 - `IMU` est l'appellation produit officielle affichée dans l'interface ;
-- les alias `super-admin`, `super_admin`, `superadmin`, `owner`, `godmode` et
-  `creator` sont uniquement des valeurs legacy ; ils ne constituent jamais une
-  preuve d'autorisation IMU ;
-- l'accès `max` exige l'identité Clerk présente dans `CLERK_MAX_USER_IDS` ou
-  une metadata serveur canonique `role=max` ;
-- `admin` exige l'identité Clerk présente dans `CLERK_ADMIN_USER_IDS` ou une
-  metadata serveur canonique `role=admin` ;
-- `ACTIVE_ROLE=max`, `activeProfile=max` ou `profiles.role_label=max` ne
-  peuvent pas créer une autorité indépendante ; les adresses email primaire et
-  secondaire restent des attributs de contact/connexion mutables et ne peuvent
-  jamais accorder de privilège. `CREATOR_INBOX_EMAIL` est limité au contact et
-  aux notifications internes.
+- `super-admin`, `super_admin` et `superadmin` sont des alias entrants
+  acceptés et normalisés vers `max` ;
+- ces trois termes désignent strictement le même rôle et ne créent aucune
+  différence de permissions ;
+- `owner`, `godmode` et `creator` restent uniquement des alias de
+  compatibilité lorsqu'une donnée legacy les fournit, jamais des rôles ou des
+  libellés canoniques.
 
 Les chemins historiques comme `09-admin-superadmin` et `/admin/godmode` sont
 conservés pour compatibilité documentaire et de navigation. Leur nom ne définit
@@ -349,7 +343,7 @@ community.moderate_global
 admin.view_backoffice
 admin.run_operational_tools
 admin.view_audit
-roles.request_promotion
+roles.assign_self_service
 roles.assign_privileged
 platform.admin
 ```
@@ -509,9 +503,7 @@ motif si requis
 + targetUserId si pertinent
 ```
 
-Un admin ne peut pas attribuer `elu` ou `admin` : la capacité
-`roles.assign_privileged` est réservée à l'IMU actif (`ACTIVE_ROLE=max`) et à
-la surface dédiée. Il ne peut jamais attribuer `max`.
+Un admin ne doit pas pouvoir attribuer `max` sauf contrat explicite distinct.
 
 ### Max
 
