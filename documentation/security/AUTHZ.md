@@ -30,7 +30,9 @@ Règle de vocabulaire : **IMU = rôle interne `max`**. Le rôle `max` est accord
 uniquement par l'identité Clerk immuable présente dans `CLERK_MAX_USER_IDS` ou
 par une metadata serveur canonique `role=max`. Le rôle `admin` provient de
 `CLERK_ADMIN_USER_IDS` ou d'une metadata serveur canonique `role=admin`.
-L'adresse primaire ou secondaire, `CREATOR_INBOX_EMAIL`, `activeRole`,
+Les adresses email primaire et secondaire sont des attributs de contact et de
+connexion mutables ; elles ne sont jamais une source d'AuthZ. `CREATOR_INBOX_EMAIL`
+reste réservé au contact et aux notifications internes. `activeRole`,
 `activeProfile` et la ligne Supabase `profiles.role_label` ne peuvent jamais
 accorder un privilège.
 

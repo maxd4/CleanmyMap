@@ -129,29 +129,34 @@ describe("role resolution", () => {
     ).toBe("admin");
   });
 
-  it("does not change role when the email changes", () => {
+  it.each([
+    ["primary email replacement", { primaryEmailAddress: { emailAddress: "after@example" } }],
+    ["primary email removal", { primaryEmailAddress: undefined }],
+    [
+      "secondary email addition",
+      {
+        primaryEmailAddress: { emailAddress: "before@example" },
+        emailAddresses: [{ emailAddress: "added@example" }],
+      },
+    ],
+  ])("keeps the role unchanged after %s", (_change, emailFields) => {
     const allowlists = {
       adminUserIds: new Set<string>(),
       maxUserIds: new Set(["stable-user"]),
     };
+    const before = resolveClerkRole({
+      user: user({
+        id: "stable-user",
+        primaryEmailAddress: { emailAddress: "before@example" },
+      }),
+      ...allowlists,
+    });
+    const after = resolveClerkRole({
+      user: user({ id: "stable-user", ...emailFields }),
+      ...allowlists,
+    });
 
-    expect(
-      resolveClerkRole({
-        user: user({
-          id: "stable-user",
-          primaryEmailAddress: { emailAddress: "before@example" },
-        }),
-        ...allowlists,
-      }),
-    ).toBe("max");
-    expect(
-      resolveClerkRole({
-        user: user({
-          id: "stable-user",
-          primaryEmailAddress: { emailAddress: "after@example" },
-        }),
-        ...allowlists,
-      }),
-    ).toBe("max");
+    expect(before).toBe("max");
+    expect(after).toBe(before);
   });
 });
