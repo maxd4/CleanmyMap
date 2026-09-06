@@ -9,6 +9,14 @@ const packageRoot = existsSync(join(process.cwd(), "src"))
 const rubriquesRoot = join(packageRoot, "src/components/sections/rubriques");
 const rendererPath = join(rubriquesRoot, "section-renderer.tsx");
 const recyclingSectionPath = join(rubriquesRoot, "recycling-section.tsx");
+const routePagePath = join(packageRoot, "src/app/(app)/sections/route/page.tsx");
+const terrainSectionsPath = join(rubriquesRoot, "terrain-sections.tsx");
+const routeEntrypointPath = join(rubriquesRoot, "route/index.tsx");
+const legacyRoutePaths = [
+  join(rubriquesRoot, "route-section.tsx"),
+  join(rubriquesRoot, "route-section.test.tsx"),
+  join(rubriquesRoot, "route-section.map.test.tsx"),
+];
 
 const complexEntrypoints = [
   join(rubriquesRoot, "community", "index.tsx"),
@@ -51,5 +59,20 @@ describe("rubrique entrypoints", () => {
   it("uses the explicit assistant entrypoint from recycling", () => {
     const recyclingSection = readFileSync(recyclingSectionPath, "utf8");
     expect(recyclingSection).toContain('from "./recycling-question-assistant/index"');
+  });
+
+  it("keeps the route page and terrain exports behind the canonical facade", () => {
+    const routePage = readFileSync(routePagePath, "utf8");
+    const terrainSections = readFileSync(terrainSectionsPath, "utf8");
+    const routeEntrypoint = readFileSync(routeEntrypointPath, "utf8");
+
+    expect(routePage).toContain('from "@/components/sections/rubriques/route"');
+    expect(terrainSections).toContain('export { RouteSection } from "./route";');
+    expect(routeEntrypoint).toContain('export { RouteSection } from "./route-section";');
+    expect(routeEntrypoint).toContain('export { RouteSection as default } from "./route-section";');
+
+    for (const legacyRoutePath of legacyRoutePaths) {
+      expect(existsSync(legacyRoutePath)).toBe(false);
+    }
   });
 });
