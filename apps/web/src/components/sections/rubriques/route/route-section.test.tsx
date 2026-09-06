@@ -2,7 +2,16 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ useUser: vi.fn(), requestRecommendation: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  useUser: vi.fn(),
+  requestRecommendation: vi.fn(),
+  routeData: {
+    status: "ok",
+    dataStatus: "complete",
+    routeGeometry: { mode: "fallback" },
+    origin: { source: "browser" },
+  },
+}));
 
 vi.mock("@clerk/nextjs", () => ({ useUser: mocks.useUser }));
 vi.mock("next/dynamic", () => ({ default: () => () => null }));
@@ -22,13 +31,13 @@ vi.mock("./hooks/use-route-data", () => ({
   useRouteData: () => ({
     options: { priorityVsTravel: 65, travelBudgetMinutes: 60, maxStops: 6 },
     setOptions: vi.fn(),
-    data: undefined,
+    data: mocks.routeData,
     isLoading: false,
     error: null,
     picks: [],
     totalKm: 0,
     totalMinutes: 0,
-    hasData: false,
+    hasData: true,
     hasRoute: false,
     fr: true,
     recommendationRequested: false,
@@ -62,6 +71,7 @@ describe("RouteSection explainability wiring", () => {
       </EffectiveAuthStateProvider>,
     );
     expect(markup).toContain("data-route-event-selector");
+    expect(markup).toContain("data-route-explanation");
     expect(markup).toContain("Calculer la recommandation");
   });
 });
