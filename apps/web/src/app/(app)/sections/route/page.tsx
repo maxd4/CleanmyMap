@@ -1,5 +1,5 @@
 import { Navigation, MapPin, History, FilePlus2 } from "lucide-react";
-import { RouteSection } from "@/components/sections/rubriques/route";
+import { RouteSection } from "@/components/sections/rubriques/route-section";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { PageHeader } from "@/components/ui/page-header";
