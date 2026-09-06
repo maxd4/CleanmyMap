@@ -93,6 +93,27 @@ function weightedAvailable(
   };
 }
 
+function weightedFixedNeutral(
+  values: Array<{ value: number | null; confidence: number; weight: number }>,
+): { raw: number; effective: number; confidence: number } {
+  const neutral = VOLUNTEER_ADDITIONALITY_MODEL_CONFIG.confidence.neutral;
+  return values.reduce(
+    (result, item) => {
+      const rawValue = item.value === null ? neutral : clamp01(item.value);
+      const effectiveValue = item.value === null
+        ? neutral
+        : confidenceLimited(item.value, item.confidence);
+      const confidence = item.value === null ? 0 : clamp01(item.confidence);
+      return {
+        raw: result.raw + rawValue * item.weight,
+        effective: result.effective + effectiveValue * item.weight,
+        confidence: result.confidence + confidence * item.weight,
+      };
+    },
+    { raw: 0, effective: 0, confidence: 0 },
+  );
+}
+
 function audit(
   value: number | null,
   confidence: number,
@@ -270,7 +291,7 @@ function municipalFactor(
     complexity.confidence,
     complexity.value === null ? "unknown" : "inference",
   );
-  const lowCoverage = weightedAvailable([
+  const lowCoverage = weightedFixedNeutral([
     { value: direct.value === null ? null : 1 - direct.value, confidence: direct.confidence, weight: VOLUNTEER_ADDITIONALITY_MODEL_CONFIG.weights.coverageGap.documentedCoverage },
     { value: mechanizedValue, confidence: mechanizedConfidence, weight: VOLUNTEER_ADDITIONALITY_MODEL_CONFIG.weights.coverageGap.mechanizedAccessibilityGap },
     { value: manualValue, confidence: manualConfidence, weight: VOLUNTEER_ADDITIONALITY_MODEL_CONFIG.weights.coverageGap.manualIntervention },
@@ -280,7 +301,7 @@ function municipalFactor(
   return {
     lowRelativeCoverage: {
       raw: lowCoverage.raw,
-      effective: confidenceLimited(lowCoverage.raw, lowCoverage.confidence),
+      effective: lowCoverage.effective,
       confidence: round(lowCoverage.confidence),
       influence: 1,
       note:

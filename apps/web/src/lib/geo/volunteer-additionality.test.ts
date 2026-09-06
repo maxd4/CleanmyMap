@@ -197,9 +197,73 @@ describe("volunteer additionality", () => {
 
   it("ne transforme pas l'absence de couverture en absence de nettoyage", () => {
     const unknown = calculateVolunteerAdditionality(input({ municipalCleaning: null }));
-    expect(unknown.municipalCleaning.lowRelativeCoverage.raw).toBeNull();
+    expect(unknown.municipalCleaning.lowRelativeCoverage.raw).toBe(0.5);
     expect(unknown.municipalCleaning.lowRelativeCoverage.effective).toBe(0.5);
+    expect(unknown.municipalCleaning.lowRelativeCoverage.confidence).toBe(0);
     expect(unknown.adjustments.maluses.join(" ")).toContain("non documentée");
+  });
+
+  it("conserve les poids fixes quand la couverture directe est absente", () => {
+    const result = calculateVolunteerAdditionality(input({
+      municipalCleaning: municipal({
+        municipalCleaningServiceLevel: null,
+        municipalCleaningServiceLevelBasis: "unknown",
+        documentedCleaningFrequency: null,
+      }),
+    }));
+
+    expect(result.municipalCleaning.lowRelativeCoverage.effective).toBeCloseTo(
+      0.65 * 0.5 + 0.15 * 0.8 + 0.12 * 0.8 + 0.08 * 0.85,
+      3,
+    );
+    expect(result.municipalCleaning.lowRelativeCoverage.confidence).toBeCloseTo(0.35, 3);
+  });
+
+  it("borne strictement l'influence d'une surface seule à son poids de 8 %", () => {
+    const allUnknown = calculateVolunteerAdditionality(input({ municipalCleaning: null }));
+    const surfaceOnly = calculateVolunteerAdditionality(input({
+      municipalCleaning: municipal({
+        municipalCleaningServiceLevel: null,
+        municipalCleaningServiceLevelBasis: "unknown",
+        mechanizedCleaningAccessibility: null,
+        mechanizedAccessibilityBasis: "unknown",
+        manualCleaningLikely: {
+          value: null,
+          basis: "unknown",
+          evidence: { sourceEvidenceIds: [], resolution: "unknown", confidence: 0 },
+        },
+        surfaceClasses: [{ surfaceClass: "stairs", featureCount: 1, share: 1 }],
+      }),
+    }));
+    const difference = surfaceOnly.municipalCleaning.lowRelativeCoverage.effective -
+      allUnknown.municipalCleaning.lowRelativeCoverage.effective;
+
+    expect(surfaceOnly.municipalCleaning.lowRelativeCoverage.effective).toBeCloseTo(0.528, 3);
+    expect(difference).toBeLessThanOrEqual(0.08 * (0.85 - 0.5) + 1e-9);
+  });
+
+  it("applique la formule nominale lorsque tous les signaux sont disponibles", () => {
+    const result = calculateVolunteerAdditionality(input());
+
+    expect(result.municipalCleaning.lowRelativeCoverage.raw).toBeCloseTo(0.804, 3);
+    expect(result.municipalCleaning.lowRelativeCoverage.effective).toBeCloseTo(0.804, 3);
+    expect(result.municipalCleaning.lowRelativeCoverage.confidence).toBe(1);
+  });
+
+  it("ramène chaque facteur de faible confiance vers le neutre", () => {
+    const lowConfidence = calculateVolunteerAdditionality(input({
+      municipalCleaning: municipal({
+        municipalCleaningServiceLevelEvidence: { sourceEvidenceIds: ["test"], resolution: "resolved", confidence: 0.1 },
+      }),
+    }));
+    const nominal = calculateVolunteerAdditionality(input());
+    const neutral = 0.5;
+
+    expect(lowConfidence.municipalCleaning.lowRelativeCoverage.effective).toBeGreaterThan(neutral);
+    expect(lowConfidence.municipalCleaning.lowRelativeCoverage.effective).toBeLessThan(
+      nominal.municipalCleaning.lowRelativeCoverage.effective,
+    );
+    expect(lowConfidence.municipalCleaning.lowRelativeCoverage.confidence).toBeCloseTo(0.415, 3);
   });
 
   it("réduit le score lorsqu'un marché vient de fermer avec remise en état prévue", () => {

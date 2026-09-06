@@ -64,6 +64,7 @@ export function serviceabilityByZone(
 
 export function safetyForObservedCandidate(
   candidate: TrashSpotterActionableCandidate,
+  geographicSafety?: VolunteerSafetyAssessment,
 ): VolunteerSafetyAssessment {
   if (!candidate.safety) {
     return { status: "unknown", suitability: null, confidence: 0 };
@@ -85,11 +86,11 @@ export function safetyForObservedCandidate(
       evidenceIds: ["trash-spotter-category-safety-policy"],
     };
   }
+  if (geographicSafety) return geographicSafety;
   return {
-    status: "safe",
-    suitability: 1,
-    confidence: 0.5,
-    evidenceIds: ["trash-spotter-category-safety-policy"],
+    status: "unknown",
+    suitability: null,
+    confidence: 0,
   };
 }
 
@@ -150,8 +151,9 @@ export function observedCandidateContribution(input: {
   pressureSnapshot: ParisPressureSnapshot | null;
   municipalCleaningSnapshot: MunicipalCleaningServiceabilitySnapshot | null;
   municipalInterventions?: RouteAdditionalityOptions["municipalInterventions"];
+  geographicSafety?: VolunteerSafetyAssessment;
 }): RoutePlannerContribution {
-  const safety = safetyForObservedCandidate(input.candidate);
+  const safety = safetyForObservedCandidate(input.candidate, input.geographicSafety);
   const pressureSnapshot = input.pressureSnapshot;
   const nearest = pressureSnapshot
     ? findNearestParisPressureZone(input.candidate, pressureSnapshot)
