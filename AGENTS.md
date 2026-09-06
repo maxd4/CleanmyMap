@@ -261,6 +261,17 @@ ci-dessus.
   jamais une nouvelle source de vérité ni une nouvelle structure du dépôt ;
 - indiquer clairement où télécharger l'archive fournie.
 
+### Documents Markdown apportés par l'utilisateur
+
+- tout nouveau fichier `.md` explicitement apporté ou téléchargé par
+  l'utilisateur dans le checkout est une source utilisateur intentionnelle ;
+  il ne doit jamais être traité comme un artefact disposable ni supprimé
+  parce qu'il est untracked ; s'il n'existe pas encore sur `origin/main`, il
+  doit être intégré au dépôt, commité et poussé sur `main` dans son
+  emplacement fourni ; seul un secret, une donnée sensible, un fichier
+  manifestement généré ou un contenu tiers non destiné au dépôt peut bloquer
+  cette intégration, avec un STOP explicite.
+
 Ne jamais supprimer en masse un fichier untracked, généré ou non canonique
 sans établir sa provenance, son rôle, sa régénérabilité et son emplacement
 attendu. En cas de doute, le conserver et produire un verdict
