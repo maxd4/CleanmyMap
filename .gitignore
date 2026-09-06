@@ -78,6 +78,22 @@ documentation/pages_site/routes/**/*.bmp
 documentation/pages_site/routes/**/*.tif
 documentation/pages_site/routes/**/*.tiff
 
+# Action fallback photo assets stay local-only; keep README and JSON metadata.
+apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[jJ][pP][gG]
+apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[jJ][pP][eE][gG]
+apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[pP][nN][gG]
+apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[gG][iI][fF]
+apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[wW][eE][bB][pP]
+apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[aA][vV][iI][fF]
+apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[hH][eE][iI][cC]
+apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[hH][eE][iI][fF]
+apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[bB][mM][pP]
+apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[tT][iI][fF]
+apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[tT][iI][fF][fF]
+apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[jJ][xX][lL]
+apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[iI][cC][oO]
+apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[sS][vV][gG]
+
 .vercel/
 .playwright-mcp/
 apps/web/data/local-db/*.json
