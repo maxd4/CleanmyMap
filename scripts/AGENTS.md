@@ -13,6 +13,24 @@ médias et rapports présents sous `scripts/`.
   donnée, un artefact ou un environnement ;
 - privilégier une validation ciblée avant une suite lourde.
 
+## Coordinateur local des chantiers
+
+Le script `scripts/dev/workspace-coordination.mjs` conserve uniquement des
+métadonnées runtime sous `.artifacts/coordination/`. Son cycle est
+`init` → `start` → `claim` → `publication-acquire` → staging/validation →
+`publication-release`/`release`. `init` migre les chemins déjà dirty vers
+`LEGACY_UNOWNED` sans les modifier ni les revendiquer ; une adoption doit être
+explicitement demandée. Les claims sont atomiques, relatifs au dépôt et
+protégés contre la traversée ; le domaine `AUTHZ_SECURITY` est sérialisé et un
+verrou stale est signalé, pas nettoyé automatiquement.
+
+Le coordinateur ne remplace pas les contrôles Git : le pré-commit vérifie la
+portée `STAGED` et exige que le détenteur du verrou de publication possède tous
+les chemins staged. Le stale-check refetch `origin/main` et compare uniquement
+les chemins du run depuis son `baseSha`. Les commandes `status --compact` et
+`status --json` exposent des métadonnées et des chemins, jamais le contenu des
+fichiers ; aucun snapshot global et aucun `git add -A` ne sont acceptés.
+
 ## Portée Git des contrôles
 
 - les contrôles manuels de changements peuvent utiliser la portée `WORKTREE` ;

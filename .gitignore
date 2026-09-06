@@ -30,6 +30,8 @@ output/
 # CleanMyMap local generated outputs. `.artifacts/validation/` is intentional evidence.
 /.artifacts/validation/prepush-candidate/
 /.artifacts/validation/publication-candidate/
+# Runtime-only metadata for local parallel work coordination.
+/.artifacts/coordination/
 /artifacts/
 **/artifacts/
 **/backups/

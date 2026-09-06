@@ -593,6 +593,17 @@ peut publier normalement malgré des changements dirty étrangers. Avant tout
 push, il vérifie l'ascendance de `HEAD` : un commit local étranger qui serait
 embarqué est un blocage explicite, pas une publication silencieuse.
 
+Pour coordonner plusieurs chantiers dans le checkout partagé, utiliser le
+coordinateur local `workspace:init`, `workspace:start`, `workspace:claim` et
+`workspace:status`. L'initialisation classe les deltas préexistants
+`LEGACY_UNOWNED` sans les revendiquer ; l'adoption doit être explicite. Chaque
+run ne revendique que son allowlist, le domaine `AUTHZ_SECURITY` est exclusif,
+et le verrou `workspace:publication-acquire` sérialise l'index avant staging.
+Le statut compact reste métadonnées-only ; le stale-check refetch `origin/main`
+et compare uniquement les chemins possédés depuis le base SHA. Ne jamais prendre
+un snapshot global du dirty worktree ni utiliser `git add -A` pour coordonner un
+lot.
+
 Si le checkout partagé contient déjà un commit étranger, une divergence, une
 race ou ne permet pas une resynchronisation sûre, Codex peut utiliser une
 sandbox de publication éphémère depuis le dernier `origin/main`, avec la seule

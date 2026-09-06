@@ -27,6 +27,12 @@ try {
     Write-Host "Pre-commit guardrail"
     Write-Host "Repository: $RepoRoot"
 
+    $WorkspaceRunId = $env:CMM_WORKSPACE_RUN_ID
+    $WorkspaceCoordinationArgs = @("scripts/dev/workspace-coordination.mjs", "check-staged")
+    if ($WorkspaceRunId) {
+        $WorkspaceCoordinationArgs += @("--run-id", $WorkspaceRunId)
+    }
+    Invoke-GuardStep "staged workspace ownership" { node @WorkspaceCoordinationArgs }
     Invoke-GuardStep "staged-surface quick checks" { npm run checks:staged:quick }
     Invoke-GuardStep "staged secret audit" { npm run security:secrets -- --staged-only }
     Invoke-GuardStep "staged diff check" { git diff --cached --check }
