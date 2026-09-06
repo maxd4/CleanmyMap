@@ -12,8 +12,13 @@ export type HomeCommunityActivityItem = {
   actor: string;
   initials: string;
   action: string;
+  title: string;
+  summary: string;
   location: string;
   timeLabel: string;
+  dateLabel: string;
+  statusLabel: string;
+  imageUrl: string | null;
   tone: "cyan" | "emerald" | "blue" | "amber";
 };
 
@@ -147,6 +152,49 @@ function formatActionLabel(contract: ActionDataContract): string {
   return "a enregistré une action terrain";
 }
 
+function getActionTitle(contract: ActionDataContract): string {
+  return (
+    contract.metadata.preparationData?.actionTitle?.trim() ||
+    contract.location.label.trim() ||
+    "Action terrain"
+  );
+}
+
+function getActionSummary(contract: ActionDataContract): string {
+  return (
+    contract.metadata.preparationData?.shortDescription?.trim() ||
+    formatActionLabel(contract)
+  );
+}
+
+async function resolveActionPreviewImageUrl(
+  actionId: string,
+): Promise<string | null> {
+  try {
+    const storage = getSupabaseServerClient().storage.from("action-photos");
+    const result = await storage.list(actionId, {
+      limit: 1,
+      offset: 0,
+      sortBy: { column: "name", order: "asc" },
+    });
+    if (result.error) {
+      return null;
+    }
+
+    const file = (result.data ?? []).find((entry) =>
+      /\.(?:jpe?g|png|webp)$/i.test(entry.name),
+    );
+    if (!file) {
+      return null;
+    }
+
+    const { data } = storage.getPublicUrl(`${actionId}/${file.name}`);
+    return data.publicUrl || null;
+  } catch {
+    return null;
+  }
+}
+
 function formatRelativeDay(observedAt: string): string {
   const observed = new Date(`${observedAt}T00:00:00.000Z`);
   if (Number.isNaN(observed.getTime())) {
@@ -207,8 +255,13 @@ export function buildHomeCommunityActivity(
         actor,
         initials: getInitials(actor),
         action: formatActionLabel(contract),
+        title: getActionTitle(contract),
+        summary: getActionSummary(contract),
         location: contract.location.label.trim() || "Lieu non précisé",
         timeLabel: formatRelativeDay(contract.dates.observedAt),
+        dateLabel: contract.dates.observedAt,
+        statusLabel: contract.status === "approved" ? "Vérifiée" : "À vérifier",
+        imageUrl: null,
         tone: tones[index % tones.length],
       };
     });
@@ -217,6 +270,22 @@ export function buildHomeCommunityActivity(
     visibleActions: visibleContracts.length,
     distinctLocations,
     items,
+  };
+}
+
+async function attachActionPreviewImages(
+  activity: HomeCommunityActivitySummary,
+): Promise<HomeCommunityActivitySummary> {
+  const imageUrls = await Promise.all(
+    activity.items.map((item) => resolveActionPreviewImageUrl(item.id)),
+  );
+
+  return {
+    ...activity,
+    items: activity.items.map((item, index) => ({
+      ...item,
+      imageUrl: imageUrls[index] ?? null,
+    })),
   };
 }
 
@@ -341,10 +410,11 @@ async function buildLandingSummary(): Promise<LandingSummary> {
     },
   );
   const sourceHealth = recent.sourceHealth;
+  const activityWithImages = await attachActionPreviewImages(activity);
 
   return {
     counters,
-    activity,
+    activity: activityWithImages,
     dataAvailability: {
       status: sourceHealth.partial ? "partial" : "available",
       sourceHealth,
