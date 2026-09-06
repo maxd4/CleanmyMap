@@ -35,6 +35,7 @@ type ImmersiveLayoutProps = {
   showIntro?: boolean;
   fullViewport?: boolean;
   showStoriesCarousel?: boolean;
+  compact?: boolean;
   zoneQuery?: string;
   mapExportTargetRef?: RefObject<HTMLDivElement | null>;
   onViewportChange?: (viewport: MapViewportState) => void;
@@ -64,6 +65,7 @@ export function ImmersiveLayout({
   showIntro = true,
   fullViewport = false,
   showStoriesCarousel = true,
+  compact = false,
   zoneQuery = "",
   mapExportTargetRef,
   onViewportChange,
@@ -115,7 +117,7 @@ export function ImmersiveLayout({
         <div className="grid gap-6">
           <div
             ref={mapExportTargetRef}
-            className={`relative min-h-[600px] overflow-hidden rounded-[2.75rem] ${isEmerald ? "border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(244,250,242,0.98),rgba(252,254,250,0.98))] shadow-[0_24px_56px_-32px_rgba(34,197,94,0.16)]" : "border border-sky-200/80 bg-sky-50 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)]"}`}
+            className={`relative overflow-hidden rounded-[2.75rem] ${compact ? "h-[24rem] min-h-[24rem] sm:h-[28rem] sm:min-h-[28rem] lg:h-[clamp(22rem,calc(100dvh-23rem),31rem)] lg:min-h-[22rem]" : "min-h-[600px]"} ${isEmerald ? "border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(244,250,242,0.98),rgba(252,254,250,0.98))] shadow-[0_24px_56px_-32px_rgba(34,197,94,0.16)]" : "border border-sky-200/80 bg-sky-50 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)]"}`}
           >
             {mapCanvasError ? (
               <div className="flex h-full items-center justify-center bg-rose-50 px-6 text-center text-slate-950">
@@ -139,9 +141,10 @@ export function ImmersiveLayout({
                 isValidating={isValidating}
                 zoneQuery={zoneQuery}
                 tone={tone}
+                compact={compact}
               />
             ) : !MapCanvas ? (
-              <MapLoadingState fullViewport tone={tone} />
+              <MapLoadingState fullViewport={fullViewport} compact={compact} tone={tone} />
             ) : (
               <MapCanvas
                 items={items}
@@ -149,6 +152,7 @@ export function ImmersiveLayout({
                 sourceCompleteness={sourceCompleteness}
                 selectedActionId={selectedActionId}
                 onSelectAction={onSelectAction}
+                compact={compact}
                 fullViewport={fullViewport}
                 tone={tone}
                 onViewportChange={onViewportChange}

@@ -21,6 +21,7 @@ type ActionsMapFeedContentProps = {
   showIntro?: boolean;
   fullViewport?: boolean;
   showStoriesCarousel?: boolean;
+  compact?: boolean;
   zoneQuery?: string;
   selectedActionId?: string | null;
   onOpenAction?: (actionId: string) => void;
@@ -41,6 +42,7 @@ export function ActionsMapFeedContent({
   showIntro = true,
   fullViewport = false,
   showStoriesCarousel = true,
+  compact = false,
   zoneQuery = "",
   selectedActionId = null,
   onOpenAction,
@@ -118,6 +120,7 @@ export function ActionsMapFeedContent({
     showIntro,
     fullViewport,
     showStoriesCarousel,
+    compact,
     zoneQuery,
     mapExportTargetRef,
     initialViewport,
@@ -140,7 +143,7 @@ export function ActionsMapFeedContent({
         <DefaultLayout {...layoutProps} />
       )}
 
-      {feedData.isLoading ? (
+      {feedData.isLoading && !compact ? (
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <div className="cmm-surface-muted space-y-3 rounded-2xl p-4">
             <CmmSkeleton variant="text" className="w-32" />
@@ -163,7 +166,7 @@ export function ActionsMapFeedContent({
       ) : null}
 
       {feedData.error ? (
-        <CmmFeedback tone="error" className="mt-5">
+        <CmmFeedback tone="error" className={compact ? "absolute bottom-3 left-5 right-5 z-[1200]" : "mt-5"}>
           {feedData.error instanceof Error
             ? feedData.error.message
             : "Impossible de récupérer les données de la carte. Veuillez vérifier votre connexion."}
@@ -187,6 +190,7 @@ export function ActionsMapFeed({
   showIntro = true,
   fullViewport = false,
   showStoriesCarousel = true,
+  compact = false,
   visibleCategories = DEFAULT_VISIBLE_CATEGORIES,
   selectedActionId = null,
   onOpenAction,
@@ -223,6 +227,7 @@ export function ActionsMapFeed({
       showIntro={showIntro}
       fullViewport={fullViewport}
       showStoriesCarousel={showStoriesCarousel}
+      compact={compact}
       zoneQuery={zoneQuery}
       tone={tone}
       selectedActionId={selectedActionId}

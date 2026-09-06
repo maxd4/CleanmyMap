@@ -28,6 +28,7 @@ type DefaultLayoutProps = {
   viewportRequest?: MapViewportState | null;
   viewportRequestKey?: number;
   recenterViewport?: MapViewportState | null;
+  compact?: boolean;
   sourceCompleteness?: RepollutionDatasetCompleteness;
 };
 
@@ -53,6 +54,7 @@ export function DefaultLayout({
   viewportRequest,
   viewportRequestKey,
   recenterViewport,
+  compact = false,
   sourceCompleteness = "partial",
 }: DefaultLayoutProps) {
   const isEmerald = tone === "emerald";
@@ -113,6 +115,7 @@ export function DefaultLayout({
             isValidating={isValidating}
             zoneQuery={zoneQuery}
             tone={tone}
+            compact={compact}
           />
         ) : (
           <MapCanvas
@@ -121,6 +124,7 @@ export function DefaultLayout({
             sourceCompleteness={sourceCompleteness}
             selectedActionId={selectedActionId}
             onSelectAction={onSelectAction}
+            compact={compact}
             onViewportChange={onViewportChange}
             onViewportInteraction={onViewportInteraction}
             initialViewport={initialViewport}
