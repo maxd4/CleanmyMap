@@ -109,10 +109,8 @@ rester vide lorsque la fonctionnalité correspondante n’est pas activée.
 | `CLERK_IS_SATELLITE` | Clerk | CONFIG | O | O | O | O | Vercel / template local | configuration Clerk |
 | `CLERK_SATELLITE_AUTO_SYNC` | Clerk | CONFIG | O | O | O | O | Vercel / template local | synchronisation Clerk |
 | `CLERK_ALLOWED_PARTIES` | Clerk | CONFIG | O | O | O | O | Clerk Dashboard / Vercel | contrôle d’audience |
-| `CLERK_ADMIN_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / audit opérateur | allowlist serveur canonique `admin` |
-| `CLERK_MAX_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / audit opérateur | allowlist serveur canonique `max` |
-| `CLERK_IMU_OWNER_USER_ID` | Clerk | SECRET | O | R | R | R | Clerk Dashboard / Vercel | destinataire de contact interne, sans AuthZ |
-| `CLERK_IMU_OWNER_EMAIL` | Clerk | CONFIG | O | R | R | R | Clerk Dashboard / Vercel | configuration de contact interne, sans AuthZ |
+| `CLERK_ADMIN_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / gestion opérateur | allowlist AuthZ |
+| `CLERK_MAX_USER_IDS` | Clerk | SECRET | O | O | O | O | Vercel / gestion opérateur | allowlist AuthZ |
 | `RESEND_API_KEY` | Resend | SECRET | O | O | O | R si email | Resend / Vercel | email serveur |
 | `RESEND_FROM_EMAIL` | Resend | CONFIG | O | O | O | O | Resend / Vercel | expéditeur email |
 | `RESEND_REPLY_TO` | Resend | CONFIG | O | O | O | O | Resend / Vercel | réponse email |
@@ -191,13 +189,8 @@ au contrat.
 - Production utilise la paire Clerk Production : `pk_live_*` avec `sk_live_*`.
 - Une clé `live` ne doit jamais entrer dans `.env.local`, et une clé `test` ne
   doit pas être déployée en Production.
-- `CLERK_ADMIN_USER_IDS` et `CLERK_MAX_USER_IDS` sont des allowlists serveur
-  indépendantes pour la résolution des rôles. Les metadata serveur canoniques
-  `role=admin` et `role=max` sont également acceptées. Les adresses email,
-  primaire ou secondaire, et `CREATOR_INBOX_EMAIL` ne participent jamais à la
-  résolution AuthZ. Les variables `CLERK_IMU_OWNER_USER_ID` et
-  `CLERK_IMU_OWNER_EMAIL` peuvent servir au routage de contact interne, mais
-  ne confèrent aucun rôle.
+- Les allowlists `CLERK_ADMIN_USER_IDS` et `CLERK_MAX_USER_IDS` sont des
+  contrôles AuthZ opératoires; elles ne sont pas des personas UX.
 
 ### Supabase
 
