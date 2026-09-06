@@ -19,6 +19,8 @@ describe("audit-clerk-supabase role contract", () => {
   it("accepts canonical max metadata but ignores email-shaped identity", () => {
     const context = {
       userId: "other",
+      email: "contact@cleanmymap.fr",
+      creatorInboxEmail: "contact@cleanmymap.fr",
       adminUserIds: parseAdminUserIds("secondary"),
       maxUserIds: parseAdminUserIds("max-user"),
     };

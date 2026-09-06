@@ -243,7 +243,7 @@ describe("syncClerkUserToSupabase", () => {
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
-  it("does not promote a normal user from a privileged email", async () => {
+  it("does not promote a normal user from primary or secondary contact emails", async () => {
     const { supabase, upsert } = createSupabaseMock({
       existingProfile: null,
     });
@@ -252,8 +252,11 @@ describe("syncClerkUserToSupabase", () => {
     await syncClerkUserToSupabase({
       id: "user_email_only",
       username: "email_only",
-      emailAddresses: [{ emailAddress: "owner@example" }],
-      primaryEmailAddress: { emailAddress: "creator@example" },
+      emailAddresses: [
+        { emailAddress: "contact@cleanmymap.fr" },
+        { emailAddress: "secondary@cleanmymap.fr" },
+      ],
+      primaryEmailAddress: { emailAddress: "contact@cleanmymap.fr" },
       imageUrl: "https://example.com/avatar.png",
       publicMetadata: {},
       privateMetadata: {},

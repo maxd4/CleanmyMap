@@ -4,6 +4,8 @@ import { resolveIdentityActiveRole } from "./authz-identity";
 
 describe("authz helpers", () => {
   it.each([
+    ["benevole", "admin", "benevole"],
+    ["benevole", "max", "benevole"],
     ["max", "benevole", "benevole"],
     ["admin", "scientifique", "scientifique"],
     ["admin", "max", "admin"],

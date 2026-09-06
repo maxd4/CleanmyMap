@@ -189,9 +189,11 @@ La règle de nommage est : **IMU = rôle interne `max`**.
   une metadata serveur canonique `role=max` ;
 - `admin` exige l'identité Clerk présente dans `CLERK_ADMIN_USER_IDS` ou une
   metadata serveur canonique `role=admin` ;
-- `ACTIVE_ROLE=max`, `activeProfile=max`, `profiles.role_label=max`, une
-  adresse email primaire ou secondaire et `CREATOR_INBOX_EMAIL` ne peuvent pas
-  accorder de privilège.
+- `ACTIVE_ROLE=max`, `activeProfile=max` ou `profiles.role_label=max` ne
+  peuvent pas créer une autorité indépendante ; les adresses email primaire et
+  secondaire restent des attributs de contact/connexion mutables et ne peuvent
+  jamais accorder de privilège. `CREATOR_INBOX_EMAIL` est limité au contact et
+  aux notifications internes.
 
 Les chemins historiques comme `09-admin-superadmin` et `/admin/godmode` sont
 conservés pour compatibilité documentaire et de navigation. Leur nom ne définit

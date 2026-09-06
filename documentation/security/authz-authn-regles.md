@@ -102,6 +102,13 @@ alias historiques (`owner`, `godmode`, `creator`, `super_admin`, etc.) ne
 constituent jamais une autorité. Les alias restent uniquement acceptés à la
 frontière de lecture legacy pour les rôles non privilégiés.
 
+Les adresses email Clerk, primaire comme secondaire, sont des attributs de
+contact et de connexion mutables. Leur ajout, leur remplacement, leur
+promotion au rang d'adresse primaire ou leur suppression ne peut donc jamais
+modifier `role`, `isAdmin`, `isMax` ou les permissions Supabase synchronisées.
+`CREATOR_INBOX_EMAIL` ne doit jamais être utilisé comme allowlist de privilèges ;
+il reste disponible uniquement pour le routage de contact et de notifications.
+
 Le bypass `CMM_DEV_AUTH_BYPASS` est accepté seulement avec
 `NODE_ENV=development` et un hostname strictement local (`localhost`,
 `127.0.0.1` ou `[::1]`). `dev-max` est synthétique et local; `dev-admin` sert
