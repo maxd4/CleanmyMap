@@ -38,21 +38,21 @@ const ACTION_TONE_STYLES: Record<
 };
 
 function ActionPreview({
-  imageUrl,
-  title,
+  image,
 }: {
-  imageUrl: string | null;
-  title: string;
+  image: HomeCommunityActivitySummary["items"][number]["image"];
 }) {
+  const hasImage = image.url !== null;
+
   return (
     <div
-      aria-label={imageUrl ? `Photo de ${title}` : "Aucune photo disponible"}
+      aria-label={hasImage ? image.alt : "Aucune image disponible"}
       className="h-20 w-24 shrink-0 overflow-hidden rounded-[1.05rem] border border-emerald-100/70 bg-white/80 sm:h-[5.5rem] sm:w-[7.6rem]"
-      role={imageUrl ? "img" : undefined}
+      role={hasImage ? "img" : undefined}
       style={
-        imageUrl
+        hasImage
           ? {
-              backgroundImage: `url("${imageUrl}")`,
+              backgroundImage: `url("${image.url}")`,
               backgroundPosition: "center",
               backgroundSize: "cover",
             }
@@ -72,7 +72,7 @@ function CommunityActivityCard({
       data-gsap-reveal
       className="flex items-center gap-3 rounded-[1.25rem] border border-white/90 bg-white/80 px-3 py-3 shadow-[0_14px_26px_-24px_rgba(4,78,58,0.6)] transition-transform hover:-translate-y-0.5 sm:gap-4 sm:px-3.5"
     >
-      <ActionPreview imageUrl={item.imageUrl} title={item.title} />
+      <ActionPreview image={item.image} />
       <div className="min-w-0 flex-1 self-stretch py-0.5">
         <div className="flex items-start justify-between gap-2">
           <h3 className="line-clamp-2 text-[13px] font-black leading-tight text-[#082d35] sm:text-sm">
