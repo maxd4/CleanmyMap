@@ -20,6 +20,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import type { ActionDataQualityResult } from "../form/action-declaration-form.quality";
 import { estimateWasteKg } from "../form/action-declaration-form.estimation";
+import { getOrganizerTypeLabel } from "@/lib/actions/organizer-type";
 import {
   formatGeometryPointCount,
   summarizeActionDrawingValidation,
@@ -220,6 +221,12 @@ export function ActionStepReview({
             icon={Building2}
             label="Structure"
             value={fmtAssociation(payload.associationName)}
+            valueClass="text-violet-700"
+          />
+          <DataRow
+            icon={Building2}
+            label="Type de structure"
+            value={getOrganizerTypeLabel(payload.organizerType)}
             valueClass="text-violet-700"
           />
           {payload.recordType === "action" && (

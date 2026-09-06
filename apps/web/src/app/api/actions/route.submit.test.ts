@@ -139,10 +139,36 @@ describe("POST /api/actions", () => {
     createServerRateLimitResponseMock.mockReturnValue(null);
   });
 
+  it("requires a structure type for new actions", async () => {
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify({
+          actorName: "Test User",
+          associationName: "Action spontanée",
+          actionDate: "2026-04-22",
+          locationLabel: "Test lieu action",
+          wasteKg: 1,
+          cigaretteButts: 0,
+          volunteersCount: 1,
+          durationMinutes: 30,
+        }),
+      }),
+    );
+
+    const body = (await response.json()) as { details?: { organizerType?: string[] } };
+    expect(response.status).toBe(422);
+    expect(body.details?.organizerType?.[0]).toContain("type de structure");
+    expect(createActionMock).not.toHaveBeenCalled();
+  });
+
   it("creates an action from the dashboard form payload", async () => {
     const { POST } = await import("./route");
 
     const form = createInitialFormState("Test User");
+    form.organizerType = "spontaneous";
     form.locationLabel = "Test lieu action";
     form.recordType = "action";
     form.wasteKg = "2.5";
@@ -154,6 +180,7 @@ describe("POST /api/actions", () => {
     const payload = toContractCreatePayload({
       actorName: "Test User",
       associationName: "Action spontanée",
+      organizerType: "spontaneous",
       actionDate: form.actionDate,
       locationLabel: form.locationLabel,
       wasteKg: Number(form.wasteKg),
@@ -226,6 +253,7 @@ describe("POST /api/actions", () => {
     const payload = toContractCreatePayload({
       actorName: "Test User",
       associationName: "Action spontanée",
+      organizerType: "spontaneous",
       actionDate: "2026-04-22",
       locationLabel: "Test lieu action",
       wasteKg: 2.5,
@@ -273,6 +301,7 @@ describe("POST /api/actions", () => {
     const payload = toContractCreatePayload({
       actorName: "Max local",
       associationName: "Action spontanée",
+      organizerType: "spontaneous",
       actionDate: "2026-04-22",
       locationLabel: "Lieu max local",
       wasteKg: 2.5,
@@ -301,6 +330,7 @@ describe("POST /api/actions", () => {
     const { POST } = await import("./route");
 
     const form = createInitialFormState("Test User");
+    form.organizerType = "spontaneous";
     form.actionTitle = "Préparation terrain";
     form.shortDescription = "Préparer une action de nettoyage.";
     form.communeZoneLabel = "Paris 15";
@@ -372,6 +402,7 @@ describe("POST /api/actions", () => {
     const { POST } = await import("./route");
 
     const form = createInitialFormState("Test User");
+    form.organizerType = "spontaneous";
     form.actionTitle = "Préparation terrain";
     form.shortDescription = "Préparer une action de nettoyage.";
     form.communeZoneLabel = "Paris 15";
@@ -442,6 +473,7 @@ describe("POST /api/actions", () => {
     const payload = toContractCreatePayload({
       actorName: "Test User",
       associationName: "Action spontanée",
+      organizerType: "spontaneous",
       actionDate: "2026-04-22",
       actionPhase: "post_action_draft",
       locationLabel: "Test lieu action",
@@ -479,6 +511,7 @@ describe("POST /api/actions", () => {
     const payload = toContractCreatePayload({
       actorName: "Test User",
       associationName: "Association Sans Murs Paris 15",
+      organizerType: "association",
       actionDate: "2026-04-22",
       locationLabel: "Test lieu action",
       wasteKg: 2.5,
@@ -534,6 +567,7 @@ describe("POST /api/actions", () => {
     const payload = toContractCreatePayload({
       actorName: "Test User",
       associationName: "Action spontanée",
+      organizerType: "spontaneous",
       actionDate: "2026-04-22",
       locationLabel: "Test lieu action",
       wasteKg: 2.5,
@@ -581,6 +615,7 @@ describe("POST /api/actions", () => {
     const payload = toContractCreatePayload({
       actorName: "Test User",
       associationName: "Action spontanée",
+      organizerType: "spontaneous",
       actionDate: "2026-04-22",
       locationLabel: "Test lieu action",
       wasteKg: 2.5,
@@ -621,6 +656,7 @@ describe("POST /api/actions", () => {
       },
       metadata: {
         associationName: "Action spontanée",
+        organizerType: "spontaneous",
         wasteKg: 0,
         cigaretteButts: 0,
         volunteersCount: 1,

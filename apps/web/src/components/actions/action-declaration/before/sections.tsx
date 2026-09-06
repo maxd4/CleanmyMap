@@ -6,6 +6,7 @@ import {
   ASSOCIATION_SELECTION_OPTIONS,
   ENTREPRISE_ASSOCIATION_OPTION,
 } from "@/lib/actions/association-options";
+import { ORGANIZER_TYPE_OPTIONS } from "@/lib/actions/organizer-type";
 import { CmmCard } from "@/components/ui/cmm-card";
 import type { FormState } from "../form/model";
 import { ActionParticipantPicker } from "../../action-participant-picker";
@@ -58,6 +59,24 @@ export function IdentityAndSharingSection({
                       {actorNameOptions.map((option) => (
                         <option key={option} value={option}>
                           {option}
+                        </option>
+                      ))}
+                    </select>
+                  </FieldShell>
+
+                  <FieldShell label="Type de structure" hint="Indiquez le cadre de l’action, indépendamment du nom de l’organisateur.">
+                    <select
+                      value={form.organizerType}
+                      onChange={(event) =>
+                        updateField("organizerType", event.target.value as FormState["organizerType"])
+                      }
+                      required
+                      className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                    >
+                      <option value="">Sélectionnez un type de structure</option>
+                      {ORGANIZER_TYPE_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
                         </option>
                       ))}
                     </select>

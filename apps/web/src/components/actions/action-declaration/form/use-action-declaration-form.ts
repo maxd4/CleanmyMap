@@ -143,6 +143,7 @@ export function useActionDeclarationForm({
           ...preparedForm,
           actorName: action.actorName ?? preparedForm.actorName,
           associationName: action.associationName ?? preparedForm.associationName,
+          organizerType: action.organizerType ?? preparedForm.organizerType,
           participantAccounts: action.participantAccounts ?? preparedForm.participantAccounts,
           groupJoinEnabled: action.groupJoinEnabled,
           actionDate: action.actionDate,
@@ -495,6 +496,13 @@ export function useActionDeclarationForm({
 
 function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
+
+  if (!form.organizerType) {
+    issues.push({
+      field: "organizerType",
+      message: "Sélectionnez un type de structure avant l’envoi.",
+    });
+  }
 
   if (!form.associationName.trim()) {
     issues.push({

@@ -8,6 +8,7 @@ import {
   ActionVisionEstimate,
   CreateActionPayload,
 } from "../types";
+import type { OrganizerType } from "../organizer-type";
 
 export type ActionContractCreatePayload = {
   type: ActionRecordType;
@@ -32,6 +33,7 @@ export type ActionContractCreatePayload = {
   metadata: {
     actorName?: string;
     associationName?: string;
+    organizerType?: OrganizerType | null;
     organizerAccounts?: string[];
     participantAccounts?: string[];
     groupJoinEnabled?: boolean;
@@ -84,6 +86,7 @@ export function toContractCreatePayload(
     metadata: {
       actorName: payload.actorName,
       associationName: payload.associationName,
+      organizerType: payload.organizerType,
       organizerAccounts: payload.organizerAccounts,
       participantAccounts: payload.participantAccounts,
       groupJoinEnabled: payload.groupJoinEnabled,
@@ -142,6 +145,7 @@ function normalizeContractCreatePayload(
   return {
     actorName: payload.metadata.actorName,
     associationName: payload.metadata.associationName,
+    organizerType: payload.metadata.organizerType ?? undefined,
     groupJoinEnabled: payload.metadata.groupJoinEnabled,
     actionPhase: payload.metadata.actionPhase ?? undefined,
     preparationData: payload.metadata.preparationData ?? null,

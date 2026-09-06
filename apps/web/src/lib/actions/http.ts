@@ -8,6 +8,7 @@ import type {
   ActionPreparationData,
   CreateActionPayload,
 } from "@/lib/actions/types";
+import type { OrganizerType } from "@/lib/actions/organizer-type";
 import { AppError, type AppErrorKind, defaultMessageForKind } from "@/lib/errors/app-errors";
 import { toContractCreatePayload } from "./contracts/contract-builders";
 
@@ -285,6 +286,7 @@ export type ActionPrefillResponse = {
     actionDate: string;
     actorName: string;
     associationName: string | null;
+    organizerType: OrganizerType | null;
     locationLabel: string | null;
     volunteersCount: number;
     durationMinutes: number;
@@ -313,6 +315,7 @@ export type ActionEditorRecord = {
   notes: string | null;
   submissionMode: "quick" | "complete" | null;
   associationName: string | null;
+  organizerType?: OrganizerType | null;
   groupJoinEnabled: boolean;
   participantAccounts: string[];
   placeType: string | null;

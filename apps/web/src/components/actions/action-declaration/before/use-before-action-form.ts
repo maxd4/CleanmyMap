@@ -105,6 +105,9 @@ export function useBeforeActionForm({
     if (!form.associationName.trim()) {
       issues.push("Sélectionnez une structure ou un cadre d'engagement.");
     }
+    if (!form.organizerType) {
+      issues.push("Sélectionnez un type de structure avant de publier le pré-formulaire.");
+    }
     if (!form.departureLocationLabel.trim()) {
       issues.push("Indiquez le point de rendez-vous avant de publier.");
     }

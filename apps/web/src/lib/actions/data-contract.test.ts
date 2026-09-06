@@ -26,6 +26,7 @@ it("maps polygon geometry to map payload without breaking point fields", () => {
     durationMinutes: 55,
     actorName: "Max",
     associationName: "Action spontanee",
+    organizerType: "association",
     notes: "zone dense",
     notesPlain: "zone dense",
     manualDrawing: {
@@ -48,6 +49,8 @@ it("maps polygon geometry to map payload without breaking point fields", () => {
   expect(mapItem.latitude).toBe(48.87);
   expect(mapItem.longitude).toBe(2.36);
   expect(mapItem.contract?.metadata.associationName).toBe("Action spontanee");
+  expect(mapItem.contract?.metadata.organizerType).toBe("association");
+  expect(mapItem.organizer_type).toBe("association");
   expect(mapItem.manual_drawing?.kind).toBe("polygon");
   expect(mapItem.manual_drawing?.coordinates.length).toBe(3);
   expect(mapItem.manual_drawing_geojson).toContain('"Polygon"');
@@ -67,6 +70,7 @@ it("keeps geometry optional when normalizing create payload", () => {
     dates: { observedAt: "2026-04-08" },
     metadata: {
       associationName: "Entreprise",
+      organizerType: "company",
       wasteKg: 2.2,
       volunteersCount: 1,
     },
@@ -74,6 +78,7 @@ it("keeps geometry optional when normalizing create payload", () => {
 
   expect(normalized.locationLabel).toBe("Paris 11e");
   expect(normalized.associationName).toBe("Entreprise");
+  expect(normalized.organizerType).toBe("company");
   expect(normalized.manualDrawing).toBeUndefined();
 });
 

@@ -23,6 +23,7 @@ function buildBaseForm() {
  form.durationMinutes ="75";
  form.notes ="Collecte de test";
  form.routeAdjustmentMessage ="Éviter l'avenue principale";
+ form.organizerType = "association";
  return form;
 }
 
@@ -176,6 +177,26 @@ describe("action declaration payload helpers", () => {
     });
 
     expect(payload.recordType).toBe("clean_place");
+  });
+
+  it("keeps the structure type separate from the organizer name", () => {
+    const form = buildBaseForm();
+    form.associationName = "Action spontanée";
+    form.organizerType = "student_association";
+    form.organizerAccounts = "club-etudiant";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.organizerType).toBe("student_association");
+    expect(payload.associationName).toBe("Action spontanée");
   });
 
   it("normalizes the other volunteer UI sentinel before payload creation", () => {

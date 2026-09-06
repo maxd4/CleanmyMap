@@ -32,6 +32,7 @@ const contract: ActionDataContract = {
   metadata: {
     actorName: "Alice",
     associationName: "Collectif Test",
+    organizerType: null,
     placeType: "N° Boulevard/Avenue/Place",
     departureLocationLabel: null,
     arrivalLocationLabel: null,

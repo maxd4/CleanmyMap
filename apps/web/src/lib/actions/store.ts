@@ -37,6 +37,7 @@ const ACTION_BASE_SELECT_FIELDS = [
   "updated_at",
   "created_by_clerk_id",
   "actor_name",
+  "organizer_type",
   "action_date",
   "location_label",
   "latitude",
@@ -390,6 +391,7 @@ async function insertCreatedAction(
   const baseInsert = {
     created_by_clerk_id: params.userId,
     actor_name: params.payload.actorName ?? null,
+    organizer_type: params.payload.organizerType ?? null,
     action_date: params.payload.actionDate,
     location_label: params.payload.locationLabel,
     latitude: params.payload.latitude ?? null,

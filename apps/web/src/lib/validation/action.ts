@@ -4,6 +4,7 @@ import {
   type ActionContractCreatePayload,
 } from "@/lib/actions/data-contract";
 import { isValidAssociationName } from "@/lib/actions/association-options";
+import { isOrganizerType, type OrganizerType } from "@/lib/actions/organizer-type";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import { isWasteCategorySlug } from "@/lib/waste";
 
@@ -82,6 +83,11 @@ const associationNameSchema = z
   .max(120)
   .refine((value) => isValidAssociationName(value), "Association invalide.");
 
+const organizerTypeSchema = z.custom<OrganizerType>(
+  isOrganizerType,
+  "Type de structure invalide.",
+);
+
 const accountTokensSchema = z.array(z.string().min(1).max(120)).max(50).optional();
 const wasteCategorySlugSchema = z
   .string()
@@ -133,6 +139,7 @@ const userMetadataSchema = z.object({
 const createActionLegacySchema = z.object({
   actorName: z.string().min(1).max(120).optional(),
   associationName: associationNameSchema,
+  organizerType: organizerTypeSchema.nullable().optional(),
   organizerAccounts: z.array(z.string().min(1).max(120)).max(20).optional(),
   participantAccounts: accountTokensSchema,
   groupJoinEnabled: z.boolean().optional(),
@@ -186,6 +193,7 @@ const createActionContractSchema = z.object({
   metadata: z.object({
     actorName: z.string().min(1).max(120).optional(),
     associationName: associationNameSchema,
+    organizerType: organizerTypeSchema.nullable().optional(),
     organizerAccounts: z.array(z.string().min(1).max(120)).max(20).optional(),
     participantAccounts: accountTokensSchema,
     groupJoinEnabled: z.boolean().optional(),

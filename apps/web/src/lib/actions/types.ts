@@ -16,6 +16,7 @@ export type ActionSourceName = "actions" | "spots" | "local";
 import type { ActionDataQualitySummary } from "./quality/data-quality-types";
 import type { ActionQualityGrade } from "./quality/quality-rules";
 import type { WasteCategorySlug } from "@/lib/waste/types";
+import type { OrganizerType } from "./organizer-type";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
@@ -115,6 +116,7 @@ export type ActionListItem = {
   created_by_clerk_id?: string | null;
   actor_name: string | null;
   association_name?: string | null;
+  organizer_type?: OrganizerType | null;
   action_date: string;
   location_label: string;
   latitude: number | null;
@@ -176,6 +178,7 @@ export type ActionListItem = {
     metadata: {
       actorName: string | null;
       associationName?: string | null;
+      organizerType?: OrganizerType | null;
       notes: string | null;
       notesPlain: string | null;
       groupJoinEnabled: boolean | null;
@@ -222,6 +225,7 @@ export type ActionDrawing = {
 export type CreateActionPayload = {
   actorName?: string;
   associationName?: string;
+  organizerType?: OrganizerType | null;
   organizerAccounts?: string[];
   participantAccounts?: string[];
   groupJoinEnabled?: boolean;
@@ -278,6 +282,7 @@ export type ActionMapItem = Pick<
   notes_plain?: string | null;
   record_type?: ActionRecordType | LegacyActionRecordType;
   source?: string;
+  organizer_type?: OrganizerType | null;
   geometry_kind?: ActionGeometryKind | null;
   geometry_geojson?: string | null;
   geometry_confidence?: number | null;
@@ -321,6 +326,7 @@ export type ActionMapItem = Pick<
     metadata: {
       actorName: string | null;
       associationName?: string | null;
+      organizerType?: OrganizerType | null;
       departureLocationLabel?: string | null;
       arrivalLocationLabel?: string | null;
       notes: string | null;
