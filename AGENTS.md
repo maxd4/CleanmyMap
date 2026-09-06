@@ -227,6 +227,18 @@ ci-dessus.
   dans l'installation utilisateur globale, jamais dans le checkout ;
 - ne pas modifier `documentation/pepite/` sans demande explicite.
 
+### Archives ZIP
+
+- par défaut, lorsqu'un seul fichier ou un petit nombre de fichiers suffit,
+  fournir les fichiers individuels plutôt qu'une archive ;
+- si l'utilisateur demande explicitement un fichier `.zip`, celui-ci peut être
+  créé et fourni quel que soit le type des fichiers qu'il contient ;
+- conserver exactement dans l'archive les noms et chemins attendus ; ne pas
+  modifier le contenu uniquement pour faciliter l'archivage ;
+- traiter le ZIP uniquement comme un format de transport : il ne constitue
+  jamais une nouvelle source de vérité ni une nouvelle structure du dépôt ;
+- indiquer clairement où télécharger l'archive fournie.
+
 Ne jamais supprimer en masse un fichier untracked, généré ou non canonique
 sans établir sa provenance, son rôle, sa régénérabilité et son emplacement
 attendu. En cas de doute, le conserver et produire un verdict
