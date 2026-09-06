@@ -41,9 +41,44 @@ function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function writeJson(filePath, value) {
+function jsonPayload(value) {
+  return `${JSON.stringify(value, null, 2)}\n`;
+}
+
+function writePayload(filePath, payload) {
+  const descriptor = fs.openSync(filePath, "w");
+  try {
+    fs.writeFileSync(descriptor, payload, "utf8");
+    fs.fsyncSync(descriptor);
+  } finally {
+    fs.closeSync(descriptor);
+  }
+}
+
+function temporaryMetadataPath(filePath) {
+  return `${filePath}.${process.pid}.${crypto.randomUUID()}.tmp`;
+}
+
+function writeJsonAtomic(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  const temporaryPath = temporaryMetadataPath(filePath);
+  try {
+    writePayload(temporaryPath, jsonPayload(value));
+    fs.renameSync(temporaryPath, filePath);
+  } finally {
+    if (fs.existsSync(temporaryPath)) fs.unlinkSync(temporaryPath);
+  }
+}
+
+function writeExclusiveMetadata(filePath, value) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const temporaryPath = temporaryMetadataPath(filePath);
+  try {
+    writePayload(temporaryPath, jsonPayload(value));
+    fs.renameSync(temporaryPath, filePath);
+  } finally {
+    if (fs.existsSync(temporaryPath)) fs.unlinkSync(temporaryPath);
+  }
 }
 
 function writeExclusive(filePath, value) {
@@ -51,7 +86,8 @@ function writeExclusive(filePath, value) {
   let descriptor;
   try {
     descriptor = fs.openSync(filePath, "wx");
-    fs.writeFileSync(descriptor, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+    fs.writeFileSync(descriptor, jsonPayload(value), "utf8");
+    fs.fsyncSync(descriptor);
   } finally {
     if (descriptor !== undefined) fs.closeSync(descriptor);
   }
@@ -123,8 +159,20 @@ function loadMigration(root) {
   return readOptionalJson(getMigrationPath(root));
 }
 
-function saveMigration(root, migration) {
-  writeJson(getMigrationPath(root), migration);
+function normalizeMigration(migration) {
+  if (!migration) return null;
+  return {
+    ...migration,
+    adoptedLegacyPaths: [...new Set(migration.adoptedLegacyPaths ?? [])].sort(),
+  };
+}
+
+function saveMigration(root, migration, metadataWriter = writeJsonAtomic) {
+  metadataWriter(getMigrationPath(root), {
+    ...migration,
+    version: Math.max(migration.version ?? 1, 2),
+    adoptedLegacyPaths: [...new Set(migration.adoptedLegacyPaths ?? [])].sort(),
+  });
 }
 
 function readPathLocks(root) {
@@ -145,13 +193,17 @@ function removeOwnedPathLock(root, repoPath, runId) {
   fs.unlinkSync(filePath);
 }
 
+function readRunPathLocks(root, runId) {
+  return readPathLocks(root).filter(({ lock }) => lock.runId === runId);
+}
+
 function getRemoteChangedPaths(repositoryRoot, baseSha, ownedPaths, gitRunner = git) {
   if (ownedPaths.length === 0) return [];
   const args = ["diff", "--name-only", `${baseSha}..origin/main`, "--", ...ownedPaths];
   return gitRunner(repositoryRoot, args).split(/\r?\n/).filter(Boolean).sort();
 }
 
-export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git } = {}) {
+export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git, metadataWriter = writeJsonAtomic } = {}) {
   const repo = path.resolve(repositoryRoot ?? process.cwd());
   const root = getCoordinationRoot(repo);
   const runGit = (args) => gitRunner(repo, args);
@@ -161,14 +213,15 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git } =
     fs.mkdirSync(path.join(root, "locks"), { recursive: true });
     const migrationPath = getMigrationPath(root);
     const existing = readOptionalJson(migrationPath);
-    if (existing) return existing;
+    if (existing) return normalizeMigration(existing);
     const migration = {
-      version: 1,
+      version: 2,
       initializedAt: new Date().toISOString(),
       mode: "LEGACY_UNOWNED",
       legacyUnowned: readDirtyPaths(repo, (_repositoryRoot, args) => runGit(args)).map((item) => normalizeRepoPath(repo, item)),
+      adoptedLegacyPaths: [],
     };
-    writeExclusive(migrationPath, migration);
+    writeExclusiveMetadata(migrationPath, migration);
     return migration;
   }
 
@@ -177,14 +230,15 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git } =
     assertSafeSegment(domain, "domain");
     const resolvedBaseSha = baseSha ?? runGit(["rev-parse", "origin/main"]);
     const run = {
-      version: 1,
+      version: 2,
       runId,
       domain,
       baseSha: resolvedBaseSha,
       startedAt: new Date().toISOString(),
       ownedPaths: [],
+      adoptedLegacyPaths: [],
     };
-    writeExclusive(getRunPath(root, runId), run);
+    writeExclusiveMetadata(getRunPath(root, runId), run);
     return run;
   }
 
@@ -235,11 +289,71 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git } =
     }
 
     const ownedPaths = [...new Set([...(run.ownedPaths ?? []), ...normalizedPaths])].sort();
-    writeJson(runPath, { ...run, ownedPaths });
+    const adoptedLegacyPaths = [...new Set([
+      ...(run.adoptedLegacyPaths ?? []),
+      ...(adoptLegacy ? legacyConflicts : []),
+    ])].sort();
+    metadataWriter(runPath, { ...run, ownedPaths, adoptedLegacyPaths });
     if (adoptLegacy && migration) {
-      saveMigration(root, { ...migration, legacyUnowned: [...legacy].filter((item) => !legacyConflicts.includes(item)).sort(), mode: legacy.size - legacyConflicts.length === 0 ? "STRICT" : migration.mode });
+      saveMigration(root, {
+        ...migration,
+        legacyUnowned: [...legacy].filter((item) => !legacyConflicts.includes(item)).sort(),
+        adoptedLegacyPaths: [...new Set([...(migration.adoptedLegacyPaths ?? []), ...legacyConflicts])].sort(),
+        mode: legacy.size - legacyConflicts.length === 0 ? "STRICT" : migration.mode,
+      }, metadataWriter);
     }
     return { ...run, ownedPaths };
+  }
+
+  function unclaim({ runId, paths = [], returnLegacy = false } = {}) {
+    const { run, runPath } = loadRun(root, runId);
+    const normalizedPaths = [...new Set(paths.map((item) => normalizeRepoPath(repo, item)))].sort();
+    if (normalizedPaths.length === 0) throw new Error("At least one path is required.");
+
+    const owned = new Set(run.ownedPaths ?? []);
+    const existingLocks = readPathLocks(root);
+    for (const repoPath of normalizedPaths) {
+      const lock = existingLocks.find(({ lock: candidate }) => candidate.path === repoPath);
+      if (lock && lock.lock.runId !== runId) {
+        throw new Error(`COORDINATION_CONFLICT: ${repoPath} is owned by ${lock.lock.runId}.`);
+      }
+      if (!owned.has(repoPath) || !lock) {
+        throw new Error(`UNCLAIM_NOT_OWNED: ${repoPath} is not owned by ${runId}.`);
+      }
+    }
+
+    const publication = readOptionalJson(path.join(root, "publication.lock"));
+    if (publication) {
+      const staged = new Set(readStagedPaths(repo, (_repositoryRoot, args) => runGit(args)));
+      const stagedPaths = normalizedPaths.filter((repoPath) => staged.has(repoPath));
+      if (stagedPaths.length > 0) {
+        throw new Error(`UNCLAIM_STAGED: ${stagedPaths.join(", ")}`);
+      }
+    }
+
+    const migration = loadMigration(root);
+    if (returnLegacy && !migration) throw new Error("COORDINATION_NOT_INITIALIZED: migration state is required.");
+    const nextRun = {
+      ...run,
+      ownedPaths: (run.ownedPaths ?? []).filter((repoPath) => !normalizedPaths.includes(repoPath)).sort(),
+      adoptedLegacyPaths: (run.adoptedLegacyPaths ?? []).filter((repoPath) => !normalizedPaths.includes(repoPath)).sort(),
+    };
+
+    if (returnLegacy) {
+      const legacy = new Set(migration.legacyUnowned ?? []);
+      const adopted = new Set(migration.adoptedLegacyPaths ?? []);
+      for (const repoPath of normalizedPaths) {
+        legacy.add(repoPath);
+        adopted.delete(repoPath);
+      }
+      // Return to legacy first: if the run metadata write fails, the path stays
+      // conservatively owned and is still represented as non-orphan dirty work.
+      saveMigration(root, { ...migration, legacyUnowned: [...legacy].sort(), adoptedLegacyPaths: [...adopted].sort() }, metadataWriter);
+    }
+
+    metadataWriter(runPath, nextRun);
+    for (const repoPath of normalizedPaths) removeOwnedPathLock(root, repoPath, runId);
+    return nextRun;
   }
 
   function staleCheck({ runId, fetch = true } = {}) {
@@ -276,7 +390,21 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git } =
 
   function release({ runId } = {}) {
     const { run, runPath } = loadRun(root, runId);
-    for (const repoPath of run.ownedPaths ?? []) removeOwnedPathLock(root, repoPath, runId);
+    const adopted = new Set(run.adoptedLegacyPaths ?? []);
+    const dirty = new Set(readDirtyPaths(repo, (_repositoryRoot, args) => runGit(args)));
+    const dirtyAdopted = [...adopted].filter((repoPath) => dirty.has(repoPath)).sort();
+    if (dirtyAdopted.length > 0) {
+      const migration = loadMigration(root) ?? { version: 2, mode: "LEGACY_UNOWNED", legacyUnowned: [], adoptedLegacyPaths: [] };
+      const legacy = new Set(migration.legacyUnowned ?? []);
+      const adoptedMigration = new Set(migration.adoptedLegacyPaths ?? []);
+      for (const repoPath of dirtyAdopted) {
+        legacy.add(repoPath);
+        adoptedMigration.delete(repoPath);
+      }
+      // Persist the safety net before removing this run's locks.
+      saveMigration(root, { ...migration, legacyUnowned: [...legacy].sort(), adoptedLegacyPaths: [...adoptedMigration].sort() }, metadataWriter);
+    }
+    for (const { lock } of readRunPathLocks(root, runId)) removeOwnedPathLock(root, lock.path, runId);
     const scopePath = path.join(root, "locks", `scope-${run.domain}.json`);
     const scope = readOptionalJson(scopePath);
     if (scope?.runId === runId) fs.unlinkSync(scopePath);
@@ -307,7 +435,13 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git } =
     const legacySet = new Set(legacyUnowned);
     const orphanDirty = dirtyPaths.filter((item) => !ownedSet.has(item) && !legacySet.has(item));
     const result = {
-      activeRuns: activeRuns.map((run) => ({ runId: run.runId, domain: run.domain, baseSha: run.baseSha, ownedPaths: run.ownedPaths ?? [] })),
+      activeRuns: activeRuns.map((run) => ({
+        runId: run.runId,
+        domain: run.domain,
+        baseSha: run.baseSha,
+        ownedPaths: run.ownedPaths ?? [],
+        adoptedLegacyPaths: run.adoptedLegacyPaths ?? [],
+      })),
       ownedFiles: ownedPaths.length,
       legacyUnowned: legacyUnowned.length,
       overlaps,
@@ -317,7 +451,14 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git } =
     if (runId) {
       const run = activeRuns.find((item) => item.runId === runId);
       if (!run) throw new Error(`Unknown active run: ${runId}`);
-      result.run = { runId, domain: run.domain, baseSha: run.baseSha, ownedPaths: run.ownedPaths ?? [], remoteChangedPaths: getRemoteChangedPaths(repo, run.baseSha, run.ownedPaths ?? [], (_repositoryRoot, args) => runGit(args)) };
+      result.run = {
+        runId,
+        domain: run.domain,
+        baseSha: run.baseSha,
+        ownedPaths: run.ownedPaths ?? [],
+        adoptedLegacyPaths: run.adoptedLegacyPaths ?? [],
+        remoteChangedPaths: getRemoteChangedPaths(repo, run.baseSha, run.ownedPaths ?? [], (_repositoryRoot, args) => runGit(args)),
+      };
     }
     return result;
   }
@@ -344,7 +485,7 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git } =
     return { ...report, staleLocks, publicationOrphan, ok: report.overlaps.length === 0 && staleLocks.length === 0 && !publicationOrphan };
   }
 
-  return { init, start, claim, staleCheck, publicationAcquire, publicationRelease, release, status, checkStaged, doctor };
+  return { init, start, claim, unclaim, staleCheck, publicationAcquire, publicationRelease, release, status, checkStaged, doctor };
 }
 
 function parseArgs(argv) {
@@ -363,6 +504,7 @@ function parseArgs(argv) {
     if (argument === "--json") options.json = true;
     else if (argument === "--compact") options.compact = true;
     else if (argument === "--adopt-legacy") options.adoptLegacy = true;
+    else if (argument === "--return-legacy") options.returnLegacy = true;
     else if (argument.startsWith("--")) {
       const [key, inlineValue] = argument.slice(2).split("=", 2);
       const value = inlineValue ?? argv[++index];
@@ -397,6 +539,7 @@ function main() {
   if (command === "init") result = coordinator.init();
   else if (command === "start") result = coordinator.start({ runId: options.run_id, domain: options.domain, baseSha: options.base_sha });
   else if (command === "claim") result = coordinator.claim({ runId: options.run_id, paths: options.paths, adoptLegacy: options.adoptLegacy });
+  else if (command === "unclaim") result = coordinator.unclaim({ runId: options.run_id, paths: options.paths, returnLegacy: options.returnLegacy });
   else if (command === "status") result = coordinator.status({ runId: options.run_id });
   else if (command === "stale-check") result = coordinator.staleCheck({ runId: options.run_id });
   else if (command === "publication-acquire") result = coordinator.publicationAcquire({ runId: options.run_id });

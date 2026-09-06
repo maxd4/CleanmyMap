@@ -69,6 +69,128 @@ test("rejects traversal and preserves legacy ownership until explicit adoption",
     assert.throws(() => coordinator.claim({ runId: "run-a", paths: ["apps/web/src/legacy.ts"] }), /LEGACY_UNOWNED/);
     coordinator.claim({ runId: "run-a", paths: ["apps/web/src/legacy.ts"], adoptLegacy: true });
     assert.equal(coordinator.status().legacyUnowned, 0);
+    assert.deepEqual(coordinator.status({ runId: "run-a" }).run.adoptedLegacyPaths, ["apps/web/src/legacy.ts"]);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("dirty legacy read-only remains legacy and needs no claim", () => {
+  const root = fixture();
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({ status: " M apps/web/src/legacy.ts\n" }),
+    });
+    coordinator.init();
+    const report = coordinator.status();
+    assert.equal(report.ownedFiles, 0);
+    assert.equal(report.legacyUnowned, 1);
+    assert.deepEqual(report.orphanDirty, []);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("adoptLegacy then unclaim --return-legacy restores LEGACY_UNOWNED", () => {
+  const root = fixture();
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({ status: " M legacy.ts\n" }),
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "OTHER" });
+    coordinator.claim({ runId: "run-a", paths: ["legacy.ts"], adoptLegacy: true });
+    coordinator.unclaim({ runId: "run-a", paths: ["legacy.ts"], returnLegacy: true });
+    const report = coordinator.status();
+    assert.equal(report.ownedFiles, 0);
+    assert.equal(report.legacyUnowned, 1);
+    assert.equal(report.orphanDirty.length, 0);
+    assert.deepEqual(coordinator.status({ runId: "run-a" }).run.ownedPaths, []);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("unclaim refuses unowned and foreign-owned paths", () => {
+  const root = fixture();
+  try {
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner: fakeGit() });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.start({ runId: "run-b", domain: "LEARN" });
+    assert.throws(() => coordinator.unclaim({ runId: "run-a", paths: ["missing.ts"] }), /UNCLAIM_NOT_OWNED/);
+    coordinator.claim({ runId: "run-a", paths: ["foreign.ts"] });
+    assert.throws(() => coordinator.unclaim({ runId: "run-b", paths: ["foreign.ts"] }), /run-a/);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("unclaim refuses a path staged under the current publication lock", () => {
+  const root = fixture();
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({ staged: "staged.ts\0" }),
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["staged.ts"] });
+    coordinator.publicationAcquire({ runId: "run-a" });
+    assert.throws(() => coordinator.unclaim({ runId: "run-a", paths: ["staged.ts"] }), /UNCLAIM_STAGED/);
+    coordinator.publicationRelease({ runId: "run-a" });
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("release returns an adopted dirty path to legacy before removing its lock", () => {
+  const root = fixture();
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({ status: " M adopted.ts\n" }),
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["adopted.ts"], adoptLegacy: true });
+    coordinator.release({ runId: "run-a" });
+    const report = coordinator.status();
+    assert.equal(report.ownedFiles, 0);
+    assert.equal(report.legacyUnowned, 1);
+    assert.deepEqual(report.orphanDirty, []);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("return-to-legacy is persisted before a run metadata failure", () => {
+  const root = fixture();
+  let failRunMetadata = false;
+  try {
+    const metadataWriter = (filePath, value) => {
+      if (failRunMetadata && filePath.endsWith(path.join("active-runs", "run-a.json"))) {
+        throw new Error("simulated run metadata failure");
+      }
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+    };
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({ status: " M adopted.ts\n" }),
+      metadataWriter,
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["adopted.ts"], adoptLegacy: true });
+    failRunMetadata = true;
+    assert.throws(() => coordinator.unclaim({ runId: "run-a", paths: ["adopted.ts"], returnLegacy: true }), /simulated run metadata failure/);
+    const report = coordinator.status();
+    assert.equal(report.legacyUnowned, 1);
+    assert.equal(report.orphanDirty.length, 0);
+    assert.deepEqual(report.activeRuns[0].ownedPaths, ["adopted.ts"]);
   } finally {
     cleanup(root);
   }

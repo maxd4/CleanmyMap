@@ -20,9 +20,19 @@ métadonnées runtime sous `.artifacts/coordination/`. Son cycle est
 `init` → `start` → `claim` → `publication-acquire` → staging/validation →
 `publication-release`/`release`. `init` migre les chemins déjà dirty vers
 `LEGACY_UNOWNED` sans les modifier ni les revendiquer ; une adoption doit être
-explicitement demandée. Les claims sont atomiques, relatifs au dépôt et
+explicitement demandée. Un `claim` représente exclusivement une intention
+d'écriture future : un fichier dirty, staged ou simplement présent dans
+`LEGACY_UNOWNED` n'est pas un ownership et ne doit pas être adopté par un run
+qui ne prévoit pas de le modifier. Une lecture seule reste donc dans
+`LEGACY_UNOWNED`. Les claims sont atomiques, relatifs au dépôt et
 protégés contre la traversée ; le domaine `AUTHZ_SECURITY` est sérialisé et un
 verrou stale est signalé, pas nettoyé automatiquement.
+
+`unclaim --run-id <RUN_ID> [--return-legacy] -- <paths>` retire uniquement les
+chemins effectivement possédés par le run, refuse les locks étrangers et les
+chemins staged sous publication, et ne modifie ni le fichier, ni l'index, ni
+`HEAD`. Un chemin adopté encore dirty revient au legacy avant le `release` du
+run.
 
 Le coordinateur ne remplace pas les contrôles Git : le pré-commit vérifie la
 portée `STAGED` et exige que le détenteur du verrou de publication possède tous
