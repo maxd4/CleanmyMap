@@ -1,4 +1,5 @@
 import type { RouteTraceSelectedStop } from "@/lib/route/route-trace";
+import { formatScorePercent } from "@/lib/formatters/score";
 import {
   formatDistance,
   formatDuration,
@@ -22,6 +23,9 @@ function AdditionalityDetail({
   const documentedCoverage = additionality?.municipalCleaning.documentedCoverage;
   const frequency = additionality?.municipalCleaning.documentedFrequency;
   const hasKnownCoverage = documentedCoverage?.available || frequency?.normalized !== null;
+  const finalPlannerContribution = selection.finalPlannerContribution == null
+    ? selection.combinedScore * 100
+    : selection.finalPlannerContribution;
   const labels = [
     selection.volunteerAdditionality != null && selection.volunteerAdditionality >= 60
       ? "Forte valeur bénévole"
@@ -40,7 +44,7 @@ function AdditionalityDetail({
     <section className="mt-3 rounded-xl border border-fuchsia-300/20 bg-fuchsia-500/10 p-3 text-xs text-fuchsia-50" data-route-additionality-details>
       <p className="font-black text-white">Valeur complémentaire de l’action bénévole</p>
       <p className="mt-1 leading-relaxed text-fuchsia-100/85">
-        Pollution probable : {formatNumber(selection.pollutionPriority ?? 0, 1)} sur 100 · additionnalité : {selection.volunteerAdditionality == null ? "indisponible" : `${formatNumber(selection.volunteerAdditionality, 1)} sur 100`} · contribution planner : {formatNumber(selection.finalPlannerContribution ?? selection.combinedScore, 1)} sur 100.
+        Pollution probable : {formatScorePercent(selection.pollutionPriority ?? 0)} · additionnalité : {selection.volunteerAdditionality == null ? "indisponible" : formatScorePercent(selection.volunteerAdditionality)} · contribution planner : {formatScorePercent(finalPlannerContribution)}.
       </p>
       {labels.length > 0 ? (
         <ul className="mt-2 flex flex-wrap gap-2">
@@ -49,14 +53,14 @@ function AdditionalityDetail({
       ) : null}
       {additionality ? (
         <dl className="mt-2 grid gap-2 sm:grid-cols-2">
-          <div><dt className="text-fuchsia-100/60">Confiance</dt><dd className="font-semibold">{formatNumber(additionality.confidence.overall * 100, 0)} %</dd></div>
-          <div><dt className="text-fuchsia-100/60">Couverture documentée</dt><dd className="font-semibold">{documentedCoverage?.available ? `${formatNumber((documentedCoverage.normalized ?? 0) * 100, 0)} %` : frequency?.visitsPerWeek != null ? `${formatNumber(frequency.visitsPerWeek, 1)} passage(s)/semaine` : "inconnue"}</dd></div>
-          <div><dt className="text-fuchsia-100/60">Propreté historique</dt><dd className="font-semibold">{formatNumber(additionality.historicalCleanliness.effective * 100, 0)} % de pression</dd></div>
-          <div><dt className="text-fuchsia-100/60">Malus opérationnel</dt><dd className="font-semibold">{additionality.municipalCleaning.scheduledInterventionPenalty > 0 ? `-${formatNumber(additionality.municipalCleaning.scheduledInterventionPenalty * 100, 0)} %` : "aucun détecté"}</dd></div>
+          <div><dt className="text-fuchsia-100/60">Confiance</dt><dd className="font-semibold">{formatScorePercent(additionality.confidence.overall * 100)}</dd></div>
+          <div><dt className="text-fuchsia-100/60">Couverture documentée</dt><dd className="font-semibold">{documentedCoverage?.available ? formatScorePercent((documentedCoverage.normalized ?? 0) * 100) : frequency?.visitsPerWeek != null ? `${formatNumber(frequency.visitsPerWeek, 1)} passage(s)/semaine` : "inconnue"}</dd></div>
+          <div><dt className="text-fuchsia-100/60">Propreté historique</dt><dd className="font-semibold">{formatScorePercent(additionality.historicalCleanliness.effective * 100)} de pression</dd></div>
+          <div><dt className="text-fuchsia-100/60">Malus opérationnel</dt><dd className="font-semibold">{additionality.municipalCleaning.scheduledInterventionPenalty > 0 ? `-${formatScorePercent(additionality.municipalCleaning.scheduledInterventionPenalty * 100)}` : "aucun détecté"}</dd></div>
         </dl>
       ) : null}
       {additionality?.municipalCleaning.surfaceComplexity.available ? (
-        <p className="mt-2 text-fuchsia-100/80">Complexité de surface estimée à {formatNumber((additionality.municipalCleaning.surfaceComplexity.normalized ?? 0) * 100, 0)} % ; les catégories de surface restent des indices, sans bonus automatique.</p>
+        <p className="mt-2 text-fuchsia-100/80">Complexité de surface estimée à {formatScorePercent((additionality.municipalCleaning.surfaceComplexity.normalized ?? 0) * 100)} ; les catégories de surface restent des indices, sans bonus automatique.</p>
       ) : null}
       {!additionality ? <p className="mt-2 text-fuchsia-100/75">La couche d’additionnalité n’a pas fourni une évaluation exploitable ; l’inconnu n’est pas interprété comme une absence de nettoyage.</p> : null}
     </section>

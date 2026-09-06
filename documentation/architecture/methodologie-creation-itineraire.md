@@ -88,10 +88,14 @@ jusqu’à l’interface et à l’explication finales.
 
 ## 4. Priorisation
 
-La priorité est construite à partir de plusieurs signaux disponibles, dans le
-respect de leur provenance et de leur état de confiance. Elle peut tenir
-compte du contexte urbain, de la proximité du trajet, des événements, de
-l’historique disponible et du coût de déplacement.
+La priorité de pollution est construite à partir de plusieurs signaux
+disponibles, dans le respect de leur provenance et de leur état de confiance.
+Elle peut tenir compte du contexte urbain, de la proximité du trajet, des
+événements, de l’historique disponible et du coût de déplacement. Le planner
+conserve séparément `pollutionPriority`, `volunteerAdditionality` et
+`finalPlannerContribution` : l’additionnalité modifie le classement dans une
+pondération bornée, mais ne remplace ni la pression déchets/mégots, ni les
+événements, ni le budget, ni la sécurité.
 
 Les déchets diffus et les mégots ne sont pas obligés de produire la même
 priorité. Le planner peut exploiter le risque correspondant au contexte
@@ -106,10 +110,17 @@ Les prédictions restent des risques ou des pressions estimées. Elles ne
 remplacent jamais l’historique terrain et ne sont pas présentées comme une
 mesure réelle de pollution.
 
-L’additionalité du nettoiement municipal pourra enrichir cette priorisation
-lorsqu’un contrat documenté sera disponible. Dans cette version, elle reste
-une extension explicitement séparée et ne doit pas être déduite d’une simple
-difficulté géométrique d’accès.
+`volunteerAdditionality` estime la valeur complémentaire d’une action bénévole
+à partir du besoin probable, de la couverture municipale relative et de
+l’aptitude bénévole. Le calcul reste borné et dépendant de la confiance : une
+donnée municipale documentée prévaut sur une inférence, tandis qu’une donnée
+absente rapproche le facteur de son neutre et réduit la confiance globale.
+Une difficulté mécanique peut contribuer à l’additionnalité, mais ne constitue
+jamais à elle seule une preuve de faible couverture municipale.
+
+Une intervention municipale forte ou imminente, lorsqu’elle est documentée,
+réduit l’additionnalité. La surface et les obstacles décrivent des indices de
+nettoyabilité ; ils ne constituent pas une observation de tournée.
 
 ## 5. Contraintes du planner
 
@@ -120,10 +131,15 @@ Le planner applique les contraintes suivantes :
 - les règles d’éligibilité et de sécurité ;
 - l’origine et sa précision déclarée ;
 - le mode de planification, notamment le mode libre ou le mode centré sur un
-  événement lorsqu’il est disponible ;
+  événement (`planningMode: "free"` ou `"event-centered"`) ;
 - les contraintes du réseau et les informations effectivement fournies par
   le routage ;
 - les états de disponibilité, de complétude et de dégradation des sources.
+
+En mode event-centered, le contexte événementiel et l’ancrage sont conservés
+dans la trace : événement, statut temporel, rayon, poids d’ancrage, candidats
+favorisés et impacts par candidat. Cet ancrage reste soumis au budget et aux
+contraintes de sécurité.
 
 Ces contraintes peuvent empêcher la sélection d’une zone pourtant prioritaire.
 Le résultat doit alors conserver la décision et la raison de l’exclusion dans
@@ -169,6 +185,13 @@ La trace d’itinéraire doit permettre de relier la proposition à ses données
 - les exclusions et les candidats incompatibles avec les contraintes ;
 - les risques déchets et mégots, leurs composantes, leur confiance, leur
   provenance et leurs éventuels gaps ;
+- `pollutionPriority`, `volunteerAdditionality` et
+  `finalPlannerContribution`, pour les candidats observés comme prédits ;
+- la nature des surfaces et la complexité géométrique, la couverture
+  municipale documentée ou estimée, la fréquence lorsqu’elle existe, la
+  confiance des signaux et les éventuels malus d’intervention programmée ;
+- l’aptitude bénévole et l’état de sécurité géographique ; une prédiction sans
+  sécurité explicite n’est pas admise comme cible bénévole ;
 - la distance au corridor, le détour et la contribution à l’admission d’une
   zone prédite ;
 - le fournisseur de routage, le mode `network` ou `fallback`, les estimations,
@@ -194,6 +217,8 @@ Les règles de lecture sont les suivantes :
 
 - `null` n’est pas zéro ;
 - l’absence d’une source n’est pas l’absence de pollution ;
+- l’absence de couverture municipale documentée n’est pas l’absence de
+  nettoyage ;
 - une source partielle produit un état partiel, pas une certitude complète ;
 - une origine approximative, une distance estimée et un trajet de fallback
   doivent être identifiables ;
@@ -202,6 +227,18 @@ Les règles de lecture sont les suivantes :
   fonctionner ;
 - une zone prédite obsolète, partielle ou indisponible doit dégrader
   explicitement l’état de la recommandation selon le contrat courant.
+- une prédiction sans preuve explicite de sécurité géographique est exclue du
+  planner bénévole ; une sécurité inconnue ne peut pas augmenter son
+  additionnalité ;
+
+Les distinctions suivantes sont contractuelles :
+
+```text
+geometry proxy ≠ municipal coverage
+prediction ≠ observation
+additionality ≠ preuve d’absence de nettoyage municipal
+planner decision ≠ mesure terrain
+```
 
 Un fallback permet de continuer avec une information moins précise lorsque le
 contrat le prévoit. Il n’autorise pas à inventer une source, une preuve terrain
@@ -218,29 +255,39 @@ Le socle actuellement présent sur `main` comprend :
   explicabilité et état de confiance lorsqu’ils sont disponibles ;
 - l’intégration bornée de ces zones prédites au pool du planner, sans créer de
   signalement observé artificiel ;
-- la pression événementielle chargée lorsqu’un snapshot contextuel est
-  disponible pour l’assistance de recommandation ;
+- la pression événementielle et le mode `planningMode` libre ou
+  event-centered, avec ancrage événementiel et trace ;
+- le snapshot `municipal-cleaning-serviceability`, chargé hors requête et
+  consommé par `volunteerAdditionality` ;
+- le calcul de `volunteerAdditionality`, sa pondération bornée dépendante de la
+  confiance et sa contribution distincte au classement du planner ;
+- la séparation explicite de `pollutionPriority`,
+  `volunteerAdditionality` et `finalPlannerContribution`, avec exclusion des
+  prédictions sans sécurité explicite du planner bénévole ;
+- la trace et la surface `Comprendre cet itinéraire`, qui exposent la
+  pollution, l’additionnalité, la couverture, la complexité, la sécurité et la
+  confiance sans recalcul côté frontend ;
 - le routage réseau et les fallbacks explicitement identifiés.
 
 Les risques et pressions restent des estimations. Ils ne sont ni des
 observations de terrain ni des probabilités calibrées de trouver des déchets.
-La pression événementielle actuellement disponible ne signifie pas qu’un mode
-de planification centré sur un événement est exposé par le contrat courant.
+Le mode event-centered ne transforme pas un événement en observation de
+pollution ; il ajoute un contexte d’ancrage traçable à la décision du planner.
 
 ## 10. Fondations et intégrations en cours
 
-Certaines briques sont présentes sans constituer encore une capacité de
-planification complète :
+Les fondations suivantes bornent la capacité actuelle sans devenir des
+affirmations métier supplémentaires :
 
-- la couche `municipal-cleaning-serviceability` fournit un snapshot, un
-  contrat de preuve et des proxies de serviceabilité géométrique ; elle ne
-  mesure pas une fréquence réelle rue par rue et n’est pas encore branchée sur
-  une politique `volunteerAdditionality` du planner ;
-- les données événementielles sont chargées par l’orchestration API et peuvent
-  alimenter le contexte d’assistance, mais le contrat de requête et la
-  sélection d’un itinéraire véritablement event-centered restent à intégrer ;
-- les contrats d’explicabilité continuent d’être consolidés autour des états
-  observé, prédit, estimé et fallback.
+- le snapshot `municipal-cleaning-serviceability` est versionné et chargé
+  localement ; il n’est pas rafraîchi en temps réel pendant chaque calcul et
+  sa couverture reste partielle ;
+- les fréquences municipales et les opérations programmées ne sont utilisées
+  que lorsqu’elles sont documentées dans le snapshot ou le contexte fourni ;
+- les proxies géométriques, la complexité de surface et l’accessibilité
+  mécanisée ne mesurent pas une tournée municipale ;
+- la disponibilité d’un événement, d’une preuve municipale ou d’une preuve de
+  sécurité dépend de la complétude du snapshot et du contrat d’entrée.
 
 Une difficulté d’accès mécanique ou une inférence géométrique ne peut donc pas
 être lue comme une absence de nettoiement municipal.
@@ -250,10 +297,6 @@ Une difficulté d’accès mécanique ou une inférence géométrique ne peut do
 Les extensions suivantes restent explicitement futures dans le périmètre
 actuel :
 
-- l’utilisation de la serviceabilité municipale pour calculer une
-  additionnalité bénévole et modifier la priorisation du planner ;
-- un mode event-centered complet, avec contrat de demande, sélection et trace
-  dédiés ;
 - la météo et les conditions dépendantes de la date ou de l’heure ;
 - la durée d’intervention et l’estimation du temps de nettoyage ;
 - les groupes, équipes et la génération de plusieurs itinéraires.

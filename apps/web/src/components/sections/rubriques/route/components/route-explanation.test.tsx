@@ -2,6 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { RouteExplanationData } from "./route-explanation.model";
+import { riskLabel } from "./route-explanation.model";
 import { RouteExplanation } from "./route-explanation";
 
 function dataFor(mode: "network" | "fallback"): RouteExplanationData {
@@ -92,6 +93,14 @@ describe("RouteExplanation", () => {
     expect(markup).toContain("Rue de Test");
     expect(markup).toContain("Mesure réseau");
     expect(markup).toContain("<summary");
+    expect(markup).toContain("Pollution probable : 0 %");
+    expect(markup).toContain("contribution planner : 83,5 %");
+    expect(markup).not.toContain("sur 100");
+  });
+
+  it("formats route risk scores as French percentages", () => {
+    expect(riskLabel(63)).toBe("63 %");
+    expect(riskLabel(63.5)).toBe("63,5 %");
   });
 
   it("does not invent street details for fallback geometry", () => {
