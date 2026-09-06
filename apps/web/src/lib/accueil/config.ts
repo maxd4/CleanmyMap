@@ -52,14 +52,16 @@ export function buildHomeMetrics(
     {
       key: 'wasteKg',
       label: 'Déchets récoltés',
-      value: hasData ? `${counters.wasteKg.toFixed(1)} kg` : 'n/a',
+      value: hasData
+        ? `${counters.wasteKg.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg`
+        : 'n/a',
       category: 'Résultat',
       accent: 'blue' as const,
     },
     {
       key: 'butts',
       label: 'Mégots retirés',
-      value: hasData ? `${counters.butts.toLocaleString()}` : 'n/a',
+      value: hasData ? `${counters.butts.toLocaleString('fr-FR')}` : 'n/a',
       category: 'Résultat',
       accent: 'blue' as const,
     },
@@ -67,15 +69,17 @@ export function buildHomeMetrics(
       key: 'volunteers',
       label: 'Bénévoles mobilisés',
       value: hasData
-        ? `${counters.volunteers.toLocaleString()}`
+        ? `${counters.volunteers.toLocaleString('fr-FR')}`
         : 'n/a',
       category: 'Résultat',
       accent: 'blue' as const,
     },
     {
       key: 'co2',
-      label: 'CO₂e évité',
-      value: hasData ? `${counters.co2AvoidedKg.toFixed(1)} kg` : 'n/a',
+      label: 'CO₂ évité',
+      value: hasData
+        ? `${counters.co2AvoidedKg.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg`
+        : 'n/a',
       category: 'Équivalent',
       accent: 'emerald' as const,
     },
@@ -83,7 +87,7 @@ export function buildHomeMetrics(
       key: 'water',
       label: 'Eau préservée',
       value: hasData
-        ? `${counters.waterSavedLiters.toLocaleString()} L`
+        ? `${counters.waterSavedLiters.toLocaleString('fr-FR')} L`
         : 'n/a',
       category: 'Équivalent',
       accent: 'emerald' as const,
@@ -91,7 +95,7 @@ export function buildHomeMetrics(
     {
       key: 'euro',
       label: 'Économie de voirie',
-      value: hasData ? `${counters.euroSaved.toLocaleString()} €` : 'n/a',
+      value: hasData ? `${counters.euroSaved.toLocaleString('fr-FR')} €` : 'n/a',
       category: 'Économique',
       accent: 'amber' as const,
     },

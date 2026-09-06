@@ -1,250 +1,133 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import {
-  Cloud,
-  Droplets,
-  Euro,
-  FileText,
-  Info,
-  LayoutDashboard,
-  Leaf,
+  ArrowRight,
+  MessageCircle,
+  Plus,
+  UserRound,
   MapPin,
-  Trash2,
-  UsersRound,
 } from "lucide-react";
-import useSWR from "swr";
-import { ActionPollutionScoreReferencesProvider } from "@/components/actions/map/action-pollution-score-references-context";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { SitePreferencesControls } from "@/components/ui/site-preferences-controls";
-import { PageHeader } from "@/components/ui/page-header";
-import { fetchMapActions } from "@/lib/actions/http";
-import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
-import type { HomeMetric } from "@/lib/accueil/config";
+import type { HomeCounters, HomeMetric } from "@/lib/accueil/config";
+import { HomeImpactKpiCard } from "./accueil-impact-kpi-card";
+import { HomeMapPreview } from "./accueil-map-preview";
 
 interface HomeHeroProps {
   metrics: HomeMetric[];
+  counters: HomeCounters;
+  actionCount?: number;
 }
 
-const HomeMapCanvas = dynamic(
-  () =>
-    import("@/components/actions/actions-map-canvas").then(
-      (mod) => mod.ActionsMapCanvas,
-    ),
+const heroActions = [
   {
-    ssr: false,
-    loading: () => (
-      <div className="h-full w-full animate-pulse rounded-[1.65rem] border border-white/10 bg-[rgba(10,31,50,0.96)]" />
-    ),
+    href: "/actions/map",
+    label: "Consulter la carte",
+    icon: MapPin,
+    primary: true,
   },
-);
-
-const metricAccentStyles = {
-  blue: {
-    ring: "from-emerald-300/28 via-emerald-200/12 to-transparent",
-    bubble: "bg-emerald-300/14 text-emerald-100 ring-1 ring-emerald-200/18",
-    bar: "bg-[#34d399]",
-    label: "text-[#d9f99d]",
-    value: "text-[#ecfdf5]",
-    card: "hover:border-[#34d399]/36",
+  {
+    href: "/sections/messagerie",
+    label: "Discuter",
+    icon: MessageCircle,
+    primary: false,
   },
-  emerald: {
-    ring: "from-lime-300/24 via-emerald-200/12 to-transparent",
-    bubble: "bg-lime-300/14 text-lime-100 ring-1 ring-lime-200/18",
-    bar: "bg-[#84cc16]",
-    label: "text-[#bbf7d0]",
-    value: "text-[#f7fee7]",
-    card: "hover:border-[#84cc16]/36",
+  {
+    href: "/actions/new",
+    label: "Créer une action",
+    icon: Plus,
+    primary: false,
   },
-  amber: {
-    ring: "from-amber-300/24 via-lime-200/12 to-transparent",
-    bubble: "bg-amber-300/14 text-amber-100 ring-1 ring-amber-200/18",
-    bar: "bg-[#22c55e]",
-    label: "text-[#fde68a]",
-    value: "text-[#f0fdf4]",
-    card: "hover:border-[#22c55e]/36",
+  {
+    href: "/sections/rejoindre-un-formulaire",
+    label: "Rejoindre une action",
+    icon: UserRound,
+    primary: false,
   },
-} as const;
+] as const;
 
-const metricIconByKey = {
-  wasteKg: Trash2,
-  butts: Leaf,
-  volunteers: UsersRound,
-  co2: Cloud,
-  water: Droplets,
-  euro: Euro,
-} as const;
-
-export function HomeHero({ metrics }: HomeHeroProps) {
-  const { data: mapData, error: mapError } = useSWR(
-    "home-hero-map-preview",
-    () =>
-      fetchMapActions({
-        status: "approved",
-        days: 365,
-        limit: 18,
-        types: "all",
-      }),
-  );
-
+export function HomeHero({ metrics, counters, actionCount = 0 }: HomeHeroProps) {
   return (
-    <section className="relative overflow-hidden bg-transparent pt-4 sm:pt-6">
-      <div className="pointer-events-none absolute inset-x-0 top-[-6rem] h-[24rem] bg-[radial-gradient(ellipse_55%_45%_at_50%_0%,rgba(34,197,94,0.22),transparent_68%)]" />
-      <div className="relative z-10 mx-auto w-full max-w-none px-1 pb-9 pt-2 sm:px-2 lg:px-4 lg:pb-12">
-        <div className="flex flex-col gap-6 xl:gap-8">
-          <div className="group relative min-h-[470px] overflow-hidden rounded-[2.5rem] border border-white/10 cmm-surface-texture-emerald shadow-[0_36px_90px_-44px_rgba(2,6,23,0.78)]">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-            <div className="relative z-10 grid h-full gap-0 lg:grid-cols-2 lg:items-center">
-              <div className="flex h-full min-w-0 flex-col justify-center gap-6 px-7 py-7 sm:px-9 sm:py-9 lg:px-11 lg:py-10">
-                <div className="space-y-6">
-                  <PageHeader
-                    contrast="inverse"
-                    title="Clean My Map"
-                    subtitle="Cultivons l&apos;entraide pour dépolluer, cartographier et transformer chaque action terrain en preuve utile."
-                    action={<SitePreferencesControls variant="locale" />}
-                  />
+    <section className="relative isolate left-1/2 w-screen -translate-x-1/2 overflow-visible bg-[#dffbed] text-[#082f24]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_72%_16%,rgba(196,181,253,0.42),transparent_24%),radial-gradient(circle_at_32%_82%,rgba(110,231,183,0.52),transparent_30%),linear-gradient(135deg,#005743_0%,#0a936b_42%,#b9f3dc_100%)]" />
+      <div className="pointer-events-none absolute -right-28 top-24 h-96 w-96 rounded-full bg-violet-300/30 blur-[100px]" />
+      <div className="pointer-events-none absolute -left-40 bottom-20 h-96 w-96 rounded-full bg-emerald-200/45 blur-[110px]" />
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center rounded-full border border-emerald-300/16 bg-emerald-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-white">
-                      Dépolluer
-                    </span>
-                    <span className="inline-flex items-center rounded-full border border-emerald-300/16 bg-emerald-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-white">
-                      Cartographier
-                    </span>
-                    <span className="inline-flex items-center rounded-full border border-emerald-300/16 bg-emerald-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-white">
-                      Impacter
-                    </span>
-                  </div>
+      <div className="relative z-10 mx-auto w-full max-w-[1680px] px-4 pb-5 pt-5 sm:px-8 sm:pb-8 sm:pt-8 lg:px-10 lg:pb-10 lg:pt-10">
+        <div className="grid items-center gap-8 lg:grid-cols-[minmax(25rem,0.82fr)_minmax(38rem,1.38fr)] lg:gap-10 xl:gap-14">
+          <div className="min-w-0 px-1 py-4 sm:px-3 lg:py-8">
+            <div className="max-w-[37rem]">
+              <p className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.32em] text-emerald-100 sm:text-xs">
+                <span className="h-3 w-3 shrink-0 rounded-full bg-[#26e6a4] shadow-[0_0_18px_rgba(38,230,164,0.92)]" />
+                Des territoires plus propres, ensemble
+              </p>
 
-                  <div className="grid grid-cols-2 gap-2 pt-2 lg:grid-cols-4">
-                    <CmmButton
-                      href="/actions/map"
-                      tone="primary"
-                      variant="pill"
-                      size="lg"
-                      className="h-[52px] w-full min-w-0 rounded-2xl px-4 text-[13px] font-black gap-2 whitespace-nowrap transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-                    >
-                      <MapPin size={20} />
-                      Ouvrir la carte
-                    </CmmButton>
-                    <CmmButton
-                      href="/actions/new"
-                      tone="secondary"
-                      variant="pill"
-                      size="lg"
-                      className="h-[52px] w-full min-w-0 rounded-full px-4 text-[13px] font-black gap-2 whitespace-nowrap transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-                    >
-                      <FileText size={19} />
-                      Formulaire bénévole
-                    </CmmButton>
-                    <CmmButton
-                      href="/sections/rejoindre-un-formulaire"
-                      tone="secondary"
-                      variant="pill"
-                      size="lg"
-                      className="h-[52px] w-full min-w-0 rounded-full px-4 text-[13px] font-black gap-2 whitespace-nowrap transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-                    >
-                      <UsersRound size={19} />
-                      Rejoindre un formulaire
-                    </CmmButton>
-                    <CmmButton
-                      href={EXPLORER_ROUTE}
-                      tone="tertiary"
-                      variant="pill"
-                      size="lg"
-                      className="h-[52px] w-full min-w-0 rounded-2xl px-4 text-[13px] font-black gap-2 whitespace-nowrap transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-                    >
-                      <LayoutDashboard size={20} />
-                      Accéder au sommaire
-                    </CmmButton>
-                  </div>
-                </div>
+              <h1 className="mt-6 max-w-[38rem] text-[clamp(3.5rem,5.4vw,5.25rem)] font-black leading-[0.88] tracking-[-0.085em] text-white drop-shadow-[0_12px_26px_rgba(0,37,27,0.18)] lg:whitespace-nowrap">
+                Clean My Map
+              </h1>
+              <p className="mt-7 max-w-[35rem] text-[clamp(1.05rem,1.7vw,1.42rem)] leading-[1.45] text-white/90">
+                Cultivons l&apos;entraide pour dépolluer, cartographier et transformer chaque action terrain en preuve utile.
+              </p>
+
+              <div className="mt-9 grid max-w-[36rem] grid-cols-2 gap-4 sm:mt-10 sm:gap-5">
+                {heroActions.map(({ href, icon: Icon, label, primary }) => (
+                  <CmmButton
+                    key={href}
+                    href={href}
+                    tone={primary ? "primary" : "secondary"}
+                    variant="pill"
+                    size="lg"
+                    className={
+                      primary
+                        ? "h-[4.2rem] w-full justify-between rounded-[1.45rem] !border-[#72ffd0] !bg-[#28d99b] !text-[#053b2a] !shadow-[0_16px_34px_-18px_rgba(0,44,30,0.75)] hover:!bg-[#67efbb] sm:px-6"
+                        : "h-[4.2rem] w-full justify-start rounded-[1.45rem] !border-white/80 !bg-white !text-[#102044] !shadow-[0_16px_34px_-22px_rgba(0,44,30,0.38)] hover:!bg-[#f5fffb] sm:px-6"
+                    }
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <Icon size={22} strokeWidth={2.2} aria-hidden="true" />
+                      <span className="truncate text-left text-[13px] font-black sm:text-[15px]">
+                        {label}
+                      </span>
+                    </span>
+                    {primary ? <ArrowRight size={21} aria-hidden="true" /> : null}
+                  </CmmButton>
+                ))}
               </div>
-
-              <section className="relative min-h-[430px] min-w-0 self-stretch overflow-hidden bg-[linear-gradient(180deg,rgba(4,59,38,0.94)_0%,rgba(8,83,52,0.96)_52%,rgba(6,96,59,0.98)_100%)]">
-                <div className="absolute inset-0">
-                  {mapError ? (
-                    <div className="flex h-full w-full items-center justify-center px-5 text-center text-sm text-white">
-                      Impossible de charger la carte pour le moment.
-                    </div>
-                  ) : (
-                    <ActionPollutionScoreReferencesProvider>
-                      <HomeMapCanvas
-                        items={mapData?.items ?? []}
-                        selectedActionId={null}
-                        compact
-                        className="absolute inset-0 h-full w-full rounded-none border-0 bg-transparent shadow-none ring-0"
-                      />
-                    </ActionPollutionScoreReferencesProvider>
-                  )}
-                </div>
-
-              </section>
             </div>
           </div>
 
-          <div className="relative min-h-[560px] overflow-hidden rounded-[2.5rem] border border-white/10 cmm-surface-texture-emerald shadow-[0_36px_90px_-44px_rgba(2,6,23,0.72)]">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-emerald-300 via-lime-300 to-emerald-200" />
-            <div className="relative z-10 flex h-full flex-col p-7 sm:p-9 lg:p-10">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="space-y-2">
-                  <p className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.32em] text-white sm:text-[12px]">
-                    <span className="h-3.5 w-3.5 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]" />
-                    Impact terrain 2026
-                  </p>
-
-                </div>
-                <CmmButton
-                  href="/methodologie"
-                  tone="secondary"
-                  variant="pill"
-                  className="h-10 px-4 text-[10px] font-black uppercase tracking-[0.2em] gap-2"
-                >
-                  <Info size={12} />
-                  Méthodologie
-                </CmmButton>
-              </div>
-
-              <div className="mt-6 grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
-                {metrics.map((metric) => {
-                  const s = metricAccentStyles[metric.accent];
-                  const MetricIcon = metricIconByKey[metric.key as keyof typeof metricIconByKey] ?? Trash2;
-                  return (
-                    <div
-                      key={metric.key}
-                      className={`group relative min-h-[148px] overflow-hidden rounded-[1.35rem] border border-white/10 bg-[linear-gradient(180deg,rgba(16,84,54,0.95)_0%,rgba(10,66,41,0.94)_100%)] p-4 shadow-[0_16px_34px_-24px_rgba(2,6,23,0.82)] transition-transform duration-300 hover:-translate-y-0.5 ${s.card}`}
-                    >
-                      <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${s.bar}`} />
-                      <div className={`pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.08),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(132,204,22,0.10),transparent_32%)]`} />
-                      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(132,204,22,0.12),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.05),transparent_38%),radial-gradient(circle_at_center,rgba(255,255,255,0.03),transparent_55%)] opacity-90" />
-
-                      <div className="relative z-10 flex h-full flex-col justify-between gap-5">
-                        <div className="flex items-start justify-between gap-3">
-                          <span className={`inline-flex h-12 w-12 items-center justify-center rounded-full ${s.bubble}`}>
-                            <MetricIcon size={22} strokeWidth={2.2} />
-                          </span>
-                          <span className="inline-flex rounded-full border border-white/12 bg-white/[0.04] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-white">
-                            2026
-                          </span>
-                        </div>
-
-                        <div className="space-y-2">
-                          <p className={`text-[11px] font-black uppercase tracking-[0.26em] ${s.label}`}>
-                            {metric.label}
-                          </p>
-                          <div className={`text-[clamp(1.9rem,3.3vw,2.65rem)] font-black leading-none tracking-tight ${s.value} whitespace-nowrap truncate`}>
-                            {metric.value}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-            </div>
-          </div>
+          <HomeMapPreview />
         </div>
+
+        <section className="relative mt-8 overflow-visible rounded-[2rem] border border-white/70 bg-white/30 p-4 shadow-[0_28px_70px_-38px_rgba(0,53,37,0.6)] backdrop-blur-xl sm:mt-10 sm:p-7 lg:mt-12 lg:p-8">
+          <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-[radial-gradient(circle_at_10%_0%,rgba(255,255,255,0.6),transparent_28%),radial-gradient(circle_at_90%_100%,rgba(110,231,183,0.26),transparent_32%)]" />
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 px-1 sm:px-2">
+            <p className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.28em] text-[#11234a] sm:text-xs">
+              <span className="h-3 w-3 rounded-full bg-[#1bd9a0] shadow-[0_0_15px_rgba(27,217,160,0.7)]" />
+              Impact terrain 2026
+            </p>
+            <CmmButton
+              href="/methodologie"
+              tone="secondary"
+              variant="pill"
+              className="h-10 !border-white/80 !bg-white/90 !text-[#102044] !shadow-[0_10px_24px_-16px_rgba(0,40,30,0.4)] hover:!bg-white"
+            >
+              <span aria-hidden="true">ⓘ</span>
+              Méthodologie
+              <ArrowRight size={14} aria-hidden="true" />
+            </CmmButton>
+          </div>
+
+          <div className="relative z-10 mt-5 grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
+            {metrics.map((metric) => (
+              <HomeImpactKpiCard
+                key={metric.key}
+                metric={metric}
+                counters={counters}
+                actionCount={actionCount}
+              />
+            ))}
+          </div>
+        </section>
       </div>
     </section>
   );
