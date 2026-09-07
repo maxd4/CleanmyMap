@@ -58,7 +58,7 @@ describe("action fallback images", () => {
     expect(activity.items[0]?.image).toEqual({
       source: "userProvidedImage",
       url: "data:image/jpeg;base64,real-photo",
-      alt: "Photo fournie par l'utilisateur pour Lieu sans contexte",
+      alt: "Photo fournie par l'utilisateur pour Action de dépollution",
       isFallback: false,
     });
   });
