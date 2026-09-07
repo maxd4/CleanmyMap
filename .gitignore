@@ -81,7 +81,8 @@ documentation/pages_site/routes/**/*.bmp
 documentation/pages_site/routes/**/*.tif
 documentation/pages_site/routes/**/*.tiff
 
-# Action fallback photo assets stay local-only; keep README and JSON metadata.
+# Canonical action fallback PNGs directly in this directory are versioned runtime assets.
+# Ignore only nested local image exports; never ignore canonical PNGs.
 apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[jJ][pP][gG]
 apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[jJ][pP][eE][gG]
 apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[pP][nN][gG]
@@ -96,6 +97,7 @@ apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[tT][iI][fF][fF]
 apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[jJ][xX][lL]
 apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[iI][cC][oO]
 apps/web/public/images/action-fallbacks/action-fallbacks/**/*.[sS][vV][gG]
+!apps/web/public/images/action-fallbacks/*.[pP][nN][gG]
 
 .vercel/
 .playwright-mcp/
