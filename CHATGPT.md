@@ -932,3 +932,12 @@ relire main
 Le but n'est pas de produire le plus de prompts, de fichiers ou de refactors possible.
 
 Le but est de faire converger CleanMyMap vers une architecture plus simple, cohérente, sûre, mesurable, maintenable, auditable, documentée et fidèle au comportement réel du produit.
+## Sécurité des diagnostics host et des verrous Git
+
+Pour les décisions et diagnostics préparatoires, appliquer la section
+canonique « Sécurité des diagnostics host et des verrous Git » de `AGENTS.md` :
+ne supprimer `.git/index.lock` qu'après preuve stale complète et une seule
+fois, arrêter en `HOST_ENVIRONMENT` s'il réapparaît, préserver les processus
+Git étrangers, borner les diagnostics ProcMon/ETW et ne pas transformer un
+workaround Codex Desktop en contrat du dépôt. Ne pas implémenter ici
+`UNPUBLISHED_COMMITS_BLOCK`, réservé à un lot mécanique séparé.
