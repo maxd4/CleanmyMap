@@ -282,7 +282,7 @@ export function HomeNavigationSchema() {
   return (
     <section
       aria-labelledby="home-navigation-title"
-      className="relative isolate min-h-[112rem] w-[calc(100%_-_3px)] max-w-none overflow-hidden bg-[#fbfefd] py-12 sm:w-full sm:py-16 lg:min-h-[94rem] lg:pb-[4.5rem] lg:pt-[6.5rem]"
+      className="relative isolate mx-auto min-h-[112rem] w-[calc(100%_-_4px)] max-w-none overflow-hidden bg-[#fbfefd] py-12 sm:py-16 lg:min-h-[94rem] lg:pb-[4.5rem] lg:pt-[6.5rem]"
     >
       <NavigationLandscape />
       <div className="relative z-10 mx-auto w-full max-w-[1750px] px-4 sm:px-8 lg:px-0">
@@ -293,8 +293,8 @@ export function HomeNavigationSchema() {
           >
             L&apos;union fait la <span className="bg-gradient-to-r from-emerald-500 via-sky-500 to-violet-600 bg-clip-text text-transparent">force</span>
           </h2>
-          <p className="mt-5 text-[clamp(1.25rem,2.7vw,2.6rem)] leading-snug tracking-[-0.02em] text-indigo-900/75">
-            Partager un moment sportif et convivial tout en agissant pour notre environnement
+          <p className="mx-auto mt-5 max-w-[1280px] text-[clamp(1.15rem,2.35vw,2.35rem)] leading-snug tracking-[-0.02em] text-indigo-900/75">
+            Partager un moment sportif et convivial tout en agissant en faveur de l&apos;environnement
           </p>
         </header>
 
@@ -307,12 +307,12 @@ export function HomeNavigationSchema() {
         </div>
 
         <div className="relative mt-12 text-center sm:mt-14 lg:mt-[3.75rem]">
-          <p className="font-[cursive] text-[clamp(2.4rem,4.7vw,4.8rem)] italic leading-none tracking-[-0.06em] text-blue-700">
+          <p className="font-[cursive] text-[clamp(1.9rem,3.2vw,3.5rem)] italic leading-none tracking-[-0.04em] text-[#9a6a22]">
             Cultivons l&apos;entraide
           </p>
           <span
             aria-hidden="true"
-            className="mx-auto mt-4 block h-1.5 w-40 -rotate-3 rounded-full bg-blue-700"
+            className="mx-auto mt-3 block h-1 w-28 -rotate-3 rounded-full bg-[#9a6a22]"
           />
         </div>
       </div>
