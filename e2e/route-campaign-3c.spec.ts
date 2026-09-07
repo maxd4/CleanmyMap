@@ -18,6 +18,7 @@ type RecommendationObservation = {
 };
 
 type RouteResponseBody = {
+  isLoop?: boolean;
   status?: "ok" | "empty" | "degraded";
   dataStatus?: string;
   origin?: { latitude?: number; longitude?: number; source?: string };
@@ -26,6 +27,13 @@ type RouteResponseBody = {
   travelBudgetMinutes?: number;
   withinBudget?: boolean;
   stops?: Array<unknown>;
+  loop?: {
+    isLoop?: boolean;
+    origin?: { latitude?: number; longitude?: number; source?: string };
+    returnDistanceKm?: number;
+    returnMinutes?: number;
+    budgetRemainingMinutes?: number;
+  };
   diagnostics?: {
     loaded?: number;
     eligible?: number;
@@ -35,6 +43,9 @@ type RouteResponseBody = {
     truncated?: boolean;
   };
   routeGeometry?: {
+    isLoop?: boolean;
+    origin?: [number, number] | null;
+    coordinates?: Array<[number, number]>;
     mode?: "network" | "fallback";
     provider?: string;
     profile?: string | null;
@@ -202,6 +213,7 @@ function assertRecommendationContract(
   expectedMaxStops: number,
   expectedOrigin: "browser" | "map" | "approximate_saved_area",
 ): void {
+  expect(body.isLoop).toBe(true);
   expect(["ok", "empty", "degraded"]).toContain(body.status);
   expect(body.origin?.source).toBe(expectedOrigin);
   expect(typeof body.travelDistanceKm).toBe("number");
@@ -209,6 +221,13 @@ function assertRecommendationContract(
   expect(body.travelMinutes).toBeLessThanOrEqual(expectedBudget);
   expect(body.travelBudgetMinutes).toBe(expectedBudget);
   expect(body.withinBudget).toBe(true);
+  expect(body.loop?.isLoop).toBe(true);
+  expect(body.loop?.origin?.source).toBe(expectedOrigin);
+  expect(typeof body.loop?.returnDistanceKm).toBe("number");
+  expect(typeof body.loop?.returnMinutes).toBe("number");
+  expect(body.loop?.budgetRemainingMinutes).toBe(
+    expectedBudget - (body.travelMinutes ?? 0),
+  );
   expect(body.stops?.length ?? 0).toBeLessThanOrEqual(expectedMaxStops);
 
   const diagnostics = body.diagnostics;
@@ -230,6 +249,10 @@ function assertRecommendationContract(
   if (body.routeGeometry?.mode === "fallback") {
     expect(body.routeGeometry.estimated).toBe(true);
   }
+  expect(body.routeGeometry?.isLoop).toBe(true);
+  const coordinates = body.routeGeometry?.coordinates ?? [];
+  expect(coordinates.length).toBeGreaterThanOrEqual(2);
+  expect(coordinates[0]).toEqual(coordinates.at(-1));
 }
 
 async function clickAndReadRecommendation(
