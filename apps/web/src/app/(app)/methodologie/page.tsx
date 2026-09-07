@@ -9,14 +9,8 @@ import type {
   EnvironmentalImpactSnapshotRecord,
 } from "@/lib/environmental-impact-estimator/types";
 import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
-import {
-  buildPublicLandingActionMetricsFromAggregate,
-} from "@/lib/accueil/action-participant-aggregation";
 import type { PublicLandingActionAggregation } from "@/lib/accueil/action-participant-aggregation";
-import {
-  buildLandingFloorDate,
-  loadPublicLandingActionSummary,
-} from "@/lib/accueil/public-landing-action-summary";
+import { loadLatestPublicImpactSnapshot } from "@/lib/impact/public-impact-snapshot";
 
 export const metadata: Metadata = {
   title: "Méthodologie - Comment nous calculons l'impact | CleanMyMap",
@@ -88,14 +82,10 @@ export default async function MethodologiePage() {
   }
 
   try {
-    const landingAggregate = await loadPublicLandingActionSummary(
-      buildLandingFloorDate(),
-    );
-    impactTerrainResults = buildPublicLandingActionMetricsFromAggregate(
-      landingAggregate,
-    );
+    const impactSnapshot = await loadLatestPublicImpactSnapshot();
+    impactTerrainResults = impactSnapshot?.payload.kpis ?? null;
   } catch (error) {
-    console.error("[MethodologiePage] Failed to load public terrain KPI aggregate", error);
+    console.error("[MethodologiePage] Failed to load monthly public terrain snapshot", error);
   }
 
   githubStats = await githubStatsPromise;

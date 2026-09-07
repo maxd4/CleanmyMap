@@ -1,11 +1,12 @@
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import { sumActionImpactKpis } from "@/lib/actions/impact-calculators";
-import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
-import { computeImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
 import { fetchCachedUnifiedActionContracts } from "@/lib/actions/unified-source/unified-source-cache";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
+import {
+  loadLatestPublicImpactSnapshot,
+  type PublicImpactSnapshotPayload,
+} from "@/lib/impact/public-impact-snapshot";
 import type { HomeCounters } from "./config";
 import {
   getUserProvidedActionImageUrl,
@@ -13,14 +14,8 @@ import {
 } from "./action-fallbacks";
 import {
   aggregatePublicActionMetrics,
-  buildPublicLandingActionMetricsFromAggregate,
   type PublicLandingActionAggregation,
 } from "./action-participant-aggregation";
-import {
-  buildLandingFloorDate,
-  loadPublicLandingActionSummary,
-  type PublicLandingActionSummaryRow,
-} from "./public-landing-action-summary";
 
 export type HomeCommunityActivityImage =
   | {
@@ -75,10 +70,6 @@ export type LandingSummary = {
   activity: HomeCommunityActivitySummary;
   dataAvailability: LandingDataAvailability;
 } & PublicLandingActionAggregation;
-
-export const LANDING_SUMMARY_SNAPSHOT_KEY = "cleanmymap-landing-summary";
-export const LANDING_SUMMARY_SNAPSHOT_VERSION = "landing-summary-2026.09-v2";
-export const LANDING_SUMMARY_SNAPSHOT_TTL_MINUTES = 60;
 
 export const ACCUEIL_TEST_MARKERS = [
   "test",
@@ -392,35 +383,6 @@ export function computeLandingCounters(
   };
 }
 
-function toFiniteNonNegativeNumber(value: number | string | null | undefined): number {
-  const parsed = Number(value ?? 0);
-  return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
-}
-
-function buildLandingCountersFromAggregate(
-  row: PublicLandingActionSummaryRow,
-): HomeCounters {
-  const wasteKg = toFiniteNonNegativeNumber(row.waste_kg);
-  const butts = toFiniteNonNegativeNumber(row.cigarette_butts);
-  const volunteers = toFiniteNonNegativeNumber(row.volunteers);
-  const streetCleaningSavings =
-    computeImpactTerrain2026StreetCleaningSavings({
-      wasteKg,
-      durationMinutes: toFiniteNonNegativeNumber(row.total_duration_minutes),
-    });
-
-  return {
-    wasteKg,
-    butts,
-    volunteers,
-    co2AvoidedKg: wasteKg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg,
-    waterSavedLiters: Math.round(
-      butts * IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt,
-    ),
-    euroSaved: Math.round(streetCleaningSavings.massEstimateEuros),
-  };
-}
-
 const DEFAULT_LANDING_SOURCE_HEALTH: UnifiedSourceHealth = {
   partial: false,
   failedSources: [],
@@ -448,58 +410,62 @@ export function buildLandingSummaryFromContracts(
   };
 }
 
-async function buildLandingSummary(): Promise<LandingSummary> {
-  const floorDate = buildLandingFloorDate();
-  const [aggregate, recent] = await Promise.all([
-    loadPublicLandingActionSummary(floorDate),
-    fetchCachedUnifiedActionContracts({
-      limit: 3,
-      status: "approved",
-      floorDate,
-      requireCoordinates: false,
-      types: ["action"],
-    }),
-  ]);
-  const counters = buildLandingCountersFromAggregate(aggregate);
-  const actionAggregation = buildPublicLandingActionMetricsFromAggregate(
-    aggregate,
-  );
+export function buildLandingSummaryFromImpactSnapshot(
+  payload: PublicImpactSnapshotPayload,
+  recentContracts: ActionDataContract[],
+  sourceHealth: UnifiedSourceHealth = DEFAULT_LANDING_SOURCE_HEALTH,
+): LandingSummary {
+  const { kpis } = payload;
+  const counters: HomeCounters = {
+    wasteKg: kpis.impactTerrain.wasteKg,
+    butts: kpis.impactTerrain.buttsTotal,
+    volunteers: kpis.participantsTotal,
+    co2AvoidedKg: kpis.impactTerrain.co2eKg,
+    waterSavedLiters: kpis.impactTerrain.waterLiters,
+    euroSaved: Math.round(kpis.streetCleaningSavings.massEstimateEuros),
+  };
   const activity = buildHomeCommunityActivityFromRecentContracts(
-    recent.items,
-    floorDate,
+    recentContracts,
+    payload.period.fromDate,
     {
-      visibleActions: toFiniteNonNegativeNumber(aggregate.visible_actions),
-      distinctLocations: toFiniteNonNegativeNumber(aggregate.distinct_locations),
+      visibleActions: payload.aggregates.visibleActions,
+      distinctLocations: payload.aggregates.distinctLocations,
     },
   );
-  const sourceHealth = recent.sourceHealth;
-  const activityWithImages = await attachActionPreviewImages(activity);
 
   return {
     counters,
-    activity: activityWithImages,
+    activity,
     dataAvailability: {
       status: sourceHealth.partial ? "partial" : "available",
       sourceHealth,
     },
-    ...actionAggregation,
+    ...kpis,
   };
 }
 
 export async function loadLandingSummary(): Promise<LandingSummary> {
-  const snapshot = await loadOrRefreshPublicSurfaceSnapshot<LandingSummary>({
-    snapshotKey: LANDING_SUMMARY_SNAPSHOT_KEY,
-    title: "Résumé public de la page d'accueil",
-    version: LANDING_SUMMARY_SNAPSHOT_VERSION,
-    ttlMinutes: LANDING_SUMMARY_SNAPSHOT_TTL_MINUTES,
-    buildPayload: buildLandingSummary,
-    meta: {
-      route: "home",
-      periodDays: 365,
-      recentActivityLimit: 3,
-      sourceTypes: ["action"],
-    },
-  });
+  const snapshot = await loadLatestPublicImpactSnapshot();
+  if (!snapshot) {
+    throw new Error("Public monthly impact snapshot is unavailable.");
+  }
 
-  return snapshot.payload;
+  const recent = await fetchCachedUnifiedActionContracts({
+    limit: 3,
+    status: "approved",
+    floorDate: snapshot.payload.period.fromDate,
+    requireCoordinates: false,
+    types: ["action"],
+  });
+  const summary = buildLandingSummaryFromImpactSnapshot(
+    snapshot.payload,
+    recent.items,
+    recent.sourceHealth,
+  );
+  const activityWithImages = await attachActionPreviewImages(summary.activity);
+
+  return {
+    ...summary,
+    activity: activityWithImages,
+  };
 }

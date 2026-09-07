@@ -28,6 +28,10 @@
     {
       "path": "/api/cron/storage-usage",
       "schedule": "0 3 1 * *"
+    },
+    {
+      "path": "/api/cron/impact",
+      "schedule": "0 3 1 * *"
     }
   ],
   "ignoreCommand": "node scripts/ignored-build-step.mjs"

@@ -108,6 +108,10 @@ export function isPublicSurfaceSnapshotFresh(
 export async function upsertPublicSurfaceSnapshot<TPayload>(
   snapshot: Omit<PublicSurfaceSnapshotRecord<TPayload>, "id">,
 ): Promise<void> {
+  if (!canUseSupabaseServerPersistence() && !allowLocalFileStoreFallback()) {
+    throw new Error("Public surface snapshot persistence is unavailable.");
+  }
+
   if (canUseSupabaseServerPersistence()) {
     try {
       const supabase = getSupabaseServerClient();
@@ -129,11 +133,11 @@ export async function upsertPublicSurfaceSnapshot<TPayload>(
       }
 
       if (!allowLocalFileStoreFallback()) {
-        return;
+        throw new Error("Public surface snapshot persistence failed.");
       }
-    } catch {
+    } catch (error) {
       if (!allowLocalFileStoreFallback()) {
-        return;
+        throw error;
       }
     }
   }
@@ -161,6 +165,10 @@ export async function upsertPublicSurfaceSnapshot<TPayload>(
 export async function readLatestPublicSurfaceSnapshot<TPayload>(
   snapshotKey: string,
 ): Promise<PublicSurfaceSnapshotRecord<TPayload> | null> {
+  if (!canUseSupabaseServerPersistence() && !allowLocalFileStoreFallback()) {
+    return null;
+  }
+
   if (canUseSupabaseServerPersistence()) {
     try {
       const supabase = getSupabaseServerClient();
@@ -204,6 +212,10 @@ export async function readLatestPublicSurfaceSnapshot<TPayload>(
 export async function listPublicSurfaceSnapshots<TPayload>(
   limit = 12,
 ): Promise<PublicSurfaceSnapshotRecord<TPayload>[]> {
+  if (!canUseSupabaseServerPersistence() && !allowLocalFileStoreFallback()) {
+    return [];
+  }
+
   if (canUseSupabaseServerPersistence()) {
     try {
       const supabase = getSupabaseServerClient();

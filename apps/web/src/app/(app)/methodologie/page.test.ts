@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { EnvironmentalImpactSnapshotRecord } from "@/lib/environmental-impact-estimator/types";
 
 const snapshotOnlyMock = vi.hoisted(() => vi.fn());
+const publicImpactSnapshotMock = vi.hoisted(() => vi.fn());
 const liveDashboardMock = vi.hoisted(() => vi.fn());
 const githubStatsMock = vi.hoisted(() => vi.fn());
 const clientCalls = vi.hoisted(() => [] as Array<Record<string, unknown>>);
@@ -11,6 +12,10 @@ const clientCalls = vi.hoisted(() => [] as Array<Record<string, unknown>>);
 vi.mock("@/lib/environmental-impact-estimator/dashboard-capture", () => ({
   loadEnvironmentalImpactDashboardSnapshotOnly: snapshotOnlyMock,
   loadEnvironmentalImpactDashboard: liveDashboardMock,
+}));
+
+vi.mock("@/lib/impact/public-impact-snapshot", () => ({
+  loadLatestPublicImpactSnapshot: publicImpactSnapshotMock,
 }));
 
 vi.mock("@/lib/github/github-repository-stats", () => ({
@@ -37,6 +42,7 @@ describe("/methodologie public page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     clientCalls.length = 0;
+    publicImpactSnapshotMock.mockResolvedValue(null);
   });
 
   it("renders a partial state when no snapshot is available", async () => {
@@ -91,6 +97,12 @@ describe("/methodologie public page", () => {
       version: snapshot.version,
     };
     snapshotOnlyMock.mockResolvedValueOnce(dashboard);
+    const monthlyImpactSnapshot = {
+      payload: {
+        kpis: { participantsTotal: 31, impactTerrain: { wasteKg: 25.5 } },
+      },
+    };
+    publicImpactSnapshotMock.mockResolvedValueOnce(monthlyImpactSnapshot);
     githubStatsMock.mockResolvedValueOnce(null);
 
     const page = await MethodologiePage();
@@ -107,6 +119,7 @@ describe("/methodologie public page", () => {
     expect(props.impactSnapshots).toEqual([snapshot]);
     expect(props.impactGeneratedAt).toBe("2026-06-26T08:00:00.000Z");
     expect(props.impactLaunchedAt).toBe("2026-01-01T00:00:00.000Z");
+    expect(props.impactTerrainResults).toBe(monthlyImpactSnapshot.payload.kpis);
     expect(props.impactElectricity).toMatchObject({
       factorKgCo2ePerKwh: 0.35,
       calculation: "missing",
@@ -116,6 +129,7 @@ describe("/methodologie public page", () => {
       availability: "missing",
     });
     expect(liveDashboardMock).not.toHaveBeenCalled();
+    expect(publicImpactSnapshotMock).toHaveBeenCalledOnce();
   });
 
   it("keeps the page renderable when impact snapshots are unavailable", async () => {
