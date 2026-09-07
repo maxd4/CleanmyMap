@@ -10,6 +10,12 @@ import {
   getUserProvidedActionImageUrl,
   selectActionFallback,
 } from "./action-fallbacks";
+import {
+  aggregatePublicActionMetrics,
+  buildPublicLandingActionMetricsFromAggregate,
+  type PublicLandingActionAggregation,
+  type PublicLandingActionAggregationRow,
+} from "./action-participant-aggregation";
 
 export type HomeCommunityActivityImage =
   | {
@@ -63,10 +69,10 @@ export type LandingSummary = {
   counters: HomeCounters;
   activity: HomeCommunityActivitySummary;
   dataAvailability: LandingDataAvailability;
-};
+} & PublicLandingActionAggregation;
 
 export const LANDING_SUMMARY_SNAPSHOT_KEY = "cleanmymap-landing-summary";
-export const LANDING_SUMMARY_SNAPSHOT_VERSION = "landing-summary-2026.09-v1";
+export const LANDING_SUMMARY_SNAPSHOT_VERSION = "landing-summary-2026.09-v2";
 export const LANDING_SUMMARY_SNAPSHOT_TTL_MINUTES = 60;
 
 export const ACCUEIL_TEST_MARKERS = [
@@ -388,7 +394,7 @@ export function computeLandingCounters(
   };
 }
 
-type LandingActionSummaryRow = {
+type LandingActionSummaryRow = PublicLandingActionAggregationRow & {
   visible_actions: number | string | null;
   distinct_locations: number | string | null;
   waste_kg: number | string | null;
@@ -434,6 +440,10 @@ export function buildLandingSummaryFromContracts(
   floorDate: string,
   sourceHealth: UnifiedSourceHealth = DEFAULT_LANDING_SOURCE_HEALTH,
 ): LandingSummary {
+  const actionAggregation = aggregatePublicActionMetrics(
+    getAccueilVisibleContracts(contracts, floorDate),
+  );
+
   return {
     counters: computeLandingCounters(contracts, floorDate),
     activity: buildHomeCommunityActivity(contracts, floorDate),
@@ -441,6 +451,7 @@ export function buildLandingSummaryFromContracts(
       status: sourceHealth.partial ? "partial" : "available",
       sourceHealth,
     },
+    ...actionAggregation,
   };
 }
 
@@ -475,6 +486,9 @@ async function buildLandingSummary(): Promise<LandingSummary> {
     }),
   ]);
   const counters = buildLandingCountersFromAggregate(aggregate);
+  const actionAggregation = buildPublicLandingActionMetricsFromAggregate(
+    aggregate,
+  );
   const activity = buildHomeCommunityActivityFromRecentContracts(
     recent.items,
     floorDate,
@@ -493,6 +507,7 @@ async function buildLandingSummary(): Promise<LandingSummary> {
       status: sourceHealth.partial ? "partial" : "available",
       sourceHealth,
     },
+    ...actionAggregation,
   };
 }
 
