@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildActionDataContract } from "@/lib/actions/data-contract";
+import { buildImpactTerrain2026PublicResults } from "@/lib/impact/impact-terrain-2026-results";
 
 const fetchCachedUnifiedActionContractsMock = vi.hoisted(() => vi.fn());
 const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
@@ -114,6 +115,18 @@ describe("landing summary loading", () => {
         { key: "company", category: "Entreprise", count: 2 },
       ],
       classificationWarnings: [],
+      impactTerrain: {
+        wasteKg: 25.5,
+        wasteBagsEquivalent: 5.1,
+        co2CarKilometers: expect.any(Number),
+        waterOlympicPools: expect.any(Number),
+      },
+      streetCleaningSavings: {
+        massEstimateEuros: 38.25,
+        timeEstimateEuros: 18.465,
+        lowerBoundEuros: 18.465,
+        upperBoundEuros: 38.25,
+      },
     });
     expect(summary.activity).toMatchObject({
       visibleActions: 12,
@@ -170,6 +183,10 @@ describe("landing summary loading", () => {
       totalDurationHours: 0.5,
       actionDistribution: [],
       classificationWarnings: [],
+      impactTerrain: buildImpactTerrain2026PublicResults({
+        wasteKg: 0,
+        buttsTotal: 0,
+      }),
       streetCleaningSavings: {
         wasteKg: 0,
         durationMinutes: 30,

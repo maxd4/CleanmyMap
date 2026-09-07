@@ -118,6 +118,12 @@ export default async function HomePage() {
 
   const hasOverviewData = Boolean(landingSummary);
   const metrics = buildHomeMetrics(counters, hasOverviewData);
+  const impactSnapshot = landingSummary
+    ? {
+        impactTerrain: landingSummary.impactTerrain,
+        streetCleaningSavings: landingSummary.streetCleaningSavings,
+      }
+    : null;
   const communityActivity = landingSummary?.activity ?? {
     visibleActions: 0,
     distinctLocations: 0,
@@ -132,6 +138,7 @@ export default async function HomePage() {
           metrics={metrics}
           counters={counters}
           actionCount={communityActivity.visibleActions}
+          impactSnapshot={impactSnapshot}
         />
         <HomeNavigationSchema />
         <HomeCommunityCredibility

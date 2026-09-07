@@ -2,13 +2,18 @@
 
 import { Cloud, Droplets, Euro, Info, Leaf, Trash2, UsersRound } from "lucide-react";
 import { useState } from "react";
-import type { HomeCounters, HomeMetric } from "@/lib/accueil/config";
+import type {
+  HomeCounters,
+  HomeImpactSnapshot,
+  HomeMetric,
+} from "@/lib/accueil/config";
 import { buildImpactInsight } from "./accueil-impact-copy";
 
 type HomeImpactKpiCardProps = {
   metric: HomeMetric;
   counters: HomeCounters;
   actionCount: number;
+  impactSnapshot: HomeImpactSnapshot | null;
 };
 
 const metricStyles = {
@@ -42,11 +47,17 @@ export function HomeImpactKpiCard({
   metric,
   counters,
   actionCount,
+  impactSnapshot,
 }: HomeImpactKpiCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const style = metricStyles[metric.accent];
   const tooltipId = `impact-tooltip-${metric.key}`;
-  const insight = buildImpactInsight(metric.key, counters, actionCount);
+  const insight = buildImpactInsight(
+    metric.key,
+    counters,
+    actionCount,
+    impactSnapshot,
+  );
   const MetricIcon = metricIcons[metric.key as keyof typeof metricIcons];
 
   return (

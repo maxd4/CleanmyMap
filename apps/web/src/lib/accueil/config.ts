@@ -1,6 +1,18 @@
+import type { ImpactTerrain2026PublicResults } from "@/lib/impact/impact-terrain-2026-results";
+import type { ImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
+
 /**
  * Configuration et helpers pour la page d'accueil
  */
+
+/**
+ * Résultats déjà calculés dans le snapshot public de la homepage.
+ * Les composants de présentation ne doivent pas reconstruire ces valeurs.
+ */
+export type HomeImpactSnapshot = Readonly<{
+  impactTerrain: ImpactTerrain2026PublicResults;
+  streetCleaningSavings: ImpactTerrain2026StreetCleaningSavings;
+}>;
 
 export interface HomeMetric {
   key: string;

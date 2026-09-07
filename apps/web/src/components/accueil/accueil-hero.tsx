@@ -8,7 +8,11 @@ import {
   MapPin,
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import type { HomeCounters, HomeMetric } from "@/lib/accueil/config";
+import type {
+  HomeCounters,
+  HomeImpactSnapshot,
+  HomeMetric,
+} from "@/lib/accueil/config";
 import { HomeImpactKpiCard } from "./accueil-impact-kpi-card";
 import { HomeMapPreview } from "./accueil-map-preview";
 
@@ -16,6 +20,7 @@ interface HomeHeroProps {
   metrics: HomeMetric[];
   counters: HomeCounters;
   actionCount?: number;
+  impactSnapshot: HomeImpactSnapshot | null;
 }
 
 const heroActions = [
@@ -45,7 +50,12 @@ const heroActions = [
   },
 ] as const;
 
-export function HomeHero({ metrics, counters, actionCount = 0 }: HomeHeroProps) {
+export function HomeHero({
+  metrics,
+  counters,
+  actionCount = 0,
+  impactSnapshot,
+}: HomeHeroProps) {
   return (
     <section className="relative isolate overflow-visible text-[#082f24]">
       <div className="relative z-10 mx-auto w-full max-w-[1800px] px-3 pb-3 pt-3 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8 lg:pb-6 lg:pt-6">
@@ -102,7 +112,7 @@ export function HomeHero({ metrics, counters, actionCount = 0 }: HomeHeroProps) 
               Impact terrain 2026
             </p>
             <CmmButton
-              href="/methodologie"
+              href="/methodologie#indicateurs-impact-terrain"
               tone="secondary"
               variant="pill"
               className="h-10 !border-white/80 !bg-white/90 !text-[#102044] !shadow-[0_10px_24px_-16px_rgba(0,40,30,0.4)] hover:!bg-white"
@@ -120,6 +130,7 @@ export function HomeHero({ metrics, counters, actionCount = 0 }: HomeHeroProps) 
                 metric={metric}
                 counters={counters}
                 actionCount={actionCount}
+                impactSnapshot={impactSnapshot}
               />
             ))}
           </div>

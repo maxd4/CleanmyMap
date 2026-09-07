@@ -1,4 +1,4 @@
-import type { HomeCounters } from "@/lib/accueil/config";
+import type { HomeCounters, HomeImpactSnapshot } from "@/lib/accueil/config";
 
 export type ImpactInsight = {
   lines: string[];
@@ -21,30 +21,50 @@ function formatDistance(meters: number): string {
     : `${format(meters, 1)} m`;
 }
 
+function formatMass(kg: number): string {
+  return kg >= 1 ? `${format(kg, 1)} kg` : `${format(kg * 1000, 1)} g`;
+}
+
+function formatPlural(
+  value: number,
+  singular: string,
+  plural: string,
+  maximumFractionDigits = 1,
+): string {
+  return `${format(value, maximumFractionDigits)} ${value === 1 ? singular : plural}`;
+}
+
 export function buildImpactInsight(
   key: string,
   counters: HomeCounters,
   actionCount: number,
+  impactSnapshot?: HomeImpactSnapshot | null,
 ): ImpactInsight {
   switch (key) {
-    case "wasteKg":
+    case "wasteKg": {
+      const results = impactSnapshot?.impactTerrain;
+      if (!results) return { lines: [] };
+
       return {
         lines: [
-          `≈ ${format(counters.wasteKg / 5)} sacs de ramassage de 50 L`,
-          `≈ ${format(counters.wasteKg / 15)} vélos mécaniques`,
+          `≈ ${formatPlural(results.wasteBagsEquivalent, "sac poubelle de 50 L", "sacs poubelle de 50 L")}`,
+          `≈ ${formatPlural(results.wasteMechanicalBicyclesEquivalent, "Vélib'", "Vélib'")}`,
         ],
-        note: "Base indicative : 1 sac = 5 kg, 1 vélo = 15 kg.",
       };
+    }
     case "butts": {
-      const meters = counters.butts * 0.025;
-      const kilometres = meters / 1000;
+      const results = impactSnapshot?.impactTerrain;
+      if (!results) return { lines: [] };
+
+      const lines = [
+        `≈ ${formatDistance(results.buttsDistanceMeters)} de mégots alignés`,
+      ];
+      if (results.estimatedButtsWeightKg !== null) {
+        lines.push(`≈ ${formatMass(results.estimatedButtsWeightKg)} de mégots`);
+      }
+
       return {
-        lines: [
-          `Mis bout à bout : ≈ ${formatDistance(meters)}`,
-          `Soit ≈ ${format((kilometres / 775) * 100, 2)} % d'un Paris–Marseille`,
-          `Poids cumulé : ≈ ${format((counters.butts * 0.2) / 1000)} kg`,
-        ],
-        note: "Repères : 1 mégot = 2,5 cm et 0,2 g.",
+        lines,
       };
     }
     case "volunteers":
@@ -58,37 +78,37 @@ export function buildImpactInsight(
         note: actionCount > 0 ? "Moyenne indicative sur les actions comptabilisées." : undefined,
       };
     case "co2": {
-      const grams = counters.co2AvoidedKg * 1000;
-      const parisMoscowTrips = grams / (142 * 2840);
+      const results = impactSnapshot?.impactTerrain;
+      if (!results) return { lines: [] };
+
       return {
         lines: [
-          `≈ ${format(grams / 142)} km en voiture thermique évités`,
-          `≈ ${format(parisMoscowTrips, 2)} trajet${parisMoscowTrips > 1 ? "s" : ""} Paris–Moscou`,
-          `≈ ${format((grams / 1_000_000) * 100, 2)} % d'un vol Paris–New York`,
+          `≈ ${format(results.co2CarKilometers)} km en voiture thermique, soit ${formatPlural(results.co2ParisMoscowCarTrips, "voyage", "voyages", 2)} Paris–Moscou`,
+          `≈ ${formatPlural(results.co2ParisNewYorkFlightShares, "voyage", "voyages", 2)} Paris–New York en avion`,
         ],
-        note: "Repères : 142 g/km en voiture, 1 000 000 g par vol aller simple.",
       };
     }
     case "water": {
-      const pools = counters.waterSavedLiters / 2_500_000;
-      const years = counters.waterSavedLiters / 55_000;
+      const results = impactSnapshot?.impactTerrain;
+      if (!results) return { lines: [] };
+
       return {
         lines: [
-          `≈ ${format(pools, 2)} piscine${pools > 1 ? "s" : ""} olympique${pools > 1 ? "s" : ""}`,
-          `≈ ${format(years)} année${years > 1 ? "s" : ""} de consommation`,
+          `≈ ${formatPlural(results.waterOlympicPools, "piscine olympique", "piscines olympiques", 2)}`,
+          `≈ ${formatPlural(results.waterFrenchPersonYears, "année", "années", 2)} de consommation d'eau d'un Français moyen`,
         ],
-        note: "Base scientifique : 1 mégot = 500 L potentiellement pollués.",
       };
     }
-    case "euro":
+    case "euro": {
+      const savings = impactSnapshot?.streetCleaningSavings;
+      if (!savings) return { lines: [] };
+
       return {
         lines: [
-          "Estimation du coût de voirie évité",
-          "Calcul : heures d'action cumulées × 11,92 €",
-          "Une méthode lisible pour valoriser l'effort terrain.",
+          `${format(savings.lowerBoundEuros, 2)} à ${format(savings.upperBoundEuros, 2)} € économisés grâce au temps d'action bénévole et aux déchets retirés`,
         ],
-        note: "Voir la méthodologie pour le détail du calcul.",
       };
+    }
     default:
       return { lines: ["Indicateur d'impact terrain."] };
   }
