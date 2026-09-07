@@ -131,7 +131,13 @@ function KpiMethodBlock({
                 </p>
                 <p>
                   <span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "masse estimée" : "estimated mass"}</span>
-                  <strong>{results.estimatedButtsWeightKg.toLocaleString("fr-FR", { maximumFractionDigits: 3 })} kg</strong>
+                  <strong>
+                    {results.estimatedButtsWeightKg === null
+                      ? isFrench
+                        ? "non calculable (état absent)"
+                        : "not calculable (missing condition)"
+                      : `${results.estimatedButtsWeightKg.toLocaleString("fr-FR", { maximumFractionDigits: 3 })} kg`}
+                  </strong>
                 </p>
                 <p>
                   <span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "distance pédagogique" : "pedagogical distance"}</span>

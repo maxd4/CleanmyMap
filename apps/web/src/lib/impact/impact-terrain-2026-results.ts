@@ -36,7 +36,7 @@ export type ImpactTerrain2026PublicResults = {
   qualifiedButtsTotal: number;
   unqualifiedButtsTotal: number;
   buttsByCondition: ImpactTerrain2026ButtsDistributionEntry[];
-  estimatedButtsWeightKg: number;
+  estimatedButtsWeightKg: number | null;
   buttsDistanceMeters: number;
 };
 
@@ -93,8 +93,11 @@ export function buildImpactTerrain2026PublicResults(params: {
     unqualifiedButtsTotal,
     buttsByCondition,
     estimatedButtsWeightKg:
-      qualifiedWeightKg +
-      estimateButtsWeightKg(unqualifiedButtsTotal, null),
+      qualifiedButtsTotal > 0
+        ? qualifiedWeightKg
+        : buttsTotal === 0
+          ? 0
+          : null,
     buttsDistanceMeters: buttsTotal * BUTT_LENGTH_METERS,
   };
 }

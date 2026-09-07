@@ -40,7 +40,7 @@ describe("Impact terrain 2026 public results", () => {
     expect(result.unqualifiedButtsTotal).toBe(700);
     expect(result.buttsByCondition.some((entry) => entry.count === 0)).toBe(false);
     expect(result.estimatedButtsWeightKg).toBeCloseTo(
-      100 / 2_500 + 200 / (2_500 * 0.7) + 700 / 2_500,
+      100 / 2_500 + 200 / (2_500 * 0.7),
       10,
     );
     expect(result.buttsDistanceMeters).toBe(25);
@@ -63,10 +63,7 @@ describe("Impact terrain 2026 public results", () => {
     expect(result.buttsTotal).toBe(1_000);
     expect(result.qualifiedButtsTotal).toBe(700);
     expect(result.unqualifiedButtsTotal).toBe(300);
-    expect(result.estimatedButtsWeightKg).toBeCloseTo(
-      700 / (2_500 * 0.4) + 300 / 2_500,
-      10,
-    );
+    expect(result.estimatedButtsWeightKg).toBeCloseTo(700 / (2_500 * 0.4), 10);
   });
 
   it("normalizes the structured RPC result without inventing a condition", () => {
@@ -84,5 +81,12 @@ describe("Impact terrain 2026 public results", () => {
       expect.objectContaining({ condition: "propre", count: 100 }),
     ]);
     expect(result.unqualifiedButtsTotal).toBe(400);
+    expect(result.estimatedButtsWeightKg).toBeCloseTo(100 / 2_500, 10);
+    expect(
+      buildImpactTerrain2026PublicResultsFromAggregate({
+        cigaretteButts: "400",
+        buttsByCondition: [{ condition: "unknown", count: 400 }],
+      }).estimatedButtsWeightKg,
+    ).toBeNull();
   });
 });
