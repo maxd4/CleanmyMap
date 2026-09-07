@@ -118,9 +118,17 @@ export function RouteMap({
     [origin, routeGeometry, stops],
   );
   const routeCoordinates =
-    routeGeometry.coordinates.length >= 2
+    routeGeometry.isLoop && routeGeometry.coordinates.length >= 2
       ? routeGeometry.coordinates
-      : stops.map((stop) => [stop.latitude, stop.longitude] as [number, number]);
+      : origin && stops.length > 0
+        ? [
+            [origin.latitude, origin.longitude] as [number, number],
+            ...stops.map(
+              (stop) => [stop.latitude, stop.longitude] as [number, number],
+            ),
+            [origin.latitude, origin.longitude] as [number, number],
+          ]
+        : [];
   const center = origin
     ? [origin.latitude, origin.longitude] as [number, number]
     : routeCoordinates[0] ?? EMPTY_CENTER;

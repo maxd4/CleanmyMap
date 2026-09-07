@@ -40,7 +40,7 @@ const responsePayload = {
     excludedByTravelBudget: 1,
   },
   generatedAt: "2026-09-02T10:00:00.000Z",
-  engineVersion: "route-planner-v1",
+  engineVersion: "route-planner-v2",
   stops: [],
   routeGeometry: {
     coordinates: [],
@@ -79,7 +79,7 @@ describe("route recommendation request gate", () => {
 
     expect(transport).toHaveBeenCalledOnce();
     expect(JSON.parse(transport.mock.calls[0]?.[1]?.body as string)).toEqual(
-      DEFAULT_ROUTE_OPTIONS,
+      { ...DEFAULT_ROUTE_OPTIONS, planningMode: { type: "free" } },
     );
     expect(submitted.options).not.toBe(editedOptions);
     expect(submitted.options).toEqual(DEFAULT_ROUTE_OPTIONS);
@@ -101,6 +101,7 @@ describe("route recommendation request gate", () => {
       priorityVsTravel: 23,
       travelBudgetMinutes: 42,
       maxStops: 4,
+      planningMode: { type: "free" },
     });
     expect(payload).not.toHaveProperty("id");
     expect(payload).not.toHaveProperty("options");
@@ -139,6 +140,7 @@ describe("route recommendation request gate", () => {
     expect(request.options).not.toHaveProperty("origin");
     expect(JSON.parse(transport.mock.calls[0]?.[1]?.body as string)).toEqual({
       ...DEFAULT_ROUTE_OPTIONS,
+      planningMode: { type: "free" },
       origin,
     });
   });

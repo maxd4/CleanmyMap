@@ -12,6 +12,43 @@ const stops: [number, number][] = [
 ];
 
 describe("OSRM routing capability", () => {
+  it("keeps the origin as the final provider waypoint for a closed route", async () => {
+    const loop: [number, number][] = [stops[0]!, stops[1]!, stops[0]!];
+    const transport = vi.fn(async (input: RequestInfo | URL) => {
+      expect(String(input)).toContain(
+        "2.352200,48.856600;2.353200,48.857600;2.352200,48.856600",
+      );
+      return new Response(
+        JSON.stringify({
+          code: "Ok",
+          routes: [{
+            distance: 2400,
+            duration: 1200,
+            geometry: { coordinates: loop.map(([latitude, longitude]) => [longitude, latitude]) },
+            legs: [
+              { distance: 1200, duration: 600 },
+              { distance: 1200, duration: 600 },
+            ],
+          }],
+        }),
+        { status: 200 },
+      );
+    });
+
+    const result = await routePolylineThroughStreetNetwork(loop, { transport });
+
+    expect(result.isLoop).toBe(true);
+    expect(result.origin).toEqual(stops[0]);
+    expect(result.coordinates[0]).toEqual(stops[0]);
+    expect(result.coordinates.at(-1)).toEqual(stops[0]);
+    expect(result.returnLeg).toMatchObject({
+      fromStopIndex: 1,
+      toStopIndex: 2,
+      distanceKm: 1.2,
+      estimatedMinutes: 10,
+    });
+  });
+
   it("returns validated network geometry and provider legs through an injected transport", async () => {
     const transport = vi.fn(async (input: RequestInfo | URL) => {
       expect(String(input)).toContain("/route/v1/foot/");
@@ -135,7 +172,7 @@ describe("OSRM routing capability", () => {
       estimated: true,
     });
     expect(result.durationMinutes).toBeGreaterThan(0);
-    expect(result.legs).toEqual([]);
+    expect(result.legs).toHaveLength(stops.length - 1);
   });
 
   it("aborts a slow provider and falls back without leaking the request", async () => {

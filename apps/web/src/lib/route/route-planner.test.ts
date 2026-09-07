@@ -4,10 +4,9 @@ import {
   buildTrashSpotterActionableCandidates,
 } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { WasteCategorySlug } from "@/lib/waste";
-import type { RouteGeometry, RouteGeometryLeg } from "./route-contract";
+import type { RouteGeometry } from "./route-contract";
 import {
   fallbackRoutePrefixWithinBudget,
-  longestNetworkPrefixWithinBudget,
   planRoute,
   routeDistanceKm,
   travelMinutesForDistance,
@@ -74,6 +73,16 @@ function fallbackGeometry(
   durationMinutes: number,
 ): RouteGeometry {
   return {
+    isLoop: coordinates.length >= 2 && coordinates[0]?.every((value, index) => value === coordinates.at(-1)?.[index]),
+    origin: coordinates[0] ?? null,
+    returnLeg: coordinates.length >= 2
+      ? {
+          fromStopIndex: coordinates.length - 2,
+          toStopIndex: coordinates.length - 1,
+          distanceKm: 0,
+          estimatedMinutes: 0,
+        }
+      : null,
     coordinates,
     distanceKm: 0,
     durationMinutes,
@@ -215,7 +224,7 @@ describe("route planner V1", () => {
   it("counts the origin-to-first-stop movement at 4.5 km/h", () => {
     const stop = candidate("first", 0.01, 0, 80);
     const result = planRoute(
-      plannerInput({ candidates: [stop], maxStops: 1, travelBudgetMinutes: 20 }),
+      plannerInput({ candidates: [stop], maxStops: 1, travelBudgetMinutes: 40 }),
     );
     const planned = result.stops[0];
 
@@ -226,6 +235,44 @@ describe("route planner V1", () => {
       travelMinutesForDistance(planned?.incrementalDistanceKm ?? 0),
     );
     expect(planned?.cumulativeTravelMinutes).toBe(planned?.incrementalTravelMinutes);
+    expect(planned?.returnDistanceKm).toBe(routeDistanceKm(stop, origin()));
+    expect(planned?.loopTravelMinutes).toBe(
+      planned?.incrementalTravelMinutes + planned?.returnTravelMinutes,
+    );
+    expect(planned?.loopTravelMinutes).toBeLessThanOrEqual(40);
+  });
+
+  it("refuses a distant stop when the return would exceed the budget", () => {
+    const result = planRoute(
+      plannerInput({
+        candidates: [candidate("distant", 0.1, 0, 100)],
+        travelBudgetMinutes: 10,
+      }),
+    );
+
+    expect(result.stops).toHaveLength(0);
+    expect(result.audit.evaluations[0]).toMatchObject({
+      feasible: false,
+      returnTravelMinutes: expect.any(Number),
+      loopTravelMinutes: expect.any(Number),
+    });
+  });
+
+  it("reserves the return while adding multiple stops", () => {
+    const result = planRoute(
+      plannerInput({
+        candidates: [
+          candidate("one", 0.005, 0, 80),
+          candidate("two", 0.01, 0, 70),
+        ],
+        travelBudgetMinutes: 20,
+        maxStops: 2,
+      }),
+    );
+
+    expect(result.stops.length).toBeGreaterThan(0);
+    expect(result.stops.every((stop) => stop.loopTravelMinutes <= 20)).toBe(true);
+    expect(result.stops.at(-1)?.returnTravelMinutes).toBeGreaterThan(0);
   });
 
   it("returns no stop when the first movement cannot fit a very short budget", () => {
@@ -311,30 +358,14 @@ describe("route planner V1", () => {
   });
 });
 
-describe("route planner provider-prefix helpers", () => {
-  it("keeps the longest valid network prefix within the budget", () => {
-    const legs: RouteGeometryLeg[] = [
-      { fromStopIndex: 0, toStopIndex: 1, distanceKm: 1, estimatedMinutes: 6 },
-      { fromStopIndex: 1, toStopIndex: 2, distanceKm: 1, estimatedMinutes: 5 },
-      { fromStopIndex: 2, toStopIndex: 3, distanceKm: 1, estimatedMinutes: 1 },
-    ];
-
-    expect(longestNetworkPrefixWithinBudget(legs, 10)).toBe(1);
-    expect(
-      longestNetworkPrefixWithinBudget(
-        [{ ...legs[0], estimatedMinutes: Number.NaN }],
-        10,
-      ),
-    ).toBe(0);
-  });
-
+describe("route planner closed-loop fallback helper", () => {
   it("keeps the fallback prefix and includes the real origin in provider input", () => {
     const stops = [
       { id: "one", latitude: 0.01, longitude: 0 },
       { id: "two", latitude: 0.02, longitude: 0 },
     ];
     const createFallback = vi.fn((coordinates: [number, number][]) =>
-      fallbackGeometry(coordinates, coordinates.length === 3 ? 20 : 8),
+      fallbackGeometry(coordinates, coordinates.length === 4 ? 20 : 8),
     );
 
     const result = fallbackRoutePrefixWithinBudget(
@@ -349,10 +380,12 @@ describe("route planner provider-prefix helpers", () => {
       [0, 0],
       [0.01, 0],
       [0.02, 0],
+      [0, 0],
     ]);
     expect(createFallback).toHaveBeenLastCalledWith([
       [0, 0],
       [0.01, 0],
+      [0, 0],
     ]);
   });
 });

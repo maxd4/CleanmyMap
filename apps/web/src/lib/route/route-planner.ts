@@ -2,11 +2,11 @@ import {
   isVolunteerRouteEligible,
   type TrashSpotterActionableCandidate,
 } from "@/lib/actions/trash-spotter-actionable-candidates";
-import type { RouteGeometry, RouteGeometryLeg } from "./route-contract";
+import type { RouteGeometry } from "./route-contract";
 import type { RoutePredictedCandidate } from "./route-predicted-targets";
 import type { RoutePlannerContribution } from "./route-additionality";
 
-export const ROUTE_PLANNER_ENGINE_VERSION = "route-planner-v1" as const;
+export const ROUTE_PLANNER_ENGINE_VERSION = "route-planner-v2" as const;
 export const WALKING_SPEED_KM_PER_HOUR = 4.5;
 
 export type RoutePlannerOrigin = {
@@ -29,6 +29,10 @@ export type PlannedRouteStop = {
   incrementalDistanceKm: number;
   incrementalTravelMinutes: number;
   cumulativeTravelMinutes: number;
+  returnDistanceKm: number;
+  returnTravelMinutes: number;
+  loopDistanceKm: number;
+  loopTravelMinutes: number;
 };
 
 export type RoutePlannerResult = {
@@ -55,6 +59,11 @@ export type RoutePlannerCandidateEvaluation = {
   incrementalDistanceKm: number;
   incrementalTravelMinutes: number;
   cumulativeTravelMinutes: number;
+  returnDistanceKm: number;
+  returnTravelMinutes: number;
+  loopDistanceKm: number;
+  loopTravelMinutes: number;
+  budgetAfterReturnMinutes: number;
   normalizedPriority: number;
   normalizedTravel: number;
   combinedScore: number;
@@ -131,12 +140,12 @@ function compareCandidates(
   const leftPriority = clamp(plannerContribution(left.candidate) / 100, 0, 1);
   const rightPriority = clamp(plannerContribution(right.candidate) / 100, 0, 1);
   const leftProximity = clamp(
-    1 - left.incrementalTravelMinutes / budgetMinutes,
+    1 - left.loopTravelMinutes / budgetMinutes,
     0,
     1,
   );
   const rightProximity = clamp(
-    1 - right.incrementalTravelMinutes / budgetMinutes,
+    1 - right.loopTravelMinutes / budgetMinutes,
     0,
     1,
   );
@@ -178,6 +187,7 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
   const remaining = [...safeCandidates];
   const stops: PlannedRouteStop[] = [];
   let current: { latitude: number; longitude: number } = input.origin;
+  let cumulativeDistanceKm = 0;
   let cumulativeTravelMinutes = 0;
   let excludedByTravelBudget = 0;
   const evaluations: RoutePlannerCandidateEvaluation[] = [];
@@ -190,10 +200,18 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
         const incrementalTravelMinutes = travelMinutesForDistance(
           incrementalDistanceKm,
         );
+        const returnDistanceKm = routeDistanceKm(candidate, input.origin);
+        const returnTravelMinutes = travelMinutesForDistance(returnDistanceKm);
+        const loopDistanceKm =
+          cumulativeDistanceKm + incrementalDistanceKm + returnDistanceKm;
+        const loopTravelMinutes =
+          cumulativeTravelMinutes +
+          incrementalTravelMinutes +
+          returnTravelMinutes;
         const finalPlannerContribution = plannerContribution(candidate);
         const normalizedPriority = clamp(finalPlannerContribution / 100, 0, 1);
         const normalizedTravel = clamp(
-          1 - incrementalTravelMinutes / Math.max(1, budgetMinutes),
+          1 - loopTravelMinutes / Math.max(1, budgetMinutes),
           0,
           1,
         );
@@ -203,6 +221,11 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
           incrementalTravelMinutes,
           cumulativeTravelMinutes:
             cumulativeTravelMinutes + incrementalTravelMinutes,
+          returnDistanceKm,
+          returnTravelMinutes,
+          loopDistanceKm,
+          loopTravelMinutes,
+          budgetAfterReturnMinutes: Math.max(0, budgetMinutes - loopTravelMinutes),
           normalizedPriority,
           normalizedTravel,
           combinedScore:
@@ -213,7 +236,7 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
           finalPlannerContribution,
           additionalityWeight: candidate.additionalityWeight ?? 0,
           feasible:
-            cumulativeTravelMinutes + incrementalTravelMinutes <=
+            loopTravelMinutes <=
             budgetMinutes + 1e-9,
         };
       });
@@ -244,6 +267,11 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
       incrementalDistanceKm: next.incrementalDistanceKm,
       incrementalTravelMinutes: next.incrementalTravelMinutes,
       cumulativeTravelMinutes: next.cumulativeTravelMinutes,
+      returnDistanceKm: next.returnDistanceKm,
+      returnTravelMinutes: next.returnTravelMinutes,
+      loopDistanceKm: next.loopDistanceKm,
+      loopTravelMinutes: next.loopTravelMinutes,
+      budgetAfterReturnMinutes: next.budgetAfterReturnMinutes,
       normalizedPriority: next.normalizedPriority,
       normalizedTravel: next.normalizedTravel,
       combinedScore: next.combinedScore,
@@ -253,7 +281,7 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
         budgetMinutes -
           (next.cumulativeTravelMinutes - next.incrementalTravelMinutes),
       ),
-      budgetAfterMinutes: Math.max(0, budgetMinutes - next.cumulativeTravelMinutes),
+      budgetAfterMinutes: next.budgetAfterReturnMinutes,
       selectionReason: "score_combine_priorite_deplacement",
     });
     const nextIndex = remaining.findIndex(
@@ -261,6 +289,7 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
     );
     if (nextIndex >= 0) remaining.splice(nextIndex, 1);
     current = next.candidate;
+    cumulativeDistanceKm = next.loopDistanceKm - next.returnDistanceKm;
     cumulativeTravelMinutes = next.cumulativeTravelMinutes;
   }
 
@@ -283,27 +312,6 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
   };
 }
 
-/** Returns the longest ordered prefix whose provider legs fit the budget. */
-export function longestNetworkPrefixWithinBudget(
-  legs: RouteGeometryLeg[],
-  budgetMinutes: number,
-): number {
-  let cumulative = 0;
-  let count = 0;
-  for (const leg of legs) {
-    if (
-      !Number.isFinite(leg.estimatedMinutes) ||
-      leg.estimatedMinutes < 0 ||
-      cumulative + leg.estimatedMinutes > budgetMinutes + 1e-9
-    ) {
-      break;
-    }
-    cumulative += leg.estimatedMinutes;
-    count += 1;
-  }
-  return count;
-}
-
 export function fallbackRoutePrefixWithinBudget<T extends {
   latitude: number;
   longitude: number;
@@ -321,6 +329,7 @@ export function fallbackRoutePrefixWithinBudget<T extends {
       ...prefix.map(
         (stop) => [stop.latitude, stop.longitude] as [number, number],
       ),
+      [origin.latitude, origin.longitude],
     ]).durationMinutes > budgetMinutes
   ) {
     prefix = prefix.slice(0, -1);

@@ -26,7 +26,6 @@ const loadCachedEventPressureByArrondissementMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const getTerritoryArrondissementCenterMock = vi.hoisted(() => vi.fn());
 const planRouteMock = vi.hoisted(() => vi.fn());
-const longestNetworkPrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
 const fallbackRoutePrefixWithinBudgetMock = vi.hoisted(() => vi.fn());
 const loadParisPressureSnapshotMock = vi.hoisted(() => vi.fn());
 const loadMunicipalCleaningServiceabilitySnapshotMock = vi.hoisted(() => vi.fn());
@@ -77,9 +76,8 @@ vi.mock("@/lib/geo/paris-arrondissements", () => ({
 }));
 vi.mock("@/lib/route/route-planner", () => ({
   fallbackRoutePrefixWithinBudget: fallbackRoutePrefixWithinBudgetMock,
-  longestNetworkPrefixWithinBudget: longestNetworkPrefixWithinBudgetMock,
   planRoute: planRouteMock,
-  ROUTE_PLANNER_ENGINE_VERSION: "route-planner-v1",
+  ROUTE_PLANNER_ENGINE_VERSION: "route-planner-v2",
   routeDistanceKm: vi.fn(() => 1),
   travelMinutesForDistance: vi.fn(() => 5),
 }));
@@ -130,12 +128,17 @@ vi.mock("@/lib/http/api-errors", () => ({
 function plannerAudit(stops: Array<ReturnType<typeof plannedStop>>) {
   return {
     evaluations: [],
-    selections: stops.map(({ candidate: selectedCandidate, incrementalDistanceKm, incrementalTravelMinutes, cumulativeTravelMinutes }, index) => ({
+    selections: stops.map(({ candidate: selectedCandidate, incrementalDistanceKm, incrementalTravelMinutes, cumulativeTravelMinutes, returnDistanceKm, returnTravelMinutes, loopDistanceKm, loopTravelMinutes }, index) => ({
       candidateId: selectedCandidate.id,
       step: index + 1,
       incrementalDistanceKm,
       incrementalTravelMinutes,
       cumulativeTravelMinutes,
+      returnDistanceKm,
+      returnTravelMinutes,
+      loopDistanceKm,
+      loopTravelMinutes,
+      budgetAfterReturnMinutes: Math.max(0, 60 - loopTravelMinutes),
       normalizedPriority: selectedCandidate.score / 100,
       normalizedTravel: 0.9,
       combinedScore: selectedCandidate.score / 100,
@@ -265,7 +268,6 @@ describe("POST /api/route/recommend", () => {
         audit: plannerAudit(stops),
       };
     });
-    longestNetworkPrefixWithinBudgetMock.mockReturnValue(0);
     fallbackRoutePrefixWithinBudgetMock.mockImplementation(
       (_origin, stops) => stops,
     );
@@ -470,7 +472,7 @@ describe("POST /api/route/recommend", () => {
 
     expect(response.status).toBe(200);
     expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledWith(
-      [[explicitOrigin.latitude, explicitOrigin.longitude], [candidate.latitude, candidate.longitude]],
+      [[explicitOrigin.latitude, explicitOrigin.longitude], [candidate.latitude, candidate.longitude], [explicitOrigin.latitude, explicitOrigin.longitude]],
       {},
     );
     expect(applyOriginRouteGeometryLegsMock).toHaveBeenCalledWith(
@@ -510,7 +512,6 @@ describe("POST /api/route/recommend", () => {
     routePolylineThroughFossgisFootMock
       .mockResolvedValueOnce(networkGeometry)
       .mockResolvedValueOnce(reconciledGeometry);
-    longestNetworkPrefixWithinBudgetMock.mockReturnValueOnce(1);
     createFallbackRouteGeometryMock.mockImplementation(
       (coordinates: [number, number][]) => fallbackGeometry(coordinates, 8),
     );
@@ -522,14 +523,10 @@ describe("POST /api/route/recommend", () => {
     }));
     const payload = await response.json();
 
-    expect(longestNetworkPrefixWithinBudgetMock).toHaveBeenCalledWith(
-      networkGeometry.legs,
-      60,
-    );
     expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledTimes(2);
     expect(routePolylineThroughFossgisFootMock).toHaveBeenNthCalledWith(
       2,
-      [[48.9, 2.4], [candidate.latitude, candidate.longitude]],
+      [[48.9, 2.4], [candidate.latitude, candidate.longitude], [48.9, 2.4]],
       {},
     );
     expect(payload.routeGeometry).toEqual(reconciledGeometry);
@@ -568,7 +565,6 @@ describe("POST /api/route/recommend", () => {
     routePolylineThroughFossgisFootMock
       .mockResolvedValueOnce(overBudgetNetwork)
       .mockRejectedValueOnce(new Error("provider unavailable"));
-    longestNetworkPrefixWithinBudgetMock.mockReturnValueOnce(1);
     fallbackRoutePrefixWithinBudgetMock.mockReturnValueOnce([plannedStops[0]]);
     createFallbackRouteGeometryMock.mockImplementation(
       (coordinates: [number, number][]) => fallbackGeometry(coordinates, 8),
@@ -590,14 +586,13 @@ describe("POST /api/route/recommend", () => {
       excludedCandidateIds: ["spot-2"],
     }));
     expect(payload.trace.warnings).toContain(
-      "La seconde mesure réseau a échoué après la réduction au budget ; un fallback local est utilisé.",
+      "La mesure réseau de la boucle réduite a échoué ; un fallback local fermé est utilisé.",
     );
   });
 
   it("n'effectue pas de second appel lorsque le préfixe réseau est vide", async () => {
-    const secondCandidate = { ...candidate, id: "spot-2", latitude: 48.86 };
-    const plannedStops = [plannedStop(candidate), plannedStop(secondCandidate, 1)];
-    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate, secondCandidate]);
+    const plannedStops = [plannedStop(candidate)];
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
     planRouteMock.mockReturnValueOnce({
       stops: plannedStops,
       diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
@@ -612,7 +607,6 @@ describe("POST /api/route/recommend", () => {
       estimated: false,
       legs: [],
     });
-    longestNetworkPrefixWithinBudgetMock.mockReturnValueOnce(0);
 
     const { POST } = await import("./route");
     const response = await POST(request({
@@ -624,7 +618,7 @@ describe("POST /api/route/recommend", () => {
     expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledOnce();
     expect(payload.stops).toEqual([]);
     expect(payload.trace.finalRoutingReconciliation).toEqual(expect.objectContaining({
-      stopsBefore: 2,
+      stopsBefore: 1,
       stopsAfter: 0,
       providerCalls: 1,
     }));
@@ -694,7 +688,6 @@ describe("POST /api/route/recommend", () => {
         estimated: false,
         legs: [{ fromStopIndex: 0, toStopIndex: 1, distanceKm: 1, estimatedMinutes: 40 }],
       });
-    longestNetworkPrefixWithinBudgetMock.mockReturnValueOnce(1);
 
     const { POST } = await import("./route");
     const response = await POST(request({
@@ -788,7 +781,7 @@ describe("POST /api/route/recommend", () => {
       withinBudget: true,
       serviceMinutesEstimate: null,
       totalMinutesEstimate: null,
-      engineVersion: "route-planner-v1",
+      engineVersion: "route-planner-v2",
       generatedAt: expect.any(String),
     }));
     expect(payload.diagnostics).toEqual(expect.objectContaining({

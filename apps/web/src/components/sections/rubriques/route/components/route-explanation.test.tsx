@@ -13,10 +13,18 @@ function dataFor(mode: "network" | "fallback"): RouteExplanationData {
     observedAt: "2026-08-20T10:00:00.000Z",
   };
   return {
+    isLoop: true,
     planningMode: { type: "free" },
     origin: { latitude: 48.8566, longitude: 2.3522, source: "browser" },
-    travelDistanceKm: 1.2,
-    travelMinutes: 16,
+    travelDistanceKm: 2.4,
+    travelMinutes: 32,
+    loop: {
+      isLoop: true,
+      origin: { latitude: 48.8566, longitude: 2.3522, source: "browser" },
+      returnDistanceKm: 1.2,
+      returnMinutes: 16,
+      budgetRemainingMinutes: 28,
+    },
     stops: [{
       id: "spot-1",
       label: "Place de test",
@@ -24,7 +32,7 @@ function dataFor(mode: "network" | "fallback"): RouteExplanationData {
       longitude: 2.35,
     }],
     trace: {
-      engineVersion: "route-planner-v1",
+      engineVersion: "route-planner-v2",
       planningMode: { type: "free" },
       parameters: { travelBudgetMinutes: 60, maxStops: 6, priorityVsTravel: 65 },
       origin: { latitude: 48.8566, longitude: 2.3522, source: "browser" },
@@ -32,12 +40,17 @@ function dataFor(mode: "network" | "fallback"): RouteExplanationData {
       selectedStops: mode === "network" ? [{
         step: 1,
         id: "spot-1",
-        criteriaUsed: ["priority_score", "incremental_travel_cost"],
+        criteriaUsed: ["priority_score", "incremental_travel_cost", "return_travel_cost"],
         normalizedScoreComponents: { priority: 0.8, travel: 0.9 },
         combinedScore: 0.835,
         incrementalDistanceKm: 1.2,
         incrementalTravelMinutes: 16,
         cumulativeTravelMinutes: 16,
+        returnDistanceKm: 1.2,
+        returnTravelMinutes: 16,
+        loopDistanceKm: 2.4,
+        loopTravelMinutes: 32,
+        budgetAfterReturnMinutes: 28,
         budgetBeforeMinutes: 60,
         budgetAfterMinutes: 44,
         reason: "Étape 1: sélection dans le budget.",
@@ -46,19 +59,26 @@ function dataFor(mode: "network" | "fallback"): RouteExplanationData {
         eventContributions: [],
         eventScoreContribution: 0,
       }] : [],
+      loop: {
+        isLoop: true,
+        origin: { latitude: 48.8566, longitude: 2.3522, source: "browser" },
+        returnDistanceKm: 1.2,
+        returnMinutes: 16,
+        budgetRemainingMinutes: 28,
+      },
       ordering: {
         stopIds: mode === "network" ? ["spot-1"] : [],
         criteria: ["combined_score_desc", "priority_desc", "incremental_travel_asc", "id_lexicographic"],
       },
-      budget: { requestedMinutes: 60, consumedMinutes: 16, remainingMinutes: 44 },
-      distance: { totalKm: 1.2, segmentsTotalKm: 1.2 },
-      duration: { networkMinutes: mode === "network" ? 16 : null, estimatedMinutes: mode === "fallback" ? 16 : null, serviceMinutes: null, totalMinutes: 16 },
+      budget: { requestedMinutes: 60, consumedMinutes: 32, remainingMinutes: 28 },
+      distance: { totalKm: 2.4, segmentsTotalKm: 2.4 },
+      duration: { networkMinutes: mode === "network" ? 32 : null, estimatedMinutes: mode === "fallback" ? 32 : null, serviceMinutes: null, totalMinutes: 32 },
       routing: {
         provider: mode === "network" ? "fossgis-osrm" : "none",
         profile: mode === "network" ? "foot" : null,
         mode,
         estimated: mode === "fallback",
-        parameters: { walkingSpeedKmPerHour: 4.5, coordinateCount: 2, budgetPrefixApplied: false },
+        parameters: { walkingSpeedKmPerHour: 4.5, coordinateCount: 3, budgetPrefixApplied: false },
         opaqueProviderDecisions: [],
         degradations: [],
       },
@@ -69,9 +89,23 @@ function dataFor(mode: "network" | "fallback"): RouteExplanationData {
         durationMinutes: 16,
         measured: true,
         streetSteps: [{ name: "Rue de Test", distanceKm: 1.2, durationMinutes: 16, maneuver: "depart" }],
+      }, {
+        from: "spot-1",
+        to: "origin",
+        distanceKm: 1.2,
+        durationMinutes: 16,
+        measured: true,
+        streetSteps: [{ name: "Rue du Retour", distanceKm: 1.2, durationMinutes: 16, maneuver: "arrive" }],
       }] : [{
         from: "origin",
         to: "spot-1",
+        distanceKm: 1.2,
+        durationMinutes: 16,
+        measured: false,
+        streetSteps: [],
+      }, {
+        from: "spot-1",
+        to: "origin",
         distanceKm: 1.2,
         durationMinutes: 16,
         measured: false,
@@ -92,6 +126,9 @@ describe("RouteExplanation", () => {
     expect(markup).toContain("Étape 1: sélection dans le budget.");
     expect(markup).toContain("Rue de Test");
     expect(markup).toContain("Mesure réseau");
+    expect(markup).toContain("Boucle de 2,4 km · départ et arrivée au même endroit");
+    expect(markup).toContain("retour réserve 16 min");
+    expect(markup).toContain("Rue du Retour");
     expect(markup).toContain("<summary");
     expect(markup).toContain("Pollution probable : 0 %");
     expect(markup).toContain("contribution planner : 83,5 %");

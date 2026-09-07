@@ -22,6 +22,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { RouteGeometry } from "@/lib/route/route-contract";
 
 const EMPTY_ROUTE_GEOMETRY: RouteGeometry = {
+  isLoop: true,
+  origin: null,
+  returnLeg: null,
   coordinates: [],
   distanceKm: 0,
   durationMinutes: 0,
@@ -317,6 +320,11 @@ export function RouteSection() {
                             <span className="text-5xl font-black text-white tracking-tighter">{totalMinutes}</span>
                             <span className="text-xl font-black text-slate-500 tracking-widest uppercase">min</span>
                          </div>
+                         {data.isLoop ? (
+                           <p className="text-sm font-semibold text-emerald-100/80">
+                             Boucle de {totalKm.toFixed(2)} km · départ et arrivée au même endroit
+                           </p>
+                         ) : null}
                       </div>
 
                       <div className="text-right space-y-2">

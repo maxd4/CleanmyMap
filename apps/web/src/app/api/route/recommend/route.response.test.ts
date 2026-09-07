@@ -20,7 +20,7 @@ vi.mock("@/lib/route/recommendation-assistant", () => ({
   defaultRouteAssistantPayload: defaultRouteAssistantPayloadMock,
 }));
 vi.mock("@/lib/route/route-planner", () => ({
-  ROUTE_PLANNER_ENGINE_VERSION: "route-planner-v1",
+      ROUTE_PLANNER_ENGINE_VERSION: "route-planner-v2",
   routeDistanceKm: vi.fn(() => 1),
   travelMinutesForDistance: vi.fn(() => 5),
 }));
@@ -35,6 +35,9 @@ const completeSourceHealth = {
 
 function routeGeometry(mode: "network" | "fallback" = "network") {
   return {
+    isLoop: true,
+    origin: [48.85, 2.35] as [number, number],
+    returnLeg: { fromStopIndex: 1, toStopIndex: 2, distanceKm: 0.8, estimatedMinutes: 4 },
     coordinates: [],
     distanceKm: mode === "network" ? 2 : 1,
     durationMinutes: mode === "network" ? 12 : 8,
@@ -130,6 +133,11 @@ function plannerResult(candidateId?: string) {
             incrementalDistanceKm: 1,
             incrementalTravelMinutes: 5,
             cumulativeTravelMinutes: 5,
+            returnDistanceKm: 1,
+            returnTravelMinutes: 5,
+            loopDistanceKm: 2,
+            loopTravelMinutes: 10,
+            budgetAfterReturnMinutes: 50,
             normalizedPriority: 0.82,
             normalizedTravel: 0.9,
             combinedScore: 0.85,
@@ -224,6 +232,14 @@ describe("route recommendation response trace contract", () => {
     expect(payload.trace.selectedStops).toEqual([]);
     expect(payload.dataLayers).toBeDefined();
     expect(payload.status).toBe(payload.dataLayers.recommendation);
+    expect(payload).toMatchObject({
+      isLoop: true,
+      loop: {
+        isLoop: true,
+        returnDistanceKm: 0.8,
+        returnMinutes: 4,
+      },
+    });
   });
 
   it("returns final observed selection evidence for a non-empty response", async () => {

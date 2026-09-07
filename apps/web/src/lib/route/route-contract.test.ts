@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { applyRouteGeometryLegs, type RouteStop } from "./route-contract";
+import {
+  applyOriginRouteGeometryLegs,
+  applyRouteGeometryLegs,
+  type RouteStop,
+} from "./route-contract";
 
 const stops: RouteStop[] = [
   {
@@ -37,6 +41,9 @@ const stops: RouteStop[] = [
 describe("route response contract", () => {
   it("propagates provider legs without changing stop order or count", () => {
     const result = applyRouteGeometryLegs(stops, {
+      isLoop: false,
+      origin: [48.85, 2.35],
+      returnLeg: null,
       coordinates: [],
       distanceKm: 2.4,
       durationMinutes: 15,
@@ -57,8 +64,38 @@ describe("route response contract", () => {
     expect(result[2]).toMatchObject({ segmentKm: 1.5, estimatedMinutes: 9 });
   });
 
+  it("applies the outbound legs of a closed route and keeps the return explicit", () => {
+    const result = applyOriginRouteGeometryLegs(stops, {
+      isLoop: true,
+      origin: [48.84, 2.34],
+      returnLeg: { fromStopIndex: 3, toStopIndex: 4, distanceKm: 1.8, estimatedMinutes: 11 },
+      coordinates: [],
+      distanceKm: 5.2,
+      durationMinutes: 31,
+      provider: "osrm",
+      profile: "foot",
+      mode: "network",
+      estimated: false,
+      legs: [
+        { fromStopIndex: 0, toStopIndex: 1, distanceKm: 0.9, estimatedMinutes: 6 },
+        { fromStopIndex: 1, toStopIndex: 2, distanceKm: 1.5, estimatedMinutes: 9 },
+        { fromStopIndex: 2, toStopIndex: 3, distanceKm: 1, estimatedMinutes: 5 },
+        { fromStopIndex: 3, toStopIndex: 4, distanceKm: 1.8, estimatedMinutes: 11 },
+      ],
+    });
+
+    expect(result).toMatchObject([
+      { segmentKm: 0.9, estimatedMinutes: 6 },
+      { segmentKm: 1.5, estimatedMinutes: 9 },
+      { segmentKm: 1, estimatedMinutes: 5 },
+    ]);
+  });
+
   it("keeps deterministic estimates in fallback mode", () => {
     const result = applyRouteGeometryLegs(stops, {
+      isLoop: false,
+      origin: [48.85, 2.35],
+      returnLeg: null,
       coordinates: [],
       distanceKm: 3.5,
       durationMinutes: 52,
