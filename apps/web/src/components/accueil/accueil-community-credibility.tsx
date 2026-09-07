@@ -357,7 +357,7 @@ export function HomeCommunityCredibility({
 
           <article
             data-gsap-reveal
-            className="mt-6 flex flex-1 flex-col rounded-[1.65rem] border border-white/25 bg-[linear-gradient(135deg,#28c997_0%,#1fb7a4_46%,#7569ec_100%)] p-5 text-white shadow-[0_24px_48px_-32px_rgba(4,76,54,0.48)] sm:p-6 lg:p-7"
+            className="mt-6 flex flex-1 flex-col rounded-[1.65rem] border border-white/25 bg-[linear-gradient(135deg,#20b384_0%,#179f98_46%,#7569ec_100%)] p-5 text-white shadow-[0_24px_48px_-32px_rgba(4,76,54,0.48)] sm:p-6 lg:p-7"
           >
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-emerald-100">
@@ -412,7 +412,7 @@ export function HomeCommunityCredibility({
 
           <article
             data-gsap-reveal
-            className="mt-3 flex flex-1 flex-col rounded-[1.65rem] border border-white/25 bg-[linear-gradient(135deg,#24c995_0%,#1ba9af_48%,#7569ec_100%)] p-5 text-white shadow-[0_24px_52px_-30px_rgba(50,45,143,0.34)] sm:p-6 lg:p-7"
+            className="mt-3 flex flex-1 flex-col rounded-[1.65rem] border border-white/25 bg-[linear-gradient(135deg,#1eaf82_0%,#1699a2_48%,#7569ec_100%)] p-5 text-white shadow-[0_24px_52px_-30px_rgba(50,45,143,0.34)] sm:p-6 lg:p-7"
           >
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
