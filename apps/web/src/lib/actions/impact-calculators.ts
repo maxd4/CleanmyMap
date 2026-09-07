@@ -1,15 +1,16 @@
 import type { ActionWasteBreakdown } from "./types";
-import { ActionMegotsCondition } from "./types";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
-import { BUTTS_PER_KG_REFERENCE } from "@/lib/impact/impact-terrain-2026";
+import {
+  BUTTS_PER_KG_REFERENCE,
+  estimateButtsWeightKg,
+} from "@/lib/impact/impact-terrain-2026";
 
-export { BUTTS_PER_KG_REFERENCE } from "@/lib/impact/impact-terrain-2026";
-
-export const CONDITION_WEIGHT_FACTORS: Record<ActionMegotsCondition, number> = {
-  propre: 1.0,
-  humide: 0.7,
-  mouille: 0.4,
-};
+export {
+  BUTTS_PER_KG_REFERENCE,
+  CONDITION_WEIGHT_FACTORS,
+  computeButtsCount,
+  estimateButtsWeightKg,
+} from "@/lib/impact/impact-terrain-2026";
 
 export type ActionImpactInput = {
   metadata: {
@@ -56,34 +57,6 @@ export type ActionImpactMethodology = {
 };
 
 /**
- * Calcule le nombre estimé de mégots en fonction du poids et de l'état (propreté/humidité).
- */
-export function computeButtsCount(
-  weightKg: number,
-  condition: ActionMegotsCondition,
-): number {
-  return Math.round(
-    weightKg * BUTTS_PER_KG_REFERENCE * CONDITION_WEIGHT_FACTORS[condition],
-  );
-}
-
-/**
- * Estime le poids en kg correspondant à un nombre de mégots.
- * Sert à garder le slider de quantité et le poids saisis cohérents dans l'UI.
- */
-export function estimateButtsWeightKg(
-  count: number,
-  condition: ActionMegotsCondition,
-): number {
-  const factor = CONDITION_WEIGHT_FACTORS[condition];
-  if (!Number.isFinite(count) || count <= 0 || factor <= 0) {
-    return 0;
-  }
-
-  return count / (BUTTS_PER_KG_REFERENCE * factor);
-}
-
-/**
  * Retourne la masse d'impact la plus fiable disponible pour une action.
  *
  * Priorité:
@@ -101,7 +74,10 @@ export function estimateActionWasteKg(
   );
   const derivedWasteKg = Math.max(
     0,
-    Number(contract.metadata.cigaretteButts || 0) / BUTTS_PER_KG_REFERENCE,
+    estimateButtsWeightKg(
+      Number(contract.metadata.cigaretteButts || 0),
+      contract.metadata.wasteBreakdown?.megotsCondition,
+    ),
   );
 
   return Math.max(directWasteKg, breakdownWasteKg, derivedWasteKg);
@@ -122,7 +98,10 @@ export function resolveActionWasteKgSource(
   const wasteKg = Math.max(
     directWasteKg,
     breakdownWasteKg,
-    cigaretteButts / BUTTS_PER_KG_REFERENCE,
+    estimateButtsWeightKg(
+      cigaretteButts,
+      contract.metadata.wasteBreakdown?.megotsCondition,
+    ),
   );
 
   if (wasteKg <= 0) {
@@ -207,7 +186,7 @@ export function buildActionImpactMethodology(): ActionImpactMethodology {
     factors,
     buttsPerKg: BUTTS_PER_KG_REFERENCE,
     formulas: {
-      wasteKg: `wasteKg = max(0, wasteKg_declare, wasteBreakdown.megotsKg, cigaretteButts / ${BUTTS_PER_KG_REFERENCE})`,
+      wasteKg: `masse(cigaretteButts, état) = cigaretteButts / (${BUTTS_PER_KG_REFERENCE} * facteur_état); wasteKg = max(0, wasteKg_declare, wasteBreakdown.megotsKg, masse(cigaretteButts, megotsCondition))`,
       butts: "butts = max(0, cigaretteButts)",
       volunteers: "volunteers = max(0, volunteersCount)",
       co2e: `co2e_kg = wasteKg * ${factors.co2KgPerWasteKg}`,

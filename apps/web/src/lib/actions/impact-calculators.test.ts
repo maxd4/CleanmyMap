@@ -52,6 +52,18 @@ describe("canonical action impact calculation", () => {
     expect(impact.euroSaved).toBe(2);
   });
 
+  it("uses the qualified condition for cigarette-butt mass", () => {
+    const impact = computeActionImpactKpis(
+      makeContract({
+        cigaretteButts: 1_000,
+        wasteBreakdown: { megotsCondition: "mouille" },
+      }),
+    );
+
+    expect(impact.wasteKg).toBe(1_000 / (BUTTS_PER_KG_REFERENCE * 0.4));
+    expect(impact.wasteKgSource).toBe("cigarette_butts");
+  });
+
   it("uses wasteBreakdown.megotsKg when it is the available weight signal", () => {
     const impact = computeActionImpactKpis(
       makeContract({
@@ -115,6 +127,7 @@ describe("canonical action impact calculation", () => {
     expect(methodology.version).toBe(IMPACT_PROXY_CONFIG.version);
     expect(methodology.buttsPerKg).toBe(BUTTS_PER_KG_REFERENCE);
     expect(methodology.formulas.wasteKg).toContain(String(BUTTS_PER_KG_REFERENCE));
+    expect(methodology.formulas.wasteKg).not.toContain("cigaretteButts / 2500");
     expect(methodology.formulas.co2e).toContain(
       String(IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg),
     );

@@ -14,8 +14,12 @@ import {
   aggregatePublicActionMetrics,
   buildPublicLandingActionMetricsFromAggregate,
   type PublicLandingActionAggregation,
-  type PublicLandingActionAggregationRow,
 } from "./action-participant-aggregation";
+import {
+  buildLandingFloorDate,
+  loadPublicLandingActionSummary,
+  type PublicLandingActionSummaryRow,
+} from "./public-landing-action-summary";
 
 export type HomeCommunityActivityImage =
   | {
@@ -128,13 +132,6 @@ function getAccueilVisibleContracts(
     }
     return contract.dates.observedAt >= floorDate;
   });
-}
-
-function buildLandingFloorDate(now = new Date()): string {
-  const floor = new Date(now);
-  floor.setUTCHours(0, 0, 0, 0);
-  floor.setUTCDate(floor.getUTCDate() - 365);
-  return floor.toISOString().slice(0, 10);
 }
 
 function getActorLabel(contract: ActionDataContract): string {
@@ -394,21 +391,13 @@ export function computeLandingCounters(
   };
 }
 
-type LandingActionSummaryRow = PublicLandingActionAggregationRow & {
-  visible_actions: number | string | null;
-  distinct_locations: number | string | null;
-  waste_kg: number | string | null;
-  cigarette_butts: number | string | null;
-  volunteers: number | string | null;
-};
-
 function toFiniteNonNegativeNumber(value: number | string | null): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
 }
 
 function buildLandingCountersFromAggregate(
-  row: LandingActionSummaryRow,
+  row: PublicLandingActionSummaryRow,
 ): HomeCounters {
   const wasteKg = toFiniteNonNegativeNumber(row.waste_kg);
   const butts = toFiniteNonNegativeNumber(row.cigarette_butts);
@@ -455,28 +444,10 @@ export function buildLandingSummaryFromContracts(
   };
 }
 
-async function loadLandingActionSummary(
-  floorDate: string,
-): Promise<LandingActionSummaryRow> {
-  const result = await getSupabaseServerClient().rpc(
-    "load_public_landing_action_summary",
-    { p_floor_date: floorDate },
-  );
-  if (result.error) {
-    throw result.error;
-  }
-
-  const row = Array.isArray(result.data) ? result.data[0] : result.data;
-  if (!row) {
-    throw new Error("Landing action summary returned no row.");
-  }
-  return row as LandingActionSummaryRow;
-}
-
 async function buildLandingSummary(): Promise<LandingSummary> {
   const floorDate = buildLandingFloorDate();
   const [aggregate, recent] = await Promise.all([
-    loadLandingActionSummary(floorDate),
+    loadPublicLandingActionSummary(floorDate),
     fetchCachedUnifiedActionContracts({
       limit: 3,
       status: "approved",

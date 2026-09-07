@@ -1,6 +1,53 @@
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import type { ActionMegotsCondition } from "@/lib/actions/types";
 
 export const BUTTS_PER_KG_REFERENCE = 2_500;
+export const WASTE_KG_PER_50L_BAG = 5;
+export const WASTE_KG_PER_MECHANICAL_BICYCLE = 20;
+export const BUTT_LENGTH_METERS = 0.025;
+
+export const MEGOTS_CONDITIONS = ["propre", "humide", "mouille"] as const;
+
+export const CONDITION_WEIGHT_FACTORS: Record<
+  ActionMegotsCondition,
+  number
+> = {
+  propre: 1,
+  humide: 0.7,
+  mouille: 0.4,
+};
+
+export const MEGOTS_CONDITION_LABELS: Record<
+  ActionMegotsCondition,
+  ImpactTerrain2026LocalizedText
+> = {
+  propre: { fr: "Propre", en: "Clean" },
+  humide: { fr: "Humide", en: "Damp" },
+  mouille: { fr: "Mouillé", en: "Wet" },
+};
+
+export function computeButtsCount(
+  weightKg: number,
+  condition: ActionMegotsCondition,
+): number {
+  return Math.round(
+    Math.max(0, weightKg) *
+      BUTTS_PER_KG_REFERENCE *
+      CONDITION_WEIGHT_FACTORS[condition],
+  );
+}
+
+export function estimateButtsWeightKg(
+  count: number,
+  condition?: ActionMegotsCondition | null,
+): number {
+  if (!Number.isFinite(count) || count <= 0) {
+    return 0;
+  }
+
+  const factor = condition ? CONDITION_WEIGHT_FACTORS[condition] : 1;
+  return count / (BUTTS_PER_KG_REFERENCE * factor);
+}
 
 export type ImpactTerrain2026KpiKey =
   | "wasteKg"
@@ -81,18 +128,18 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
             "Aggregated field result in kilograms; it does not claim to measure undeclared waste.",
           ),
           pedagogicalConversion: text(
-            "Repères de lecture : 1 sac indicatif = 5 kg ; 1 vélo mécanique indicatif = 15 kg.",
-            "Reading aids: 1 indicative bag = 5 kg; 1 indicative mechanical bicycle = 15 kg.",
+            `Repères de lecture : 1 sac de 50 L indicatif = ${WASTE_KG_PER_50L_BAG} kg ; 1 Vélib' mécanique indicatif = ${WASTE_KG_PER_MECHANICAL_BICYCLE} kg.`,
+            `Reading aids: 1 indicative 50 L bag = ${WASTE_KG_PER_50L_BAG} kg; 1 indicative mechanical Vélib' = ${WASTE_KG_PER_MECHANICAL_BICYCLE} kg.`,
           ),
         },
         formula: text(
-          `wasteKg_action = max(0, wasteKg_declare, wasteBreakdown.megotsKg, cigaretteButts / ${BUTTS_PER_KG_REFERENCE}) ; total = somme(wasteKg_action)`,
-          `wasteKg_action = max(0, declared_wasteKg, wasteBreakdown.megotsKg, cigaretteButts / ${BUTTS_PER_KG_REFERENCE}); total = sum(wasteKg_action)`,
+          `masse(cigaretteButts, état) = cigaretteButts / (${BUTTS_PER_KG_REFERENCE} × facteur_état) ; wasteKg_action = max(0, wasteKg_declare, wasteBreakdown.megotsKg, masse(cigaretteButts, megotsCondition)) ; total = somme(wasteKg_action)`,
+          `mass(cigaretteButts, condition) = cigaretteButts / (${BUTTS_PER_KG_REFERENCE} × condition_factor); wasteKg_action = max(0, declared_wasteKg, wasteBreakdown.megotsKg, mass(cigaretteButts, megotsCondition)); total = sum(wasteKg_action)`,
         ),
         assumptions: [
           text(
-            `La conversion de secours utilise ${BUTTS_PER_KG_REFERENCE} mégots par kilogramme.`,
-            `The fallback conversion uses ${BUTTS_PER_KG_REFERENCE} cigarette butts per kilogram.`,
+            `La conversion de secours utilise ${BUTTS_PER_KG_REFERENCE} mégots par kilogramme, ajustée par l’état lorsqu’il est qualifié.`,
+            `The fallback conversion uses ${BUTTS_PER_KG_REFERENCE} cigarette butts per kilogram, adjusted by the condition when qualified.`,
           ),
           text(
             "Les valeurs négatives ou non exploitables sont ramenées à zéro.",
@@ -133,13 +180,13 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
             "Aggregated field result in units; this KPI does not infer a count from weight.",
           ),
           pedagogicalConversion: text(
-            "Repères de lecture indicatifs : longueur mise bout à bout et poids moyen d’un mégot.",
-            "Indicative reading aids: end-to-end length and average cigarette-butt weight.",
+            `Repères de lecture indicatifs : ${BUTT_LENGTH_METERS * 100} cm par mégot pour la longueur mise bout à bout ; la masse provient du calcul qualifié lorsqu’un état est disponible.`,
+            `Indicative reading aids: ${BUTT_LENGTH_METERS * 100} cm per butt for end-to-end length; mass comes from the qualified calculation when a condition is available.`,
           ),
         },
         formula: text(
-          "butts_action = max(0, cigaretteButts) ; total = somme(butts_action)",
-          "butts_action = max(0, cigaretteButts); total = sum(butts_action)",
+          `butts_action = max(0, cigaretteButts) ; distance_m = butts_total × ${BUTT_LENGTH_METERS} ; masse_qualifiee = somme(cigaretteButts_condition / (${BUTTS_PER_KG_REFERENCE} × facteur_etat))`,
+          `butts_action = max(0, cigaretteButts); distance_m = total_butts × ${BUTT_LENGTH_METERS}; qualified_mass = sum(condition_butts / (${BUTTS_PER_KG_REFERENCE} × condition_factor))`,
         ),
         assumptions: [
           text(
@@ -159,8 +206,8 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
         ],
         limits: [
           text(
-            "Les conversions pédagogiques ne sont pas des mesures supplémentaires et ne modifient pas le compteur.",
-            "Pedagogical conversions are not additional measurements and do not modify the count.",
+            "La répartition qualifiée ne comprend que les mégots dont l’état est réellement disponible ; les autres restent non qualifiés.",
+            "The qualified distribution only includes butts whose condition is actually available; the others remain unqualified.",
           ),
         ],
       },

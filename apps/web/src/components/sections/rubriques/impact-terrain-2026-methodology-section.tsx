@@ -13,6 +13,8 @@ import {
   type ImpactTerrain2026KpiMethod,
   type ImpactTerrain2026LocalizedText,
 } from "@/lib/impact/impact-terrain-2026";
+import type { ImpactTerrain2026PublicResults } from "@/lib/impact/impact-terrain-2026-results";
+import { ImpactTerrain2026ButtsPieChart } from "./impact-terrain-2026-butts-pie-chart";
 
 const KPI_ICONS: Record<ImpactTerrain2026KpiMethod["key"], LucideIcon> = {
   wasteKg: Trash2,
@@ -49,9 +51,11 @@ function MethodList({
 function KpiMethodBlock({
   method,
   isFrench,
+  results,
 }: {
   method: ImpactTerrain2026KpiMethod;
   isFrench: boolean;
+  results: ImpactTerrain2026PublicResults | null;
 }) {
   const Icon = KPI_ICONS[method.key];
 
@@ -83,6 +87,61 @@ function KpiMethodBlock({
             {localize(method.semantics.terrainData, isFrench)}
           </p>
         </div>
+
+        {method.key === "wasteKg" && (
+          <div className="rounded-2xl border border-emerald-200/20 bg-emerald-300/5 p-4">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100/75">
+              {isFrench ? "Résultat public chargé" : "Loaded public result"}
+            </h4>
+            {results ? (
+              <div className="mt-3 grid gap-3 text-sm text-slate-200 sm:grid-cols-3">
+                <p>
+                  <span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">kg</span>
+                  <strong>{results.wasteKg.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}</strong>
+                </p>
+                <p>
+                  <span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "équivalence" : "equivalent"}</span>
+                  <strong>{results.wasteBagsEquivalent.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} {isFrench ? "sacs de 50 L" : "50 L bags"}</strong>
+                </p>
+                <p>
+                  <span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "équivalence" : "equivalent"}</span>
+                  <strong>{results.wasteMechanicalBicyclesEquivalent.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} {isFrench ? "Vélib' mécaniques" : "mechanical Vélib'"}</strong>
+                </p>
+              </div>
+            ) : (
+              <p className="mt-2 text-xs leading-relaxed text-slate-400">
+                {isFrench
+                  ? "Le résultat public n’est pas disponible dans cette génération de la page ; les formules restent documentées ci-dessous."
+                  : "The public result is unavailable in this page generation; the formulas remain documented below."}
+              </p>
+            )}
+          </div>
+        )}
+
+        {method.key === "butts" && (
+          <div className="space-y-4 rounded-2xl border border-emerald-200/20 bg-emerald-300/5 p-4">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100/75">
+              {isFrench ? "Résultats publics et qualification" : "Public results and qualification"}
+            </h4>
+            {results ? (
+              <div className="grid gap-3 text-sm text-slate-200 sm:grid-cols-3">
+                <p>
+                  <span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "mégots déclarés" : "reported butts"}</span>
+                  <strong>{results.buttsTotal.toLocaleString("fr-FR")}</strong>
+                </p>
+                <p>
+                  <span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "masse estimée" : "estimated mass"}</span>
+                  <strong>{results.estimatedButtsWeightKg.toLocaleString("fr-FR", { maximumFractionDigits: 3 })} kg</strong>
+                </p>
+                <p>
+                  <span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "distance pédagogique" : "pedagogical distance"}</span>
+                  <strong>{results.buttsDistanceMeters.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} m</strong>
+                </p>
+              </div>
+            ) : null}
+            <ImpactTerrain2026ButtsPieChart results={results} isFrench={isFrench} />
+          </div>
+        )}
 
         <div>
           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-red-200/65">
@@ -146,8 +205,10 @@ function KpiMethodBlock({
 
 export function ImpactTerrain2026MethodologySection({
   isFrench,
+  results = null,
 }: {
   isFrench: boolean;
+  results?: ImpactTerrain2026PublicResults | null;
 }) {
   const methodology = buildImpactTerrain2026Methodology();
 
@@ -196,7 +257,12 @@ export function ImpactTerrain2026MethodologySection({
 
       <div className="grid gap-5 xl:grid-cols-2">
         {methodology.kpis.map((method) => (
-          <KpiMethodBlock key={method.key} method={method} isFrench={isFrench} />
+          <KpiMethodBlock
+            key={method.key}
+            method={method}
+            isFrench={isFrench}
+            results={results}
+          />
         ))}
       </div>
     </section>

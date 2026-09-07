@@ -9,6 +9,14 @@ import type {
   EnvironmentalImpactSnapshotRecord,
 } from "@/lib/environmental-impact-estimator/types";
 import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
+import {
+  buildPublicLandingActionMetricsFromAggregate,
+} from "@/lib/accueil/action-participant-aggregation";
+import {
+  buildLandingFloorDate,
+  loadPublicLandingActionSummary,
+} from "@/lib/accueil/public-landing-action-summary";
+import type { ImpactTerrain2026PublicResults } from "@/lib/impact/impact-terrain-2026-results";
 
 export const metadata: Metadata = {
   title: "Méthodologie - Comment nous calculons l'impact | CleanMyMap",
@@ -45,6 +53,7 @@ export default async function MethodologiePage() {
   };
   let impactGeneratedAt: string | null = null;
   let impactLaunchedAt: string | null = null;
+  let impactTerrainResults: ImpactTerrain2026PublicResults | null = null;
   let impactElectricity = buildElectricityEstimate({ monthlyElectricityKwh: null }, null);
   let impactWater = buildWaterEstimate({
     monthlyElectricityKwh: null,
@@ -78,6 +87,17 @@ export default async function MethodologiePage() {
     console.error("[MethodologiePage] Failed to load public impact services", error);
   }
 
+  try {
+    const landingAggregate = await loadPublicLandingActionSummary(
+      buildLandingFloorDate(),
+    );
+    impactTerrainResults = buildPublicLandingActionMetricsFromAggregate(
+      landingAggregate,
+    ).impactTerrain;
+  } catch (error) {
+    console.error("[MethodologiePage] Failed to load public terrain KPI aggregate", error);
+  }
+
   githubStats = await githubStatsPromise;
 
   return (
@@ -87,6 +107,7 @@ export default async function MethodologiePage() {
       impactSnapshots={impactSnapshots}
       impactGeneratedAt={impactGeneratedAt}
       impactLaunchedAt={impactLaunchedAt}
+      impactTerrainResults={impactTerrainResults}
       impactElectricity={impactElectricity}
       impactWater={impactWater}
       githubStats={githubStats}

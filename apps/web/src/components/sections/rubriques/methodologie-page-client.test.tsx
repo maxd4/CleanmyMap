@@ -5,6 +5,7 @@ import { SitePreferencesProvider } from "@/components/ui/site-preferences-provid
 import {
   LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS,
 } from "@/lib/actions/pollution/local-repollution-calibration";
+import { buildImpactTerrain2026PublicResults } from "@/lib/impact/impact-terrain-2026-results";
 import { buildActionPollutionProjectionMethodology } from "@/lib/actions/pollution/revisit-priority";
 import {
   ActionMapMethodologySection,
@@ -165,5 +166,30 @@ describe("ActionMapMethodologySection", () => {
     expect(markup).not.toContain("Gamification");
     expect(markup).not.toContain("restez à l’écoute");
     expect(markup).not.toContain("COMING SOON");
+  });
+
+  it("publishes the first two KPI results with qualified butt distribution", async () => {
+    const { ImpactTerrain2026MethodologySection } = await import(
+      "./impact-terrain-2026-methodology-section"
+    );
+    const markup = renderToStaticMarkup(
+      <ImpactTerrain2026MethodologySection
+        isFrench
+        results={buildImpactTerrain2026PublicResults({
+          wasteKg: 10,
+          buttsTotal: 1_000,
+          qualifiedButtsByCondition: { propre: 100, humide: 200 },
+        })}
+      />,
+    );
+
+    expect(markup).toContain("2 sacs de 50 L");
+    expect(markup).toContain("0,5");
+    expect(markup).toContain("Propre");
+    expect(markup).toContain("Humide");
+    expect(markup).toContain("Non qualifiés");
+    expect(markup).toContain("masse estimée");
+    expect(markup).toContain("distance pédagogique");
+    expect(markup).not.toContain("0,2 g");
   });
 });

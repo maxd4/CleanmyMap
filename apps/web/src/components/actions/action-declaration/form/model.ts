@@ -6,6 +6,7 @@ import { PLACE_TYPE_OPTIONS } from"@/lib/actions/place-type-options";
 import { normalizeActionDrawing } from"../../map/actions-map-geometry.utils";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
+import { estimateButtsWeightKg } from "@/lib/impact/impact-terrain-2026";
 
 export type FormState = {
  actorName: string;
@@ -180,18 +181,9 @@ export type ValidationIssue = {
  message: string;
 };
 
-// Constantes de conversion mégots -> masse (en grammes)
-const CIGARETTE_BUTT_WEIGHTS = {
- propre: 0.2, // Mégot sec
- humide: 0.4, // Mégot humide
- mouille: 0.6, // Mégot mouillé
-} as const;
-
-// Fonction de conversion nombre de mégots -> masse en kg
 export function convertCigaretteButtsToKg(
  count: number,
  condition: ActionMegotsCondition,
 ): number {
- const weightPerButt = CIGARETTE_BUTT_WEIGHTS[condition];
- return (count * weightPerButt) / 1000; // Conversion grammes -> kg
+ return estimateButtsWeightKg(count, condition);
 }

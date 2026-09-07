@@ -3,6 +3,11 @@ import {
   isOrganizerType,
   type OrganizerType,
 } from "@/lib/actions/organizer-type";
+import {
+  buildImpactTerrain2026PublicResultsFromActions,
+  buildImpactTerrain2026PublicResultsFromAggregate,
+  type ImpactTerrain2026PublicResults,
+} from "@/lib/impact/impact-terrain-2026-results";
 
 export type ActionAggregationAction = {
   metadata: Pick<
@@ -12,6 +17,9 @@ export type ActionAggregationAction = {
     organizerType?: OrganizerType | null;
     volunteersCount?: number | null;
     durationMinutes?: number | null;
+    wasteKg?: number | null;
+    cigaretteButts?: number | null;
+    wasteBreakdown?: ActionDataContract["metadata"]["wasteBreakdown"];
   };
 };
 
@@ -32,6 +40,7 @@ export type PublicLandingActionAggregation = {
   totalDurationHours: number;
   actionDistribution: ActionDistributionEntry[];
   classificationWarnings: ActionAggregationWarning[];
+  impactTerrain: ImpactTerrain2026PublicResults;
 };
 
 type Classification = {
@@ -177,6 +186,9 @@ export function aggregatePublicActionMetrics(
       .filter(([, count]) => count > 0)
       .map(([code, count]) => ({ code, count }))
       .sort((left, right) => left.code.localeCompare(right.code)),
+    impactTerrain: buildImpactTerrain2026PublicResultsFromActions(
+      actions.map((action) => action.metadata),
+    ),
   };
 }
 
@@ -186,6 +198,9 @@ export type PublicLandingActionAggregationRow = {
   total_duration_minutes?: number | string | null;
   action_distribution?: unknown;
   classification_warnings?: unknown;
+  waste_kg?: number | string | null;
+  cigarette_butts?: number | string | null;
+  butts_by_condition?: unknown;
 };
 
 function toFiniteNonNegativeNumber(value: unknown): number {
@@ -237,5 +252,10 @@ export function buildPublicLandingActionMetricsFromAggregate(
     totalDurationHours: totalDurationMinutes / 60,
     actionDistribution,
     classificationWarnings,
+    impactTerrain: buildImpactTerrain2026PublicResultsFromAggregate({
+      wasteKg: row.waste_kg,
+      cigaretteButts: row.cigarette_butts,
+      buttsByCondition: row.butts_by_condition,
+    }),
   };
 }
