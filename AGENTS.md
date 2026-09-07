@@ -507,3 +507,27 @@ et la prochaine étape, puis attendre confirmation avant de continuer.
 - Avant de clôturer, vérifier qu’aucune copie externe n’a été créée par le lot;
   les éventuels artefacts internes générés hors du contrôle de l’agent ne
   constituent pas une autorisation de reproduire ce comportement.
+
+## Sécurité des diagnostics host et des verrous Git
+
+Le fichier `.git/index.lock` ne doit jamais être supprimé par réflexe. Sa
+suppression n'est permise qu'après preuve documentée qu'il est stale : fichier
+de 0 octet, inchangé depuis au moins 30 secondes, aucun processus Git
+mutateur pertinent et aucun `MERGE`, `REBASE`, `CHERRY_PICK` ou `REVERT` actif.
+La suppression est alors unique et ciblée. Si le lock réapparaît, arrêter avec
+le verdict `HOST_ENVIRONMENT` ; ne pas entrer dans une boucle de suppressions.
+
+Ne jamais tuer globalement `git.exe` ou `fsmonitor`. Identifier le dépôt et le
+processus concernés, puis préserver les démons et processus Git étrangers.
+
+Les diagnostics host tels que ProcMon, ETW ou équivalents doivent être filtrés
+et bornés dans le temps. Annoncer leur périmètre et le volume attendu et
+obtenir une autorisation explicite avant toute capture susceptible de dépasser
+1 Go. Ne jamais charger ou parcourir intégralement en Python une capture d'au
+moins 500 Mo sans autorisation explicite. Préférer un export filtré, une
+fenêtre temporelle courte, une requête native ou un traitement borné ; arrêter
+plutôt que provoquer une consommation RAM ou disque non bornée.
+
+Un workaround local de Codex Desktop, notamment `config.toml` ou un mode
+Git Review, ne constitue pas un contrat du dépôt et ne doit pas être transposé
+dans sa gouvernance.
