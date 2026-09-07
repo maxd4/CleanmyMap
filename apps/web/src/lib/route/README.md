@@ -50,5 +50,29 @@ la durée totales de la boucle, le coût du retour et le budget restant. La trac
 répète ces éléments et ajoute le retour comme dernier segment explicable. Un
 fallback conserve la même fermeture et estime les legs à 4,5 km/h.
 
+## Répartition multi-groupe
+
+La requête HTTP accepte `volunteers` (1 à 100) et `groupCount` (1 à 12), avec
+la contrainte `groupCount <= volunteers`. Le défaut reste `1 / 1` afin de
+préserver le comportement historique du planner. Pour plusieurs groupes,
+`route-group-partition.ts` charge un seul pool de candidats, conserve l'origine
+commune et produit une partition déterministe dans le domaine route ; l'UI ne
+recalcule ni la sélection ni la répartition.
+
+Les effectifs sont équilibrés au plus près (par exemple `11 → 4 / 4 / 3`).
+Chaque candidat est attribué au plus à un groupe par défaut. La sélection
+réserve le retour à l'origine dans chaque boucle estimée et applique d'abord
+les exclusions de sécurité, puis la valeur, l'équilibre et les coûts de
+recouvrement (cible, zone prédictive et corridor). Un secteur court partagé
+près de l'origine n'est pas pénalisé comme un corridor commun inutile.
+
+La réponse expose `groups` et `partition`. Ses métriques sont déterministes :
+`sharedTargetRatio`, `coverageGain`, `balanceDistance`, `balanceDuration` et
+`balanceTargetCount`. Tant que les géométries finales de chaque groupe ne sont
+pas routées, `networkSharedDistanceKm` reste `null` et
+`networkDistanceMeasured` reste `false`. Le mode `event-centered` conserve
+l'ancre et l'origine communes ; sa complémentarité est calculée sur le pool
+déjà pondéré par le contexte événementiel.
+
 Documentation canonique associée :
 `documentation/architecture/methodologie-creation-itineraire.md`.

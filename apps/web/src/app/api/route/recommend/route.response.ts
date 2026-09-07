@@ -89,6 +89,8 @@ export function buildRouteRecommendationResponse(input: {
   maxStops: number;
   travelBudgetMinutes: number;
   priorityVsTravel: number;
+  volunteers: number;
+  groupCount: number;
 }): NextResponse {
   const {
     origin,
@@ -100,6 +102,8 @@ export function buildRouteRecommendationResponse(input: {
     maxStops,
     travelBudgetMinutes,
     priorityVsTravel,
+    volunteers,
+    groupCount,
   } = input;
   const { plannedStops, routeGeometry, plannerResult } = planning;
   const { candidates, contracts, dataStatus, isTruncated, sourceHealth } =
@@ -167,6 +171,8 @@ export function buildRouteRecommendationResponse(input: {
       travelDistanceKm: 0,
       travelMinutes: 0,
       travelBudgetMinutes,
+      volunteers,
+      groupCount,
       loop,
       withinBudget: true,
       serviceMinutesEstimate: null,
@@ -192,6 +198,11 @@ export function buildRouteRecommendationResponse(input: {
       ],
       proactiveAssistant: {
         ...defaultRouteAssistantPayload(),
+      },
+      groups: planning.groupPartition.groups,
+      partition: {
+        metrics: planning.groupPartition.metrics,
+        audit: planning.groupPartition.audit,
       },
     } satisfies RouteRecommendationResponse;
 
@@ -234,6 +245,8 @@ export function buildRouteRecommendationResponse(input: {
     travelDistanceKm: totalDistance,
     travelMinutes,
     travelBudgetMinutes,
+    volunteers,
+    groupCount,
     loop,
     withinBudget: travelMinutes <= travelBudgetMinutes,
     serviceMinutesEstimate: null,
@@ -261,6 +274,11 @@ export function buildRouteRecommendationResponse(input: {
       `Pondération opérationnelle: ${priorityVsTravel}% priorité / ${100 - priorityVsTravel}% déplacement.`,
     ],
     proactiveAssistant,
+    groups: planning.groupPartition.groups,
+    partition: {
+      metrics: planning.groupPartition.metrics,
+      audit: planning.groupPartition.audit,
+    },
   } satisfies RouteRecommendationResponse;
 
   return NextResponse.json(responsePayload);

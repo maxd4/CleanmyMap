@@ -106,6 +106,8 @@ export async function POST(request: Request) {
       travelBudgetMinutes: options.travelBudgetMinutes,
       maxStops: options.maxStops,
       priorityVsTravel,
+      volunteers: options.volunteers,
+      groupCount: options.groupCount,
       planningMode,
       eventCenteredAnchor,
       eventSignalContext: candidateData.routeEventSignalContext,
@@ -120,6 +122,8 @@ export async function POST(request: Request) {
       maxStops: options.maxStops,
       travelBudgetMinutes: options.travelBudgetMinutes,
       priorityVsTravel,
+      volunteers: options.volunteers,
+      groupCount: options.groupCount,
     });
 
     try {

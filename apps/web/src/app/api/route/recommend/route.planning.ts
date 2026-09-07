@@ -27,6 +27,11 @@ import {
 import type { RouteEventSignalContext } from "@/lib/route/route-event-pressure";
 import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 import type { RouteFinalRoutingReconciliation } from "@/lib/route/route-trace";
+import {
+  MAX_ROUTE_PARTITION_CANDIDATES,
+  partitionRouteCandidates,
+  type RouteGroupPartitionResult,
+} from "@/lib/route/route-group-partition";
 
 export type RoutePlanningResult = {
   plannerResult: RoutePlannerResult;
@@ -36,6 +41,7 @@ export type RoutePlanningResult = {
   eventCenteredContext: RouteEventCenteredContext | null;
   budgetPrefixApplied: boolean;
   finalRoutingReconciliation?: RouteFinalRoutingReconciliation;
+  groupPartition: RouteGroupPartitionResult;
 };
 
 function fallbackGeometryForPrefix(
@@ -59,6 +65,8 @@ export async function planRouteRecommendation(input: {
   travelBudgetMinutes: number;
   maxStops: number;
   priorityVsTravel: number;
+  volunteers: number;
+  groupCount: number;
   planningMode: RoutePlanningMode;
   eventCenteredAnchor: RouteEventCenteredAnchor | null;
   eventSignalContext: RouteEventSignalContext;
@@ -109,7 +117,12 @@ export async function planRouteRecommendation(input: {
     predictedCandidates: candidatesForPool.filter(
       (candidate) => candidate.family === "predicted",
     ),
-    maxCandidates: Math.max(input.maxStops * 2, 8),
+    maxCandidates: input.groupCount === 1
+      ? Math.max(input.maxStops * 2, 8)
+      : Math.min(
+          MAX_ROUTE_PARTITION_CANDIDATES,
+          Math.max(input.maxStops * input.groupCount * 2, 8),
+        ),
   });
   const plannerResult = planRoute({
     origin: input.origin,
@@ -117,6 +130,17 @@ export async function planRouteRecommendation(input: {
     travelBudgetMinutes: input.travelBudgetMinutes,
     maxStops: input.maxStops,
     priorityVsTravel: input.priorityVsTravel,
+  });
+  const groupPartition = partitionRouteCandidates({
+    origin: input.origin,
+    candidates: candidatePool.candidates,
+    volunteers: input.volunteers,
+    groupCount: input.groupCount,
+    travelBudgetMinutes: input.travelBudgetMinutes,
+    maxStops: input.maxStops,
+    priorityVsTravel: input.priorityVsTravel,
+    planningMode: input.planningMode,
+    plannerResult,
   });
   let predictionSummary = applyRoutePredictionPoolAudit(
     predictionBuild.summary,
@@ -256,5 +280,6 @@ export async function planRouteRecommendation(input: {
       degraded: finalRoutingDegraded,
       warning: finalRoutingWarning,
     },
+    groupPartition,
   };
 }
