@@ -1,0 +1,42 @@
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+import { buildHomeMetrics } from "@/lib/accueil/config";
+
+vi.mock("./accueil-map-preview", () => ({
+  HomeMapPreview: () => <div data-testid="home-map-preview" />,
+}));
+
+import { HomeHero } from "./accueil-hero";
+
+describe("HomeHero impact methodology link", () => {
+  it("links to the canonical impact-terrain methodology section", () => {
+    const html = renderToStaticMarkup(
+      <HomeHero
+        metrics={
+          buildHomeMetrics(
+            {
+              wasteKg: 0,
+              butts: 0,
+              volunteers: 0,
+              co2AvoidedKg: 0,
+              waterSavedLiters: 0,
+              euroSaved: 0,
+            },
+            false,
+          )
+        }
+        counters={{
+          wasteKg: 0,
+          butts: 0,
+          volunteers: 0,
+          co2AvoidedKg: 0,
+          waterSavedLiters: 0,
+          euroSaved: 0,
+        }}
+        impactSnapshot={null}
+      />,
+    );
+
+    expect(html).toContain('href="/methodologie#indicateurs-impact-terrain"');
+  });
+});
