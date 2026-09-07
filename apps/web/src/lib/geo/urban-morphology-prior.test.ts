@@ -71,6 +71,8 @@ describe("urban morphology prior", () => {
 
     expect(result.status).toBe("applied");
     expect(result.appliedMalusPoints).toBeGreaterThan(0);
+    expect(result.morphologyType).toContain("lowTrafficLocalStreet");
+    expect(result.geographicSource).toEqual(source);
     expect(result.afterRisk).toBeLessThan(result.beforeRisk);
     expect(result.afterRisk).toBeGreaterThanOrEqual(0);
     expect(result.explanation).not.toMatch(/propre/i);

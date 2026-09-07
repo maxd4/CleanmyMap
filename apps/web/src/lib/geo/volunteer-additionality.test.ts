@@ -66,6 +66,8 @@ function risk(overrides: Partial<ParisPressureRiskEstimate> = {}): ParisPressure
       version: "urban-morphology-prior-v1" as const,
       status: "unavailable" as const,
       source: null,
+      geographicSource: null,
+      morphologyType: [],
       confidence: 0,
       features: null,
       components: {
