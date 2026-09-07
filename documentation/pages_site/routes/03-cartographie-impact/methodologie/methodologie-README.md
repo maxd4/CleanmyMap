@@ -57,6 +57,64 @@ et les formules affichées à partir des facteurs runtime de
 les futurs consommateurs de méthode doivent réutiliser ce domaine ; la page
 `/methodologie` ne devient pas une source de calcul.
 
+### KPI 1 — Déchets récoltés
+
+La donnée terrain est la masse de déchets récoltés en kilogrammes. Le runtime
+retient, par action, la masse déclarée ou détaillée disponible ; lorsqu’il doit
+recourir au signal mégots, il réutilise la masse canonique qualifiée décrite
+ci-dessous. Les actions éligibles sont ensuite additionnées.
+
+Les conversions pédagogiques sont :
+
+```txt
+sacs_50L = déchets_kg / 5
+Vélib_mécaniques = déchets_kg / 20
+```
+
+Les valeurs `5 kg / sac de 50 L` et `20 kg / Vélib' mécanique` sont des
+références méthodologiques CleanMyMap, centralisées dans le domaine Impact
+terrain 2026. Elles servent uniquement à donner un ordre de grandeur : elles
+ne mesurent ni le volume réellement utilisé, ni le poids d’un vélo particulier.
+
+### KPI 2 — Mégots retirés
+
+La donnée principale est le nombre de mégots déclaré ou enregistré. Le runtime
+conserve exactement les trois états disponibles : `propre`, `humide` et
+`mouille` (affichés « Propre », « Humide » et « Mouillé »). Aucun quatrième état
+n’est créé.
+
+La masse estimée réutilise `BUTTS_PER_KG_REFERENCE` et
+`CONDITION_WEIGHT_FACTORS` :
+
+```txt
+masse_qualifiée_kg = somme(mégots_état / (2500 × facteur_état))
+masse_non_qualifiée_kg = mégots_non_qualifiés / 2500
+masse_estimée_kg = masse_qualifiée_kg + masse_non_qualifiée_kg
+```
+
+La qualification est comptée uniquement lorsque l’état est réellement présent
+dans les métadonnées de l’action. Les mégots historiques sans qualification ne
+sont pas attribués arbitrairement à `propre`, `humide` ou `mouille` ; ils sont
+signalés séparément comme non qualifiés. La conversion pédagogique de distance
+reste : `distance_m = mégots × 0,025`, soit un repère de 2,5 cm par mégot. Ce
+repère ne modifie ni le compteur ni la masse canonique.
+
+Le résultat public structuré préparé pour les futurs tooltips est exposé dans
+`apps/web/src/lib/impact/impact-terrain-2026-results.ts` et comprend les
+équivalences déchets, la répartition non nulle par état, la masse estimée
+canonique, la part non qualifiée et la distance pédagogique. La RPC reste
+bornée et transmet uniquement les compteurs qualifiés nécessaires ; elle ne
+charge pas le corpus d’actions dans le runtime web.
+
+Les effets environnementaux ou sanitaires des mégots ne sont pas enrichis par
+des citations non vérifiées dans ce lot. Les références affichées restent les
+références runtime et les références méthodologiques déjà présentes dans le
+domaine.
+
+Les quatre autres KPI — Bénévoles mobilisés, CO₂ évité, Eau préservée et
+Économie de voirie — restent dans la même section et conservent leur contrat
+commun. Leur détail métier n’est pas développé dans ce lot.
+
 Les résultats dynamiques et les nouveaux agrégats homepage ne sont pas injectés
 dans les bulles i dans ce lot. Le temps total des actions reste un agrégat
 canonique séparé, documenté comme une donnée préparatoire pour une évolution

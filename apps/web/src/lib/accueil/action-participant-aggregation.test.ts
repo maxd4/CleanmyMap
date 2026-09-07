@@ -107,6 +107,17 @@ describe("action participant aggregation", () => {
         { key: "spontaneous:2", category: "Duo", count: 2 },
       ],
       classificationWarnings: [{ code: "missing_organizer_type", count: 1 }],
+      impactTerrain: {
+        wasteKg: 0,
+        wasteBagsEquivalent: 0,
+        wasteMechanicalBicyclesEquivalent: 0,
+        buttsTotal: 0,
+        qualifiedButtsTotal: 0,
+        unqualifiedButtsTotal: 0,
+        buttsByCondition: [],
+        estimatedButtsWeightKg: 0,
+        buttsDistanceMeters: 0,
+      },
     });
   });
 });
