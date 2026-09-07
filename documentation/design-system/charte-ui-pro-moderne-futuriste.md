@@ -90,19 +90,27 @@ Règle : un bloc = une couleur dominante. Pas de mélange d'accents dans une mê
 
 ## CTA & Boutons
 
-### CTA Primaire
+La priorité d'un bouton suit la hiérarchie canonique documentée dans
+[`BLOC_COLOR_SYSTEM_PREMIUM.md`](./BLOC_COLOR_SYSTEM_PREMIUM.md#hiérarchie-canonique-des-boutons) :
+`doré/brun > violet > vert > blanc`. Elle exprime l'importance de l'action
+et ne doit pas être déduite de la couleur de la famille du bloc.
 
-- Gradient ou fond solide dans la couleur de l'accent du bloc.
-- Ombre portée dans la teinte du bloc.
-- Hover : `hover:-translate-y-0.5` + intensification légère.
+### Action au niveau le plus élevé
+
+- Utiliser le doré/brun uniquement pour une action critique ou structurante.
+- Réserver son usage aux cas rares et intentionnels.
+- Gradient ou fond solide, ombre portée et hover restent des traitements
+  visuels possibles ; ils ne changent pas la priorité sémantique.
 
 ```tsx
 className="inline-flex h-14 items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400 px-8 text-base font-bold text-white shadow-[0_12px_24px_-12px_rgba(234,88,12,0.6)] transition-transform hover:-translate-y-0.5"
 ```
 
-### CTA Secondaire
+### Action d'accompagnement
 
-- Fond semi-transparent sur la carte, bordure légère dans l'accent.
+- Le blanc accompagne un CTA plus important et ne doit pas le concurrencer.
+- Un fond semi-transparent ou une bordure légère dans l'accent sont des
+  traitements de surface possibles, pas une nouvelle hiérarchie.
 
 ```tsx
 className="inline-flex h-12 items-center gap-2.5 rounded-2xl bg-white/10 px-6 text-sm font-bold text-white transition-all hover:bg-white/16 hover:-translate-y-0.5"
@@ -126,7 +134,8 @@ Rôle : **outil de pilotage** (pas marketing).
 - Fond de page : teinte claire/lumineuse de la couleur du bloc (radial-gradient ou gradient directionnel).
 - Cartes : fond sombre teinté dans la même couleur, `backdrop-blur-xl`, bordure légère dans l'accent.
 - Titres et chiffres colorés dans l'accent. Textes en blanc à 100%.
-- Max 1 CTA primaire + 1 secondaire par section.
+- Limiter à une action de priorité maximale par section ; les actions
+  d'accompagnement peuvent cohabiter lorsqu'elles clarifient le parcours.
 
 ### Pattern B — "Utilitaire / Plan du site"
 
@@ -140,7 +149,8 @@ Rôle : **outil de pilotage** (pas marketing).
 ## Checklist de review (rapide)
 
 - **Lisibilité** : le texte reste net (pas de blur agressif sur le texte).
-- **Contraste** : CTA primaire évident, titres colorés lisibles sur fond sombre.
+- **Contraste** : l'action la plus importante est évidente, titres colorés
+  lisibles sur fond sombre.
 - **Opacité texte** : tous les textes à 100% sauf exception documentée.
 - **Densité** : mobile compact, desktop respirant.
 - **Cohérence** : même langage visuel (coins, shadows, pills).

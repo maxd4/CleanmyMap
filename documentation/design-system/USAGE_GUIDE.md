@@ -174,10 +174,16 @@ export default function ExamplePage() {
 ### Boutons canoniques
 
 - Utiliser `CmmButton` pour tous les CTA visibles dans les blocs.
-- `tone="primary"` = CTA principal de la zone.
-- `tone="secondary"` = CTA de soutien.
-- `tone="tertiary"` = action contextuelle ou bas de hiérarchie.
-- Les couleurs viennent du thème de la page/famille, jamais d'une classe locale codée en dur.
+- Choisir d'abord la priorité selon la hiérarchie
+  [`doré/brun > violet > vert > blanc`](./BLOC_COLOR_SYSTEM_PREMIUM.md#hiérarchie-canonique-des-boutons),
+  indépendamment de la famille de la page.
+- Dans le runtime actuel, `tone="primary"` rend le bouton vert standard,
+  `tone="secondary"` le bouton blanc d'accompagnement et `tone="tertiary"`
+  une action transparente de faible emphase.
+- Ne pas déduire la priorité du nom `primary`/`secondary` ni inventer un tone
+  `gold`, `brown` ou `violet` non exposé par `CmmButton`.
+- `tone="destructive"` reste réservé à la sémantique rouge de danger et est
+  exclu de cette hiérarchie.
 
 ### Utilisation dans les rubriques existantes
 
