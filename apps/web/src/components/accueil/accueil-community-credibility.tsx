@@ -440,24 +440,24 @@ export function HomeCommunityCredibility({
 
             <div
               aria-label="Étapes de construction de l'écosystème"
-              className="mt-6 overflow-x-auto rounded-[1.25rem] border border-white/30 bg-white/10 p-3"
+              className="mt-6 w-full min-w-0 overflow-hidden rounded-[1.25rem] border border-white/30 bg-white/10 p-3"
               role="list"
             >
-              <div className="flex min-w-[39rem] items-stretch">
+              <div className="flex w-full min-w-0 items-stretch">
                 {ECOSYSTEM_STEPS.map((step, index) => (
                   <div key={step.title} className="flex min-w-0 flex-1 items-stretch">
-                    <div className="flex min-w-0 flex-1 flex-col items-center justify-center px-3 text-center">
-                      <p className="text-base font-black tracking-tight text-white">
+                    <div className="flex min-w-0 flex-1 flex-col items-center justify-center px-1.5 text-center sm:px-3">
+                      <p className="text-[clamp(0.8rem,1.4vw,1rem)] font-black tracking-tight text-white">
                         {step.title}
                       </p>
-                      <p className="mt-1 whitespace-pre-line text-sm leading-snug text-white/90">
+                      <p className="mt-1 whitespace-pre-line text-[clamp(0.7rem,1.2vw,0.875rem)] leading-snug text-white/90">
                         {step.text}
                       </p>
                     </div>
                     {index < ECOSYSTEM_STEPS.length - 1 ? (
-                      <div className="flex items-center gap-2 text-white/80" aria-hidden="true">
+                      <div className="flex shrink-0 items-center gap-1 text-white/80 sm:gap-2" aria-hidden="true">
                         <span className="h-12 w-px bg-white/35" />
-                        <ArrowRight size={19} strokeWidth={1.8} />
+                        <ArrowRight className="shrink-0" size={18} strokeWidth={1.8} />
                         <span className="h-12 w-px bg-white/35" />
                       </div>
                     ) : null}
