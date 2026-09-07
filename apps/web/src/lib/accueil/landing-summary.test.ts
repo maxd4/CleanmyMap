@@ -1,22 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildActionDataContract } from "@/lib/actions/data-contract";
 import { buildImpactTerrain2026PublicResults } from "@/lib/impact/impact-terrain-2026-results";
+import type { PublicImpactSnapshotPayload } from "@/lib/impact/public-impact-snapshot";
 
 const fetchCachedUnifiedActionContractsMock = vi.hoisted(() => vi.fn());
-const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
-const rpcMock = vi.hoisted(() => vi.fn());
+const loadLatestPublicImpactSnapshotMock = vi.hoisted(() => vi.fn());
 const storageListMock = vi.hoisted(() => vi.fn());
 const storagePublicUrlMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/actions/unified-source/unified-source-cache", () => ({
   fetchCachedUnifiedActionContracts: fetchCachedUnifiedActionContractsMock,
 }));
-vi.mock("@/lib/public-surface-snapshot-service", () => ({
-  loadOrRefreshPublicSurfaceSnapshot: loadOrRefreshPublicSurfaceSnapshotMock,
+vi.mock("@/lib/impact/public-impact-snapshot", () => ({
+  loadLatestPublicImpactSnapshot: loadLatestPublicImpactSnapshotMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: () => ({
-    rpc: rpcMock,
     storage: {
       from: () => ({
         list: storageListMock,
@@ -26,12 +25,7 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
-import {
-  LANDING_SUMMARY_SNAPSHOT_KEY,
-  LANDING_SUMMARY_SNAPSHOT_TTL_MINUTES,
-  LANDING_SUMMARY_SNAPSHOT_VERSION,
-  loadLandingSummary,
-} from "./data";
+import { loadLandingSummary } from "./data";
 
 function actionContract() {
   return buildActionDataContract({
@@ -51,26 +45,61 @@ function actionContract() {
   });
 }
 
+function monthlyPayload(): PublicImpactSnapshotPayload {
+  return {
+    period: {
+      fromDate: "2025-09-08",
+      toDate: "2026-09-08",
+      timezone: "UTC",
+    },
+    generatedAt: "2026-09-08T03:00:00.000Z",
+    methodologyVersion: "impact-proxy-2026.04-v1",
+    resultsContractVersion: "impact-terrain-results-2026.09-v1",
+    kpis: {
+      participantsTotal: 31,
+      totalDurationMinutes: 90,
+      totalDurationHours: 1.5,
+      actionDistribution: [
+        { key: "company", category: "Entreprise", count: 2 },
+      ],
+      classificationWarnings: [],
+      impactTerrain: buildImpactTerrain2026PublicResults({
+        wasteKg: 25.5,
+        buttsTotal: 1250,
+      }),
+      streetCleaningSavings: {
+        wasteKg: 25.5,
+        durationMinutes: 90,
+        actionHours: 1.5,
+        massEstimateEuros: 38.25,
+        timeEstimateEuros: 18.465,
+        lowerBoundEuros: 18.465,
+        upperBoundEuros: 38.25,
+      },
+    },
+    aggregates: {
+      visibleActions: 12,
+      distinctLocations: 4,
+    },
+    provenance: {
+      sourceRpc: "public.load_public_landing_action_summary",
+      scope: {
+        actionType: "action",
+        status: "approved",
+        visibility: "visible",
+        excludesTestDemoData: true,
+        floorDate: "2025-09-08",
+      },
+      calculationDomain: [],
+    },
+  };
+}
+
 describe("landing summary loading", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    rpcMock.mockResolvedValue({
-      data: [
-        {
-          visible_actions: 12,
-          distinct_locations: 4,
-          waste_kg: "25.5",
-          cigarette_butts: 1250,
-          volunteers: 31,
-          participants_total: 31,
-          total_duration_minutes: 90,
-          action_distribution: [
-            { key: "company", category: "Entreprise", count: 2 },
-          ],
-          classification_warnings: [],
-        },
-      ],
-      error: null,
+    loadLatestPublicImpactSnapshotMock.mockResolvedValue({
+      payload: monthlyPayload(),
     });
     fetchCachedUnifiedActionContractsMock.mockResolvedValue({
       items: [actionContract()],
@@ -84,14 +113,9 @@ describe("landing summary loading", () => {
     });
     storageListMock.mockResolvedValue({ data: [], error: null });
     storagePublicUrlMock.mockReturnValue({ data: { publicUrl: "" } });
-    loadOrRefreshPublicSurfaceSnapshotMock.mockImplementation(
-      async (params: { buildPayload: () => Promise<unknown> }) => ({
-        payload: await params.buildPayload(),
-      }),
-    );
   });
 
-  it("uses the bounded action preview and the dedicated 60-minute snapshot", async () => {
+  it("uses the monthly impact snapshot and only fetches bounded recent activity", async () => {
     storageListMock.mockResolvedValue({
       data: [{ name: "2026-08-27-photo.jpg" }],
       error: null,
@@ -138,72 +162,32 @@ describe("landing summary loading", () => {
       url: "https://storage.example/action-photo.jpg",
       isFallback: false,
     });
+    expect(loadLatestPublicImpactSnapshotMock).toHaveBeenCalledOnce();
     expect(fetchCachedUnifiedActionContractsMock).toHaveBeenCalledWith({
       limit: 3,
       status: "approved",
-      floorDate: expect.any(String),
+      floorDate: "2025-09-08",
       requireCoordinates: false,
       types: ["action"],
     });
-    expect(rpcMock).toHaveBeenCalledWith(
-      "load_public_landing_action_summary",
-      { p_floor_date: expect.any(String) },
-    );
-    expect(loadOrRefreshPublicSurfaceSnapshotMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        snapshotKey: LANDING_SUMMARY_SNAPSHOT_KEY,
-        version: LANDING_SUMMARY_SNAPSHOT_VERSION,
-        ttlMinutes: LANDING_SUMMARY_SNAPSHOT_TTL_MINUTES,
-      }),
-    );
   });
 
-  it("returns a fresh snapshot without rebuilding the landing payload", async () => {
-    const freshPayload = {
-      counters: {
-        wasteKg: 1,
-        butts: 2,
-        volunteers: 3,
-        co2AvoidedKg: 1.2,
-        waterSavedLiters: 1000,
-        euroSaved: 2,
+  it("does not rebuild the monthly KPI aggregate when a snapshot is available", async () => {
+    fetchCachedUnifiedActionContractsMock.mockResolvedValueOnce({
+      items: [],
+      isTruncated: false,
+      sourceHealth: {
+        partial: false,
+        failedSources: [],
+        availableSources: ["actions"],
+        warnings: [],
       },
-      activity: { visibleActions: 1, distinctLocations: 1, items: [] },
-      dataAvailability: {
-        status: "available",
-        sourceHealth: {
-          partial: false,
-          failedSources: [],
-          availableSources: ["actions"],
-          warnings: [],
-        },
-      },
-      participantsTotal: 3,
-      totalDurationMinutes: 30,
-      totalDurationHours: 0.5,
-      actionDistribution: [],
-      classificationWarnings: [],
-      impactTerrain: buildImpactTerrain2026PublicResults({
-        wasteKg: 0,
-        buttsTotal: 0,
-      }),
-      streetCleaningSavings: {
-        wasteKg: 0,
-        durationMinutes: 30,
-        actionHours: 0.5,
-        massEstimateEuros: 0,
-        timeEstimateEuros: 6.155,
-        lowerBoundEuros: 0,
-        upperBoundEuros: 6.155,
-      },
-    };
-    loadOrRefreshPublicSurfaceSnapshotMock.mockResolvedValue({
-      payload: freshPayload,
     });
 
-    await expect(loadLandingSummary()).resolves.toEqual(freshPayload);
+    const summary = await loadLandingSummary();
 
-    expect(fetchCachedUnifiedActionContractsMock).not.toHaveBeenCalled();
-    expect(rpcMock).not.toHaveBeenCalled();
+    expect(summary.participantsTotal).toBe(31);
+    expect(loadLatestPublicImpactSnapshotMock).toHaveBeenCalledOnce();
+    expect(fetchCachedUnifiedActionContractsMock).toHaveBeenCalledOnce();
   });
 });
