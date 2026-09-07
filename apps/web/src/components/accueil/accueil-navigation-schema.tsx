@@ -118,7 +118,7 @@ function NavigationCard({ path }: { path: NavigationPath }) {
 
   return (
     <article
-      className={`relative flex min-h-[27rem] flex-col overflow-hidden rounded-[2rem] border p-5 shadow-[0_22px_55px_-34px_rgba(15,23,42,0.35)] transition-transform duration-200 hover:-translate-y-1 sm:p-6 ${tone.card}`}
+      className={`relative flex min-h-[27rem] flex-col overflow-hidden rounded-[2rem] border p-5 shadow-[0_22px_55px_-34px_rgba(15,23,42,0.35)] transition-transform duration-200 hover:-translate-y-1 motion-reduce:transform-none motion-reduce:transition-none sm:p-6 lg:min-h-[36rem] ${tone.card}`}
     >
       <div className="relative flex items-center justify-center gap-3">
         <span
@@ -151,7 +151,7 @@ function NavigationCard({ path }: { path: NavigationPath }) {
                 </span>
                 <ArrowRight
                   aria-hidden="true"
-                  className={`size-5 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 ${tone.arrow}`}
+                  className={`size-5 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none ${tone.arrow}`}
                   strokeWidth={2}
                 />
               </>
@@ -163,7 +163,7 @@ function NavigationCard({ path }: { path: NavigationPath }) {
                   href={item.href}
                   target="_blank"
                   rel="noreferrer"
-                  className={`group flex min-h-12 items-center gap-3 rounded-full px-3 py-2.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 ${tone.pill}`}
+                  className={`group flex min-h-12 items-center gap-3 rounded-full px-3 py-2.5 outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-offset-2 ${tone.pill}`}
                 >
                   {content}
                 </a>
@@ -172,7 +172,7 @@ function NavigationCard({ path }: { path: NavigationPath }) {
               <li key={item.label}>
                 <Link
                   href={item.href}
-                  className={`group flex min-h-12 items-center gap-3 rounded-full px-3 py-2.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 ${tone.pill}`}
+                  className={`group flex min-h-12 items-center gap-3 rounded-full px-3 py-2.5 outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-offset-2 ${tone.pill}`}
                 >
                   {content}
                 </Link>
@@ -189,10 +189,10 @@ export function HomeNavigationSchema() {
   return (
     <section
       aria-labelledby="home-navigation-title"
-      className="relative isolate w-full max-w-[100vw] overflow-hidden bg-white/70 py-12 sm:py-16 lg:py-20"
+      className="relative isolate w-[calc(100%_-_3px)] max-w-none overflow-hidden bg-white/70 py-12 sm:w-full sm:py-16 lg:py-20"
     >
       <NavigationLandscape />
-      <div className="relative z-10 mx-auto w-full max-w-[1380px] px-4 sm:px-8 lg:px-12">
+      <div className="relative z-10 mx-auto w-full max-w-[1800px] px-4 sm:px-8 lg:px-12">
         <header className="mx-auto max-w-5xl text-center">
           <h2
             id="home-navigation-title"
