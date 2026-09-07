@@ -131,6 +131,31 @@ frontières sont déjà prévisibles.
 - la règle complète des scores et ses exceptions techniques sont documentées
    dans `documentation/design-system/ui-score-formatting.md`.
 
+### Cible UI fournie par image ou mockup
+
+Lorsqu'un utilisateur fournit une image, une maquette, une capture ou une
+version cible UI, cette référence visuelle est prioritaire pour la composition,
+les proportions, la hiérarchie, la densité, les alignements, les espacements,
+les tailles relatives, les rayons, la palette, le style des boutons et cartes,
+les retours à la ligne, la quantité d'icônes et la position ou l'ordre des
+éléments. Le lot vise une fidélité stricte à la cible : une divergence visible
+importante signifie que le lot est incomplet ; « proche » ou « dans l'esprit »
+ne suffit pas.
+
+- Reproduire fidèlement les textes visibles : formulation, casse, accents,
+  ponctuation, retours à la ligne demandés et libellés explicitement retirés.
+- Si un détail de la cible est incompatible avec une contrainte fonctionnelle,
+  le design system, l'accessibilité ou les données runtime, conserver le
+  résultat le plus proche possible avec les primitives canoniques, signaler
+  chaque écart restant et en expliquer la nécessité ; ne jamais remplacer
+  silencieusement la cible par une approximation libre.
+- Valider réellement le rendu sur `localhost`, comparer aux images de référence
+  sur desktop et sur les largeurs pertinentes, puis corriger jusqu'à disparition
+  des écarts majeurs. La validation finale doit distinguer les éléments alignés,
+  les écarts résiduels, leur justification et la preuve visuelle disponible.
+- Si l'utilisateur exclut le header ou le footer, ne pas les réinventer pour
+  embellir le mockup ; cette exclusion fait partie du périmètre visuel.
+
 ## Validation web ciblée
 
 Pour une modification limitée à l'application web, utiliser les validations

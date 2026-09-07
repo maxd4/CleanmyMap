@@ -13,6 +13,11 @@
 - Texte réellement conçu comme noir = noir exact `#000000` / `text-black`; une teinte `slate` ou `stone` reste autorisée lorsqu'elle constitue intentionnellement une couleur de famille et non un substitut au noir
 - Bordures cartes = `border-[accent]-200/18`, hover `border-[accent]-200/38`
 
+Lorsqu'une cible visuelle est fournie, elle reste la référence de rendu ; pour
+la palette, les familles et contrastes de ce document restent la contrainte
+canonique. Si la cible entre en conflit avec cette contrainte, appliquer la
+variante compatible la plus proche et expliciter l'écart dans la preuve visuelle.
+
 ## Surfaces & cards
 
 Le contrat runtime unique des cartes, panels, états interactifs, modes
