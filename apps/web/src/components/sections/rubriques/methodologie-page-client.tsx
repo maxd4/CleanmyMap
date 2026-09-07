@@ -30,7 +30,7 @@ import type {
 import { buildWaterEstimate } from "@/lib/environmental-impact-estimator/services/water";
 import { buildElectricityEstimate } from "@/lib/environmental-impact-estimator/services/electricity";
 import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
-import type { ImpactTerrain2026PublicResults } from "@/lib/impact/impact-terrain-2026-results";
+import type { PublicLandingActionAggregation } from "@/lib/accueil/action-participant-aggregation";
 import { FreePlanServicesMethodologyVisual } from "./free-plan-services-methodology-visual";
 import { MonthlyImpactHistoryChart } from "./monthly-impact-history-chart";
 import { RouteMethodologySection } from "./route-methodology-section";
@@ -64,7 +64,7 @@ type MethodologiePageClientProps = {
   impactGeneratedAt: string | null;
   impactLaunchedAt: string | null;
   githubStats: GitHubRepositoryStats | null;
-  impactTerrainResults?: ImpactTerrain2026PublicResults | null;
+  impactTerrainResults?: PublicLandingActionAggregation | null;
   impactElectricity?: EnvironmentalImpactElectricityEstimate | null;
   impactWater?: EnvironmentalImpactWaterEstimate | null;
 };

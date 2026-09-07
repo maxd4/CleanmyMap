@@ -117,6 +117,14 @@ describe("action participant aggregation", () => {
         buttsByCondition: [],
         estimatedButtsWeightKg: 0,
         buttsDistanceMeters: 0,
+        co2eKg: 0,
+        co2eGrams: 0,
+        co2CarKilometers: 0,
+        co2ParisMoscowCarTrips: 0,
+        co2ParisNewYorkFlightShares: 0,
+        waterLiters: 0,
+        waterOlympicPools: 0,
+        waterFrenchPersonYears: 0,
       },
     });
   });

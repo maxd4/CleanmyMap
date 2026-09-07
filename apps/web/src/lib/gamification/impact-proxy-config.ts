@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { WATER_LITERS_PER_CIGARETTE_BUTT } from "@/lib/impact/impact-terrain-2026-constants";
 
 export type ImpactProxyFactors = {
   waterLitersPerCigaretteButt: number;
@@ -22,7 +23,7 @@ export type ImpactProxyConfig = {
 const DEFAULT_IMPACT_PROXY_VERSION = "impact-proxy-2026.04-v1";
 
 const DEFAULT_IMPACT_PROXY_FACTORS: ImpactProxyFactors = {
-  waterLitersPerCigaretteButt: 500,
+  waterLitersPerCigaretteButt: WATER_LITERS_PER_CIGARETTE_BUTT,
   co2KgPerWasteKg: 1.2,
   surfaceM2PerWasteKg: 2.5,
   surfaceM2PerVolunteerMinute: 0.12,
