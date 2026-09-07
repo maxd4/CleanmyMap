@@ -49,6 +49,27 @@ du 27 août. Le snapshot observé après le déploiement restait celui généré
 donc pas présenter cette séquence comme une preuve complète de la
 reconstruction runtime post-déploiement.
 
+### Extension canonique Participants / temps — 7 septembre 2026
+
+La migration append-only
+`20260907000001_public_landing_action_aggregation.sql` étend cette même RPC
+avec `participants_total`, `total_duration_minutes`,
+`action_distribution` et `classification_warnings`. Le périmètre reste borné
+aux actions approuvées, visibles, hors marqueurs de test et postérieures à la
+date fournie ; le runtime web ne charge toujours qu'un aperçu de trois actions.
+
+`action_distribution` classe chaque action une seule fois : les actions
+spontanées sont dérivées de `volunteers_count`, tandis que les structures sont
+classées depuis `organizer_type`. Un type legacy absent ou incohérent tombe dans
+`Autres` et produit un warning administratif, sans inférer quoi que ce soit du
+nom de l'organisateur. La durée est additionnée en minutes d'action, sans
+conversion en personnes-heures ; les heures sont dérivées côté contrat par
+division par 60.
+
+La RPC conserve `SECURITY INVOKER`, `search_path=pg_catalog, public`, la
+lecture bornée, les colonnes historiques, les révocations `anon` /
+`authenticated` et le seul grant `service_role`.
+
 ## Clôture de l'optimisation des lectures — 29 août 2026
 
 Cette passe clôture l'optimisation préventive issue des commits

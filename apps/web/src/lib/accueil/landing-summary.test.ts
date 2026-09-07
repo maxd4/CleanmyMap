@@ -61,6 +61,12 @@ describe("landing summary loading", () => {
           waste_kg: "25.5",
           cigarette_butts: 1250,
           volunteers: 31,
+          participants_total: 31,
+          total_duration_minutes: 90,
+          action_distribution: [
+            { key: "company", category: "Entreprise", count: 2 },
+          ],
+          classification_warnings: [],
         },
       ],
       error: null,
@@ -99,6 +105,15 @@ describe("landing summary loading", () => {
       wasteKg: 25.5,
       butts: 1250,
       volunteers: 31,
+    });
+    expect(summary).toMatchObject({
+      participantsTotal: 31,
+      totalDurationMinutes: 90,
+      totalDurationHours: 1.5,
+      actionDistribution: [
+        { key: "company", category: "Entreprise", count: 2 },
+      ],
+      classificationWarnings: [],
     });
     expect(summary.activity).toMatchObject({
       visibleActions: 12,
@@ -150,6 +165,11 @@ describe("landing summary loading", () => {
           warnings: [],
         },
       },
+      participantsTotal: 3,
+      totalDurationMinutes: 30,
+      totalDurationHours: 0.5,
+      actionDistribution: [],
+      classificationWarnings: [],
     };
     loadOrRefreshPublicSurfaceSnapshotMock.mockResolvedValue({
       payload: freshPayload,
