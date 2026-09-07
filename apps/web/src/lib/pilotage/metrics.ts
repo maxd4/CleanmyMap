@@ -13,6 +13,7 @@ export type PilotageWindowMetrics = {
   approvedActions: number;
   impactVolumeKg: number;
   mobilizationCount: number;
+  totalDurationMinutes: number;
   qualityScore: number;
   coverageRate: number;
   moderationDelayDays: number | null;
@@ -196,6 +197,11 @@ function computeWindowMetrics(
     (acc, record) => acc + computeActionImpactKpis(record).volunteers,
     0,
   );
+  const totalDurationMinutes = approvedActionsRecords.reduce(
+    (acc, record) =>
+      acc + Math.max(0, Number(record.metadata.durationMinutes || 0)),
+    0,
+  );
 
   const qualityResults = approvedActionsRecords.map((record) =>
     evaluateActionQuality(toActionListItem(record), new Date(windowEndMs)),
@@ -236,6 +242,7 @@ function computeWindowMetrics(
     approvedActions,
     impactVolumeKg: round1(impactVolumeKg),
     mobilizationCount,
+    totalDurationMinutes,
     qualityScore: round1(qualityScore),
     coverageRate: round1(coverageRate),
     moderationDelayDays:

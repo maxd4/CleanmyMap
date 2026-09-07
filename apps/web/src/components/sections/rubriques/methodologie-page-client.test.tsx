@@ -222,6 +222,10 @@ describe("ActionMapMethodologySection", () => {
     expect(markup).toContain("km voiture");
     expect(markup).toContain("piscines olympiques");
     expect(markup).toContain("années de consommation");
+    expect(markup).toContain("Deux estimations et fourchette");
+    expect(markup).toContain("estimation par la masse");
+    expect(markup).toContain("estimation par le temps");
+    expect(markup).toContain("fourchette");
     expect(markup).not.toContain("0,2 g");
   });
 });

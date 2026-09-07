@@ -167,7 +167,7 @@
         "inputLabel": "Kg of waste",
         "resultLabel": "CO2 avoided",
         "surfaceLabel": "Surface cleaned",
-        "savingsLabel": "Estimated savings",
+        "savingsLabel": "Valuation range",
         "formulaLabel": "Reference",
         "formula": "{waste} kg × {factor} = CO2"
       },

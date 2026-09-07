@@ -18,6 +18,10 @@ describe("impact magnitude helpers", () => {
     expect(snapshot.surfaceM2FromWaste).toBe(50);
     expect(snapshot.surfaceM2FromVolunteerTime).toBe(3.5999999999999996);
     expect(snapshot.euroSaved).toBe(30);
+    expect(snapshot.streetCleaningSavings.massEstimateEuros).toBe(30);
+    expect(snapshot.streetCleaningSavings.timeEstimateEuros).toBe(6.155);
+    expect(snapshot.streetCleaningSavings.lowerBoundEuros).toBe(6.155);
+    expect(snapshot.streetCleaningSavings.upperBoundEuros).toBe(30);
   });
 
   it("clamps invalid or out-of-range inputs safely", () => {

@@ -164,11 +164,48 @@ servent à lire un ordre de grandeur et ne modifient pas le résultat source.
 
 L’agrégat public et le résultat méthodologique sont donc cohérents : les
 participants, la répartition des actions, le CO₂e et l’eau sont calculés à
-partir du même périmètre public borné. Les trois KPI sont documentés ici sans
+partir du même périmètre public borné. Les six KPI sont documentés ici sans
 injection dans les bulles `i` de la homepage dans ce lot.
 
-Le sixième KPI — Économie de voirie — reste dans la même section et conserve
-son contrat commun ; son détail métier n’est pas développé dans ce lot.
+### KPI 6 — Économie de voirie
+
+Ce KPI conserve deux approches méthodologiques distinctes, sans fallback
+silencieux ni moyenne entre elles :
+
+```txt
+economie_dechets = wasteKg × 1,5 €
+heures_action = somme(durationMinutes) / 60
+economie_temps = heures_action × 12,31 €
+economie_min = min(economie_dechets, economie_temps)
+economie_max = max(economie_dechets, economie_temps)
+```
+
+La valorisation par le temps compare une heure d’action bénévole à une heure
+de travail humain consacrée à une tâche équivalente. Elle utilise `12,31 €/h`,
+référence méthodologique CleanMyMap. Cette valeur n’est pas qualifiée de SMIC
+légal brut 2026, aucune source primaire vérifiable correspondante n’étant
+déposée dans ce contrat.
+
+La valorisation par la masse utilise `1,5 €/kg`, soit `1 500 €/tonne`. La masse
+retirée est un proxy du service rendu en matière de collecte, logistique,
+transport, traitement et orientation vers les filières. Les repères pédagogiques
+peuvent situer l’ordre de grandeur autour de `900 €/tonne`, ou autour de
+`1 000–1 500 €/tonne` pour certains déchets diffus ou nécessitant un traitement
+spécifique. Ces chiffres ne sont attribués ni à l’ADEME ni à une autre
+organisation dans ce contrat.
+
+Le résultat public expose séparément l’estimation par la masse, l’estimation par
+le temps, puis la borne basse et la borne haute : `entre X € et Y €`. Il s’agit
+d’une estimation méthodologique, pas d’une dépense comptable réellement
+économisée euro pour euro, d’une facture évitée ou d’une valorisation
+contractuelle. La durée cumulée n’est jamais multipliée par `volunteersCount` :
+le calcul porte sur des heures d’action, pas des personnes-heures.
+
+La source domaine commune est réutilisée par l’agrégat public, les calculateurs
+d’action, le portail sponsor, l’apprentissage et les rapports. La façade
+legacy `euroSaved` reste explicitement une valeur par la masse pour les exports
+et consommateurs historiques qui en dépendent ; elle ne remplace pas les
+quatre valeurs détaillées du contrat `streetCleaningSavings`.
 
 Les résultats dynamiques et les nouveaux agrégats homepage ne sont pas injectés
 dans les bulles i dans ce lot. Le temps total des actions reste un agrégat

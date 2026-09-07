@@ -71,9 +71,11 @@ function buildSnapshotGroups(report: ReportModel): SnapshotGroup[] {
         {
           label: "Économie de voirie (proxy)",
           value:
-            report.climate.streetCleaningSavingsEuros == null
-              ? "Indisponible"
-              : `${toFrNumber(report.climate.streetCleaningSavingsEuros)} €`,
+            report.climate.streetCleaningSavings
+              ? `${toFrNumber(report.climate.streetCleaningSavings.lowerBoundEuros)}–${toFrNumber(report.climate.streetCleaningSavings.upperBoundEuros)} €`
+              : report.climate.streetCleaningSavingsEuros == null
+                ? "Indisponible"
+                : `${toFrNumber(report.climate.streetCleaningSavingsEuros)} €`,
           icon: ArrowRight,
         },
       ],

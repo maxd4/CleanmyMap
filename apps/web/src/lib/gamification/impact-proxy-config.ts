@@ -1,5 +1,8 @@
 import { env } from "@/lib/env";
-import { WATER_LITERS_PER_CIGARETTE_BUTT } from "@/lib/impact/impact-terrain-2026-constants";
+import {
+  STREET_CLEANING_EUROS_PER_WASTE_KG,
+  WATER_LITERS_PER_CIGARETTE_BUTT,
+} from "@/lib/impact/impact-terrain-2026-constants";
 
 export type ImpactProxyFactors = {
   waterLitersPerCigaretteButt: number;
@@ -27,7 +30,7 @@ const DEFAULT_IMPACT_PROXY_FACTORS: ImpactProxyFactors = {
   co2KgPerWasteKg: 1.2,
   surfaceM2PerWasteKg: 2.5,
   surfaceM2PerVolunteerMinute: 0.12,
-  euroSavedPerWasteKg: 1.5,
+  euroSavedPerWasteKg: STREET_CLEANING_EUROS_PER_WASTE_KG,
 };
 
 const MAX_PROXY_FACTOR = 1_000_000;

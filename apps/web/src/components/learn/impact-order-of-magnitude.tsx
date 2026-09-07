@@ -198,7 +198,7 @@ export function ImpactOrderOfMagnitudeSection() {
               />
               <InfoChip
                 label={t("magnitude.waste.savingsLabel")}
-                value={`${formatValue(snapshot.euroSaved)} €`}
+                value={`${formatValue(snapshot.streetCleaningSavings.lowerBoundEuros)}–${formatValue(snapshot.streetCleaningSavings.upperBoundEuros)} €`}
               />
               <InfoChip
                 label={t("magnitude.waste.formulaLabel")}

@@ -27,7 +27,7 @@ function makeContract(
 describe("canonical action impact calculation", () => {
   it("keeps declared waste as the selected source", () => {
     const impact = computeActionImpactKpis(
-      makeContract({ wasteKg: 12, cigaretteButts: 10, volunteersCount: 4 }),
+      makeContract({ wasteKg: 12, cigaretteButts: 10, volunteersCount: 4, durationMinutes: 10 }),
     );
 
     expect(impact).toMatchObject({
@@ -37,6 +37,15 @@ describe("canonical action impact calculation", () => {
       volunteers: 4,
       co2AvoidedKg: 14.399999999999999,
       waterSavedLiters: 5000,
+      streetCleaningSavings: {
+        wasteKg: 12,
+        durationMinutes: 10,
+        actionHours: 10 / 60,
+        massEstimateEuros: 18,
+        timeEstimateEuros: (10 / 60) * 12.31,
+        lowerBoundEuros: (10 / 60) * 12.31,
+        upperBoundEuros: 18,
+      },
       euroSaved: 18,
     });
   });
@@ -89,6 +98,15 @@ describe("canonical action impact calculation", () => {
       volunteers: 0,
       co2AvoidedKg: 0,
       waterSavedLiters: 0,
+      streetCleaningSavings: {
+        wasteKg: 0,
+        durationMinutes: 0,
+        actionHours: 0,
+        massEstimateEuros: 0,
+        timeEstimateEuros: 0,
+        lowerBoundEuros: 0,
+        upperBoundEuros: 0,
+      },
       euroSaved: 0,
     });
   });
@@ -117,7 +135,33 @@ describe("canonical action impact calculation", () => {
       volunteers: 3,
       co2AvoidedKg: expect.closeTo(3.6, 10),
       waterSavedLiters: 1_300_000,
+      streetCleaningSavings: {
+        wasteKg: 3,
+        durationMinutes: 0,
+        actionHours: 0,
+        massEstimateEuros: 4.5,
+        timeEstimateEuros: 0,
+        lowerBoundEuros: 0,
+        upperBoundEuros: 4.5,
+      },
       euroSaved: 5,
+    });
+  });
+
+  it("calculates independent mass/time estimates and bounds without volunteer multiplication", () => {
+    const totals = sumActionImpactKpis([
+      makeContract({ wasteKg: 10, volunteersCount: 20, durationMinutes: 60 }),
+      makeContract({ wasteKg: 0, volunteersCount: 50, durationMinutes: 30 }),
+    ]);
+
+    expect(totals.streetCleaningSavings).toEqual({
+      wasteKg: 10,
+      durationMinutes: 90,
+      actionHours: 1.5,
+      massEstimateEuros: 15,
+      timeEstimateEuros: 18.465,
+      lowerBoundEuros: 15,
+      upperBoundEuros: 18.465,
     });
   });
 
@@ -137,6 +181,7 @@ describe("canonical action impact calculation", () => {
     expect(methodology.formulas.euro).toContain(
       String(IMPACT_PROXY_CONFIG.factors.euroSavedPerWasteKg),
     );
+    expect(methodology.formulas.euro).toContain("somme(durationMinutes) / 60");
     expect(methodology.formulas.surface).toContain(
       String(IMPACT_PROXY_CONFIG.factors.surfaceM2PerWasteKg),
     );

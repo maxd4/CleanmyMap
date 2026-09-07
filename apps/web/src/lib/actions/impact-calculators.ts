@@ -2,7 +2,11 @@ import type { ActionWasteBreakdown } from "./types";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import {
   BUTTS_PER_KG_REFERENCE,
+  computeImpactTerrain2026StreetCleaningSavings,
   estimateButtsWeightKg,
+  STREET_CLEANING_EUROS_PER_WASTE_KG,
+  type ImpactTerrain2026StreetCleaningSavings,
+  VOLUNTEER_ACTION_EUROS_PER_HOUR,
 } from "@/lib/impact/impact-terrain-2026";
 
 export {
@@ -17,6 +21,7 @@ export type ActionImpactInput = {
     wasteKg?: number | null;
     cigaretteButts?: number | null;
     volunteersCount?: number | null;
+    durationMinutes?: number | null;
     wasteBreakdown?: ActionWasteBreakdown | null;
   };
 };
@@ -34,6 +39,8 @@ export type ActionImpactKpis = {
   volunteers: number;
   co2AvoidedKg: number;
   waterSavedLiters: number;
+  streetCleaningSavings: ImpactTerrain2026StreetCleaningSavings;
+  /** Legacy mass-only facade retained for report/export consumers. */
   euroSaved: number;
 };
 
@@ -125,6 +132,11 @@ export function computeActionImpactKpis(
     0,
     Number(contract.metadata.volunteersCount || 0),
   );
+  const streetCleaningSavings =
+    computeImpactTerrain2026StreetCleaningSavings({
+      wasteKg,
+      durationMinutes: Number(contract.metadata.durationMinutes || 0),
+    });
 
   return {
     wasteKg,
@@ -135,9 +147,8 @@ export function computeActionImpactKpis(
     waterSavedLiters: Math.round(
       butts * IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt,
     ),
-    euroSaved: Math.round(
-      wasteKg * IMPACT_PROXY_CONFIG.factors.euroSavedPerWasteKg,
-    ),
+    streetCleaningSavings,
+    euroSaved: Math.round(streetCleaningSavings.massEstimateEuros),
   };
 }
 
@@ -150,14 +161,23 @@ export function sumActionImpactKpis(
     volunteers: 0,
     co2AvoidedKg: 0,
     waterSavedLiters: 0,
+    streetCleaningSavings: computeImpactTerrain2026StreetCleaningSavings({
+      wasteKg: 0,
+      durationMinutes: 0,
+    }),
     euroSaved: 0,
   };
+  let totalDurationMinutes = 0;
 
   for (const contract of contracts) {
     const impact = computeActionImpactKpis(contract);
     totals.wasteKg += impact.wasteKg;
     totals.butts += impact.butts;
     totals.volunteers += impact.volunteers;
+    totalDurationMinutes += Math.max(
+      0,
+      Number(contract.metadata.durationMinutes || 0),
+    );
   }
 
   totals.co2AvoidedKg =
@@ -165,9 +185,12 @@ export function sumActionImpactKpis(
   totals.waterSavedLiters = Math.round(
     totals.butts * IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt,
   );
-  totals.euroSaved = Math.round(
-    totals.wasteKg * IMPACT_PROXY_CONFIG.factors.euroSavedPerWasteKg,
-  );
+  totals.streetCleaningSavings =
+    computeImpactTerrain2026StreetCleaningSavings({
+      wasteKg: totals.wasteKg,
+      durationMinutes: totalDurationMinutes,
+    });
+  totals.euroSaved = Math.round(totals.streetCleaningSavings.massEstimateEuros);
 
   return totals;
 }
@@ -191,7 +214,7 @@ export function buildActionImpactMethodology(): ActionImpactMethodology {
       volunteers: "volunteers = max(0, volunteersCount)",
       co2e: `co2e_kg = wasteKg * ${factors.co2KgPerWasteKg}`,
       water: `eau_L = butts * ${factors.waterLitersPerCigaretteButt}`,
-      euro: `economie_voirie_EUR = wasteKg * ${factors.euroSavedPerWasteKg}`,
+      euro: `economie_dechets = totalWasteKg * ${STREET_CLEANING_EUROS_PER_WASTE_KG}; heures_action = somme(durationMinutes) / 60; economie_temps = heures_action * ${VOLUNTEER_ACTION_EUROS_PER_HOUR}; economie_min = min(economie_dechets, economie_temps); economie_max = max(economie_dechets, economie_temps)`,
       surface: `surface_m2 = wasteKg * ${factors.surfaceM2PerWasteKg} + volunteerMinutes * ${factors.surfaceM2PerVolunteerMinute}`,
     },
   };

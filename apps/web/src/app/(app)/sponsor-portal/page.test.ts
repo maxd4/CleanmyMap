@@ -24,6 +24,7 @@ const overview = {
     current: {
       impactVolumeKg: 120,
       mobilizationCount: 18,
+      totalDurationMinutes: 600,
     },
   },
   contracts: [{ id: "contract-1" }],
@@ -152,6 +153,7 @@ describe("/sponsor-portal access boundary", () => {
     const markup = renderToStaticMarkup(await SponsorPortalPage());
 
     expect(markup).toContain('data-testid="metrics"');
+    expect(markup).toContain("123,1–180 €");
     expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({ periodDays: 730, limit: 5000 });
     expect(events).toEqual(["auth", "profile", "overview"]);
   });

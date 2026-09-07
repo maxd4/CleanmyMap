@@ -220,7 +220,7 @@
         "inputLabel": "Kg de déchets",
         "resultLabel": "CO2 évité",
         "surfaceLabel": "Surface nettoyée",
-        "savingsLabel": "Économie estimée",
+        "savingsLabel": "Fourchette de valorisation",
         "formulaLabel": "Repère",
         "formula": "{waste} kg × {factor} = CO2"
       },

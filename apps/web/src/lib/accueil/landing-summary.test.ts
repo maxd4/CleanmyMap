@@ -170,6 +170,15 @@ describe("landing summary loading", () => {
       totalDurationHours: 0.5,
       actionDistribution: [],
       classificationWarnings: [],
+      streetCleaningSavings: {
+        wasteKg: 0,
+        durationMinutes: 30,
+        actionHours: 0.5,
+        massEstimateEuros: 0,
+        timeEstimateEuros: 6.155,
+        lowerBoundEuros: 0,
+        upperBoundEuros: 6.155,
+      },
     };
     loadOrRefreshPublicSurfaceSnapshotMock.mockResolvedValue({
       payload: freshPayload,

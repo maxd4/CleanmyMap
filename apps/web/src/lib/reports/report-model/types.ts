@@ -2,6 +2,7 @@ import type { ActionListItem, ActionMapItem } from "@/lib/actions/types";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { PersonalImpactMethodology } from "@/lib/gamification/progression-types";
+import type { ImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
 
 export type ChapterAudience = "terrain" | "strategie" | "mixte";
 
@@ -91,6 +92,8 @@ export type ReportModel = {
     twelve: { actions: number; kg: number; butts: number };
     waterProtectedLiters: number;
     co2AvoidedKg: number;
+    streetCleaningSavings?: ImpactTerrain2026StreetCleaningSavings;
+    /** Legacy mass-only report/export facade. */
     streetCleaningSavingsEuros?: number;
   };
   community: {

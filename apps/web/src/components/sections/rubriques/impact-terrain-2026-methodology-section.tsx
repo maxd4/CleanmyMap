@@ -205,6 +205,21 @@ function KpiMethodBlock({
           </div>
         )}
 
+        {method.key === "euro" && (
+          <div className="rounded-2xl border border-emerald-200/20 bg-emerald-300/5 p-4">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100/75">
+              {isFrench ? "Deux estimations et fourchette" : "Two estimates and range"}
+            </h4>
+            {results?.streetCleaningSavings ? (
+              <div className="mt-3 grid gap-3 text-sm text-slate-200 sm:grid-cols-2">
+                <p><span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "estimation par la masse" : "waste-mass estimate"}</span><strong>{results.streetCleaningSavings.massEstimateEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €</strong></p>
+                <p><span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "estimation par le temps" : "action-time estimate"}</span><strong>{results.streetCleaningSavings.timeEstimateEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €</strong></p>
+                <p className="sm:col-span-2"><span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "fourchette" : "range"}</span><strong>{results.streetCleaningSavings.lowerBoundEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}–{results.streetCleaningSavings.upperBoundEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €</strong></p>
+              </div>
+            ) : null}
+          </div>
+        )}
+
         <div>
           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-red-200/65">
             {isFrench ? "Agrégat" : "Aggregate"}
