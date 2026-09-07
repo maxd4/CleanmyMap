@@ -26,6 +26,22 @@ describe("Impact terrain 2026 public results", () => {
     });
   });
 
+  it("publishes CO₂e and water conversions from the canonical runtime results", () => {
+    const result = buildImpactTerrain2026PublicResults({
+      wasteKg: 10,
+      buttsTotal: 1_000,
+    });
+
+    expect(result.co2eKg).toBe(12);
+    expect(result.co2eGrams).toBe(12_000);
+    expect(result.co2CarKilometers).toBeCloseTo(12_000 / 142, 10);
+    expect(result.co2ParisMoscowCarTrips).toBeCloseTo(12_000 / (2_840 * 142), 10);
+    expect(result.co2ParisNewYorkFlightShares).toBeCloseTo(12_000 / 1_000_000, 10);
+    expect(result.waterLiters).toBe(500_000);
+    expect(result.waterOlympicPools).toBeCloseTo(500_000 / 2_500_000, 10);
+    expect(result.waterFrenchPersonYears).toBeCloseTo(500_000 / 55_000, 10);
+  });
+
   it("keeps only non-zero qualified butt conditions and tracks unqualified data", () => {
     const result = buildImpactTerrain2026PublicResults({
       buttsTotal: 1_000,

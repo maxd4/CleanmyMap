@@ -1,5 +1,22 @@
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
+import {
+  CO2_GRAMS_PER_CAR_KILOMETER,
+  CO2_GRAMS_PER_PARIS_NEW_YORK_FLIGHT,
+  FRENCH_PERSON_ANNUAL_WATER_LITERS,
+  OLYMPIC_POOL_LITERS,
+  PARIS_MOSCOW_ROAD_DISTANCE_KM,
+  WATER_LITERS_PER_CIGARETTE_BUTT,
+} from "./impact-terrain-2026-constants";
+
+export {
+  CO2_GRAMS_PER_CAR_KILOMETER,
+  CO2_GRAMS_PER_PARIS_NEW_YORK_FLIGHT,
+  FRENCH_PERSON_ANNUAL_WATER_LITERS,
+  OLYMPIC_POOL_LITERS,
+  PARIS_MOSCOW_ROAD_DISTANCE_KM,
+  WATER_LITERS_PER_CIGARETTE_BUTT,
+} from "./impact-terrain-2026-constants";
 
 export const BUTTS_PER_KG_REFERENCE = 2_500;
 export const WASTE_KG_PER_50L_BAG = 5;
@@ -47,6 +64,59 @@ export function estimateButtsWeightKg(
 
   const factor = condition ? CONDITION_WEIGHT_FACTORS[condition] : 1;
   return count / (BUTTS_PER_KG_REFERENCE * factor);
+}
+
+export type ImpactTerrain2026Co2Conversions = {
+  co2eKg: number;
+  co2eGrams: number;
+  carKilometers: number;
+  parisMoscowCarTrips: number;
+  parisNewYorkFlightShares: number;
+};
+
+export function computeImpactTerrain2026Co2Conversions(
+  wasteKg: number,
+): ImpactTerrain2026Co2Conversions {
+  const normalizedWasteKg = Number.isFinite(wasteKg)
+    ? Math.max(0, wasteKg)
+    : 0;
+  const co2eKg =
+    normalizedWasteKg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg;
+  const co2eGrams = co2eKg * 1_000;
+
+  return {
+    co2eKg,
+    co2eGrams,
+    carKilometers: co2eGrams / CO2_GRAMS_PER_CAR_KILOMETER,
+    parisMoscowCarTrips:
+      co2eGrams /
+      (PARIS_MOSCOW_ROAD_DISTANCE_KM * CO2_GRAMS_PER_CAR_KILOMETER),
+    parisNewYorkFlightShares:
+      co2eGrams / CO2_GRAMS_PER_PARIS_NEW_YORK_FLIGHT,
+  };
+}
+
+export type ImpactTerrain2026WaterConversions = {
+  waterLiters: number;
+  olympicPools: number;
+  frenchPersonYears: number;
+};
+
+export function computeImpactTerrain2026WaterConversions(
+  cigaretteButts: number,
+): ImpactTerrain2026WaterConversions {
+  const normalizedButts = Number.isFinite(cigaretteButts)
+    ? Math.max(0, cigaretteButts)
+    : 0;
+  const waterLiters =
+    normalizedButts *
+    IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt;
+
+  return {
+    waterLiters,
+    olympicPools: waterLiters / OLYMPIC_POOL_LITERS,
+    frenchPersonYears: waterLiters / FRENCH_PERSON_ANNUAL_WATER_LITERS,
+  };
 }
 
 export type ImpactTerrain2026KpiKey =
@@ -272,13 +342,13 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
             "Impact proxy expressed as kilograms of avoided CO₂e, to be read as a reproducible order of magnitude.",
           ),
           pedagogicalConversion: text(
-            "Des équivalences de distance ou de trajet peuvent aider à lire le résultat ; elles ne constituent pas une mesure d’émissions évitées.",
-            "Distance or trip equivalents may help read the result; they are not a measurement of avoided emissions.",
+            `Conversions pédagogiques : CO₂_g = CO₂e_kg × 1 000 ; km voiture = CO₂_g / ${CO2_GRAMS_PER_CAR_KILOMETER} ; part Paris–New York = CO₂_g / ${CO2_GRAMS_PER_PARIS_NEW_YORK_FLIGHT} ; part Paris–Moscou en voiture = CO₂_g / (${PARIS_MOSCOW_ROAD_DISTANCE_KM} × ${CO2_GRAMS_PER_CAR_KILOMETER}). Ces équivalences ne constituent pas une mesure d’émissions évitées.`,
+            `Pedagogical conversions: CO₂_g = CO₂e_kg × 1,000; car km = CO₂_g / ${CO2_GRAMS_PER_CAR_KILOMETER}; Paris–New York flight share = CO₂_g / ${CO2_GRAMS_PER_PARIS_NEW_YORK_FLIGHT}; Paris–Moscow car-trip share = CO₂_g / (${PARIS_MOSCOW_ROAD_DISTANCE_KM} × ${CO2_GRAMS_PER_CAR_KILOMETER}). These equivalents are not a measurement of avoided emissions.`,
           ),
         },
         formula: text(
-          `co2e_kg = totalWasteKg × ${factors.co2KgPerWasteKg}`,
-          `co2e_kg = totalWasteKg × ${factors.co2KgPerWasteKg}`,
+          `CO₂e_kg = totalWasteKg × ${factors.co2KgPerWasteKg} ; CO₂_g = CO₂e_kg × 1 000 ; km_voiture = CO₂_g / ${CO2_GRAMS_PER_CAR_KILOMETER} ; part_vol_Paris_NY = CO₂_g / ${CO2_GRAMS_PER_PARIS_NEW_YORK_FLIGHT} ; part_Paris_Moscou_voiture = CO₂_g / (${PARIS_MOSCOW_ROAD_DISTANCE_KM} × ${CO2_GRAMS_PER_CAR_KILOMETER})`,
+          `CO₂e_kg = totalWasteKg × ${factors.co2KgPerWasteKg}; CO₂_g = CO₂e_kg × 1,000; car_km = CO₂_g / ${CO2_GRAMS_PER_CAR_KILOMETER}; Paris_NY_flight_share = CO₂_g / ${CO2_GRAMS_PER_PARIS_NEW_YORK_FLIGHT}; Paris_Moscow_car_trip_share = CO₂_g / (${PARIS_MOSCOW_ROAD_DISTANCE_KM} × ${CO2_GRAMS_PER_CAR_KILOMETER})`,
         ),
         assumptions: [
           text(
@@ -288,6 +358,10 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
         ],
         references: [
           text(sources.co2, sources.co2),
+          text(
+            `Références de conversion : ${CO2_GRAMS_PER_CAR_KILOMETER} g CO₂e/km ; ${CO2_GRAMS_PER_PARIS_NEW_YORK_FLIGHT.toLocaleString("fr-FR")} g CO₂e pour une part de vol Paris–New York ; ${PARIS_MOSCOW_ROAD_DISTANCE_KM.toLocaleString("fr-FR")} km par route pour Paris–Moscou.`,
+            `Conversion references: ${CO2_GRAMS_PER_CAR_KILOMETER} g CO₂e/km; ${CO2_GRAMS_PER_PARIS_NEW_YORK_FLIGHT.toLocaleString("en-US")} g CO₂e for a Paris–New York flight share; ${PARIS_MOSCOW_ROAD_DISTANCE_KM.toLocaleString("en-US")} road km for Paris–Moscow.`,
+          ),
           text(`Version runtime : ${version}.`, `Runtime version: ${version}.`),
         ],
         limits: [
@@ -314,13 +388,13 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
             "Proxy expressed as potentially preserved liters, not as a volume of water actually treated.",
           ),
           pedagogicalConversion: text(
-            "Les repères de piscine ou de consommation rendent l’ordre de grandeur lisible sans changer le résultat source.",
-            "Pool or consumption references make the order of magnitude readable without changing the source result.",
+            `Conversions pédagogiques : piscines = eau_L / ${OLYMPIC_POOL_LITERS.toLocaleString("fr-FR")} ; années de consommation = eau_L / ${FRENCH_PERSON_ANNUAL_WATER_LITERS.toLocaleString("fr-FR")}. Il s’agit d’un proxy de potentiel, pas d’une mesure directe.`,
+            `Pedagogical conversions: pools = water_L / ${OLYMPIC_POOL_LITERS.toLocaleString("en-US")}; consumption years = water_L / ${FRENCH_PERSON_ANNUAL_WATER_LITERS.toLocaleString("en-US")}. This is a potential proxy, not a direct measurement.`,
           ),
         },
         formula: text(
-          `eau_L = totalButts × ${factors.waterLitersPerCigaretteButt}`,
-          `water_L = totalButts × ${factors.waterLitersPerCigaretteButt}`,
+          `eau_L = totalButts × ${factors.waterLitersPerCigaretteButt} ; piscines = eau_L / ${OLYMPIC_POOL_LITERS} ; années = eau_L / ${FRENCH_PERSON_ANNUAL_WATER_LITERS}`,
+          `water_L = totalButts × ${factors.waterLitersPerCigaretteButt}; pools = water_L / ${OLYMPIC_POOL_LITERS}; years = water_L / ${FRENCH_PERSON_ANNUAL_WATER_LITERS}`,
         ),
         assumptions: [
           text(
@@ -330,6 +404,10 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
         ],
         references: [
           text(sources.water, sources.water),
+          text(
+            `Références de conversion : ${WATER_LITERS_PER_CIGARETTE_BUTT} L par mégot ; ${OLYMPIC_POOL_LITERS.toLocaleString("fr-FR")} L pour une piscine olympique ; ${FRENCH_PERSON_ANNUAL_WATER_LITERS.toLocaleString("fr-FR")} L/an/personne.`,
+            `Conversion references: ${WATER_LITERS_PER_CIGARETTE_BUTT} L per cigarette butt; ${OLYMPIC_POOL_LITERS.toLocaleString("en-US")} L for an Olympic pool; ${FRENCH_PERSON_ANNUAL_WATER_LITERS.toLocaleString("en-US")} L/person/year.`,
+          ),
           text(`Version runtime : ${version}.`, `Runtime version: ${version}.`),
         ],
         limits: [

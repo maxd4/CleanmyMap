@@ -13,8 +13,9 @@ import {
   type ImpactTerrain2026KpiMethod,
   type ImpactTerrain2026LocalizedText,
 } from "@/lib/impact/impact-terrain-2026";
-import type { ImpactTerrain2026PublicResults } from "@/lib/impact/impact-terrain-2026-results";
+import type { PublicLandingActionAggregation } from "@/lib/accueil/action-participant-aggregation";
 import { ImpactTerrain2026ButtsPieChart } from "./impact-terrain-2026-butts-pie-chart";
+import { ImpactTerrain2026ParticipantsPieChart } from "./impact-terrain-2026-participants-pie-chart";
 
 const KPI_ICONS: Record<ImpactTerrain2026KpiMethod["key"], LucideIcon> = {
   wasteKg: Trash2,
@@ -55,9 +56,10 @@ function KpiMethodBlock({
 }: {
   method: ImpactTerrain2026KpiMethod;
   isFrench: boolean;
-  results: ImpactTerrain2026PublicResults | null;
+  results: PublicLandingActionAggregation | null;
 }) {
   const Icon = KPI_ICONS[method.key];
+  const terrainResults = results?.impactTerrain ?? null;
 
   return (
     <article
@@ -88,24 +90,47 @@ function KpiMethodBlock({
           </p>
         </div>
 
+        {method.key === "volunteers" && (
+          <div className="space-y-4 rounded-2xl border border-emerald-200/20 bg-emerald-300/5 p-4">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100/75">
+              {isFrench ? "Participants et répartition des actions" : "Participants and action distribution"}
+            </h4>
+            {results ? (
+              <p className="text-sm text-slate-200">
+                <span className="mr-2 text-slate-400">{isFrench ? "participants déclarés" : "reported participants"}</span>
+                <strong>{results.participantsTotal.toLocaleString("fr-FR")}</strong>
+              </p>
+            ) : (
+              <p className="text-xs leading-relaxed text-slate-400">
+                {isFrench ? "Le résultat public n’est pas disponible dans cette génération de la page." : "The public result is unavailable in this page generation."}
+              </p>
+            )}
+            <ImpactTerrain2026ParticipantsPieChart
+              distribution={results?.actionDistribution ?? []}
+              participantsTotal={results?.participantsTotal ?? 0}
+              isFrench={isFrench}
+            />
+          </div>
+        )}
+
         {method.key === "wasteKg" && (
           <div className="rounded-2xl border border-emerald-200/20 bg-emerald-300/5 p-4">
             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100/75">
               {isFrench ? "Résultat public chargé" : "Loaded public result"}
             </h4>
-            {results ? (
+            {terrainResults ? (
               <div className="mt-3 grid gap-3 text-sm text-slate-200 sm:grid-cols-3">
                 <p>
                   <span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">kg</span>
-                  <strong>{results.wasteKg.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}</strong>
+                  <strong>{terrainResults.wasteKg.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}</strong>
                 </p>
                 <p>
                   <span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "équivalence" : "equivalent"}</span>
-                  <strong>{results.wasteBagsEquivalent.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} {isFrench ? "sacs de 50 L" : "50 L bags"}</strong>
+                  <strong>{terrainResults.wasteBagsEquivalent.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} {isFrench ? "sacs de 50 L" : "50 L bags"}</strong>
                 </p>
                 <p>
                   <span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "équivalence" : "equivalent"}</span>
-                  <strong>{results.wasteMechanicalBicyclesEquivalent.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} {isFrench ? "Vélib' mécaniques" : "mechanical Vélib'"}</strong>
+                  <strong>{terrainResults.wasteMechanicalBicyclesEquivalent.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} {isFrench ? "Vélib' mécaniques" : "mechanical Vélib'"}</strong>
                 </p>
               </div>
             ) : (
@@ -123,29 +148,60 @@ function KpiMethodBlock({
             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100/75">
               {isFrench ? "Résultats publics et qualification" : "Public results and qualification"}
             </h4>
-            {results ? (
+            {terrainResults ? (
               <div className="grid gap-3 text-sm text-slate-200 sm:grid-cols-3">
                 <p>
                   <span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "mégots déclarés" : "reported butts"}</span>
-                  <strong>{results.buttsTotal.toLocaleString("fr-FR")}</strong>
+                  <strong>{terrainResults.buttsTotal.toLocaleString("fr-FR")}</strong>
                 </p>
                 <p>
                   <span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "masse estimée" : "estimated mass"}</span>
                   <strong>
-                    {results.estimatedButtsWeightKg === null
+                    {terrainResults.estimatedButtsWeightKg === null
                       ? isFrench
                         ? "non calculable (état absent)"
                         : "not calculable (missing condition)"
-                      : `${results.estimatedButtsWeightKg.toLocaleString("fr-FR", { maximumFractionDigits: 3 })} kg`}
+                      : `${terrainResults.estimatedButtsWeightKg.toLocaleString("fr-FR", { maximumFractionDigits: 3 })} kg`}
                   </strong>
                 </p>
                 <p>
                   <span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "distance pédagogique" : "pedagogical distance"}</span>
-                  <strong>{results.buttsDistanceMeters.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} m</strong>
+                  <strong>{terrainResults.buttsDistanceMeters.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} m</strong>
                 </p>
               </div>
             ) : null}
-            <ImpactTerrain2026ButtsPieChart results={results} isFrench={isFrench} />
+            <ImpactTerrain2026ButtsPieChart results={terrainResults} isFrench={isFrench} />
+          </div>
+        )}
+
+        {method.key === "co2" && (
+          <div className="rounded-2xl border border-emerald-200/20 bg-emerald-300/5 p-4">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100/75">
+              {isFrench ? "Résultat proxy et conversions" : "Proxy result and conversions"}
+            </h4>
+            {terrainResults ? (
+              <div className="mt-3 grid gap-3 text-sm text-slate-200 sm:grid-cols-2">
+                <p><span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">CO₂e</span><strong>{terrainResults.co2eKg.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} kg</strong></p>
+                <p><span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "km voiture" : "car km"}</span><strong>{terrainResults.co2CarKilometers.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}</strong></p>
+                <p><span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "part Paris–Moscou voiture" : "Paris–Moscow car-trip share"}</span><strong>{terrainResults.co2ParisMoscowCarTrips.toLocaleString("fr-FR", { maximumFractionDigits: 4 })}</strong></p>
+                <p><span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "part de vol Paris–New York" : "Paris–New York flight share"}</span><strong>{terrainResults.co2ParisNewYorkFlightShares.toLocaleString("fr-FR", { maximumFractionDigits: 4 })}</strong></p>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {method.key === "water" && (
+          <div className="rounded-2xl border border-emerald-200/20 bg-emerald-300/5 p-4">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100/75">
+              {isFrench ? "Résultat proxy et conversions" : "Proxy result and conversions"}
+            </h4>
+            {terrainResults ? (
+              <div className="mt-3 grid gap-3 text-sm text-slate-200 sm:grid-cols-3">
+                <p><span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "litres potentiels" : "potential liters"}</span><strong>{terrainResults.waterLiters.toLocaleString("fr-FR", { maximumFractionDigits: 0 })} L</strong></p>
+                <p><span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "piscines olympiques" : "Olympic pools"}</span><strong>{terrainResults.waterOlympicPools.toLocaleString("fr-FR", { maximumFractionDigits: 4 })}</strong></p>
+                <p><span className="block text-[10px] uppercase tracking-[0.15em] text-slate-400">{isFrench ? "années de consommation" : "consumption years"}</span><strong>{terrainResults.waterFrenchPersonYears.toLocaleString("fr-FR", { maximumFractionDigits: 4 })}</strong></p>
+              </div>
+            ) : null}
           </div>
         )}
 
@@ -214,7 +270,7 @@ export function ImpactTerrain2026MethodologySection({
   results = null,
 }: {
   isFrench: boolean;
-  results?: ImpactTerrain2026PublicResults | null;
+  results?: PublicLandingActionAggregation | null;
 }) {
   const methodology = buildImpactTerrain2026Methodology();
 

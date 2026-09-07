@@ -4,6 +4,8 @@ import {
   BUTT_LENGTH_METERS,
   BUTTS_PER_KG_REFERENCE,
   CONDITION_WEIGHT_FACTORS,
+  computeImpactTerrain2026Co2Conversions,
+  computeImpactTerrain2026WaterConversions,
   MEGOTS_CONDITIONS,
   MEGOTS_CONDITION_LABELS,
   WASTE_KG_PER_50L_BAG,
@@ -38,6 +40,14 @@ export type ImpactTerrain2026PublicResults = {
   buttsByCondition: ImpactTerrain2026ButtsDistributionEntry[];
   estimatedButtsWeightKg: number | null;
   buttsDistanceMeters: number;
+  co2eKg: number;
+  co2eGrams: number;
+  co2CarKilometers: number;
+  co2ParisMoscowCarTrips: number;
+  co2ParisNewYorkFlightShares: number;
+  waterLiters: number;
+  waterOlympicPools: number;
+  waterFrenchPersonYears: number;
 };
 
 export type ImpactTerrain2026ConditionCounts = Partial<
@@ -82,6 +92,9 @@ export function buildImpactTerrain2026PublicResults(params: {
     (sum, entry) => sum + entry.estimatedWeightKg,
     0,
   );
+  const co2Conversions = computeImpactTerrain2026Co2Conversions(wasteKg);
+  const waterConversions =
+    computeImpactTerrain2026WaterConversions(buttsTotal);
 
   return {
     wasteKg,
@@ -99,6 +112,14 @@ export function buildImpactTerrain2026PublicResults(params: {
           ? 0
           : null,
     buttsDistanceMeters: buttsTotal * BUTT_LENGTH_METERS,
+    co2eKg: co2Conversions.co2eKg,
+    co2eGrams: co2Conversions.co2eGrams,
+    co2CarKilometers: co2Conversions.carKilometers,
+    co2ParisMoscowCarTrips: co2Conversions.parisMoscowCarTrips,
+    co2ParisNewYorkFlightShares: co2Conversions.parisNewYorkFlightShares,
+    waterLiters: waterConversions.waterLiters,
+    waterOlympicPools: waterConversions.olympicPools,
+    waterFrenchPersonYears: waterConversions.frenchPersonYears,
   };
 }
 

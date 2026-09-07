@@ -5,7 +5,7 @@ import { SitePreferencesProvider } from "@/components/ui/site-preferences-provid
 import {
   LOCAL_REPOLLUTION_CALIBRATION_CONSTANTS,
 } from "@/lib/actions/pollution/local-repollution-calibration";
-import { buildImpactTerrain2026PublicResults } from "@/lib/impact/impact-terrain-2026-results";
+import { aggregatePublicActionMetrics } from "@/lib/accueil/action-participant-aggregation";
 import { buildActionPollutionProjectionMethodology } from "@/lib/actions/pollution/revisit-priority";
 import {
   ActionMapMethodologySection,
@@ -175,11 +175,38 @@ describe("ActionMapMethodologySection", () => {
     const markup = renderToStaticMarkup(
       <ImpactTerrain2026MethodologySection
         isFrench
-        results={buildImpactTerrain2026PublicResults({
-          wasteKg: 10,
-          buttsTotal: 1_000,
-          qualifiedButtsByCondition: { propre: 100, humide: 200 },
-        })}
+        results={aggregatePublicActionMetrics([
+          {
+            metadata: {
+              organizerType: "spontaneous",
+              volunteersCount: 5,
+              durationMinutes: 30,
+              wasteKg: 4,
+              cigaretteButts: 400,
+              wasteBreakdown: { megotsCondition: "propre" },
+            },
+          },
+          {
+            metadata: {
+              organizerType: "spontaneous",
+              volunteersCount: 2,
+              durationMinutes: 15,
+              wasteKg: 4,
+              cigaretteButts: 400,
+              wasteBreakdown: { megotsCondition: "humide" },
+            },
+          },
+          {
+            metadata: {
+              organizerType: "spontaneous",
+              volunteersCount: 1,
+              durationMinutes: 10,
+              wasteKg: 2,
+              cigaretteButts: 200,
+              wasteBreakdown: null,
+            },
+          },
+        ])}
       />,
     );
 
@@ -190,6 +217,11 @@ describe("ActionMapMethodologySection", () => {
     expect(markup).toContain("Non qualifiés");
     expect(markup).toContain("masse estimée");
     expect(markup).toContain("distance pédagogique");
+    expect(markup).toContain("participants déclarés");
+    expect(markup).toContain("Quintet");
+    expect(markup).toContain("km voiture");
+    expect(markup).toContain("piscines olympiques");
+    expect(markup).toContain("années de consommation");
     expect(markup).not.toContain("0,2 g");
   });
 });

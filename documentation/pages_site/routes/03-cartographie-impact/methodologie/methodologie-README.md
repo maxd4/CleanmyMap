@@ -51,11 +51,13 @@ ne modifie jamais la donnée source et un proxy ne doit pas être présenté com
 une mesure instrumentale.
 
 La source domaine commune est
-`apps/web/src/lib/impact/impact-terrain-2026.ts`. Elle compose les définitions
-et les formules affichées à partir des facteurs runtime de
-`apps/web/src/lib/gamification/impact-proxy-config.ts`. Le moteur d’impact et
-les futurs consommateurs de méthode doivent réutiliser ce domaine ; la page
-`/methodologie` ne devient pas une source de calcul.
+`apps/web/src/lib/impact/impact-terrain-2026.ts`, avec les références de
+conversion centralisées dans
+`apps/web/src/lib/impact/impact-terrain-2026-constants.ts`. Elle compose les
+définitions et les formules affichées à partir des facteurs runtime de
+`apps/web/src/lib/gamification/impact-proxy-config.ts`. Le moteur d’impact, les
+agrégats publics et les futurs consommateurs de méthode doivent réutiliser ce
+domaine ; la page `/methodologie` ne devient pas une source de calcul.
 
 ### KPI 1 — Déchets récoltés
 
@@ -99,7 +101,7 @@ signalés séparément comme non qualifiés. La conversion pédagogique de dista
 reste : `distance_m = mégots × 0,025`, soit un repère de 2,5 cm par mégot. Ce
 repère ne modifie ni le compteur ni la masse canonique.
 
-Le résultat public structuré préparé pour les futurs tooltips est exposé dans
+Le résultat public structuré préparé pour les futurs consommateurs est exposé dans
 `apps/web/src/lib/impact/impact-terrain-2026-results.ts` et comprend les
 équivalences déchets, la répartition non nulle par état, la masse estimée
 canonique, la part non qualifiée et la distance pédagogique. La RPC reste
@@ -111,15 +113,67 @@ des citations non vérifiées dans ce lot. Les références affichées restent l
 références runtime et les références méthodologiques déjà présentes dans le
 domaine.
 
-Les quatre autres KPI — Bénévoles mobilisés, CO₂ évité, Eau préservée et
-Économie de voirie — restent dans la même section et conservent leur contrat
-commun. Leur détail métier n’est pas développé dans ce lot.
+### KPI 3 — Participants
+
+Le résultat principal est `participantsTotal = somme(volunteersCount)` sur le
+périmètre public canonique. La répartition `actionDistribution` classe chaque
+action éligible une seule fois : une action spontanée est dérivée de son nombre
+de participants (`Solo`, `Duo`, `Trio`, `Quatuor`, `Quintet`, `Sextet`, etc.) ;
+les autres actions utilisent leur `organizerType` (`Entreprise`, `Association`,
+`Association étudiante`, `Collectif`, `Autres`). Le nom d’une structure ne sert
+jamais de catégorie statistique et une donnée legacy sans type exploitable tombe
+dans `Autres` avec un warning administratif, sans modifier l’action d’origine.
+
+Le contrat public est porté par
+`apps/web/src/lib/accueil/action-participant-aggregation.ts` et fournit aussi
+`totalDurationMinutes`/`totalDurationHours`. La durée est additionnée par
+action, sans multiplication par le nombre de participants.
+
+### KPI 4 — CO₂e évité
+
+Le terrain fournit une masse de déchets retenue ; le résultat CO₂e reste le
+proxy runtime existant :
+
+```txt
+CO₂e_kg = totalWasteKg × co2KgPerWasteKg
+CO₂_g = CO₂e_kg × 1000
+km_voiture = CO₂_g / 142
+part_vol_Paris_NY = CO₂_g / 1 000 000
+part_Paris_Moscou_voiture = CO₂_g / (2 840 × 142)
+```
+
+Les distances et parts de trajet sont des conversions pédagogiques, non une
+mesure d’émissions évitées. Les références `142 g/km`, `1 000 000 g` et
+`2 840 km` sont centralisées dans le domaine Impact terrain 2026 et réutilisées
+par les résultats publics.
+
+### KPI 5 — Eau préservée
+
+Le terrain fournit un nombre de mégots ; le résultat est explicitement un
+proxy de potentiel, et non une mesure directe d’eau traitée ou économisée :
+
+```txt
+eau_L = totalButts × 500
+piscines = eau_L / 2 500 000
+années = eau_L / 55 000
+```
+
+Les références `500 L/mégot`, `2 500 000 L/piscine olympique` et
+`55 000 L/an/personne` sont centralisées dans le même domaine. Les conversions
+servent à lire un ordre de grandeur et ne modifient pas le résultat source.
+
+L’agrégat public et le résultat méthodologique sont donc cohérents : les
+participants, la répartition des actions, le CO₂e et l’eau sont calculés à
+partir du même périmètre public borné. Les trois KPI sont documentés ici sans
+injection dans les bulles `i` de la homepage dans ce lot.
+
+Le sixième KPI — Économie de voirie — reste dans la même section et conserve
+son contrat commun ; son détail métier n’est pas développé dans ce lot.
 
 Les résultats dynamiques et les nouveaux agrégats homepage ne sont pas injectés
 dans les bulles i dans ce lot. Le temps total des actions reste un agrégat
-canonique séparé, documenté comme une donnée préparatoire pour une évolution
-ultérieure de l’économie de voirie ; il ne remplace pas la formule runtime
-actuelle dans cette section.
+canonique séparé, disponible pour l’évolution de l’économie de voirie ; il ne
+remplace pas la formule runtime actuelle dans cette section.
 
 ## Modes d’affichage
 

@@ -3,6 +3,14 @@ import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import {
   BUTTS_PER_KG_REFERENCE,
   buildImpactTerrain2026Methodology,
+  computeImpactTerrain2026Co2Conversions,
+  computeImpactTerrain2026WaterConversions,
+  CO2_GRAMS_PER_CAR_KILOMETER,
+  CO2_GRAMS_PER_PARIS_NEW_YORK_FLIGHT,
+  FRENCH_PERSON_ANNUAL_WATER_LITERS,
+  OLYMPIC_POOL_LITERS,
+  PARIS_MOSCOW_ROAD_DISTANCE_KM,
+  WATER_LITERS_PER_CIGARETTE_BUTT,
 } from "./impact-terrain-2026";
 
 describe("Impact terrain 2026 methodology domain", () => {
@@ -52,5 +60,26 @@ describe("Impact terrain 2026 methodology domain", () => {
     expect(byKey.wasteKg?.formula.fr).toContain(
       String(BUTTS_PER_KG_REFERENCE),
     );
+  });
+
+  it("keeps the pedagogical conversion constants in one domain source", () => {
+    expect(CO2_GRAMS_PER_CAR_KILOMETER).toBe(142);
+    expect(CO2_GRAMS_PER_PARIS_NEW_YORK_FLIGHT).toBe(1_000_000);
+    expect(PARIS_MOSCOW_ROAD_DISTANCE_KM).toBe(2_840);
+    expect(WATER_LITERS_PER_CIGARETTE_BUTT).toBe(500);
+    expect(OLYMPIC_POOL_LITERS).toBe(2_500_000);
+    expect(FRENCH_PERSON_ANNUAL_WATER_LITERS).toBe(55_000);
+
+    expect(computeImpactTerrain2026Co2Conversions(10).co2eGrams).toBe(12_000);
+    expect(computeImpactTerrain2026WaterConversions(1_000).waterLiters).toBe(
+      500_000,
+    );
+
+    const methodology = buildImpactTerrain2026Methodology();
+    const byKey = Object.fromEntries(
+      methodology.kpis.map((kpi) => [kpi.key, kpi]),
+    );
+    expect(byKey.co2?.formula.fr).toContain("CO₂_g = CO₂e_kg × 1 000");
+    expect(byKey.water?.formula.fr).toContain("piscines = eau_L / 2500000");
   });
 });
