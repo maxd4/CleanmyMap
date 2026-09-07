@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RouteRecommendationResponse } from "@/lib/route/route-response-contract";
+import type { RouteGroupPartitionResult } from "@/lib/route/route-group-partition";
 import { buildRouteRecommendationResponse } from "./route.response";
 
 const resolveRouteDataLayersMock = vi.hoisted(() => vi.fn());
@@ -152,6 +153,44 @@ function plannerResult(candidateId?: string) {
   };
 }
 
+function groupPartition(): RouteGroupPartitionResult {
+  return {
+    volunteers: 1,
+    groupCount: 1,
+    groups: [{
+      groupIndex: 1,
+      volunteerCount: 1,
+      origin,
+      candidateIds: [],
+      estimatedDistanceKm: 0,
+      estimatedDurationMinutes: 0,
+      targetCount: 0,
+    }],
+    metrics: {
+      sharedTargetRatio: 0,
+      coverageGain: 0,
+      balanceDistance: 0,
+      balanceDuration: 0,
+      balanceTargetCount: 0,
+    },
+    audit: {
+      mode: "single-group-compatible",
+      planningMode: "free",
+      consideredCandidateIds: [],
+      excludedUnsafeCandidateIds: [],
+      excludedByPartitionBoundCandidateIds: [],
+      assignments: [],
+      overlapCosts: {
+        sameTarget: 0,
+        samePredictiveZone: 0,
+        nearbyCorridor: 0,
+        networkSharedDistanceKm: null,
+        networkDistanceMeasured: false,
+      },
+    },
+  };
+}
+
 function responseInput(overrides: Record<string, unknown> = {}) {
   const base = {
     origin,
@@ -183,12 +222,22 @@ function responseInput(overrides: Record<string, unknown> = {}) {
       predictionSummary: predictionSummary(),
       eventCenteredContext: null,
       budgetPrefixApplied: false,
+      groupPartition: groupPartition(),
     },
     maxStops: 3,
     travelBudgetMinutes: 60,
     priorityVsTravel: 65,
+    volunteers: 1,
+    groupCount: 1,
   };
-  return { ...base, ...overrides } as Parameters<typeof buildRouteRecommendationResponse>[0];
+  return {
+    ...base,
+    ...overrides,
+    planning: {
+      ...base.planning,
+      ...(overrides.planning as Record<string, unknown> | undefined),
+    },
+  } as Parameters<typeof buildRouteRecommendationResponse>[0];
 }
 
 function installDefaultMocks() {
@@ -234,6 +283,9 @@ describe("route recommendation response trace contract", () => {
     expect(payload.status).toBe(payload.dataLayers.recommendation);
     expect(payload).toMatchObject({
       isLoop: true,
+      volunteers: 1,
+      groupCount: 1,
+      groups: [{ groupIndex: 1 }],
       loop: {
         isLoop: true,
         returnDistanceKm: 0.8,

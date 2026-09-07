@@ -107,6 +107,14 @@ function isPlannerSafetyExcluded(candidate: RoutePlannerCandidate): boolean {
       candidate.volunteerSafety.status !== "safe");
 }
 
+/** Shared server-side eligibility gate used by single- and multi-group planning. */
+export function isRoutePlannerCandidateEligible(
+  candidate: RoutePlannerCandidate,
+): boolean {
+  return !isPlannerSafetyExcluded(candidate) &&
+    (candidate.family === "predicted" || isVolunteerRouteEligible(candidate));
+}
+
 function toRadians(value: number): number {
   return (value * Math.PI) / 180;
 }
@@ -179,11 +187,7 @@ function compareCandidates(
 export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
   const budgetMinutes = Math.max(0, input.travelBudgetMinutes);
   const priorityWeight = clamp(input.priorityVsTravel, 0, 100) / 100;
-  const safeCandidates = input.candidates.filter(
-    (candidate) =>
-      !isPlannerSafetyExcluded(candidate) &&
-      (candidate.family === "predicted" || isVolunteerRouteEligible(candidate)),
-  );
+  const safeCandidates = input.candidates.filter(isRoutePlannerCandidateEligible);
   const remaining = [...safeCandidates];
   const stops: PlannedRouteStop[] = [];
   let current: { latitude: number; longitude: number } = input.origin;

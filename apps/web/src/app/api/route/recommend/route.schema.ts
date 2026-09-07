@@ -1,6 +1,10 @@
 import { z } from "zod";
 import type { RouteRecommendationRequest } from "@/lib/route/route-response-contract";
 import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
+import {
+  MAX_ROUTE_GROUP_COUNT,
+  MAX_ROUTE_VOLUNTEERS,
+} from "@/lib/route/route-group-partition";
 
 export const routeRecommendationRequestSchema = z
   .object({
@@ -22,8 +26,19 @@ export const routeRecommendationRequestSchema = z
       ])
       .default({ type: "free" }),
     riskFocus: z.enum(["all", "waste", "cigaretteButts"]).default("all"),
+    volunteers: z.number().int().min(1).max(MAX_ROUTE_VOLUNTEERS).default(1),
+    groupCount: z.number().int().min(1).max(MAX_ROUTE_GROUP_COUNT).default(1),
   })
-  .strip() satisfies z.ZodType<RouteRecommendationRequest>;
+  .strip()
+  .superRefine((value, context) => {
+    if (value.groupCount > value.volunteers) {
+      context.addIssue({
+        code: "custom",
+        path: ["groupCount"],
+        message: "groupCount cannot exceed volunteers",
+      });
+    }
+  }) satisfies z.ZodType<RouteRecommendationRequest>;
 
 export const ROUTE_RECOMMENDATION_RATE_LIMIT = {
   limit: 6,

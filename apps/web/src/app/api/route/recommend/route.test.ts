@@ -76,6 +76,7 @@ vi.mock("@/lib/geo/paris-arrondissements", () => ({
 }));
 vi.mock("@/lib/route/route-planner", () => ({
   fallbackRoutePrefixWithinBudget: fallbackRoutePrefixWithinBudgetMock,
+  isRoutePlannerCandidateEligible: vi.fn(() => true),
   planRoute: planRouteMock,
   ROUTE_PLANNER_ENGINE_VERSION: "route-planner-v2",
   routeDistanceKm: vi.fn(() => 1),
@@ -354,12 +355,13 @@ describe("POST /api/route/recommend", () => {
     expect(loadRouteRecommendationSourceMock).toHaveBeenCalledTimes(1);
   });
 
-  it("ignores removed legacy route fields at the HTTP boundary", async () => {
+  it("accepts the multi-group contract while stripping removed legacy fields", async () => {
     const { POST } = await import("./route");
     const response = await POST(
       request({
         availableMinutes: 240,
         volunteers: 8,
+        groupCount: 2,
         accessibility: "strict",
         security: "renforced",
         weather: "rain",
@@ -372,6 +374,9 @@ describe("POST /api/route/recommend", () => {
 
     expect(response.status).toBe(200);
     expect(payload.constraintsApplied).toBeUndefined();
+    expect(payload.volunteers).toBe(8);
+    expect(payload.groupCount).toBe(2);
+    expect(payload.groups).toHaveLength(2);
     expect(payload.scoreBreakdown).toEqual({ priority: 0, distance: 0 });
     expect(buildTrashSpotterRouteCandidatesMock).toHaveBeenCalledWith(
       [],

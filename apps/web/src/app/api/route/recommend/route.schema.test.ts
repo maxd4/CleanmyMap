@@ -27,6 +27,8 @@ describe("route recommendation HTTP request schema", () => {
         ...payload,
         planningMode: { type: "free" },
         riskFocus: "all",
+        volunteers: 1,
+        groupCount: 1,
       });
       expectTypeOf(parsed.data.travelBudgetMinutes).toEqualTypeOf<number>();
       expectTypeOf(parsed.data.maxStops).toEqualTypeOf<number>();
@@ -52,6 +54,8 @@ describe("route recommendation HTTP request schema", () => {
       expect(parsed.data.origin).toBeUndefined();
       expect(parsed.data.priorityVsTravel).toBeUndefined();
       expect(parsed.data.priorityVsDistance).toBeUndefined();
+      expect(parsed.data.volunteers).toBe(1);
+      expect(parsed.data.groupCount).toBe(1);
     }
 
     expectTypeOf<RouteRecommendationOptions["travelBudgetMinutes"]>().toEqualTypeOf<number>();
@@ -75,6 +79,22 @@ describe("route recommendation HTTP request schema", () => {
 
     expect(parsed.travelBudgetMinutes).toBe(42);
     expect(parsed.maxStops).toBe(3);
+  });
+
+  it("accepts a bounded multi-group contract", () => {
+    const parsed = parseRouteRecommendationRequest({ volunteers: 11, groupCount: 3 });
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.volunteers).toBe(11);
+      expect(parsed.data.groupCount).toBe(3);
+    }
+  });
+
+  it("rejects group counts larger than the volunteer count and unsafe bounds", () => {
+    expect(parseRouteRecommendationRequest({ volunteers: 2, groupCount: 3 }).success).toBe(false);
+    expect(parseRouteRecommendationRequest({ volunteers: 0, groupCount: 1 }).success).toBe(false);
+    expect(parseRouteRecommendationRequest({ volunteers: 101, groupCount: 1 }).success).toBe(false);
   });
 
   it("rejects invalid HTTP values while stripping non-contract fields", () => {

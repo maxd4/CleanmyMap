@@ -8,6 +8,11 @@ import type { RoutePredictionSummary } from "./route-predicted-targets";
 import type { RouteGeometry, RouteStop } from "./route-contract";
 import type { RouteRecommendationTrace } from "./route-trace";
 import type { RoutePlanningMode } from "./route-planning-mode";
+import type {
+  RouteGroupAssignment,
+  RoutePartitionAudit,
+  RoutePartitionMetrics,
+} from "./route-group-partition";
 
 /** Shared HTTP input contract for the route recommendation boundary. */
 export type RouteRecommendationRequest = {
@@ -18,6 +23,8 @@ export type RouteRecommendationRequest = {
   priorityVsDistance?: number;
   planningMode?: RoutePlanningMode;
   riskFocus?: "all" | "waste" | "cigaretteButts";
+  volunteers?: number;
+  groupCount?: number;
 };
 
 export type RouteOptions = {
@@ -52,6 +59,8 @@ export type RouteRecommendationResponse = {
   travelDistanceKm: number;
   travelMinutes: number;
   travelBudgetMinutes: number;
+  volunteers: number;
+  groupCount: number;
   loop: {
     isLoop: true;
     origin: RouteResponseOrigin;
@@ -98,6 +107,11 @@ export type RouteRecommendationResponse = {
       distanceKm: number | null;
       reason: string;
     }>;
+  };
+  groups: RouteGroupAssignment[];
+  partition: {
+    metrics: RoutePartitionMetrics;
+    audit: RoutePartitionAudit;
   };
 };
 
