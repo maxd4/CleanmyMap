@@ -29,7 +29,7 @@ param(
     [string]$RepoRoot = (Get-Location).Path,
 
     [Parameter()]
-    [string]$OutputRoot = ".artifacts/validation/repository-inventory",
+    [string]$OutputRoot = "artifacts/repository-inventory",
 
     [Parameter()]
     [switch]$SkipSelfTest,
@@ -144,7 +144,7 @@ $script:AggregateOnlyDirectoryReasons = @{
     "Pods" = "Dependances CocoaPods exclues du detail"
     "vendor" = "Dependances vendor exclues du detail"
     ".npm" = "Cache npm exclu du detail"
-    ".artifacts" = "Artefacts locaux CleanMyMap exclus du detail"
+    "artifacts" = "Sorties locales generees exclues du detail"
 }
 
 # Ces noms sont souvent generes mais peuvent legitimement etre versionnes dans
@@ -153,7 +153,7 @@ $script:AggregateOnlyDirectoryReasons = @{
 $script:TrackedDirectoryProtectedNames = [System.Collections.Generic.HashSet[string]]::new(
     [System.StringComparer]::OrdinalIgnoreCase
 )
-foreach ($name in @("dist", "build", "out", ".yarn", "Pods", "vendor")) {
+foreach ($name in @("artifacts", "dist", "build", "out", ".yarn", "Pods", "vendor")) {
     [void]$script:TrackedDirectoryProtectedNames.Add($name)
 }
 
@@ -590,7 +590,7 @@ function Invoke-EndToEndSelfTest {
 
     $sandbox = Join-Path ([System.IO.Path]::GetTempPath()) ("repository-inventory-selftest-" + [guid]::NewGuid().ToString("N"))
     $testRepo = Join-Path $sandbox "repo"
-    $testOutput = Join-Path $sandbox "output"
+    $testOutput = Join-Path $testRepo "artifacts/repository-inventory"
 
     try {
         [System.IO.Directory]::CreateDirectory($testRepo) | Out-Null
@@ -599,8 +599,9 @@ function Invoke-EndToEndSelfTest {
         [System.IO.Directory]::CreateDirectory((Join-Path $testRepo "node_modules/pkg")) | Out-Null
         [System.IO.Directory]::CreateDirectory((Join-Path $testRepo "src/.next/cache")) | Out-Null
         [System.IO.Directory]::CreateDirectory((Join-Path $testRepo ".artifacts/old-run")) | Out-Null
+        [System.IO.Directory]::CreateDirectory((Join-Path $testRepo "artifacts/local-output")) | Out-Null
 
-        [System.IO.File]::WriteAllText((Join-Path $testRepo ".gitignore"), ".venv/`nnode_modules/`n.next/`n.artifacts/`nignored.txt`n")
+        [System.IO.File]::WriteAllText((Join-Path $testRepo ".gitignore"), ".venv/`nnode_modules/`n.next/`nartifacts/`nignored.txt`n")
         [System.IO.File]::WriteAllText((Join-Path $testRepo "tracked.txt"), "tracked`n")
         [System.IO.File]::WriteAllText((Join-Path $testRepo "ignored.txt"), "ignored`n")
         [System.IO.File]::WriteAllText((Join-Path $testRepo "untracked.txt"), "untracked`n")
@@ -610,12 +611,13 @@ function Invoke-EndToEndSelfTest {
         [System.IO.File]::WriteAllText((Join-Path $testRepo "node_modules/pkg/index.js"), "generated vendor`n")
         [System.IO.File]::WriteAllText((Join-Path $testRepo "src/.next/cache/chunk.bin"), "generated next cache`n")
         [System.IO.File]::WriteAllText((Join-Path $testRepo ".artifacts/old-run/report.txt"), "old artifact`n")
+        [System.IO.File]::WriteAllText((Join-Path $testRepo "artifacts/local-output/generated.txt"), "local output`n")
 
         & git -C $testRepo init -q
         if ($LASTEXITCODE -ne 0) { throw "self-test: git init failed" }
         & git -C $testRepo config user.email "repository-inventory-selftest@example.invalid"
         & git -C $testRepo config user.name "Repository Inventory Self Test"
-        & git -C $testRepo add -- .gitignore tracked.txt
+        & git -C $testRepo add -- .gitignore tracked.txt .artifacts/old-run/report.txt
         if ($LASTEXITCODE -ne 0) { throw "self-test: git add failed" }
         & git -C $testRepo commit -q -m "self-test baseline"
         if ($LASTEXITCODE -ne 0) { throw "self-test: git commit failed" }
@@ -658,6 +660,7 @@ function Invoke-EndToEndSelfTest {
         $inventory = @(Import-Csv -LiteralPath (Join-Path $runDir.FullName "inventory.csv"))
         $expectedStatuses = @{
             "tracked.txt" = "tracked"
+            ".artifacts/old-run/report.txt" = "tracked"
             "ignored.txt" = "ignored"
             "untracked.txt" = "untracked"
         }
@@ -675,14 +678,24 @@ function Invoke-EndToEndSelfTest {
         if ($inventory | Where-Object { $_.path -eq ".venv" -or $_.path -like ".venv/*" }) {
             throw "self-test: virtualenv unexpectedly present in detailed inventory"
         }
-        foreach ($excludedPath in @("node_modules", "src/.next", ".artifacts")) {
+        foreach ($excludedPath in @("node_modules", "src/.next", "artifacts")) {
             if ($inventory | Where-Object { $_.path -eq $excludedPath -or $_.path -like "$excludedPath/*" }) {
                 throw "self-test: $excludedPath unexpectedly present in detailed inventory"
             }
         }
 
+        if (-not ($inventory | Where-Object { $_.path -eq ".artifacts" -and $_.type -eq "directory" })) {
+            throw "self-test: versioned .artifacts directory missing from detailed inventory"
+        }
+        if (-not ($inventory | Where-Object { $_.path -eq ".artifacts/old-run/report.txt" -and $_.git_status -eq "tracked" })) {
+            throw "self-test: versioned .artifacts evidence missing from detailed inventory"
+        }
+        if (-not (Test-Path -LiteralPath $testOutput -PathType Container)) {
+            throw "self-test: local output directory was not created"
+        }
+
         $readmeText = [System.IO.File]::ReadAllText((Join-Path $runDir.FullName "README.md"))
-        foreach ($aggregateName in @(".git", ".venv", "node_modules", "src/.next", ".artifacts")) {
+        foreach ($aggregateName in @(".git", ".venv", "node_modules", "src/.next", "artifacts")) {
             if (-not $readmeText.Contains($aggregateName)) {
                 throw "self-test: aggregate $aggregateName missing from README"
             }

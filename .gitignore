@@ -28,6 +28,7 @@ cache/
 tmp/
 output/
 # CleanMyMap local generated outputs. `.artifacts/validation/` is intentional evidence.
+/.artifacts/validation/repository-inventory/
 /.artifacts/validation/prepush-candidate/
 /.artifacts/validation/publication-candidate/
 # Runtime-only metadata for local parallel work coordination.
