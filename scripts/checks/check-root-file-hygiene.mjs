@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
 import { createRepositoryView, parseRepositoryRef } from "./repository-view.mjs";
 
 const repoRoot = process.cwd();
@@ -83,7 +84,26 @@ export function findForbiddenTrackedPaths(trackedFiles) {
   );
 }
 
-export function validateRootFileHygiene(view, { allowRootFileGeneration = false } = {}) {
+export function listTrackedWorktreeFiles(repositoryRoot = repoRoot) {
+  const output = execFileSync("git", ["ls-files", "-z", "--"], {
+    cwd: repositoryRoot,
+  });
+  return output
+    .toString("utf8")
+    .split("\0")
+    .filter(Boolean)
+    .map((file) => file.replaceAll("\\", "/"))
+    .sort();
+}
+
+export function getTrackedFilesForHygiene(view, repositoryRoot = repoRoot) {
+  return view.mode === "git" ? view.listFiles() : listTrackedWorktreeFiles(repositoryRoot);
+}
+
+export function validateRootFileHygiene(
+  view,
+  { allowRootFileGeneration = false, repositoryRoot = repoRoot } = {},
+) {
   const rootFiles = view.rootFiles();
   const rootDirectories = view.rootDirectories();
   const forbidden = allowRootFileGeneration
@@ -94,7 +114,7 @@ export function validateRootFileHygiene(view, { allowRootFileGeneration = false 
       );
   const forbiddenRootDirectories = findForbiddenRootDirectories(rootDirectories);
   const forbiddenTrackedPaths = findForbiddenTrackedPaths(
-    view.listFiles(),
+    getTrackedFilesForHygiene(view, repositoryRoot),
   );
 
   return { rootFiles, rootDirectories, forbidden, forbiddenRootDirectories, forbiddenTrackedPaths };
