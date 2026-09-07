@@ -38,6 +38,33 @@ export type ParisPressureProvenance = {
   notes: string[];
 };
 
+export type ParisPressureUrbanMorphologyFeature =
+  | "lowTrafficLocalStreet"
+  | "deadEnd"
+  | "parkInterior"
+  | "residentialLowFlow"
+  | "parkEntrance"
+  | "parkEdge"
+  | "parkAmenity"
+  | "foodService"
+  | "stationProximity"
+  | "commerceProximity"
+  | "schoolProximity"
+  | "terraceProximity"
+  | "touristProximity";
+
+export type ParisPressureUrbanMorphologyFeatures = Record<
+  ParisPressureUrbanMorphologyFeature,
+  number | null
+>;
+
+/** Optional, source-aware geographic context. Missing is not equivalent to zero. */
+export type ParisPressureUrbanMorphology = {
+  source: ParisPressureProvenance;
+  confidence: number;
+  features: ParisPressureUrbanMorphologyFeatures;
+};
+
 export type ParisPressurePoint = {
   latitude: number;
   longitude: number;
@@ -86,8 +113,9 @@ export type ParisPressureZone = {
       rawObservations: number | null;
       resolution: "iris" | "arrondissement" | null;
       measuredAt: string | null;
-    };
+      };
   };
+  urbanMorphology?: ParisPressureUrbanMorphology;
   humanPressure: number | null;
 };
 
@@ -136,4 +164,5 @@ export type ParisPressureRawZone = {
   cleanlinessRawObservations?: number | null;
   cleanlinessResolution?: "iris" | "arrondissement" | null;
   cleanlinessMeasuredAt?: string | null;
+  urbanMorphology?: ParisPressureUrbanMorphology;
 };

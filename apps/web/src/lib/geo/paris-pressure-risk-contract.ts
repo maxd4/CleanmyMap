@@ -4,9 +4,10 @@ import type {
   ParisPressureSnapshot,
   ParisPressureSourceStatus,
 } from "./paris-pressure-contract";
+import type { UrbanMorphologyPriorApplication } from "./urban-morphology-prior";
 
 export const PARIS_PRESSURE_RISK_MODEL_CONFIG = {
-  predictionModelVersion: "paris-pressure-risk-v2",
+  predictionModelVersion: "paris-pressure-risk-v3-urban-morphology",
   weights: {
     waste: {
       residentialPressure: 0.22,
@@ -138,6 +139,7 @@ export type ParisPressureCleanlinessCorrection = {
 export type ParisPressureRiskScore = {
   baseRisk: number;
   cleanlinessCorrection: ParisPressureCleanlinessCorrection;
+  urbanMorphologyPrior: UrbanMorphologyPriorApplication;
   finalRisk: number;
   contributions: ParisPressureRiskContribution[];
 };

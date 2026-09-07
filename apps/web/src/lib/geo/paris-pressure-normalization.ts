@@ -4,6 +4,8 @@ import {
   type ParisPressureRawZone,
   type ParisPressureSnapshot,
   type ParisPressureZone,
+  type ParisPressureUrbanMorphology,
+  type ParisPressureUrbanMorphologyFeature,
 } from "./paris-pressure-contract";
 
 export const PARIS_PRESSURE_WEIGHTS = {
@@ -19,6 +21,42 @@ function clamp01(value: number): number {
 
 function finiteOrNull(value: number | null | undefined): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+const URBAN_MORPHOLOGY_FEATURES: ParisPressureUrbanMorphologyFeature[] = [
+  "lowTrafficLocalStreet",
+  "deadEnd",
+  "parkInterior",
+  "residentialLowFlow",
+  "parkEntrance",
+  "parkEdge",
+  "parkAmenity",
+  "foodService",
+  "stationProximity",
+  "commerceProximity",
+  "schoolProximity",
+  "terraceProximity",
+  "touristProximity",
+];
+
+function normalizeUrbanMorphology(
+  morphology: ParisPressureRawZone["urbanMorphology"],
+): ParisPressureUrbanMorphology | undefined {
+  if (!morphology?.source || !morphology.features) return undefined;
+  const features = Object.fromEntries(
+    URBAN_MORPHOLOGY_FEATURES.map((key) => {
+      const value = finiteOrNull(morphology.features[key]);
+      return [key, value === null ? null : clamp01(value)];
+    }),
+  ) as ParisPressureUrbanMorphology["features"];
+  if (URBAN_MORPHOLOGY_FEATURES.every((key) => features[key] === null)) {
+    return undefined;
+  }
+  return {
+    source: morphology.source,
+    confidence: clamp01(finiteOrNull(morphology.confidence) ?? 0),
+    features,
+  };
 }
 
 function minMax(values: Array<number | null>): Array<number | null> {
@@ -100,6 +138,7 @@ export function buildParisPressureSnapshot(input: {
       const transit = transport[index] ?? null;
       const tourismSignal = tourism[index] ?? null;
       const activitySignal = activity[index] ?? null;
+      const urbanMorphology = normalizeUrbanMorphology(rawZone.urbanMorphology);
 
       return {
         id: rawZone.id,
@@ -143,6 +182,7 @@ export function buildParisPressureSnapshot(input: {
             measuredAt: rawZone.cleanlinessMeasuredAt ?? null,
           },
         },
+        ...(urbanMorphology ? { urbanMorphology } : {}),
         humanPressure: weightedAverage([
           [resident, PARIS_PRESSURE_WEIGHTS.residentPopulation],
           [transit, PARIS_PRESSURE_WEIGHTS.transport],

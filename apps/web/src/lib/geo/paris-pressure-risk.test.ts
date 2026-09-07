@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type {
   ParisPressureProvenance,
   ParisPressureSnapshot,
+  ParisPressureUrbanMorphology,
   ParisPressureZone,
 } from "./paris-pressure-contract";
 import type { ParisPressureContextProvenance } from "./paris-pressure-risk-contract";
@@ -64,6 +65,7 @@ function buildZone(overrides: {
   otherPlaces?: number | null;
   cleanliness?: number | null;
   cleanlinessResolution?: "iris" | "arrondissement" | null;
+  urbanMorphology?: ParisPressureUrbanMorphology;
 } = {}): ParisPressureZone {
   return {
     id: "751010101",
@@ -101,6 +103,9 @@ function buildZone(overrides: {
         measuredAt: null,
       },
     },
+    ...(overrides.urbanMorphology
+      ? { urbanMorphology: overrides.urbanMorphology }
+      : {}),
     humanPressure: null,
   };
 }
@@ -462,6 +467,41 @@ describe("Paris pressure risk model", () => {
     expect(withContext.cigaretteButtRisk).toBe(withoutContext.cigaretteButtRisk);
     expect(withContext.waste.contributions.map(({ key, normalized, points }) => ({ key, normalized, points }))).toEqual(
       withoutContext.waste.contributions.map(({ key, normalized, points }) => ({ key, normalized, points })),
+    );
+  });
+
+  it("expose un trace morphologique séparé et annule un prior de parc avec un événement", () => {
+    const morphology: ParisPressureUrbanMorphology = {
+      source: sources[0]!,
+      confidence: 0.9,
+      features: {
+        lowTrafficLocalStreet: null,
+        deadEnd: null,
+        parkInterior: 1,
+        residentialLowFlow: null,
+        parkEntrance: null,
+        parkEdge: null,
+        parkAmenity: null,
+        foodService: null,
+        stationProximity: null,
+        commerceProximity: null,
+        schoolProximity: null,
+        terraceProximity: null,
+        touristProximity: null,
+      },
+    };
+    const zone = buildZone({ resident: 0.8, cleanliness: 0.5, urbanMorphology: morphology });
+    const calm = estimateParisPressureRisk(zone, withZone(zone));
+    const event = estimateParisPressureRisk(zone, withZone(zone), { eventPressure: 1 });
+
+    expect(calm.waste.urbanMorphologyPrior.appliedMalusPoints).toBeGreaterThan(0);
+    expect(calm.waste.urbanMorphologyPrior.source?.dataset).toBe("Test geography");
+    expect(calm.waste.urbanMorphologyPrior.beforeRisk).toBeGreaterThan(
+      calm.waste.urbanMorphologyPrior.afterRisk,
+    );
+    expect(event.waste.urbanMorphologyPrior.appliedMalusPoints).toBe(0);
+    expect(event.waste.urbanMorphologyPrior.compensatingSignals).toContain(
+      "événement récent documenté",
     );
   });
 });

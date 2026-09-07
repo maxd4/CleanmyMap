@@ -86,6 +86,10 @@ export type RoutePredictedEvidence = {
     waste: ParisPressureRiskScore["cleanlinessCorrection"];
     cigaretteButts: ParisPressureRiskScore["cleanlinessCorrection"];
   };
+  urbanMorphologyPrior: {
+    waste: ParisPressureRiskScore["urbanMorphologyPrior"];
+    cigaretteButts: ParisPressureRiskScore["urbanMorphologyPrior"];
+  };
   snapshot: Pick<
     ParisPressureSnapshot,
     "snapshotId" | "schemaVersion" | "generatedAt" | "refreshedAt"
@@ -365,6 +369,16 @@ function buildReason(
         round(cleanliness.points, 2) +
         " pts"
       : "";
+  const morphology = score.urbanMorphologyPrior;
+  const morphologyText =
+    morphology.status === "applied" && morphology.appliedMalusPoints > 0
+      ? "; contexte morphologique atténuant=" +
+        round(morphology.appliedMalusPoints, 2) +
+        " pts"
+      : morphology.compensatingSignals.length > 0
+        ? "; prior morphologique compensé par " +
+          morphology.compensatingSignals.join(", ")
+        : "";
   return (
     "Zone prédite " +
     (riskFocus === "cigaretteButts"
@@ -379,6 +393,7 @@ function buildReason(
     " min; facteurs calculés=" +
     factors +
     cleanlinessText +
+    morphologyText +
     "."
   );
 }
@@ -575,6 +590,10 @@ export function buildPredictedRouteCandidates(input: {
       cleanlinessCorrection: {
         waste: estimate.waste.cleanlinessCorrection,
         cigaretteButts: estimate.cigaretteButts.cleanlinessCorrection,
+      },
+      urbanMorphologyPrior: {
+        waste: estimate.waste.urbanMorphologyPrior,
+        cigaretteButts: estimate.cigaretteButts.urbanMorphologyPrior,
       },
       snapshot: estimate.snapshot,
       provenance: estimate.provenance,

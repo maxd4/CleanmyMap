@@ -11,6 +11,21 @@ import {
 
 const DEFAULT_OUTPUT = path.resolve("data/geospatial/paris-pressure-snapshot.json");
 const FALLBACK_RADIUS_KM = 1.5;
+const URBAN_MORPHOLOGY_FEATURE_KEYS = [
+  "lowTrafficLocalStreet",
+  "deadEnd",
+  "parkInterior",
+  "residentialLowFlow",
+  "parkEntrance",
+  "parkEdge",
+  "parkAmenity",
+  "foodService",
+  "stationProximity",
+  "commerceProximity",
+  "schoolProximity",
+  "terraceProximity",
+  "touristProximity",
+];
 
 function argument(name, fallback = null) {
   const index = process.argv.indexOf(name);
@@ -115,8 +130,29 @@ function source(family, dataset, url, license, datasetVersion, geographicLevel, 
   };
 }
 
-export function buildSnapshot({ iris, populationRows, transportRows = [], activityRows = [], cleanlinessRows = [], tourismRows = [], refreshedAt = new Date().toISOString() }) {
+function normaliseMorphology(row, morphologySource) {
+  if (!morphologySource || !row) return null;
+  const sourceValues = row.features ?? row;
+  const features = Object.fromEntries(URBAN_MORPHOLOGY_FEATURE_KEYS.map((key) => {
+    const value = finite(sourceValues[key]);
+    return [key, value === null ? null : clamp(value)];
+  }));
+  if (Object.values(features).every((value) => value === null)) return null;
+  return {
+    source: morphologySource,
+    confidence: clamp(finite(row.confidence) ?? 0),
+    features,
+  };
+}
+
+export function buildSnapshot({ iris, populationRows, transportRows = [], activityRows = [], cleanlinessRows = [], tourismRows = [], morphology = null, refreshedAt = new Date().toISOString() }) {
   const populationByIris = new Map(populationRows.map((row) => [row.iris, row.population]));
+  const morphologySource = morphology?.source ?? null;
+  const morphologyByIris = new Map(
+    (morphology?.zones ?? [])
+      .map((row) => [row.iris ?? row.zoneId ?? row.id, normaliseMorphology(row, morphologySource)])
+      .filter(([zoneId, value]) => zoneId && value !== null),
+  );
   const zones = iris.results
     .filter((row) => row.dep === "75" && row.geo_point_2d)
     .map((row) => {
@@ -147,6 +183,7 @@ export function buildSnapshot({ iris, populationRows, transportRows = [], activi
       cleanlinessRawObservations: null,
       cleanlinessResolution: null,
       cleanlinessMeasuredAt: null,
+      urbanMorphology: morphologyByIris.get(row.code_iris) ?? undefined,
       };
     });
   const expectedZoneCount = 992;
@@ -248,6 +285,7 @@ export function buildSnapshot({ iris, populationRows, transportRows = [], activi
         publicActivity: { authorisedTerraces: zone.authorisedTerraces, openAirMarkets: zone.openAirMarkets, otherPlaces: zone.otherPlaces, normalized: activity },
         cleanlinessPrior: { normalized: zone.cleanlinessPrior, rawObservations: zone.cleanlinessRawObservations, resolution: zone.cleanlinessResolution, measuredAt: zone.cleanlinessMeasuredAt },
       },
+      urbanMorphology: zone.urbanMorphology,
       humanPressure: humanPressure === null ? null : clamp(humanPressure),
     };
   }).sort((left, right) => left.id.localeCompare(right.id));
@@ -299,7 +337,8 @@ export function buildSnapshot({ iris, populationRows, transportRows = [], activi
         tourismRows.length ? "2026-09-04" : null
       ),
       source("public_activity", "Terrasses et étalages : Autorisations / Marchés découverts", "https://opendata.paris.fr/", "Licence Ouverte Etalab", "rafraîchissement source", "iris", activityRows.length ? "partial" : "unavailable", now, ["Les objets géolocalisés sont agrégés à l'IRIS contenant le point ; fallback centroïde borné et comptabilisé dans le snapshot."]),
-      source("cleanliness", "Dans Ma Rue - Anomalies signalées", "https://opendata.paris.fr/explore/dataset/dans-ma-rue/", "Licence Ouverte Etalab", "fenêtre publiée source", "arrondissement", cleanlinessRows.length ? "partial" : "unavailable", now, ["Signal de malpropreté indépendant du revenu ; lorsqu'il est agrégé à l'arrondissement, la résolution reste explicitement faible."], null, "2025+")
+      source("cleanliness", "Dans Ma Rue - Anomalies signalées", "https://opendata.paris.fr/explore/dataset/dans-ma-rue/", "Licence Ouverte Etalab", "fenêtre publiée source", "arrondissement", cleanlinessRows.length ? "partial" : "unavailable", now, ["Signal de malpropreté indépendant du revenu ; lorsqu'il est agrégé à l'arrondissement, la résolution reste explicitement faible."], null, "2025+"),
+      ...(morphologySource ? [morphologySource] : []),
     ],
     zones: finalZones,
   };
@@ -310,7 +349,7 @@ function main() {
   const populationFile = argument("--population-csv");
   const output = argument("--output", DEFAULT_OUTPUT);
   if (!irisFile || !populationFile) {
-    console.error("Usage: refresh-paris-pressure-snapshot.mjs --iris-json <file> --population-csv <file> [--transport-json <file>] [--activity-json <file>] [--cleanliness-json <file>] [--tourism-json <file>] [--output <file>]");
+    console.error("Usage: refresh-paris-pressure-snapshot.mjs --iris-json <file> --population-csv <file> [--transport-json <file>] [--activity-json <file>] [--cleanliness-json <file>] [--tourism-json <file>] [--morphology-json <file>] [--output <file>]");
     process.exitCode = 2;
     return;
   }
@@ -321,6 +360,7 @@ function main() {
     activityRows: argument("--activity-json") ? readJson(argument("--activity-json")) : [],
     cleanlinessRows: argument("--cleanliness-json") ? readJson(argument("--cleanliness-json")) : [],
     tourismRows: argument("--tourism-json") ? readJson(argument("--tourism-json")) : [],
+    morphology: argument("--morphology-json") ? readJson(argument("--morphology-json")) : null,
     refreshedAt: argument("--refreshed-at") ?? undefined,
   });
   const outputPath = path.resolve(output);

@@ -22,6 +22,7 @@ import {
   normalizedSignal,
   resolveEventPressure,
 } from "./paris-pressure-risk-normalization";
+import { applyUrbanMorphologyPrior } from "./urban-morphology-prior";
 
 type Factor = {
   key: ParisPressureRiskFactor;
@@ -135,6 +136,7 @@ function score(
   context: ParisPressureRiskContext,
 ): ParisPressureRiskScore {
   const factors = buildFactors(kind, zone, context);
+  const event = resolveEventPressure(context);
   const contributions: ParisPressureRiskContribution[] = factors.map((factor) => ({
     key: factor.key,
     label: factor.label,
@@ -148,6 +150,16 @@ function score(
   const baseRisk = round(contributions.reduce((sum, contribution) => sum + contribution.points, 0));
   const prior = zone.signals.cleanlinessPrior;
   const correction = cleanlinessCorrection(prior.normalized, prior.resolution);
+  const beforeMorphology = round(
+    Math.min(100, Math.max(0, baseRisk + correction.points)),
+  );
+  const urbanMorphologyPrior = applyUrbanMorphologyPrior({
+    kind,
+    morphology: zone.urbanMorphology,
+    beforeRisk: beforeMorphology,
+    contributions,
+    eventPressure: event,
+  });
   const cleanlinessSources = snapshot.sources.filter(
     (source) => source.family === "cleanliness",
   );
@@ -174,7 +186,8 @@ function score(
       sourceReliability: round(cleanlinessSourceReliability),
       explanation: correction.explanation,
     },
-    finalRisk: round(Math.min(100, Math.max(0, baseRisk + correction.points))),
+    urbanMorphologyPrior,
+    finalRisk: urbanMorphologyPrior.afterRisk,
     contributions,
   };
 }
@@ -249,7 +262,14 @@ function relevantProvenance(
   if (waste.cleanlinessCorrection.available || cigaretteButts.cleanlinessCorrection.available) {
     families.add("cleanliness");
   }
-  const sources = snapshot.sources.filter((source) => families.has(source.family));
+  const morphologySources = [
+    waste.urbanMorphologyPrior.source,
+    cigaretteButts.urbanMorphologyPrior.source,
+  ].filter((source): source is ParisPressureProvenance => source !== null);
+  const sources = [
+    ...snapshot.sources.filter((source) => families.has(source.family)),
+    ...morphologySources,
+  ];
   const contextFactors = new Set<ParisPressureContextFactor>();
   for (const contribution of [...waste.contributions, ...cigaretteButts.contributions]) {
     if (contribution.available) {
