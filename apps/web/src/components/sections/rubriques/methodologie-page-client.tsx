@@ -33,6 +33,7 @@ import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats
 import { FreePlanServicesMethodologyVisual } from "./free-plan-services-methodology-visual";
 import { MonthlyImpactHistoryChart } from "./monthly-impact-history-chart";
 import { RouteMethodologySection } from "./route-methodology-section";
+import { ImpactTerrain2026MethodologySection } from "./impact-terrain-2026-methodology-section";
 import {
   ActionMapMethodologySection as ActionMapMethodologySectionImpl,
   ReferenceDocCard,
@@ -250,6 +251,8 @@ export function MethodologiePageClient({
           }
           subtitle={t("header_desc")}
         />
+
+        <ImpactTerrain2026MethodologySection isFrench={isFrench} />
 
         <ActionMapMethodologySection isFrench={isFrench} />
 

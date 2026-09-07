@@ -131,6 +131,26 @@ describe("ActionMapMethodologySection", () => {
     );
 
     expect(markup).toContain("Méthode de calcul");
+    expect(markup).toContain('id="indicateurs-impact-terrain"');
+    expect(markup).toContain("Les 6 KPI Impact terrain 2026");
+    expect(markup.indexOf('id="indicateurs-impact-terrain"')).toBeLessThan(
+      markup.indexOf('id="methodologie-carte-actions"'),
+    );
+    for (const title of [
+      "Déchets récoltés",
+      "Mégots retirés",
+      "Bénévoles mobilisés",
+      "CO₂ évité",
+      "Eau préservée",
+      "Économie de voirie",
+    ]) {
+      expect(markup).toContain(title);
+    }
+    expect(markup).toContain("Donnée terrain mesurée ou déclarée");
+    expect(markup).toContain("Résultat ou proxy calculé");
+    expect(markup).toContain("Conversions pédagogiques");
+    expect(markup).toContain("Hypothèses / références");
+    expect(markup).toContain("Les valeurs dynamiques restent produites par le runtime");
     expect(markup).toContain('id="methodologie-carte-actions"');
     expect(markup).toContain('id="methodologie-itineraire"');
     expect(markup).toContain('id="modes-affichage"');

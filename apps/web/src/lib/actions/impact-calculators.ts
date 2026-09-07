@@ -1,8 +1,9 @@
 import type { ActionWasteBreakdown } from "./types";
 import { ActionMegotsCondition } from "./types";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { BUTTS_PER_KG_REFERENCE } from "@/lib/impact/impact-terrain-2026";
 
-export const BUTTS_PER_KG_REFERENCE = 2500;
+export { BUTTS_PER_KG_REFERENCE } from "@/lib/impact/impact-terrain-2026";
 
 export const CONDITION_WEIGHT_FACTORS: Record<ActionMegotsCondition, number> = {
   propre: 1.0,

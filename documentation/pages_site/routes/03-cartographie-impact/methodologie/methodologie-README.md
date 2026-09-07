@@ -32,6 +32,37 @@ La documentation de la page doit également orienter vers la méthodologie spéc
 
 `documentation/product/methodologie-carte-actions.md`
 
+## Section canonique — Indicateurs Impact terrain 2026
+
+La page expose en tête l’ancre `/methodologie#indicateurs-impact-terrain`.
+Cette section documente les six KPI présents sur la surface Impact terrain :
+
+- Déchets récoltés ;
+- Mégots retirés ;
+- Bénévoles mobilisés ;
+- CO₂ évité ;
+- Eau préservée ;
+- Économie de voirie.
+
+Chaque bloc suit le même contrat pédagogique : donnée terrain mesurée ou
+déclarée, agrégat, résultat ou proxy calculé, conversions pédagogiques,
+formule runtime, hypothèses/références et limites. Une conversion pédagogique
+ne modifie jamais la donnée source et un proxy ne doit pas être présenté comme
+une mesure instrumentale.
+
+La source domaine commune est
+`apps/web/src/lib/impact/impact-terrain-2026.ts`. Elle compose les définitions
+et les formules affichées à partir des facteurs runtime de
+`apps/web/src/lib/gamification/impact-proxy-config.ts`. Le moteur d’impact et
+les futurs consommateurs de méthode doivent réutiliser ce domaine ; la page
+`/methodologie` ne devient pas une source de calcul.
+
+Les résultats dynamiques et les nouveaux agrégats homepage ne sont pas injectés
+dans les bulles i dans ce lot. Le temps total des actions reste un agrégat
+canonique séparé, documenté comme une donnée préparatoire pour une évolution
+ultérieure de l’économie de voirie ; il ne remplace pas la formule runtime
+actuelle dans cette section.
+
 ## Modes d’affichage
 
 La page expose la section ancrée `/methodologie#modes-affichage`, qui reprend
