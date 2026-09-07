@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type {
+  ParisPressureProvenance,
   ParisPressureSnapshot,
   ParisPressureZone,
 } from "@/lib/geo/paris-pressure-contract";
@@ -121,6 +122,10 @@ describe("predicted route targets", () => {
         radiusKm: expect.any(Number),
         distanceToCorridorKm: expect.any(Number),
         contributions: expect.objectContaining({ waste: expect.any(Array), cigaretteButts: expect.any(Array) }),
+        urbanMorphologyPrior: expect.objectContaining({
+          waste: expect.objectContaining({ status: "unavailable" }),
+          cigaretteButts: expect.objectContaining({ status: "unavailable" }),
+        }),
       }),
     }));
     expect(result.candidates[0]?.label).toContain("Zone prédite");
@@ -241,7 +246,63 @@ describe("predicted route targets", () => {
     });
     expect(withProvenance.candidates[0]?.evidence.contextProvenance.map((source) => source.factor)).toEqual(["eventPressure"]);
     expect(withProvenance.candidates[0]?.evidence.provenanceGaps).toEqual([]);
-    expect(withProvenance.candidates[0]?.evidence.modelVersion).toBe("paris-pressure-risk-v2");
+    expect(withProvenance.candidates[0]?.evidence.modelVersion).toBe("paris-pressure-risk-v3-urban-morphology");
+  });
+
+  it("propage la trace du prior morphologique dans l'evidence route", () => {
+    const morphologySource: ParisPressureProvenance = {
+      family: "geography",
+      publisher: "Test geography",
+      dataset: "Morphology test",
+      url: "https://example.test/morphology",
+      license: "Licence de test",
+      datasetVersion: "2026-test",
+      observedAt: "2026-09-08",
+      refreshedAt: "2026-09-08T00:00:00.000Z",
+      geographicLevel: "iris",
+      status: "available",
+      notes: [],
+    };
+    const morphologyZone: ParisPressureZone = {
+      ...zone("morphology-zone", 48.8568, 2.3522),
+      urbanMorphology: {
+        source: morphologySource,
+        confidence: 0.9,
+        features: {
+          lowTrafficLocalStreet: null,
+          deadEnd: null,
+          parkInterior: 1,
+          residentialLowFlow: null,
+          parkEntrance: null,
+          parkEdge: null,
+          parkAmenity: null,
+          foodService: null,
+          stationProximity: null,
+          commerceProximity: null,
+          schoolProximity: null,
+          terraceProximity: null,
+          touristProximity: null,
+        },
+      },
+    };
+    const result = buildPredictedRouteCandidates({
+      snapshot: withZones([morphologyZone]),
+      origin: { latitude: 48.8566, longitude: 2.3522 },
+      travelBudgetMinutes: 60,
+      recentEvents: [{
+        latitude: 48.8568,
+        longitude: 2.3522,
+        ageDays: 0,
+        attendancePressure: 1,
+      }],
+    });
+
+    expect(result.candidates[0]?.evidence.urbanMorphologyPrior.waste).toMatchObject({
+      status: "applied",
+      source: morphologySource,
+      appliedMalusPoints: 0,
+    });
+    expect(result.candidates[0]?.reason).toContain("prior morphologique compensé");
   });
 
   it("n'invente pas un corridor entre l'origine et des observations non sélectionnées", () => {

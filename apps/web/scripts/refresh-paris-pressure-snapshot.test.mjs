@@ -124,3 +124,39 @@ test("est déterministe à entrées et horodatage identiques", () => {
   };
   assert.deepEqual(buildSnapshot(input), buildSnapshot(input));
 });
+
+test("charge une source morphologique source-aware par IRIS sans déduire une valeur absente", () => {
+  const snapshot = buildSnapshot({
+    iris: {
+      results: [irisRow("751010101", { lat: 48.855, lon: 2.355 }, {
+        type: "Polygon",
+        coordinates: [[[2.35, 48.85], [2.36, 48.85], [2.36, 48.86], [2.35, 48.86], [2.35, 48.85]]],
+      })],
+    },
+    populationRows: [],
+    morphology: {
+      source: {
+        family: "geography",
+        publisher: "Test geography",
+        dataset: "Morphology test",
+        url: "https://example.test/morphology",
+        license: "Licence de test",
+        datasetVersion: "2026-test",
+        observedAt: "2026-09-08",
+        refreshedAt: "2026-09-08T00:00:00.000Z",
+        geographicLevel: "iris",
+        status: "partial",
+        notes: [],
+      },
+      zones: [
+        { iris: "751010101", confidence: 0.9, features: { lowTrafficLocalStreet: 1 } },
+        { iris: "unknown", confidence: 0.9, features: { lowTrafficLocalStreet: 1 } },
+      ],
+    },
+    refreshedAt: "2026-09-08T00:00:00.000Z",
+  });
+  assert.equal(snapshot.zones[0].urbanMorphology.confidence, 0.9);
+  assert.equal(snapshot.zones[0].urbanMorphology.features.lowTrafficLocalStreet, 1);
+  assert.equal(snapshot.zones[0].urbanMorphology.features.deadEnd, null);
+  assert.equal(snapshot.sources.at(-1).dataset, "Morphology test");
+});

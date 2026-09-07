@@ -80,4 +80,63 @@ describe("Paris pressure normalization", () => {
       measuredAt: null,
     });
   });
+
+  it("normalise les signaux morphologiques bornés, conserve leur source et garde les inconnus", () => {
+    const morphologySource = {
+      family: "geography" as const,
+      publisher: "Test geography",
+      dataset: "Morphology test",
+      url: "https://example.test/morphology",
+      license: "Licence de test",
+      datasetVersion: "2026-test",
+      observedAt: "2026-09-08",
+      refreshedAt: "2026-09-08T00:00:00.000Z",
+      geographicLevel: "iris" as const,
+      status: "partial" as const,
+      notes: [],
+    };
+    const snapshot = buildParisPressureSnapshot({
+      snapshotId: "test-morphology",
+      generatedAt: "2026-09-08T00:00:00.000Z",
+      refreshedAt: "2026-09-08T00:00:00.000Z",
+      sources: [morphologySource],
+      zones: [
+        {
+          id: "iris-a",
+          label: "A",
+          geographicLevel: "iris",
+          centroid: { latitude: 48.85, longitude: 2.34 },
+          urbanMorphology: {
+            source: morphologySource,
+            confidence: 1.4,
+            features: {
+              lowTrafficLocalStreet: 2,
+              deadEnd: -1,
+              parkInterior: null,
+              residentialLowFlow: 0.4,
+              parkEntrance: null,
+              parkEdge: null,
+              parkAmenity: null,
+              foodService: null,
+              stationProximity: null,
+              commerceProximity: null,
+              schoolProximity: null,
+              terraceProximity: null,
+              touristProximity: null,
+            },
+          },
+        },
+      ],
+    });
+    expect(snapshot.zones[0]?.urbanMorphology).toMatchObject({
+      confidence: 1,
+      source: morphologySource,
+      features: {
+        lowTrafficLocalStreet: 1,
+        deadEnd: 0,
+        parkInterior: null,
+        residentialLowFlow: 0.4,
+      },
+    });
+  });
 });
