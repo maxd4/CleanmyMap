@@ -1,325 +1,204 @@
-# Plan de découpage monolithes
+# Plan de découpage des monolithes
 
-**Mis à jour :** 2026-09-06 | **Portée :** `apps/web/src` | **Source :** `npm run analyze:heavy-files` | **Seuil radar informatif :** > 7 KB | **Seuil d'alerte enforcement :** > 1000 lignes ou > 50 KB
+**État :** plan documentaire et radar de suivi, sans refactor applicatif dans ce lot
+**Mis à jour :** 2026-09-07
+**Portée :** `apps/web/src`, fichiers suivis `.ts` et `.tsx`
+**Règle durable :** cohésion, responsabilités, couplage et testabilité > nombre de lignes
 
-## Objectif
+## RADAR CURRENT
 
-Réduire la dette structurelle des fichiers applicatifs repérés par le radar en
-modules testables, sans régression fonctionnelle. Le seuil d'enforcement est
-un signal de revue, pas une taille cible pour les modules.
-Règle : **un lot structurel par cible principale**, **API publique inchangée**,
-**tests avant suppression du code legacy**.
+Le radar courant a été mesuré exclusivement depuis la ref Git suivante, après
+`git fetch origin main` :
 
----
-
-## 📊 Radar actuel (scan 2026-09-05)
-
-| Priorité | Taille actuelle | Fichier | Statut factuel |
-|----------|-----------------|---------|----------------|
-| 🔴 CRITIQUE | 676 lignes / 34,5 KB | `app/learn/ressources/learn-ressources-client.sections.tsx` | Qualifier les responsabilités avant extraction |
-| 🔴 CRITIQUE | 837 lignes / 33,6 KB | `components/sections/rubriques/gamification/gamification-panels.tsx` | Revalider la frontière des sous-modules |
-| 🔴 CRITIQUE | 693 lignes / 33,3 KB | `components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | Qualifier la frontière avec le shell extrait |
-| 🔴 CRITIQUE | 927 lignes / 32,1 KB | `components/admin/free-plan-services-visual.tsx` | À découper |
-| 🔴 CRITIQUE | 773 lignes / 31,9 KB | `components/navigation/app-navigation-ribbon.tsx` | Séparer composition et rendu |
-| 🔴 CRITIQUE | 795 lignes / 31,6 KB | `components/sections/rubriques/weather-section.tsx` | À découper |
-| 🔴 CRITIQUE | 991 lignes / 30,7 KB | `app/api/actions/group-join/route.test.ts` | À découper par helpers métier |
-| 🔴 CRITIQUE | 803 lignes / 30,6 KB | `components/learn/learn-practice-theme-tabs.tsx` | À découper |
-| 🔴 CRITIQUE | 708 lignes / 30,1 KB | `components/sections/rubriques/partners-network-section.tsx` | À découper |
-| 🔴 CRITIQUE | 929 lignes / 29,6 KB | `app/api/chat/route.test.ts` | À découper par scénarios et helpers |
-| 🔴 CRITIQUE | 793 lignes / 29,2 KB | `lib/governance/governance-monthly-report.ts` | À découper après contrat de données |
-| 🔴 CRITIQUE | 928 lignes / 29,1 KB | `components/chat/chat-shell.tsx` | Revalider le découpage du shell et des hooks |
-| 🔴 CRITIQUE | 513 lignes / 27,7 KB | `components/sections/rubriques/elus-section.tsx` | Vérifier la densité de données statiques |
-| 🔴 CRITIQUE | 654 lignes / 27,3 KB | `components/sections/rubriques/weather-section.preparation.tsx` | Vérifier la frontière avec `weather-section.tsx` |
-| 🔴 CRITIQUE | 629 lignes / 27,3 KB | `components/sections/rubriques/methodologie-page-client.tsx` | Qualifier les responsabilités avant extraction |
-| 🔴 CRITIQUE | 737 lignes / 27,1 KB | `lib/auth/api-authorization-contract.ts` | Séparer contrat et dérivations si le couplage le permet |
-| 🔴 CRITIQUE | 656 lignes / 27,1 KB | `components/admin/quiz-bank-admin-view.tsx` | Séparer orchestration et vues admin |
-| 🔴 CRITIQUE | 768 lignes / 27,1 KB | `lib/geo/greater-paris-select.tsx` | Revoir la frontière UI / géographie |
-| 🔴 CRITIQUE | 838 lignes / 26,6 KB | `components/sections/rubriques/rejoindre-un-formulaire-section.controller.ts` | À découper |
-| 🔴 CRITIQUE | 677 lignes / 26,5 KB | `app/learn/ressources/learn-ressources-client.data.ts` | Séparer données et orchestration |
-| 🔴 CRITIQUE | 633 lignes / 26,3 KB | `components/sections/rubriques/feedback-section-dashboard.tsx` | Qualifier la frontière de rendu |
-| 🔴 CRITIQUE | 575 lignes / 26,2 KB | `components/sections/rubriques/rejoindre-un-formulaire-section.tsx` | Revoir avec le contrôleur associé |
-| 🔴 CRITIQUE | 721 lignes / 26,2 KB | `lib/environmental-impact-estimator/constants.ts` | Isoler les constantes par domaine |
-| 🔴 CRITIQUE | 634 lignes / 25,6 KB | `components/sections/rubriques/rejoindre-un-formulaire-section.shared.tsx` | Réduire le couplage partagé |
-| 🔴 CRITIQUE | 729 lignes / 25,6 KB | `components/reports/web-document/reports-web-document.shared.tsx` | Séparer modèle et rendu |
-
-Le scan du 5 septembre identifie 503 fichiers au-dessus du seuil informatif de 7 KB.
-
-### Résorption post-scan — `quiz-bank-admin-view.tsx`
-
-Le lot du 6 septembre a clôturé la cible `components/admin/quiz-bank-admin-view.tsx`,
-qui figurait encore dans la photographie du 5 septembre :
-
-- le shell est passé de 655 lignes / 27,7 KB à 147 lignes / 6,3 KB ;
-- `quiz-bank-admin-view.question-card.tsx` porte `QuestionCard`, `CmmDisclosure` et le rendu de la traçabilité, des corrections et des badges ;
-- `quiz-bank-admin-view.filters.tsx` porte le panneau de revue éditoriale, les modes, les sélecteurs, le compteur et le reset ;
-- `quiz-bank-admin-view.presentation.ts` porte les helpers de labels, tons, troncature et difficulté/piège ;
-- `lib/learning/quiz/quiz-bank-admin.ts` porte désormais les filtres par défaut et le filtrage pur des questions ;
-- `QuizBankAdminView`, son caller, l'AuthZ admin, les données pédagogiques et le contrat de disclosure restent inchangés.
-
-Le radar du 5 septembre reste volontairement conservé comme historique. Un scan
-du worktree du 6 septembre (dirty et soumis à des changements parallèles) ne
-doit pas être interprété comme une nouvelle baseline `origin/main` ; la ligne
-ci-dessus sera retirée ou requalifiée lors de la prochaine régénération globale
-sur une référence candidate propre.
-Le fichier le plus long fait 991 lignes et le plus volumineux 34,5 KB. Le seuil enforcement ne signale
-donc aucun fichier au-dessus de 1000 lignes ou 50 KB, et le baseline
-`scripts/checks/heavy-files-baseline.json` reste vide (`allowed: []`). La liste
-ci-dessus reste une dette de maintenance mesurée, pas une autorisation de
-lancer une refonte globale. Les statuts historiques des lots détaillés plus
-bas doivent être revalidés contre ce radar avant exécution. Après le découpage
-de ce lot, `components/sections/rubriques/route/components/route-explanation.tsx`
-est à 12,3 KB / 219 lignes (rang 211) ; ses modules extraits restent sous le
-seuil radar informatif.
-
-> Déjà sortis du radar sur ce cycle :
-> - `app/api/actions/[actionId]/group-join/route.test.ts`
-> - `components/sections/rubriques/free-plan-services-methodology-visual.tsx`
-> - `components/sections/rubriques/feedback-section.tsx`
-> - `components/sections/rubriques/gamification/index.tsx`
->
-> Ces shells sont désormais minces et orchestrent des sous-modules dédiés.
-
----
-
-## Contraintes globales
-
-- Conserver les APIs publiques (props, hook signatures, exports nommés).
-- Un lot structurel par cible principale ; une modularisation directement liée,
-  sûre et utile peut rester dans le lot fonctionnel qui traverse la zone.
-- Ne pas fixer de taille cible arbitraire pour les modules : évaluer plutôt la
-  cohésion, les responsabilités, le couplage, la duplication, la testabilité et
-  le contexte nécessaire à une modification locale.
-- Ajouter des tests de logique avant de supprimer le code source.
-- `scripts/checks/heavy-files-baseline.json` reste un inventaire temporaire de dette
-  historique : toute nouvelle entrée doit être explicitement justifiée et
-  mesurée ; retirer les entrées devenues obsolètes ou repassées sous les seuils.
-- Commande de vérification recommandée : tests ciblés d'abord, puis `node scripts/checks/check-top-heavy-files.mjs --top=25`.
-- Ajouter un `npm run typecheck -w apps/web` ciblé quand la modification touche vraiment le typage ou les contrats exportés.
-- Si le typecheck ciblé est trop coûteux pour une étape intermédiaire de refactor, le repousser à la fin du lot, sans supprimer les tests ciblés ni le contrôle des fichiers lourds.
-
-## Règles d'exécution Kaizen
-
-Ces règles s'appliquent à chaque shell ou module monolithique traité dans ce plan, en cohérence avec le plan Kaizen du dépôt.
-
-- Extraire d'abord les constantes, les listes de données et les helpers purs.
-- Extraire ensuite la logique d'état dans un hook ou un module de modèle, avant de toucher au rendu.
-- Après chaque extraction, conserver un seul point d'entrée lisible qui compose les sous-modules.
-- Valider chaque étape avec la séquence suivante, selon le coût du lot :
-  - tests ciblés quand il y en a ;
-  - `npm run typecheck -w apps/web` ou commande équivalente ciblée sur le périmètre modifié, si le changement touche les types ou les exports ;
-  - `node scripts/checks/check-top-heavy-files.mjs --top=25`.
-- Pour les très gros fichiers ou les refactors multi-extractions, il est acceptable de faire d'abord les tests ciblés + le contrôle des fichiers lourds, puis de réserver le typecheck ciblé à la fin du lot.
-- Objectif de sortie :
-  - plus aucun fichier applicatif au-dessus de `1000` lignes par défaut ;
-  - idéalement, garder les shells UI entre `500` et `700` lignes.
-- Limiter l'utilisation des quotas des services web au strict nécessaire pendant l'audit et la modularisation.
-- S'appuyer sur la doctrine Kaizen du dépôt :
-  - `documentation/development/kaizen/README.md`
-  - `documentation/development/kaizen/templates/TEMPLATE-AUDIT.md`
-
----
-
-## LOT 1 — `chat-shell.tsx` (41 KB) 🔴
-
-**Nature :** Composant monolithique gérant l'UI, les messages, les connexions temps-réel et le state de saisie.
-
-### Découpage proposé
-
-```
-components/chat/
-├── index.ts                      ← exports centralisés
-├── chat-shell.tsx                ← orchestrateur léger (< 150 lignes)
-├── chat-header.tsx               ← barre du haut (titre, actions, statut)
-├── chat-message-list.tsx         ← scroll + virtualisation des messages
-├── chat-message-item.tsx         ← rendu d'un message individuel
-├── chat-input-bar.tsx            ← zone de saisie + send button
-├── chat-attachments.tsx          ← gestion des pièces jointes
-├── use-chat-connection.ts        ← logique WebSocket / realtime Supabase
-├── use-chat-messages.ts          ← fetch, pagination, optimistic updates
-└── types.ts                      ← interfaces ChatMessage, ChatSession...
+```text
+RADAR_REF=ebd22b799bd057d50a048ab57abf7eade662bb8a
 ```
 
-### Tests cibles
-- `use-chat-connection.test.ts` : reconnexion, erreurs réseau, événements reçus.
-- `use-chat-messages.test.ts` : pagination, ordre, état vide.
+Commande informative exécutée :
 
-### Done criteria
-- `chat-shell.tsx` ≤ 150 lignes, rôle d'orchestrateur uniquement.
-- `npm run test` vert sur les 2 hooks.
-
----
-
-## LOT 2 — `ActionStepHarvest.tsx` (30 KB) 🔴
-
-**Nature :** Étape de formulaire multi-état gérant photos, localisation, categorisation et validation.
-
-### Découpage proposé
-
-```
-components/actions/action-declaration/
-├── ActionStepHarvest.tsx         ← orchestrateur (< 150 lignes)
-├── harvest-photo-section.tsx     ← upload + aperçu photos
-├── harvest-location-section.tsx  ← GPS + carte
-├── harvest-category-section.tsx  ← sélection catégories
-├── harvest-validation-bar.tsx    ← barre de progression + CTA submit
-├── use-harvest-form.ts           ← state du formulaire + validation Zod
-└── harvest.types.ts              ← interfaces HarvestData, PhotoItem...
+```text
+node scripts/checks/check-top-heavy-files.mjs --ref=ebd22b799bd057d50a048ab57abf7eade662bb8a --max-lines=100000 --max-kb=7 --top=25
 ```
 
-### Tests cibles
-- `use-harvest-form.test.ts` : validation, état initial, reset.
+Commande enforcement exécutée :
 
-### Done criteria
-- Composant principal ≤ 200 lignes.
-
----
-
-## LOT 3 — `creator-inbox-panel.tsx` (28 KB) 🔴
-
-**Nature :** Panneau admin gérant la modération, les files d'attente et les actions de traitement.
-
-### Découpage proposé
-
-```
-components/admin/creator-inbox/
-├── index.ts
-├── creator-inbox-panel.tsx       ← shell (< 150 lignes)
-├── inbox-filter-bar.tsx          ← filtres statut/type
-├── inbox-item-card.tsx           ← carte d'un item à modérer
-├── inbox-action-drawer.tsx       ← panneau d'actions (accept/reject/escalate)
-├── use-inbox-queue.ts            ← logique de fil d'attente + polling
-└── inbox.types.ts
+```text
+node scripts/checks/check-top-heavy-files.mjs --ref=ebd22b799bd057d50a048ab57abf7eade662bb8a --max-lines=1000 --max-kb=50 --top=25 --enforce
 ```
 
-### Tests cibles
-- `use-inbox-queue.test.ts` : tri, filtre, actions de modération.
+### Mesures exactes
 
-### Done criteria
-- `creator-inbox-panel.tsx` ≤ 150 lignes.
+- `2011` fichiers `.ts/.tsx` sont présents sous `apps/web/src` sur cette ref.
+- `511` dépassent le seuil informatif de `7 KiB`, soit `7168` octets.
+- Maximum en lignes : `991`, pour `app/api/actions/group-join/route.test.ts`.
+- Maximum en octets : `34167` octets, soit `33.4 KiB`, pour
+  `lib/actions/organizer-directory-catalog.ts`.
+- Seuil enforcement : `>1000` lignes ou `>50 KiB`, soit `51200` octets.
+- Violations enforcement : `0` (`POLICY_OK`, commande terminée avec le code
+  `0`).
+- Baseline à cette ref : `allowed: []`.
+- Entrées stale de baseline : aucune signalée.
+- Les deux commandes ref-based ont atteint leur résultat métier complet sans
+  `ENOBUFS`.
 
----
+Le classement ci-dessous reprend la sortie exacte du top 25. Les octets sont
+les octets du blob Git ; la colonne KiB est la représentation arrondie fournie
+par le radar. Le seuil informatif déclenche une revue, mais n'impose pas à lui
+seul un découpage.
 
-## LOT 4 — `annuaire-directory-seed.ts` (26 KB) 🟠
+| Rang | Lignes | Octets | KiB | Fichier | Statut architectural |
+| ---: | ---: | ---: | ---: | --- | --- |
+| 1 | 991 | 31398 | 30.7 | `app/api/actions/group-join/route.test.ts` | À REQUALIFIER |
+| 2 | 940 | 25811 | 25.2 | `app/api/admin/moderation/route.ts` | À REQUALIFIER |
+| 3 | 929 | 30270 | 29.6 | `app/api/chat/route.test.ts` | À REQUALIFIER |
+| 4 | 928 | 29778 | 29.1 | `components/chat/chat-shell.tsx` | À DÉCOUPER |
+| 5 | 856 | 34167 | 33.4 | `lib/actions/organizer-directory-catalog.ts` | À REQUALIFIER |
+| 6 | 845 | 33925 | 33.1 | `app/api/route/recommend/route.test.ts` | À REQUALIFIER |
+| 7 | 801 | 25297 | 24.7 | `app/api/actions/route.submit.test.ts` | À REQUALIFIER |
+| 8 | 795 | 24352 | 23.8 | `app/api/actions/[actionId]/group-join/route.ts` | À REQUALIFIER |
+| 9 | 768 | 27711 | 27.1 | `lib/geo/greater-paris-select.tsx` | À DÉCOUPER |
+| 10 | 759 | 25419 | 24.8 | `lib/learning/quiz/quiz-personal-progress.ts` | À REQUALIFIER |
+| 11 | 753 | 28521 | 27.9 | `lib/auth/api-authorization-contract.ts` | COHÉSIF / NE PAS DÉCOUPER PAR TAILLE |
+| 12 | 729 | 26183 | 25.6 | `components/reports/web-document/reports-web-document.shared.tsx` | À REQUALIFIER |
+| 13 | 721 | 26819 | 26.2 | `lib/environmental-impact-estimator/constants.ts` | À REQUALIFIER |
+| 14 | 718 | 24975 | 24.4 | `lib/supabase/storage-business-contribution.ts` | À REQUALIFIER |
+| 15 | 708 | 30807 | 30.1 | `components/sections/rubriques/partners-network-section.tsx` | À DÉCOUPER |
+| 16 | 703 | 22010 | 21.5 | `lib/environmental-impact-estimator/project-signals.calculations.ts` | À REQUALIFIER |
+| 17 | 696 | 19845 | 19.4 | `app/api/admin/creator-inbox/route.ts` | À REQUALIFIER |
+| 18 | 694 | 20357 | 19.9 | `lib/gamification/progression-data.ts` | À REQUALIFIER |
+| 19 | 693 | 34095 | 33.3 | `components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | DÉJÀ STRUCTURÉ / REQUALIFICATION NON JUSTIFIÉE |
+| 20 | 691 | 23470 | 22.9 | `lib/route/route-predicted-targets.ts` | À REQUALIFIER |
+| 21 | 685 | 25305 | 24.7 | `lib/environmental-impact-estimator/services/infrastructure.ts` | À REQUALIFIER |
+| 22 | 680 | 18772 | 18.3 | `app/docs/[...segments]/route.ts` | À REQUALIFIER |
+| 23 | 679 | 25443 | 24.8 | `components/environmental-impact-estimator/environmental-impact-curve-chart.tsx` | À REQUALIFIER |
+| 24 | 677 | 27122 | 26.5 | `app/learn/ressources/learn-ressources-client.data.ts` | COHÉSIF / NE PAS DÉCOUPER PAR TAILLE |
+| 25 | 675 | 21079 | 20.6 | `lib/actions/participation/group-participation.ts` | À REQUALIFIER |
 
-**Nature :** Fichier de données statiques — pure configuration, pas de logique.
+Le top 25 ne constitue pas la liste complète des fichiers informatifs : `486`
+autres fichiers dépassent `7 KiB`. Ils restent des éléments de radar, sans
+décision architecturale automatique.
 
-### Découpage proposé
+## LOTS TERMINÉS ET FAÇADES SORTIES DU RADAR
 
-```
-components/sections/rubriques/annuaire/
-├── seed-organisations.ts         ← associations, ONG
-├── seed-collectivites.ts         ← mairies, intercommunalités
-├── seed-entreprises.ts           ← partenaires privés
-├── seed-index.ts                 ← re-export combiné
-└── annuaire.types.ts             ← interface DirectoryEntry
-```
+Les vérifications suivantes ont été faites par lecture directe des blobs de
+`RADAR_REF`, et non en reprenant le tableau historique du 5 septembre.
 
-### Done criteria
-- Aucun fichier > 8 KB.
-- Import dans l'annuaire inchangé (via `seed-index.ts`).
+| Cible historique | État sur `RADAR_REF` |
+| --- | --- |
+| Weather | `weather-section.tsx` : `97` lignes / `3682` octets ; `weather-section.preparation.tsx` : `84` / `2337` ; sorties du radar informatif. |
+| Rejoindre | La façade principale (`85` / `3770`) et le module partagé (`19` / `493`) sont sortis. Le contrôleur reste présent à `193` lignes / `7248` octets et demeure un candidat distinct. |
+| Quiz Bank Admin | `components/admin/quiz-bank-admin-view.tsx` : `148` / `6329`, sorti du radar informatif. |
+| Learn Ressources Sections | `app/learn/ressources/learn-ressources-client.sections.tsx` : `13` / `539`, sortie. Le module de données reste présent dans le radar à `677` / `27122`. |
+| Gamification | `index.tsx` : `119` / `4026` et `gamification-panels.tsx` : `14` / `529`, sortis. `lib/gamification/progression-data.ts` reste un fichier différent à requalifier. |
+| Navigation Ribbon | `app-navigation-ribbon.tsx` : `21` / `623`, sorti. |
+| Free Plan Services Visual | La façade `free-plan-services-methodology-visual.tsx` est à `82` / `3067`, sortie. Le module `.impact.tsx` reste présent et est classé séparément dans les décisions déjà prises. |
+| Governance Monthly Report | `lib/governance/governance-monthly-report.ts` : `13` / `566`, sorti. |
+| Chat API route | `app/api/chat/route.ts` : `3` / `72`, sorti. `route.test.ts` est un fichier de test séparé, encore dans le radar et à requalifier. |
+| Map Layers | `components/actions/map/map-layers.tsx` : `13` / `404`, sorti. |
+| Action Declaration Export Picker | `components/actions/action-declaration/form/action-declaration-export-picker.tsx` : `37` / `813`, sorti. |
 
----
+`Learn Practice Theme Tabs` n'est pas déclaré terminé :
+`components/learn/learn-practice-theme-tabs.tsx` reste dans le radar à
+`264` lignes / `11434` octets. La sortie d'une façade ne vaut pas sortie de
+tous les modules du domaine.
 
-## LOT 5 — `app/(app)/actions/map/page.tsx` (24 KB) 🟠
+## DÉCISIONS ARCHITECTURALES DÉJÀ PRISES
 
-**Nature :** Page Next.js gérant la carte interactive avec filtres, popups et flux d'actions.
+Ces décisions sont reprises telles quelles ; ce lot ne les réévalue pas et ne
+demande pas au radar de les déduire de la taille.
 
-### Découpage proposé
+### À DÉCOUPER
 
-```
-app/(app)/actions/map/
-├── page.tsx                      ← Server Component / layout (< 80 lignes)
-├── map-client.tsx                ← Client Component principal (< 200 lignes)
+| Fichier | Mesure actuelle | Périmètre de la décision |
+| --- | ---: | --- |
+| `components/sections/rubriques/partners-network-section.tsx` | `708` lignes / `30807` octets | Découpage à traiter dans un lot ultérieur. |
+| `components/chat/chat-shell.tsx` | `928` / `29778` | Le futur lot cible uniquement les responsabilités encore inline. L'architecture de hooks et de composants déjà existante ne doit pas être reconstruite. |
+| `components/sections/rubriques/elus-section.tsx` | `513` / `28325` | Découpage à traiter dans un lot ultérieur. |
+| `lib/geo/greater-paris-select.tsx` | `768` / `27711` | Découpage à traiter dans un lot ultérieur. |
+| `components/sections/rubriques/feedback-section-dashboard.tsx` | `633` / `26976` | Découpage à traiter dans un lot ultérieur. |
 
-components/actions/map/
-├── map-filter-bar.tsx            ← filtres géographiques et catégories
-├── map-action-popup.tsx          ← popup d'une action (déjà existe : action-popup-content.tsx — à nettoyer)
-├── map-sidebar.tsx               ← liste latérale des actions proches
-└── use-map-actions.ts            ← logique fetch, clustering, sélection
-```
+### COHÉSIF / NE PAS DÉCOUPER PAR TAILLE
 
-### Done criteria
-- `page.tsx` ≤ 80 lignes.
-- `map-client.tsx` ≤ 200 lignes.
+| Fichier | Mesure actuelle | Motif |
+| --- | ---: | --- |
+| `lib/auth/api-authorization-contract.ts` | `753` lignes / `28521` octets | Contrat d'autorisation cohésif ; la taille seule ne justifie pas une extraction. |
+| `app/learn/ressources/learn-ressources-client.data.ts` | `677` / `27122` | Données du client Learn Ressources conservées comme unité cohésive. |
+| `components/sections/rubriques/methodologie-page-client.tsx` | `629` / `27946` | Client de page cohésif ; aucune extraction mécanique par taille. |
 
----
+### DÉJÀ STRUCTURÉ / REQUALIFICATION NON JUSTIFIÉE
 
-## LOT 6 — `feedback-section.tsx` et `gamification/index.tsx` ✅
+| Fichier | Mesure actuelle | Décision |
+| --- | ---: | --- |
+| `components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | `693` lignes / `34095` octets | Module déjà structuré ; ne pas le requalifier sur le seul signal de taille. |
 
-Ces deux shells ont été sortis du monolithe principal et servent maintenant de point d'entrée mince.
+## CANDIDATS RESTANTS
 
-### État réel
+Les candidats actuellement visibles sont les fichiers du radar qui ne sont ni
+sortis, ni couverts par une décision déjà prise. Le top 25 les rend mesurables
+et traçables ; les autres `486` fichiers informatifs restent à inventorier au
+fil des décisions, sans classement architectural implicite.
 
-- `feedback-section.tsx` : shell de 37 lignes, contexte URL/prefill déplacé dans le module partagé.
-- `gamification/index.tsx` : shell de 105 lignes, composition des panneaux extraite dans `gamification-panels.tsx` et `gamification-shell.tsx`.
-- Le sous-module `gamification-panels.tsx` reste dense et peut devenir la prochaine cible si l'objectif est de descendre sous 700 lignes.
+### À REQUALIFIER
 
-### Suite possible
+Les fichiers suivants, présents dans le top 25 et sans décision préalable,
+sont à requalifier par ChatGPT avant tout futur lot :
 
-- Découper les sous-panneaux réutilisés dans `gamification-panels.tsx`.
-- Réduire les blocs de rendu les plus volumineux en composants plus petits seulement si le gain de locality est réel.
+- `app/api/actions/group-join/route.test.ts`
+- `app/api/admin/moderation/route.ts`
+- `app/api/chat/route.test.ts`
+- `lib/actions/organizer-directory-catalog.ts`
+- `app/api/route/recommend/route.test.ts`
+- `app/api/actions/route.submit.test.ts`
+- `app/api/actions/[actionId]/group-join/route.ts`
+- `lib/learning/quiz/quiz-personal-progress.ts`
+- `components/reports/web-document/reports-web-document.shared.tsx`
+- `lib/environmental-impact-estimator/constants.ts`
+- `lib/supabase/storage-business-contribution.ts`
+- `lib/environmental-impact-estimator/project-signals.calculations.ts`
+- `app/api/admin/creator-inbox/route.ts`
+- `lib/gamification/progression-data.ts`
+- `lib/route/route-predicted-targets.ts`
+- `lib/environmental-impact-estimator/services/infrastructure.ts`
+- `app/docs/[...segments]/route.ts`
+- `components/environmental-impact-estimator/environmental-impact-curve-chart.tsx`
+- `lib/actions/participation/group-participation.ts`
+- `components/learn/learn-practice-theme-tabs.tsx`
+- `components/sections/rubriques/rejoindre-un-formulaire-section.controller.ts`
 
----
+Cette liste est un état de radar, pas un audit architectural. Aucun de ces
+fichiers ne reçoit automatiquement le statut `À DÉCOUPER`.
 
-## LOT 7 — `analytics.ts` + `use-community-section.ts` (19 + 13 KB) 🟡
+## HISTORY
 
-Ces fichiers ont déjà été partiellement découpés lors du plan d'avril. Vérifier l'état réel et compléter si nécessaire.
+Le scan du 5 septembre est conservé comme historique de traçabilité, pas comme
+radar courant : il signalait `503` fichiers au-dessus de `7 KiB`, avec des
+tailles alors présentées dans un tableau désormais obsolète. Il ne doit plus
+être utilisé pour décrire l'état actuel, ni pour réintroduire comme critiques
+les façades sorties depuis.
 
-- `analytics.ts` → extraire formateurs (`formatters.ts`) et builders (`builders.ts`).
-- `use-community-section.ts` → vérifier si la logique KPI/filtres est sortie dans des hooks séparés.
+Le radar courant doit toujours être régénéré depuis la ref Git exacte annoncée
+par `RADAR_REF`. Le worktree dirty, les fichiers untracked et les changements
+parallèles ne constituent jamais une baseline.
 
----
+## RÈGLES DURABLES
 
-## LOT 8 — `quiz-bank-admin-view.tsx` ✅ (2026-09-06)
+- Un seuil de taille est un signal de revue, jamais une obligation de split.
+- La décision dépend de la cohésion, des responsabilités, du couplage, de la
+  testabilité et des contrats ; aucune cible générale du type `<150 lignes` ou
+  `<200 lignes` n'est imposée.
+- Un futur lot doit expliciter sa décision architecturale avant de modifier un
+  candidat (`À DÉCOUPER`, `COHÉSIF / NE PAS DÉCOUPER PAR TAILLE` ou
+  `DÉJÀ STRUCTURÉ / REQUALIFICATION NON JUSTIFIÉE`).
+- Les façades sorties du radar ne doivent pas être recréées pour masquer une
+  logique restante ; les responsabilités encore présentes doivent être
+  évaluées sur leurs propres frontières.
+- Ce document ne constitue pas une autorisation de refactor applicatif. Toute
+  modification de code doit faire l'objet d'un lot séparé et ciblé.
 
-**Nature :** Vue admin en lecture seule mêlant shell, filtres éditoriaux,
-présentation des questions et garde de disclosure.
+## PROVENANCE ET VALIDATION DU RADAR
 
-### État réel
-
-- façade `QuizBankAdminView` maintenue dans `quiz-bank-admin-view.tsx` ;
-- carte autonome dans `quiz-bank-admin-view.question-card.tsx` ;
-- filtres autonomes dans `quiz-bank-admin-view.filters.tsx` ;
-- helpers de présentation locaux dans `quiz-bank-admin-view.presentation.ts` ;
-- logique pure convergée vers `lib/learning/quiz/quiz-bank-admin.ts`, sans second modèle métier ;
-- caller `app/(app)/admin/quiz-bank/page.tsx` inchangé ;
-- `check-disclosure-governance.mjs` réaligné sur le propriétaire réel de `QuestionCard`.
-
-### Validation
-
-- contrat public `quiz-bank-admin.test.ts` et rendu `quiz-bank-admin-view.test.tsx` verts ;
-- garde disclosure vert ;
-- ESLint ciblé, typecheck web et `git diff --check` verts sur le candidat exact ;
-- `check-top-heavy-files --top=25` vert dans le worktree ; l'équivalent candidat a rencontré `spawnSync git ENOBUFS` dans l'environnement hôte et reste classé `HOST_ENVIRONMENT`.
-
----
-
-## Séquence d'exécution recommandée
-
-```
-LOT 4 (data pure, risque zéro)
-→ LOT 1 (chat, fort impact utilisateur)
-→ LOT 2 (formulaire critique flux principal)
-→ LOT 3 (admin, modération)
-→ LOT 5 (carte, complexité Mapbox)
-→ LOT 6 (clôture des shells déjà extraits)
-→ LOT 7 (complétion du travail d'avril)
-→ LOT 8 (vue admin quiz, clôturé)
-→ régénérer et requalifier le radar global sur une référence candidate propre
-→ décider des refactors réellement indispensables restants
-```
-
----
-
-## Commandes de référence
-
-```bash
-# Scanner les fichiers lourds
-Get-ChildItem -Path apps/web/src -Recurse -Filter "*.tsx" | Sort-Object Length -Descending | Select-Object -First 20
-
-# Validation post-découpage
-npm -C apps/web run lint
-npm -C apps/web run test -- <tests-cibles>
-npm run quality:top-heavy
-npm run typecheck
-```
+Les commandes ref-based ci-dessus ont été exécutées sur
+`ebd22b799bd057d50a048ab57abf7eade662bb8a`. Le contrôle informatif s'est
+terminé avec `INFORMATIVE_EXIT=0` et le contrôle enforcement avec
+`ENFORCEMENT_EXIT=0`. Aucun `ENOBUFS` n'a été reproduit. Le présent lot ne
+modifie ni le checker, ni la baseline heavy-files, ni le code applicatif.
