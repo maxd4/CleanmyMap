@@ -4,6 +4,7 @@ import { useRef } from "react";
 import {
   ArrowRight,
   CheckCircle2,
+  FileText,
   GraduationCap,
   Heart,
   Leaf,
@@ -27,6 +28,31 @@ const SECTION_TITLE_STYLE = {
   letterSpacing: "-0.055em",
   fontWeight: 900,
 } as const;
+
+const CREDIBILITY_PROOF_CARDS = [
+  {
+    icon: GraduationCap,
+    title: "Cadre universitaire",
+    text: "DU Engagement\nSorbonne Université",
+  },
+  {
+    icon: MapPin,
+    title: "Ancrage terrain",
+    text: "Actions réelles\net cartographiées",
+  },
+  {
+    icon: FileText,
+    title: "Traçabilité",
+    text: "Projet open-source\nsur GitHub",
+  },
+] as const;
+
+const ECOSYSTEM_STEPS = [
+  { title: "Terrain", text: "Observations\net actions" },
+  { title: "Carte", text: "Données\net visualisation" },
+  { title: "Méthode", text: "Cadre universitaire\net outils" },
+  { title: "Territoire", text: "Partenaires\net impact" },
+] as const;
 
 function SectionLandscape({
   variant,
@@ -308,8 +334,12 @@ export function HomeCommunityCredibility({
                 Crédibilité
               </p>
               <h2
-                className="relative mt-2 max-w-[13ch] text-[#063840]"
-                style={SECTION_TITLE_STYLE}
+                className="relative mt-2 whitespace-nowrap text-[#063840]"
+                style={{
+                  ...SECTION_TITLE_STYLE,
+                  fontSize: "clamp(1.15rem, 2.8vw, 3.35rem)",
+                  textWrap: "nowrap",
+                }}
               >
                 Origine, terrain et crédibilité
               </h2>
@@ -318,7 +348,7 @@ export function HomeCommunityCredibility({
 
           <p
             data-gsap-reveal
-            className="mt-6 max-w-[40rem] text-[15px] leading-relaxed text-[#315c67] sm:text-base"
+            className="mt-6 max-w-[40rem] text-[15px] leading-relaxed text-[#315c67] sm:text-base lg:text-[14px]"
           >
             CleanMyMap est un projet étudiant construit autour d&apos;actions
             réelles, porté par une ambition partenariale progressive et une
@@ -327,7 +357,7 @@ export function HomeCommunityCredibility({
 
           <article
             data-gsap-reveal
-            className="mt-6 flex flex-1 flex-col rounded-[1.65rem] border border-emerald-100/20 bg-[linear-gradient(145deg,#128b70_0%,#08715b_100%)] p-5 text-white shadow-[0_24px_48px_-32px_rgba(4,76,54,0.62)] sm:p-6 lg:p-7"
+            className="mt-6 flex flex-1 flex-col rounded-[1.65rem] border border-white/25 bg-[linear-gradient(135deg,#28c997_0%,#1fb7a4_46%,#7569ec_100%)] p-5 text-white shadow-[0_24px_48px_-32px_rgba(4,76,54,0.48)] sm:p-6 lg:p-7"
           >
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-emerald-100">
@@ -337,7 +367,7 @@ export function HomeCommunityCredibility({
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-100/90">
                   L&apos;histoire du projet
                 </p>
-                <h3 className="mt-2 text-xl font-black tracking-tight sm:text-2xl">
+                <h3 className="mt-2 whitespace-nowrap text-[clamp(1.1rem,2.2vw,2.2rem)] font-black tracking-tight">
                   Une démarche d&apos;engagement concrète
                 </h3>
               </div>
@@ -353,11 +383,36 @@ export function HomeCommunityCredibility({
                 actions de dépollution pour rendre leur impact local visible.
               </p>
             </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {CREDIBILITY_PROOF_CARDS.map((card) => {
+                const Icon = card.icon;
+
+                return (
+                  <div
+                    key={card.title}
+                    className="min-h-[7.25rem] rounded-[1.15rem] border border-white/30 bg-white/12 p-3.5 shadow-[0_16px_30px_-24px_rgba(4,76,54,0.55)] sm:p-4"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
+                        <Icon size={18} />
+                      </div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90">
+                        {card.title}
+                      </p>
+                    </div>
+                    <p className="mt-3 whitespace-pre-line text-sm leading-snug text-white/95">
+                      {card.text}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
           </article>
 
           <article
             data-gsap-reveal
-            className="mt-3 flex flex-1 flex-col rounded-[1.65rem] border border-white/25 bg-[linear-gradient(135deg,#128b70_0%,#08735d_43%,#7569d8_100%)] p-5 text-white shadow-[0_24px_52px_-30px_rgba(50,45,143,0.42)] sm:p-6 lg:p-7"
+            className="mt-3 flex flex-1 flex-col rounded-[1.65rem] border border-white/25 bg-[linear-gradient(135deg,#24c995_0%,#1ba9af_48%,#7569ec_100%)] p-5 text-white shadow-[0_24px_52px_-30px_rgba(50,45,143,0.34)] sm:p-6 lg:p-7"
           >
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
@@ -381,6 +436,34 @@ export function HomeCommunityCredibility({
                 Le terrain nourrit la carte, le cadre universitaire renforce la
                 méthode et les partenaires amplifient l&apos;impact.
               </p>
+            </div>
+
+            <div
+              aria-label="Étapes de construction de l'écosystème"
+              className="mt-6 overflow-x-auto rounded-[1.25rem] border border-white/30 bg-white/10 p-3"
+              role="list"
+            >
+              <div className="flex min-w-[39rem] items-stretch">
+                {ECOSYSTEM_STEPS.map((step, index) => (
+                  <div key={step.title} className="flex min-w-0 flex-1 items-stretch">
+                    <div className="flex min-w-0 flex-1 flex-col items-center justify-center px-3 text-center">
+                      <p className="text-base font-black tracking-tight text-white">
+                        {step.title}
+                      </p>
+                      <p className="mt-1 whitespace-pre-line text-sm leading-snug text-white/90">
+                        {step.text}
+                      </p>
+                    </div>
+                    {index < ECOSYSTEM_STEPS.length - 1 ? (
+                      <div className="flex items-center gap-2 text-white/80" aria-hidden="true">
+                        <span className="h-12 w-px bg-white/35" />
+                        <ArrowRight size={19} strokeWidth={1.8} />
+                        <span className="h-12 w-px bg-white/35" />
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
             </div>
           </article>
 
