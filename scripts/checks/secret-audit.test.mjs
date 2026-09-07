@@ -70,3 +70,40 @@ test("secret in a foreign tree file does not affect candidate scan", () => {
   assert.match(result.stdout, /PUSH_CANDIDATE/);
   assert.match(result.stdout, /1 file\(s\) scanned/);
 });
+
+test("asset integrity SHA-256 is allowed", () => {
+  const assetDigest = "a".repeat(64);
+  const result = runAudit({
+    candidateContent: `asset: { "sha256": "${assetDigest}" }\n`,
+    foreignContent: "no secret here\n",
+  });
+
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+  assert.match(result.stdout, /PUSH_CANDIDATE/);
+});
+
+test("a hash next to a password or token remains blocked", () => {
+  const sensitiveDigest = "b".repeat(64);
+  const result = runAudit({
+    candidateContent: `passwordHash=${sensitiveDigest}\nTOKEN_DIGEST=${sensitiveDigest}\n`,
+    foreignContent: "no secret here\n",
+  });
+
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /Hash digest/);
+});
+
+test("a real token pattern remains blocked", () => {
+  const syntheticToken = [
+    "eyJaaaaaaaaaa",
+    "eyJbbbbbbbbbb",
+    "eyJcccccccccc",
+  ].join(".");
+  const result = runAudit({
+    candidateContent: `ACCESS_TOKEN=${syntheticToken}\n`,
+    foreignContent: "no secret here\n",
+  });
+
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stderr, /JWT token/);
+});
