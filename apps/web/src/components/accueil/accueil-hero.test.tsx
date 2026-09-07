@@ -25,14 +25,6 @@ describe("HomeHero impact methodology link", () => {
             false,
           )
         }
-        counters={{
-          wasteKg: 0,
-          butts: 0,
-          volunteers: 0,
-          co2AvoidedKg: 0,
-          waterSavedLiters: 0,
-          euroSaved: 0,
-        }}
         impactSnapshot={null}
       />,
     );

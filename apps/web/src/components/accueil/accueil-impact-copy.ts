@@ -1,4 +1,4 @@
-import type { HomeCounters, HomeImpactSnapshot } from "@/lib/accueil/config";
+import type { HomeImpactSnapshot } from "@/lib/accueil/config";
 
 export type ImpactInsight = {
   lines: string[];
@@ -36,8 +36,6 @@ function formatPlural(
 
 export function buildImpactInsight(
   key: string,
-  counters: HomeCounters,
-  actionCount: number,
   impactSnapshot?: HomeImpactSnapshot | null,
 ): ImpactInsight {
   switch (key) {
@@ -68,14 +66,10 @@ export function buildImpactInsight(
       };
     }
     case "volunteers":
+      if (!impactSnapshot) return { lines: [] };
+
       return {
-        lines: [
-          "Une dynamique de proximité en solo, binôme ou trinôme",
-          actionCount > 0
-            ? `≈ ${format(counters.volunteers / actionCount)} participants par action collective`
-            : "Les actions collectives créent leur propre dynamique.",
-        ],
-        note: actionCount > 0 ? "Moyenne indicative sur les actions comptabilisées." : undefined,
+        lines: [],
       };
     case "co2": {
       const results = impactSnapshot?.impactTerrain;

@@ -117,9 +117,15 @@ export default async function HomePage() {
       };
 
   const hasOverviewData = Boolean(landingSummary);
-  const metrics = buildHomeMetrics(counters, hasOverviewData);
+  const metrics = buildHomeMetrics(
+    counters,
+    hasOverviewData,
+    landingSummary?.participantsTotal,
+  );
   const impactSnapshot = landingSummary
     ? {
+        participantsTotal: landingSummary.participantsTotal,
+        actionDistribution: landingSummary.actionDistribution,
         impactTerrain: landingSummary.impactTerrain,
         streetCleaningSavings: landingSummary.streetCleaningSavings,
       }
@@ -136,8 +142,6 @@ export default async function HomePage() {
       <div className="relative z-10 min-w-0">
         <HomeHero
           metrics={metrics}
-          counters={counters}
-          actionCount={communityActivity.visibleActions}
           impactSnapshot={impactSnapshot}
         />
         <HomeNavigationSchema />

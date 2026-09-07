@@ -13,7 +13,17 @@ const metric: HomeMetric = {
   accent: "emerald",
 };
 
+const participantsMetric: HomeMetric = {
+  key: "volunteers",
+  label: "Bénévoles mobilisés",
+  value: "12",
+  category: "Résultat",
+  accent: "blue",
+};
+
 const snapshot: HomeImpactSnapshot = {
+  participantsTotal: 0,
+  actionDistribution: [],
   impactTerrain: buildImpactTerrain2026PublicResults({ wasteKg: 55 }),
   streetCleaningSavings: computeImpactTerrain2026StreetCleaningSavings({
     wasteKg: 55,
@@ -26,15 +36,6 @@ describe("HomeImpactKpiCard", () => {
     const html = renderToStaticMarkup(
       <HomeImpactKpiCard
         metric={metric}
-        counters={{
-          wasteKg: 55,
-          butts: 0,
-          volunteers: 0,
-          co2AvoidedKg: 6.7,
-          waterSavedLiters: 0,
-          euroSaved: 0,
-        }}
-        actionCount={0}
         impactSnapshot={snapshot}
       />,
     );
@@ -51,20 +52,38 @@ describe("HomeImpactKpiCard", () => {
     const html = renderToStaticMarkup(
       <HomeImpactKpiCard
         metric={metric}
-        counters={{
-          wasteKg: 55,
-          butts: 0,
-          volunteers: 0,
-          co2AvoidedKg: 6.7,
-          waterSavedLiters: 0,
-          euroSaved: 0,
-        }}
-        actionCount={0}
         impactSnapshot={null}
       />,
     );
 
     expect(html).not.toContain("km en voiture thermique");
     expect(html).not.toContain("voyages Paris");
+  });
+
+  it("renders the canonical action distribution for the participant bubble", () => {
+    const html = renderToStaticMarkup(
+      <HomeImpactKpiCard
+        metric={participantsMetric}
+        impactSnapshot={{
+          ...snapshot,
+          participantsTotal: 12,
+          actionDistribution: [
+            { key: "association", category: "Association", count: 1 },
+            {
+              key: "student_association",
+              category: "Association étudiante",
+              count: 2,
+            },
+            { key: "other", category: "Autres", count: 0 },
+          ],
+        }}
+      />,
+    );
+
+    expect(html).toContain('role="img"');
+    expect(html).toContain("3 actions");
+    expect(html).toContain("Association étudiante");
+    expect(html).not.toContain(">Autres<");
+    expect(html).not.toContain("participants par action");
   });
 });

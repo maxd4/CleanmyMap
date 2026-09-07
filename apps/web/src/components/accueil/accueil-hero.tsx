@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type {
-  HomeCounters,
   HomeImpactSnapshot,
   HomeMetric,
 } from "@/lib/accueil/config";
@@ -18,8 +17,6 @@ import { HomeMapPreview } from "./accueil-map-preview";
 
 interface HomeHeroProps {
   metrics: HomeMetric[];
-  counters: HomeCounters;
-  actionCount?: number;
   impactSnapshot: HomeImpactSnapshot | null;
 }
 
@@ -52,8 +49,6 @@ const heroActions = [
 
 export function HomeHero({
   metrics,
-  counters,
-  actionCount = 0,
   impactSnapshot,
 }: HomeHeroProps) {
   return (
@@ -128,8 +123,6 @@ export function HomeHero({
               <HomeImpactKpiCard
                 key={metric.key}
                 metric={metric}
-                counters={counters}
-                actionCount={actionCount}
                 impactSnapshot={impactSnapshot}
               />
             ))}
