@@ -46,6 +46,8 @@ export type UrbanMorphologyPriorApplication = {
   version: typeof URBAN_MORPHOLOGY_PRIOR_VERSION;
   status: UrbanMorphologyPriorStatus;
   source: ParisPressureUrbanMorphology["source"] | null;
+  geographicSource: ParisPressureUrbanMorphology["source"] | null;
+  morphologyType: ParisPressureUrbanMorphologyFeature[];
   confidence: number;
   features: ParisPressureUrbanMorphology["features"] | null;
   components: {
@@ -113,6 +115,12 @@ function availableFeatures(
   ) as ParisPressureUrbanMorphology["features"];
 }
 
+function morphologyTypes(
+  morphology: ParisPressureUrbanMorphology,
+): ParisPressureUrbanMorphologyFeature[] {
+  return FEATURE_KEYS.filter((key) => feature(morphology, key) > 0);
+}
+
 function contributionAtLeast(
   contributions: readonly ParisPressureRiskContribution[],
   keys: readonly ParisPressureRiskContribution["key"][],
@@ -160,6 +168,8 @@ function unavailable(
     version: URBAN_MORPHOLOGY_PRIOR_VERSION,
     status,
     source: null,
+    geographicSource: null,
+    morphologyType: [],
     confidence: round(confidence),
     features: status === "unavailable" ? null : emptyFeatures(),
     components: {
@@ -205,6 +215,8 @@ export function applyUrbanMorphologyPrior(input: {
         "Contexte morphologique géographique peu fiable : aucune correction appliquée.",
       ),
       source: input.morphology.source,
+      geographicSource: input.morphology.source,
+      morphologyType: morphologyTypes(input.morphology),
       features: availableFeatures(input.morphology),
     };
   }
@@ -293,6 +305,8 @@ export function applyUrbanMorphologyPrior(input: {
     version: URBAN_MORPHOLOGY_PRIOR_VERSION,
     status: "applied",
     source: input.morphology.source,
+    geographicSource: input.morphology.source,
+    morphologyType: morphologyTypes(input.morphology),
     confidence: round(confidence),
     features: availableFeatures(input.morphology),
     components,
