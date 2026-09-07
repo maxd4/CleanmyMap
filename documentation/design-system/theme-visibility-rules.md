@@ -51,8 +51,12 @@ Garantir une interface lisible en permanence, sans texte invisible, sans bouton 
   - texte avec contraste élevé,
   - bordure explicite si le fond est proche du fond parent,
   - focus ring visible clavier.
-- Le bouton primaire et le bouton secondaire utilisent un dégradé diagonal de deux couleurs, pas un aplat neutre.
-- Le bouton primaire prend deux couleurs complémentaires à la page, le secondaire deux couleurs de la page, et le tertiaire un dégradé discret mais vivant.
+- La couleur du bouton suit la hiérarchie canonique d'importance
+  `doré/brun > violet > vert > blanc`, indépendamment de la famille de la
+  page ; voir [`BLOC_COLOR_SYSTEM_PREMIUM.md`](./BLOC_COLOR_SYSTEM_PREMIUM.md#hiérarchie-canonique-des-boutons).
+- Un dégradé peut renforcer la lisibilité et la profondeur d'une surface, mais
+  il ne doit pas déterminer la priorité de l'action ni remplacer le traitement
+  rouge séparé des actions `destructive`.
 - Les liens texte seuls doivent être soulignés au `hover` et au `focus`.
 - Interdit: texte clair sur fond clair ou texte sombre sur fond sombre même temporairement au `hover`.
 

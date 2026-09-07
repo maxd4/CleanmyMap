@@ -6,6 +6,12 @@ forme (`variant`) ; la géométrie et les états restent définis dans
 `apps/web/src/styles/actions.css`, importé par
 `apps/web/src/app/globals.css`.
 
+La priorité visuelle des actions est définie séparément par la hiérarchie
+canonique [`doré/brun > violet > vert > blanc`](./BLOC_COLOR_SYSTEM_PREMIUM.md#hiérarchie-canonique-des-boutons).
+Les noms historiques de l'API `tone` ci-dessous ne constituent pas une
+hiérarchie concurrente et ne doivent pas être interprétés comme des variantes
+dorée/brune ou violette inexistantes.
+
 ## API
 
 ```tsx
@@ -29,9 +35,9 @@ clavier et l'activation.
 
 | Contrat | Usage |
 | --- | --- |
-| `primary` | action principale, validation ou création |
-| `secondary` | action de soutien ou alternative neutre |
-| `tertiary` | action contextuelle de faible hiérarchie |
+| `primary` | bouton vert actuellement publié pour une action standard, une validation ou une création |
+| `secondary` | bouton blanc actuellement publié pour une action d'accompagnement ou une alternative neutre |
+| `tertiary` | bouton transparent actuellement publié pour une action contextuelle de faible emphase |
 | `destructive` | suppression, sortie ou modération destructive |
 | `sm` / `md` / `lg` | 40 / 44 / 48 px de hauteur |
 | `default` / `pill` / `ghost` | radius standard / `--radius-full` / surface sans bordure |

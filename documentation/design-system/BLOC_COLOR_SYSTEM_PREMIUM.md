@@ -18,6 +18,59 @@ la palette, les familles et contrastes de ce document restent la contrainte
 canonique. Si la cible entre en conflit avec cette contrainte, appliquer la
 variante compatible la plus proche et expliciter l'écart dans la preuve visuelle.
 
+## Hiérarchie canonique des boutons
+
+La couleur d'un bouton exprime l'importance de l'action, jamais la famille
+fonctionnelle de la page. La hiérarchie unique, du niveau le plus élevé au
+niveau le plus faible, est la suivante :
+
+| Niveau | Couleur | Usage canonique |
+| --- | --- | --- |
+| 1 | Doré / brun | Action critique ou très importante, structurante ou décisive pour le parcours. Usage rare et intentionnel ; par exemple, connexion ou inscription lorsqu'elle constitue le passage nécessaire vers l'usage complet du produit. |
+| 2 | Violet | Action importante que l'on souhaite distinguer nettement sans lui donner le poids maximal. Peut cohabiter avec un bouton vert ou blanc. |
+| 3 | Vert | Action standard et majoritaire. C'est le choix par défaut pour les CTA et actions positives ordinaires lorsqu'aucune priorité exceptionnelle ne justifie le doré/brun ou le violet. |
+| 4 | Blanc | Action d'accompagnement, alternative ou complémentaire. Le blanc ne doit pas concurrencer visuellement le CTA principal. |
+
+Cette hiérarchie est indépendante de la palette de la page ou de la famille du
+bloc. Une zone d'actions doit rendre sa priorité immédiatement compréhensible
+et éviter plusieurs actions de niveau maximal côte à côte sans justification.
+Le blanc est normalement un compagnon, pas le CTA dominant.
+
+### Contrat runtime actuel
+
+`CmmButton` expose actuellement uniquement les identifiants
+`tone="primary" | "secondary" | "tertiary" | "destructive"`.
+
+- `primary` est le bouton vert publié pour l'action standard/majoritaire ;
+- `secondary` est le bouton blanc publié pour l'action d'accompagnement et
+  constitue la valeur par défaut actuelle ;
+- `tertiary` est une action transparente de faible emphase ou contextuelle ;
+- `destructive` conserve son traitement rouge de danger et ne fait pas partie
+  de la hiérarchie de priorité `doré/brun > violet > vert > blanc`.
+
+Les niveaux sémantiques doré/brun et violet sont donc, à ce stade, un contrat
+de conception cible : aucun identifiant runtime `gold`, `brown` ou `violet`
+n'est actuellement publié par `CmmButton`. Ne pas les présenter comme des
+variantes disponibles avant l'ajout effectif de leurs tokens et styles.
+
+Les états hover, focus, loading, disabled et les exigences d'accessibilité
+restent obligatoires pour les quatre niveaux. L'importance métier ne doit pas
+être confondue avec le caractère destructif d'une action.
+
+### Exemple de composition homepage
+
+La composition de référence applique la hiérarchie ainsi :
+
+- **Consulter la carte** → vert ;
+- **Discuter** → violet ;
+- **Créer une action** → blanc ;
+- **Rejoindre une action** → blanc ;
+- **Se connecter / S'inscrire** → doré/brun.
+
+Cet exemple décrit le contrat de priorité visuelle. Les niveaux doré/brun et
+violet restent à implémenter dans le runtime avant de pouvoir être utilisés
+comme `tone` de `CmmButton`.
+
 ## Surfaces & cards
 
 Le contrat runtime unique des cartes, panels, états interactifs, modes
@@ -300,9 +353,9 @@ bg-gradient-to-r from-[accent-500] via-[accent-400] to-[accent-300]  /* 3px */
 5. **Titres / chiffres internes** : les accents `text-[accent]-100` concernent les titres/chiffres de cartes ou de surfaces sombres, jamais une nouvelle variante de H1 de page.
 6. **Texte blanc** : lorsqu'un texte est sémantiquement blanc, utiliser `text-white` à 100 %. Toute opacité réduite doit correspondre à un état ou niveau de hiérarchie explicitement voulu.
 7. **Texte noir** : lorsqu'un texte est sémantiquement noir, utiliser `text-black` à 100 %. Les `slate` / `stone` restent des couleurs intentionnelles de design et ne doivent pas être converties arbitrairement en noir.
-8. **CTA primaire** : utiliser `CmmButton tone="primary"` et laisser le thème du bloc injecter les couleurs.
-9. **CTA secondaire** : utiliser `CmmButton tone="secondary"` pour le CTA de soutien principal du bloc.
-10. **CTA tertiaire** : utiliser `CmmButton tone="tertiary"` pour les actions de bas de hiérarchie ou les liens contextuels.
+8. **Hiérarchie CTA** : appliquer le contrat `doré/brun > violet > vert > blanc` selon l'importance de l'action, indépendamment de la famille de la page.
+9. **Variantes runtime** : utiliser uniquement les `tone` réellement exposés par `CmmButton` ; ne pas inventer d'identifiant `gold`, `brown` ou `violet` absent du runtime.
+10. **Destructive** : conserver le traitement rouge dédié aux actions dangereuses ; il est séparé de la hiérarchie de priorité des boutons.
 11. **Multi-teintes** : certains blocs ont plusieurs teintes selon le type de page ; vérifier le mapping rubrique → teinte.
 12. **Référence** : vérifier `PAGE_HEADER.md`, `accueil-pillars.tsx`, `navigation.ts`, `documentation/product/matrice-rubriques.md` et `documentation/architecture/traceability-matrix.md` avant d'implémenter une évolution de palette ou de header.
 

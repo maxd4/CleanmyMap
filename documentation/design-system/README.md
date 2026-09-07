@@ -59,6 +59,15 @@ effets et exceptions est documenté dans
 documentées dans [`BLOC_COLOR_SYSTEM_PREMIUM.md`](./BLOC_COLOR_SYSTEM_PREMIUM.md).
 Le contrat est contrôlé par `npm run check:surfaces`.
 
+La hiérarchie canonique des actions est documentée dans la section
+[`Hiérarchie canonique des boutons`](./BLOC_COLOR_SYSTEM_PREMIUM.md#hiérarchie-canonique-des-boutons) :
+`doré/brun > violet > vert > blanc`. Elle exprime l'importance de l'action,
+pas la famille de la page ; `destructive` reste une sémantique de danger
+séparée. Le runtime actuel de `CmmButton` expose encore les identifiants
+`primary`, `secondary`, `tertiary` et `destructive` ; les niveaux doré/brun et
+violet sont documentés comme contrat cible tant que leurs variantes ne sont
+pas publiées.
+
 Pour les champs texte standards, utiliser `CmmField` avec `CmmInput`,
 `CmmSelect` ou `CmmTextarea` selon
 [`FORMS_CONTROLS.md`](./FORMS_CONTROLS.md). Les recettes de bordure, fond,
