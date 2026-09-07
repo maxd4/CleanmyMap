@@ -31,6 +31,15 @@ describe("action participant aggregation", () => {
     expect(result.participantsTotal).toBe(28);
     expect(result.totalDurationMinutes).toBe(280);
     expect(result.totalDurationHours).toBe(280 / 60);
+    expect(result.streetCleaningSavings).toEqual({
+      wasteKg: 0,
+      durationMinutes: 280,
+      actionHours: 280 / 60,
+      massEstimateEuros: 0,
+      timeEstimateEuros: (280 / 60) * 12.31,
+      lowerBoundEuros: 0,
+      upperBoundEuros: (280 / 60) * 12.31,
+    });
     expect(result.actionDistribution).toEqual([
       { key: "spontaneous:1", category: "Solo", count: 1 },
       { key: "spontaneous:2", category: "Duo", count: 1 },
@@ -107,6 +116,15 @@ describe("action participant aggregation", () => {
         { key: "spontaneous:2", category: "Duo", count: 2 },
       ],
       classificationWarnings: [{ code: "missing_organizer_type", count: 1 }],
+      streetCleaningSavings: {
+        wasteKg: 0,
+        durationMinutes: 90,
+        actionHours: 1.5,
+        massEstimateEuros: 0,
+        timeEstimateEuros: 18.465,
+        lowerBoundEuros: 0,
+        upperBoundEuros: 18.465,
+      },
       impactTerrain: {
         wasteKg: 0,
         wasteBagsEquivalent: 0,

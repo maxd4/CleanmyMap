@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { computeImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
@@ -73,9 +74,12 @@ export default async function SponsorPortalPage() {
 
   // Calculs ROI
   const totalKg = overview?.comparison.current.impactVolumeKg ?? null;
-  const totalEuroSaved = totalKg === null
+  const streetCleaningSavings = totalKg === null
     ? null
-    : Math.round(totalKg * factors.euroSavedPerWasteKg);
+    : computeImpactTerrain2026StreetCleaningSavings({
+        wasteKg: totalKg,
+        durationMinutes: overview?.comparison.current.totalDurationMinutes ?? 0,
+      });
   const totalCo2 = totalKg === null
     ? null
     : Math.round(totalKg * factors.co2KgPerWasteKg);
@@ -110,7 +114,9 @@ export default async function SponsorPortalPage() {
             {
               id: "economie-voirie",
               label: "Économie de voirie",
-              value: totalEuroSaved === null ? "n/a" : `${totalEuroSaved.toLocaleString()} €`,
+              value: streetCleaningSavings === null
+                ? "n/a"
+                : `${streetCleaningSavings.lowerBoundEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}–${streetCleaningSavings.upperBoundEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €`,
               deltaPercent: "+12%",
               icon: <Euro size={16} aria-hidden="true" />,
               interpretation: "positive",
@@ -237,7 +243,7 @@ export default async function SponsorPortalPage() {
           
           <div className="space-y-6">
             <p className="text-2xl text-white/40 leading-tight font-medium tracking-tight">
-              Chaque kilogramme collecté génère une économie directe de <strong className="text-white">1,50€</strong> pour la collectivité. Ce calcul est certifié par nos protocoles de mesure d&apos;impact environnemental.
+              La valorisation de voirie est une estimation méthodologique à deux lectures : <strong className="text-white">{streetCleaningSavings === null ? "n/a" : `${streetCleaningSavings.massEstimateEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € par la masse et ${streetCleaningSavings.timeEstimateEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € par le temps`}</strong>. La fourchette affichée ne constitue ni une dépense comptable économisée euro pour euro ni une certification.
             </p>
             
             <CmmButton href="/methodologie" tone="secondary" variant="pill" className="inline-flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.3em] text-black transition-all group">

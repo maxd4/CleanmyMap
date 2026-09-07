@@ -22,6 +22,6 @@ describe("LearnVulgarisationMagnitudeComparator", () => {
     expect(markup).toContain("Sortie terrain");
     expect(markup).toContain("Eau mobilisée");
     expect(markup).toContain("CO2eq");
-    expect(markup).toContain("Valeur utile");
+    expect(markup).toContain("Fourchette de valorisation");
   });
 });

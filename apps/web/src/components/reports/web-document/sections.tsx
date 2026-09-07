@@ -262,8 +262,10 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
           />
           <MetricCard
             label="Économie de voirie (proxy)"
-            value={`${toFrNumber(report.climate.streetCleaningSavingsEuros ?? 0)} €`}
-            hint="Masse × proxy runtime"
+            value={report.climate.streetCleaningSavings
+              ? `${toFrNumber(report.climate.streetCleaningSavings.lowerBoundEuros)}–${toFrNumber(report.climate.streetCleaningSavings.upperBoundEuros)} €`
+              : `${toFrNumber(report.climate.streetCleaningSavingsEuros ?? 0)} €`}
+            hint="Fourchette masse/temps"
           />
         </div>
         <div className="grid gap-3 md:grid-cols-2">

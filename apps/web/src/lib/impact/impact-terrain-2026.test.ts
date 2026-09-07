@@ -10,6 +10,9 @@ import {
   FRENCH_PERSON_ANNUAL_WATER_LITERS,
   OLYMPIC_POOL_LITERS,
   PARIS_MOSCOW_ROAD_DISTANCE_KM,
+  computeImpactTerrain2026StreetCleaningSavings,
+  STREET_CLEANING_EUROS_PER_WASTE_KG,
+  VOLUNTEER_ACTION_EUROS_PER_HOUR,
   WATER_LITERS_PER_CIGARETTE_BUTT,
 } from "./impact-terrain-2026";
 
@@ -81,5 +84,35 @@ describe("Impact terrain 2026 methodology domain", () => {
     );
     expect(byKey.co2?.formula.fr).toContain("CO₂_g = CO₂e_kg × 1 000");
     expect(byKey.water?.formula.fr).toContain("piscines = eau_L / 2500000");
+    expect(byKey.euro?.formula.fr).toContain("heures_action = somme(durationMinutes) / 60");
+    expect(byKey.euro?.formula.fr).toContain("economie_min = min");
+    expect(byKey.euro?.references.map((reference) => reference.fr).join(" ")).toContain(
+      "12,31 €/h",
+    );
+  });
+
+  it("calculates the two independent street-cleaning valuations and their range", () => {
+    const result = computeImpactTerrain2026StreetCleaningSavings({
+      wasteKg: 10,
+      durationMinutes: 90,
+    });
+
+    expect(STREET_CLEANING_EUROS_PER_WASTE_KG).toBe(1.5);
+    expect(VOLUNTEER_ACTION_EUROS_PER_HOUR).toBe(12.31);
+    expect(result).toEqual({
+      wasteKg: 10,
+      durationMinutes: 90,
+      actionHours: 1.5,
+      massEstimateEuros: 15,
+      timeEstimateEuros: 18.465,
+      lowerBoundEuros: 15,
+      upperBoundEuros: 18.465,
+    });
+    expect(
+      computeImpactTerrain2026StreetCleaningSavings({
+        wasteKg: 0,
+        durationMinutes: 0,
+      }).upperBoundEuros,
+    ).toBe(0);
   });
 });

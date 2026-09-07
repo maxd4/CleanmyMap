@@ -33,6 +33,7 @@ function toActionImpactInput(item: ActionListItem): ActionImpactInput {
       wasteKg: item.waste_kg,
       cigaretteButts: item.cigarette_butts,
       volunteersCount: item.volunteers_count,
+      durationMinutes: item.duration_minutes,
       wasteBreakdown: item.waste_breakdown,
     },
   };
@@ -44,6 +45,7 @@ function toMapImpactInput(item: ActionMapItem): ActionImpactInput {
       wasteKg: item.waste_kg,
       cigaretteButts: item.cigarette_butts,
       volunteersCount: item.volunteers_count,
+      durationMinutes: item.duration_minutes,
       wasteBreakdown: item.waste_breakdown,
     },
   };
@@ -68,6 +70,7 @@ function computeTotals(approvedActions: ActionListItem[]) {
     totalHours,
     co2AvoidedKg: impact.co2AvoidedKg,
     waterSavedLiters: impact.waterSavedLiters,
+    streetCleaningSavings: impact.streetCleaningSavings,
     euroSaved: impact.euroSaved,
   };
 }
@@ -425,6 +428,7 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
       twelve: climate12,
       waterProtectedLiters: totals.waterSavedLiters,
       co2AvoidedKg: totals.co2AvoidedKg,
+      streetCleaningSavings: totals.streetCleaningSavings,
       streetCleaningSavingsEuros: totals.euroSaved,
     },
     community: communityStats,

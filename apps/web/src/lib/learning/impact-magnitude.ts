@@ -1,4 +1,8 @@
 import type { ImpactProxyFactors } from "@/lib/gamification/impact-proxy-config";
+import {
+  computeImpactTerrain2026StreetCleaningSavings,
+  type ImpactTerrain2026StreetCleaningSavings,
+} from "@/lib/impact/impact-terrain-2026";
 
 export type ImpactMagnitudeInputs = {
   cigaretteButts: number;
@@ -14,6 +18,8 @@ export type ImpactMagnitudeSnapshot = {
   co2Kg: number;
   surfaceM2FromWaste: number;
   surfaceM2FromVolunteerTime: number;
+  streetCleaningSavings: ImpactTerrain2026StreetCleaningSavings;
+  /** Legacy mass-only display retained for existing learning payloads. */
   euroSaved: number;
 };
 
@@ -41,6 +47,11 @@ export function buildImpactMagnitudeSnapshot(
   const cigaretteButts = clampImpactMagnitudeInput(inputs.cigaretteButts, DEFAULT_IMPACT_MAGNITUDE_INPUTS.cigaretteButts);
   const wasteKg = clampImpactMagnitudeInput(inputs.wasteKg, DEFAULT_IMPACT_MAGNITUDE_INPUTS.wasteKg);
   const volunteerMinutes = clampImpactMagnitudeInput(inputs.volunteerMinutes, DEFAULT_IMPACT_MAGNITUDE_INPUTS.volunteerMinutes);
+  const streetCleaningSavings =
+    computeImpactTerrain2026StreetCleaningSavings({
+      wasteKg,
+      durationMinutes: volunteerMinutes,
+    });
 
   return {
     cigaretteButts,
@@ -50,6 +61,7 @@ export function buildImpactMagnitudeSnapshot(
     co2Kg: wasteKg * factors.co2KgPerWasteKg,
     surfaceM2FromWaste: wasteKg * factors.surfaceM2PerWasteKg,
     surfaceM2FromVolunteerTime: volunteerMinutes * factors.surfaceM2PerVolunteerMinute,
-    euroSaved: wasteKg * factors.euroSavedPerWasteKg,
+    streetCleaningSavings,
+    euroSaved: streetCleaningSavings.massEstimateEuros,
   };
 }

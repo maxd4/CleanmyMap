@@ -183,6 +183,7 @@ describe("reports web analytics", () => {
  expect(report.totals.volunteers).toBe(expected.volunteers);
  expect(report.climate.co2AvoidedKg).toBe(expected.co2AvoidedKg);
  expect(report.climate.waterProtectedLiters).toBe(expected.waterSavedLiters);
+ expect(report.climate.streetCleaningSavings).toEqual(expected.streetCleaningSavings);
  expect(report.climate.streetCleaningSavingsEuros).toBe(expected.euroSaved);
  expect(report.monthRows6.reduce((sum, row) => sum + row.kg, 0)).toBe(expected.wasteKg);
  });

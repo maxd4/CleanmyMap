@@ -474,7 +474,9 @@ export function buildPdfData(params: {
         { label: "Impact estimé", value: `${report.totals.kg.toFixed(1)} kg` },
         { label: "Émissions évitées (proxy)", value: `${report.climate.co2AvoidedKg.toFixed(1)} kg` },
         { label: "Eau préservée (proxy)", value: `${report.climate.waterProtectedLiters.toFixed(0)} L` },
-        { label: "Économie de voirie (proxy)", value: `${(report.climate.streetCleaningSavingsEuros ?? 0).toFixed(0)} €` },
+        { label: "Économie de voirie (proxy)", value: report.climate.streetCleaningSavings
+          ? `${report.climate.streetCleaningSavings.lowerBoundEuros.toFixed(0)}–${report.climate.streetCleaningSavings.upperBoundEuros.toFixed(0)} €`
+          : `${(report.climate.streetCleaningSavingsEuros ?? 0).toFixed(0)} €` },
         { label: "Indice de pollution", value: formatScorePercent(report.impactMethodology.pollutionScoreAverage, 1) },
       ],
       lines: [

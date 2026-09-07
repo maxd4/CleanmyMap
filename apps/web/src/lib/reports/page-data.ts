@@ -96,6 +96,11 @@ export function toReportsExportRow(contract: ActionDataContract) {
     Bénévoles: impact.volunteers,
     CO2e_Proxy_Kg: impact.co2AvoidedKg,
     Eau_Proxy_L: impact.waterSavedLiters,
+    Economie_Voirie_Proxy_Masse_EUR: impact.streetCleaningSavings.massEstimateEuros,
+    Economie_Voirie_Proxy_Temps_EUR: impact.streetCleaningSavings.timeEstimateEuros,
+    Economie_Voirie_Proxy_Min_EUR: impact.streetCleaningSavings.lowerBoundEuros,
+    Economie_Voirie_Proxy_Max_EUR: impact.streetCleaningSavings.upperBoundEuros,
+    /** @deprecated Mass-only legacy export retained for compatibility. */
     Economie_Voirie_Proxy_EUR: impact.euroSaved,
     Durée_Min: operational.durationMinutes,
     Charge_Terrain_Min: operational.engagementMinutes,

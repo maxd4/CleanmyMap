@@ -6,6 +6,8 @@ import {
   FRENCH_PERSON_ANNUAL_WATER_LITERS,
   OLYMPIC_POOL_LITERS,
   PARIS_MOSCOW_ROAD_DISTANCE_KM,
+  STREET_CLEANING_EUROS_PER_WASTE_KG,
+  VOLUNTEER_ACTION_EUROS_PER_HOUR,
   WATER_LITERS_PER_CIGARETTE_BUTT,
 } from "./impact-terrain-2026-constants";
 
@@ -15,6 +17,8 @@ export {
   FRENCH_PERSON_ANNUAL_WATER_LITERS,
   OLYMPIC_POOL_LITERS,
   PARIS_MOSCOW_ROAD_DISTANCE_KM,
+  STREET_CLEANING_EUROS_PER_WASTE_KG,
+  VOLUNTEER_ACTION_EUROS_PER_HOUR,
   WATER_LITERS_PER_CIGARETTE_BUTT,
 } from "./impact-terrain-2026-constants";
 
@@ -116,6 +120,42 @@ export function computeImpactTerrain2026WaterConversions(
     waterLiters,
     olympicPools: waterLiters / OLYMPIC_POOL_LITERS,
     frenchPersonYears: waterLiters / FRENCH_PERSON_ANNUAL_WATER_LITERS,
+  };
+}
+
+export type ImpactTerrain2026StreetCleaningSavings = {
+  wasteKg: number;
+  durationMinutes: number;
+  actionHours: number;
+  massEstimateEuros: number;
+  timeEstimateEuros: number;
+  lowerBoundEuros: number;
+  upperBoundEuros: number;
+};
+
+export function computeImpactTerrain2026StreetCleaningSavings(params: {
+  wasteKg: number;
+  durationMinutes: number;
+}): ImpactTerrain2026StreetCleaningSavings {
+  const wasteKg = Number.isFinite(params.wasteKg)
+    ? Math.max(0, params.wasteKg)
+    : 0;
+  const durationMinutes = Number.isFinite(params.durationMinutes)
+    ? Math.max(0, params.durationMinutes)
+    : 0;
+  const actionHours = durationMinutes / 60;
+  const massEstimateEuros =
+    wasteKg * STREET_CLEANING_EUROS_PER_WASTE_KG;
+  const timeEstimateEuros = actionHours * VOLUNTEER_ACTION_EUROS_PER_HOUR;
+
+  return {
+    wasteKg,
+    durationMinutes,
+    actionHours,
+    massEstimateEuros,
+    timeEstimateEuros,
+    lowerBoundEuros: Math.min(massEstimateEuros, timeEstimateEuros),
+    upperBoundEuros: Math.max(massEstimateEuros, timeEstimateEuros),
   };
 }
 
@@ -430,35 +470,46 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
             "The current runtime calculation aggregates waste mass and applies the euro-per-kilogram factor.",
           ),
           result: text(
-            "Proxy économique indicatif, pas facture évitée ni économie budgétaire constatée.",
-            "Indicative economic proxy, not an avoided invoice or an observed budget saving.",
+            "Deux estimations indépendantes sont produites : une valorisation par masse et une valorisation par temps. La fourchette publique prend leurs bornes sans les moyenner.",
+            "Two independent estimates are produced: waste-mass valuation and action-time valuation. The public range uses their bounds without averaging them.",
           ),
           pedagogicalConversion: text(
-            "La durée totale des actions est agrégée séparément pour les évolutions futures ; elle ne remplace pas la formule runtime actuelle dans ce lot.",
-            "Total action duration is aggregated separately for future iterations; it does not replace the current runtime formula in this lot.",
+            `Valorisation par le temps : une heure d’action bénévole est comparée à une heure de travail humain consacrée à une tâche équivalente, soit ${VOLUNTEER_ACTION_EUROS_PER_HOUR.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €/h. Valorisation par la masse : la masse retirée sert de proxy du service de collecte, logistique, transport, traitement et orientation, soit ${STREET_CLEANING_EUROS_PER_WASTE_KG.toLocaleString("fr-FR", { minimumFractionDigits: 1 })} €/kg ou ${String(STREET_CLEANING_EUROS_PER_WASTE_KG * 1_000).replace(".", ",")} €/tonne.`,
+            `Time valuation: one hour of volunteer action is compared with one hour of human work devoted to an equivalent task, at ${VOLUNTEER_ACTION_EUROS_PER_HOUR.toFixed(2)} €/h. Mass valuation: removed waste is a proxy for collection, logistics, transport, treatment and routing service, at ${STREET_CLEANING_EUROS_PER_WASTE_KG.toFixed(1)} €/kg or ${(STREET_CLEANING_EUROS_PER_WASTE_KG * 1_000).toFixed(0)} €/tonne.`,
           ),
         },
         formula: text(
-          `economie_voirie_EUR = totalWasteKg × ${factors.euroSavedPerWasteKg}`,
-          `road_service_savings_EUR = totalWasteKg × ${factors.euroSavedPerWasteKg}`,
+          `economie_dechets = totalWasteKg × ${STREET_CLEANING_EUROS_PER_WASTE_KG} ; heures_action = somme(durationMinutes) / 60 ; economie_temps = heures_action × ${VOLUNTEER_ACTION_EUROS_PER_HOUR} ; economie_min = min(economie_dechets, economie_temps) ; economie_max = max(economie_dechets, economie_temps)`,
+          `waste_estimate = totalWasteKg × ${STREET_CLEANING_EUROS_PER_WASTE_KG}; action_hours = sum(durationMinutes) / 60; time_estimate = action_hours × ${VOLUNTEER_ACTION_EUROS_PER_HOUR}; lower_bound = min(waste_estimate, time_estimate); upper_bound = max(waste_estimate, time_estimate)`,
         ),
         assumptions: [
           text(
-            "Le facteur représente une moyenne opérationnelle configurée, indépendante du tarif réel de chaque collectivité.",
-            "The factor is a configured operational average, independent of each municipality's actual rate.",
+            "La durée est cumulée par action et n’est jamais multipliée par volunteersCount : il s’agit d’heures d’action, pas de personnes-heures.",
+            "Duration is summed per action and is never multiplied by volunteersCount: these are action hours, not person-hours.",
+          ),
+          text(
+            "12,31 €/h est une référence méthodologique CleanMyMap ; aucune qualification de SMIC légal brut 2026 n’est revendiquée sans source primaire déposée.",
+            "12.31 €/h is a CleanMyMap methodological reference; no claim is made that it is the 2026 legal gross minimum wage without a primary source committed to the repository.",
           ),
         ],
         references: [
-          text(sources.roi, sources.roi),
           text(
-            "totalDurationMinutes est un agrégat canonique distinct ; aucune personne-heure n’est calculée ici.",
-            "totalDurationMinutes is a separate canonical aggregate; no person-hours are calculated here.",
+            `Références méthodologiques CleanMyMap : ${STREET_CLEANING_EUROS_PER_WASTE_KG.toLocaleString("fr-FR", { minimumFractionDigits: 1 })} €/kg (${String(STREET_CLEANING_EUROS_PER_WASTE_KG * 1_000).replace(".", ",")} €/tonne) et ${VOLUNTEER_ACTION_EUROS_PER_HOUR.toLocaleString("fr-FR", { minimumFractionDigits: 2 })} €/h.`,
+            `CleanMyMap methodological references: ${STREET_CLEANING_EUROS_PER_WASTE_KG.toFixed(1)} €/kg (${(STREET_CLEANING_EUROS_PER_WASTE_KG * 1_000).toFixed(0)} €/tonne) and ${VOLUNTEER_ACTION_EUROS_PER_HOUR.toFixed(2)} €/h.`,
+          ),
+          text(
+            "Ordre de grandeur pédagogique : 900 €/tonne ; certains déchets diffus ou nécessitant un traitement spécifique peuvent être décrits autour de 1 000–1 500 €/tonne. Ces repères ne sont attribués ni à l’ADEME ni à une autre organisation dans ce contrat.",
+            "Pedagogical order of magnitude: 900 €/tonne; some diffuse waste or waste requiring specific treatment may be described around 1,000–1,500 €/tonne. These references are not attributed to ADEME or another organization in this contract.",
+          ),
+          text(
+            "L’agrégat public fournit totalDurationMinutes ; les deux méthodes restent séparées et aucune moyenne n’est calculée.",
+            "The public aggregate provides totalDurationMinutes; the two methods remain separate and are not averaged.",
           ),
         ],
         limits: [
           text(
-            "Le proxy ne constitue pas une valorisation contractuelle, comptable ou réglementaire du travail bénévole.",
-            "The proxy is not a contractual, accounting, or regulatory valuation of volunteer work.",
+            "La fourchette est une estimation méthodologique et non une dépense comptable réellement économisée euro pour euro, une facture évitée ou une valorisation contractuelle.",
+            "The range is a methodological estimate, not an accounting expense actually saved euro for euro, an avoided invoice, or a contractual valuation.",
           ),
         ],
       },

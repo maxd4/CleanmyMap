@@ -1,6 +1,7 @@
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import { sumActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { computeImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
 import { fetchCachedUnifiedActionContracts } from "@/lib/actions/unified-source/unified-source-cache";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -391,7 +392,7 @@ export function computeLandingCounters(
   };
 }
 
-function toFiniteNonNegativeNumber(value: number | string | null): number {
+function toFiniteNonNegativeNumber(value: number | string | null | undefined): number {
   const parsed = Number(value ?? 0);
   return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
 }
@@ -402,6 +403,11 @@ function buildLandingCountersFromAggregate(
   const wasteKg = toFiniteNonNegativeNumber(row.waste_kg);
   const butts = toFiniteNonNegativeNumber(row.cigarette_butts);
   const volunteers = toFiniteNonNegativeNumber(row.volunteers);
+  const streetCleaningSavings =
+    computeImpactTerrain2026StreetCleaningSavings({
+      wasteKg,
+      durationMinutes: toFiniteNonNegativeNumber(row.total_duration_minutes),
+    });
 
   return {
     wasteKg,
@@ -411,9 +417,7 @@ function buildLandingCountersFromAggregate(
     waterSavedLiters: Math.round(
       butts * IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt,
     ),
-    euroSaved: Math.round(
-      wasteKg * IMPACT_PROXY_CONFIG.factors.euroSavedPerWasteKg,
-    ),
+    euroSaved: Math.round(streetCleaningSavings.massEstimateEuros),
   };
 }
 

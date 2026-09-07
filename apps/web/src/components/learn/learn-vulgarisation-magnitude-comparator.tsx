@@ -109,8 +109,8 @@ export function LearnVulgarisationMagnitudeComparator({
       value: `${formatMagnitude(locale, snapshot.surfaceM2FromWaste)} m²`,
     },
     {
-      label: locale === "fr" ? "Valeur utile" : "Useful value",
-      value: `${formatMagnitude(locale, snapshot.euroSaved)} €`,
+      label: locale === "fr" ? "Fourchette de valorisation" : "Valuation range",
+      value: `${formatMagnitude(locale, snapshot.streetCleaningSavings.lowerBoundEuros)}–${formatMagnitude(locale, snapshot.streetCleaningSavings.upperBoundEuros)} €`,
     },
   ];
 
