@@ -436,6 +436,15 @@ Principes :
 
 Lorsqu'un mockup ou une proposition visuelle concerne uniquement le corps éditable d'une page, ne pas réinventer le header/footer globaux s'ils sont hors périmètre.
 
+Lorsqu'une image, maquette, capture ou version cible UI est fournie, le prompt
+Codex doit exiger un **alignement visuel strict** : l'image gouverne la
+composition, les proportions, la hiérarchie, la densité, les espacements, les
+retours à la ligne et l'ordre des éléments. « Proche » ne constitue pas un
+critère de clôture. Le lot doit prévoir une comparaison réelle sur `localhost`,
+la correction des écarts majeurs et un relevé explicite des écarts résiduels
+justifiés par le design system, l'accessibilité, le runtime ou une contrainte
+fonctionnelle.
+
 Ne pas lancer une refonte UI importante pour masquer une architecture métier encore instable.
 
 ## 15. Dette structurelle et modularisation

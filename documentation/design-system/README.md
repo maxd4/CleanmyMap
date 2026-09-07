@@ -18,6 +18,18 @@ Référence d'entrée avant toute modification UI de CleanMyMap.
 12. `UI_EXCEPTION_PAGES.md`
 13. fiche canonique de la page dans `documentation/pages_site/`
 
+## Référence visuelle fournie par l'utilisateur
+
+Pour tout lot UI guidé par une image, une maquette ou une capture cible, le
+contrat d'exécution web définit un alignement visuel strict. Le design system
+fournit les primitives, tokens, contraintes d'accessibilité et règles responsive
+de mise en œuvre ; il ne transforme pas la cible en simple inspiration.
+
+En cas de conflit entre la cible et une contrainte canonique, choisir la
+solution conforme la plus proche, puis documenter explicitement l'écart et sa
+justification dans la validation visuelle. Une comparaison réelle sur
+`localhost` est requise pour ce type de lot.
+
 ## Composants canoniques
 
 Réutiliser les composants existants avant d'en créer de nouveaux.
@@ -359,4 +371,6 @@ Pour une route ou une modification structurante :
 npm run build
 ```
 
-La vérification visuelle navigateur est effectuée seulement lorsqu'elle est demandée.
+La vérification visuelle navigateur est effectuée lorsqu'elle est demandée ;
+elle est obligatoire dès qu'une image, une maquette ou une capture cible guide
+le lot UI, conformément au contrat d'alignement visuel strict.
