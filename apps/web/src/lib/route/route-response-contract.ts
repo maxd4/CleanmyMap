@@ -41,6 +41,7 @@ export type RouteRecommendationOrigin = {
 export type RouteOriginMode = "browser" | "map";
 
 export type RouteRecommendationResponse = {
+  isLoop: true;
   planningMode: RoutePlanningMode;
   status: RouteRecommendationStatus;
   dataStatus: RouteDataStatus;
@@ -51,6 +52,13 @@ export type RouteRecommendationResponse = {
   travelDistanceKm: number;
   travelMinutes: number;
   travelBudgetMinutes: number;
+  loop: {
+    isLoop: true;
+    origin: RouteResponseOrigin;
+    returnDistanceKm: number;
+    returnMinutes: number;
+    budgetRemainingMinutes: number;
+  };
   withinBudget: boolean;
   serviceMinutesEstimate: null;
   totalMinutesEstimate: null;

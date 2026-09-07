@@ -7,9 +7,11 @@ pour produire une décision de planner contrainte et explicable.
 - `route-response-contract.ts` : contrats HTTP request/response partagés par
   l’API et l’UI ; les types d’état ou de rendu restent dans le domaine UI.
 - `route-planner.ts` : sélection déterministe sous contraintes de budget,
-  sécurité, origine et nombre maximal d’arrêts.
+  sécurité, origine et nombre maximal d’arrêts. Chaque candidat réserve aussi
+  le retour à l’origine ; le planner ne produit donc qu’une boucle fermée.
 - `fossgis-foot-routing.ts` : résultat de routage
-  réseau et fallback explicitement estimé.
+  réseau et fallback explicitement estimé. L’API reçoit la séquence
+  `origine → stops → origine` et les legs incluent le dernier retour.
 - `route-predicted-targets.ts` : candidats prédits, distincts des spots
   observés, avec provenance, modèle et état de disponibilité.
 - `route-data-status.ts` : états de disponibilité et de dégradation exposés
@@ -42,6 +44,11 @@ identifié comme tel.
 Le budget et la sécurité sont des contraintes dures. À entrées identiques, la
 sélection est déterministe et aucun appel externe supplémentaire n’est réalisé
 pendant les calculs hors des providers déjà contractuels.
+
+Le contrat de recommandation expose `isLoop: true`, l’origine, la distance et
+la durée totales de la boucle, le coût du retour et le budget restant. La trace
+répète ces éléments et ajoute le retour comme dernier segment explicable. Un
+fallback conserve la même fermeture et estime les legs à 4,5 km/h.
 
 Documentation canonique associée :
 `documentation/architecture/methodologie-creation-itineraire.md`.

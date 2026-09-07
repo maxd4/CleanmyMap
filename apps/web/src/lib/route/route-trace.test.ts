@@ -26,6 +26,11 @@ function plannerResult(ids: string[]): RoutePlannerResult {
         incrementalDistanceKm: 1,
         incrementalTravelMinutes: 5,
         cumulativeTravelMinutes: (index + 1) * 5,
+        returnDistanceKm: 1,
+        returnTravelMinutes: 5,
+        loopDistanceKm: 2 + index,
+        loopTravelMinutes: (index + 1) * 5 + 5,
+        budgetAfterReturnMinutes: 50 - index * 5,
         normalizedPriority: 0.8 - index / 10,
         normalizedTravel: 0.9,
         combinedScore: 0.85 - index / 10,
@@ -82,6 +87,10 @@ function stop(id: string): PlannedRouteStop {
     incrementalDistanceKm: 1,
     incrementalTravelMinutes: 5,
     cumulativeTravelMinutes: 5,
+    returnDistanceKm: 1,
+    returnTravelMinutes: 5,
+    loopDistanceKm: 2,
+    loopTravelMinutes: 10,
   };
 }
 
@@ -93,9 +102,12 @@ function stopWithoutEvidence(id: string): PlannedRouteStop {
 
 function geometry(mode: "network" | "fallback" = "fallback"): RouteGeometry {
   return {
-    coordinates: [[48.85, 2.35] as [number, number]],
-    distanceKm: 1,
-    durationMinutes: 5,
+    isLoop: true,
+    origin: [48.85, 2.35],
+    returnLeg: { fromStopIndex: 1, toStopIndex: 2, distanceKm: 1, estimatedMinutes: 5 },
+    coordinates: [[48.85, 2.35], [48.86, 2.36], [48.85, 2.35]],
+    distanceKm: 2,
+    durationMinutes: 10,
     legs: mode === "network"
       ? [{
           fromStopIndex: 0,
@@ -108,6 +120,11 @@ function geometry(mode: "network" | "fallback" = "fallback"): RouteGeometry {
             durationMinutes: 5,
             maneuver: "depart",
           }],
+        }, {
+          fromStopIndex: 1,
+          toStopIndex: 2,
+          distanceKm: 1,
+          estimatedMinutes: 5,
         }]
       : [],
     provider: mode === "network" ? "fossgis-osrm" : "none",
@@ -121,7 +138,7 @@ describe("route recommendation trace", () => {
   it("is deterministic and reports only the final selected stops", () => {
     const selectedStops = [stop("final-1")];
     const input = {
-      engineVersion: "route-planner-v1",
+      engineVersion: "route-planner-v2",
       planningMode: { type: "free" as const },
       origin,
       travelBudgetMinutes: 60,
@@ -171,7 +188,7 @@ describe("route recommendation trace", () => {
   it("keeps real provider street steps and does not invent them for fallback", () => {
     const selectedStops = [stop("final-1")];
     const base = {
-      engineVersion: "route-planner-v1",
+      engineVersion: "route-planner-v2",
       origin,
       travelBudgetMinutes: 60,
       maxStops: 1,
@@ -185,12 +202,13 @@ describe("route recommendation trace", () => {
     };
 
     expect(buildRouteRecommendationTrace({ ...base, routeGeometry: geometry("network") }).segments[0]?.streetSteps).toHaveLength(1);
+    expect(buildRouteRecommendationTrace({ ...base, routeGeometry: geometry("network") }).segments.at(-1)).toMatchObject({ from: "final-1", to: "origin", measured: true });
     expect(buildRouteRecommendationTrace({ ...base, routeGeometry: geometry("fallback") }).segments[0]?.streetSteps).toEqual([]);
   });
 
   it("accepts an empty final route with an empty trace", () => {
     const trace = buildRouteRecommendationTrace({
-      engineVersion: "route-planner-v1",
+      engineVersion: "route-planner-v2",
       origin,
       travelBudgetMinutes: 30,
       maxStops: 3,
@@ -211,7 +229,7 @@ describe("route recommendation trace", () => {
 
   it("fails closed when a candidate has no canonical evidence", () => {
     const trace = buildRouteRecommendationTrace({
-      engineVersion: "route-planner-v1",
+      engineVersion: "route-planner-v2",
       origin,
       travelBudgetMinutes: 30,
       maxStops: 1,

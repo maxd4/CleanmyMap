@@ -11,7 +11,6 @@ import {
 } from "@/lib/route/route-predicted-targets";
 import {
   fallbackRoutePrefixWithinBudget,
-  longestNetworkPrefixWithinBudget,
   planRoute,
   type RoutePlannerCandidate,
   type RoutePlannerOrigin,
@@ -48,6 +47,7 @@ function fallbackGeometryForPrefix(
     ...stops.map(
       (stop) => [stop.latitude, stop.longitude] as [number, number],
     ),
+    [origin.latitude, origin.longitude],
   ]);
 }
 
@@ -130,7 +130,7 @@ export async function planRouteRecommendation(input: {
     },
   );
   let plannedStops = plannerResult.stops;
-  let routeGeometry = createFallbackRouteGeometry([]);
+  let routeGeometry = fallbackGeometryForPrefix(input.origin, []);
   let budgetPrefixApplied = false;
   let providerCalls = 0;
   let firstProviderMode: RouteGeometry["mode"] | null = null;
@@ -146,6 +146,7 @@ export async function planRouteRecommendation(input: {
         ({ candidate }) =>
           [candidate.latitude, candidate.longitude] as [number, number],
       ),
+      [input.origin.latitude, input.origin.longitude],
     ];
     routeGeometry = await routePolylineThroughFossgisFoot(
       routeCoordinates,
@@ -156,20 +157,20 @@ export async function planRouteRecommendation(input: {
 
     if (routeGeometry.durationMinutes > input.travelBudgetMinutes) {
       budgetPrefixApplied = true;
-      if (routeGeometry.mode === "network") {
-        const prefixLength = longestNetworkPrefixWithinBudget(
-          routeGeometry.legs,
-          input.travelBudgetMinutes,
-        );
-        plannedStops = plannedStops.slice(0, prefixLength);
+      let reconciled = false;
+      let retainedStops = [...plannedStops];
 
-        if (prefixLength > 0 && prefixLength < stopsBeforeFinalRouting) {
+      if (routeGeometry.mode === "network") {
+        while (retainedStops.length > 0) {
+          retainedStops = retainedStops.slice(0, -1);
+          if (retainedStops.length === 0) break;
           const retainedCoordinates: [number, number][] = [
             [input.origin.latitude, input.origin.longitude],
-            ...plannedStops.map(
+            ...retainedStops.map(
               ({ candidate }) =>
                 [candidate.latitude, candidate.longitude] as [number, number],
             ),
+            [input.origin.latitude, input.origin.longitude],
           ];
           try {
             providerCalls += 1;
@@ -177,57 +178,43 @@ export async function planRouteRecommendation(input: {
               retainedCoordinates,
               {},
             );
-            if (
-              reconciledGeometry.mode === "network" &&
-              reconciledGeometry.durationMinutes <= input.travelBudgetMinutes
-            ) {
+            if (reconciledGeometry.durationMinutes <= input.travelBudgetMinutes) {
+              plannedStops = retainedStops;
               routeGeometry = reconciledGeometry;
-            } else {
-              finalRoutingDegraded = true;
-              finalRoutingWarning =
-                "La géométrie réseau recalculée n'est pas compatible avec le budget ; un fallback local est utilisé.";
-              const fallbackPrefix = fallbackRoutePrefixWithinBudget(
-                input.origin,
-                plannedStops.map(({ candidate }) => candidate),
-                input.travelBudgetMinutes,
-                (coordinates) => createFallbackRouteGeometry(coordinates),
-              );
-              plannedStops = plannedStops.slice(0, fallbackPrefix.length);
-              routeGeometry = fallbackGeometryForPrefix(
-                input.origin,
-                plannedStops.map(({ candidate }) => candidate),
-              );
+              reconciled = true;
+              if (reconciledGeometry.mode === "fallback") {
+                finalRoutingDegraded = true;
+                finalRoutingWarning =
+                  "Le réseau n'a pas pu être recalculé dans le budget ; un fallback local fermé est utilisé.";
+              }
+              break;
             }
           } catch {
             finalRoutingDegraded = true;
             finalRoutingWarning =
-              "La seconde mesure réseau a échoué après la réduction au budget ; un fallback local est utilisé.";
-            const fallbackPrefix = fallbackRoutePrefixWithinBudget(
-              input.origin,
-              plannedStops.map(({ candidate }) => candidate),
-              input.travelBudgetMinutes,
-              (coordinates) => createFallbackRouteGeometry(coordinates),
-            );
-            plannedStops = plannedStops.slice(0, fallbackPrefix.length);
-            routeGeometry = fallbackGeometryForPrefix(
-              input.origin,
-              plannedStops.map(({ candidate }) => candidate),
-            );
+              "La mesure réseau de la boucle réduite a échoué ; un fallback local fermé est utilisé.";
+            break;
           }
-        } else {
-          routeGeometry = fallbackGeometryForPrefix(
-            input.origin,
-            plannedStops.map(({ candidate }) => candidate),
-          );
         }
-      } else {
+      }
+
+      if (!reconciled) {
+        finalRoutingDegraded = true;
+        finalRoutingWarning =
+          finalRoutingWarning ??
+          "La géométrie réseau de la boucle dépasse le budget ; un fallback local fermé est utilisé.";
         const fallbackPrefix = fallbackRoutePrefixWithinBudget(
           input.origin,
-          plannedStops.map(({ candidate }) => candidate),
+          (routeGeometry.mode === "network" ? retainedStops : plannedStops).map(
+            ({ candidate }) => candidate,
+          ),
           input.travelBudgetMinutes,
           (coordinates) => createFallbackRouteGeometry(coordinates),
         );
-        plannedStops = plannedStops.slice(0, fallbackPrefix.length);
+        plannedStops = (routeGeometry.mode === "network" ? retainedStops : plannedStops).slice(
+          0,
+          fallbackPrefix.length,
+        );
         routeGeometry = fallbackGeometryForPrefix(
           input.origin,
           plannedStops.map(({ candidate }) => candidate),

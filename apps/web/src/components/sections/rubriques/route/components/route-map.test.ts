@@ -85,10 +85,14 @@ const stops: RouteStop[] = [
 ];
 
 const networkGeometry: RouteGeometry = {
+  isLoop: true,
+  origin: [48.87, 2.37],
+  returnLeg: { fromStopIndex: 2, toStopIndex: 3, distanceKm: 1.4, estimatedMinutes: 12 },
   coordinates: [
-    [48.85, 2.35],
+    [48.87, 2.37],
     [48.855, 2.355],
     [48.86, 2.36],
+    [48.87, 2.37],
   ],
   distanceKm: 1.4,
   durationMinutes: 12,
@@ -111,8 +115,9 @@ describe("RouteMap", () => {
 
     expect(markup.match(/data-testid="route-stop"/g)).toHaveLength(2);
     expect(markup).toContain('data-testid="route-line"');
+    expect(networkGeometry.coordinates[0]).toEqual(networkGeometry.coordinates.at(-1));
     expect(markup).toContain("Réseau · OSRM · profil configuré: foot");
-    expect(buildRouteMapCoordinates(stops, networkGeometry)).toHaveLength(5);
+    expect(buildRouteMapCoordinates(stops, networkGeometry)).toHaveLength(6);
   });
 
   it("renders a distinct origin marker and reports map clicks as ephemeral origins", () => {
@@ -123,6 +128,7 @@ describe("RouteMap", () => {
         stops: [],
         routeGeometry: {
           ...networkGeometry,
+          isLoop: true,
           coordinates: [],
           mode: "fallback",
           provider: "none",
@@ -150,6 +156,7 @@ describe("RouteMap", () => {
   it("marks a fallback route explicitly and still renders the stop line", () => {
     const fallbackGeometry: RouteGeometry = {
       ...networkGeometry,
+      isLoop: true,
       coordinates: [],
       provider: "none",
       profile: null,
@@ -160,6 +167,7 @@ describe("RouteMap", () => {
       React.createElement(RouteMap, {
         stops,
         routeGeometry: fallbackGeometry,
+        origin: { latitude: 48.87, longitude: 2.37, source: "browser" as const },
         fr: true,
       }),
     );
@@ -174,6 +182,7 @@ describe("RouteMap", () => {
         stops,
         routeGeometry: {
           ...networkGeometry,
+          isLoop: true,
           provider: "fossgis-osrm",
         },
         fr: true,

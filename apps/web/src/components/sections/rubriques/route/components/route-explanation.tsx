@@ -67,6 +67,12 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
               </dd>
             </div>
             <div>
+              <dt className="text-slate-500">Retour à l’origine</dt>
+              <dd className="font-semibold text-white">
+                <MetricValue value={data.loop.returnDistanceKm} kind="distance" measured={trace.routing.mode === "network"} /> · {formatDuration(data.loop.returnMinutes)}
+              </dd>
+            </div>
+            <div>
               <dt className="text-slate-500">Routage</dt>
               <dd className="font-semibold text-white">
                 {trace.routing.mode === "network" ? "Réseau" : "Estimation / fallback"} · {providerLabel} · profil {profileLabel}
@@ -79,6 +85,9 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
               : trace.duration.estimatedMinutes !== null
                 ? `Déplacement estimé : ${formatDuration(trace.duration.estimatedMinutes)}.`
                 : `Déplacement réseau : ${formatDuration(trace.duration.networkMinutes)}.`}
+          </p>
+          <p className="mt-2 rounded-xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm font-semibold text-emerald-50">
+            Boucle de {formatNumber(data.travelDistanceKm)} km · départ et arrivée au même endroit. Le retour réserve {formatDuration(data.loop.returnMinutes)} du budget ; il reste {formatDuration(data.loop.budgetRemainingMinutes)} après la boucle.
           </p>
           <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] p-3 text-sm text-slate-200">
             <strong className="text-white">Mode : </strong>
@@ -149,7 +158,7 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
                     <span>{formatDuration(selection.budgetBeforeMinutes)} → {formatDuration(selection.budgetAfterMinutes)}</span>
                   </div>
                   <p className="mt-2 text-xs text-slate-400">
-                    Déplacement ajouté : {formatDistance(selection.incrementalDistanceKm)} · {formatDuration(selection.incrementalTravelMinutes)} · cumul {formatDuration(selection.cumulativeTravelMinutes)}.
+                    Déplacement ajouté : {formatDistance(selection.incrementalDistanceKm)} · {formatDuration(selection.incrementalTravelMinutes)} · retour réservé {formatDistance(selection.returnDistanceKm)} · {formatDuration(selection.returnTravelMinutes)} · boucle candidate {formatDuration(selection.loopTravelMinutes)}.
                   </p>
                 </li>
               ))}

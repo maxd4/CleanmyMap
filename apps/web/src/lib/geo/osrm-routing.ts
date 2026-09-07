@@ -120,11 +120,20 @@ function distanceKm(
   return 6371 * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
 }
 
-function fallbackDistanceKm(coordinates: [number, number][]): number {
-  return coordinates.reduce((total, point, index) => {
-    const previous = coordinates[index - 1];
-    return previous ? total + distanceKm(previous, point) : total;
-  }, 0);
+function sameCoordinate(
+  left: [number, number] | undefined,
+  right: [number, number] | undefined,
+): boolean {
+  return Boolean(
+    left &&
+      right &&
+      Math.abs(left[0] - right[0]) < 1e-6 &&
+      Math.abs(left[1] - right[1]) < 1e-6,
+  );
+}
+
+function isClosedCoordinates(coordinates: [number, number][]): boolean {
+  return coordinates.length >= 2 && sameCoordinate(coordinates[0], coordinates.at(-1));
 }
 
 export function buildOsrmRouteUrl(
@@ -143,14 +152,29 @@ export function createFallbackRouteGeometry(
   coordinates: [number, number][],
 ): RouteGeometry {
   const normalizedCoordinates = coordinates.filter(isCoordinate);
-  const distance = fallbackDistanceKm(normalizedCoordinates);
-  const duration = distance > 0 ? (distance / 4.5) * 60 : 0;
+  const legs: RouteGeometryLeg[] = normalizedCoordinates.flatMap((point, index) => {
+    const previous = normalizedCoordinates[index - 1];
+    if (!previous) return [];
+    const distance = distanceKm(previous, point);
+    return [{
+      fromStopIndex: index - 1,
+      toStopIndex: index,
+      distanceKm: Number(distance.toFixed(2)),
+      estimatedMinutes: Math.max(0, Math.round((distance / 4.5) * 60)),
+    }];
+  });
+  const distance = legs.reduce((total, leg) => total + leg.distanceKm, 0);
+  const duration = legs.reduce((total, leg) => total + leg.estimatedMinutes, 0);
+  const isLoop = isClosedCoordinates(normalizedCoordinates);
 
   return {
+    isLoop,
+    origin: normalizedCoordinates[0] ?? null,
+    returnLeg: isLoop ? legs.at(-1) ?? null : null,
     coordinates: normalizedCoordinates,
     distanceKm: Number(distance.toFixed(2)),
     durationMinutes: Math.max(0, Math.round(duration)),
-    legs: [],
+    legs,
     provider: "none",
     profile: null,
     mode: "fallback",
@@ -160,6 +184,7 @@ export function createFallbackRouteGeometry(
 
 function parseNetworkRoute(
   payload: OsrmResponse,
+  requestedCoordinates: [number, number][],
   expectedStopCount: number,
   provider: RouteNetworkGeometryProvider,
   profile: Exclude<RouteGeometryProfile, null>,
@@ -173,9 +198,9 @@ function parseNetworkRoute(
     return null;
   }
 
-  const coordinates = normalizeCoordinates(route.geometry?.coordinates);
+  const normalizedCoordinates = normalizeCoordinates(route.geometry?.coordinates);
   if (
-    !coordinates ||
+    !normalizedCoordinates ||
     !isFiniteNumber(route.distance) ||
     route.distance < 0 ||
     !isFiniteNumber(route.duration) ||
@@ -184,8 +209,24 @@ function parseNetworkRoute(
     return null;
   }
 
+  const isLoop = isClosedCoordinates(requestedCoordinates);
+  const hasCompleteLegs =
+    Array.isArray(route.legs) && route.legs.length === expectedStopCount - 1;
+  // A closed route must expose every leg so the return cost remains explicit.
+  // An incomplete provider payload is therefore degraded to the deterministic
+  // closed fallback instead of being presented as a measured loop.
+  if (isLoop && !hasCompleteLegs) return null;
+
+  const coordinates = normalizedCoordinates.map((coordinate, index) => {
+    if (index === 0) return requestedCoordinates[0] ?? coordinate;
+    if (index === normalizedCoordinates.length - 1 && isLoop) {
+      return requestedCoordinates.at(-1) ?? coordinate;
+    }
+    return coordinate;
+  });
+
   let legs: RouteGeometryLeg[] = [];
-  if (Array.isArray(route.legs) && route.legs.length === expectedStopCount - 1) {
+  if (hasCompleteLegs) {
     const parsedLegs: RouteGeometryLeg[] = [];
     for (const [index, rawLeg] of (route.legs as OsrmLeg[]).entries()) {
       if (!isFiniteNumber(rawLeg.distance) || !isFiniteNumber(rawLeg.duration)) {
@@ -226,9 +267,13 @@ function parseNetworkRoute(
       });
     }
     legs = parsedLegs;
+    if (isLoop && legs.length !== expectedStopCount - 1) return null;
   }
 
   return {
+    isLoop,
+    origin: coordinates[0] ?? null,
+    returnLeg: isLoop ? parsedReturnLeg(legs) : null,
     coordinates,
     distanceKm: Number((route.distance / 1000).toFixed(2)),
     durationMinutes: Math.max(0, Math.round(route.duration / 60)),
@@ -238,6 +283,10 @@ function parseNetworkRoute(
     mode: "network",
     estimated: false,
   };
+}
+
+function parsedReturnLeg(legs: RouteGeometryLeg[]): RouteGeometryLeg | null {
+  return legs.at(-1) ?? null;
 }
 
 async function fetchOsrmRoute(
@@ -266,6 +315,7 @@ async function fetchOsrmRoute(
     const payload = (await response.json()) as OsrmResponse;
     return parseNetworkRoute(
       payload,
+      coordinates,
       coordinates.length,
       options.provider ?? OSRM_PROVIDER,
       options.profile ?? OSRM_PROFILE,

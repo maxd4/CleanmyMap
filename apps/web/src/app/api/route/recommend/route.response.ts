@@ -123,9 +123,7 @@ export function buildRouteRecommendationResponse(input: {
     plannerResult,
     selectedStops: plannedStops,
     routeGeometry,
-    consumedTravelMinutes: plannedStops.length === 0
-      ? 0
-      : Math.min(Math.max(routeGeometry.durationMinutes, 0), travelBudgetMinutes),
+    consumedTravelMinutes: Math.max(routeGeometry.durationMinutes, 0),
     budgetPrefixApplied: planning.budgetPrefixApplied,
     sourceHealth,
     eventSignalContext: candidateData.routeEventSignalContext ?? EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT,
@@ -142,9 +140,23 @@ export function buildRouteRecommendationResponse(input: {
     selectedCount: plannedStops.length,
     routeGeometryMode: routeGeometry.mode,
   });
+  const returnDistanceKm = routeGeometry.returnLeg?.distanceKm ?? 0;
+  const returnMinutes = routeGeometry.returnLeg?.estimatedMinutes ?? 0;
+  const budgetRemainingMinutes = Math.max(
+    0,
+    travelBudgetMinutes - Math.max(0, routeGeometry.durationMinutes),
+  );
+  const loop = {
+    isLoop: true as const,
+    origin,
+    returnDistanceKm,
+    returnMinutes,
+    budgetRemainingMinutes,
+  };
 
   if (plannedStops.length === 0) {
     const responsePayload = {
+      isLoop: true as const,
       status: dataLayers.recommendation,
       planningMode,
       dataStatus,
@@ -155,6 +167,7 @@ export function buildRouteRecommendationResponse(input: {
       travelDistanceKm: 0,
       travelMinutes: 0,
       travelBudgetMinutes,
+      loop,
       withinBudget: true,
       serviceMinutesEstimate: null,
       totalMinutesEstimate: null,
@@ -190,10 +203,7 @@ export function buildRouteRecommendationResponse(input: {
     routeGeometry,
   );
   const totalDistance = routeGeometry.distanceKm;
-  const travelMinutes = Math.min(
-    Math.max(0, routeGeometry.durationMinutes),
-    travelBudgetMinutes,
-  );
+  const travelMinutes = Math.max(0, routeGeometry.durationMinutes);
   const averagePriority =
     plannedStops.reduce((acc, { candidate }) => acc + candidate.score, 0) /
     plannedStops.length;
@@ -213,6 +223,7 @@ export function buildRouteRecommendationResponse(input: {
   });
 
   const responsePayload = {
+    isLoop: true as const,
     status: dataLayers.recommendation,
     planningMode,
     dataStatus,
@@ -223,6 +234,7 @@ export function buildRouteRecommendationResponse(input: {
     travelDistanceKm: totalDistance,
     travelMinutes,
     travelBudgetMinutes,
+    loop,
     withinBudget: travelMinutes <= travelBudgetMinutes,
     serviceMinutesEstimate: null,
     totalMinutesEstimate: null,
