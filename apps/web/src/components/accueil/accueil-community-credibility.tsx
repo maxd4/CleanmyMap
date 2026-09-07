@@ -303,21 +303,21 @@ export function HomeCommunityCredibility({
 
           <div data-gsap-reveal className="mt-7 grid gap-3 sm:grid-cols-2">
             <CmmButton
-              href="/sections/rejoindre-un-formulaire"
-              tone="secondary"
-              variant="pill"
-              className="h-12 gap-2 px-5 text-[13px] font-black"
-            >
-              Rejoindre une action
-              <ArrowRight size={15} />
-            </CmmButton>
-            <CmmButton
               href="/actions/new"
               tone="primary"
               variant="pill"
               className="h-12 gap-2 px-5 text-[13px] font-black"
             >
               Déclarer une action
+              <ArrowRight size={15} />
+            </CmmButton>
+            <CmmButton
+              href="/sections/rejoindre-un-formulaire"
+              tone="secondary"
+              variant="pill"
+              className="h-12 gap-2 px-5 text-[13px] font-black"
+            >
+              Rejoindre une action
               <ArrowRight size={15} />
             </CmmButton>
           </div>
