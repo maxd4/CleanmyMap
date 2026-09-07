@@ -160,7 +160,7 @@ const SECRET_PATTERNS = [
     category: "Hash digest",
     severity: "low",
     regex: /\b(?:[a-f0-9]{32}|[a-f0-9]{40}|[a-f0-9]{64})\b/gi,
-    context: /hash|digest|checksum|signature|md5|sha1|sha256|password|token|secret/i,
+    context: /password|token|secret|credential|auth/i,
   },
   {
     category: "Long base64-like string",
