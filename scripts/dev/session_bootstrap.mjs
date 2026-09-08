@@ -1,6 +1,8 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import { createWorkspaceCoordinator } from "./workspace-coordination.mjs";
+import { sessionMemoryStatus } from "./update_session_memory.mjs";
 
 const ROOT = process.cwd();
 const REQUIRED = [
@@ -20,6 +22,12 @@ for (const file of REQUIRED) {
   mustExist(file);
 }
 
+const sessionMemoryPath = join(ROOT, "documentation", "sessions", "history", "latest-session.md");
+const sessionMemory = sessionMemoryStatus(readFileSync(sessionMemoryPath, "utf8"));
+if (!sessionMemory.valid) {
+  throw new Error(`Invalid session memory format: ${sessionMemory.errors.join("; ")}`);
+}
+
 function readRunId() {
   const argument = process.argv.slice(2).find((value) => value.startsWith("--run-id"));
   if (!argument) return null;
@@ -30,6 +38,10 @@ const coordination = createWorkspaceCoordinator({ repositoryRoot: ROOT });
 const coordinationStatus = coordination.status({ runId: readRunId() });
 
 console.log("Session bootstrap ready.");
+console.log(`SESSION_MEMORY=VALID updated=${sessionMemory.date}`);
+if (sessionMemory.stale) {
+  console.warn(`SESSION_MEMORY_STALE age_days=${sessionMemory.ageDays} threshold_days=14`);
+}
 console.log("Files verified:");
 for (const file of REQUIRED) {
   console.log(`- ${file}`);
