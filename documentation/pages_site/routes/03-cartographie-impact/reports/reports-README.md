@@ -160,6 +160,155 @@ modules et l'effet fonctionnel futur des trois niveaux de détail feront l'objet
 d'un chantier séparé. Le sélecteur de période de Génération est indépendant de
 la fenêtre fixe de l'onglet Analyse.
 
+## Préconfiguration depuis une action validée
+
+Une action réellement validée pourra proposer « Générer un rapport d'impact ».
+Ce bouton ne génère pas directement le PDF : il ouvre le générateur canonique
+de `/reports` avec une configuration déjà préparée pour produire un rapport
+portant uniquement sur cette action.
+
+Le générateur de `/reports` reste la seule source de vérité. Il ne doit pas
+exister de second moteur de rapport spécifique aux pages d'action. Le bouton
+d'une action ne fait que préparer le périmètre initial ; après vérification
+éventuelle par l'utilisateur, la génération suit le pipeline normal de
+`/reports`.
+
+Le contrat conceptuel de préconfiguration doit transmettre explicitement et de
+manière typée l'identifiant canonique de l'action, par exemple :
+
+```txt
+scope:
+  type: single_action
+  actionId: <id canonique>
+```
+
+Ce fragment est un équivalent conceptuel futur dans `ReportDataFilters`, pas la
+définition du format final de l'URL. À l'arrivée dans `/reports`, le backend
+doit résoudre cet identifiant vers l'action réelle et vérifier qu'elle est
+exploitable, admissible selon les règles métier et autorisée pour le contexte
+courant. Le périmètre doit sélectionner exactement cette action, et non les
+autres actions du même organisateur, territoire ou jour.
+
+Les données du rapport ne doivent pas être reconstruites depuis les paramètres
+de navigation si une source canonique backend existe. Les paramètres
+préremplis restent visibles dans l'interface afin d'expliquer le contexte :
+
+```txt
+Périmètre
+Action unique
+
+Action
+<nom / date / lieu de l'action>
+```
+
+L'utilisateur peut ensuite choisir les autres options autorisées, notamment le
+niveau d'exhaustivité, sans que ce point d'entrée choisisse implicitement un
+template ou un niveau de détail. Le verrou de périmètre sur l'action unique
+reste actif, sauf retour explicitement demandé vers une configuration générale.
+La présence du bouton côté page d'action doit toujours correspondre à l'état
+réellement validé de l'action.
+
+Une fois la configuration vérifiée, un rapport issu de ce point d'entrée suit
+exactement le même pipeline, le même versioning, les mêmes méthodologies, le
+même snapshot historique et les mêmes règles de traçabilité que tout autre
+rapport `/reports`.
+
+La préconfiguration est un mécanisme générique de `/reports`, et non une
+navigation codée pour les seules actions. Il doit pouvoir accueillir plus tard
+des points d'entrée préremplis pour une campagne, une organisation, un
+événement, un territoire ou un objectif mesurable, au moyen du même contrat
+plutôt que de cas dispersés dans l'UI.
+
+La forme finale de l'URL, le schéma SQL, les migrations, le design précis du
+bouton et le niveau d'exhaustivité par défaut ne sont pas définis par cette
+documentation. Leur mise en œuvre relève de lots ultérieurs.
+
+## Versioning et reproductibilité des générations
+
+Chaque rapport généré doit être versionné et reproductible. Le PDF n'est pas la
+seule preuve à conserver : à chaque génération, le backend doit également
+persister un snapshot JSON structuré, immuable et suffisamment complet pour
+reconstruire le rapport ultérieurement. Cette section fixe l'invariant
+architectural ; elle ne décide ni du schéma SQL final ni d'une migration et ne
+constitue pas une implémentation de ce mécanisme.
+
+Le snapshot doit couvrir les données finales sélectionnées, ou un modèle de
+rapport équivalent suffisamment complet pour reconstruire le document sans
+relire ni recalculer silencieusement les données runtime actuelles. Les
+métadonnées conceptuelles associées à une génération comprennent au minimum :
+
+| Métadonnée conceptuelle | Rôle |
+|---|---|
+| `generationId` | Identifiant unique de la génération |
+| `generatedAt` | Date et heure de génération |
+| `templateId`, `templateVersion` | Template ayant produit la présentation |
+| `detailLevel` | Niveau d'exhaustivité utilisé, conservé comme paramètre de génération |
+| `snapshotSchemaVersion` | Version du schéma du snapshot JSON |
+| `filtersVersion` | Version des filtres et paramètres de génération |
+| `filters` / configuration de périmètre | Configuration exacte ayant défini la période, le périmètre et les autres paramètres |
+| `reportData` / `reportModel` | Données finales sélectionnées ou modèle complet nécessaire à la reconstruction |
+| `methodologyVersions`, `calculationFactorVersions` | Versions des méthodologies et facteurs de calcul utilisés |
+| `provenance`, `quality` | Provenance, couverture, qualité et autres informations nécessaires à l'interprétation |
+| `rendererVersion` | Version éventuelle du renderer |
+| `sourceGenerationId` | Filiation éventuelle vers le snapshot d'origine lors d'une régénération dérivée |
+
+Le versioning conceptuel peut par exemple commencer par les identifiants
+suivants, puis évoluer par versions explicites :
+
+```txt
+ReportSnapshotV1
+ReportDataFiltersV1
+ReportTemplate / default / v1.0
+Methodology / v2026.x
+```
+
+Ces familles de versions ne sont pas interchangeables. Il faut distinguer
+explicitement :
+
+```txt
+données historiques figées
+≠ template de présentation
+≠ méthodologies de calcul
+≠ données runtime actuelles
+```
+
+Le snapshot répond à deux usages distincts :
+
+1. **Relecture historique fidèle** : utiliser le snapshot immuable avec le
+   template et les méthodologies d'origine pour reproduire exactement le
+   rapport tel qu'il avait été généré et publié à l'époque.
+2. **Régénération avec un template plus récent** : réinjecter les données
+   historiques figées dans une nouvelle version du template afin de produire
+   une présentation mise à jour, sans relire ni recalculer silencieusement les
+   données runtime actuelles.
+
+Si une nouvelle version de template sait consommer un ancien snapshot, elle
+peut produire un nouveau rendu à partir de ces données historiques. Si le
+schéma historique n'est plus compatible, le système doit l'indiquer
+explicitement ; aucune donnée manquante ne doit être inventée, ni remplacée
+silencieusement par une donnée courante.
+
+Une régénération ne doit jamais écraser ni modifier le rapport historique
+d'origine. Elle crée une nouvelle génération et un nouveau rendu dérivés, avec
+un lien de filiation vers la génération source (`sourceGenerationId`, ou
+équivalent conceptuel). Le snapshot historique d'origine reste immuable.
+Cette filiation doit permettre de comparer le rapport publié à l'époque avec
+une nouvelle présentation des mêmes données historiques produite par un
+template ultérieur.
+
+Cette régénération versionnée est distincte de l'action actuelle « Réexporter »
+décrite dans l'historique ci-dessous : celle-ci réutilise le snapshot enregistré
+pour produire un export, sans créer de nouvelle génération. La mise en œuvre de
+générations dérivées, de leurs snapshots versionnés et de leur filiation relève
+d'un lot ultérieur.
+
+Le niveau de détail fait donc partie des paramètres et métadonnées de la
+génération ; il ne détermine pas implicitement la sélection des modules ou des
+parties du rapport. La composition du rapport, le contenu de ses modules et
+l'effet précis de `Concis`, `Par défaut` et `Exhaustif` restent des décisions
+distinctes, conservées dans leur état actuel et traitées dans un chantier
+séparé.
+
 ## Historique des générations
 
 « Rapports récents » lit les générations réellement persistées par le compte
