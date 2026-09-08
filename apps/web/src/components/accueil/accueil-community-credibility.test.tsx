@@ -14,6 +14,18 @@ const EMPTY_ACTIVITY = {
 };
 
 describe("HomeCommunityCredibility action hierarchy", () => {
+  it("combines the credibility content into one responsive card", () => {
+    const markup = renderToStaticMarkup(
+      <HomeCommunityCredibility activity={EMPTY_ACTIVITY} />,
+    );
+
+    expect(markup.match(/data-credibility-combined-card/g)).toHaveLength(1);
+    expect(markup.match(/data-credibility-ecosystem-step/g)).toHaveLength(4);
+    expect(markup).toContain("Des partenariats progressifs");
+    expect(markup).toContain("Le terrain nourrit la carte");
+    expect(markup).not.toContain("Étapes de construction de l'écosystème");
+  });
+
   it("puts the gold impact report first in the community actions", () => {
     const markup = renderToStaticMarkup(
       <HomeCommunityCredibility activity={EMPTY_ACTIVITY} />,
