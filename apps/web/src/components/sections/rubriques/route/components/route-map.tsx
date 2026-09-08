@@ -17,7 +17,9 @@ import type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 import type {
   RouteRecommendationOrigin,
   RouteResponseOrigin,
+  RouteMultiRouteDisplayMode,
 } from "../route-types";
+import { getRouteGroupVisualStyle } from "../route-types";
 import type { RouteGroupRoute } from "@/lib/route/route-response-contract";
 
 const EMPTY_CENTER: [number, number] = [48.8566, 2.3522];
@@ -99,6 +101,7 @@ export function RouteMap({
   stops,
   routeGeometry,
   groupRoutes = [],
+  representationMode = "colors",
   selectedGroupIndex = null,
   selectedStopId = null,
   onSelectStop,
@@ -110,6 +113,7 @@ export function RouteMap({
   stops: RouteStop[];
   routeGeometry: RouteGeometry;
   groupRoutes?: RouteGroupRoute[];
+  representationMode?: RouteMultiRouteDisplayMode;
   selectedGroupIndex?: number | null;
   selectedStopId?: string | null;
   onSelectStop?: (stopId: string) => void;
@@ -204,17 +208,19 @@ export function RouteMap({
           </Marker>
         ) : null}
         {groupRoutes.length > 1
-          ? visibleGroupRoutes.map((group, groupIndex) => {
-              const color = ["#34d399", "#60a5fa", "#fbbf24", "#f472b6", "#a78bfa"][groupIndex % 5]!;
+          ? visibleGroupRoutes.map((group) => {
+              const visualStyle = getRouteGroupVisualStyle(group.groupIndex, representationMode);
               return group.routeGeometry.coordinates.length >= 2 ? (
                 <Polyline
                   key={`group-route-${group.groupIndex}`}
                   positions={group.routeGeometry.coordinates}
                   pathOptions={{
-                    color,
+                    ...visualStyle,
                     weight: selectedGroupIndex === group.groupIndex ? 7 : 5,
                     opacity: selectedGroupIndex === null ? 0.82 : selectedGroupIndex === group.groupIndex ? 0.95 : 0.2,
-                    dashArray: group.routeGeometry.mode === "fallback" ? "10 10" : undefined,
+                    dashArray: group.routeGeometry.mode === "fallback"
+                      ? visualStyle.dashArray ?? "10 10"
+                      : visualStyle.dashArray,
                   }}
                 >
                   <Tooltip sticky>

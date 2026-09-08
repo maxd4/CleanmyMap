@@ -12,6 +12,7 @@ import { RouteAssistant } from "./components/route-assistant";
 import { RouteList } from "./components/route-list";
 import { RouteExplanation } from "./components/route-explanation";
 import { RouteEventSelector } from "./components/route-event-selector";
+import { RoutePdfExport } from "./components/route-pdf-export";
 import {
   getRouteOriginLabel,
   getRouteRecommendationErrorMessage,
@@ -21,6 +22,11 @@ import { Navigation, Zap, Info, Route as RouteIcon, Sparkles } from "lucide-reac
 import { motion, AnimatePresence } from "framer-motion";
 import type { RouteGeometry } from "@/lib/route/route-contract";
 import type { RouteGroupRoute } from "@/lib/route/route-response-contract";
+import {
+  getRouteGroupPatternLabel,
+  getRouteGroupVisualStyle,
+  type RouteMultiRouteDisplayMode,
+} from "./route-types";
 
 const EMPTY_ROUTE_GEOMETRY: RouteGeometry = {
   isLoop: true,
@@ -44,6 +50,8 @@ const RouteMap = dynamic(
 export function RouteSection() {
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
   const [selectedGroupIndex, setSelectedGroupIndex] = useState<number | null>(null);
+  const [multiRouteDisplayMode, setMultiRouteDisplayMode] =
+    useState<RouteMultiRouteDisplayMode>("colors");
   const { isLoaded, isSignedIn } = useEffectiveAuthState();
   const {
     options,
@@ -360,6 +368,38 @@ export function RouteSection() {
                             : "Each group receives a different loop to cover more streets."}
                         </p>
                       </div>
+                      <fieldset
+                        className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2"
+                        aria-label={fr ? "Différencier les itinéraires par" : "Differentiate routes by"}
+                      >
+                        <legend className="px-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100/70">
+                          {fr ? "Différencier les itinéraires par" : "Differentiate routes by"}
+                        </legend>
+                        <div className="mt-1 flex flex-wrap gap-3 text-xs font-semibold text-white" role="radiogroup">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name="route-multi-display-mode"
+                              value="colors"
+                              checked={multiRouteDisplayMode === "colors"}
+                              onChange={() => setMultiRouteDisplayMode("colors")}
+                              className="accent-emerald-300"
+                            />
+                            {fr ? "Couleurs différentes" : "Different colors"}
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name="route-multi-display-mode"
+                              value="patterns"
+                              checked={multiRouteDisplayMode === "patterns"}
+                              onChange={() => setMultiRouteDisplayMode("patterns")}
+                              className="accent-emerald-300"
+                            />
+                            {fr ? "Formes différentes" : "Different patterns"}
+                          </label>
+                        </div>
+                      </fieldset>
                       <div className="flex flex-wrap gap-2" role="tablist">
                         <button
                           type="button"
@@ -384,20 +424,52 @@ export function RouteSection() {
                         ))}
                       </div>
                     </div>
-                    <div className="mt-4 grid gap-3 md:grid-cols-3">
-                      {groupRoutes.map((group) => (
-                        <button
-                          key={`summary-${group.groupIndex}`}
-                          type="button"
-                          onClick={() => setSelectedGroupIndex(group.groupIndex)}
-                          className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-emerald-300/40"
-                        >
-                          <p className="font-black text-white">{fr ? `Groupe ${group.groupIndex}` : `Group ${group.groupIndex}`}</p>
-                          <p className="mt-2 text-xs text-slate-300">
-                            {group.volunteerCount} {fr ? "bénévoles" : "volunteers"} · {group.travelDistanceKm.toFixed(2)} km · {group.travelMinutes} min · {group.targetCount} {fr ? "stops" : "stops"}
-                          </p>
-                        </button>
-                      ))}
+                    <div
+                      className="mt-4 grid gap-3 md:grid-cols-3"
+                      role="list"
+                      aria-label={fr ? "Légende des boucles" : "Loop legend"}
+                    >
+                      {groupRoutes.map((group) => {
+                        const visualStyle = getRouteGroupVisualStyle(
+                          group.groupIndex,
+                          multiRouteDisplayMode,
+                        );
+                        const groupLabel = fr
+                          ? `Groupe ${group.groupIndex} — ${group.volunteerCount} bénévoles`
+                          : `Group ${group.groupIndex} — ${group.volunteerCount} volunteers`;
+                        return (
+                          <button
+                            key={`summary-${group.groupIndex}`}
+                            type="button"
+                            onClick={() => setSelectedGroupIndex(group.groupIndex)}
+                            role="listitem"
+                            aria-label={groupLabel}
+                            className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-emerald-300/40"
+                          >
+                            <span className="flex items-center gap-3">
+                              <span
+                                aria-hidden="true"
+                                className="h-1.5 w-10 rounded-full"
+                                style={{
+                                  backgroundColor: visualStyle.color,
+                                  backgroundImage: multiRouteDisplayMode === "patterns"
+                                    ? `repeating-linear-gradient(90deg, ${visualStyle.color} 0 8px, transparent 8px 14px)`
+                                    : undefined,
+                                }}
+                              />
+                              <span className="font-black text-white">{groupLabel}</span>
+                            </span>
+                            <p className="mt-2 text-xs text-slate-300">
+                              {group.travelDistanceKm.toFixed(2)} km · {group.travelMinutes} min · {group.targetCount} {fr ? "stops" : "stops"}
+                            </p>
+                            {multiRouteDisplayMode === "patterns" ? (
+                              <p className="mt-1 text-[11px] font-semibold text-emerald-100/70">
+                                {fr ? "Trait : " : "Line: "}{getRouteGroupPatternLabel(group.groupIndex, fr)}
+                              </p>
+                            ) : null}
+                          </button>
+                        );
+                      })}
                     </div>
                     <p className="mt-4 text-xs text-emerald-100/70">
                       {fr
@@ -441,12 +513,18 @@ export function RouteSection() {
                   routeGeometry={visibleGeometry}
                   groupRoutes={groupRoutes}
                   selectedGroupIndex={selectedGroupIndex}
+                  representationMode={multiRouteDisplayMode}
                   origin={data.origin}
                   onSelectOrigin={originMode === "map" ? setMapOrigin : undefined}
                   onClearOrigin={originMode === "map" ? clearMapOrigin : undefined}
                   selectedStopId={selectedStopId}
                   onSelectStop={setSelectedStopId}
                   fr={fr}
+                />
+                <RoutePdfExport
+                  data={data}
+                  displayMode={multiRouteDisplayMode}
+                  onUsePatterns={() => setMultiRouteDisplayMode("patterns")}
                 />
                 <RouteList
                   hasRoute={hasRoute}
