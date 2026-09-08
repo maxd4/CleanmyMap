@@ -172,6 +172,7 @@ describe("route recommendation trace", () => {
       },
     });
     expect(first.ordering.stopIds).toEqual(["final-1"]);
+    expect(first.parameters.pickupPreference).toBe("balanced");
     expect(first.fallbacks).toEqual(["fallback_route_geometry", "budget_compatible_prefix"]);
     expect(first.finalRoutingReconciliation).toEqual({
       stopsBefore: 1,
@@ -204,6 +205,27 @@ describe("route recommendation trace", () => {
     expect(buildRouteRecommendationTrace({ ...base, routeGeometry: geometry("network") }).segments[0]?.streetSteps).toHaveLength(1);
     expect(buildRouteRecommendationTrace({ ...base, routeGeometry: geometry("network") }).segments.at(-1)).toMatchObject({ from: "final-1", to: "origin", measured: true });
     expect(buildRouteRecommendationTrace({ ...base, routeGeometry: geometry("fallback") }).segments[0]?.streetSteps).toEqual([]);
+  });
+
+  it("records the explicit pickup preference without changing route scoring", () => {
+    const trace = buildRouteRecommendationTrace({
+      engineVersion: "route-planner-v2",
+      origin,
+      travelBudgetMinutes: 60,
+      maxStops: 1,
+      priorityVsTravel: 65,
+      pickupPreference: "cigarette_butts",
+      candidateSummary: { loaded: 0, admissible: 0, excluded: 0, excludedByReason: {} },
+      plannerResult: plannerResult([]),
+      selectedStops: [],
+      routeGeometry: geometry(),
+      consumedTravelMinutes: 0,
+      budgetPrefixApplied: false,
+      sourceHealth,
+    });
+
+    expect(trace.parameters.pickupPreference).toBe("cigarette_butts");
+    expect(trace.parameters.priorityVsTravel).toBe(65);
   });
 
   it("accepts an empty final route with an empty trace", () => {

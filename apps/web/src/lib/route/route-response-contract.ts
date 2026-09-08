@@ -14,6 +14,23 @@ import type {
   RoutePartitionMetrics,
 } from "./route-group-partition";
 
+export const ROUTE_PICKUP_PREFERENCES = [
+  "balanced",
+  "waste",
+  "cigarette_butts",
+] as const;
+
+export type RoutePickupPreference = (typeof ROUTE_PICKUP_PREFERENCES)[number];
+
+export function isRoutePickupPreference(
+  value: unknown,
+): value is RoutePickupPreference {
+  return (
+    typeof value === "string" &&
+    ROUTE_PICKUP_PREFERENCES.includes(value as RoutePickupPreference)
+  );
+}
+
 /** Shared HTTP input contract for the route recommendation boundary. */
 export type RouteRecommendationRequest = {
   origin?: RouteRecommendationOrigin;
@@ -23,6 +40,7 @@ export type RouteRecommendationRequest = {
   priorityVsDistance?: number;
   planningMode?: RoutePlanningMode;
   riskFocus?: "all" | "waste" | "cigaretteButts";
+  pickupPreference?: RoutePickupPreference;
   volunteers?: number;
   groupCount?: number;
 };
@@ -33,6 +51,7 @@ export type RouteOptions = {
   maxStops: number;
   volunteers: number;
   groupCount: number;
+  pickupPreference: RoutePickupPreference;
 };
 
 export type RouteResponseOrigin = {
@@ -63,6 +82,9 @@ export type RouteRecommendationResponse = {
   travelBudgetMinutes: number;
   volunteers: number;
   groupCount: number;
+  constraintsApplied: {
+    pickupPreference: RoutePickupPreference;
+  };
   loop: {
     isLoop: true;
     origin: RouteResponseOrigin;

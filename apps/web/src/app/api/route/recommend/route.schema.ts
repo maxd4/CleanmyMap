@@ -26,6 +26,9 @@ export const routeRecommendationRequestSchema = z
       ])
       .default({ type: "free" }),
     riskFocus: z.enum(["all", "waste", "cigaretteButts"]).default("all"),
+    pickupPreference: z
+      .enum(["balanced", "waste", "cigarette_butts"])
+      .default("balanced"),
     volunteers: z.number().int().min(1).max(MAX_ROUTE_VOLUNTEERS).default(1),
     groupCount: z.number().int().min(1).max(MAX_ROUTE_GROUP_COUNT).default(1),
   })

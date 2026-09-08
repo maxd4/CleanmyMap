@@ -7,6 +7,7 @@ export type {
   RouteRecommendationResponse,
   RouteResponse,
   RouteResponseOrigin,
+  RoutePickupPreference,
 } from "@/lib/route/route-response-contract";
 export type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 
