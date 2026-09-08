@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_REPORT_MODULES,
   buildPdfData,
   buildScopeSelectValue,
-  detailLevelToModules,
   type ModuleState,
   REPORT_MODULE_DEFINITIONS,
   REQUIRED_CORE_CHAPTER_IDS,
@@ -76,29 +76,45 @@ describe("reports web document shared helpers", () => {
     });
   });
 
-  it("maps detail levels to module toggles", () => {
-    expect(detailLevelToModules("concis")).toEqual({
-      dataAndCartography: true,
-      transparencyAndMethods: true,
-      rawData: false,
-      detailedFiles: false,
-    });
-    expect(detailLevelToModules("exhaustif")).toEqual({
-      dataAndCartography: true,
-      transparencyAndMethods: true,
-      rawData: true,
-      detailedFiles: true,
-    });
-    expect(detailLevelToModules("default")).toEqual({
+  it("keeps the current default composition independent from detail level", () => {
+    expect(DEFAULT_REPORT_MODULES).toEqual({
       dataAndCartography: true,
       transparencyAndMethods: true,
       rawData: false,
       detailedFiles: true,
     });
+
+    const outputs = (["concis", "default", "exhaustif"] as const).map((detailLevel) =>
+      buildPdfData({
+        reportTitle: "Rapport d'impact - Paris",
+        scopeLabel: "Paris",
+        period: "full_history",
+        detailLevel,
+        modules: DEFAULT_REPORT_MODULES,
+        surfaceProxy: 42,
+        model: fixtureModel,
+      }),
+    );
+    const expectedChapterIds = outputs[0]?.chapters.map((chapter) => chapter.id);
+
+    expect(outputs.map((output) => output.chapters.map((chapter) => chapter.id))).toEqual(
+      [expectedChapterIds, expectedChapterIds, expectedChapterIds],
+    );
+    expect(outputs.every((output) => output.chapters.every((chapter) => !chapter.locked))).toBe(true);
+    expect(outputs.map((output) => output.rows)).toEqual([
+      outputs[0]?.rows,
+      outputs[0]?.rows,
+      outputs[0]?.rows,
+    ]);
+    expect(outputs.map((output) => output.columns)).toEqual([
+      outputs[0]?.columns,
+      outputs[0]?.columns,
+      outputs[0]?.columns,
+    ]);
   });
 
   it("keeps the three core chapters and removes every disabled module from PDF chapters and raw rows", () => {
-    const allModules = detailLevelToModules("exhaustif");
+    const allModules = { ...DEFAULT_REPORT_MODULES, rawData: true };
     const fullPdf = buildPdfDataWithModules(allModules);
     const fullChapterIds = fullPdf.chapters.map((chapter) => chapter.id);
 
@@ -170,7 +186,7 @@ describe("reports web document shared helpers", () => {
       scopeLabel: "Paris",
       period: "full_history",
       detailLevel: "exhaustif",
-      modules: detailLevelToModules("exhaustif"),
+      modules: { ...DEFAULT_REPORT_MODULES, rawData: true },
       surfaceProxy: 42,
       model: {
         wasteProfile: {

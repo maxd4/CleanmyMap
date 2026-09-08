@@ -32,14 +32,18 @@
   12 mois glissants, tandis que la comparaison oppose la fenêtre courante aux
   90 jours précédents selon les bornes de `computePilotageComparison()`.
 
-  La Génération utilise un `ModuleState` unique pour le preview, le résumé
-  « ce que l'utilisateur verra », `buildPdfData()` et le PDF. Les trois
-  chapitres cœur restent présents ; `dataAndCartography`,
-  `transparencyAndMethods`, `rawData` et `detailedFiles` contrôlent
-  respectivement leur contenu cartographique, transparence/méthodes, données
-  brutes et annexes. Un module désactivé est réellement absent, sans
-  placeholder. Le niveau de détail fournit les defaults et conserve les
-  règles de verrouillage pour un module activé mais trop peu détaillé.
+  La Génération conserve trois paramètres distincts : période, périmètre et
+  niveau de détail. Le niveau de détail est une métadonnée de génération ; il
+  ne sélectionne, ne désélectionne et ne verrouille aucun module ou chapitre.
+  Un `ModuleState` unique porte la composition sélectionnée par les cases de
+  modules pour le preview, le résumé « ce que l'utilisateur verra »,
+  `buildPdfData()` et le PDF. Les trois chapitres cœur restent présents ;
+  `dataAndCartography`, `transparencyAndMethods`, `rawData` et
+  `detailedFiles` contrôlent respectivement leur contenu cartographique,
+  transparence/méthodes, données brutes et annexes. Un module désactivé est
+  réellement absent, sans placeholder. La composition actuelle est conservée
+  dans ce chantier ; le contenu précis des modules et l'effet fonctionnel des
+  trois niveaux de détail seront traités séparément.
 
   L'historique « Rapports récents » ne contient que les générations réellement
   persistées par le compte connecté dans `public.report_generations`, au maximum

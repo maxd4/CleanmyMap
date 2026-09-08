@@ -34,6 +34,17 @@ export type ModuleState = {
   detailedFiles: boolean;
 };
 
+/**
+ * Composition initiale du rapport. Elle est indépendante du niveau de détail
+ * choisi dans les paramètres de génération.
+ */
+export const DEFAULT_REPORT_MODULES: ModuleState = {
+  dataAndCartography: true,
+  transparencyAndMethods: true,
+  rawData: false,
+  detailedFiles: true,
+};
+
 export const REPORT_MODULE_DEFINITIONS = [
   {
     id: "dataAndCartography",
@@ -235,14 +246,7 @@ export function buildCoverageRangeLabel(contracts: ActionDataContract[]): string
 }
 
 export function buildDetailCoverageLabel(detailLevel: DetailLevelId): string {
-  switch (detailLevel) {
-    case "concis":
-      return "Concis: seule la lecture synthétique est pleinement remplie, les sous-parties avancées restent verrouillées.";
-    case "default":
-      return "Par défaut: le socle principal et les détails principaux sont remplis; les annexes techniques restent verrouillées.";
-    case "exhaustif":
-      return "Exhaustif: le rapport embarque le niveau maximal de détail et les annexes techniques.";
-  }
+  return `Niveau de détail sélectionné: ${detailLevelLabel(detailLevel)}. La composition du rapport est définie séparément par les modules optionnels.`;
 }
 
 export function periodLabel(period: PeriodId): string {
@@ -274,41 +278,6 @@ export function detailLevelShortLabel(id: DetailLevelId): string {
   return option?.label ?? "";
 }
 
-export function detailLevelRank(id: DetailLevelId): number {
-  switch (id) {
-    case "concis":
-      return 0;
-    case "default":
-      return 1;
-    case "exhaustif":
-      return 2;
-  }
-}
-
-export function isDetailLevelAtLeast(current: DetailLevelId, required: DetailLevelId): boolean {
-  return detailLevelRank(current) >= detailLevelRank(required);
-}
-
-export function buildLockedSectionMessage(required: DetailLevelId): string {
-  return `Générez le rapport avec un niveau de détail : "${detailLevelShortLabel(required)}" si vous voulez le détail de cette sous partie.`;
-}
-
-export function buildLockedSectionChapter(params: {
-  id: string;
-  title: string;
-  subtitle: string;
-  required: DetailLevelId;
-}) {
-  return {
-    id: params.id,
-    title: params.title,
-    subtitle: params.subtitle,
-    lines: [buildLockedSectionMessage(params.required)],
-    locked: true,
-    requiredDetailLevelLabel: detailLevelLabel(params.required),
-  };
-}
-
 export function buildScopeSelectValue(kind: string, value: string): string {
   return kind === "global" || !value ? "" : `${kind}:${value}`;
 }
@@ -328,32 +297,6 @@ export function parseScopeSelectValue(
     return { kind, value: parsedValue };
   }
   return { kind: "global", value: "" };
-}
-
-export function detailLevelToModules(id: DetailLevelId): ModuleState {
-  switch (id) {
-    case "concis":
-      return {
-        dataAndCartography: true,
-        transparencyAndMethods: true,
-        rawData: false,
-        detailedFiles: false,
-      };
-    case "default":
-      return {
-        dataAndCartography: true,
-        transparencyAndMethods: true,
-        rawData: false,
-        detailedFiles: true,
-      };
-    case "exhaustif":
-      return {
-        dataAndCartography: true,
-        transparencyAndMethods: true,
-        rawData: true,
-        detailedFiles: true,
-      };
-  }
 }
 
 export function buildReportTitle(scopeLabel: string, detailLevel: DetailLevelId): string {
@@ -384,8 +327,6 @@ export function buildPdfData(params: {
     headline: string;
   };
 
-  const visibleDefaultDetail = isDetailLevelAtLeast(detailLevel, "default");
-  const visibleExhaustifDetail = isDetailLevelAtLeast(detailLevel, "exhaustif");
   const allChapters = [
     {
       id: "synthese-executive",
@@ -430,8 +371,7 @@ export function buildPdfData(params: {
         { label: "Participation bénévole", value: report.totals.volunteers },
       ],
     },
-    visibleDefaultDetail
-      ? {
+    {
           id: "cartographie-impact",
           title: "Cartographie d’impact",
           subtitle: "Lecture spatiale et évolution des signalements",
@@ -459,13 +399,7 @@ export function buildPdfData(params: {
             { key: "Recurrence", label: "Récurrence" },
             { key: "Score", label: "Score" },
           ],
-      }
-      : buildLockedSectionChapter({
-          id: "cartographie-impact",
-          title: "Cartographie d’impact",
-          subtitle: "Lecture spatiale et évolution des signalements",
-          required: "default",
-        }),
+      },
     {
       id: "indicateurs-environnementaux",
       title: "Indicateurs environnementaux",
@@ -484,8 +418,7 @@ export function buildPdfData(params: {
         `Indice de tri propre: ${formatScorePercent(report.recycling.triIndex, 1)}.`,
       ],
     },
-    visibleDefaultDetail
-      ? {
+    {
           id: "contexte-local",
           title: "Analyse du contexte local",
           subtitle: "Typologie des déchets et contraintes du territoire",
@@ -503,15 +436,8 @@ export function buildPdfData(params: {
             { key: "Kg", label: "Kg" },
             { key: "Actions", label: "Actions concernées" },
           ],
-      }
-      : buildLockedSectionChapter({
-          id: "contexte-local",
-          title: "Analyse du contexte local",
-          subtitle: "Typologie des déchets et contraintes du territoire",
-          required: "default",
-        }),
-    visibleDefaultDetail
-      ? {
+      },
+    {
           id: "communaute-mobilisation",
           title: "Communauté et mobilisation",
           subtitle: "Bénévoles, partenaires et contribution citoyenne",
@@ -532,15 +458,8 @@ export function buildPdfData(params: {
             { key: "Kg", label: "Kg" },
             { key: "Mégots", label: "Mégots" },
           ],
-      }
-      : buildLockedSectionChapter({
-          id: "communaute-mobilisation",
-          title: "Communauté et mobilisation",
-          subtitle: "Bénévoles, partenaires et contribution citoyenne",
-          required: "default",
-        }),
-    visibleDefaultDetail
-      ? {
+      },
+    {
           id: "methodologie-fiabilite",
           title: "Méthodologie et fiabilité",
           subtitle: "Mode de calcul, qualité et limites",
@@ -559,15 +478,8 @@ export function buildPdfData(params: {
             { key: "Lecture", label: "Lecture" },
             { key: "Interprétation", label: "Interprétation" },
           ],
-      }
-      : buildLockedSectionChapter({
-          id: "methodologie-fiabilite",
-          title: "Méthodologie et fiabilité",
-          subtitle: "Mode de calcul, qualité et limites",
-          required: "default",
-        }),
-    visibleDefaultDetail
-      ? {
+      },
+    {
           id: "gouvernance-transparence",
           title: "Gouvernance et transparence",
           subtitle: "Validation, modération et traçabilité",
@@ -576,21 +488,14 @@ export function buildPdfData(params: {
             `Modération: ${report.moderation.approved} approuvés / ${report.moderation.rejected === null ? "indisponible" : `${report.moderation.rejected} rejetés`}.`,
             `Délai moyen: ${toFrOptionalNumber(report.moderation.delayDays)} jours.`,
           ],
-      }
-      : buildLockedSectionChapter({
-          id: "gouvernance-transparence",
-          title: "Gouvernance et transparence",
-          subtitle: "Validation, modération et traçabilité",
-          required: "default",
-        }),
+      },
     {
       id: "recommandations-operationnelles",
       title: "Recommandations opérationnelles",
       subtitle: "Court terme, moyen terme et priorités",
       lines: executive.budgetUseCases.concat([`Zone prioritaire: ${report.areas[0]?.area ?? "n/a"}.`]),
     },
-    visibleDefaultDetail
-      ? {
+    {
           id: "calendrier-previsionnel",
           title: "Calendrier prévisionnel",
           subtitle: "Prochaines actions et échéances recommandées",
@@ -606,15 +511,8 @@ export function buildPdfData(params: {
             { key: "Objectif", label: "Objectif" },
             { key: "Responsable", label: "Responsable" },
           ],
-      }
-      : buildLockedSectionChapter({
-          id: "calendrier-previsionnel",
-          title: "Calendrier prévisionnel",
-          subtitle: "Prochaines actions et échéances recommandées",
-          required: "default",
-        }),
-    visibleDefaultDetail
-      ? {
+      },
+    {
           id: "glossaire-simplifie",
           title: "Glossaire simplifié",
           subtitle: "Définitions clés et méthodes de calcul",
@@ -631,15 +529,8 @@ export function buildPdfData(params: {
             { key: "Terme", label: "Terme" },
             { key: "Définition", label: "Définition" },
           ],
-      }
-      : buildLockedSectionChapter({
-          id: "glossaire-simplifie",
-          title: "Glossaire simplifié",
-          subtitle: "Définitions clés et méthodes de calcul",
-          required: "default",
-        }),
-    visibleExhaustifDetail
-      ? {
+      },
+    {
           id: "annexes",
           title: "Annexes",
           subtitle: "Données détaillées et exports techniques",
@@ -655,13 +546,7 @@ export function buildPdfData(params: {
             { key: "Kg", label: "Kg" },
             { key: "Score", label: "Score" },
           ],
-      }
-      : buildLockedSectionChapter({
-          id: "annexes",
-          title: "Annexes",
-          subtitle: "Données détaillées et exports techniques",
-          required: "exhaustif",
-        }),
+      },
   ];
   const visibleChapterIds = getVisibleReportChapterIds(modules);
   const chapters = allChapters
@@ -673,9 +558,8 @@ export function buildPdfData(params: {
       stats: "stats" in chapter ? chapter.stats : undefined,
       rows: "rows" in chapter ? chapter.rows : undefined,
       columns: "columns" in chapter ? chapter.columns : undefined,
-      locked: "locked" in chapter ? chapter.locked : false,
-      requiredDetailLevelLabel:
-        "requiredDetailLevelLabel" in chapter ? chapter.requiredDetailLevelLabel : undefined,
+      locked: false,
+      requiredDetailLevelLabel: undefined,
     }))
     .filter((chapter) => visibleChapterIds.has(chapter.id));
 

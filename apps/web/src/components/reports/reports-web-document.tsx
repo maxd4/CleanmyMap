@@ -16,6 +16,7 @@ import { ReportsWebDocumentPreview } from "@/components/reports/web-document/rep
 import { useReportsWebDocumentModel } from "@/components/reports/web-document/use-reports-web-document-model";
 import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
 import {
+  DEFAULT_REPORT_MODULES,
   REPORT_HISTORY_SERVER_LIMIT,
   buildCoverageRangeLabel,
   buildDetailCoverageLabel,
@@ -24,7 +25,6 @@ import {
   buildReportTitle,
   buildScopeSelectValue,
   detailLevelLabel,
-  detailLevelToModules,
   parseScopeSelectValue,
   reportPeriodLabel,
   type DetailLevelId,
@@ -84,7 +84,7 @@ export function ReportsWebDocument({
   const [historyWarning, setHistoryWarning] = useState<string | null>(null);
   const [period, setPeriod] = useState<SelectedPeriodId>("");
   const [detailLevel, setDetailLevel] = useState<DetailLevelId>("default");
-  const [modules, setModules] = useState<ModuleState>(detailLevelToModules("default"));
+  const [modules, setModules] = useState<ModuleState>(DEFAULT_REPORT_MODULES);
   const effectivePeriod = period || "six_months";
   const reportNow = useMemo(() => new Date(), []);
   const historyCompletenessWarning = effectivePeriod === "full_history" && isTruncated;
@@ -239,11 +239,6 @@ export function ReportsWebDocument({
     disabled: model.isLoading || model.hasError,
   });
 
-  function syncModulesFromDetailLevel(nextLevel: DetailLevelId): void {
-    setDetailLevel(nextLevel);
-    setModules(detailLevelToModules(nextLevel));
-  }
-
   function toggleModule(key: keyof ModuleState): void {
     setModules((current) => ({
       ...current,
@@ -351,7 +346,7 @@ export function ReportsWebDocument({
             model.setScopeValue(next.value);
           }}
           detailLevel={detailLevel}
-          onDetailLevelChange={syncModulesFromDetailLevel}
+          onDetailLevelChange={setDetailLevel}
           modules={modules}
           onModuleToggle={toggleModule}
         />
