@@ -102,11 +102,10 @@ export function HomeHero({
           <HomeMapPreview />
         </div>
 
-        <section className="relative mt-4 overflow-visible rounded-[2rem] border border-white/70 bg-white/30 p-3 shadow-[0_28px_70px_-38px_rgba(0,53,37,0.6)] backdrop-blur-xl sm:mt-6 sm:p-5 lg:mt-7 lg:p-5">
-          <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-[radial-gradient(circle_at_10%_0%,rgba(255,255,255,0.6),transparent_28%),radial-gradient(circle_at_90%_100%,rgba(110,231,183,0.26),transparent_32%)]" />
-          <div className="relative z-10 flex flex-wrap items-center justify-between gap-4 px-1 sm:px-2">
-            <p className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.28em] text-[#11234a] sm:text-xs">
-              <span className="h-3 w-3 rounded-full bg-[#1bd9a0] shadow-[0_0_15px_rgba(27,217,160,0.7)]" />
+        <section className="relative mt-4 overflow-visible sm:mt-6 lg:mt-7">
+          <div className="relative z-10 flex flex-wrap items-center justify-between gap-5 px-1 sm:px-2">
+            <p className="flex items-center gap-4 text-[clamp(1.9rem,3.8vw,3.35rem)] font-black leading-none tracking-[-0.055em] text-[#061d17]">
+              <span className="h-3 w-3 shrink-0 rounded-full bg-[#26e6a4] shadow-[0_0_15px_rgba(38,230,164,0.7)] sm:h-4 sm:w-4" />
               Impact terrain 2026
             </p>
             <CmmButton
@@ -121,7 +120,7 @@ export function HomeHero({
             </CmmButton>
           </div>
 
-          <div className="relative z-10 mt-3 grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="relative z-10 mt-7 grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {metrics.map((metric) => (
               <HomeImpactKpiCard
                 key={metric.key}

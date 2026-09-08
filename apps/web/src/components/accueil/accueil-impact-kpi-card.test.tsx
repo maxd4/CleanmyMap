@@ -48,6 +48,7 @@ describe("HomeImpactKpiCard", () => {
     expect(shouldOpenTooltipOnFocus("mouse")).toBe(false);
     expect(shouldOpenTooltipOnFocus("touch")).toBe(false);
   });
+
   it("consumes canonical tooltip results and keeps the accessible info control", () => {
     const html = renderToStaticMarkup(
       <HomeImpactKpiCard
@@ -60,6 +61,8 @@ describe("HomeImpactKpiCard", () => {
     expect(html).toContain('aria-controls="impact-tooltip-co2"');
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain("Afficher la méthode de calcul pour CO₂ évité");
+    expect(html).toContain("items-start gap-3");
+    expect(html).toContain("text-[clamp(1.75rem,2.5vw,2.45rem)]");
     expect(html).not.toContain("0,025");
     expect(html).not.toContain("1 000 000");
   });
