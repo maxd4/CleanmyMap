@@ -13,7 +13,13 @@ const source = readFileSync(new URL("./cmm-button.tsx", import.meta.url), "utf8"
 
 describe("CmmButton", () => {
   it("exposes the canonical tone, size, variant and width contract", () => {
-    const tones = ["primary", "secondary", "tertiary", "destructive"] as const;
+    const tones = [
+      "primary",
+      "secondary",
+      "tertiary",
+      "important",
+      "destructive",
+    ] as const;
     const sizes = ["sm", "md", "lg"] as const;
     const variants = ["default", "pill", "ghost"] as const;
     const widths = ["auto", "wide"] as const;

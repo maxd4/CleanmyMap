@@ -38,20 +38,22 @@ Le blanc est normalement un compagnon, pas le CTA dominant.
 
 ### Contrat runtime actuel
 
-`CmmButton` expose actuellement uniquement les identifiants
-`tone="primary" | "secondary" | "tertiary" | "destructive"`.
+`CmmButton` expose les identifiants runtime
+`tone="primary" | "secondary" | "tertiary" | "important" | "destructive"`.
 
 - `primary` est le bouton vert publié pour l'action standard/majoritaire ;
 - `secondary` est le bouton blanc publié pour l'action d'accompagnement et
   constitue la valeur par défaut actuelle ;
 - `tertiary` est une action transparente de faible emphase ou contextuelle ;
+- `important` est le bouton violet publié pour une action importante, au-dessus
+  du vert sans atteindre le niveau critique doré/brun ;
 - `destructive` conserve son traitement rouge de danger et ne fait pas partie
   de la hiérarchie de priorité `doré/brun > violet > vert > blanc`.
 
-Les niveaux sémantiques doré/brun et violet sont donc, à ce stade, un contrat
-de conception cible : aucun identifiant runtime `gold`, `brown` ou `violet`
-n'est actuellement publié par `CmmButton`. Ne pas les présenter comme des
-variantes disponibles avant l'ajout effectif de leurs tokens et styles.
+Le niveau doré/brun reste un contrat de conception cible : aucun identifiant
+runtime `gold` ou `brown` n'est actuellement publié par `CmmButton`. Le violet
+est publié sous l'identifiant sémantique `important`, et non sous un nom de
+couleur.
 
 Les états hover, focus, loading, disabled et les exigences d'accessibilité
 restent obligatoires pour les quatre niveaux. L'importance métier ne doit pas
@@ -67,9 +69,8 @@ La composition de référence applique la hiérarchie ainsi :
 - **Rejoindre une action** → blanc ;
 - **Se connecter / S'inscrire** → doré/brun.
 
-Cet exemple décrit le contrat de priorité visuelle. Les niveaux doré/brun et
-violet restent à implémenter dans le runtime avant de pouvoir être utilisés
-comme `tone` de `CmmButton`.
+Cet exemple décrit le contrat de priorité visuelle. Le niveau doré/brun reste
+à implémenter dans le runtime ; pour le violet, utiliser `tone="important"`.
 
 ## Surfaces & cards
 

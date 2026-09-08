@@ -180,8 +180,10 @@ export default function ExamplePage() {
 - Dans le runtime actuel, `tone="primary"` rend le bouton vert standard,
   `tone="secondary"` le bouton blanc d'accompagnement et `tone="tertiary"`
   une action transparente de faible emphase.
-- Ne pas déduire la priorité du nom `primary`/`secondary` ni inventer un tone
-  `gold`, `brown` ou `violet` non exposé par `CmmButton`.
+- `tone="important"` rend le bouton violet d'action importante.
+- Ne pas inventer un tone `gold` ou `brown` non exposé par `CmmButton` ; le
+  doré/brun reste réservé au contrat cible tant que ses tokens ne sont pas
+  publiés.
 - `tone="destructive"` reste réservé à la sémantique rouge de danger et est
   exclu de cette hiérarchie.
 - Pour trois actions disposées en deux lignes, utiliser

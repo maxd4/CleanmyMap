@@ -9,15 +9,14 @@ la géométrie et les états restent définis dans
 
 La priorité visuelle des actions est définie séparément par la hiérarchie
 canonique [`doré/brun > violet > vert > blanc`](./BLOC_COLOR_SYSTEM_PREMIUM.md#hiérarchie-canonique-des-boutons).
-Les noms historiques de l'API `tone` ci-dessous ne constituent pas une
-hiérarchie concurrente et ne doivent pas être interprétés comme des variantes
-dorée/brune ou violette inexistantes.
+Les noms de l'API `tone` ci-dessous expriment l'intention sémantique et ne
+doivent pas être remplacés par des classes de couleur locales.
 
 ## API
 
 ```tsx
 <CmmButton
-  tone="primary|secondary|tertiary|destructive"
+  tone="primary|secondary|tertiary|important|destructive"
   size="sm|md|lg"
   variant="default|pill|ghost"
   width="auto|wide"
@@ -40,6 +39,7 @@ clavier et l'activation.
 | `primary` | bouton vert actuellement publié pour une action standard, une validation ou une création |
 | `secondary` | bouton blanc actuellement publié pour une action d'accompagnement ou une alternative neutre |
 | `tertiary` | bouton transparent actuellement publié pour une action contextuelle de faible emphase |
+| `important` | bouton violet publié pour une action importante |
 | `destructive` | suppression, sortie ou modération destructive |
 | `sm` / `md` / `lg` | 40 / 44 / 48 px de hauteur |
 | `default` / `pill` / `ghost` | radius standard / `--radius-full` / surface sans bordure |

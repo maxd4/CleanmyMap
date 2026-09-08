@@ -4,6 +4,7 @@ import { useRef } from "react";
 import {
   ArrowRight,
   CheckCircle2,
+  Cigarette,
   FileText,
   GraduationCap,
   Heart,
@@ -11,8 +12,9 @@ import {
   MapPin,
   UserPlus,
   Users,
+  Trash2,
 } from "lucide-react";
-import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import type { HomeCommunityActivitySummary } from "@/lib/accueil/data";
 import { useGsapReveal } from "@/lib/animations/use-gsap-reveal";
 
@@ -141,10 +143,14 @@ function CommunityActivityCard({
 }: {
   item: HomeCommunityActivitySummary["items"][number];
 }) {
+  const hasImpactMetrics =
+    item.cigaretteButts !== null || item.wasteKg !== null;
+
   return (
     <article
       data-gsap-reveal
-      className="flex items-start gap-3 rounded-[1.25rem] border border-white/90 bg-white/80 px-3 py-3 shadow-[0_14px_26px_-24px_rgba(4,78,58,0.45)] transition-transform hover:-translate-y-0.5 sm:gap-4 sm:px-3.5"
+      data-home-community-action-card
+      className="flex items-start gap-3 rounded-[1.25rem] border border-white/90 bg-white/80 px-3 py-3 shadow-[0_14px_26px_-24px_rgba(4,78,58,0.45)] transition-transform hover:-translate-y-0.5 sm:gap-4 sm:px-4"
     >
       <ActionPreview image={item.image} />
       <div className="flex min-w-0 flex-1 items-start gap-3 self-stretch py-0.5">
@@ -152,8 +158,24 @@ function CommunityActivityCard({
           <h3 className="line-clamp-2 text-[13px] font-black leading-tight text-[#082d35] sm:text-sm">
             {item.title}
           </h3>
-          <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-[#315c67] sm:text-[13px]">
-            {item.summary}
+          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] leading-snug text-[#315c67] sm:text-[12px]">
+            {item.cigaretteButts !== null ? (
+              <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                <Cigarette size={13} aria-hidden="true" />
+                <span>{item.cigaretteButts.toLocaleString("fr-FR")} mégots</span>
+              </span>
+            ) : null}
+            {item.wasteKg !== null ? (
+              <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                <Trash2 size={13} aria-hidden="true" />
+                <span>
+                  {item.wasteKg.toLocaleString("fr-FR", {
+                    maximumFractionDigits: 1,
+                  })} kg de déchets
+                </span>
+              </span>
+            ) : null}
+            {!hasImpactMetrics ? item.summary : null}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <span className="line-clamp-1 max-w-full rounded-full bg-[#e8f1f0] px-2.5 py-1 text-[10px] font-bold text-[#315c67]">
@@ -198,7 +220,7 @@ export function HomeCommunityCredibility({
       className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_15%_22%,rgba(255,255,255,0.72),transparent_28%),radial-gradient(circle_at_82%_64%,rgba(196,181,253,0.22),transparent_30%),linear-gradient(135deg,#d9faef_0%,#c4f4e2_48%,#e8f8f3_100%)] py-8 sm:py-10 lg:py-12"
     >
       <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:radial-gradient(circle_at_20%_88%,rgba(16,185,129,0.2),transparent_24%),radial-gradient(circle_at_74%_8%,rgba(129,140,248,0.16),transparent_20%)]" />
-      <div className="relative mx-auto grid w-full max-w-[1800px] items-stretch gap-4 px-3 sm:px-6 lg:grid-cols-2 lg:gap-5 lg:px-8">
+      <div className="relative mx-auto grid w-full max-w-[1860px] items-stretch gap-4 px-3 sm:px-6 lg:grid-cols-2 lg:gap-6 lg:px-6">
         <div className="relative isolate flex min-w-0 flex-col overflow-hidden rounded-[2.25rem] border border-white/85 bg-white/58 p-5 shadow-[0_28px_70px_-50px_rgba(7,95,71,0.42)] backdrop-blur-xl sm:p-7 lg:min-h-[760px] lg:p-7 xl:p-8">
           <SectionLandscape variant="community" />
           <div data-gsap-reveal className="flex items-start gap-4">
@@ -301,25 +323,38 @@ export function HomeCommunityCredibility({
             )}
           </div>
 
-          <div data-gsap-reveal className="mt-7 grid gap-3 sm:grid-cols-2">
-            <CmmButton
-              href="/actions/new"
-              tone="primary"
-              variant="pill"
-              className="h-12 gap-2 px-5 text-[13px] font-black"
-            >
-              Déclarer une action
-              <ArrowRight size={15} />
-            </CmmButton>
-            <CmmButton
-              href="/sections/rejoindre-un-formulaire"
-              tone="secondary"
-              variant="pill"
-              className="h-12 gap-2 px-5 text-[13px] font-black"
-            >
-              Rejoindre une action
-              <ArrowRight size={15} />
-            </CmmButton>
+          <div data-gsap-reveal className="mt-7">
+            <CmmButtonGroup layout="two-column">
+              <CmmButton
+                href="/actions/new"
+                tone="primary"
+                variant="pill"
+                className="h-12 gap-2 px-5 text-[13px] font-black"
+              >
+                Déclarer une action
+                <ArrowRight size={15} />
+              </CmmButton>
+              <CmmButton
+                href="/sections/rejoindre-un-formulaire"
+                tone="secondary"
+                variant="pill"
+                className="h-12 gap-2 px-5 text-[13px] font-black"
+              >
+                Rejoindre une action
+                <ArrowRight size={15} />
+              </CmmButton>
+              <CmmButton
+                href="/reports"
+                tone="important"
+                variant="pill"
+                width="wide"
+                className="h-12 gap-2 px-5 text-[13px] font-black"
+              >
+                <FileText size={16} />
+                Générer un rapport d&apos;impact
+                <ArrowRight size={15} />
+              </CmmButton>
+            </CmmButtonGroup>
           </div>
         </div>
 

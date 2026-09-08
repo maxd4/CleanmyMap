@@ -50,6 +50,9 @@ export type HomeCommunityActivityItem = {
   timeLabel: string;
   dateLabel: string;
   statusLabel: string;
+  volunteersCount: number | null;
+  cigaretteButts: number | null;
+  wasteKg: number | null;
   image: HomeCommunityActivityImage;
   tone: "cyan" | "emerald" | "blue" | "amber";
 };
@@ -127,12 +130,30 @@ function getAccueilVisibleContracts(
 }
 
 function getActorLabel(contract: ActionDataContract): string {
+  const associationName = contract.metadata.associationName?.trim();
+  const actorName = contract.metadata.actorName?.trim();
+
+  if (associationName) {
+    return associationName;
+  }
+  if (actorName && !/^google sheet$/iu.test(actorName)) {
+    return actorName;
+  }
+
   return (
     contract.location.label.trim() ||
-    contract.metadata.associationName?.trim() ||
-    contract.metadata.actorName?.trim() ||
     "Action terrain"
   );
+}
+
+function toFiniteNonNegativeMetric(
+  value: number | null | undefined,
+): number | null {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return null;
+  }
+
+  return Math.max(0, value);
 }
 
 function getInitials(label: string): string {
@@ -194,6 +215,34 @@ function getActionSummary(contract: ActionDataContract): string {
     contract.metadata.preparationData?.shortDescription?.trim() ||
     formatActionLabel(contract)
   );
+}
+
+function formatObservedDate(observedAt: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/u.exec(observedAt);
+  if (!match) {
+    return observedAt;
+  }
+
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
+function formatCommunityActionTitle(
+  actor: string,
+  contract: ActionDataContract,
+): string {
+  const volunteers = toFiniteNonNegativeMetric(
+    contract.metadata.volunteersCount,
+  );
+  const volunteerLabel =
+    volunteers === null
+      ? "des bénévoles"
+      : `${volunteers.toLocaleString("fr-FR")} bénévole${
+          volunteers > 1 ? "s" : ""
+        }`;
+
+  return `${actor} a réuni ${volunteerLabel} le ${formatObservedDate(
+    contract.dates.observedAt,
+  )}`;
 }
 
 function getActivityImage(
@@ -317,12 +366,19 @@ export function buildHomeCommunityActivity(
         actor,
         initials: getInitials(actor),
         action: formatActionLabel(contract),
-        title: getActionTitle(contract),
+        title: formatCommunityActionTitle(actor, contract),
         summary: getActionSummary(contract),
         location: getActionLocation(contract),
         timeLabel: formatRelativeDay(contract.dates.observedAt),
         dateLabel: contract.dates.observedAt,
         statusLabel: contract.status === "approved" ? "Vérifiée" : "À vérifier",
+        volunteersCount: toFiniteNonNegativeMetric(
+          contract.metadata.volunteersCount,
+        ),
+        cigaretteButts: toFiniteNonNegativeMetric(
+          contract.metadata.cigaretteButts,
+        ),
+        wasteKg: toFiniteNonNegativeMetric(contract.metadata.wasteKg),
         image: getActivityImage(contract),
         tone: tones[index % tones.length],
       };

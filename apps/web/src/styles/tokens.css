@@ -22,6 +22,9 @@
   --action-primary-bg: rgb(16 185 129);
   --action-primary-text: #ffffff;
   --action-primary-hover: rgb(5 150 105);
+  --action-important-bg: rgb(124 58 237);
+  --action-important-text: #ffffff;
+  --action-important-hover: rgb(109 40 217);
   --action-secondary-bg: #ffffff;
   --action-secondary-text: #0f172a;
   --action-secondary-hover: rgba(15, 23, 42, 0.04);
@@ -297,6 +300,9 @@ html[data-theme="dark"] {
   --action-secondary-bg: rgba(15, 23, 42, 0.72);
   --action-secondary-text: #f8fafc;
   --action-secondary-hover: rgba(16, 185, 129, 0.12);
+  --action-important-bg: rgb(139 92 246);
+  --action-important-text: #ffffff;
+  --action-important-hover: rgb(124 58 237);
   --action-destructive-bg: #ef4444;
   --action-destructive-text: #ffffff;
   --action-destructive-hover: #dc2626;

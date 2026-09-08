@@ -146,8 +146,10 @@ describe("accueil data", () => {
     );
 
     expect(activity.items[0]).toMatchObject({
-      title: "Action de dépollution",
+      title: "Bénévole a réuni 3 bénévoles le 10/04/2026",
       location: "Forêt de Meudon, 92360 Meudon",
+      cigaretteButts: 0,
+      wasteKg: 0,
     });
   });
 
@@ -172,8 +174,38 @@ describe("accueil data", () => {
     );
 
     expect(activity.items[0]).toMatchObject({
-      title: "Action de dépollution",
+      title: "Bénévole a réuni 3 bénévoles le 10/04/2026",
       location: "Rue de la Paix, 75002 Paris",
+    });
+  });
+
+  it("formats recent activity with the organizer, date and real impact metrics", () => {
+    const activity = buildHomeCommunityActivity(
+      [
+        buildActionDataContract({
+          id: "brigade-verte",
+          type: "action",
+          status: "approved",
+          source: "actions",
+          observedAt: "2026-04-14",
+          createdAt: "2026-04-14T08:00:00.000Z",
+          locationLabel: "Canal Saint-Martin, Paris",
+          latitude: 48.87,
+          longitude: 2.36,
+          associationName: "La Brigade Verte",
+          volunteersCount: 10,
+          cigaretteButts: 320,
+          wasteKg: 18,
+        }),
+      ],
+      "2026-01-01",
+    );
+
+    expect(activity.items[0]).toMatchObject({
+      title: "La Brigade Verte a réuni 10 bénévoles le 14/04/2026",
+      volunteersCount: 10,
+      cigaretteButts: 320,
+      wasteKg: 18,
     });
   });
 
