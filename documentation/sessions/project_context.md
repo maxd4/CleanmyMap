@@ -19,11 +19,15 @@ restent dans les sources de session ou les documents d'audit appropriés.
 
 - Gouvernance générale et règles de travail : `AGENTS.md` et le `AGENTS.md`
   scoped du sous-arbre concerné.
-- Architecture et frontières : `documentation/architecture/master-architecture.md`
-  et les ADR applicables.
-- Contrats de sécurité et d'accès : `documentation/security/` et les sources
-  AuthN/AuthZ concernées.
-- Design system et contrats UI : `documentation/design-system/`.
+- Architecture et frontières : `documentation/architecture/README.md`,
+  `documentation/architecture/master-architecture.md` et les ADR applicables.
+- Données et Supabase : `documentation/database/README.md` et
+  `documentation/architecture/data-governance.md`.
+- Contrats de sécurité et d'accès : `documentation/security/README.md` et les
+  sources AuthN/AuthZ concernées.
+- Design system et contrats UI : `documentation/design-system/README.md` et le
+  document canonique du composant concerné.
+- Validation et tests : `documentation/development/TESTING.md`.
 - Mémoire de session :
   `documentation/sessions/history/latest-session.md`.
 - Procédure de session et budget de contexte :
@@ -67,8 +71,6 @@ versionnées et impose une lecture ciblée lorsqu'un fichier y est concerné.
 - `apps/mobile` est une application distincte ; ses contrats d'identité,
   missions/GPS, RLS et finalisation des métriques restent des zones protégées.
 - Les migrations Supabase canoniques résident sous `apps/web/supabase/migrations/`.
-- La homepage, le header et le footer sont des zones protégées sauf demande
-  explicite.
 
 ## Zones sensibles
 
