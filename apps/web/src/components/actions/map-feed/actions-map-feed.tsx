@@ -17,6 +17,7 @@ import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/loc
 type ActionsMapFeedContentProps = {
   feedData: MapFeedDataState;
   presentation?: "default" | "immersive";
+  homepagePreview?: boolean;
   tone?: "sky" | "emerald";
   showIntro?: boolean;
   fullViewport?: boolean;
@@ -38,6 +39,7 @@ type ActionsMapFeedContentProps = {
 export function ActionsMapFeedContent({
   feedData,
   presentation = "default",
+  homepagePreview = false,
   tone = "sky",
   showIntro = true,
   fullViewport = false,
@@ -93,6 +95,40 @@ export function ActionsMapFeedContent({
   }, [isMapVisible]);
 
   const isImmersive = presentation === "immersive";
+
+  if (homepagePreview) {
+    return (
+      <section
+        ref={mapShellRef}
+        aria-label="Aperçu de la carte des actions"
+        aria-busy={feedData.isLoading || feedData.isValidating}
+        className="relative h-full min-h-[18rem] w-full [mask-image:radial-gradient(ellipse_at_center,black_48%,transparent_100%)]"
+      >
+        {MapCanvas ? (
+          <MapCanvas
+            items={feedData.items}
+            sourceItems={feedData.allItems}
+            sourceCompleteness={feedData.hasPartialSource ? "partial" : "complete"}
+            compact
+            tone="emerald"
+            initialViewport={null}
+            viewportRequest={null}
+            viewportRequestKey={0}
+            recenterViewport={null}
+            onViewportChange={undefined}
+            onViewportInteraction={undefined}
+          />
+        ) : (
+          <div className="h-full min-h-[18rem] w-full" aria-hidden="true" />
+        )}
+        {feedData.error ? (
+          <span className="sr-only">
+            Impossible de récupérer les données de la carte.
+          </span>
+        ) : null}
+      </section>
+    );
+  }
 
   const shellClass = isImmersive
     ? isEmerald
@@ -186,6 +222,7 @@ export function ActionsMapFeed({
   zoneQuery,
   limit = 120,
   presentation = "default",
+  homepagePreview = false,
   tone = "sky",
   showIntro = true,
   fullViewport = false,
@@ -217,13 +254,14 @@ export function ActionsMapFeed({
     zoneQuery,
     visibleCategories,
     limit,
-    viewport: mapViewport,
+    viewport: homepagePreview ? null : mapViewport,
   });
 
   return (
     <ActionsMapFeedContent
       feedData={feedData}
       presentation={presentation}
+      homepagePreview={homepagePreview}
       showIntro={showIntro}
       fullViewport={fullViewport}
       showStoriesCarousel={showStoriesCarousel}

@@ -47,6 +47,37 @@ describe("ActionsMapFeed", () => {
     );
   });
 
+  it("keeps the homepage preview on the canonical unbounded action source", () => {
+    useMapFeedDataMock.mockReturnValue({
+      data: null,
+      allItems: [],
+      items: [],
+      summary: { totalKg: 0, totalButts: 0 },
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      reload: vi.fn(),
+      freshnessLabel: null,
+      partialSourcesLabel: "inconnues",
+      hasPartialSource: false,
+    });
+
+    renderToStaticMarkup(
+      React.createElement(ActionsMapFeed, {
+        days: 365,
+        statusFilter: "approved",
+        impactFilter: "all",
+        qualityMin: 0,
+        homepagePreview: true,
+        showStoriesCarousel: false,
+      }),
+    );
+
+    expect(useMapFeedDataMock).toHaveBeenCalledWith(
+      expect.objectContaining({ viewport: null }),
+    );
+  });
+
   it("uses the canonical feedback and skeleton primitives for feed states", () => {
     useMapFeedDataMock.mockReturnValue({
       data: null,

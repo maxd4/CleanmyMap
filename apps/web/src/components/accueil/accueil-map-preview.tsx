@@ -1,12 +1,13 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
 import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
-import { CmmButton } from "@/components/ui/cmm-button";
 
 export function HomeMapPreview() {
   return (
-    <div className="relative min-w-0 overflow-hidden rounded-[2.25rem]">
+    <div
+      className="relative isolate h-[20rem] min-w-0 overflow-hidden sm:h-[24rem] lg:h-[31rem]"
+      aria-label="Aperçu de la carte des actions"
+    >
       <ActionsMapFeed
         days={365}
         statusFilter="approved"
@@ -14,28 +15,24 @@ export function HomeMapPreview() {
         qualityMin={0}
         presentation="immersive"
         tone="emerald"
+        homepagePreview
         showIntro={false}
         showStoriesCarousel={false}
         compact
         limit={120}
       />
-
-      <div className="pointer-events-none absolute inset-0 z-[1100]">
-        <div className="absolute left-8 top-8 inline-flex items-center gap-3 rounded-full border border-white/80 bg-white/90 px-4 py-3 text-[10px] font-black uppercase tracking-[0.22em] text-[#192548] shadow-[0_12px_28px_-18px_rgba(0,45,35,0.48)] backdrop-blur-xl sm:left-10 sm:top-10 sm:px-5">
-          <span className="h-3 w-3 rounded-full bg-[#c04cf4] shadow-[0_0_12px_rgba(192,76,244,0.5)]" />
-          Récentes
-        </div>
-
-        <CmmButton
-          href="/actions/map"
-          tone="secondary"
-          variant="pill"
-          className="pointer-events-auto absolute right-8 top-8 h-12 !border-white/80 !bg-white/95 !text-[#142143] !shadow-[0_12px_28px_-16px_rgba(0,45,35,0.5)] hover:!bg-white sm:right-10 sm:top-10 sm:h-14 sm:px-6"
-        >
-          Voir la carte
-          <ExternalLink size={18} aria-hidden="true" />
-        </CmmButton>
-      </div>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-20 bg-[radial-gradient(ellipse_at_center,transparent_48%,rgba(0,87,67,0.12)_74%,rgba(0,87,67,0.52)_100%)]"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 z-20 h-20 bg-gradient-to-b from-[#0a936b]/35 to-transparent"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-20 bg-gradient-to-t from-[#0a936b]/35 to-transparent"
+      />
     </div>
   );
 }
