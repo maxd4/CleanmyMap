@@ -97,13 +97,28 @@ test("deploys every signed commit automatically, independently of changed paths"
   );
 });
 
-test("skips unsigned, unavailable, or incomplete Vercel commits", () => {
-  for (const signatureStatus of ["absent", "unavailable"]) {
-    assert.equal(
-      evaluateSignedDeployment({ currentSha: "commit", signatureStatus }).action,
-      "ignore",
-    );
-  }
+test("preserves the existing path decision for unsigned or unavailable commits", () => {
+  const webFallback = evaluateIgnoreCommand({
+    previousSha: "previous",
+    currentSha: "commit",
+    changedPaths: ["apps/web/src/app/page.tsx"],
+  });
+  const nonWebFallback = evaluateIgnoreCommand({
+    previousSha: "previous",
+    currentSha: "commit",
+    changedPaths: ["scripts/ci/pre_push_guard.ps1"],
+  });
 
-  assert.equal(evaluateSignedDeployment({ currentSha: "", signatureStatus: "present" }).action, "ignore");
+  assert.equal(
+    evaluateSignedDeployment({ currentSha: "commit", signatureStatus: "absent", fallbackDecision: webFallback }).action,
+    "build",
+  );
+  assert.equal(
+    evaluateSignedDeployment({ currentSha: "commit", signatureStatus: "unavailable", fallbackDecision: nonWebFallback }).action,
+    "ignore",
+  );
+  assert.equal(
+    evaluateSignedDeployment({ currentSha: "", signatureStatus: "unavailable", fallbackDecision: webFallback }).action,
+    "build",
+  );
 });

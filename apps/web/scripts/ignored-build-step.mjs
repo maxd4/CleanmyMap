@@ -130,7 +130,7 @@ export function evaluateIgnoreCommand({ previousSha, currentSha, changedPaths, g
  * Detect a cryptographic signature block embedded in a Git commit object.
  *
  * Vercel's build environment does not contain the developers' trusted keyring,
- * so this gate deliberately checks the commit object rather than pretending to
+ * so this rule deliberately checks the commit object rather than pretending to
  * verify signer identity. Repository branch protection remains responsible
  * for requiring a trusted/verified signer.
  */
@@ -145,32 +145,19 @@ export function hasCommitSignature(commitObject) {
 
 /**
  * A signed Git commit is an explicit deployment request for the Vercel
- * project. Unsigned or unverifiable commits fail closed and skip the build.
+ * project. Other commits retain the existing path-based decision so this
+ * opt-in rule does not disable ordinary web deployments.
  */
-export function evaluateSignedDeployment({ currentSha, signatureStatus }) {
-  if (!currentSha) {
+export function evaluateSignedDeployment({ currentSha, signatureStatus, fallbackDecision }) {
+  if (signatureStatus === "present" && currentSha) {
     return {
-      action: "ignore",
+      action: "build",
       buildPaths: [],
-      reason: "Vercel commit SHA is unavailable; signed deployment cannot be established",
+      reason: "signed Vercel commit; deploy automatically",
     };
   }
 
-  if (signatureStatus !== "present") {
-    return {
-      action: "ignore",
-      buildPaths: [],
-      reason: signatureStatus === "absent"
-        ? "Vercel commit is not signed"
-        : "Vercel commit signature could not be inspected",
-    };
-  }
-
-  return {
-    action: "build",
-    buildPaths: [],
-    reason: "signed Vercel commit; deploy automatically",
-  };
+  return fallbackDecision ?? evaluateIgnoreCommand({ previousSha: "", currentSha, changedPaths: undefined });
 }
 
 function repositoryRoot() {
@@ -178,6 +165,19 @@ function repositoryRoot() {
     cwd: process.cwd(),
     encoding: "utf8",
   }).trim();
+}
+
+function changedPathsBetween(previousSha, currentSha, cwd) {
+  const output = execFileSync(
+    "git",
+    ["diff", "--name-only", "--no-renames", "-z", previousSha, currentSha],
+    { cwd },
+  );
+
+  return output
+    .toString("utf8")
+    .split("\0")
+    .filter((pathname) => pathname.length > 0);
 }
 
 function readCommitSignatureStatus(currentSha, cwd) {
@@ -193,17 +193,24 @@ function readCommitSignatureStatus(currentSha, cwd) {
 }
 
 function main() {
+  const previousSha = process.env.VERCEL_GIT_PREVIOUS_SHA?.trim();
   const currentSha = process.env.VERCEL_GIT_COMMIT_SHA?.trim();
 
   let signatureStatus = "unavailable";
+  let fallbackDecision;
   try {
     const root = repositoryRoot();
+    const changedPaths = previousSha && currentSha
+      ? changedPathsBetween(previousSha, currentSha, root)
+      : undefined;
+    fallbackDecision = evaluateIgnoreCommand({ previousSha, currentSha, changedPaths });
     signatureStatus = readCommitSignatureStatus(currentSha, root);
   } catch {
+    fallbackDecision = evaluateIgnoreCommand({ previousSha, currentSha, gitError: true });
     signatureStatus = "unavailable";
   }
 
-  const decision = evaluateSignedDeployment({ currentSha, signatureStatus });
+  const decision = evaluateSignedDeployment({ currentSha, signatureStatus, fallbackDecision });
 
   const label = decision.action === "ignore" ? "IGNORE" : "BUILD";
   const details = decision.buildPaths.length > 0
