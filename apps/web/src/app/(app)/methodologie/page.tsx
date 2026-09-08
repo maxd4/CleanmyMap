@@ -32,8 +32,8 @@ export const metadata: Metadata = {
   },
 };
 
-// The methodology page is public and can be regenerated periodically.
-export const revalidate = 3600;
+// Methodology values come from weekly/monthly snapshots and daily-scale sources.
+export const revalidate = 86400;
 
 export default async function MethodologiePage() {
   let freePlanServices: EnvironmentalImpactInfrastructureServiceEstimate[] = [];

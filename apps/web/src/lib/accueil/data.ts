@@ -1,10 +1,12 @@
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import { sumActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { fetchCachedUnifiedActionContracts } from "@/lib/actions/unified-source/unified-source-cache";
+import type { UnifiedActionContractsCacheOptions } from "@/lib/actions/unified-source/unified-source-cache";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   loadLatestPublicImpactSnapshot,
+  type PublicImpactSnapshotRecord,
   type PublicImpactSnapshotPayload,
 } from "@/lib/impact/public-impact-snapshot";
 import type { HomeCounters } from "./config";
@@ -73,6 +75,12 @@ export type LandingSummary = {
   activity: HomeCommunityActivitySummary;
   dataAvailability: LandingDataAvailability;
 } & PublicLandingActionAggregation;
+
+export const EMPTY_HOME_COMMUNITY_ACTIVITY: HomeCommunityActivitySummary = {
+  visibleActions: 0,
+  distinctLocations: 0,
+  items: [],
+};
 
 const HOMEPAGE_COMMUNITY_ACTION_LIMIT = 3;
 const LANDING_FALLBACK_CONTRACT_LIMIT = 500;
@@ -510,46 +518,82 @@ export function buildLandingSummaryFromImpactSnapshot(
   };
 }
 
+type RecentCommunityActivityData = {
+  contracts: ActionDataContract[];
+  floorDate: string;
+  activity: HomeCommunityActivitySummary;
+  sourceHealth: UnifiedSourceHealth;
+};
+
+async function loadRecentCommunityActivityData(
+  snapshot: PublicImpactSnapshotRecord | null,
+  cacheOptions: UnifiedActionContractsCacheOptions = {},
+): Promise<RecentCommunityActivityData> {
+  const floorDate = snapshot?.payload.period.fromDate ?? buildLandingFloorDate();
+  const recent = await fetchCachedUnifiedActionContracts({
+    limit: snapshot ? HOMEPAGE_COMMUNITY_ACTION_LIMIT : LANDING_FALLBACK_CONTRACT_LIMIT,
+    status: "approved",
+    floorDate,
+    requireCoordinates: false,
+    types: ["action"],
+  }, cacheOptions);
+  const activity = snapshot
+    ? buildHomeCommunityActivityFromRecentContracts(
+        recent.items,
+        floorDate,
+        {
+          visibleActions: snapshot.payload.aggregates.visibleActions,
+          distinctLocations: snapshot.payload.aggregates.distinctLocations,
+        },
+      )
+    : buildHomeCommunityActivity(recent.items, floorDate);
+
+  return {
+    contracts: recent.items,
+    floorDate,
+    activity: await attachActionPreviewImages(activity),
+    sourceHealth: recent.sourceHealth,
+  };
+}
+
+export type HomeCommunityActivityResponse = {
+  activity: HomeCommunityActivitySummary;
+  errorMessage: string | null;
+};
+
+export async function loadRecentCommunityActivity(): Promise<HomeCommunityActivityResponse> {
+  const snapshot = await loadLatestPublicImpactSnapshot();
+  const recent = await loadRecentCommunityActivityData(snapshot);
+
+  return {
+    activity: recent.activity,
+    errorMessage: recent.sourceHealth.partial
+      ? "Les dernières actions vérifiées sont partiellement disponibles."
+      : null,
+  };
+}
+
 export async function loadLandingSummary(): Promise<LandingSummary> {
   const snapshot = await loadLatestPublicImpactSnapshot();
   if (!snapshot) {
-    const floorDate = buildLandingFloorDate();
-    const fallback = await fetchCachedUnifiedActionContracts({
-      limit: LANDING_FALLBACK_CONTRACT_LIMIT,
-      status: "approved",
-      floorDate,
-      requireCoordinates: false,
-      types: ["action"],
+    const fallback = await loadRecentCommunityActivityData(null, {
+      revalidateSeconds: 3600,
     });
     const summary = buildLandingSummaryFromContracts(
-      fallback.items,
-      floorDate,
+      fallback.contracts,
+      fallback.floorDate,
       fallback.sourceHealth,
     );
-    const activityWithImages = await attachActionPreviewImages(summary.activity);
 
     return {
       ...summary,
-      activity: activityWithImages,
+      activity: fallback.activity,
     };
   }
 
-  const recent = await fetchCachedUnifiedActionContracts({
-    limit: HOMEPAGE_COMMUNITY_ACTION_LIMIT,
-    status: "approved",
-    floorDate: snapshot.payload.period.fromDate,
-    requireCoordinates: false,
-    types: ["action"],
-  });
-  const summary = buildLandingSummaryFromImpactSnapshot(
+  return buildLandingSummaryFromImpactSnapshot(
     snapshot.payload,
-    recent.items,
-    recent.sourceHealth,
+    [],
+    DEFAULT_LANDING_SOURCE_HEALTH,
   );
-  const activityWithImages = await attachActionPreviewImages(summary.activity);
-
-  return {
-    ...summary,
-    activity: activityWithImages,
-  };
 }

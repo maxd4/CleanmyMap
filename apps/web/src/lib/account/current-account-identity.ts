@@ -1,22 +1,11 @@
 import {
   normalizeDisplayNameMode,
   resolveActiveProfile,
-  type AppProfile,
-  type DisplayNameMode,
 } from "@/lib/profiles";
 import type { Role } from "@/lib/domain-language";
+import type { UserIdentity } from "@/lib/authz";
 
-export type CurrentAccountIdentity = {
-  userId: string;
-  displayName: string;
-  displayNameMode: DisplayNameMode;
-  handle: string;
-  username: string;
-  firstName: string | null;
-  email: string | null;
-  role: Role;
-  activeProfile: AppProfile;
-};
+export type CurrentAccountIdentity = UserIdentity;
 
 type CurrentAccountIdentityResponse = Partial<CurrentAccountIdentity> & {
   error?: string;
@@ -56,11 +45,35 @@ function buildCurrentAccountIdentity(
     username,
     firstName: trimOrNull(payload.firstName),
     email: trimOrNull(payload.email),
+    currentLevel:
+      typeof payload.currentLevel === "number" && Number.isFinite(payload.currentLevel)
+        ? Math.max(1, Math.trunc(payload.currentLevel))
+        : 1,
+    actorNameOptions:
+      Array.isArray(payload.actorNameOptions) &&
+      payload.actorNameOptions.every((value): value is string => typeof value === "string")
+        ? payload.actorNameOptions
+        : [username, payload.userId],
     role,
+    activeRole: resolveActiveProfile({
+      metadataActiveProfile: payload.activeProfile,
+      role,
+    }),
     activeProfile: resolveActiveProfile({
       metadataActiveProfile: payload.activeProfile,
       role,
     }),
+    badges: Array.isArray(payload.badges)
+      ? payload.badges.filter(
+          (badge): badge is UserIdentity["badges"][number] =>
+            typeof badge === "object" &&
+            badge !== null &&
+            typeof badge.id === "string" &&
+            typeof badge.label === "string" &&
+            typeof badge.icon === "string",
+        )
+      : [],
+    locationPreference: payload.locationPreference ?? null,
   };
 }
 

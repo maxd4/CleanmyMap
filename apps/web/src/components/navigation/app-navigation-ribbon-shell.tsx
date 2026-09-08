@@ -3,9 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { List } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
+import useSWR from "swr";
 import Link from "next/link";
 
 import type { UserIdentity } from "@/lib/authz";
+import {
+  fetchCurrentAccountIdentity,
+  type CurrentAccountIdentity,
+} from "@/lib/account/current-account-identity";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
   getActiveSpaceForPath,
@@ -30,6 +35,7 @@ import { RibbonMenus } from "./app-navigation-ribbon-menus";
 type AppNavigationRibbonShellProps = AppNavigationRibbonProps & {
   pathname: string;
   user: ClerkUserLike | null;
+  authStateReady: boolean;
   showAccountActions: boolean;
 };
 
@@ -39,15 +45,28 @@ function AppNavigationRibbonShell({
   identity,
   pathname,
   user,
+  authStateReady,
   showAccountActions,
 }: AppNavigationRibbonShellProps) {
   const { locale, displayMode } = useSitePreferences();
   const ribbonRef = useRef<HTMLElement | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
-  const effectiveProfile = identity?.activeProfile ?? currentProfile ?? "benevole";
+  const { data: hydratedIdentity } = useSWR<CurrentAccountIdentity | null>(
+    authStateReady
+      ? ["current-account-identity", user?.id ?? "anonymous-session"]
+      : null,
+    fetchCurrentAccountIdentity,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      shouldRetryOnError: false,
+      dedupingInterval: 120_000,
+    },
+  );
+  const effectiveIdentity: UserIdentity | null = identity ?? hydratedIdentity ?? null;
+  const effectiveProfile = effectiveIdentity?.activeProfile ?? currentProfile ?? "benevole";
   const effectiveProfileLabel =
     profileLabel ?? getProfileLabel(effectiveProfile, locale);
-  const effectiveIdentity: UserIdentity | null = identity ?? null;
 
   const ribbonChrome = useAdaptiveRibbonChrome(
     ribbonRef,
@@ -62,7 +81,7 @@ function AppNavigationRibbonShell({
   }, [displayMode, effectiveProfile, locale]);
 
   const activeSpaceId = getActiveSpaceForPath(effectiveProfile, pathname, displayMode);
-  const isAuthenticated = showAccountActions && Boolean(effectiveIdentity);
+  const isAuthenticated = showAccountActions && Boolean(user || effectiveIdentity);
   const identityForBubble = effectiveIdentity;
 
   function onTrackNavigation(href: string, label: string, spaceId: string | null) {
@@ -208,7 +227,7 @@ export function AppNavigationRibbonPublic({
   identity,
   pathname,
 }: AppNavigationRibbonProps & { pathname: string }) {
-  const { user } = useUser();
+  const { isLoaded, user } = useUser();
   const userResource = user ?? null;
 
   return (
@@ -218,6 +237,7 @@ export function AppNavigationRibbonPublic({
       identity={identity}
       pathname={pathname}
       user={userResource}
+      authStateReady={isLoaded}
       showAccountActions
     />
   );
@@ -229,7 +249,7 @@ export function AppNavigationRibbonProtected({
   identity,
   pathname,
 }: AppNavigationRibbonProps & { pathname: string }) {
-  const { user } = useUser();
+  const { isLoaded, user } = useUser();
   const userResource = user ?? null;
 
   return (
@@ -239,6 +259,7 @@ export function AppNavigationRibbonProtected({
       identity={identity}
       pathname={pathname}
       user={userResource}
+      authStateReady={isLoaded}
       showAccountActions
     />
   );
