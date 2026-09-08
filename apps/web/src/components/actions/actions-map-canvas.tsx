@@ -34,8 +34,14 @@ import {
 import {
   createActionsMapViewport,
   getActionsMapCenter,
+  HOMEPAGE_MAP_BOUNDS,
+  HOMEPAGE_MAP_CENTER,
+  HOMEPAGE_MAP_FRANCE_BOUNDS,
+  HOMEPAGE_MAP_INITIAL_ZOOM,
+  HOMEPAGE_MAP_MIN_ZOOM,
 } from "./actions-map-canvas.utils";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
+import type { ActionsMapPresentation } from "./map-feed/map-feed.types";
 import {
   DEFAULT_VISIBLE_MAP_LAYERS,
   toggleVisibleMapLayer,
@@ -48,6 +54,7 @@ type ActionsMapCanvasProps = {
   onSelectAction?: (actionId: string) => void;
   fullViewport?: boolean;
   compact?: boolean;
+  presentation?: ActionsMapPresentation;
   className?: string;
   tone?: "sky" | "emerald";
   onViewportChange?: (viewport: MapViewportState) => void;
@@ -124,12 +131,27 @@ function MapViewportSync({
   return null;
 }
 
+function HomepageFranceViewport() {
+  const map = useMap();
+
+  useEffect(() => {
+    map.fitBounds(HOMEPAGE_MAP_FRANCE_BOUNDS, {
+      padding: [18, 18],
+      maxZoom: 6.5,
+      animate: false,
+    });
+  }, [map]);
+
+  return null;
+}
+
 export function ActionsMapCanvas({
   items,
   selectedActionId = null,
   onSelectAction,
   fullViewport = false,
   compact = false,
+  presentation = "default",
   className,
   tone = "sky",
   onViewportChange,
@@ -141,9 +163,15 @@ export function ActionsMapCanvas({
   sourceItems = items,
   sourceCompleteness = "partial",
 }: ActionsMapCanvasProps) {
+  const isHomepagePreview = presentation === "homepage-preview";
+  const isMinimalPreview = compact || isHomepagePreview;
   const center = useMemo(() => getActionsMapCenter(items), [items]);
-  const mapCenter = initialViewport?.center ?? center;
-  const mapZoom = initialViewport?.zoom ?? (compact ? 11 : 12);
+  const mapCenter = isHomepagePreview
+    ? HOMEPAGE_MAP_CENTER
+    : initialViewport?.center ?? center;
+  const mapZoom = isHomepagePreview
+    ? HOMEPAGE_MAP_INITIAL_ZOOM
+    : initialViewport?.zoom ?? (compact ? 11 : 12);
   const logicalRecenterViewport =
     recenterViewport ??
     initialViewport ??
@@ -196,12 +224,12 @@ export function ActionsMapCanvas({
       className={cn(
         "relative overflow-hidden rounded-[2rem]",
         mapShellClasses,
-        compact && "h-full rounded-none border-0 bg-transparent shadow-none ring-0",
+        isMinimalPreview && "h-full rounded-none border-0 bg-transparent shadow-none ring-0",
         className,
       )}
     >
       <div className="pointer-events-none absolute left-3 top-28 z-[1000] flex flex-wrap gap-2 md:top-32">
-        {compact ? null : [
+        {isMinimalPreview ? null : [
           { key: "points" as const, label: "Points" },
           { key: "shapes" as const, label: "Tracés" },
           { key: "infrastructure" as const, label: "Infras" },
@@ -227,7 +255,7 @@ export function ActionsMapCanvas({
           );
         })}
       </div>
-      {compact ? null : (
+      {isMinimalPreview ? null : (
         <div
           className="pointer-events-none absolute right-3 top-16 z-[1000] sm:top-3"
           role="group"
@@ -253,7 +281,7 @@ export function ActionsMapCanvas({
           </div>
         </div>
       )}
-      {compact ? null : (
+      {isMinimalPreview ? null : (
         <div className="pointer-events-none absolute left-3 top-40 z-[1000] md:top-44">
           <MapGeometryLegend />
         </div>
@@ -262,10 +290,17 @@ export function ActionsMapCanvas({
       <MapContainer
         center={mapCenter}
         zoom={mapZoom}
+        minZoom={isHomepagePreview ? HOMEPAGE_MAP_MIN_ZOOM : undefined}
+        maxBounds={isHomepagePreview ? HOMEPAGE_MAP_BOUNDS : undefined}
+        maxBoundsViscosity={isHomepagePreview ? 0.72 : undefined}
         scrollWheelZoom
-        wheelPxPerZoomLevel={120}
+        wheelPxPerZoomLevel={isHomepagePreview ? 360 : 120}
+        wheelDebounceTime={isHomepagePreview ? 80 : undefined}
+        zoomDelta={isHomepagePreview ? 0.5 : undefined}
+        zoomSnap={isHomepagePreview ? 0.5 : undefined}
+        zoomControl={!isHomepagePreview}
         className={
-          compact
+          isMinimalPreview
             ? cn(
                 "h-full min-h-[18rem] w-full transition-colors duration-500",
                 mapCanvasClass,
@@ -280,11 +315,12 @@ export function ActionsMapCanvas({
           viewportRequest={viewportRequest}
           viewportRequestKey={viewportRequestKey}
         />
+        {isHomepagePreview ? <HomepageFranceViewport /> : null}
         <MapViewportReporter
           onViewportChange={onViewportChange}
           onViewportInteraction={onViewportInteraction}
         />
-        {compact ? null : (
+        {isMinimalPreview ? null : (
           <MapControls
             center={logicalRecenterViewport.center}
             zoom={logicalRecenterViewport.zoom}
@@ -292,7 +328,7 @@ export function ActionsMapCanvas({
             tone={tone}
           />
         )}
-        {compact ? (
+        {isMinimalPreview ? (
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
             url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
@@ -334,7 +370,7 @@ export function ActionsMapCanvas({
             displayMode={displayMode}
             currentPlaceStateViews={currentPlaceStateViews}
           />
-          {compact ? null : (
+          {isMinimalPreview ? null : (
             <>
               <InfrastructureMarkers
                 items={mainItems}

@@ -1,6 +1,7 @@
 import type { ActionMapItem } from "@/lib/actions/types";
 import { mapItemCoordinates } from "@/lib/actions/data-contract";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
+import type { LatLngBoundsExpression } from "leaflet";
 
 type MapCenter = [number, number];
 
@@ -9,6 +10,20 @@ type MapCenter = [number, number];
  * has been resolved. They are deliberately not a real territory default.
  */
 export const NEUTRAL_MAP_CENTER: MapCenter = [0, 0];
+
+/** Geographic framing reserved for the homepage map preview. */
+export const HOMEPAGE_MAP_CENTER: MapCenter = [46.6, 2.3];
+export const HOMEPAGE_MAP_INITIAL_ZOOM = 5;
+export const HOMEPAGE_MAP_MIN_ZOOM = 5;
+export const HOMEPAGE_MAP_FRANCE_BOUNDS: LatLngBoundsExpression = [
+  [41.1, -5.5],
+  [51.2, 9.7],
+];
+export const HOMEPAGE_MAP_BOUNDS: LatLngBoundsExpression = [
+  [40, -7],
+  [52, 11],
+];
+
 const BASE_MAP_BOUND_SPAN = {
   latitude: 0.028,
   longitude: 0.038,

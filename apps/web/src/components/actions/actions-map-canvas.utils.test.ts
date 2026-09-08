@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ACTIONS_MAP_VIEWPORT,
   getActionsMapCenter,
+  HOMEPAGE_MAP_BOUNDS,
+  HOMEPAGE_MAP_FRANCE_BOUNDS,
+  HOMEPAGE_MAP_MIN_ZOOM,
   NEUTRAL_MAP_CENTER,
 } from "./actions-map-canvas.utils";
 import type { ActionMapItem } from "@/lib/actions/types";
@@ -24,6 +27,18 @@ function buildItem(
 }
 
 describe("getActionsMapCenter", () => {
+  it("keeps the homepage preview framed on metropolitan France", () => {
+    expect(HOMEPAGE_MAP_MIN_ZOOM).toBe(5);
+    expect(HOMEPAGE_MAP_FRANCE_BOUNDS).toEqual([
+      [41.1, -5.5],
+      [51.2, 9.7],
+    ]);
+    expect(HOMEPAGE_MAP_BOUNDS).toEqual([
+      [40, -7],
+      [52, 11],
+    ]);
+  });
+
   it("falls back to a neutral center when there is no geolocated item", () => {
     expect(getActionsMapCenter([buildItem({ latitude: null, longitude: null })])).toEqual(
       NEUTRAL_MAP_CENTER,

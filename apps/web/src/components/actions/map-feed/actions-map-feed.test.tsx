@@ -68,7 +68,7 @@ describe("ActionsMapFeed", () => {
         statusFilter: "approved",
         impactFilter: "all",
         qualityMin: 0,
-        homepagePreview: true,
+        presentation: "homepage-preview",
         showStoriesCarousel: false,
       }),
     );
