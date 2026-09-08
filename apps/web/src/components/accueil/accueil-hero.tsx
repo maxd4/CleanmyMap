@@ -2,7 +2,6 @@
 
 import {
   ArrowRight,
-  MessageCircle,
   Plus,
   UserRound,
   Users,
@@ -31,14 +30,6 @@ const heroActions = [
     showArrow: true,
   },
   {
-    href: "/sections/messagerie",
-    label: "Discuter",
-    icon: MessageCircle,
-    tone: "important",
-    width: "auto",
-    showArrow: false,
-  },
-  {
     href: "/actions/new",
     label: "Créer une action",
     icon: Plus,
@@ -59,7 +50,7 @@ const heroActions = [
     label: "Se connecter / S'inscrire",
     icon: Users,
     tone: "critical",
-    width: "wide",
+    width: "auto",
     showArrow: false,
   },
 ] as const;
