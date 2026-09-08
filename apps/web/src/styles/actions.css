@@ -207,6 +207,16 @@
     --cmm-button-color: var(--action-important-text);
   }
 
+  .cmm-button[data-cmm-button-tone="critical"] {
+    --cmm-button-background: var(--action-critical-bg);
+    --cmm-button-background-hover: var(--action-critical-hover);
+    --cmm-button-background-image: linear-gradient(135deg, color-mix(in srgb, var(--action-critical-bg) 86%, white), var(--action-critical-bg));
+    --cmm-button-background-image-hover: linear-gradient(135deg, color-mix(in srgb, var(--action-critical-hover) 86%, white), var(--action-critical-hover));
+    --cmm-button-border: var(--action-critical-bg);
+    --cmm-button-border-hover: var(--action-critical-hover);
+    --cmm-button-color: var(--action-critical-text);
+  }
+
   .cmm-button[data-cmm-button-tone="secondary"] {
     --cmm-button-border: var(--border-strong);
     --cmm-button-border-hover: var(--action-primary-bg);
@@ -311,4 +321,9 @@
 
 
 
+}
+
+/* Les liens CmmButton doivent garder leur couleur de ton malgré le reset global des liens. */
+a.cmm-button {
+  color: var(--cmm-button-color);
 }

@@ -25,6 +25,9 @@
   --action-important-bg: rgb(124 58 237);
   --action-important-text: #ffffff;
   --action-important-hover: rgb(109 40 217);
+  --action-critical-bg: rgb(145 99 25);
+  --action-critical-text: #ffffff;
+  --action-critical-hover: rgb(113 75 15);
   --action-secondary-bg: #ffffff;
   --action-secondary-text: #0f172a;
   --action-secondary-hover: rgba(15, 23, 42, 0.04);
@@ -303,6 +306,9 @@ html[data-theme="dark"] {
   --action-important-bg: rgb(139 92 246);
   --action-important-text: #ffffff;
   --action-important-hover: rgb(124 58 237);
+  --action-critical-bg: rgb(178 132 47);
+  --action-critical-text: #ffffff;
+  --action-critical-hover: rgb(145 99 25);
   --action-destructive-bg: #ef4444;
   --action-destructive-text: #ffffff;
   --action-destructive-hover: #dc2626;

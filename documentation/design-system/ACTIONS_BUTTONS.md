@@ -16,7 +16,7 @@ doivent pas être remplacés par des classes de couleur locales.
 
 ```tsx
 <CmmButton
-  tone="primary|secondary|tertiary|important|destructive"
+  tone="primary|secondary|tertiary|important|critical|destructive"
   size="sm|md|lg"
   variant="default|pill|ghost"
   width="auto|wide"
@@ -40,6 +40,7 @@ clavier et l'activation.
 | `secondary` | bouton blanc actuellement publié pour une action d'accompagnement ou une alternative neutre |
 | `tertiary` | bouton transparent actuellement publié pour une action contextuelle de faible emphase |
 | `important` | bouton violet publié pour une action importante |
+| `critical` | bouton doré/brun publié pour une action critique ou très importante ; usage rare et intentionnel |
 | `destructive` | suppression, sortie ou modération destructive |
 | `sm` / `md` / `lg` | 40 / 44 / 48 px de hauteur |
 | `default` / `pill` / `ghost` | radius standard / `--radius-full` / surface sans bordure |
@@ -60,7 +61,7 @@ consommateurs.
 ## Modes et mouvement
 
 - `exhaustif` conserve les effets premium légers : gradient possible pour
-  `primary` et `destructive`, ombre soft, translation au survol et compression
+  `primary`, `important`, `critical` et `destructive`, ombre soft, translation au survol et compression
   active, en 180 ms ;
 - `minimaliste` retire gradient, ombre et transform, avec une transition de
   couleur/bordure en 150 ms ;

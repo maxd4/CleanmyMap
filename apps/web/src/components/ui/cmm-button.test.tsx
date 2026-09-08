@@ -18,6 +18,7 @@ describe("CmmButton", () => {
       "secondary",
       "tertiary",
       "important",
+      "critical",
       "destructive",
     ] as const;
     const sizes = ["sm", "md", "lg"] as const;

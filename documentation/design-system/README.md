@@ -64,8 +64,8 @@ La hiérarchie canonique des actions est documentée dans la section
 `doré/brun > violet > vert > blanc`. Elle exprime l'importance de l'action,
 pas la famille de la page ; `destructive` reste une sémantique de danger
 séparée. Le runtime de `CmmButton` expose `primary` (vert), `secondary`
-(blanc), `tertiary` (faible emphase), `important` (violet) et `destructive`
-(danger). Le doré/brun reste un contrat cible non publié.
+(blanc), `tertiary` (faible emphase), `important` (violet), `critical`
+(doré/brun) et `destructive` (danger).
 La géométrie runtime, dont le mode `width="wide"` pour les compositions à
 deux colonnes, est détaillée dans [`ACTIONS_BUTTONS.md`](./ACTIONS_BUTTONS.md).
 

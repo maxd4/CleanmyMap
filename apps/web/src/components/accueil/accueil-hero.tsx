@@ -5,9 +5,10 @@ import {
   MessageCircle,
   Plus,
   UserRound,
+  Users,
   MapPin,
 } from "lucide-react";
-import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import type {
   HomeImpactSnapshot,
   HomeMetric,
@@ -25,25 +26,41 @@ const heroActions = [
     href: "/actions/map",
     label: "Consulter la carte",
     icon: MapPin,
-    primary: true,
+    tone: "primary",
+    width: "auto",
+    showArrow: true,
   },
   {
     href: "/sections/messagerie",
     label: "Discuter",
     icon: MessageCircle,
-    primary: false,
+    tone: "important",
+    width: "auto",
+    showArrow: false,
   },
   {
     href: "/actions/new",
     label: "Créer une action",
     icon: Plus,
-    primary: false,
+    tone: "secondary",
+    width: "auto",
+    showArrow: false,
   },
   {
     href: "/sections/rejoindre-un-formulaire",
     label: "Rejoindre une action",
     icon: UserRound,
-    primary: false,
+    tone: "secondary",
+    width: "auto",
+    showArrow: false,
+  },
+  {
+    href: "/sign-in",
+    label: "Se connecter / S'inscrire",
+    icon: Users,
+    tone: "critical",
+    width: "wide",
+    showArrow: false,
   },
 ] as const;
 
@@ -69,30 +86,25 @@ export function HomeHero({
                 Cultivons l&apos;entraide pour dépolluer, cartographier et transformer chaque action terrain en preuve utile.
               </p>
 
-              <div className="mt-7 grid max-w-[38rem] grid-cols-2 gap-3 sm:mt-8 sm:gap-4">
-                {heroActions.map(({ href, icon: Icon, label, primary }) => (
+              <CmmButtonGroup
+                layout="two-column"
+                className="mt-7 max-w-[38rem] sm:mt-8"
+              >
+                {heroActions.map(({ href, icon: Icon, label, tone, width, showArrow }) => (
                   <CmmButton
                     key={href}
                     href={href}
-                    tone={primary ? "primary" : "secondary"}
+                    tone={tone}
                     variant="pill"
                     size="lg"
-                    className={
-                      primary
-                        ? "h-[3.85rem] w-full justify-between rounded-[1.35rem] !border-[#72ffd0] !bg-[#28d99b] !text-[#053b2a] !shadow-[0_16px_34px_-18px_rgba(0,44,30,0.75)] hover:!bg-[#67efbb] sm:px-6"
-                        : "h-[3.85rem] w-full justify-start rounded-[1.35rem] !border-white/80 !bg-white !text-[#102044] !shadow-[0_16px_34px_-22px_rgba(0,44,30,0.38)] hover:!bg-[#f5fffb] sm:px-6"
-                    }
+                    width={width}
                   >
-                    <span className="flex min-w-0 items-center gap-3">
-                      <Icon size={22} strokeWidth={2.2} aria-hidden="true" />
-                      <span className="truncate text-left text-[13px] font-black sm:text-[15px]">
-                        {label}
-                      </span>
-                    </span>
-                    {primary ? <ArrowRight size={21} aria-hidden="true" /> : null}
+                    <Icon size={22} strokeWidth={2.2} aria-hidden="true" />
+                    <span>{label}</span>
+                    {showArrow ? <ArrowRight size={21} aria-hidden="true" /> : null}
                   </CmmButton>
                 ))}
-              </div>
+              </CmmButtonGroup>
             </div>
           </div>
 
