@@ -197,6 +197,16 @@
     --cmm-button-color: var(--action-primary-text);
   }
 
+  .cmm-button[data-cmm-button-tone="important"] {
+    --cmm-button-background: var(--action-important-bg);
+    --cmm-button-background-hover: var(--action-important-hover);
+    --cmm-button-background-image: linear-gradient(135deg, color-mix(in srgb, var(--action-important-bg) 86%, white), var(--action-important-bg));
+    --cmm-button-background-image-hover: linear-gradient(135deg, color-mix(in srgb, var(--action-important-hover) 86%, white), var(--action-important-hover));
+    --cmm-button-border: var(--action-important-bg);
+    --cmm-button-border-hover: var(--action-important-hover);
+    --cmm-button-color: var(--action-important-text);
+  }
+
   .cmm-button[data-cmm-button-tone="secondary"] {
     --cmm-button-border: var(--border-strong);
     --cmm-button-border-hover: var(--action-primary-bg);

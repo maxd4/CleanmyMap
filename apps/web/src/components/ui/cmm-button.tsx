@@ -5,7 +5,12 @@ import type { MouseEvent, ReactElement, ReactNode, Ref } from"react";
 import { isValidElement, cloneElement } from"react";
 import { cn } from"@/lib/utils";
 
-export type ButtonTone ="primary" |"secondary" |"tertiary" |"destructive";
+export type ButtonTone =
+  | "primary"
+  | "secondary"
+  | "tertiary"
+  | "important"
+  | "destructive";
 export type ButtonSize ="sm" |"md" |"lg";
 export type ButtonVariant ="default" |"pill" |"ghost";
 export type ButtonWidth ="auto" |"wide";
