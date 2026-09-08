@@ -184,6 +184,26 @@ export default function ExamplePage() {
   `gold`, `brown` ou `violet` non exposé par `CmmButton`.
 - `tone="destructive"` reste réservé à la sémantique rouge de danger et est
   exclu de cette hiérarchie.
+- Pour trois actions disposées en deux lignes, utiliser
+  `CmmButtonGroup layout="two-column"` et `width="wide"` sur le bouton qui
+  doit occuper les deux colonnes. Cette largeur ne modifie pas la priorité
+  exprimée par `tone`.
+
+Exemple de grille homogène avec trois actions :
+
+```tsx
+<CmmButtonGroup layout="two-column">
+  <CmmButton href="/actions/map" tone="primary">
+    Consulter la carte
+  </CmmButton>
+  <CmmButton href="/actions" tone="secondary">
+    Voir les actions
+  </CmmButton>
+  <CmmButton href="/actions/new" tone="secondary" width="wide">
+    Créer une action
+  </CmmButton>
+</CmmButtonGroup>
+```
 
 ### Utilisation dans les rubriques existantes
 

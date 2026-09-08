@@ -8,6 +8,8 @@ import { cn } from"@/lib/utils";
 export type ButtonTone ="primary" |"secondary" |"tertiary" |"destructive";
 export type ButtonSize ="sm" |"md" |"lg";
 export type ButtonVariant ="default" |"pill" |"ghost";
+export type ButtonWidth ="auto" |"wide";
+export type CmmButtonGroupLayout ="inline" |"two-column";
 
 export interface CmmButtonProps {
  children: ReactNode;
@@ -17,6 +19,7 @@ export interface CmmButtonProps {
  tone?: ButtonTone;
  size?: ButtonSize;
  variant?: ButtonVariant;
+ width?: ButtonWidth;
  className?: string;
  disabled?: boolean;
  loading?: boolean;
@@ -46,6 +49,7 @@ export function CmmButton({
  tone ="secondary",
  size ="md",
  variant ="default",
+ width ="auto",
  className,
  disabled,
  ariaLabel,
@@ -70,6 +74,7 @@ export function CmmButton({
   "data-cmm-button-tone": tone,
   "data-cmm-button-size": size,
   "data-cmm-button-variant": variant,
+  "data-cmm-button-width": width,
   "data-cmm-button-disabled": disabled ? "true" : undefined,
   "data-cmm-button-loading": loading ? "true" : undefined,
   "aria-busy": loading || undefined,
@@ -143,11 +148,15 @@ export function CmmButton({
 export interface CmmButtonGroupProps {
  children: ReactNode;
  className?: string;
+ layout?: CmmButtonGroupLayout;
 }
 
-export function CmmButtonGroup({ children, className }: CmmButtonGroupProps) {
+export function CmmButtonGroup({ children, className, layout = "inline" }: CmmButtonGroupProps) {
  return (
- <div className={cn("flex flex-wrap items-center gap-2", className)}>
+ <div
+  className={cn("cmm-button-group flex flex-wrap items-center gap-2", className)}
+  data-cmm-button-group-layout={layout}
+ >
  {children}
  </div>
  );
