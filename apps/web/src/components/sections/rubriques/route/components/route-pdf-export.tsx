@@ -32,7 +32,7 @@ export function RoutePdfExport({
     <section
       data-print-ignore="true"
       className="rounded-[1.75rem] border border-sky-300/20 bg-sky-500/10 p-5"
-      aria-label="Exporter l’itinéraire"
+      aria-label="Imprimer ou exporter l’itinéraire"
     >
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -40,9 +40,12 @@ export function RoutePdfExport({
             <FileDown size={15} aria-hidden="true" />
             Export terrain
           </p>
-          <h3 className="mt-2 text-base font-black text-white">Exporter en PDF</h3>
+          <h3 className="mt-2 text-base font-black text-white">Imprimer / exporter en PDF</h3>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-sky-50/80">
-            Ouvre une fiche A4 avec le tracé calculé, les stops, la légende et les métriques. Utilisez ensuite « Enregistrer en PDF » dans la fenêtre d’impression.
+            Ouvre la fiche terrain prête à imprimer ou à enregistrer en PDF.
+          </p>
+          <p className="mt-1 text-[11px] font-semibold text-sky-50/70">
+            A4 paysage · échelle 100 % · arrière-plans activés pour la couleur
           </p>
         </div>
         <CmmButton
@@ -50,9 +53,9 @@ export function RoutePdfExport({
           tone="primary"
           size="sm"
           onClick={handleExport}
-          ariaLabel="Exporter l’itinéraire en PDF"
+          ariaLabel="Imprimer ou exporter l’itinéraire en PDF"
         >
-          Exporter en PDF
+          Imprimer / exporter en PDF
         </CmmButton>
       </div>
 
