@@ -176,7 +176,7 @@ function CommunityActivityCard({
       data-gsap-reveal
       data-home-community-action-card
       aria-label={`Voir l'action ${item.title}`}
-      className="group block rounded-[1.25rem] border border-white/90 bg-white/80 px-3 py-3 shadow-[0_14px_26px_-24px_rgba(4,78,58,0.45)] outline-none transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50 sm:px-4"
+      className="group block rounded-[1.25rem] border border-white/90 bg-white/80 px-3 py-3.5 shadow-[0_14px_26px_-24px_rgba(4,78,58,0.45)] outline-none transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50 sm:px-4 sm:py-4"
     >
       <article className="flex items-start gap-3 sm:gap-4">
         <ActionPreview image={item.image} />
@@ -205,19 +205,19 @@ function CommunityActivityCard({
               {!hasImpactMetrics ? item.summary : null}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <span className="line-clamp-1 max-w-full rounded-full bg-[#e8f1f0] px-2.5 py-1 text-[10px] font-bold text-[#315c67]">
+              <span className="line-clamp-1 max-w-full rounded-full bg-[#e8f1f0] px-2.5 py-1 text-[11px] font-bold text-[#315c67]">
                 {item.location}
               </span>
             </div>
           </div>
           <div className="flex w-[4.75rem] shrink-0 flex-col items-end justify-between gap-2 self-stretch">
             <time
-              className="whitespace-nowrap text-[10px] font-semibold text-[#476c76] sm:text-[11px]"
+              className="whitespace-nowrap text-[11px] font-semibold text-[#476c76] sm:text-[12px]"
               dateTime={item.dateLabel}
             >
               {item.timeLabel}
             </time>
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-800">
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[11px] font-bold text-emerald-800">
               <CheckCircle2 size={12} />
               {item.statusLabel}
             </span>
@@ -304,7 +304,7 @@ export function HomeCommunityCredibility({
                 Communauté
               </p>
               <h2
-                className="relative mt-2 max-w-[14ch] text-[#063840]"
+                className="relative mt-2 text-[#063840]"
                 style={SECTION_TITLE_STYLE}
               >
                 Une communauté vivante et engagée
@@ -314,7 +314,7 @@ export function HomeCommunityCredibility({
 
           <p
             data-gsap-reveal
-            className="mt-6 max-w-[38rem] text-[15px] leading-relaxed text-[#315c67] sm:text-base"
+            className="mt-7 max-w-[38rem] text-[15px] leading-relaxed text-[#315c67] sm:text-base"
           >
             Chaque jour, des citoyens, des collectivités et des associations
             agissent concrètement sur le terrain avec CleanMyMap. Ensemble,
@@ -323,14 +323,14 @@ export function HomeCommunityCredibility({
 
           <div
             data-gsap-reveal
-            className="mt-6 flex flex-col gap-4 rounded-[1.45rem] border border-emerald-100 bg-white/48 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+            className="mt-7 flex flex-col gap-4 rounded-[1.45rem] border border-emerald-100 bg-white/48 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-5"
           >
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                 <Heart size={24} fill="currentColor" />
               </div>
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.23em] text-[#315c67]">
+                <p className="text-[11px] font-black uppercase tracking-[0.23em] text-[#315c67]">
                   Soutenir CleanMyMap
                 </p>
                 <p className="mt-1 text-base font-black text-[#082d35]">
@@ -353,7 +353,7 @@ export function HomeCommunityCredibility({
             </CmmButton>
           </div>
 
-          <div className="mt-7 flex items-center justify-between gap-3">
+          <div className="mt-8 flex items-center justify-between gap-3">
             <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#082d35]">
               Dernières actions vérifiées
             </p>
@@ -379,7 +379,7 @@ export function HomeCommunityCredibility({
             </div>
           ) : null}
 
-          <div className="mt-3 space-y-2.5">
+          <div className="mt-4 space-y-3">
             {Array.from({ length: COMMUNITY_ACTION_SLOTS }, (_, index) => {
               const item = visibleActivity.items[index];
 
@@ -393,7 +393,7 @@ export function HomeCommunityCredibility({
 
           <div
             data-gsap-reveal
-            className="mt-7 grid gap-3 lg:grid-cols-3"
+            className="mt-8 grid gap-3 lg:grid-cols-3"
           >
             <CmmButton
               href="/reports"
@@ -436,14 +436,7 @@ export function HomeCommunityCredibility({
               <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-600">
                 Crédibilité
               </p>
-              <h2
-                className="relative mt-2 whitespace-nowrap text-[#063840]"
-                style={{
-                  ...SECTION_TITLE_STYLE,
-                  fontSize: "clamp(1.15rem, 2.8vw, 3.35rem)",
-                  textWrap: "nowrap",
-                }}
-              >
+              <h2 className="relative mt-2 text-[#063840]" style={SECTION_TITLE_STYLE}>
                 Origine, terrain et crédibilité
               </h2>
             </div>
@@ -451,7 +444,7 @@ export function HomeCommunityCredibility({
 
           <p
             data-gsap-reveal
-            className="mt-6 max-w-[40rem] text-[15px] leading-relaxed text-[#315c67] sm:text-base lg:text-[14px]"
+            className="mt-7 max-w-[40rem] text-[15px] leading-relaxed text-[#315c67] sm:text-base"
           >
             CleanMyMap est un projet étudiant construit autour d&apos;actions
             réelles, porté par une ambition partenariale progressive et une
@@ -461,7 +454,7 @@ export function HomeCommunityCredibility({
           <article
             data-gsap-reveal
             data-credibility-combined-card
-            className="mt-6 flex flex-col rounded-[1.65rem] border border-white/25 bg-[linear-gradient(135deg,#20b384_0%,#179f98_46%,#7569ec_100%)] p-5 text-white shadow-[0_24px_48px_-32px_rgba(4,76,54,0.48)] sm:p-6 lg:p-7"
+            className="mt-5 flex flex-col rounded-[1.65rem] border border-white/25 bg-[linear-gradient(135deg,#20b384_0%,#179f98_46%,#7569ec_100%)] p-4 text-white shadow-[0_24px_48px_-32px_rgba(4,76,54,0.48)] sm:p-5 lg:p-6"
           >
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-emerald-100">
@@ -476,7 +469,7 @@ export function HomeCommunityCredibility({
                 </h3>
               </div>
             </div>
-            <div className="mt-5 space-y-3 text-[14px] leading-relaxed text-white/90 sm:text-[15px]">
+            <div className="mt-4 space-y-2.5 text-[14px] leading-relaxed text-white/90 sm:text-[15px]">
               <p>
                 Né au sein du DU Engagement de Sorbonne Université,
                 CleanMyMap transforme l&apos;engagement citoyen en un outil de
@@ -488,24 +481,24 @@ export function HomeCommunityCredibility({
               </p>
             </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
               {CREDIBILITY_PROOF_CARDS.map((card) => {
                 const Icon = card.icon;
 
                 return (
                   <div
                     key={card.title}
-                    className="min-h-[7.25rem] rounded-[1.15rem] border border-white/30 bg-white/12 p-3.5 shadow-[0_16px_30px_-24px_rgba(4,76,54,0.55)] sm:p-4"
+                    className="min-h-[6.75rem] rounded-[1.15rem] border border-white/30 bg-white/12 p-3.5 shadow-[0_16px_30px_-24px_rgba(4,76,54,0.55)] sm:p-4"
                   >
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
                         <Icon size={18} />
                       </div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90">
+                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/90">
                         {card.title}
                       </p>
                     </div>
-                    <p className="mt-3 whitespace-pre-line text-sm leading-snug text-white/95">
+                    <p className="mt-2 whitespace-pre-line text-sm leading-snug text-white/95">
                       {card.text}
                     </p>
                   </div>
@@ -513,13 +506,13 @@ export function HomeCommunityCredibility({
               })}
             </div>
 
-            <div className="mt-7 border-t border-white/25 pt-6">
+            <div className="mt-5 border-t border-white/25 pt-4">
               <div className="flex items-start gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
                   <Users size={23} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/85">
+                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-white/85">
                     Des partenariats au service du territoire
                   </p>
                   <h3 className="mt-2 text-xl font-black tracking-tight sm:text-2xl">
@@ -529,7 +522,7 @@ export function HomeCommunityCredibility({
               </div>
             </div>
 
-            <div className="mt-5 space-y-3 text-[14px] leading-relaxed text-white/90 sm:text-[15px]">
+            <div className="mt-4 space-y-2.5 text-[14px] leading-relaxed text-white/90 sm:text-[15px]">
               <p>
                 Des partenariats progressifs avec les associations locales, les
                 collectivités et les acteurs publics franciliens.
@@ -540,7 +533,7 @@ export function HomeCommunityCredibility({
               </p>
             </div>
 
-            <div className="mt-6 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4" role="list">
+            <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4" role="list">
               {ECOSYSTEM_STEPS.map((step) => (
                 <div
                   key={step.title}
@@ -561,7 +554,7 @@ export function HomeCommunityCredibility({
 
           <div
             data-gsap-reveal
-            className="mt-6 grid gap-3 sm:grid-cols-2 lg:mt-6 lg:grid-cols-3"
+            className="mt-5 grid gap-3 sm:grid-cols-2 lg:mt-5 lg:grid-cols-3"
           >
             <CmmButton
               href="/sections/messagerie"
