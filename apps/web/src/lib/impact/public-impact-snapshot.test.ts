@@ -1,12 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const loadAggregateMock = vi.hoisted(() => vi.fn());
+const loadIncrementalAggregateMock = vi.hoisted(() => vi.fn());
+const loadFullAggregateMock = vi.hoisted(() => vi.fn());
+const advanceStateMock = vi.hoisted(() => vi.fn());
+const rebuildStateMock = vi.hoisted(() => vi.fn());
 const readLatestSnapshotMock = vi.hoisted(() => vi.fn());
 const upsertSnapshotMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/accueil/public-landing-action-summary", () => ({
   buildLandingFloorDate: (now: Date) => now.toISOString().slice(0, 10),
-  loadPublicLandingActionSummary: loadAggregateMock,
+  loadIncrementalPublicLandingActionSummary: loadIncrementalAggregateMock,
+  loadPublicLandingActionSummary: loadFullAggregateMock,
+  advancePublicImpactActionState: advanceStateMock,
+  rebuildPublicImpactActionState: rebuildStateMock,
 }));
 
 vi.mock("@/lib/public-surface-snapshots", () => ({
@@ -61,7 +67,10 @@ function existingSnapshot(overrides: Record<string, unknown> = {}) {
 describe("public monthly impact snapshot", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    loadAggregateMock.mockResolvedValue(aggregate);
+    loadIncrementalAggregateMock.mockResolvedValue(aggregate);
+    loadFullAggregateMock.mockResolvedValue(aggregate);
+    advanceStateMock.mockResolvedValue(undefined);
+    rebuildStateMock.mockResolvedValue(undefined);
     readLatestSnapshotMock.mockResolvedValue(existingSnapshot());
     upsertSnapshotMock.mockResolvedValue(undefined);
   });
@@ -100,8 +109,9 @@ describe("public monthly impact snapshot", () => {
       distinctLocations: 2,
     });
     expect(payload.provenance.sourceRpc).toBe(
-      "public.load_public_landing_action_summary",
+      "public.load_public_landing_action_summary_incremental",
     );
+    expect(payload.provenance.sourceMode).toBe("incremental");
   });
 
   it("does not recalculate or persist a second snapshot in the same month", async () => {
@@ -113,7 +123,9 @@ describe("public monthly impact snapshot", () => {
 
     expect(result.reused).toBe(true);
     expect(result.persisted).toBe(false);
-    expect(loadAggregateMock).not.toHaveBeenCalled();
+    expect(advanceStateMock).toHaveBeenCalledWith("2026-09-08");
+    expect(loadIncrementalAggregateMock).not.toHaveBeenCalled();
+    expect(loadFullAggregateMock).not.toHaveBeenCalled();
     expect(upsertSnapshotMock).not.toHaveBeenCalled();
   });
 
@@ -133,6 +145,9 @@ describe("public monthly impact snapshot", () => {
         }),
       }),
     );
+    expect(advanceStateMock).toHaveBeenCalledWith("2026-09-08");
+    expect(loadIncrementalAggregateMock).toHaveBeenCalledOnce();
+    expect(loadFullAggregateMock).not.toHaveBeenCalled();
   });
 
   it("allows an explicitly forced rerun without changing the monthly key", async () => {
@@ -149,14 +164,33 @@ describe("public monthly impact snapshot", () => {
     expect(result.persisted).toBe(true);
     expect(upsertSnapshotMock).toHaveBeenCalledOnce();
     expect(upsertSnapshotMock.mock.calls[0]?.[0].snapshotDate).toBe("2026-09-01");
+    expect(advanceStateMock).toHaveBeenCalledWith("2026-09-08");
+    expect(loadFullAggregateMock).not.toHaveBeenCalled();
+  });
+
+  it("uses the explicit rebuild mode without using the full-scan RPC in the normal path", async () => {
+    const result = await generateAndPersistPublicImpactSnapshot({
+      now: NOW,
+      rebuild: true,
+    });
+
+    expect(result.persisted).toBe(true);
+    expect(rebuildStateMock).toHaveBeenCalledWith("2026-09-08");
+    expect(advanceStateMock).not.toHaveBeenCalled();
+    expect(loadIncrementalAggregateMock).toHaveBeenCalledOnce();
+    expect(loadFullAggregateMock).not.toHaveBeenCalled();
+    expect(upsertSnapshotMock.mock.calls[0]?.[0].payload.provenance.sourceMode).toBe(
+      "rebuild",
+    );
   });
 
   it("does not persist when the aggregate calculation fails", async () => {
-    loadAggregateMock.mockRejectedValue(new Error("aggregate unavailable"));
+    loadIncrementalAggregateMock.mockRejectedValue(new Error("aggregate unavailable"));
 
     await expect(
       generateAndPersistPublicImpactSnapshot({ now: NOW }),
     ).rejects.toThrow("aggregate unavailable");
+    expect(loadFullAggregateMock).not.toHaveBeenCalled();
     expect(upsertSnapshotMock).not.toHaveBeenCalled();
   });
 

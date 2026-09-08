@@ -1,6 +1,8 @@
 import {
   buildLandingFloorDate,
-  loadPublicLandingActionSummary,
+  advancePublicImpactActionState,
+  loadIncrementalPublicLandingActionSummary,
+  rebuildPublicImpactActionState,
   type PublicLandingActionSummaryRow,
 } from "@/lib/accueil/public-landing-action-summary";
 import {
@@ -18,7 +20,7 @@ import {
 
 export const PUBLIC_IMPACT_SNAPSHOT_KEY = "cleanmymap-impact-terrain-2026";
 export const PUBLIC_IMPACT_SNAPSHOT_VERSION =
-  "impact-terrain-public-2026.09-v1";
+  "impact-terrain-public-2026.09-v2";
 export const PUBLIC_IMPACT_SNAPSHOT_TITLE =
   "Snapshot public mensuel Impact terrain 2026";
 
@@ -37,7 +39,8 @@ export type PublicImpactSnapshotPayload = {
     distinctLocations: number;
   };
   provenance: {
-    sourceRpc: "public.load_public_landing_action_summary";
+    sourceRpc: "public.load_public_landing_action_summary_incremental";
+    sourceMode: "incremental" | "rebuild";
     scope: {
       actionType: "action";
       status: "approved";
@@ -78,6 +81,7 @@ export function buildPublicImpactSnapshotPayload(params: {
   aggregate: PublicLandingActionSummaryRow;
   generatedAt: string;
   floorDate: string;
+  sourceMode?: "incremental" | "rebuild";
 }): PublicImpactSnapshotPayload {
   const kpis = buildPublicLandingActionMetricsFromAggregate(params.aggregate);
 
@@ -98,7 +102,8 @@ export function buildPublicImpactSnapshotPayload(params: {
       ),
     },
     provenance: {
-      sourceRpc: "public.load_public_landing_action_summary",
+      sourceRpc: "public.load_public_landing_action_summary_incremental",
+      sourceMode: params.sourceMode ?? "incremental",
       scope: {
         actionType: "action",
         status: "approved",
@@ -110,6 +115,7 @@ export function buildPublicImpactSnapshotPayload(params: {
         "apps/web/src/lib/impact/impact-terrain-2026.ts",
         "apps/web/src/lib/impact/impact-terrain-2026-results.ts",
         "apps/web/src/lib/accueil/action-participant-aggregation.ts",
+        "apps/web/supabase/migrations/20260908000001_incremental_public_impact_state.sql",
       ],
     },
   };
@@ -133,7 +139,11 @@ function isPublicImpactSnapshotPayload(
       typeof payload.resultsContractVersion === "string" &&
       payload.kpis &&
       payload.aggregates &&
-      payload.provenance,
+      payload.provenance &&
+      payload.provenance.sourceRpc ===
+        "public.load_public_landing_action_summary_incremental" &&
+      (payload.provenance.sourceMode === "incremental" ||
+        payload.provenance.sourceMode === "rebuild"),
   );
 }
 
@@ -152,14 +162,23 @@ export async function loadLatestPublicImpactSnapshot(): Promise<PublicImpactSnap
 export async function generateAndPersistPublicImpactSnapshot(params: {
   now?: Date;
   force?: boolean;
+  rebuild?: boolean;
 } = {}): Promise<GeneratePublicImpactSnapshotResult> {
   const now = params.now ?? new Date();
   const generatedAt = now.toISOString();
   const monthDate = getImpactSnapshotMonthDate(generatedAt);
   const current = await loadLatestPublicImpactSnapshot();
 
+  const floorDate = buildLandingFloorDate(now);
+  if (params.rebuild) {
+    await rebuildPublicImpactActionState(floorDate);
+  } else {
+    await advancePublicImpactActionState(floorDate);
+  }
+
   if (
     !params.force &&
+    !params.rebuild &&
     current?.snapshotDate === monthDate &&
     current.version === PUBLIC_IMPACT_SNAPSHOT_VERSION
   ) {
@@ -171,12 +190,12 @@ export async function generateAndPersistPublicImpactSnapshot(params: {
     };
   }
 
-  const floorDate = buildLandingFloorDate(now);
-  const aggregate = await loadPublicLandingActionSummary(floorDate);
+  const aggregate = await loadIncrementalPublicLandingActionSummary();
   const payload = buildPublicImpactSnapshotPayload({
     aggregate,
     generatedAt,
     floorDate,
+    sourceMode: params.rebuild ? "rebuild" : "incremental",
   });
   const snapshot: Omit<PublicImpactSnapshotRecord, "id"> = {
     snapshotKey: PUBLIC_IMPACT_SNAPSHOT_KEY,
@@ -190,6 +209,7 @@ export async function generateAndPersistPublicImpactSnapshot(params: {
       periodToDate: payload.period.toDate,
       methodologyVersion: payload.methodologyVersion,
       sourceRpc: payload.provenance.sourceRpc,
+      sourceMode: payload.provenance.sourceMode,
     },
   };
 
