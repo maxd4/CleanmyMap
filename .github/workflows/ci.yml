@@ -95,7 +95,7 @@ jobs:
           echo "web_code_relevant=$web_code_relevant" >> "$GITHUB_OUTPUT"
           echo "mobile_code_relevant=$mobile_code_relevant" >> "$GITHUB_OUTPUT"
 
-  web-checks:
+  web-governance:
     needs: scope
     if: needs.scope.outputs.docs_only == 'true' || needs.scope.outputs.web_code_relevant == 'true'
     runs-on: ubuntu-latest
@@ -143,44 +143,60 @@ jobs:
       - name: GitHub Actions security policy
         run: npm run check:github-actions
 
+  web-validation:
+    needs: scope
+    if: needs.scope.outputs.docs_only != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Verify Node runtime contract
+        run: node scripts/checks/check-node-version-contract.mjs
+
       - name: Install Node dependencies
-        if: needs.scope.outputs.docs_only != 'true'
         run: npm ci
 
       - name: Lockfile policy
-        if: needs.scope.outputs.docs_only != 'true'
         run: npm run check:lockfile-policy
 
       - name: TypeScript typecheck
-        if: needs.scope.outputs.docs_only != 'true'
         run: npm run typecheck
 
       - name: UTF-8 check for French-sensitive files
-        if: needs.scope.outputs.docs_only != 'true'
         run: npm run check:utf8-fr
 
       - name: Heavy files policy
-        if: needs.scope.outputs.docs_only != 'true'
         run: npm run quality:top-heavy
 
       - name: Web lint
-        if: needs.scope.outputs.docs_only != 'true'
         run: npm run lint
 
       - name: Web test policy
-        if: needs.scope.outputs.docs_only != 'true'
         run: node scripts/checks/validation-policy.mjs --assert-full-suite
 
       - name: Web Vitest tests
-        if: needs.scope.outputs.docs_only != 'true'
         run: npm run test
 
       - name: Vercel audit
-        if: ${{ always() && needs.scope.outputs.docs_only != 'true' }}
         run: npm run audit:vercel:ci
 
       - name: Web production build
-        if: needs.scope.outputs.docs_only != 'true'
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}

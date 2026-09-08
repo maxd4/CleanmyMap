@@ -584,9 +584,13 @@ dépendance absente est un blocage explicite
 L'invocation manuelle de `npm run prepush:guard` sans protocole conserve le
 fallback `origin/main...HEAD` et doit afficher `mode = manual-fallback`.
 Le hook `.githooks/pre-commit` reste automatique et bloquant sur `STAGED`.
-Le hook `.githooks/pre-push` est volontairement non bloquant : il ne lance pas
-`npm run prepush:guard` et ne déclenche pas de validation qualité lourde.
-`npm run prepush:guard` est une validation renforcée, manuelle et opt-in ; les
+Le hook `.githooks/pre-push` doit exécuter le garde sur le `PUSH_CANDIDATE` exact
+transmis par Git. Si une ressource temporaire est indisponible, il doit attendre
+puis réessayer avec un backoff borné (30 s, 60 s, 120 s ; maximum environ
+5 minutes) et ne pas abandonner au premier échec transitoire. Si le blocage est
+structurel (outil absent, authentification/permission manquante ou contrat
+impossible à satisfaire), il doit s'arrêter avec le diagnostic exact. Il ne
+doit jamais contourner le garde ni pousser un candidat non validé. Les
 validations larges sont exécutées par la CI ou avant une release lorsque cela
 est explicitement requis.
 `npm run checks:changed` est un contrôle de développement `WORKTREE`, et non
@@ -613,6 +617,15 @@ et compare uniquement les chemins possédés depuis le base SHA. Ne jamais prend
 un snapshot global du dirty worktree ni utiliser `git add -A` pour coordonner un
 lot.
 
+## Sécurité des diagnostics host et des verrous Git
+
+Pour les décisions et diagnostics préparatoires, appliquer la section
+canonique « Sécurité des diagnostics host et des verrous Git » de `AGENTS.md` :
+ne supprimer `.git/index.lock` qu'après preuve stale complète et une seule
+fois, arrêter en `HOST_ENVIRONMENT` s'il réapparaît, préserver les processus
+Git étrangers, borner les diagnostics ProcMon/ETW et ne pas transformer un
+workaround Codex Desktop en contrat du dépôt. Ne pas implémenter ici
+`UNPUBLISHED_COMMITS_BLOCK`, réservé à un lot mécanique séparé.
 Si le checkout partagé contient déjà un commit étranger, une divergence, une
 race ou ne permet pas une resynchronisation sûre, Codex peut utiliser une
 sandbox de publication éphémère depuis le dernier `origin/main`, avec la seule
@@ -941,12 +954,3 @@ relire main
 Le but n'est pas de produire le plus de prompts, de fichiers ou de refactors possible.
 
 Le but est de faire converger CleanMyMap vers une architecture plus simple, cohérente, sûre, mesurable, maintenable, auditable, documentée et fidèle au comportement réel du produit.
-## Sécurité des diagnostics host et des verrous Git
-
-Pour les décisions et diagnostics préparatoires, appliquer la section
-canonique « Sécurité des diagnostics host et des verrous Git » de `AGENTS.md` :
-ne supprimer `.git/index.lock` qu'après preuve stale complète et une seule
-fois, arrêter en `HOST_ENVIRONMENT` s'il réapparaît, préserver les processus
-Git étrangers, borner les diagnostics ProcMon/ETW et ne pas transformer un
-workaround Codex Desktop en contrat du dépôt. Ne pas implémenter ici
-`UNPUBLISHED_COMMITS_BLOCK`, réservé à un lot mécanique séparé.

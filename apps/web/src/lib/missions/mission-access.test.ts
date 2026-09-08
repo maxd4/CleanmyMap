@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
-const getCurrentUserRoleLabelMock = vi.hoisted(() => vi.fn());
+const getCurrentUserActiveRoleMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
-  getCurrentUserRoleLabel: getCurrentUserRoleLabelMock,
+  getCurrentUserActiveRole: getCurrentUserActiveRoleMock,
   requireAuthenticatedAccess: requireAuthenticatedAccessMock,
 }));
 
@@ -92,7 +92,7 @@ describe("readAuthorizedMission", () => {
       ok: true,
       userId: "owner-1",
     });
-    getCurrentUserRoleLabelMock.mockResolvedValue("benevole");
+    getCurrentUserActiveRoleMock.mockResolvedValue("benevole");
   });
 
   it("refuse un anonyme avant toute résolution de rôle ou lecture Supabase", async () => {
@@ -107,7 +107,7 @@ describe("readAuthorizedMission", () => {
       status: 401,
       error: "Unauthorized",
     });
-    expect(getCurrentUserRoleLabelMock).not.toHaveBeenCalled();
+    expect(getCurrentUserActiveRoleMock).not.toHaveBeenCalled();
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 
@@ -152,7 +152,7 @@ describe("readAuthorizedMission", () => {
   it.each(["admin", "max"] as const)(
     "autorise le profil privilégié %s après lecture de volunteer_id",
     async (role) => {
-      getCurrentUserRoleLabelMock.mockResolvedValue(role);
+      getCurrentUserActiveRoleMock.mockResolvedValue(role);
       installSupabaseFixture({
         mission: { ...missionFixture, volunteer_id: "other-user" },
       });
@@ -166,7 +166,7 @@ describe("readAuthorizedMission", () => {
   it.each(["benevole", "coordinateur", "scientifique", "entreprise", "elu"] as const)(
     "refuse le profil ordinaire %s d'une mission tierce sans lire les GPS",
     async (role) => {
-      getCurrentUserRoleLabelMock.mockResolvedValue(role);
+      getCurrentUserActiveRoleMock.mockResolvedValue(role);
       const supabase = installSupabaseFixture({
         mission: { ...missionFixture, volunteer_id: "other-user" },
       });

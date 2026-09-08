@@ -94,7 +94,7 @@ test("pre-push leaves the complete release validation available separately", asy
   }
 });
 
-test("pre-commit remains blocking while pre-push stays non-blocking and manual", async () => {
+test("pre-commit and pre-push are blocking candidate guards", async () => {
   const packageJson = JSON.parse(await readRepoFile("package.json"));
   const preCommitHook = await readRepoFile(".githooks/pre-commit");
   const prePushHook = await readRepoFile(".githooks/pre-push");
@@ -102,13 +102,19 @@ test("pre-commit remains blocking while pre-push stays non-blocking and manual",
 
   assert.match(preCommitHook, /npm run precommit:guard/);
   assert.match(packageJson.scripts["prepush:guard"], /pre_push_guard\.ps1/);
-  assert.match(prePushHook, /non-blocking/);
-  assert.doesNotMatch(prePushHook, /npm run prepush:guard/);
-  assert.doesNotMatch(prePushHook, /(^|\n)\s*(?:exec\s+)?npm run prepush:guard(?:\s|$)/);
-  assert.doesNotMatch(prePushHook, /prepush:guard\s+--/);
+  assert.match(prePushHook, /exec npm run prepush:guard/);
+  assert.match(prePushHook, /"\$@"/);
+  assert.match(prePushHook, /GIT_OPTIONAL_LOCKS=0\s+exec npm run prepush:guard/);
   assert.match(prePushGuard, /PUSH_CANDIDATE/);
   assert.match(prePushGuard, /--candidate-ref=/);
+  assert.match(prePushGuard, /\$env:GIT_OPTIONAL_LOCKS\s*=\s*"0"/);
   assert.notEqual(preCommitHook, prePushHook);
+});
+
+test("read-only workspace Git wrapper disables optional index locks", async () => {
+  const coordinator = await readRepoFile("scripts/dev/workspace-coordination.mjs");
+
+  assert.match(coordinator, /env:\s*\{\s*\.\.\.process\.env,\s*GIT_OPTIONAL_LOCKS:\s*"0"\s*\}/s);
 });
 
 test("governance keeps parallel dirty work separate from published commits", async () => {

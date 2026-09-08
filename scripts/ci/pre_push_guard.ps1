@@ -11,6 +11,10 @@ $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 Push-Location $RepoRoot
 
 try {
+    # All Git reads in this guard validate a PUSH_CANDIDATE and must never
+    # refresh or lock the caller's worktree index.
+    $env:GIT_OPTIONAL_LOCKS = "0"
+
 function Invoke-GuardStep {
         param(
             [Parameter(Mandatory = $true)]

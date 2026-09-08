@@ -8,12 +8,16 @@ export const COORDINATION_ROOT = [".artifacts", "coordination"];
 export const CRITICAL_SCOPES = new Set(["AUTHZ_SECURITY"]);
 
 const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+const DEFAULT_PUBLICATION_WAIT_MS = 5 * 60 * 1000;
+const DEFAULT_LEASE_MS = 5 * 60 * 1000;
+const DEFAULT_BACKOFF_MS = [30_000, 60_000, 120_000, 90_000];
 
 function git(repositoryRoot, args) {
   return execFileSync("git", args, {
     cwd: repositoryRoot,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
+    env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" },
     windowsHide: true,
   }).trim();
 }
@@ -205,10 +209,35 @@ function getRemoteChangedPaths(repositoryRoot, baseSha, ownedPaths, gitRunner = 
   return gitRunner(repositoryRoot, args).split(/\r?\n/).filter(Boolean).sort();
 }
 
-export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git, metadataWriter = writeJsonAtomic } = {}) {
+export function createWorkspaceCoordinator({
+  repositoryRoot,
+  gitRunner = git,
+  metadataWriter = writeJsonAtomic,
+  now = () => Date.now(),
+  sleep = (milliseconds) => {
+    const blocker = new Int32Array(new SharedArrayBuffer(4));
+    Atomics.wait(blocker, 0, 0, milliseconds);
+  },
+  leaseMs = DEFAULT_LEASE_MS,
+  publicationWaitMs = DEFAULT_PUBLICATION_WAIT_MS,
+  backoffMs = DEFAULT_BACKOFF_MS,
+  onPublicationWait = ({ owner, waitMs }) => console.error(`PUBLICATION_WAIT owner=${owner} retry_in_ms=${waitMs}`),
+} = {}) {
   const repo = path.resolve(repositoryRoot ?? process.cwd());
   const root = getCoordinationRoot(repo);
   const runGit = (args) => gitRunner(repo, args);
+  const timestamp = () => new Date(now()).toISOString();
+  const leaseExpired = (metadata) => {
+    const heartbeat = Date.parse(metadata?.heartbeatAt ?? metadata?.updatedAt ?? metadata?.acquiredAt ?? metadata?.startedAt ?? "");
+    return !Number.isFinite(heartbeat) || now() - heartbeat > leaseMs;
+  };
+  const updateRunHeartbeat = (runId) => {
+    const { run, runPath } = loadRun(root, runId);
+    const heartbeatAt = timestamp();
+    const next = { ...run, updatedAt: heartbeatAt, heartbeatAt };
+    metadataWriter(runPath, next);
+    return next;
+  };
 
   function init() {
     fs.mkdirSync(path.join(root, "active-runs"), { recursive: true });
@@ -236,7 +265,9 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git, me
       runId,
       domain,
       baseSha: resolvedBaseSha,
-      startedAt: new Date().toISOString(),
+      startedAt: timestamp(),
+      updatedAt: timestamp(),
+      heartbeatAt: timestamp(),
       ownedPaths: [],
       adoptedLegacyPaths: [],
     };
@@ -275,12 +306,12 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git, me
       for (const repoPath of normalizedPaths) {
         const lockPath = path.join(root, "locks", pathLockName(repoPath));
         if (fs.existsSync(lockPath)) continue;
-        const lock = { version: 1, kind: "path", path: repoPath, runId, acquiredAt: new Date().toISOString() };
+        const lock = { version: 2, kind: "path", path: repoPath, runId, acquiredAt: timestamp(), updatedAt: timestamp(), heartbeatAt: timestamp() };
         writeExclusive(lockPath, lock);
         created.push({ repoPath, lockPath });
       }
       if (scopeNeeded && !fs.existsSync(scopePath)) {
-        writeExclusive(scopePath, { version: 1, kind: "scope", scope: run.domain, runId, acquiredAt: new Date().toISOString() });
+        writeExclusive(scopePath, { version: 2, kind: "scope", scope: run.domain, runId, acquiredAt: timestamp(), updatedAt: timestamp(), heartbeatAt: timestamp() });
         created.push({ lockPath: scopePath });
       }
     } catch (error) {
@@ -295,7 +326,8 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git, me
       ...(run.adoptedLegacyPaths ?? []),
       ...(adoptLegacy ? legacyConflicts : []),
     ])].sort();
-    metadataWriter(runPath, { ...run, ownedPaths, adoptedLegacyPaths });
+    const heartbeatAt = timestamp();
+    metadataWriter(runPath, { ...run, ownedPaths, adoptedLegacyPaths, updatedAt: heartbeatAt, heartbeatAt });
     if (adoptLegacy && migration) {
       saveMigration(root, {
         ...migration,
@@ -304,7 +336,7 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git, me
         mode: legacy.size - legacyConflicts.length === 0 ? "STRICT" : migration.mode,
       }, metadataWriter);
     }
-    return { ...run, ownedPaths };
+    return { ...run, ownedPaths, adoptedLegacyPaths, updatedAt: heartbeatAt, heartbeatAt };
   }
 
   function unclaim({ runId, paths = [], returnLegacy = false } = {}) {
@@ -359,6 +391,7 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git, me
   }
 
   function staleCheck({ runId, fetch = true } = {}) {
+    updateRunHeartbeat(runId);
     const { run } = loadRun(root, runId);
     if (fetch) runGit(["fetch", "origin", "main"]);
     const changedPaths = getRemoteChangedPaths(repo, run.baseSha, run.ownedPaths ?? [], (_repositoryRoot, args) => runGit(args));
@@ -368,17 +401,44 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git, me
   function publicationAcquire({ runId } = {}) {
     loadRun(root, runId);
     const lockPath = path.join(root, "publication.lock");
-    const lock = { version: 1, kind: "publication", runId, acquiredAt: new Date().toISOString() };
-    try {
-      writeExclusive(lockPath, lock);
-    } catch (error) {
-      if (error?.code === "EEXIST") {
+    const startedWaitingAt = now();
+    let attempt = 0;
+    while (true) {
+      const acquiredAt = timestamp();
+      const lock = { version: 2, kind: "publication", runId, acquiredAt, updatedAt: acquiredAt, heartbeatAt: acquiredAt };
+      try {
+        writeExclusive(lockPath, lock);
+        updateRunHeartbeat(runId);
+        return lock;
+      } catch (error) {
+        if (error?.code !== "EEXIST") throw error;
+        const recovered = recoverAbandonedLocks();
+        if (recovered.length > 0) continue;
         const owner = readOptionalJson(lockPath)?.runId ?? "unknown";
-        throw new Error(`COORDINATION_CONFLICT: publication lock is owned by ${owner}.`);
+        const remaining = publicationWaitMs - (now() - startedWaitingAt);
+        if (remaining <= 0) {
+          throw new Error(`PUBLICATION_WAIT_TIMEOUT: publication lock is owned by ${owner} after ${publicationWaitMs}ms.`);
+        }
+        const waitMs = Math.min(backoffMs[Math.min(attempt, backoffMs.length - 1)] ?? 1_000, remaining);
+        onPublicationWait({ owner, waitMs, attempt: attempt + 1 });
+        updateRunHeartbeat(runId);
+        sleep(waitMs);
+        attempt += 1;
       }
-      throw error;
     }
-    return lock;
+  }
+
+  function heartbeat({ runId } = {}) {
+    const run = updateRunHeartbeat(runId);
+    const lockPath = path.join(root, "publication.lock");
+    const publication = readOptionalJson(lockPath);
+    if (publication?.runId === runId) {
+      const heartbeatAt = timestamp();
+      const next = { ...publication, updatedAt: heartbeatAt, heartbeatAt };
+      metadataWriter(lockPath, next);
+      return { run, publication: next };
+    }
+    return { run, publication: null };
   }
 
   function publicationRelease({ runId } = {}) {
@@ -388,6 +448,35 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git, me
     if (lock.runId !== runId) throw new Error(`Refusing to release publication lock owned by ${lock.runId}.`);
     fs.unlinkSync(lockPath);
     return { released: true };
+  }
+
+  function recoverAbandonedLocks() {
+    const activeRunsPath = path.join(root, "active-runs");
+    const activeRuns = fs.existsSync(activeRunsPath)
+      ? fs.readdirSync(activeRunsPath).filter((entry) => entry.endsWith(".json")).map((entry) => readJson(path.join(activeRunsPath, entry)))
+      : [];
+    const byRun = new Map(activeRuns.map((run) => [run.runId, run]));
+    const staged = new Set(readStagedPaths(repo, (_repositoryRoot, args) => runGit(args)));
+    const recovered = [];
+    for (const { filePath, lock } of readPathLocks(root)) {
+      const owner = byRun.get(lock.runId);
+      const ownedPaths = owner?.ownedPaths ?? [lock.path];
+      const stagedOwned = ownedPaths.filter((repoPath) => staged.has(repoPath));
+      if (!leaseExpired(lock) || (owner && !leaseExpired(owner)) || stagedOwned.length > 0) continue;
+      fs.unlinkSync(filePath);
+      recovered.push({ kind: "path", path: lock.path, runId: lock.runId, proof: { leaseExpired: true, stagedOwned } });
+    }
+    const publicationPath = path.join(root, "publication.lock");
+    const publication = readOptionalJson(publicationPath);
+    if (publication && leaseExpired(publication)) {
+      const owner = byRun.get(publication.runId);
+      const stagedOwned = (owner?.ownedPaths ?? []).filter((repoPath) => staged.has(repoPath));
+      if ((!owner || leaseExpired(owner)) && stagedOwned.length === 0) {
+        fs.unlinkSync(publicationPath);
+        recovered.push({ kind: "publication", runId: publication.runId, proof: { leaseExpired: true, stagedOwned } });
+      }
+    }
+    return recovered;
   }
 
   function release({ runId } = {}) {
@@ -487,7 +576,7 @@ export function createWorkspaceCoordinator({ repositoryRoot, gitRunner = git, me
     return { ...report, staleLocks, publicationOrphan, ok: report.overlaps.length === 0 && staleLocks.length === 0 && !publicationOrphan };
   }
 
-  return { init, start, claim, unclaim, staleCheck, publicationAcquire, publicationRelease, release, status, checkStaged, doctor };
+  return { init, start, claim, unclaim, staleCheck, publicationAcquire, publicationRelease, heartbeat, recoverAbandonedLocks, release, status, checkStaged, doctor };
 }
 
 function parseArgs(argv) {
@@ -546,6 +635,8 @@ function main() {
   else if (command === "stale-check") result = coordinator.staleCheck({ runId: options.run_id });
   else if (command === "publication-acquire") result = coordinator.publicationAcquire({ runId: options.run_id });
   else if (command === "publication-release") result = coordinator.publicationRelease({ runId: options.run_id });
+  else if (command === "heartbeat") result = coordinator.heartbeat({ runId: options.run_id });
+  else if (command === "recover-abandoned") result = coordinator.recoverAbandonedLocks();
   else if (command === "release") result = coordinator.release({ runId: options.run_id });
   else if (command === "check-staged") result = coordinator.checkStaged({ runId: options.run_id });
   else if (command === "doctor") result = coordinator.doctor();

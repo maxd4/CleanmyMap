@@ -32,6 +32,10 @@ const fs = require("node:fs");
 const config = ${JSON.stringify(config)};
 const args = process.argv.slice(2);
 const logPath = process.env.GUARD_TEST_LOG;
+if (process.env.GIT_OPTIONAL_LOCKS !== "0") {
+  console.error("GIT_OPTIONAL_LOCKS was not propagated to the pre-push Git client");
+  process.exit(97);
+}
 if (logPath) fs.appendFileSync(logPath, \`git \${args.join(" ")}\\n\`);
 
 if (args[0] === "cat-file") process.exit(0);
