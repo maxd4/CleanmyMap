@@ -112,10 +112,10 @@ export function HomeHero({
               href="/methodologie#indicateurs-impact-terrain"
               tone="secondary"
               variant="pill"
-              className="h-9 !border !border-[#c2415b] !bg-white/90 !text-[#102044] !shadow-[0_10px_24px_-16px_rgba(0,40,30,0.4)] hover:!bg-white"
+              className="h-9 !border !border-[#047957] !bg-white/90 !text-[#047957] !shadow-[0_10px_24px_-16px_rgba(0,40,30,0.4)] hover:!bg-white"
             >
               <span aria-hidden="true">ⓘ</span>
-              Méthodologie
+              <span className="text-[#7c3aed]">Méthodologie</span>
               <ArrowRight size={14} aria-hidden="true" />
             </CmmButton>
           </div>

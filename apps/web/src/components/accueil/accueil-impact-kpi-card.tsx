@@ -104,7 +104,7 @@ export function HomeImpactKpiCard({
                 setIsOpen(false);
               }
             }}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#c2415b] bg-white/65 text-[#9f1239] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c2415b] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#047957] bg-white/65 text-[#7c3aed] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#047957] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent min-[1200px]:hidden"
           >
             <Info size={16} strokeWidth={2.5} aria-hidden="true" />
           </button>
