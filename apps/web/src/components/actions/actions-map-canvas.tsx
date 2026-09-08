@@ -196,7 +196,7 @@ export function ActionsMapCanvas({
       className={cn(
         "relative overflow-hidden rounded-[2rem]",
         mapShellClasses,
-        compact && "rounded-none border-0 bg-transparent shadow-none ring-0",
+        compact && "h-full rounded-none border-0 bg-transparent shadow-none ring-0",
         className,
       )}
     >
@@ -227,30 +227,32 @@ export function ActionsMapCanvas({
           );
         })}
       </div>
-      <div
-        className="pointer-events-none absolute right-3 top-16 z-[1000] sm:top-3"
-        role="group"
-        aria-label="Mode d’affichage des états"
-      >
-        <div className="pointer-events-auto inline-flex rounded-full border border-slate-200/70 bg-white/90 p-1 shadow-lg backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-950/90">
-          {ACTIONS_MAP_DISPLAY_MODE_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={[
-                "rounded-full px-2.5 py-1.5 text-[10px] font-bold transition sm:px-3",
-                displayMode === option.value
-                  ? "bg-slate-900 text-white dark:bg-sky-400 dark:text-slate-950"
-                  : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
-              ].join(" ")}
-              aria-pressed={displayMode === option.value}
-              onClick={() => setDisplayMode(option.value)}
-            >
-              {option.label}
-            </button>
-          ))}
+      {compact ? null : (
+        <div
+          className="pointer-events-none absolute right-3 top-16 z-[1000] sm:top-3"
+          role="group"
+          aria-label="Mode d’affichage des états"
+        >
+          <div className="pointer-events-auto inline-flex rounded-full border border-slate-200/70 bg-white/90 p-1 shadow-lg backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-950/90">
+            {ACTIONS_MAP_DISPLAY_MODE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={[
+                  "rounded-full px-2.5 py-1.5 text-[10px] font-bold transition sm:px-3",
+                  displayMode === option.value
+                    ? "bg-slate-900 text-white dark:bg-sky-400 dark:text-slate-950"
+                    : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
+                ].join(" ")}
+                aria-pressed={displayMode === option.value}
+                onClick={() => setDisplayMode(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       {compact ? null : (
         <div className="pointer-events-none absolute left-3 top-40 z-[1000] md:top-44">
           <MapGeometryLegend />
@@ -282,28 +284,38 @@ export function ActionsMapCanvas({
           onViewportChange={onViewportChange}
           onViewportInteraction={onViewportInteraction}
         />
-        <MapControls
-          center={logicalRecenterViewport.center}
-          zoom={logicalRecenterViewport.zoom}
-          variant={compact ? "default" : "immersive"}
-          tone={tone}
-        />
-        <LayersControl position="topright">
-          <LayersControl.BaseLayer checked name="Plan clair">
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
-              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-              crossOrigin="anonymous"
-            />
-          </LayersControl.BaseLayer>
-          <LayersControl.BaseLayer name="Plan contrasté">
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-              crossOrigin="anonymous"
-            />
-          </LayersControl.BaseLayer>
-        </LayersControl>
+        {compact ? null : (
+          <MapControls
+            center={logicalRecenterViewport.center}
+            zoom={logicalRecenterViewport.zoom}
+            variant="immersive"
+            tone={tone}
+          />
+        )}
+        {compact ? (
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
+            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            crossOrigin="anonymous"
+          />
+        ) : (
+          <LayersControl position="topright">
+            <LayersControl.BaseLayer checked name="Plan clair">
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
+                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                crossOrigin="anonymous"
+              />
+            </LayersControl.BaseLayer>
+            <LayersControl.BaseLayer name="Plan contrasté">
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                crossOrigin="anonymous"
+              />
+            </LayersControl.BaseLayer>
+          </LayersControl>
+        )}
 
         <LayerGroup>
           <SignalementMarkers
@@ -322,20 +334,24 @@ export function ActionsMapCanvas({
             displayMode={displayMode}
             currentPlaceStateViews={currentPlaceStateViews}
           />
-          <InfrastructureMarkers
-            items={mainItems}
-            visible={visibleLayers.infrastructure}
-            selectedActionId={selectedActionId}
-            onSelectAction={onSelectAction}
-          />
-          <TrashSpotterMarkers
-            items={trashSpotterItems}
-            visible={visibleLayers.trashSpotter}
-            selectedActionId={selectedActionId}
-            onSelectAction={onSelectAction}
-            displayMode={displayMode}
-            currentPlaceStateViews={currentPlaceStateViews}
-          />
+          {compact ? null : (
+            <>
+              <InfrastructureMarkers
+                items={mainItems}
+                visible={visibleLayers.infrastructure}
+                selectedActionId={selectedActionId}
+                onSelectAction={onSelectAction}
+              />
+              <TrashSpotterMarkers
+                items={trashSpotterItems}
+                visible={visibleLayers.trashSpotter}
+                selectedActionId={selectedActionId}
+                onSelectAction={onSelectAction}
+                displayMode={displayMode}
+                currentPlaceStateViews={currentPlaceStateViews}
+              />
+            </>
+          )}
         </LayerGroup>
 
         <style>{`

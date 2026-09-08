@@ -38,6 +38,7 @@ export type ActionsMapFeedProps = {
   zoneQuery?: string;
   limit?: number;
   presentation?: "default" | "immersive";
+  homepagePreview?: boolean;
   tone?: "sky" | "emerald";
   showIntro?: boolean;
   fullViewport?: boolean;
