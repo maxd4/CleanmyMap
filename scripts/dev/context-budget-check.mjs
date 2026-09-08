@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { sessionMemoryStatus } from "./update_session_memory.mjs";
 
 const ROOT = process.cwd();
 
@@ -60,7 +61,7 @@ function checkBootstrapScope() {
   const historyLoads = [...content.matchAll(/documentation\/sessions\/history\/([^`"']+)/g)]
     .map((match) => match[1])
     .filter((relativePath) => relativePath !== "latest-session.md");
-  if (/\breadFile(?:Sync)?\b/.test(content)) {
+  if (/\breadFile(?:Sync)?\b/.test(content) && !content.includes('readFileSync(sessionMemoryPath, "utf8")')) {
     found.push("bootstrap reads file content");
   }
   if (historyLoads.length > 0) {
@@ -77,6 +78,10 @@ function checkBootstrapScope() {
 
 function main() {
   const results = RULES.map(checkRule);
+  const sessionMemoryPath = join(ROOT, "documentation", "sessions", "history", "latest-session.md");
+  const sessionMemory = existsSync(sessionMemoryPath)
+    ? sessionMemoryStatus(readFileSync(sessionMemoryPath, "utf8"))
+    : { valid: false, errors: ["missing required file"] };
   const bootstrapScope = checkBootstrapScope();
   let failed = false;
 
@@ -93,6 +98,16 @@ function main() {
   console.log(`- [${bootstrapPrefix}] bootstrap scope: ${bootstrapScope.message}`);
   if (!bootstrapScope.ok) {
     failed = true;
+  }
+
+  if (!sessionMemory.valid) {
+    console.log(`- [FAIL] latest-session.md format: ${sessionMemory.errors.join("; ")}`);
+    failed = true;
+  } else {
+    console.log(`- [OK] latest-session.md format: valid (${sessionMemory.date})`);
+    if (sessionMemory.stale) {
+      console.warn(`- [WARN] latest-session.md is stale (${sessionMemory.ageDays} days; threshold 14)`);
+    }
   }
 
   if (failed) {

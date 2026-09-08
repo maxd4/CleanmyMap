@@ -72,6 +72,35 @@ Cette couche formalise la boucle de travail attendue pour les tâches non trivia
 - Recent done, in-progress, next, and risks.
 - Update at the end of each meaningful session.
 
+### Format et fraîcheur de la mémoire volatile
+
+`latest-session.md` suit un format généré unique :
+
+```md
+# Latest Session
+
+Updated: YYYY-MM-DD
+
+## Done
+- ...
+
+## In Progress
+- ...
+
+## Next
+- ...
+
+## Risks
+- ...
+```
+
+`npm run session:bootstrap` et `npm run session:budget` valident ce format et
+échouent si la structure est invalide. Une date de plus de 14 jours est
+signalée comme `STALE`, sans bloquer le démarrage ; elle ne devient à nouveau
+actuelle qu'après une mise à jour par `npm run session:close`. Les sections sont
+limitées à huit entrées et la date `Updated:` est écrite automatiquement par le
+générateur.
+
 ## Update cadence
 - `AGENTS.md`: monthly or by explicit process decision.
 - `documentation/sessions/project_context.md`: when runtime topology or conventions change.

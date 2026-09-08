@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { join } from "node:path";
 
 const ROOT = process.cwd();
@@ -6,6 +7,9 @@ const TARGET = join(ROOT, "documentation", "sessions", "history", "latest-sessio
 const SECTIONS = ["Done", "In Progress", "Next", "Risks"];
 const DEFAULT_MAX_LINES = 140;
 const MAX_ITEMS_PER_SECTION = 8;
+const SESSION_STALE_AFTER_DAYS = 14;
+
+export { MAX_ITEMS_PER_SECTION, SESSION_STALE_AFTER_DAYS, SECTIONS, TARGET };
 
 function parseArgs(argv) {
   const out = {
@@ -65,7 +69,7 @@ function emptyState() {
   };
 }
 
-function parseExisting(content) {
+export function parseExisting(content) {
   const state = emptyState();
   let current = null;
 
@@ -88,6 +92,108 @@ function parseExisting(content) {
   return state;
 }
 
+export function validateSessionMemory(content) {
+  const lines = String(content ?? "").replace(/\r\n/g, "\n").split("\n");
+  if (lines.at(-1) === "") {
+    lines.pop();
+  }
+
+  const errors = [];
+  const state = emptyState();
+  let index = 0;
+
+  if (lines[index] !== "# Latest Session") {
+    errors.push("first line must be '# Latest Session'");
+  }
+  index += 1;
+
+  if (lines[index] !== "") {
+    errors.push("title must be followed by one blank line");
+  }
+  index += 1;
+
+  const updatedMatch = lines[index]?.match(/^Updated: (\d{4}-\d{2}-\d{2})$/);
+  if (!updatedMatch || Number.isNaN(Date.parse(`${updatedMatch[1]}T00:00:00Z`))) {
+    errors.push("updated date must use 'Updated: YYYY-MM-DD'");
+  }
+  index += 1;
+
+  if (lines[index] !== "") {
+    errors.push("updated date must be followed by one blank line");
+  }
+  index += 1;
+
+  for (const section of SECTIONS) {
+    if (lines[index] !== `## ${section}`) {
+      errors.push(`expected section '## ${section}'`);
+    }
+    index += 1;
+
+    const items = [];
+    while (index < lines.length && lines[index] !== "") {
+      const item = lines[index].match(/^\- (.+)$/);
+      if (!item) {
+        errors.push(`${section} contains a non-bullet line`);
+      } else {
+        items.push(item[1]);
+      }
+      index += 1;
+    }
+
+    if (items.length === 0) {
+      errors.push(`${section} must contain at least one bullet`);
+    }
+    if (items.length > MAX_ITEMS_PER_SECTION) {
+      errors.push(`${section} contains more than ${MAX_ITEMS_PER_SECTION} bullets`);
+    }
+    if (items.includes("None.") && items.length !== 1) {
+      errors.push(`${section} cannot mix '- None.' with other bullets`);
+    }
+    state[section] = items;
+
+    if (section !== SECTIONS.at(-1)) {
+      if (lines[index] !== "") {
+        errors.push(`${section} must be followed by one blank line`);
+      }
+      index += 1;
+    }
+  }
+
+  if (index < lines.length) {
+    errors.push("unexpected content after Risks");
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    date: updatedMatch?.[1] ?? null,
+    state,
+  };
+}
+
+export function sessionMemoryStatus(content, now = new Date()) {
+  const validation = validateSessionMemory(content);
+  if (!validation.valid) {
+    return { ...validation, stale: false, ageDays: null };
+  }
+
+  const updatedAt = Date.parse(`${validation.date}T00:00:00Z`);
+  const ageDays = Math.max(0, Math.floor((now.getTime() - updatedAt) / 86_400_000));
+  return {
+    ...validation,
+    stale: ageDays > SESSION_STALE_AFTER_DAYS,
+    ageDays,
+  };
+}
+
+export function assertValidSessionMemory(content) {
+  const status = sessionMemoryStatus(content);
+  if (!status.valid) {
+    throw new Error(`Invalid session memory format: ${status.errors.join("; ")}`);
+  }
+  return status;
+}
+
 function normalizeItems(items) {
   const deduped = [];
   const seen = new Set();
@@ -107,8 +213,8 @@ function normalizeItems(items) {
   return deduped.slice(0, MAX_ITEMS_PER_SECTION);
 }
 
-function buildMarkdown(state) {
-  const today = new Date().toISOString().slice(0, 10);
+export function buildMarkdown(state, now = new Date()) {
+  const today = now.toISOString().slice(0, 10);
   const lines = ["# Latest Session", "", `Updated: ${today}`, ""];
 
   for (const section of SECTIONS) {
@@ -135,9 +241,12 @@ function trimLines(content, maxLines) {
   return lines.slice(0, maxLines).join("\n").trimEnd() + "\n";
 }
 
-function main() {
+export function main() {
   const args = parseArgs(process.argv);
   const existing = !args.reset && existsSync(TARGET) ? readFileSync(TARGET, "utf8") : "";
+  if (existing) {
+    assertValidSessionMemory(existing);
+  }
   const state = existing ? parseExisting(existing) : emptyState();
 
   state["Done"].unshift(...args.done);
@@ -156,4 +265,6 @@ function main() {
   }
 }
 
-main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
+}
