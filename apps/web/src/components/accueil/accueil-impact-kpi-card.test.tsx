@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import { computeImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
 import { buildImpactTerrain2026PublicResults } from "@/lib/impact/impact-terrain-2026-results";
 import type { HomeImpactSnapshot, HomeMetric } from "@/lib/accueil/config";
-import { HomeImpactKpiCard } from "./accueil-impact-kpi-card";
+import {
+  HomeImpactKpiCard,
+  shouldOpenTooltipOnFocus,
+  shouldToggleTooltipOnClick,
+} from "./accueil-impact-kpi-card";
 
 const metric: HomeMetric = {
   key: "co2",
@@ -32,6 +36,18 @@ const snapshot: HomeImpactSnapshot = {
 };
 
 describe("HomeImpactKpiCard", () => {
+  it("keeps mouse clicks hover-driven while allowing touch and pen toggles", () => {
+    expect(shouldToggleTooltipOnClick("mouse", 1)).toBe(false);
+    expect(shouldToggleTooltipOnClick("touch", 1)).toBe(true);
+    expect(shouldToggleTooltipOnClick("pen", 1)).toBe(true);
+    expect(shouldToggleTooltipOnClick(null, 0)).toBe(false);
+  });
+
+  it("opens on keyboard/programmatic focus but not pointer focus", () => {
+    expect(shouldOpenTooltipOnFocus(null)).toBe(true);
+    expect(shouldOpenTooltipOnFocus("mouse")).toBe(false);
+    expect(shouldOpenTooltipOnFocus("touch")).toBe(false);
+  });
   it("consumes canonical tooltip results and keeps the accessible info control", () => {
     const html = renderToStaticMarkup(
       <HomeImpactKpiCard
