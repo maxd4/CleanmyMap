@@ -181,9 +181,8 @@ export default function ExamplePage() {
   `tone="secondary"` le bouton blanc d'accompagnement et `tone="tertiary"`
   une action transparente de faible emphase.
 - `tone="important"` rend le bouton violet d'action importante.
-- Ne pas inventer un tone `gold` ou `brown` non exposé par `CmmButton` ; le
-  doré/brun reste réservé au contrat cible tant que ses tokens ne sont pas
-  publiés.
+- `tone="critical"` rend le bouton doré/brun d'action critique ou très
+  importante. Son usage est rare et intentionnel.
 - `tone="destructive"` reste réservé à la sémantique rouge de danger et est
   exclu de cette hiérarchie.
 - Pour trois actions disposées en deux lignes, utiliser

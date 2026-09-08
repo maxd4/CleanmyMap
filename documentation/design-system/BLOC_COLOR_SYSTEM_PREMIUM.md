@@ -39,7 +39,7 @@ Le blanc est normalement un compagnon, pas le CTA dominant.
 ### Contrat runtime actuel
 
 `CmmButton` expose les identifiants runtime
-`tone="primary" | "secondary" | "tertiary" | "important" | "destructive"`.
+`tone="primary" | "secondary" | "tertiary" | "important" | "critical" | "destructive"`.
 
 - `primary` est le bouton vert publié pour l'action standard/majoritaire ;
 - `secondary` est le bouton blanc publié pour l'action d'accompagnement et
@@ -47,13 +47,14 @@ Le blanc est normalement un compagnon, pas le CTA dominant.
 - `tertiary` est une action transparente de faible emphase ou contextuelle ;
 - `important` est le bouton violet publié pour une action importante, au-dessus
   du vert sans atteindre le niveau critique doré/brun ;
+- `critical` est le bouton doré/brun publié pour une action critique ou très
+  importante, structurante ou décisive pour le parcours ;
 - `destructive` conserve son traitement rouge de danger et ne fait pas partie
   de la hiérarchie de priorité `doré/brun > violet > vert > blanc`.
 
-Le niveau doré/brun reste un contrat de conception cible : aucun identifiant
-runtime `gold` ou `brown` n'est actuellement publié par `CmmButton`. Le violet
-est publié sous l'identifiant sémantique `important`, et non sous un nom de
-couleur.
+Le doré/brun est publié sous l'identifiant sémantique `critical`, et non sous
+un nom de couleur comme `gold` ou `brown`. Le violet est publié sous
+`important`, pour la même raison.
 
 Les états hover, focus, loading, disabled et les exigences d'accessibilité
 restent obligatoires pour les quatre niveaux. L'importance métier ne doit pas
@@ -69,8 +70,8 @@ La composition de référence applique la hiérarchie ainsi :
 - **Rejoindre une action** → blanc ;
 - **Se connecter / S'inscrire** → doré/brun.
 
-Cet exemple décrit le contrat de priorité visuelle. Le niveau doré/brun reste
-à implémenter dans le runtime ; pour le violet, utiliser `tone="important"`.
+Cet exemple décrit le contrat de priorité visuelle. Utiliser `tone="critical"`
+pour le doré/brun et `tone="important"` pour le violet.
 
 ## Surfaces & cards
 
@@ -355,7 +356,7 @@ bg-gradient-to-r from-[accent-500] via-[accent-400] to-[accent-300]  /* 3px */
 6. **Texte blanc** : lorsqu'un texte est sémantiquement blanc, utiliser `text-white` à 100 %. Toute opacité réduite doit correspondre à un état ou niveau de hiérarchie explicitement voulu.
 7. **Texte noir** : lorsqu'un texte est sémantiquement noir, utiliser `text-black` à 100 %. Les `slate` / `stone` restent des couleurs intentionnelles de design et ne doivent pas être converties arbitrairement en noir.
 8. **Hiérarchie CTA** : appliquer le contrat `doré/brun > violet > vert > blanc` selon l'importance de l'action, indépendamment de la famille de la page.
-9. **Variantes runtime** : utiliser uniquement les `tone` réellement exposés par `CmmButton` ; ne pas inventer d'identifiant `gold`, `brown` ou `violet` absent du runtime.
+9. **Variantes runtime** : utiliser uniquement les `tone` réellement exposés par `CmmButton` ; le doré/brun correspond à `critical`, le violet à `important` ; ne pas inventer d'identifiant `gold`, `brown` ou `violet`.
 10. **Destructive** : conserver le traitement rouge dédié aux actions dangereuses ; il est séparé de la hiérarchie de priorité des boutons.
 11. **Multi-teintes** : certains blocs ont plusieurs teintes selon le type de page ; vérifier le mapping rubrique → teinte.
 12. **Référence** : vérifier `PAGE_HEADER.md`, `accueil-pillars.tsx`, `navigation.ts`, `documentation/product/matrice-rubriques.md` et `documentation/architecture/traceability-matrix.md` avant d'implémenter une évolution de palette ou de header.
