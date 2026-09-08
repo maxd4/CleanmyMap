@@ -22,7 +22,13 @@ describe("RoutePdfExport", () => {
       />,
     );
 
-    expect(markup).toContain("Exporter en PDF");
+    expect(markup).toContain("Imprimer / exporter en PDF");
+    expect(markup).toContain(
+      "Ouvre la fiche terrain prête à imprimer ou à enregistrer en PDF.",
+    );
+    expect(markup).toContain(
+      "A4 paysage · échelle 100 % · arrière-plans activés pour la couleur",
+    );
     expect(markup).toContain("Vous prévoyez une impression en noir et blanc ?");
     expect(markup).toContain("Utiliser des formes différentes");
   });
