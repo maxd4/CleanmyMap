@@ -68,7 +68,9 @@ describe("HomeImpactKpiCard", () => {
     expect(html).toContain("text-center");
     expect(html).toContain("min-[1200px]:text-[clamp(2.5rem,2.7vw,3.2rem)]");
     expect(html).toContain("h-8 w-8");
-    expect(html).toContain("border border-[#c2415b]");
+    expect(html).toContain("border border-[#047957]");
+    expect(html).toContain("text-[#7c3aed]");
+    expect(html).toContain("min-[1200px]:hidden");
     expect(html).not.toContain("0,025");
     expect(html).not.toContain("1 000 000");
   });

@@ -32,7 +32,8 @@ describe("HomeHero impact methodology link", () => {
     expect(html).toContain('href="/methodologie#indicateurs-impact-terrain"');
     expect(html).toContain("text-white");
     expect(html).toContain("grid-cols-2 gap-3 px-1 min-[768px]:grid-cols-3");
-    expect(html).toContain("h-9 !border !border-[#c2415b]");
+    expect(html).toContain("h-9 !border !border-[#047957]");
+    expect(html).toContain('class="text-[#7c3aed]">Méthodologie</span>');
   });
 
   it("renders four equal two-row actions with real destinations", () => {
