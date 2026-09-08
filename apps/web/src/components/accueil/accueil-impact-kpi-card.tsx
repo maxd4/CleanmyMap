@@ -1,7 +1,7 @@
 "use client";
 
 import { Cloud, Droplets, Euro, Info, Leaf, Trash2, UsersRound } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type {
   HomeImpactSnapshot,
   HomeMetric,
@@ -41,11 +41,23 @@ const metricIcons = {
   euro: Euro,
 } as const;
 
+export function shouldToggleTooltipOnClick(
+  pointerType: string | null,
+  clickDetail: number,
+) {
+  return (pointerType === "touch" || pointerType === "pen") && clickDetail > 0;
+}
+
+export function shouldOpenTooltipOnFocus(pointerType: string | null) {
+  return pointerType === null;
+}
+
 export function HomeImpactKpiCard({
   metric,
   impactSnapshot,
 }: HomeImpactKpiCardProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const lastPointerTypeRef = useRef<string | null>(null);
   const style = metricStyles[metric.accent];
   const tooltipId = `impact-tooltip-${metric.key}`;
   const insight = buildImpactInsight(metric.key, impactSnapshot);
@@ -65,8 +77,24 @@ export function HomeImpactKpiCard({
             aria-controls={tooltipId}
             aria-describedby={isOpen ? tooltipId : undefined}
             aria-expanded={isOpen}
-            onClick={() => setIsOpen((current) => !current)}
-            onFocus={() => setIsOpen(true)}
+            onPointerDown={(event) => {
+              lastPointerTypeRef.current = event.pointerType || null;
+              if (event.pointerType === "mouse") {
+                setIsOpen(false);
+              }
+            }}
+            onClick={(event) => {
+              const pointerType = lastPointerTypeRef.current;
+              lastPointerTypeRef.current = null;
+              if (shouldToggleTooltipOnClick(pointerType, event.detail)) {
+                setIsOpen((current) => !current);
+              }
+            }}
+            onFocus={() => {
+              if (shouldOpenTooltipOnFocus(lastPointerTypeRef.current)) {
+                setIsOpen(true);
+              }
+            }}
             onBlur={() => setIsOpen(false)}
             onKeyDown={(event) => {
               if (event.key === "Escape") {
@@ -94,7 +122,7 @@ export function HomeImpactKpiCard({
         role="tooltip"
         aria-hidden={!isOpen}
         style={{ zIndex: 1200 }}
-        className={`invisible pointer-events-none absolute bottom-[calc(100%+0.75rem)] right-0 z-30 w-[min(19rem,calc(100vw-2.5rem))] translate-y-2 rounded-2xl border border-white/80 bg-[#f7fffb] p-4 text-left text-[#14334a] opacity-0 shadow-[0_22px_42px_-20px_rgba(0,49,36,0.55)] transition duration-200 group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:visible group-focus-within:opacity-100 ${isOpen ? "!pointer-events-auto !visible !translate-y-0 !opacity-100" : ""}`}
+        className={`invisible pointer-events-none absolute bottom-[calc(100%+0.75rem)] right-0 z-30 w-[min(19rem,calc(100vw-2.5rem))] translate-y-2 rounded-2xl border border-white/80 bg-[#f7fffb] p-4 text-left text-[#14334a] opacity-0 shadow-[0_22px_42px_-20px_rgba(0,49,36,0.55)] transition duration-200 group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 ${isOpen ? "!pointer-events-auto !visible !translate-y-0 !opacity-100" : ""}`}
       >
         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#0b7758]">
           {metric.label}
