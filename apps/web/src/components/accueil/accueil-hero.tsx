@@ -104,7 +104,7 @@ export function HomeHero({
 
         <section className="relative mt-4 overflow-visible sm:mt-6 lg:mt-7">
           <div className="relative z-10 flex flex-wrap items-center justify-between gap-5 px-1 sm:px-2">
-            <p className="flex items-center gap-4 text-[clamp(1.9rem,3.8vw,3.35rem)] font-black leading-none tracking-[-0.055em] text-[#061d17]">
+            <p className="flex items-center gap-4 text-[clamp(1.9rem,3.8vw,3.35rem)] font-black leading-none tracking-[-0.055em] text-white">
               <span className="h-3 w-3 shrink-0 rounded-full bg-[#26e6a4] shadow-[0_0_15px_rgba(38,230,164,0.7)] sm:h-4 sm:w-4" />
               Impact terrain 2026
             </p>
@@ -120,7 +120,7 @@ export function HomeHero({
             </CmmButton>
           </div>
 
-          <div className="relative z-10 mx-auto mt-7 grid w-full grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:max-w-[82rem] xl:grid-cols-6">
+          <div className="relative z-10 mt-7 grid w-full grid-cols-1 gap-3 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 xl:gap-4">
             {metrics.map((metric) => (
               <HomeImpactKpiCard
                 key={metric.key}
