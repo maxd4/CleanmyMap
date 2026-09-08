@@ -100,7 +100,7 @@ describe("accueil data", () => {
     expect(activity.items[0]?.id).toBe("approved");
   });
 
-  it("keeps four recent action records available for the homepage slots", () => {
+  it("keeps three recent action records available for the homepage slots", () => {
     const activity = buildHomeCommunityActivity(
       [
         makeContract("action-1", "approved", 1),
@@ -112,12 +112,11 @@ describe("accueil data", () => {
       "2026-01-01",
     );
 
-    expect(activity.items).toHaveLength(4);
+    expect(activity.items).toHaveLength(3);
     expect(activity.items.map((item) => item.id)).toEqual([
       "action-1",
       "action-2",
       "action-3",
-      "action-4",
     ]);
   });
 

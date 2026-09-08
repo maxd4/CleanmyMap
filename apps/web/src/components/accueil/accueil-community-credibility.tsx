@@ -58,7 +58,7 @@ const ECOSYSTEM_STEPS = [
   { title: "Territoire", text: "Partenaires et impact" },
 ] as const;
 
-const COMMUNITY_ACTION_SLOTS = 4;
+const COMMUNITY_ACTION_SLOTS = 3;
 
 function SectionLandscape({
   variant,
