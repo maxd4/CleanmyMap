@@ -8,8 +8,6 @@ import {
   DEFAULT_POLLUTION_SCORE_REFERENCES,
   type PollutionScoreReferences,
 } from "@/lib/actions/pollution/pollution-score";
-import { fetchActionPollutionScoreReferences } from "@/lib/actions/pollution/pollution-score-references";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   ACTION_POLLUTION_SCORE_REFERENCES_INVALIDATED_EVENT,
 } from "@/lib/actions/pollution/pollution-score-references-events";
@@ -33,8 +31,17 @@ const ActionPollutionScoreReferencesContext =
   createContext<ActionPollutionScoreReferencesContextValue | null>(null);
 
 async function fetchPollutionScoreReferences(): Promise<PollutionScoreReferences> {
-  const supabase = getSupabaseBrowserClient();
-  return fetchActionPollutionScoreReferences(supabase);
+  const response = await fetch("/api/actions/map/pollution-score-references", {
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error("Impossible de charger la référence du score.");
+  }
+  const payload = (await response.json()) as { references?: PollutionScoreReferences };
+  if (!payload.references) {
+    throw new Error("Référence du score absente de la réponse.");
+  }
+  return payload.references;
 }
 
 const POLLUTION_SCORE_REFERENCES_KEY = "action-pollution-score-references";
