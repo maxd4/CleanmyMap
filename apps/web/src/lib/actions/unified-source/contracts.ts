@@ -26,6 +26,7 @@ import type { ActionRow } from "@/types/database";
 export type UnifiedActionContractsParams = {
   limit: number;
   status: ActionStatus | null;
+  includeFuturePublicActions?: boolean;
   floorDate: string | null;
   requireCoordinates: boolean;
   types: ActionEntityType[] | null;

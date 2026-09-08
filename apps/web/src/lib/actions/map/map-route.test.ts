@@ -122,6 +122,7 @@ describe("buildMapActionsRouteResult", () => {
       expect.objectContaining({
         requireCoordinates: true,
         status: "approved",
+        includeFuturePublicActions: true,
         limit: 40,
       }),
     );
@@ -192,6 +193,45 @@ describe("buildMapActionsRouteResult", () => {
 
     expect(result.body.items.map((item) => item.id)).toEqual(["approved"]);
     expect(result.body.count).toBe(1);
+  });
+
+  it("publishes only future pre-actions as a public map projection", async () => {
+    const deps = buildDeps({
+      fetchUnifiedActionContracts: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: "future-action",
+            type: "action",
+            source: "actions",
+            status: "pending",
+            dates: { observedAt: "2999-01-01" },
+            metadata: { actionPhase: "pre_action" },
+          },
+          {
+            id: "pending-post-action",
+            type: "action",
+            source: "actions",
+            status: "pending",
+            dates: { observedAt: "2999-01-01" },
+            metadata: { actionPhase: "post_action_complete" },
+          },
+        ],
+        sourceHealth: {
+          partial: false,
+          failedSources: [],
+          availableSources: ["actions"],
+          warnings: [],
+        },
+      }),
+    });
+
+    const result = await buildMapActionsRouteResult(
+      new URL("http://localhost/api/actions/map?floorDate=all"),
+      deps,
+    );
+
+    expect(result.body.items.map((item) => item.id)).toEqual(["future-action"]);
+    expect(result.body.items[0]?.status).toBe("approved");
   });
 
   it("adds a partial-data warning header when needed", async () => {

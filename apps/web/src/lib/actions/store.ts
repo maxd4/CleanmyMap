@@ -113,6 +113,7 @@ function buildActionListQuery(
   params: {
     limit: number;
     status: ActionStatus | null;
+    includeFuturePublicActions?: boolean;
     floorDate?: string;
     requireCoordinates?: boolean;
     viewport?: ActionMapViewportQuery;
@@ -128,7 +129,12 @@ function buildActionListQuery(
     nextQuery = nextQuery.eq("moderation_visibility", "visible");
   }
 
-  if (params.status) {
+  if (params.includeFuturePublicActions && params.status === "approved") {
+    const today = new Date().toISOString().slice(0, 10);
+    nextQuery = nextQuery.or(
+      `status.eq.approved,and(status.eq.pending,action_phase.eq.pre_action,action_date.gt.${today})`,
+    );
+  } else if (params.status) {
     nextQuery = nextQuery.eq("status", params.status);
   }
   if (params.floorDate) {
@@ -153,6 +159,7 @@ async function fetchActionRows(
   params: {
     limit: number;
     status: ActionStatus | null;
+    includeFuturePublicActions?: boolean;
     floorDate?: string;
     requireCoordinates?: boolean;
     viewport?: ActionMapViewportQuery;
@@ -169,7 +176,11 @@ async function fetchActionRows(
     }
 
     const rows = await runActionQuery<ActionRow>(supabase, (query) =>
-      buildActionListQuery(query, params, ACTION_SELECT_FIELDS_LEGACY),
+      buildActionListQuery(
+        query,
+        { ...params, includeFuturePublicActions: false },
+        ACTION_SELECT_FIELDS_LEGACY,
+      ),
     );
     return rows.map(normalizeStoredAction);
   }
@@ -290,6 +301,7 @@ export async function fetchActions(
   params: {
     limit: number;
     status: ActionStatus | null;
+    includeFuturePublicActions?: boolean;
     floorDate?: string;
     requireCoordinates?: boolean;
     viewport?: ActionMapViewportQuery;

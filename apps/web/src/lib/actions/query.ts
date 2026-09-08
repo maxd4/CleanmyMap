@@ -10,6 +10,7 @@ type ActionQueryTerminal = PromiseLike<ActionQueryResult<unknown>>;
 export type ActionQuery = PromiseLike<ActionQueryResult<unknown>> & {
   select: (...args: unknown[]) => ActionQuery;
   eq: (...args: unknown[]) => ActionQuery;
+  or: (...args: unknown[]) => ActionQuery;
   order: (...args: unknown[]) => ActionQuery;
   limit: (...args: unknown[]) => ActionQuery;
   in: (...args: unknown[]) => ActionQuery;

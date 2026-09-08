@@ -59,9 +59,13 @@ Une action ancienne ne devient jamais automatiquement un nouveau spot Trash Spot
 
 ## Contrat des filtres publics
 
-Le flux public de cette route est strictement limité aux actions `approved`. Ce
-contrat est appliqué par la requête de la page ; il n'est pas exposé comme un
-choix utilisateur.
+Le flux public de cette route est limité aux actions `approved` visibles et aux
+pré-actions futures valides (`pending`, `actionPhase = pre_action`, date
+strictement future). Ces pré-actions sont exposées comme `approved` dans la
+projection de carte uniquement ; leur statut persisté reste `pending` et elles
+ne contribuent pas aux KPI Impact. Les autres actions `pending`, `rejected` ou
+masquées restent exclues. Ce contrat est appliqué par la requête de la page ;
+il n'est pas exposé comme un choix utilisateur.
 
 Les seuls contrôles de filtrage affichés sont ceux qui modifient effectivement
 la vue :

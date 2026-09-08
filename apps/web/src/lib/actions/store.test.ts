@@ -69,6 +69,7 @@ describe("fetchActions", () => {
         eqCalls.push(args);
         return query;
       },
+      or: () => query,
       gte: () => query,
       not: () => query,
       then: (resolve: (value: unknown) => void) =>
@@ -94,6 +95,35 @@ describe("fetchActions", () => {
     expect(eqCalls).toContainEqual(["status", "approved"]);
   });
 
+  it("adds only future pre-actions to the public action read", async () => {
+    const orCalls: unknown[][] = [];
+    const query = {
+      select: () => query,
+      order: () => query,
+      limit: () => query,
+      eq: () => query,
+      or: (...args: unknown[]) => {
+        orCalls.push(args);
+        return query;
+      },
+      gte: () => query,
+      not: () => query,
+      then: (resolve: (value: unknown) => void) => resolve({ data: [], error: null }),
+    };
+
+    await fetchActions({ from: () => query } as never, {
+      limit: 20,
+      status: "approved",
+      includeFuturePublicActions: true,
+      requireCoordinates: true,
+    });
+
+    expect(orCalls).toHaveLength(1);
+    expect(orCalls[0]?.[0]).toEqual(
+      expect.stringContaining("status.eq.approved,and(status.eq.pending,action_phase.eq.pre_action,action_date.gt."),
+    );
+  });
+
   it("falls back to legacy action columns when moderation visibility is not migrated yet", async () => {
     const selectCalls: string[] = [];
     const eqCalls: unknown[][] = [];
@@ -110,6 +140,7 @@ describe("fetchActions", () => {
         eqCalls.push(args);
         return query;
       },
+      or: () => query,
       gte: () => query,
       not: () => query,
       then: (resolve: (value: unknown) => void) => {

@@ -15,6 +15,8 @@ import {
   type CreatedSignalement,
 } from "@/lib/actions/signalement/create-signalement";
 import type { ActionStatus } from "@/lib/actions/types";
+import { invalidatePublicSurfaceSnapshotsByRoute } from "@/lib/public-surface-snapshots";
+import { logFailure } from "@/lib/logging/failure-log";
 
 export class ActionCreationValidationError extends Error {
   constructor(public readonly fieldErrors: Record<string, string[]>) {
@@ -168,6 +170,17 @@ export async function createActionSubmission(
     manualParticipants: participantResolution.participants,
     status,
   });
+
+  try {
+    await invalidatePublicSurfaceSnapshotsByRoute(["api/actions", "api/actions/map"]);
+  } catch (error) {
+    logFailure(
+      "Actions/Create",
+      "Public action map snapshot invalidation failed",
+      error,
+      { actionId: created.id },
+    );
+  }
 
   emitActionCreated({
     actionId: created.id,
