@@ -64,14 +64,14 @@ export function HomeImpactKpiCard({
   const MetricIcon = metricIcons[metric.key as keyof typeof metricIcons];
 
   return (
-    <article className="group relative min-h-[9rem] rounded-[1.15rem] border border-white/65 bg-[rgba(222,249,239,0.62)] p-3 shadow-[0_18px_32px_-24px_rgba(0,68,45,0.35)] backdrop-blur-md transition duration-300 hover:-translate-y-0.5 hover:bg-[rgba(236,253,245,0.74)] min-[1200px]:min-h-[11.25rem] min-[1200px]:rounded-[1.35rem] min-[1200px]:p-5">
+    <article className="group relative min-h-[9rem] rounded-[1.15rem] border border-white/65 bg-[rgba(222,249,239,0.62)] p-3 shadow-[0_18px_32px_-24px_rgba(0,68,45,0.35)] backdrop-blur-md transition duration-300 hover:-translate-y-0.5 hover:bg-[rgba(236,253,245,0.74)] min-[768px]:min-h-[9.5rem] min-[768px]:p-4 min-[1200px]:min-h-[11.25rem] min-[1200px]:rounded-[1.35rem] min-[1200px]:p-5">
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[1.35rem] bg-[radial-gradient(circle_at_0%_0%,rgba(255,255,255,0.72),transparent_40%)]" />
       <div className="relative z-10 flex h-full flex-col gap-4 min-[1200px]:gap-6">
-        <div className="flex items-start gap-2 min-[1200px]:gap-3">
-          <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full min-[1200px]:h-12 min-[1200px]:w-12 ${style.icon}`} aria-hidden="true">
+        <div className="flex items-center gap-2 min-[768px]:gap-3">
+          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full min-[768px]:h-10 min-[768px]:w-10 min-[1200px]:h-12 min-[1200px]:w-12 ${style.icon}`} aria-hidden="true">
             {MetricIcon ? <MetricIcon size={22} strokeWidth={2.2} /> : null}
           </span>
-          <p className={`min-w-0 flex-1 pt-1 text-sm font-black leading-tight tracking-[-0.015em] sm:text-base min-[1200px]:text-lg ${style.label}`}>
+          <p className={`min-w-0 flex-1 text-sm font-black leading-tight tracking-[-0.015em] min-[768px]:text-base min-[1200px]:text-lg ${style.label}`}>
             {metric.label}
           </p>
           <button
@@ -104,14 +104,14 @@ export function HomeImpactKpiCard({
                 setIsOpen(false);
               }
             }}
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#8eb7aa]/70 bg-white/55 text-[#145342] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#047957] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[#c2415b] bg-white/65 text-[#9f1239] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c2415b] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
           >
-            <Info size={14} strokeWidth={2.5} aria-hidden="true" />
+            <Info size={16} strokeWidth={2.5} aria-hidden="true" />
           </button>
         </div>
 
         <div className="min-w-0">
-          <p className={`truncate font-black leading-none tracking-[-0.04em] ${metric.key === "water" ? "text-[clamp(1.2rem,4vw,1.65rem)] min-[1200px]:text-[clamp(1.9rem,1.65vw,2.35rem)]" : "text-[clamp(1.55rem,4.8vw,2rem)] min-[1200px]:text-[clamp(2.25rem,2.5vw,3rem)]"} ${style.value}`}>
+          <p className={`truncate font-black leading-none tracking-[-0.04em] ${metric.key === "water" ? "text-[clamp(1rem,4.5vw,1.45rem)] min-[768px]:text-[clamp(1.35rem,3vw,1.8rem)] min-[1200px]:text-[clamp(1.9rem,1.65vw,2.35rem)]" : "text-[clamp(1.45rem,6.2vw,1.85rem)] min-[768px]:text-[clamp(1.7rem,3.6vw,2.15rem)] min-[1200px]:text-[clamp(2.25rem,2.5vw,3rem)]"} ${style.value}`}>
             {metric.value === "n/a" ? "—" : metric.value}
           </p>
         </div>
