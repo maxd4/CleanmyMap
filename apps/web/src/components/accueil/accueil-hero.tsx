@@ -60,7 +60,7 @@ export function HomeHero({
   impactSnapshot,
 }: HomeHeroProps) {
   return (
-    <section className="relative isolate overflow-visible text-[#082f24]">
+    <section data-homepage-section="hero" className="relative isolate overflow-visible text-[#082f24]">
       <div className="relative z-10 mx-auto w-full max-w-[1800px] px-3 pb-3 pt-3 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8 lg:pb-6 lg:pt-6">
         <div className="grid items-center gap-5 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:gap-7 xl:gap-10">
           <div className="min-w-0 px-1 py-4 sm:px-3 lg:py-8">

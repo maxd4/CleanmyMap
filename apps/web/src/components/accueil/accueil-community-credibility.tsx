@@ -289,9 +289,9 @@ export function HomeCommunityCredibility({
   return (
     <section
       ref={sectionRef}
-      className="relative isolate overflow-hidden bg-[radial-gradient(circle_at_15%_22%,rgba(255,255,255,0.72),transparent_28%),radial-gradient(circle_at_82%_64%,rgba(196,181,253,0.22),transparent_30%),linear-gradient(135deg,#d9faef_0%,#c4f4e2_48%,#e8f8f3_100%)] py-8 sm:py-10 lg:py-12"
+      data-homepage-section="community-credibility"
+      className="relative isolate overflow-hidden py-8 sm:py-10 lg:py-12"
     >
-      <div className="pointer-events-none absolute inset-0 opacity-40 [background-image:radial-gradient(circle_at_20%_88%,rgba(16,185,129,0.2),transparent_24%),radial-gradient(circle_at_74%_8%,rgba(129,140,248,0.16),transparent_20%)]" />
       <div className="relative mx-auto grid w-full max-w-[1860px] items-stretch gap-4 px-3 sm:px-6 lg:grid-cols-2 lg:gap-6 lg:px-6">
         <div className="relative isolate flex min-w-0 flex-col overflow-hidden rounded-[2.25rem] border border-white/85 bg-white/58 p-5 shadow-[0_28px_70px_-50px_rgba(7,95,71,0.42)] backdrop-blur-xl sm:p-7 lg:min-h-[760px] lg:p-7 xl:p-8">
           <SectionLandscape variant="community" />
