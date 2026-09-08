@@ -327,6 +327,7 @@ p { margin: 1.5mm 0; }
 .route-pdf-metrics dt { color: #475569; font-size: 8.5pt; }
 .route-pdf-metrics dd { margin: 1mm 0 0; font-weight: 700; }
 .route-pdf-stops, .route-pdf-corridors, .route-pdf-instructions { break-inside: avoid; margin-top: 4mm; }
+.route-pdf-map-shell, .route-pdf-legend, .route-pdf-metrics { break-inside: avoid; page-break-inside: avoid; }
 .route-pdf-stops ol, .route-pdf-corridors ul, .route-pdf-instructions ul { margin: 0; padding-left: 6mm; }
 .route-pdf-stops li, .route-pdf-corridors li, .route-pdf-instructions li { margin: 1mm 0; }
 .route-pdf-stops li span { color: #475569; display: block; font-size: 9pt; }
