@@ -4,6 +4,7 @@ import http from "node:http";
 import { describe, it } from "node:test";
 
 import {
+  classifyChildExit,
   chooseAvailablePort,
   openUrlInBrowser,
   parsePortArgs,
@@ -148,6 +149,7 @@ describe("dev-with-fallback-port", () => {
 
   it("does not open a browser when Next exits before readiness", async () => {
     let browserOpenCount = 0;
+    const errors = [];
     const spawnImpl = () => {
       const child = new EventEmitter();
       child.kill = () => {};
@@ -165,9 +167,92 @@ describe("dev-with-fallback-port", () => {
         browserOpenCount += 1;
         return { browser: "chrome" };
       },
+      consoleImpl: { log() {}, error: (message) => errors.push(message) },
     });
 
     assert.equal(result.exitCode, 1);
     assert.equal(browserOpenCount, 0);
+    assert.deepEqual(errors, [
+      "[dev] Échec de démarrage : Next.js a quitté avant readiness (code=1, signal=n/a).",
+    ]);
+  });
+
+  it("reports a runtime failure when Next exits after readiness", async () => {
+    const errors = [];
+    const child = new EventEmitter();
+    child.kill = () => {};
+    const resultPromise = runDevServer(["--open-browser"], {
+      env: { NODE_ENV: "development", PORT: "3000" },
+      choosePortImpl: async () => 3000,
+      spawnImpl: () => {
+        setTimeout(() => child.emit("exit", 1, null), 5);
+        return child;
+      },
+      waitForServerReadyImpl: async () => ({ statusCode: 200 }),
+      nextBinPath: "next",
+      openUrlInBrowserImpl: async () => ({ browser: "chrome" }),
+      consoleImpl: { log() {}, error: (message) => errors.push(message) },
+    });
+
+    assert.deepEqual(await resultPromise, { exitCode: 1 });
+    assert.deepEqual(errors, [
+      "[dev] Échec runtime : Next.js a quitté après readiness (code=1, signal=n/a).",
+    ]);
+  });
+
+  it("keeps intentional stops informational and preserves normal exit codes", async () => {
+    for (const [signal, expectedCode] of [["SIGINT", 130], ["SIGTERM", 143]]) {
+      const logs = [];
+      const child = new EventEmitter();
+      child.kill = () => {};
+      const result = await runDevServer(["--open-browser"], {
+        env: { NODE_ENV: "development", PORT: "3000" },
+        choosePortImpl: async () => 3000,
+        spawnImpl: () => {
+          setTimeout(() => child.emit("exit", null, signal), 5);
+          return child;
+        },
+        waitForServerReadyImpl: async () => ({ statusCode: 200 }),
+        nextBinPath: "next",
+        openUrlInBrowserImpl: async () => ({ browser: "chrome" }),
+        consoleImpl: { log: (message) => logs.push(message), error() {} },
+      });
+
+      assert.equal(result.exitCode, expectedCode);
+      assert.deepEqual(logs.slice(-1), ["[dev] Serveur local arrêté."]);
+    }
+
+    const normalLogs = [];
+    const normalChild = new EventEmitter();
+    normalChild.kill = () => {};
+    const normalResult = await runDevServer(["--open-browser"], {
+      env: { NODE_ENV: "development", PORT: "3000" },
+      choosePortImpl: async () => 3000,
+      spawnImpl: () => {
+        setTimeout(() => normalChild.emit("exit", 0, null), 5);
+        return normalChild;
+      },
+      waitForServerReadyImpl: async () => ({ statusCode: 200 }),
+      nextBinPath: "next",
+      openUrlInBrowserImpl: async () => ({ browser: "chrome" }),
+      consoleImpl: { log: (message) => normalLogs.push(message), error() {} },
+    });
+
+    assert.equal(normalResult.exitCode, 0);
+    assert.deepEqual(normalLogs.slice(-1), ["[dev] Serveur local terminé normalement."]);
+  });
+
+  it("propagates an unexpected child code without masking it", () => {
+    assert.deepEqual(classifyChildExit({ code: 17, signal: null }, { wasReady: true }), {
+      kind: "runtime",
+      exitCode: 17,
+      message: "[dev] Échec runtime : Next.js a quitté après readiness (code=17, signal=n/a).",
+    });
+    assert.deepEqual(classifyChildExit({ code: -1073741510, signal: null }), {
+      kind: "intentional-stop",
+      exitCode: 130,
+      message: "[dev] Serveur local arrêté.",
+    });
+    assert.equal(classifyChildExit({ code: null, signal: "SIGTERM" }, { startupFailure: true }).exitCode, 1);
   });
 });

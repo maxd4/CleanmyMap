@@ -7,6 +7,7 @@ const scriptDir = resolve(fileURLToPath(new URL(".", import.meta.url)));
 export const repoRoot = resolve(scriptDir, "../..");
 export const webDir = resolve(repoRoot, "apps/web");
 export const devServerScript = resolve(scriptDir, "dev-with-fallback-port.mjs");
+const WINDOWS_CTRL_C_EXIT_CODES = new Set([-1073741510, 3221225786]);
 
 export const LOCAL_ROLE_CONFIGS = Object.freeze({
   max: Object.freeze({
@@ -122,9 +123,12 @@ export function ensureDevelopmentEnv({
   return { envFile, pulled: true };
 }
 
-function exitCodeForChild(code, signal) {
+export function exitCodeForChild(code, signal) {
   if (signal) {
     return signal === "SIGINT" ? 130 : signal === "SIGTERM" ? 143 : 1;
+  }
+  if (WINDOWS_CTRL_C_EXIT_CODES.has(code)) {
+    return 130;
   }
   return code ?? 1;
 }

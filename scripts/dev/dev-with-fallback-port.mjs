@@ -15,6 +15,7 @@ const turbopackCacheDirs = [
 ];
 const require = createRequire(import.meta.url);
 const defaultHost = process.env.DEV_HOST ?? "localhost";
+const WINDOWS_CTRL_C_EXIT_CODES = new Set([-1073741510, 3221225786]);
 
 export function parsePortArgs(argv) {
   const passthrough = [];
@@ -271,14 +272,51 @@ async function clearTurbopackCache() {
   }
 }
 
-function exitCodeForChild(result) {
+export function exitCodeForChild(result) {
   if (result.error) {
     return 1;
   }
   if (result.signal) {
     return result.signal === "SIGINT" ? 130 : result.signal === "SIGTERM" ? 143 : 1;
   }
+  if (WINDOWS_CTRL_C_EXIT_CODES.has(result.code)) {
+    return 130;
+  }
   return result.code ?? 0;
+}
+
+export function classifyChildExit(
+  result,
+  { wasReady = false, forwardedSignal = null, startupFailure = false } = {},
+) {
+  const signal = result.signal ?? forwardedSignal;
+  const rawExitCode = signal === "SIGINT" ? 130 : signal === "SIGTERM" ? 143 : exitCodeForChild(result);
+  const exitCode = startupFailure && (rawExitCode === 130 || rawExitCode === 143) ? 1 : rawExitCode;
+
+  if (exitCode === 0) {
+    return { kind: "normal", exitCode, message: "[dev] Serveur local terminé normalement." };
+  }
+  if (!startupFailure && (exitCode === 130 || exitCode === 143)) {
+    return { kind: "intentional-stop", exitCode, message: "[dev] Serveur local arrêté." };
+  }
+
+  const phase = wasReady && !startupFailure ? "runtime" : "startup";
+  const phaseLabel = phase === "runtime" ? "après readiness" : "avant readiness";
+  return {
+    kind: phase,
+    exitCode,
+    message: `[dev] Échec ${phase === "runtime" ? "runtime" : "de démarrage"} : Next.js a quitté ${phaseLabel} (code=${result.code ?? "n/a"}, signal=${signal ?? "n/a"}).`,
+  };
+}
+
+function reportChildExit(result, options, consoleImpl) {
+  const classification = classifyChildExit(result, options);
+  if (classification.kind === "startup" || classification.kind === "runtime") {
+    consoleImpl.error(classification.message);
+  } else {
+    consoleImpl.log(classification.message);
+  }
+  return classification;
 }
 
 export async function runDevServer(
@@ -290,6 +328,7 @@ export async function runDevServer(
     waitForServerReadyImpl = waitForServerReady,
     openUrlInBrowserImpl = openUrlInBrowser,
     nextBinPath = null,
+    consoleImpl = console,
   } = {},
 ) {
   const host = env.DEV_HOST ?? defaultHost;
@@ -357,44 +396,73 @@ export async function runDevServer(
     child.once("exit", (code, signal) => resolveResult({ code, signal }));
   });
 
+  let serverReady = false;
+  const readinessAbort = new AbortController();
+  const readinessPromise = Promise.resolve()
+    .then(() => waitForServerReadyImpl(chosenPort, { host, signal: readinessAbort.signal }))
+    .then((result) => {
+      serverReady = true;
+      return { kind: "ready", result };
+    })
+    .catch((error) => ({ kind: "readiness-error", error }));
+
   if (openBrowser) {
-    const readinessAbort = new AbortController();
     try {
-      await Promise.race([
-        waitForServerReadyImpl(chosenPort, { host, signal: readinessAbort.signal }),
-        childExit.then((result) => {
-          readinessAbort.abort();
-          throw new Error(
-            `[dev] Next.js a quitté avant d'être prêt (code=${result.code ?? "n/a"}, signal=${result.signal ?? "n/a"}).`,
-          );
-        }),
+      const readinessResult = await Promise.race([
+        readinessPromise,
+        childExit.then((result) => ({
+          kind: "child-exit",
+          result,
+        })),
       ]);
+      if (readinessResult.kind === "child-exit") {
+        readinessAbort.abort();
+        cleanupSignals();
+        return {
+          exitCode: reportChildExit(
+            readinessResult.result,
+            { wasReady: false, forwardedSignal },
+            consoleImpl,
+          ).exitCode,
+        };
+      }
+      if (readinessResult.kind === "readiness-error") {
+        throw readinessResult.error;
+      }
 
       try {
         const opened = await openUrlInBrowserImpl(url);
-        console.log(`[dev] Navigateur ouvert (${opened.browser}) sur ${url}`);
+        consoleImpl.log(`[dev] Navigateur ouvert (${opened.browser}) sur ${url}`);
       } catch (error) {
-        console.error(
+        consoleImpl.error(
           `[dev] Impossible d'ouvrir le navigateur sur ${url}: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     } catch (error) {
-      console.error(error instanceof Error ? error.message : String(error));
+      consoleImpl.error(error instanceof Error ? error.message : String(error));
       if (error instanceof Error && error.message.includes("n'est pas prêt")) {
         child.kill("SIGTERM");
       }
       const result = await childExit;
       cleanupSignals();
-      return { exitCode: Math.max(1, exitCodeForChild(result)) };
+      return {
+        exitCode: reportChildExit(
+          result,
+          { wasReady: serverReady, forwardedSignal, startupFailure: true },
+          consoleImpl,
+        ).exitCode,
+      };
     }
   }
 
   const result = await childExit;
-  cleanupSignals();
-  if (forwardedSignal && result.signal === null) {
-    return { exitCode: forwardedSignal === "SIGINT" ? 130 : 143 };
+  if (!serverReady) {
+    readinessAbort.abort();
   }
-  return { exitCode: exitCodeForChild(result) };
+  cleanupSignals();
+  return {
+    exitCode: reportChildExit(result, { wasReady: serverReady, forwardedSignal }, consoleImpl).exitCode,
+  };
 }
 
 const isMainModule = process.argv[1] && resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
