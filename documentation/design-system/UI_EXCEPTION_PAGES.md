@@ -279,4 +279,4 @@ Les routes API n'ont pas de UI de page, donc la colonne `Exception UI ?` y est t
 
 - [`BLOC_COLOR_SYSTEM_PREMIUM.md`](./BLOC_COLOR_SYSTEM_PREMIUM.md)
 - [`theme-visibility-rules.md`](./theme-visibility-rules.md)
-- [`principes-visuels.md`](./principes-visuels.md)
+- [`README.md`](./README.md) pour l’index des contrats et façades du design system.

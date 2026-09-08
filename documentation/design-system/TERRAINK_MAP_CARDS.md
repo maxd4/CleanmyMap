@@ -1,4 +1,8 @@
-# Cartes comparatives base + Terraink
+# Cartes comparatives base + Terraink — expérimentation
+
+**Statut : `EXPERIMENTATION` actuelle, non canonique**
+
+Cette piste ne remplace aucun composant de carte ou contrat de production.
 
 ## Objectif
 
@@ -47,4 +51,3 @@ Quand il faudra choisir un seul rendu, comparer:
 - la qualité de lecture sur mobile ;
 - la pertinence pour un rapport ou un export ;
 - la compatibilité avec l'usage métier de la page.
-
