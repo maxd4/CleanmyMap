@@ -10,11 +10,12 @@ import {
   Heart,
   Leaf,
   MapPin,
+  MessageCircle,
   UserPlus,
   Users,
   Trash2,
 } from "lucide-react";
-import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { HomeCommunityActivitySummary } from "@/lib/accueil/data";
 import { useGsapReveal } from "@/lib/animations/use-gsap-reveal";
 
@@ -323,38 +324,38 @@ export function HomeCommunityCredibility({
             )}
           </div>
 
-          <div data-gsap-reveal className="mt-7">
-            <CmmButtonGroup layout="two-column">
-              <CmmButton
-                href="/actions/new"
-                tone="primary"
-                variant="pill"
-                className="h-12 gap-2 px-5 text-[13px] font-black"
-              >
-                Déclarer une action
-                <ArrowRight size={15} />
-              </CmmButton>
-              <CmmButton
-                href="/sections/rejoindre-un-formulaire"
-                tone="secondary"
-                variant="pill"
-                className="h-12 gap-2 px-5 text-[13px] font-black"
-              >
-                Rejoindre une action
-                <ArrowRight size={15} />
-              </CmmButton>
-              <CmmButton
-                href="/reports"
-                tone="important"
-                variant="pill"
-                width="wide"
-                className="h-12 gap-2 px-5 text-[13px] font-black"
-              >
-                <FileText size={16} />
-                Générer un rapport d&apos;impact
-                <ArrowRight size={15} />
-              </CmmButton>
-            </CmmButtonGroup>
+          <div
+            data-gsap-reveal
+            className="mt-7 grid gap-3 lg:grid-cols-3"
+          >
+            <CmmButton
+              href="/reports"
+              tone="critical"
+              variant="pill"
+              className="h-12 w-full min-w-0 gap-2 px-5 text-[13px] font-black"
+            >
+              <FileText size={16} />
+              Générer un rapport d&apos;impact
+              <ArrowRight size={15} />
+            </CmmButton>
+            <CmmButton
+              href="/actions/new"
+              tone="primary"
+              variant="pill"
+              className="h-12 w-full min-w-0 gap-2 px-5 text-[13px] font-black"
+            >
+              Déclarer une action
+              <ArrowRight size={15} />
+            </CmmButton>
+            <CmmButton
+              href="/sections/rejoindre-un-formulaire"
+              tone="secondary"
+              variant="pill"
+              className="h-12 w-full min-w-0 gap-2 px-5 text-[13px] font-black"
+            >
+              Rejoindre une action
+              <ArrowRight size={15} />
+            </CmmButton>
           </div>
         </div>
 
@@ -502,12 +503,25 @@ export function HomeCommunityCredibility({
             </div>
           </article>
 
-          <div data-gsap-reveal className="mt-6 grid gap-3 sm:grid-cols-2 lg:mt-6">
+          <div
+            data-gsap-reveal
+            className="mt-6 grid gap-3 sm:grid-cols-2 lg:mt-6 lg:grid-cols-3"
+          >
+            <CmmButton
+              href="/sections/messagerie"
+              tone="important"
+              variant="pill"
+              className="h-12 w-full min-w-0 gap-2 px-5 text-[13px] font-black"
+            >
+              <MessageCircle size={16} />
+              Discuter
+              <ArrowRight size={15} />
+            </CmmButton>
             <CmmButton
               href="/actions/map"
               tone="primary"
               variant="pill"
-              className="h-12 gap-2 px-5 text-[13px] font-black"
+              className="h-12 w-full min-w-0 gap-2 px-5 text-[13px] font-black"
             >
               <MapPin size={16} />
               Voir la carte
@@ -517,7 +531,7 @@ export function HomeCommunityCredibility({
               href="/sections/community?tab=partners"
               tone="secondary"
               variant="pill"
-              className="h-12 gap-2 px-5 text-[13px] font-black"
+              className="h-12 w-full min-w-0 gap-2 px-5 text-[13px] font-black"
             >
               Voir les partenaires
               <ArrowRight size={15} />
