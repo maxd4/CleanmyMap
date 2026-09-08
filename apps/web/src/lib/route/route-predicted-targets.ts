@@ -354,11 +354,14 @@ function actualFactorLabels(score: ParisPressureRiskScore): string[] {
 function buildReason(
   estimate: ParisPressureRiskEstimate,
   riskFocus: RouteRiskFocus,
+  dominantRisk: "waste" | "cigaretteButts",
   distanceToCorridorKm: number,
   detourMinutes: number,
 ): string {
-  const score =
-    riskFocus === "cigaretteButts" ? estimate.cigaretteButts : estimate.waste;
+  const reasonRisk = riskFocus === "all" ? dominantRisk : riskFocus;
+  const score = reasonRisk === "cigaretteButts"
+    ? estimate.cigaretteButts
+    : estimate.waste;
   const labels = actualFactorLabels(score);
   const cleanliness = score.cleanlinessCorrection;
   const factors =
@@ -381,11 +384,9 @@ function buildReason(
         : "";
   return (
     "Zone prédite " +
-    (riskFocus === "cigaretteButts"
+    (reasonRisk === "cigaretteButts"
       ? "mégots"
-      : riskFocus === "waste"
-        ? "déchets"
-        : "déchets/mégots") +
+      : "déchets") +
     " à " +
     round(distanceToCorridorKm, 2) +
     " km du corridor, détour estimé " +
@@ -617,6 +618,7 @@ export function buildPredictedRouteCandidates(input: {
       reason: buildReason(
         estimate,
         riskFocus,
+        dominantRisk,
         distanceToCorridorKm,
         detourMinutes,
       ),

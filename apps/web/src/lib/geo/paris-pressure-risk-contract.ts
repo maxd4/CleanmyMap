@@ -145,12 +145,13 @@ export type ParisPressureRiskScore = {
 };
 
 export type ParisPressureRiskConfidence = {
-  /** Completeness and source reliability of the base risk factors only. */
+  /** Completeness and source reliability of the base risk factors. */
   dataCompleteness: number;
   sourceCompleteness: number;
-  /** Completeness and source reliability of the correction applied to finalRisk. */
+  /** Completeness and source reliability of the cleanliness correction applied to beforeMorphology. */
   cleanlinessCorrectionCompleteness: number;
   cleanlinessCorrectionSourceReliability: number;
+  /** This global confidence covers base factors plus cleanliness correction; the morphology prior has separate confidence. */
   score: number;
   level: "unknown" | "low" | "medium" | "high";
   availableFactors: number;
