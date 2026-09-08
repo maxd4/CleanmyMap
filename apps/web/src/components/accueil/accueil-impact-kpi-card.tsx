@@ -64,13 +64,16 @@ export function HomeImpactKpiCard({
   const MetricIcon = metricIcons[metric.key as keyof typeof metricIcons];
 
   return (
-    <article className="group relative min-h-[10.4rem] rounded-[1.35rem] border border-white/65 bg-white/40 p-5 shadow-[0_18px_32px_-24px_rgba(0,68,45,0.35)] backdrop-blur-md transition duration-300 hover:-translate-y-0.5 hover:bg-white/55">
+    <article className="group relative min-h-[11.25rem] rounded-[1.35rem] border border-white/65 bg-[rgba(222,249,239,0.62)] p-5 shadow-[0_18px_32px_-24px_rgba(0,68,45,0.35)] backdrop-blur-md transition duration-300 hover:-translate-y-0.5 hover:bg-[rgba(236,253,245,0.74)]">
       <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[1.35rem] bg-[radial-gradient(circle_at_0%_0%,rgba(255,255,255,0.72),transparent_40%)]" />
-      <div className="relative z-10 flex h-full flex-col justify-between gap-5">
-        <div className="flex items-start justify-between gap-3">
+      <div className="relative z-10 flex h-full flex-col gap-6">
+        <div className="flex items-start gap-3">
           <span className={`flex h-12 w-12 items-center justify-center rounded-full ${style.icon}`} aria-hidden="true">
             {MetricIcon ? <MetricIcon size={22} strokeWidth={2.2} /> : null}
           </span>
+          <p className={`min-w-0 flex-1 pt-1 text-sm font-extrabold leading-tight tracking-[-0.015em] sm:text-base ${style.label}`}>
+            {metric.label}
+          </p>
           <button
             type="button"
             aria-label={`Afficher la méthode de calcul pour ${metric.label}`}
@@ -108,10 +111,7 @@ export function HomeImpactKpiCard({
         </div>
 
         <div className="min-w-0">
-          <p className={`truncate text-[10px] font-black uppercase tracking-[0.2em] ${style.label}`}>
-            {metric.label}
-          </p>
-          <p className={`mt-3 truncate font-black leading-none tracking-[-0.04em] ${metric.key === "water" ? "text-[clamp(1.35rem,1.65vw,1.9rem)]" : "text-[clamp(1.75rem,2.5vw,2.45rem)]"} ${style.value}`}>
+          <p className={`truncate font-black leading-none tracking-[-0.04em] ${metric.key === "water" ? "text-[clamp(1.35rem,1.65vw,1.9rem)]" : "text-[clamp(1.75rem,2.5vw,2.45rem)]"} ${style.value}`}>
             {metric.value === "n/a" ? "—" : metric.value}
           </p>
         </div>
