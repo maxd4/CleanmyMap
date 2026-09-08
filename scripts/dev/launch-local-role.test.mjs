@@ -6,6 +6,7 @@ import { describe, it } from "node:test";
 import {
   buildRoleEnvironment,
   ensureDevelopmentEnv,
+  exitCodeForChild,
   getRoleConfig,
   getVercelEnvPullArgs,
   isVercelProjectLinked,
@@ -13,6 +14,13 @@ import {
 } from "./launch-local-role.mjs";
 
 describe("launch-local-role", () => {
+  it("maps voluntary child termination without changing unexpected codes", () => {
+    assert.equal(exitCodeForChild(null, "SIGINT"), 130);
+    assert.equal(exitCodeForChild(null, "SIGTERM"), 143);
+    assert.equal(exitCodeForChild(-1073741510, null), 130);
+    assert.equal(exitCodeForChild(17, null), 17);
+  });
+
   it("injects coherent MAX and bénévole identities", () => {
     assert.deepEqual(getRoleConfig("max"), {
       role: "max",
@@ -95,9 +103,15 @@ describe("launch-local-role", () => {
       [".aLANCER_SITE_LOCAL_ROLE_BENEVOLE.bat", "benevole"],
     ]) {
       const content = readFileSync(file, "utf8");
+      assert.match(content, /chcp 65001 >nul/);
       assert.match(content, /launch-local-role\.mjs/);
       assert.match(content, new RegExp(`launch-local-role\\.mjs[\" ]+${role}`));
       assert.doesNotMatch(content, /vercel-sync-env\.mjs|timeout\s+\/t|localhost:3000|start\s+http/i);
+      assert.match(content, /Serveur local arrêté/);
+      assert.match(content, /s'est arrêté de manière inattendue \(code %EXIT_CODE%\)/);
+      if (role === "benevole") {
+        assert.match(content, /BÉNÉVOLE/);
+      }
     }
   });
 });
