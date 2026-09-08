@@ -41,6 +41,9 @@ import {
   partitionRouteCandidates,
   type RouteGroupPartitionResult,
 } from "@/lib/route/route-group-partition";
+import { resolveEffectiveRiskFocus } from "@/lib/route/route-risk-focus";
+import type { RouteRiskFocus } from "@/lib/route/route-predicted-targets";
+import type { RoutePickupPreference } from "@/lib/route/route-response-contract";
 
 export type RoutePlanningResult = {
   plannerResult: RoutePlannerResult;
@@ -78,10 +81,16 @@ export async function planRouteRecommendation(input: {
   priorityVsTravel: number;
   volunteers: number;
   groupCount: number;
+  riskFocus?: RouteRiskFocus;
+  pickupPreference?: RoutePickupPreference;
   planningMode: RoutePlanningMode;
   eventCenteredAnchor: RouteEventCenteredAnchor | null;
   eventSignalContext: RouteEventSignalContext;
 }): Promise<RoutePlanningResult> {
+  const effectiveRiskFocus = resolveEffectiveRiskFocus({
+    riskFocus: input.riskFocus,
+    pickupPreference: input.pickupPreference,
+  });
   const baselinePlannerResult = planRoute({
     origin: input.origin,
     candidates: input.spatialCandidates,
@@ -104,6 +113,7 @@ export async function planRouteRecommendation(input: {
       source: "ordered_baseline",
     },
     travelBudgetMinutes: input.travelBudgetMinutes,
+    riskFocus: effectiveRiskFocus,
     recentEvents: [...input.eventSignalContext.candidatePressureById.values()]
       .flatMap((pressure) => pressure.contributions)
       .map((event) => ({

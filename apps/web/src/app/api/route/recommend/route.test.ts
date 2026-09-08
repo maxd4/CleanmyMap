@@ -295,6 +295,65 @@ describe("POST /api/route/recommend", () => {
     expect(loadRouteRecommendationSourceMock).toHaveBeenCalledOnce();
   });
 
+  it("propagates the effective predictive focus to the response and trace", async () => {
+    const summary = {
+      status: "unavailable" as const,
+      source: "urban-pressure-model" as const,
+      modelVersion: null,
+      snapshot: null,
+      riskFocus: "all" as const,
+      zonesConsidered: 0,
+      candidatesConsidered: 0,
+      admitted: 0,
+      admittedCandidateIds: [],
+      passedToPlanner: 0,
+      excludedByPreselection: 0,
+      excludedByPlannerBudget: 0,
+      excludedByFinalRoutingBudget: 0,
+      preselectionExcludedCandidateIds: [],
+      preselectionExclusionReasons: {},
+      finalRoutingBudgetExcludedCandidateIds: [],
+      selected: 0,
+      selectedCandidateIds: [],
+      excludedByCorridor: 0,
+      deduplicated: 0,
+      excludedZoneIds: [],
+      deduplicatedZoneIds: [],
+      warnings: [],
+    };
+    buildPredictedRouteCandidatesMock.mockImplementation(({ riskFocus }) => ({
+      candidates: [],
+      summary: { ...summary, riskFocus },
+    }));
+
+    const { POST } = await import("./route");
+    const wasteResponse = await POST(request({
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+      pickupPreference: "waste",
+      riskFocus: "cigaretteButts",
+    }));
+    const cigaretteResponse = await POST(request({
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+      pickupPreference: "cigarette_butts",
+      riskFocus: "waste",
+    }));
+    const wastePayload = await wasteResponse.json();
+    const cigarettePayload = await cigaretteResponse.json();
+
+    expect(wastePayload.prediction.riskFocus).toBe("waste");
+    expect(wastePayload.trace.prediction.riskFocus).toBe("waste");
+    expect(cigarettePayload.prediction.riskFocus).toBe("cigaretteButts");
+    expect(cigarettePayload.trace.prediction.riskFocus).toBe("cigaretteButts");
+    expect(buildPredictedRouteCandidatesMock).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ riskFocus: "waste" }),
+    );
+    expect(buildPredictedRouteCandidatesMock).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ riskFocus: "cigaretteButts" }),
+    );
+  });
+
   it("returns 401 for an anonymous effective session before reading the source", async () => {
     getSafeAuthSessionMock.mockResolvedValueOnce({
       userId: null,
