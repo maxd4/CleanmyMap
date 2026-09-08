@@ -57,6 +57,38 @@ Règles :
 - RLS ne doit pas être désactivée pour contourner un défaut ;
 - les routes sensibles vérifient l'accès côté serveur.
 
+## Contrat de lecture des snapshots publics d'impact
+
+Un snapshot n'est servi que s'il est courant et valide. La présence d'un
+enregistrement ne suffit jamais à justifier sa réutilisation : la clé, la
+version publiée, les versions de formule et de résultat, ainsi que la période
+courante doivent correspondre au contexte de lecture.
+
+```text
+1. snapshot courant + valide
+   → HIT
+   → lecture uniquement, sans recalcul ni écriture
+
+2. snapshot absent ou invalide
+   → FALLBACK CANONIQUE
+   → lecture des contrats Supabase
+   → calcul avec la logique métier canonique
+   → résultat servi
+
+3. si le contexte l'autorise
+   → snapshot réparé / repersisté par le job prévu à cet effet
+
+4. si Supabase échoue aussi
+   → état dégradé explicite
+   → aucune donnée inventée ou silencieusement périmée
+```
+
+Le chemin de lecture homepage utilise `loadLatestPublicImpactSnapshot` pour le
+HIT puis `buildLandingSummaryFromContracts` comme fallback canonique. Le job
+`generateAndPersistPublicImpactSnapshot` ne réutilise un snapshot que si ces
+contrôles de fraîcheur et de version passent ; sinon il recalcule et
+repersiste le résultat autorisé.
+
 ## Application mobile
 
 `apps/mobile/` est la seconde application déployable du même produit CleanMyMap.

@@ -237,8 +237,10 @@ statistiques GitHub du dépôt
 dates de génération et de lancement
 ```
 
-La page publique consomme le dernier snapshot d’impact disponible. La génération
-live des signaux opérationnels est séparée du rendu public et reste réservée aux
+La page publique ne consomme qu’un snapshot d’impact courant et valide ; un
+snapshot simplement présent mais périmé, incompatible avec la version de la
+formule ou hors période courante est traité comme absent. La génération live
+des signaux opérationnels est séparée du rendu public et reste réservée aux
 parcours serveur, admin ou cron prévus à cet effet.
 
 Le cron mensuel Impact terrain publie ce snapshot depuis un état incrémental
@@ -252,8 +254,10 @@ il ne déclenche pas une reconstruction complète. Le paramètre exceptionnel
 méthodologie ou à une réparation contrôlée et peut réutiliser la RPC complète
 comme oracle de vérification.
 
-En l’absence de snapshot, la page affiche un état partiel avec les valeurs vides
-prévues ; cette indisponibilité ne doit pas rendre la page entière inutilisable.
+En l’absence de snapshot courant valide, ou si Supabase échoue, la page affiche
+un état partiel explicite avec les valeurs vides prévues ; cette indisponibilité
+ne doit pas rendre la page entière inutilisable et aucune donnée ne doit être
+inventée.
 
 ## Palette
 

@@ -25,6 +25,7 @@ import {
   buildPublicImpactSnapshotPayload,
   generateAndPersistPublicImpactSnapshot,
   getImpactSnapshotMonthDate,
+  isCurrentPublicImpactSnapshot,
   PUBLIC_IMPACT_SNAPSHOT_VERSION,
 } from "./public-impact-snapshot";
 
@@ -62,6 +63,19 @@ function existingSnapshot(overrides: Record<string, unknown> = {}) {
     meta: {},
     ...overrides,
   };
+}
+
+function currentSnapshot(overrides: Record<string, unknown> = {}) {
+  return existingSnapshot({
+    snapshotDate: "2026-09-01",
+    generatedAt: NOW.toISOString(),
+    payload: buildPublicImpactSnapshotPayload({
+      aggregate,
+      generatedAt: NOW.toISOString(),
+      floorDate: "2026-09-08",
+    }),
+    ...overrides,
+  });
 }
 
 describe("public monthly impact snapshot", () => {
@@ -115,9 +129,8 @@ describe("public monthly impact snapshot", () => {
   });
 
   it("does not recalculate or persist a second snapshot in the same month", async () => {
-    readLatestSnapshotMock.mockResolvedValue(
-      existingSnapshot({ snapshotDate: "2026-09-01" }),
-    );
+    const snapshot = currentSnapshot();
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
 
     const result = await generateAndPersistPublicImpactSnapshot({ now: NOW });
 
@@ -127,6 +140,57 @@ describe("public monthly impact snapshot", () => {
     expect(loadIncrementalAggregateMock).not.toHaveBeenCalled();
     expect(loadFullAggregateMock).not.toHaveBeenCalled();
     expect(upsertSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects a same-month snapshot when its formula version is stale", async () => {
+    const snapshot = currentSnapshot({
+      payload: {
+        ...currentSnapshot().payload,
+        methodologyVersion: "impact-proxy-stale",
+      },
+    });
+
+    expect(isCurrentPublicImpactSnapshot(snapshot, NOW)).toBe(false);
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    const result = await generateAndPersistPublicImpactSnapshot({ now: NOW });
+
+    expect(result.persisted).toBe(true);
+    expect(result.reused).toBe(false);
+    expect(loadIncrementalAggregateMock).toHaveBeenCalledOnce();
+    expect(upsertSnapshotMock).toHaveBeenCalledOnce();
+  });
+
+  it("rejects a same-month snapshot when its rolling period is stale", async () => {
+    const valid = currentSnapshot();
+    const snapshot = {
+      ...valid,
+      payload: {
+        ...valid.payload,
+        period: {
+          ...valid.payload.period,
+          fromDate: "2026-09-07",
+          toDate: "2026-09-07",
+        },
+        provenance: {
+          ...valid.payload.provenance,
+          scope: {
+            ...valid.payload.provenance.scope,
+            floorDate: "2026-09-07",
+          },
+        },
+      },
+    };
+
+    expect(isCurrentPublicImpactSnapshot(snapshot, NOW)).toBe(false);
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    const result = await generateAndPersistPublicImpactSnapshot({ now: NOW });
+
+    expect(result.persisted).toBe(true);
+    expect(result.reused).toBe(false);
+    expect(loadIncrementalAggregateMock).toHaveBeenCalledOnce();
+    expect(upsertSnapshotMock).toHaveBeenCalledOnce();
   });
 
   it("persists one month-start snapshot when the month has no valid snapshot", async () => {

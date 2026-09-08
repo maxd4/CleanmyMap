@@ -137,22 +137,63 @@ function isPublicImpactSnapshotPayload(
       typeof payload.generatedAt === "string" &&
       typeof payload.methodologyVersion === "string" &&
       typeof payload.resultsContractVersion === "string" &&
-      payload.kpis &&
-      payload.aggregates &&
+      typeof payload.kpis === "object" &&
+      payload.kpis !== null &&
+      typeof payload.aggregates === "object" &&
+      payload.aggregates !== null &&
       payload.provenance &&
       payload.provenance.sourceRpc ===
         "public.load_public_landing_action_summary_incremental" &&
       (payload.provenance.sourceMode === "incremental" ||
-        payload.provenance.sourceMode === "rebuild"),
+        payload.provenance.sourceMode === "rebuild") &&
+      payload.provenance.scope &&
+      payload.provenance.scope.actionType === "action" &&
+      payload.provenance.scope.status === "approved" &&
+      payload.provenance.scope.visibility === "visible" &&
+      payload.provenance.scope.excludesTestDemoData === true &&
+      typeof payload.provenance.scope.floorDate === "string",
   );
 }
 
-export async function loadLatestPublicImpactSnapshot(): Promise<PublicImpactSnapshotRecord | null> {
+export function isCurrentPublicImpactSnapshot(
+  snapshot: PublicImpactSnapshotRecord | null | undefined,
+  now = new Date(),
+): snapshot is PublicImpactSnapshotRecord {
+  if (!snapshot || !isPublicImpactSnapshotPayload(snapshot.payload)) {
+    return false;
+  }
+
+  if (!Number.isFinite(new Date(snapshot.generatedAt).getTime())) {
+    return false;
+  }
+
+  const currentDate = getPublicSurfaceSnapshotDate(now.toISOString());
+  const currentFloorDate = buildLandingFloorDate(now);
+  const payload = snapshot.payload;
+
+  return (
+    snapshot.snapshotKey === PUBLIC_IMPACT_SNAPSHOT_KEY &&
+    snapshot.snapshotDate === getImpactSnapshotMonthDate(now.toISOString()) &&
+    snapshot.version === PUBLIC_IMPACT_SNAPSHOT_VERSION &&
+    snapshot.generatedAt === payload.generatedAt &&
+    getPublicSurfaceSnapshotDate(snapshot.generatedAt) === currentDate &&
+    payload.methodologyVersion === IMPACT_PROXY_CONFIG.version &&
+    payload.resultsContractVersion ===
+      IMPACT_TERRAIN_2026_RESULTS_CONTRACT_VERSION &&
+    payload.period.fromDate === currentFloorDate &&
+    payload.period.toDate === currentDate &&
+    payload.provenance.scope.floorDate === currentFloorDate
+  );
+}
+
+export async function loadLatestPublicImpactSnapshot(
+  now = new Date(),
+): Promise<PublicImpactSnapshotRecord | null> {
   const snapshot = await readLatestPublicSurfaceSnapshot<PublicImpactSnapshotPayload>(
     PUBLIC_IMPACT_SNAPSHOT_KEY,
   );
 
-  if (!snapshot || !isPublicImpactSnapshotPayload(snapshot.payload)) {
+  if (!isCurrentPublicImpactSnapshot(snapshot, now)) {
     return null;
   }
 
@@ -167,7 +208,7 @@ export async function generateAndPersistPublicImpactSnapshot(params: {
   const now = params.now ?? new Date();
   const generatedAt = now.toISOString();
   const monthDate = getImpactSnapshotMonthDate(generatedAt);
-  const current = await loadLatestPublicImpactSnapshot();
+  const current = await loadLatestPublicImpactSnapshot(now);
 
   const floorDate = buildLandingFloorDate(now);
   if (params.rebuild) {
