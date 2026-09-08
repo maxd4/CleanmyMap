@@ -5,8 +5,10 @@ import {
   buildEntrepriseAssociationName,
   getOrganizerDirectoryEntries,
   getOrganizerDirectoryEntryByValue,
+  getOrganizerDirectoryLocationLabel,
   isAssociationSelectionOption,
   isKnownOrganizerDirectoryValue,
+  isOrganizerAssociationNameCompatible,
   isValidAssociationName,
   normalizeAssociationScopeValue,
   normalizeAssociationSelectionForPrefill,
@@ -48,14 +50,45 @@ describe("organizer directory", () => {
   });
 
   it("filters entries by organizer type and excludes spontaneous", () => {
-    const associations = getOrganizerDirectoryEntries("association");
+    for (const organizerType of ORGANIZER_TYPE_VALUES) {
+      const entries = getOrganizerDirectoryEntries(organizerType);
 
-    expect(associations.length).toBeGreaterThan(0);
-    expect(associations.every((entry) => entry.organizerType === "association")).toBe(
-      true,
-    );
-    expect(getOrganizerDirectoryEntries("spontaneous")).toEqual([]);
+      if (organizerType === "spontaneous") {
+        expect(entries).toEqual([]);
+        continue;
+      }
+
+      expect(entries.length).toBeGreaterThan(0);
+      expect(entries.every((entry) => entry.organizerType === organizerType)).toBe(
+        true,
+      );
+    }
+
     expect(getOrganizerDirectoryEntries(null)).toEqual([]);
+  });
+
+  it("sorts francilien entries before national entries and hides national locations", () => {
+    const associations = getOrganizerDirectoryEntries("association");
+    const firstNationalIndex = associations.findIndex(
+      (entry) => entry.geographicScope === "national",
+    );
+
+    expect(firstNationalIndex).toBeGreaterThan(0);
+    expect(
+      associations
+        .slice(0, firstNationalIndex)
+        .every((entry) => entry.isIleDeFrance === true),
+    ).toBe(true);
+    expect(
+      getOrganizerDirectoryLocationLabel(
+        associations.find((entry) => entry.geographicScope === "national")!,
+      ),
+    ).toBeNull();
+    expect(
+      getOrganizerDirectoryLocationLabel(
+        associations.find((entry) => entry.geographicScope !== "national")!,
+      ),
+    ).toContain("Île-de-France");
   });
 
   it("resolves canonical values and rejects unknown values", () => {
@@ -84,6 +117,24 @@ describe("legacy association compatibility", () => {
 });
 
 describe("association options helpers", () => {
+  it("keeps structure values compatible only with the selected organizer type", () => {
+    expect(isOrganizerAssociationNameCompatible("spontaneous", "Action spontanée")).toBe(
+      true,
+    );
+    expect(isOrganizerAssociationNameCompatible("spontaneous", "World Cleanup Day France")).toBe(
+      false,
+    );
+    expect(isOrganizerAssociationNameCompatible("association", "World Cleanup Day France")).toBe(
+      true,
+    );
+    expect(isOrganizerAssociationNameCompatible("association", "Entreprise - SNCF")).toBe(
+      false,
+    );
+    expect(isOrganizerAssociationNameCompatible("company", "Entreprise - SNCF")).toBe(true);
+    expect(isOrganizerAssociationNameCompatible("company", "Entreprise - ")).toBe(false);
+    expect(isOrganizerAssociationNameCompatible("association", "Paris Clean Walk")).toBe(true);
+  });
+
   it("builds and validates entreprise-specific association names", () => {
     const value = buildEntrepriseAssociationName("Veolia");
     expect(value).toBe("Entreprise - Veolia");

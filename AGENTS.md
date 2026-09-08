@@ -143,10 +143,15 @@ intermédiaires ne doivent pas commencer par ce canari.
   chantier parallèle. Le fallback manuel utilise `HEAD` comme candidat
   dynamique matérialisé, pas le WORKTREE dirty ;
 - le hook `.githooks/pre-commit` est automatique et bloquant sur `STAGED` ; le
-  hook `.githooks/pre-push` est volontairement non bloquant et n'exécute aucun
-  garde-fou qualité lourd. `npm run prepush:guard` reste disponible comme
-  validation renforcée manuelle et opt-in ; les validations larges relèvent de
-  la CI ou d'une préparation explicite de release ;
+  hook `.githooks/pre-push` doit exécuter le garde sur le `PUSH_CANDIDATE` exact
+  transmis par Git ; si une ressource temporaire est indisponible, attendre
+  puis réessayer avec un backoff borné (30 s, 60 s, 120 s ; maximum environ
+  5 minutes) ; ne pas abandonner au premier échec transitoire ; si le blocage
+  est structurel (outil absent, authentification/permission manquante ou
+  contrat impossible à satisfaire), arrêter avec le diagnostic exact ; ne
+  jamais contourner le garde ni pousser un candidat non validé. Les
+  validations larges relèvent de la CI ou d'une préparation explicite de
+  release ;
 - l'invocation manuelle du guard sans protocole peut utiliser le fallback
   `origin/main...HEAD`, qui doit être affiché comme `manual-fallback`, mais ses
   checks statiques doivent utiliser `--ref=HEAD` plutôt que le worktree ;
@@ -210,8 +215,10 @@ ci-dessus.
   bloquantes et immédiates ; un verrou obsolète est signalé par `doctor`, jamais
   supprimé automatiquement ;
 - avant toute opération d'index, le run obtient `workspace:publication-acquire`.
-  Le pré-commit exige alors que tous les chemins staged appartiennent à ce run ;
-  après commit, push ou échec, libérer explicitement le verrou et le run ;
+  L'acquisition attend un publisher concurrent avec un backoff et un timeout
+  bornés ; cette attente n'est pas un conflit de chantier. Le pré-commit exige
+  alors que tous les chemins staged appartiennent à ce run ; après commit, push
+  ou échec, libérer explicitement le verrou et le run ;
 - `workspace:status --compact` n'inspecte que des métadonnées et des chemins,
   sans lire le contenu source ; `workspace:stale` refetch `origin/main` et ne
   compare que les chemins possédés depuis le `baseSha` du run ;

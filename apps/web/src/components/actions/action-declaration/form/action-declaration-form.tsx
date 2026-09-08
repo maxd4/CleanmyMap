@@ -125,6 +125,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     handlePhotoUpload,
     clearPhotos,
     updateField,
+    updateFields,
     handleResumeDraft,
     handleIgnoreDraft,
     handleConfirmSubmit,
@@ -367,6 +368,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                     <ActionStepIdentity
                       form={form}
                       updateField={updateField}
+                      updateFields={updateFields}
                       userMetadata={props.userMetadata}
                       recordType={form.recordType}
                       hasAttemptedSubmit={hasAttemptedSubmit}

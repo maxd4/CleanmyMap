@@ -16,7 +16,16 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ASSOCIATION_SELECTION_OPTIONS, buildEntrepriseAssociationName } from "@/lib/actions/association-options";
+import {
+  ENTREPRISE_ASSOCIATION_OPTION,
+  buildEntrepriseAssociationName,
+  extractEntrepriseName,
+  getOrganizerDirectoryEntries,
+  getOrganizerDirectoryEntryByValue,
+  getOrganizerDirectoryLocationLabel,
+  isAssociationSelectionOption,
+  isOrganizerAssociationNameCompatible,
+} from "@/lib/actions/association-options";
 import { ORGANIZER_TYPE_OPTIONS } from "@/lib/actions/organizer-type";
 import { OTHER_VOLUNTEER_ASSOCIATION_VALUE } from "../payload";
 import type { FormState } from "../form/model";
@@ -67,14 +76,13 @@ const PLACE_TYPE_TILE_OPTIONS = [
   },
 ] as const;
 
-const POPULAR = new Set(["Action spontanée", "Entreprise", "Paris Clean Walk", "World Cleanup Day France", "Wings of the Ocean"]);
-
 const inputCls = "w-full h-12 pl-10 pr-4 rounded-xl border border-emerald-200/70 bg-[#F3FBF6] text-sm font-medium text-emerald-950 placeholder:text-emerald-700/35 focus:outline-none focus:ring-2 focus:ring-emerald-500/18 focus:border-emerald-400 transition-all";
 const inputErrCls = "border-rose-400 ring-2 ring-rose-400/20 focus:border-rose-400 focus:ring-rose-400/20";
 
 interface Props {
   form: FormState;
   updateField: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
+  updateFields: (updates: Partial<FormState>) => void;
   userMetadata: { userId: string; displayName?: string; username?: string };
   recordType: FormState["recordType"];
   hasAttemptedSubmit?: boolean;
@@ -100,11 +108,27 @@ function Field({ icon: Icon, children, className }: { icon: LucideIcon; children
   );
 }
 
-export function ActionStepIdentity({ form, updateField, userMetadata, recordType, hasAttemptedSubmit }: Props) {
+export function ActionStepIdentity({ form, updateField, updateFields, userMetadata, recordType, hasAttemptedSubmit }: Props) {
   const isActionMode = recordType === "action";
-  const isSpontaneousAction = form.associationName === "Action spontanée";
-  const isEntreprise = form.associationName === "Entreprise" || form.associationName.startsWith("Entreprise - ");
+  const isSpontaneousAction = form.organizerType === "spontaneous";
+  const isEntreprise =
+    form.organizerType === "company" ||
+    form.associationName === ENTREPRISE_ASSOCIATION_OPTION ||
+    form.associationName.startsWith("Entreprise - ");
   const isAutreBénévole = form.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE;
+  const directoryEntries = getOrganizerDirectoryEntries(form.organizerType);
+  const currentDirectoryEntry = getOrganizerDirectoryEntryByValue(form.associationName);
+  const currentLegacyAssociation =
+    form.organizerType !== "company" &&
+    !currentDirectoryEntry &&
+    isAssociationSelectionOption(form.associationName) &&
+    isOrganizerAssociationNameCompatible(form.organizerType, form.associationName)
+      ? form.associationName
+      : null;
+  const structureSelectValue =
+    form.organizerType === "company" && currentDirectoryEntry?.organizerType !== "company"
+      ? ""
+      : form.associationName;
   const missingDate = hasAttemptedSubmit && !form.actionDate;
   const missingAssociation = hasAttemptedSubmit && !form.associationName;
   const missingOrganizerType = hasAttemptedSubmit && isActionMode && !form.organizerType;
@@ -118,14 +142,42 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
   const [autreBenevoleName, setAutreBenevoleName] = useState(isAutreBénévole ? form.actorName : "");
 
   function handleAssociationChange(val: string) {
-    updateField("associationName", val);
-    if (val !== "Entreprise") updateField("enterpriseName", "");
-    if (val === "Action spontanée") {
-      updateField("organizerAccounts", "");
-    }
-    if (val !== OTHER_VOLUNTEER_ASSOCIATION_VALUE) {
-      updateField("actorName", userMetadata.displayName ?? userMetadata.username ?? "");
-    }
+    const nextAssociationName =
+      form.organizerType === "company" && !val
+        ? ENTREPRISE_ASSOCIATION_OPTION
+        : val;
+    updateFields({
+      associationName: nextAssociationName,
+      enterpriseName:
+        form.organizerType === "company"
+          ? extractEntrepriseName(nextAssociationName) ?? ""
+          : "",
+      ...(nextAssociationName !== OTHER_VOLUNTEER_ASSOCIATION_VALUE
+        ? { actorName: userMetadata.displayName ?? userMetadata.username ?? "" }
+        : {}),
+    });
+  }
+
+  function handleOrganizerTypeChange(nextType: FormState["organizerType"]) {
+    const keepsCurrentAssociation = isOrganizerAssociationNameCompatible(
+      nextType,
+      form.associationName,
+    );
+    const nextAssociationName =
+      nextType === "spontaneous"
+        ? "Action spontanée"
+        : keepsCurrentAssociation
+          ? form.associationName
+          : "";
+
+    updateFields({
+      organizerType: nextType,
+      associationName: nextAssociationName,
+      enterpriseName:
+        nextType === "company"
+          ? extractEntrepriseName(nextAssociationName) ?? ""
+          : "",
+    });
   }
 
   function handleAutreBenevoleName(val: string) {
@@ -134,8 +186,12 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
   }
 
   function handleEntrepriseName(val: string) {
-    updateField("enterpriseName", val);
-    updateField("associationName", val.trim() ? buildEntrepriseAssociationName(val) : "Entreprise");
+    updateFields({
+      enterpriseName: val,
+      associationName: val.trim()
+        ? buildEntrepriseAssociationName(val)
+        : ENTREPRISE_ASSOCIATION_OPTION,
+    });
   }
 
   return (
@@ -154,7 +210,7 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
                     id="action-organizer-type"
                     className={cn(inputCls, "appearance-none cursor-pointer", missingOrganizerType && inputErrCls)}
                     value={form.organizerType}
-                    onChange={(e) => updateField("organizerType", e.target.value as FormState["organizerType"])}
+                    onChange={(e) => handleOrganizerTypeChange(e.target.value as FormState["organizerType"])}
                     required={isActionMode}
                     aria-invalid={missingOrganizerType}
                     aria-describedby={missingOrganizerType ? organizerTypeErrorId : undefined}
@@ -172,34 +228,48 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
                 )}
               </div>
 
-              <div className="space-y-1">
-                <Field icon={ChevronDown}>
-                  <select
-                    className={cn(inputCls, "appearance-none cursor-pointer", missingAssociation && inputErrCls)}
-                    value={isAutreBénévole ? OTHER_VOLUNTEER_ASSOCIATION_VALUE : form.associationName}
-                    onChange={(e) => handleAssociationChange(e.target.value)}
-                    aria-invalid={missingAssociation}
-                    aria-describedby={missingAssociation ? associationErrorId : undefined}
-                  >
-                    <optgroup label="Fréquents">
-                      {[...ASSOCIATION_SELECTION_OPTIONS].filter((o) => POPULAR.has(o)).map((o) => (
-                        <option key={o} value={o}>{o}</option>
-                      ))}
-                      <option value={OTHER_VOLUNTEER_ASSOCIATION_VALUE}>Autre bénévole</option>
-                    </optgroup>
-                    <optgroup label="Associations">
-                      {[...ASSOCIATION_SELECTION_OPTIONS].filter((o) => !POPULAR.has(o)).sort().map((o) => (
-                        <option key={o} value={o}>{o}</option>
-                      ))}
-                    </optgroup>
-                  </select>
-                </Field>
-                {missingAssociation && (
-                  <p id={associationErrorId} className="pl-1 text-xs font-medium text-rose-700">
-                    Sélectionnez une structure ou “Autre bénévole”.
-                  </p>
-                )}
-              </div>
+              {form.organizerType && !isSpontaneousAction ? (
+                <div className="space-y-1">
+                  <label htmlFor="action-organizer-structure" className="pl-1 text-xs font-semibold text-emerald-900/70">
+                    Structure <span aria-hidden="true">*</span>
+                  </label>
+                  <Field icon={ChevronDown}>
+                    <select
+                      id="action-organizer-structure"
+                      data-testid="action-organizer-structure"
+                      className={cn(inputCls, "appearance-none cursor-pointer", missingAssociation && inputErrCls)}
+                      value={isAutreBénévole ? OTHER_VOLUNTEER_ASSOCIATION_VALUE : structureSelectValue}
+                      onChange={(e) => handleAssociationChange(e.target.value)}
+                      aria-invalid={missingAssociation}
+                      aria-describedby={missingAssociation ? associationErrorId : undefined}
+                    >
+                      <option value="">
+                        {form.organizerType === "company"
+                          ? "Saisissez ou choisissez une entreprise"
+                          : "Sélectionnez une structure"}
+                      </option>
+                      {currentLegacyAssociation ? (
+                        <option value={currentLegacyAssociation}>
+                          {currentLegacyAssociation} — valeur historique
+                        </option>
+                      ) : null}
+                      {directoryEntries.map((entry) => {
+                        const location = getOrganizerDirectoryLocationLabel(entry);
+                        return (
+                          <option key={entry.id} value={entry.value}>
+                            {entry.name}{location ? ` — ${location}` : ""}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </Field>
+                  {missingAssociation && (
+                    <p id={associationErrorId} className="pl-1 text-xs font-medium text-rose-700">
+                      Sélectionnez une structure ou renseignez une structure libre.
+                    </p>
+                  )}
+                </div>
+              ) : null}
 
               <div className="space-y-1">
                 <Field icon={Calendar}>

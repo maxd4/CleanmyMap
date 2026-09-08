@@ -31,6 +31,13 @@ retour dans `LEGACY_UNOWNED`. Lors du `release`, un chemin adopté encore dirty
 est conservativement rendu au legacy avant la suppression de son lock. Aucun
 de ces mécanismes ne modifie le fichier, l'index ou `HEAD`.
 
+Le `publication.lock` reste un mutex global, mais son acquisition attend un
+publisher concurrent avec un backoff et un timeout bornés. Cette attente est
+distincte d'un conflit réel de chemin, de scope critique ou de staged étranger.
+Les runs et le lock portent un heartbeat ; une récupération n'est autorisée
+que pour une lease expirée, avec preuve qu'aucun chemin staged du propriétaire
+ne serait mis en danger.
+
 ## Portée Git des contrôles
 
 - les contrôles manuels de changements peuvent utiliser la portée `WORKTREE` ;
@@ -79,10 +86,15 @@ de ces mécanismes ne modifie le fichier, l'index ou `HEAD`.
   `origin/main...HEAD`, affiché explicitement comme `manual-fallback`, mais
   ses checks statiques doivent utiliser `--ref=HEAD` ;
 - le hook `.githooks/pre-commit` reste automatique et bloquant sur `STAGED` ; le
-  hook `.githooks/pre-push` est volontairement non bloquant et ne doit pas
-  lancer `npm run prepush:guard`. Ce dernier reste une validation renforcée
-  manuelle et opt-in ; les validations larges relèvent de la CI ou d'une
-  préparation explicite de release ;
+  hook `.githooks/pre-push` doit exécuter le garde sur le `PUSH_CANDIDATE` exact
+  transmis par Git ; si une ressource temporaire est indisponible, attendre
+  puis réessayer avec un backoff borné (30 s, 60 s, 120 s ; maximum environ
+  5 minutes) ; ne pas abandonner au premier échec transitoire ; si le blocage
+  est structurel (outil absent, authentification/permission manquante ou
+  contrat impossible à satisfaire), arrêter avec le diagnostic exact ; ne
+  jamais contourner le garde ni pousser un candidat non validé. Les
+  validations larges relèvent de la CI ou d'une préparation explicite de
+  release ;
 - `npm run checks:changed` reste un contrôle `WORKTREE` de développement et ne
   constitue pas une preuve de publication. Un échec prouvé étranger peut être
   classé `SKIPPED_PARALLEL_CHANTIER` si `STAGED` et `PUSH_CANDIDATE` restent

@@ -199,14 +199,111 @@ test("return-to-legacy is persisted before a run metadata failure", () => {
 test("serializes publication and never releases another run's lock", () => {
   const root = fixture();
   try {
-    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner: fakeGit() });
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner: fakeGit(), publicationWaitMs: 0, onPublicationWait: () => {} });
     coordinator.init();
     coordinator.start({ runId: "run-a", domain: "ROUTE" });
     coordinator.start({ runId: "run-b", domain: "ROUTE" });
     coordinator.publicationAcquire({ runId: "run-a" });
-    assert.throws(() => coordinator.publicationAcquire({ runId: "run-b" }), /run-a/);
+    assert.throws(() => coordinator.publicationAcquire({ runId: "run-b" }), /PUBLICATION_WAIT_TIMEOUT.*run-a/);
     assert.throws(() => coordinator.publicationRelease({ runId: "run-b" }), /run-a/);
     coordinator.publicationRelease({ runId: "run-a" });
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("second publisher waits and succeeds after the first publisher releases", () => {
+  const root = fixture();
+  try {
+    let clock = Date.parse("2026-01-01T00:00:00.000Z");
+    let released = false;
+    const now = () => clock;
+    const first = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner: fakeGit(), now });
+    const second = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit(),
+      now,
+      publicationWaitMs: 5_000,
+      backoffMs: [1_000],
+      sleep: () => {
+        if (!released) {
+          first.publicationRelease({ runId: "run-a" });
+          released = true;
+        }
+        clock += 1_000;
+      },
+      onPublicationWait: ({ owner }) => assert.equal(owner, "run-a"),
+    });
+    first.init();
+    first.start({ runId: "run-a", domain: "ROUTE" });
+    second.start({ runId: "run-b", domain: "ROUTE" });
+    first.publicationAcquire({ runId: "run-a" });
+    const lock = second.publicationAcquire({ runId: "run-b" });
+    assert.equal(lock.runId, "run-b");
+    second.publicationRelease({ runId: "run-b" });
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("publication wait times out with a distinct diagnostic", () => {
+  const root = fixture();
+  try {
+    let clock = Date.parse("2026-01-01T00:00:00.000Z");
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit(),
+      now: () => clock,
+      publicationWaitMs: 2_000,
+      backoffMs: [1_000],
+      sleep: (milliseconds) => { clock += milliseconds; },
+      onPublicationWait: () => {},
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.start({ runId: "run-b", domain: "ROUTE" });
+    coordinator.publicationAcquire({ runId: "run-a" });
+    assert.throws(() => coordinator.publicationAcquire({ runId: "run-b" }), /PUBLICATION_WAIT_TIMEOUT/);
+    coordinator.publicationRelease({ runId: "run-a" });
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("heartbeat keeps a live publication lock and abandoned recovery requires proof", () => {
+  const root = fixture();
+  try {
+    let clock = Date.parse("2026-01-01T00:00:00.000Z");
+    const now = () => clock;
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner: fakeGit(), now, leaseMs: 1_000 });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["owned.ts"], adoptLegacy: true });
+    coordinator.publicationAcquire({ runId: "run-a" });
+    clock += 500;
+    coordinator.heartbeat({ runId: "run-a" });
+    assert.deepEqual(coordinator.recoverAbandonedLocks(), []);
+    coordinator.publicationRelease({ runId: "run-a" });
+    coordinator.release({ runId: "run-a" });
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("expired publication lock is recovered only when no owner staged path remains", () => {
+  const root = fixture();
+  try {
+    let clock = Date.parse("2026-01-01T00:00:00.000Z");
+    const now = () => clock;
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner: fakeGit(), now, leaseMs: 1_000 });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["owned.ts"], adoptLegacy: true });
+    coordinator.publicationAcquire({ runId: "run-a" });
+    clock += 2_000;
+    const recovered = coordinator.recoverAbandonedLocks();
+    assert.equal(recovered.some((item) => item.kind === "publication" && item.runId === "run-a"), true);
+    coordinator.release({ runId: "run-a" });
   } finally {
     cleanup(root);
   }

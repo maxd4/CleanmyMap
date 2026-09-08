@@ -6,7 +6,10 @@ import {
   type ActionEditorRecord,
 } from "@/lib/actions/http";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
-import { ENTREPRISE_ASSOCIATION_OPTION } from "@/lib/actions/association-options";
+import {
+  ENTREPRISE_ASSOCIATION_OPTION,
+  extractEntrepriseName,
+} from "@/lib/actions/association-options";
 import type {
   ActionDrawing,
   ActionPhotoAsset,
@@ -143,6 +146,9 @@ export function useActionDeclarationForm({
           ...preparedForm,
           actorName: action.actorName ?? preparedForm.actorName,
           associationName: action.associationName ?? preparedForm.associationName,
+          enterpriseName:
+            extractEntrepriseName(action.associationName ?? "") ??
+            preparedForm.enterpriseName,
           organizerType: action.organizerType ?? preparedForm.organizerType,
           participantAccounts: action.participantAccounts ?? preparedForm.participantAccounts,
           groupJoinEnabled: action.groupJoinEnabled,
@@ -200,7 +206,10 @@ export function useActionDeclarationForm({
   }, [createCleanForm, initialActionId]);
 
   const drawingIsValid = isDrawingValid(manualDrawing);
-  const isEntrepriseMode = form.associationName === ENTREPRISE_ASSOCIATION_OPTION;
+  const isEntrepriseMode =
+    form.organizerType === "company" ||
+    form.associationName === ENTREPRISE_ASSOCIATION_OPTION ||
+    form.associationName.startsWith("Entreprise - ");
   const routePreviewInput = form.departureLocationLabel.trim() || form.locationLabel.trim();
   const manualDrawingValidation = summarizeActionDrawingValidation(manualDrawing);
   const routePreviewValidation = summarizeActionDrawingValidation(
@@ -312,7 +321,7 @@ export function useActionDeclarationForm({
     return () => { active = false; };
   }, [photoAssets, form.locationLabel, form.placeType, form.volunteersCount, form.durationMinutes]);
 
-  function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
+  function trackFormStart() {
     if (!hasTrackedStartRef.current) {
       hasTrackedStartRef.current = true;
       trackFunnel("start_form", declarationMode, {
@@ -324,20 +333,34 @@ export function useActionDeclarationForm({
         linkedEventId: linkedEventId ?? null,
       });
     }
-    const nextForm = { ...form, [key]: value };
-    if (key === "routeStyle") {
+
+  }
+
+  function updateForm(updates: Partial<FormState>) {
+    const nextForm: FormState = { ...form, ...updates };
+    if (updates.routeStyle !== undefined) {
       nextForm.routeStyle = "souple";
     }
-    if (key === "associationName" && value === "Action spontanée") {
+    if (updates.associationName === "Action spontanée") {
       nextForm.organizerAccounts = "";
     }
     if (!pendingDraft && submissionState !== "success") {
       saveDraft(nextForm);
     }
-    if (key === "recordType") {
+    if (updates.recordType !== undefined) {
       setHasAttemptedSubmit(false);
     }
     setForm(nextForm);
+  }
+
+  function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
+    trackFormStart();
+    updateForm({ [key]: value } as Partial<FormState>);
+  }
+
+  function updateFields(updates: Partial<FormState>) {
+    trackFormStart();
+    updateForm(updates);
   }
 
   function normalizeFormBeforeSubmit(f: FormState): FormState {
@@ -488,6 +511,7 @@ export function useActionDeclarationForm({
     handlePhotoUpload,
     clearPhotos,
     updateField,
+    updateFields,
     handleResumeDraft,
     handleIgnoreDraft,
     handleConfirmSubmit,

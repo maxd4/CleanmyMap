@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
-const getCurrentUserRoleLabelMock = vi.hoisted(() => vi.fn());
+const getCurrentUserActiveRoleMock = vi.hoisted(() => vi.fn());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 const getCommunityBugReportByIdMock = vi.hoisted(() => vi.fn());
 const updateCommunityBugReportStatusMock = vi.hoisted(() => vi.fn());
@@ -10,7 +10,7 @@ vi.mock("@clerk/nextjs/server", () => ({ auth: vi.fn() }));
 
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
-  getCurrentUserRoleLabel: getCurrentUserRoleLabelMock,
+  getCurrentUserActiveRole: getCurrentUserActiveRoleMock,
 }));
 
 vi.mock("@/lib/admin/audit/operation-audit", () => ({
@@ -91,7 +91,7 @@ describe("PATCH /api/community/bug-reports", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    getCurrentUserRoleLabelMock.mockResolvedValue("max");
+    getCurrentUserActiveRoleMock.mockResolvedValue("max");
     getCurrentUserIdentityMock.mockResolvedValue({
       userId: "reviewer-1",
       displayName: "private-reviewer",
