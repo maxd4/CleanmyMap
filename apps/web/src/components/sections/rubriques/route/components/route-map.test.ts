@@ -2,6 +2,7 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
+import type { RouteGroupRoute } from "@/lib/route/route-response-contract";
 
 vi.mock("react-leaflet", () => {
   const passthrough = ({ children }: { children?: React.ReactNode }) =>
@@ -31,13 +32,20 @@ vi.mock("react-leaflet", () => {
     Polyline: ({
       children,
       positions,
+      pathOptions,
     }: {
       children?: React.ReactNode;
       positions?: [number, number][];
+      pathOptions?: { color?: string; dashArray?: string };
     }) =>
       React.createElement(
         "div",
-        { "data-testid": "route-line", "data-points": positions?.length },
+        {
+          "data-testid": "route-line",
+          "data-points": positions?.length,
+          "data-color": pathOptions?.color,
+          "data-dash": pathOptions?.dashArray,
+        },
         children,
       ),
     Popup: passthrough,
@@ -102,6 +110,25 @@ const networkGeometry: RouteGeometry = {
   mode: "network",
   estimated: false,
 };
+
+function groupRoute(groupIndex: number, mode: RouteGeometry["mode"] = "network"): RouteGroupRoute {
+  return {
+    groupIndex,
+    volunteerCount: 4,
+    origin: { latitude: 48.87, longitude: 2.37, source: "browser" },
+    candidateIds: [`group-${groupIndex}-spot`],
+    estimatedDistanceKm: 1.4,
+    estimatedDurationMinutes: 12,
+    targetCount: 1,
+    reservedCandidateIds: [],
+    stops,
+    routeGeometry: { ...networkGeometry, mode },
+    travelDistanceKm: 1.4,
+    travelMinutes: 12,
+    travelBudgetMinutes: 60,
+    withinBudget: true,
+  };
+}
 
 describe("RouteMap", () => {
   it("renders one numbered stop marker and one line for the selected route", () => {
@@ -202,5 +229,66 @@ describe("RouteMap", () => {
       }),
     );
     expect(genericMarkup).not.toContain("Corriger la carte");
+  });
+
+  it("keeps group colors and non-color line patterns deterministic", () => {
+    const groupRoutes = [groupRoute(1), groupRoute(2), groupRoute(3)];
+    const colorsMarkup = renderToStaticMarkup(
+      React.createElement(RouteMap, {
+        stops: [],
+        routeGeometry: networkGeometry,
+        groupRoutes,
+        representationMode: "colors",
+        fr: true,
+      }),
+    );
+    const patternsMarkup = renderToStaticMarkup(
+      React.createElement(RouteMap, {
+        stops: [],
+        routeGeometry: networkGeometry,
+        groupRoutes,
+        representationMode: "patterns",
+        fr: true,
+      }),
+    );
+
+    expect(colorsMarkup).toContain('data-color="#34d399"');
+    expect(colorsMarkup).toContain('data-color="#60a5fa"');
+    expect(colorsMarkup).toContain('data-color="#fbbf24"');
+    expect(patternsMarkup).toContain('data-dash="12 8"');
+    expect(patternsMarkup).toContain('data-dash="3 7"');
+  });
+
+  it("keeps fallback routes visibly distinct in pattern mode", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(RouteMap, {
+        stops: [],
+        routeGeometry: networkGeometry,
+        groupRoutes: [groupRoute(1, "fallback"), groupRoute(2, "fallback")],
+        representationMode: "patterns",
+        fr: true,
+      }),
+    );
+
+    expect(markup).toContain('data-dash="10 10"');
+    expect(markup).toContain('data-dash="12 8"');
+  });
+
+  it("can isolate one group without changing its route geometry", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(RouteMap, {
+        stops: [],
+        routeGeometry: networkGeometry,
+        groupRoutes: [groupRoute(1), groupRoute(2), groupRoute(3)],
+        selectedGroupIndex: 2,
+        representationMode: "colors",
+        fr: true,
+      }),
+    );
+
+    expect(markup.match(/data-testid="route-line"/g)).toHaveLength(1);
+    expect(markup).toContain('data-color="#60a5fa"');
+    expect(markup).not.toContain('data-color="#34d399"');
+    expect(markup).not.toContain('data-color="#fbbf24"');
   });
 });

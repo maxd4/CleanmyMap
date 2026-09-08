@@ -35,6 +35,14 @@ export function renderReportHtmlWindow(reportWindow: Window, html: string): void
   reportWindow.focus();
 }
 
+export function openPrintableHtmlWindow(html: string): boolean {
+  const reportWindow = window.open("", "_blank");
+  if (!reportWindow) return false;
+
+  renderReportHtmlWindow(reportWindow, html);
+  return true;
+}
+
 export function openReportWindow(payload: PdfReportPayload): boolean {
   const reportWindow = window.open("", "_blank");
   if (!reportWindow) return false;
