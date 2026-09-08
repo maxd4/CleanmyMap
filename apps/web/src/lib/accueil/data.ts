@@ -74,6 +74,9 @@ export type LandingSummary = {
   dataAvailability: LandingDataAvailability;
 } & PublicLandingActionAggregation;
 
+const HOMEPAGE_COMMUNITY_ACTION_LIMIT = 3;
+const LANDING_FALLBACK_CONTRACT_LIMIT = 500;
+
 export const ACCUEIL_TEST_MARKERS = [
   "test",
   "demo",
@@ -109,6 +112,13 @@ export function formatLandingOverviewErrorMessage(error: unknown): string {
   }
 
   return "Supabase est momentanément indisponible. Réessaie dans un instant.";
+}
+
+function buildLandingFloorDate(now = new Date()): string {
+  const floor = new Date(now);
+  floor.setUTCHours(0, 0, 0, 0);
+  floor.setUTCDate(floor.getUTCDate() - 365);
+  return floor.toISOString().slice(0, 10);
 }
 
 function getAccueilVisibleContracts(
@@ -357,7 +367,7 @@ export function buildHomeCommunityActivity(
 
   const items = [...visibleContracts]
     .sort((a, b) => b.dates.observedAt.localeCompare(a.dates.observedAt))
-    .slice(0, 4)
+    .slice(0, HOMEPAGE_COMMUNITY_ACTION_LIMIT)
     .map((contract, index) => {
       const actor = getActorLabel(contract);
 
@@ -503,11 +513,29 @@ export function buildLandingSummaryFromImpactSnapshot(
 export async function loadLandingSummary(): Promise<LandingSummary> {
   const snapshot = await loadLatestPublicImpactSnapshot();
   if (!snapshot) {
-    throw new Error("Public monthly impact snapshot is unavailable.");
+    const floorDate = buildLandingFloorDate();
+    const fallback = await fetchCachedUnifiedActionContracts({
+      limit: LANDING_FALLBACK_CONTRACT_LIMIT,
+      status: "approved",
+      floorDate,
+      requireCoordinates: false,
+      types: ["action"],
+    });
+    const summary = buildLandingSummaryFromContracts(
+      fallback.items,
+      floorDate,
+      fallback.sourceHealth,
+    );
+    const activityWithImages = await attachActionPreviewImages(summary.activity);
+
+    return {
+      ...summary,
+      activity: activityWithImages,
+    };
   }
 
   const recent = await fetchCachedUnifiedActionContracts({
-    limit: 3,
+    limit: HOMEPAGE_COMMUNITY_ACTION_LIMIT,
     status: "approved",
     floorDate: snapshot.payload.period.fromDate,
     requireCoordinates: false,

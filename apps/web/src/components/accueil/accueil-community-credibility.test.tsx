@@ -86,13 +86,13 @@ describe("HomeCommunityCredibility action hierarchy", () => {
     expect(markup).toContain('data-cmm-button-tone="important"');
   });
 
-  it("keeps four clickable action slots and reserves empty structures", () => {
+  it("keeps three clickable action slots and reserves empty structures", () => {
     const markup = renderToStaticMarkup(
       <HomeCommunityCredibility activity={ONE_ITEM_ACTIVITY} />,
     );
 
-    expect(markup.match(/data-home-community-action-card/g)).toHaveLength(4);
-    expect(markup.match(/data-home-community-action-placeholder/g)).toHaveLength(3);
+    expect(markup.match(/data-home-community-action-card/g)).toHaveLength(3);
+    expect(markup.match(/data-home-community-action-placeholder/g)).toHaveLength(2);
     expect(markup).toContain(
       'href="/actions/map?actionId=action-1"',
     );
