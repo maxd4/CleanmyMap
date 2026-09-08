@@ -91,6 +91,13 @@ Référence :
 plus forte valeur par bénévole parmi les actions approuvées
 ```
 
+La référence globale est capturée par le job hebdomadaire
+`MAP_POLLUTION_REFERENCES` dans le snapshot public
+`map-pollution-score-references`. La carte lit cette petite référence
+persistée ; si elle est absente, le contrat de lecture expose explicitement
+un fallback RPC temporaire. Ce snapshot ne fige ni le score d'une action, ni
+sa projection temporelle, ni sa couleur ou la légende.
+
 Formules :
 
 ```txt
