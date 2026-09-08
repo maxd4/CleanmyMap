@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import Link from "next/link";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { CmmButton } from "./cmm-button";
+import { CmmButton, CmmButtonGroup } from "./cmm-button";
 
 const css = [
   readFileSync(new URL("../../styles/tokens.css", import.meta.url), "utf8"),
@@ -12,27 +12,44 @@ const css = [
 const source = readFileSync(new URL("./cmm-button.tsx", import.meta.url), "utf8");
 
 describe("CmmButton", () => {
-  it("exposes the canonical tone, size and variant contract", () => {
+  it("exposes the canonical tone, size, variant and width contract", () => {
     const tones = ["primary", "secondary", "tertiary", "destructive"] as const;
     const sizes = ["sm", "md", "lg"] as const;
     const variants = ["default", "pill", "ghost"] as const;
+    const widths = ["auto", "wide"] as const;
 
     for (const tone of tones) {
       for (const size of sizes) {
         for (const variant of variants) {
-          const markup = renderToStaticMarkup(
-            <CmmButton tone={tone} size={size} variant={variant}>
-              Action
-            </CmmButton>,
-          );
+          for (const width of widths) {
+            const markup = renderToStaticMarkup(
+              <CmmButton tone={tone} size={size} variant={variant} width={width}>
+                Action
+              </CmmButton>,
+            );
 
-          expect(markup).toContain('class="cmm-button"');
-          expect(markup).toContain(`data-cmm-button-tone="${tone}"`);
-          expect(markup).toContain(`data-cmm-button-size="${size}"`);
-          expect(markup).toContain(`data-cmm-button-variant="${variant}"`);
+            expect(markup).toContain('class="cmm-button"');
+            expect(markup).toContain(`data-cmm-button-tone="${tone}"`);
+            expect(markup).toContain(`data-cmm-button-size="${size}"`);
+            expect(markup).toContain(`data-cmm-button-variant="${variant}"`);
+            expect(markup).toContain(`data-cmm-button-width="${width}"`);
+          }
         }
       }
     }
+  });
+
+  it("supports a wide button spanning two columns in a balanced group", () => {
+    const markup = renderToStaticMarkup(
+      <CmmButtonGroup layout="two-column">
+        <CmmButton>Premier</CmmButton>
+        <CmmButton>Deuxième</CmmButton>
+        <CmmButton width="wide">Troisième</CmmButton>
+      </CmmButtonGroup>,
+    );
+
+    expect(markup).toContain('data-cmm-button-group-layout="two-column"');
+    expect(markup).toContain('data-cmm-button-width="wide"');
   });
 
   it("renders a native button with its preserved attributes", () => {
@@ -112,6 +129,8 @@ describe("CmmButton", () => {
 
     expect(css).toContain("--cmm-button-radius: var(--radius-sm);");
     expect(css).toContain("--cmm-button-radius: var(--radius-full);");
+    expect(css).toContain('[data-cmm-button-width="wide"]');
+    expect(css).toContain('[data-cmm-button-group-layout="two-column"]');
     expect(css).toContain('[data-display-mode="minimaliste"] .cmm-button');
     expect(css).toContain('[data-display-mode="sobre"] .cmm-button');
     expect(css).toContain("@media (prefers-reduced-motion: reduce)");

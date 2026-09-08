@@ -67,6 +67,8 @@ séparée. Le runtime actuel de `CmmButton` expose encore les identifiants
 `primary`, `secondary`, `tertiary` et `destructive` ; les niveaux doré/brun et
 violet sont documentés comme contrat cible tant que leurs variantes ne sont
 pas publiées.
+La géométrie runtime, dont le mode `width="wide"` pour les compositions à
+deux colonnes, est détaillée dans [`ACTIONS_BUTTONS.md`](./ACTIONS_BUTTONS.md).
 
 Pour les champs texte standards, utiliser `CmmField` avec `CmmInput`,
 `CmmSelect` ou `CmmTextarea` selon

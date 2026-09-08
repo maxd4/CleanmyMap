@@ -247,6 +247,35 @@
     --cmm-button-shadow: none;
   }
 
+  .cmm-button[data-cmm-button-width="wide"] {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .cmm-button-group[data-cmm-button-group-layout="two-column"] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cmm-button-group[data-cmm-button-group-layout="two-column"] > .cmm-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .cmm-button-group[data-cmm-button-group-layout="two-column"] > .cmm-button[data-cmm-button-width="wide"] {
+    grid-column: span 2;
+  }
+
+  @media (max-width: 639px) {
+    .cmm-button-group[data-cmm-button-group-layout="two-column"] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cmm-button-group[data-cmm-button-group-layout="two-column"] > .cmm-button[data-cmm-button-width="wide"] {
+      grid-column: auto;
+    }
+  }
+
   .cmm-button:not([data-cmm-button-disabled="true"]):not([data-cmm-button-loading="true"]):hover {
     border-color: var(--cmm-button-border-hover);
     background-color: var(--cmm-button-background-hover);

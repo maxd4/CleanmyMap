@@ -1,8 +1,9 @@
 # Actions & Buttons — contrat canonique
 
 `CmmButton` est la primitive unique des actions standard du web. Les pages
-choisissent uniquement une intention (`tone`), une densité (`size`) et une
-forme (`variant`) ; la géométrie et les états restent définis dans
+choisissent une intention (`tone`), une densité (`size`), une forme
+(`variant`) et, lorsque la composition le justifie, une largeur (`width`) ;
+la géométrie et les états restent définis dans
 `apps/web/src/styles/actions.css`, importé par
 `apps/web/src/app/globals.css`.
 
@@ -19,6 +20,7 @@ dorée/brune ou violette inexistantes.
   tone="primary|secondary|tertiary|destructive"
   size="sm|md|lg"
   variant="default|pill|ghost"
+  width="auto|wide"
   loading={isPending}
 >
   Action
@@ -41,6 +43,15 @@ clavier et l'activation.
 | `destructive` | suppression, sortie ou modération destructive |
 | `sm` / `md` / `lg` | 40 / 44 / 48 px de hauteur |
 | `default` / `pill` / `ghost` | radius standard / `--radius-full` / surface sans bordure |
+| `auto` / `wide` | largeur intrinsèque / largeur équivalente à deux colonnes normales |
+
+`width="wide"` est une variante de composition, indépendante de `tone`,
+`size` et `variant`. Dans un `CmmButtonGroup layout="two-column"`, le bouton
+long occupe les deux colonnes et les autres boutons occupent chacun une
+colonne. Le groupe repasse sur une colonne en mobile ; le bouton long conserve
+alors une largeur de colonne complète. Utiliser ce mode lorsqu'une grille de
+trois actions doit conserver un rythme homogène sur deux lignes, pas pour
+accentuer la priorité d'une action.
 
 Les paddings horizontaux sont respectivement de 12 / 16 / 20 px et le gap
 interne est de 8 px. Ces valeurs ne doivent pas être recopiées dans les
