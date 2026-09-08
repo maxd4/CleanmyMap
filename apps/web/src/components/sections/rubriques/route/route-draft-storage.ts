@@ -1,13 +1,15 @@
 import type { RouteOptions } from "./route-types";
 
 export const ROUTE_DRAFT_STORAGE_KEY = "cleanmymap.route-draft";
-export const ROUTE_DRAFT_SCHEMA_VERSION = 3;
-const LEGACY_ROUTE_DRAFT_SCHEMA_VERSIONS = [1, 2] as const;
+export const ROUTE_DRAFT_SCHEMA_VERSION = 4;
+const LEGACY_ROUTE_DRAFT_SCHEMA_VERSIONS = [1, 2, 3] as const;
 
 export const DEFAULT_ROUTE_OPTIONS: RouteOptions = {
   priorityVsTravel: 65,
   travelBudgetMinutes: 60,
   maxStops: 6,
+  volunteers: 1,
+  groupCount: 1,
 };
 
 type StorageReader = Pick<Storage, "getItem">;
@@ -26,6 +28,9 @@ function boundedInteger(value: unknown, fallback: number, min: number, max: numb
 export function normalizeRouteOptions(value: unknown): RouteOptions {
   const candidate = isRecord(value) ? value : {};
 
+  const volunteers = boundedInteger(candidate.volunteers, DEFAULT_ROUTE_OPTIONS.volunteers, 1, 100);
+  const groupCount = boundedInteger(candidate.groupCount, DEFAULT_ROUTE_OPTIONS.groupCount, 1, 12);
+
   return {
     priorityVsTravel: boundedInteger(
       candidate.priorityVsTravel ?? candidate.priorityVsDistance,
@@ -40,6 +45,8 @@ export function normalizeRouteOptions(value: unknown): RouteOptions {
       600,
     ),
     maxStops: boundedInteger(candidate.maxStops, DEFAULT_ROUTE_OPTIONS.maxStops, 1, 12),
+    volunteers,
+    groupCount: Math.min(groupCount, volunteers),
   };
 }
 

@@ -101,6 +101,37 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
           {trace.prediction ? (
             <PredictionSummary prediction={trace.prediction} />
           ) : null}
+          {trace.multiRoute ? (
+            <section className="mt-4 rounded-2xl border border-indigo-300/20 bg-indigo-500/10 p-4" aria-label={fr ? "Explicabilité multi-groupes" : "Multi-group explainability"}>
+              <h3 className="font-black text-white">
+                {fr ? `${trace.multiRoute.groupCount} boucles coordonnées` : `${trace.multiRoute.groupCount} coordinated loops`}
+              </h3>
+              <p className="mt-2 text-sm text-slate-200">
+                {fr
+                  ? "Chaque groupe reçoit une boucle différente afin de couvrir davantage de rues."
+                  : "Each group receives a different loop to cover more streets."}
+              </p>
+              <dl className="mt-3 grid gap-2 text-xs text-slate-300 sm:grid-cols-2">
+                <div><dt className="text-slate-500">Distance cumulée</dt><dd className="font-semibold text-white">{formatDistance(data.multiRoute.totalDistanceKm)}</dd></div>
+                <div><dt className="text-slate-500">Couverture</dt><dd className="font-semibold text-white">{formatNumber(data.multiRoute.coverageGain)}</dd></div>
+                <div><dt className="text-slate-500">Cibles partagées</dt><dd className="font-semibold text-white">{formatNumber(data.multiRoute.sharedTargetRatio * 100)} %</dd></div>
+                <div><dt className="text-slate-500">Distance réseau partagée</dt><dd className="font-semibold text-white">{data.multiRoute.sharedDistanceRatio === null ? "Non mesurée" : `${formatNumber(data.multiRoute.sharedDistanceRatio * 100)} %`}</dd></div>
+                <div><dt className="text-slate-500">Équilibre distance / durée</dt><dd className="font-semibold text-white">{formatDistance(data.multiRoute.balanceDistance)} / {formatDuration(data.multiRoute.balanceDuration)}</dd></div>
+                <div><dt className="text-slate-500">Équilibre des stops</dt><dd className="font-semibold text-white">écart {formatNumber(data.multiRoute.balanceTargetCount)}</dd></div>
+              </dl>
+              <ul className="mt-4 space-y-2 text-xs text-slate-300">
+                {trace.multiRoute.groups.map((group) => (
+                  <li key={group.groupIndex} className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+                    <strong className="text-white">Groupe {group.groupIndex}</strong> · {group.volunteerCount} bénévoles · {formatDistance(group.distanceKm)} · {formatDuration(group.durationMinutes)} · {group.targetCount} stops.
+                    {group.reservedCandidateIds.length > 0 ? ` ${group.reservedCandidateIds.length} cible(s) réservée(s) aux autres groupes.` : ""}
+                  </li>
+                ))}
+              </ul>
+              <ul className="mt-3 space-y-1 text-xs text-slate-400">
+                {trace.multiRoute.constraints.map((constraint) => <li key={constraint}>· {constraint}</li>)}
+              </ul>
+            </section>
+          ) : null}
         </section>
 
         <CmmDisclosure summary={fr ? "Pourquoi ces points ?" : "Why these points?"} tone="emerald" size="md">

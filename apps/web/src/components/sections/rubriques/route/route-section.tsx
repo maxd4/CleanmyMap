@@ -20,6 +20,7 @@ import { SectionShell } from "@/components/sections/rubriques/shared";
 import { Navigation, Zap, Info, Route as RouteIcon, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { RouteGeometry } from "@/lib/route/route-contract";
+import type { RouteGroupRoute } from "@/lib/route/route-response-contract";
 
 const EMPTY_ROUTE_GEOMETRY: RouteGeometry = {
   isLoop: true,
@@ -42,6 +43,7 @@ const RouteMap = dynamic(
 
 export function RouteSection() {
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
+  const [selectedGroupIndex, setSelectedGroupIndex] = useState<number | null>(null);
   const { isLoaded, isSignedIn } = useEffectiveAuthState();
   const {
     options,
@@ -68,6 +70,12 @@ export function RouteSection() {
     isRequestInFlight,
     requestRecommendation,
   } = useRouteData();
+  const groupRoutes: RouteGroupRoute[] = data?.groupRoutes ?? [];
+  const selectedGroup = selectedGroupIndex === null
+    ? null
+    : groupRoutes.find(({ groupIndex }) => groupIndex === selectedGroupIndex) ?? null;
+  const visibleStops = selectedGroup?.stops ?? picks;
+  const visibleGeometry = selectedGroup?.routeGeometry ?? data?.routeGeometry ?? EMPTY_ROUTE_GEOMETRY;
 
   const dataStatusMessage = data
     ? data.status === "empty"
@@ -321,9 +329,11 @@ export function RouteSection() {
                             <span className="text-xl font-black text-slate-500 tracking-widest uppercase">min</span>
                          </div>
                          {data.isLoop ? (
-                           <p className="text-sm font-semibold text-emerald-100/80">
-                             Boucle de {totalKm.toFixed(2)} km · départ et arrivée au même endroit
-                           </p>
+                         <p className="text-sm font-semibold text-emerald-100/80">
+                             {groupRoutes.length > 1
+                               ? `${data.volunteers} bénévoles · ${data.groupCount} groupes · ${data.multiRoute.totalDistanceKm.toFixed(2)} km cumulés`
+                               : `Boucle de ${totalKm.toFixed(2)} km · départ et arrivée au même endroit`}
+                         </p>
                          ) : null}
                       </div>
 
@@ -333,6 +343,69 @@ export function RouteSection() {
                       </div>
                    </div>
                 </div>
+
+                {groupRoutes.length > 1 ? (
+                  <section
+                    aria-label={fr ? "Sélection des groupes" : "Group selection"}
+                    className="rounded-[2rem] border border-emerald-300/18 bg-[rgba(11,39,30,0.88)] p-5"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-100/68">
+                          {fr ? "Boucles coordonnées" : "Coordinated loops"}
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-white/80">
+                          {fr
+                            ? "Chaque groupe reçoit une boucle différente afin de couvrir davantage de rues."
+                            : "Each group receives a different loop to cover more streets."}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2" role="tablist">
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={selectedGroupIndex === null}
+                          onClick={() => setSelectedGroupIndex(null)}
+                          className="rounded-full border border-white/15 px-3 py-2 text-xs font-bold text-white transition hover:border-emerald-300/50"
+                        >
+                          {fr ? "Tous les groupes" : "All groups"}
+                        </button>
+                        {groupRoutes.map((group) => (
+                          <button
+                            key={group.groupIndex}
+                            type="button"
+                            role="tab"
+                            aria-selected={selectedGroupIndex === group.groupIndex}
+                            onClick={() => setSelectedGroupIndex(group.groupIndex)}
+                            className="rounded-full border border-emerald-300/25 bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-50 transition hover:border-emerald-300/60"
+                          >
+                            {fr ? `Groupe ${group.groupIndex}` : `Group ${group.groupIndex}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="mt-4 grid gap-3 md:grid-cols-3">
+                      {groupRoutes.map((group) => (
+                        <button
+                          key={`summary-${group.groupIndex}`}
+                          type="button"
+                          onClick={() => setSelectedGroupIndex(group.groupIndex)}
+                          className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-left transition hover:border-emerald-300/40"
+                        >
+                          <p className="font-black text-white">{fr ? `Groupe ${group.groupIndex}` : `Group ${group.groupIndex}`}</p>
+                          <p className="mt-2 text-xs text-slate-300">
+                            {group.volunteerCount} {fr ? "bénévoles" : "volunteers"} · {group.travelDistanceKm.toFixed(2)} km · {group.travelMinutes} min · {group.targetCount} {fr ? "stops" : "stops"}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-4 text-xs text-emerald-100/70">
+                      {fr
+                        ? `Couverture : ${data.multiRoute.coverageGain.toFixed(2)} · recouvrement des cibles : ${(data.multiRoute.sharedTargetRatio * 100).toFixed(0)} % · distance partagée réseau : ${data.multiRoute.sharedDistanceRatio === null ? "non mesurée" : `${(data.multiRoute.sharedDistanceRatio * 100).toFixed(1)} %`}.`
+                        : `Coverage: ${data.multiRoute.coverageGain.toFixed(2)} · shared targets: ${(data.multiRoute.sharedTargetRatio * 100).toFixed(0)}% · network shared distance: ${data.multiRoute.sharedDistanceRatio === null ? "not measured" : `${(data.multiRoute.sharedDistanceRatio * 100).toFixed(1)}%`}.`}
+                    </p>
+                  </section>
+                ) : null}
 
                 {/* Tradeoffs & Logic */}
                 {hasData && (
@@ -364,8 +437,10 @@ export function RouteSection() {
 
                 {/* Stops List */}
                 <RouteMap
-                  stops={picks}
-                  routeGeometry={data.routeGeometry}
+                  stops={visibleStops}
+                  routeGeometry={visibleGeometry}
+                  groupRoutes={groupRoutes}
+                  selectedGroupIndex={selectedGroupIndex}
                   origin={data.origin}
                   onSelectOrigin={originMode === "map" ? setMapOrigin : undefined}
                   onClearOrigin={originMode === "map" ? clearMapOrigin : undefined}
@@ -375,7 +450,7 @@ export function RouteSection() {
                 />
                 <RouteList
                   hasRoute={hasRoute}
-                  picks={picks}
+                  picks={visibleStops}
                   fr={fr}
                   selectedStopId={selectedStopId}
                   onSelectStop={setSelectedStopId}

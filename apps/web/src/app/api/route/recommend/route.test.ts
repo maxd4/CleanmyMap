@@ -385,6 +385,54 @@ describe("POST /api/route/recommend", () => {
     );
   });
 
+  it("calcule un ensemble de boucles distinctes pour les groupes coordonnés", async () => {
+    const secondCandidate = { ...candidate, id: "spot-2", latitude: 48.84, longitude: 2.34 };
+    buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate, secondCandidate]);
+    planRouteMock.mockImplementation((input) => ({
+      stops: input.candidates.slice(0, input.maxStops).map((item: typeof candidate, index: number) => plannedStop(item, index)),
+      diagnostics: { excludedUnsafe: 0, excludedByTravelBudget: 0 },
+      audit: plannerAudit(input.candidates.slice(0, input.maxStops).map((item: typeof candidate, index: number) => plannedStop(item, index))),
+    }));
+    routePolylineThroughFossgisFootMock.mockImplementation(
+      async (coordinates: [number, number][]) => ({
+        ...fallbackGeometry(coordinates, 10),
+        mode: "network",
+        provider: "fossgis-osrm",
+        profile: "foot",
+        estimated: false,
+        legs: coordinates.slice(1).map((_, index) => ({
+          fromStopIndex: index,
+          toStopIndex: index + 1,
+          distanceKm: 1,
+          estimatedMinutes: 5,
+        })),
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+      volunteers: 2,
+      groupCount: 2,
+      maxStops: 1,
+      travelBudgetMinutes: 60,
+    }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.groupRoutes).toHaveLength(2);
+    expect(payload.groupRoutes.every((group: { routeGeometry: { isLoop: boolean; coordinates: [number, number][] } }) => {
+      const first = group.routeGeometry.coordinates[0];
+      const last = group.routeGeometry.coordinates.at(-1);
+      return group.routeGeometry.isLoop && first?.[0] === last?.[0] && first?.[1] === last?.[1];
+    })).toBe(true);
+    expect(payload.groupRoutes.every((group: { withinBudget: boolean }) => group.withinBudget)).toBe(true);
+    expect(payload.multiRoute.groupCount).toBe(2);
+    expect(payload.trace.multiRoute.groups).toHaveLength(2);
+    expect(new Set(payload.groupRoutes.flatMap((group: { candidateIds: string[] }) => group.candidateIds)).size).toBe(2);
+    expect(routePolylineThroughFossgisFootMock).toHaveBeenCalledTimes(2);
+  });
+
   it("passes an explicit origin and all planner options to planRoute", async () => {
     buildTrashSpotterRouteCandidatesMock.mockReturnValueOnce([candidate]);
     const explicitOrigin = { latitude: 48.9, longitude: 2.4, source: "map" } as const;
@@ -536,6 +584,15 @@ describe("POST /api/route/recommend", () => {
     );
     expect(payload.routeGeometry).toEqual(reconciledGeometry);
     expect(payload.stops).toHaveLength(1);
+    expect(payload.stops.map(({ id }: { id: string }) => id)).toEqual([candidate.id]);
+    expect(payload.groups[0]?.candidateIds).toEqual([candidate.id]);
+    expect(payload.partition.audit.assignments).toEqual([
+      expect.objectContaining({ candidateId: candidate.id }),
+    ]);
+    expect(payload.partition.audit.assignments).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ candidateId: "spot-2" })]),
+    );
+    expect(payload.trace.ordering.stopIds).toEqual([candidate.id]);
     expect(payload.travelMinutes).toBeLessThanOrEqual(payload.travelBudgetMinutes);
     expect(payload.trace.finalRoutingReconciliation).toEqual(expect.objectContaining({
       stopsBefore: 2,

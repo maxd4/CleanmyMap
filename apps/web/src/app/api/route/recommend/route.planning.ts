@@ -28,6 +28,15 @@ import type { RouteEventSignalContext } from "@/lib/route/route-event-pressure";
 import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 import type { RouteFinalRoutingReconciliation } from "@/lib/route/route-trace";
 import {
+  buildSingleGroupRoute,
+  routePartitionedGroups,
+  type RouteMultiRouteResult,
+} from "@/lib/route/route-multi-route";
+import type {
+  RouteGroupRoute,
+  RouteMultiRouteMetrics,
+} from "@/lib/route/route-response-contract";
+import {
   MAX_ROUTE_PARTITION_CANDIDATES,
   partitionRouteCandidates,
   type RouteGroupPartitionResult,
@@ -42,6 +51,8 @@ export type RoutePlanningResult = {
   budgetPrefixApplied: boolean;
   finalRoutingReconciliation?: RouteFinalRoutingReconciliation;
   groupPartition: RouteGroupPartitionResult;
+  groupRoutes?: RouteGroupRoute[];
+  multiRouteMetrics?: RouteMultiRouteMetrics;
 };
 
 function fallbackGeometryForPrefix(
@@ -131,7 +142,7 @@ export async function planRouteRecommendation(input: {
     maxStops: input.maxStops,
     priorityVsTravel: input.priorityVsTravel,
   });
-  const groupPartition = partitionRouteCandidates({
+  const partitionInput = {
     origin: input.origin,
     candidates: candidatePool.candidates,
     volunteers: input.volunteers,
@@ -140,8 +151,14 @@ export async function planRouteRecommendation(input: {
     maxStops: input.maxStops,
     priorityVsTravel: input.priorityVsTravel,
     planningMode: input.planningMode,
-    plannerResult,
-  });
+  };
+  let groupPartition: RouteGroupPartitionResult | null =
+    input.groupCount === 1
+      ? null
+      : partitionRouteCandidates({
+          ...partitionInput,
+          plannerResult,
+        });
   let predictionSummary = applyRoutePredictionPoolAudit(
     predictionBuild.summary,
     candidatePool.audit,
@@ -162,8 +179,10 @@ export async function planRouteRecommendation(input: {
   let finalRoutingDegraded = false;
   const stopsBeforeFinalRouting = plannedStops.length;
   let finalRoutingBudgetExcludedCandidateIds: string[] = [];
+  let groupRoutes: RouteGroupRoute[] = [];
+  let multiRouteMetrics: RouteMultiRouteMetrics | undefined;
 
-  if (plannedStops.length > 0) {
+  if (input.groupCount === 1 && plannedStops.length > 0) {
     const routeCoordinates: [number, number][] = [
       [input.origin.latitude, input.origin.longitude],
       ...plannedStops.map(
@@ -247,13 +266,68 @@ export async function planRouteRecommendation(input: {
     }
   }
 
-  finalRoutingBudgetExcludedCandidateIds = plannerResult.stops
-    .slice(plannedStops.length)
-    .map(({ candidate }) => candidate.id);
+  if (input.groupCount === 1) {
+    finalRoutingBudgetExcludedCandidateIds = plannerResult.stops
+      .slice(plannedStops.length)
+      .map(({ candidate }) => candidate.id);
+    groupPartition = partitionRouteCandidates({
+      ...partitionInput,
+      plannerResult: {
+        ...plannerResult,
+        stops: plannedStops,
+      },
+    });
+    groupRoutes = [buildSingleGroupRoute({
+      group: groupPartition.groups[0]!,
+      plannedStops,
+      routeGeometry,
+      travelBudgetMinutes: input.travelBudgetMinutes,
+    })];
+    multiRouteMetrics = {
+      groupCount: 1,
+      volunteers: input.volunteers,
+      totalDistanceKm: routeGeometry.distanceKm,
+      totalDurationMinutes: routeGeometry.durationMinutes,
+      coverageGain: groupPartition.metrics.coverageGain,
+      sharedTargetRatio: 0,
+      sharedDistanceKm: null,
+      sharedDistanceRatio: null,
+      balanceDistance: 0,
+      balanceDuration: 0,
+      balanceTargetCount: 0,
+      balanceVolunteerCount: 0,
+      fallbackGroupCount: routeGeometry.mode === "fallback" ? 1 : 0,
+      networkDistanceMeasured: false,
+    };
+  } else {
+    if (!groupPartition) {
+      throw new Error("La partition multi-groupe n'a pas été produite.");
+    }
+    const multiRouteResult: RouteMultiRouteResult = await routePartitionedGroups({
+      origin: input.origin,
+      candidates: candidatePool.candidates,
+      partition: groupPartition,
+      travelBudgetMinutes: input.travelBudgetMinutes,
+    });
+    groupPartition = multiRouteResult.partition;
+    groupRoutes = multiRouteResult.groupRoutes;
+    multiRouteMetrics = multiRouteResult.metrics;
+    plannedStops = multiRouteResult.plannedStops;
+    routeGeometry = groupRoutes[0]?.routeGeometry ?? fallbackGeometryForPrefix(input.origin, []);
+    budgetPrefixApplied = multiRouteResult.budgetPrefixApplied;
+    providerCalls = multiRouteResult.providerCalls;
+    firstProviderMode = multiRouteResult.firstProviderMode;
+    finalRoutingDegraded = multiRouteResult.degraded;
+    finalRoutingWarning = multiRouteResult.warning;
+    finalRoutingBudgetExcludedCandidateIds = multiRouteResult.excludedCandidateIds;
+  }
   predictionSummary = applyRoutePredictionFinalRoutingBudgetAudit(
     predictionSummary,
     finalRoutingBudgetExcludedCandidateIds,
   );
+  if (!groupPartition) {
+    throw new Error("La partition de groupes n'a pas été produite.");
+  }
 
   const eventCenteredContext = input.eventCenteredAnchor
     ? buildRouteEventCenteredContext(
@@ -271,7 +345,9 @@ export async function planRouteRecommendation(input: {
     eventCenteredContext,
     budgetPrefixApplied,
     finalRoutingReconciliation: {
-      stopsBefore: stopsBeforeFinalRouting,
+      stopsBefore: input.groupCount === 1
+        ? stopsBeforeFinalRouting
+        : plannedStops.length + finalRoutingBudgetExcludedCandidateIds.length,
       stopsAfter: plannedStops.length,
       excludedCandidateIds: finalRoutingBudgetExcludedCandidateIds,
       providerCalls,
@@ -281,5 +357,7 @@ export async function planRouteRecommendation(input: {
       warning: finalRoutingWarning,
     },
     groupPartition,
+    groupRoutes,
+    multiRouteMetrics,
   };
 }

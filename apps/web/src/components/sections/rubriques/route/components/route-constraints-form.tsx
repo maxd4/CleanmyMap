@@ -33,6 +33,54 @@ export function RouteOptionsForm({
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
+          {fr ? "Nombre de bénévoles" : "Volunteers"}
+          <input
+            type="number"
+            min={1}
+            max={100}
+            step={1}
+            value={options.volunteers}
+            onChange={(event) =>
+              setOptions((prev) => {
+                const volunteers = Math.min(100, Math.max(1, Number(event.target.value || 1)));
+                return {
+                  ...prev,
+                  volunteers,
+                  groupCount: Math.min(prev.groupCount, volunteers),
+                };
+              })
+            }
+            className={buildInputClass()}
+          />
+        </label>
+
+        <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
+          {fr ? "Nombre de sous-groupes" : "Sub-groups"}
+          <input
+            type="number"
+            min={1}
+            max={Math.min(12, options.volunteers)}
+            step={1}
+            value={options.groupCount}
+            onChange={(event) =>
+              setOptions((prev) => ({
+                ...prev,
+                groupCount: Math.min(
+                  Math.min(12, prev.volunteers),
+                  Math.max(1, Number(event.target.value || 1)),
+                ),
+              }))
+            }
+            className={buildInputClass()}
+          />
+          <span className="text-xs font-medium text-emerald-100/64">
+            {fr
+              ? `${options.volunteers} bénévoles · ${options.groupCount} groupes · environ ${Math.ceil(options.volunteers / options.groupCount)} personne(s) par groupe`
+              : `${options.volunteers} volunteers · ${options.groupCount} groups · about ${Math.ceil(options.volunteers / options.groupCount)} per group`}
+          </span>
+        </label>
+
+        <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
           {fr ? "Pondération priorité / déplacement" : "Priority / travel weighting"}
           <input
             type="range"

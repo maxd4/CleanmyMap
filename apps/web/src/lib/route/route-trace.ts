@@ -96,6 +96,34 @@ export type RouteFinalRoutingReconciliation = {
   warning: string | null;
 };
 
+export type RouteMultiRouteTrace = {
+  groupCount: number;
+  volunteers: number;
+  groups: Array<{
+    groupIndex: number;
+    volunteerCount: number;
+    candidateIds: string[];
+    reservedCandidateIds: string[];
+    distanceKm: number;
+    durationMinutes: number;
+    targetCount: number;
+    routeMode: RouteGeometry["mode"];
+    withinBudget: boolean;
+  }>;
+  metrics: {
+    coverageGain: number;
+    sharedTargetRatio: number;
+    sharedDistanceKm: number | null;
+    sharedDistanceRatio: number | null;
+    balanceDistance: number;
+    balanceDuration: number;
+    balanceTargetCount: number;
+    balanceVolunteerCount: number;
+    networkDistanceMeasured: boolean;
+  };
+  constraints: string[];
+};
+
 export type RouteRecommendationTrace = {
   isLoop: true;
   engineVersion: string;
@@ -104,6 +132,8 @@ export type RouteRecommendationTrace = {
     travelBudgetMinutes: number;
     maxStops: number;
     priorityVsTravel: number;
+    volunteers?: number;
+    groupCount?: number;
   };
   origin: RoutePlannerOrigin;
   candidates: RouteTraceCandidateSummary;
@@ -176,6 +206,7 @@ export type RouteRecommendationTrace = {
   } | null;
   prediction?: RoutePredictionSummary | null;
   finalRoutingReconciliation: RouteFinalRoutingReconciliation;
+  multiRoute: RouteMultiRouteTrace | null;
 };
 
 export type BuildRouteRecommendationTraceInput = {
@@ -197,6 +228,9 @@ export type BuildRouteRecommendationTraceInput = {
   spatialPrior?: RouteRecommendationTrace["spatialPrior"];
   predictionSummary?: RoutePredictionSummary | null;
   finalRoutingReconciliation?: RouteFinalRoutingReconciliation;
+  volunteers?: number;
+  groupCount?: number;
+  multiRoute?: RouteMultiRouteTrace | null;
 };
 
 const EMPTY_EVENT_SIGNAL_CONTEXT: RouteEventSignalContext = {
@@ -455,6 +489,8 @@ export function buildRouteRecommendationTrace(
       travelBudgetMinutes: input.travelBudgetMinutes,
       maxStops: input.maxStops,
       priorityVsTravel: input.priorityVsTravel,
+      ...(input.volunteers !== undefined ? { volunteers: input.volunteers } : {}),
+      ...(input.groupCount !== undefined ? { groupCount: input.groupCount } : {}),
     },
     origin: { ...input.origin },
     candidates: input.candidateSummary,
@@ -530,5 +566,6 @@ export function buildRouteRecommendationTrace(
     spatialPrior: input.spatialPrior ?? null,
     prediction: input.predictionSummary ?? null,
     finalRoutingReconciliation,
+    multiRoute: input.multiRoute ?? null,
   };
 }

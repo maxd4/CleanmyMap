@@ -13,8 +13,15 @@ import {
 } from "@/lib/route/route-contract";
 import { ROUTE_PLANNER_ENGINE_VERSION } from "@/lib/route/route-planner";
 import type { RoutePlannerOrigin } from "@/lib/route/route-planner";
-import type { RouteRecommendationResponse } from "@/lib/route/route-response-contract";
-import { buildRouteRecommendationTrace, type RouteTraceCandidateSummary } from "@/lib/route/route-trace";
+import type {
+  RouteMultiRouteMetrics,
+  RouteRecommendationResponse,
+} from "@/lib/route/route-response-contract";
+import {
+  buildRouteRecommendationTrace,
+  type RouteMultiRouteTrace,
+  type RouteTraceCandidateSummary,
+} from "@/lib/route/route-trace";
 import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 import type { RouteEventPressureContext, RouteCandidateData } from "./route.candidates";
 import type { RoutePlanningResult } from "./route.planning";
@@ -69,6 +76,43 @@ function buildTraceCandidateSummary(
   };
 }
 
+function buildMultiRouteTrace(
+  groupRoutes: NonNullable<RoutePlanningResult["groupRoutes"]>,
+  metrics: RouteMultiRouteMetrics,
+): RouteMultiRouteTrace {
+  return {
+    groupCount: metrics.groupCount,
+    volunteers: metrics.volunteers,
+    groups: groupRoutes.map((group) => ({
+      groupIndex: group.groupIndex,
+      volunteerCount: group.volunteerCount,
+      candidateIds: [...group.candidateIds],
+      reservedCandidateIds: [...group.reservedCandidateIds],
+      distanceKm: group.travelDistanceKm,
+      durationMinutes: group.travelMinutes,
+      targetCount: group.targetCount,
+      routeMode: group.routeGeometry.mode,
+      withinBudget: group.withinBudget,
+    })),
+    metrics: {
+      coverageGain: metrics.coverageGain,
+      sharedTargetRatio: metrics.sharedTargetRatio,
+      sharedDistanceKm: metrics.sharedDistanceKm,
+      sharedDistanceRatio: metrics.sharedDistanceRatio,
+      balanceDistance: metrics.balanceDistance,
+      balanceDuration: metrics.balanceDuration,
+      balanceTargetCount: metrics.balanceTargetCount,
+      balanceVolunteerCount: metrics.balanceVolunteerCount,
+      networkDistanceMeasured: metrics.networkDistanceMeasured,
+    },
+    constraints: [
+      "Chaque groupe conserve une origine commune et une boucle fermée.",
+      "Un stop ne peut être attribué qu'à un seul groupe par défaut.",
+      "La sécurité et le budget individuel priment sur la diversité des groupes.",
+    ],
+  };
+}
+
 const EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT = {
   candidatePressureById: new Map(),
   completedEventsConsidered: 0,
@@ -106,6 +150,26 @@ export function buildRouteRecommendationResponse(input: {
     groupCount,
   } = input;
   const { plannedStops, routeGeometry, plannerResult } = planning;
+  const groupRoutes = planning.groupRoutes ?? [];
+  const multiRoute: RouteMultiRouteMetrics = planning.multiRouteMetrics ?? {
+    groupCount,
+    volunteers,
+    totalDistanceKm: routeGeometry.distanceKm,
+    totalDurationMinutes: routeGeometry.durationMinutes,
+    coverageGain: planning.groupPartition.metrics.coverageGain,
+    sharedTargetRatio: planning.groupPartition.metrics.sharedTargetRatio,
+    sharedDistanceKm: null,
+    sharedDistanceRatio: null,
+    balanceDistance: planning.groupPartition.metrics.balanceDistance,
+    balanceDuration: planning.groupPartition.metrics.balanceDuration,
+    balanceTargetCount: planning.groupPartition.metrics.balanceTargetCount,
+    balanceVolunteerCount: 0,
+    fallbackGroupCount: routeGeometry.mode === "fallback" ? 1 : 0,
+    networkDistanceMeasured: false,
+  };
+  const multiRouteTrace = groupRoutes.length > 1
+    ? buildMultiRouteTrace(groupRoutes, multiRoute)
+    : null;
   const { candidates, contracts, dataStatus, isTruncated, sourceHealth } =
     candidateData;
   const predictionSummary = {
@@ -125,15 +189,18 @@ export function buildRouteRecommendationResponse(input: {
     priorityVsTravel,
     candidateSummary: buildTraceCandidateSummary(candidateData, plannerResult),
     plannerResult,
-    selectedStops: plannedStops,
+    selectedStops: groupCount === 1 ? plannedStops : [],
     routeGeometry,
-    consumedTravelMinutes: Math.max(routeGeometry.durationMinutes, 0),
+    consumedTravelMinutes: Math.max(multiRoute.totalDurationMinutes, 0),
     budgetPrefixApplied: planning.budgetPrefixApplied,
     sourceHealth,
     eventSignalContext: candidateData.routeEventSignalContext ?? EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT,
     eventCenteredContext: planning.eventCenteredContext,
     predictionSummary,
     finalRoutingReconciliation: planning.finalRoutingReconciliation,
+    volunteers,
+    groupCount,
+    multiRoute: multiRouteTrace,
   });
   const dataLayers = resolveRouteDataLayers({
     observed: { candidateCount: candidates.length, isTruncated, sourceHealth },
@@ -204,17 +271,18 @@ export function buildRouteRecommendationResponse(input: {
         metrics: planning.groupPartition.metrics,
         audit: planning.groupPartition.audit,
       },
+      groupRoutes,
+      multiRoute,
     } satisfies RouteRecommendationResponse;
 
     return NextResponse.json(responsePayload);
   }
 
-  const stops = applyOriginRouteGeometryLegs(
-    buildStops(plannedStops),
-    routeGeometry,
-  );
-  const totalDistance = routeGeometry.distanceKm;
-  const travelMinutes = Math.max(0, routeGeometry.durationMinutes);
+  const stops = groupRoutes.length > 1
+    ? groupRoutes.flatMap(({ stops: groupStops }) => groupStops)
+    : applyOriginRouteGeometryLegs(buildStops(plannedStops), routeGeometry);
+  const totalDistance = multiRoute.totalDistanceKm;
+  const travelMinutes = Math.max(0, multiRoute.totalDurationMinutes);
   const averagePriority =
     plannedStops.reduce((acc, { candidate }) => acc + candidate.score, 0) /
     plannedStops.length;
@@ -248,7 +316,9 @@ export function buildRouteRecommendationResponse(input: {
     volunteers,
     groupCount,
     loop,
-    withinBudget: travelMinutes <= travelBudgetMinutes,
+    withinBudget: groupRoutes.length > 1
+      ? groupRoutes.every(({ withinBudget }) => withinBudget)
+      : travelMinutes <= travelBudgetMinutes,
     serviceMinutesEstimate: null,
     totalMinutesEstimate: null,
     diagnostics: {
@@ -279,6 +349,8 @@ export function buildRouteRecommendationResponse(input: {
       metrics: planning.groupPartition.metrics,
       audit: planning.groupPartition.audit,
     },
+    groupRoutes,
+    multiRoute,
   } satisfies RouteRecommendationResponse;
 
   return NextResponse.json(responsePayload);

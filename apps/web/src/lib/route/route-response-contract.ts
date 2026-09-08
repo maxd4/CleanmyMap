@@ -31,6 +31,8 @@ export type RouteOptions = {
   priorityVsTravel: number;
   travelBudgetMinutes: number;
   maxStops: number;
+  volunteers: number;
+  groupCount: number;
 };
 
 export type RouteResponseOrigin = {
@@ -109,10 +111,39 @@ export type RouteRecommendationResponse = {
     }>;
   };
   groups: RouteGroupAssignment[];
+  groupRoutes: RouteGroupRoute[];
+  multiRoute: RouteMultiRouteMetrics;
   partition: {
     metrics: RoutePartitionMetrics;
     audit: RoutePartitionAudit;
   };
+};
+
+export type RouteGroupRoute = RouteGroupAssignment & {
+  reservedCandidateIds: string[];
+  stops: RouteStop[];
+  routeGeometry: RouteGeometry;
+  travelDistanceKm: number;
+  travelMinutes: number;
+  travelBudgetMinutes: number;
+  withinBudget: boolean;
+};
+
+export type RouteMultiRouteMetrics = {
+  groupCount: number;
+  volunteers: number;
+  totalDistanceKm: number;
+  totalDurationMinutes: number;
+  coverageGain: number;
+  sharedTargetRatio: number;
+  sharedDistanceKm: number | null;
+  sharedDistanceRatio: number | null;
+  balanceDistance: number;
+  balanceDuration: number;
+  balanceTargetCount: number;
+  balanceVolunteerCount: number;
+  fallbackGroupCount: number;
+  networkDistanceMeasured: boolean;
 };
 
 export type RouteResponse = RouteRecommendationResponse;
