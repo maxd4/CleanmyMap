@@ -32,7 +32,7 @@ describe("HomeHero impact methodology link", () => {
     expect(html).toContain('href="/methodologie#indicateurs-impact-terrain"');
   });
 
-  it("renders the target three-row action hierarchy with real destinations", () => {
+  it("renders four equal two-row actions with real destinations", () => {
     const html = renderToStaticMarkup(
       <HomeHero
         metrics={
@@ -54,14 +54,13 @@ describe("HomeHero impact methodology link", () => {
 
     expect(html).toContain('data-cmm-button-group-layout="two-column"');
     expect(html).toContain('href="/actions/map"');
-    expect(html).toContain('href="/sections/messagerie"');
+    expect(html).not.toContain('href="/sections/messagerie"');
     expect(html).toContain('href="/actions/new"');
     expect(html).toContain('href="/sections/rejoindre-un-formulaire"');
     expect(html).toContain('href="/sign-in"');
     expect(html).toContain('data-cmm-button-tone="primary"');
-    expect(html).toContain('data-cmm-button-tone="important"');
     expect(html).toContain('data-cmm-button-tone="critical"');
-    expect(html).toContain('data-cmm-button-width="wide"');
+    expect(html).toContain('data-cmm-button-width="auto"');
     expect(html).toContain("Se connecter / S&#x27;inscrire");
   });
 });
