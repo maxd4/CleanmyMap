@@ -241,6 +241,17 @@ La page publique consomme le dernier snapshot d’impact disponible. La généra
 live des signaux opérationnels est séparée du rendu public et reste réservée aux
 parcours serveur, admin ou cron prévus à cet effet.
 
+Le cron mensuel Impact terrain publie ce snapshot depuis un état incrémental
+maintenu par les mutations de `public.actions` : les insertions, modifications,
+changements d’éligibilité et suppressions appliquent un delta à la projection
+par action et aux compteurs décrémentables. Lorsque la fenêtre glissante avance,
+les contributions sorties des 365 jours sont soustraites sans rescanner les
+actions inchangées. Le paramètre `force` republie l’état incrémental du mois ;
+il ne déclenche pas une reconstruction complète. Le paramètre exceptionnel
+`rebuild=true` est réservé à la première initialisation, à une évolution de
+méthodologie ou à une réparation contrôlée et peut réutiliser la RPC complète
+comme oracle de vérification.
+
 En l’absence de snapshot, la page affiche un état partiel avec les valeurs vides
 prévues ; cette indisponibilité ne doit pas rendre la page entière inutilisable.
 

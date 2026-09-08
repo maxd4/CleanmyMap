@@ -34,3 +34,44 @@ export async function loadPublicLandingActionSummary(
   }
   return row as PublicLandingActionSummaryRow;
 }
+
+async function callImpactStateRpc(
+  functionName:
+  | "advance_public_impact_action_state"
+  | "load_public_landing_action_summary_incremental"
+  | "rebuild_public_impact_action_state",
+  args: Record<string, unknown> = {},
+): Promise<unknown> {
+  const result = await getSupabaseServerClient().rpc(functionName, args);
+  if (result.error) {
+    throw result.error;
+  }
+  return result.data;
+}
+
+export async function advancePublicImpactActionState(
+  floorDate: string,
+): Promise<void> {
+  await callImpactStateRpc("advance_public_impact_action_state", {
+    p_floor_date: floorDate,
+  });
+}
+
+export async function rebuildPublicImpactActionState(
+  floorDate: string,
+): Promise<void> {
+  await callImpactStateRpc("rebuild_public_impact_action_state", {
+    p_floor_date: floorDate,
+  });
+}
+
+export async function loadIncrementalPublicLandingActionSummary(): Promise<PublicLandingActionSummaryRow> {
+  const data = await callImpactStateRpc(
+    "load_public_landing_action_summary_incremental",
+  );
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) {
+    throw new Error("Incremental landing action summary returned no row.");
+  }
+  return row as PublicLandingActionSummaryRow;
+}

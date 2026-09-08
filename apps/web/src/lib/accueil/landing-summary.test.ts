@@ -82,7 +82,8 @@ function monthlyPayload(): PublicImpactSnapshotPayload {
       distinctLocations: 4,
     },
     provenance: {
-      sourceRpc: "public.load_public_landing_action_summary",
+      sourceRpc: "public.load_public_landing_action_summary_incremental",
+      sourceMode: "incremental",
       scope: {
         actionType: "action",
         status: "approved",

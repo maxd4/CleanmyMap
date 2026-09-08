@@ -22,7 +22,7 @@ const generatedResult = {
     snapshotKey: "cleanmymap-impact-terrain-2026",
     snapshotDate: "2026-09-01",
     generatedAt: "2026-09-08T03:00:00.000Z",
-    version: "impact-terrain-public-2026.09-v1",
+    version: "impact-terrain-public-2026.09-v2",
     payload: {
       period: {
         fromDate: "2025-09-08",
@@ -74,8 +74,23 @@ describe("cron public monthly impact route", () => {
         date: "2026-09-01",
         methodologyVersion: "impact-proxy-2026.04-v1",
       },
+      rebuild: false,
     });
-    expect(generateSnapshotMock).toHaveBeenCalledWith({ force: true });
+    expect(generateSnapshotMock).toHaveBeenCalledWith({ force: true, rebuild: false });
+  });
+
+  it("passes rebuild=true only for an explicit exceptional reconstruction", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/cron/impact?rebuild=true", {
+        headers: { authorization: "Bearer test-secret" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(generateSnapshotMock).toHaveBeenCalledWith({
+      force: false,
+      rebuild: true,
+    });
   });
 
   it("returns a safe 503 and keeps persistence untouched on calculation failure", async () => {

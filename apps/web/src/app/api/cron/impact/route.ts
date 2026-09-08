@@ -21,9 +21,10 @@ export async function GET(request: Request) {
   }
 
   const force = new URL(request.url).searchParams.get("force") === "true";
+  const rebuild = new URL(request.url).searchParams.get("rebuild") === "true";
 
   try {
-    const result = await generateAndPersistPublicImpactSnapshot({ force });
+    const result = await generateAndPersistPublicImpactSnapshot({ force, rebuild });
 
     return NextResponse.json({
       status: "ok",
@@ -38,6 +39,7 @@ export async function GET(request: Request) {
       persisted: result.persisted,
       reused: result.reused,
       forced: result.forced,
+      rebuild,
       triggeredBy: "vercel-cron",
     });
   } catch (error) {
