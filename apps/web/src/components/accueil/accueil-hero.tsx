@@ -120,7 +120,7 @@ export function HomeHero({
             </CmmButton>
           </div>
 
-          <div className="relative z-10 mt-7 grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="relative z-10 mx-auto mt-7 grid w-full grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:max-w-[82rem] xl:grid-cols-6">
             {metrics.map((metric) => (
               <HomeImpactKpiCard
                 key={metric.key}
