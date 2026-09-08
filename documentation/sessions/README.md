@@ -32,13 +32,13 @@ contexte projet canonique.
 - **fiche_projet_resume.txt** - Résumé du projet
 - **background.txt** - Contexte général
 - **impact_IA.txt** - Impact de l'IA sur le projet
-- **economie_token.txt** - Économie de tokens
 - **economie_token_prompt_template.md** - Template prompts économes
-- **charte_modes.txt** - Charte des modes d'affichage
-- **audit_vercel_clerk_supabase.txt** - Audit infrastructure
 - **ateliers_DU.txt** - Ateliers Design Urbain
 - **oral_DU_engagement.md** - Mémo de soutenance et trame de pitch pour le jury DU Engagement
 - **Rapport_Annuel_Depollution_Citoyenne_Paris.pdf** - Rapport annuel
+
+La matrice canonique des modes d'affichage est documentée dans
+[`DISPLAY_MODES_CANONICAL.md`](../design-system/DISPLAY_MODES_CANONICAL.md).
 
 ### assets/ — ressources à consulter seulement lorsque nécessaires
 - **data_pipeline.webp** - Pipeline de données

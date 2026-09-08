@@ -25,7 +25,6 @@ Supabase vivent dans `documentation/database/`.
 - `runbook-deploiement.md`
 - `checklist-push-deploy.md`
 - `cloudflare-uptimerobot-checklist.md`
-- `fix_vercel_deploy.md`
 
 ## Incidents et maintenance
 
