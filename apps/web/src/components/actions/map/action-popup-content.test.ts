@@ -128,6 +128,8 @@ describe("action popup presentation", () => {
     expect(markup).toContain("Déchets collectés");
     expect(markup).toContain("Mégots collectés");
     expect(markup).toContain("Nouvelle action ici");
+    expect(markup).toContain('href="/reports"');
+    expect(markup).toContain("Générer le rapport d&#x27;impact");
     expect(markup).not.toContain("Priorité d'intervention");
     expect(markup).not.toContain("Déclarer une action");
     expect(markup).not.toContain("pollution");
@@ -289,6 +291,7 @@ describe("action popup presentation", () => {
     );
 
     expect(markup).toContain("Mettre à jour l’état du lieu");
+    expect(markup).not.toContain('href="/reports"');
     expect(markup).not.toContain("mode=propre");
   });
 });

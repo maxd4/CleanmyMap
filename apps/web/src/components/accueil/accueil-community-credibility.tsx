@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef } from "react";
 import {
   ArrowRight,
@@ -56,6 +57,8 @@ const ECOSYSTEM_STEPS = [
   { title: "Méthode", text: "Cadre universitaire et outils" },
   { title: "Territoire", text: "Partenaires et impact" },
 ] as const;
+
+const COMMUNITY_ACTION_SLOTS = 4;
 
 function SectionLandscape({
   variant,
@@ -148,53 +151,84 @@ function CommunityActivityCard({
     item.cigaretteButts !== null || item.wasteKg !== null;
 
   return (
-    <article
+    <Link
+      href={`/actions/map?actionId=${encodeURIComponent(item.id)}`}
+      prefetch={false}
       data-gsap-reveal
       data-home-community-action-card
-      className="flex items-start gap-3 rounded-[1.25rem] border border-white/90 bg-white/80 px-3 py-3 shadow-[0_14px_26px_-24px_rgba(4,78,58,0.45)] transition-transform hover:-translate-y-0.5 sm:gap-4 sm:px-4"
+      aria-label={`Voir l'action ${item.title}`}
+      className="group block rounded-[1.25rem] border border-white/90 bg-white/80 px-3 py-3 shadow-[0_14px_26px_-24px_rgba(4,78,58,0.45)] outline-none transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50 sm:px-4"
     >
-      <ActionPreview image={item.image} />
-      <div className="flex min-w-0 flex-1 items-start gap-3 self-stretch py-0.5">
-        <div className="min-w-0 flex-1">
-          <h3 className="line-clamp-2 text-[13px] font-black leading-tight text-[#082d35] sm:text-sm">
-            {item.title}
-          </h3>
-          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] leading-snug text-[#315c67] sm:text-[12px]">
-            {item.cigaretteButts !== null ? (
-              <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                <Cigarette size={13} aria-hidden="true" />
-                <span>{item.cigaretteButts.toLocaleString("fr-FR")} mégots</span>
-              </span>
-            ) : null}
-            {item.wasteKg !== null ? (
-              <span className="inline-flex items-center gap-1 whitespace-nowrap">
-                <Trash2 size={13} aria-hidden="true" />
-                <span>
-                  {item.wasteKg.toLocaleString("fr-FR", {
-                    maximumFractionDigits: 1,
-                  })} kg de déchets
+      <article className="flex items-start gap-3 sm:gap-4">
+        <ActionPreview image={item.image} />
+        <div className="flex min-w-0 flex-1 items-start gap-3 self-stretch py-0.5">
+          <div className="min-w-0 flex-1">
+            <h3 className="line-clamp-2 text-[13px] font-black leading-tight text-[#082d35] sm:text-sm">
+              {item.title}
+            </h3>
+            <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] leading-snug text-[#315c67] sm:text-[12px]">
+              {item.cigaretteButts !== null ? (
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <Cigarette size={13} aria-hidden="true" />
+                  <span>{item.cigaretteButts.toLocaleString("fr-FR")} mégots</span>
                 </span>
+              ) : null}
+              {item.wasteKg !== null ? (
+                <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                  <Trash2 size={13} aria-hidden="true" />
+                  <span>
+                    {item.wasteKg.toLocaleString("fr-FR", {
+                      maximumFractionDigits: 1,
+                    })} kg de déchets
+                  </span>
+                </span>
+              ) : null}
+              {!hasImpactMetrics ? item.summary : null}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="line-clamp-1 max-w-full rounded-full bg-[#e8f1f0] px-2.5 py-1 text-[10px] font-bold text-[#315c67]">
+                {item.location}
               </span>
-            ) : null}
-            {!hasImpactMetrics ? item.summary : null}
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span className="line-clamp-1 max-w-full rounded-full bg-[#e8f1f0] px-2.5 py-1 text-[10px] font-bold text-[#315c67]">
-              {item.location}
+            </div>
+          </div>
+          <div className="flex w-[4.75rem] shrink-0 flex-col items-end justify-between gap-2 self-stretch">
+            <time
+              className="whitespace-nowrap text-[10px] font-semibold text-[#476c76] sm:text-[11px]"
+              dateTime={item.dateLabel}
+            >
+              {item.timeLabel}
+            </time>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-800">
+              <CheckCircle2 size={12} />
+              {item.statusLabel}
             </span>
           </div>
         </div>
-        <div className="flex w-[4.75rem] shrink-0 flex-col items-end justify-between gap-2 self-stretch">
-          <time
-            className="whitespace-nowrap text-[10px] font-semibold text-[#476c76] sm:text-[11px]"
-            dateTime={item.dateLabel}
-          >
-            {item.timeLabel}
-          </time>
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-bold text-emerald-800">
-            <CheckCircle2 size={12} />
-            {item.statusLabel}
-          </span>
+      </article>
+    </Link>
+  );
+}
+
+function CommunityActivityPlaceholder() {
+  return (
+    <article
+      data-gsap-reveal
+      data-home-community-action-card
+      data-home-community-action-placeholder
+      aria-label="Aucune action récente disponible"
+      className="flex min-h-[7.25rem] items-start gap-3 rounded-[1.25rem] border border-white/80 bg-white/55 px-3 py-3 text-[#476c76] shadow-[0_14px_26px_-24px_rgba(4,78,58,0.3)] sm:gap-4 sm:px-4"
+    >
+      <ActionPreview
+        image={{ source: "none", url: null, alt: "", isFallback: false }}
+      />
+      <div className="flex min-w-0 flex-1 items-center self-stretch">
+        <div className="space-y-2">
+          <p className="text-[13px] font-black leading-tight sm:text-sm">
+            Aucune action récente disponible
+          </p>
+          <p className="text-[11px] leading-snug sm:text-[12px]">
+            Cet emplacement reste réservé à une action vérifiée.
+          </p>
         </div>
       </div>
     </article>
@@ -309,19 +343,15 @@ export function HomeCommunityCredibility({
           ) : null}
 
           <div className="mt-3 space-y-2.5">
-            {activity.items.length > 0 ? (
-              activity.items.slice(0, 3).map((item) => (
+            {Array.from({ length: COMMUNITY_ACTION_SLOTS }, (_, index) => {
+              const item = activity.items[index];
+
+              return item ? (
                 <CommunityActivityCard key={item.id} item={item} />
-              ))
-            ) : (
-              <div
-                data-gsap-reveal
-                className="rounded-[1.25rem] border border-white/80 bg-white/75 px-4 py-5 text-sm text-[#315c67]"
-              >
-                Aucune action terrain récente vérifiée n&apos;est disponible pour
-                le moment.
-              </div>
-            )}
+              ) : (
+                <CommunityActivityPlaceholder key={`placeholder-${index}`} />
+              );
+            })}
           </div>
 
           <div

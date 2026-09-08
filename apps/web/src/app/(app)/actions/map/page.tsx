@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { BarChart3, Table2, ArrowRight } from "lucide-react";
 import { buildHomeMetrics } from "@/lib/accueil/config";
 import { ActionsMapFeedContent } from "@/components/actions/map-feed/actions-map-feed";
@@ -69,6 +70,8 @@ export default function ActionsMapPage() {
 
 function ActionsMapPageContent() {
   const pageFamily = resolvePageFamily("/actions/map");
+  const searchParams = useSearchParams();
+  const requestedActionId = searchParams.get("actionId")?.trim() || null;
   const { references } = useActionPollutionScoreReferences();
   const {
     filters,
@@ -86,8 +89,12 @@ function ActionsMapPageContent() {
     visibleCategories,
   } = filters;
 
-  const [railTab, setRailTab] = useState<"insights" | "journal">("insights");
-  const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+  const [railTab, setRailTab] = useState<"insights" | "journal">(
+    requestedActionId ? "journal" : "insights",
+  );
+  const [selectedActionId, setSelectedActionId] = useState<string | null>(
+    requestedActionId,
+  );
   const {
     viewport: mapViewport,
     viewportRequest,

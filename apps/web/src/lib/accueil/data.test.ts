@@ -100,6 +100,27 @@ describe("accueil data", () => {
     expect(activity.items[0]?.id).toBe("approved");
   });
 
+  it("keeps four recent action records available for the homepage slots", () => {
+    const activity = buildHomeCommunityActivity(
+      [
+        makeContract("action-1", "approved", 1),
+        makeContract("action-2", "approved", 2),
+        makeContract("action-3", "approved", 3),
+        makeContract("action-4", "approved", 4),
+        makeContract("action-5", "approved", 5),
+      ],
+      "2026-01-01",
+    );
+
+    expect(activity.items).toHaveLength(4);
+    expect(activity.items.map((item) => item.id)).toEqual([
+      "action-1",
+      "action-2",
+      "action-3",
+      "action-4",
+    ]);
+  });
+
   it("prefers the real action name over the legacy sheet source label", () => {
     const activity = buildHomeCommunityActivity(
       [

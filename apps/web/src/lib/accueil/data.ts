@@ -357,7 +357,7 @@ export function buildHomeCommunityActivity(
 
   const items = [...visibleContracts]
     .sort((a, b) => b.dates.observedAt.localeCompare(a.dates.observedAt))
-    .slice(0, 3)
+    .slice(0, 4)
     .map((contract, index) => {
       const actor = getActorLabel(contract);
 
