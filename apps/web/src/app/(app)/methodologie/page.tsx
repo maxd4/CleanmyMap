@@ -55,7 +55,9 @@ export default async function MethodologiePage() {
     monthlyEvaporatedWaterLiters: null,
   });
 
-  const githubStatsPromise = loadGitHubRepositoryStats("maxd4/CleanmyMap").catch((error) => {
+  const githubStatsPromise = loadGitHubRepositoryStats("maxd4/CleanmyMap", {
+    revalidateSeconds: 86400,
+  }).catch((error) => {
     console.error("[MethodologiePage] Failed to load GitHub repository stats", error);
     return null;
   });
