@@ -43,11 +43,13 @@ pas que tous les signaux métier sont disponibles. Le snapshot actuel contient
 ## Version et configuration
 
 La configuration versionnée est `predictionModelVersion =
-"paris-pressure-risk-v2"` dans `paris-pressure-risk-contract.ts`. Cette
-version ne modifie aucun poids, aucune échelle et aucune formule de risque.
-Elle durcit la portée de la provenance contextuelle, rend une résolution de
-propreté inconnue fail-closed et intègre la fiabilité de la correction dans la
-confiance finale.
+"paris-pressure-risk-v3-urban-morphology"` dans
+`paris-pressure-risk-contract.ts`. Le prior additionnel est versionné
+séparément sous `urban-morphology-prior-v1`. Cette version ne modifie aucun
+poids, aucune échelle et aucune formule de risque de base. Elle conserve la
+portée de la provenance contextuelle, le comportement fail-closed d'une
+résolution de propreté inconnue et la traçabilité séparée du prior
+morphologique.
 
 ### Poids de base
 
@@ -190,6 +192,72 @@ en IRIS.
 La correction ne remplace jamais l'historique local validé. Un hotspot peut
 donc conserver un risque élevé malgré une correction de propreté favorable.
 
+## Prior morphologique urbain
+
+Le prior morphologique est un contexte géographique optionnel, porté par
+`zone.urbanMorphology`. Il est séparé du risque de base et calculé
+indépendamment pour les déchets et les mégots. Le pipeline est explicitement :
+
+```text
+beforeMorphology = clamp(baseRisk + cleanlinessCorrection, 0, 100)
+afterRisk = clamp(beforeMorphology - appliedMalusPoints, 0, 100)
+```
+
+`beforeMorphology` est donc le risque après les facteurs de base et la
+correction de propreté, mais avant le prior morphologique. Le prior ne remplace
+ni les facteurs de base ni la correction de propreté.
+
+Les composantes atténuantes utilisées par le prior sont :
+
+- voie locale peu circulée (`lowTrafficLocalStreet`) ;
+- voie sans issue (`deadEnd`) ;
+- intérieur de parc (`parkInterior`) ;
+- secteur résidentiel à faible flux (`residentialLowFlow`).
+
+Des exceptions géographiques réduisent une composante lorsqu'un contexte
+local documente une fréquentation ou un usage incompatible avec cette
+atténuation : entrées, lisières, équipements et restauration de parc pour
+`parkInterior` ; proximité d'une station, d'un commerce, d'une école, de
+terrasses ou d'un secteur touristique pour les composantes liées au faible
+flux. Ces exceptions sont appliquées avant le calcul des points du prior.
+
+Les plafonds configurés sont de `10` points pour les déchets et `8` points
+pour les mégots. Le seuil de confiance du prior est `0,55`. Les coefficients
+et ces plafonds sont ceux de `urban-morphology-prior-v1` ; ils ne doivent pas
+être réinterprétés comme des observations de pollution.
+
+Un prior appliqué peut être compensé par des signaux déjà présents dans la
+branche de risque concernée :
+
+- pression événementielle supérieure ou égale à `0,65` ;
+- historique local validé supérieur ou égal à `0,4`, déchets ou mégots selon
+  la branche ;
+- signal de fréquentation robuste supérieur ou égal à `0,65`, parmi les
+  facteurs de fréquentation disponibles pour cette branche.
+
+Les signaux et les points de compensation sont conservés dans
+`urbanMorphologyPrior.compensatingSignals` et
+`urbanMorphologyPrior.compensationPoints`. Ils ne sont pas inventés après le
+calcul.
+
+La source géographique est portée par `urbanMorphologyPrior.source` et
+`geographicSource`, avec le contrat complet de provenance : éditeur, jeu de
+données, version, niveau géographique, statut, dates, licence et notes. Les
+sources morphologiques réellement utilisées sont également intégrées à la
+provenance pertinente du score. Le runtime ne déduit pas une morphologie à
+partir de la proximité d'un centroïde ou d'une autre source non déclarée.
+
+Si la morphologie est `unavailable` ou si sa confiance est inférieure à
+`0,55`, aucun malus n'est appliqué. L'absence de morphologie ne signifie donc
+pas que la zone est propre. Le prior est non éliminatoire au niveau du
+contrat : il n'ajoute aucune règle d'exclusion propre ; les règles d'admission
+et de corridor du planner restent distinctes.
+
+Lorsque le snapshot courant ne contient pas de données morphologiques pour une
+zone, le statut est `unavailable`, `appliedMalusPoints` vaut `0` et
+`afterRisk` est égal à `beforeMorphology`. Le comportement est alors identique
+à celui qui précédait l'introduction du prior.
+
 ## Sortie explicable et provenance
 
 `estimateParisPressureRisk` retourne notamment :
@@ -200,6 +268,9 @@ donc conserver un risque élevé malgré une correction de propreté favorable.
   de sa source ;
 - `cleanlinessCorrection` séparée, avec sa valeur, sa résolution et son
   explication ;
+- `urbanMorphologyPrior` séparé par branche, avec son statut, sa version, sa
+  source géographique, ses composantes, son plafond, ses points avant/après
+  compensation, sa confiance et son explication ;
 - `confidence` par score : complétude des facteurs de base, fiabilité de leurs
   sources, disponibilité et fiabilité de la correction de propreté, score,
   niveau et facteurs manquants ;
@@ -217,11 +288,16 @@ La confiance expose quatre composantes :
 - `cleanlinessCorrectionSourceReliability` : fiabilité de la source de
   propreté utilisée, avec `1`, `0,7` ou `0` selon son statut.
 
-La confiance finale est la borne minimale de ces quatre indicateurs. Ainsi une
-correction inconnue ou sans source fiable ne peut pas conserver la même
-confiance qu'un `finalRisk` dont la correction de propreté est documentée. Le
-niveau est `unknown` à `0`, `low` sous `0,4`, `medium` de `0,4` à moins de
-`0,75`, et `high` à partir de `0,75`.
+La confiance globale est la borne minimale de ces quatre indicateurs. Elle
+décrit les facteurs de base et la correction de propreté ; elle n'intègre pas
+la confiance du prior morphologique. Cette dernière est tracée séparément dans
+`urbanMorphologyPrior.confidence`, avec son propre statut `applied`,
+`low_confidence` ou `unavailable`. Ainsi une correction inconnue ou sans source
+fiable ne peut pas conserver la même confiance qu'un `finalRisk` dont la
+correction de propreté est documentée, sans prétendre que cette confiance
+globale mesure aussi la fiabilité du prior. Le niveau est `unknown` à `0`,
+`low` sous `0,4`, `medium` de `0,4` à moins de `0,75`, et `high` à partir de
+`0,75`.
 
 Le tri de `estimateParisPressureRiskByZone` est déterministe :
 `wasteRisk` décroissant, puis `cigaretteButtRisk` décroissant, puis `zoneId`

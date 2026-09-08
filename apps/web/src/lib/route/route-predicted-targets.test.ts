@@ -184,6 +184,73 @@ describe("predicted route targets", () => {
     expect(butts.candidates[0]?.family).toBe("predicted");
   });
 
+  it("explique la branche mégots dominante lorsque le focus porte sur les deux risques", () => {
+    const morphologySource: ParisPressureProvenance = {
+      family: "geography",
+      publisher: "Test geography",
+      dataset: "Morphology dominant risk test",
+      url: "https://example.test/morphology-dominant-risk",
+      license: "Licence de test",
+      datasetVersion: "2026-test",
+      observedAt: "2026-09-08",
+      refreshedAt: "2026-09-08T00:00:00.000Z",
+      geographicLevel: "iris",
+      status: "available",
+      notes: [],
+    };
+    const input = {
+      snapshot: withZones([{
+        ...zone("butts-dominant", 48.8568, 2.3522, {
+          residentPopulation: { population: null, densityPerKm2: null, normalized: 0 },
+          transport: { stationCount: 0, annualEntrants: null, normalized: 0 },
+          tourism: { visitorAttendance: null, tourismPresenceProxy: null, normalized: 0 },
+          publicActivity: {
+            authorisedTerraces: 200,
+            openAirMarkets: 0,
+            otherPlaces: 0,
+            normalized: 0,
+          },
+        }),
+        urbanMorphology: {
+          source: morphologySource,
+          confidence: 0.9,
+          features: {
+            lowTrafficLocalStreet: null,
+            deadEnd: null,
+            parkInterior: 1,
+            residentialLowFlow: null,
+            parkEntrance: null,
+            parkEdge: null,
+            parkAmenity: null,
+            foodService: null,
+            stationProximity: null,
+            commerceProximity: null,
+            schoolProximity: null,
+            terraceProximity: null,
+            touristProximity: null,
+          },
+        },
+      }]),
+      origin: { latitude: 48.8566, longitude: 2.3522 },
+      travelBudgetMinutes: 60,
+      riskFocus: "all",
+    } as const;
+    const result = buildPredictedRouteCandidates(input);
+    const cigaretteFocused = buildPredictedRouteCandidates({
+      ...input,
+      riskFocus: "cigaretteButts",
+    });
+
+    const candidate = result.candidates[0]!;
+    expect(candidate.evidence.cigaretteButtRisk).toBeGreaterThan(candidate.evidence.wasteRisk);
+    expect(candidate.evidence.dominantRisk).toBe("cigaretteButts");
+    expect(candidate.reason).toContain("Zone prédite mégots");
+    expect(candidate.reason).toContain("Terrasses");
+    expect(candidate.reason).toContain("prior morphologique compensé par signal de fréquentation robuste");
+    expect(candidate.reason).toBe(cigaretteFocused.candidates[0]?.reason);
+    expect(candidate.reason).not.toContain("contexte morphologique atténuant=3.5 pts");
+  });
+
   it("reste fonctionnel sans snapshot et permet au planner observé de continuer", () => {
     const unavailable = buildPredictedRouteCandidates({
       snapshot: null,
