@@ -44,3 +44,12 @@ Les primitives suivent le contrat global de `DISPLAY_MODES_CANONICAL.md` :
 
 Les modes ne changent ni les données, ni les fonctionnalités, ni la structure
 des composants métier.
+
+## Règles UX conservées
+
+- ne pas afficher un message machine vague comme `An error occurred` ;
+- ne pas utiliser une modal bloquante pour une simple erreur de champ ;
+- distinguer validation, réseau, serveur, permission et état vide ;
+- toute action de reprise doit avoir un effet réel : corriger, réessayer,
+  rafraîchir, se reconnecter ou contacter le support ;
+- ne pas présenter une erreur réseau comme une erreur serveur définitive.
