@@ -15,6 +15,7 @@ import { ROUTE_PLANNER_ENGINE_VERSION } from "@/lib/route/route-planner";
 import type { RoutePlannerOrigin } from "@/lib/route/route-planner";
 import type {
   RouteMultiRouteMetrics,
+  RoutePickupPreference,
   RouteRecommendationResponse,
 } from "@/lib/route/route-response-contract";
 import {
@@ -135,6 +136,7 @@ export function buildRouteRecommendationResponse(input: {
   priorityVsTravel: number;
   volunteers: number;
   groupCount: number;
+  pickupPreference: RoutePickupPreference;
 }): NextResponse {
   const {
     origin,
@@ -148,6 +150,7 @@ export function buildRouteRecommendationResponse(input: {
     priorityVsTravel,
     volunteers,
     groupCount,
+    pickupPreference,
   } = input;
   const { plannedStops, routeGeometry, plannerResult } = planning;
   const groupRoutes = planning.groupRoutes ?? [];
@@ -200,6 +203,7 @@ export function buildRouteRecommendationResponse(input: {
     finalRoutingReconciliation: planning.finalRoutingReconciliation,
     volunteers,
     groupCount,
+    pickupPreference,
     multiRoute: multiRouteTrace,
   });
   const dataLayers = resolveRouteDataLayers({
@@ -240,6 +244,7 @@ export function buildRouteRecommendationResponse(input: {
       travelBudgetMinutes,
       volunteers,
       groupCount,
+      constraintsApplied: { pickupPreference },
       loop,
       withinBudget: true,
       serviceMinutesEstimate: null,
@@ -315,6 +320,7 @@ export function buildRouteRecommendationResponse(input: {
     travelBudgetMinutes,
     volunteers,
     groupCount,
+    constraintsApplied: { pickupPreference },
     loop,
     withinBudget: groupRoutes.length > 1
       ? groupRoutes.every(({ withinBudget }) => withinBudget)

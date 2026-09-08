@@ -88,7 +88,14 @@ describe("route recommendation request gate", () => {
   it("serializes only the shared HTTP fields, never the UI snapshot wrapper", async () => {
     const submitted = createRouteRecommendationSubmission(
       11,
-      { priorityVsTravel: 23, travelBudgetMinutes: 42, maxStops: 4, volunteers: 11, groupCount: 3 },
+      {
+        priorityVsTravel: 23,
+        travelBudgetMinutes: 42,
+        maxStops: 4,
+        volunteers: 11,
+        groupCount: 3,
+        pickupPreference: "waste",
+      },
     );
     const transport = vi.fn().mockResolvedValue(
       new Response(JSON.stringify(responsePayload), { status: 200 }),
@@ -103,6 +110,7 @@ describe("route recommendation request gate", () => {
       maxStops: 4,
       volunteers: 11,
       groupCount: 3,
+      pickupPreference: "waste",
       planningMode: { type: "free" },
     });
     expect(payload).not.toHaveProperty("id");
@@ -127,6 +135,25 @@ describe("route recommendation request gate", () => {
     );
 
     expect(transport).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps cigarette-butts preference in the explicit request snapshot", async () => {
+    const transport = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(responsePayload), { status: 200 }),
+    );
+
+    await fetchRouteRecommendation(
+      createRouteRecommendationSubmission(
+        13,
+        { ...DEFAULT_ROUTE_OPTIONS, pickupPreference: "cigarette_butts" },
+      ),
+      transport,
+    );
+
+    expect(JSON.parse(transport.mock.calls[0]?.[1]?.body as string)).toMatchObject({
+      pickupPreference: "cigarette_butts",
+      planningMode: { type: "free" },
+    });
   });
 
   it("transports an ephemeral browser origin alongside, not inside, the options", async () => {

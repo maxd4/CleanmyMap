@@ -26,6 +26,7 @@ const nonDefaultOptions: RouteOptions = {
   maxStops: 9,
   volunteers: 11,
   groupCount: 3,
+  pickupPreference: "waste",
 };
 
 describe("route draft storage contract", () => {
@@ -73,6 +74,7 @@ describe("route draft storage contract", () => {
       maxStops: 9,
       volunteers: 1,
       groupCount: 1,
+      pickupPreference: "balanced",
     });
   });
 
@@ -92,6 +94,7 @@ describe("route draft storage contract", () => {
       maxStops: 1,
       volunteers: 1,
       groupCount: 1,
+      pickupPreference: "balanced",
     });
 
     writeRouteDraftOptions(storage, nonDefaultOptions);
@@ -120,6 +123,45 @@ describe("route draft storage contract", () => {
     );
 
     expect(readRouteDraftOptions(storage)).toEqual(DEFAULT_ROUTE_OPTIONS);
+  });
+
+  it("migrates an older draft without pickup preference to balanced", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(
+      ROUTE_DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        version: 4,
+        options: {
+          priorityVsTravel: 55,
+          travelBudgetMinutes: 45,
+          maxStops: 4,
+          volunteers: 4,
+          groupCount: 2,
+        },
+      }),
+    );
+
+    expect(readRouteDraftOptions(storage)).toMatchObject({
+      priorityVsTravel: 55,
+      travelBudgetMinutes: 45,
+      maxStops: 4,
+      volunteers: 4,
+      groupCount: 2,
+      pickupPreference: "balanced",
+    });
+  });
+
+  it("falls back to balanced for an invalid persisted preference", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(
+      ROUTE_DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        version: ROUTE_DRAFT_SCHEMA_VERSION,
+        options: { pickupPreference: "profile-derived" },
+      }),
+    );
+
+    expect(readRouteDraftOptions(storage).pickupPreference).toBe("balanced");
   });
 
   it("does not throw when browser storage is unavailable", () => {

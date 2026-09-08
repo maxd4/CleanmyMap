@@ -373,7 +373,7 @@ describe("POST /api/route/recommend", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(200);
-    expect(payload.constraintsApplied).toBeUndefined();
+    expect(payload.constraintsApplied).toEqual({ pickupPreference: "balanced" });
     expect(payload.volunteers).toBe(8);
     expect(payload.groupCount).toBe(2);
     expect(payload.groups).toHaveLength(2);

@@ -124,6 +124,7 @@ export async function POST(request: Request) {
       priorityVsTravel,
       volunteers: options.volunteers,
       groupCount: options.groupCount,
+      pickupPreference: options.pickupPreference,
     });
 
     try {

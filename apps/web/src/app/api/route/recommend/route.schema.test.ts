@@ -27,6 +27,7 @@ describe("route recommendation HTTP request schema", () => {
         ...payload,
         planningMode: { type: "free" },
         riskFocus: "all",
+        pickupPreference: "balanced",
         volunteers: 1,
         groupCount: 1,
       });
@@ -56,6 +57,7 @@ describe("route recommendation HTTP request schema", () => {
       expect(parsed.data.priorityVsDistance).toBeUndefined();
       expect(parsed.data.volunteers).toBe(1);
       expect(parsed.data.groupCount).toBe(1);
+      expect(parsed.data.pickupPreference).toBe("balanced");
     }
 
     expectTypeOf<RouteRecommendationOptions["travelBudgetMinutes"]>().toEqualTypeOf<number>();
@@ -79,6 +81,15 @@ describe("route recommendation HTTP request schema", () => {
 
     expect(parsed.travelBudgetMinutes).toBe(42);
     expect(parsed.maxStops).toBe(3);
+  });
+
+  it("accepts waste and cigarette-butts preferences", () => {
+    expect(parseRouteRecommendationRequest({ pickupPreference: "waste" }).data?.pickupPreference).toBe("waste");
+    expect(parseRouteRecommendationRequest({ pickupPreference: "cigarette_butts" }).data?.pickupPreference).toBe("cigarette_butts");
+  });
+
+  it("rejects an invalid pickup preference", () => {
+    expect(parseRouteRecommendationRequest({ pickupPreference: "profile" }).success).toBe(false);
   });
 
   it("accepts a bounded multi-group contract", () => {

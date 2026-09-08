@@ -1,5 +1,6 @@
 import {
   normalizeGroupCountForOrganization,
+  type RoutePickupPreference,
   type RouteOptions,
 } from "../route-types";
 
@@ -130,6 +131,72 @@ export function RouteOptionsForm({
               </span>
             </label>
           ) : null}
+        </fieldset>
+
+        <fieldset
+          className="rounded-2xl border border-emerald-200/12 bg-[rgba(11,34,25,0.52)] p-4 md:col-span-2"
+          aria-label={fr ? "Préférence de collecte" : "Pickup preference"}
+        >
+          <legend className="px-1 text-sm font-bold text-emerald-50/90">
+            {fr
+              ? "Que souhaitez-vous principalement ramasser ?"
+              : "What would you mainly like to collect?"}
+          </legend>
+          <div className="mt-2 grid gap-3 md:grid-cols-3" role="radiogroup">
+            {(
+              [
+                [
+                  "balanced",
+                  "Sans préférence",
+                  "Le moteur équilibre les différents types de pollution.",
+                  "No preference",
+                  "The engine balances the different types of pollution.",
+                ],
+                [
+                  "waste",
+                  "Déchets",
+                  "Le moteur privilégie les zones où les déchets sont les plus pertinents à ramasser.",
+                  "Waste",
+                  "The engine prioritizes areas where waste is most relevant to collect.",
+                ],
+                [
+                  "cigarette_butts",
+                  "Mégots",
+                  "Le moteur privilégie les zones où les mégots sont les plus présents ou probables.",
+                  "Cigarette butts",
+                  "The engine prioritizes areas where cigarette butts are most present or likely.",
+                ],
+              ] as const
+            ).map(([value, label, help, englishLabel, englishHelp]) => {
+              const preference = value as RoutePickupPreference;
+              return (
+                <label
+                  key={value}
+                  className="flex min-h-24 cursor-pointer flex-col gap-2 rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold text-white transition has-[:checked]:border-emerald-300/60 has-[:checked]:bg-emerald-400/10"
+                >
+                  <span className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="route-pickup-preference"
+                      value={value}
+                      checked={options.pickupPreference === preference}
+                      onChange={() =>
+                        setOptions((prev) => ({
+                          ...prev,
+                          pickupPreference: preference,
+                        }))
+                      }
+                      className="accent-emerald-300"
+                    />
+                    {fr ? label : englishLabel}
+                  </span>
+                  <span className="pl-7 text-xs font-medium leading-relaxed text-emerald-100/64">
+                    {fr ? help : englishHelp}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
         </fieldset>
 
         <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">

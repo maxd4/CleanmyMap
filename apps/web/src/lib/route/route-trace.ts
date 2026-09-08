@@ -26,6 +26,7 @@ import type {
   RouteTargetEvidence,
 } from "./route-predicted-targets";
 import type { VolunteerAdditionalityResult } from "@/lib/geo/volunteer-additionality-contract";
+import type { RoutePickupPreference } from "./route-response-contract";
 
 export type RouteTraceExclusionReason =
   | "not_admissible"
@@ -132,6 +133,7 @@ export type RouteRecommendationTrace = {
     travelBudgetMinutes: number;
     maxStops: number;
     priorityVsTravel: number;
+    pickupPreference: RoutePickupPreference;
     volunteers?: number;
     groupCount?: number;
   };
@@ -216,6 +218,7 @@ export type BuildRouteRecommendationTraceInput = {
   travelBudgetMinutes: number;
   maxStops: number;
   priorityVsTravel: number;
+  pickupPreference?: RoutePickupPreference;
   candidateSummary: RouteTraceCandidateSummary;
   plannerResult: RoutePlannerResult;
   selectedStops: PlannedRouteStop[];
@@ -489,6 +492,7 @@ export function buildRouteRecommendationTrace(
       travelBudgetMinutes: input.travelBudgetMinutes,
       maxStops: input.maxStops,
       priorityVsTravel: input.priorityVsTravel,
+      pickupPreference: input.pickupPreference ?? "balanced",
       ...(input.volunteers !== undefined ? { volunteers: input.volunteers } : {}),
       ...(input.groupCount !== undefined ? { groupCount: input.groupCount } : {}),
     },

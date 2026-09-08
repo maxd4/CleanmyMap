@@ -229,6 +229,7 @@ function responseInput(overrides: Record<string, unknown> = {}) {
     priorityVsTravel: 65,
     volunteers: 1,
     groupCount: 1,
+    pickupPreference: "balanced",
   };
   return {
     ...base,
@@ -285,6 +286,7 @@ describe("route recommendation response trace contract", () => {
       isLoop: true,
       volunteers: 1,
       groupCount: 1,
+      constraintsApplied: { pickupPreference: "balanced" },
       groups: [{ groupIndex: 1 }],
       loop: {
         isLoop: true,
@@ -326,6 +328,17 @@ describe("route recommendation response trace contract", () => {
     });
     expect(payload.dataLayers).toBeDefined();
     expect(payload.status).toBe(payload.dataLayers.recommendation);
+  });
+
+  it("returns the explicit pickup preference in constraints and trace", async () => {
+    installDefaultMocks();
+    const response = buildRouteRecommendationResponse(responseInput({
+      pickupPreference: "waste",
+    }));
+    const payload: RouteRecommendationResponse = await response.json();
+
+    expect(payload.constraintsApplied).toEqual({ pickupPreference: "waste" });
+    expect(payload.trace.parameters.pickupPreference).toBe("waste");
   });
 
   it("keeps prediction evidence distinct from observed evidence", async () => {

@@ -48,6 +48,7 @@ describe("route organization and representation UI contract", () => {
           maxStops: 6,
           volunteers: 12,
           groupCount: 3,
+          pickupPreference: "balanced",
         },
         setOptions,
         fr: true,
@@ -59,6 +60,12 @@ describe("route organization and representation UI contract", () => {
     expect(markup).toContain("Diviser le groupe");
     expect(markup).toContain('min="2"');
     expect(markup).toContain("12 bénévoles → 3 groupes");
+    expect(markup).toContain("Que souhaitez-vous principalement ramasser ?");
+    expect(markup).toContain("Sans préférence");
+    expect(markup).toContain("Déchets");
+    expect(markup).toContain("Mégots");
+    expect(markup).toContain("Le moteur équilibre les différents types de pollution.");
+    expect(markup).toContain("Le moteur privilégie les zones où les mégots sont les plus présents ou probables.");
     expect(setOptions).not.toHaveBeenCalled();
   });
 });
