@@ -62,6 +62,8 @@ describe("HomeImpactKpiCard", () => {
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain("Afficher la méthode de calcul pour CO₂ évité");
     expect(html).toContain("items-start gap-3");
+    expect(html).toContain("min-h-[9.75rem]");
+    expect(html).toContain("sm:text-lg");
     expect(html).toContain("text-[clamp(1.75rem,2.5vw,2.45rem)]");
     expect(html).not.toContain("0,025");
     expect(html).not.toContain("1 000 000");
