@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import type { HomeCommunityActivitySummary } from "@/lib/accueil/data";
 
 vi.mock("@/lib/animations/use-gsap-reveal", () => ({
   useGsapReveal: () => undefined,
@@ -11,6 +12,30 @@ const EMPTY_ACTIVITY = {
   visibleActions: 0,
   distinctLocations: 0,
   items: [],
+};
+
+const ONE_ITEM_ACTIVITY: HomeCommunityActivitySummary = {
+  visibleActions: 1,
+  distinctLocations: 1,
+  items: [
+    {
+      id: "action-1",
+      actor: "La Brigade Verte",
+      initials: "LB",
+      action: "Action terrain",
+      title: "La Brigade Verte a réuni 10 bénévoles le 14/04/2026",
+      summary: "Action vérifiée",
+      location: "Canal Saint-Martin, Paris",
+      timeLabel: "Il y a 2 j",
+      dateLabel: "2026-04-14",
+      statusLabel: "Vérifiée",
+      volunteersCount: 10,
+      cigaretteButts: 320,
+      wasteKg: 18,
+      image: { source: "none", url: null, alt: "", isFallback: false },
+      tone: "emerald" as const,
+    },
+  ],
 };
 
 describe("HomeCommunityCredibility action hierarchy", () => {
@@ -59,5 +84,20 @@ describe("HomeCommunityCredibility action hierarchy", () => {
     expect(mapIndex).toBeLessThan(partnersIndex);
     expect(markup).toContain(">Discuter<");
     expect(markup).toContain('data-cmm-button-tone="important"');
+  });
+
+  it("keeps four clickable action slots and reserves empty structures", () => {
+    const markup = renderToStaticMarkup(
+      <HomeCommunityCredibility activity={ONE_ITEM_ACTIVITY} />,
+    );
+
+    expect(markup.match(/data-home-community-action-card/g)).toHaveLength(4);
+    expect(markup.match(/data-home-community-action-placeholder/g)).toHaveLength(3);
+    expect(markup).toContain(
+      'href="/actions/map?actionId=action-1"',
+    );
+    expect(markup).toContain(
+      'aria-label="Voir l&#x27;action La Brigade Verte a réuni 10 bénévoles le 14/04/2026"',
+    );
   });
 });

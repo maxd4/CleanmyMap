@@ -3,6 +3,7 @@ import {
   Calendar,
   Clock,
   ExternalLink,
+  FileText,
   Shield,
   Sparkles,
   Trash2,
@@ -190,6 +191,19 @@ export function ActionPopupContentBody({
           <span>{sourceLabel}</span>
         </div>
       </div>
+
+      {isAction ? (
+        <CmmButton
+          href="/reports"
+          tone="critical"
+          variant="pill"
+          className="w-full justify-center gap-2 px-4 py-3 text-[11px] font-black uppercase tracking-[0.1em]"
+        >
+          <FileText size={15} />
+          Générer le rapport d&apos;impact
+          <ArrowRight size={15} />
+        </CmmButton>
+      ) : null}
 
       {updateHref ? (
         <a
