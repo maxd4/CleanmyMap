@@ -104,14 +104,14 @@ export function HomeImpactKpiCard({
                 setIsOpen(false);
               }
             }}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-[#c2415b] bg-white/65 text-[#9f1239] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c2415b] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#c2415b] bg-white/65 text-[#9f1239] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c2415b] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
           >
             <Info size={16} strokeWidth={2.5} aria-hidden="true" />
           </button>
         </div>
 
-        <div className="min-w-0">
-          <p className={`truncate font-black leading-none tracking-[-0.04em] ${metric.key === "water" ? "text-[clamp(1rem,4.5vw,1.45rem)] min-[768px]:text-[clamp(1.35rem,3vw,1.8rem)] min-[1200px]:text-[clamp(1.9rem,1.65vw,2.35rem)]" : "text-[clamp(1.45rem,6.2vw,1.85rem)] min-[768px]:text-[clamp(1.7rem,3.6vw,2.15rem)] min-[1200px]:text-[clamp(2.25rem,2.5vw,3rem)]"} ${style.value}`}>
+        <div className="flex min-w-0 flex-1 items-center justify-center">
+          <p className={`w-full truncate text-center font-black leading-none tracking-[-0.04em] ${metric.key === "water" ? "text-[clamp(1.1rem,4.8vw,1.55rem)] min-[768px]:text-[clamp(1.5rem,3.2vw,1.95rem)] min-[1200px]:text-[clamp(2rem,1.75vw,2.5rem)]" : "text-[clamp(1.6rem,6.5vw,2rem)] min-[768px]:text-[clamp(1.9rem,3.8vw,2.35rem)] min-[1200px]:text-[clamp(2.5rem,2.7vw,3.2rem)]"} ${style.value}`}>
             {metric.value === "n/a" ? "—" : metric.value}
           </p>
         </div>

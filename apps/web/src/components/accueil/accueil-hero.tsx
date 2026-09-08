@@ -112,7 +112,7 @@ export function HomeHero({
               href="/methodologie#indicateurs-impact-terrain"
               tone="secondary"
               variant="pill"
-              className="h-10 !border-white/80 !bg-white/90 !text-[#102044] !shadow-[0_10px_24px_-16px_rgba(0,40,30,0.4)] hover:!bg-white"
+              className="h-9 !border !border-[#c2415b] !bg-white/90 !text-[#102044] !shadow-[0_10px_24px_-16px_rgba(0,40,30,0.4)] hover:!bg-white"
             >
               <span aria-hidden="true">ⓘ</span>
               Méthodologie
@@ -120,7 +120,7 @@ export function HomeHero({
             </CmmButton>
           </div>
 
-          <div className="relative z-10 mt-7 grid w-full grid-cols-2 gap-3 min-[768px]:grid-cols-3 min-[1200px]:grid-cols-6 min-[1200px]:gap-4">
+          <div className="relative z-10 mt-7 grid w-full grid-cols-2 gap-3 px-1 min-[768px]:grid-cols-3 min-[768px]:px-2 min-[1200px]:grid-cols-6 min-[1200px]:gap-4 min-[1200px]:px-3">
             {metrics.map((metric) => (
               <HomeImpactKpiCard
                 key={metric.key}
