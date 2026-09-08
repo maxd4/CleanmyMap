@@ -124,24 +124,34 @@ export function HomeImpactKpiCard({
         style={{ zIndex: 1200 }}
         className={`invisible pointer-events-none absolute bottom-[calc(100%+0.75rem)] right-0 z-30 w-[min(19rem,calc(100vw-2.5rem))] translate-y-2 rounded-2xl border border-white/80 bg-[#f7fffb] p-4 text-left text-[#14334a] opacity-0 shadow-[0_22px_42px_-20px_rgba(0,49,36,0.55)] transition duration-200 group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 ${isOpen ? "!pointer-events-auto !visible !translate-y-0 !opacity-100" : ""}`}
       >
-        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#0b7758]">
-          {metric.label}
-        </p>
-        <div className="mt-3 space-y-2 text-xs font-semibold leading-5">
-          {insight.lines.map((line) => (
-            <p key={line}>{line}</p>
-          ))}
-          {metric.key === "volunteers" ? (
-            <ParticipantsDistribution
-              distribution={impactSnapshot?.actionDistribution ?? []}
-            />
-          ) : null}
+        <div className="flex items-start gap-3">
+          <span
+            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#047957] bg-white/70 text-[#7c3aed] min-[1200px]:inline-flex"
+            aria-hidden="true"
+          >
+            <Info size={18} strokeWidth={2.5} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#0b7758]">
+              {metric.label}
+            </p>
+            <div className="mt-3 space-y-2 text-xs font-semibold leading-5">
+              {insight.lines.map((line) => (
+                <p key={line}>{line}</p>
+              ))}
+              {metric.key === "volunteers" ? (
+                <ParticipantsDistribution
+                  distribution={impactSnapshot?.actionDistribution ?? []}
+                />
+              ) : null}
+            </div>
+            {insight.note ? (
+              <p className="mt-3 border-t border-[#b8ded0] pt-3 text-[10px] font-medium leading-4 text-[#41675e]">
+                {insight.note}
+              </p>
+            ) : null}
+          </div>
         </div>
-        {insight.note ? (
-          <p className="mt-3 border-t border-[#b8ded0] pt-3 text-[10px] font-medium leading-4 text-[#41675e]">
-            {insight.note}
-          </p>
-        ) : null}
       </div>
     </article>
   );
