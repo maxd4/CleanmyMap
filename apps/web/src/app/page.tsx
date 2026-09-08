@@ -141,9 +141,13 @@ export default async function HomePage() {
       ? "Les données d’activité sont partiellement disponibles."
       : null);
   return (
-    <main className="relative isolate -mx-2 min-h-screen min-w-0 w-[calc(100%+1rem)] overflow-hidden bg-[radial-gradient(circle_at_72%_10%,rgba(196,181,253,0.42),transparent_24%),radial-gradient(circle_at_32%_48%,rgba(110,231,183,0.52),transparent_34%),linear-gradient(135deg,#005743_0%,#0a936b_42%,#b9f3dc_100%)] font-sans text-[#082f24] [zoom:0.9] sm:-mx-4 sm:w-[calc(100%+2rem)]">
-      <div className="pointer-events-none absolute -right-28 top-24 h-96 w-96 rounded-full bg-violet-300/30 blur-[100px]" />
-      <div className="pointer-events-none absolute -left-40 top-[34rem] h-96 w-96 rounded-full bg-emerald-200/45 blur-[110px]" />
+    <main
+      data-homepage-canvas
+      className="relative isolate -mx-2 min-h-screen min-w-0 w-[calc(100%+1rem)] overflow-hidden bg-[radial-gradient(circle_at_78%_14%,rgba(167,139,250,0.18),transparent_24%),radial-gradient(circle_at_18%_57%,rgba(245,158,11,0.1),transparent_22%),radial-gradient(circle_at_82%_79%,rgba(16,185,129,0.14),transparent_30%),linear-gradient(180deg,#005743_0%,#087958_16%,#1ea876_28%,#75d3ad_37%,#c8f2df_50%,#f1fbf5_67%,#f7fcf8_84%,#edf8f1_100%)] font-sans text-[#082f24] [zoom:0.9] sm:-mx-4 sm:w-[calc(100%+2rem)]"
+    >
+      <div className="pointer-events-none absolute -right-28 top-24 h-96 w-96 rounded-full bg-violet-300/20 blur-[120px]" />
+      <div className="pointer-events-none absolute -left-40 top-[39rem] h-[28rem] w-[28rem] rounded-full bg-amber-200/20 blur-[130px]" />
+      <div className="pointer-events-none absolute right-[-12rem] top-[76rem] h-[34rem] w-[34rem] rounded-full bg-emerald-200/30 blur-[150px]" />
       <div className="relative z-10 min-w-0">
         <HomeHero
           metrics={metrics}

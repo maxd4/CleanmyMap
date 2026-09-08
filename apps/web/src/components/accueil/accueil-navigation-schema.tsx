@@ -102,23 +102,23 @@ function NavigationLandscape() {
     >
       <path
         d="M0 302c150-70 270-57 410-10 132 44 235 14 352-50 128-70 230-51 350 30 110 74 199 75 328 20v365H0Z"
-        fill="#d8f8ea"
-        opacity="0.62"
+        fill="#c6f2dc"
+        opacity="0.34"
       />
       <path
         d="M0 390c137-38 247-20 355 28 122 54 215 51 334-19 125-73 231-64 360 12 122 72 244 71 391-24v698H0Z"
-        fill="#e4f4ff"
-        opacity="0.66"
+        fill="#d9f4e7"
+        opacity="0.3"
       />
       <path
         d="M0 0h1440v180c-142 32-236 91-335 134-128 56-218 55-338-5-135-68-254-64-378 8-124 72-229 67-389-6Z"
-        fill="#ffffff"
-        opacity="0.54"
+        fill="#f7fffb"
+        opacity="0.28"
       />
-      <path d="M0 960c182-34 332-10 485 30 164 44 308 54 473 13 173-43 309-45 482-5v87H0Z" fill="#d7f6e9" opacity="0.88" />
-      <path d="M0 1004c170-12 319 29 465 55 176 31 326 18 492-20 183-42 317-31 483 14v32H0Z" fill="#e9f5ff" opacity="0.88" />
-      <path d="M60 252c21-74 43-118 74-157 31 39 48 78 56 143-43-15-82-8-130 14Zm1280 733c21-67 43-108 73-145 27 36 43 72 50 128-43-10-79-3-123 17Z" fill="#bcefdc" opacity="0.72" />
-      <path d="M45 676c18-53 31-82 52-111 21 29 32 59 38 108-31-7-59-5-90 3Zm1320-165c17-45 30-71 49-96 20 26 30 52 35 94-30-7-55-5-84 2Z" fill="#9be5c8" opacity="0.65" />
+      <path d="M0 960c182-34 332-10 485 30 164 44 308 54 473 13 173-43 309-45 482-5v87H0Z" fill="#c8f1dc" opacity="0.46" />
+      <path d="M0 1004c170-12 319 29 465 55 176 31 326 18 492-20 183-42 317-31 483 14v32H0Z" fill="#e3f7ec" opacity="0.44" />
+      <path d="M60 252c21-74 43-118 74-157 31 39 48 78 56 143-43-15-82-8-130 14Zm1280 733c21-67 43-108 73-145 27 36 43 72 50 128-43-10-79-3-123 17Z" fill="#b5ead1" opacity="0.45" />
+      <path d="M45 676c18-53 31-82 52-111 21 29 32 59 38 108-31-7-59-5-90 3Zm1320-165c17-45 30-71 49-96 20 26 30 52 35 94-30-7-55-5-84 2Z" fill="#8cdbba" opacity="0.36" />
     </svg>
   );
 }
@@ -281,8 +281,9 @@ function NavigationCard({ path }: { path: NavigationPath }) {
 export function HomeNavigationSchema() {
   return (
     <section
+      data-homepage-section="navigation"
       aria-labelledby="home-navigation-title"
-      className="relative isolate mx-auto min-h-[112rem] w-[calc(100%_-_4px)] max-w-none overflow-hidden bg-[#fbfefd] py-12 sm:py-16 lg:min-h-[94rem] lg:pb-[4.5rem] lg:pt-[6.5rem]"
+      className="relative isolate mx-auto min-h-[112rem] w-[calc(100%_-_4px)] max-w-none overflow-hidden py-12 sm:py-16 lg:min-h-[94rem] lg:pb-[4.5rem] lg:pt-[6.5rem]"
     >
       <NavigationLandscape />
       <div className="relative z-10 mx-auto w-full max-w-[1750px] px-4 sm:px-8 lg:px-0">
