@@ -33,6 +33,12 @@ type WorkflowRunsResponse = {
   total_count: number;
 };
 
+export type GitHubRepositoryStatsOptions = {
+  revalidateSeconds?: number;
+};
+
+const GITHUB_DEFAULT_REVALIDATE_SECONDS = 3600;
+
 function buildHeaders(token: string | null): HeadersInit {
   return {
     Accept: "application/vnd.github+json",
@@ -65,10 +71,17 @@ async function resolveGitHubToken(): Promise<string | null> {
   }
 }
 
-async function fetchJson<T>(path: string, token: string | null): Promise<T | null> {
+async function fetchJson<T>(
+  path: string,
+  token: string | null,
+  options: GitHubRepositoryStatsOptions = {},
+): Promise<T | null> {
   const response = await fetch(`https://api.github.com${path}`, {
     headers: buildHeaders(token),
-    next: { revalidate: 3600 },
+    next: {
+      revalidate:
+        options.revalidateSeconds ?? GITHUB_DEFAULT_REVALIDATE_SECONDS,
+    },
   });
 
   if (!response.ok) {
@@ -78,7 +91,11 @@ async function fetchJson<T>(path: string, token: string | null): Promise<T | nul
   return (await response.json()) as T;
 }
 
-async function fetchPaginatedArray<T>(path: string, token: string | null): Promise<T[] | null> {
+async function fetchPaginatedArray<T>(
+  path: string,
+  token: string | null,
+  options: GitHubRepositoryStatsOptions = {},
+): Promise<T[] | null> {
   const items: T[] = [];
   let nextUrl: string | null = `https://api.github.com${path}${path.includes("?") ? "&" : "?"}per_page=100`;
   let guard = 0;
@@ -86,7 +103,10 @@ async function fetchPaginatedArray<T>(path: string, token: string | null): Promi
   while (nextUrl && guard < 10) {
     const response: Response = await fetch(nextUrl, {
       headers: buildHeaders(token),
-      next: { revalidate: 3600 },
+      next: {
+        revalidate:
+          options.revalidateSeconds ?? GITHUB_DEFAULT_REVALIDATE_SECONDS,
+      },
     });
 
     if (!response.ok) {
@@ -105,13 +125,18 @@ async function fetchPaginatedArray<T>(path: string, token: string | null): Promi
   return items;
 }
 
-async function fetchWorkflowRunsCount30d(repoFullName: string, token: string | null): Promise<number | null> {
+async function fetchWorkflowRunsCount30d(
+  repoFullName: string,
+  token: string | null,
+  options: GitHubRepositoryStatsOptions = {},
+): Promise<number | null> {
   const since = new Date();
   since.setDate(since.getDate() - 30);
   const sinceIso = since.toISOString().slice(0, 10);
   const response = await fetchJson<WorkflowRunsResponse>(
     `/repos/${repoFullName}/actions/runs?status=completed&created=>=${sinceIso}&per_page=1`,
     token,
+    options,
   );
 
   if (!response) {
@@ -123,22 +148,29 @@ async function fetchWorkflowRunsCount30d(repoFullName: string, token: string | n
 
 export async function loadGitHubRepositoryStats(
   repoFullName: string,
+  options: GitHubRepositoryStatsOptions = {},
 ): Promise<GitHubRepositoryStats> {
   const token = await resolveGitHubToken();
-  const repo = await fetchJson<GitHubRepositoryResponse>(`/repos/${repoFullName}`, token);
+  const repo = await fetchJson<GitHubRepositoryResponse>(
+    `/repos/${repoFullName}`,
+    token,
+    options,
+  );
   const workflowRunsCount30d = token
-    ? await fetchWorkflowRunsCount30d(repoFullName, token)
+    ? await fetchWorkflowRunsCount30d(repoFullName, token, options)
     : null;
   const dependabotAlerts = token
     ? await fetchPaginatedArray<Record<string, unknown>>(
         `/repos/${repoFullName}/dependabot/alerts?state=open`,
         token,
+        options,
       )
     : null;
   const codeScanningAlerts = token
     ? await fetchPaginatedArray<CodeScanningAlertResponse>(
         `/repos/${repoFullName}/code-scanning/alerts?state=open`,
         token,
+        options,
       )
     : null;
 
