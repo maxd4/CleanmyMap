@@ -88,7 +88,7 @@ describe("route recommendation request gate", () => {
   it("serializes only the shared HTTP fields, never the UI snapshot wrapper", async () => {
     const submitted = createRouteRecommendationSubmission(
       11,
-      { priorityVsTravel: 23, travelBudgetMinutes: 42, maxStops: 4 },
+      { priorityVsTravel: 23, travelBudgetMinutes: 42, maxStops: 4, volunteers: 11, groupCount: 3 },
     );
     const transport = vi.fn().mockResolvedValue(
       new Response(JSON.stringify(responsePayload), { status: 200 }),
@@ -101,6 +101,8 @@ describe("route recommendation request gate", () => {
       priorityVsTravel: 23,
       travelBudgetMinutes: 42,
       maxStops: 4,
+      volunteers: 11,
+      groupCount: 3,
       planningMode: { type: "free" },
     });
     expect(payload).not.toHaveProperty("id");

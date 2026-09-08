@@ -140,6 +140,15 @@ export const API_AUTHORIZATION_CONTRACT = {
       evidenceScope: "module",
     },
   },
+  "actions/map/pollution-score-references": {
+    GET: {
+      expected: "Public weekly pollution-score reference snapshot read",
+      dimensions: ["public-safe"],
+      actual:
+        "No session gate; bounded persisted reference is served through the public map contract",
+      evidence: ["loadPollutionScoreReferencesForMap"],
+    },
+  },
   "actions/prefill": {
     GET: {
       expected: "Authenticated user reads only their own prefill history",

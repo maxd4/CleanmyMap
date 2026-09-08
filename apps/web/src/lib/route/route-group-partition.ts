@@ -76,7 +76,7 @@ export type RoutePartitionAudit = {
     samePredictiveZone: number;
     nearbyCorridor: number;
     networkSharedDistanceKm: number | null;
-    networkDistanceMeasured: false;
+    networkDistanceMeasured: boolean;
   };
 };
 

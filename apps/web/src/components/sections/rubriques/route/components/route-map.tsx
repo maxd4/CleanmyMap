@@ -18,6 +18,7 @@ import type {
   RouteRecommendationOrigin,
   RouteResponseOrigin,
 } from "../route-types";
+import type { RouteGroupRoute } from "@/lib/route/route-response-contract";
 
 const EMPTY_CENTER: [number, number] = [48.8566, 2.3522];
 
@@ -97,6 +98,8 @@ function RouteOriginPicker({
 export function RouteMap({
   stops,
   routeGeometry,
+  groupRoutes = [],
+  selectedGroupIndex = null,
   selectedStopId = null,
   onSelectStop,
   origin = null,
@@ -106,6 +109,8 @@ export function RouteMap({
 }: {
   stops: RouteStop[];
   routeGeometry: RouteGeometry;
+  groupRoutes?: RouteGroupRoute[];
+  selectedGroupIndex?: number | null;
   selectedStopId?: string | null;
   onSelectStop?: (stopId: string) => void;
   origin?: RouteResponseOrigin | null;
@@ -113,10 +118,21 @@ export function RouteMap({
   onClearOrigin?: () => void;
   fr: boolean;
 }) {
-  const mapCoordinates = useMemo(
-    () => buildRouteMapCoordinates(stops, routeGeometry, origin),
-    [origin, routeGeometry, stops],
-  );
+  const visibleGroupRoutes = selectedGroupIndex === null
+    ? groupRoutes
+    : groupRoutes.filter(({ groupIndex }) => groupIndex === selectedGroupIndex);
+  const mapCoordinates = useMemo(() => {
+    if (groupRoutes.length === 0) {
+      return buildRouteMapCoordinates(stops, routeGeometry, origin);
+    }
+    return [
+      ...(origin ? [[origin.latitude, origin.longitude] as [number, number]] : []),
+      ...visibleGroupRoutes.flatMap(({ routeGeometry: geometry, stops: groupStops }) => [
+        ...geometry.coordinates,
+        ...groupStops.map((stop) => [stop.latitude, stop.longitude] as [number, number]),
+      ]),
+    ];
+  }, [groupRoutes, origin, routeGeometry, stops, visibleGroupRoutes]);
   const routeCoordinates =
     routeGeometry.isLoop && routeGeometry.coordinates.length >= 2
       ? routeGeometry.coordinates
@@ -136,7 +152,9 @@ export function RouteMap({
   return (
     <section className="relative overflow-hidden rounded-[2rem] border border-emerald-300/18 bg-[rgba(10,31,50,0.98)] shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
       <div className="absolute left-4 top-4 z-[1000] rounded-full border border-white/15 bg-slate-950/80 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white backdrop-blur-xl">
-        {routeGeometry.mode === "network"
+        {groupRoutes.length > 1
+          ? `${fr ? "Boucles coordonnées" : "Coordinated loops"} · ${visibleGroupRoutes.every(({ routeGeometry: geometry }) => geometry.mode === "network") ? (fr ? "réseau" : "network") : visibleGroupRoutes.some(({ routeGeometry: geometry }) => geometry.mode === "network") ? (fr ? "réseau + estimation" : "network + estimated") : (fr ? "estimées" : "estimated")}`
+          : routeGeometry.mode === "network"
           ? `${fr ? "Réseau" : "Network"} · ${routeGeometry.provider.toUpperCase()} · ${fr ? "profil configuré" : "configured profile"}: ${routeGeometry.profile ?? "n/a"}`
           : fr
             ? "Itinéraire estimé · réseau indisponible"
@@ -185,7 +203,27 @@ export function RouteMap({
             </Popup>
           </Marker>
         ) : null}
-        {routeCoordinates.length >= 2 ? (
+        {groupRoutes.length > 1
+          ? visibleGroupRoutes.map((group, groupIndex) => {
+              const color = ["#34d399", "#60a5fa", "#fbbf24", "#f472b6", "#a78bfa"][groupIndex % 5]!;
+              return group.routeGeometry.coordinates.length >= 2 ? (
+                <Polyline
+                  key={`group-route-${group.groupIndex}`}
+                  positions={group.routeGeometry.coordinates}
+                  pathOptions={{
+                    color,
+                    weight: selectedGroupIndex === group.groupIndex ? 7 : 5,
+                    opacity: selectedGroupIndex === null ? 0.82 : selectedGroupIndex === group.groupIndex ? 0.95 : 0.2,
+                    dashArray: group.routeGeometry.mode === "fallback" ? "10 10" : undefined,
+                  }}
+                >
+                  <Tooltip sticky>
+                    {fr ? `Groupe ${group.groupIndex} · ${group.travelDistanceKm.toFixed(2)} km · ${group.travelMinutes} min` : `Group ${group.groupIndex} · ${group.travelDistanceKm.toFixed(2)} km · ${group.travelMinutes} min`}
+                  </Tooltip>
+                </Polyline>
+              ) : null;
+            })
+          : routeCoordinates.length >= 2 ? (
           <Polyline
             positions={routeCoordinates}
             pathOptions={
@@ -210,11 +248,13 @@ export function RouteMap({
             </Tooltip>
           </Polyline>
         ) : null}
-        {stops.map((stop, index) => {
+        {(groupRoutes.length > 1
+          ? visibleGroupRoutes.flatMap((group) => group.stops.map((stop, index) => ({ group, stop, index })))
+          : stops.map((stop, index) => ({ group: null, stop, index }))).map(({ group, stop, index }) => {
           const selected = selectedStopId === stop.id;
           return (
             <Marker
-              key={stop.id}
+              key={`${group?.groupIndex ?? "route"}-${stop.id}`}
               position={[stop.latitude, stop.longitude]}
               icon={buildStopIcon(index, selected)}
               eventHandlers={{
@@ -222,7 +262,7 @@ export function RouteMap({
               }}
             >
               <Tooltip direction="top" offset={[0, -12]}>
-                {`${index + 1}. ${stop.label}`}
+                {`${group ? `G${group.groupIndex} · ` : ""}${index + 1}. ${stop.label}`}
               </Tooltip>
               <Popup>
                 <strong>{index + 1}. {stop.label}</strong>
@@ -232,9 +272,11 @@ export function RouteMap({
             </Marker>
           );
         })}
-        {stops.map((stop) => (
+        {(groupRoutes.length > 1
+          ? visibleGroupRoutes.flatMap((group) => group.stops.map((stop) => ({ group, stop })))
+          : stops.map((stop) => ({ group: null, stop }))).map(({ group, stop }) => (
           <CircleMarker
-            key={`anchor-${stop.id}`}
+            key={`anchor-${group?.groupIndex ?? "route"}-${stop.id}`}
             center={[stop.latitude, stop.longitude]}
             radius={selectedStopId === stop.id ? 13 : 9}
             pathOptions={{

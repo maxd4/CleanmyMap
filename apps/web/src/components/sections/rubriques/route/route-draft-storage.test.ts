@@ -24,6 +24,8 @@ const nonDefaultOptions: RouteOptions = {
   priorityVsTravel: 42,
   travelBudgetMinutes: 90,
   maxStops: 9,
+  volunteers: 11,
+  groupCount: 3,
 };
 
 describe("route draft storage contract", () => {
@@ -69,6 +71,8 @@ describe("route draft storage contract", () => {
       priorityVsTravel: 42,
       travelBudgetMinutes: 60,
       maxStops: 9,
+      volunteers: 1,
+      groupCount: 1,
     });
   });
 
@@ -86,6 +90,8 @@ describe("route draft storage contract", () => {
       priorityVsTravel: 30,
       travelBudgetMinutes: 60,
       maxStops: 1,
+      volunteers: 1,
+      groupCount: 1,
     });
 
     writeRouteDraftOptions(storage, nonDefaultOptions);

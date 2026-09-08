@@ -22,6 +22,11 @@ export function RouteSummaryCards({ options, fr }: RouteSummaryCardsProps) {
       value: `${options.travelBudgetMinutes} min`,
       note: fr ? "Temps maximal" : "Maximum time",
     },
+    {
+      label: fr ? "Sous-groupes" : "Sub-groups",
+      value: `${options.volunteers} · ${options.groupCount}`,
+      note: fr ? "Bénévoles · groupes" : "Volunteers · groups",
+    },
   ] as const;
 
   return (
@@ -38,7 +43,7 @@ export function RouteSummaryCards({ options, fr }: RouteSummaryCardsProps) {
           : "The selection combines the available operational priority (report freshness) and travel."}
       </p>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
         {summaryCards.map((item) => (
           <div
             key={item.label}
