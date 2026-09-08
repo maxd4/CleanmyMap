@@ -5,6 +5,8 @@ import {
   classifyChangedPath,
   evaluateChangedPaths,
   evaluateIgnoreCommand,
+  evaluateSignedDeployment,
+  hasCommitSignature,
 } from "./ignored-build-step.mjs";
 
 test("builds when a web runtime or build input changes", () => {
@@ -73,4 +75,35 @@ test("builds a mixed change set when one path is web-served documentation", () =
 
   assert.equal(decision.action, "build");
   assert.deepEqual(decision.buildPaths, ["documentation/operations/runbook-deploiement.md"]);
+});
+
+test("recognizes signed Git commit objects without confusing payload text for a signature", () => {
+  assert.equal(
+    hasCommitSignature("tree abc\ngpgsig -----BEGIN SSH SIGNATURE-----\n payload\n\nsubject"),
+    true,
+  );
+  assert.equal(hasCommitSignature("tree abc\nauthor Maxence <maxence@example.com>\n\nsubject"), false);
+  assert.equal(hasCommitSignature("tree abc\n\nsubject mentions gpgsig but is not signed"), false);
+});
+
+test("deploys every signed commit automatically, independently of changed paths", () => {
+  assert.deepEqual(
+    evaluateSignedDeployment({ currentSha: "signed", signatureStatus: "present" }),
+    {
+      action: "build",
+      buildPaths: [],
+      reason: "signed Vercel commit; deploy automatically",
+    },
+  );
+});
+
+test("skips unsigned, unavailable, or incomplete Vercel commits", () => {
+  for (const signatureStatus of ["absent", "unavailable"]) {
+    assert.equal(
+      evaluateSignedDeployment({ currentSha: "commit", signatureStatus }).action,
+      "ignore",
+    );
+  }
+
+  assert.equal(evaluateSignedDeployment({ currentSha: "", signatureStatus: "present" }).action, "ignore");
 });
