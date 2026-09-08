@@ -29,6 +29,36 @@ restent dans les sources de session ou les documents d'audit appropriés.
 - Procédure de session et budget de contexte :
   `documentation/operations/agent-memory-governance.md`.
 
+## Exclusions de contexte
+
+- `.codexignore` exclut les sorties locales déjà identifiées comme générées :
+  `artifacts/`, `**/artifacts/`, `.quarto/` et `**/.quarto/`.
+- `.artifacts/` n'est pas exclu globalement : il contient des preuves et
+  inventaires versionnés, notamment `.artifacts/README.md`. Toute nouvelle
+  exclusion doit d'abord vérifier la provenance, le suivi Git et le caractère
+  régénérable des fichiers concernés.
+- Les dossiers lourds suivants ne sont pas à scanner par défaut :
+  `node_modules/`, `.next/`, `.vercel/`, `.playwright-mcp/`, `.gitnexus/`,
+  `artifacts/`, `backups/` et les caches Quarto.
+
+## Doctrine de lecture progressive
+
+Pour une tâche ordinaire, lire dans cet ordre :
+
+1. les règles racine ;
+2. le `AGENTS.md` scoped applicable ;
+3. le fichier cible ;
+4. ses dépendances directes, callers et consommateurs nécessaires ;
+5. les tests directement liés ;
+6. la documentation canonique du domaine ;
+7. le contexte complémentaire seulement si un doute réel subsiste.
+
+Un audit explicitement global peut élargir ce périmètre. Les historiques de
+session non pertinents, `node_modules/`, `.next/`, `.vercel/`, `.artifacts/`,
+`artifacts/`, `backups/`, `.playwright-mcp/`, `.gitnexus/` et les caches Quarto
+ne sont pas explorés par défaut ; l'exception `.artifacts/` protège ses preuves
+versionnées et impose une lecture ciblée lorsqu'un fichier y est concerné.
+
 ## Frontières d'architecture
 
 - `apps/web` porte l'application web, ses routes API et son intégration
