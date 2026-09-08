@@ -51,10 +51,10 @@ const CREDIBILITY_PROOF_CARDS = [
 ] as const;
 
 const ECOSYSTEM_STEPS = [
-  { title: "Terrain", text: "Observations\net actions" },
-  { title: "Carte", text: "Données\net visualisation" },
-  { title: "Méthode", text: "Cadre universitaire\net outils" },
-  { title: "Territoire", text: "Partenaires\net impact" },
+  { title: "Terrain", text: "Observations et actions" },
+  { title: "Carte", text: "Données et visualisation" },
+  { title: "Méthode", text: "Cadre universitaire et outils" },
+  { title: "Territoire", text: "Partenaires et impact" },
 ] as const;
 
 function SectionLandscape({
@@ -393,17 +393,18 @@ export function HomeCommunityCredibility({
 
           <article
             data-gsap-reveal
-            className="mt-6 flex flex-1 flex-col rounded-[1.65rem] border border-white/25 bg-[linear-gradient(135deg,#20b384_0%,#179f98_46%,#7569ec_100%)] p-5 text-white shadow-[0_24px_48px_-32px_rgba(4,76,54,0.48)] sm:p-6 lg:p-7"
+            data-credibility-combined-card
+            className="mt-6 flex flex-col rounded-[1.65rem] border border-white/25 bg-[linear-gradient(135deg,#20b384_0%,#179f98_46%,#7569ec_100%)] p-5 text-white shadow-[0_24px_48px_-32px_rgba(4,76,54,0.48)] sm:p-6 lg:p-7"
           >
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-emerald-100">
                 <GraduationCap size={23} />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-100/90">
                   L&apos;histoire du projet
                 </p>
-                <h3 className="mt-2 whitespace-nowrap text-[clamp(1.1rem,2.2vw,2.2rem)] font-black tracking-tight">
+                <h3 className="mt-2 text-[clamp(1.1rem,2.2vw,2.2rem)] font-black tracking-tight sm:whitespace-nowrap">
                   Une démarche d&apos;engagement concrète
                 </h3>
               </div>
@@ -444,25 +445,23 @@ export function HomeCommunityCredibility({
                 );
               })}
             </div>
-          </article>
 
-          <article
-            data-gsap-reveal
-            className="mt-3 flex flex-1 flex-col rounded-[1.65rem] border border-white/25 bg-[linear-gradient(135deg,#1eaf82_0%,#1699a2_48%,#7569ec_100%)] p-5 text-white shadow-[0_24px_52px_-30px_rgba(50,45,143,0.34)] sm:p-6 lg:p-7"
-          >
-            <div className="flex items-start gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
-                <Users size={23} />
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/85">
-                  Des partenariats au service du territoire
-                </p>
-                <h3 className="mt-2 text-xl font-black tracking-tight sm:text-2xl">
-                  Un écosystème en construction
-                </h3>
+            <div className="mt-7 border-t border-white/25 pt-6">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white">
+                  <Users size={23} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/85">
+                    Des partenariats au service du territoire
+                  </p>
+                  <h3 className="mt-2 text-xl font-black tracking-tight sm:text-2xl">
+                    Un écosystème en construction
+                  </h3>
+                </div>
               </div>
             </div>
+
             <div className="mt-5 space-y-3 text-[14px] leading-relaxed text-white/90 sm:text-[15px]">
               <p>
                 Des partenariats progressifs avec les associations locales, les
@@ -474,32 +473,22 @@ export function HomeCommunityCredibility({
               </p>
             </div>
 
-            <div
-              aria-label="Étapes de construction de l'écosystème"
-              className="mt-6 w-full min-w-0 overflow-hidden rounded-[1.25rem] border border-white/30 bg-white/10 p-3"
-              role="list"
-            >
-              <div className="flex w-full min-w-0 items-stretch">
-                {ECOSYSTEM_STEPS.map((step, index) => (
-                  <div key={step.title} className="flex min-w-0 flex-1 items-stretch">
-                    <div className="flex min-w-0 flex-1 flex-col items-center justify-center px-1.5 text-center sm:px-3">
-                      <p className="text-[clamp(0.8rem,1.4vw,1rem)] font-black tracking-tight text-white">
-                        {step.title}
-                      </p>
-                      <p className="mt-1 whitespace-pre-line text-[clamp(0.7rem,1.2vw,0.875rem)] leading-snug text-white/90">
-                        {step.text}
-                      </p>
-                    </div>
-                    {index < ECOSYSTEM_STEPS.length - 1 ? (
-                      <div className="flex shrink-0 items-center gap-1 text-white/80 sm:gap-2" aria-hidden="true">
-                        <span className="h-12 w-px bg-white/35" />
-                        <ArrowRight className="shrink-0" size={18} strokeWidth={1.8} />
-                        <span className="h-12 w-px bg-white/35" />
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
+            <div className="mt-6 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4" role="list">
+              {ECOSYSTEM_STEPS.map((step) => (
+                <div
+                  key={step.title}
+                  data-credibility-ecosystem-step
+                  className="rounded-[1rem] border border-white/20 bg-white/10 px-3.5 py-3"
+                  role="listitem"
+                >
+                  <p className="text-sm font-black tracking-tight text-white">
+                    {step.title}
+                  </p>
+                  <p className="mt-1 text-[13px] leading-snug text-white/90">
+                    {step.text}
+                  </p>
+                </div>
+              ))}
             </div>
           </article>
 
