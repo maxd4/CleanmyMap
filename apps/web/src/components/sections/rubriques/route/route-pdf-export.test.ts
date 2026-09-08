@@ -2,15 +2,20 @@ import { describe, expect, it } from "vitest";
 import type { RouteResponse } from "@/lib/route/route-response-contract";
 import { buildRoutePdfHtml } from "./route-pdf-export";
 
-const stop = (id: string, latitude: number, longitude: number) => ({
+const stop = (
+  id: string,
+  latitude: number,
+  longitude: number,
+  overrides: { label?: string; priorityReason?: string; score?: number } = {},
+) => ({
   id,
-  label: `Zone ${id}`,
+  label: overrides.label ?? `Zone ${id}`,
   latitude,
   longitude,
   segmentKm: 0.8,
   estimatedMinutes: 6,
-  priorityReason: "Signalement observé",
-  score: 82,
+  priorityReason: overrides.priorityReason ?? "Signalement observé",
+  score: overrides.score ?? 82,
 });
 const geometry = (coordinates: [number, number][]) => ({
   isLoop: true as const,
@@ -80,13 +85,19 @@ function buildFixture(groupCount = 1): RouteResponse {
     dataStatus: "complete",
     dataLayers: {} as RouteResponse["dataLayers"],
     isTruncated: false,
-    sourceHealth: { warnings: [] } as RouteResponse["sourceHealth"],
+    sourceHealth: {
+      partial: false,
+      failedSources: [],
+      availableSources: ["spots"],
+      warnings: [],
+    },
     origin,
     travelDistanceKm: 2.4,
     travelMinutes: 18,
     travelBudgetMinutes: 60,
     volunteers: 6,
     groupCount,
+    constraintsApplied: { pickupPreference: "balanced" },
     loop: {
       isLoop: true,
       origin,
@@ -106,7 +117,7 @@ function buildFixture(groupCount = 1): RouteResponse {
       warnings: [],
       segments: [],
       eventCentered: null,
-    } as RouteResponse["trace"],
+    } as unknown as RouteResponse["trace"],
     routeGeometry: firstGeometry,
     scoreBreakdown: { priority: 82, distance: 18 },
     tradeoffs: [],
@@ -134,6 +145,36 @@ function buildFixture(groupCount = 1): RouteResponse {
 }
 
 describe("route PDF export", () => {
+  it("formate les scores avec le pourcentage canonique", () => {
+    const data = buildFixture();
+    const routeStop = data.groupRoutes[0]!.stops[0]!;
+    data.groupRoutes[0]!.stops[0] = { ...routeStop, score: 82.5 };
+    const html = buildRoutePdfHtml(data, "colors", data.generatedAt);
+
+    expect(html).toContain("score 82,5 %");
+    expect(html).toContain("score 82,0 %");
+    expect(html).not.toMatch(/score 82(?:\s|·)/);
+  });
+
+  it("échappe les valeurs injectées dans les attributs et le texte HTML", () => {
+    const unsafe = "\"&<>'";
+    const data = buildFixture();
+    const routeStop = data.groupRoutes[0]!.stops[0]!;
+    data.groupRoutes[0]!.stops[0] = {
+      ...routeStop,
+      id: unsafe,
+      label: unsafe,
+      priorityReason: unsafe,
+    };
+    const html = buildRoutePdfHtml(data, "colors", data.generatedAt);
+    const escaped = "&quot;&amp;&lt;&gt;&#039;";
+
+    expect(html).toContain(`data-route-stop="${escaped}"`);
+    expect(html).toContain(`<strong>${escaped}</strong>`);
+    expect(html).toContain(`<span>${escaped} · score`);
+    expect(html).not.toContain(unsafe);
+  });
+
   it("renders a reproducible single closed loop without planner calls", () => {
     const data = buildFixture();
     const first = buildRoutePdfHtml(data, "colors", data.generatedAt);

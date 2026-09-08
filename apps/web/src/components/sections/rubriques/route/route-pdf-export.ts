@@ -1,5 +1,6 @@
 import type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 import type { RouteResponse } from "@/lib/route/route-response-contract";
+import { formatScorePercent } from "@/lib/formatters/score";
 import {
   getRouteGroupPatternLabel,
   getRouteGroupVisualStyle,
@@ -26,7 +27,7 @@ function escapeHtml(value: unknown): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
 
@@ -240,7 +241,7 @@ function renderMetrics(data: RouteResponse, routes: ExportRoute[], multi: boolea
 function renderStops(routes: ExportRoute[]): string {
   return routes
     .map(
-      (route) => `<section class="route-pdf-stops"><h3>Groupe ${route.groupIndex} — stops / zones</h3>${route.stops.length > 0 ? `<ol>${route.stops.map((stop) => `<li><strong>${escapeHtml(stop.label)}</strong><span>${escapeHtml(stop.priorityReason)} · score ${formatNumber(stop.score, 1)} · ${escapeHtml(formatDistance(stop.segmentKm))} · ${escapeHtml(formatDuration(stop.estimatedMinutes))}</span></li>`).join("")}</ol>` : "<p>Aucun stop retenu.</p>"}</section>`,
+      (route) => `<section class="route-pdf-stops"><h3>Groupe ${route.groupIndex} — stops / zones</h3>${route.stops.length > 0 ? `<ol>${route.stops.map((stop) => `<li><strong>${escapeHtml(stop.label)}</strong><span>${escapeHtml(stop.priorityReason)} · score ${formatScorePercent(stop.score, 1)} · ${escapeHtml(formatDistance(stop.segmentKm))} · ${escapeHtml(formatDuration(stop.estimatedMinutes))}</span></li>`).join("")}</ol>` : "<p>Aucun stop retenu.</p>"}</section>`,
     )
     .join("");
 }
