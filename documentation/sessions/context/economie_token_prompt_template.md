@@ -1,25 +1,42 @@
-# Prompt Template (Low-Token Execution)
+# Prompt opérationnel — structure canonique
 
-## Contexte minimal
-- Projet: CleanMyMap
-- Stack: Next.js + TypeScript + Supabase + Clerk
-- Regles globales: AGENTS.md
-- Memoire session: documentation/sessions/history/latest-session.md
+Ce canevas réduit le contexte répété sans remplacer `AGENTS.md`, les règles
+scoped, les contrats métier ou les sources canoniques du dépôt. Ne pas y
+recopier la stack, l'historique du projet ou les règles générales.
 
-## Tache
-[Describe only the task to execute now]
+## OBJECTIF
 
-## Contraintes
-- Keep changes minimal and production-ready.
-- Do not repeat existing context.
-- Prefer focused diffs.
-- Report blockers explicitly.
+[Résultat concret attendu pour cette tâche uniquement]
 
-## Sortie attendue
-1) Applied changes
-2) Files touched
-3) Validations run
-4) Remaining risks / next action
+## SOURCES / FICHIERS À RELIRE
 
-## Verification command(s)
-[List exact commands to run]
+- `AGENTS.md` et le `AGENTS.md` scoped applicable.
+- Sources canoniques directement concernées : [chemins précis].
+- Callers, consommateurs, tests ou migrations à vérifier : [chemins précis].
+
+## PÉRIMÈTRE
+
+- Inclus : [fichiers, routes, contrats ou surfaces concernés].
+- Exclu : [zones à préserver explicitement].
+
+## CHANGEMENT
+
+[Description courte du changement à appliquer, sans recopier la gouvernance
+existante]
+
+## INVARIANTS
+
+- [Contrats métier, sécurité, données ou compatibilité à préserver]
+- [Comportements ou fichiers qui ne doivent pas changer]
+
+## VALIDATIONS
+
+- [Commande ciblée obligatoire]
+- [Tests, lint, typecheck, build ou audit justifiés par le périmètre]
+- Vérifier le diff exact et signaler séparément les échecs préexistants ou
+  liés à un chantier parallèle.
+
+## STOP CONDITION
+
+[Preuve observable permettant de déclarer la tâche terminée ; sinon décrire le
+blocage précis et ne pas élargir le périmètre]
