@@ -311,6 +311,18 @@ Activation:
 - `apps/web/vercel.json` pour les cron jobs
 - fonction Node.js par défaut en région Paris (`cdg1`) pour rapprocher le compute des données et des utilisateurs franciliens.
 
+Ordonnanceur périodique canonique :
+
+- Vercel ne programme qu'un seul appel quotidien à `/api/cron/maintenance`, à
+  `20 3 * * *` UTC ;
+- le registre `apps/web/src/lib/periodic/maintenance-job-registry.ts` décide
+  quels jobs sont arrivés à échéance ;
+- `impact-terrain` et `governance-report` sont mensuels, le 1er du mois ;
+- `platform-usage` et `map-pollution-references` sont hebdomadaires, le lundi ;
+- les artefacts existants prouvent l'idempotence par période ; un échec isolé
+  est rapporté sans empêcher les jobs indépendants de s'exécuter et peut être
+  rattrapé par l'appel quotidien suivant.
+
 Code clé:
 
 - [apps/web/vercel.json](../../apps/web/vercel.json)

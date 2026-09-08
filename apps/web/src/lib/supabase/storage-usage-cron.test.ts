@@ -6,28 +6,28 @@ import {
 } from "./storage-usage-cron";
 
 describe("storage usage cron schedule", () => {
-  it("keeps the next run on the first day at 03:00 UTC before the schedule fires", () => {
+  it("uses the next daily dispatcher run before the schedule fires", () => {
     const nextRun = getNextStorageUsageCronRun(
       new Date("2026-05-01T02:59:59.000Z"),
     );
 
-    expect(nextRun.toISOString()).toBe("2026-05-01T03:00:00.000Z");
+    expect(nextRun.toISOString()).toBe("2026-05-01T03:20:00.000Z");
   });
 
-  it("rolls the next run to the following month once the schedule has passed", () => {
+  it("rolls the next run to the following day once the schedule has passed", () => {
     const nextRun = getNextStorageUsageCronRun(
-      new Date("2026-05-01T03:00:00.000Z"),
+      new Date("2026-05-01T03:20:00.000Z"),
     );
 
-    expect(nextRun.toISOString()).toBe("2026-06-01T03:00:00.000Z");
+    expect(nextRun.toISOString()).toBe("2026-05-02T03:20:00.000Z");
   });
 
-  it("handles the December rollover correctly", () => {
+  it("handles the year rollover correctly", () => {
     const nextRun = getNextStorageUsageCronRun(
-      new Date("2026-12-15T12:00:00.000Z"),
+      new Date("2026-12-31T12:00:00.000Z"),
     );
 
-    expect(nextRun.toISOString()).toBe("2027-01-01T03:00:00.000Z");
+    expect(nextRun.toISOString()).toBe("2027-01-01T03:20:00.000Z");
   });
 
   it("builds a readable cron status card payload", () => {
@@ -39,8 +39,8 @@ describe("storage usage cron schedule", () => {
     expect(status.configured).toBe(false);
     expect(status.statusLabel).toBe("À configurer");
     expect(status.schedule).toBe(STORAGE_USAGE_CRON_SCHEDULE);
-    expect(status.nextRunAt).toBe("2026-06-01T03:00:00.000Z");
-    expect(status.nextRunLabel).toContain("1 juin 2026");
-    expect(status.nextRunLabel).toContain("03:00");
+    expect(status.nextRunAt).toBe("2026-05-21T03:20:00.000Z");
+    expect(status.nextRunLabel).toContain("21 mai 2026");
+    expect(status.nextRunLabel).toContain("03:20");
   });
 });

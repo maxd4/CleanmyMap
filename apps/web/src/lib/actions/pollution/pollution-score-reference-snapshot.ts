@@ -16,7 +16,6 @@ import { getUtcWeekStart } from "@/lib/periodic/periodic-job-calendar";
 
 export const MAP_POLLUTION_REFERENCES_SNAPSHOT_KEY = "map-pollution-score-references";
 export const MAP_POLLUTION_REFERENCES_VERSION = "map-pollution-score-references-2026.09-v1";
-export const MAP_POLLUTION_REFERENCES_SCHEDULE = "0 3 * * 1";
 
 export type PollutionScoreReferenceSnapshotPayload = {
   references: PollutionScoreReferences;
