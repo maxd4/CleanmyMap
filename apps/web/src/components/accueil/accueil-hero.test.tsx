@@ -62,5 +62,12 @@ describe("HomeHero impact methodology link", () => {
     expect(html).toContain('data-cmm-button-tone="critical"');
     expect(html).toContain('data-cmm-button-width="auto"');
     expect(html).toContain("Se connecter / S&#x27;inscrire");
+
+    expect(html.indexOf('href="/actions/map"')).toBeLessThan(
+      html.indexOf('href="/sign-in"'),
+    );
+    expect(html.indexOf('href="/sections/rejoindre-un-formulaire"')).toBeLessThan(
+      html.indexOf('href="/actions/new"'),
+    );
   });
 });
