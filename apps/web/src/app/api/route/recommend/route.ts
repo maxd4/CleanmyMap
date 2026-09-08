@@ -108,6 +108,8 @@ export async function POST(request: Request) {
       priorityVsTravel,
       volunteers: options.volunteers,
       groupCount: options.groupCount,
+      riskFocus: options.riskFocus,
+      pickupPreference: options.pickupPreference,
       planningMode,
       eventCenteredAnchor,
       eventSignalContext: candidateData.routeEventSignalContext,

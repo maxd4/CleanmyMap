@@ -148,23 +148,23 @@ export function RouteOptionsForm({
                 [
                   "balanced",
                   "Sans préférence",
-                  "Le moteur équilibre les différents types de pollution.",
+                  "Aucun type de pollution n'est favorisé dans les zones prédites.",
                   "No preference",
-                  "The engine balances the different types of pollution.",
+                  "No pollution type is favored in predicted zones.",
                 ],
                 [
                   "waste",
                   "Déchets",
-                  "Le moteur privilégie les zones où les déchets sont les plus pertinents à ramasser.",
+                  "Dans les zones prédites, le calcul utilise en priorité le risque déchets.",
                   "Waste",
-                  "The engine prioritizes areas where waste is most relevant to collect.",
+                  "In predicted zones, the calculation prioritizes waste risk.",
                 ],
                 [
                   "cigarette_butts",
                   "Mégots",
-                  "Le moteur privilégie les zones où les mégots sont les plus présents ou probables.",
+                  "Dans les zones prédites, le calcul utilise en priorité le risque mégots.",
                   "Cigarette butts",
-                  "The engine prioritizes areas where cigarette butts are most present or likely.",
+                  "In predicted zones, the calculation prioritizes cigarette-butt risk.",
                 ],
               ] as const
             ).map(([value, label, help, englishLabel, englishHelp]) => {
