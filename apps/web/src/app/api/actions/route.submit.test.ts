@@ -12,6 +12,7 @@ const buildPostActionRetentionLoopMock = vi.hoisted(() => vi.fn());
 const trackServerEventMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const createActionMock = vi.hoisted(() => vi.fn());
+const invalidateSnapshotsMock = vi.hoisted(() => vi.fn());
 const createSignalementMock = vi.hoisted(() => vi.fn());
 const resolveActionCreationStatusMock = vi.hoisted(() =>
   vi.fn((isAutoApprovedSubmission: boolean) =>
@@ -64,6 +65,10 @@ vi.mock("@/lib/actions/store", () => ({
   resolveActionCreationStatus: resolveActionCreationStatusMock,
 }));
 
+vi.mock("@/lib/public-surface-snapshots", () => ({
+  invalidatePublicSurfaceSnapshotsByRoute: invalidateSnapshotsMock,
+}));
+
 vi.mock("@/lib/actions/signalement/create-signalement", () => ({
   createSignalement: createSignalementMock,
 }));
@@ -80,6 +85,7 @@ describe("POST /api/actions", () => {
     vi.clearAllMocks();
     getSupabaseServerClientMock.mockReturnValue({});
     createActionMock.mockResolvedValue({ id: "action-test-1" });
+    invalidateSnapshotsMock.mockResolvedValue(undefined);
     createSignalementMock.mockResolvedValue({
       id: "spot-test-1",
       created_at: "2026-04-22T00:00:00Z",
@@ -207,6 +213,7 @@ describe("POST /api/actions", () => {
     expect(body.id).toBe("action-test-1");
     expect(body.retentionLoop).toMatchObject({ badge: null, xpAwarded: 0 });
     expect(createActionMock).toHaveBeenCalledTimes(1);
+    expect(invalidateSnapshotsMock).toHaveBeenCalledWith(["api/actions", "api/actions/map"]);
     expect(createActionMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
@@ -246,6 +253,7 @@ describe("POST /api/actions", () => {
       currentLevel: 1,
       actorNameOptions: ["Test User"],
       role: "admin",
+      activeRole: "admin",
       badges: [],
     });
     const { POST } = await import("./route");
@@ -280,6 +288,45 @@ describe("POST /api/actions", () => {
     );
   }, 15000);
 
+  it("keeps a normal future pre-action pending while publishing it through the map boundary", async () => {
+    const { POST } = await import("./route");
+
+    const payload = toContractCreatePayload({
+      actorName: "Test User",
+      associationName: "Action spontanée",
+      organizerType: "spontaneous",
+      actionDate: "2999-01-01",
+      actionPhase: "pre_action",
+      locationLabel: "Parc futur",
+      wasteKg: 0,
+      cigaretteButts: 0,
+      volunteersCount: 3,
+      durationMinutes: 30,
+      notes: "Préparation de l'action future",
+      submissionMode: "quick",
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(createActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        status: "pending",
+        payload: expect.objectContaining({
+          actionDate: "2999-01-01",
+          actionPhase: "pre_action",
+        }),
+      }),
+    );
+    expect(invalidateSnapshotsMock).toHaveBeenCalledWith(["api/actions", "api/actions/map"]);
+  }, 15000);
+
   it("accepts a localhost max bypass through the central auth helper", async () => {
     requireAuthenticatedAccessMock.mockResolvedValueOnce({
       ok: true,
@@ -293,6 +340,7 @@ describe("POST /api/actions", () => {
       currentLevel: 1,
       actorNameOptions: ["Max local"],
       role: "max",
+      activeRole: "max",
       badges: [],
     });
     pickTraceableActorNameMock.mockReturnValueOnce("Max local");
@@ -396,6 +444,7 @@ describe("POST /api/actions", () => {
       currentLevel: 1,
       actorNameOptions: ["Test User"],
       role: "admin",
+      activeRole: "admin",
       badges: [],
     });
 

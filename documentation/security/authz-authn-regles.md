@@ -368,14 +368,19 @@ Restaurer `moderation_visibility = visible` ne valide pas l'action et ne transfo
 
 `GET /api/actions/map` est une projection public-safe distincte des lectures de
 modération. Quel que soit le paramètre `status` fourni (`approved`, `pending`,
-`rejected` ou `all`), le handler conserve la compatibilité de l'URL mais
-normalise la lecture vers les actions `approved` et `moderation_visibility =
-visible`. Cette règle est appliquée à la fois avec et sans viewport, y compris
-lorsqu'un snapshot existant est servi.
+`rejected` ou `all`), le handler conserve la compatibilité de l'URL. Il expose
+les actions `approved` visibles et, dans la seule projection cartographique,
+les pré-actions `pending` valides dont `action_date` est future. Ces dernières
+sont normalisées en `approved` dans le DTO public de la carte, tandis que leur
+statut persisté reste `pending` et qu'elles restent exclues des KPI Impact.
+Cette règle est appliquée à la fois avec et sans viewport, y compris lorsqu'un
+snapshot existant est servi. Les actions `pending` post-action, `rejected` ou
+masquées ne sont jamais incluses.
 
 Le fallback navigateur appelle `actions_map_feed` avec le statut public
-`approved` et filtre défensivement ses lignes. La RPC ne restitue elle-même que
-les actions approuvées et visibles et les lignes
+`approved` et filtre défensivement ses lignes. La RPC restitue les actions
+approuvées visibles ainsi que les pré-actions futures `pending` valides (avec un
+statut de projection `approved`) et les lignes
 `trash_spotter_spots.status IN ('validated', 'cleaned')`. La RLS de cette table
 interdit également la lecture directe des lignes `new` aux rôles anon et
 authenticated.

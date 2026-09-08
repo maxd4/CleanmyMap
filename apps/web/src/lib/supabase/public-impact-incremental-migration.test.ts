@@ -8,6 +8,13 @@ const migration = readFileSync(
   ),
   "utf8",
 );
+const futureActionMigration = readFileSync(
+  new URL(
+    "../../../supabase/migrations/20260908010000_future_action_public_visibility.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("incremental public Impact state migration", () => {
   it("defines the per-action projection and decrementable aggregate counters", () => {
@@ -40,5 +47,16 @@ describe("incremental public Impact state migration", () => {
     expect(migration).toContain("grant execute on function public.rebuild_public_impact_action_state(date) to service_role;");
     expect(migration).toMatch(/security definer/gi);
     expect(migration).toContain("set search_path = pg_catalog, public");
+  });
+
+  it("keeps future map visibility separate from Impact eligibility", () => {
+    expect(futureActionMigration).toContain("create or replace function public.actions_map_feed(");
+    expect(futureActionMigration).toContain("a.status = 'pending'");
+    expect(futureActionMigration).toContain("a.action_date > current_date");
+    expect(futureActionMigration).toContain("a.action_date <= current_date");
+    expect(futureActionMigration).toContain("revoke all on function public.actions_map_feed(");
+    expect(futureActionMigration).toContain("grant execute on function public.actions_map_feed(");
+    expect(futureActionMigration).toContain("set search_path = public, pg_catalog");
+    expect(futureActionMigration).toContain("set search_path = pg_catalog, public");
   });
 });

@@ -27,6 +27,40 @@ type FetchUnifiedActionContractsResult = {
   sourceHealth: ActionMapResponse["sourceHealth"];
 };
 
+function utcDateString(now: Date): string {
+  return now.toISOString().slice(0, 10);
+}
+
+export function isPublicFutureActionContract(
+  contract: ActionDataContract,
+  now = new Date(),
+): boolean {
+  return (
+    contract.source === "actions" &&
+    contract.type === "action" &&
+    contract.status === "pending" &&
+    contract.metadata.actionPhase === "pre_action" &&
+    contract.dates.observedAt > utcDateString(now)
+  );
+}
+
+function isPublicMapContract(contract: ActionDataContract, now: Date): boolean {
+  return contract.status === "approved" || isPublicFutureActionContract(contract, now);
+}
+
+function toPublicMapContract(contract: ActionDataContract, now: Date): ActionDataContract {
+  if (!isPublicFutureActionContract(contract, now)) {
+    return contract;
+  }
+
+  return {
+    ...contract,
+    // The map DTO is a public projection. The persisted action remains pending
+    // for its lifecycle and is still excluded from Impact eligibility.
+    status: "approved",
+  };
+}
+
 export type ParseMapActionsParams = {
   limit: number;
   days: number;
@@ -46,6 +80,7 @@ export type MapActionsRouteDependencies = {
     params: {
       limit: number;
       status: ActionStatus | null;
+      includeFuturePublicActions?: boolean;
       floorDate: string | null;
       requireCoordinates: boolean;
       types: ActionRecordType[] | null;
@@ -177,16 +212,17 @@ export async function buildMapActionsRouteResult(
 ): Promise<MapActionsRouteResult> {
   const params = parseMapActionsParams(url, deps.parseEntityTypesParam);
   const supabase = deps.getSupabaseServerClient(false);
+  const now = new Date();
   const result = await deps.fetchUnifiedActionContracts(supabase, {
     limit: Math.max(params.limit * 4, params.limit),
     status: params.status,
+    includeFuturePublicActions: true,
     floorDate: params.floorDate,
     requireCoordinates: true,
     types: params.types,
     viewport: params.viewport,
   });
 
-  const now = new Date();
   const sourceHealth = result.sourceHealth ?? {
     partial: false,
     failedSources: [],
@@ -195,7 +231,9 @@ export async function buildMapActionsRouteResult(
   };
   const items = deps
     .filterActionContractsByScope(
-      result.items.filter((contract) => contract.status === "approved"),
+      result.items
+        .filter((contract) => isPublicMapContract(contract, now))
+        .map((contract) => toPublicMapContract(contract, now)),
       params.scope,
     )
     .map((contract) => {
