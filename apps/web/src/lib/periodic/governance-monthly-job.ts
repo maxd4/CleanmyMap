@@ -17,7 +17,6 @@ import {
 import { getUtcMonthStart } from "./periodic-job-calendar";
 
 export const GOVERNANCE_MONTHLY_JOB_VERSION = GOVERNANCE_MONTHLY_REPORT_VERSION;
-export const GOVERNANCE_MONTHLY_SCHEDULE = "0 3 1 * *";
 
 export class GovernanceMonthlyJobError extends Error {
   constructor(message: string) {

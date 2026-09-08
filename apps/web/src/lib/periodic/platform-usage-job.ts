@@ -16,7 +16,6 @@ import { getUtcWeekStart } from "./periodic-job-calendar";
 
 export const PLATFORM_USAGE_SNAPSHOT_KEY = "platform-usage-weekly";
 export const PLATFORM_USAGE_JOB_VERSION = "platform-usage-2026.09-v1";
-export const PLATFORM_USAGE_SCHEDULE = "0 3 * * 1";
 
 export type PlatformUsageSnapshotPayload = {
   capturedAt: string;

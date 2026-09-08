@@ -1,5 +1,11 @@
-export const STORAGE_USAGE_CRON_SCHEDULE = "0 3 1 * *";
-export const STORAGE_USAGE_CRON_TIMEZONE = "UTC";
+import {
+  getNextMaintenanceCronRun,
+  MAINTENANCE_CRON_SCHEDULE,
+  MAINTENANCE_CRON_TIMEZONE,
+} from "@/lib/periodic/maintenance-cron-contract";
+
+export const STORAGE_USAGE_CRON_SCHEDULE = MAINTENANCE_CRON_SCHEDULE;
+export const STORAGE_USAGE_CRON_TIMEZONE = MAINTENANCE_CRON_TIMEZONE;
 
 export type StorageUsageCronStatus = {
   configured: boolean;
@@ -12,19 +18,7 @@ export type StorageUsageCronStatus = {
 };
 
 export function getNextStorageUsageCronRun(now = new Date()): Date {
-  const currentTime = now.getTime();
-  const year = now.getUTCFullYear();
-  const month = now.getUTCMonth();
-  const thisMonthRun = Date.UTC(year, month, 1, 3, 0, 0, 0);
-
-  if (currentTime < thisMonthRun) {
-    return new Date(thisMonthRun);
-  }
-
-  const nextYear = month === 11 ? year + 1 : year;
-  const nextMonth = month === 11 ? 0 : month + 1;
-
-  return new Date(Date.UTC(nextYear, nextMonth, 1, 3, 0, 0, 0));
+  return getNextMaintenanceCronRun(now);
 }
 
 function formatUtcDateTime(value: Date): string {
@@ -55,7 +49,7 @@ export function buildStorageUsageCronStatus(
     configured,
     statusLabel: configured ? "Configuré" : "À configurer",
     schedule: STORAGE_USAGE_CRON_SCHEDULE,
-    scheduleLabel: "1er du mois à 03:00 UTC",
+    scheduleLabel: "Tous les jours à 03:20 UTC (dispatcher commun)",
     timezone: STORAGE_USAGE_CRON_TIMEZONE,
     nextRunAt: nextRun.toISOString(),
     nextRunLabel: formatUtcDateTime(nextRun),
