@@ -15,7 +15,11 @@ export type CachedUnifiedActionContractsParams = {
   types: ActionEntityType[] | null;
 };
 
-const UNIFIED_ACTION_CONTRACTS_CACHE_REVALIDATE_SECONDS = 300;
+export type UnifiedActionContractsCacheOptions = {
+  revalidateSeconds?: number;
+};
+
+export const UNIFIED_ACTION_CONTRACTS_CACHE_REVALIDATE_SECONDS = 600;
 
 function buildTypesCacheKey(types: ActionEntityType[] | null): string {
   return types && types.length > 0 ? types.join(",") : "all";
@@ -35,6 +39,7 @@ export function buildUnifiedActionContractsCacheKey(
 
 export async function fetchCachedUnifiedActionContracts(
   params: CachedUnifiedActionContractsParams,
+  options: UnifiedActionContractsCacheOptions = {},
 ): Promise<{
   items: Awaited<ReturnType<typeof fetchUnifiedActionContracts>>["items"];
   isTruncated: boolean;
@@ -47,7 +52,8 @@ export async function fetchCachedUnifiedActionContracts(
     },
     ["unified-action-contracts", buildUnifiedActionContractsCacheKey(params)],
     {
-      revalidate: UNIFIED_ACTION_CONTRACTS_CACHE_REVALIDATE_SECONDS,
+      revalidate:
+        options.revalidateSeconds ?? UNIFIED_ACTION_CONTRACTS_CACHE_REVALIDATE_SECONDS,
       tags: ["unified-action-contracts"],
     },
   );

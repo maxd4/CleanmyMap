@@ -17,6 +17,7 @@ import {
   setDisplayNameModeOverride,
 } from "@/lib/account/display-name-mode-store";
 import { getDevAuthBypassUserId } from "@/lib/auth/dev-auth";
+import type { UserIdentity } from "@/lib/authz";
 
 const updateDisplayNameModeSchema = z.object({
   displayNameMode: z.enum(["full_name", "pseudo"]),
@@ -27,17 +28,7 @@ const DISPLAY_NAME_MODE_CACHE_HEADERS = {
 };
 const DISPLAY_NAME_MODE_CACHE_REVALIDATE_SECONDS = 120;
 
-type DisplayNameModeResponse = {
-  userId: string;
-  displayName: string;
-  displayNameMode: "full_name" | "pseudo";
-  handle: string;
-  username: string;
-  firstName: string | null;
-  email: string | null;
-  role: "benevole" | "coordinateur" | "scientifique" | "entreprise" | "elu" | "admin" | "max";
-  activeProfile: "benevole" | "coordinateur" | "scientifique" | "entreprise" | "elu" | "admin" | "max";
-};
+type DisplayNameModeResponse = UserIdentity;
 
 function buildDisplayNameModeCacheKey(userId: string): string {
   return `user:${userId}`;
@@ -53,17 +44,7 @@ async function loadCachedDisplayNameMode(
         return null;
       }
 
-      return {
-        userId: identity.userId,
-        displayName: identity.displayName,
-        displayNameMode: identity.displayNameMode ?? "full_name",
-        handle: identity.handle,
-        username: identity.username,
-        firstName: identity.firstName,
-        email: identity.email,
-        role: identity.role,
-        activeProfile: identity.activeProfile,
-      } satisfies DisplayNameModeResponse;
+      return identity satisfies DisplayNameModeResponse;
     },
     ["display-name-mode", buildDisplayNameModeCacheKey(userId)],
     {

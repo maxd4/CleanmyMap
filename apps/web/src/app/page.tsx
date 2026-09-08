@@ -15,8 +15,8 @@ import {
 import type { Metadata } from "next";
 import { metadata as appMetadata } from "@/lib/metadata";
 
-// The landing page can be regenerated periodically while still showing fresh counters.
-export const revalidate = 300;
+// Stable landing content is regenerated hourly; recent activity refreshes independently.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   ...appMetadata,
@@ -135,6 +135,11 @@ export default async function HomePage() {
     distinctLocations: 0,
     items: [],
   };
+  const communityActivityError =
+    overviewLoadError ??
+    (landingSummary?.dataAvailability.status === "partial"
+      ? "Les données d’activité sont partiellement disponibles."
+      : null);
   return (
     <main className="relative isolate -mx-2 min-h-screen min-w-0 w-[calc(100%+1rem)] overflow-hidden bg-[radial-gradient(circle_at_72%_10%,rgba(196,181,253,0.42),transparent_24%),radial-gradient(circle_at_32%_48%,rgba(110,231,183,0.52),transparent_34%),linear-gradient(135deg,#005743_0%,#0a936b_42%,#b9f3dc_100%)] font-sans text-[#082f24] [zoom:0.9] sm:-mx-4 sm:w-[calc(100%+2rem)]">
       <div className="pointer-events-none absolute -right-28 top-24 h-96 w-96 rounded-full bg-violet-300/30 blur-[100px]" />
@@ -147,7 +152,7 @@ export default async function HomePage() {
         <HomeNavigationSchema />
         <HomeCommunityCredibility
           activity={communityActivity}
-          errorMessage={overviewLoadError}
+          errorMessage={communityActivityError}
         />
       </div>
     </main>

@@ -116,15 +116,7 @@ describe("landing summary loading", () => {
     storagePublicUrlMock.mockReturnValue({ data: { publicUrl: "" } });
   });
 
-  it("uses the monthly impact snapshot and only fetches bounded recent activity", async () => {
-    storageListMock.mockResolvedValue({
-      data: [{ name: "2026-08-27-photo.jpg" }],
-      error: null,
-    });
-    storagePublicUrlMock.mockReturnValue({
-      data: { publicUrl: "https://storage.example/action-photo.jpg" },
-    });
-
+  it("uses the monthly impact snapshot without pulling activity into the page ISR", async () => {
     const summary = await loadLandingSummary();
 
     expect(summary.counters).toMatchObject({
@@ -153,42 +145,48 @@ describe("landing summary loading", () => {
         upperBoundEuros: 38.25,
       },
     });
-    expect(summary.activity).toMatchObject({
+    expect(summary.activity).toEqual({
       visibleActions: 12,
       distinctLocations: 4,
-      items: [{ id: "landing-action" }],
-    });
-    expect(summary.activity.items[0]?.image).toMatchObject({
-      source: "userProvidedImage",
-      url: "https://storage.example/action-photo.jpg",
-      isFallback: false,
+      items: [],
     });
     expect(loadLatestPublicImpactSnapshotMock).toHaveBeenCalledOnce();
-    expect(fetchCachedUnifiedActionContractsMock).toHaveBeenCalledWith({
-      limit: 3,
-      status: "approved",
-      floorDate: "2025-09-08",
-      requireCoordinates: false,
-      types: ["action"],
-    });
+    expect(fetchCachedUnifiedActionContractsMock).not.toHaveBeenCalled();
   });
 
   it("does not rebuild the monthly KPI aggregate when a snapshot is available", async () => {
+    const summary = await loadLandingSummary();
+
+    expect(summary.participantsTotal).toBe(31);
+    expect(loadLatestPublicImpactSnapshotMock).toHaveBeenCalledOnce();
+    expect(fetchCachedUnifiedActionContractsMock).not.toHaveBeenCalled();
+  });
+
+  it("falls back to canonical approved contracts and exposes degraded source health", async () => {
+    loadLatestPublicImpactSnapshotMock.mockResolvedValueOnce(null);
     fetchCachedUnifiedActionContractsMock.mockResolvedValueOnce({
-      items: [],
+      items: [actionContract()],
       isTruncated: false,
       sourceHealth: {
-        partial: false,
-        failedSources: [],
-        availableSources: ["actions"],
-        warnings: [],
+        partial: true,
+        failedSources: ["supabase"],
+        availableSources: ["local"],
+        warnings: ["Supabase indisponible"],
       },
     });
 
     const summary = await loadLandingSummary();
 
-    expect(summary.participantsTotal).toBe(31);
-    expect(loadLatestPublicImpactSnapshotMock).toHaveBeenCalledOnce();
-    expect(fetchCachedUnifiedActionContractsMock).toHaveBeenCalledOnce();
+    expect(summary.counters).toMatchObject({
+      wasteKg: 2,
+      butts: 100,
+      volunteers: 3,
+    });
+    expect(summary.activity.items[0]?.id).toBe("landing-action");
+    expect(summary.dataAvailability.status).toBe("partial");
+    expect(fetchCachedUnifiedActionContractsMock).toHaveBeenCalledWith(
+      expect.objectContaining({ limit: 500 }),
+      { revalidateSeconds: 3600 },
+    );
   });
 });

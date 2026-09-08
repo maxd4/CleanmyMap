@@ -17,7 +17,11 @@ import {
   Trash2,
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import type { HomeCommunityActivitySummary } from "@/lib/accueil/data";
+import useSWR from "swr";
+import type {
+  HomeCommunityActivityResponse,
+  HomeCommunityActivitySummary,
+} from "@/lib/accueil/data";
 import { useGsapReveal } from "@/lib/animations/use-gsap-reveal";
 
 type HomeCommunityCredibilityProps = {
@@ -59,6 +63,21 @@ const ECOSYSTEM_STEPS = [
 ] as const;
 
 const COMMUNITY_ACTION_SLOTS = 3;
+const HOMEPAGE_ACTIVITY_ENDPOINT = "/api/homepage/activity";
+
+async function fetchHomepageActivity(
+  endpoint: string,
+): Promise<HomeCommunityActivityResponse> {
+  const response = await fetch(endpoint, { headers: { Accept: "application/json" } });
+  const body = (await response.json()) as HomeCommunityActivityResponse;
+  if (!response.ok) {
+    throw new Error(
+      body.errorMessage ?? "Les dernières actions vérifiées sont momentanément indisponibles.",
+    );
+  }
+
+  return body;
+}
 
 function SectionLandscape({
   variant,
@@ -240,6 +259,24 @@ export function HomeCommunityCredibility({
   errorMessage,
 }: HomeCommunityCredibilityProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
+  const { data: refreshedActivity, error: refreshError } =
+    useSWR<HomeCommunityActivityResponse>(
+      HOMEPAGE_ACTIVITY_ENDPOINT,
+      fetchHomepageActivity,
+      {
+        fallbackData: { activity, errorMessage: errorMessage ?? null },
+        revalidateOnMount: true,
+        revalidateOnFocus: false,
+        revalidateOnReconnect: false,
+        shouldRetryOnError: false,
+        dedupingInterval: 600_000,
+      },
+    );
+  const visibleActivity = refreshedActivity?.activity ?? activity;
+  const visibleErrorMessage =
+    refreshedActivity?.errorMessage ??
+    errorMessage ??
+    (refreshError instanceof Error ? refreshError.message : null);
 
   useGsapReveal(sectionRef, {
     selector: "[data-gsap-reveal]",
@@ -332,19 +369,19 @@ export function HomeCommunityCredibility({
             </CmmButton>
           </div>
 
-          {errorMessage ? (
+          {visibleErrorMessage ? (
             <div
               data-gsap-reveal
               role="alert"
               className="mt-3 rounded-[1.2rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
             >
-              Les actions vérifiées sont momentanément indisponibles. {errorMessage}
+              Les actions vérifiées sont momentanément indisponibles. {visibleErrorMessage}
             </div>
           ) : null}
 
           <div className="mt-3 space-y-2.5">
             {Array.from({ length: COMMUNITY_ACTION_SLOTS }, (_, index) => {
-              const item = activity.items[index];
+              const item = visibleActivity.items[index];
 
               return item ? (
                 <CommunityActivityCard key={item.id} item={item} />
