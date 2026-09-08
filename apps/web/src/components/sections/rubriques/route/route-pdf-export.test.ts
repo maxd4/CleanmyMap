@@ -187,6 +187,9 @@ describe("route PDF export", () => {
     expect(first).toContain("Durée de collecte estimée");
     expect(first).toContain("Non fournie par le planner");
     expect(first).toContain('size: A4 landscape');
+    expect(first).toContain(
+      '.route-pdf-map-shell, .route-pdf-legend, .route-pdf-metrics { break-inside: avoid; page-break-inside: avoid; }',
+    );
     expect(first).toContain('data-route-stop="a"');
     expect(first).toContain('data-route-stop="b"');
     expect(first).not.toContain("Vue générale — 3 groupes");
