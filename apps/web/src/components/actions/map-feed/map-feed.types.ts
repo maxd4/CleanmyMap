@@ -11,6 +11,8 @@ import type { MapViewportState } from "@/lib/geo/map-viewport";
 import type { RefObject } from "react";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 
+export type ActionsMapPresentation = "default" | "immersive" | "homepage-preview";
+
 export type ActionsMapCanvasComponent = ComponentType<{
   items: ActionMapItem[];
   sourceItems?: ActionMapItem[];
@@ -19,6 +21,7 @@ export type ActionsMapCanvasComponent = ComponentType<{
   onSelectAction?: (actionId: string) => void;
   fullViewport?: boolean;
   compact?: boolean;
+  presentation?: ActionsMapPresentation;
   tone?: "sky" | "emerald";
   onViewportChange?: (viewport: MapViewportState) => void;
   onViewportInteraction?: () => void;
@@ -37,8 +40,7 @@ export type ActionsMapFeedProps = {
   qualityMin: number;
   zoneQuery?: string;
   limit?: number;
-  presentation?: "default" | "immersive";
-  homepagePreview?: boolean;
+  presentation?: ActionsMapPresentation;
   tone?: "sky" | "emerald";
   showIntro?: boolean;
   fullViewport?: boolean;

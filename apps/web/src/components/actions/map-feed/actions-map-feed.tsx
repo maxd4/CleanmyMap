@@ -2,7 +2,10 @@
 
 import { useEffect, useState, type RefObject } from "react";
 import { DEFAULT_VISIBLE_CATEGORIES } from "@/components/actions/map-marker-categories";
-import type { ActionsMapCanvasComponent, ActionsMapFeedProps } from "./map-feed.types";
+import type {
+  ActionsMapCanvasComponent,
+  ActionsMapFeedProps,
+} from "./map-feed.types";
 import { useMapFeedData, type MapFeedDataState } from "./use-map-feed-data";
 import { ImmersiveLayout } from "./_layouts/immersive-layout";
 import { DefaultLayout } from "./_layouts/default-layout";
@@ -16,8 +19,7 @@ import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/loc
 
 type ActionsMapFeedContentProps = {
   feedData: MapFeedDataState;
-  presentation?: "default" | "immersive";
-  homepagePreview?: boolean;
+  presentation?: ActionsMapFeedProps["presentation"];
   tone?: "sky" | "emerald";
   showIntro?: boolean;
   fullViewport?: boolean;
@@ -39,7 +41,6 @@ type ActionsMapFeedContentProps = {
 export function ActionsMapFeedContent({
   feedData,
   presentation = "default",
-  homepagePreview = false,
   tone = "sky",
   showIntro = true,
   fullViewport = false,
@@ -94,15 +95,16 @@ export function ActionsMapFeedContent({
     };
   }, [isMapVisible]);
 
+  const isHomepagePreview = presentation === "homepage-preview";
   const isImmersive = presentation === "immersive";
 
-  if (homepagePreview) {
+  if (isHomepagePreview) {
     return (
       <section
         ref={mapShellRef}
         aria-label="Aperçu de la carte des actions"
         aria-busy={feedData.isLoading || feedData.isValidating}
-        className="relative h-full min-h-[18rem] w-full [mask-image:radial-gradient(ellipse_at_center,black_48%,transparent_100%)]"
+        className="relative h-full min-h-[18rem] w-full"
       >
         {MapCanvas ? (
           <MapCanvas
@@ -110,6 +112,7 @@ export function ActionsMapFeedContent({
             sourceItems={feedData.allItems}
             sourceCompleteness={feedData.hasPartialSource ? "partial" : "complete"}
             compact
+            presentation="homepage-preview"
             tone="emerald"
             initialViewport={null}
             viewportRequest={null}
@@ -222,7 +225,6 @@ export function ActionsMapFeed({
   zoneQuery,
   limit = 120,
   presentation = "default",
-  homepagePreview = false,
   tone = "sky",
   showIntro = true,
   fullViewport = false,
@@ -254,14 +256,13 @@ export function ActionsMapFeed({
     zoneQuery,
     visibleCategories,
     limit,
-    viewport: homepagePreview ? null : mapViewport,
+    viewport: presentation === "homepage-preview" ? null : mapViewport,
   });
 
   return (
     <ActionsMapFeedContent
       feedData={feedData}
       presentation={presentation}
-      homepagePreview={homepagePreview}
       showIntro={showIntro}
       fullViewport={fullViewport}
       showStoriesCarousel={showStoriesCarousel}
