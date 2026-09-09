@@ -168,6 +168,29 @@ La séparation s’applique aussi aux distances utilisées pour admettre une zon
 prédite : distance au corridor, détour estimé et résultat réseau sont des
 informations différentes et sont conservés dans leurs champs respectifs.
 
+### Charge de nettoyage estimée, sans durée calibrée
+
+Le contrat versionné `cleanup-workload-v1` expose une charge vectorielle
+séparée entre `ordinaryWasteUnits` et `cigaretteButtUnits`. Cette charge reste
+une dérivation d’évidence, pas une mesure physique :
+
+- pour un signalement observé, une unité correspond à la présence d’une
+  catégorie canonique distincte et validée ; elle ne représente pas le nombre
+  d’objets, un poids ou un volume ;
+- pour une zone prédite, les unités conservent directement l’échelle native
+  `0–100` de `wasteRisk` et `cigaretteButtRisk` ; aucun score n’est converti en
+  kilogrammes, en nombre de mégots ou en minutes ;
+- la base des unités, la confiance par famille, la provenance et la version du
+  contrat restent exposées pour éviter de mélanger observation et prédiction ;
+- une catégorie non ramassable par des bénévoles, une zone dangereuse ou une
+  sécurité inconnue est exclue de la charge et ne devient jamais une cible de
+  collecte.
+
+Cette charge estimée ne fournit encore aucune durée d’intervention. La durée
+de collecte reste non calibrée et ne doit pas être déduite de ces unités. Les
+mesures de trajet restent des mesures de déplacement fournies ou estimées par
+le routage ; elles ne sont pas une durée de collecte.
+
 À entrées identiques et à données snapshotées identiques, l’ordre de sélection
 est déterministe. Le frontend affiche le résultat et sa trace ; il ne recalcule
 pas la logique du planner.
@@ -297,7 +320,8 @@ Les extensions suivantes restent explicitement futures dans le périmètre
 actuel :
 
 - la météo et les conditions dépendantes de la date ou de l’heure ;
-- la durée d’intervention et l’estimation du temps de nettoyage ;
+- la durée d’intervention et l’estimation du temps de nettoyage, qui ne sont
+  pas encore calibrées par `cleanup-workload-v1` ;
 - les groupes, équipes et la génération de plusieurs itinéraires.
 
 Ces évolutions devront conserver la séparation entre observation, prédiction,
