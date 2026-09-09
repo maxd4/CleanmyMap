@@ -1,5 +1,13 @@
 # Cartographie des compétences — Quiz CleanMyMap (85 questions)
 
+> **Statut documentaire : `HISTORY / SNAPSHOT`**
+>
+> Cette cartographie figée porte sur 85 questions. Elle n'est pas le contrat
+> courant de la banque : [`quiz-system-audit.md`](./quiz-system-audit.md)
+> inspecte plus récemment 115 questions. Ne pas utiliser ce snapshot pour
+> décrire l'état actuel ni recalculer artificiellement la cartographie dans le
+> cadre d'une simple maintenance documentaire.
+
 ## Légende des compétences
 
 | Code | Compétence |
