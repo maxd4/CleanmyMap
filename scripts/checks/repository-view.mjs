@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 
 const DEFAULT_BATCH_CONTENT_TARGET_BYTES = 32 * 1024 * 1024;
 const BATCH_OUTPUT_MARGIN_BYTES = 1024;
+const BATCH_HEADER_MARGIN_BYTES = 128;
 
 export function normalizeRepositoryPath(relativePath) {
   return String(relativePath ?? "")
@@ -157,20 +158,54 @@ export function partitionGitBlobBatches(blobEntries, targetBytes = DEFAULT_BATCH
   return batches;
 }
 
-function readGitBlob(repositoryRoot, objectId, size) {
-  return execFileSync("git", ["cat-file", "blob", objectId], {
+function readGitBlobBatch(repositoryRoot, entries, executeGit = execFileSync) {
+  const objectIds = entries.map((entry) => entry.objectId);
+  const maxBuffer = entries.reduce(
+    (total, entry) => total + entry.size,
+    entries.length * BATCH_HEADER_MARGIN_BYTES + BATCH_OUTPUT_MARGIN_BYTES,
+  );
+  const batchOutput = executeGit("git", ["cat-file", "--batch"], {
     cwd: repositoryRoot,
-    maxBuffer: size + BATCH_OUTPUT_MARGIN_BYTES,
+    input: Buffer.from(`${objectIds.join("\n")}\n`, "utf8"),
+    maxBuffer,
   });
+  const blobs = new Map();
+  let offset = 0;
+
+  for (const entry of entries) {
+    const headerEnd = batchOutput.indexOf(10, offset);
+    if (headerEnd < 0) throw new Error(`Git blob batch header is missing for ${entry.objectId}`);
+    const header = batchOutput.toString("utf8", offset, headerEnd).split(" ");
+    if (header[1] !== "blob") {
+      throw new Error(`Expected a Git blob for ${entry.objectId}, received ${header.slice(1).join(" ")}`);
+    }
+    const size = Number(header[2]);
+    if (!Number.isSafeInteger(size) || size !== entry.size) {
+      throw new Error(`Git blob size mismatch for ${entry.objectId}`);
+    }
+    const contentStart = headerEnd + 1;
+    const contentEnd = contentStart + size;
+    if (contentEnd >= batchOutput.length || batchOutput[contentEnd] !== 10) {
+      throw new Error(`Git blob batch content is truncated for ${entry.objectId}`);
+    }
+    blobs.set(entry.objectId, Buffer.from(batchOutput.subarray(contentStart, contentEnd)));
+    offset = contentEnd + 1;
+  }
+
+  return blobs;
 }
 
-export function createGitRepositoryView(ref, root = process.cwd()) {
+export function createGitRepositoryView(
+  ref,
+  root = process.cwd(),
+  { batchContentTargetBytes = DEFAULT_BATCH_CONTENT_TARGET_BYTES, gitExecutor = execFileSync } = {},
+) {
   if (!ref) {
     throw new Error("A Git ref is required for a Git repository view.");
   }
 
   const repositoryRoot = path.resolve(root);
-  const treeOutput = execFileSync("git", ["ls-tree", "--full-tree", "-r", "-l", "-z", ref, "--"], {
+  const treeOutput = gitExecutor("git", ["ls-tree", "--full-tree", "-r", "-l", "-z", ref, "--"], {
     cwd: repositoryRoot,
   });
   const objectByPath = new Map();
@@ -194,6 +229,15 @@ export function createGitRepositoryView(ref, root = process.cwd()) {
   }
 
   const blobsByObject = new Map();
+  const batches = partitionGitBlobBatches(
+    [...sizeByObject.entries()].map(([objectId, size]) => ({ objectId, size })),
+    batchContentTargetBytes,
+  );
+  const batchByObject = new Map();
+  for (const batch of batches) {
+    for (const entry of batch.entries) batchByObject.set(entry.objectId, batch);
+  }
+  const loadedBatches = new Set();
 
   const files = [...objectByPath.keys()];
 
@@ -206,16 +250,24 @@ export function createGitRepositoryView(ref, root = process.cwd()) {
       if (!objectId) {
         throw new Error(`Git repository view file is missing: ${normalizedPath}`);
       }
+      const batch = batchByObject.get(objectId);
+      if (!batch) throw new Error(`Git repository view blob is missing: ${objectId}`);
+      if (!loadedBatches.has(batch)) {
+        for (const [loadedObjectId, blob] of readGitBlobBatch(repositoryRoot, batch.entries, gitExecutor)) {
+          blobsByObject.set(loadedObjectId, blob);
+        }
+        loadedBatches.add(batch);
+      }
       if (!blobsByObject.has(objectId)) {
-        blobsByObject.set(objectId, readGitBlob(repositoryRoot, objectId, sizeByObject.get(objectId)));
+        throw new Error(`Git repository view blob was not loaded: ${objectId}`);
       }
       return blobsByObject.get(objectId);
     },
   });
 }
 
-export function createRepositoryView({ root = process.cwd(), ref } = {}) {
-  return ref ? createGitRepositoryView(ref, root) : createFilesystemRepositoryView(root);
+export function createRepositoryView({ root = process.cwd(), ref, ...options } = {}) {
+  return ref ? createGitRepositoryView(ref, root, options) : createFilesystemRepositoryView(root);
 }
 
 export function parseRepositoryRef(argv = process.argv.slice(2)) {
