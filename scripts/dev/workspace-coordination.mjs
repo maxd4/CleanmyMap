@@ -209,6 +209,18 @@ function getRemoteChangedPaths(repositoryRoot, baseSha, ownedPaths, gitRunner = 
   return gitRunner(repositoryRoot, args).split(/\r?\n/).filter(Boolean).sort();
 }
 
+function getCommitChangedPaths(repositoryRoot, commitSha, gitRunner = git) {
+  return gitRunner(repositoryRoot, [
+    "diff-tree",
+    "--root",
+    "--no-commit-id",
+    "--name-only",
+    "-r",
+    commitSha,
+    "--",
+  ]).split(/\r?\n/).filter(Boolean).sort();
+}
+
 function getUnpublishedPaths(repositoryRoot, originMainSha, headSha, gitRunner = git) {
   if (originMainSha === headSha) return [];
   return gitRunner(repositoryRoot, ["diff", "--name-only", `${originMainSha}..${headSha}`])
@@ -625,6 +637,89 @@ export function createWorkspaceCoordinator({
     }
   }
 
+  function publicationReconcile({ runId, publishedSha } = {}) {
+    const { run, runPath } = loadRun(root, runId);
+    const normalizedPublishedSha = String(publishedSha ?? "").trim();
+    if (!normalizedPublishedSha) {
+      throw workspaceError("PUBLISHED_SHA_REQUIRED", "a published commit SHA is required");
+    }
+
+    const refs = refreshPublicationConvergence();
+    const publicationLock = readOptionalJson(path.join(root, "publication.lock"));
+    if (publicationLock && publicationLock.runId !== runId) {
+      throw workspaceError(
+        "PUBLICATION_LOCK_FOREIGN",
+        `publication lock is owned by ${publicationLock.runId}`,
+        { owner: publicationLock.runId },
+      );
+    }
+
+    try {
+      runGit(["merge-base", "--is-ancestor", normalizedPublishedSha, refs.originMainSha]);
+    } catch {
+      throw workspaceError(
+        "PUBLISHED_SHA_NOT_ANCESTOR",
+        `${normalizedPublishedSha} is not an ancestor of ${refs.originMainSha}`,
+        { publishedSha: normalizedPublishedSha, originMainSha: refs.originMainSha },
+      );
+    }
+
+    const ownedPaths = (run.ownedPaths ?? []).map((repoPath) => normalizeRepoPath(repo, repoPath));
+    const intersectsOwned = (repoPath) => ownedPaths.some((ownedPath) => pathsOverlap(repoPath, ownedPath));
+    const changedPaths = getCommitChangedPaths(
+      repo,
+      normalizedPublishedSha,
+      (_repositoryRoot, args) => runGit(args),
+    ).map((repoPath) => normalizeRepoPath(repo, repoPath));
+    const unownedChangedPaths = changedPaths.filter((repoPath) => !intersectsOwned(repoPath));
+    if (unownedChangedPaths.length > 0) {
+      throw workspaceError(
+        "PUBLISHED_PATH_NOT_OWNED",
+        `published commit changed paths outside run ownership: ${unownedChangedPaths.join(", ")}`,
+        { unownedChangedPaths, changedPaths },
+      );
+    }
+
+    const stagedPaths = readStagedPaths(repo, (_repositoryRoot, args) => runGit(args))
+      .map((repoPath) => normalizeRepoPath(repo, repoPath));
+    const stagedOwnedPaths = stagedPaths.filter(intersectsOwned);
+    if (stagedOwnedPaths.length > 0) {
+      throw workspaceError(
+        "STAGED_OWNED_PATHS",
+        `run-owned paths are staged: ${stagedOwnedPaths.join(", ")}`,
+        { stagedOwnedPaths },
+      );
+    }
+
+    const dirtyPaths = readDirtyPaths(repo, (_repositoryRoot, args) => runGit(args))
+      .map((repoPath) => normalizeRepoPath(repo, repoPath));
+    const dirtyOwnedPaths = dirtyPaths.filter(intersectsOwned);
+    if (dirtyOwnedPaths.length > 0) {
+      throw workspaceError(
+        "DIRTY_OWNED_PATHS",
+        `run-owned paths are locally modified: ${dirtyOwnedPaths.join(", ")}`,
+        { dirtyOwnedPaths },
+      );
+    }
+
+    const completedAt = timestamp();
+    metadataWriter(runPath, {
+      ...run,
+      publicationRequired: true,
+      publicationCompletedAt: completedAt,
+      reconciledPublishedSha: normalizedPublishedSha,
+      updatedAt: completedAt,
+      heartbeatAt: completedAt,
+    });
+    return {
+      reconciled: true,
+      runId,
+      reconciledPublishedSha: normalizedPublishedSha,
+      changedPaths,
+      completedAt,
+    };
+  }
+
   function recoverAbandonedLocks() {
     const activeRunsPath = path.join(root, "active-runs");
     const activeRuns = fs.existsSync(activeRunsPath)
@@ -757,7 +852,23 @@ export function createWorkspaceCoordinator({
     return { ...report, staleLocks, publicationOrphan, ok: report.overlaps.length === 0 && staleLocks.length === 0 && !publicationOrphan };
   }
 
-  return { init, start, claim, unclaim, staleCheck, publicationAcquire, publicationRelease, publicationComplete, heartbeat, recoverAbandonedLocks, release, status, checkStaged, doctor };
+  return {
+    init,
+    start,
+    claim,
+    unclaim,
+    staleCheck,
+    publicationAcquire,
+    publicationRelease,
+    publicationComplete,
+    publicationReconcile,
+    heartbeat,
+    recoverAbandonedLocks,
+    release,
+    status,
+    checkStaged,
+    doctor,
+  };
 }
 
 function parseArgs(argv) {
@@ -816,6 +927,7 @@ function main() {
   else if (command === "stale-check") result = coordinator.staleCheck({ runId: options.run_id });
   else if (command === "publication-acquire") result = coordinator.publicationAcquire({ runId: options.run_id });
   else if (command === "publication-complete") result = coordinator.publicationComplete({ runId: options.run_id });
+  else if (command === "publication-reconcile") result = coordinator.publicationReconcile({ runId: options.run_id, publishedSha: options.published_sha });
   else if (command === "publication-release") result = coordinator.publicationRelease({ runId: options.run_id });
   else if (command === "heartbeat") result = coordinator.heartbeat({ runId: options.run_id });
   else if (command === "recover-abandoned") result = coordinator.recoverAbandonedLocks();

@@ -35,7 +35,7 @@ const skippedDirectories = new Set([
 ]);
 
 const requiredMarkers = new Map([
-  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "HEAD == origin/main", "WORKTREE_BASE_DIVERGED"]],
+  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "ahead-only", "PUBLICATION_PENDING", "UNPUBLISHED_PATH_CONFLICT", "WORKTREE_BASE_DIVERGED"]],
   ["apps/web/AGENTS.md", ["Next.js", "Server/Client", "Leaflet"]],
   ["apps/web/src/app/api/AGENTS.md", ["AuthN", "AuthZ", "contrat de réponse propre"]],
   ["apps/web/supabase/AGENTS.md", ["apps/web/supabase/migrations/", "unique", "RLS"]],
@@ -137,6 +137,11 @@ function validateMarkers(view, findings) {
 
   const rootContent = readIfPresent(view, "AGENTS.md");
   if (rootContent) {
+    if (rootContent.includes("Il refuse aussi de créer un run mutable si")) {
+      findings.push(
+        "AGENTS.md: workspace:start must allow ahead-only checkouts and mark PUBLICATION_PENDING instead of refusing every HEAD != origin/main.",
+      );
+    }
     for (const heading of rootForbiddenHeadings) {
       if (rootContent.includes(heading)) {
         findings.push(

@@ -10,11 +10,27 @@ function fixture() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-workspace-coordination-"));
 }
 
-function fakeGit({ status = "", staged = "", branch = "main", head = "origin-sha", origin = "origin-sha", relation = "0 0", remoteDiff = "", unpublishedDiff = "" } = {}) {
+function fakeGit({
+  status = "",
+  staged = "",
+  branch = "main",
+  head = "origin-sha",
+  origin = "origin-sha",
+  relation = "0 0",
+  remoteDiff = "",
+  unpublishedDiff = "",
+  commitDiff = "owned.ts\n",
+  ancestor = true,
+} = {}) {
   const resolve = (value, args) => (typeof value === "function" ? value(args) : value);
   return (_root, args) => {
     if (args[0] === "status") return typeof status === "function" ? status(args) : status;
     if (args[0] === "diff" && args[1] === "--cached") return staged;
+    if (args[0] === "merge-base" && args[1] === "--is-ancestor") {
+      if (!resolve(ancestor, args)) throw new Error("not an ancestor");
+      return "";
+    }
+    if (args[0] === "diff-tree") return resolve(commitDiff, args);
     if (args[0] === "rev-list") return resolve(relation, args);
     if (args[0] === "diff" && args[1] === "--name-only" && args.length === 3) return resolve(unpublishedDiff, args);
     if (args[0] === "diff") return resolve(remoteDiff, args);
@@ -374,6 +390,118 @@ test("publication acquire validates a fresh run and publication complete closes 
     assert.equal(completed.completed, true);
     assert.equal(fs.existsSync(path.join(root, ".artifacts", "coordination", "publication.lock")), false);
     coordinator.release({ runId: "run-a" });
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("publication reconcile records proof for an already published commit and releases the run", () => {
+  const root = fixture();
+  const publishedSha = "a".repeat(40);
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({ commitDiff: "owned.ts\n" }),
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["owned.ts"] });
+
+    const reconciled = coordinator.publicationReconcile({ runId: "run-a", publishedSha });
+    assert.equal(reconciled.reconciled, true);
+    assert.equal(reconciled.reconciledPublishedSha, publishedSha);
+    const run = JSON.parse(
+      fs.readFileSync(
+        path.join(root, ".artifacts", "coordination", "active-runs", "run-a.json"),
+        "utf8",
+      ),
+    );
+    assert.equal(run.reconciledPublishedSha, publishedSha);
+    assert.ok(run.publicationCompletedAt);
+    coordinator.release({ runId: "run-a" });
+    assert.equal(fs.existsSync(path.join(root, ".artifacts", "coordination", "active-runs", "run-a.json")), false);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("publication reconcile rejects a commit that is not published", () => {
+  const root = fixture();
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({ ancestor: false }),
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["owned.ts"] });
+    assert.throws(
+      () => coordinator.publicationReconcile({ runId: "run-a", publishedSha: "b".repeat(40) }),
+      /PUBLISHED_SHA_NOT_ANCESTOR/,
+    );
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("publication reconcile rejects published paths outside run ownership", () => {
+  const root = fixture();
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({ commitDiff: "outside.ts\n" }),
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["owned.ts"] });
+    assert.throws(
+      () => coordinator.publicationReconcile({ runId: "run-a", publishedSha: "c".repeat(40) }),
+      /PUBLISHED_PATH_NOT_OWNED.*outside\.ts/,
+    );
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("publication reconcile rejects a divergent checkout", () => {
+  const root = fixture();
+  let head = "same";
+  let origin = "same";
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({ head: () => head, origin: () => origin }),
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["owned.ts"] });
+    head = "local";
+    origin = "remote";
+    assert.throws(
+      () => coordinator.publicationReconcile({ runId: "run-a", publishedSha: "d".repeat(40) }),
+      /WORKTREE_BASE_DIVERGED/,
+    );
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("publication reconcile rejects a foreign publication mutex", () => {
+  const root = fixture();
+  try {
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner: fakeGit() });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["owned.ts"] });
+    const coordinationRoot = path.join(root, ".artifacts", "coordination");
+    fs.writeFileSync(
+      path.join(coordinationRoot, "publication.lock"),
+      JSON.stringify({ runId: "run-b", kind: "publication" }),
+    );
+    assert.throws(
+      () => coordinator.publicationReconcile({ runId: "run-a", publishedSha: "e".repeat(40) }),
+      /PUBLICATION_LOCK_FOREIGN.*run-b/,
+    );
   } finally {
     cleanup(root);
   }
