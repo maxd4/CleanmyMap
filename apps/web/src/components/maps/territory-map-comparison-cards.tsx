@@ -6,6 +6,7 @@ import "leaflet/dist/leaflet.css";
 import { Compass, MapPin, LocateFixed } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
+import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
 
 const MapContainer = dynamic(
   () => import("react-leaflet").then((mod) => mod.MapContainer),
@@ -172,8 +173,8 @@ function MapPreviewFrame({
           className="h-full w-full"
         >
           <TileLayer
-            attribution="&copy; OpenStreetMap contributors &copy; CARTO"
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            attribution={CARTO_BASEMAPS.voyager.attribution}
+            url={CARTO_BASEMAPS.voyager.url}
           />
         </MapContainer>
 

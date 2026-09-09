@@ -44,6 +44,11 @@ type FallbackPayload = {
   reference?: MapReferencePoint | null;
 };
 
+export type ActionsMapViewportOptions = {
+  fallbackViewport?: MapViewportState;
+  useRemoteFallback?: boolean;
+};
+
 export function shouldApplyAutomaticViewport(params: {
   isMounted: boolean;
   hasManualViewportChange: boolean;
@@ -60,14 +65,17 @@ export function shouldApplyAutomaticViewport(params: {
 
 export function useActionsMapViewport(
   onViewportChange?: (viewport: MapViewportState) => void,
+  options: ActionsMapViewportOptions = {},
 ) {
+  const fallbackViewport = options.fallbackViewport ?? DEFAULT_ACTIONS_MAP_VIEWPORT;
+  const useRemoteFallback = options.useRemoteFallback ?? true;
   const [viewport, setViewport] = useState<MapViewportState | null>(
-    DEFAULT_ACTIONS_MAP_VIEWPORT,
+    fallbackViewport,
   );
   const [viewportRequest, setViewportRequest] = useState<MapViewportState | null>(null);
   const [viewportRequestKey, setViewportRequestKey] = useState(0);
   const [recenterViewport, setRecenterViewport] = useState<MapViewportState>(
-    DEFAULT_ACTIONS_MAP_VIEWPORT,
+    fallbackViewport,
   );
   const hasReceivedInitialViewportReportRef = useRef(false);
   const hasManualViewportChangeRef = useRef(false);
@@ -90,7 +98,8 @@ export function useActionsMapViewport(
           });
           nextViewport = resolution.viewport;
         } catch {
-          // Keep the strict local reference viewport when the map API is unavailable.
+          // The public homepage must remain on Paris when automatic resolution fails.
+          nextViewport = useRemoteFallback ? stableFallback : fallbackViewport;
         }
       }
 
@@ -113,7 +122,7 @@ export function useActionsMapViewport(
       setViewportRequestKey((current) => current + 1);
       setViewport(nextViewport);
     },
-    [],
+    [fallbackViewport, useRemoteFallback],
   );
 
   const loadFallbackViewport = useCallback(async (): Promise<FallbackPayload | null> => {
@@ -147,7 +156,7 @@ export function useActionsMapViewport(
         }
 
         if (!payload) {
-          await applyAutomaticViewport(null, DEFAULT_ACTIONS_MAP_VIEWPORT);
+          await applyAutomaticViewport(null, fallbackViewport);
           return;
         }
 
@@ -177,10 +186,10 @@ export function useActionsMapViewport(
           return;
         }
 
-        await applyAutomaticViewport(null, DEFAULT_ACTIONS_MAP_VIEWPORT);
+        await applyAutomaticViewport(null, fallbackViewport);
       })();
     });
-  }, [applyAutomaticViewport, loadFallbackViewport]);
+  }, [applyAutomaticViewport, fallbackViewport, loadFallbackViewport]);
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -197,7 +206,11 @@ export function useActionsMapViewport(
 
     const handleGeolocationFailure = () => {
       if (!hasManualViewportChangeRef.current) {
-        queueFallbackViewport();
+        if (useRemoteFallback) {
+          queueFallbackViewport();
+        } else {
+          void applyAutomaticViewport(null, fallbackViewport);
+        }
       }
     };
 
@@ -233,7 +246,7 @@ export function useActionsMapViewport(
     );
 
     return cleanup;
-  }, [applyAutomaticViewport, queueFallbackViewport]);
+  }, [applyAutomaticViewport, fallbackViewport, queueFallbackViewport, useRemoteFallback]);
 
   const handleManualViewportInteraction = useCallback(() => {
     if (pendingProgrammaticViewportRef.current) {

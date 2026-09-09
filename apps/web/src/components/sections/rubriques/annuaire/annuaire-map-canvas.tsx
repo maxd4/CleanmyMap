@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
 import { getAssociationProfile, getAssociationStructureBadge, getEntryTrustState } from "./annuaire-helpers";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
 
 const PARIS_CENTER: [number, number] = [48.8566, 2.3522];
 
@@ -86,14 +87,14 @@ export function AnnuaireMapCanvas({
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Mode Épuré">
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
-              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+              attribution={CARTO_BASEMAPS.light.attribution}
+              url={CARTO_BASEMAPS.light.url}
             />
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="Voyager">
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+              attribution={CARTO_BASEMAPS.voyager.attribution}
+              url={CARTO_BASEMAPS.voyager.url}
             />
           </LayersControl.BaseLayer>
         </LayersControl>

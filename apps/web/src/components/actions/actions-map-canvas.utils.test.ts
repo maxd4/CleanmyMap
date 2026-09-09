@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ACTIONS_MAP_VIEWPORT,
   getActionsMapCenter,
-  HOMEPAGE_MAP_BOUNDS,
-  HOMEPAGE_MAP_FRANCE_BOUNDS,
-  HOMEPAGE_MAP_MIN_ZOOM,
+  HOMEPAGE_MAP_VIEWPORT,
   NEUTRAL_MAP_CENTER,
 } from "./actions-map-canvas.utils";
 import type { ActionMapItem } from "@/lib/actions/types";
@@ -27,16 +25,9 @@ function buildItem(
 }
 
 describe("getActionsMapCenter", () => {
-  it("keeps the homepage preview framed on metropolitan France", () => {
-    expect(HOMEPAGE_MAP_MIN_ZOOM).toBe(5);
-    expect(HOMEPAGE_MAP_FRANCE_BOUNDS).toEqual([
-      [41.1, -5.5],
-      [51.2, 9.7],
-    ]);
-    expect(HOMEPAGE_MAP_BOUNDS).toEqual([
-      [40, -7],
-      [52, 11],
-    ]);
+  it("uses Paris as the homepage fallback viewport", () => {
+    expect(HOMEPAGE_MAP_VIEWPORT.center).toEqual([48.8566, 2.3522]);
+    expect(HOMEPAGE_MAP_VIEWPORT.zoom).toBe(12);
   });
 
   it("falls back to a neutral center when there is no geolocated item", () => {

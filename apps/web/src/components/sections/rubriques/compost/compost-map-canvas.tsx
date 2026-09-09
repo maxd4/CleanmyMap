@@ -17,6 +17,7 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { CompostPoint } from "@/lib/learning/compost-guide-data";
+import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
 
 type CompostMapCanvasProps = {
   points: CompostPoint[];
@@ -113,14 +114,14 @@ export function CompostMapCanvas({ points }: CompostMapCanvasProps) {
           <LayersControl position="topright">
             <LayersControl.BaseLayer checked name={isFrench ? "Plan contrasté" : "High contrast map"}>
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                attribution={CARTO_BASEMAPS.dark.attribution}
+                url={CARTO_BASEMAPS.dark.url}
               />
             </LayersControl.BaseLayer>
             <LayersControl.BaseLayer name={isFrench ? "Plan clair" : "Light map"}>
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                attribution={CARTO_BASEMAPS.light.attribution}
+                url={CARTO_BASEMAPS.light.url}
               />
             </LayersControl.BaseLayer>
           </LayersControl>

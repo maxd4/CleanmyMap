@@ -21,6 +21,7 @@ import type {
 } from "../route-types";
 import { getRouteGroupVisualStyle } from "../route-types";
 import type { RouteGroupRoute } from "@/lib/route/route-response-contract";
+import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
 
 const EMPTY_CENTER: [number, number] = [48.8566, 2.3522];
 
@@ -171,8 +172,8 @@ export function RouteMap({
         className="h-[430px] w-full"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution={CARTO_BASEMAPS.light.attribution}
+          url={CARTO_BASEMAPS.light.url}
           crossOrigin="anonymous"
         />
         <RouteMapViewport coordinates={mapCoordinates} />
