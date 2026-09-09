@@ -101,17 +101,56 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
           {trace.prediction ? (
             <PredictionSummary prediction={trace.prediction} />
           ) : null}
-          <p className="mt-3 rounded-xl border border-amber-300/20 bg-amber-500/10 p-3 text-sm text-amber-50">
-            {trace.parameters.pickupPreference === "waste"
-              ? "Préférence : déchets. Pour les zones prédites, le risque déchets a été utilisé pour leur priorisation ; les signalements observés conservent leurs preuves et leur scoring propres."
-              : trace.parameters.pickupPreference === "cigarette_butts"
-                ? "Préférence : mégots. Pour les zones prédites, le risque mégots a été utilisé pour leur priorisation ; les signalements observés conservent leurs preuves et leur scoring propres."
-                : trace.parameters.effectiveRiskFocus === "waste"
-                  ? "Aucun type n’a été explicitement favorisé ; le focus déchets historique a été conservé pour les zones prédites. Les signalements observés conservent leurs preuves et leur scoring propres."
-                  : trace.parameters.effectiveRiskFocus === "cigaretteButts"
-                    ? "Aucun type n’a été explicitement favorisé ; le focus mégots historique a été conservé pour les zones prédites. Les signalements observés conservent leurs preuves et leur scoring propres."
-                    : "Aucun type n’a été explicitement favorisé. Les zones prédites utilisent le focus canonique all ; les signalements observés conservent leurs preuves et leur scoring propres."}
-          </p>
+          <section
+            className="mt-3 rounded-xl border border-amber-300/20 bg-amber-500/10 p-4 text-sm text-amber-50"
+            aria-labelledby="route-preference-trace"
+          >
+            <h3 id="route-preference-trace" className="font-black text-white">
+              {fr ? "Traçabilité de la préférence" : "Preference trace"}
+            </h3>
+            <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
+              <div>
+                <dt className="text-amber-100/65">pickupPreference</dt>
+                <dd className="font-bold text-white">{trace.parameters.pickupPreference}</dd>
+              </div>
+              <div>
+                <dt className="text-amber-100/65">effectiveRiskFocus</dt>
+                <dd className="font-bold text-white">{trace.parameters.effectiveRiskFocus}</dd>
+              </div>
+              <div>
+                <dt className="text-amber-100/65">prediction.riskFocus</dt>
+                <dd className="font-bold text-white">
+                  {trace.prediction?.riskFocus ?? "non disponible"}
+                </dd>
+              </div>
+            </dl>
+            <p className="mt-3 text-xs leading-relaxed text-amber-100/90">
+              {fr
+                ? trace.parameters.pickupPreference === "waste"
+                  ? "Le calcul privilégie le risque déchets des zones prédites."
+                  : trace.parameters.pickupPreference === "cigarette_butts"
+                  ? "Le calcul privilégie le risque mégots des zones prédites."
+                    : trace.parameters.effectiveRiskFocus === "waste"
+                      ? "Aucun type n’est explicitement favorisé ; le focus déchets effectivement utilisé est conservé pour les zones prédites."
+                      : trace.parameters.effectiveRiskFocus === "cigaretteButts"
+                        ? "Aucun type n’est explicitement favorisé ; le focus mégots effectivement utilisé est conservé pour les zones prédites."
+                        : "Aucun type n’est explicitement favorisé dans les zones prédites."
+                : trace.parameters.pickupPreference === "waste"
+                  ? "The calculation prioritizes waste risk in predicted zones."
+                  : trace.parameters.pickupPreference === "cigarette_butts"
+                    ? "The calculation prioritizes cigarette-butt risk in predicted zones."
+                    : trace.parameters.effectiveRiskFocus === "waste"
+                      ? "No type is explicitly favored; the effective waste focus is retained for predicted zones."
+                      : trace.parameters.effectiveRiskFocus === "cigaretteButts"
+                        ? "No type is explicitly favored; the effective cigarette-butt focus is retained for predicted zones."
+                        : "No type is explicitly favored in predicted zones."}
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-amber-100/90">
+              {fr
+                ? "La sécurité, la distance et l’utilité restent prises en compte. Les signalements observés ne sont pas repondérés : leur scoring observé reste inchangé."
+                : "Safety, distance, and usefulness remain part of the calculation. Observed reports are not reweighted: their observed scoring remains unchanged."}
+            </p>
+          </section>
           {trace.multiRoute ? (
             <section className="mt-4 rounded-2xl border border-indigo-300/20 bg-indigo-500/10 p-4" aria-label={fr ? "Explicabilité multi-groupes" : "Multi-group explainability"}>
               <h3 className="font-black text-white">

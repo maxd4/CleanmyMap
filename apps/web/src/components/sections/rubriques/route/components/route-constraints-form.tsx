@@ -148,23 +148,23 @@ export function RouteOptionsForm({
                 [
                   "balanced",
                   "Sans préférence",
-                  "Aucun type de pollution n'est favorisé dans les zones prédites.",
+                  "Aucun type n’est explicitement favorisé dans les zones prédites.",
                   "No preference",
-                  "No pollution type is favored in predicted zones.",
+                  "No type is explicitly favored in predicted zones.",
                 ],
                 [
                   "waste",
                   "Déchets",
-                  "Dans les zones prédites, le calcul utilise en priorité le risque déchets.",
+                  "Le calcul privilégie le risque déchets des zones prédites.",
                   "Waste",
-                  "In predicted zones, the calculation prioritizes waste risk.",
+                  "The calculation prioritizes waste risk in predicted zones.",
                 ],
                 [
                   "cigarette_butts",
                   "Mégots",
-                  "Dans les zones prédites, le calcul utilise en priorité le risque mégots.",
+                  "Le calcul privilégie le risque mégots des zones prédites.",
                   "Cigarette butts",
-                  "In predicted zones, the calculation prioritizes cigarette-butt risk.",
+                  "The calculation prioritizes cigarette-butt risk in predicted zones.",
                 ],
               ] as const
             ).map(([value, label, help, englishLabel, englishHelp]) => {
@@ -197,6 +197,11 @@ export function RouteOptionsForm({
               );
             })}
           </div>
+          <p className="mt-3 text-xs font-medium leading-relaxed text-emerald-100/70">
+            {fr
+              ? "La sécurité, la distance et l’utilité restent prises en compte."
+              : "Safety, distance, and usefulness remain part of the calculation."}
+          </p>
         </fieldset>
 
         <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">

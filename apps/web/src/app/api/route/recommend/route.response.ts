@@ -177,6 +177,7 @@ export function buildRouteRecommendationResponse(input: {
     candidateData;
   const predictionSummary = {
     ...planning.predictionSummary,
+    riskFocus: planning.effectiveRiskFocus,
     selected: plannedStops.filter(({ candidate }) => candidate.family === "predicted")
       .length,
     selectedCandidateIds: plannedStops

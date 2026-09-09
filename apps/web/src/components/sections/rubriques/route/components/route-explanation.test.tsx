@@ -34,7 +34,13 @@ function dataFor(mode: "network" | "fallback"): RouteExplanationData {
     trace: {
       engineVersion: "route-planner-v2",
       planningMode: { type: "free" },
-      parameters: { travelBudgetMinutes: 60, maxStops: 6, priorityVsTravel: 65 },
+      parameters: {
+        travelBudgetMinutes: 60,
+        maxStops: 6,
+        priorityVsTravel: 65,
+        pickupPreference: "balanced",
+        effectiveRiskFocus: "all",
+      },
       origin: { latitude: 48.8566, longitude: 2.3522, source: "browser" },
       candidates: { loaded: 1, admissible: 1, excluded: 0, excludedByReason: {} },
       selectedStops: mode === "network" ? [{
@@ -118,6 +124,32 @@ function dataFor(mode: "network" | "fallback"): RouteExplanationData {
   } as unknown as RouteExplanationData;
 }
 
+function predictionFor(riskFocus: "all" | "waste" | "cigaretteButts") {
+  return {
+    status: "unavailable" as const,
+    source: "urban-pressure-model" as const,
+    modelVersion: null,
+    snapshot: null,
+    riskFocus,
+    zonesConsidered: 0,
+    candidatesConsidered: 0,
+    admitted: 0,
+    admittedCandidateIds: [],
+    passedToPlanner: 0,
+    excludedByPreselection: 0,
+    excludedByPlannerBudget: 0,
+    excludedByFinalRoutingBudget: 0,
+    preselectionExcludedCandidateIds: [],
+    preselectionExclusionReasons: {},
+    finalRoutingBudgetExcludedCandidateIds: [],
+    selected: 0,
+    selectedCandidateIds: [],
+    excludedByCorridor: 0,
+    deduplicated: 0,
+    warnings: [],
+  };
+}
+
 describe("RouteExplanation", () => {
   it("exposes trace-backed selection and network street details", () => {
     const markup = renderToStaticMarkup(<RouteExplanation data={dataFor("network")} fr />);
@@ -133,6 +165,11 @@ describe("RouteExplanation", () => {
     expect(markup).toContain("Pollution probable : 0 %");
     expect(markup).toContain("contribution planner : 83,5 %");
     expect(markup).not.toContain("sur 100");
+    expect(markup).toContain("pickupPreference");
+    expect(markup).toContain("effectiveRiskFocus");
+    expect(markup).toContain("prediction.riskFocus");
+    expect(markup).toContain("Aucun type n’est explicitement favorisé dans les zones prédites.");
+    expect(markup).toContain("La sécurité, la distance et l’utilité restent prises en compte.");
   });
 
   it("formats route risk scores as French percentages", () => {
@@ -147,11 +184,17 @@ describe("RouteExplanation", () => {
       pickupPreference: "cigarette_butts",
       effectiveRiskFocus: "cigaretteButts",
     };
+    Reflect.set(data.trace, "prediction", predictionFor("cigaretteButts"));
     const markup = renderToStaticMarkup(<RouteExplanation data={data} fr />);
 
-    expect(markup).toContain("Préférence : mégots");
-    expect(markup).toContain("risque mégots a été utilisé");
-    expect(markup).toContain("signalements observés conservent leurs preuves et leur scoring propres");
+    expect(markup).toContain("pickupPreference");
+    expect(markup).toContain("cigarette_butts");
+    expect(markup).toContain("effectiveRiskFocus");
+    expect(markup).toContain("cigaretteButts");
+    expect(markup).toContain("prediction.riskFocus");
+    expect(markup).toContain("Le calcul privilégie le risque mégots des zones prédites.");
+    expect(markup).toContain("Les signalements observés ne sont pas repondérés");
+    expect(markup).toContain("leur scoring observé reste inchangé");
   });
 
   it("does not invent street details for fallback geometry", () => {

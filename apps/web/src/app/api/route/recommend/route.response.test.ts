@@ -335,12 +335,22 @@ describe("route recommendation response trace contract", () => {
     installDefaultMocks();
     const response = buildRouteRecommendationResponse(responseInput({
       pickupPreference: "waste",
+      planning: {
+        effectiveRiskFocus: "waste",
+        predictionSummary: predictionSummary(),
+      },
     }));
     const payload: RouteRecommendationResponse = await response.json();
 
     expect(payload.constraintsApplied).toEqual({ pickupPreference: "waste" });
     expect(payload.trace.parameters.pickupPreference).toBe("waste");
-    expect(payload.trace.parameters.effectiveRiskFocus).toBe("all");
+    expect(payload.trace.parameters.effectiveRiskFocus).toBe("waste");
+    expect(payload.prediction.riskFocus).toBe("waste");
+    expect(payload.trace.prediction?.riskFocus).toBe("waste");
+    expect(payload.serviceMinutesEstimate).toBeNull();
+    expect(payload.totalMinutesEstimate).toBeNull();
+    expect(payload.trace.duration.serviceMinutes).toBeNull();
+    expect(payload.trace.duration.totalMinutes).not.toBeNull();
   });
 
   it("keeps prediction evidence distinct from observed evidence", async () => {
