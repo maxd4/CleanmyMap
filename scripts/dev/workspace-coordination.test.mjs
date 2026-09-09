@@ -10,11 +10,13 @@ function fixture() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-workspace-coordination-"));
 }
 
-function fakeGit({ status = "", staged = "", branch = "main", head = "origin-sha", origin = "origin-sha", remoteDiff = "" } = {}) {
+function fakeGit({ status = "", staged = "", branch = "main", head = "origin-sha", origin = "origin-sha", relation = "0 0", remoteDiff = "", unpublishedDiff = "" } = {}) {
   const resolve = (value, args) => (typeof value === "function" ? value(args) : value);
   return (_root, args) => {
     if (args[0] === "status") return typeof status === "function" ? status(args) : status;
     if (args[0] === "diff" && args[1] === "--cached") return staged;
+    if (args[0] === "rev-list") return resolve(relation, args);
+    if (args[0] === "diff" && args[1] === "--name-only" && args.length === 3) return resolve(unpublishedDiff, args);
     if (args[0] === "diff") return resolve(remoteDiff, args);
     if (args[0] === "branch" && args[1] === "--show-current") return resolve(branch, args);
     if (args[0] === "rev-parse" && args[1] === "HEAD") return resolve(head, args);
@@ -79,17 +81,61 @@ for (const [label, branch] of [["another branch", "feature/test"], ["detached HE
   });
 }
 
-for (const [label, head, origin] of [
-  ["ahead", "local-ahead", "origin-main"],
-  ["behind", "origin-main", "local-behind"],
-  ["divergent", "local-a", "local-b"],
+test("allows an ahead-only checkout and records its unpublished paths", () => {
+  const root = fixture();
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({
+        head: "local-ahead",
+        origin: "origin-main",
+        relation: "0 1",
+        unpublishedDiff: "owned.ts\n",
+      }),
+    });
+    coordinator.init();
+    const run = coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    assert.equal(run.publicationPending, true);
+    assert.deepEqual(run.unpublishedPaths, ["owned.ts"]);
+    coordinator.claim({ runId: "run-a", paths: ["independent.ts"] });
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("rejects a claimed path intersecting an unpublished commit", () => {
+  const root = fixture();
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({
+        head: "local-ahead",
+        origin: "origin-main",
+        relation: "0 1",
+        unpublishedDiff: "apps/web/src/owned.ts\n",
+      }),
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    assert.throws(
+      () => coordinator.claim({ runId: "run-a", paths: ["apps/web/src/owned.ts"] }),
+      /UNPUBLISHED_PATH_CONFLICT.*apps\/web\/src\/owned\.ts/,
+    );
+  } finally {
+    cleanup(root);
+  }
+});
+
+for (const [label, head, origin, relation] of [
+  ["behind", "origin-main", "local-behind", "1 0"],
+  ["divergent", "local-a", "local-b", "1 1"],
 ]) {
   test(`rejects a ${label} checkout before creating run metadata`, () => {
     const root = fixture();
     try {
       const coordinator = createWorkspaceCoordinator({
         repositoryRoot: root,
-        gitRunner: fakeGit({ head, origin }),
+        gitRunner: fakeGit({ head, origin, relation }),
       });
       coordinator.init();
       assert.throws(
@@ -429,6 +475,36 @@ test("publication acquire rejects a diverged checkout before freshness staging",
     origin = "remote";
     assert.throws(() => coordinator.publicationAcquire({ runId: "run-a" }), /WORKTREE_BASE_DIVERGED/);
     assert.equal(fs.existsSync(path.join(root, ".artifacts", "coordination", "publication.lock")), false);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("publication acquire rejects an ahead-only checkout until convergence", () => {
+  const root = fixture();
+  let head = "local-ahead";
+  let origin = "origin-main";
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({
+        head: () => head,
+        origin: () => origin,
+        relation: "0 1",
+        unpublishedDiff: "unpublished.ts\n",
+      }),
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["independent.ts"] });
+    assert.throws(() => coordinator.publicationAcquire({ runId: "run-a" }), /WORKTREE_BASE_DIVERGED/);
+    assert.equal(fs.existsSync(path.join(root, ".artifacts", "coordination", "publication.lock")), false);
+
+    head = "origin-main";
+    origin = "origin-main";
+    coordinator.publicationAcquire({ runId: "run-a" });
+    coordinator.publicationComplete({ runId: "run-a" });
+    coordinator.release({ runId: "run-a" });
   } finally {
     cleanup(root);
   }

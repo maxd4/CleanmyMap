@@ -40,10 +40,15 @@ ne serait mis en danger.
 
 `workspace:start` commence par `git fetch origin main`, lit `HEAD` et
 la branche courante. Toute branche autre que `main`, y compris un detached
-HEAD, lève `WORKTREE_BRANCH_INVALID`. Le coordinateur refuse aussi tout nouveau
-run mutable lorsque `HEAD != origin/main`, avec `WORKTREE_BASE_DIVERGED` et les
-deux SHA ; un worktree dirty seul reste autorisé. Lorsque les contrôles passent,
-le SHA commun est conservé comme `baseSha` du run.
+HEAD, lève `WORKTREE_BRANCH_INVALID`. Un `HEAD == origin/main` autorise le
+démarrage ; un checkout `ahead-only` autorise également le démarrage, marque
+`PUBLICATION_PENDING` et conserve les chemins de
+`git diff --name-only origin/main..HEAD`. Les chemins revendiqués par ce run
+doivent être disjoints de ces commits non publiés, sinon
+`UNPUBLISHED_PATH_CONFLICT`. Un checkout behind ou réellement divergent lève
+`WORKTREE_BASE_DIVERGED`. Cette politique de démarrage ne doit pas exiger
+l'égalité littérale `HEAD == origin/main` ; cette égalité reste obligatoire
+avant toute publication. Le SHA de `origin/main` est conservé comme `baseSha`.
 
 Après obtention effective de `publication.lock`, `workspace:publication-acquire`
 refait `git fetch origin main`, vérifie la branche, la convergence de `HEAD` et

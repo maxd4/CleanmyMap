@@ -67,10 +67,15 @@ intermédiaires ne doivent pas commencer par ce canari.
   puis un push vers `origin/main` ; aucune modification ne justifie un commit
   artificiel ;
 - un `worktree dirty` et une divergence de branche sont deux états distincts :
-  les changements dirty parallèles restent autorisés, mais avant tout nouveau
-  chantier mutable il faut exécuter `git fetch origin main` puis vérifier
-  `HEAD == origin/main` ; sinon signaler `CHECKOUT_DIVERGENCE`, ne pas ouvrir
-  de nouveau chantier mutable et demander une réconciliation dédiée ;
+  les changements dirty parallèles restent autorisés ; `workspace:start`
+  exécute `git fetch origin main` puis classe les refs : `HEAD == origin/main`
+  autorise le démarrage, un `ahead-only` autorise le démarrage avec
+  `PUBLICATION_PENDING`, et un checkout behind ou réellement divergent lève
+  `WORKTREE_BASE_DIVERGED` ;
+- pour un checkout `ahead-only`, `workspace:start` conserve les chemins de
+  `git diff --name-only origin/main..HEAD` ; un nouveau run ne peut revendiquer
+  que des chemins disjoints et l'intersection lève
+  `UNPUBLISHED_PATH_CONFLICT`. Marqueur de politique : ne pas exiger l'égalité littérale `HEAD == origin/main` au démarrage ; cette égalité reste obligatoire avant toute publication ;
 - à chaque fin d'exécution ayant produit des modifications, clôturer
   immédiatement le lot : vérifier son allowlist, committer uniquement ses
   fichiers, puis pousser ce commit vers `origin/main` avant toute nouvelle
