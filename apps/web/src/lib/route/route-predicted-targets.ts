@@ -161,6 +161,7 @@ export type RoutePredictionCorridor = {
 };
 
 export type RoutePredictionPoolAudit = {
+  effectiveRiskFocus: RouteRiskFocus;
   admittedCandidateIds: string[];
   passedToPlannerCandidateIds: string[];
   excludedByPreselectionCandidateIds: string[];
@@ -171,6 +172,7 @@ export function buildRoutePlannerCandidatePool(input: {
   observedCandidates: readonly RoutePlannerCandidate[];
   predictedCandidates: readonly RoutePredictedCandidate[];
   maxCandidates: number;
+  effectiveRiskFocus?: RouteRiskFocus;
 }): {
   candidates: RoutePlannerCandidate[];
   audit: RoutePredictionPoolAudit;
@@ -195,11 +197,13 @@ export function buildRoutePlannerCandidatePool(input: {
     return left.id.localeCompare(right.id);
   });
   const maxCandidates = Math.max(0, Math.floor(input.maxCandidates));
+  const effectiveRiskFocus = input.effectiveRiskFocus ?? "all";
   const passed = ordered.slice(0, maxCandidates);
   const excluded = ordered.slice(maxCandidates);
   return {
     candidates: passed,
     audit: {
+      effectiveRiskFocus,
       admittedCandidateIds: ordered.map((candidate) => candidate.id),
       passedToPlannerCandidateIds: passed.map((candidate) => candidate.id),
       excludedByPreselectionCandidateIds: excluded.map((candidate) => candidate.id),
@@ -436,6 +440,8 @@ export function buildPredictedRouteCandidates(input: {
   observedCandidates?: readonly CorridorPoint[];
   corridor?: RoutePredictionCorridor;
   travelBudgetMinutes: number;
+  effectiveRiskFocus?: RouteRiskFocus;
+  /** @deprecated Use effectiveRiskFocus at the route boundary. */
   riskFocus?: RouteRiskFocus;
   recentEvents?: readonly (CorridorPoint & {
     ageDays: number;
@@ -449,7 +455,7 @@ export function buildPredictedRouteCandidates(input: {
   candidates: RoutePredictedCandidate[];
   summary: RoutePredictionSummary;
 } {
-  const riskFocus = input.riskFocus ?? "all";
+  const riskFocus = input.effectiveRiskFocus ?? input.riskFocus ?? "all";
   if (!input.snapshot) {
     return {
       candidates: [],
@@ -497,8 +503,9 @@ export function buildPredictedRouteCandidates(input: {
     const risk = chosenRisk(estimate, riskFocus);
     const nearCorridor =
       distanceToCorridorKm <= PREDICTED_CORRIDOR_RADIUS_KM + radiusKm;
+    const admissionRisk = chosenRisk(estimate, "all");
     const strongOpportunity =
-      risk >= PREDICTED_STRONG_RISK_THRESHOLD &&
+      admissionRisk >= PREDICTED_STRONG_RISK_THRESHOLD &&
       detourMinutes <=
         Math.min(
           PREDICTED_MAX_DETOUR_MINUTES,

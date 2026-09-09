@@ -3,7 +3,7 @@ import {
   type TrashSpotterActionableCandidate,
 } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { RouteGeometry } from "./route-contract";
-import type { RoutePredictedCandidate } from "./route-predicted-targets";
+import type { RoutePredictedCandidate, RouteRiskFocus } from "./route-predicted-targets";
 import type { RoutePlannerContribution } from "./route-additionality";
 
 export const ROUTE_PLANNER_ENGINE_VERSION = "route-planner-v2" as const;
@@ -42,6 +42,7 @@ export type RoutePlannerResult = {
     excludedByTravelBudget: number;
   };
   audit: {
+    effectiveRiskFocus?: RouteRiskFocus;
     evaluations: RoutePlannerCandidateEvaluation[];
     selections: RoutePlannerSelection[];
     orderingCriteria: [
@@ -86,6 +87,7 @@ export type RoutePlannerInput = {
   travelBudgetMinutes: number;
   maxStops: number;
   priorityVsTravel: number;
+  effectiveRiskFocus?: RouteRiskFocus;
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -185,6 +187,7 @@ function compareCandidates(
 }
 
 export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
+  const effectiveRiskFocus = input.effectiveRiskFocus ?? "all";
   const budgetMinutes = Math.max(0, input.travelBudgetMinutes);
   const priorityWeight = clamp(input.priorityVsTravel, 0, 100) / 100;
   const safeCandidates = input.candidates.filter(isRoutePlannerCandidateEligible);
@@ -304,6 +307,7 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
       excludedByTravelBudget,
     },
     audit: {
+      effectiveRiskFocus,
       evaluations,
       selections,
       orderingCriteria: [

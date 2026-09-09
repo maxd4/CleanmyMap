@@ -41,9 +41,7 @@ import {
   partitionRouteCandidates,
   type RouteGroupPartitionResult,
 } from "@/lib/route/route-group-partition";
-import { resolveEffectiveRiskFocus } from "@/lib/route/route-risk-focus";
 import type { RouteRiskFocus } from "@/lib/route/route-predicted-targets";
-import type { RoutePickupPreference } from "@/lib/route/route-response-contract";
 
 export type RoutePlanningResult = {
   plannerResult: RoutePlannerResult;
@@ -83,22 +81,19 @@ export async function planRouteRecommendation(input: {
   priorityVsTravel: number;
   volunteers: number;
   groupCount: number;
-  riskFocus?: RouteRiskFocus;
-  pickupPreference?: RoutePickupPreference;
+  effectiveRiskFocus: RouteRiskFocus;
   planningMode: RoutePlanningMode;
   eventCenteredAnchor: RouteEventCenteredAnchor | null;
   eventSignalContext: RouteEventSignalContext;
 }): Promise<RoutePlanningResult> {
-  const effectiveRiskFocus = resolveEffectiveRiskFocus({
-    riskFocus: input.riskFocus,
-    pickupPreference: input.pickupPreference,
-  });
+  const effectiveRiskFocus = input.effectiveRiskFocus;
   const baselinePlannerResult = planRoute({
     origin: input.origin,
     candidates: input.spatialCandidates,
     travelBudgetMinutes: input.travelBudgetMinutes,
     maxStops: input.maxStops,
     priorityVsTravel: input.priorityVsTravel,
+    effectiveRiskFocus,
   });
   const predictionBuild = buildPredictedRouteCandidates({
     snapshot: input.parisPressureSnapshot,
@@ -115,7 +110,7 @@ export async function planRouteRecommendation(input: {
       source: "ordered_baseline",
     },
     travelBudgetMinutes: input.travelBudgetMinutes,
-    riskFocus: effectiveRiskFocus,
+    effectiveRiskFocus,
     recentEvents: [...input.eventSignalContext.candidatePressureById.values()]
       .flatMap((pressure) => pressure.contributions)
       .map((event) => ({
@@ -140,6 +135,7 @@ export async function planRouteRecommendation(input: {
     predictedCandidates: candidatesForPool.filter(
       (candidate) => candidate.family === "predicted",
     ),
+    effectiveRiskFocus,
     maxCandidates: input.groupCount === 1
       ? Math.max(input.maxStops * 2, 8)
       : Math.min(
@@ -153,6 +149,7 @@ export async function planRouteRecommendation(input: {
     travelBudgetMinutes: input.travelBudgetMinutes,
     maxStops: input.maxStops,
     priorityVsTravel: input.priorityVsTravel,
+    effectiveRiskFocus,
   });
   const partitionInput = {
     origin: input.origin,
@@ -163,6 +160,7 @@ export async function planRouteRecommendation(input: {
     maxStops: input.maxStops,
     priorityVsTravel: input.priorityVsTravel,
     planningMode: input.planningMode,
+    effectiveRiskFocus,
   };
   let groupPartition: RouteGroupPartitionResult | null =
     input.groupCount === 1
@@ -320,6 +318,7 @@ export async function planRouteRecommendation(input: {
       candidates: candidatePool.candidates,
       partition: groupPartition,
       travelBudgetMinutes: input.travelBudgetMinutes,
+      effectiveRiskFocus,
     });
     groupPartition = multiRouteResult.partition;
     groupRoutes = multiRouteResult.groupRoutes;

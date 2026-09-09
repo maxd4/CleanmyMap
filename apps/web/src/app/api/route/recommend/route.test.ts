@@ -321,9 +321,9 @@ describe("POST /api/route/recommend", () => {
       deduplicatedZoneIds: [],
       warnings: [],
     };
-    buildPredictedRouteCandidatesMock.mockImplementation(({ riskFocus }) => ({
+    buildPredictedRouteCandidatesMock.mockImplementation(({ effectiveRiskFocus }) => ({
       candidates: [],
-      summary: { ...summary, riskFocus },
+      summary: { ...summary, riskFocus: effectiveRiskFocus },
     }));
 
     const { POST } = await import("./route");
@@ -348,11 +348,11 @@ describe("POST /api/route/recommend", () => {
     expect(cigarettePayload.trace.parameters.effectiveRiskFocus).toBe("cigaretteButts");
     expect(buildPredictedRouteCandidatesMock).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ riskFocus: "waste" }),
+      expect.objectContaining({ effectiveRiskFocus: "waste" }),
     );
     expect(buildPredictedRouteCandidatesMock).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ riskFocus: "cigaretteButts" }),
+      expect.objectContaining({ effectiveRiskFocus: "cigaretteButts" }),
     );
   });
 
@@ -515,6 +515,7 @@ describe("POST /api/route/recommend", () => {
       travelBudgetMinutes: 42,
       maxStops: 1,
       priorityVsTravel: 25,
+      effectiveRiskFocus: "all",
     });
     expect((await response.json()).origin).toEqual(explicitOrigin);
   });
