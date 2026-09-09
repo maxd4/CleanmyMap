@@ -38,6 +38,14 @@ Les runs et le lock portent un heartbeat ; une récupération n'est autorisée
 que pour une lease expirée, avec preuve qu'aucun chemin staged du propriétaire
 ne serait mis en danger.
 
+`workspace:start` commence par `git fetch origin main`, lit `HEAD` et
+`origin/main`, puis refuse tout nouveau run mutable lorsque
+`HEAD != origin/main`. Il lève alors `WORKTREE_BASE_DIVERGED` avec les deux
+SHA et ne crée pas les métadonnées du run. Un worktree dirty seul reste
+autorisé ; l'invariant porte sur la base de branche, pas sur l'absence de
+changements locaux. Lorsque `HEAD == origin/main`, le SHA commun est conservé
+comme `baseSha` du run.
+
 ## Portée Git des contrôles
 
 - les contrôles manuels de changements peuvent utiliser la portée `WORKTREE` ;
