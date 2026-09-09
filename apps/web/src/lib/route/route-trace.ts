@@ -27,7 +27,11 @@ import type {
   RouteRiskFocus,
 } from "./route-predicted-targets";
 import type { VolunteerAdditionalityResult } from "@/lib/geo/volunteer-additionality-contract";
-import type { RoutePickupPreference } from "./route-response-contract";
+import type { RoutePickupPreference } from "./route-pickup-preference";
+import {
+  buildCleanupWorkload,
+  type CleanupWorkload,
+} from "./route-cleanup-workload";
 
 export type RouteTraceExclusionReason =
   | "not_admissible"
@@ -76,6 +80,7 @@ export type RouteTraceSelectedStop = {
   parisPressure?: ParisPressureAtPoint | null;
   targetFamily?: "observed" | "predicted";
   evidence?: RouteTargetEvidence;
+  cleanupWorkload: CleanupWorkload;
 };
 
 export type RouteTraceSegment = {
@@ -401,6 +406,7 @@ function selectionForStop(
         .parisPressure ?? null),
     targetFamily: stop.candidate.evidence?.family,
     evidence: stop.candidate.evidence,
+    cleanupWorkload: buildCleanupWorkload(stop.candidate),
   };
 }
 

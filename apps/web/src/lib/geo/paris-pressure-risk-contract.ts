@@ -4,7 +4,7 @@ import type {
   ParisPressureSnapshot,
   ParisPressureSourceStatus,
 } from "./paris-pressure-contract";
-import type { UrbanMorphologyPriorApplication } from "./urban-morphology-prior";
+import type { UrbanMorphologyPriorApplication } from "./urban-morphology-prior-contract";
 
 export const PARIS_PRESSURE_RISK_MODEL_CONFIG = {
   predictionModelVersion: "paris-pressure-risk-v3-urban-morphology",

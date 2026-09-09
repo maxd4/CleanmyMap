@@ -65,12 +65,12 @@ export type ParisPressureUrbanMorphology = {
   features: ParisPressureUrbanMorphologyFeatures;
 };
 
-export type ParisPressurePoint = {
-  latitude: number;
-  longitude: number;
-};
+import type {
+  ParisPressureGeometry,
+  ParisPressurePoint,
+} from "./paris-pressure-spatial-types";
 
-import type { ParisPressureGeometry } from "./paris-pressure-geometry";
+export type { ParisPressurePoint } from "./paris-pressure-spatial-types";
 
 export type ParisPressureSpatialJoin = {
   pointInPolygonMatches: number;

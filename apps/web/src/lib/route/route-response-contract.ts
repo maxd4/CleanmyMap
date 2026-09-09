@@ -13,23 +13,13 @@ import type {
   RoutePartitionAudit,
   RoutePartitionMetrics,
 } from "./route-group-partition";
+import type { RoutePickupPreference } from "./route-pickup-preference";
 
-export const ROUTE_PICKUP_PREFERENCES = [
-  "balanced",
-  "waste",
-  "cigarette_butts",
-] as const;
-
-export type RoutePickupPreference = (typeof ROUTE_PICKUP_PREFERENCES)[number];
-
-export function isRoutePickupPreference(
-  value: unknown,
-): value is RoutePickupPreference {
-  return (
-    typeof value === "string" &&
-    ROUTE_PICKUP_PREFERENCES.includes(value as RoutePickupPreference)
-  );
-}
+export {
+  ROUTE_PICKUP_PREFERENCES,
+  isRoutePickupPreference,
+} from "./route-pickup-preference";
+export type { RoutePickupPreference } from "./route-pickup-preference";
 
 /** Shared HTTP input contract for the route recommendation boundary. */
 export type RouteRecommendationRequest = {

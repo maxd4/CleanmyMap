@@ -1,21 +1,17 @@
-import type { ParisPressurePoint } from "./paris-pressure-contract";
 import {
   isValidParisPressureGeometry as isValidCoreGeometry,
   parisPressureGeometryAreaKm2 as coreGeometryAreaKm2,
   pointInParisPressureGeometry as corePointInGeometry,
 } from "./paris-pressure-geometry-core.mjs";
+import type {
+  ParisPressureGeometry,
+  ParisPressurePoint,
+} from "./paris-pressure-spatial-types";
 
-export type ParisPressureCoordinate = readonly [number, number];
-
-export type ParisPressureGeometry =
-  | {
-      type: "Polygon";
-      coordinates: readonly (readonly ParisPressureCoordinate[])[];
-    }
-  | {
-      type: "MultiPolygon";
-      coordinates: readonly (readonly (readonly ParisPressureCoordinate[])[])[];
-    };
+export type {
+  ParisPressureCoordinate,
+  ParisPressureGeometry,
+} from "./paris-pressure-spatial-types";
 
 export function isValidParisPressureGeometry(
   geometry: ParisPressureGeometry | null | undefined,

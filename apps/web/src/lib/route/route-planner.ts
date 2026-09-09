@@ -3,8 +3,12 @@ import {
   type TrashSpotterActionableCandidate,
 } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { RouteGeometry } from "./route-contract";
-import type { RoutePredictedCandidate, RouteRiskFocus } from "./route-predicted-targets";
 import type { RoutePlannerContribution } from "./route-additionality";
+import type {
+  RouteObservedEvidence,
+  RoutePredictedCandidate,
+  RouteRiskFocus,
+} from "./route-target-contract";
 
 export const ROUTE_PLANNER_ENGINE_VERSION = "route-planner-v2" as const;
 export const WALKING_SPEED_KM_PER_HOUR = 4.5;
@@ -20,7 +24,7 @@ export type RoutePlannerCandidate =
       score: number;
       reason: string;
       family: "observed";
-      evidence: import("./route-predicted-targets").RouteObservedEvidence;
+      evidence: RouteObservedEvidence;
     } & Partial<RoutePlannerContribution>)
   | RoutePredictedCandidate;
 
