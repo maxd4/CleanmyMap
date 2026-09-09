@@ -1,34 +1,11 @@
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { NextResponse } from "next/server";
+import { findPublicDocumentationByApiSlug } from "@/lib/documentation/public-documentation-registry";
 
 export const runtime = "nodejs";
 
-type DocumentationAsset = {
-  filePath: string;
-  filename: string;
-};
-
 const DOCUMENTATION_ROOT = path.resolve(process.cwd(), "..", "..", "documentation");
-
-const DOCUMENTATION_ASSETS: Record<string, DocumentationAsset> = {
-  "graphique-impact-co2e": {
-    filePath: path.join("plans", "rapport_impact", "graphique_impact_CO2e.md"),
-    filename: "graphique_impact_CO2e.md",
-  },
-  atelier_DU: {
-    filePath: path.join("plans", "ateliers_DU.md"),
-    filename: "atelier_DU.md",
-  },
-  journal_DU: {
-    filePath: path.join("plans", "journal_impact_DU.md"),
-    filename: "journal_DU.md",
-  },
-  journal_impact_DU: {
-    filePath: path.join("plans", "journal_impact_DU.md"),
-    filename: "journal_impact_DU.md",
-  },
-};
 
 function buildDownloadHeaders(filename: string) {
   return {
@@ -43,7 +20,7 @@ export async function GET(
   context: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await context.params;
-  const asset = DOCUMENTATION_ASSETS[slug];
+  const asset = findPublicDocumentationByApiSlug(slug);
 
   if (!asset) {
     return NextResponse.json(
@@ -55,9 +32,10 @@ export async function GET(
     );
   }
 
-  const resolvedPath = path.resolve(DOCUMENTATION_ROOT, asset.filePath);
+  const resolvedPath = path.resolve(DOCUMENTATION_ROOT, asset.canonicalPath);
+  const relative = path.relative(DOCUMENTATION_ROOT, resolvedPath);
 
-  if (!resolvedPath.startsWith(DOCUMENTATION_ROOT)) {
+  if (relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
     return NextResponse.json(
       {
         status: "error",

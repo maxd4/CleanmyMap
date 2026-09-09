@@ -5,11 +5,13 @@ import {
   resolveSentryEnvironment,
   resolveSentryRelease,
 } from "./src/lib/observability/sentry-metadata.mjs";
+import { PUBLIC_DOCUMENTATION_TRACE_FILES } from "./src/lib/documentation/public-documentation-registry";
 
 const repoRoot = path.resolve(__dirname, "../..");
 const env = process.env;
 const sentryRelease = resolveSentryRelease(env) ?? "";
 const sentryEnvironment = resolveSentryEnvironment(env);
+const DOCUMENTATION_TRACE_GLOB = "../../documentation/**/*";
 
 const nextConfig: NextConfig = {
   env: {
@@ -19,6 +21,13 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   productionBrowserSourceMaps: true,
   outputFileTracingRoot: repoRoot,
+  outputFileTracingExcludes: {
+    "/*": [DOCUMENTATION_TRACE_GLOB],
+  },
+  outputFileTracingIncludes: {
+    "/docs/*": PUBLIC_DOCUMENTATION_TRACE_FILES.docs,
+    "/api/documentation/*": PUBLIC_DOCUMENTATION_TRACE_FILES.api,
+  },
   serverExternalPackages: ["@prisma/instrumentation", "@fastify/otel"],
   compress: true,
   generateEtags: true,
