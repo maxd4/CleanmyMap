@@ -209,6 +209,18 @@ function getRemoteChangedPaths(repositoryRoot, baseSha, ownedPaths, gitRunner = 
   return gitRunner(repositoryRoot, args).split(/\r?\n/).filter(Boolean).sort();
 }
 
+function getUnpublishedPaths(repositoryRoot, originMainSha, headSha, gitRunner = git) {
+  if (originMainSha === headSha) return [];
+  return gitRunner(repositoryRoot, ["diff", "--name-only", `${originMainSha}..${headSha}`])
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .sort();
+}
+
+function pathsOverlap(left, right) {
+  return left === right || left.startsWith(`${right}/`) || right.startsWith(`${left}/`);
+}
+
 function workspaceError(code, message, details = {}) {
   const error = new Error(`${code}: ${message}`);
   error.code = code;
@@ -271,6 +283,28 @@ export function createWorkspaceCoordinator({
     return { headSha, originMainSha };
   };
 
+  const classifyHeadRelation = ({ headSha, originMainSha }) => {
+    if (headSha === originMainSha) return { kind: "equal", behind: 0, ahead: 0 };
+    const counts = runGit(["rev-list", "--left-right", "--count", "origin/main...HEAD"])
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(Number);
+    if (counts.length !== 2 || counts.some((value) => !Number.isInteger(value) || value < 0)) {
+      throw workspaceError(
+        "WORKTREE_BASE_DIVERGED",
+        `unable to classify HEAD=${headSha} origin/main=${originMainSha}`,
+        { headSha, originMainSha },
+      );
+    }
+    const [behind, ahead] = counts;
+    if (behind === 0 && ahead > 0) return { kind: "ahead-only", behind, ahead };
+    throw workspaceError(
+      "WORKTREE_BASE_DIVERGED",
+      `HEAD=${headSha} origin/main=${originMainSha}`,
+      { headSha, originMainSha, behind, ahead },
+    );
+  };
+
   const refreshPublicationFreshness = (runId) => {
     runGit(["fetch", "origin", "main"]);
     assertMainBranch();
@@ -326,17 +360,26 @@ export function createWorkspaceCoordinator({
     assertSafeSegment(domain, "domain");
     runGit(["fetch", "origin", "main"]);
     assertMainBranch();
-    const { originMainSha } = assertHeadMatchesOrigin();
+    const refs = {
+      headSha: runGit(["rev-parse", "HEAD"]),
+      originMainSha: runGit(["rev-parse", "origin/main"]),
+    };
+    const relation = classifyHeadRelation(refs);
+    const unpublishedPaths = relation.kind === "ahead-only"
+      ? getUnpublishedPaths(repo, refs.originMainSha, refs.headSha, (_repositoryRoot, args) => runGit(args))
+      : [];
     const run = {
       version: 2,
       runId,
       domain,
-      baseSha: originMainSha,
+      baseSha: refs.originMainSha,
       startedAt: timestamp(),
       updatedAt: timestamp(),
       heartbeatAt: timestamp(),
       ownedPaths: [],
       adoptedLegacyPaths: [],
+      publicationPending: relation.kind === "ahead-only",
+      unpublishedPaths,
     };
     writeExclusiveMetadata(getRunPath(root, runId), run);
     return run;
@@ -346,6 +389,17 @@ export function createWorkspaceCoordinator({
     const { run, runPath } = loadRun(root, runId);
     const normalizedPaths = [...new Set(paths.map((item) => normalizeRepoPath(repo, item)))].sort();
     if (normalizedPaths.length === 0) throw new Error("At least one path is required.");
+    const unpublishedPaths = (run.unpublishedPaths ?? []).map((item) => normalizeRepoPath(repo, item));
+    const unpublishedConflicts = normalizedPaths.filter((repoPath) =>
+      unpublishedPaths.some((unpublishedPath) => pathsOverlap(repoPath, unpublishedPath)),
+    );
+    if (unpublishedConflicts.length > 0) {
+      throw workspaceError(
+        "UNPUBLISHED_PATH_CONFLICT",
+        `paths overlap unpublished commits: ${unpublishedConflicts.join(", ")}`,
+        { unpublishedConflicts, unpublishedPaths },
+      );
+    }
     const migration = loadMigration(root);
     const legacy = new Set(migration?.legacyUnowned ?? []);
     const legacyConflicts = normalizedPaths.filter((item) => legacy.has(item));
