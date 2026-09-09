@@ -173,6 +173,7 @@ describe("route recommendation trace", () => {
     });
     expect(first.ordering.stopIds).toEqual(["final-1"]);
     expect(first.parameters.pickupPreference).toBe("balanced");
+    expect(first.parameters.effectiveRiskFocus).toBe("all");
     expect(first.fallbacks).toEqual(["fallback_route_geometry", "budget_compatible_prefix"]);
     expect(first.finalRoutingReconciliation).toEqual({
       stopsBefore: 1,
@@ -225,6 +226,7 @@ describe("route recommendation trace", () => {
     });
 
     expect(trace.parameters.pickupPreference).toBe("cigarette_butts");
+    expect(trace.parameters.effectiveRiskFocus).toBe("all");
     expect(trace.parameters.priorityVsTravel).toBe(65);
   });
 

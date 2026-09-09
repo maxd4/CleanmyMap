@@ -140,6 +140,20 @@ describe("RouteExplanation", () => {
     expect(riskLabel(63.5)).toBe("63,5 %");
   });
 
+  it("explains the selected predictive branch without reweighting observed spots", () => {
+    const data = dataFor("network");
+    data.trace.parameters = {
+      ...data.trace.parameters,
+      pickupPreference: "cigarette_butts",
+      effectiveRiskFocus: "cigaretteButts",
+    };
+    const markup = renderToStaticMarkup(<RouteExplanation data={data} fr />);
+
+    expect(markup).toContain("Préférence : mégots");
+    expect(markup).toContain("risque mégots a été utilisé");
+    expect(markup).toContain("signalements observés conservent leurs preuves et leur scoring propres");
+  });
+
   it("does not invent street details for fallback geometry", () => {
     const markup = renderToStaticMarkup(<RouteExplanation data={dataFor("fallback")} fr />);
 

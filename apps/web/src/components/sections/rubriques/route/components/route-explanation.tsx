@@ -101,6 +101,17 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
           {trace.prediction ? (
             <PredictionSummary prediction={trace.prediction} />
           ) : null}
+          <p className="mt-3 rounded-xl border border-amber-300/20 bg-amber-500/10 p-3 text-sm text-amber-50">
+            {trace.parameters.pickupPreference === "waste"
+              ? "Préférence : déchets. Pour les zones prédites, le risque déchets a été utilisé pour leur priorisation ; les signalements observés conservent leurs preuves et leur scoring propres."
+              : trace.parameters.pickupPreference === "cigarette_butts"
+                ? "Préférence : mégots. Pour les zones prédites, le risque mégots a été utilisé pour leur priorisation ; les signalements observés conservent leurs preuves et leur scoring propres."
+                : trace.parameters.effectiveRiskFocus === "waste"
+                  ? "Aucun type n’a été explicitement favorisé ; le focus déchets historique a été conservé pour les zones prédites. Les signalements observés conservent leurs preuves et leur scoring propres."
+                  : trace.parameters.effectiveRiskFocus === "cigaretteButts"
+                    ? "Aucun type n’a été explicitement favorisé ; le focus mégots historique a été conservé pour les zones prédites. Les signalements observés conservent leurs preuves et leur scoring propres."
+                    : "Aucun type n’a été explicitement favorisé. Les zones prédites utilisent le focus canonique all ; les signalements observés conservent leurs preuves et leur scoring propres."}
+          </p>
           {trace.multiRoute ? (
             <section className="mt-4 rounded-2xl border border-indigo-300/20 bg-indigo-500/10 p-4" aria-label={fr ? "Explicabilité multi-groupes" : "Multi-group explainability"}>
               <h3 className="font-black text-white">

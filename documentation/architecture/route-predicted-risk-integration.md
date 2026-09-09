@@ -31,6 +31,22 @@ Le tri est déterministe : score de priorité décroissant, famille `observed` �
 une prédiction forte ; à score égal, la preuve observée gagne. La contrainte de
 budget reste appliquée par le planner et demeure dure.
 
+La préférence de collecte est une préférence souple appliquée uniquement à la
+branche prédictive : `waste` sélectionne `wasteRisk`, `cigarette_butts`
+sélectionne `cigaretteButtRisk`, et `balanced` conserve le `riskFocus` explicite
+historique ou `all` par défaut. Le resolver est unique et la valeur effective
+est propagée jusqu'au pool, au planner, à la partition et à la trace. Elle
+modifie donc la priorité déterministe des zones prédites et peut modifier les
+stops, la boucle et ses métriques de déplacement lorsque les données le
+justifient.
+
+Cette préférence n'est ni un filtre absolu, ni une permission de ramassage,
+ni un modèle de durée de collecte. Les candidats observés conservent leur
+scoring, leurs catégories et leurs preuves existants. Les contraintes de
+sécurité, d'additionalité, d'événement, de distance, de budget et de réseau
+restent prioritaires. Une zone prédite sans preuve de sécurité `safe` n'est pas
+transmise au planner ; aucune préférence ne peut lever cette exclusion.
+
 Le résumé prédictif distingue les compteurs et identifiants :
 
 - `admitted` : zones prédites admises après le corridor et la déduplication ;
