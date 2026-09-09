@@ -8,6 +8,7 @@ import {
   type RoutePlannerOrigin,
   type RoutePlannerResult,
 } from "./route-planner";
+import type { RouteRiskFocus } from "./route-predicted-targets";
 import type { RoutePlanningMode } from "./route-planning-mode";
 
 export const MAX_ROUTE_VOLUNTEERS = 100;
@@ -26,6 +27,7 @@ export type RouteGroupPartitionInput = {
   priorityVsTravel: number;
   planningMode?: RoutePlanningMode;
   plannerResult?: RoutePlannerResult;
+  effectiveRiskFocus?: RouteRiskFocus;
 };
 
 export type RouteGroupAssignment = {
@@ -67,6 +69,7 @@ export type RoutePartitionAssignmentAudit = {
 export type RoutePartitionAudit = {
   mode: "single-group-compatible" | "coordinated-multi-group";
   planningMode: RoutePlanningMode["type"];
+  effectiveRiskFocus?: RouteRiskFocus;
   consideredCandidateIds: string[];
   excludedUnsafeCandidateIds: string[];
   excludedByPartitionBoundCandidateIds: string[];
@@ -236,6 +239,7 @@ function buildSingleGroupResult(
     audit: {
       mode: "single-group-compatible",
       planningMode: input.planningMode?.type ?? "free",
+      effectiveRiskFocus: input.effectiveRiskFocus ?? "all",
       consideredCandidateIds: orderedCandidates.map(({ id }) => id),
       excludedUnsafeCandidateIds: orderedCandidates
         .filter((candidate) => !isRoutePlannerCandidateEligible(candidate))
@@ -390,6 +394,7 @@ export function partitionRouteCandidates(
       travelBudgetMinutes: input.travelBudgetMinutes,
       maxStops: input.maxStops,
       priorityVsTravel: input.priorityVsTravel,
+      effectiveRiskFocus: input.effectiveRiskFocus,
     });
     return buildSingleGroupResult(input, compatiblePlannerResult);
   }
@@ -503,6 +508,7 @@ export function partitionRouteCandidates(
     audit: {
       mode: "coordinated-multi-group",
       planningMode: input.planningMode?.type ?? "free",
+      effectiveRiskFocus: input.effectiveRiskFocus ?? "all",
       consideredCandidateIds: orderedCandidates.map(({ id }) => id),
       excludedUnsafeCandidateIds: orderedCandidates
         .filter((candidate) => !isRoutePlannerCandidateEligible(candidate))

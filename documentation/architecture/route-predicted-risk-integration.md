@@ -34,11 +34,17 @@ budget reste appliquée par le planner et demeure dure.
 La préférence de collecte est une préférence souple appliquée uniquement à la
 branche prédictive : `waste` sélectionne `wasteRisk`, `cigarette_butts`
 sélectionne `cigaretteButtRisk`, et `balanced` conserve le `riskFocus` explicite
-historique ou `all` par défaut. Le resolver est unique et la valeur effective
-est propagée jusqu'au pool, au planner, à la partition et à la trace. Elle
-modifie donc la priorité déterministe des zones prédites et peut modifier les
-stops, la boucle et ses métriques de déplacement lorsque les données le
+historique ou `all` par défaut. Le resolver est unique à la frontière HTTP et
+la valeur `effectiveRiskFocus` est propagée jusqu'à la construction des zones,
+au pool, au planner, à la partition, au routage multi-groupe et à la trace.
+Elle modifie donc la priorité déterministe des zones prédites et peut modifier
+les stops, la boucle et ses métriques de déplacement lorsque les données le
 justifient.
+
+L'admission géographique hors corridor reste évaluée avec le risque global
+`all`. Ainsi, une préférence focalisée peut réordonner une zone de l'autre type
+sans la transformer en exclusion absolue ; le corridor, la sécurité,
+l'additionalité et le budget conservent leurs contraintes propres.
 
 Cette préférence n'est ni un filtre absolu, ni une permission de ramassage,
 ni un modèle de durée de collecte. Les candidats observés conservent leur

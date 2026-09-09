@@ -17,6 +17,7 @@ import { resolveRouteOrigin } from "./route.origin";
 import { planRouteRecommendation } from "./route.planning";
 import { buildRouteRecommendationResponse } from "./route.response";
 import { loadRouteEventCenteredAnchor } from "@/lib/route/route-event-centered-loader";
+import { resolveEffectiveRiskFocus } from "@/lib/route/route-risk-focus";
 import {
   parseRouteRecommendationRequest,
   resolvePriorityVsTravel,
@@ -63,8 +64,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const options = parsed.data;
-  const priorityVsTravel = resolvePriorityVsTravel(options);
+    const options = parsed.data;
+    const priorityVsTravel = resolvePriorityVsTravel(options);
+    const effectiveRiskFocus = resolveEffectiveRiskFocus({
+      pickupPreference: options.pickupPreference,
+      riskFocus: options.riskFocus,
+    });
 
   try {
     const supabase = getSupabaseServerClient();
@@ -108,8 +113,7 @@ export async function POST(request: Request) {
       priorityVsTravel,
       volunteers: options.volunteers,
       groupCount: options.groupCount,
-      riskFocus: options.riskFocus,
-      pickupPreference: options.pickupPreference,
+      effectiveRiskFocus,
       planningMode,
       eventCenteredAnchor,
       eventSignalContext: candidateData.routeEventSignalContext,

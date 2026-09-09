@@ -19,10 +19,12 @@ import type {
   RouteGroupAssignment,
   RouteGroupPartitionResult,
 } from "./route-group-partition";
+import type { RouteRiskFocus } from "./route-predicted-targets";
 
 type Coordinate = [number, number];
 
 export type RouteMultiRouteResult = {
+  effectiveRiskFocus: RouteRiskFocus;
   partition: RouteGroupPartitionResult;
   groupRoutes: RouteGroupRoute[];
   plannedStops: PlannedRouteStop[];
@@ -303,6 +305,7 @@ export async function routePartitionedGroups(input: {
   candidates: readonly RoutePlannerCandidate[];
   partition: RouteGroupPartitionResult;
   travelBudgetMinutes: number;
+  effectiveRiskFocus?: RouteRiskFocus;
 }): Promise<RouteMultiRouteResult> {
   const candidatesById = new Map(input.candidates.map((candidate) => [candidate.id, candidate]));
   const routedGroups: RouteGroupRoutingResult[] = [];
@@ -404,6 +407,7 @@ export async function routePartitionedGroups(input: {
     },
   };
   return {
+    effectiveRiskFocus: input.effectiveRiskFocus ?? input.partition.audit.effectiveRiskFocus ?? "all",
     partition,
     groupRoutes,
     plannedStops: routedGroups.flatMap(({ plannedStops }) => plannedStops),
