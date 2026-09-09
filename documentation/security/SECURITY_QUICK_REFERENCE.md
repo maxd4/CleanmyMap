@@ -1,188 +1,59 @@
-# Guide de Sécurité Rapide - Erreurs Courantes
+# Référence sécurité rapide — `CURRENT`
 
-## 🚨 Erreurs à NE PAS faire
+Cette page rappelle les erreurs fréquentes. Les contrats détaillés restent
+dans l'index [`README.md`](./README.md).
 
-### 1. Validation d'URL avec `startsWith()` ou `includes()`
+## URLs
 
-#### ❌ DANGEREUX
-```typescript
-// CodeQL: js/incomplete-url-substring-sanitization
-if (url.startsWith("https://")) { /* ... */ }
-if (url.includes("http")) { /* ... */ }
-if (url.indexOf("http") === 0) { /* ... */ }
+À ne pas faire :
+
+```ts
+url.startsWith("https://")
+url.includes("http")
+url.indexOf("http") === 0
 ```
 
-**Pourquoi ?** Ces patterns peuvent être contournés :
-- `"https://evil.com/https://legit.com"` passe le test `startsWith("https://")`
-- `"javascript://alert(1)//http"` passe le test `includes("http")`
+À faire : parser avec `new URL()`, vérifier `protocol === "https:"` quand
+HTTPS est requis, comparer le hostname exactement et réutiliser
+`apps/web/src/lib/security/validation.ts`.
 
-#### ✅ CORRECT
-```typescript
-/**
- * Validates URL has https protocol (CodeQL-safe)
- * See: documentation/security/url-validation-security.md
- */
-function hasHttpsProtocol(url: string | undefined): boolean {
-  if (!url || typeof url !== "string") return false;
-  try {
-    const parsed = new URL(url);
-    return parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+## XSS et HTML
 
-// Usage
-if (hasHttpsProtocol(userInput)) {
-  // Safe to use URL
-}
-```
+- contenu utilisateur : texte React ou `textContent`, jamais HTML injecté ;
+- HTML dynamique : sanitation explicite et documentée ;
+- scripts/styles statiques contrôlés : exception contextualisée, sans entrée utilisateur ;
+- données JSON dans `<script>` : sérialisation et encodage adaptés au contexte ;
+- `dangerouslySetInnerHTML` n'est pas une preuve de vulnérabilité à lui seul, mais chaque occurrence doit être revue selon [`dom-xss-prevention.md`](./dom-xss-prevention.md).
 
-**Où utiliser cette fonction :**
-- `lib/supabase/server.ts` ✅ Déjà corrigé
-- `lib/supabase/client.ts` ✅ Déjà corrigé
-- `lib/persistence/runtime-store.ts` ✅ Déjà corrigé
-- `src/lib/security/validation.ts` ✅ Helpers centralisés
+## AuthZ et données
 
----
+Une session valide ne suffit pas. Vérifier identité, capacité, rôle compatible,
+scope/ownership, état métier, projection minimale et audit si nécessaire.
+`activeProfile`, un rôle envoyé par le client, un email et `service_role` côté
+client ne sont jamais une autorité.
 
-### 2. Injection HTML avec `innerHTML` ou `dangerouslySetInnerHTML`
+## Rate limiting
 
-#### ❌ DANGEREUX
-```typescript
-// CodeQL: js/xss-through-dom
-element.innerHTML = userInput;
-button.innerHTML = "↩"; // Même du texte statique peut être flaggé
+L'identité vient du contexte serveur ou de l'IP de plateforme prévue ; une clé
+client arbitraire n'est pas acceptée. Le fallback mémoire local est best-effort
+et ne constitue pas une garantie multi-instance. Voir
+[`RATE_LIMITING.md`](./RATE_LIMITING.md).
 
-// React
-<div dangerouslySetInnerHTML={{ __html: t("footer.partner") }} />
-<style dangerouslySetInnerHTML={{ __html: `@media print { ... }` }} />
-```
+## Blocages immédiats
 
-**Pourquoi ?** Permet les attaques XSS :
-- `userInput = "<img src=x onerror='alert(1)'>"` → exécute du code
-- CodeQL détecte même les constantes pour éviter les faux négatifs
+- secret probable ou PII dans Git, logs ou documentation ;
+- contrôle serveur absent sur une route sensible ;
+- scope ambigu accepté comme permission globale ;
+- RLS ou signature webhook contournée ;
+- audit de succès avant l'effet réel ;
+- entrée critique non validée ;
+- réponse `429` cassant son contrat.
 
-#### ✅ CORRECT
+## Commandes
 
-**Pour du texte simple :**
-```typescript
-// Utiliser textContent au lieu de innerHTML
-button.textContent = "↩"; // Interprété comme du texte, pas du HTML
-```
-
-**Pour du contenu React :**
-```typescript
-// Laisser React sanitiser automatiquement
-<div>{translationText}</div>
-
-// Si HTML contrôlé est nécessaire, sanitiser avec DOMPurify
-import DOMPurify from "dompurify";
-
-<div 
-  dangerouslySetInnerHTML={{ 
-    __html: DOMPurify.sanitize(t("footer.partner")) 
-  }} 
-/>
-```
-
-**Pour les styles CSS :**
-```typescript
-// Utiliser styled-components ou style JSX
-<style jsx>{`
-  @media print {
-    body { -webkit-print-color-adjust: exact; }
-  }
-`}</style>
-
-// Ou utiliser la prop style React
-<div style={{ color: "red" }}>Texte</div>
-```
-
-**Exceptions documentées :**
-```typescript
-{/* 
-  SECURITY: Static CSS for print media. 
-  No user input. Safe per js/xss-through-dom guidelines.
-  See: documentation/security/dom-xss-prevention.md
-*/}
-<style dangerouslySetInnerHTML={{ __html: printStyles }} />
-```
-
-**Où utiliser :**
-- `components/actions/action-drawing-map.tsx` ✅ Déjà corrigé (utilise `textContent`)
-
----
-
-### 3. Surfaces publiques et 429 homogènes
-
-#### ✅ À vérifier
-
-- Les formulaires publics utilisent `createPublicRateLimitResponse()`
-- Les réponses 429 contiennent la même structure `error`, `kind`, `status`
-- Les garde-fous `honeypot` et `submittedAt` sont testés par des cas déterministes
-
-#### Référence
-
-- `documentation/security/PRE_MERGE_CHECKLIST.md`
-- `apps/web/src/lib/security/validation.ts`
-
----
-
-## 📋 Checklist pour les revues de code
-
-### URLs
-- [ ] Pas de `startsWith("http")` ou `startsWith("https://")`
-- [ ] Pas de `includes("http")` pour détecter des liens
-- [ ] Pas de `indexOf("http")` pour valider des URLs
-- [ ] Utiliser `new URL()` avec try/catch pour parser les URLs
-- [ ] Vérifier explicitement `parsed.protocol === "https:"`
-- [ ] Pour les hostnames, comparer `parsed.hostname` (pas de substring)
-
-### innerHTML / XSS
-- [ ] Pas de `innerHTML` avec contenu utilisateur
-- [ ] Pas de `dangerouslySetInnerHTML` sans sanitisation
-- [ ] Utiliser `textContent` pour du texte simple
-- [ ] Sanitiser avec DOMPurify si HTML dynamique nécessaire
-- [ ] Documenter les exceptions (CSS statique, traductions contrôlées)
-- [ ] Préférer les composants React natifs à l'injection HTML
-
----
-
-## 🔗 Références complètes
-
-- **URL Validation :** `documentation/security/url-validation-security.md`
-- **DOM XSS Prevention :** `documentation/security/dom-xss-prevention.md`
-- **CodeQL js/incomplete-url-substring-sanitization :** https://codeql.github.com/codeql-query-help/javascript/js-incomplete-url-substring-sanitization/
-- **CodeQL js/xss-through-dom :** https://codeql.github.com/codeql-query-help/javascript/js-xss-through-dom/
-- **OWASP Input Validation :** https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
-- **OWASP DOM-based XSS :** https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
-- **Checklist avant merge :** `documentation/security/PRE_MERGE_CHECKLIST.md`
-
----
-
-## 💡 Commandes utiles
-
-Chercher les patterns dangereux dans le code :
 ```bash
-# Chercher les startsWith("http")
-grep -r "startsWith.*http" apps/web/src --include="*.ts" --include="*.tsx"
-
-# Chercher les innerHTML
-grep -r "\.innerHTML" apps/web/src --include="*.ts" --include="*.tsx"
-
-# Chercher les dangerouslySetInnerHTML
-grep -r "dangerouslySetInnerHTML" apps/web/src --include="*.ts" --include="*.tsx"
+npm run security:secrets
+npm run check:doc-governance
+npm run check:stack-doc-drift
+npm run test:security
 ```
-
----
-
-## 📝 Historique des corrections
-
-| Date | Fichier | Correction |
-|------|---------|-----------|
-| 2026-04-24 | `lib/supabase/server.ts` | Ajout `hasHttpsProtocol()` helper |
-| 2026-04-24 | `lib/supabase/client.ts` | Ajout `hasHttpsProtocol()` helper |
-| 2026-04-24 | `lib/persistence/runtime-store.ts` | Ajout `hasHttpsProtocol()` helper |
-| 2026-04-24 | `components/actions/action-drawing-map.tsx` | Remplacé `innerHTML` par `textContent` |
-| 2026-04-24 | Ce fichier | Création du guide de référence rapide |

@@ -1,53 +1,27 @@
-# Guide Sécurité
+# `SECURITY_GUIDE.md` — façade de compatibilité
 
-Ce document donne le contexte de référence pour les zones sensibles de CleanMyMap.
+> **Statut : `COMPATIBILITY`**
 
-## Ce qu'il faut protéger
+Ce chemin historique est conservé pour les liens existants. L'index canonique
+est [`README.md`](./README.md) ; ce guide ne duplique pas la doctrine ni les
+contrats spécialisés.
 
-- Routes publiques vs privées
-- Indexation (`robots`, `sitemap`, `noindex`)
-- Validation d'URL
-- Regex à risque et ReDoS
-- Rate limiting et anti-spam
-- Secrets, variables d'environnement et permissions CI
+## Orientation
 
-## Règles de base
+- Doctrine transverse actuelle : [`SECURITY.md`](./SECURITY.md).
+- AuthN/AuthZ actuel : [`authz-authn-regles.md`](./authz-authn-regles.md).
+- Modèle AuthZ cible : [`authorization-capabilities.md`](./authorization-capabilities.md), explicitement `PLAN / TARGET`.
+- Revue humaine : [`CODE_REVIEW_CHECKLIST.md`](./CODE_REVIEW_CHECKLIST.md).
+- Avant merge : [`PRE_MERGE_CHECKLIST.md`](./PRE_MERGE_CHECKLIST.md).
+- Rappels opérationnels : [`SECURITY_QUICK_REFERENCE.md`](./SECURITY_QUICK_REFERENCE.md).
 
-- Valider les entrées avant toute logique métier.
-- Utiliser des helpers partagés plutôt que des validations locales dupliquées.
-- Préférer le parsing explicite aux regex quand le format est structuré.
-- Garder les réponses d'erreur homogènes sur les mêmes surfaces.
-- Bloquer au plus tôt les surfaces privées ou sensibles.
+## Contrats spécialisés
 
-## Helpers de référence
+Consulter directement [`url-validation-security.md`](./url-validation-security.md),
+[`regex-security.md`](./regex-security.md),
+[`dom-xss-prevention.md`](./dom-xss-prevention.md),
+[`RATE_LIMITING.md`](./RATE_LIMITING.md) ou
+[`admin-operation-audit.md`](./admin-operation-audit.md) selon la surface.
 
-- `src/lib/security/validation.ts`
-- `src/lib/seo/indexability.ts`
-- `src/lib/auth/protected-routes.ts`
-- `src/lib/community/discussion-rate-limit.ts`
-- `src/lib/http/api-errors.ts`
-
-## Checklists à appliquer
-
-- Voir [README](./README.md)
-- Voir [Contrôles avant merge](./PRE_MERGE_CHECKLIST.md)
-- Voir [Référence rapide](./SECURITY_QUICK_REFERENCE.md)
-
-## Si une modification touche une surface sensible
-
-1. Vérifier si la route doit être publique ou privée.
-2. Vérifier l'impact sur le sitemap et les robots.
-3. Vérifier la validation d'entrée.
-4. Vérifier les protections anti-spam et rate limits.
-5. Lancer les tests de sécurité ciblés.
-6. Vérifier qu'aucun secret n'a été introduit.
-
-## Signal d'alerte
-
-Bloquer immédiatement si:
-
-- une URL est validée par substring
-- une regex critique n'est pas bornée
-- une page privée devient indexable
-- un 429 public change de forme sans raison
-- une permission GitHub Actions devient trop large
+Les contrôles généraux de développement sont maintenus dans
+[`documentation/development/`](../development/) et ne sont pas recopiés ici.

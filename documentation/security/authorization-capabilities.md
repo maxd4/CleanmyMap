@@ -1,8 +1,13 @@
 # Autorisation par capacités et périmètres
 
-> **Statut** : contrat d'autorisation cible durable pour CleanMyMap.
+> **Statut** : `PLAN / TARGET` — contrat d'autorisation cible durable pour
+> CleanMyMap.
 >
-> Ce document définit comment attribuer des permissions utiles mais contrôlées aux rôles métier. Tant que la convergence du code n'est pas complète, le comportement réellement implémenté reste déterminé par le code et les tests sur `main`. Une divergence entre ce contrat cible et le runtime doit être traitée explicitement ; elle ne doit jamais être masquée par la documentation.
+> Ce document définit comment attribuer des permissions utiles mais contrôlées
+> aux rôles métier. Tant que la convergence du code n'est pas complète, le
+> comportement réellement implémenté reste déterminé par le code et les tests
+> sur `main`. Une divergence entre ce contrat cible et le runtime doit être
+> traitée explicitement ; elle ne doit jamais être masquée par la documentation.
 
 ## 1. Objectif
 

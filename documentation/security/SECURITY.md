@@ -1,4 +1,8 @@
-# Sécurité interne — CleanMyMap
+# Sécurité interne — CleanMyMap (`CURRENT`)
+
+> Doctrine transverse actuellement applicable. L'index canonique du domaine
+> est [`documentation/security/README.md`](./README.md) ; les contrats
+> spécialisés détaillent leur sujet sans être recopiés ici.
 
 Ce document décrit la doctrine de sécurité interne du projet.
 

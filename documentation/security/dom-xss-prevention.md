@@ -1,116 +1,59 @@
-# DOM XSS Prevention
+# Prévention XSS DOM — contrat `CURRENT`
 
-> **Démarrage rapide :** Voir [SECURITY_QUICK_REFERENCE.md](./SECURITY_QUICK_REFERENCE.md) pour un guide condensé.
+Ce document décrit le contrat de traitement des contenus dans le runtime
+actuel. Une occurrence de `innerHTML` ou `dangerouslySetInnerHTML` n'est pas à
+elle seule une preuve de vulnérabilité : la source, le contexte et le caractère
+contrôlé ou non de la donnée doivent être établis.
 
-## CodeQL Warning: js/xss-through-dom
+## 1. Contenu non fiable
 
-### Problème
+Les entrées utilisateur, traductions ou données externes non auditées sont du
+texte ou du HTML non fiable. Les afficher avec le rendu React normal ou
+`textContent` ; ne pas les injecter directement dans `innerHTML`, `outerHTML`,
+`document.write()` ou `dangerouslySetInnerHTML`.
 
-L'utilisation de `innerHTML`, `outerHTML`, `document.write()`, ou `dangerouslySetInnerHTML` avec du contenu non-sanitisé peut conduire à des attaques XSS (Cross-Site Scripting).
+Si du HTML dynamique est réellement requis, le sanitizer approuvé doit être
+appliqué à la frontière, avec une allowlist adaptée au contexte et un test
+contre les balises/attributs actifs. La sanitation ne remplace pas la
+validation métier.
 
-### Patterns dangereux
+## 2. Scripts et styles statiques contrôlés
 
-```typescript
-// ❌ DANGEREUX — XSS si userInput contient <script>
-element.innerHTML = userInput;
+Le runtime contient des usages de `dangerouslySetInnerHTML` pour des scripts
+d'initialisation et des styles d'impression contrôlés par le code. Ces usages
+ne reçoivent pas de contenu utilisateur par construction et doivent rester
+statiques, courts, révisables et commentés lorsque le contexte n'est pas évident.
+Une donnée qui devient dynamique change de catégorie et doit repasser par une
+conception de sanitation/encodage.
 
-// ❌ DANGEREUX — même avec des constantes (CodeQL les détecte)
-button.innerHTML = "↩";
+## 3. Données sérialisées dans `<script>`
 
-// ❌ DANGEREUX — React dangerouslySetInnerHTML avec traductions
-<div dangerouslySetInnerHTML={{ __html: t("footer.partner") }} />
+Le JSON-LD et les autres données injectées dans un script doivent être produits
+par le serveur depuis une structure typée, sérialisés avec un encodeur adapté au
+contexte JavaScript et séparés du code. Ne jamais concaténer une chaîne fournie
+par l'utilisateur dans le corps d'un script. Vérifier l'échappement des
+séquences qui peuvent terminer le contexte script (`<`, `</script>`, etc.)
+selon le helper utilisé.
 
-// ❌ DANGEREUX — CSS via dangerouslySetInnerHTML
-<style dangerouslySetInnerHTML={{ __html: `
-  @media print { body { color: red; } }
-`}} />
-```
+## 4. HTML généré pour export
 
-### Solutions sûres
+Les générateurs HTML/PDF sont des producteurs de documents, pas une permission
+d'injecter des données non échappées. Toute valeur provenant d'un formulaire,
+d'une base ou d'une source tierce doit être échappée pour le contexte HTML ou
+texte correspondant avant génération. Les scripts de contrôle d'impression et
+de fermeture peuvent rester statiques.
 
-#### 1. Utiliser `textContent` pour du texte simple
+## Checklist
 
-```typescript
-// ✅ SÛR — interprète comme du texte, pas du HTML
-button.textContent = "↩";
-```
+- [ ] source de chaque valeur identifiée ;
+- [ ] contenu non fiable rendu comme texte ou sanitisé ;
+- [ ] script/style statique séparé et documenté ;
+- [ ] sérialisation `<script>` encodée pour son contexte ;
+- [ ] HTML d'export échappé avant génération ;
+- [ ] tests négatifs présents lorsqu'une frontière est sensible.
 
-#### 2. Utiliser des composants React natifs
-
-```typescript
-// ✅ SÛR — React sanitise automatiquement
-<div>{translationText}</div>
-
-// ✅ SÛR — pour les traductions avec HTML contrôlé
-<div 
-  dangerouslySetInnerHTML={{ 
-    __html: DOMPurify.sanitize(t("footer.partner")) 
-  }} 
-/>
-```
-
-#### 3. Sanitiser avec DOMPurify si HTML nécessaire
-
-```typescript
-import DOMPurify from "dompurify";
-
-// ✅ SÛR — HTML sanitisié
-const cleanHtml = DOMPurify.sanitize(dirtyHtml);
-element.innerHTML = cleanHtml;
-```
-
-#### 4. Pour les styles CSS inline
-
-```typescript
-// ✅ SÛR — utiliser JSX style prop
-<style jsx>{`
-  @media print {
-    body { -webkit-print-color-adjust: exact; }
-  }
-`}</style>
-
-// Ou avec styled-components/emotion
-```
-
-### Exceptions acceptables
-
-Cas où `dangerouslySetInnerHTML` peut être acceptable avec documentation:
-
-1. **Contenu statique contrôlé** (pas d'input utilisateur)
-2. **Styles CSS pour impression** (`@media print`)
-3. **Contenu de traductions auditées**
-
-Dans ces cas, ajouter un commentaire explicite:
-
-```typescript
-{/* 
-  SECURITY: Static CSS for print media. 
-  No user input. Safe per js/xss-through-dom guidelines.
-*/}
-<style dangerouslySetInnerHTML={{ __html: printStyles }} />
-```
-
-### Fichiers avec innerHTML corrigés
-
-| Fichier | Usage | Statut |
-|---------|-------|--------|
-| `components/actions/action-drawing-map.tsx` | `button.innerHTML = "↩"` | Remplacé par `textContent` |
-| `app/(app)/methodologie/page.tsx` | `dangerouslySetInnerHTML` pour traduction | À remplacer par sanitisation |
-| `app/(app)/prints/report/page.tsx` | `dangerouslySetInnerHTML` pour CSS print | Documenté comme safe |
-
-### Checklist pour les revues de code
-
-- [ ] Pas de `innerHTML` avec contenu utilisateur
-- [ ] Pas de `dangerouslySetInnerHTML` sans sanitisation
-- [ ] Utiliser `textContent` pour du texte simple
-- [ ] Sanitiser avec DOMPurify si HTML dynamique nécessaire
-- [ ] Documenter les exceptions (CSS statique, traductions contrôlées)
-- [ ] Préférer les composants React natifs à l'injection HTML
-
-### Références
-
-- [CodeQL: js/xss-through-dom](https://codeql.github.com/codeql-query-help/javascript/js-xss-through-dom/)
-- [OWASP: DOM-based XSS Prevention](https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html)
-- [DOMPurify Documentation](https://github.com/cure53/DOMPurify)
-- [CWE-79: Cross-site Scripting (XSS)](https://cwe.mitre.org/data/definitions/79.html)
-- [Guide rapide](./SECURITY_QUICK_REFERENCE.md#2-injection-html-avec-innerhtml-ou-dangerouslysetinnerhtml)
+Références :
+[`SECURITY_QUICK_REFERENCE.md`](./SECURITY_QUICK_REFERENCE.md),
+[`CODE_REVIEW_CHECKLIST.md`](./CODE_REVIEW_CHECKLIST.md),
+[CodeQL `js/xss-through-dom`](https://codeql.github.com/codeql-query-help/javascript/js-xss-through-dom/),
+[OWASP DOM XSS](https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html).
