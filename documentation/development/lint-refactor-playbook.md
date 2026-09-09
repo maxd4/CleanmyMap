@@ -1,191 +1,212 @@
-# Guide De Refactorisation Lint
+# Lint & Static Analysis Refactor Playbook
 
-Ce guide sert à éviter de recréer les warnings ESLint les plus fréquents dans CleanMyMap.
-L'objectif n'est pas de "faire passer le lint" à tout prix, mais de corriger la cause racine sans toucher à l'UX ni au métier.
+## Objet
 
----
+Ce playbook décrit comment corriger les diagnostics ESLint et de qualité
+statique sans dégrader le comportement de CleanMyMap.
 
-## Règle De Base
+Il ne maintient aucun compteur de warnings, classement daté de fichiers ou
+backlog. Les résultats courants doivent être produits par les outils du dépôt
+au moment du chantier.
 
-- Ne pas remplacer un problème de typage par un cast décoratif.
-- Ne pas déplacer un calcul pur dans un effet React.
-- Ne pas conserver une fonction trop complexe en la "silenciant" avec un `eslint-disable`.
-- Normaliser les données au bord du système, pas au milieu de la logique métier.
+Pour le typage, la source normative est
+[`typescript-precision-policy.md`](./typescript-precision-policy.md).
 
----
+## Principe directeur
 
-## Remplacer `any` Proprement
+Un diagnostic statique est un signal. La correction doit traiter la cause qui
+rend le code fragile, ambigu ou inutile, pas seulement faire disparaître le
+message.
 
-Quand une donnée arrive d'une source externe, utiliser cet ordre :
-
-1. `unknown`
-2. garde de type ou parseur local
-3. type métier explicite
-4. `as` seulement après validation réelle
-
-### À faire
-
-```ts
-function parsePayload(value: unknown): Payload | null {
-  if (!value || typeof value !== "object") {
-    return null;
-  }
-  const record = value as Record<string, unknown>;
-  if (typeof record["id"] !== "string") {
-    return null;
-  }
-  return { id: record["id"] };
-}
+```text
+comportement / sécurité
+→ contrat de données
+→ effets et dépendances
+→ types
+→ complexité
+→ code mort
+→ rendu / style
 ```
 
-### À éviter
+## Workflow
 
-- `any` à la place d'une vraie validation.
-- `as unknown as SomeType`.
-- Typage trop large qui cache les erreurs réelles.
-
-### Cas recommandés
-
-- API routes
-- Supabase
-- auth
-- formulaires
-- données terrain
-- calculs d'impact
-
----
-
-## Réduire La Complexité Sans Changer Le Comportement
-
-Quand une fonction devient trop complexe, extraire :
-
-- la normalisation des champs ;
-- les règles de décision ;
-- les mappages répétitifs ;
-- les cas spéciaux dans des helpers dédiés.
-
-### Signes Qu'il Faut Découper
-
-- trop de `if` en chaîne ;
-- plusieurs branches qui retournent des objets presque identiques ;
-- logique de validation mélangée avec la construction de réponse ;
-- parsing JSON, validation et transformation dans la même fonction.
-
-### Patron Recommandé
-
-```ts
-function normalizeFoo(raw: unknown): Foo | null {
-  if (!raw || typeof raw !== "object") {
-    return null;
-  }
-  const record = raw as Record<string, unknown>;
-  return {
-    id: typeof record["id"] === "string" ? record["id"] : "",
-  };
-}
-
-function buildFooResponse(foo: Foo): ResponseDto {
-  return {
-    id: foo.id,
-  };
-}
-```
-
-Ce découpage garde la fonction publique lisible et limite les régressions.
-
----
+1. Reproduire le diagnostic sur la zone concernée.
+2. Identifier la règle et la cause racine.
+3. Vérifier contrats, callers et tests utiles.
+4. Corriger le plus petit périmètre cohérent.
+5. Adapter un test si logique, frontière ou effet change.
+6. Relancer le lint ciblé.
+7. Lancer typecheck/tests selon le risque.
+8. Utiliser `artifacts/` pour une preuve ponctuelle, pas un snapshot documentaire durable.
 
 ## Hooks React
 
-Si une valeur peut être calculée pendant le rendu, ne pas utiliser `useEffect` pour la remplir dans le state.
+### `react-hooks/set-state-in-effect`
 
-### Correct
+Ne pas déplacer un calcul pur dans un effet. Préférer initialisation directe,
+valeur dérivée pendant le rendu, ou `useMemo` uniquement pour un calcul
+réellement coûteux.
 
-- dériver la valeur avec un calcul pur ;
-- utiliser `useMemo` seulement si le calcul est réellement coûteux ;
-- réserver `useEffect` aux effets de bord réels.
+Réserver `useEffect` aux effets de bord réels.
 
-### Incorrect
+### `react-hooks/exhaustive-deps`
 
-- `setState` dans un `useEffect` juste pour synchroniser une donnée dérivée ;
-- dépendances manquantes pour "faire taire" le warning ;
-- logique métier cachée dans un effet de montage.
+Avant de modifier la liste des dépendances :
 
----
+- identifier les valeurs réellement lues ;
+- stabiliser une fonction seulement si son identité est réellement pertinente ;
+- extraire une logique pure si elle n'a pas besoin d'effet ;
+- ne jamais retirer une dépendance uniquement pour faire taire le lint.
 
-## Parsing De Réponse Réseau
+## Types et données inconnues
 
-Pour les réponses JSON, utiliser une séquence stable :
+Pour `no-explicit-any` et les règles `no-unsafe-*`, appliquer
+[`typescript-precision-policy.md`](./typescript-precision-policy.md).
 
-- lire la réponse ;
-- parser de manière sûre ;
-- valider la forme ;
-- transformer vers un type précis ;
-- lever une erreur métier explicite si la forme est invalide.
-
-### Exemple De Structure
-
-```ts
-const body = await parseJsonSafely(response);
-if (!response.ok) {
-  throw new ApiError(...);
-}
-if (!isExpectedBody(body)) {
-  throw new ApiError(...);
-}
-return buildResponse(body);
+```text
+unknown
+→ validation
+→ normalisation
+→ type métier
 ```
 
-Cela évite les accès dynamiques dispersés et les cast inutiles.
+Ne pas corriger par un cast décoratif. Cette règle vaut notamment aux
+frontières des API routes, de Supabase, de l'authentification, des formulaires
+et des données terrain.
 
----
+## Code mort
 
-## Normalisation Des Stockages Locaux
+Pour `no-unused-vars`, déterminer si la valeur est réellement morte, révèle une
+branche inachevée ou appartient à une signature imposée. Supprimer le code
+réellement mort ; ne pas le commenter ni le renommer pour masquer le diagnostic.
 
-Dans les stores JSON ou les adaptateurs de persistance :
+## Complexité et taille
 
-- valider les champs obligatoires ;
-- convertir les valeurs optionnelles en `null` ou en valeur par défaut ;
-- sortir les helpers de normalisation dans des fonctions courtes ;
-- garder l'objet métier final stable.
+Pour `complexity`, `max-lines-per-function`, `max-lines` ou équivalent :
 
-Ce pattern s'applique bien aux :
+- la taille seule n'impose pas une extraction ;
+- rechercher une vraie responsabilité ;
+- isoler normalisation, règles de décision et transformations pures lorsqu'elles
+  forment une unité cohérente ;
+- préserver les contrats publics et l'ordre des effets.
 
-- stores communautaires ;
-- stores de contact ;
-- caches locaux ;
-- synchronisations Supabase mirror.
+Signaux justifiant une extraction cohésive :
 
----
+- branches qui répètent presque les mêmes objets de sortie ;
+- validation mélangée à la construction de réponse ;
+- parsing, validation et transformation concentrés dans une même fonction ;
+- plusieurs cas spéciaux qui peuvent être testés indépendamment.
 
-## Priorité De Correction
+Voir [`conventions-modularisation.md`](./conventions-modularisation.md).
 
-Quand plusieurs warnings existent dans un même fichier, corriger dans cet ordre :
+## JSX et rendu
 
-- `react-hooks/set-state-in-effect`
-- `react-hooks/exhaustive-deps`
-- `@typescript-eslint/no-explicit-any`
-- `@typescript-eslint/no-unused-vars`
-- `complexity`
-- `max-lines-per-function`
-- `max-lines`
+### `react/no-unescaped-entities`
 
-Ce tri garde la priorité sur les risques de comportement, puis sur la maintenabilité.
+Corriger la représentation du texte JSX sans changer son contenu fonctionnel.
 
----
+### `@next/next/no-img-element`
 
-## Checklist Avant De Valider Un Refactor
+Utiliser `next/image` lorsqu'il couvre correctement le besoin. Une exception
+doit être motivée par le comportement réel.
 
-- Le comportement visible est inchangé.
-- Les données externes sont validées au bord du système.
-- Aucun `any` nouveau n'a été introduit.
-- Aucun `as unknown as` n'a été ajouté.
-- Les effets React ne contiennent que des effets de bord réels.
-- La fonction publique est plus simple qu'avant.
-- Le lint ciblé passe sur les fichiers modifiés.
+### Accessibilité
 
----
+Traiter le diagnostic selon la sémantique réelle : nom accessible, label, rôle,
+focus, clavier, relation erreur/champ. Ne pas ajouter un `aria-*` arbitraire
+pour satisfaire une règle.
+
+Pour les contrats UI, consulter `documentation/design-system/`.
+
+## Réponses réseau et parsing
+
+Une réponse externe ne doit pas être propagée comme objet dynamique dans la
+logique métier.
+
+```text
+lecture
+→ parsing sûr
+→ validation
+→ conversion vers type métier
+→ utilisation
+```
+
+Ne pas fabriquer silencieusement un objet valide avec des fallbacks arbitraires.
+
+## Stockages locaux et adaptateurs
+
+Pour un store JSON ou un adaptateur de persistance :
+
+- valider les champs obligatoires à la frontière ;
+- convertir explicitement les valeurs optionnelles en `null` ou valeur par défaut ;
+- isoler la normalisation dans une fonction courte ;
+- conserver un objet métier final stable.
+
+Cette règle vaut notamment pour les stores communautaires, les caches locaux et
+les miroirs de données.
+
+## Suppressions ESLint
+
+Une directive `eslint-disable` n'est acceptable que lorsqu'une règle générique
+ne représente pas correctement un cas légitime. Elle doit être locale,
+motivée et supprimée lorsque la cause disparaît.
+
+Ne pas diminuer globalement une sévérité pour éviter une correction locale.
+
+## Validation
+
+Pour une correction locale :
+
+```text
+lint ciblé
+→ test ciblé si logique modifiée
+→ typecheck si types, exports ou frontières touchés
+```
+
+Pour une abstraction, route, helper partagé ou extraction :
+
+```text
+lint ciblé
+→ tests de contrat concernés
+→ typecheck
+→ validations plus larges selon le risque
+```
+
+Les commandes exactes sont définies dans [`TESTING.md`](./TESTING.md) et la
+gouvernance du dépôt.
+
+Lorsque plusieurs diagnostics coexistent dans un fichier, traiter d'abord les
+risques de comportement puis la maintenabilité :
+
+1. `react-hooks/set-state-in-effect` ;
+2. `react-hooks/exhaustive-deps` ;
+3. `@typescript-eslint/no-explicit-any` et `no-unsafe-*` ;
+4. `@typescript-eslint/no-unused-vars` ;
+5. `complexity`, `max-lines-per-function`, puis `max-lines`.
+
+## Critères de sortie
+
+- diagnostic ciblé résolu ;
+- cause racine plus claire ;
+- aucun cast ou disable aveugle ajouté ;
+- comportement et contrats préservés ou explicitement modifiés ;
+- tests pertinents verts ;
+- aucune dette structurelle artificielle créée.
+
+Checklist avant validation :
+
+- comportement visible et contrats inchangés, ou modification explicitement
+  documentée ;
+- données externes validées à la frontière ;
+- aucun `any` ou `as unknown as` ajouté pour masquer une incertitude ;
+- effets React réservés aux effets de bord réels ;
+- fonction publique et périmètre de correction plus clairs ;
+- lint ciblé exécuté sur les fichiers concernés.
 
 ## Références
 
-- [TypeScript Precision Policy](./typescript-precision-policy.md)
+- [`typescript-precision-policy.md`](./typescript-precision-policy.md)
+- [`conventions-modularisation.md`](./conventions-modularisation.md)
+- [`repo-quality-rules.md`](./repo-quality-rules.md)
+- [`TESTING.md`](./TESTING.md)
+- [`kaizen/PRINCIPLES.md`](./kaizen/PRINCIPLES.md)
