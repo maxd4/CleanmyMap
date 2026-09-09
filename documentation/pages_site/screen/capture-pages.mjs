@@ -221,7 +221,9 @@ async function postProcessPng(sourcePath, targetPath) {
 }
 
 async function captureRoute(page, routeConfig) {
-  const targetUrl = new URL(ensureLeadingSlash(routeConfig.route), baseUrl).toString();
+  const targetUrlObject = new URL(ensureLeadingSlash(routeConfig.route), baseUrl);
+  targetUrlObject.searchParams.set("cmmCapture", "1");
+  const targetUrl = targetUrlObject.toString();
   const outputPath = resolveOutputPath(routeConfig.outputPath);
   const stagingPath = path.join(
     stagingRoot,

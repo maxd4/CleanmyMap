@@ -107,7 +107,11 @@ function AppNavigationRibbonShell({
 
 
   return (
-    <div className="sticky top-[var(--app-ribbon-top-offset,0rem)] z-50 w-full">
+    <div
+      data-cmm-capture-sticky
+      data-cmm-capture-stabilize
+      className="sticky top-[var(--app-ribbon-top-offset,0rem)] z-50 w-full"
+    >
       <nav
         ref={ribbonRef}
         aria-label={locale === "fr" ? "Barre de navigation principale" : "Main navigation bar"}
