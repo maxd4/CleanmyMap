@@ -11,7 +11,7 @@ import { canonicalAgentFiles, validateAgentGovernance } from "./check-agent-gove
 function createValidFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-agent-governance-"));
   const content = {
-    "AGENTS.md": "apps/web scripts documentation fichiers scoped HEAD == origin/main WORKTREE_BASE_DIVERGED",
+    "AGENTS.md": "apps/web scripts documentation fichiers scoped HEAD == origin/main ahead-only PUBLICATION_PENDING UNPUBLISHED_PATH_CONFLICT WORKTREE_BASE_DIVERGED",
     "apps/web/AGENTS.md": "Next.js Server/Client Leaflet",
     "apps/web/src/app/api/AGENTS.md": "AuthN AuthZ contrat de réponse propre",
     "apps/web/supabase/AGENTS.md": "apps/web/supabase/migrations/ unique RLS",
@@ -50,6 +50,18 @@ describe("AGENTS hierarchy governance", () => {
       const result = runCheck(script, fixture);
       assert.equal(result.status, 0);
       assert.match(result.output, /10 canonical files/);
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects the legacy rule that refused every ahead-only checkout", () => {
+    const fixture = createValidFixture();
+    const agentsPath = path.join(fixture, "AGENTS.md");
+    fs.appendFileSync(agentsPath, "\nIl refuse aussi de créer un run mutable si HEAD != origin/main.\n");
+    try {
+      const findings = validateAgentGovernance(fixture);
+      assert.ok(findings.some((finding) => finding.includes("must allow ahead-only checkouts")));
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }

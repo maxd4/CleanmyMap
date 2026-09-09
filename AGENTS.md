@@ -231,10 +231,13 @@ ci-dessus.
   traversée ;
 - `workspace:start` fait `git fetch origin main`, refuse de créer un run mutable
   hors de la branche `main` et lève `WORKTREE_BRANCH_INVALID` pour une autre
-  branche ou un detached HEAD. Il refuse aussi de créer un run mutable si
-  `HEAD != origin/main` et lève `WORKTREE_BASE_DIVERGED` avec les deux SHA ; un
-  worktree dirty seul n'est pas un refus. Lorsque les contrôles passent, le SHA
-  commun devient le `baseSha` du run ;
+  branche ou un detached HEAD. `HEAD == origin/main` autorise le démarrage ; un
+  checkout `ahead-only` l'autorise aussi, marque `PUBLICATION_PENDING` et
+  conserve les chemins de `git diff --name-only origin/main..HEAD`. Les chemins
+  revendiqués par le run doivent être disjoints de ces commits non publiés,
+  sinon `UNPUBLISHED_PATH_CONFLICT`. Un checkout behind ou réellement divergent
+  lève `WORKTREE_BASE_DIVERGED` avec les deux SHA. Lorsque les contrôles
+  passent, le SHA de `origin/main` devient le `baseSha` du run ;
 - le domaine `AUTHZ_SECURITY` est exclusif : aucun autre run ne peut le
   revendiquer en parallèle ; les autres collisions de fichiers sont également
   bloquantes et immédiates ; un verrou obsolète est signalé par `doctor`, jamais
@@ -252,6 +255,14 @@ ci-dessus.
   `main` et exige `git rev-list --left-right --count HEAD...origin/main = 0 0`.
   Il libère ensuite le mutex et marque la preuve dans le run. `workspace:release`
   refuse un run marqué comme publication en attente sans cette preuve ;
+- `workspace:publication-reconcile --run-id <id> --published-sha <sha>` est la
+  voie bornée pour un run déjà publié dont l'ancien stale-check décrit ses
+  propres chemins publiés. Elle exige `main`, `HEAD == origin/main`, un SHA
+  ancêtre de `origin/main`, des chemins de commit inclus dans l'ownership du
+  run, aucun staged ou changement local sur ses chemins et aucun mutex de
+  publication étranger. Elle enregistre `publicationCompletedAt` et
+  `reconciledPublishedSha`, sans modifier l'historique Git, puis autorise
+  `workspace:release` ;
 - `workspace:claim` n'adopte jamais implicitement un fichier dirty. Un chemin
   dirty qui n'est ni legacy, ni déjà possédé par le run est `ORPHAN_DIRTY` et
   exige `--adopt-legacy`. Aucun de ces contrôles ne lit le contenu du fichier ;
