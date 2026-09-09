@@ -1,7 +1,62 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { it } from "node:test";
-import { findLegacySpotsRuntimeSurfaceViolations } from "./audit-supabase-migration-trees.mjs";
+import {
+  auditMigrationTree,
+  findLegacySpotsRuntimeSurfaceViolations,
+} from "./audit-supabase-migration-trees.mjs";
+
+function createView(files) {
+  const entries = new Map(Object.entries(files));
+  const directories = new Set();
+  for (const file of entries.keys()) {
+    const parts = file.split("/");
+    for (let index = 1; index < parts.length; index += 1) {
+      directories.add(parts.slice(0, index).join("/"));
+    }
+  }
+
+  return {
+    exists: (relativePath) => entries.has(relativePath) || directories.has(relativePath),
+    listFiles: (prefix) => [...entries.keys()].filter((file) => file.startsWith(`${prefix}/`)),
+    readBinary: (relativePath) => Buffer.from(entries.get(relativePath), "utf8"),
+  };
+}
+
+it("accepts the canonical migration tree when no root Supabase namespace exists", () => {
+  const result = auditMigrationTree(
+    createView({
+      "apps/web/supabase/migrations/20260101000000_safe.sql": "-- canonical migration",
+    }),
+  );
+
+  assert.equal(result.status, 0);
+  assert.equal(result.canonicalCount, 1);
+});
+
+it("rejects a root Supabase migrations directory", () => {
+  const result = auditMigrationTree(
+    createView({
+      "apps/web/supabase/migrations/20260101000000_safe.sql": "-- canonical migration",
+      "supabase/migrations/20260102000000_forbidden.sql": "-- duplicate root tree",
+    }),
+  );
+
+  assert.equal(result.status, 2);
+  assert.match(result.error, /supabase\//);
+});
+
+it("rejects any other content under the root Supabase namespace", () => {
+  const result = auditMigrationTree(
+    createView({
+      "apps/web/supabase/migrations/20260101000000_safe.sql": "-- canonical migration",
+      "supabase/.temp/cli-latest": "generated CLI state",
+    }),
+  );
+
+  assert.equal(result.status, 2);
+  assert.match(result.error, /root Supabase namespace/);
+});
 
 function normalizeSql(sql) {
   return sql.replace(/\s+/g, " ");

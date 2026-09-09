@@ -21,6 +21,10 @@ test-results/
 node_modules/
 **/.next/
 **/.next-sourcemap-test/
+# Canonical tool caches stay local; a root `supabase/` namespace must remain visible to the architecture guard.
+/apps/web/supabase/.temp/
+/documentation/.quarto/
+/.kiro/
 # Codex-local Next build/cache snapshots are generated outputs, not source.
 /apps/web/.next-codex-*/
 *.tsbuildinfo
