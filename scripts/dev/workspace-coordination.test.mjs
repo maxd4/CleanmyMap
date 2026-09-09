@@ -10,13 +10,15 @@ function fixture() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-workspace-coordination-"));
 }
 
-function fakeGit({ status = "", staged = "", head = "origin-sha", origin = "origin-sha", remoteDiff = "" } = {}) {
+function fakeGit({ status = "", staged = "", branch = "main", head = "origin-sha", origin = "origin-sha", remoteDiff = "" } = {}) {
+  const resolve = (value, args) => (typeof value === "function" ? value(args) : value);
   return (_root, args) => {
-    if (args[0] === "status") return status;
+    if (args[0] === "status") return typeof status === "function" ? status(args) : status;
     if (args[0] === "diff" && args[1] === "--cached") return staged;
-    if (args[0] === "diff") return remoteDiff;
-    if (args[0] === "rev-parse" && args[1] === "HEAD") return head;
-    if (args[0] === "rev-parse" && args[1] === "origin/main") return origin;
+    if (args[0] === "diff") return resolve(remoteDiff, args);
+    if (args[0] === "branch" && args[1] === "--show-current") return resolve(branch, args);
+    if (args[0] === "rev-parse" && args[1] === "HEAD") return resolve(head, args);
+    if (args[0] === "rev-parse" && args[1] === "origin/main") return resolve(origin, args);
     if (args[0] === "fetch") return "";
     throw new Error(`Unexpected git call: ${args.join(" ")}`);
   };
@@ -56,6 +58,26 @@ test("allows a dirty worktree when HEAD equals origin/main", () => {
     cleanup(root);
   }
 });
+
+for (const [label, branch] of [["another branch", "feature/test"], ["detached HEAD", ""]]) {
+  test(`rejects ${label} before creating run metadata`, () => {
+    const root = fixture();
+    try {
+      const coordinator = createWorkspaceCoordinator({
+        repositoryRoot: root,
+        gitRunner: fakeGit({ branch }),
+      });
+      coordinator.init();
+      assert.throws(
+        () => coordinator.start({ runId: "run-a", domain: "ROUTE" }),
+        /WORKTREE_BRANCH_INVALID/,
+      );
+      assert.equal(fs.existsSync(path.join(root, ".artifacts", "coordination", "active-runs", "run-a.json")), false);
+    } finally {
+      cleanup(root);
+    }
+  });
+}
 
 for (const [label, head, origin] of [
   ["ahead", "local-ahead", "origin-main"],
@@ -149,6 +171,41 @@ test("adoptLegacy then unclaim --return-legacy restores LEGACY_UNOWNED", () => {
     assert.equal(report.legacyUnowned, 1);
     assert.equal(report.orphanDirty.length, 0);
     assert.deepEqual(coordinator.status({ runId: "run-a" }).run.ownedPaths, []);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("rejects a dirty orphan unless it is explicitly adopted", () => {
+  const root = fixture();
+  let dirty = "";
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({ status: () => dirty }),
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    dirty = " M orphan.ts\n";
+    assert.throws(
+      () => coordinator.claim({ runId: "run-a", paths: ["orphan.ts"] }),
+      /ORPHAN_DIRTY.*orphan.ts/,
+    );
+    coordinator.claim({ runId: "run-a", paths: ["orphan.ts"], adoptLegacy: true });
+    assert.deepEqual(coordinator.status({ runId: "run-a" }).run.adoptedLegacyPaths, ["orphan.ts"]);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("allows a clean path to be claimed without adoption", () => {
+  const root = fixture();
+  try {
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner: fakeGit() });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["clean.ts"] });
+    assert.deepEqual(coordinator.status({ runId: "run-a" }).run.ownedPaths, ["clean.ts"]);
   } finally {
     cleanup(root);
   }
@@ -253,6 +310,184 @@ test("serializes publication and never releases another run's lock", () => {
   }
 });
 
+test("publication acquire validates a fresh run and publication complete closes it", () => {
+  const root = fixture();
+  let remoteDiff = "";
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({ remoteDiff: () => remoteDiff }),
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["owned.ts"] });
+    coordinator.publicationAcquire({ runId: "run-a" });
+    assert.throws(() => coordinator.release({ runId: "run-a" }), /PUBLICATION_COMPLETE_REQUIRED/);
+    remoteDiff = "owned.ts\n";
+    const completed = coordinator.publicationComplete({ runId: "run-a" });
+    assert.equal(completed.completed, true);
+    assert.equal(fs.existsSync(path.join(root, ".artifacts", "coordination", "publication.lock")), false);
+    coordinator.release({ runId: "run-a" });
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("publication acquire accepts unrelated remote changes when HEAD remains current", () => {
+  const root = fixture();
+  let head = "base";
+  let origin = "base";
+  let fetchCount = 0;
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: (_root, args) => {
+        if (args[0] === "fetch") {
+          fetchCount += 1;
+          if (fetchCount === 2) {
+            head = "next";
+            origin = "next";
+          }
+          return "";
+        }
+        if (args[0] === "branch") return "main";
+        if (args[0] === "rev-parse" && args[1] === "HEAD") return head;
+        if (args[0] === "rev-parse" && args[1] === "origin/main") return origin;
+        if (args[0] === "diff") return args.includes("owned.ts") ? "" : "other.ts\n";
+        if (args[0] === "status") return "";
+        if (args[0] === "diff" && args[1] === "--cached") return "";
+        throw new Error(`Unexpected git call: ${args.join(" ")}`);
+      },
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["owned.ts"] });
+    coordinator.publicationAcquire({ runId: "run-a" });
+    coordinator.publicationComplete({ runId: "run-a" });
+    coordinator.release({ runId: "run-a" });
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("publication acquire rejects an owned-path race and cleans the lock", () => {
+  const root = fixture();
+  let fetchCount = 0;
+  let head = "base";
+  let origin = "base";
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: (_root, args) => {
+        if (args[0] === "fetch") {
+          fetchCount += 1;
+          if (fetchCount === 2) {
+            head = "next";
+            origin = "next";
+          }
+          return "";
+        }
+        if (args[0] === "branch") return "main";
+        if (args[0] === "rev-parse" && args[1] === "HEAD") return head;
+        if (args[0] === "rev-parse" && args[1] === "origin/main") return origin;
+        if (args[0] === "diff") return "owned.ts\n";
+        if (args[0] === "status") return "";
+        throw new Error(`Unexpected git call: ${args.join(" ")}`);
+      },
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["owned.ts"] });
+    assert.throws(() => coordinator.publicationAcquire({ runId: "run-a" }), /WORKSPACE_STALE.*owned.ts/);
+    assert.equal(fs.existsSync(path.join(root, ".artifacts", "coordination", "publication.lock")), false);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("publication acquire rejects a diverged checkout before freshness staging", () => {
+  const root = fixture();
+  let head = "base";
+  let origin = "base";
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: (_root, args) => {
+        if (args[0] === "fetch") return "";
+        if (args[0] === "branch") return "main";
+        if (args[0] === "rev-parse" && args[1] === "HEAD") return head;
+        if (args[0] === "rev-parse" && args[1] === "origin/main") return origin;
+        if (args[0] === "diff") return "";
+        if (args[0] === "status") return "";
+        throw new Error(`Unexpected git call: ${args.join(" ")}`);
+      },
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["owned.ts"] });
+    head = "local";
+    origin = "remote";
+    assert.throws(() => coordinator.publicationAcquire({ runId: "run-a" }), /WORKTREE_BASE_DIVERGED/);
+    assert.equal(fs.existsSync(path.join(root, ".artifacts", "coordination", "publication.lock")), false);
+  } finally {
+    cleanup(root);
+  }
+});
+
+test("publication acquire rejects a branch change and cleans the lock", () => {
+  const root = fixture();
+  let branch = "main";
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({ branch: () => branch }),
+    });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["owned.ts"] });
+    branch = "feature/test";
+    assert.throws(() => coordinator.publicationAcquire({ runId: "run-a" }), /WORKTREE_BRANCH_INVALID/);
+    assert.equal(fs.existsSync(path.join(root, ".artifacts", "coordination", "publication.lock")), false);
+  } finally {
+    cleanup(root);
+  }
+});
+
+for (const [label, nextBranch, nextHead, nextOrigin] of [
+  ["another branch", "feature/test", "same", "same"],
+  ["detached HEAD", "", "same", "same"],
+  ["ahead checkout", "main", "local", "remote"],
+  ["behind checkout", "main", "remote", "local"],
+  ["divergent checkout", "main", "local-a", "local-b"],
+]) {
+  test(`publication complete rejects a ${label}`, () => {
+    const root = fixture();
+    let branch = "main";
+    let head = "same";
+    let origin = "same";
+    try {
+      const coordinator = createWorkspaceCoordinator({
+        repositoryRoot: root,
+        gitRunner: fakeGit({
+          branch: () => branch,
+          head: () => head,
+          origin: () => origin,
+        }),
+      });
+      coordinator.init();
+      coordinator.start({ runId: "run-a", domain: "ROUTE" });
+      coordinator.claim({ runId: "run-a", paths: ["owned.ts"] });
+      coordinator.publicationAcquire({ runId: "run-a" });
+      branch = nextBranch;
+      head = nextHead;
+      origin = nextOrigin;
+      assert.throws(() => coordinator.publicationComplete({ runId: "run-a" }), /WORKTREE_BRANCH_INVALID|WORKTREE_BASE_DIVERGED/);
+    } finally {
+      cleanup(root);
+    }
+  });
+}
+
 test("second publisher waits and succeeds after the first publisher releases", () => {
   const root = fixture();
   try {
@@ -324,7 +559,7 @@ test("heartbeat keeps a live publication lock and abandoned recovery requires pr
     clock += 500;
     coordinator.heartbeat({ runId: "run-a" });
     assert.deepEqual(coordinator.recoverAbandonedLocks(), []);
-    coordinator.publicationRelease({ runId: "run-a" });
+    coordinator.publicationComplete({ runId: "run-a" });
     coordinator.release({ runId: "run-a" });
   } finally {
     cleanup(root);
@@ -344,7 +579,7 @@ test("expired publication lock is recovered only when no owner staged path remai
     clock += 2_000;
     const recovered = coordinator.recoverAbandonedLocks();
     assert.equal(recovered.some((item) => item.kind === "publication" && item.runId === "run-a"), true);
-    coordinator.release({ runId: "run-a" });
+    // The recovered lock cannot be completed; the pending run remains open.
   } finally {
     cleanup(root);
   }

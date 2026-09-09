@@ -627,7 +627,26 @@ et le verrou `workspace:publication-acquire` sérialise l'index avant staging.
 Le statut compact reste métadonnées-only ; le stale-check refetch `origin/main`
 et compare uniquement les chemins possédés depuis le base SHA. Ne jamais prendre
 un snapshot global du dirty worktree ni utiliser `git add -A` pour coordonner un
-lot.
+lot. L'ordre canonique est :
+
+```text
+START
+  fetch -> branch == main -> HEAD == origin/main
+WORK
+  ownership disjoint
+PUBLICATION ACQUIRE
+  mutex -> fetch -> branch check -> HEAD/origin check -> stale owned paths
+STAGE / COMMIT / PUSH
+PUBLICATION COMPLETE
+  fetch -> branch check -> HEAD...origin/main == 0 0
+RELEASE
+```
+
+`workspace:claim` refuse `ORPHAN_DIRTY` pour un fichier dirty non legacy et non
+possédé ; `--adopt-legacy` est nécessaire pour une adoption explicite. Un run
+ayant acquis le mutex pour publier reste en attente jusqu'à
+`workspace:publication-complete` ; `workspace:release` ne peut pas contourner
+cette preuve de convergence.
 
 ## Sécurité des diagnostics host et des verrous Git
 

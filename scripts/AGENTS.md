@@ -39,12 +39,30 @@ que pour une lease expirée, avec preuve qu'aucun chemin staged du propriétaire
 ne serait mis en danger.
 
 `workspace:start` commence par `git fetch origin main`, lit `HEAD` et
-`origin/main`, puis refuse tout nouveau run mutable lorsque
-`HEAD != origin/main`. Il lève alors `WORKTREE_BASE_DIVERGED` avec les deux
-SHA et ne crée pas les métadonnées du run. Un worktree dirty seul reste
-autorisé ; l'invariant porte sur la base de branche, pas sur l'absence de
-changements locaux. Lorsque `HEAD == origin/main`, le SHA commun est conservé
-comme `baseSha` du run.
+la branche courante. Toute branche autre que `main`, y compris un detached
+HEAD, lève `WORKTREE_BRANCH_INVALID`. Le coordinateur refuse aussi tout nouveau
+run mutable lorsque `HEAD != origin/main`, avec `WORKTREE_BASE_DIVERGED` et les
+deux SHA ; un worktree dirty seul reste autorisé. Lorsque les contrôles passent,
+le SHA commun est conservé comme `baseSha` du run.
+
+Après obtention effective de `publication.lock`, `workspace:publication-acquire`
+refait `git fetch origin main`, vérifie la branche, la convergence de `HEAD` et
+`origin/main` (`HEAD == origin/main`), puis le stale-check des seuls chemins possédés depuis le
+`baseSha`. Une modification distante possédée lève `WORKSPACE_STALE` avec la
+liste des chemins et libère le mutex avant de sortir ; une divergence de base
+lève `WORKTREE_BASE_DIVERGED` et suit le même nettoyage. Aucun staging ne doit
+suivre un acquire refusé.
+
+`workspace:publication-complete` est l'unique preuve de clôture d'une
+publication : le run doit posséder le mutex, refaire les contrôles de branche et
+de fetch, puis obtenir `git rev-list --left-right --count HEAD...origin/main =
+0 0`. La preuve est inscrite dans le run avant la libération du mutex ; un run
+marqué comme publication en attente ne peut pas être fermé par `workspace:release`.
+
+`workspace:claim` refuse avec `ORPHAN_DIRTY` un chemin dirty qui n'est ni
+`LEGACY_UNOWNED`, ni déjà possédé par le run. L'adoption doit être explicite via
+`--adopt-legacy`; le coordinateur ne lit jamais le contenu des fichiers pour
+décider l'ownership.
 
 ## Portée Git des contrôles
 
