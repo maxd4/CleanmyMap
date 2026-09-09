@@ -3,7 +3,7 @@ import { createRepositoryView, parseRepositoryRef } from "../checks/repository-v
 
 const repoRoot = process.cwd();
 const canonicalDir = "apps/web/supabase/migrations";
-const forbiddenMirrorDir = "supabase/migrations";
+const forbiddenRootDir = "supabase";
 
 const HISTORICAL_TEMPORARY_EXTENSION_MIGRATIONS = new Set([
   "20260819142956_temp_enable_pg_net_for_benchmark_fetch.sql",
@@ -114,13 +114,13 @@ export function auditMigrationTree(view) {
   if (!view.exists(canonicalDir)) {
     return { status: 1, error: `Supabase migration audit failed: missing ${canonicalDir}` };
   }
-  if (view.exists(forbiddenMirrorDir)) {
+  if (view.exists(forbiddenRootDir)) {
     return {
       status: 2,
       error: [
-        "Supabase migration audit failed: the deprecated root migration tree exists:",
-        `- ${forbiddenMirrorDir}`,
-        "Use apps/web/supabase/migrations/ as the only editable migration source.",
+        "Supabase migration audit failed: the deprecated root Supabase namespace exists:",
+        `- ${forbiddenRootDir}/`,
+        "Remove the root namespace and use apps/web/supabase/migrations/ as the only editable migration source.",
       ].join("\n"),
     };
   }
