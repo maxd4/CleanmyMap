@@ -41,6 +41,23 @@ Elle modifie donc la priorité déterministe des zones prédites et peut modifie
 les stops, la boucle et ses métriques de déplacement lorsque les données le
 justifient.
 
+Contrat canonique :
+
+```text
+pickupPreference = préférence souple
+≠ filtre absolu
+≠ permission de ramassage
+≠ estimation de durée de collecte
+```
+
+La trace expose toujours `pickupPreference` et `effectiveRiskFocus`. La valeur
+`prediction.riskFocus` est celle effectivement utilisée pour calculer les zones
+prédites ; elle ne doit pas diverger du `effectiveRiskFocus` propagé au planner.
+La sécurité, la distance et l'utilité restent prises en compte. Les
+signalements observés ne sont pas repondérés : leur scoring observé reste
+inchangé. Les champs `serviceMinutesEstimate` et `totalMinutesEstimate` restent
+`null`.
+
 L'admission géographique hors corridor reste évaluée avec le risque global
 `all`. Ainsi, une préférence focalisée peut réordonner une zone de l'autre type
 sans la transformer en exclusion absolue ; le corridor, la sécurité,

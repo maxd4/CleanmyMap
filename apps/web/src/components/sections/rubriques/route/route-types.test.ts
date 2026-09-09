@@ -64,9 +64,10 @@ describe("route organization and representation UI contract", () => {
     expect(markup).toContain("Sans préférence");
     expect(markup).toContain("Déchets");
     expect(markup).toContain("Mégots");
-    expect(markup).toContain("Aucun type de pollution n&#x27;est favorisé dans les zones prédites.");
-    expect(markup).toContain("Dans les zones prédites, le calcul utilise en priorité le risque déchets.");
-    expect(markup).toContain("Dans les zones prédites, le calcul utilise en priorité le risque mégots.");
+    expect(markup).toContain("Aucun type n’est explicitement favorisé dans les zones prédites.");
+    expect(markup).toContain("Le calcul privilégie le risque déchets des zones prédites.");
+    expect(markup).toContain("Le calcul privilégie le risque mégots des zones prédites.");
+    expect(markup).toContain("La sécurité, la distance et l’utilité restent prises en compte.");
     expect(setOptions).not.toHaveBeenCalled();
   });
 });
