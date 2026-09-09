@@ -7,21 +7,11 @@ import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
+import { resolveSignalementCoordinate } from "./signalement-page.utils";
 
 type SignalementPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
-
-export function resolveSignalementCoordinate(
-  value: string | string[] | undefined,
-  min: number,
-  max: number,
-): number | null {
-  const raw = Array.isArray(value) ? value[0] : value;
-  if (!raw || raw.trim() === "") return null;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) && parsed >= min && parsed <= max ? parsed : null;
-}
 
 export default async function SignalementPage({
   searchParams,

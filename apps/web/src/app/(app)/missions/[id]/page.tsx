@@ -14,13 +14,13 @@ import {
 } from "@/components/missions/mission-page-contract";
 
 type MissionPageParams = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 export default async function MissionPage({ params }: MissionPageParams) {
-  const { id } = params;
+  const { id } = await params;
   const classes = getBlockClasses("act");
   const access = await readAuthorizedMission(id);
 

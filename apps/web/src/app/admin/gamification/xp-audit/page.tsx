@@ -40,16 +40,17 @@ function clampInteger(
 export default async function Page({
   searchParams,
 }: {
-  searchParams?: XpAuditSearchParams;
+  searchParams?: Promise<XpAuditSearchParams>;
 }) {
   await checkAdminAccess();
 
   const supabase = getSupabaseServerClient(true);
-  const userId = searchParams?.userId ?? null;
-  const from = searchParams?.from ?? null;
-  const to = searchParams?.to ?? null;
-  const limit = clampInteger(Number(searchParams?.limit ?? 50), 1, 200, 50);
-  const offset = clampInteger(Number(searchParams?.offset ?? 0), 0, 10000, 0);
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const userId = resolvedSearchParams?.userId ?? null;
+  const from = resolvedSearchParams?.from ?? null;
+  const to = resolvedSearchParams?.to ?? null;
+  const limit = clampInteger(Number(resolvedSearchParams?.limit ?? 50), 1, 200, 50);
+  const offset = clampInteger(Number(resolvedSearchParams?.offset ?? 0), 0, 10000, 0);
 
   let query = supabase
     .from("xp_audit")
