@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveSignalementCoordinate } from "./page";
+import { resolveSignalementCoordinate } from "./signalement-page.utils";
 
 describe("canonical Trash Spotter entry coordinates", () => {
   it("accepts valid map coordinates and ignores invalid values", () => {

@@ -49,7 +49,7 @@ export default async function AdminPage({
   searchParams,
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
-} = {}) {
+}) {
   const resolvedSearchParams = await searchParams;
   const moderationPreset = parseAdminModerationParam(resolvedSearchParams?.moderation);
   const { userId, clerkReachable } = await getSafeAuthSession();
