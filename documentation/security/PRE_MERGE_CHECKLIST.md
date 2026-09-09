@@ -1,76 +1,43 @@
-# Contrôles à Faire Avant Merge
+# Contrôles sécurité avant merge — `CURRENT`
 
-Utiliser cette page comme checklist commune pour les humains et les agents IA.
+Cette checklist est consommée par les skills et reste limitée aux contrôles de
+sécurité. Les contrôles généraux de développement sont définis dans
+[`documentation/development/`](../development/).
 
-## 1. Routes publiques vs privées
+## Routes et indexation
 
-- Vérifier que les routes sensibles figurent dans `src/lib/auth/protected-routes.ts`.
-- Vérifier que les routes privées ne sont pas exposées dans `src/lib/seo/indexability.ts`.
-- Vérifier qu'aucune nouvelle route interne n'est indexable par erreur.
-- Vérifier que les pages `admin`, `dashboard`, `partners/dashboard`, `admin/services` et l'espace créateur passent par une garde Clerk côté serveur.
-- Vérifier que les routes API sensibles (`/api/admin/*`, `/api/actions/*`, `/api/community/*`, `/api/chat/*`, `/api/analytics/*`, `/api/send`, `/api/services`) sont bloquées côté serveur, pas seulement masquées dans l'interface.
+- [ ] Les routes sensibles ont une garde serveur dans `apps/web/src/lib/auth/protected-routes.ts` ou leur contrat équivalent.
+- [ ] Le handler vérifie ses capacités et son scope ; l'interface et le proxy ne sont pas considérés comme une autorisation.
+- [ ] Les pages privées sont hors indexation et sitemap public.
 
-## 2. Robots / sitemap / noindex
+## Entrées et injections
 
-- Les pages internes doivent avoir `robots.index = false`.
-- Les routes publiques indexables doivent rester dans `sitemap.ts`.
-- Les routes privées ne doivent pas être ajoutées au sitemap.
+- [ ] Les entrées externes sont bornées, validées et normalisées.
+- [ ] Les URLs utilisent `new URL()` ou `apps/web/src/lib/security/validation.ts`.
+- [ ] Les regex sensibles sont bornées et ne contiennent pas de quantificateurs imbriqués non justifiés.
+- [ ] Le contrat XSS est respecté pour texte, HTML, styles statiques et données sérialisées dans `<script>`.
 
-## 3. Validation d'URL
+## AuthZ, données et secrets
 
-- Utiliser `new URL()` ou `src/lib/security/validation.ts`.
-- Refuser les hôtes placeholders (`example.com`, `localhost`, `127.0.0.1`, `::1`).
-- Ne pas valider une URL avec `startsWith("http")`, `includes("http")` ou `indexOf("http")`.
+- [ ] Identité, capacité, rôle compatible, ownership/scope et état métier sont vérifiés côté serveur.
+- [ ] Les DTO sont minimisés et les cas négatifs de scope sont testés.
+- [ ] RLS est active, les RPC sensibles sont permissionnées et `service_role` reste serveur.
+- [ ] Une opération privilégiée utilise le contrat d'audit et n'enregistre `success` qu'après l'effet réel.
+- [ ] `npm run security:secrets` ne détecte aucun secret.
 
-## 4. Regex à risque
+## Anti-abus
 
-- Interdire les quantificateurs imbriqués.
-- Limiter la longueur avant toute validation regex.
-- Préférer le parsing explicite quand c'est possible.
-- Ordonner les alternatives de la plus longue à la plus courte.
+- [ ] Le rate limit est appliqué avec l'identité serveur et le chemin/méthode réels.
+- [ ] Les formulaires publics conservent les garde-fous pertinents (`honeypot`, `submittedAt`, BotID) et le contrat HTTP `429`.
 
-## 5. Rate limiting et anti-spam
+## Validation documentaire ciblée
 
-- Les formulaires publics doivent utiliser `createPublicRateLimitResponse()`.
-- Les garde-fous `honeypot` et `submittedAt` doivent être testés de façon déterministe.
-- Les réponses 429 doivent garder la même structure: `error`, `kind`, `status`.
-- Les formulaires publics ne doivent jamais écrire directement en base sans validation serveur stricte.
+```bash
+npm run security:secrets
+npm run check:doc-governance
+npm run check:stack-doc-drift
+git diff --check
+```
 
-## 6. Secrets et variables d'environnement
-
-- Lancer `npm run security:secrets`.
-- Ne jamais ajouter de clé, token ou DSN en clair dans le repo.
-- Documenter toute nouvelle variable d'environnement serveur ou client.
-- Les clés privées ne doivent jamais arriver dans le frontend.
-- Resend doit rester côté serveur uniquement.
-- Sentry, PostHog et Vercel Analytics doivent rester conditionnés par la configuration prévue.
-
-## 7. GitHub Actions
-
-- Garder des permissions minimales par job.
-- Conserver les permissions minimales par job ; lorsqu'une suite Vitest complète
-  couvre explicitement les groupes sécurité et régression, ne pas relancer ces
-  mêmes fichiers dans un job séparé.
-- Les changements Dependabot qui touchent l'auth, les secrets, la CI ou le routage doivent passer en revue renforcée.
-- Les protections bot/rate limiting doivent rester actives sur les surfaces publiques exposées.
-
-## 8. Vérification finale
-
-- Aucun placeholder ou `TODO` bloquant.
-- Aucun test de sécurité désactivé.
-- Les tests ciblés passent.
-- Les workflows référencent bien les nouveaux tests ou scripts.
-- Les pages de test ou brouillons ne doivent pas réapparaître dans la navigation publique ni dans le sitemap.
-
-## 9. Performance / Quotas Vercel
-
-- Une nouvelle route API doit avoir un besoin clair et des bornes explicites.
-- Une nouvelle page dynamique doit justifier l'absence de cache.
-- Un nouveau middleware doit rester léger et ciblé.
-- Une nouvelle requête Supabase doit être bornée et relue pour son coût.
-- Un nouveau polling doit être justifié face à un cache ou à une alternative moins coûteuse.
-- Un nouveau composant Leaflet doit être chargé seulement là où il apporte un gain réel.
-- Un nouveau fetch serveur doit expliquer son impact sur l'origine et le transfert.
-- Un nouveau PDF ou export doit être borné, protégé et mesuré.
-- Une nouvelle dépendance lourde doit être justifiée par le besoin métier et le bundle.
-- Si le changement augmente un quota Vercel volontairement, la PR doit l'indiquer explicitement.
+Pour le code, ajouter les checks de développement adaptés ; cette page ne les
+recopie pas.

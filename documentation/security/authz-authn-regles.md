@@ -1,4 +1,8 @@
-# AuthN, AuthZ, secrets et frontières API
+# AuthN, AuthZ, secrets et frontières API (`CURRENT`)
+
+> Source canonique de l'état runtime actuel. La matrice de capacités cible est
+> séparée dans [`authorization-capabilities.md`](./authorization-capabilities.md)
+> et ne doit pas être lue comme une permission déjà déployée.
 
 Référence durable pour l'authentification, les permissions, les dérogations administratives et les frontières d'accès.
 

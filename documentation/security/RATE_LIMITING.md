@@ -1,57 +1,20 @@
-# Rate limiting - CleanMyMap
+# Rate limiting — `CURRENT` et `PLAN`
 
-Ce document décrit uniquement la protection effectivement présente dans le
-runtime actuel. Le store local n'est pas une protection anti-bot, un quota
-global ou une garantie multi-instance de production.
+## CURRENT — runtime vérifié
 
-## Identité et portée
+Les helpers de `apps/web/src/lib/rate-limit/` résolvent l'identité depuis la
+requête serveur : `authenticated:<Clerk userId>` pour une session Clerk et
+`anonymous:<IP>` depuis les sources d'IP de plateforme prévues. Le header
+client `x-user-id` et les clés arbitraires de payload ne sont pas des preuves.
+La clé comprend la méthode et le pathname.
 
-Les helpers de `src/lib/rate-limit/` résolvent une identité à partir de la
-requête serveur reçue :
+Quand Upstash est configuré, `verifyRateLimit()` utilise le store distribué
+partagé. Le `Map` local est un fallback best-effort, nettoyé périodiquement ;
+il n'est ni distribué ni une garantie de production multi-instance. Une panne
+Upstash est journalisée sans secret puis bascule sur ce fallback conformément au
+contrat runtime.
 
-- requête authentifiée : `authenticated:<Clerk userId>` issu du contexte Clerk
-  serveur ; le header client `x-user-id` est ignoré ;
-- requête anonyme : `anonymous:<IP>` issu de `request.ip` lorsqu'il est fourni
-  par la plateforme, puis de `x-vercel-forwarded-for` ou `x-real-ip` ;
-  `x-forwarded-for` n'est pas considéré comme une preuve fiable ;
-- développement local : le bypass Clerk existant peut fournir l'identité
-  locale configurée, uniquement lorsque `NODE_ENV=development` et que son
-  contrat d'hôte/environnement est respecté. Il est désactivé en production.
-
-La clé complète inclut la méthode HTTP et le pathname :
-
-```text
-ratelimit:<METHOD>:<pathname>:<authenticated:userId|anonymous:ip>
-```
-
-Aucune clé arbitraire fournie par le client n'est acceptée par
-`verifyRateLimit()`. Les valeurs comme un email ou un identifiant de payload
-ne peuvent donc pas remplacer l'identité de la requête.
-
-Lorsque Upstash est configuré, `verifyRateLimit()` utilise le client partagé de
-`src/lib/services/upstash.ts` et un sliding window distribué. La clé complète
-inclut la méthode, le pathname et l'identité ; elle est donc commune aux
-instances qui parlent au même Redis.
-
-Le `Map` de `src/lib/rate-limit/store.ts` est local au processus et nettoyé
-périodiquement. Il n'est utilisé qu'en fallback immédiat si Upstash n'est pas
-configuré ou devient indisponible. Il reste best-effort, non distribué et ne
-doit pas être présenté comme une garantie de production multi-instance. Une
-panne Upstash ne transforme pas la requête en erreur applicative : elle est
-journalisée sans secret puis bascule sur ce store local.
-
-## Classification méthode + route
-
-`getRateLimitConfig(pathname, method)` applique les priorités suivantes :
-
-1. routes auth/sign-in/login : profil `auth` ;
-2. routes AI, vision et recommendation : profil `ai` ;
-3. `POST`, `PUT`, `PATCH`, `DELETE` : profil `write` ;
-4. `GET`, `HEAD` : profil `read` ;
-5. autres routes `/api/` : profil `api` ;
-6. autres chemins : profil `default`.
-
-Les limites par défaut sont :
+Profils par défaut :
 
 | Profil | Limite | Fenêtre | Stratégie |
 |---|---:|---:|---|
@@ -62,117 +25,28 @@ Les limites par défaut sont :
 | `ai` | 20 | 60 s | sliding window |
 | `write` | 10 | 60 s | sliding window |
 
-La réponse de dépassement contient HTTP `429`, le code
-`RATE_LIMIT_EXCEEDED`, un header `Retry-After` en secondes et, lorsque le
-résultat du helper est disponible, les headers `X-RateLimit-Limit`,
-`X-RateLimit-Remaining` et `X-RateLimit-Reset`.
+Les dépassements renvoient `429`, `RATE_LIMIT_EXCEEDED`, `Retry-After` et,
+si disponibles, les headers de quota. Les options spécifiques d'un handler
+peuvent être plus strictes que ces profils.
 
-## Couche BotID anti-automation
+Les handlers actuellement concernés incluent les POST d'actions, chat,
+signalements, événements, contact, métriques pédagogiques, newsletter et
+onboarding partenaires. Les GET de chat et d'événements ne passent pas par
+`verifyRateLimit()` dans le runtime décrit ici. BotID reste une protection
+anti-automation navigateur distincte sur les routes explicitement configurées ;
+il ne remplace ni AuthN/AuthZ ni le rate limit.
 
-Vercel BotID Basic protège les POST anonymes effectivement déclenchés par les
-appels navigateur CleanMyMap. `initBotId()` est initialisé dans
-`apps/web/instrumentation-client.ts`, et `checkBotId()` est appelé au début de
-chaque handler serveur concerné, avant `request.json()`, Clerk, Supabase,
-Resend, l'IA ou les autres traitements métier.
+Les formulaires publics conservent leurs contrôles `honeypot` et `submittedAt`
+lorsqu'ils sont prévus par leur contrat. Les wrappers génériques ne prouvent
+pas qu'une route les utilise.
 
-Les routes protégées sont :
+## PLAN — direction de convergence
 
-- `/api/contact` ;
-- `/api/newsletter/subscribe` ;
-- `/api/gamification/quiz/pedagogical-metrics` ;
+Rate limiting, AuthN/AuthZ, quotas métier et BotID restent des contrôles
+distincts. Une défense anti-automation additionnelle doit être proportionnée au
+risque et ne doit pas devenir automatiquement un hard gate pour toute écriture
+authentifiée. Les écritures publiques doivent combiner validation stricte,
+fréquence et protection anti-abus adaptée sans confondre ces garanties.
 
-Un bot détecté reçoit la réponse stable HTTP `403` avec le code
-`BOT_DETECTED`. L'ordre d'exécution est `BotID → rate-limit Upstash (ou
-fallback local) → logique métier` : un rejet BotID ne déclenche pas Redis et
-un rejet `429` ne déclenche aucun service métier. BotID est un filtre
-anti-automation navigateur, pas un quota distribué.
-
-Les écritures déjà authentifiées et l'exception d'écriture publique DSA ne sont
-pas bloquées par BotID dans le runtime actuel. L'audit des appelants du dépôt
-ne trouve pas de webhook, script de maintenance ou client machine pour ces
-trois POST. Les chemins voisins
-`/api/community/events/ops` et `/api/actions/map` ne sont pas déclarés dans la
-configuration BotID : ils restent hors de cette protection navigateur et ne
-sont pas concernés par ce lot.
-
-## Routes réellement protégées par `verifyRateLimit()`
-
-Ces appels sont présents dans les handlers suivants. Les limites indiquées
-sont les options explicitement passées au helper :
-
-| Route | Méthode | Limite | Fenêtre |
-|---|---|---:|---:|
-| `/api/actions` | `POST` | 10 | 60 s |
-| `/api/chat` | `POST` | 20 | 60 s |
-| `/api/community/bug-reports` | `POST` | 4 | 300 s |
-| `/api/community/events` | `POST` | 6 | 60 s |
-| `/api/community/promotion-requests` | `POST` | 3 | 300 s |
-| `/api/contact` | `POST` | 3 | 300 s |
-| `/api/gamification/quiz/pedagogical-metrics` | `POST` | 10 | 60 s |
-| `/api/newsletter/subscribe` | `POST` | 5 | 60 s |
-| `/api/partners/onboarding-requests` | `POST` | 3 | 300 s |
-
-Les `GET` de `/api/chat` et `/api/community/events` ne passent pas par
-`verifyRateLimit()` dans le code actuel. Certaines routes disposent par
-ailleurs de contrôles métier distincts, notamment le quota Supabase des
-discussions ; ces contrôles ne sont pas le store rate-limit local décrit ici.
-
-## Politique cible de convergence
-
-Cette section décrit la direction documentaire future ; elle ne réécrit pas la
-description factuelle du runtime actuel ci-dessus.
-
-- le rate limiting est un contrôle de fréquence ;
-- l'AuthN et l'AuthZ contrôlent respectivement l'identité et la permission ;
-- BotID est un signal et une protection anti-automation complémentaire ;
-- ces trois mécanismes ne sont pas interchangeables.
-
-BotID ne doit plus devenir automatiquement un hard gate sur toute écriture
-authentifiée. Une écriture déjà attribuée à une session Clerk doit d'abord
-reposer sur ses contrôles d'AuthN, d'AuthZ, d'ownership ou de scope, de
-validation et de fréquence ; une défense anti-automation additionnelle doit
-rester proportionnée au risque.
-
-Les écritures publiques exceptionnelles doivent combiner les contrôles
-anti-abus appropriés — validation stricte, rate limit, honeypot ou délai lorsque
-pertinent, et anti-automation éventuelle — sans rendre le parcours inaccessible
-aux humains légitimes.
-
-Des faux positifs humains observés avec une défense anti-automation constituent
-une justification architecturale générale pour cette séparation des contrôles.
-Cette documentation ne conserve aucun identifiant, horodatage, adresse IP,
-SHA ou état temporaire de commissioning relatif à un cas individuel.
-
-## Middleware et wrappers
-
-`rateLimitMiddleware()`, `withRateLimit()`, `withApiRateLimit()` et
-`createRateLimitedHandler()` transmettent explicitement `request.method` et
-`request.nextUrl.pathname`. Ils restent des capacités réutilisables, mais
-aucun usage runtime de ces wrappers n'a été trouvé dans les routes actuelles et
-le `proxy.ts` ne les installe pas.
-
-Le `proxy.ts` actuel assure le contexte Clerk, les protections de pages et les
-headers SEO. Il ne fournit pas une limite mémoire globale sur toutes les
-requêtes `/api/`.
-
-## Formulaires et contrôles complémentaires
-
-Les formulaires publics concernés conservent leurs contrôles `honeypot` et
-`submittedAt` :
-
-- `/api/contact` ;
-- `/api/newsletter/subscribe` ;
-- `/api/community/bug-reports` ;
-- `/api/partners/onboarding-requests`.
-
-Ces contrôles complètent le rate-limit Upstash et son fallback local ; ils ne
-remplacent ni BotID ni le quota métier pédagogique.
-
-## Limites de production et prochain lot
-
-BotID Basic fournit une protection anti-automation des flux navigateur.
-Upstash est le rate-limit distribué principal avec sliding window ; le `Map`
-reste uniquement son fallback local best-effort. Vercel DDoS est une couche
-plateforme séparée et n'est pas confondue avec ce contrôle applicatif. Ce lot
-ne clôt pas pour autant la protection anti-bot/quota production globale : les
-limites métier spécialisées et les contrôles de capacité restent distincts.
+Cette section ne constitue pas une promesse de déploiement ni une preuve de
+couverture globale.

@@ -1,5 +1,14 @@
 # Backlog d'audit GitHub — exécutable par Codex
 
+> **Statut : `AUDIT / SNAPSHOT` historique — ne pas traiter comme `CURRENT`.**
+>
+> Cette archive conserve la confrontation réalisée le **13 juillet 2026** sur
+> `maxd4/CleanmyMap`, branche `main`, au SHA
+> `8666d8eb8e4f309fd518aea8b5321fa2f29af9d2`. Les constats, compteurs et
+> recommandations qui suivent doivent être revalidés contre GitHub et le code
+> courant avant toute action ; ils ne décrivent pas automatiquement l'état du
+> runtime ou des réglages distants actuels.
+
 **Dernière confrontation avec GitHub :** 13 juillet 2026  
 **Dépôt de référence :** `maxd4/CleanmyMap`  
 **Branche de référence :** `main`  

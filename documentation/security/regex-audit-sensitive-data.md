@@ -1,4 +1,4 @@
-# Audit regex des donnees sensibles
+# Audit regex des donnees sensibles (`CURRENT`)
 
 Commande :
 
