@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { performance } from "node:perf_hooks";
 import test from "node:test";
 
+const STATIC_CHECK_TIMEOUT_MS = 60_000;
 const ref = execFileSync("git", ["rev-parse", "origin/main"], { encoding: "utf8" }).trim();
 const checks = [
   "scripts/checks/check-env-contract.mjs",
@@ -43,11 +45,29 @@ const compatibleChecks = checks.filter(
     ),
 );
 
+function runStaticChecker(script) {
+  const extraArgs = script.endsWith("check-top-heavy-files.mjs") ? ["--enforce"] : [];
+  const startedAt = performance.now();
+  try {
+    execFileSync(process.execPath, [script, ...extraArgs, `--ref=${ref}`], {
+      stdio: "ignore",
+      timeout: STATIC_CHECK_TIMEOUT_MS,
+      windowsHide: true,
+    });
+  } catch (error) {
+    const durationMs = Math.round(performance.now() - startedAt);
+    const timedOut = error?.code === "ETIMEDOUT" || error?.signal === "SIGTERM";
+    const reason = timedOut
+      ? `timed out after ${durationMs}ms (limit ${STATIC_CHECK_TIMEOUT_MS}ms)`
+      : `failed after ${durationMs}ms with ${error?.code ?? `exit ${error?.status ?? "unknown"}`}`;
+    throw new Error(`${script} ${reason} for exact Git ref ${ref}`);
+  }
+}
+
 test("all pre-push static checks accept and validate an exact Git ref", () => {
   for (const script of compatibleChecks) {
-    const extraArgs = script.endsWith("check-top-heavy-files.mjs") ? ["--enforce"] : [];
     assert.doesNotThrow(
-      () => execFileSync(process.execPath, [script, ...extraArgs, `--ref=${ref}`], { stdio: "ignore" }),
+      () => runStaticChecker(script),
       `${script} rejected ref ${ref}`,
     );
   }
