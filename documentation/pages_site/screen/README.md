@@ -55,5 +55,17 @@ Pour capturer des pages protégées en local, utilisez soit :
 ## Notes
 
 - les captures sont desktop uniquement
+
+## Mode de capture déterministe
+
+Le pipeline ouvre chaque route avec le paramètre explicite `?cmmCapture=1`.
+Ce contrat active l'attribut `data-cmm-capture-mode="true"` sur la racine du
+document. Les composants de chrome qui portent `data-cmm-capture-sticky`
+restent alors dans le flux normal du document et les transitions marquées sont
+désactivées pendant la capture.
+
+En navigation normale, sans ce paramètre, le ruban global conserve son
+comportement `sticky`. Le même attribut permet d'intégrer d'autres surfaces
+sticky au pipeline sans leur imposer un comportement statique en production.
 - le format de sortie est PNG uniquement
 - les captures legacy sont écrites dans `artifacts/screenshots/legacy/`; les éventuels fichiers historiques de `documentation/liberte-UX-UI/` ne sont pas réécrits

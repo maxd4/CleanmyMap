@@ -28,6 +28,21 @@ body {
   --app-ribbon-top-offset: 0rem;
 }
 
+/*
+ * Full-page screenshot contract: normal navigation remains sticky, while the
+ * explicit capture mode keeps marked global chrome in document flow.
+ */
+html[data-cmm-capture-mode="true"] [data-cmm-capture-sticky] {
+  position: static !important;
+  inset: auto !important;
+}
+
+html[data-cmm-capture-mode="true"] [data-cmm-capture-stabilize],
+html[data-cmm-capture-mode="true"] [data-cmm-capture-stabilize] * {
+  animation: none !important;
+  transition: none !important;
+}
+
 
 @media (min-width: 1024px) {
   html {

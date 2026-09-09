@@ -17,6 +17,7 @@ import {
   DEFAULT_THEME,
 } from "@/lib/ui/preferences";
 import { DisplayModeInitializer } from "@/components/ui/display-mode-initializer";
+import { CaptureModeInitializer } from "@/components/ui/capture-mode-initializer";
 
 export const metadata: Metadata = appMetadata;
 
@@ -38,6 +39,7 @@ export default async function RootLayout({
     >
       <head>
         <DisplayModeInitializer />
+        <CaptureModeInitializer />
         <OrganizationJsonLd />
         <WebSiteJsonLd />
         <FAQJsonLd />
