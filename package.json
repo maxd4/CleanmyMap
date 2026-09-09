@@ -119,6 +119,7 @@
     "workspace:status": "node scripts/dev/workspace-coordination.mjs status",
     "workspace:stale": "node scripts/dev/workspace-coordination.mjs stale-check",
     "workspace:publication-acquire": "node scripts/dev/workspace-coordination.mjs publication-acquire",
+    "workspace:publication-complete": "node scripts/dev/workspace-coordination.mjs publication-complete",
     "workspace:publication-release": "node scripts/dev/workspace-coordination.mjs publication-release",
     "workspace:release": "node scripts/dev/workspace-coordination.mjs release",
     "workspace:doctor": "node scripts/dev/workspace-coordination.mjs doctor",

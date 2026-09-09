@@ -225,18 +225,31 @@ ci-dessus.
   `workspace:stale` ; les chemins sont relatifs au dépôt et protégés contre la
   traversée ;
 - `workspace:start` fait `git fetch origin main`, refuse de créer un run mutable
-  si `HEAD != origin/main` et lève `WORKTREE_BASE_DIVERGED` avec les deux SHA ;
-  un worktree dirty seul n'est pas un refus ; lorsque les SHA sont égaux, le
-  SHA commun devient le `baseSha` du run ;
+  hors de la branche `main` et lève `WORKTREE_BRANCH_INVALID` pour une autre
+  branche ou un detached HEAD. Il refuse aussi de créer un run mutable si
+  `HEAD != origin/main` et lève `WORKTREE_BASE_DIVERGED` avec les deux SHA ; un
+  worktree dirty seul n'est pas un refus. Lorsque les contrôles passent, le SHA
+  commun devient le `baseSha` du run ;
 - le domaine `AUTHZ_SECURITY` est exclusif : aucun autre run ne peut le
   revendiquer en parallèle ; les autres collisions de fichiers sont également
   bloquantes et immédiates ; un verrou obsolète est signalé par `doctor`, jamais
   supprimé automatiquement ;
 - avant toute opération d'index, le run obtient `workspace:publication-acquire`.
   L'acquisition attend un publisher concurrent avec un backoff et un timeout
-  bornés ; cette attente n'est pas un conflit de chantier. Le pré-commit exige
-  alors que tous les chemins staged appartiennent à ce run ; après commit, push
-  ou échec, libérer explicitement le verrou et le run ;
+  bornés, puis, après obtention effective du mutex et avant tout staging,
+  refait `fetch`, vérifie `main`, `HEAD == origin/main` et le stale-check des
+  chemins possédés depuis le `baseSha`. Un échec lève `WORKTREE_BASE_DIVERGED`
+  ou `WORKSPACE_STALE`, retourne les chemins concernés dans l'erreur et libère
+  le mutex ; cette attente n'est pas un conflit de chantier. Le pré-commit exige
+  alors que tous les chemins staged appartiennent à ce run ;
+- `workspace:publication-complete` est la clôture canonique après commit/push :
+  le run doit posséder le mutex, puis le coordinateur refait `fetch`, vérifie
+  `main` et exige `git rev-list --left-right --count HEAD...origin/main = 0 0`.
+  Il libère ensuite le mutex et marque la preuve dans le run. `workspace:release`
+  refuse un run marqué comme publication en attente sans cette preuve ;
+- `workspace:claim` n'adopte jamais implicitement un fichier dirty. Un chemin
+  dirty qui n'est ni legacy, ni déjà possédé par le run est `ORPHAN_DIRTY` et
+  exige `--adopt-legacy`. Aucun de ces contrôles ne lit le contenu du fichier ;
 - `workspace:status --compact` n'inspecte que des métadonnées et des chemins,
   sans lire le contenu source ; `workspace:stale` refetch `origin/main` et ne
   compare que les chemins possédés depuis le `baseSha` du run ;

@@ -209,6 +209,13 @@ function getRemoteChangedPaths(repositoryRoot, baseSha, ownedPaths, gitRunner = 
   return gitRunner(repositoryRoot, args).split(/\r?\n/).filter(Boolean).sort();
 }
 
+function workspaceError(code, message, details = {}) {
+  const error = new Error(`${code}: ${message}`);
+  error.code = code;
+  Object.assign(error, details);
+  return error;
+}
+
 export function createWorkspaceCoordinator({
   repositoryRoot,
   gitRunner = git,
@@ -239,6 +246,64 @@ export function createWorkspaceCoordinator({
     return next;
   };
 
+  const assertMainBranch = () => {
+    const branch = runGit(["branch", "--show-current"]);
+    if (branch !== "main") {
+      throw workspaceError(
+        "WORKTREE_BRANCH_INVALID",
+        `current branch is ${branch || "detached HEAD"}; expected main`,
+        { branch },
+      );
+    }
+    return branch;
+  };
+
+  const assertHeadMatchesOrigin = () => {
+    const headSha = runGit(["rev-parse", "HEAD"]);
+    const originMainSha = runGit(["rev-parse", "origin/main"]);
+    if (headSha !== originMainSha) {
+      throw workspaceError(
+        "WORKTREE_BASE_DIVERGED",
+        `HEAD=${headSha} origin/main=${originMainSha}`,
+        { headSha, originMainSha },
+      );
+    }
+    return { headSha, originMainSha };
+  };
+
+  const refreshPublicationFreshness = (runId) => {
+    runGit(["fetch", "origin", "main"]);
+    assertMainBranch();
+    const { run } = loadRun(root, runId);
+    const refs = assertHeadMatchesOrigin();
+    const changedPaths = getRemoteChangedPaths(
+      repo,
+      run.baseSha,
+      run.ownedPaths ?? [],
+      (_repositoryRoot, args) => runGit(args),
+    );
+    if (changedPaths.length > 0) {
+      throw workspaceError(
+        "WORKSPACE_STALE",
+        `owned paths changed since ${run.baseSha}: ${changedPaths.join(", ")}`,
+        { changedPaths },
+      );
+    }
+    return { run, ...refs, changedPaths };
+  };
+
+  const refreshPublicationConvergence = () => {
+    runGit(["fetch", "origin", "main"]);
+    assertMainBranch();
+    return assertHeadMatchesOrigin();
+  };
+
+  const releaseOwnedPublicationLock = (runId) => {
+    const lockPath = path.join(root, "publication.lock");
+    const lock = readOptionalJson(lockPath);
+    if (lock?.runId === runId) fs.unlinkSync(lockPath);
+  };
+
   function init() {
     fs.mkdirSync(path.join(root, "active-runs"), { recursive: true });
     fs.mkdirSync(path.join(root, "locks"), { recursive: true });
@@ -260,13 +325,8 @@ export function createWorkspaceCoordinator({
     assertSafeSegment(runId, "run id");
     assertSafeSegment(domain, "domain");
     runGit(["fetch", "origin", "main"]);
-    const headSha = runGit(["rev-parse", "HEAD"]);
-    const originMainSha = runGit(["rev-parse", "origin/main"]);
-    if (headSha !== originMainSha) {
-      throw new Error(
-        `WORKTREE_BASE_DIVERGED: HEAD=${headSha} origin/main=${originMainSha}`,
-      );
-    }
+    assertMainBranch();
+    const { originMainSha } = assertHeadMatchesOrigin();
     const run = {
       version: 2,
       runId,
@@ -289,11 +349,24 @@ export function createWorkspaceCoordinator({
     const migration = loadMigration(root);
     const legacy = new Set(migration?.legacyUnowned ?? []);
     const legacyConflicts = normalizedPaths.filter((item) => legacy.has(item));
+    const existingLocks = readPathLocks(root);
+    const dirty = new Set(readDirtyPaths(repo, (_repositoryRoot, args) => runGit(args)));
+    const orphanDirty = normalizedPaths.filter((repoPath) => {
+      if (!dirty.has(repoPath) || legacy.has(repoPath)) return false;
+      const existing = existingLocks.find(({ lock }) => lock.path === repoPath);
+      return !existing;
+    });
+    if (orphanDirty.length > 0 && !adoptLegacy) {
+      throw workspaceError(
+        "ORPHAN_DIRTY",
+        `dirty paths require explicit adoption: ${orphanDirty.join(", ")}`,
+        { orphanDirty },
+      );
+    }
     if (legacyConflicts.length > 0 && !adoptLegacy) {
       throw new Error(`LEGACY_UNOWNED requires explicit adoption: ${legacyConflicts.join(", ")}`);
     }
 
-    const existingLocks = readPathLocks(root);
     for (const repoPath of normalizedPaths) {
       const existing = existingLocks.find(({ lock }) => lock.path === repoPath && lock.runId !== runId);
       if (existing) throw new Error(`COORDINATION_CONFLICT: ${repoPath} is owned by ${existing.lock.runId}.`);
@@ -331,7 +404,7 @@ export function createWorkspaceCoordinator({
     const ownedPaths = [...new Set([...(run.ownedPaths ?? []), ...normalizedPaths])].sort();
     const adoptedLegacyPaths = [...new Set([
       ...(run.adoptedLegacyPaths ?? []),
-      ...(adoptLegacy ? legacyConflicts : []),
+      ...(adoptLegacy ? [...legacyConflicts, ...orphanDirty] : []),
     ])].sort();
     const heartbeatAt = timestamp();
     metadataWriter(runPath, { ...run, ownedPaths, adoptedLegacyPaths, updatedAt: heartbeatAt, heartbeatAt });
@@ -339,7 +412,7 @@ export function createWorkspaceCoordinator({
       saveMigration(root, {
         ...migration,
         legacyUnowned: [...legacy].filter((item) => !legacyConflicts.includes(item)).sort(),
-        adoptedLegacyPaths: [...new Set([...(migration.adoptedLegacyPaths ?? []), ...legacyConflicts])].sort(),
+        adoptedLegacyPaths: [...new Set([...(migration.adoptedLegacyPaths ?? []), ...legacyConflicts, ...orphanDirty])].sort(),
         mode: legacy.size - legacyConflicts.length === 0 ? "STRICT" : migration.mode,
       }, metadataWriter);
     }
@@ -415,8 +488,24 @@ export function createWorkspaceCoordinator({
       const lock = { version: 2, kind: "publication", runId, acquiredAt, updatedAt: acquiredAt, heartbeatAt: acquiredAt };
       try {
         writeExclusive(lockPath, lock);
-        updateRunHeartbeat(runId);
-        return lock;
+        try {
+          const freshness = refreshPublicationFreshness(runId);
+          const heartbeatAt = timestamp();
+          metadataWriter(
+            getRunPath(root, runId),
+            {
+              ...freshness.run,
+              publicationRequired: true,
+              publicationCompletedAt: null,
+              updatedAt: heartbeatAt,
+              heartbeatAt,
+            },
+          );
+          return lock;
+        } catch (error) {
+          releaseOwnedPublicationLock(runId);
+          throw error;
+        }
       } catch (error) {
         if (error?.code !== "EEXIST") throw error;
         const recovered = recoverAbandonedLocks();
@@ -457,6 +546,31 @@ export function createWorkspaceCoordinator({
     return { released: true };
   }
 
+  function publicationComplete({ runId } = {}) {
+    const { run, runPath } = loadRun(root, runId);
+    const lockPath = path.join(root, "publication.lock");
+    const lock = readOptionalJson(lockPath);
+    if (!lock) throw workspaceError("PUBLICATION_LOCK_REQUIRED", `run ${runId} does not hold the publication lock`);
+    if (lock.runId !== runId) throw workspaceError("PUBLICATION_LOCK_REQUIRED", `publication lock is owned by ${lock.runId}`);
+
+    try {
+      refreshPublicationConvergence();
+      const completedAt = timestamp();
+      metadataWriter(runPath, {
+        ...run,
+        publicationRequired: true,
+        publicationCompletedAt: completedAt,
+        updatedAt: completedAt,
+        heartbeatAt: completedAt,
+      });
+      fs.unlinkSync(lockPath);
+      return { completed: true, runId, completedAt };
+    } catch (error) {
+      releaseOwnedPublicationLock(runId);
+      throw error;
+    }
+  }
+
   function recoverAbandonedLocks() {
     const activeRunsPath = path.join(root, "active-runs");
     const activeRuns = fs.existsSync(activeRunsPath)
@@ -488,6 +602,12 @@ export function createWorkspaceCoordinator({
 
   function release({ runId } = {}) {
     const { run, runPath } = loadRun(root, runId);
+    if (run.publicationRequired && !run.publicationCompletedAt) {
+      throw workspaceError(
+        "PUBLICATION_COMPLETE_REQUIRED",
+        `run ${runId} requires workspace:publication-complete before release`,
+      );
+    }
     const adopted = new Set(run.adoptedLegacyPaths ?? []);
     const dirty = new Set(readDirtyPaths(repo, (_repositoryRoot, args) => runGit(args)));
     const dirtyAdopted = [...adopted].filter((repoPath) => dirty.has(repoPath)).sort();
@@ -583,7 +703,7 @@ export function createWorkspaceCoordinator({
     return { ...report, staleLocks, publicationOrphan, ok: report.overlaps.length === 0 && staleLocks.length === 0 && !publicationOrphan };
   }
 
-  return { init, start, claim, unclaim, staleCheck, publicationAcquire, publicationRelease, heartbeat, recoverAbandonedLocks, release, status, checkStaged, doctor };
+  return { init, start, claim, unclaim, staleCheck, publicationAcquire, publicationRelease, publicationComplete, heartbeat, recoverAbandonedLocks, release, status, checkStaged, doctor };
 }
 
 function parseArgs(argv) {
@@ -641,6 +761,7 @@ function main() {
   else if (command === "status") result = coordinator.status({ runId: options.run_id });
   else if (command === "stale-check") result = coordinator.staleCheck({ runId: options.run_id });
   else if (command === "publication-acquire") result = coordinator.publicationAcquire({ runId: options.run_id });
+  else if (command === "publication-complete") result = coordinator.publicationComplete({ runId: options.run_id });
   else if (command === "publication-release") result = coordinator.publicationRelease({ runId: options.run_id });
   else if (command === "heartbeat") result = coordinator.heartbeat({ runId: options.run_id });
   else if (command === "recover-abandoned") result = coordinator.recoverAbandonedLocks();
