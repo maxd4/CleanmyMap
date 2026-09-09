@@ -10,12 +10,13 @@ function fixture() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-workspace-coordination-"));
 }
 
-function fakeGit({ status = "", staged = "", origin = "origin-sha", remoteDiff = "" } = {}) {
+function fakeGit({ status = "", staged = "", head = "origin-sha", origin = "origin-sha", remoteDiff = "" } = {}) {
   return (_root, args) => {
     if (args[0] === "status") return status;
     if (args[0] === "diff" && args[1] === "--cached") return staged;
     if (args[0] === "diff") return remoteDiff;
-    if (args[0] === "rev-parse") return origin;
+    if (args[0] === "rev-parse" && args[1] === "HEAD") return head;
+    if (args[0] === "rev-parse" && args[1] === "origin/main") return origin;
     if (args[0] === "fetch") return "";
     throw new Error(`Unexpected git call: ${args.join(" ")}`);
   };
@@ -39,6 +40,46 @@ test("allows independent runs and claims normalized repository-relative paths", 
     cleanup(root);
   }
 });
+
+test("allows a dirty worktree when HEAD equals origin/main", () => {
+  const root = fixture();
+  try {
+    const coordinator = createWorkspaceCoordinator({
+      repositoryRoot: root,
+      gitRunner: fakeGit({ status: " M foreign.ts\n" }),
+    });
+    coordinator.init();
+    const run = coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    assert.equal(run.baseSha, "origin-sha");
+    assert.equal(fs.existsSync(path.join(root, ".artifacts", "coordination", "active-runs", "run-a.json")), true);
+  } finally {
+    cleanup(root);
+  }
+});
+
+for (const [label, head, origin] of [
+  ["ahead", "local-ahead", "origin-main"],
+  ["behind", "origin-main", "local-behind"],
+  ["divergent", "local-a", "local-b"],
+]) {
+  test(`rejects a ${label} checkout before creating run metadata`, () => {
+    const root = fixture();
+    try {
+      const coordinator = createWorkspaceCoordinator({
+        repositoryRoot: root,
+        gitRunner: fakeGit({ head, origin }),
+      });
+      coordinator.init();
+      assert.throws(
+        () => coordinator.start({ runId: "run-a", domain: "ROUTE" }),
+        new RegExp(`WORKTREE_BASE_DIVERGED: HEAD=${head} origin/main=${origin}`),
+      );
+      assert.equal(fs.existsSync(path.join(root, ".artifacts", "coordination", "active-runs", "run-a.json")), false);
+    } finally {
+      cleanup(root);
+    }
+  });
+}
 
 test("rejects same-file and critical-scope collisions with the existing owner", () => {
   const root = fixture();
@@ -314,10 +355,10 @@ test("stale-check reports only owned paths changed since the run base", () => {
   try {
     const coordinator = createWorkspaceCoordinator({
       repositoryRoot: root,
-      gitRunner: fakeGit({ remoteDiff: "apps/web/src/owned.ts\n" }),
+      gitRunner: fakeGit({ origin: "base-sha", head: "base-sha", remoteDiff: "apps/web/src/owned.ts\n" }),
     });
     coordinator.init();
-    coordinator.start({ runId: "run-a", domain: "ROUTE", baseSha: "base-sha" });
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
     coordinator.claim({ runId: "run-a", paths: ["apps/web/src/owned.ts", "apps/web/src/unchanged.ts"] });
     const result = coordinator.staleCheck({ runId: "run-a", fetch: true });
     assert.equal(result.staleScope, "FAIL");

@@ -11,13 +11,13 @@ import { canonicalAgentFiles, validateAgentGovernance } from "./check-agent-gove
 function createValidFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-agent-governance-"));
   const content = {
-    "AGENTS.md": "apps/web scripts documentation fichiers scoped",
+    "AGENTS.md": "apps/web scripts documentation fichiers scoped HEAD == origin/main WORKTREE_BASE_DIVERGED",
     "apps/web/AGENTS.md": "Next.js Server/Client Leaflet",
     "apps/web/src/app/api/AGENTS.md": "AuthN AuthZ contrat de réponse propre",
     "apps/web/supabase/AGENTS.md": "apps/web/supabase/migrations/ unique RLS",
     "apps/web/scripts/AGENTS.md": "dry-run --apply provenance",
     "apps/mobile/AGENTS.md": "ClerkProvider Third-Party Auth `sub` Clerk distance_m",
-    "scripts/AGENTS.md": "audit cleanup provenance",
+    "scripts/AGENTS.md": "audit cleanup provenance HEAD == origin/main WORKTREE_BASE_DIVERGED",
     ".github/AGENTS.md": "permissions CodeQL check:github-actions",
     "maintenance/python/AGENTS.md": "hors du requirements pytest",
     "documentation/AGENTS.md": "état actuel historique public",

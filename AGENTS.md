@@ -66,6 +66,11 @@ intermédiaires ne doivent pas commencer par ce canari.
   produit des modifications doit se terminer par un commit ciblé sur `main`
   puis un push vers `origin/main` ; aucune modification ne justifie un commit
   artificiel ;
+- un `worktree dirty` et une divergence de branche sont deux états distincts :
+  les changements dirty parallèles restent autorisés, mais avant tout nouveau
+  chantier mutable il faut exécuter `git fetch origin main` puis vérifier
+  `HEAD == origin/main` ; sinon signaler `CHECKOUT_DIVERGENCE`, ne pas ouvrir
+  de nouveau chantier mutable et demander une réconciliation dédiée ;
 - à chaque fin d'exécution ayant produit des modifications, clôturer
   immédiatement le lot : vérifier son allowlist, committer uniquement ses
   fichiers, puis pousser ce commit vers `origin/main` avant toute nouvelle
@@ -169,8 +174,17 @@ intermédiaires ne doivent pas commencer par ce canari.
   avance indépendante de `main` ; ne jamais force-push ni réécrire l'historique ;
 - avant le push, vérifier le diff exact du périmètre logique, les validations
   pertinentes, `git diff --cached --name-only` et l'ascendance réellement
-  destinée au push ; après création du commit local, ne pas exiger l'égalité
-  littérale `HEAD == origin/main` ;
+  destinée au push ; une `publication-candidate` réussie ne clôt pas le lot si
+  le checkout principal reste divergent ;
+- après tout push réussi, refaire `git fetch origin main`, puis vérifier
+  `git rev-list --left-right --count HEAD...origin/main` ; un verdict
+  `terminé` exige le résultat `0 0` et doit signaler
+  `CHECKOUT_DIVERGENCE` dans tout autre cas ; ne jamais résoudre cette
+  divergence automatiquement par merge, rebase, reset destructif, stash ou
+  clean lorsqu'il existe des changements parallèles. Pour la seule validation
+  d'une candidate avant le push, ne pas exiger l'égalité littérale
+  `HEAD == origin/main` ; l'exigence de convergence s'applique au démarrage
+  d'un nouveau chantier et à la clôture après publication ;
 - si le push échoue, conserver le commit local et signaler explicitement le
   blocage ; ne jamais contourner les protections par un force push ;
 - lorsqu'une vérification effective du site web est demandée, comparer le
@@ -210,6 +224,10 @@ ci-dessus.
   allowlist avec `workspace:claim`, puis consulte `workspace:status` ou
   `workspace:stale` ; les chemins sont relatifs au dépôt et protégés contre la
   traversée ;
+- `workspace:start` fait `git fetch origin main`, refuse de créer un run mutable
+  si `HEAD != origin/main` et lève `WORKTREE_BASE_DIVERGED` avec les deux SHA ;
+  un worktree dirty seul n'est pas un refus ; lorsque les SHA sont égaux, le
+  SHA commun devient le `baseSha` du run ;
 - le domaine `AUTHZ_SECURITY` est exclusif : aucun autre run ne peut le
   revendiquer en parallèle ; les autres collisions de fichiers sont également
   bloquantes et immédiates ; un verrou obsolète est signalé par `doctor`, jamais

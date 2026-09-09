@@ -256,15 +256,22 @@ export function createWorkspaceCoordinator({
     return migration;
   }
 
-  function start({ runId, domain, baseSha } = {}) {
+  function start({ runId, domain } = {}) {
     assertSafeSegment(runId, "run id");
     assertSafeSegment(domain, "domain");
-    const resolvedBaseSha = baseSha ?? runGit(["rev-parse", "origin/main"]);
+    runGit(["fetch", "origin", "main"]);
+    const headSha = runGit(["rev-parse", "HEAD"]);
+    const originMainSha = runGit(["rev-parse", "origin/main"]);
+    if (headSha !== originMainSha) {
+      throw new Error(
+        `WORKTREE_BASE_DIVERGED: HEAD=${headSha} origin/main=${originMainSha}`,
+      );
+    }
     const run = {
       version: 2,
       runId,
       domain,
-      baseSha: resolvedBaseSha,
+      baseSha: originMainSha,
       startedAt: timestamp(),
       updatedAt: timestamp(),
       heartbeatAt: timestamp(),
@@ -628,7 +635,7 @@ function main() {
   const coordinator = createWorkspaceCoordinator({ repositoryRoot: process.cwd() });
   let result;
   if (command === "init") result = coordinator.init();
-  else if (command === "start") result = coordinator.start({ runId: options.run_id, domain: options.domain, baseSha: options.base_sha });
+  else if (command === "start") result = coordinator.start({ runId: options.run_id, domain: options.domain });
   else if (command === "claim") result = coordinator.claim({ runId: options.run_id, paths: options.paths, adoptLegacy: options.adoptLegacy });
   else if (command === "unclaim") result = coordinator.unclaim({ runId: options.run_id, paths: options.paths, returnLegacy: options.returnLegacy });
   else if (command === "status") result = coordinator.status({ runId: options.run_id });

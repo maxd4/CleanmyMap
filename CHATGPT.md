@@ -546,6 +546,12 @@ Ne pas supprimer une compatibilité encore consommée uniquement pour « nettoye
 
 Un checkout local dirty est normal dans CleanMyMap.
 
+Le dirty worktree ne doit pas être confondu avec une divergence de branche.
+Avant tout nouveau chantier mutable, Codex doit faire `git fetch origin main`
+et vérifier `HEAD == origin/main`. Une divergence doit être signalée comme
+`CHECKOUT_DIVERGENCE` et réconciliée dans un lot dédié ; elle ne doit pas être
+résolue automatiquement par merge, rebase, reset destructif, stash ou clean.
+
 Les modifications `staged`, `unstaged` ou `untracked` étrangères au chantier courant :
 
 - ne bloquent pas automatiquement le lot ;
@@ -605,6 +611,12 @@ Codex stage uniquement l'allowlist du lot, vérifie le nom des fichiers staged e
 peut publier normalement malgré des changements dirty étrangers. Avant tout
 push, il vérifie l'ascendance de `HEAD` : un commit local étranger qui serait
 embarqué est un blocage explicite, pas une publication silencieuse.
+
+Une publication distante réussie et un checkout local réconcilié sont deux
+preuves différentes. Après un push, Codex doit refaire le fetch et vérifier
+`git rev-list --left-right --count HEAD...origin/main`. Le résultat doit être
+`0 0` pour considérer le chantier entièrement clos ; une
+`publication-candidate` ne masque pas un checkout divergent.
 
 Pour coordonner plusieurs chantiers dans le checkout partagé, utiliser le
 coordinateur local `workspace:init`, `workspace:start`, `workspace:claim` et
