@@ -10,7 +10,6 @@ import {
 } from "@/lib/geo/volunteer-additionality";
 import type { VolunteerAdditionalityResult, VolunteerSafetyAssessment } from "@/lib/geo/volunteer-additionality-contract";
 import type { TrashSpotterActionableCandidate } from "@/lib/actions/trash-spotter-actionable-candidates";
-import type { RouteObservedEvidence, RoutePredictedEvidence } from "./route-predicted-targets";
 
 export const ROUTE_PLANNER_ADDITIONALITY_WEIGHT = 0.25;
 export const ROUTE_PLANNER_ADDITIONALITY_MODEL_VERSION =
@@ -191,9 +190,20 @@ export function observedCandidateContribution(input: {
   };
 }
 
-export function evidenceWithContribution<
-  T extends RouteObservedEvidence | RoutePredictedEvidence,
->(evidence: T, contribution: RoutePlannerContribution): T {
+type EvidenceWithContributionFields = Pick<
+  RoutePlannerContribution,
+  | "pollutionPriority"
+  | "volunteerAdditionality"
+  | "finalPlannerContribution"
+  | "volunteerAdditionalityConfidence"
+  | "additionalityWeight"
+  | "additionality"
+>;
+
+export function evidenceWithContribution<T extends object>(
+  evidence: T,
+  contribution: RoutePlannerContribution,
+): T & EvidenceWithContributionFields {
   return {
     ...evidence,
     pollutionPriority: contribution.pollutionPriority,
@@ -202,5 +212,5 @@ export function evidenceWithContribution<
     volunteerAdditionalityConfidence: contribution.volunteerAdditionalityConfidence,
     additionalityWeight: contribution.additionalityWeight,
     ...(contribution.additionality ? { additionality: contribution.additionality } : {}),
-  } as T;
+  } as T & EvidenceWithContributionFields;
 }

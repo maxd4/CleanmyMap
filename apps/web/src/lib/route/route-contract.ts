@@ -41,6 +41,8 @@ export type RouteGeometry = {
   estimated: boolean;
 };
 
+import type { RouteTargetEvidence } from "./route-target-contract";
+
 export type RouteStop = {
   id: string;
   label: string;
@@ -50,7 +52,7 @@ export type RouteStop = {
   estimatedMinutes: number;
   priorityReason: string;
   score: number;
-  evidence?: import("./route-predicted-targets").RouteTargetEvidence;
+  evidence?: RouteTargetEvidence;
 };
 
 /** Applies provider legs without ever changing the stop count or order. */
