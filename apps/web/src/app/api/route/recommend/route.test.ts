@@ -342,8 +342,10 @@ describe("POST /api/route/recommend", () => {
 
     expect(wastePayload.prediction.riskFocus).toBe("waste");
     expect(wastePayload.trace.prediction.riskFocus).toBe("waste");
+    expect(wastePayload.trace.parameters.effectiveRiskFocus).toBe("waste");
     expect(cigarettePayload.prediction.riskFocus).toBe("cigaretteButts");
     expect(cigarettePayload.trace.prediction.riskFocus).toBe("cigaretteButts");
+    expect(cigarettePayload.trace.parameters.effectiveRiskFocus).toBe("cigaretteButts");
     expect(buildPredictedRouteCandidatesMock).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({ riskFocus: "waste" }),

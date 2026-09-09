@@ -200,6 +200,7 @@ export function buildRouteRecommendationResponse(input: {
     eventSignalContext: candidateData.routeEventSignalContext ?? EMPTY_ROUTE_EVENT_SIGNAL_CONTEXT,
     eventCenteredContext: planning.eventCenteredContext,
     predictionSummary,
+    effectiveRiskFocus: planning.effectiveRiskFocus,
     finalRoutingReconciliation: planning.finalRoutingReconciliation,
     volunteers,
     groupCount,

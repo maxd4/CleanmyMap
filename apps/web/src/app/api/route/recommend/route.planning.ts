@@ -48,6 +48,8 @@ import type { RoutePickupPreference } from "@/lib/route/route-response-contract"
 export type RoutePlanningResult = {
   plannerResult: RoutePlannerResult;
   predictionSummary: ReturnType<typeof applyRoutePredictionPoolAudit>;
+  /** The single predictive branch used by this planning run. */
+  effectiveRiskFocus: RouteRiskFocus;
   plannedStops: RoutePlannerResult["stops"];
   routeGeometry: RouteGeometry;
   eventCenteredContext: RouteEventCenteredContext | null;
@@ -350,6 +352,7 @@ export async function planRouteRecommendation(input: {
   return {
     plannerResult,
     predictionSummary,
+    effectiveRiskFocus,
     plannedStops,
     routeGeometry,
     eventCenteredContext,

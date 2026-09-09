@@ -24,6 +24,7 @@ import type { ParisPressureSnapshot } from "@/lib/geo/paris-pressure-contract";
 import type {
   RoutePredictionSummary,
   RouteTargetEvidence,
+  RouteRiskFocus,
 } from "./route-predicted-targets";
 import type { VolunteerAdditionalityResult } from "@/lib/geo/volunteer-additionality-contract";
 import type { RoutePickupPreference } from "./route-response-contract";
@@ -134,6 +135,7 @@ export type RouteRecommendationTrace = {
     maxStops: number;
     priorityVsTravel: number;
     pickupPreference: RoutePickupPreference;
+    effectiveRiskFocus: RouteRiskFocus;
     volunteers?: number;
     groupCount?: number;
   };
@@ -219,6 +221,7 @@ export type BuildRouteRecommendationTraceInput = {
   maxStops: number;
   priorityVsTravel: number;
   pickupPreference?: RoutePickupPreference;
+  effectiveRiskFocus?: RouteRiskFocus;
   candidateSummary: RouteTraceCandidateSummary;
   plannerResult: RoutePlannerResult;
   selectedStops: PlannedRouteStop[];
@@ -493,6 +496,8 @@ export function buildRouteRecommendationTrace(
       maxStops: input.maxStops,
       priorityVsTravel: input.priorityVsTravel,
       pickupPreference: input.pickupPreference ?? "balanced",
+      effectiveRiskFocus:
+        input.effectiveRiskFocus ?? input.predictionSummary?.riskFocus ?? "all",
       ...(input.volunteers !== undefined ? { volunteers: input.volunteers } : {}),
       ...(input.groupCount !== undefined ? { groupCount: input.groupCount } : {}),
     },

@@ -220,6 +220,7 @@ function responseInput(overrides: Record<string, unknown> = {}) {
       routeGeometry: routeGeometry(),
       plannerResult: plannerResult(),
       predictionSummary: predictionSummary(),
+      effectiveRiskFocus: "all",
       eventCenteredContext: null,
       budgetPrefixApplied: false,
       groupPartition: groupPartition(),
@@ -339,6 +340,7 @@ describe("route recommendation response trace contract", () => {
 
     expect(payload.constraintsApplied).toEqual({ pickupPreference: "waste" });
     expect(payload.trace.parameters.pickupPreference).toBe("waste");
+    expect(payload.trace.parameters.effectiveRiskFocus).toBe("all");
   });
 
   it("keeps prediction evidence distinct from observed evidence", async () => {
