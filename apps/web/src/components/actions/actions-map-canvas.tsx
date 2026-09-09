@@ -34,13 +34,9 @@ import {
 import {
   createActionsMapViewport,
   getActionsMapCenter,
-  HOMEPAGE_MAP_BOUNDS,
-  HOMEPAGE_MAP_CENTER,
-  HOMEPAGE_MAP_FRANCE_BOUNDS,
-  HOMEPAGE_MAP_INITIAL_ZOOM,
-  HOMEPAGE_MAP_MIN_ZOOM,
 } from "./actions-map-canvas.utils";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
+import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
 import type { ActionsMapPresentation } from "./map-feed/map-feed.types";
 import {
   DEFAULT_VISIBLE_MAP_LAYERS,
@@ -131,20 +127,6 @@ function MapViewportSync({
   return null;
 }
 
-function HomepageFranceViewport() {
-  const map = useMap();
-
-  useEffect(() => {
-    map.fitBounds(HOMEPAGE_MAP_FRANCE_BOUNDS, {
-      padding: [18, 18],
-      maxZoom: 6.5,
-      animate: false,
-    });
-  }, [map]);
-
-  return null;
-}
-
 export function ActionsMapCanvas({
   items,
   selectedActionId = null,
@@ -166,12 +148,8 @@ export function ActionsMapCanvas({
   const isHomepagePreview = presentation === "homepage-preview";
   const isMinimalPreview = compact || isHomepagePreview;
   const center = useMemo(() => getActionsMapCenter(items), [items]);
-  const mapCenter = isHomepagePreview
-    ? HOMEPAGE_MAP_CENTER
-    : initialViewport?.center ?? center;
-  const mapZoom = isHomepagePreview
-    ? HOMEPAGE_MAP_INITIAL_ZOOM
-    : initialViewport?.zoom ?? (compact ? 11 : 12);
+  const mapCenter = initialViewport?.center ?? center;
+  const mapZoom = initialViewport?.zoom ?? (compact ? 11 : 12);
   const logicalRecenterViewport =
     recenterViewport ??
     initialViewport ??
@@ -290,14 +268,7 @@ export function ActionsMapCanvas({
       <MapContainer
         center={mapCenter}
         zoom={mapZoom}
-        minZoom={isHomepagePreview ? HOMEPAGE_MAP_MIN_ZOOM : undefined}
-        maxBounds={isHomepagePreview ? HOMEPAGE_MAP_BOUNDS : undefined}
-        maxBoundsViscosity={isHomepagePreview ? 0.72 : undefined}
         scrollWheelZoom
-        wheelPxPerZoomLevel={isHomepagePreview ? 360 : 120}
-        wheelDebounceTime={isHomepagePreview ? 80 : undefined}
-        zoomDelta={isHomepagePreview ? 0.5 : undefined}
-        zoomSnap={isHomepagePreview ? 0.5 : undefined}
         zoomControl={!isHomepagePreview}
         className={
           isMinimalPreview
@@ -315,7 +286,6 @@ export function ActionsMapCanvas({
           viewportRequest={viewportRequest}
           viewportRequestKey={viewportRequestKey}
         />
-        {isHomepagePreview ? <HomepageFranceViewport /> : null}
         <MapViewportReporter
           onViewportChange={onViewportChange}
           onViewportInteraction={onViewportInteraction}
@@ -330,23 +300,23 @@ export function ActionsMapCanvas({
         )}
         {isMinimalPreview ? (
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
-            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            attribution={CARTO_BASEMAPS.light.attribution}
+            url={CARTO_BASEMAPS.light.url}
             crossOrigin="anonymous"
           />
         ) : (
           <LayersControl position="topright">
             <LayersControl.BaseLayer checked name="Plan clair">
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                attribution={CARTO_BASEMAPS.light.attribution}
+                url={CARTO_BASEMAPS.light.url}
                 crossOrigin="anonymous"
               />
             </LayersControl.BaseLayer>
             <LayersControl.BaseLayer name="Plan contrasté">
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                attribution={CARTO_BASEMAPS.dark.attribution}
+                url={CARTO_BASEMAPS.dark.url}
                 crossOrigin="anonymous"
               />
             </LayersControl.BaseLayer>

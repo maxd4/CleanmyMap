@@ -13,6 +13,7 @@ import { logFailure } from "@/lib/logging/failure-log";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
+import { HOMEPAGE_MAP_VIEWPORT } from "@/components/actions/actions-map-canvas.utils";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import { useActionsMapViewport } from "./use-actions-map-viewport";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
@@ -114,12 +115,12 @@ export function ActionsMapFeedContent({
             compact
             presentation="homepage-preview"
             tone="emerald"
-            initialViewport={null}
-            viewportRequest={null}
-            viewportRequestKey={0}
-            recenterViewport={null}
-            onViewportChange={undefined}
-            onViewportInteraction={undefined}
+            initialViewport={initialViewport}
+            viewportRequest={viewportRequest}
+            viewportRequestKey={viewportRequestKey}
+            recenterViewport={recenterViewport}
+            onViewportChange={onViewportChange}
+            onViewportInteraction={onViewportInteraction}
           />
         ) : (
           <div className="h-full min-h-[18rem] w-full" aria-hidden="true" />
@@ -244,7 +245,15 @@ export function ActionsMapFeed({
     recenterViewport,
     handleManualViewportInteraction,
     handleViewportChange,
-  } = useActionsMapViewport(onViewportChange);
+  } = useActionsMapViewport(
+    onViewportChange,
+    presentation === "homepage-preview"
+      ? {
+          fallbackViewport: HOMEPAGE_MAP_VIEWPORT,
+          useRemoteFallback: false,
+        }
+      : undefined,
+  );
 
   const feedData = useMapFeedData({
     types,
@@ -256,7 +265,7 @@ export function ActionsMapFeed({
     zoneQuery,
     visibleCategories,
     limit,
-    viewport: presentation === "homepage-preview" ? null : mapViewport,
+    viewport: mapViewport,
   });
 
   return (

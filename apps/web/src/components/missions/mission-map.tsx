@@ -7,6 +7,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { renderToStaticMarkup } from "react-dom/server";
 import { AlertTriangle, Camera, CheckCircle2, FileText, MapPin, Trash2 } from "lucide-react";
+import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
 
 type Point = {
   latitude: number;
@@ -102,8 +103,8 @@ export function MissionMap({ points, actions = [] }: MissionMapProps) {
         scrollWheelZoom={false}
       >
         <TileLayer
-          attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          attribution={CARTO_BASEMAPS.voyager.attribution}
+          url={CARTO_BASEMAPS.voyager.url}
         />
 
         <Polyline positions={positions} color="#10b981" weight={6} opacity={0.6} />

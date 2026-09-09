@@ -4,7 +4,7 @@ import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
 
 export function HomeMapPreview() {
   const edgeMask =
-    "linear-gradient(to right, transparent 0%, #000 8%, #000 92%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%)";
+    "linear-gradient(to right, transparent 0%, #000 3.5%, #000 96.5%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 3.5%, #000 96.5%, transparent 100%)";
 
   return (
     <div
@@ -33,10 +33,6 @@ export function HomeMapPreview() {
           limit={120}
         />
       </div>
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-20 bg-[linear-gradient(to_right,rgba(10,147,107,0.34),transparent_10%,transparent_90%,rgba(10,147,107,0.34)),linear-gradient(to_bottom,rgba(10,147,107,0.28),transparent_14%,transparent_86%,rgba(10,147,107,0.28))]"
-      />
     </div>
   );
 }
