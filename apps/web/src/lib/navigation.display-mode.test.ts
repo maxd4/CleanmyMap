@@ -137,6 +137,10 @@ describe("navigation display modes", () => {
   });
 
   it("keeps the home block focused on entry and decision pages", () => {
+    const benevoleHomeSpace = getNavigationSpacesForProfile(
+      "benevole",
+      "exhaustif",
+    ).find((space) => space.id === "home");
     const adminHomeSpace = getNavigationSpacesForProfile(
       "admin",
       "exhaustif",
@@ -146,6 +150,10 @@ describe("navigation display modes", () => {
       "exhaustif",
     ).find((space) => space.id === "home");
 
+    expect(benevoleHomeSpace?.items.map((item) => item.routeId)).toEqual([
+      "dashboard",
+      "explorer",
+    ]);
     expect(adminHomeSpace?.items.map((item) => item.routeId)).toEqual([
       "dashboard",
       "explorer",
