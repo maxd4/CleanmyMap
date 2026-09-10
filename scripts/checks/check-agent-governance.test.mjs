@@ -11,13 +11,13 @@ import { canonicalAgentFiles, validateAgentGovernance } from "./check-agent-gove
 function createValidFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-agent-governance-"));
   const content = {
-    "AGENTS.md": "apps/web scripts documentation fichiers scoped HEAD == origin/main ahead-only PUBLICATION_PENDING UNPUBLISHED_PATH_CONFLICT WORKTREE_BASE_DIVERGED",
+    "AGENTS.md": "apps/web scripts documentation fichiers scoped workspace:start codex/<run-id> git-common-dir/cleanmymap-workspace intendedPaths AUTHZ_SECURITY claims advisory publication-integrate publication-complete",
     "apps/web/AGENTS.md": "Next.js Server/Client Leaflet",
     "apps/web/src/app/api/AGENTS.md": "AuthN AuthZ contrat de réponse propre",
     "apps/web/supabase/AGENTS.md": "apps/web/supabase/migrations/ unique RLS",
     "apps/web/scripts/AGENTS.md": "dry-run --apply provenance",
     "apps/mobile/AGENTS.md": "ClerkProvider Third-Party Auth `sub` Clerk distance_m",
-    "scripts/AGENTS.md": "audit cleanup provenance HEAD == origin/main WORKTREE_BASE_DIVERGED",
+    "scripts/AGENTS.md": "audit cleanup provenance workspace:start codex/<run-id> git-common-dir/cleanmymap-workspace intendedPaths advisory AUTHZ_SECURITY publication-integrate",
     ".github/AGENTS.md": "permissions CodeQL check:github-actions",
     "maintenance/python/AGENTS.md": "hors du requirements pytest",
     "documentation/AGENTS.md": "état actuel historique public",
@@ -50,6 +50,52 @@ describe("AGENTS hierarchy governance", () => {
       const result = runCheck(script, fixture);
       assert.equal(result.status, 0);
       assert.match(result.output, /10 canonical files/);
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts the current worktree-per-run doctrine", () => {
+    const fixture = createValidFixture();
+    try {
+      assert.deepEqual(validateAgentGovernance(fixture), []);
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects legacy coordination rules when they appear outside migration sections", () => {
+    const cases = [
+      "UNPUBLISHED_PATH_CONFLICT",
+      "ORPHAN_DIRTY",
+      "HEAD == origin/main",
+      "WORKTREE_BRANCH_INVALID",
+      "interdit les worktrees liés",
+    ];
+
+    for (const legacyRule of cases) {
+      const fixture = createValidFixture();
+      fs.appendFileSync(path.join(fixture, "AGENTS.md"), `\n${legacyRule}\n`);
+      try {
+        const findings = validateAgentGovernance(fixture);
+        assert.ok(
+          findings.some((finding) => finding.includes("current doctrine contradicts worktree-per-run")),
+          `expected a semantic contradiction for ${legacyRule}`,
+        );
+      } finally {
+        fs.rmSync(fixture, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("allows legacy terminology in a clearly labeled migration section", () => {
+    const fixture = createValidFixture();
+    fs.appendFileSync(
+      path.join(fixture, "AGENTS.md"),
+      "\n### Migration / legacy\n\nUNPUBLISHED_PATH_CONFLICT ORPHAN_DIRTY HEAD == origin/main LEGACY_UNOWNED\n",
+    );
+    try {
+      assert.deepEqual(validateAgentGovernance(fixture), []);
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }

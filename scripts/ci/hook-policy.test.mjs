@@ -128,8 +128,9 @@ test("governance keeps parallel dirty work separate from published commits", asy
   assert.match(rootAgents, /WORKTREE/);
   assert.match(rootAgents, /STAGED/);
   assert.match(rootAgents, /PUSH_CANDIDATE/);
-  assert.match(rootAgents, /sandbox de publication éphémère/);
-  assert.match(rootAgents, /ne pas exiger l'égalité\s+littérale `HEAD == origin\/main`/);
+  assert.match(rootAgents, /worktree lié créé et géré par le coordinateur/);
+  assert.match(rootAgents, /workspace:publication-integrate/);
+  assert.doesNotMatch(rootAgents, /ne pas exiger l'égalité\s+littérale `HEAD == origin\/main`/);
   assert.match(chatgpt, /ne doit pas recommander d'attendre un chantier parallèle indépendant/);
   assert.match(scriptsAgents, /pré-commit doit utiliser exclusivement la portée `STAGED`/);
   assert.match(scriptsAgents, /pré-push réel doit utiliser exclusivement la portée\s+`PUSH_CANDIDATE`/);
