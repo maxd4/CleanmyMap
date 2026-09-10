@@ -33,6 +33,16 @@ const refContainsLegacyAiGuides = (() => {
   }
 })();
 
+const refContainsLegacyCoordinatorDoctrine = (() => {
+  try {
+    const content = execFileSync("git", ["show", `${ref}:AGENTS.md`], { encoding: "utf8" });
+    return content.includes("le checkout de travail reste directement sur `main`") ||
+      content.includes("UNPUBLISHED_PATH_CONFLICT");
+  } catch {
+    return true;
+  }
+})();
+
 // The migration deliberately removes the governance exception for this domain.
 // Keep the compatibility sweep from treating the still-published pre-migration
 // base ref as a current candidate; pre-push validates documentation governance
@@ -42,7 +52,8 @@ const compatibleChecks = checks.filter(
     !(
       refContainsLegacyAiGuides &&
       script.endsWith("check-documentation-governance.mjs")
-    ),
+    ) &&
+    !(script.endsWith("check-agent-governance.mjs") && refContainsLegacyCoordinatorDoctrine),
 );
 
 function runStaticChecker(script) {

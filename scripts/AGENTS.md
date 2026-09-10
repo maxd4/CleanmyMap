@@ -15,90 +15,43 @@ médias et rapports présents sous `scripts/`.
 
 ## Coordinateur local des chantiers
 
-### Migration vers les worktrees liés
+### Modèle worktree courant
 
-Le checkout `main` est une référence/bootstrap ; chaque nouveau run possède
-une branche `codex/<run-id>` et un worktree lié sous
-`<parent>/CleanMyMap-worktrees/<run-id>/`. Les métadonnées, claims advisory et
-le mutex global sont stockés sous
+Le checkout `main` est une référence/bootstrap. `workspace:start` fait un
+fetch puis crée une branche `codex/<run-id>` et un worktree lié sous
+`<parent>/CleanMyMap-worktrees/<run-id>/`, avec un index et un staging isolés.
+Les métadonnées et le mutex global sont stockés sous
 `git rev-parse --git-common-dir/cleanmymap-workspace`. Le champ canonique est
-`intendedPaths`; `ownedPaths` reste une lecture de compatibilité uniquement.
-Les chevauchements ordinaires sont permis, tandis que `AUTHZ_SECURITY` reste
-exclusif. `.artifacts/coordination` est seulement signalé comme
-`LEGACY_COORDINATION_STATE` et n'est jamais écrit.
+`intendedPaths`; les claims ordinaires sont advisory et les chevauchements non
+critiques sont permis. `AUTHZ_SECURITY` reste la seule scope exclusive.
 
-La reprise recharge le même run, sa branche, son worktree et sa publication.
-La publication intègre depuis un worktree éphémère
-`<parent>/CleanMyMap-worktrees/.publish/<run-id>/` avec `publish/<run-id>` ;
-les fast-forwards sont conservés et tout nouveau merge est signé. Un conflit
-Git devient `INTEGRATION_CONFLICT`. Après convergence, seuls les worktrees et
-branches du run sont nettoyés.
+`workspace-coordination.mjs` ne coordonne que des intentions d'écriture
+futures et ne lit pas le contenu des fichiers pour décider l'ownership. Après
+`workspace:claim`, le run travaille dans son worktree ; avant le staging il
+obtient `workspace:publication-acquire`, qui prend le mutex global, refait le
+fetch et vérifie les `intendedPaths` depuis le `baseSha`.
 
-`workspace-coordination.mjs` conserve uniquement des métadonnées runtime sous
-`git rev-parse --git-common-dir/cleanmymap-workspace/`. Un `claim` représente exclusivement une intention
-d'écriture future : un fichier dirty, staged ou simplement présent dans
-`LEGACY_UNOWNED` ne constitue jamais une preuve d'ownership et ne doit pas
-être adopté par un run qui ne prévoit pas de le modifier. La lecture seule
-reste donc dans `LEGACY_UNOWNED`.
+`workspace:resume -- --run-id <RUN_ID>` reprend le même run après interruption.
+`workspace:publication-integrate` intègre le dernier `origin/main` depuis un
+worktree de publication sous `<parent>/CleanMyMap-worktrees/.publish/<run-id>/`
+et conserve le fast-forward lorsque possible ; tout nouveau merge est signé.
+Un conflit Git devient `INTEGRATION_CONFLICT`.
 
-Une adoption explicite d'un futur chemin d'écriture est suivie dans les
-métadonnées du run via `adoptedLegacyPaths`. Si cette intention est abandonnée,
-`unclaim --run-id <RUN_ID> [--return-legacy] -- <paths>` retire uniquement les
-chemins effectivement possédés par ce run ; il refuse les locks étrangers et
-les chemins staged sous publication. `--return-legacy` enregistre d'abord le
-retour dans `LEGACY_UNOWNED`. Lors du `release`, un chemin adopté encore dirty
-est conservativement rendu au legacy avant la suppression de son lock. Aucun
-de ces mécanismes ne modifie le fichier, l'index ou `HEAD`.
+`workspace:publication-complete` est l'unique preuve de publication terminée :
+le coordinateur refait le fetch et vérifie la convergence de la branche
+publiée avec `origin/main`, puis libère le mutex. `workspace:release` retire
+uniquement la branche, le worktree et les métadonnées du run.
 
-Le `publication.lock` reste un mutex global, mais son acquisition attend un
-publisher concurrent avec un backoff et un timeout bornés. Cette attente est
-distincte d'un conflit réel de chemin, de scope critique ou de staged étranger.
-Les runs et le lock portent un heartbeat ; une récupération n'est autorisée
-que pour une lease expirée, avec preuve qu'aucun chemin staged du propriétaire
-ne serait mis en danger.
+### Migration / legacy
 
-`workspace:start` commence par `git fetch origin main`, lit `HEAD` et
-la branche courante. Toute branche autre que `main`, y compris un detached
-HEAD, lève `WORKTREE_BRANCH_INVALID`. Un `HEAD == origin/main` autorise le
-démarrage ; un checkout `ahead-only` autorise également le démarrage, marque
-`PUBLICATION_PENDING` et conserve les chemins de
-`git diff --name-only origin/main..HEAD`. Les chemins revendiqués par ce run
-doivent être disjoints de ces commits non publiés, sinon
-`UNPUBLISHED_PATH_CONFLICT`. Un checkout behind ou réellement divergent lève
-`WORKTREE_BASE_DIVERGED`. Cette politique de démarrage ne doit pas exiger
-l'égalité littérale `HEAD == origin/main` ; cette égalité reste obligatoire
-avant toute publication. Le SHA de `origin/main` est conservé comme `baseSha`.
-
-Après obtention effective de `publication.lock`, `workspace:publication-acquire`
-refait `git fetch origin main`, vérifie la branche, la convergence de `HEAD` et
-`origin/main` (`HEAD == origin/main`) pour une nouvelle publication, puis le
-stale-check des seuls chemins possédés depuis le `baseSha`. Une reprise
-réentrante du même run peut conserver un `ahead-only` cohérent classé
-`COMMITTED_PENDING`; toute autre modification distante possédée lève
-`WORKSPACE_STALE` avec la liste des chemins et libère le mutex avant de sortir,
-et une divergence de base lève `WORKTREE_BASE_DIVERGED` avec le même nettoyage.
-Aucun staging ne doit suivre un acquire refusé.
-
-Après interruption, `workspace:resume -- --run-id <RUN_ID>` recharge uniquement
-le run existant, renouvelle son heartbeat et classe `WORK`, `STAGED_PENDING`,
-`COMMITTED_PENDING` ou `PUSHED_PENDING_COMPLETE` par lecture des refs, des
-staged et des ownerships. En `ahead-only`, il doit retrouver le run dont le
-candidat appartient sans ambiguïté à l'allowlist avant toute reprise. Il
-refuse `PUBLICATION_RESUME_FOREIGN_COMMIT`, `PUBLICATION_RESUME_STALE`,
-`PUBLICATION_RESUME_AMBIGUOUS` ou `PUBLICATION_RESUME_FOREIGN_STAGED` et ne
-modifie jamais l'historique Git. `publication-acquire` est réentrant pour son
-propre run et ne permet pas à un autre run d'adopter une publication expirée.
-
-`workspace:publication-complete` est l'unique preuve de clôture d'une
-publication : le run doit posséder le mutex, refaire les contrôles de branche et
-de fetch, puis obtenir `git rev-list --left-right --count HEAD...origin/main =
-0 0`. La preuve est inscrite dans le run avant la libération du mutex ; un run
-marqué comme publication en attente ne peut pas être fermé par `workspace:release`.
-
-`workspace:claim` refuse avec `ORPHAN_DIRTY` un chemin dirty qui n'est ni
-`LEGACY_UNOWNED`, ni déjà possédé par le run. L'adoption doit être explicite via
-`--adopt-legacy`; le coordinateur ne lit jamais le contenu des fichiers pour
-décider l'ownership.
+`workspace:init` reste read-only. `.artifacts/coordination` est seulement lu
+comme `LEGACY_COORDINATION_STATE`; l'ancien champ `ownedPaths`,
+`LEGACY_UNOWNED` et les locks de chemins sont des compatibilités historiques.
+Les erreurs historiques `WORKTREE_BRANCH_INVALID`,
+`UNPUBLISHED_PATH_CONFLICT`, `COORDINATION_CONFLICT`, `ORPHAN_DIRTY` et
+`PUBLICATION_PENDING` ne décrivent pas le modèle courant. Toute adoption d'un
+état historique doit être explicite et ne peut pas modifier silencieusement
+un fichier, l'index ou l'historique Git.
 
 ## Portée Git des contrôles
 
