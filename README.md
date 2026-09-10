@@ -1,60 +1,102 @@
 # CleanMyMap
 
 <p align="center">
-  <img src="apps/web/src/app/favicon.ico" alt="CleanMyMap" width="180" />
+  <img src="./apps/web/public/brand/logo-cleanmymap-officiel.svg" alt="CleanMyMap — plateforme citoyenne de dépollution" width="640" />
 </p>
 
 <p align="center">
-  <strong>Plateforme citoyenne pour déclarer, visualiser et exporter des actions de dépollution.</strong>
+  <strong>Agir localement. Mesurer collectivement.</strong>
 </p>
 
 <p align="center">
-  <a href="https://cleanmymap.vercel.app">Démo</a> ·
-  <a href="https://github.com/maxd4/CleanMyMap/issues">Issues</a> ·
-  <a href="./documentation/README.md">Documentation</a> ·
-  <a href="https://cleanmymap.fr/mentions-legales">Mentions légales</a>
+  Une plateforme civic-tech pour repérer, organiser, réaliser, mesurer et partager des actions citoyennes de dépollution.
 </p>
 
 <p align="center">
+  <a href="https://cleanmymap.fr">Voir CleanMyMap</a> ·
+  <a href="https://cleanmymap.fr/actions/map">Explorer la carte</a> ·
+  <a href="./documentation/README.md">Documentation</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/maxd4/CleanMyMap/actions/workflows/ci.yml"><img src="https://github.com/maxd4/CleanMyMap/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
+  <a href="https://github.com/maxd4/CleanMyMap/actions/workflows/codeql.yml"><img src="https://github.com/maxd4/CleanMyMap/actions/workflows/codeql.yml/badge.svg?branch=main" alt="CodeQL Analysis" /></a>
   <img src="https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs" alt="Next.js 16" />
   <img src="https://img.shields.io/badge/TypeScript-7-blue?logo=typescript" alt="TypeScript 7" />
-  <img src="https://img.shields.io/badge/Supabase-Backend-3FCF8E?logo=supabase" alt="Supabase" />
-  <img src="https://img.shields.io/badge/Clerk-Auth-6C47FF?logo=clerk" alt="Clerk" />
-  <img src="https://img.shields.io/badge/Vercel-Deploy-000000?logo=vercel" alt="Vercel" />
 </p>
 
-## En bref
+## Aperçu du produit
 
-CleanMyMap est une plateforme civic-tech centrée sur l'action terrain, la cartographie, la preuve d'impact et la coordination locale.
+<p align="center">
+  <img src="./apps/web/public/homepage/schema-global-transparent.png" alt="Schéma fonctionnel des parcours et familles de CleanMyMap" />
+</p>
 
-Le projet permet notamment de :
+<p align="center"><em>Vue d'ensemble fonctionnelle des parcours CleanMyMap : agir, déclarer, comprendre l'impact, apprendre et rejoindre le réseau.</em></p>
 
-- préparer et déclarer des actions de dépollution ;
-- suivre les impacts et produire des rapports ;
-- explorer une carte communautaire ;
-- coordonner citoyens, associations, collectivités et partenaires ;
-- proposer des contenus pédagogiques sur les déchets et les bonnes pratiques.
+## Pourquoi CleanMyMap&nbsp;?
 
-## Stack
+Organiser une action de dépollution oblige souvent à assembler plusieurs outils séparés pour repérer un besoin, préparer une intervention, organiser les participants, coordonner le terrain, déclarer ce qui a été fait, mesurer l'impact et partager les résultats.
 
-La version exacte des dépendances est définie dans les manifestes.
+CleanMyMap rassemble ces étapes dans un même parcours local. La plateforme relie l'action terrain, la cartographie, la preuve d'impact et la coordination entre citoyens, associations, collectivités et autres acteurs du territoire.
 
-Repères actuels :
+## La boucle produit
+
+<p align="center"><strong>Repérer → Préparer → Agir → Mesurer → Partager</strong></p>
+
+Ces étapes forment une boucle continue de connaissance et d'action terrain : les observations aident à préparer les interventions, les actions produisent des éléments mesurables, puis les résultats rendent les prochaines décisions plus lisibles.
+
+## Capacités principales
+
+- **Agir** — signaler, rejoindre, préparer ou organiser une action de terrain.
+- **Cartographie & Impact** — visualiser les actions, l'état du territoire et les impacts documentés.
+- **Réseau & Discussions** — coordonner les bénévoles et les acteurs locaux.
+- **Apprendre** — comprendre les déchets et les bonnes pratiques grâce aux ressources et parcours pédagogiques.
+- **Open data & transparence** — consulter la documentation, les méthodes et les données exposées selon leurs contrats réels.
+
+Les rubriques et leurs routes canoniques sont décrites dans la [matrice produit](./documentation/product/matrice-rubriques.md) et l'[index des pages du site](./documentation/pages_site/INDEX.md).
+
+## Transparence et méthodologie
+
+CleanMyMap ne se limite pas à une interface :
+
+- la [méthodologie de la carte d'actions](./documentation/product/methodologie-carte-actions.md) décrit les lectures, projections, couleurs et limites de la carte ;
+- le [protocole scientifique](./documentation/product/SCIENTIFIC_PROTOCOL.md) distingue les mesures, estimations et conditions d'interprétation ;
+- la [gouvernance des données](./documentation/architecture/data-governance.md) documente les frontières de lecture, de persistance et de sécurité ;
+- la [documentation sécurité](./documentation/security/README.md) complète les règles d'authentification, d'autorisation et de protection des données ;
+- la section [Open data](https://cleanmymap.fr/sections/open-data) présente les données exposées par le produit selon leurs contrats ;
+- le [code du projet](https://github.com/maxd4/CleanMyMap) est consultable publiquement.
+
+## Architecture
+
+```text
+Web — Next.js / React
+├── Clerk — identité, authentification et rôles
+├── Supabase / PostgreSQL — données et persistance
+└── Vercel — déploiement web
+
+Mobile — Expo / React Native
+```
+
+Le web et le mobile sont deux applications déployables d'un même monorepo. Ils partagent les contrats métier nécessaires, Clerk et Supabase, sans constituer deux produits indépendants.
+
+## Stack détaillée
+
+Les versions exactes sont définies dans les manifestes du dépôt. Les principaux repères sont :
 
 - Next.js 16 avec App Router ;
 - React 19 ;
 - TypeScript 7 ;
 - Tailwind CSS 4 ;
-- Supabase/PostgreSQL ;
+- Supabase / PostgreSQL ;
 - Clerk ;
 - Vercel ;
-- Expo/React Native pour l'application mobile.
+- Expo / React Native pour l'application mobile.
 
 ## Structure du dépôt
 
 | Chemin | Rôle |
 | --- | --- |
-| `apps/web/` | Application Next.js de production, routes API et composants |
+| `apps/web/` | Application web Next.js, routes API et composants |
 | `apps/web/supabase/` | Configuration et migrations Supabase du workspace web |
 | `apps/mobile/` | Application mobile de suivi GPS, encore à stabiliser sur l'identité et la finalisation des missions |
 | `documentation/` | Architecture, produit, sécurité, design system, opérations et pages |
@@ -72,18 +114,18 @@ Pour tout travail ciblé sur le dépôt :
 
 Documentation principale :
 
-- `documentation/README.md`
-- `documentation/architecture/README.md`
-- `documentation/design-system/README.md`
-- `documentation/security/README.md`
-- `documentation/pages_site/INDEX.md`
-- `apps/web/README.md`
+- [`documentation/README.md`](./documentation/README.md)
+- [`documentation/architecture/README.md`](./documentation/architecture/README.md)
+- [`documentation/design-system/README.md`](./documentation/design-system/README.md)
+- [`documentation/security/README.md`](./documentation/security/README.md)
+- [`documentation/pages_site/INDEX.md`](./documentation/pages_site/INDEX.md)
+- [`apps/web/README.md`](./apps/web/README.md)
 
 ## Démarrage
 
 Pré-requis :
 
-- Node.js 24.x (contrat versionné dans `apps/web/.nvmrc`) ;
+- Node.js 24.x, selon le contrat versionné dans `apps/web/.nvmrc` ;
 - dépendances npm installées.
 
 ```bash
@@ -96,7 +138,6 @@ Le script de développement utilise le port `3000` s'il est libre, sinon il choi
 ## Commandes utiles
 
 ```bash
-npm run dev
 npm run typecheck
 npm run lint
 npm run test
@@ -140,8 +181,7 @@ La lane maintenance reste disponible à part :
 npm run checks:maintenance
 ```
 
-La correspondance entre les jobs GitHub Actions et les contrôles reproductibles
-localement est documentée dans [l'audit de reproductibilité des workflows](documentation/operations/github-governance.md#reproductibilité-locale-des-workflows).
+La correspondance entre les jobs GitHub Actions et les contrôles reproductibles localement est documentée dans [l'audit de reproductibilité des workflows](./documentation/operations/github-governance.md#reproductibilité-locale-des-workflows).
 
 Les tests E2E sont séparés car Playwright peut nécessiter l'installation locale de Chromium :
 
@@ -152,38 +192,29 @@ npm run test:e2e
 
 ## Sécurité
 
-- signalement responsable : `SECURITY.md` ;
-- documentation interne : `documentation/security/README.md` ;
-- audit secrets : `npm run security:secrets` ;
-- AuthN : Clerk ;
-- AuthZ : contrôles serveur ;
-- données : Supabase avec RLS et séparation des clients anon/service role.
+- signalement responsable : [`SECURITY.md`](./SECURITY.md) ;
+- documentation interne : [`documentation/security/README.md`](./documentation/security/README.md) ;
+- audit des secrets : `npm run security:secrets` ;
+- authentification : Clerk ;
+- autorisation : contrôles serveur ;
+- données : Supabase avec RLS et séparation des clients anon / service role.
 
-Ne jamais exposer une clé `service_role` dans un client web ou mobile.
+Une clé `service_role` ne doit jamais être exposée dans un client web ou mobile.
 
 ## Application mobile
 
 `apps/mobile/` assure le suivi GPS natif.
 
-CleanMyMap est un seul produit et un seul monorepo avec deux applications
-déployables distinctes : `apps/web` pour le web et `apps/mobile` pour le mobile.
-L'application mobile est issue de l'ancien `companion-app`, qui reste un repère
-historique et technique, mais elle ne constitue ni une copie du web ni un
-projet indépendant. Les deux applications partagent notamment Clerk,
-Supabase et les contrats métier nécessaires.
+CleanMyMap est un seul produit et un seul monorepo avec deux applications déployables distinctes : `apps/web` pour le web et `apps/mobile` pour le mobile. L'application mobile est issue de l'ancien `companion-app`, qui reste un repère historique et technique, mais elle ne constitue ni une copie du web ni un projet indépendant. Les deux applications partagent notamment Clerk, Supabase et les contrats métier nécessaires.
 
-Les contrats d'identité Clerk et de finalisation de distance sont finalisés puis
-gelés. Les limites encore ouvertes sont le renouvellement en background
-headless, `mission_actions`, la validation opérationnelle et la future évolution
-produit avant toute reprise du mobile.
+Les contrats d'identité Clerk et de finalisation de distance sont finalisés puis gelés. Les limites encore ouvertes sont le renouvellement en background headless, `mission_actions`, la validation opérationnelle et la future évolution produit avant toute reprise du mobile.
 
-Les identifiants techniques historiques restent inchangés :
-`cleanmymap-companion` et `fr.cleanmymap.companion`.
+Les identifiants techniques historiques restent inchangés : `cleanmymap-companion` et `fr.cleanmymap.companion`.
 
 Voir :
 
-- `documentation/architecture/adr/ADR-004-companion-identity.md`
-- `documentation/architecture/adr/ADR-006-supabase-migrations-source-of-truth.md`
+- [`ADR-004 — Identité companion`](./documentation/architecture/adr/ADR-004-companion-identity.md)
+- [`ADR-006 — Source de vérité des migrations Supabase`](./documentation/architecture/adr/ADR-006-supabase-migrations-source-of-truth.md)
 
 ## Cadre juridique
 
@@ -199,22 +230,17 @@ Documents publics :
 - [Politique de confidentialité](https://cleanmymap.fr/politique-confidentialite)
 - [Politique des cookies](https://cleanmymap.fr/politique-cookies)
 - [Conditions générales d'utilisation](https://cleanmymap.fr/conditions-generales-utilisation)
-- [Documentation juridique](documentation/legal/README.md)
-- [Signalement de vulnérabilité](SECURITY.md)
+- [Documentation juridique](./documentation/legal/README.md)
+- [Signalement de vulnérabilité](./SECURITY.md)
 
 ## Origine
 
 CleanMyMap a été initié et conçu par **Maxence Deroome**.
 
-Références :
-
-- `AUTHORS.md`
+Référence : [`AUTHORS.md`](./AUTHORS.md)
 
 ## Licence
 
-Le code source est publiquement consultable, mais aucune licence de
-réutilisation définitive n'est publiée à ce jour.
+Le code source est publiquement consultable, mais aucune licence de réutilisation définitive n'est publiée à ce jour.
 
-En l'absence de fichier `LICENSE`, aucune licence open source définitive ni
-aucun droit général de réutilisation n'est accordé. Aucune licence open source
-particulière ne doit être déduite.
+En l'absence de fichier `LICENSE`, aucun droit général de réutilisation n'est accordé. Aucune licence particulière ne doit être déduite.
