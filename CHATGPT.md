@@ -642,11 +642,32 @@ PUBLICATION COMPLETE
 RELEASE
 ```
 
+Après une interruption, `workspace:resume -- --run-id <RUN_ID>` recharge le
+run durable et classe `WORK`, `STAGED_PENDING`, `COMMITTED_PENDING` ou
+`PUSHED_PENDING_COMPLETE` sans modifier Git. En présence d'un checkout
+`ahead-only`, rechercher d'abord un run récupérable et reprendre ce même
+`runId`; ne jamais créer un nouveau propriétaire pour son commit. La reprise
+et `publication-acquire` vérifient exclusivement les chemins possédés, les
+staged et l'ascendance du candidat, avec refus explicite en cas de commit
+étranger, stale, ambigu ou staged étranger. Le mutex est réentrant pour son
+propre run, y compris après expiration lorsque le candidat reste cohérent.
+
 `workspace:claim` refuse `ORPHAN_DIRTY` pour un fichier dirty non legacy et non
 possédé ; `--adopt-legacy` est nécessaire pour une adoption explicite. Un run
 ayant acquis le mutex pour publier reste en attente jusqu'à
 `workspace:publication-complete` ; `workspace:release` ne peut pas contourner
 cette preuve de convergence.
+
+Le modèle courant remplace le checkout partagé comme workspace mutable :
+`workspace:start` crée une branche `codex/<run-id>` et un worktree lié sous
+`<parent>/CleanMyMap-worktrees/<run-id>/`, tandis que `main` reste une référence
+dirty préservée. Les métadonnées et le mutex sont sous le `git-common-dir`,
+dans `cleanmymap-workspace`; `.artifacts/coordination` est legacy et
+lecture-seule. Les claims ordinaires sont advisory et utilisent
+`intendedPaths`; seule la scope critique `AUTHZ_SECURITY` reste exclusive.
+La publication se fait depuis `.publish/<run-id>` sur `publish/<run-id>`, avec
+fast-forward conservé ou merge signé, puis suppression des seuls worktrees et
+branches du run après convergence.
 
 ## Sécurité des diagnostics host et des verrous Git
 
