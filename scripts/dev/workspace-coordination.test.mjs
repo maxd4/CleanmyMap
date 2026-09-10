@@ -195,6 +195,22 @@ test("publication complete requires remote convergence and closes only after int
   } finally { cleanup(root); }
 });
 
+test("reacquires a published run after its original base becomes stale", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root, { remoteDiff: "owned.ts\n" });
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner, publicationWaitMs: 1, backoffMs: [1] });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["owned.ts"] });
+    const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", "run-a.json");
+    const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
+    saved.publication = { state: "PUSHED_PENDING_COMPLETE", publishedSha: "base-sha" };
+    fs.writeFileSync(runFile, JSON.stringify(saved));
+    assert.doesNotThrow(() => coordinator.publicationAcquire({ runId: "run-a" }));
+  } finally { cleanup(root); }
+});
+
 test("integrates through the dedicated publish worktree and keeps fast-forward", () => {
   const root = fixture();
   try {
