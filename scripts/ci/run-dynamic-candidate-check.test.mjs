@@ -98,3 +98,18 @@ test("reports a missing dynamic tool as HOST_ENVIRONMENT", () => {
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("resolves shared Git objects when the source is a linked worktree", () => {
+  const root = createFixture();
+  const linked = join(root, "..", "cleanmymap-dynamic-linked-worktree");
+  try {
+    git(root, ["worktree", "add", "--detach", linked, "HEAD"]);
+    const ref = git(root, ["rev-parse", "HEAD"]);
+    const result = runRunner(linked, ref, "node", ["scripts/checks/dynamic-check.mjs"]);
+    assert.equal(result.status, 0, result.stderr + result.stdout);
+  } finally {
+    try { git(root, ["worktree", "remove", "--", linked]); } catch { /* fixture cleanup is authoritative */ }
+    rmSync(root, { recursive: true, force: true });
+    rmSync(linked, { recursive: true, force: true });
+  }
+});
