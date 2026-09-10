@@ -1,20 +1,18 @@
-import {
-  isVolunteerRouteEligible,
-  type TrashSpotterActionableCandidate,
+import type {
+  TrashSpotterSafety,
+  TrashSpotterSpecializationReason,
 } from "@/lib/actions/trash-spotter-actionable-candidates";
-import type { ParisPressureProvenance } from "@/lib/geo/paris-pressure-contract";
-import type { RoutePlannerCandidate } from "./route-planner";
 import type { RoutePredictedEvidence } from "./route-predicted-targets";
 
 /**
  * This is an evidence vector, not a physical quantity or a duration model.
  * Its version must change when the interpretation of either component changes.
  */
-export const CLEANUP_WORKLOAD_MODEL_VERSION = "cleanup-workload-v1" as const;
+export const CLEANUP_WORKLOAD_MODEL_VERSION = "route-cleanup-workload-v1" as const;
 
 export type CleanupWorkloadStatus =
-  | "available"
-  | "partial"
+  | "relative_estimate"
+  | "presence_only"
   | "unavailable"
   | "excluded";
 
@@ -25,9 +23,11 @@ export type CleanupWorkloadExclusionReason =
   | "unsafe_predicted_candidate"
   | "unknown_predicted_safety";
 
-export type CleanupWorkloadUnitBasis =
-  | "canonical_category_presence"
-  | "native_risk_index_0_100";
+export type CleanupWorkloadAxis = {
+  relativePressure: number | null;
+  observedPresence: boolean | null;
+  confidence: number | null;
+};
 
 export type CleanupWorkloadConfidence = {
   ordinaryWaste: number | null;
@@ -35,13 +35,13 @@ export type CleanupWorkloadConfidence = {
 };
 
 export type CleanupWorkloadProvenance = {
-  source: "trash_spotter_spots" | "urban-pressure-model";
-  evidenceFamily: "observed" | "predicted";
+  source: "trash_spotter_spots" | "urban-pressure-model" | null;
+  evidenceFamily: "observed" | "predicted" | null;
   observedAt: string | null;
   zoneId: string | null;
   sourceModelVersion: string | null;
   snapshotId: string | null;
-  sourceProvenance: readonly ParisPressureProvenance[];
+  sourceProvenance: readonly RoutePredictedEvidence["provenance"][number][];
 };
 
 export type CleanupWorkload = {
@@ -49,16 +49,55 @@ export type CleanupWorkload = {
   candidateId: string;
   family: "observed" | "predicted";
   status: CleanupWorkloadStatus;
-  ordinaryWasteUnits: number | null;
-  cigaretteButtUnits: number | null;
-  unitBasis: {
-    ordinaryWaste: CleanupWorkloadUnitBasis;
-    cigaretteButts: CleanupWorkloadUnitBasis;
-  };
+  ordinaryWaste: CleanupWorkloadAxis;
+  cigaretteButts: CleanupWorkloadAxis;
   confidence: CleanupWorkloadConfidence;
   provenance: CleanupWorkloadProvenance;
   exclusionReason: CleanupWorkloadExclusionReason | null;
 };
+
+export type CleanupWorkloadObservedInput = {
+  family: "observed";
+  id: string;
+  source: "trash_spotter_spots";
+  observedAt: string;
+  wasteCategories: readonly string[];
+  safety: Pick<TrashSpotterSafety, "volunteerEligibility" | "specializationReason">;
+};
+
+export type CleanupWorkloadPredictedInput = {
+  family: "predicted";
+  id: string;
+  evidence: Pick<RoutePredictedEvidence, "source"> &
+    Partial<
+      Pick<
+        RoutePredictedEvidence,
+        | "modelVersion"
+        | "zoneId"
+        | "snapshot"
+        | "provenance"
+        | "wasteRisk"
+        | "cigaretteButtRisk"
+        | "confidence"
+      >
+    >;
+  volunteerSafety?: { status: "safe" | "unknown" | "excluded" };
+};
+
+export type CleanupWorkloadInput =
+  | CleanupWorkloadObservedInput
+  | CleanupWorkloadPredictedInput
+  // Older planner fixtures/callers can omit canonical evidence. Keep them
+  // representable without turning missing evidence into a quantity.
+  | { family?: undefined; id: string };
+
+function emptyAxis(): CleanupWorkloadAxis {
+  return {
+    relativePressure: null,
+    observedPresence: null,
+    confidence: null,
+  };
+}
 
 function emptyConfidence(): CleanupWorkloadConfidence {
   return { ordinaryWaste: null, cigaretteButts: null };
@@ -70,11 +109,15 @@ function finiteRisk(value: number): number | null {
     : null;
 }
 
-function finiteConfidence(value: number, available: boolean): number | null {
-  return available && Number.isFinite(value) && value >= 0 && value <= 1 ? value : null;
+function finiteConfidence(value: number): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1
+    ? value
+    : null;
 }
 
-function observedProvenance(candidate: TrashSpotterActionableCandidate): CleanupWorkloadProvenance {
+function observedProvenance(
+  candidate: CleanupWorkloadObservedInput,
+): CleanupWorkloadProvenance {
   return {
     source: candidate.source,
     evidenceFamily: "observed",
@@ -86,97 +129,99 @@ function observedProvenance(candidate: TrashSpotterActionableCandidate): Cleanup
   };
 }
 
-function predictedProvenance(evidence: RoutePredictedEvidence): CleanupWorkloadProvenance {
+function predictedProvenance(
+  evidence: CleanupWorkloadPredictedInput["evidence"],
+): CleanupWorkloadProvenance {
   return {
     source: evidence.source,
     evidenceFamily: "predicted",
     observedAt: null,
-    zoneId: evidence.zoneId,
-    sourceModelVersion: evidence.modelVersion,
-    snapshotId: evidence.snapshot.snapshotId,
-    sourceProvenance: [...evidence.provenance],
+    zoneId: evidence.zoneId ?? null,
+    sourceModelVersion: evidence.modelVersion ?? null,
+    snapshotId: evidence.snapshot?.snapshotId ?? null,
+    sourceProvenance: [...(evidence.provenance ?? [])],
   };
 }
 
 function observedExclusionReason(
-  candidate: TrashSpotterActionableCandidate,
+  safety: CleanupWorkloadObservedInput["safety"],
 ): CleanupWorkloadExclusionReason {
-  if (candidate.safety.specializationReason === "missing_categories") {
-    return "missing_categories";
-  }
-  if (candidate.safety.specializationReason === "no_pickup") {
-    return "no_pickup_waste";
-  }
+  const reason: TrashSpotterSpecializationReason | null = safety.specializationReason;
+  if (reason === "missing_categories") return "missing_categories";
+  if (reason === "no_pickup") return "no_pickup_waste";
   return "specialized_waste";
 }
 
-function observedWorkload(candidate: Extract<RoutePlannerCandidate, { family: "observed" }>): CleanupWorkload {
-  const categories = [...new Set(candidate.wasteCategories)].sort();
-  const provenance = observedProvenance(candidate);
+function observedWorkload(
+  candidate: CleanupWorkloadObservedInput,
+): CleanupWorkload {
   const base = {
     modelVersion: CLEANUP_WORKLOAD_MODEL_VERSION,
     candidateId: candidate.id,
     family: "observed" as const,
-    unitBasis: {
-      ordinaryWaste: "canonical_category_presence" as const,
-      cigaretteButts: "canonical_category_presence" as const,
-    },
-    provenance,
+    provenance: observedProvenance(candidate),
   };
 
-  if (!isVolunteerRouteEligible(candidate)) {
+  if (candidate.safety.volunteerEligibility !== "eligible") {
     return {
       ...base,
       status: "excluded",
-      ordinaryWasteUnits: null,
-      cigaretteButtUnits: null,
+      ordinaryWaste: emptyAxis(),
+      cigaretteButts: emptyAxis(),
       confidence: emptyConfidence(),
-      exclusionReason: observedExclusionReason(candidate),
+      exclusionReason: observedExclusionReason(candidate.safety),
     };
   }
 
-  if (categories.length === 0) {
+  if (candidate.wasteCategories.length === 0) {
     return {
       ...base,
       status: "unavailable",
-      ordinaryWasteUnits: null,
-      cigaretteButtUnits: null,
+      ordinaryWaste: emptyAxis(),
+      cigaretteButts: emptyAxis(),
       confidence: emptyConfidence(),
       exclusionReason: null,
     };
   }
 
-  const cigaretteButtUnits = categories.filter((category) => category === "cigarette_butt").length;
-  const ordinaryWasteUnits = categories.length - cigaretteButtUnits;
+  const cigaretteButtsPresent = candidate.wasteCategories.includes("cigarette_butt");
+  const ordinaryWastePresent = candidate.wasteCategories.some(
+    (category) => category !== "cigarette_butt",
+  );
   return {
     ...base,
-    status: "available",
-    ordinaryWasteUnits,
-    cigaretteButtUnits,
-    confidence: {
-      ordinaryWaste: ordinaryWasteUnits > 0 ? 1 : null,
-      cigaretteButts: cigaretteButtUnits > 0 ? 1 : null,
+    status: "presence_only",
+    ordinaryWaste: {
+      relativePressure: null,
+      observedPresence: ordinaryWastePresent,
+      confidence: null,
     },
+    cigaretteButts: {
+      relativePressure: null,
+      observedPresence: cigaretteButtsPresent,
+      confidence: null,
+    },
+    confidence: emptyConfidence(),
     exclusionReason: null,
   };
 }
 
-function predictedWorkload(candidate: Extract<RoutePlannerCandidate, { family: "predicted" }>): CleanupWorkload {
+function predictedWorkload(
+  candidate: CleanupWorkloadPredictedInput,
+): CleanupWorkload {
   const evidence = candidate.evidence;
-  const ordinaryWasteUnits = finiteRisk(evidence.wasteRisk);
-  const cigaretteButtUnits = finiteRisk(evidence.cigaretteButtRisk);
+  const ordinaryWastePressure = finiteRisk(evidence.wasteRisk ?? Number.NaN);
+  const cigaretteButtPressure = finiteRisk(evidence.cigaretteButtRisk ?? Number.NaN);
   const confidence = {
-    ordinaryWaste: finiteConfidence(evidence.confidence.waste.score, ordinaryWasteUnits !== null),
-    cigaretteButts: finiteConfidence(evidence.confidence.cigaretteButts.score, cigaretteButtUnits !== null),
+    ordinaryWaste: finiteConfidence(evidence.confidence?.waste?.score ?? Number.NaN),
+    cigaretteButts: finiteConfidence(
+      evidence.confidence?.cigaretteButts?.score ?? Number.NaN,
+    ),
   };
   const base = {
     modelVersion: CLEANUP_WORKLOAD_MODEL_VERSION,
     candidateId: candidate.id,
     family: "predicted" as const,
-    unitBasis: {
-      ordinaryWaste: "native_risk_index_0_100" as const,
-      cigaretteButts: "native_risk_index_0_100" as const,
-    },
     confidence,
     provenance: predictedProvenance(evidence),
   };
@@ -185,8 +230,8 @@ function predictedWorkload(candidate: Extract<RoutePlannerCandidate, { family: "
     return {
       ...base,
       status: "excluded",
-      ordinaryWasteUnits: null,
-      cigaretteButtUnits: null,
+      ordinaryWaste: emptyAxis(),
+      cigaretteButts: emptyAxis(),
       confidence: emptyConfidence(),
       exclusionReason: "unknown_predicted_safety",
     };
@@ -195,39 +240,68 @@ function predictedWorkload(candidate: Extract<RoutePlannerCandidate, { family: "
     return {
       ...base,
       status: "excluded",
-      ordinaryWasteUnits: null,
-      cigaretteButtUnits: null,
+      ordinaryWaste: emptyAxis(),
+      cigaretteButts: emptyAxis(),
       confidence: emptyConfidence(),
       exclusionReason: "unsafe_predicted_candidate",
     };
   }
 
-  const availableComponents = [ordinaryWasteUnits, cigaretteButtUnits].filter(
-    (value): value is number => value !== null,
-  ).length;
+  const ordinaryWaste = {
+    relativePressure: ordinaryWastePressure,
+    observedPresence: null,
+    confidence: ordinaryWastePressure === null ? null : confidence.ordinaryWaste,
+  };
+  const cigaretteButts = {
+    relativePressure: cigaretteButtPressure,
+    observedPresence: null,
+    confidence: cigaretteButtPressure === null ? null : confidence.cigaretteButts,
+  };
   return {
     ...base,
     status:
-      availableComponents === 0
+      ordinaryWastePressure === null && cigaretteButtPressure === null
         ? "unavailable"
-        : availableComponents === 2
-          ? "available"
-          : "partial",
-    ordinaryWasteUnits,
-    cigaretteButtUnits,
+        : "relative_estimate",
+    ordinaryWaste,
+    cigaretteButts,
+    exclusionReason: null,
+  };
+}
+
+function unavailableWorkload(candidateId: string): CleanupWorkload {
+  return {
+    modelVersion: CLEANUP_WORKLOAD_MODEL_VERSION,
+    candidateId,
+    family: "observed",
+    status: "unavailable",
+    ordinaryWaste: emptyAxis(),
+    cigaretteButts: emptyAxis(),
+    confidence: emptyConfidence(),
+    provenance: {
+      source: null,
+      evidenceFamily: null,
+      observedAt: null,
+      zoneId: null,
+      sourceModelVersion: null,
+      snapshotId: null,
+      sourceProvenance: [],
+    },
     exclusionReason: null,
   };
 }
 
 /**
- * Derives the versioned workload vector from route evidence only.
+ * Derives the versioned workload vector from a minimal evidence-shaped input.
  *
- * Observed units count distinct canonical category evidence. Predicted units
- * preserve the model's native 0-100 risk indexes. Neither branch estimates
- * physical amounts, kilograms, object counts, pickup permission, or minutes.
+ * Observed categories prove presence only. Predicted risks preserve the
+ * model's native 0-100 indexes. Neither branch estimates physical amounts,
+ * kilograms, object counts, pickup permission, or minutes.
  */
-export function buildCleanupWorkload(candidate: RoutePlannerCandidate): CleanupWorkload {
-  return candidate.family === "observed"
-    ? observedWorkload(candidate)
-    : predictedWorkload(candidate);
+export function buildCleanupWorkload(
+  candidate: CleanupWorkloadInput,
+): CleanupWorkload {
+  if (candidate.family === "observed") return observedWorkload(candidate);
+  if (candidate.family === "predicted") return predictedWorkload(candidate);
+  return unavailableWorkload(candidate.id);
 }
