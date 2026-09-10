@@ -46,10 +46,11 @@ describe("route documentation status", () => {
     expect(current).toContain("finalPlannerContribution");
     expect(current).toContain("sécurité explicite");
     expect(normalizedMethodology).toContain("geometry proxy ≠ municipal coverage");
-    expect(normalizedMethodology).toContain("cleanup-workload-v1");
-    expect(normalizedMethodology).toContain("ordinaryWasteUnits");
-    expect(normalizedMethodology).toContain("cigaretteButtUnits");
-    expect(normalizedMethodology).toContain("ne sont pas une durée de collecte");
+    expect(normalizedMethodology).toContain("route-cleanup-workload-v1");
+    expect(normalizedMethodology).toContain("présence observée ≠ quantité");
+    expect(normalizedMethodology).toContain("risque prédit 0–100 ≠ quantité physique");
+    expect(normalizedMethodology).toContain("cleanupWorkload ≠ durée de collecte");
+    expect(normalizedMethodology).toContain("cleanupWorkload` n’est pas une durée de collecte");
 
     expect(foundation).toContain("municipal-cleaning-serviceability");
     expect(foundation).toContain("chargé localement");

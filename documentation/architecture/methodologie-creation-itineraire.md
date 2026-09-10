@@ -170,26 +170,27 @@ informations différentes et sont conservés dans leurs champs respectifs.
 
 ### Charge de nettoyage estimée, sans durée calibrée
 
-Le contrat versionné `cleanup-workload-v1` expose une charge vectorielle
-séparée entre `ordinaryWasteUnits` et `cigaretteButtUnits`. Cette charge reste
-une dérivation d’évidence, pas une mesure physique :
+Le contrat versionné `route-cleanup-workload-v1` expose une charge vectorielle
+séparée entre `ordinaryWaste` et `cigaretteButts`. Cette charge reste une
+dérivation d’évidence, pas une mesure physique :
 
-- pour un signalement observé, une unité correspond à la présence d’une
-  catégorie canonique distincte et validée ; elle ne représente pas le nombre
-  d’objets, un poids ou un volume ;
-- pour une zone prédite, les unités conservent directement l’échelle native
-  `0–100` de `wasteRisk` et `cigaretteButtRisk` ; aucun score n’est converti en
-  kilogrammes, en nombre de mégots ou en minutes ;
-- la base des unités, la confiance par famille, la provenance et la version du
-  contrat restent exposées pour éviter de mélanger observation et prédiction ;
+- pour un signalement observé éligible, les catégories prouvent uniquement une
+  présence (`observedPresence`) ; elles ne représentent ni une quantité, ni un
+  poids, ni un volume ;
+- pour une zone prédite explicitement sûre, `relativePressure` conserve
+  directement l’échelle native `0–100` de `wasteRisk` et
+  `cigaretteButtRisk`, avec la confiance prédictive existante ; aucun score
+  n’est converti en kilogrammes, en nombre de mégots ou en minutes ;
+- la provenance, la confiance et la version du contrat restent exposées pour
+  éviter de mélanger observation et prédiction ;
 - une catégorie non ramassable par des bénévoles, une zone dangereuse ou une
   sécurité inconnue est exclue de la charge et ne devient jamais une cible de
   collecte.
 
-Cette charge estimée ne fournit encore aucune durée d’intervention. La durée
-de collecte reste non calibrée et ne doit pas être déduite de ces unités. Les
-mesures de trajet restent des mesures de déplacement fournies ou estimées par
-le routage ; elles ne sont pas une durée de collecte.
+Une présence observée n’est pas une quantité. Un risque prédit `0–100` n’est
+pas une quantité physique. `cleanupWorkload` n’est pas une durée de collecte :
+aucune durée de nettoyage n’est actuellement calibrée. Les mesures de trajet
+restent des mesures de déplacement fournies ou estimées par le routage.
 
 À entrées identiques et à données snapshotées identiques, l’ordre de sélection
 est déterministe. Le frontend affiche le résultat et sa trace ; il ne recalcule
@@ -232,6 +233,19 @@ La surface `Comprendre cet itinéraire` restitue cette trace. Elle ne fabrique
 pas un texte justificatif séparé des calculs réels et ne convertit pas un score
 de risque en probabilité de trouver des déchets sans calibration statistique
 appropriée.
+
+Le contrat versionné `route-cleanup-workload-v1` sépare la preuve de charge selon
+deux axes : `ordinaryWaste` et `cigaretteButts`. Pour une cible observée, une
+catégorie bénévole éligible prouve uniquement une présence (`presence_only`) ;
+elle ne prouve ni une quantité ni un niveau de pression. Pour une cible
+prédite explicitement sûre, les axes conservent les risques natifs 0–100 et la
+confiance existante du modèle (`relative_estimate`). Une donnée absente est
+`unavailable` et une cible non sûre est `excluded`.
+
+Ainsi, `présence observée ≠ quantité`, `risque prédit 0–100 ≠ quantité
+physique` et `cleanupWorkload ≠ durée de collecte`. La calibration temporelle
+reste une évolution future : le workload n'est converti ni en kilogrammes, ni
+en nombre d'objets, ni en minutes.
 
 ## 8. Dégradations et données manquantes
 
@@ -321,7 +335,7 @@ actuel :
 
 - la météo et les conditions dépendantes de la date ou de l’heure ;
 - la durée d’intervention et l’estimation du temps de nettoyage, qui ne sont
-  pas encore calibrées par `cleanup-workload-v1` ;
+  pas encore calibrées par `route-cleanup-workload-v1` ;
 - les groupes, équipes et la génération de plusieurs itinéraires.
 
 Ces évolutions devront conserver la séparation entre observation, prédiction,
