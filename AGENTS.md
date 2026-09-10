@@ -222,7 +222,30 @@ ci-dessus.
 
 ## Coordination locale des chantiers
 
-- utiliser `npm run workspace:init` une seule fois pour enregistrer les deltas
+### Modèle worktree du coordinateur
+
+Le checkout `main` est uniquement une référence/bootstrap. `workspace:start`
+fait un fetch puis crée, sous le `git-common-dir`, un run avec une branche
+`codex/<run-id>` et un worktree lié sous
+`<parent>/CleanMyMap-worktrees/<run-id>/`. Le run canonique persiste
+`intendedPaths`; les claims sont advisory et les chevauchements non critiques
+sont permis. `ownedPaths` n'est lu que pour migrer un ancien état.
+
+Les métadonnées et le mutex global vivent sous
+`git-common-dir/cleanmymap-workspace`. L'ancien `.artifacts/coordination` est
+seulement détecté comme `LEGACY_COORDINATION_STATE` et reste en lecture seule.
+La scope `AUTHZ_SECURITY` reste exclusive.
+
+`workspace:resume` reprend le même run, sa branche, son worktree et son état
+de publication. `workspace:publication-integrate` utilise le worktree
+éphémère `<parent>/CleanMyMap-worktrees/.publish/<run-id>/` et la branche
+`publish/<run-id>`, conserve le fast-forward si possible, signe tout nouveau
+merge d'intégration et lève `INTEGRATION_CONFLICT` en cas de conflit Git.
+Après `workspace:publication-complete`, seuls les worktrees et branches du run
+sont supprimés ; le checkout `main` et les worktrees étrangers sont préservés.
+
+- legacy initialization is read-only and is superseded by the worktree model;
+  `workspace:init` never mutates `.artifacts/coordination`;
   déjà présents comme `LEGACY_UNOWNED`, sans les lire en détail, modifier ou
   revendiquer automatiquement ; toute adoption est explicite ;
 - chaque chantier crée un run avec `workspace:start`, revendique uniquement son
@@ -245,11 +268,13 @@ ci-dessus.
 - avant toute opération d'index, le run obtient `workspace:publication-acquire`.
   L'acquisition attend un publisher concurrent avec un backoff et un timeout
   bornés, puis, après obtention effective du mutex et avant tout staging,
-  refait `fetch`, vérifie `main`, `HEAD == origin/main` et le stale-check des
-  chemins possédés depuis le `baseSha`. Un échec lève `WORKTREE_BASE_DIVERGED`
-  ou `WORKSPACE_STALE`, retourne les chemins concernés dans l'erreur et libère
-  le mutex ; cette attente n'est pas un conflit de chantier. Le pré-commit exige
-  alors que tous les chemins staged appartiennent à ce run ;
+  refait `fetch`, vérifie `main`, `HEAD == origin/main` pour une publication
+  nouvelle et le stale-check des chemins possédés depuis le `baseSha`. Une
+  reprise réentrante du même run peut conserver un `ahead-only` cohérent
+  classé `COMMITTED_PENDING` ; tout autre écart lève
+  `WORKTREE_BASE_DIVERGED` ou `WORKSPACE_STALE`, retourne les chemins concernés
+  dans l'erreur et libère le mutex. Le pré-commit exige alors que tous les
+  chemins staged appartiennent à ce run ;
 - `workspace:publication-complete` est la clôture canonique après commit/push :
   le run doit posséder le mutex, puis le coordinateur refait `fetch`, vérifie
   `main` et exige `git rev-list --left-right --count HEAD...origin/main = 0 0`.
@@ -263,6 +288,20 @@ ci-dessus.
   publication étranger. Elle enregistre `publicationCompletedAt` et
   `reconciledPublishedSha`, sans modifier l'historique Git, puis autorise
   `workspace:release` ;
+- `workspace:resume -- --run-id <id>` recharge le run durable après une
+  interruption et renouvelle son heartbeat sans modifier Git. Il classe
+  `WORK`, `STAGED_PENDING`, `COMMITTED_PENDING` ou
+  `PUSHED_PENDING_COMPLETE` ; en checkout `ahead-only`, il faut rechercher
+  d'abord un candidat récupérable et reprendre le même `runId`, jamais créer
+  un nouveau propriétaire pour un commit existant. La reprise refuse avec
+  `PUBLICATION_RESUME_FOREIGN_COMMIT`, `PUBLICATION_RESUME_STALE`,
+  `PUBLICATION_RESUME_AMBIGUOUS` ou `PUBLICATION_RESUME_FOREIGN_STAGED` toute
+  preuve étrangère, ambiguë, stale ou staged hors ownership ;
+- `workspace:publication-acquire` est réentrant pour son propre `runId` : il
+  ne patiente jamais sur son propre `publication.lock`, renouvelle son
+  heartbeat et peut reprendre un lock expiré seulement si le run, les locks
+  de chemins et le candidat Git concordent. Il ne permet jamais à un autre run
+  d'adopter le commit d'une lease expirée ;
 - `workspace:claim` n'adopte jamais implicitement un fichier dirty. Un chemin
   dirty qui n'est ni legacy, ni déjà possédé par le run est `ORPHAN_DIRTY` et
   exige `--adopt-legacy`. Aucun de ces contrôles ne lit le contenu du fichier ;
@@ -271,6 +310,11 @@ ci-dessus.
   compare que les chemins possédés depuis le `baseSha` du run ;
 - aucune photographie générale du worktree, aucun `git add -A` et aucune
   adoption implicite ne sont autorisés par ce mécanisme.
+
+Les références ci-dessus au checkout partagé décrivent uniquement la
+compatibilité de migration de l'ancien coordinateur. Pour tout nouveau run,
+le modèle worktree et le stockage sous `git-common-dir/cleanmymap-workspace`
+décrits au début de cette section prévalent.
 
 ## Hygiène du dépôt et architecture interne
 
