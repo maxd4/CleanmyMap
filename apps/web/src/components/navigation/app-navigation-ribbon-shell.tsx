@@ -186,9 +186,12 @@ function AppNavigationRibbonShell({
 
             <RibbonMenus
               key={`ribbon-menus-${pathname}`}
-              locale={locale}
-              ribbonChrome={ribbonChrome}
-              onTrackNavigation={onTrackNavigation}
+              {...({
+                locale,
+                pathname,
+                ribbonChrome,
+                onTrackNavigation,
+              } as React.ComponentProps<typeof RibbonMenus>)}
             />
 
             <RibbonAccountActions
