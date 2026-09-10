@@ -23,6 +23,7 @@ import { createFallbackSensitiveZoneApaisementSummary } from "@/lib/gamification
 import { fetchCachedReferralSummary } from "@/lib/gamification/referrals-cache";
 import { loadCachedReferralLineageView } from "@/lib/gamification/referral-lineage";
 import { ReferralProfileTabs } from "@/components/gamification/referral-profile-tabs";
+import { ProfileGamificationSummary } from "@/components/gamification/profile-gamification-summary";
 
 type ProfilPageProps = {
   params: Promise<{ profile: string }>;
@@ -153,9 +154,15 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
         {/* ── Badges infinis ── */}
         <FamilyRubriqueCard
           withTopBar={true}
-          topBarContent="Badges"
+          topBarContent="Progression & badges"
           className="p-12"
         >
+          <ProfileGamificationSummary
+            currentLevel={identity?.currentLevel ?? null}
+            actionsCreated={infiniteTotals.actionsCreated}
+            regularityLabel={infiniteTotals.monthlyRegularity.currentLabel}
+            actionBalanceLabel={infiniteTotals.actionBalance.currentLabel}
+          />
           <InfiniteBadgesPanel totals={infiniteTotals} />
         </FamilyRubriqueCard>
 
