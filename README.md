@@ -19,6 +19,7 @@
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/website?url=https%3A%2F%2Fcleanmymap.fr&label=site&up_message=en%20ligne&down_message=indisponible" alt="Site en ligne" />
   <a href="https://github.com/maxd4/CleanMyMap/actions/workflows/ci.yml"><img src="https://github.com/maxd4/CleanMyMap/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI" /></a>
   <a href="https://github.com/maxd4/CleanMyMap/actions/workflows/codeql.yml"><img src="https://github.com/maxd4/CleanMyMap/actions/workflows/codeql.yml/badge.svg?branch=main" alt="CodeQL Analysis" /></a>
   <img src="https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs" alt="Next.js 16" />
@@ -28,10 +29,10 @@
 ## Aperçu du produit
 
 <p align="center">
-  <img src="./apps/web/public/homepage/schema-global-transparent.png" alt="Schéma fonctionnel des parcours et familles de CleanMyMap" />
+  <img src="./apps/web/public/brand/github-product-overview.webp" alt="Vue réelle de l'accueil CleanMyMap avec la carte des actions et les indicateurs d'impact" />
 </p>
 
-<p align="center"><em>Vue d'ensemble fonctionnelle des parcours CleanMyMap : agir, déclarer, comprendre l'impact, apprendre et rejoindre le réseau.</em></p>
+<p align="center"><em>Vue réelle de l'accueil : une carte pour repérer les actions et des indicateurs pour rendre l'impact lisible.</em></p>
 
 ## Pourquoi CleanMyMap&nbsp;?
 
@@ -52,6 +53,12 @@ Ces étapes forment une boucle continue de connaissance et d'action terrain : le
 - **Réseau & Discussions** — coordonner les bénévoles et les acteurs locaux.
 - **Apprendre** — comprendre les déchets et les bonnes pratiques grâce aux ressources et parcours pédagogiques.
 - **Open data & transparence** — consulter la documentation, les méthodes et les données exposées selon leurs contrats réels.
+
+<p align="center">
+  <img src="./apps/web/public/brand/github-actions-map.webp" alt="Aperçu cartographique réel de CleanMyMap avec des actions visibles autour de Paris" />
+</p>
+
+<p align="center"><em>Aperçu cartographique réel de la homepage, avec les actions visibles autour de Paris et les attributions OpenStreetMap et CARTO.</em></p>
 
 Les rubriques et leurs routes canoniques sont décrites dans la [matrice produit](./documentation/product/matrice-rubriques.md) et l'[index des pages du site](./documentation/pages_site/INDEX.md).
 
