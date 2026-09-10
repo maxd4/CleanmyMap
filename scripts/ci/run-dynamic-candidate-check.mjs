@@ -214,7 +214,7 @@ function createCandidateGitDirectory(materialization) {
   );
   fs.writeFileSync(
     path.join(gitDirectory, "objects", "info", "alternates"),
-    `${path.join(materialization.repositoryRoot, ".git", "objects")}\n`,
+    `${path.resolve(materialization.repositoryRoot, git(materialization.repositoryRoot, ["rev-parse", "--git-path", "objects"]))}\n`,
   );
   fs.copyFileSync(materialization.candidateIndexPath, path.join(gitDirectory, "index"));
   materialization.gitDirectory = gitDirectory;
