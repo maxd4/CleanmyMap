@@ -17,7 +17,7 @@ function git(repositoryRoot, args) {
   return execFileSync("git", args, {
     cwd: repositoryRoot,
     encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
+    stdio: [args[0] === "push" ? "inherit" : "ignore", "pipe", "pipe"],
     env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" },
     windowsHide: true,
   }).trim();
