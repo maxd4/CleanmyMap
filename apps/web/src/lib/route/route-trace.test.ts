@@ -3,6 +3,7 @@ import { buildActionDataContract } from "@/lib/actions/data-contract";
 import { buildTrashSpotterActionableCandidates } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import { buildRouteRecommendationTrace } from "./route-trace";
+import { buildCleanupWorkload } from "./route-cleanup-workload";
 import type { RouteGeometry } from "./route-contract";
 import type { RoutePlannerResult, PlannedRouteStop } from "./route-planner";
 
@@ -171,6 +172,9 @@ describe("route recommendation trace", () => {
         proof: "validated",
       },
     });
+    expect(first.selectedStops[0]?.cleanupWorkload).toEqual(
+      buildCleanupWorkload(selectedStops[0]!.candidate),
+    );
     expect(first.ordering.stopIds).toEqual(["final-1"]);
     expect(first.parameters.pickupPreference).toBe("balanced");
     expect(first.parameters.effectiveRiskFocus).toBe("all");
