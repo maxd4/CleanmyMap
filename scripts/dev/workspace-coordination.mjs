@@ -701,7 +701,8 @@ export function createWorkspaceCoordinator({
     }
     const coordinatorWorktrees = listed.filter((item) => isWithin(worktreesRoot, path.resolve(item.path)) && (item.branch?.startsWith("refs/heads/codex/") || item.branch?.startsWith("refs/heads/publish/")));
     const orphanWorktrees = coordinatorWorktrees.filter((item) => {
-      const runId = item.branch.split("/").slice(2).join("/");
+      const prefix = item.branch.startsWith("refs/heads/codex/") ? "refs/heads/codex/" : "refs/heads/publish/";
+      const runId = item.branch.slice(prefix.length);
       return !active.has(runId);
     }).map((item) => ({ path: item.path, branch: item.branch }));
     const coordinatorWorktreeOrphan = orphanWorktrees.length > 0;
