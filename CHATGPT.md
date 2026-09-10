@@ -548,10 +548,9 @@ Un checkout local dirty est normal dans CleanMyMap.
 
 Le dirty worktree ne doit pas être confondu avec une divergence de branche.
 Avant tout nouveau chantier mutable, Codex doit faire `git fetch origin main`
-et lancer `workspace:start`. Le coordinateur crée alors la branche et le
-worktree isolés du run ; une divergence de la référence/bootstrap est traitée
-par le mécanisme de publication, sans merge, rebase, reset destructif, stash ou
-clean du checkout de référence.
+et vérifier `HEAD == origin/main`. Une divergence doit être signalée comme
+`CHECKOUT_DIVERGENCE` et réconciliée dans un lot dédié ; elle ne doit pas être
+résolue automatiquement par merge, rebase, reset destructif, stash ou clean.
 
 Les modifications `staged`, `unstaged` ou `untracked` étrangères au chantier courant :
 
@@ -619,45 +618,60 @@ preuves différentes. Après un push, Codex doit refaire le fetch et vérifier
 `0 0` pour considérer le chantier entièrement clos ; une
 `publication-candidate` ne masque pas un checkout divergent.
 
-Pour coordonner plusieurs chantiers, utiliser le coordinateur local
-`workspace:start`, `workspace:claim`, `workspace:status` et
-`workspace:publication-acquire`. Chaque run possède une branche
-`codex/<run-id>`, un worktree lié et un staging isolé ; ses claims ordinaires
-sont advisory via `intendedPaths`, tandis que `AUTHZ_SECURITY` reste exclusif.
-Les métadonnées et le mutex global vivent sous le `git-common-dir` dans
-`cleanmymap-workspace`. Le statut compact reste métadonnées-only ; le
-stale-check compare les seuls chemins intentionnels depuis le base SHA. Ne
-jamais prendre un snapshot global du dirty worktree ni utiliser `git add -A`
-pour coordonner un lot. L'ordre canonique est :
+Pour coordonner plusieurs chantiers dans le checkout partagé, utiliser le
+coordinateur local `workspace:init`, `workspace:start`, `workspace:claim` et
+`workspace:status`. L'initialisation classe les deltas préexistants
+`LEGACY_UNOWNED` sans les revendiquer ; l'adoption doit être explicite. Chaque
+run ne revendique que son allowlist, le domaine `AUTHZ_SECURITY` est exclusif,
+et le verrou `workspace:publication-acquire` ne sérialise que l'intégration et
+le push, après le commit local signé.
+Le statut compact reste métadonnées-only ; le stale-check refetch `origin/main`
+et compare uniquement les chemins possédés depuis le base SHA. Ne jamais prendre
+un snapshot global du dirty worktree ni utiliser `git add -A` pour coordonner un
+lot. L'ordre canonique est :
 
 ```text
 START
-  fetch -> workspace:start -> codex/<run-id> -> linked worktree
+  fetch -> branch == main -> worktree lié
 WORK
-  intendedPaths -> claims advisory
-PUBLICATION ACQUIRE
-  global mutex -> latest origin/main -> stale intended paths
-STAGE / COMMIT
-  isolated index -> signed commit -> publication-integrate
-PUSH
-  validate candidate -> push main
-PUBLICATION COMPLETE
-  fetch -> verify remote convergence -> release mutex
-RELEASE
-  remove only the run branch/worktrees
+  claims advisory -> stage ciblé -> STAGED validation
+  -> commit local signé sur codex/<run-id>
+PUBLICATION
+  publication-acquire -> fetch -> intégration Git
+  -> PUSH_CANDIDATE -> push main -> finalisation
 ```
 
 Après une interruption, `workspace:resume -- --run-id <RUN_ID>` recharge le
-run durable, sa branche et son worktree sans modifier Git. La reprise et
-`publication-acquire` vérifient le candidat, les staged et l'ascendance
-attendus par ce run. `workspace:publication-integrate` réintègre le dernier
-`origin/main` dans le worktree de publication sous `.publish/<run-id>/`, puis
-`workspace:publication-complete` prouve la convergence avant `workspace:release`.
+run durable et classe `WORK`, `STAGED_PENDING`, `COMMITTED_PENDING` ou
+`PUSHED_PENDING_COMPLETE` sans modifier Git. En présence d'un checkout
+`ahead-only`, rechercher d'abord un run récupérable et reprendre ce même
+`runId`; ne jamais créer un nouveau propriétaire pour son commit. La reprise
+et `publication-acquire` vérifient exclusivement les chemins possédés, les
+staged et l'ascendance du candidat, avec refus explicite en cas de commit
+étranger, ambigu ou staged étranger. Un simple chevauchement de fichier n'est
+pas un conflit : l'intégration Git décide, et seul un conflit Git réel bloque.
+Le mutex est réentrant pour son propre run, y compris après expiration lorsque
+le candidat reste cohérent.
 
-ChatGPT reste en lecture seule vis-à-vis de GitHub et du checkout : il ne crée
-ni branche, ni commit, ni push, ni worktree. Il peut toutefois demander à Codex
-d'exécuter le mécanisme canonique ci-dessus ; Codex seul crée le run, modifie
-les fichiers autorisés, valide, publie et libère ses propres worktrees.
+`workspace:claim` refuse `ORPHAN_DIRTY` pour un fichier dirty non legacy et non
+possédé ; `--adopt-legacy` est nécessaire pour une adoption explicite.
+`workspace:check-staged` n'exige pas le mutex : il vérifie uniquement les
+`intendedPaths`. Après preuve que `publishedSha` est ancêtre de `origin/main`,
+`workspace:publication-complete` marque `COMPLETE`, ferme les métadonnées,
+supprime claims et locks et nettoie uniquement les worktrees et branches du
+run. Cette finalisation est idempotente/reprenable ; `workspace:release` reste
+une primitive de récupération et n'est pas nécessaire après publication.
+
+Le modèle courant remplace le checkout partagé comme workspace mutable :
+`workspace:start` crée une branche `codex/<run-id>` et un worktree lié sous
+`<parent>/CleanMyMap-worktrees/<run-id>/`, tandis que `main` reste une référence
+dirty préservée. Les métadonnées et le mutex sont sous le `git-common-dir`,
+dans `cleanmymap-workspace`; `.artifacts/coordination` est legacy et
+lecture-seule. Les claims ordinaires sont advisory et utilisent
+`intendedPaths`; seule la scope critique `AUTHZ_SECURITY` reste exclusive.
+La publication se fait depuis `.publish/<run-id>` sur `publish/<run-id>`, avec
+fast-forward conservé ou merge signé, puis suppression des seuls worktrees et
+branches du run après convergence.
 
 ## Sécurité des diagnostics host et des verrous Git
 
@@ -668,11 +682,11 @@ fois, arrêter en `HOST_ENVIRONMENT` s'il réapparaît, préserver les processus
 Git étrangers, borner les diagnostics ProcMon/ETW et ne pas transformer un
 workaround Codex Desktop en contrat du dépôt. Ne pas implémenter ici
 `UNPUBLISHED_COMMITS_BLOCK`, réservé à un lot mécanique séparé.
-Si le worktree du run rencontre une divergence, une race ou ne permet pas une
-intégration sûre, Codex peut utiliser le worktree de publication éphémère
-prévu par `workspace:publication-integrate`, depuis le dernier `origin/main`,
-avec la seule allowlist du lot, puis le supprimer. Ce n'est pas une copie
-persistante et ce n'est pas un workflow distinct du modèle courant.
+Si le checkout partagé contient déjà un commit étranger, une divergence, une
+race ou ne permet pas une resynchronisation sûre, Codex peut utiliser une
+sandbox de publication éphémère depuis le dernier `origin/main`, avec la seule
+allowlist du lot, puis la supprimer. Ce n'est pas une copie persistante et ce
+n'est pas un workflow par défaut.
 
 Une erreur de test clairement attribuable à un chantier parallèle est classée :
 
