@@ -500,7 +500,25 @@ export function createWorkspaceCoordinator({
     runGit(["fetch", "origin", "main"]);
     const { publishPath, branch } = ensurePublishWorktree(run);
     const runBranch = run.branchName ?? `codex/${runId}`;
+    const originMain = gitAt(repo, publishPath, ["rev-parse", "origin/main"], gitRunner);
     let fastForward = true;
+    const publishContainsOrigin = (() => {
+      try { gitAt(repo, publishPath, ["merge-base", "--is-ancestor", originMain, "HEAD"], gitRunner); return true; } catch { return false; }
+    })();
+    if (!publishContainsOrigin) {
+      try {
+        gitAt(repo, publishPath, ["merge", "--ff-only", "origin/main"], gitRunner);
+      } catch {
+        try {
+          const mergeArgs = ["merge", "--no-ff", "-S", ...(signer ? [`-S${signer}`] : []), "-m", `integrate origin/main before ${runId}`, "origin/main"];
+          gitAt(repo, publishPath, mergeArgs, gitRunner);
+        } catch (error) {
+          try { gitAt(repo, publishPath, ["merge", "--abort"], gitRunner); } catch { /* own publish worktree only */ }
+          throw workspaceError("INTEGRATION_CONFLICT", `Git integration conflict for ${runId}`, { cause: error.message });
+        }
+        fastForward = false;
+      }
+    }
     try { gitAt(repo, publishPath, ["merge-base", "--is-ancestor", "HEAD", runBranch], gitRunner); } catch { fastForward = false; }
     try {
       if (fastForward) gitAt(repo, publishPath, ["merge", "--ff-only", runBranch], gitRunner);
