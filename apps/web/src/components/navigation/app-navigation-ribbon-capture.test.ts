@@ -18,6 +18,18 @@ describe("global ribbon capture contract", () => {
     expect(source).toContain("data-cmm-capture-stabilize");
   });
 
+  it("keeps Sommaire in the home block and responsive tree only", () => {
+    const source = fs.readFileSync(
+      path.join(navigationDirectory, "app-navigation-ribbon-shell.tsx"),
+      "utf8",
+    );
+
+    expect(source).not.toContain("href={EXPLORER_ROUTE}");
+    expect(source).not.toContain("<List");
+    expect(source).toContain('className="lg:hidden"');
+    expect(source).toContain("<AppNavigationTreeMenu");
+  });
+
   it("uses a root capture attribute to make marked chrome static", () => {
     const source = fs.readFileSync(
       path.join(sourceDirectory, "styles/base.css"),

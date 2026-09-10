@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { List } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
 import useSWR from "swr";
 import Link from "next/link";
@@ -19,7 +18,6 @@ import {
 import { getProfileLabel } from "@/lib/profiles";
 import { trackNavigationClick } from "@/lib/analytics/navigation-client";
 import { cn } from "@/lib/utils";
-import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { GlobalSearch } from "./global-search";
 import { useAdaptiveRibbonChrome } from "./app-navigation-ribbon-theme";
 import { AppNavigationBlockDropdown } from "./app-navigation-block-dropdown";
@@ -146,21 +144,6 @@ function AppNavigationRibbonShell({
           </Link>
 
           <div className="hidden min-w-0 flex-1 items-center gap-1.5 xl:flex">
-          <Link
-            href={EXPLORER_ROUTE}
-            prefetch={false}
-            onClick={() => onTrackNavigation(EXPLORER_ROUTE, locale === "fr" ? "Sommaire" : "Summary", null)}
-            className="group inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-full border border-cyan-100/16 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 px-4 text-white shadow-[0_18px_36px_-22px_rgba(20,184,166,0.58)] transition-transform hover:scale-[1.01] hover:border-cyan-100/28 hover:from-cyan-400 hover:via-teal-400 hover:to-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
-            aria-label={locale === "fr" ? "Sommaire" : "Summary"}
-          >
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/16 bg-white/14">
-                <List className="h-4 w-4" aria-hidden="true" />
-              </span>
-              <span className="cmm-text-caption font-black uppercase tracking-[0.18em]">
-                {locale === "fr" ? "Sommaire" : "Summary"}
-              </span>
-            </Link>
-
             <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
               <nav
                 aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"}
@@ -202,8 +185,8 @@ function AppNavigationRibbonShell({
             </div>
 
             <RibbonMenus
+              key={`ribbon-menus-${pathname}`}
               locale={locale}
-              pathname={pathname}
               ribbonChrome={ribbonChrome}
               onTrackNavigation={onTrackNavigation}
             />
