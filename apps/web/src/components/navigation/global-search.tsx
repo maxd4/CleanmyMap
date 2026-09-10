@@ -1,12 +1,13 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Command, CornerDownLeft, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { CmmDropdown } from "@/components/ui/cmm-dropdown";
 import { getNavigationSpacesForProfile } from "@/lib/navigation";
 import type { AppProfile } from "@/lib/profiles";
 import type { DisplayMode, Locale } from "@/lib/ui/preferences";
@@ -64,17 +65,11 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
       .slice(0, 8);
   }, [allItems, locale, query]);
 
-  const toggle = useCallback(() => setIsOpen((prev) => !prev), []);
-
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "k") {
         event.preventDefault();
-        toggle();
-      }
-
-      if (event.key === "Escape") {
-        setIsOpen(false);
+        setIsOpen(true);
       }
 
       if (!isOpen) {
@@ -96,7 +91,7 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [filteredItems, isOpen, router, selectedIndex, toggle]);
+  }, [filteredItems, isOpen, router, selectedIndex]);
 
   useEffect(() => {
     const resetTimer = window.setTimeout(() => {
@@ -109,43 +104,40 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
   }, [pathname]);
 
   return (
-    <>
-      <button
-        type="button"
-        onClick={toggle}
-        className="group inline-flex min-h-10 w-full items-center justify-between gap-2.5 rounded-full border border-white/10 bg-white/8 px-3.5 text-white shadow-[0_18px_38px_-30px_rgba(2,6,23,0.95)] backdrop-blur-xl transition-all hover:border-cyan-200/24 hover:bg-white/12 hover:text-white active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
-        title={locale === "fr" ? "Rechercher (Ctrl+K)" : "Search (Ctrl+K)"}
-        aria-label={locale === "fr" ? "Rechercher" : "Search"}
-      >
-        <span className="flex min-w-0 items-center gap-2">
-          <Search className="h-4.5 w-4.5 shrink-0 text-cyan-100 transition-transform group-hover:scale-110" aria-hidden="true" />
-          <span className="truncate cmm-text-caption font-black uppercase tracking-[0.14em]">
-            {locale === "fr" ? "Rechercher" : "Search"}
+    <CmmDropdown
+      id="global-search-popover"
+      ariaLabel={locale === "fr" ? "Recherche globale" : "Global search"}
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      panelRole="region"
+      triggerHasPopup="dialog"
+      panelClassName="w-[min(42rem,calc(100vw-1rem))]"
+      wrapperClassName="w-full"
+      verticalGap={8}
+      renderTrigger={(triggerProps) => (
+        <button
+          {...triggerProps}
+          className="group inline-flex min-h-10 w-full items-center justify-between gap-2.5 rounded-full border border-white/10 bg-white/8 px-3.5 text-white shadow-[0_18px_38px_-30px_rgba(2,6,23,0.95)] backdrop-blur-xl transition-all hover:border-cyan-200/24 hover:bg-white/12 hover:text-white active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+          aria-label={locale === "fr" ? "Rechercher" : "Search"}
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <Search className="h-4.5 w-4.5 shrink-0 text-cyan-100 transition-transform group-hover:scale-110" aria-hidden="true" />
+            <span className="truncate cmm-text-caption font-black uppercase tracking-[0.14em]">
+              {locale === "fr" ? "Rechercher" : "Search"}
+            </span>
           </span>
-        </span>
-        <kbd className="hidden shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/18 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/56 sm:inline-flex">
-          <Command size={10} />
-          K
-        </kbd>
-      </button>
-
-      <AnimatePresence>
-        {isOpen ? (
-          <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[15vh] sm:pt-[20vh]">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsOpen(false)}
-              className="absolute inset-0 bg-slate-950/88"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              className="relative w-full max-w-2xl overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-900 shadow-2xl"
-            >
+          <kbd className="hidden shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/18 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/56 sm:inline-flex">
+            <Command size={10} />
+            K
+          </kbd>
+        </button>
+      )}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.98, y: -4 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="overflow-hidden rounded-[2rem] border border-slate-800 bg-slate-900 shadow-2xl"
+      >
               <div className="flex items-center border-b border-slate-800 px-6 py-4">
                 <Search className="h-5 w-5 text-slate-400" />
                 <input
@@ -282,10 +274,7 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
                   Quick Search System
                 </div>
               </div>
-            </motion.div>
-          </div>
-        ) : null}
-      </AnimatePresence>
-    </>
+      </motion.div>
+    </CmmDropdown>
   );
 }

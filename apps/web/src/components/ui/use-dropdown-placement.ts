@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState, type RefObject } from "react";
 
 type DropdownPlacement = {
   openUp: boolean;
-  triggerRect: Pick<DOMRect, "top" | "bottom"> | null;
+  triggerRect: Pick<DOMRect, "top" | "bottom" | "left" | "width"> | null;
+  viewportHeight: number;
+  layoutScale: number;
 };
 
 type UseDropdownPlacementOptions = {
@@ -12,6 +14,30 @@ type UseDropdownPlacementOptions = {
   triggerRef: RefObject<HTMLElement | null>;
   verticalGap?: number;
 };
+
+export function resolveDropdownOpenUp(
+  rect: Pick<DOMRect, "top" | "bottom">,
+  viewportHeight: number,
+  verticalGap = 12,
+): boolean {
+  const spaceAbove = rect.top - verticalGap;
+  const spaceBelow = viewportHeight - rect.bottom - verticalGap;
+  return spaceBelow < 260 && spaceAbove > spaceBelow;
+}
+
+function resolveDropdownLayoutScale(element: HTMLElement): number {
+  let scale = 1;
+  let current: HTMLElement | null = element;
+  while (current) {
+    const zoom = Number.parseFloat(window.getComputedStyle(current).zoom);
+    if (Number.isFinite(zoom) && zoom > 0) {
+      scale *= zoom;
+    }
+    current = current.parentElement;
+  }
+
+  return Number.isFinite(scale) && scale > 0 ? scale : 1;
+}
 
 export function useDropdownPlacement({
   isOpen,
@@ -21,6 +47,8 @@ export function useDropdownPlacement({
   const [placement, setPlacement] = useState<DropdownPlacement>({
     openUp: false,
     triggerRect: null,
+    viewportHeight: 0,
+    layoutScale: 1,
   });
 
   const updatePlacement = useCallback(() => {
@@ -30,16 +58,18 @@ export function useDropdownPlacement({
     }
 
     const rect = trigger.getBoundingClientRect();
-    const spaceAbove = rect.top - verticalGap;
-    const spaceBelow = window.innerHeight - rect.bottom - verticalGap;
-    const openUp = spaceBelow < 260 && spaceAbove > spaceBelow;
+    const openUp = resolveDropdownOpenUp(rect, window.innerHeight, verticalGap);
 
     setPlacement({
       openUp,
       triggerRect: {
         top: rect.top,
         bottom: rect.bottom,
+        left: rect.left,
+        width: rect.width,
       },
+      viewportHeight: window.innerHeight,
+      layoutScale: resolveDropdownLayoutScale(trigger),
     });
   }, [triggerRef, verticalGap]);
 
@@ -49,6 +79,13 @@ export function useDropdownPlacement({
     }
 
     updatePlacement();
+    let active = true;
+    void document.fonts?.ready.then(() => {
+      if (active) {
+        updatePlacement();
+      }
+    });
+    const settleTimer = window.setTimeout(updatePlacement, 600);
 
     const onResize = () => updatePlacement();
     const onScroll = () => updatePlacement();
@@ -57,6 +94,8 @@ export function useDropdownPlacement({
     window.addEventListener("scroll", onScroll, { passive: true });
 
     return () => {
+      active = false;
+      window.clearTimeout(settleTimer);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("scroll", onScroll);
     };
