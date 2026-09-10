@@ -35,13 +35,13 @@ const skippedDirectories = new Set([
 ]);
 
 const requiredMarkers = new Map([
-  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "workspace:start", "codex/<run-id>", "git-common-dir/cleanmymap-workspace", "intendedPaths", "AUTHZ_SECURITY", "claims", "advisory", "publication-integrate", "publication-complete"]],
+  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "workspace:start", "codex/<run-id>", "git-common-dir/cleanmymap-workspace", "intendedPaths", "AUTHZ_SECURITY", "claims", "advisory", "publication-integrate", "publication-complete", "ahead-only", "PUBLICATION_PENDING", "UNPUBLISHED_PATH_CONFLICT", "WORKTREE_BASE_DIVERGED"]],
   ["apps/web/AGENTS.md", ["Next.js", "Server/Client", "Leaflet"]],
   ["apps/web/src/app/api/AGENTS.md", ["AuthN", "AuthZ", "contrat de réponse propre"]],
   ["apps/web/supabase/AGENTS.md", ["apps/web/supabase/migrations/", "unique", "RLS"]],
   ["apps/web/scripts/AGENTS.md", ["dry-run", "--apply", "provenance"]],
   ["apps/mobile/AGENTS.md", ["ClerkProvider", "Third-Party Auth", "`sub` Clerk", "distance_m"]],
-  ["scripts/AGENTS.md", ["audit", "cleanup", "provenance", "workspace:start", "codex/<run-id>", "git-common-dir/cleanmymap-workspace", "intendedPaths", "advisory", "AUTHZ_SECURITY", "publication-integrate"]],
+  ["scripts/AGENTS.md", ["audit", "cleanup", "provenance", "workspace:start", "codex/<run-id>", "git-common-dir/cleanmymap-workspace", "intendedPaths", "advisory", "AUTHZ_SECURITY", "publication-integrate", "HEAD == origin/main", "WORKTREE_BASE_DIVERGED"]],
   [".github/AGENTS.md", ["permissions", "CodeQL", "check:github-actions"]],
   ["maintenance/python/AGENTS.md", ["hors du", "requirements", "pytest"]],
   ["documentation/AGENTS.md", ["état actuel", "historique", "public"]],
@@ -119,59 +119,6 @@ function validateMigrationTrees(findings, directories) {
   }
 }
 
-function contentOutsideLegacySections(content) {
-  const lines = content.split(/\r?\n/);
-  const currentLines = [];
-  let legacyLevel = null;
-
-  for (const line of lines) {
-    const heading = /^(#{2,6})\s+(.+?)\s*$/.exec(line);
-    if (heading) {
-      const level = heading[1].length;
-      if (legacyLevel !== null && level <= legacyLevel) {
-        legacyLevel = null;
-      }
-      if (/\b(?:migration|legacy)\b/i.test(heading[2])) {
-        legacyLevel = level;
-        continue;
-      }
-    }
-
-    if (legacyLevel === null) {
-      currentLines.push(line);
-    }
-  }
-
-  return currentLines.join("\n");
-}
-
-const currentDoctrineContradictions = [
-  [/checkout.*(?:reste|directement).*`?main`?/i, "a main checkout as the mutable run workspace"],
-  [/HEAD\s*==\s*origin\/main/i, "HEAD equality with origin/main as a run or publication prerequisite"],
-  [/WORKTREE_BRANCH_INVALID/i, "WORKTREE_BRANCH_INVALID as a current run rule"],
-  [/UNPUBLISHED_PATH_CONFLICT/i, "UNPUBLISHED_PATH_CONFLICT as a current coordination rule"],
-  [/COORDINATION_CONFLICT/i, "COORDINATION_CONFLICT as a current ordinary-claim rule"],
-  [/ORPHAN_DIRTY/i, "ORPHAN_DIRTY as a current ordinary-claim rule"],
-  [/LEGACY_UNOWNED/i, "LEGACY_UNOWNED outside migration compatibility"],
-  [/PUBLICATION_PENDING/i, "PUBLICATION_PENDING as a current run rule"],
-  [/(?:interdit|interdiction)[^\n]*(?:linked\s+)?worktree/i, "a prohibition on coordinator linked worktrees"],
-  [/(?:verrou|lock)[^\n]*(?:chemin|path)[^\n]*(?:exclusif|exclusive|bloquant)/i, "exclusive locks for ordinary paths"],
-];
-
-function validateCurrentDoctrine(view, findings) {
-  for (const relativePath of ["AGENTS.md", "scripts/AGENTS.md", "CHATGPT.md"]) {
-    const content = readIfPresent(view, relativePath);
-    if (!content) continue;
-
-    const currentContent = contentOutsideLegacySections(content);
-    for (const [pattern, description] of currentDoctrineContradictions) {
-      if (pattern.test(currentContent)) {
-        findings.push(`${relativePath}: current doctrine contradicts worktree-per-run coordination (${description}).`);
-      }
-    }
-  }
-}
-
 function validateMarkers(view, findings) {
   for (const [relativePath, markers] of requiredMarkers) {
     const content = readIfPresent(view, relativePath);
@@ -203,8 +150,6 @@ function validateMarkers(view, findings) {
       }
     }
   }
-
-  validateCurrentDoctrine(view, findings);
 
   const supabaseContent = readIfPresent(view, "apps/web/supabase/AGENTS.md");
   if (supabaseContent && /(?<!apps\/web\/)supabase\/migrations\//.test(supabaseContent)) {

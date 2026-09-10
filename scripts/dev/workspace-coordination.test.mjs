@@ -22,9 +22,12 @@ function fakeGit(root, options = {}) {
     heads: new Map(),
     worktrees: new Map([[path.resolve(root), "refs/heads/main"]]),
     tracked: new Set(options.tracked ?? []),
+    calls: [],
+    branches: new Set(["main"]),
   };
   const command = (cwd, args) => {
     const worktree = path.resolve(cwd);
+    state.calls.push({ cwd: worktree, args: [...args] });
     if (args[0] === "rev-parse" && args[1] === "--git-common-dir") return ".git";
     if (args[0] === "rev-parse" && args[1] === "HEAD") return state.worktrees.get(worktree) === "refs/heads/main" ? state.head : state.heads.get(worktree) ?? state.head;
     if (args[0] === "rev-parse" && args[1] === "origin/main") return state.origin;
@@ -49,6 +52,7 @@ function fakeGit(root, options = {}) {
       fs.mkdirSync(worktree, { recursive: true });
       state.worktrees.set(worktree, branch);
       state.heads.set(worktree, state.head);
+      state.branches.add(branch.replace("refs/heads/", ""));
       return "";
     }
     if (args[0] === "worktree" && args[1] === "remove") {
@@ -64,14 +68,32 @@ function fakeGit(root, options = {}) {
     }
     if (args[0] === "branch" && args[1] === "-D") {
       state.heads.delete(args[2]);
+      state.branches.delete(args[2]);
       return "";
     }
-    if (args[0] === "merge-base") return "";
+    if (args[0] === "branch" && args[1] === "-d") {
+      state.branches.delete(args[2]);
+      return "";
+    }
+    if (args[0] === "merge-base") {
+      const key = `${args[2]}..${args[3]}`;
+      if ((options.ancestorFailures ?? []).includes(key)) throw new Error("not an ancestor");
+      return "";
+    }
     if (args[0] === "merge" && options.mergeError) throw new Error("CONFLICT (content): merge conflict");
-    if (args[0] === "merge" || args[0] === "push") return "";
+    if (args[0] === "merge") return "";
+    if (args[0] === "commit") {
+      const commit = `commit-${state.calls.length}`;
+      state.heads.set(worktree, commit);
+      return commit;
+    }
+    if (args[0] === "push") {
+      state.origin = state.heads.get(worktree) ?? state.origin;
+      return "";
+    }
     throw new Error(`Unexpected fake git call: ${args.join(" ")}`);
   };
-  state.worktreesHasBranch = (branch) => [...state.worktrees.values()].includes(`refs/heads/${branch}`) || state.heads.has(branch);
+  state.worktreesHasBranch = (branch) => state.branches.has(branch) || [...state.worktrees.values()].includes(`refs/heads/${branch}`);
   command.state = state;
   return command;
 }
@@ -195,22 +217,6 @@ test("publication complete requires remote convergence and closes only after int
   } finally { cleanup(root); }
 });
 
-test("reacquires a published run after its original base becomes stale", () => {
-  const root = fixture();
-  try {
-    const gitRunner = fakeGit(root, { remoteDiff: "owned.ts\n" });
-    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner, publicationWaitMs: 1, backoffMs: [1] });
-    coordinator.init();
-    coordinator.start({ runId: "run-a", domain: "ROUTE" });
-    coordinator.claim({ runId: "run-a", paths: ["owned.ts"] });
-    const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", "run-a.json");
-    const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
-    saved.publication = { state: "PUSHED_PENDING_COMPLETE", publishedSha: "base-sha" };
-    fs.writeFileSync(runFile, JSON.stringify(saved));
-    assert.doesNotThrow(() => coordinator.publicationAcquire({ runId: "run-a" }));
-  } finally { cleanup(root); }
-});
-
 test("integrates through the dedicated publish worktree and keeps fast-forward", () => {
   const root = fixture();
   try {
@@ -234,5 +240,149 @@ test("turns a real Git integration failure into INTEGRATION_CONFLICT", () => {
     coordinator.publicationAcquire({ runId: "run-a" });
     assert.throws(() => coordinator.publicationIntegrate({ runId: "run-a", push: false }), /INTEGRATION_CONFLICT/);
     assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "publication.lock")), true);
+  } finally { cleanup(root); }
+});
+
+test("permits simultaneous staged work and local commits before the publication mutex", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    const first = coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    const second = coordinator.start({ runId: "run-b", domain: "LEARN" });
+    coordinator.claim({ runId: "run-a", paths: ["src/a.ts"] });
+    coordinator.claim({ runId: "run-b", paths: ["src/b.ts"] });
+    gitRunner.state.staged.set(first.worktreePath, "src/a.ts\0");
+    gitRunner.state.staged.set(second.worktreePath, "src/b.ts\0");
+    assert.deepEqual(coordinator.checkStaged({ runId: "run-a" }).stagedPaths, ["src/a.ts"]);
+    assert.deepEqual(coordinator.checkStaged({ runId: "run-b" }).stagedPaths, ["src/b.ts"]);
+    assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "publication.lock")), false);
+    gitRunner(first.worktreePath, ["commit", "-S", "-m", "run a"]);
+    gitRunner(second.worktreePath, ["commit", "-S", "-m", "run b"]);
+    assert.equal(gitRunner.state.heads.get(path.resolve(first.worktreePath)).startsWith("commit-"), true);
+    assert.equal(gitRunner.state.heads.get(path.resolve(second.worktreePath)).startsWith("commit-"), true);
+  } finally { cleanup(root); }
+});
+
+test("does not reject an intended path changed remotely when Git can integrate it", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root, { remoteDiff: "src/shared.ts\n" });
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["src/shared.ts"] });
+    assert.doesNotThrow(() => coordinator.publicationAcquire({ runId: "run-a" }));
+  } finally { cleanup(root); }
+});
+
+test("integrates a changed origin/main before the run branch", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root, { ancestorFailures: ["origin-sha..HEAD"], origin: "origin-sha" });
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.publicationAcquire({ runId: "run-a" });
+    coordinator.publicationIntegrate({ runId: "run-a", push: false });
+    const originMerge = gitRunner.state.calls.findIndex(({ args }) => args[0] === "merge" && args.at(-1) === "origin/main");
+    const runMerge = gitRunner.state.calls.findIndex(({ args }) => args[0] === "merge" && args.at(-1) === "codex/run-a");
+    assert.ok(originMerge >= 0);
+    assert.ok(runMerge > originMerge);
+  } finally { cleanup(root); }
+});
+
+test("publicationComplete finalizes a run, including claims, locks and worktrees, and is idempotent", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    const run = coordinator.start({ runId: "run-a", domain: "AUTHZ_SECURITY" });
+    coordinator.claim({ runId: "run-a", paths: ["src/authz.ts"] });
+    coordinator.publicationAcquire({ runId: "run-a" });
+    const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", "run-a.json");
+    const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
+    saved.publication = { state: "PUSHED_PENDING_COMPLETE", publishedSha: "base-sha" };
+    fs.writeFileSync(runFile, JSON.stringify(saved));
+    const result = coordinator.publicationComplete({ runId: "run-a" });
+    assert.equal(result.completed, true);
+    assert.equal(fs.existsSync(runFile), false);
+    assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "claims")), true);
+    assert.equal(fs.readdirSync(path.join(root, ".git", ...COORDINATION_ROOT, "claims")).length, 0);
+    assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "locks", "scope-AUTHZ_SECURITY.json")), false);
+    assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "publication.lock")), false);
+    assert.equal(fs.existsSync(run.worktreePath), false);
+    assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "closed-runs", "run-a.json")), true);
+    assert.equal(coordinator.publicationComplete({ runId: "run-a" }).idempotent, true);
+  } finally { cleanup(root); }
+});
+
+test("accepts an already-published ancestor after another remote publication", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root, { origin: "new-origin" });
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.claim({ runId: "run-a", paths: ["owned.ts"] });
+    coordinator.publicationAcquire({ runId: "run-a" });
+    const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", "run-a.json");
+    const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
+    saved.publication = { state: "PUSHED_PENDING_COMPLETE", publishedSha: "published-sha" };
+    fs.writeFileSync(runFile, JSON.stringify(saved));
+    assert.doesNotThrow(() => coordinator.publicationComplete({ runId: "run-a" }));
+  } finally { cleanup(root); }
+});
+
+test("refuses a published SHA that is not an ancestor", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root, { origin: "new-origin", ancestorFailures: ["published-sha..new-origin"] });
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.publicationAcquire({ runId: "run-a" });
+    const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", "run-a.json");
+    const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
+    saved.publication = { state: "PUSHED_PENDING_COMPLETE", publishedSha: "published-sha" };
+    fs.writeFileSync(runFile, JSON.stringify(saved));
+    assert.throws(() => coordinator.publicationComplete({ runId: "run-a" }), /PUBLICATION_NOT_CONVERGED/);
+  } finally { cleanup(root); }
+});
+
+test("doctor detects and safely recovers an abandoned critical scope, but not a live one", () => {
+  const root = fixture();
+  try {
+    let clock = Date.parse("2026-01-01T00:00:00.000Z");
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner, now: () => clock, leaseMs: 10 });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "AUTHZ_SECURITY" });
+    const lockFile = path.join(root, ".git", ...COORDINATION_ROOT, "locks", "scope-AUTHZ_SECURITY.json");
+    fs.writeFileSync(lockFile, JSON.stringify({ version: 3, kind: "critical-scope", scope: "AUTHZ_SECURITY", runId: "missing", heartbeatAt: "2025-01-01T00:00:00.000Z" }));
+    assert.equal(coordinator.doctor().staleLocks.some((item) => item.kind === "critical-scope"), true);
+    assert.equal(coordinator.recoverAbandonedLocks().some((item) => item.kind === "critical-scope"), true);
+    const live = JSON.parse(fs.readFileSync(path.join(root, ".git", ...COORDINATION_ROOT, "runs", "run-a.json"), "utf8"));
+    fs.writeFileSync(lockFile, JSON.stringify({ version: 3, kind: "critical-scope", scope: "AUTHZ_SECURITY", runId: "run-a", heartbeatAt: live.heartbeatAt }));
+    clock += 1;
+    assert.equal(coordinator.recoverAbandonedLocks().some((item) => item.kind === "critical-scope"), false);
+    assert.equal(fs.existsSync(lockFile), true);
+  } finally { cleanup(root); }
+});
+
+test("doctor reports a coordinator worktree without an active run and a missing run worktree", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    const run = coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    fs.rmSync(run.worktreePath, { recursive: true, force: true });
+    gitRunner.state.worktrees.set(path.join(path.dirname(root), "CleanMyMap-worktrees", "orphan"), "refs/heads/codex/orphan");
+    const report = coordinator.doctor();
+    assert.equal(report.missingWorktrees.some((item) => item.runId === "run-a"), true);
+    assert.equal(report.orphanWorktrees.some((item) => item.branch === "refs/heads/codex/orphan"), true);
   } finally { cleanup(root); }
 });
