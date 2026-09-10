@@ -1,43 +1,38 @@
 import { describe, expect, it } from "vitest";
-import type { RoutePlannerCandidate } from "./route-planner";
 import type { RoutePredictedEvidence } from "./route-predicted-targets";
-import { buildCleanupWorkload, CLEANUP_WORKLOAD_MODEL_VERSION } from "./route-cleanup-workload";
+import {
+  buildCleanupWorkload,
+  CLEANUP_WORKLOAD_MODEL_VERSION,
+} from "./route-cleanup-workload";
 
 function observedCandidate(
-  wasteCategories: RoutePlannerCandidate extends infer Candidate
-    ? Candidate extends { family: "observed"; wasteCategories: infer Categories }
-      ? Categories
-      : never
-    : never,
-  safety: { volunteerEligibility: "eligible" | "specialized_required"; specializationReason: "trained_only" | "no_pickup" | "missing_categories" | "unknown_categories" | null } = {
+  wasteCategories: readonly string[],
+  safety: {
+    volunteerEligibility: "eligible" | "specialized_required";
+    specializationReason:
+      | "trained_only"
+      | "no_pickup"
+      | "missing_categories"
+      | "unknown_categories"
+      | null;
+  } = {
     volunteerEligibility: "eligible",
     specializationReason: null,
   },
-): RoutePlannerCandidate {
+) {
   return {
     id: "observed-1",
-    label: "Spot observé",
-    latitude: 48.85,
-    longitude: 2.35,
+    family: "observed" as const,
+    source: "trash_spotter_spots" as const,
     observedAt: "2026-09-01T10:00:00.000Z",
     wasteCategories,
-    source: "trash_spotter_spots",
-    sourceStatus: "validated",
     safety,
-    contract: {} as never,
-    score: 80,
-    reason: "fixture",
-    family: "observed",
-    evidence: {
-      family: "observed",
-      source: "trash_spotter_spots",
-      proof: "validated",
-      observedAt: "2026-09-01T10:00:00.000Z",
-    },
-  } as RoutePlannerCandidate;
+  };
 }
 
-function predictedEvidence(overrides: Partial<RoutePredictedEvidence> = {}): RoutePredictedEvidence {
+function predictedEvidence(
+  overrides: Partial<RoutePredictedEvidence> = {},
+): RoutePredictedEvidence {
   return {
     family: "predicted",
     source: "urban-pressure-model",
@@ -103,75 +98,118 @@ function predictedEvidence(overrides: Partial<RoutePredictedEvidence> = {}): Rou
 
 function predictedCandidate(
   evidence: RoutePredictedEvidence,
-  volunteerSafety: RoutePlannerCandidate extends infer Candidate
-    ? Candidate extends { family: "predicted"; volunteerSafety?: infer Safety }
-      ? Safety
-      : never
-    : never = { status: "safe", suitability: 1, confidence: 1 },
-): RoutePlannerCandidate {
+  volunteerSafety?: { status: "safe" | "unknown" | "excluded" },
+) {
   return {
     id: evidence.zoneId,
-    label: evidence.zoneLabel,
-    latitude: evidence.centroid.latitude,
-    longitude: evidence.centroid.longitude,
-    score: 80,
-    reason: "fixture",
-    family: "predicted",
+    family: "predicted" as const,
     evidence,
-    volunteerSafety,
-  } as RoutePlannerCandidate;
+    ...(volunteerSafety ? { volunteerSafety } : {}),
+  };
 }
 
 describe("cleanup workload contract", () => {
-  it("preserves low and high predicted risks in separate native index units", () => {
-    const workload = buildCleanupWorkload(predictedCandidate(predictedEvidence()));
+  it("records observed cigarette-butt presence without numeric units or confidence", () => {
+    const workload = buildCleanupWorkload(
+      observedCandidate(["cigarette_butt"]),
+    );
 
     expect(workload).toMatchObject({
       modelVersion: CLEANUP_WORKLOAD_MODEL_VERSION,
-      status: "available",
-      ordinaryWasteUnits: 18,
-      cigaretteButtUnits: 72,
-      unitBasis: {
-        ordinaryWaste: "native_risk_index_0_100",
-        cigaretteButts: "native_risk_index_0_100",
+      status: "presence_only",
+      ordinaryWaste: {
+        relativePressure: null,
+        observedPresence: false,
+        confidence: null,
       },
-      confidence: { ordinaryWaste: 0.8, cigaretteButts: 0.6 },
+      cigaretteButts: {
+        relativePressure: null,
+        observedPresence: true,
+        confidence: null,
+      },
+      confidence: { ordinaryWaste: null, cigaretteButts: null },
     });
+    expect(workload).not.toHaveProperty("ordinaryWasteUnits");
+    expect(workload).not.toHaveProperty("cigaretteButtUnits");
   });
 
-  it("derives observed category presence without pretending to know quantity", () => {
+  it("records ordinary-waste presence only", () => {
+    const workload = buildCleanupWorkload(observedCandidate(["plastic"]));
+
+    expect(workload.ordinaryWaste).toEqual({
+      relativePressure: null,
+      observedPresence: true,
+      confidence: null,
+    });
+    expect(workload.cigaretteButts).toEqual({
+      relativePressure: null,
+      observedPresence: false,
+      confidence: null,
+    });
+    expect(workload.status).toBe("presence_only");
+  });
+
+  it("records both observed presences without turning categories into quantities", () => {
     const workload = buildCleanupWorkload(
-      observedCandidate(["cigarette_butt", "plastic"]),
+      observedCandidate(["cigarette_butt", "plastic", "glass"]),
+    );
+
+    expect(workload.ordinaryWaste.observedPresence).toBe(true);
+    expect(workload.cigaretteButts.observedPresence).toBe(true);
+    expect(workload.ordinaryWaste.relativePressure).toBeNull();
+    expect(workload.cigaretteButts.relativePressure).toBeNull();
+    expect(workload.confidence).toEqual({ ordinaryWaste: null, cigaretteButts: null });
+  });
+
+  it("preserves native predicted risks and axis confidence", () => {
+    const workload = buildCleanupWorkload(
+      predictedCandidate(predictedEvidence(), { status: "safe" }),
     );
 
     expect(workload).toMatchObject({
-      status: "available",
-      ordinaryWasteUnits: 1,
-      cigaretteButtUnits: 1,
-      unitBasis: {
-        ordinaryWaste: "canonical_category_presence",
-        cigaretteButts: "canonical_category_presence",
+      modelVersion: CLEANUP_WORKLOAD_MODEL_VERSION,
+      status: "relative_estimate",
+      ordinaryWaste: {
+        relativePressure: 18,
+        observedPresence: null,
+        confidence: 0.8,
       },
-      confidence: { ordinaryWaste: 1, cigaretteButts: 1 },
-      provenance: {
-        source: "trash_spotter_spots",
-        evidenceFamily: "observed",
-        observedAt: "2026-09-01T10:00:00.000Z",
+      cigaretteButts: {
+        relativePressure: 72,
+        observedPresence: null,
+        confidence: 0.6,
       },
     });
   });
 
-  it("keeps missing predicted data explicit and partial", () => {
+  it("marks safe predicted data unavailable when both risks are missing", () => {
     const workload = buildCleanupWorkload(
-      predictedCandidate(predictedEvidence({ wasteRisk: Number.NaN })),
+      predictedCandidate(
+        predictedEvidence({ wasteRisk: Number.NaN, cigaretteButtRisk: Number.NaN }),
+        { status: "safe" },
+      ),
     );
 
-    expect(workload).toMatchObject({
-      status: "partial",
-      ordinaryWasteUnits: null,
-      cigaretteButtUnits: 72,
-      confidence: { ordinaryWaste: null, cigaretteButts: 0.6 },
+    expect(workload.status).toBe("unavailable");
+    expect(workload.ordinaryWaste.relativePressure).toBeNull();
+    expect(workload.cigaretteButts.relativePressure).toBeNull();
+    expect(workload.ordinaryWaste.observedPresence).toBeNull();
+    expect(workload.cigaretteButts.observedPresence).toBeNull();
+  });
+
+  it("excludes unsafe or unknown predicted candidates", () => {
+    const unsafe = buildCleanupWorkload(
+      predictedCandidate(predictedEvidence(), { status: "excluded" }),
+    );
+    const unknown = buildCleanupWorkload(predictedCandidate(predictedEvidence()));
+
+    expect(unsafe).toMatchObject({
+      status: "excluded",
+      ordinaryWaste: { relativePressure: null, observedPresence: null, confidence: null },
+      cigaretteButts: { relativePressure: null, observedPresence: null, confidence: null },
+      exclusionReason: "unsafe_predicted_candidate",
     });
+    expect(unknown.exclusionReason).toBe("unknown_predicted_safety");
   });
 
   it("excludes observed waste that volunteers cannot pick up", () => {
@@ -184,43 +222,17 @@ describe("cleanup workload contract", () => {
 
     expect(workload).toMatchObject({
       status: "excluded",
-      ordinaryWasteUnits: null,
-      cigaretteButtUnits: null,
+      ordinaryWaste: { relativePressure: null, observedPresence: null, confidence: null },
+      cigaretteButts: { relativePressure: null, observedPresence: null, confidence: null },
       exclusionReason: "no_pickup_waste",
     });
   });
 
-  it("excludes a dangerous or safety-unknown predicted candidate", () => {
-    const dangerous = buildCleanupWorkload(
-      predictedCandidate(predictedEvidence(), {
-        status: "excluded",
-        suitability: 0,
-        confidence: 1,
-        exclusionReasons: ["active_roadway"],
-      }),
+  it("is deterministic and preserves predicted provenance", () => {
+    const candidate = predictedCandidate(
+      predictedEvidence({ zoneId: "zone-deterministic", provenance: [] }),
+      { status: "safe" },
     );
-    const unknown = buildCleanupWorkload(
-      predictedCandidate(predictedEvidence(), {
-        status: "unknown",
-        suitability: null,
-        confidence: 0,
-      }),
-    );
-
-    expect(dangerous).toMatchObject({
-      status: "excluded",
-      ordinaryWasteUnits: null,
-      cigaretteButtUnits: null,
-      exclusionReason: "unsafe_predicted_candidate",
-    });
-    expect(unknown.exclusionReason).toBe("unsafe_predicted_candidate");
-  });
-
-  it("is deterministic and preserves source version/provenance", () => {
-    const candidate = predictedCandidate(predictedEvidence({
-      zoneId: "zone-deterministic",
-      provenance: [],
-    }));
 
     expect(buildCleanupWorkload(candidate)).toEqual(buildCleanupWorkload(candidate));
     expect(buildCleanupWorkload(candidate).provenance).toMatchObject({
