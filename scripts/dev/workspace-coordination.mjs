@@ -402,12 +402,22 @@ export function createWorkspaceCoordinator({
         const lock = { version: 3, kind: "global-publication", runId, acquiredAt, updatedAt: acquiredAt, heartbeatAt: acquiredAt };
         writeExclusive(lockFile, lock);
         try {
-          runGit(["fetch", "origin", "main"]);
-          const refs = assertMainReference(repo, gitRunner);
-          const intended = normalizePaths(repo, run.intendedPaths ?? run.ownedPaths ?? []);
-          const remoteChanged = readChangedPaths(repo, run.baseSha, refs.originMainSha, (_cwd, args) => runGit(args)).filter((item) => intended.some((owned) => pathsOverlap(owned, normalizeRepoPath(repo, item))));
-          if (remoteChanged.length > 0) throw workspaceError("WORKSPACE_STALE", `intended paths changed since ${run.baseSha}: ${remoteChanged.join(", ")}`, { changedPaths: remoteChanged });
-          metadataWriter(filePath, { ...run, intendedPaths: intended, publication: { state: "ACQUIRED", acquiredAt }, updatedAt: timestamp(), heartbeatAt: timestamp() });
+           runGit(["fetch", "origin", "main"]);
+           const refs = assertMainReference(repo, gitRunner);
+           const intended = normalizePaths(repo, run.intendedPaths ?? run.ownedPaths ?? []);
+           const publishedSha = run.publication?.publishedSha;
+           let publishedOnRemote = false;
+           if (run.publication?.state === "PUSHED_PENDING_COMPLETE" && publishedSha) {
+             try { gitAt(repo, repo, ["merge-base", "--is-ancestor", publishedSha, refs.originMainSha], gitRunner); publishedOnRemote = true; } catch { /* publication is not yet proven on remote */ }
+           }
+           if (publishedOnRemote) {
+             const stagedPaths = runWorktreeStatus(run).stagedPaths;
+             if (stagedPaths.length > 0) throw workspaceError("PUBLICATION_RESUME_FOREIGN_STAGED", stagedPaths.join(", "), { foreignStaged: stagedPaths });
+           } else {
+             const remoteChanged = readChangedPaths(repo, run.baseSha, refs.originMainSha, (_cwd, args) => runGit(args)).filter((item) => intended.some((owned) => pathsOverlap(owned, normalizeRepoPath(repo, item))));
+             if (remoteChanged.length > 0) throw workspaceError("WORKSPACE_STALE", `intended paths changed since ${run.baseSha}: ${remoteChanged.join(", ")}`, { changedPaths: remoteChanged });
+           }
+           metadataWriter(filePath, { ...run, intendedPaths: intended, publication: { state: "ACQUIRED", acquiredAt }, updatedAt: timestamp(), heartbeatAt: timestamp() });
           return lock;
         } catch (error) {
           if (lockOwner()?.runId === runId) fs.unlinkSync(lockFile);
