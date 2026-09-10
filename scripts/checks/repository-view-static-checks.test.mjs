@@ -4,7 +4,7 @@ import { performance } from "node:perf_hooks";
 import test from "node:test";
 
 const STATIC_CHECK_TIMEOUT_MS = 60_000;
-const ref = execFileSync("git", ["rev-parse", "origin/main"], { encoding: "utf8" }).trim();
+const ref = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 const checks = [
   "scripts/checks/check-env-contract.mjs",
   "scripts/checks/check-root-file-hygiene.mjs",
@@ -36,8 +36,7 @@ const refContainsLegacyAiGuides = (() => {
 const refContainsLegacyCoordinatorDoctrine = (() => {
   try {
     const content = execFileSync("git", ["show", `${ref}:AGENTS.md`], { encoding: "utf8" });
-    return content.includes("le checkout de travail reste directement sur `main`") ||
-      content.includes("UNPUBLISHED_PATH_CONFLICT");
+    return content.includes("le checkout de travail reste directement sur `main`") || content.includes("UNPUBLISHED_PATH_CONFLICT");
   } catch {
     return true;
   }
@@ -52,8 +51,7 @@ const compatibleChecks = checks.filter(
     !(
       refContainsLegacyAiGuides &&
       script.endsWith("check-documentation-governance.mjs")
-    ) &&
-    !(script.endsWith("check-agent-governance.mjs") && refContainsLegacyCoordinatorDoctrine),
+    ) && !(script.endsWith("check-agent-governance.mjs") && refContainsLegacyCoordinatorDoctrine),
 );
 
 function runStaticChecker(script) {
