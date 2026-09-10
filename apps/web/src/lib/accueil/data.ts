@@ -114,12 +114,9 @@ export function isLikelyTestContract(contract: ActionDataContract): boolean {
   return ACCUEIL_TEST_MARKERS.some((marker) => haystack.includes(marker));
 }
 
-export function formatLandingOverviewErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return `Supabase est momentanément indisponible. ${error.message}`;
-  }
-
-  return "Supabase est momentanément indisponible. Réessaie dans un instant.";
+export function formatLandingOverviewErrorMessage(_error: unknown): string {
+  void _error;
+  return "Les actions vérifiées sont momentanément indisponibles.";
 }
 
 function buildLandingFloorDate(now = new Date()): string {
