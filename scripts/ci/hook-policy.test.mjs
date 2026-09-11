@@ -72,6 +72,10 @@ test("pre-push derives gates from the Git protocol candidate and keeps manual fa
   assert.match(guard, /STATIC_CANDIDATE/);
   assert.match(guard, /exact Git tree named by --ref/);
   assert.match(guard, /DYNAMIC_CANDIDATE/);
+  assert.match(guard, /--dependency-mode=\$DependencyMode/);
+  assert.match(guard, /-DependencyMode "reuse"/);
+  assert.match(guard, /-DependencyMode "isolated"/);
+  assert.match(guard, /--dependency-mode=isolated/);
   assert.doesNotMatch(guard, /(?<!run-dynamic-candidate-check\.mjs[^\r\n]*)npm run (?:test:scripts|lint|typecheck|build)/);
   assert.doesNotMatch(guard, /npm run check:doc-governance \}/);
   assert.doesNotMatch(guard, /npm run test:regression-gates/);

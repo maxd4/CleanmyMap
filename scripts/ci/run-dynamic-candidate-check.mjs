@@ -25,10 +25,12 @@ const CANONICAL_DEPENDENCY_PATHS = Object.freeze([
   "apps/mobile/node_modules",
 ]);
 
+const DEPENDENCY_MODES = Object.freeze(["reuse", "isolated"]);
+
 function usage(message) {
   if (message) console.error(message);
   console.error(
-    "Usage: node scripts/ci/run-dynamic-candidate-check.mjs --ref=<commit> --command=<tool> -- [arguments]",
+    "Usage: node scripts/ci/run-dynamic-candidate-check.mjs --ref=<commit> --command=<tool> --dependency-mode=<reuse|isolated> -- [arguments]",
   );
   process.exitCode = 2;
 }
@@ -39,16 +41,27 @@ function parseArguments(argv = process.argv.slice(2)) {
   const commandArguments = separatorIndex === -1 ? [] : argv.slice(separatorIndex + 1);
   const refArgument = runnerArguments.find((argument) => argument.startsWith("--ref="));
   const commandArgument = runnerArguments.find((argument) => argument.startsWith("--command="));
+  const dependencyModeArgument = runnerArguments.find((argument) => argument.startsWith("--dependency-mode="));
 
-  if (!refArgument || !commandArgument) {
-    usage("Both --ref and --command are required.");
+  if (!refArgument || !commandArgument || !dependencyModeArgument) {
+    usage("--ref, --command and --dependency-mode are required.");
+    return null;
   }
 
   const command = commandArgument.slice("--command=".length);
-  if (!command) usage("--command must not be empty.");
+  const dependencyMode = dependencyModeArgument.slice("--dependency-mode=".length);
+  if (!command) {
+    usage("--command must not be empty.");
+    return null;
+  }
+  if (!DEPENDENCY_MODES.includes(dependencyMode)) {
+    usage(`--dependency-mode must be one of: ${DEPENDENCY_MODES.join(", ")}.`);
+    return null;
+  }
   return {
     ref: refArgument.slice("--ref=".length),
     command,
+    dependencyMode,
     commandArguments,
   };
 }
@@ -248,7 +261,7 @@ function createCandidateGitDirectory(materialization) {
   materialization.gitDirectory = gitDirectory;
 }
 
-function materializeCandidate(repositoryRoot, candidateRef) {
+function materializeCandidate(repositoryRoot, candidateRef, dependencyMode) {
   const candidateSha = git(repositoryRoot, ["rev-parse", "--verify", candidateRef + "^{commit}"]);
   const canonicalRoot = resolveCanonicalRepositoryRoot(repositoryRoot);
   const lifecycle = createCandidateMaterialization({
@@ -269,7 +282,7 @@ function materializeCandidate(repositoryRoot, candidateRef) {
     const blobs = readGitBlobs(repositoryRoot, entries);
     materializeGitTree(candidateTreeRoot, entries, blobs);
     const dependenciesMatch = dependencyManifestsMatch(candidateTreeRoot, canonicalRoot);
-    if (dependenciesMatch) {
+    if (dependencyMode === "reuse" && dependenciesMatch) {
       for (const relativePath of CANONICAL_DEPENDENCY_PATHS) {
         const sourcePath = path.join(canonicalRoot, ...relativePath.split("/"));
         if (relativePath === "node_modules") linkDirectory(candidateTreeRoot, relativePath, sourcePath, linkedPaths);
@@ -299,6 +312,8 @@ function materializeCandidate(repositoryRoot, candidateRef) {
       repositoryRoot,
       canonicalRoot,
       candidateSha,
+      dependencyMode,
+      dependenciesMatch,
       candidateTreeRoot,
       materializedRoot,
       candidateRoot,
@@ -318,13 +333,17 @@ function materializeCandidate(repositoryRoot, candidateRef) {
 function installIsolatedDependencies(materialization) {
   const invocation = resolveInvocation("npm");
   if (!invocation.executable) throw new Error("HOST_ENVIRONMENT: npm is unavailable for isolated dynamic candidate dependencies.");
-  const result = spawnSync(invocation.executable, [...invocation.prefixArguments, "ci", "--no-audit", "--no-fund"], {
-    cwd: materialization.candidateTreeRoot,
-    env: cleanGitEnvironment(),
-    stdio: "inherit",
-    windowsHide: true,
-    shell: invocation.shell,
-  });
+  const result = spawnSync(
+    invocation.executable,
+    [...invocation.prefixArguments, "ci", "--prefer-offline", "--no-audit", "--no-fund"],
+    {
+      cwd: materialization.candidateTreeRoot,
+      env: cleanGitEnvironment(),
+      stdio: "inherit",
+      windowsHide: true,
+      shell: invocation.shell,
+    },
+  );
   if (result.error) throw new Error(`HOST_ENVIRONMENT: npm ci could not start: ${result.error.message}`);
   if (result.status !== 0) throw new Error(`DYNAMIC_DEPENDENCY_INSTALL_FAILED: npm ci exited with ${result.status ?? 1}.`);
 }
@@ -344,12 +363,19 @@ function resolveInvocation(command) {
 }
 
 function run() {
-  const { ref, command, commandArguments } = parseArguments();
+  const parsedArguments = parseArguments();
+  if (!parsedArguments) return 2;
+  const { ref, command, dependencyMode, commandArguments } = parsedArguments;
   const repositoryRoot = path.resolve(process.cwd());
-  const materialization = materializeCandidate(repositoryRoot, ref);
+  const materialization = materializeCandidate(repositoryRoot, ref, dependencyMode);
   let detachSignalCleanup = () => {};
   try {
-    if (!fs.existsSync(path.join(materialization.candidateTreeRoot, "node_modules"))) {
+    const candidateNodeModules = path.join(materialization.candidateTreeRoot, "node_modules");
+    const needsIsolatedInstall =
+      dependencyMode === "isolated" ||
+      !materialization.dependenciesMatch ||
+      !fs.existsSync(candidateNodeModules);
+    if (needsIsolatedInstall) {
       installIsolatedDependencies(materialization);
     }
     detachSignalCleanup = installCandidateSignalCleanup(materialization);
