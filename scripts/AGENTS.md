@@ -135,9 +135,15 @@ décider l'ownership.
   build) doivent utiliser `DYNAMIC_CANDIDATE` et un arbre éphémère construit
   exclusivement depuis le SHA candidat sous
   `.artifacts/validation/prepush-candidate/<sha>/`. Elles ne doivent jamais
-  lire le WORKTREE ni ses fichiers étrangers ; les dépendances locales peuvent
-    être reliées ou matérialisées temporairement sous cette racine sans modifier
-    le dépôt, et l'index normal doit rester inchangé ;
+  lire le WORKTREE ni ses fichiers étrangers ; les gates compatibles
+  (scripts, lint, typecheck, tests) invoquent le matérialiseur avec
+  `--dependency-mode=reuse` et peuvent réutiliser les installations canoniques
+  lorsque les manifests correspondent. Les builds npm/Vercel invoquent
+  explicitement `--dependency-mode=isolated`, sans lien vers un
+  `node_modules` canonique, puis exécutent `npm ci --prefer-offline --no-audit
+  --no-fund` dans la candidate. Dans les deux modes, les dépendances sont
+  temporaires sous cette racine, l’index normal reste inchangé et le cleanup
+  est obligatoire sur succès comme sur erreur ;
 - les lifecycle de candidates doivent réutiliser le helper
   `scripts/ci/candidate-lifecycle.mjs` et les seules racines
   `.artifacts/validation/prepush-candidate/<sha>/` ou
