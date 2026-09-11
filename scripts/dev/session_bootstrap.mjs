@@ -47,13 +47,13 @@ for (const file of REQUIRED) {
   console.log(`- ${file}`);
 }
 console.log(`ACTIVE_RUNS=${coordinationStatus.activeRuns.length}`);
-console.log(`OWNED_FILES=${coordinationStatus.ownedFiles}`);
-console.log(`LEGACY_UNOWNED=${coordinationStatus.legacyUnowned}`);
+console.log(`ADVISORY_CLAIMS=${coordinationStatus.advisoryClaims}`);
+console.log(`LEGACY_COMPATIBILITY_RECORDS=${coordinationStatus.legacyUnowned}`);
 console.log(`OVERLAPS=${coordinationStatus.overlaps.length}`);
 console.log(`PUBLICATION_OWNER=${coordinationStatus.publicationOwner ?? "none"}`);
-console.log(`ORPHAN_DIRTY=${coordinationStatus.orphanDirty.length}`);
+console.log(`UNCLAIMED_DIRTY_PATHS=${coordinationStatus.orphanDirty.length}`);
 if (coordinationStatus.run) {
   console.log(`RUN_ID=${coordinationStatus.run.runId}`);
-  console.log(`RUN_OWNED_PATHS=${coordinationStatus.run.ownedPaths.length}`);
+  console.log(`RUN_INTENDED_PATHS=${coordinationStatus.run.intendedPaths.length}`);
   console.log(`RUN_REMOTE_CHANGED=${coordinationStatus.run.remoteChangedPaths.length}`);
 }
