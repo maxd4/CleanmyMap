@@ -19,6 +19,12 @@ const DEPENDENCY_MANIFESTS = Object.freeze([
   "apps/mobile/package-lock.json",
 ]);
 
+const CANONICAL_DEPENDENCY_PATHS = Object.freeze([
+  "node_modules",
+  "apps/web/node_modules",
+  "apps/mobile/node_modules",
+]);
+
 function usage(message) {
   if (message) console.error(message);
   console.error(
@@ -241,9 +247,16 @@ function materializeCandidate(repositoryRoot, candidateRef) {
     const entries = readGitTree(repositoryRoot, candidateSha);
     const blobs = readGitBlobs(repositoryRoot, entries);
     materializeGitTree(candidateTreeRoot, entries, blobs);
-    const dependencySource = path.join(canonicalRoot, "node_modules");
-    if (dependencyManifestsMatch(candidateTreeRoot, canonicalRoot) && fs.existsSync(dependencySource)) {
-      linkDirectory(candidateTreeRoot, "node_modules", dependencySource, linkedPaths);
+    const dependenciesMatch = dependencyManifestsMatch(candidateTreeRoot, canonicalRoot);
+    if (dependenciesMatch) {
+      for (const relativePath of CANONICAL_DEPENDENCY_PATHS) {
+        linkDirectory(
+          candidateTreeRoot,
+          relativePath,
+          path.join(canonicalRoot, ...relativePath.split("/")),
+          linkedPaths,
+        );
+      }
     }
     linkDirectory(candidateTreeRoot, ".vercel", path.join(repositoryRoot, ".vercel"), linkedPaths);
     linkDirectory(
