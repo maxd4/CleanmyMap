@@ -159,7 +159,13 @@ function linkDirectory(candidateTreeRoot, relativePath, sourcePath, linkedPaths)
 
 function linkWorkspaceDirectory(candidateTreeRoot, relativePath, sourcePath, linkedPaths) {
   if (!fs.existsSync(sourcePath)) return;
-  const overlayPath = path.join(candidateTreeRoot, ".cmm-dependency-links", relativePath.replaceAll("/", "-"));
+  const overlayPath = path.join(
+    candidateTreeRoot,
+    ".artifacts",
+    "validation",
+    "dependency-links",
+    relativePath.replaceAll("/", "-"),
+  );
   fs.mkdirSync(overlayPath, { recursive: true });
   for (const entry of fs.readdirSync(sourcePath, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
