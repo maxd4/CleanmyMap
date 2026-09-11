@@ -70,6 +70,57 @@ Avant d'ajouter une surface ou un flux :
 
 ## Vercel : règles durables
 
+### Moratoire de déploiement jusqu'au 16 septembre 2026 inclus
+
+Du 10 au 16 septembre 2026 inclus, aucun déploiement Vercel n'est autorisé
+pour CleanMyMap. Cette règle temporaire de maîtrise des quotas prévaut sur les
+procédures ordinaires de publication et s'applique à tous les opérateurs,
+outils et chemins de livraison :
+
+- ne pas exécuter `vercel deploy`, `npx vercel` ni aucune commande équivalente
+  ou appel d'API de déploiement ;
+- ne créer ni déploiement Preview ni déploiement Production ;
+- ne pousser aucun commit ou ref susceptible de déclencher un déploiement
+  automatique via l'intégration Git Vercel ;
+- limiter les travaux à des builds, audits et validations locales ;
+- ne pas contourner cette règle avec `--force`, `--no-verify`, une autre CLI,
+  un workflow manuel ou une intégration distante.
+
+Le moratoire expire à la fin du 16 septembre 2026 (reprise possible le
+17 septembre 2026). Pendant cette période, un résultat local ne constitue pas
+une preuve de déploiement ni de disponibilité distante.
+
+### Déclenchement, mesure et rétention
+
+La signature d'un commit est un signal d'intégrité Git uniquement. Elle ne
+constitue jamais une demande de build ou de déploiement Vercel. Le déclenchement
+de `ignoreCommand` dépend exclusivement de l'impact réel du diff sur le runtime
+web : les documents présents dans la registry documentaire publique peuvent
+déclencher un build ; les autres modifications de `documentation/` ne le
+déclenchent pas.
+
+Après le moratoire, mesurer pendant quelques jours le ratio entre :
+
+- les commits intégrés sur `main` ;
+- les déploiements dont la cible Vercel est `production` ;
+- les références de commit uniques réellement associées à ces Productions.
+
+Le rapport doit distinguer les Productions des Previews et des déploiements
+`canceled` ou `error`, puis afficher au minimum `Productions / commits main` et
+le nombre de Productions par commit. Une mesure locale ou API en lecture seule
+ne constitue pas une autorisation de déployer.
+
+Une release gate n'est pas activée par défaut. Si la mesure confirme un rythme
+de Productions durablement excessif, l'activation doit être une décision
+volontaire et documentée : Git continue d'intégrer sur `main`, tandis qu'une
+Production n'est générée qu'au moment d'une publication explicitement demandée.
+
+La rétention Vercel doit rester agressive en parallèle : fenêtre très courte
+pour les Previews, les déploiements annulés et les erreurs, et petite fenêtre
+pour les Productions. Ces réglages relèvent des paramètres Vercel du projet ou
+de l'équipe ; ils ne sont pas considérés comme configurés par la seule présence
+de cette règle dans le dépôt.
+
 ### Rendu dynamique et cache
 
 Ne pas utiliser par défaut :

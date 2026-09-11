@@ -5,8 +5,6 @@ import {
   classifyChangedPath,
   evaluateChangedPaths,
   evaluateIgnoreCommand,
-  evaluateSignedDeployment,
-  hasCommitSignature,
 } from "./ignored-build-step.mjs";
 
 test("builds when a web runtime or build input changes", () => {
@@ -19,7 +17,8 @@ test("builds when a web runtime or build input changes", () => {
     "package-lock.json",
     "apps/web/vercel.json",
     "apps/web/scripts/upload-sentry-sourcemaps.mjs",
-    "documentation/legal/politique-confidentialite.md",
+    "documentation/plans/journal_impact_DU.md",
+    "documentation/architecture/methodologie-creation-itineraire.md",
   ];
 
   for (const pathname of buildInputs) {
@@ -40,6 +39,9 @@ test("ignores only reviewed non-web documentation and maintenance paths", () => 
     "apps/web/src/components/learn/quiz/README.md",
     "apps/web/AGENTS.md",
     "apps/web/vitest.config.ts",
+    "documentation/development/README.md",
+    "documentation/security/README.md",
+    "documentation/pages_site/routes/00-homepage/homepage-README.md",
   ];
 
   for (const pathname of ignoredPaths) {
@@ -47,9 +49,10 @@ test("ignores only reviewed non-web documentation and maintenance paths", () => 
   }
 });
 
-test("keeps documentation served by the web route as a build trigger", () => {
-  assert.equal(classifyChangedPath("documentation/development/README.md"), "build");
-  assert.equal(classifyChangedPath("documentation/pages_site/routes/00-homepage/homepage-README.md"), "build");
+test("builds only documentation registered as a public runtime input", () => {
+  assert.equal(classifyChangedPath("documentation/plans/journal_impact_DU.md"), "build");
+  assert.equal(classifyChangedPath("documentation/development/README.md"), "ignore");
+  assert.equal(classifyChangedPath("documentation/pages_site/routes/00-homepage/homepage-README.md"), "ignore");
 });
 
 test("builds on unknown, malformed, or unavailable diff input", () => {
@@ -69,35 +72,15 @@ test("builds on unknown, malformed, or unavailable diff input", () => {
 test("builds a mixed change set when one path is web-served documentation", () => {
   const decision = evaluateChangedPaths([
     "apps/mobile/package.json",
-    "documentation/operations/runbook-deploiement.md",
+    "documentation/plans/journal_impact_DU.md",
     "scripts/ci/pre_push_guard.ps1",
   ]);
 
   assert.equal(decision.action, "build");
-  assert.deepEqual(decision.buildPaths, ["documentation/operations/runbook-deploiement.md"]);
+  assert.deepEqual(decision.buildPaths, ["documentation/plans/journal_impact_DU.md"]);
 });
 
-test("recognizes signed Git commit objects without confusing payload text for a signature", () => {
-  assert.equal(
-    hasCommitSignature("tree abc\ngpgsig -----BEGIN SSH SIGNATURE-----\n payload\n\nsubject"),
-    true,
-  );
-  assert.equal(hasCommitSignature("tree abc\nauthor Maxence <maxence@example.com>\n\nsubject"), false);
-  assert.equal(hasCommitSignature("tree abc\n\nsubject mentions gpgsig but is not signed"), false);
-});
-
-test("deploys every signed commit automatically, independently of changed paths", () => {
-  assert.deepEqual(
-    evaluateSignedDeployment({ currentSha: "signed", signatureStatus: "present" }),
-    {
-      action: "build",
-      buildPaths: [],
-      reason: "signed Vercel commit; deploy automatically",
-    },
-  );
-});
-
-test("preserves the existing path decision for unsigned or unavailable commits", () => {
+test("uses the same path decision regardless of Git signature state", () => {
   const webFallback = evaluateIgnoreCommand({
     previousSha: "previous",
     currentSha: "commit",
@@ -109,16 +92,10 @@ test("preserves the existing path decision for unsigned or unavailable commits",
     changedPaths: ["scripts/ci/pre_push_guard.ps1"],
   });
 
+  assert.equal(webFallback.action, "build");
+  assert.equal(nonWebFallback.action, "ignore");
   assert.equal(
-    evaluateSignedDeployment({ currentSha: "commit", signatureStatus: "absent", fallbackDecision: webFallback }).action,
-    "build",
-  );
-  assert.equal(
-    evaluateSignedDeployment({ currentSha: "commit", signatureStatus: "unavailable", fallbackDecision: nonWebFallback }).action,
+    evaluateIgnoreCommand({ previousSha: "previous", currentSha: "commit", changedPaths: ["documentation/development/README.md"] }).action,
     "ignore",
-  );
-  assert.equal(
-    evaluateSignedDeployment({ currentSha: "", signatureStatus: "unavailable", fallbackDecision: webFallback }).action,
-    "build",
   );
 });

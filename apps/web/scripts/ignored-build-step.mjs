@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
-import { resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const BUILD_EXIT_CODE = 1;
@@ -30,6 +31,17 @@ const IGNORED_EXACT_PATHS = new Set([
   "apps/web/vitest.config.ts",
 ]);
 
+const PUBLIC_DOCUMENTATION_REGISTRY_SEGMENTS = [
+  "apps",
+  "web",
+  "src",
+  "lib",
+  "documentation",
+  "public-documentation-registry.ts",
+];
+
+let publicDocumentationPaths;
+
 function normalizePath(value) {
   if (typeof value !== "string") {
     return null;
@@ -52,6 +64,32 @@ function isWebGovernanceDocumentation(pathname) {
   return /^(?:AGENTS(?:\.override)?|README)\.md$/i.test(filename);
 }
 
+function getPublicDocumentationPaths() {
+  if (publicDocumentationPaths !== undefined) {
+    return publicDocumentationPaths;
+  }
+
+  try {
+    const registryPath = join(repositoryRoot(), ...PUBLIC_DOCUMENTATION_REGISTRY_SEGMENTS);
+    const source = readFileSync(registryPath, "utf8");
+    const paths = [...source.matchAll(/canonicalPath\s*:\s*["']([^"']+)["']/g)].map(
+      (match) => match[1],
+    );
+
+    if (paths.length === 0 || paths.some((pathname) => pathname.startsWith("/") || pathname.includes(".."))) {
+      throw new Error("Public documentation registry could not be read safely");
+    }
+
+    publicDocumentationPaths = new Set(paths);
+  } catch {
+    // A registry that cannot be read must not make a documentation change
+    // silently non-deploying.
+    publicDocumentationPaths = null;
+  }
+
+  return publicDocumentationPaths;
+}
+
 /**
  * Classify one Git path for Vercel's ignored build step.
  *
@@ -65,8 +103,8 @@ export function classifyChangedPath(value) {
   }
 
   if (pathname.startsWith("documentation/")) {
-    // The web documentation route reads this tree at runtime.
-    return "build";
+    const canonicalPath = pathname.slice("documentation/".length);
+    return getPublicDocumentationPaths()?.has(canonicalPath) ? "build" : "ignore";
   }
 
   if (BUILD_SCRIPTS.has(pathname)) {
@@ -126,40 +164,6 @@ export function evaluateIgnoreCommand({ previousSha, currentSha, changedPaths, g
   return evaluateChangedPaths(changedPaths);
 }
 
-/**
- * Detect a cryptographic signature block embedded in a Git commit object.
- *
- * Vercel's build environment does not contain the developers' trusted keyring,
- * so this rule deliberately checks the commit object rather than pretending to
- * verify signer identity. Repository branch protection remains responsible
- * for requiring a trusted/verified signer.
- */
-export function hasCommitSignature(commitObject) {
-  if (typeof commitObject !== "string") {
-    return false;
-  }
-
-  const header = commitObject.split(/\r?\n\r?\n/, 1)[0];
-  return /^(?:gpgsig|gpgsig-sha256) /m.test(header);
-}
-
-/**
- * A signed Git commit is an explicit deployment request for the Vercel
- * project. Other commits retain the existing path-based decision so this
- * opt-in rule does not disable ordinary web deployments.
- */
-export function evaluateSignedDeployment({ currentSha, signatureStatus, fallbackDecision }) {
-  if (signatureStatus === "present" && currentSha) {
-    return {
-      action: "build",
-      buildPaths: [],
-      reason: "signed Vercel commit; deploy automatically",
-    };
-  }
-
-  return fallbackDecision ?? evaluateIgnoreCommand({ previousSha: "", currentSha, changedPaths: undefined });
-}
-
 function repositoryRoot() {
   return execFileSync("git", ["rev-parse", "--show-toplevel"], {
     cwd: process.cwd(),
@@ -180,23 +184,10 @@ function changedPathsBetween(previousSha, currentSha, cwd) {
     .filter((pathname) => pathname.length > 0);
 }
 
-function readCommitSignatureStatus(currentSha, cwd) {
-  try {
-    const commitObject = execFileSync("git", ["cat-file", "commit", currentSha], {
-      cwd,
-      encoding: "utf8",
-    });
-    return hasCommitSignature(commitObject) ? "present" : "absent";
-  } catch {
-    return "unavailable";
-  }
-}
-
 function main() {
   const previousSha = process.env.VERCEL_GIT_PREVIOUS_SHA?.trim();
   const currentSha = process.env.VERCEL_GIT_COMMIT_SHA?.trim();
 
-  let signatureStatus = "unavailable";
   let fallbackDecision;
   try {
     const root = repositoryRoot();
@@ -204,13 +195,11 @@ function main() {
       ? changedPathsBetween(previousSha, currentSha, root)
       : undefined;
     fallbackDecision = evaluateIgnoreCommand({ previousSha, currentSha, changedPaths });
-    signatureStatus = readCommitSignatureStatus(currentSha, root);
   } catch {
     fallbackDecision = evaluateIgnoreCommand({ previousSha, currentSha, gitError: true });
-    signatureStatus = "unavailable";
   }
 
-  const decision = evaluateSignedDeployment({ currentSha, signatureStatus, fallbackDecision });
+  const decision = fallbackDecision;
 
   const label = decision.action === "ignore" ? "IGNORE" : "BUILD";
   const details = decision.buildPaths.length > 0
