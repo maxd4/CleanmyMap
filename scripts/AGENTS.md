@@ -17,8 +17,10 @@ médias et rapports présents sous `scripts/`.
 
 ### Migration vers les worktrees liés
 
-Le checkout `main` est une référence/bootstrap ; chaque nouveau run possède
-une branche `codex/<run-id>` et un worktree lié sous
+Le checkout bootstrap `CleanmyMap-main` reste sur `main`, est le miroir local
+de `origin/main` et la source du serveur localhost ; il ne sert pas au
+développement mutable. Chaque nouveau run possède une branche
+`codex/<run-id>` et un worktree lié sous
 `<parent>/CleanMyMap-worktrees/<run-id>/`. Les métadonnées, claims advisory et
 le mutex global sont stockés sous
 `git rev-parse --git-common-dir/cleanmymap-workspace`. Le champ canonique est
@@ -33,6 +35,15 @@ La reprise recharge le même run, sa branche, son worktree et sa publication.
 les fast-forwards sont conservés et tout nouveau merge est signé. Un conflit
 Git devient `INTEGRATION_CONFLICT`. Après convergence, seuls les worktrees et
 branches du run sont nettoyés.
+
+Après une publication réussie et la finalisation du run, le coordinateur
+recherche ce bootstrap, vérifie `main` et l'absence de modifications, puis
+exécute `fetch origin main` et `merge --ff-only origin/main`. Un bootstrap
+dirty est signalé `BOOTSTRAP_DIRTY` et laissé intact ; aucune copie manuelle,
+aucun reset, rebase, stash ou clean automatique n'est permis. `doctor` signale
+également les runs fermés avec worktree, les runs terminés dirty/staged, les
+commits non publiés abandonnés, les worktrees sans run et les métadonnées
+`ACQUIRED` sans mutex réel.
 
 `workspace-coordination.mjs` conserve uniquement des métadonnées runtime sous
 `git rev-parse --git-common-dir/cleanmymap-workspace/`. Un `claim` représente exclusivement une intention

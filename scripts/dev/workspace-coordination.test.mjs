@@ -374,7 +374,54 @@ test("publicationComplete finalizes a run, including claims, locks and worktrees
     assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "publication.lock")), false);
     assert.equal(fs.existsSync(run.worktreePath), false);
     assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "closed-runs", "run-a.json")), true);
+    const removals = gitRunner.state.calls.filter(({ args }) => args[0] === "worktree" && args[1] === "remove");
+    assert.ok(removals.length > 0);
+    assert.equal(removals.every(({ cwd }) => path.resolve(cwd) === path.resolve(root)), true);
     assert.equal(coordinator.publicationComplete({ runId: "run-a" }).idempotent, true);
+  } finally { cleanup(root); }
+});
+
+test("publicationComplete fast-forwards a clean bootstrap without copying files", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.publicationAcquire({ runId: "run-a" });
+    const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", "run-a.json");
+    const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
+    saved.publication = { state: "PUSHED_PENDING_COMPLETE", publishedSha: "base-sha" };
+    fs.writeFileSync(runFile, JSON.stringify(saved));
+
+    const result = coordinator.publicationComplete({ runId: "run-a" });
+
+    assert.equal(result.bootstrapSync.state, "SYNCED");
+    assert.equal(result.bootstrapSync.path, path.resolve(root));
+    assert.equal(gitRunner.state.calls.some(({ cwd, args }) => path.resolve(cwd) === path.resolve(root) && args.join(" ") === "merge --ff-only origin/main"), true);
+    assert.equal(gitRunner.state.calls.some(({ cwd, args }) => path.resolve(cwd) !== path.resolve(root) && args[0] === "copy"), false);
+  } finally { cleanup(root); }
+});
+
+test("publicationComplete preserves a dirty bootstrap and reports BOOTSTRAP_DIRTY", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.publicationAcquire({ runId: "run-a" });
+    gitRunner.state.status.set(path.resolve(root), " M legacy.ts\n");
+    const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", "run-a.json");
+    const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
+    saved.publication = { state: "PUSHED_PENDING_COMPLETE", publishedSha: "base-sha" };
+    fs.writeFileSync(runFile, JSON.stringify(saved));
+
+    const result = coordinator.publicationComplete({ runId: "run-a" });
+
+    assert.equal(result.bootstrapSync.state, "BOOTSTRAP_DIRTY");
+    assert.equal(result.bootstrapSync.dirtyPaths.includes("legacy.ts"), true);
+    assert.equal(gitRunner.state.calls.some(({ cwd, args }) => path.resolve(cwd) === path.resolve(root) && args[0] === "merge"), false);
   } finally { cleanup(root); }
 });
 
@@ -461,11 +508,45 @@ test("doctor reports closed-run worktrees and prematurely closed work", () => {
     fs.writeFileSync(closedPath, JSON.stringify(saved));
     fs.unlinkSync(activePath);
     gitRunner.state.status.set(path.resolve(run.worktreePath), " M src/dirty.ts\n");
+    gitRunner.state.heads.set(path.resolve(run.worktreePath), "unpublished-sha");
 
     const report = coordinator.doctor();
     assert.equal(report.closedRunWorktrees.some((item) => item.runId === "closed-dirty"), true);
     assert.equal(report.worktreesWithoutActiveMetadata.some((item) => item.branch === "refs/heads/codex/closed-dirty"), true);
     assert.equal(report.prematurelyClosedRuns.some((item) => item.runId === "closed-dirty"), true);
+    assert.equal(report.abandonedUnpublishedCommits.some((item) => item.runId === "closed-dirty"), true);
+    assert.equal(report.ok, false);
+  } finally { cleanup(root); }
+});
+
+test("doctor reports bootstrap, acquired metadata and completed dirty worktree anomalies", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    const acquired = coordinator.start({ runId: "acquired-without-lock", domain: "ROUTE" });
+    const acquiredPath = path.join(root, ".git", ...COORDINATION_ROOT, "runs", "acquired-without-lock.json");
+    const acquiredMetadata = JSON.parse(fs.readFileSync(acquiredPath, "utf8"));
+    acquiredMetadata.publication = { state: "ACQUIRED" };
+    fs.writeFileSync(acquiredPath, JSON.stringify(acquiredMetadata));
+
+    const completed = coordinator.start({ runId: "completed-dirty", domain: "ROUTE" });
+    const completedPath = path.join(root, ".git", ...COORDINATION_ROOT, "runs", "completed-dirty.json");
+    const completedMetadata = JSON.parse(fs.readFileSync(completedPath, "utf8"));
+    completedMetadata.publication = { state: "COMPLETE", publishedSha: "base-sha" };
+    const closedPath = path.join(root, ".git", ...COORDINATION_ROOT, "closed-runs", "completed-dirty.json");
+    fs.mkdirSync(path.dirname(closedPath), { recursive: true });
+    fs.writeFileSync(closedPath, JSON.stringify(completedMetadata));
+    fs.unlinkSync(completedPath);
+    gitRunner.state.status.set(path.resolve(root), " M bootstrap-legacy.ts\n");
+    gitRunner.state.status.set(path.resolve(completed.worktreePath), " M completed.ts\n");
+
+    const report = coordinator.doctor();
+
+    assert.equal(report.bootstrap.state, "BOOTSTRAP_DIRTY");
+    assert.equal(report.metadataAcquiredWithoutMutex.some((item) => item.runId === acquired.runId), true);
+    assert.equal(report.completedRunWorktreesDirty.some((item) => item.runId === completed.runId), true);
     assert.equal(report.ok, false);
   } finally { cleanup(root); }
 });
