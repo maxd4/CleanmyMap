@@ -157,6 +157,22 @@ function linkDirectory(candidateTreeRoot, relativePath, sourcePath, linkedPaths)
   linkedPaths.push(destination);
 }
 
+function linkWorkspaceDirectory(candidateTreeRoot, relativePath, sourcePath, linkedPaths) {
+  if (!fs.existsSync(sourcePath)) return;
+  const overlayPath = path.join(candidateTreeRoot, ".cmm-dependency-links", relativePath.replaceAll("/", "-"));
+  fs.mkdirSync(overlayPath, { recursive: true });
+  for (const entry of fs.readdirSync(sourcePath, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const entryDestination = path.join(overlayPath, entry.name);
+    fs.symlinkSync(path.join(sourcePath, entry.name), entryDestination, "junction");
+    linkedPaths.push(entryDestination);
+  }
+  const destination = path.join(candidateTreeRoot, ...relativePath.split("/"));
+  fs.mkdirSync(path.dirname(destination), { recursive: true });
+  fs.symlinkSync(overlayPath, destination, "junction");
+  linkedPaths.push(destination);
+}
+
 function findGitExecutable() {
   const locator = process.platform === "win32" ? "where.exe" : "which";
   return execFileSync(locator, ["git"], { encoding: "utf8" })
@@ -250,12 +266,9 @@ function materializeCandidate(repositoryRoot, candidateRef) {
     const dependenciesMatch = dependencyManifestsMatch(candidateTreeRoot, canonicalRoot);
     if (dependenciesMatch) {
       for (const relativePath of CANONICAL_DEPENDENCY_PATHS) {
-        linkDirectory(
-          candidateTreeRoot,
-          relativePath,
-          path.join(canonicalRoot, ...relativePath.split("/")),
-          linkedPaths,
-        );
+        const sourcePath = path.join(canonicalRoot, ...relativePath.split("/"));
+        if (relativePath === "node_modules") linkDirectory(candidateTreeRoot, relativePath, sourcePath, linkedPaths);
+        else linkWorkspaceDirectory(candidateTreeRoot, relativePath, sourcePath, linkedPaths);
       }
     }
     linkDirectory(candidateTreeRoot, ".vercel", path.join(repositoryRoot, ".vercel"), linkedPaths);
