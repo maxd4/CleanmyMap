@@ -655,6 +655,10 @@ staged et l'ascendance du candidat, avec refus explicite en cas de commit
 pas un conflit : l'intégration Git décide, et seul un conflit Git réel bloque.
 Le mutex est réentrant pour son propre run, y compris après expiration lorsque
 le candidat reste cohérent.
+La lease par défaut du mutex de publication est temporairement fixée à
+30 minutes pour les opérations longues. Cette valeur sera remplacée par un
+heartbeat autonome ; elle ne change pas le délai d'attente de publication ni
+les garde-fous de staged et d'ownership.
 
 `workspace:claim` refuse `ORPHAN_DIRTY` pour un fichier dirty non legacy et non
 possédé ; `--adopt-legacy` est nécessaire pour une adoption explicite.

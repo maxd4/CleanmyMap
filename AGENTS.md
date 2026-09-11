@@ -316,6 +316,11 @@ localement sans copie manuelle.
   les runs sans worktree et les worktrees de coordinateur sans run. La
   récupération d'un critical lock n'est autorisée que si son propriétaire est
   absent ou sa lease expirée ; un lock vivant n'est jamais supprimé ;
+- la lease par défaut du mutex de publication est temporairement fixée à
+  30 minutes pour absorber les opérations longues. Cette durée est
+  transitoire, en attendant un heartbeat autonome pendant ces opérations ;
+  elle ne modifie pas le délai d'attente de publication ni les garde-fous de
+  staged et d'ownership ;
 - `workspace:claim` n'adopte jamais implicitement un fichier dirty. Un chemin
   dirty qui n'est ni legacy, ni déjà possédé par le run est `ORPHAN_DIRTY` et
   exige `--adopt-legacy`. Aucun de ces contrôles ne lit le contenu du fichier ;

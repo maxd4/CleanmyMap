@@ -173,6 +173,51 @@ test("serializes publication with a global mutex and bounded wait", () => {
   } finally { cleanup(root); }
 });
 
+test("keeps a live publication lock before the 30-minute lease and recovers it after expiry", () => {
+  const root = fixture();
+  try {
+    let clock = Date.parse("2026-01-01T00:00:00.000Z");
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner, now: () => clock });
+    coordinator.init();
+    const run = coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.publicationAcquire({ runId: "run-a" });
+    const lockFile = path.join(root, ".git", ...COORDINATION_ROOT, "publication.lock");
+
+    clock += 29 * 60 * 1000;
+    assert.deepEqual(coordinator.recoverAbandonedLocks(), []);
+    assert.equal(fs.existsSync(lockFile), true);
+    assert.equal(fs.existsSync(run.worktreePath), true);
+    assert.equal(JSON.parse(fs.readFileSync(lockFile, "utf8")).runId, "run-a");
+
+    clock += 2 * 60 * 1000;
+    assert.equal(coordinator.recoverAbandonedLocks().some((item) => item.kind === "publication"), true);
+    assert.equal(fs.existsSync(lockFile), false);
+  } finally { cleanup(root); }
+});
+
+test("recovers an expired lock without deleting foreign staged work or its worktree", () => {
+  const root = fixture();
+  try {
+    let clock = Date.parse("2026-01-01T00:00:00.000Z");
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner, now: () => clock });
+    coordinator.init();
+    const run = coordinator.start({ runId: "run-a", domain: "ROUTE" });
+    coordinator.publicationAcquire({ runId: "run-a" });
+    const foreignRun = coordinator.start({ runId: "run-b", domain: "LEARN" });
+    const lockFile = path.join(root, ".git", ...COORDINATION_ROOT, "publication.lock");
+    gitRunner.state.staged.set(path.resolve(foreignRun.worktreePath), "M foreign.ts\0");
+
+    clock += 31 * 60 * 1000;
+    assert.equal(coordinator.recoverAbandonedLocks().some((item) => item.kind === "publication"), true);
+    assert.equal(fs.existsSync(lockFile), false);
+    assert.equal(fs.existsSync(run.worktreePath), true);
+    assert.equal(fs.existsSync(foreignRun.worktreePath), true);
+    assert.equal(gitRunner.state.staged.get(path.resolve(foreignRun.worktreePath)), "M foreign.ts\0");
+  } finally { cleanup(root); }
+});
+
 test("resume returns the same run identity and reads legacy ownedPaths compatibly", () => {
   const root = fixture();
   try {
@@ -423,6 +468,32 @@ test("publicationComplete preserves a dirty bootstrap and reports BOOTSTRAP_DIRT
     assert.equal(result.bootstrapSync.dirtyPaths.includes("legacy.ts"), true);
     assert.equal(gitRunner.state.calls.some(({ cwd, args }) => path.resolve(cwd) === path.resolve(root) && args[0] === "merge"), false);
   } finally { cleanup(root); }
+});
+
+test("publicationComplete releases the run worktree when invoked from its cwd", () => {
+  const root = fixture();
+  const previousDirectory = process.cwd();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    const run = coordinator.start({ runId: "run-from-cwd", domain: "ROUTE" });
+    coordinator.publicationAcquire({ runId: "run-from-cwd" });
+    const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", "run-from-cwd.json");
+    const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
+    saved.publication = { state: "PUSHED_PENDING_COMPLETE", publishedSha: "base-sha" };
+    fs.writeFileSync(runFile, JSON.stringify(saved));
+
+    process.chdir(run.worktreePath);
+    const result = coordinator.publicationComplete({ runId: "run-from-cwd" });
+
+    assert.equal(result.completed, true);
+    assert.equal(fs.existsSync(run.worktreePath), false);
+    assert.equal(process.cwd(), path.resolve(root));
+  } finally {
+    process.chdir(previousDirectory);
+    cleanup(root);
+  }
 });
 
 test("accepts an already-published ancestor after another remote publication", () => {
