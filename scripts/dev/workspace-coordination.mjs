@@ -147,6 +147,13 @@ function loadRun(root, runId) {
   return { run, filePath };
 }
 
+function loadClosedRun(root, runId) {
+  const filePath = getClosedRunPath(root, runId);
+  const run = readOptionalJson(filePath);
+  if (!run) throw workspaceError("UNKNOWN_RUN", `unknown run: ${runId}`);
+  return { run, filePath };
+}
+
 function worktreeParent(repositoryRoot) { return path.join(path.dirname(path.resolve(repositoryRoot)), "CleanMyMap-worktrees"); }
 function ownWorktreePath(repositoryRoot, runId) { return path.join(worktreeParent(repositoryRoot), runId); }
 function publishWorktreePath(repositoryRoot, runId) { return path.join(worktreeParent(repositoryRoot), ".publish", runId); }
@@ -378,6 +385,16 @@ export function createWorkspaceCoordinator({
     return { worktree, branch };
   }
 
+  function assertClosedRunRecoveryReference(run) {
+    const worktree = runWorktree(run);
+    const expectedBranch = `refs/heads/${run.branchName ?? `codex/${run.runId}`}`;
+    const listed = worktreeList(repo, gitRunner).find((item) => path.resolve(item.path) === worktree);
+    if (!listed || listed.branch !== expectedBranch || !fs.existsSync(worktree)) {
+      throw workspaceError("CLOSED_RUN_RECOVERY_UNSAFE", `closed run ${run.runId} no longer has its recorded branch/worktree`, { runId: run.runId, worktree, expectedBranch });
+    }
+    return { worktree, branch: expectedBranch.slice("refs/heads/".length) };
+  }
+
   function isAncestor(ancestor, descendant, repositoryRoot = repo) {
     if (!ancestor || !descendant) return false;
     try {
@@ -493,14 +510,35 @@ export function createWorkspaceCoordinator({
   }
 
   function resume({ runId } = {}) {
-    const { run, filePath } = loadRunWithLegacyMigration(runId);
+    let loaded;
+    let closed = false;
+    try {
+      loaded = loadRunWithLegacyMigration(runId);
+    } catch (error) {
+      if (error.code !== "UNKNOWN_RUN") throw error;
+      loaded = loadClosedRun(root, runId);
+      closed = true;
+    }
+    if (closed) {
+      if (loaded.run.publication?.state === "COMPLETE" || loaded.run.publication?.publishedSha) {
+        throw workspaceError("CLOSED_RUN_RECOVERY_PUBLISHED", `closed run ${runId} is not an unpublished recovery candidate`);
+      }
+      assertClosedRunRecoveryReference(loaded.run);
+    }
+    const { run, filePath } = loaded;
     const migrated = !run.worktreePath;
     const nextRun = { ...run, branchName: run.branchName ?? `codex/${runId}`, worktreePath: run.worktreePath ?? ownPath(runId), intendedPaths: normalizePaths(repo, run.intendedPaths ?? run.ownedPaths ?? []) };
-    ensureWorktree({ run: nextRun, migrateDirtyPaths: migrated ? nextRun.intendedPaths : [] });
+    if (!closed) ensureWorktree({ run: nextRun, migrateDirtyPaths: migrated ? nextRun.intendedPaths : [] });
     const classification = classifyResume(nextRun);
     const heartbeatAt = timestamp();
     const saved = { ...nextRun, state: classification.state, updatedAt: heartbeatAt, heartbeatAt };
-    metadataWriter(filePath, saved);
+    if (closed) {
+      const activePath = getRunPath(root, runId);
+      metadataWriter(activePath, saved);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    } else {
+      metadataWriter(filePath, saved);
+    }
     return { runId, state: classification.state, headSha: classification.headSha, originMainSha: classification.originMainSha, baseSha: saved.baseSha, branchName: saved.branchName, worktreePath: saved.worktreePath, stagedPaths: classification.stagedPaths, candidatePaths: classification.candidatePaths ?? [], publication: saved.publication ?? null, legacyCoordinationState: legacyState() };
   }
 
@@ -534,6 +572,25 @@ export function createWorkspaceCoordinator({
       runGit(["worktree", "remove", "--", candidate]);
     }
     for (const branch of [run.publishBranchName ?? `publish/${run.runId}`, run.branchName ?? `codex/${run.runId}`]) if (branchExists(repo, branch, gitRunner)) runGit(["branch", "-D", branch]);
+  }
+
+  function assertRunIsEmptyAndAbandoned(run) {
+    const ownStatus = runWorktreeStatus(run);
+    if (ownStatus.dirtyPaths.length > 0 || ownStatus.stagedPaths.length > 0) {
+      throw workspaceError("WORKTREE_DIRTY", `run worktree is not clean: ${[...new Set([...ownStatus.dirtyPaths, ...ownStatus.stagedPaths])].join(", ")}`);
+    }
+    const ownHead = gitAt(repo, ownStatus.worktree, ["rev-parse", "HEAD"], gitRunner);
+    if (ownHead !== run.baseSha) throw workspaceError("UNPUBLISHED_WORK", `run ${run.runId} contains an unpublished commit ${ownHead}`, { runId: run.runId, headSha: ownHead, baseSha: run.baseSha });
+
+    const publishPath = path.resolve(run.publishWorktreePath ?? publishPathFor(run.runId));
+    if (!fs.existsSync(publishPath)) return;
+    const publishStatus = { stagedPaths: readStagedPaths(publishPath, (cwd, args) => gitRunner(cwd, args)), dirtyPaths: readDirtyPaths(publishPath, (cwd, args) => gitRunner(cwd, args)) };
+    if (publishStatus.dirtyPaths.length > 0 || publishStatus.stagedPaths.length > 0) {
+      throw workspaceError("WORKTREE_DIRTY", `publish worktree is not clean: ${[...new Set([...publishStatus.dirtyPaths, ...publishStatus.stagedPaths])].join(", ")}`, { worktree: publishPath });
+    }
+    const publishHead = gitAt(repo, publishPath, ["rev-parse", "HEAD"], gitRunner);
+    const originMain = runGit(["rev-parse", "origin/main"]);
+    if (publishHead !== originMain) throw workspaceError("UNPUBLISHED_WORK", `publish worktree ${publishPath} contains ${publishHead}`, { runId: run.runId, publishHead, originMain });
   }
 
   function publicationIntegrate({ runId, push = true, signer = null } = {}) {
@@ -655,6 +712,8 @@ export function createWorkspaceCoordinator({
     const { run, filePath } = loadRunWithLegacyMigration(runId);
     if (run.publication?.state && run.publication.state !== "COMPLETE") throw workspaceError("PUBLICATION_COMPLETE_REQUIRED", `run ${runId} requires publication completion`);
     if (run.publication?.state === "COMPLETE") return finalizeRun({ run, filePath, publishedSha: run.publication.publishedSha });
+    assertRunIsEmptyAndAbandoned(run);
+    cleanupOwnWorktrees(run);
     removeRunClaimsAndLocks(runId, run.domain);
     fs.mkdirSync(path.dirname(getClosedRunPath(root, runId)), { recursive: true });
     metadataWriter(getClosedRunPath(root, runId), { ...run, closedAt: timestamp() });
@@ -679,6 +738,7 @@ export function createWorkspaceCoordinator({
     const report = status();
     const activeRuns = readRuns(root);
     const active = new Map(activeRuns.map((run) => [run.runId, run]));
+    const closedRuns = readRuns(root, "closed-runs");
     const publication = lockOwner();
     const staleLocks = [];
     const publicationOrphan = Boolean(publication && (!active.has(publication.runId) || isLeaseExpired(publication, now, leaseMs)));
@@ -706,7 +766,37 @@ export function createWorkspaceCoordinator({
       return !active.has(runId);
     }).map((item) => ({ path: item.path, branch: item.branch }));
     const coordinatorWorktreeOrphan = orphanWorktrees.length > 0;
-    return { ...report, staleLocks, publicationOrphan, missingWorktrees, orphanWorktrees, coordinatorWorktreeOrphan, ok: staleLocks.length === 0 && missingWorktrees.length === 0 && orphanWorktrees.length === 0 };
+    const closedRunWorktrees = [];
+    const prematurelyClosedRuns = [];
+    for (const run of closedRuns) {
+      const worktree = path.resolve(run.worktreePath ?? ownPath(run.runId));
+      const listedRunWorktree = listed.find((item) => path.resolve(item.path) === worktree);
+      if (listedRunWorktree || fs.existsSync(worktree)) closedRunWorktrees.push({ runId: run.runId, path: worktree, branch: listedRunWorktree?.branch ?? null });
+      if (run.publication?.state === "COMPLETE" || !listedRunWorktree || !fs.existsSync(worktree)) continue;
+      try {
+        const status = runWorktreeStatus({ ...run, worktreePath: worktree });
+        const head = gitAt(repo, worktree, ["rev-parse", "HEAD"], gitRunner);
+        if (status.dirtyPaths.length > 0 || status.stagedPaths.length > 0 || head !== run.baseSha) {
+          prematurelyClosedRuns.push({ runId: run.runId, path: worktree, headSha: head, baseSha: run.baseSha, dirtyPaths: status.dirtyPaths, stagedPaths: status.stagedPaths });
+        }
+      } catch (error) {
+        prematurelyClosedRuns.push({ runId: run.runId, path: worktree, reason: error.code ?? "WORKTREE_INSPECTION_FAILED" });
+      }
+    }
+    const worktreesWithoutActiveMetadata = orphanWorktrees;
+    const lifecycleResidues = closedRunWorktrees.length > 0 || worktreesWithoutActiveMetadata.length > 0 || prematurelyClosedRuns.length > 0;
+    return {
+      ...report,
+      staleLocks,
+      publicationOrphan,
+      missingWorktrees,
+      orphanWorktrees,
+      coordinatorWorktreeOrphan,
+      closedRunWorktrees,
+      worktreesWithoutActiveMetadata,
+      prematurelyClosedRuns,
+      ok: staleLocks.length === 0 && missingWorktrees.length === 0 && orphanWorktrees.length === 0 && !lifecycleResidues,
+    };
   }
 
   return { init, start, claim, unclaim, staleCheck, resume, publicationAcquire, publicationIntegrate, publicationRelease, publicationComplete, publicationReconcile, heartbeat, recoverAbandonedLocks, release, status, checkStaged, doctor };
