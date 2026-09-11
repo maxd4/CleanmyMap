@@ -71,17 +71,12 @@ La lease par défaut du mutex de publication est temporairement de 30 minutes
 pour absorber les opérations longues ; cette durée attend un remplacement par
 un heartbeat autonome et ne modifie pas le délai d'attente de publication.
 
-`workspace:start` commence par `git fetch origin main`, lit `HEAD` et
-la branche courante. Toute branche autre que `main`, y compris un detached
-HEAD, lève `WORKTREE_BRANCH_INVALID`. Un `HEAD == origin/main` autorise le
-démarrage ; un checkout `ahead-only` autorise également le démarrage, marque
-`PUBLICATION_PENDING` et conserve les chemins de
-`git diff --name-only origin/main..HEAD`. Les chemins revendiqués par ce run
-doivent être disjoints de ces commits non publiés, sinon
-`UNPUBLISHED_PATH_CONFLICT`. Un checkout behind ou réellement divergent lève
-`WORKTREE_BASE_DIVERGED`. Cette politique de démarrage ne doit pas exiger
-l'égalité littérale `HEAD == origin/main` ; cette égalité reste obligatoire
-avant toute publication. Le SHA de `origin/main` est conservé comme `baseSha`.
+`workspace:start` commence par `git fetch origin main`, vérifie que le
+bootstrap est bien la référence `main`, puis crée le run depuis le SHA courant
+de `origin/main` dans une branche `codex/<run-id>` et un worktree lié. Le
+bootstrap peut être dirty ou en retard : il n'est jamais utilisé comme
+workspace mutable et n'est pas écrasé lorsqu'une synchronisation n'est pas
+sûre. Le SHA de `origin/main` est conservé comme `baseSha`.
 
 Le flux canonique est `STAGE → STAGED VALIDATION → COMMIT LOCAL SIGNÉ →
 PUBLICATION ACQUIRE → INTEGRATE → PUSH → FINALIZE`. Le staging et le contrôle
@@ -95,9 +90,8 @@ informatif et ne bloque pas par simple chevauchement de chemin.
 Après interruption, `workspace:resume -- --run-id <RUN_ID>` recharge uniquement
 le run existant, renouvelle son heartbeat et classe `WORK`, `STAGED_PENDING`,
 `COMMITTED_PENDING` ou `PUSHED_PENDING_COMPLETE` par lecture des refs, des
-staged et des ownerships. En `ahead-only`, il doit retrouver le run dont le
-candidat appartient sans ambiguïté à l'allowlist avant toute reprise. Il
-refuse `PUBLICATION_RESUME_FOREIGN_COMMIT`, `PUBLICATION_RESUME_STALE`,
+staged et des chemins intended. Il refuse
+`PUBLICATION_RESUME_FOREIGN_COMMIT`, `PUBLICATION_RESUME_STALE`,
 `PUBLICATION_RESUME_AMBIGUOUS` ou `PUBLICATION_RESUME_FOREIGN_STAGED` et ne
 modifie jamais l'historique Git. `publication-acquire` est réentrant pour son
 propre run et ne permet pas à un autre run d'adopter une publication expirée.
@@ -116,6 +110,15 @@ lock `AUTHZ_SECURITY` vivant n'est jamais récupéré.
 `LEGACY_UNOWNED`, ni déjà possédé par le run. L'adoption doit être explicite via
 `--adopt-legacy`; le coordinateur ne lit jamais le contenu des fichiers pour
 décider l'ownership.
+
+### LEGACY / COMPATIBILITY
+
+`PUBLICATION_PENDING`, `UNPUBLISHED_PATH_CONFLICT`, `WORKTREE_BASE_DIVERGED`,
+`LEGACY_UNOWNED`, `ORPHAN_DIRTY`, `OWNED_FILES`, `RUN_OWNED_PATHS` et la notion
+de `checkout partagé` désignent uniquement des états ou libellés de migration
+de l'ancien coordinateur. Ils peuvent être lus pour diagnostiquer un état
+historique, mais ne gouvernent aucun nouveau run et ne constituent pas des
+conflits anticipés du modèle worktree.
 
 ## Portée Git des contrôles
 

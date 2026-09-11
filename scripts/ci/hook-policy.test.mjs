@@ -132,8 +132,13 @@ test("governance keeps parallel dirty work separate from published commits", asy
   assert.match(rootAgents, /WORKTREE/);
   assert.match(rootAgents, /STAGED/);
   assert.match(rootAgents, /PUSH_CANDIDATE/);
-  assert.match(rootAgents, /sandbox de publication éphémère/);
-  assert.match(rootAgents, /ne pas exiger l'égalité\s+littérale `HEAD == origin\/main`/);
+  assert.match(rootAgents, /CleanMyMap-worktrees/);
+  assert.match(rootAgents, /publication-acquire/);
+  assert.match(rootAgents, /publication-integrate/);
+  assert.match(rootAgents, /INTEGRATION_CONFLICT/);
+  assert.match(rootAgents, /### LEGACY \/ COMPATIBILITY/);
+  assert.doesNotMatch(rootAgents, /Pour coordonner plusieurs chantiers dans le checkout partagé/);
+  assert.doesNotMatch(scriptsAgents, /HEAD == origin\/main/);
   assert.match(chatgpt, /ne doit pas recommander d'attendre un chantier parallèle indépendant/);
   assert.match(scriptsAgents, /pré-commit doit utiliser exclusivement la portée `STAGED`/);
   assert.match(scriptsAgents, /pré-push réel doit utiliser exclusivement la portée\s+`PUSH_CANDIDATE`/);

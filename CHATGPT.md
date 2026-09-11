@@ -544,10 +544,10 @@ Ne pas supprimer une compatibilité encore consommée uniquement pour « nettoye
 
 ## 17. Worktree dirty et chantiers parallèles
 
-Le checkout bootstrap `CleanmyMap-main` reste sur `main`, doit normalement être
-un miroir clean de `origin/main` et sert au serveur localhost ; il n'est pas le
-workspace mutable d'un chantier. Un dirty bootstrap est un signal
-`BOOTSTRAP_DIRTY`, pas une autorisation de l'écraser.
+Le checkout bootstrap `CleanmyMap-main` reste sur `main`, constitue la
+référence locale et sert au serveur localhost ; il n'est pas le workspace
+mutable d'un chantier. Il peut être dirty ou en retard : `BOOTSTRAP_DIRTY` est
+un signal de synchronisation, jamais une autorisation de l'écraser.
 
 Chaque run mutable utilise une branche `codex/<run-id>` et un worktree lié
 dédié. Son dirty state est autorisé pendant le travail ; avant publication,
@@ -619,15 +619,15 @@ Une publication distante réussie et un checkout local réconcilié sont deux
 preuves différentes. Après un push, Codex doit refaire le fetch et vérifier
 `git rev-list --left-right --count HEAD...origin/main`. Le résultat doit être
 `0 0` pour considérer le chantier entièrement clos ; une
-`publication-candidate` ne masque pas un checkout divergent.
+`publication-candidate` ne remplace pas la synchronisation sûre du bootstrap.
 
-Pour coordonner plusieurs chantiers dans le checkout partagé, utiliser le
-coordinateur local `workspace:init`, `workspace:start`, `workspace:claim` et
-`workspace:status`. L'initialisation classe les deltas préexistants
-`LEGACY_UNOWNED` sans les revendiquer ; l'adoption doit être explicite. Chaque
-run ne revendique que son allowlist, le domaine `AUTHZ_SECURITY` est exclusif,
-et le verrou `workspace:publication-acquire` ne sérialise que l'intégration et
-le push, après le commit local signé.
+Pour coordonner plusieurs chantiers, utiliser le coordinateur local depuis le
+bootstrap de référence : `workspace:start` crée une branche
+`codex/<run-id>` et un worktree lié dédié, puis `workspace:claim` enregistre des
+`intendedPaths` advisory. Le domaine `AUTHZ_SECURITY` est exclusif ; les
+claims ordinaires, le stage et le commit restent isolés dans le worktree du
+run. `workspace:publication-acquire` et `workspace:publication-integrate`
+ne sérialisent que l'intégration et le push, après le commit local signé.
 Le statut compact reste métadonnées-only ; le stale-check refetch `origin/main`
 et compare uniquement les chemins possédés depuis le base SHA. Ne jamais prendre
 un snapshot global du dirty worktree ni utiliser `git add -A` pour coordonner un
@@ -640,19 +640,21 @@ WORK
   claims advisory -> stage ciblé -> STAGED validation
   -> commit local signé sur codex/<run-id>
 PUBLICATION
-  publication-acquire -> fetch -> intégration Git
-  -> PUSH_CANDIDATE -> push main -> finalisation
+  publication-acquire -> fetch -> publication-integrate
+  -> intégration Git -> PUSH_CANDIDATE -> push main
+FINALIZE
+  publication-complete -> cleanup du run uniquement
 ```
 
 Après une interruption, `workspace:resume -- --run-id <RUN_ID>` recharge le
 run durable et classe `WORK`, `STAGED_PENDING`, `COMMITTED_PENDING` ou
-`PUSHED_PENDING_COMPLETE` sans modifier Git. En présence d'un checkout
-`ahead-only`, rechercher d'abord un run récupérable et reprendre ce même
-`runId`; ne jamais créer un nouveau propriétaire pour son commit. La reprise
-et `publication-acquire` vérifient exclusivement les chemins possédés, les
-staged et l'ascendance du candidat, avec refus explicite en cas de commit
-étranger, ambigu ou staged étranger. Un simple chevauchement de fichier n'est
-pas un conflit : l'intégration Git décide, et seul un conflit Git réel bloque.
+`PUSHED_PENDING_COMPLETE` sans modifier Git. La reprise retrouve le même
+`runId` et ses `intendedPaths`; elle ne crée jamais un nouveau propriétaire
+pour un commit existant. La reprise et `publication-acquire` vérifient les
+chemins intended, les staged et l'ascendance du candidat, avec refus explicite
+en cas de commit étranger, ambigu ou staged étranger. Un simple chevauchement
+de fichier n'est pas un conflit : l'intégration Git décide, et seul un conflit
+Git réel devient `INTEGRATION_CONFLICT`.
 Le mutex est réentrant pour son propre run, y compris après expiration lorsque
 le candidat reste cohérent.
 La lease par défaut du mutex de publication est temporairement fixée à
@@ -660,8 +662,8 @@ La lease par défaut du mutex de publication est temporairement fixée à
 heartbeat autonome ; elle ne change pas le délai d'attente de publication ni
 les garde-fous de staged et d'ownership.
 
-`workspace:claim` refuse `ORPHAN_DIRTY` pour un fichier dirty non legacy et non
-possédé ; `--adopt-legacy` est nécessaire pour une adoption explicite.
+`workspace:claim` refuse l'adoption implicite d'un fichier dirty étranger ; une
+adoption historique reste explicite avec `--adopt-legacy`.
 `workspace:check-staged` n'exige pas le mutex : il vérifie uniquement les
 `intendedPaths`. Après preuve que `publishedSha` est ancêtre de `origin/main`,
 `workspace:publication-complete` marque `COMPLETE`, ferme les métadonnées,
@@ -669,20 +671,24 @@ supprime claims et locks et nettoie uniquement les worktrees et branches du
 run. Cette finalisation est idempotente/reprenable ; `workspace:release` reste
 une primitive de récupération et n'est pas nécessaire après publication.
 
-Le modèle courant remplace le checkout partagé comme workspace mutable :
+Le modèle courant est : bootstrap `main` = référence locale ;
 `workspace:start` crée une branche `codex/<run-id>` et un worktree lié sous
-`<parent>/CleanMyMap-worktrees/<run-id>/`. Le bootstrap `CleanmyMap-main` reste
-sur `main`, clean entre les publications, et est fast-forwardé
-automatiquement après une publication réussie uniquement s'il est clean et sur
-`main`; sinon le coordinateur signale `BOOTSTRAP_DIRTY` ou
-`BOOTSTRAP_BRANCH_INVALID` sans l'écraser. Les métadonnées et le mutex sont
-sous le `git-common-dir`, dans `cleanmymap-workspace`; `.artifacts/coordination`
-est legacy et lecture-seule. Les claims ordinaires sont advisory et utilisent
-`intendedPaths`; seule la scope critique `AUTHZ_SECURITY` reste exclusive.
-La publication suit `COMMIT → publication-acquire → fetch → integrate →
+`<parent>/CleanMyMap-worktrees/<run-id>/`. Les métadonnées et le mutex sont
+sous le `git-common-dir`, dans `cleanmymap-workspace` ;
+`.artifacts/coordination` est legacy et lecture-seule. Les claims ordinaires
+sont advisory et utilisent `intendedPaths`; seule la scope critique
+`AUTHZ_SECURITY` reste exclusive. La publication suit
+`COMMIT → publication-acquire → fetch → publication-integrate →
 PUSH_CANDIDATE → push origin/main → publication-complete → cleanup`, puis le
-localhost retrouve les corrections publiées depuis le bootstrap sans copie
-manuelle.
+bootstrap est synchronisé uniquement s'il est clean et que le fast-forward est
+sûr.
+
+### LEGACY / COMPATIBILITY
+
+`PUBLICATION_PENDING`, `UNPUBLISHED_PATH_CONFLICT`, `WORKTREE_BASE_DIVERGED`,
+`LEGACY_UNOWNED`, `ORPHAN_DIRTY`, `OWNED_FILES`, `RUN_OWNED_PATHS` et la notion
+de `checkout partagé` décrivent uniquement l'ancien modèle ou des états de
+migration. Ils ne gouvernent aucun nouveau run.
 
 ## Sécurité des diagnostics host et des verrous Git
 
@@ -693,8 +699,8 @@ fois, arrêter en `HOST_ENVIRONMENT` s'il réapparaît, préserver les processus
 Git étrangers, borner les diagnostics ProcMon/ETW et ne pas transformer un
 workaround Codex Desktop en contrat du dépôt. Ne pas implémenter ici
 `UNPUBLISHED_COMMITS_BLOCK`, réservé à un lot mécanique séparé.
-Si le checkout partagé contient déjà un commit étranger, une divergence, une
-race ou ne permet pas une resynchronisation sûre, Codex peut utiliser une
+Si un état historique de l'ancien modèle contient déjà un commit étranger, une
+divergence, une race ou ne permet pas une resynchronisation sûre, Codex peut utiliser une
 sandbox de publication éphémère depuis le dernier `origin/main`, avec la seule
 allowlist du lot, puis la supprimer. Ce n'est pas une copie persistante et ce
 n'est pas un workflow par défaut.

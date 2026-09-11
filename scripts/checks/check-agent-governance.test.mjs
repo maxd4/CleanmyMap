@@ -11,13 +11,13 @@ import { canonicalAgentFiles, validateAgentGovernance } from "./check-agent-gove
 function createValidFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-agent-governance-"));
   const content = {
-    "AGENTS.md": "apps/web scripts documentation fichiers scoped workspace:start codex/<run-id> git-common-dir/cleanmymap-workspace intendedPaths AUTHZ_SECURITY claims advisory publication-integrate publication-complete HEAD == origin/main ahead-only PUBLICATION_PENDING UNPUBLISHED_PATH_CONFLICT WORKTREE_BASE_DIVERGED",
+    "AGENTS.md": "apps/web scripts documentation fichiers scoped workspace:start codex/<run-id> CleanMyMap-worktrees git-common-dir/cleanmymap-workspace intendedPaths AUTHZ_SECURITY claims advisory publication-acquire publication-integrate PUSH_CANDIDATE publication-complete INTEGRATION_CONFLICT\n\n### LEGACY / COMPATIBILITY\nPUBLICATION_PENDING UNPUBLISHED_PATH_CONFLICT WORKTREE_BASE_DIVERGED checkout partagé RUN_OWNED_PATHS OWNED_FILES",
     "apps/web/AGENTS.md": "Next.js Server/Client Leaflet",
     "apps/web/src/app/api/AGENTS.md": "AuthN AuthZ contrat de réponse propre",
     "apps/web/supabase/AGENTS.md": "apps/web/supabase/migrations/ unique RLS",
     "apps/web/scripts/AGENTS.md": "dry-run --apply provenance",
     "apps/mobile/AGENTS.md": "ClerkProvider Third-Party Auth `sub` Clerk distance_m",
-    "scripts/AGENTS.md": "audit cleanup provenance workspace:start codex/<run-id> git-common-dir/cleanmymap-workspace intendedPaths advisory AUTHZ_SECURITY publication-integrate HEAD == origin/main WORKTREE_BASE_DIVERGED",
+    "scripts/AGENTS.md": "audit cleanup provenance workspace:start codex/<run-id> CleanMyMap-worktrees git-common-dir/cleanmymap-workspace intendedPaths advisory AUTHZ_SECURITY publication-acquire publication-integrate PUSH_CANDIDATE publication-complete INTEGRATION_CONFLICT",
     ".github/AGENTS.md": "permissions CodeQL check:github-actions",
     "maintenance/python/AGENTS.md": "hors du requirements pytest",
     "documentation/AGENTS.md": "état actuel historique public",
@@ -55,13 +55,23 @@ describe("AGENTS hierarchy governance", () => {
     }
   });
 
-  it("rejects the legacy rule that refused every ahead-only checkout", () => {
+  it("rejects legacy coordinator terms in the current section", () => {
     const fixture = createValidFixture();
     const agentsPath = path.join(fixture, "AGENTS.md");
-    fs.appendFileSync(agentsPath, "\nIl refuse aussi de créer un run mutable si HEAD != origin/main.\n");
+    const current = fs.readFileSync(agentsPath, "utf8");
+    fs.writeFileSync(agentsPath, current.replace("PUSH_CANDIDATE", "PUBLICATION_PENDING PUSH_CANDIDATE"));
     try {
       const findings = validateAgentGovernance(fixture);
-      assert.ok(findings.some((finding) => finding.includes("must allow ahead-only checkouts")));
+      assert.ok(findings.some((finding) => finding.includes("PUBLICATION_PENDING")));
+    } finally {
+      fs.rmSync(fixture, { recursive: true, force: true });
+    }
+  });
+
+  it("allows legacy coordinator terms only in a marked compatibility section", () => {
+    const fixture = createValidFixture();
+    try {
+      assert.deepEqual(validateAgentGovernance(fixture), []);
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }
