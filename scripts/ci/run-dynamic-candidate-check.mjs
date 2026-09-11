@@ -161,9 +161,8 @@ function linkWorkspaceDirectory(candidateTreeRoot, relativePath, sourcePath, lin
   if (!fs.existsSync(sourcePath)) return;
   const overlayPath = path.join(
     candidateTreeRoot,
-    ".artifacts",
-    "validation",
-    "dependency-links",
+    ".next",
+    "canonical-workspace-node-modules",
     relativePath.replaceAll("/", "-"),
   );
   fs.mkdirSync(overlayPath, { recursive: true });
