@@ -10,7 +10,7 @@ export const CRITICAL_SCOPES = new Set(["AUTHZ_SECURITY"]);
 
 const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const DEFAULT_PUBLICATION_WAIT_MS = 5 * 60 * 1000;
-const DEFAULT_LEASE_MS = 5 * 60 * 1000;
+const DEFAULT_LEASE_MS = 30 * 60 * 1000;
 const DEFAULT_BACKOFF_MS = [30_000, 60_000, 120_000, 90_000];
 
 function git(repositoryRoot, args) {
@@ -592,12 +592,14 @@ export function createWorkspaceCoordinator({
   }
 
   function cleanupOwnWorktrees(run) {
+    const currentDirectory = path.resolve(process.cwd());
     for (const candidate of [run.publishWorktreePath ?? publishPathFor(run.runId), run.worktreePath ?? ownPath(run.runId)]) {
       if (!fs.existsSync(candidate)) continue;
       const dirty = readDirtyPaths(candidate, (cwd, args) => gitRunner(cwd, args));
       if (dirty.length > 0) throw workspaceError("WORKTREE_DIRTY", `${candidate}: ${dirty.join(", ")}`);
       // The command may itself run from the run worktree. Use the canonical
       // bootstrap as Git's cwd so removing the target cannot fail on Windows.
+      if (isWithin(path.resolve(candidate), currentDirectory)) process.chdir(canonicalRoot);
       gitRunner(canonicalRoot, ["worktree", "remove", "--", candidate]);
     }
     for (const branch of [run.publishBranchName ?? `publish/${run.runId}`, run.branchName ?? `codex/${run.runId}`]) if (branchExists(canonicalRoot, branch, gitRunner)) gitRunner(canonicalRoot, ["branch", "-D", branch]);
