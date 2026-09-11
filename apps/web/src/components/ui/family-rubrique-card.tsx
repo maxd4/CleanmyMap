@@ -5,7 +5,7 @@ import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { usePageFamily } from "@/lib/ui/page-families/use-page-family";
 import type { ResolvedPageFamily } from "@/lib/ui/page-families/types";
 
-type FamilyRubriqueCardProps = Omit<ComponentProps<typeof RubriqueCard>, "themeColor" | "surfaceKind"> & {
+type FamilyRubriqueCardProps = Omit<ComponentProps<typeof RubriqueCard>, "themeColor" | "surfaceKind" | "key"> & {
   /** Si omis, résolu via le pathname courant. */
   family?: ResolvedPageFamily;
 };
