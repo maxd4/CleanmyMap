@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  Une plateforme civic-tech pour repérer, organiser, réaliser, mesurer et partager des actions citoyennes de dépollution.
+  Plateforme civic-tech pour repérer, organiser, mesurer et coordonner des actions citoyennes de dépollution.
 </p>
 
 <p align="center">
