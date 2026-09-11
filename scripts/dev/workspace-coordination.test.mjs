@@ -425,6 +425,32 @@ test("publicationComplete preserves a dirty bootstrap and reports BOOTSTRAP_DIRT
   } finally { cleanup(root); }
 });
 
+test("publicationComplete releases the run worktree when invoked from its cwd", () => {
+  const root = fixture();
+  const previousDirectory = process.cwd();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    const run = coordinator.start({ runId: "run-from-cwd", domain: "ROUTE" });
+    coordinator.publicationAcquire({ runId: "run-from-cwd" });
+    const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", "run-from-cwd.json");
+    const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
+    saved.publication = { state: "PUSHED_PENDING_COMPLETE", publishedSha: "base-sha" };
+    fs.writeFileSync(runFile, JSON.stringify(saved));
+
+    process.chdir(run.worktreePath);
+    const result = coordinator.publicationComplete({ runId: "run-from-cwd" });
+
+    assert.equal(result.completed, true);
+    assert.equal(fs.existsSync(run.worktreePath), false);
+    assert.equal(process.cwd(), path.resolve(root));
+  } finally {
+    process.chdir(previousDirectory);
+    cleanup(root);
+  }
+});
+
 test("accepts an already-published ancestor after another remote publication", () => {
   const root = fixture();
   try {
