@@ -50,6 +50,7 @@ function fakeGit(root, options = {}) {
       const branch = branchIndex >= 0 ? `refs/heads/${args[branchIndex + 1]}` : `refs/heads/${args.at(-1)}`;
       const worktree = path.resolve(branchIndex >= 0 ? args[branchIndex + 2] : args[2]);
       fs.mkdirSync(worktree, { recursive: true });
+      fs.writeFileSync(path.join(worktree, ".git"), `gitdir: ${path.join(root, ".git", "worktrees", `${path.basename(worktree)}-${state.worktrees.size}`)}\n`);
       state.worktrees.set(worktree, branch);
       state.heads.set(worktree, state.head);
       state.branches.add(branch.replace("refs/heads/", ""));
@@ -77,7 +78,7 @@ function fakeGit(root, options = {}) {
     }
     if (args[0] === "merge-base") {
       const key = `${args[2]}..${args[3]}`;
-      if ((options.ancestorFailures ?? []).includes(key)) throw new Error("not an ancestor");
+      if ((options.ancestorFailures ?? state.ancestorFailures ?? []).includes(key)) throw new Error("not an ancestor");
       return "";
     }
     if (args[0] === "merge" && options.mergeError) throw new Error("CONFLICT (content): merge conflict");
@@ -98,7 +99,10 @@ function fakeGit(root, options = {}) {
   return command;
 }
 
-function cleanup(root) { fs.rmSync(root, { recursive: true, force: true }); }
+function cleanup(root) {
+  fs.rmSync(root, { recursive: true, force: true });
+  fs.rmSync(path.join(path.dirname(root), "CleanMyMap-worktrees"), { recursive: true, force: true });
+}
 
 test("stores metadata below git-common-dir and creates one branch/worktree per run", () => {
   const root = fixture();
@@ -423,6 +427,120 @@ test("publicationComplete finalizes a run, including claims, locks and worktrees
     assert.ok(removals.length > 0);
     assert.equal(removals.every(({ cwd }) => path.resolve(cwd) === path.resolve(root)), true);
     assert.equal(coordinator.publicationComplete({ runId: "run-a" }).idempotent, true);
+  } finally { cleanup(root); }
+});
+
+test("publicationComplete removes a registered publication worktree through the normal cleanup", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    const run = coordinator.start({ runId: "run-registered-publish", domain: "ROUTE" });
+    coordinator.publicationAcquire({ runId: run.runId });
+    const publishPath = path.join(path.dirname(root), "CleanMyMap-worktrees", ".publish", run.runId);
+    fs.mkdirSync(publishPath, { recursive: true });
+    gitRunner.state.worktrees.set(path.resolve(publishPath), "refs/heads/publish/run-registered-publish");
+    const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", `${run.runId}.json`);
+    const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
+    saved.publishWorktreePath = publishPath;
+    saved.publication = { state: "PUSHED_PENDING_COMPLETE", publishedSha: "base-sha" };
+    fs.writeFileSync(runFile, JSON.stringify(saved));
+
+    const result = coordinator.publicationComplete({ runId: run.runId });
+
+    assert.equal(result.completed, true);
+    assert.equal(fs.existsSync(publishPath), false);
+    assert.equal(gitRunner.state.calls.some(({ args }) => args[0] === "worktree" && args[1] === "remove" && path.resolve(args.at(-1)) === path.resolve(publishPath)), true);
+  } finally { cleanup(root); }
+});
+
+test("publicationComplete removes an already-absent publication worktree idempotently", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    const run = coordinator.start({ runId: "run-absent-publish", domain: "ROUTE" });
+    coordinator.publicationAcquire({ runId: run.runId });
+    const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", `${run.runId}.json`);
+    const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
+    saved.publication = { state: "PUSHED_PENDING_COMPLETE", publishedSha: "base-sha" };
+    fs.writeFileSync(runFile, JSON.stringify(saved));
+
+    assert.equal(coordinator.publicationComplete({ runId: run.runId }).completed, true);
+    assert.equal(coordinator.publicationComplete({ runId: run.runId }).idempotent, true);
+  } finally { cleanup(root); }
+});
+
+function prepareOrphanPublication({ root, gitRunner, runId, gitdir, publishedSha = "published-sha", origin = "origin-sha", ancestorFailures = [] }) {
+  const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+  const run = coordinator.start({ runId, domain: "ROUTE" });
+  coordinator.publicationAcquire({ runId });
+  const publishPath = path.join(path.dirname(root), "CleanMyMap-worktrees", ".publish", runId);
+  fs.mkdirSync(publishPath, { recursive: true });
+  fs.writeFileSync(path.join(publishPath, ".git"), `gitdir: ${gitdir}\n`);
+  const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", `${runId}.json`);
+  const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
+  saved.publishWorktreePath = publishPath;
+  saved.publication = { state: "COMPLETE", publishedSha };
+  fs.writeFileSync(runFile, JSON.stringify(saved));
+  gitRunner.state.origin = origin;
+  gitRunner.state.ancestorFailures = ancestorFailures;
+  return { coordinator, run, publishPath };
+}
+
+test("publicationComplete removes a canonical orphan publication worktree after proving the published SHA", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const administrativePath = path.join(root, ".git", "worktrees", "missing-publication-admin");
+    const { coordinator, publishPath } = prepareOrphanPublication({ root, gitRunner, runId: "run-orphan-publish", gitdir: administrativePath });
+
+    const result = coordinator.publicationComplete({ runId: "run-orphan-publish" });
+
+    assert.equal(result.completed, true);
+    assert.equal(fs.existsSync(publishPath), false);
+  } finally { cleanup(root); }
+});
+
+test("publicationComplete refuses an orphan publication worktree with a non-canonical gitdir", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const externalGitdir = path.join(path.dirname(root), "external-worktree-admin");
+    const { coordinator, publishPath } = prepareOrphanPublication({ root, gitRunner, runId: "run-external-publish", gitdir: externalGitdir });
+
+    assert.throws(() => coordinator.publicationComplete({ runId: "run-external-publish" }), { code: "ORPHAN_PUBLICATION_WORKTREE_REFUSED" });
+    assert.equal(fs.existsSync(publishPath), true);
+  } finally { cleanup(root); }
+});
+
+test("publicationComplete refuses an unregistered normal run worktree without deleting it", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    const run = coordinator.start({ runId: "run-unregistered-normal", domain: "ROUTE" });
+    coordinator.publicationAcquire({ runId: run.runId });
+    gitRunner.state.worktrees.delete(path.resolve(run.worktreePath));
+    const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", `${run.runId}.json`);
+    const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
+    saved.publication = { state: "COMPLETE", publishedSha: "base-sha" };
+    fs.writeFileSync(runFile, JSON.stringify(saved));
+
+    assert.throws(() => coordinator.publicationComplete({ runId: run.runId }), { code: "WORKTREE_NOT_REGISTERED" });
+    assert.equal(fs.existsSync(run.worktreePath), true);
+  } finally { cleanup(root); }
+});
+
+test("publicationComplete refuses orphan cleanup when the published SHA is not on origin/main", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const administrativePath = path.join(root, ".git", "worktrees", "missing-publication-admin");
+    const { coordinator, publishPath } = prepareOrphanPublication({ root, gitRunner, runId: "run-unpublished-orphan", gitdir: administrativePath, ancestorFailures: ["published-sha..origin-sha"] });
+
+    assert.throws(() => coordinator.publicationComplete({ runId: "run-unpublished-orphan" }), { code: "PUBLICATION_NOT_CONVERGED" });
+    assert.equal(fs.existsSync(publishPath), true);
   } finally { cleanup(root); }
 });
 
