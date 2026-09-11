@@ -67,6 +67,9 @@ distincte d'un conflit réel de chemin, de scope critique ou de staged étranger
 Les runs et le lock portent un heartbeat ; une récupération n'est autorisée
 que pour une lease expirée, avec preuve qu'aucun chemin staged du propriétaire
 ne serait mis en danger.
+La lease par défaut du mutex de publication est temporairement de 30 minutes
+pour absorber les opérations longues ; cette durée attend un remplacement par
+un heartbeat autonome et ne modifie pas le délai d'attente de publication.
 
 `workspace:start` commence par `git fetch origin main`, lit `HEAD` et
 la branche courante. Toute branche autre que `main`, y compris un detached

@@ -10,7 +10,7 @@ export const CRITICAL_SCOPES = new Set(["AUTHZ_SECURITY"]);
 
 const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const DEFAULT_PUBLICATION_WAIT_MS = 5 * 60 * 1000;
-const DEFAULT_LEASE_MS = 5 * 60 * 1000;
+const DEFAULT_LEASE_MS = 30 * 60 * 1000;
 const DEFAULT_BACKOFF_MS = [30_000, 60_000, 120_000, 90_000];
 
 function git(repositoryRoot, args) {
