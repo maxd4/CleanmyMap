@@ -1,12 +1,16 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HomeCommunityActivitySummary } from "@/lib/accueil/data";
 
 vi.mock("@/lib/animations/use-gsap-reveal", () => ({
   useGsapReveal: () => undefined,
 }));
 
-import { HomeCommunityCredibility } from "./accueil-community-credibility";
+import {
+  fetchHomepageActivity,
+  HomeCommunityCredibility,
+  HOMEPAGE_ACTIVITY_UNAVAILABLE_MESSAGE,
+} from "./accueil-community-credibility";
 
 const EMPTY_ACTIVITY = {
   visibleActions: 0,
@@ -37,6 +41,15 @@ const ONE_ITEM_ACTIVITY: HomeCommunityActivitySummary = {
     },
   ],
 };
+
+const ACTIVITY_RESPONSE = {
+  activity: ONE_ITEM_ACTIVITY,
+  errorMessage: null,
+};
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("HomeCommunityCredibility action hierarchy", () => {
   it("combines the credibility content into one responsive card", () => {
@@ -99,5 +112,66 @@ describe("HomeCommunityCredibility action hierarchy", () => {
     expect(markup).toContain(
       'aria-label="Voir l&#x27;action La Brigade Verte a réuni 10 bénévoles le 14/04/2026"',
     );
+  });
+
+  it("parses a valid JSON activity response", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify(ACTIVITY_RESPONSE), { status: 200 }),
+      ),
+    );
+
+    await expect(fetchHomepageActivity("/api/homepage/activity")).resolves.toEqual(
+      ACTIVITY_RESPONSE,
+    );
+  });
+
+  it("normalizes a JSON 503 response to the stable public error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            activity: { visibleActions: 0, distinctLocations: 0, items: [] },
+            errorMessage: "Database timeout",
+          }),
+          { status: 503 },
+        ),
+      ),
+    );
+
+    await expect(fetchHomepageActivity("/api/homepage/activity")).rejects.toMatchObject({
+      message: HOMEPAGE_ACTIVITY_UNAVAILABLE_MESSAGE,
+    });
+  });
+
+  it.each([
+    ["an empty body", ""],
+    ["a non-JSON body", "Service unavailable"],
+    ["invalid JSON", "{"],
+  ])("normalizes %s to the stable public error", async (_description, body) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(body, { status: 200 })),
+    );
+
+    await expect(fetchHomepageActivity("/api/homepage/activity")).rejects.toMatchObject({
+      message: HOMEPAGE_ACTIVITY_UNAVAILABLE_MESSAGE,
+    });
+  });
+
+  it("never renders technical activity errors in the public HTML", () => {
+    const markup = renderToStaticMarkup(
+      <HomeCommunityCredibility
+        activity={ONE_ITEM_ACTIVITY}
+        errorMessage="Unexpected end of JSON input"
+      />,
+    );
+
+    expect(markup).toContain(HOMEPAGE_ACTIVITY_UNAVAILABLE_MESSAGE);
+    expect(markup).toContain("La Brigade Verte a réuni 10 bénévoles le 14/04/2026");
+    expect(markup).not.toContain("Unexpected end of JSON input");
+    expect(markup).not.toContain("Supabase");
   });
 });

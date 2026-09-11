@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const loadRecentCommunityActivityMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/accueil/data", () => ({
-  formatLandingOverviewErrorMessage: (error: unknown) =>
-    error instanceof Error ? `Erreur: ${error.message}` : "Erreur inconnue",
+  formatLandingOverviewErrorMessage: () =>
+    "Les actions vérifiées sont momentanément indisponibles.",
   loadRecentCommunityActivity: loadRecentCommunityActivityMock,
 }));
 
@@ -44,7 +44,7 @@ describe("GET /api/homepage/activity", () => {
     expect(response.status).toBe(503);
     expect(await response.json()).toMatchObject({
       activity: { items: [] },
-      errorMessage: "Erreur: source offline",
+      errorMessage: "Les actions vérifiées sont momentanément indisponibles.",
     });
   });
 });

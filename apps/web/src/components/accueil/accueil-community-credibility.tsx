@@ -64,16 +64,59 @@ const ECOSYSTEM_STEPS = [
 
 const COMMUNITY_ACTION_SLOTS = 3;
 const HOMEPAGE_ACTIVITY_ENDPOINT = "/api/homepage/activity";
+export const HOMEPAGE_ACTIVITY_UNAVAILABLE_MESSAGE =
+  "Les actions vérifiées sont momentanément indisponibles.";
 
-async function fetchHomepageActivity(
+function isHomeCommunityActivityResponse(
+  value: unknown,
+): value is HomeCommunityActivityResponse {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const response = value as Record<string, unknown>;
+  const activity = response.activity;
+  if (!activity || typeof activity !== "object") {
+    return false;
+  }
+
+  const summary = activity as Record<string, unknown>;
+  return (
+    typeof summary.visibleActions === "number" &&
+    typeof summary.distinctLocations === "number" &&
+    Array.isArray(summary.items) &&
+    (response.errorMessage === null || typeof response.errorMessage === "string")
+  );
+}
+
+export async function fetchHomepageActivity(
   endpoint: string,
 ): Promise<HomeCommunityActivityResponse> {
-  const response = await fetch(endpoint, { headers: { Accept: "application/json" } });
-  const body = (await response.json()) as HomeCommunityActivityResponse;
-  if (!response.ok) {
-    throw new Error(
-      body.errorMessage ?? "Les dernières actions vérifiées sont momentanément indisponibles.",
-    );
+  let response: Response;
+  let rawBody: string;
+
+  try {
+    response = await fetch(endpoint, {
+      headers: { Accept: "application/json" },
+    });
+    rawBody = await response.text();
+  } catch {
+    throw new Error(HOMEPAGE_ACTIVITY_UNAVAILABLE_MESSAGE);
+  }
+
+  if (!response.ok || !rawBody.trim()) {
+    throw new Error(HOMEPAGE_ACTIVITY_UNAVAILABLE_MESSAGE);
+  }
+
+  let body: unknown;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    throw new Error(HOMEPAGE_ACTIVITY_UNAVAILABLE_MESSAGE);
+  }
+
+  if (!isHomeCommunityActivityResponse(body)) {
+    throw new Error(HOMEPAGE_ACTIVITY_UNAVAILABLE_MESSAGE);
   }
 
   return body;
@@ -273,10 +316,9 @@ export function HomeCommunityCredibility({
       },
     );
   const visibleActivity = refreshedActivity?.activity ?? activity;
-  const visibleErrorMessage =
-    refreshedActivity?.errorMessage ??
-    errorMessage ??
-    (refreshError instanceof Error ? refreshError.message : null);
+  const hasActivityError = Boolean(
+    refreshError || refreshedActivity?.errorMessage || errorMessage,
+  );
 
   useGsapReveal(sectionRef, {
     selector: "[data-gsap-reveal]",
@@ -369,13 +411,13 @@ export function HomeCommunityCredibility({
             </CmmButton>
           </div>
 
-          {visibleErrorMessage ? (
+          {hasActivityError ? (
             <div
               data-gsap-reveal
               role="alert"
               className="mt-3 rounded-[1.2rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950"
             >
-              Les actions vérifiées sont momentanément indisponibles. {visibleErrorMessage}
+              {HOMEPAGE_ACTIVITY_UNAVAILABLE_MESSAGE}
             </div>
           ) : null}
 

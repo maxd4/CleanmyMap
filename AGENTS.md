@@ -62,14 +62,22 @@ intermédiaires ne doivent pas commencer par ce canari.
   `maxd4/CleanmyMap`, branche `main` ;
 - lire le fichier actuel et ses dépendances directes avant de le modifier ; ne
   pas privilégier une ancienne conversation ou un ancien plan au dépôt réel ;
-- le checkout `main` est une référence/bootstrap préservée ; toute exécution
-  mutable passe par `workspace:start`, qui crée la branche `codex/<run-id>` et
-  le worktree lié du run sous `<parent>/CleanMyMap-worktrees/<run-id>/` ;
-- `workspace:start` fait `git fetch origin main`, enregistre le SHA courant de
-  `origin/main` comme `baseSha`, et prépare un run isolé avec son index et son
-  staging propres. Les claims ordinaires sont advisory : ils décrivent
-  `intendedPaths` et n'imposent pas de verrou exclusif par chemin ; la scope
-  `AUTHZ_SECURITY` reste exclusive ;
+- le checkout bootstrap `CleanmyMap-main` reste toujours sur `main`, sert de
+  miroir local de `origin/main` et de source pour localhost ; il ne sert pas au
+  développement mutable. Toute exécution qui produit des modifications doit
+  se terminer par un commit ciblé sur la branche `codex/<run-id>` de son
+  worktree, puis une publication vers `origin/main` ; aucune modification ne
+  justifie un commit artificiel ;
+- un `worktree dirty` et une divergence de branche sont deux états distincts :
+  les changements dirty parallèles restent autorisés ; `workspace:start`
+  exécute `git fetch origin main` puis classe les refs : `HEAD == origin/main`
+  autorise le démarrage, un `ahead-only` autorise le démarrage avec
+  `PUBLICATION_PENDING`, et un checkout behind ou réellement divergent lève
+  `WORKTREE_BASE_DIVERGED` ;
+- pour un checkout `ahead-only`, `workspace:start` conserve les chemins de
+  `git diff --name-only origin/main..HEAD` ; un nouveau run ne peut revendiquer
+  que des chemins disjoints et l'intersection lève
+  `UNPUBLISHED_PATH_CONFLICT`. Marqueur de politique : ne pas exiger l'égalité littérale `HEAD == origin/main` au démarrage ; cette égalité reste obligatoire avant toute publication ;
 - à chaque fin d'exécution ayant produit des modifications, clôturer
   immédiatement le lot : vérifier son allowlist, committer uniquement ses
   fichiers, puis pousser ce commit vers `origin/main` avant toute nouvelle
@@ -82,12 +90,12 @@ intermédiaires ne doivent pas commencer par ce canari.
 - un commit doit contenir exclusivement les fichiers du lot courant ; les
   changements parallèles hors périmètre ne sont jamais ajoutés au lot et sont
   préservés, y compris s'ils étaient déjà stagés avant l'intervention ;
-- le dossier du projet reste la source canonique des fichiers versionnables ;
-  un worktree lié créé et géré par le coordinateur n'est ni une copie, ni un
-  clone, ni une nouvelle source de vérité. Les seuls worktrees autorisés sont
-  ceux du coordinateur sous `<parent>/CleanMyMap-worktrees/` et ils sont
-  supprimés à la clôture du run ; les copies persistantes, clones et worktrees
-  étrangers ou ad hoc restent interdits ;
+- le dossier du projet est l'unique source canonique ; ne pas créer ni
+  conserver de copie persistante du dépôt, copie manuelle de fichiers, branche
+  temporaire ou clone Git isolé. Les worktrees liés `codex/<run-id>` sous
+  `<parent>/CleanMyMap-worktrees/` sont les workspaces mutables officiels du
+  coordinateur et ne sont pas des copies ; aucun worktree étranger ou ad hoc ne
+  doit être créé ;
 - Git pousse des commits, pas des fichiers ; avant de pousser, après
   `git fetch origin main`, inspecter `git log --oneline origin/main..HEAD`
   et le périmètre de chaque commit local non publié pour vérifier si `HEAD`
@@ -97,9 +105,12 @@ intermédiaires ne doivent pas commencer par ce canari.
   périmètre ; si un commit local étranger serait nécessairement embarqué par le
   push, ne pas le publier silencieusement, conserver le lot et signaler
   précisément ce seul blocage ;
-- si `origin/main` avance, le run réintègre le dernier état dans son worktree
-  via `workspace:publication-integrate` ; un conflit réel sur les fichiers ou
-  contrats du lot impose un STOP explicite ;
+- si `origin/main` avance, faire d'abord `git fetch origin main` ; une
+  évolution distante indépendante du lot autorise une resynchronisation sûre
+  sans écraser les changements parallèles, suivie des validations et du push ;
+  si cette resynchronisation n'est pas sûre dans le checkout partagé, utiliser
+  la sandbox de publication éphémère ci-dessus ; un conflit réel sur les
+  fichiers ou contrats du lot impose un STOP explicite ;
 - distinguer les trois portées de validation : `WORKTREE` pour l'itération
   manuelle (dirty et untracked inclus), `STAGED` pour le candidat de
   pré-commit (`git diff --cached`) et `PUSH_CANDIDATE` pour le vrai pré-push,
@@ -160,20 +171,26 @@ intermédiaires ne doivent pas commencer par ce canari.
   `SKIPPED_PARALLEL_CHANTIER` sans masquer une erreur du candidat ;
 - les suites lourdes ne doivent pas être répétées entre phases sans raison
   liée au candidat réellement validé ;
-- le flux normal de publication est : allowlist → claims advisory → staging
-  isolé dans le worktree du run → validation `STAGED` → commit signé →
-  `workspace:publication-acquire` → intégration du dernier `origin/main` dans
-  le worktree de publication → validation `PUSH_CANDIDATE` → push vers `main` →
-  `workspace:publication-complete` → release ;
-- avant le push, vérifier le diff exact de l'allowlist, les validations
+- le flux normal de publication est : allowlist → stage ciblé → validation
+  `STAGED` → commit local signé sur `codex/<run-id>` → `publication-acquire` →
+  `git fetch origin main` → intégration Git → validation `PUSH_CANDIDATE` → push
+  normal → finalisation. En sandbox, transférer
+  aussi les ajouts et suppressions de l'allowlist, vérifier l'absence de fichier
+  étranger, puis appliquer au plus une nouvelle tentative bornée après une
+  avance indépendante de `main` ; ne jamais force-push ni réécrire l'historique ;
+- avant le push, vérifier le diff exact du périmètre logique, les validations
   pertinentes, `git diff --cached --name-only` et l'ascendance réellement
-  destinée au push. L'intégration utilise le worktree de publication et
-  conserve le fast-forward lorsque possible ; un conflit devient
-  `INTEGRATION_CONFLICT` ;
-- après tout push réussi, `workspace:publication-complete` refait le fetch,
-  prouve la convergence de `HEAD` et `origin/main`, puis libère le mutex. Le
-  run est ensuite libéré et seuls sa branche, son worktree et ses métadonnées
-  temporaires sont retirés ; les changements parallèles sont préservés ;
+  destinée au push ; une `publication-candidate` réussie ne clôt pas le lot si
+  le checkout principal reste divergent ;
+- après tout push réussi, refaire `git fetch origin main`, puis vérifier
+  `git rev-list --left-right --count HEAD...origin/main` ; un verdict
+  `terminé` exige le résultat `0 0` et doit signaler
+  `CHECKOUT_DIVERGENCE` dans tout autre cas ; ne jamais résoudre cette
+  divergence automatiquement par merge, rebase, reset destructif, stash ou
+  clean lorsqu'il existe des changements parallèles. Pour la seule validation
+  d'une candidate avant le push, ne pas exiger l'égalité littérale
+  `HEAD == origin/main` ; l'exigence de convergence s'applique au démarrage
+  d'un nouveau chantier et à la clôture après publication ;
 - si le push échoue, conserver le commit local et signaler explicitement le
   blocage ; ne jamais contourner les protections par un force push ;
 - lorsqu'une vérification effective du site web est demandée, comparer le
@@ -208,7 +225,8 @@ ci-dessus.
 
 ### Modèle worktree du coordinateur
 
-Le checkout `main` est uniquement une référence/bootstrap. `workspace:start`
+Le checkout bootstrap `CleanmyMap-main` est uniquement une référence locale
+sur `main` et ne constitue pas un workspace mutable. `workspace:start`
 fait un fetch puis crée, sous le `git-common-dir`, un run avec une branche
 `codex/<run-id>` et un worktree lié sous
 `<parent>/CleanMyMap-worktrees/<run-id>/`. Le run canonique persiste
@@ -226,45 +244,96 @@ de publication. `workspace:publication-integrate` utilise le worktree
 `publish/<run-id>`, conserve le fast-forward si possible, signe tout nouveau
 merge d'intégration et lève `INTEGRATION_CONFLICT` en cas de conflit Git.
 Après `workspace:publication-complete`, seuls les worktrees et branches du run
-sont supprimés ; le checkout `main` et les worktrees étrangers sont préservés.
+sont supprimés ; le coordinateur tente ensuite, depuis le bootstrap propre,
+`fetch origin main` puis `merge --ff-only origin/main`. Un bootstrap dirty est
+signalé `BOOTSTRAP_DIRTY` et reste inchangé ; aucun reset, rebase, stash ou
+clean automatique n'est autorisé. Le serveur localhost continue de partir du
+bootstrap, de sorte que ce fast-forward rend les corrections publiées visibles
+localement sans copie manuelle.
 
-- chaque chantier crée un run avec `workspace:start`, puis revendique son
-  allowlist comme intention avec `workspace:claim`. Les chemins sont relatifs
-  au dépôt, protégés contre la traversée, et les claims ordinaires restent
-  advisory ; seul `AUTHZ_SECURITY` est exclusif ;
-- avant toute opération d'index, le run obtient
-  `workspace:publication-acquire`. Après acquisition du mutex global, le
-  coordinateur refait le fetch, vérifie le stale-check des `intendedPaths`,
-  puis autorise le staging isolé du worktree du run ; aucun staging ne doit
-  suivre un acquire refusé ;
-- `workspace:publication-integrate` matérialise le worktree de publication
-  sous `<parent>/CleanMyMap-worktrees/.publish/<run-id>/` et intègre le dernier
-  `origin/main` sans modifier le checkout de référence. Le fast-forward est
-  conservé si possible ; tout nouveau merge est signé et un conflit devient
-  `INTEGRATION_CONFLICT` ;
-- `workspace:resume -- --run-id <id>` recharge le run durable, sa branche et
-  son worktree après interruption sans modifier l'historique Git. Il reprend
-  uniquement un candidat qui concorde avec ce run et son allowlist ;
-- `workspace:publication-complete` est l'unique preuve de clôture : le run
-  possède le mutex, le coordinateur refait le fetch et confirme que la branche
-  publiée et `origin/main` sont identiques. Il inscrit la preuve, libère le
-  mutex, puis `workspace:release` retire uniquement les worktrees, branche et
-  métadonnées du run ;
-- `workspace:status --compact` reste métadonnées-only et `workspace:stale`
-  compare les seuls `intendedPaths` depuis le `baseSha`. Aucune photographie
-  générale du worktree et aucun `git add -A` ne sont autorisés.
+- legacy initialization is read-only and is superseded by the worktree model;
+  `workspace:init` never mutates `.artifacts/coordination`;
+  déjà présents comme `LEGACY_UNOWNED`, sans les lire en détail, modifier ou
+  revendiquer automatiquement ; toute adoption est explicite ;
+- chaque chantier crée un run avec `workspace:start`, revendique uniquement son
+  allowlist avec `workspace:claim`, puis consulte `workspace:status` ou
+  `workspace:stale` ; les chemins sont relatifs au dépôt et protégés contre la
+  traversée ;
+- `workspace:start` fait `git fetch origin main`, refuse de créer un run mutable
+  hors de la branche `main` et lève `WORKTREE_BRANCH_INVALID` pour une autre
+  branche ou un detached HEAD. `HEAD == origin/main` autorise le démarrage ; un
+  checkout `ahead-only` l'autorise aussi, marque `PUBLICATION_PENDING` et
+  conserve les chemins de `git diff --name-only origin/main..HEAD`. Les chemins
+  revendiqués par le run doivent être disjoints de ces commits non publiés,
+  sinon `UNPUBLISHED_PATH_CONFLICT`. Un checkout behind ou réellement divergent
+  lève `WORKTREE_BASE_DIVERGED` avec les deux SHA. Lorsque les contrôles
+  passent, le SHA de `origin/main` devient le `baseSha` du run ;
+- le domaine `AUTHZ_SECURITY` est exclusif : aucun autre run ne peut le
+  revendiquer en parallèle ; les autres collisions de fichiers sont également
+  bloquantes et immédiates ; un verrou obsolète est signalé par `doctor`, jamais
+  supprimé automatiquement ;
+- le run peut stage et valider son allowlist avant toute acquisition de
+  `publication.lock`; `workspace:check-staged` vérifie uniquement que les
+  chemins staged appartiennent à `intendedPaths`. Le mutex global ne sérialise
+  que l'intégration et le push. `publication-acquire` refait le fetch et prépare
+  cette phase sans transformer un simple chevauchement de chemin en stale :
+  même fichier ≠ conflit. L'intégration Git continue lorsqu'elle est propre et
+  un conflit Git réel devient `INTEGRATION_CONFLICT` ; `workspace:stale` reste un
+  signal read-only et informatif ;
+- `workspace:publication-complete` est la clôture canonique après commit/push :
+  après preuve que `publishedSha` est ancêtre de `origin/main`, il marque
+  durablement `COMPLETE`, supprime les claims du run, libère les locks, ferme
+  les métadonnées et nettoie exclusivement ses worktrees et branches intégrés.
+  Cette finalisation est idempotente et reprenable ; `workspace:release` reste
+  une primitive explicite de récupération, mais n'est pas nécessaire après une
+  publication normale. `doctor` signale aussi le bootstrap `main` dirty, les
+  runs fermés avec worktree, les runs terminés dirty/staged, les commits non
+  publiés abandonnés, les worktrees sans run et les métadonnées `ACQUIRED` sans
+  mutex réel ;
+- `workspace:publication-reconcile --run-id <id> --published-sha <sha>` est la
+  voie bornée pour un run déjà publié dont l'ancien stale-check décrit ses
+  propres chemins publiés. Elle exige `main`, `HEAD == origin/main`, un SHA
+  ancêtre de `origin/main`, des chemins de commit inclus dans l'ownership du
+  run, aucun staged ou changement local sur ses chemins et aucun mutex de
+  publication étranger. Elle enregistre `publicationCompletedAt` et
+  `reconciledPublishedSha`, sans modifier l'historique Git, puis autorise
+  `workspace:release` ;
+- `workspace:resume -- --run-id <id>` recharge le run durable après une
+  interruption et renouvelle son heartbeat sans modifier Git. Il classe
+  `WORK`, `STAGED_PENDING`, `COMMITTED_PENDING` ou
+  `PUSHED_PENDING_COMPLETE` ; en checkout `ahead-only`, il faut rechercher
+  d'abord un candidat récupérable et reprendre le même `runId`, jamais créer
+  un nouveau propriétaire pour un commit existant. La reprise refuse avec
+  `PUBLICATION_RESUME_FOREIGN_COMMIT`, `PUBLICATION_RESUME_STALE`,
+  `PUBLICATION_RESUME_AMBIGUOUS` ou `PUBLICATION_RESUME_FOREIGN_STAGED` toute
+  preuve étrangère, ambiguë, stale ou staged hors ownership ;
+- `workspace:publication-acquire` est réentrant pour son propre `runId` : il
+  ne patiente jamais sur son propre `publication.lock`, renouvelle son
+  heartbeat et peut reprendre un lock expiré seulement si le run, les locks
+  de chemins et le candidat Git concordent. Il ne permet jamais à un autre run
+  d'adopter le commit d'une lease expirée. Le lock `AUTHZ_SECURITY` porte le
+  même heartbeat que son run ; `doctor` signale les locks orphelins ou expirés,
+  les runs sans worktree et les worktrees de coordinateur sans run. La
+  récupération d'un critical lock n'est autorisée que si son propriétaire est
+  absent ou sa lease expirée ; un lock vivant n'est jamais supprimé ;
+- la lease par défaut du mutex de publication est temporairement fixée à
+  30 minutes pour absorber les opérations longues. Cette durée est
+  transitoire, en attendant un heartbeat autonome pendant ces opérations ;
+  elle ne modifie pas le délai d'attente de publication ni les garde-fous de
+  staged et d'ownership ;
+- `workspace:claim` n'adopte jamais implicitement un fichier dirty. Un chemin
+  dirty qui n'est ni legacy, ni déjà possédé par le run est `ORPHAN_DIRTY` et
+  exige `--adopt-legacy`. Aucun de ces contrôles ne lit le contenu du fichier ;
+- `workspace:status --compact` n'inspecte que des métadonnées et des chemins,
+  sans lire le contenu source ; `workspace:stale` refetch `origin/main` et ne
+  compare que les chemins possédés depuis le `baseSha` du run ;
+- aucune photographie générale du worktree, aucun `git add -A` et aucune
+  adoption implicite ne sont autorisés par ce mécanisme.
 
-### Migration / legacy
-
-- `workspace:init` est read-only et ne modifie jamais l'ancien
-  `.artifacts/coordination`, conservé comme `LEGACY_COORDINATION_STATE` ;
-- `LEGACY_UNOWNED`, l'ancien champ `ownedPaths` et les locks de chemins ne sont
-  lus que pour compatibilité et migration, jamais comme doctrine courante ;
-- les erreurs historiques `WORKTREE_BRANCH_INVALID`,
-  `UNPUBLISHED_PATH_CONFLICT`, `COORDINATION_CONFLICT`, `ORPHAN_DIRTY` et
-  `PUBLICATION_PENDING` ne décrivent pas le modèle worktree courant ;
-- aucune adoption implicite d'un fichier dirty ou staged n'est effectuée ;
-  une migration éventuelle doit être explicite, bornée et documentée.
+Les références ci-dessus au checkout partagé décrivent uniquement la
+compatibilité de migration de l'ancien coordinateur. Pour tout nouveau run,
+le modèle worktree et le stockage sous `git-common-dir/cleanmymap-workspace`
+décrits au début de cette section prévalent.
 
 ## Hygiène du dépôt et architecture interne
 
@@ -272,12 +341,12 @@ sont supprimés ; le checkout `main` et les worktrees étrangers sont préservé
   du projet, notamment le code, les tests, la documentation, les scripts, les
   données et les artefacts, selon les emplacements canoniques de son
   architecture ;
-- le dossier du projet est la source canonique unique des fichiers
-  versionnables. Les worktrees liés créés par le coordinateur sous
-  `<parent>/CleanMyMap-worktrees/` sont des vues Git temporaires du même dépôt,
-  non des copies ou sources concurrentes ; ils sont supprimés à la clôture de
-  leur run. Les clones, copies persistantes et worktrees étrangers ou ad hoc
-  restent interdits ;
+- le dossier du projet est la source canonique unique ; ne pas créer ni
+  conserver par commodité de dossier parallèle, copie persistante, clone ou
+  copie de fichier hors racine sous `business` ou sur la machine. Les worktrees
+  liés du coordinateur sous `CleanMyMap-worktrees/` sont l'unique exception
+  structurée prévue pour les runs mutables ; aucun dossier `CleanmyMap-*`
+  parallèle non géré ne doit être créé ;
 - respecter et étendre l'arborescence canonique existante ; ne pas créer de
   structure ambiguë ou dupliquée lorsqu'un contenu possède déjà un emplacement
   canonique ; la racine du projet reste la source canonique des fichiers
@@ -535,8 +604,10 @@ et la prochaine étape, puis attendre confirmation avant de continuer.
   système pour du contenu issu du projet.
 - Il est interdit de créer, copier, cloner, snapshotter, exporter ou conserver
   hors de cette racine un fichier ou dossier issu du projet à titre persistant,
-  notamment une copie complète, un backup, un staging durable, un worktree ou
-  un clone Git.
+  notamment une copie complète, un backup, un staging durable ou un clone Git.
+  Les worktrees liés `codex/<run-id>` gérés par le coordinateur sous
+  `CleanMyMap-worktrees/` sont des workspaces Git officiels, pas des copies ;
+  ils ne doivent jamais être remplacés par des copies manuelles.
 - Il est également interdit de créer ou d'utiliser un clone Git isolé, même
   éphémère ; la sandbox exceptionnelle de publication ne constitue pas une
   autorisation de clone et doit utiliser un mécanisme qui ne duplique pas le
