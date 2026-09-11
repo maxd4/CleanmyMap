@@ -8,6 +8,7 @@ import {
 } from "@/lib/sections-registry";
 import { PendingSection } from "./shared";
 import { RouteSection } from "./route";
+import type { FeedbackSectionProps } from "./feedback-section.shared";
 
 type SectionRendererProps = {
   section: SectionRubriqueDefinition;
@@ -16,7 +17,7 @@ type SectionRendererProps = {
 const CommunitySection = dynamic(() =>
   import("./community").then((module) => module.CommunitySection),
 );
-const FeedbackSection = dynamic(() =>
+const FeedbackSection = dynamic<FeedbackSectionProps>(() =>
   import("./feedback").then((module) => module.FeedbackSection),
 );
 const ActorsSection = dynamic(() =>
