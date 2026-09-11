@@ -14,7 +14,10 @@ import {
 } from "react";
 
 import { cn } from "@/lib/utils";
-import { useDropdownPlacement } from "./use-dropdown-placement";
+import {
+  DEFAULT_DROPDOWN_VERTICAL_GAP_PX,
+  useDropdownPlacement,
+} from "./use-dropdown-placement";
 
 export type CmmDropdownPanelRole = "menu" | "region";
 
@@ -23,7 +26,8 @@ export type CmmDropdownTriggerProps = {
   type: "button";
   "aria-expanded": boolean;
   "aria-controls": string;
-  "aria-haspopup": "menu" | "dialog";
+  "aria-haspopup"?: "menu" | "dialog";
+  onMouseDown: (event: MouseEvent<HTMLButtonElement>) => void;
   onClick: (event: MouseEvent<HTMLButtonElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>) => void;
   onMouseEnter: () => void;
@@ -38,7 +42,7 @@ type CmmDropdownProps = {
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
   panelRole?: CmmDropdownPanelRole;
-  triggerHasPopup?: "menu" | "dialog";
+  triggerHasPopup?: "menu" | "dialog" | null;
   panelClassName?: string;
   panelStyle?: CSSProperties;
   wrapperClassName?: string;
@@ -61,7 +65,7 @@ export function CmmDropdown({
   panelClassName,
   panelStyle,
   wrapperClassName,
-  verticalGap = 12,
+  verticalGap = DEFAULT_DROPDOWN_VERTICAL_GAP_PX,
   hoverCloseDelayMs = DEFAULT_HOVER_CLOSE_DELAY_MS,
 }: CmmDropdownProps) {
   const isControlled = open !== undefined;
@@ -70,6 +74,10 @@ export function CmmDropdown({
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverOpenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverOpenedMarkerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hoverOpenedRef = useRef(false);
+  const clickToggleOpenRef = useRef<boolean | null>(null);
   const wasOpenRef = useRef(isOpen);
   const [canHover, setCanHover] = useState(false);
   const placement = useDropdownPlacement({
@@ -95,30 +103,63 @@ export function CmmDropdown({
     }
   }, []);
 
+  const clearHoverOpenTimer = useCallback(() => {
+    if (hoverOpenTimerRef.current) {
+      clearTimeout(hoverOpenTimerRef.current);
+      hoverOpenTimerRef.current = null;
+    }
+  }, []);
+
+  const clearHoverOpenedMarker = useCallback(() => {
+    if (hoverOpenedMarkerTimerRef.current) {
+      clearTimeout(hoverOpenedMarkerTimerRef.current);
+      hoverOpenedMarkerTimerRef.current = null;
+    }
+    hoverOpenedRef.current = false;
+  }, []);
+
   const openFromHover = useCallback(() => {
     clearCloseTimer();
-    setOpen(true);
-  }, [clearCloseTimer, setOpen]);
+    clearHoverOpenTimer();
+    clearHoverOpenedMarker();
+    hoverOpenTimerRef.current = setTimeout(() => {
+      setOpen(true);
+      hoverOpenedRef.current = true;
+      hoverOpenedMarkerTimerRef.current = setTimeout(() => {
+        hoverOpenedRef.current = false;
+        hoverOpenedMarkerTimerRef.current = null;
+      }, hoverCloseDelayMs);
+      hoverOpenTimerRef.current = null;
+    }, 0);
+  }, [clearCloseTimer, clearHoverOpenTimer, clearHoverOpenedMarker, hoverCloseDelayMs, setOpen]);
 
   const closeFromHover = useCallback(() => {
+    clearHoverOpenTimer();
+    clearHoverOpenedMarker();
     clearCloseTimer();
     closeTimerRef.current = setTimeout(() => {
       setOpen(false);
       closeTimerRef.current = null;
     }, hoverCloseDelayMs);
-  }, [clearCloseTimer, hoverCloseDelayMs, setOpen]);
+  }, [clearCloseTimer, clearHoverOpenTimer, clearHoverOpenedMarker, hoverCloseDelayMs, setOpen]);
 
   const closeAndRestoreFocus = useCallback(() => {
+    clearHoverOpenTimer();
+    clearHoverOpenedMarker();
     clearCloseTimer();
     setOpen(false);
     triggerRef.current?.focus();
     window.setTimeout(() => triggerRef.current?.focus(), 0);
-  }, [clearCloseTimer, setOpen]);
+  }, [clearCloseTimer, clearHoverOpenTimer, clearHoverOpenedMarker, setOpen]);
 
   const toggle = useCallback(() => {
+    clearHoverOpenTimer();
+    clearHoverOpenedMarker();
     clearCloseTimer();
-    setOpen(!isOpen);
-  }, [clearCloseTimer, isOpen, setOpen]);
+    const openBeforeClick = clickToggleOpenRef.current ?? isOpen;
+    clickToggleOpenRef.current = null;
+    setOpen(!openBeforeClick);
+  }, [clearCloseTimer, clearHoverOpenTimer, clearHoverOpenedMarker, isOpen, setOpen]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
@@ -169,9 +210,11 @@ export function CmmDropdown({
 
   useEffect(
     () => () => {
+      clearHoverOpenTimer();
+      clearHoverOpenedMarker();
       clearCloseTimer();
     },
-    [clearCloseTimer],
+    [clearCloseTimer, clearHoverOpenTimer, clearHoverOpenedMarker],
   );
 
   const triggerProps: CmmDropdownTriggerProps = {
@@ -179,7 +222,17 @@ export function CmmDropdown({
     type: "button",
     "aria-expanded": isOpen,
     "aria-controls": id,
-    "aria-haspopup": triggerHasPopup,
+    ...(triggerHasPopup ? { "aria-haspopup": triggerHasPopup } : {}),
+    onMouseDown: () => {
+      clearHoverOpenTimer();
+      if (hoverOpenedRef.current) {
+        clearHoverOpenedMarker();
+        clickToggleOpenRef.current = false;
+        setOpen(false);
+        return;
+      }
+      clickToggleOpenRef.current = isOpen;
+    },
     onClick: (event) => {
       if (!event.defaultPrevented) {
         toggle();
@@ -239,6 +292,16 @@ export function CmmDropdown({
           onMouseEnter={canHover ? openFromHover : undefined}
           onMouseLeave={canHover ? closeFromHover : undefined}
         >
+          <span
+            aria-hidden="true"
+            className="pointer-events-auto absolute left-0 right-0"
+            style={
+              placement.openUp
+                ? { bottom: `-${verticalGap}px`, height: `${verticalGap}px` }
+                : { top: `-${verticalGap}px`, height: `${verticalGap}px` }
+            }
+            onMouseEnter={canHover ? openFromHover : undefined}
+          />
           <span
             aria-hidden="true"
             className={cn(
