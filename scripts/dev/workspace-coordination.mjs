@@ -596,9 +596,11 @@ export function createWorkspaceCoordinator({
       if (!fs.existsSync(candidate)) continue;
       const dirty = readDirtyPaths(candidate, (cwd, args) => gitRunner(cwd, args));
       if (dirty.length > 0) throw workspaceError("WORKTREE_DIRTY", `${candidate}: ${dirty.join(", ")}`);
-      runGit(["worktree", "remove", "--", candidate]);
+      // The command may itself run from the run worktree. Use the canonical
+      // bootstrap as Git's cwd so removing the target cannot fail on Windows.
+      gitRunner(canonicalRoot, ["worktree", "remove", "--", candidate]);
     }
-    for (const branch of [run.publishBranchName ?? `publish/${run.runId}`, run.branchName ?? `codex/${run.runId}`]) if (branchExists(repo, branch, gitRunner)) runGit(["branch", "-D", branch]);
+    for (const branch of [run.publishBranchName ?? `publish/${run.runId}`, run.branchName ?? `codex/${run.runId}`]) if (branchExists(canonicalRoot, branch, gitRunner)) gitRunner(canonicalRoot, ["branch", "-D", branch]);
   }
 
   function assertRunIsEmptyAndAbandoned(run) {

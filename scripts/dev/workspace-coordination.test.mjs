@@ -374,6 +374,9 @@ test("publicationComplete finalizes a run, including claims, locks and worktrees
     assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "publication.lock")), false);
     assert.equal(fs.existsSync(run.worktreePath), false);
     assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "closed-runs", "run-a.json")), true);
+    const removals = gitRunner.state.calls.filter(({ args }) => args[0] === "worktree" && args[1] === "remove");
+    assert.ok(removals.length > 0);
+    assert.equal(removals.every(({ cwd }) => path.resolve(cwd) === path.resolve(root)), true);
     assert.equal(coordinator.publicationComplete({ runId: "run-a" }).idempotent, true);
   } finally { cleanup(root); }
 });
