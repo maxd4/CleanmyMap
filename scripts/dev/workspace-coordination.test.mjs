@@ -204,6 +204,65 @@ test("foreign staged files are rejected from a resumed run", () => {
   } finally { cleanup(root); }
 });
 
+test("release refuses dirty or unpublished work and preserves the active run", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    const dirtyRun = coordinator.start({ runId: "dirty-run", domain: "ROUTE" });
+    gitRunner.state.status.set(path.resolve(dirtyRun.worktreePath), " M src/dirty.ts\n");
+    assert.throws(() => coordinator.release({ runId: "dirty-run" }), /WORKTREE_DIRTY/);
+    assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "runs", "dirty-run.json")), true);
+
+    const committedRun = coordinator.start({ runId: "committed-run", domain: "ROUTE" });
+    gitRunner.state.heads.set(path.resolve(committedRun.worktreePath), "unpublished-sha");
+    assert.throws(() => coordinator.release({ runId: "committed-run" }), /UNPUBLISHED_WORK/);
+    assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "runs", "committed-run.json")), true);
+  } finally { cleanup(root); }
+});
+
+test("release cleans an actually empty abandoned run", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    const run = coordinator.start({ runId: "empty-run", domain: "ROUTE" });
+    const result = coordinator.release({ runId: "empty-run" });
+    assert.equal(result.released, true);
+    assert.equal(fs.existsSync(run.worktreePath), false);
+    assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "runs", "empty-run.json")), false);
+    assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "closed-runs", "empty-run.json")), true);
+  } finally { cleanup(root); }
+});
+
+test("resume reopens a closed unpublished run only with a concordant worktree", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    const run = coordinator.start({ runId: "recoverable-run", domain: "NAVIGATION_UI" });
+    coordinator.claim({ runId: "recoverable-run", paths: ["src/navigation.ts"] });
+    const activePath = path.join(root, ".git", ...COORDINATION_ROOT, "runs", "recoverable-run.json");
+    const closedPath = path.join(root, ".git", ...COORDINATION_ROOT, "closed-runs", "recoverable-run.json");
+    const saved = JSON.parse(fs.readFileSync(activePath, "utf8"));
+    saved.state = "WORK";
+    saved.closedAt = "2026-01-01T00:00:00.000Z";
+    fs.mkdirSync(path.dirname(closedPath), { recursive: true });
+    fs.writeFileSync(closedPath, JSON.stringify(saved));
+    fs.unlinkSync(activePath);
+    gitRunner.state.status.set(path.resolve(run.worktreePath), " M src/navigation.ts\n");
+
+    const resumed = coordinator.resume({ runId: "recoverable-run" });
+    assert.equal(resumed.runId, "recoverable-run");
+    assert.equal(resumed.state, "WORK");
+    assert.equal(fs.existsSync(activePath), true);
+    assert.equal(fs.existsSync(closedPath), false);
+  } finally { cleanup(root); }
+});
+
 test("publication complete requires remote convergence and closes only after integration proof", () => {
   const root = fixture();
   try {
@@ -384,5 +443,29 @@ test("doctor reports a coordinator worktree without an active run and a missing 
     const report = coordinator.doctor();
     assert.equal(report.missingWorktrees.some((item) => item.runId === "run-a"), true);
     assert.equal(report.orphanWorktrees.some((item) => item.branch === "refs/heads/codex/orphan"), true);
+  } finally { cleanup(root); }
+});
+
+test("doctor reports closed-run worktrees and prematurely closed work", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner });
+    coordinator.init();
+    const run = coordinator.start({ runId: "closed-dirty", domain: "ROUTE" });
+    const activePath = path.join(root, ".git", ...COORDINATION_ROOT, "runs", "closed-dirty.json");
+    const closedPath = path.join(root, ".git", ...COORDINATION_ROOT, "closed-runs", "closed-dirty.json");
+    const saved = JSON.parse(fs.readFileSync(activePath, "utf8"));
+    saved.state = "WORK";
+    fs.mkdirSync(path.dirname(closedPath), { recursive: true });
+    fs.writeFileSync(closedPath, JSON.stringify(saved));
+    fs.unlinkSync(activePath);
+    gitRunner.state.status.set(path.resolve(run.worktreePath), " M src/dirty.ts\n");
+
+    const report = coordinator.doctor();
+    assert.equal(report.closedRunWorktrees.some((item) => item.runId === "closed-dirty"), true);
+    assert.equal(report.worktreesWithoutActiveMetadata.some((item) => item.branch === "refs/heads/codex/closed-dirty"), true);
+    assert.equal(report.prematurelyClosedRuns.some((item) => item.runId === "closed-dirty"), true);
+    assert.equal(report.ok, false);
   } finally { cleanup(root); }
 });
