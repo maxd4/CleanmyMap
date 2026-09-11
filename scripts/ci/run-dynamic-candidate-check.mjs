@@ -9,6 +9,16 @@ import {
   installCandidateSignalCleanup,
 } from "./candidate-lifecycle.mjs";
 
+const DEPENDENCY_MANIFESTS = Object.freeze([
+  "package.json",
+  "package-lock.json",
+  "npm-shrinkwrap.json",
+  "apps/web/package.json",
+  "apps/web/package-lock.json",
+  "apps/mobile/package.json",
+  "apps/mobile/package-lock.json",
+]);
+
 function usage(message) {
   if (message) console.error(message);
   console.error(
@@ -53,6 +63,30 @@ function git(repositoryRoot, arguments_, options = {}) {
     env: cleanGitEnvironment(),
     ...options,
   }).trim();
+}
+
+function resolveCanonicalRepositoryRoot(repositoryRoot) {
+  const commonDir = path.resolve(repositoryRoot, git(repositoryRoot, ["rev-parse", "--git-common-dir"]));
+  const canonicalRoot = path.dirname(commonDir);
+  if (!fs.existsSync(path.join(canonicalRoot, ".git"))) {
+    throw new Error(`HOST_ENVIRONMENT: canonical repository root could not be resolved from ${commonDir}.`);
+  }
+  return canonicalRoot;
+}
+
+function dependencyManifestsMatch(candidateTreeRoot, canonicalRoot) {
+  let compared = 0;
+  for (const relativePath of DEPENDENCY_MANIFESTS) {
+    const candidatePath = path.join(candidateTreeRoot, ...relativePath.split("/"));
+    const canonicalPath = path.join(canonicalRoot, ...relativePath.split("/"));
+    const candidateExists = fs.existsSync(candidatePath);
+    const canonicalExists = fs.existsSync(canonicalPath);
+    if (candidateExists !== canonicalExists) return false;
+    if (!candidateExists) continue;
+    compared += 1;
+    if (!Buffer.from(fs.readFileSync(candidatePath)).equals(fs.readFileSync(canonicalPath))) return false;
+  }
+  return compared > 0;
 }
 
 function readGitTree(repositoryRoot, candidateSha) {
@@ -109,45 +143,12 @@ function materializeGitTree(candidateTreeRoot, entries, blobs) {
   }
 }
 
-function mapRepositoryPath(candidateTreeRoot, repositoryRoot, sourcePath) {
-  const relativeSource = path.relative(repositoryRoot, sourcePath);
-  if (relativeSource.startsWith(".." + path.sep) || path.isAbsolute(relativeSource)) return null;
-  return path.join(candidateTreeRoot, relativeSource);
-}
-
 function linkDirectory(candidateTreeRoot, relativePath, sourcePath, linkedPaths) {
   if (!fs.existsSync(sourcePath)) return;
   const destination = path.join(candidateTreeRoot, ...relativePath.split("/"));
   fs.mkdirSync(path.dirname(destination), { recursive: true });
   fs.symlinkSync(sourcePath, destination, "junction");
   linkedPaths.push(destination);
-}
-
-function materializeLocalDependencyDirectory(candidateTreeRoot, repositoryRoot, relativePath, sourcePath, linkedPaths) {
-  if (!fs.existsSync(sourcePath)) return;
-  const destination = path.join(candidateTreeRoot, ...relativePath.split("/"));
-  fs.mkdirSync(path.dirname(destination), { recursive: true });
-
-  const materializeEntry = (source, target) => {
-    const sourceStat = fs.lstatSync(source);
-    if (sourceStat.isSymbolicLink()) {
-      const resolvedSource = fs.realpathSync(source);
-      const mappedTarget = mapRepositoryPath(candidateTreeRoot, repositoryRoot, resolvedSource);
-      if (mappedTarget) {
-        fs.symlinkSync(mappedTarget, target, "junction");
-        linkedPaths.push(target);
-        return;
-      }
-      fs.cpSync(resolvedSource, target, { recursive: true, dereference: true });
-      return;
-    }
-    fs.cpSync(source, target, { recursive: true, dereference: true });
-  };
-
-  fs.mkdirSync(destination, { recursive: true });
-  for (const entry of fs.readdirSync(sourcePath)) {
-    materializeEntry(path.join(sourcePath, entry), path.join(destination, entry));
-  }
 }
 
 function findGitExecutable() {
@@ -220,8 +221,9 @@ function createCandidateGitDirectory(materialization) {
   materialization.gitDirectory = gitDirectory;
 }
 
-function materializeCandidate(repositoryRoot, candidateRef, { materializeRootDependencies = false } = {}) {
+function materializeCandidate(repositoryRoot, candidateRef) {
   const candidateSha = git(repositoryRoot, ["rev-parse", "--verify", candidateRef + "^{commit}"]);
+  const canonicalRoot = resolveCanonicalRepositoryRoot(repositoryRoot);
   const lifecycle = createCandidateMaterialization({
     repositoryRoot,
     family: CANDIDATE_FAMILIES.PREPUSH,
@@ -239,30 +241,10 @@ function materializeCandidate(repositoryRoot, candidateRef, { materializeRootDep
     const entries = readGitTree(repositoryRoot, candidateSha);
     const blobs = readGitBlobs(repositoryRoot, entries);
     materializeGitTree(candidateTreeRoot, entries, blobs);
-    if (materializeRootDependencies) {
-      materializeLocalDependencyDirectory(
-        candidateTreeRoot,
-        repositoryRoot,
-        "node_modules",
-        path.join(repositoryRoot, "node_modules"),
-        linkedPaths,
-      );
-    } else {
-      linkDirectory(candidateTreeRoot, "node_modules", path.join(repositoryRoot, "node_modules"), linkedPaths);
+    const dependencySource = path.join(canonicalRoot, "node_modules");
+    if (dependencyManifestsMatch(candidateTreeRoot, canonicalRoot) && fs.existsSync(dependencySource)) {
+      linkDirectory(candidateTreeRoot, "node_modules", dependencySource, linkedPaths);
     }
-    materializeLocalDependencyDirectory(
-      candidateTreeRoot,
-      repositoryRoot,
-      "apps/web/node_modules",
-      path.join(repositoryRoot, "apps", "web", "node_modules"),
-      linkedPaths,
-    );
-    linkDirectory(
-      candidateTreeRoot,
-      "apps/mobile/node_modules",
-      path.join(repositoryRoot, "apps", "mobile", "node_modules"),
-      linkedPaths,
-    );
     linkDirectory(candidateTreeRoot, ".vercel", path.join(repositoryRoot, ".vercel"), linkedPaths);
     linkDirectory(
       candidateTreeRoot,
@@ -284,6 +266,7 @@ function materializeCandidate(repositoryRoot, candidateRef, { materializeRootDep
     const materialization = {
       ...lifecycle,
       repositoryRoot,
+      canonicalRoot,
       candidateSha,
       candidateTreeRoot,
       materializedRoot,
@@ -299,6 +282,20 @@ function materializeCandidate(repositoryRoot, candidateRef, { materializeRootDep
     lifecycle.cleanup(linkedPaths);
     throw error;
   }
+}
+
+function installIsolatedDependencies(materialization) {
+  const invocation = resolveInvocation("npm");
+  if (!invocation.executable) throw new Error("HOST_ENVIRONMENT: npm is unavailable for isolated dynamic candidate dependencies.");
+  const result = spawnSync(invocation.executable, [...invocation.prefixArguments, "ci", "--no-audit", "--no-fund"], {
+    cwd: materialization.candidateTreeRoot,
+    env: cleanGitEnvironment(),
+    stdio: "inherit",
+    windowsHide: true,
+    shell: invocation.shell,
+  });
+  if (result.error) throw new Error(`HOST_ENVIRONMENT: npm ci could not start: ${result.error.message}`);
+  if (result.status !== 0) throw new Error(`DYNAMIC_DEPENDENCY_INSTALL_FAILED: npm ci exited with ${result.status ?? 1}.`);
 }
 
 function resolveInvocation(command) {
@@ -318,12 +315,13 @@ function resolveInvocation(command) {
 function run() {
   const { ref, command, commandArguments } = parseArguments();
   const repositoryRoot = path.resolve(process.cwd());
-  const materializeRootDependencies =
-    (command === "npm" && commandArguments.some((argument) => argument === "build")) ||
-    (command === "npx" && commandArguments.includes("vercel") && commandArguments.includes("build"));
-  const materialization = materializeCandidate(repositoryRoot, ref, { materializeRootDependencies });
-  const detachSignalCleanup = installCandidateSignalCleanup(materialization);
+  const materialization = materializeCandidate(repositoryRoot, ref);
+  let detachSignalCleanup = () => {};
   try {
+    if (!fs.existsSync(path.join(materialization.candidateTreeRoot, "node_modules"))) {
+      installIsolatedDependencies(materialization);
+    }
+    detachSignalCleanup = installCandidateSignalCleanup(materialization);
     const invocation = resolveInvocation(command);
     if (!invocation.executable) {
       console.error(
