@@ -22,6 +22,8 @@ function createFixture() {
   mkdirSync(join(root, "scripts", "checks"), { recursive: true });
   mkdirSync(join(root, "apps", "web", "src"), { recursive: true });
   writeFileSync(join(root, "apps", "web", "src", "candidate.ts"), "export const candidate = true;\n");
+  writeFileSync(join(root, "package.json"), '{"name":"dynamic-fixture","private":true}\n');
+  writeFileSync(join(root, "package-lock.json"), '{"name":"dynamic-fixture","lockfileVersion":3,"requires":true,"packages":{"":{"name":"dynamic-fixture"}}}\n');
   writeFileSync(
     checkerPath,
     [
@@ -41,6 +43,8 @@ function createFixture() {
   git(root, ["config", "user.name", "Dynamic Candidate Test"]);
   git(root, ["add", "."]);
   git(root, ["commit", "--quiet", "-m", "candidate dynamic checker"]);
+  mkdirSync(join(root, "node_modules", "eslint"), { recursive: true });
+  writeFileSync(join(root, "node_modules", "eslint", "package.json"), '{"name":"eslint","version":"fixture"}\n');
   return root;
 }
 
@@ -81,8 +85,58 @@ test("forwards a candidate failure", () => {
     const ref = git(root, ["rev-parse", "HEAD"]);
     const result = runRunner(root, ref, "node", ["-e", "process.exitCode = 7"]);
     assert.equal(result.status, 7, result.stderr);
+    assert.equal(existsSync(join(root, ".artifacts", "validation", "prepush-candidate")), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("resolves npm packages from the canonical checkout for a linked worktree", () => {
+  const root = createFixture();
+  const linked = join(root, "..", "cleanmymap-dynamic-dependency-linked-worktree");
+  try {
+    git(root, ["worktree", "add", "--detach", linked, "HEAD"]);
+    assert.equal(existsSync(join(linked, "node_modules")), false);
+    const ref = git(linked, ["rev-parse", "HEAD"]);
+    const result = runRunner(linked, ref, "node", ["-e", "console.log(require.resolve('eslint/package.json'))"]);
+    assert.equal(result.status, 0, result.stderr + result.stdout);
+    assert.match(result.stdout, /node_modules[\\/]eslint[\\/]package\.json/);
+    assert.equal(existsSync(join(root, ".artifacts", "validation", "prepush-candidate")), false);
+  } finally {
+    try { git(root, ["worktree", "remove", "--", linked]); } catch { /* fixture cleanup is authoritative */ }
+    rmSync(root, { recursive: true, force: true });
+    rmSync(linked, { recursive: true, force: true });
+  }
+});
+
+test("cleans the candidate after materialization fails", () => {
+  const root = createFixture();
+  try {
+    const result = runRunner(root, "missing-candidate-ref", "node");
+    assert.notEqual(result.status, 0);
+    assert.equal(existsSync(join(root, ".artifacts", "validation", "prepush-candidate")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("cleans an isolated dependency candidate when npm ci fails", () => {
+  const root = createFixture();
+  const linked = join(root, "..", "cleanmymap-dynamic-dependency-failure-worktree");
+  try {
+    git(root, ["worktree", "add", "--detach", linked, "HEAD"]);
+    writeFileSync(join(linked, "package.json"), '{"name":"dynamic-fixture","private":true,"dependencies":{"package-that-does-not-exist-cleanmymap":"0.0.0"}}\n');
+    writeFileSync(join(linked, "package-lock.json"), '{"name":"dynamic-fixture","lockfileVersion":3,"requires":true,"packages":{"":{"name":"dynamic-fixture","dependencies":{"package-that-does-not-exist-cleanmymap":"0.0.0"}}}}\n');
+    git(linked, ["add", "package.json", "package-lock.json"]);
+    git(linked, ["commit", "--quiet", "-m", "incompatible dependency graph"]);
+    const ref = git(linked, ["rev-parse", "HEAD"]);
+    const result = runRunner(linked, ref, "node", ["-e", "process.exitCode = 0"]);
+    assert.notEqual(result.status, 0);
+    assert.equal(existsSync(join(linked, ".artifacts", "validation", "prepush-candidate")), false);
+  } finally {
+    try { git(root, ["worktree", "remove", "--", linked]); } catch { /* fixture cleanup is authoritative */ }
+    rmSync(root, { recursive: true, force: true });
+    rmSync(linked, { recursive: true, force: true });
   }
 });
 
