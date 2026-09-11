@@ -35,13 +35,13 @@ const skippedDirectories = new Set([
 ]);
 
 const requiredMarkers = new Map([
-  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "workspace:start", "codex/<run-id>", "git-common-dir/cleanmymap-workspace", "intendedPaths", "AUTHZ_SECURITY", "claims", "advisory", "publication-integrate", "publication-complete", "ahead-only", "PUBLICATION_PENDING", "UNPUBLISHED_PATH_CONFLICT", "WORKTREE_BASE_DIVERGED"]],
+  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "workspace:start", "codex/<run-id>", "CleanMyMap-worktrees", "git-common-dir/cleanmymap-workspace", "intendedPaths", "AUTHZ_SECURITY", "claims", "advisory", "publication-acquire", "publication-integrate", "PUSH_CANDIDATE", "publication-complete", "INTEGRATION_CONFLICT"]],
   ["apps/web/AGENTS.md", ["Next.js", "Server/Client", "Leaflet"]],
   ["apps/web/src/app/api/AGENTS.md", ["AuthN", "AuthZ", "contrat de réponse propre"]],
   ["apps/web/supabase/AGENTS.md", ["apps/web/supabase/migrations/", "unique", "RLS"]],
   ["apps/web/scripts/AGENTS.md", ["dry-run", "--apply", "provenance"]],
   ["apps/mobile/AGENTS.md", ["ClerkProvider", "Third-Party Auth", "`sub` Clerk", "distance_m"]],
-  ["scripts/AGENTS.md", ["audit", "cleanup", "provenance", "workspace:start", "codex/<run-id>", "git-common-dir/cleanmymap-workspace", "intendedPaths", "advisory", "AUTHZ_SECURITY", "publication-integrate", "HEAD == origin/main", "WORKTREE_BASE_DIVERGED"]],
+  ["scripts/AGENTS.md", ["audit", "cleanup", "provenance", "workspace:start", "codex/<run-id>", "CleanMyMap-worktrees", "git-common-dir/cleanmymap-workspace", "intendedPaths", "advisory", "AUTHZ_SECURITY", "publication-acquire", "publication-integrate", "PUSH_CANDIDATE", "publication-complete", "INTEGRATION_CONFLICT"]],
   [".github/AGENTS.md", ["permissions", "CodeQL", "check:github-actions"]],
   ["maintenance/python/AGENTS.md", ["hors du", "requirements", "pytest"]],
   ["documentation/AGENTS.md", ["état actuel", "historique", "public"]],
@@ -54,6 +54,52 @@ const rootForbiddenHeadings = [
   "### Affichage des scores",
   "## 5. Design system",
 ];
+
+const legacyCoordinatorTerms = Object.freeze([
+  "PUBLICATION_PENDING",
+  "UNPUBLISHED_PATH_CONFLICT",
+  "WORKTREE_BASE_DIVERGED",
+  "checkout partagé",
+  "RUN_OWNED_PATHS",
+  "OWNED_FILES",
+]);
+
+function headingLevel(line) {
+  const match = /^(#{2,6})\s+/.exec(line);
+  return match ? match[1].length : null;
+}
+
+export function contentOutsideLegacySections(content) {
+  const kept = [];
+  let legacyLevel = null;
+  for (const line of content.split(/\r?\n/)) {
+    const level = headingLevel(line);
+    if (level !== null) {
+      if (legacyLevel !== null && level <= legacyLevel) legacyLevel = null;
+      if (legacyLevel === null && /\b(?:legacy|compatibility|historique)\b/i.test(line)) {
+        legacyLevel = level;
+        continue;
+      }
+    }
+    if (legacyLevel === null) kept.push(line);
+  }
+  return kept.join("\n");
+}
+
+function validateCurrentCoordinatorDoctrine(view, findings) {
+  for (const relativePath of ["AGENTS.md", "scripts/AGENTS.md", "CHATGPT.md"]) {
+    const content = readIfPresent(view, relativePath);
+    if (!content) continue;
+    const currentContent = contentOutsideLegacySections(content).toLocaleLowerCase("fr-FR");
+    for (const term of legacyCoordinatorTerms) {
+      if (currentContent.includes(term.toLocaleLowerCase("fr-FR"))) {
+        findings.push(
+          `${relativePath}: legacy coordinator term \`${term}\` is allowed only under a clearly marked LEGACY / COMPATIBILITY section.`,
+        );
+      }
+    }
+  }
+}
 
 function walk(view) {
   const files = [];
@@ -137,11 +183,6 @@ function validateMarkers(view, findings) {
 
   const rootContent = readIfPresent(view, "AGENTS.md");
   if (rootContent) {
-    if (rootContent.includes("Il refuse aussi de créer un run mutable si")) {
-      findings.push(
-        "AGENTS.md: workspace:start must allow ahead-only checkouts and mark PUBLICATION_PENDING instead of refusing every HEAD != origin/main.",
-      );
-    }
     for (const heading of rootForbiddenHeadings) {
       if (rootContent.includes(heading)) {
         findings.push(
@@ -150,6 +191,8 @@ function validateMarkers(view, findings) {
       }
     }
   }
+
+  validateCurrentCoordinatorDoctrine(view, findings);
 
   const supabaseContent = readIfPresent(view, "apps/web/supabase/AGENTS.md");
   if (supabaseContent && /(?<!apps\/web\/)supabase\/migrations\//.test(supabaseContent)) {

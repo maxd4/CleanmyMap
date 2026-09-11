@@ -36,7 +36,21 @@ const refContainsLegacyAiGuides = (() => {
 const refContainsLegacyCoordinatorDoctrine = (() => {
   try {
     const content = execFileSync("git", ["show", `${ref}:AGENTS.md`], { encoding: "utf8" });
-    return content.includes("le checkout de travail reste directement sur `main`") || content.includes("UNPUBLISHED_PATH_CONFLICT");
+    const currentContent = [];
+    let legacyLevel = null;
+    for (const line of content.split(/\r?\n/)) {
+      const heading = /^(#{2,6})\s+/.exec(line);
+      const level = heading ? heading[1].length : null;
+      if (level !== null) {
+        if (legacyLevel !== null && level <= legacyLevel) legacyLevel = null;
+        if (legacyLevel === null && /\b(?:legacy|compatibility|historique)\b/i.test(line)) {
+          legacyLevel = level;
+          continue;
+        }
+      }
+      if (legacyLevel === null) currentContent.push(line);
+    }
+    return /le checkout de travail reste directement sur `main`|PUBLICATION_PENDING|UNPUBLISHED_PATH_CONFLICT|WORKTREE_BASE_DIVERGED|checkout partagé|RUN_OWNED_PATHS|OWNED_FILES/i.test(currentContent.join("\n"));
   } catch {
     return true;
   }

@@ -68,16 +68,12 @@ intermédiaires ne doivent pas commencer par ce canari.
   se terminer par un commit ciblé sur la branche `codex/<run-id>` de son
   worktree, puis une publication vers `origin/main` ; aucune modification ne
   justifie un commit artificiel ;
-- un `worktree dirty` et une divergence de branche sont deux états distincts :
-  les changements dirty parallèles restent autorisés ; `workspace:start`
-  exécute `git fetch origin main` puis classe les refs : `HEAD == origin/main`
-  autorise le démarrage, un `ahead-only` autorise le démarrage avec
-  `PUBLICATION_PENDING`, et un checkout behind ou réellement divergent lève
-  `WORKTREE_BASE_DIVERGED` ;
-- pour un checkout `ahead-only`, `workspace:start` conserve les chemins de
-  `git diff --name-only origin/main..HEAD` ; un nouveau run ne peut revendiquer
-  que des chemins disjoints et l'intersection lève
-  `UNPUBLISHED_PATH_CONFLICT`. Marqueur de politique : ne pas exiger l'égalité littérale `HEAD == origin/main` au démarrage ; cette égalité reste obligatoire avant toute publication ;
+- un `worktree dirty` et l'état du bootstrap sont distincts : les changements
+  dirty parallèles restent autorisés. `workspace:start` fait un fetch de
+  `origin/main`, puis crée le run mutable depuis ce SHA dans une branche
+  `codex/<run-id>` et un worktree lié sous `CleanMyMap-worktrees`. Le bootstrap
+  `main` est une référence locale et peut être dirty ou en retard ; il reste
+  inchangé lorsqu'il ne peut pas être synchronisé sans risque ;
 - à chaque fin d'exécution ayant produit des modifications, clôturer
   immédiatement le lot : vérifier son allowlist, committer uniquement ses
   fichiers, puis pousser ce commit vers `origin/main` avant toute nouvelle
@@ -108,8 +104,8 @@ intermédiaires ne doivent pas commencer par ce canari.
 - si `origin/main` avance, faire d'abord `git fetch origin main` ; une
   évolution distante indépendante du lot autorise une resynchronisation sûre
   sans écraser les changements parallèles, suivie des validations et du push ;
-  si cette resynchronisation n'est pas sûre dans le checkout partagé, utiliser
-  la sandbox de publication éphémère ci-dessus ; un conflit réel sur les
+  si cette resynchronisation du bootstrap n'est pas sûre, utiliser la sandbox
+  de publication éphémère ci-dessus ; un conflit réel sur les
   fichiers ou contrats du lot impose un STOP explicite ;
 - distinguer les trois portées de validation : `WORKTREE` pour l'itération
   manuelle (dirty et untracked inclus), `STAGED` pour le candidat de
@@ -251,35 +247,20 @@ clean automatique n'est autorisé. Le serveur localhost continue de partir du
 bootstrap, de sorte que ce fast-forward rend les corrections publiées visibles
 localement sans copie manuelle.
 
-- legacy initialization is read-only and is superseded by the worktree model;
-  `workspace:init` never mutates `.artifacts/coordination`;
-  déjà présents comme `LEGACY_UNOWNED`, sans les lire en détail, modifier ou
-  revendiquer automatiquement ; toute adoption est explicite ;
-- chaque chantier crée un run avec `workspace:start`, revendique uniquement son
-  allowlist avec `workspace:claim`, puis consulte `workspace:status` ou
-  `workspace:stale` ; les chemins sont relatifs au dépôt et protégés contre la
-  traversée ;
-- `workspace:start` fait `git fetch origin main`, refuse de créer un run mutable
-  hors de la branche `main` et lève `WORKTREE_BRANCH_INVALID` pour une autre
-  branche ou un detached HEAD. `HEAD == origin/main` autorise le démarrage ; un
-  checkout `ahead-only` l'autorise aussi, marque `PUBLICATION_PENDING` et
-  conserve les chemins de `git diff --name-only origin/main..HEAD`. Les chemins
-  revendiqués par le run doivent être disjoints de ces commits non publiés,
-  sinon `UNPUBLISHED_PATH_CONFLICT`. Un checkout behind ou réellement divergent
-  lève `WORKTREE_BASE_DIVERGED` avec les deux SHA. Lorsque les contrôles
-  passent, le SHA de `origin/main` devient le `baseSha` du run ;
+- `workspace:init` reste une lecture de compatibilité ; chaque nouveau run
+  commence par `workspace:start`, crée une branche `codex/<run-id>` et un
+  worktree lié depuis le dernier `origin/main`, puis revendique son allowlist
+  advisory avec `workspace:claim`. Les chemins sont relatifs au dépôt et
+  protégés contre la traversée ; les chevauchements ordinaires sont permis.
 - le domaine `AUTHZ_SECURITY` est exclusif : aucun autre run ne peut le
-  revendiquer en parallèle ; les autres collisions de fichiers sont également
-  bloquantes et immédiates ; un verrou obsolète est signalé par `doctor`, jamais
+  revendiquer en parallèle ; un verrou obsolète est signalé par `doctor`, jamais
   supprimé automatiquement ;
 - le run peut stage et valider son allowlist avant toute acquisition de
   `publication.lock`; `workspace:check-staged` vérifie uniquement que les
   chemins staged appartiennent à `intendedPaths`. Le mutex global ne sérialise
-  que l'intégration et le push. `publication-acquire` refait le fetch et prépare
-  cette phase sans transformer un simple chevauchement de chemin en stale :
-  même fichier ≠ conflit. L'intégration Git continue lorsqu'elle est propre et
-  un conflit Git réel devient `INTEGRATION_CONFLICT` ; `workspace:stale` reste un
-  signal read-only et informatif ;
+  que `publication-integrate` et le push. Un conflit Git réel devient
+  `INTEGRATION_CONFLICT` ; un simple chevauchement de chemin n'est pas un
+  conflit anticipé ;
 - `workspace:publication-complete` est la clôture canonique après commit/push :
   après preuve que `publishedSha` est ancêtre de `origin/main`, il marque
   durablement `COMPLETE`, supprime les claims du run, libère les locks, ferme
@@ -292,21 +273,20 @@ localement sans copie manuelle.
   mutex réel ;
 - `workspace:publication-reconcile --run-id <id> --published-sha <sha>` est la
   voie bornée pour un run déjà publié dont l'ancien stale-check décrit ses
-  propres chemins publiés. Elle exige `main`, `HEAD == origin/main`, un SHA
-  ancêtre de `origin/main`, des chemins de commit inclus dans l'ownership du
-  run, aucun staged ou changement local sur ses chemins et aucun mutex de
-  publication étranger. Elle enregistre `publicationCompletedAt` et
+  propres chemins publiés. Elle vérifie le contexte `main`, l'ascendance du SHA
+  publié, les chemins intended du run, l'absence de staged étranger et de mutex
+  étranger. Elle enregistre `publicationCompletedAt` et
   `reconciledPublishedSha`, sans modifier l'historique Git, puis autorise
   `workspace:release` ;
 - `workspace:resume -- --run-id <id>` recharge le run durable après une
   interruption et renouvelle son heartbeat sans modifier Git. Il classe
   `WORK`, `STAGED_PENDING`, `COMMITTED_PENDING` ou
-  `PUSHED_PENDING_COMPLETE` ; en checkout `ahead-only`, il faut rechercher
-  d'abord un candidat récupérable et reprendre le même `runId`, jamais créer
-  un nouveau propriétaire pour un commit existant. La reprise refuse avec
-  `PUBLICATION_RESUME_FOREIGN_COMMIT`, `PUBLICATION_RESUME_STALE`,
-  `PUBLICATION_RESUME_AMBIGUOUS` ou `PUBLICATION_RESUME_FOREIGN_STAGED` toute
-  preuve étrangère, ambiguë, stale ou staged hors ownership ;
+  `PUSHED_PENDING_COMPLETE` ; la reprise retrouve le même run et ses chemins
+  intended, jamais un nouveau propriétaire pour un commit existant. Elle
+  refuse avec `PUBLICATION_RESUME_FOREIGN_COMMIT`,
+  `PUBLICATION_RESUME_STALE`, `PUBLICATION_RESUME_AMBIGUOUS` ou
+  `PUBLICATION_RESUME_FOREIGN_STAGED` toute preuve étrangère, ambiguë, stale ou
+  staged hors ownership ;
 - `workspace:publication-acquire` est réentrant pour son propre `runId` : il
   ne patiente jamais sur son propre `publication.lock`, renouvelle son
   heartbeat et peut reprendre un lock expiré seulement si le run, les locks
@@ -330,10 +310,14 @@ localement sans copie manuelle.
 - aucune photographie générale du worktree, aucun `git add -A` et aucune
   adoption implicite ne sont autorisés par ce mécanisme.
 
-Les références ci-dessus au checkout partagé décrivent uniquement la
-compatibilité de migration de l'ancien coordinateur. Pour tout nouveau run,
-le modèle worktree et le stockage sous `git-common-dir/cleanmymap-workspace`
-décrits au début de cette section prévalent.
+### LEGACY / COMPATIBILITY
+
+`PUBLICATION_PENDING`, `UNPUBLISHED_PATH_CONFLICT`, `WORKTREE_BASE_DIVERGED`,
+`LEGACY_UNOWNED`, `ORPHAN_DIRTY`, `OWNED_FILES`, `RUN_OWNED_PATHS` et la notion
+de `checkout partagé` désignent uniquement des états ou libellés de migration
+de l'ancien coordinateur. Ils peuvent être lus pour diagnostiquer un état
+historique, mais ne gouvernent aucun nouveau run et ne constituent pas des
+conflits anticipés du modèle worktree.
 
 ## Hygiène du dépôt et architecture interne
 
