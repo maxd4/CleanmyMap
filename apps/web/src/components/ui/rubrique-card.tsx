@@ -7,7 +7,7 @@ import { motion, HTMLMotionProps } from "framer-motion";
 
 export type RubriqueTheme = "fuchsia" | "amber" | "emerald" | "sky" | "rose" | "indigo" | "violet" | "purple" | "blue" | "slate";
 
-export interface RubriqueCardProps extends Omit<HTMLMotionProps<"div">, "children"> {
+export interface RubriqueCardProps extends Omit<HTMLMotionProps<"div">, "children" | "key"> {
   themeColor?: RubriqueTheme;
   surfaceKind?: "themed" | "neutral";
   watermarkIcon?: LucideIcon;
