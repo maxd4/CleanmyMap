@@ -544,13 +544,16 @@ Ne pas supprimer une compatibilité encore consommée uniquement pour « nettoye
 
 ## 17. Worktree dirty et chantiers parallèles
 
-Un checkout local dirty est normal dans CleanMyMap.
+Le checkout bootstrap `CleanmyMap-main` reste sur `main`, doit normalement être
+un miroir clean de `origin/main` et sert au serveur localhost ; il n'est pas le
+workspace mutable d'un chantier. Un dirty bootstrap est un signal
+`BOOTSTRAP_DIRTY`, pas une autorisation de l'écraser.
 
-Le dirty worktree ne doit pas être confondu avec une divergence de branche.
-Avant tout nouveau chantier mutable, Codex doit faire `git fetch origin main`
-et vérifier `HEAD == origin/main`. Une divergence doit être signalée comme
-`CHECKOUT_DIVERGENCE` et réconciliée dans un lot dédié ; elle ne doit pas être
-résolue automatiquement par merge, rebase, reset destructif, stash ou clean.
+Chaque run mutable utilise une branche `codex/<run-id>` et un worktree lié
+dédié. Son dirty state est autorisé pendant le travail ; avant publication,
+son travail utile doit être commité et le worktree doit être clean et sans
+staged. Les dirty states étrangers ne bloquent pas les autres runs : seules
+les collisions Git réelles et les scopes critiques le peuvent.
 
 Les modifications `staged`, `unstaged` ou `untracked` étrangères au chantier courant :
 
@@ -664,14 +667,18 @@ une primitive de récupération et n'est pas nécessaire après publication.
 
 Le modèle courant remplace le checkout partagé comme workspace mutable :
 `workspace:start` crée une branche `codex/<run-id>` et un worktree lié sous
-`<parent>/CleanMyMap-worktrees/<run-id>/`, tandis que `main` reste une référence
-dirty préservée. Les métadonnées et le mutex sont sous le `git-common-dir`,
-dans `cleanmymap-workspace`; `.artifacts/coordination` est legacy et
-lecture-seule. Les claims ordinaires sont advisory et utilisent
+`<parent>/CleanMyMap-worktrees/<run-id>/`. Le bootstrap `CleanmyMap-main` reste
+sur `main`, clean entre les publications, et est fast-forwardé
+automatiquement après une publication réussie uniquement s'il est clean et sur
+`main`; sinon le coordinateur signale `BOOTSTRAP_DIRTY` ou
+`BOOTSTRAP_BRANCH_INVALID` sans l'écraser. Les métadonnées et le mutex sont
+sous le `git-common-dir`, dans `cleanmymap-workspace`; `.artifacts/coordination`
+est legacy et lecture-seule. Les claims ordinaires sont advisory et utilisent
 `intendedPaths`; seule la scope critique `AUTHZ_SECURITY` reste exclusive.
-La publication se fait depuis `.publish/<run-id>` sur `publish/<run-id>`, avec
-fast-forward conservé ou merge signé, puis suppression des seuls worktrees et
-branches du run après convergence.
+La publication suit `COMMIT → publication-acquire → fetch → integrate →
+PUSH_CANDIDATE → push origin/main → publication-complete → cleanup`, puis le
+localhost retrouve les corrections publiées depuis le bootstrap sans copie
+manuelle.
 
 ## Sécurité des diagnostics host et des verrous Git
 
