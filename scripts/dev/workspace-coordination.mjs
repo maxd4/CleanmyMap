@@ -53,6 +53,11 @@ function isWithin(parent, child) {
   return relative === "" || (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
 }
 
+function isStrictlyWithin(parent, child) {
+  const relative = path.relative(parent, child);
+  return relative !== "" && relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+}
+
 function readJson(filePath) { return JSON.parse(fs.readFileSync(filePath, "utf8")); }
 function readOptionalJson(filePath) { return fs.existsSync(filePath) ? readJson(filePath) : null; }
 function jsonPayload(value) { return `${JSON.stringify(value, null, 2)}\n`; }
@@ -593,10 +598,70 @@ export function createWorkspaceCoordinator({
 
   function cleanupOwnWorktrees(run) {
     const currentDirectory = path.resolve(process.cwd());
+    const listedPaths = new Set(worktreeList(repo, gitRunner).map((item) => path.resolve(item.path)));
+    const canonicalPublishPath = path.resolve(publishPathFor(run.runId));
+    const recordedPublishPath = path.resolve(run.publishWorktreePath ?? canonicalPublishPath);
+
+    function assertOrphanPublicationWorktree(candidate) {
+      if (path.resolve(candidate) !== canonicalPublishPath || recordedPublishPath !== canonicalPublishPath) {
+        throw workspaceError("ORPHAN_PUBLICATION_WORKTREE_REFUSED", `publication worktree path is not canonical for ${run.runId}`, { runId: run.runId, worktree: candidate, canonicalPublishPath, recordedPublishPath });
+      }
+
+      const publishRoot = path.resolve(worktreesRoot, ".publish");
+      if (!isStrictlyWithin(publishRoot, path.resolve(candidate)) || path.basename(path.resolve(candidate)) !== run.runId) {
+        throw workspaceError("ORPHAN_PUBLICATION_WORKTREE_REFUSED", `publication worktree path is outside the canonical run directory`, { runId: run.runId, worktree: candidate, publishRoot });
+      }
+
+      let candidateStat;
+      try { candidateStat = fs.lstatSync(candidate); } catch (error) { throw workspaceError("ORPHAN_PUBLICATION_WORKTREE_REFUSED", `publication worktree cannot be inspected: ${error.message}`, { runId: run.runId, worktree: candidate }); }
+      if (!candidateStat.isDirectory() || candidateStat.isSymbolicLink()) throw workspaceError("ORPHAN_PUBLICATION_WORKTREE_REFUSED", `publication worktree is not a real directory`, { runId: run.runId, worktree: candidate });
+
+      const gitFile = path.join(candidate, ".git");
+      let gitFileStat;
+      try { gitFileStat = fs.lstatSync(gitFile); } catch (error) { throw workspaceError("ORPHAN_PUBLICATION_WORKTREE_REFUSED", `publication worktree .git file is unavailable: ${error.message}`, { runId: run.runId, worktree: candidate }); }
+      if (!gitFileStat.isFile() || gitFileStat.isSymbolicLink()) throw workspaceError("ORPHAN_PUBLICATION_WORKTREE_REFUSED", `publication worktree .git must be a regular gitdir file`, { runId: run.runId, worktree: candidate });
+
+      const gitFileContents = fs.readFileSync(gitFile, "utf8").trim();
+      const gitdirMatch = /^gitdir:[ \t]*(.+)$/u.exec(gitFileContents);
+      if (!gitdirMatch) throw workspaceError("ORPHAN_PUBLICATION_WORKTREE_REFUSED", `publication worktree .git has no canonical gitdir pointer`, { runId: run.runId, worktree: candidate });
+
+      const gitCommonDir = path.resolve(getGitCommonDir(repo, gitRunner));
+      const administrativeRoot = path.resolve(gitCommonDir, "worktrees");
+      const administrativePath = path.resolve(path.dirname(gitFile), gitdirMatch[1]);
+      if (!isStrictlyWithin(administrativeRoot, administrativePath)) throw workspaceError("ORPHAN_PUBLICATION_WORKTREE_REFUSED", `publication worktree gitdir points outside the repository worktree metadata`, { runId: run.runId, worktree: candidate, administrativePath, administrativeRoot });
+
+      let administrativeExists = false;
+      try { fs.lstatSync(administrativePath); administrativeExists = true; } catch (error) { if (error.code !== "ENOENT") throw workspaceError("ORPHAN_PUBLICATION_WORKTREE_REFUSED", `publication worktree administrative descriptor cannot be checked: ${error.message}`, { runId: run.runId, worktree: candidate, administrativePath }); }
+      if (administrativeExists) throw workspaceError("ORPHAN_PUBLICATION_WORKTREE_REFUSED", `publication worktree administrative descriptor still exists`, { runId: run.runId, worktree: candidate, administrativePath });
+
+      const publishedSha = run.publication?.publishedSha;
+      const originMain = runGit(["rev-parse", "origin/main"]);
+      if (!publishedSha || !isAncestor(publishedSha, originMain)) throw workspaceError("PUBLICATION_NOT_CONVERGED", `published SHA ${publishedSha ?? "none"} is not an ancestor of origin/main ${originMain}`, { runId: run.runId, publishedSha, originMain });
+
+      return { publishedSha, originMain };
+    }
+
+    const cleanupPlan = [];
     for (const candidate of [run.publishWorktreePath ?? publishPathFor(run.runId), run.worktreePath ?? ownPath(run.runId)]) {
       if (!fs.existsSync(candidate)) continue;
+      if (!listedPaths.has(path.resolve(candidate))) {
+        if (path.resolve(candidate) === canonicalPublishPath && recordedPublishPath === canonicalPublishPath) {
+          assertOrphanPublicationWorktree(candidate);
+          cleanupPlan.push({ kind: "orphan-publication", candidate });
+        }
+        else throw workspaceError("WORKTREE_NOT_REGISTERED", `run worktree is not registered by Git: ${candidate}`, { runId: run.runId, worktree: candidate });
+        continue;
+      }
       const dirty = readDirtyPaths(candidate, (cwd, args) => gitRunner(cwd, args));
       if (dirty.length > 0) throw workspaceError("WORKTREE_DIRTY", `${candidate}: ${dirty.join(", ")}`);
+      cleanupPlan.push({ kind: "registered", candidate });
+    }
+
+    for (const { kind, candidate } of cleanupPlan) {
+      if (kind === "orphan-publication") {
+        fs.rmSync(candidate, { recursive: true, force: false });
+        continue;
+      }
       // The command may itself run from the run worktree. Use the canonical
       // bootstrap as Git's cwd so removing the target cannot fail on Windows.
       if (isWithin(path.resolve(candidate), currentDirectory)) process.chdir(canonicalRoot);
