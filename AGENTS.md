@@ -62,10 +62,12 @@ intermédiaires ne doivent pas commencer par ce canari.
   `maxd4/CleanmyMap`, branche `main` ;
 - lire le fichier actuel et ses dépendances directes avant de le modifier ; ne
   pas privilégier une ancienne conversation ou un ancien plan au dépôt réel ;
-- le checkout de travail reste directement sur `main` ; toute exécution qui
-  produit des modifications doit se terminer par un commit ciblé sur `main`
-  puis un push vers `origin/main` ; aucune modification ne justifie un commit
-  artificiel ;
+- le checkout bootstrap `CleanmyMap-main` reste toujours sur `main`, sert de
+  miroir local de `origin/main` et de source pour localhost ; il ne sert pas au
+  développement mutable. Toute exécution qui produit des modifications doit
+  se terminer par un commit ciblé sur la branche `codex/<run-id>` de son
+  worktree, puis une publication vers `origin/main` ; aucune modification ne
+  justifie un commit artificiel ;
 - un `worktree dirty` et une divergence de branche sont deux états distincts :
   les changements dirty parallèles restent autorisés ; `workspace:start`
   exécute `git fetch origin main` puis classe les refs : `HEAD == origin/main`
@@ -89,13 +91,11 @@ intermédiaires ne doivent pas commencer par ce canari.
   changements parallèles hors périmètre ne sont jamais ajoutés au lot et sont
   préservés, y compris s'ils étaient déjà stagés avant l'intervention ;
 - le dossier du projet est l'unique source canonique ; ne pas créer ni
-  conserver de copie persistante du dépôt, copie de fichier, branche temporaire
-  ou worktree isolé ; il est strictement interdit de créer ou d'utiliser un
-  clone Git isolé, même temporaire ou sous `business` ; une sandbox de
-  publication éphémère n'est permise qu'en cas de commit étranger à publier,
-  divergence/race ou resynchronisation dangereuse, depuis le dernier
-  `origin/main`, avec la seule allowlist du lot, puis suppression avant la fin
-  du chantier, et ne peut pas être matérialisée par un clone Git ;
+  conserver de copie persistante du dépôt, copie manuelle de fichiers, branche
+  temporaire ou clone Git isolé. Les worktrees liés `codex/<run-id>` sous
+  `<parent>/CleanMyMap-worktrees/` sont les workspaces mutables officiels du
+  coordinateur et ne sont pas des copies ; aucun worktree étranger ou ad hoc ne
+  doit être créé ;
 - Git pousse des commits, pas des fichiers ; avant de pousser, après
   `git fetch origin main`, inspecter `git log --oneline origin/main..HEAD`
   et le périmètre de chaque commit local non publié pour vérifier si `HEAD`
@@ -225,7 +225,8 @@ ci-dessus.
 
 ### Modèle worktree du coordinateur
 
-Le checkout `main` est uniquement une référence/bootstrap. `workspace:start`
+Le checkout bootstrap `CleanmyMap-main` est uniquement une référence locale
+sur `main` et ne constitue pas un workspace mutable. `workspace:start`
 fait un fetch puis crée, sous le `git-common-dir`, un run avec une branche
 `codex/<run-id>` et un worktree lié sous
 `<parent>/CleanMyMap-worktrees/<run-id>/`. Le run canonique persiste
@@ -243,7 +244,12 @@ de publication. `workspace:publication-integrate` utilise le worktree
 `publish/<run-id>`, conserve le fast-forward si possible, signe tout nouveau
 merge d'intégration et lève `INTEGRATION_CONFLICT` en cas de conflit Git.
 Après `workspace:publication-complete`, seuls les worktrees et branches du run
-sont supprimés ; le checkout `main` et les worktrees étrangers sont préservés.
+sont supprimés ; le coordinateur tente ensuite, depuis le bootstrap propre,
+`fetch origin main` puis `merge --ff-only origin/main`. Un bootstrap dirty est
+signalé `BOOTSTRAP_DIRTY` et reste inchangé ; aucun reset, rebase, stash ou
+clean automatique n'est autorisé. Le serveur localhost continue de partir du
+bootstrap, de sorte que ce fast-forward rend les corrections publiées visibles
+localement sans copie manuelle.
 
 - legacy initialization is read-only and is superseded by the worktree model;
   `workspace:init` never mutates `.artifacts/coordination`;
@@ -280,7 +286,10 @@ sont supprimés ; le checkout `main` et les worktrees étrangers sont préservé
   les métadonnées et nettoie exclusivement ses worktrees et branches intégrés.
   Cette finalisation est idempotente et reprenable ; `workspace:release` reste
   une primitive explicite de récupération, mais n'est pas nécessaire après une
-  publication normale ;
+  publication normale. `doctor` signale aussi le bootstrap `main` dirty, les
+  runs fermés avec worktree, les runs terminés dirty/staged, les commits non
+  publiés abandonnés, les worktrees sans run et les métadonnées `ACQUIRED` sans
+  mutex réel ;
 - `workspace:publication-reconcile --run-id <id> --published-sha <sha>` est la
   voie bornée pour un run déjà publié dont l'ancien stale-check décrit ses
   propres chemins publiés. Elle exige `main`, `HEAD == origin/main`, un SHA
@@ -328,11 +337,11 @@ décrits au début de cette section prévalent.
   données et les artefacts, selon les emplacements canoniques de son
   architecture ;
 - le dossier du projet est la source canonique unique ; ne pas créer ni
-  conserver par commodité de dossier parallèle, copie persistante, clone,
-  worktree ou arborescence de projet hors racine sous `business` ou sur la
-  machine, notamment un dépôt ou dossier `CleanmyMap-*` parallèle ; seule la
-  sandbox de publication éphémère explicitement autorisée par la gouvernance
-  Git fait exception et doit être supprimée avant la fin du chantier ;
+  conserver par commodité de dossier parallèle, copie persistante, clone ou
+  copie de fichier hors racine sous `business` ou sur la machine. Les worktrees
+  liés du coordinateur sous `CleanMyMap-worktrees/` sont l'unique exception
+  structurée prévue pour les runs mutables ; aucun dossier `CleanmyMap-*`
+  parallèle non géré ne doit être créé ;
 - respecter et étendre l'arborescence canonique existante ; ne pas créer de
   structure ambiguë ou dupliquée lorsqu'un contenu possède déjà un emplacement
   canonique ; la racine du projet reste la source canonique des fichiers
@@ -590,8 +599,10 @@ et la prochaine étape, puis attendre confirmation avant de continuer.
   système pour du contenu issu du projet.
 - Il est interdit de créer, copier, cloner, snapshotter, exporter ou conserver
   hors de cette racine un fichier ou dossier issu du projet à titre persistant,
-  notamment une copie complète, un backup, un staging durable, un worktree ou
-  un clone Git.
+  notamment une copie complète, un backup, un staging durable ou un clone Git.
+  Les worktrees liés `codex/<run-id>` gérés par le coordinateur sous
+  `CleanMyMap-worktrees/` sont des workspaces Git officiels, pas des copies ;
+  ils ne doivent jamais être remplacés par des copies manuelles.
 - Il est également interdit de créer ou d'utiliser un clone Git isolé, même
   éphémère ; la sandbox exceptionnelle de publication ne constitue pas une
   autorisation de clone et doit utiliser un mécanisme qui ne duplique pas le

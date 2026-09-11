@@ -35,6 +35,14 @@ test("root directory contract accepts canonical directories", () => {
   assert.equal(allowedRootDirectories.includes("companion-app"), false);
 });
 
+test("linked worktree metadata file is allowed at the repository root", () => {
+  const result = validateRootFileHygiene({
+    rootFiles: () => [".git"],
+    rootDirectories: () => [],
+  });
+  assert.deepEqual(result.forbidden, []);
+});
+
 test("root directory contract accepts local-only directories when untracked", () => {
   assert.deepEqual(findForbiddenRootDirectories(localOnlyRootDirectories), []);
 });

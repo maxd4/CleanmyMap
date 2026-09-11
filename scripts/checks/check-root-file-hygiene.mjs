@@ -12,6 +12,7 @@ const allowedRootFiles = new Set([
   ".codexignore",
   ".cursorrules",
   ".editorconfig",
+  ".git",
   ".gitattributes",
   ".gitignore",
   ".vercelignore",
