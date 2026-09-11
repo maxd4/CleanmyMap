@@ -15,16 +15,17 @@ type UseDropdownPlacementOptions = {
   verticalGap?: number;
 };
 
+export const DEFAULT_DROPDOWN_VERTICAL_GAP_PX = 12;
+
 export function resolveDropdownOpenUp(
   rect: Pick<DOMRect, "top" | "bottom">,
   viewportHeight: number,
-  verticalGap = 12,
+  verticalGap = DEFAULT_DROPDOWN_VERTICAL_GAP_PX,
 ): boolean {
   const spaceAbove = rect.top - verticalGap;
   const spaceBelow = viewportHeight - rect.bottom - verticalGap;
   return spaceBelow < 260 && spaceAbove > spaceBelow;
 }
-
 function resolveDropdownLayoutScale(element: HTMLElement): number {
   let scale = 1;
   let current: HTMLElement | null = element;
@@ -42,7 +43,7 @@ function resolveDropdownLayoutScale(element: HTMLElement): number {
 export function useDropdownPlacement({
   isOpen,
   triggerRef,
-  verticalGap = 12,
+  verticalGap = DEFAULT_DROPDOWN_VERTICAL_GAP_PX,
 }: UseDropdownPlacementOptions): DropdownPlacement {
   const [placement, setPlacement] = useState<DropdownPlacement>({
     openUp: false,
