@@ -246,9 +246,9 @@ describe("accueil data", () => {
   it("formats a clear landing overview error message", () => {
     expect(
       formatLandingOverviewErrorMessage(new Error("Database timeout")),
-    ).toBe("Supabase est momentanément indisponible. Database timeout");
-    expect(formatLandingOverviewErrorMessage("boom")).toBe(
-      "Supabase est momentanément indisponible. Réessaie dans un instant.",
+    ).toBe("Les actions vérifiées sont momentanément indisponibles.");
+    expect(formatLandingOverviewErrorMessage("Supabase secret details")).toBe(
+      "Les actions vérifiées sont momentanément indisponibles.",
     );
   });
 

@@ -9,10 +9,28 @@ import {
   installCandidateSignalCleanup,
 } from "./candidate-lifecycle.mjs";
 
+const DEPENDENCY_MANIFESTS = Object.freeze([
+  "package.json",
+  "package-lock.json",
+  "npm-shrinkwrap.json",
+  "apps/web/package.json",
+  "apps/web/package-lock.json",
+  "apps/mobile/package.json",
+  "apps/mobile/package-lock.json",
+]);
+
+const CANONICAL_DEPENDENCY_PATHS = Object.freeze([
+  "node_modules",
+  "apps/web/node_modules",
+  "apps/mobile/node_modules",
+]);
+
+const DEPENDENCY_MODES = Object.freeze(["reuse", "isolated"]);
+
 function usage(message) {
   if (message) console.error(message);
   console.error(
-    "Usage: node scripts/ci/run-dynamic-candidate-check.mjs --ref=<commit> --command=<tool> -- [arguments]",
+    "Usage: node scripts/ci/run-dynamic-candidate-check.mjs --ref=<commit> --command=<tool> --dependency-mode=<reuse|isolated> -- [arguments]",
   );
   process.exitCode = 2;
 }
@@ -23,16 +41,27 @@ function parseArguments(argv = process.argv.slice(2)) {
   const commandArguments = separatorIndex === -1 ? [] : argv.slice(separatorIndex + 1);
   const refArgument = runnerArguments.find((argument) => argument.startsWith("--ref="));
   const commandArgument = runnerArguments.find((argument) => argument.startsWith("--command="));
+  const dependencyModeArgument = runnerArguments.find((argument) => argument.startsWith("--dependency-mode="));
 
-  if (!refArgument || !commandArgument) {
-    usage("Both --ref and --command are required.");
+  if (!refArgument || !commandArgument || !dependencyModeArgument) {
+    usage("--ref, --command and --dependency-mode are required.");
+    return null;
   }
 
   const command = commandArgument.slice("--command=".length);
-  if (!command) usage("--command must not be empty.");
+  const dependencyMode = dependencyModeArgument.slice("--dependency-mode=".length);
+  if (!command) {
+    usage("--command must not be empty.");
+    return null;
+  }
+  if (!DEPENDENCY_MODES.includes(dependencyMode)) {
+    usage(`--dependency-mode must be one of: ${DEPENDENCY_MODES.join(", ")}.`);
+    return null;
+  }
   return {
     ref: refArgument.slice("--ref=".length),
     command,
+    dependencyMode,
     commandArguments,
   };
 }
@@ -53,6 +82,30 @@ function git(repositoryRoot, arguments_, options = {}) {
     env: cleanGitEnvironment(),
     ...options,
   }).trim();
+}
+
+function resolveCanonicalRepositoryRoot(repositoryRoot) {
+  const commonDir = path.resolve(repositoryRoot, git(repositoryRoot, ["rev-parse", "--git-common-dir"]));
+  const canonicalRoot = path.dirname(commonDir);
+  if (!fs.existsSync(path.join(canonicalRoot, ".git"))) {
+    throw new Error(`HOST_ENVIRONMENT: canonical repository root could not be resolved from ${commonDir}.`);
+  }
+  return canonicalRoot;
+}
+
+function dependencyManifestsMatch(candidateTreeRoot, canonicalRoot) {
+  let compared = 0;
+  for (const relativePath of DEPENDENCY_MANIFESTS) {
+    const candidatePath = path.join(candidateTreeRoot, ...relativePath.split("/"));
+    const canonicalPath = path.join(canonicalRoot, ...relativePath.split("/"));
+    const candidateExists = fs.existsSync(candidatePath);
+    const canonicalExists = fs.existsSync(canonicalPath);
+    if (candidateExists !== canonicalExists) return false;
+    if (!candidateExists) continue;
+    compared += 1;
+    if (!Buffer.from(fs.readFileSync(candidatePath)).equals(fs.readFileSync(canonicalPath))) return false;
+  }
+  return compared > 0;
 }
 
 function readGitTree(repositoryRoot, candidateSha) {
@@ -109,12 +162,6 @@ function materializeGitTree(candidateTreeRoot, entries, blobs) {
   }
 }
 
-function mapRepositoryPath(candidateTreeRoot, repositoryRoot, sourcePath) {
-  const relativeSource = path.relative(repositoryRoot, sourcePath);
-  if (relativeSource.startsWith(".." + path.sep) || path.isAbsolute(relativeSource)) return null;
-  return path.join(candidateTreeRoot, relativeSource);
-}
-
 function linkDirectory(candidateTreeRoot, relativePath, sourcePath, linkedPaths) {
   if (!fs.existsSync(sourcePath)) return;
   const destination = path.join(candidateTreeRoot, ...relativePath.split("/"));
@@ -123,31 +170,25 @@ function linkDirectory(candidateTreeRoot, relativePath, sourcePath, linkedPaths)
   linkedPaths.push(destination);
 }
 
-function materializeLocalDependencyDirectory(candidateTreeRoot, repositoryRoot, relativePath, sourcePath, linkedPaths) {
+function linkWorkspaceDirectory(candidateTreeRoot, relativePath, sourcePath, linkedPaths) {
   if (!fs.existsSync(sourcePath)) return;
+  const overlayPath = path.join(
+    candidateTreeRoot,
+    ".next",
+    "canonical-workspace-node-modules",
+    relativePath.replaceAll("/", "-"),
+  );
+  fs.mkdirSync(overlayPath, { recursive: true });
+  for (const entry of fs.readdirSync(sourcePath, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue;
+    const entryDestination = path.join(overlayPath, entry.name);
+    fs.symlinkSync(path.join(sourcePath, entry.name), entryDestination, "junction");
+    linkedPaths.push(entryDestination);
+  }
   const destination = path.join(candidateTreeRoot, ...relativePath.split("/"));
   fs.mkdirSync(path.dirname(destination), { recursive: true });
-
-  const materializeEntry = (source, target) => {
-    const sourceStat = fs.lstatSync(source);
-    if (sourceStat.isSymbolicLink()) {
-      const resolvedSource = fs.realpathSync(source);
-      const mappedTarget = mapRepositoryPath(candidateTreeRoot, repositoryRoot, resolvedSource);
-      if (mappedTarget) {
-        fs.symlinkSync(mappedTarget, target, "junction");
-        linkedPaths.push(target);
-        return;
-      }
-      fs.cpSync(resolvedSource, target, { recursive: true, dereference: true });
-      return;
-    }
-    fs.cpSync(source, target, { recursive: true, dereference: true });
-  };
-
-  fs.mkdirSync(destination, { recursive: true });
-  for (const entry of fs.readdirSync(sourcePath)) {
-    materializeEntry(path.join(sourcePath, entry), path.join(destination, entry));
-  }
+  fs.symlinkSync(overlayPath, destination, "junction");
+  linkedPaths.push(destination);
 }
 
 function findGitExecutable() {
@@ -220,8 +261,9 @@ function createCandidateGitDirectory(materialization) {
   materialization.gitDirectory = gitDirectory;
 }
 
-function materializeCandidate(repositoryRoot, candidateRef, { materializeRootDependencies = false } = {}) {
+function materializeCandidate(repositoryRoot, candidateRef, dependencyMode) {
   const candidateSha = git(repositoryRoot, ["rev-parse", "--verify", candidateRef + "^{commit}"]);
+  const canonicalRoot = resolveCanonicalRepositoryRoot(repositoryRoot);
   const lifecycle = createCandidateMaterialization({
     repositoryRoot,
     family: CANDIDATE_FAMILIES.PREPUSH,
@@ -239,30 +281,14 @@ function materializeCandidate(repositoryRoot, candidateRef, { materializeRootDep
     const entries = readGitTree(repositoryRoot, candidateSha);
     const blobs = readGitBlobs(repositoryRoot, entries);
     materializeGitTree(candidateTreeRoot, entries, blobs);
-    if (materializeRootDependencies) {
-      materializeLocalDependencyDirectory(
-        candidateTreeRoot,
-        repositoryRoot,
-        "node_modules",
-        path.join(repositoryRoot, "node_modules"),
-        linkedPaths,
-      );
-    } else {
-      linkDirectory(candidateTreeRoot, "node_modules", path.join(repositoryRoot, "node_modules"), linkedPaths);
+    const dependenciesMatch = dependencyManifestsMatch(candidateTreeRoot, canonicalRoot);
+    if (dependencyMode === "reuse" && dependenciesMatch) {
+      for (const relativePath of CANONICAL_DEPENDENCY_PATHS) {
+        const sourcePath = path.join(canonicalRoot, ...relativePath.split("/"));
+        if (relativePath === "node_modules") linkDirectory(candidateTreeRoot, relativePath, sourcePath, linkedPaths);
+        else linkWorkspaceDirectory(candidateTreeRoot, relativePath, sourcePath, linkedPaths);
+      }
     }
-    materializeLocalDependencyDirectory(
-      candidateTreeRoot,
-      repositoryRoot,
-      "apps/web/node_modules",
-      path.join(repositoryRoot, "apps", "web", "node_modules"),
-      linkedPaths,
-    );
-    linkDirectory(
-      candidateTreeRoot,
-      "apps/mobile/node_modules",
-      path.join(repositoryRoot, "apps", "mobile", "node_modules"),
-      linkedPaths,
-    );
     linkDirectory(candidateTreeRoot, ".vercel", path.join(repositoryRoot, ".vercel"), linkedPaths);
     linkDirectory(
       candidateTreeRoot,
@@ -284,7 +310,10 @@ function materializeCandidate(repositoryRoot, candidateRef, { materializeRootDep
     const materialization = {
       ...lifecycle,
       repositoryRoot,
+      canonicalRoot,
       candidateSha,
+      dependencyMode,
+      dependenciesMatch,
       candidateTreeRoot,
       materializedRoot,
       candidateRoot,
@@ -299,6 +328,24 @@ function materializeCandidate(repositoryRoot, candidateRef, { materializeRootDep
     lifecycle.cleanup(linkedPaths);
     throw error;
   }
+}
+
+function installIsolatedDependencies(materialization) {
+  const invocation = resolveInvocation("npm");
+  if (!invocation.executable) throw new Error("HOST_ENVIRONMENT: npm is unavailable for isolated dynamic candidate dependencies.");
+  const result = spawnSync(
+    invocation.executable,
+    [...invocation.prefixArguments, "ci", "--prefer-offline", "--no-audit", "--no-fund"],
+    {
+      cwd: materialization.candidateTreeRoot,
+      env: cleanGitEnvironment(),
+      stdio: "inherit",
+      windowsHide: true,
+      shell: invocation.shell,
+    },
+  );
+  if (result.error) throw new Error(`HOST_ENVIRONMENT: npm ci could not start: ${result.error.message}`);
+  if (result.status !== 0) throw new Error(`DYNAMIC_DEPENDENCY_INSTALL_FAILED: npm ci exited with ${result.status ?? 1}.`);
 }
 
 function resolveInvocation(command) {
@@ -316,14 +363,22 @@ function resolveInvocation(command) {
 }
 
 function run() {
-  const { ref, command, commandArguments } = parseArguments();
+  const parsedArguments = parseArguments();
+  if (!parsedArguments) return 2;
+  const { ref, command, dependencyMode, commandArguments } = parsedArguments;
   const repositoryRoot = path.resolve(process.cwd());
-  const materializeRootDependencies =
-    (command === "npm" && commandArguments.some((argument) => argument === "build")) ||
-    (command === "npx" && commandArguments.includes("vercel") && commandArguments.includes("build"));
-  const materialization = materializeCandidate(repositoryRoot, ref, { materializeRootDependencies });
-  const detachSignalCleanup = installCandidateSignalCleanup(materialization);
+  const materialization = materializeCandidate(repositoryRoot, ref, dependencyMode);
+  let detachSignalCleanup = () => {};
   try {
+    const candidateNodeModules = path.join(materialization.candidateTreeRoot, "node_modules");
+    const needsIsolatedInstall =
+      dependencyMode === "isolated" ||
+      !materialization.dependenciesMatch ||
+      !fs.existsSync(candidateNodeModules);
+    if (needsIsolatedInstall) {
+      installIsolatedDependencies(materialization);
+    }
+    detachSignalCleanup = installCandidateSignalCleanup(materialization);
     const invocation = resolveInvocation(command);
     if (!invocation.executable) {
       console.error(

@@ -289,6 +289,7 @@ function Invoke-GuardStep {
                 "scripts/ci/run-dynamic-candidate-check.mjs",
                 "--ref=$CandidateRef",
                 "--command=npx",
+                "--dependency-mode=isolated",
                 "--",
                 "vercel",
                 "build",
@@ -366,6 +367,9 @@ function Invoke-GuardStep {
             [string]$Label,
             [Parameter(Mandatory = $true)]
             [string]$Command,
+            [Parameter(Mandatory = $true)]
+            [ValidateSet("reuse", "isolated")]
+            [string]$DependencyMode,
             [Parameter(Mandatory = $false)]
             [AllowEmptyCollection()]
             [string[]]$CommandArguments = @()
@@ -377,6 +381,7 @@ function Invoke-GuardStep {
             "scripts/ci/run-dynamic-candidate-check.mjs",
             "--ref=$CandidateRef",
             "--command=$Command",
+            "--dependency-mode=$DependencyMode",
             "--"
         ) + $CommandArguments
         Invoke-GuardStep "$Label ($CandidateRef)" { & node @runnerArguments }
@@ -478,7 +483,7 @@ function Invoke-GuardStep {
         Invoke-StaticCandidateChecks -CandidateRefs @($plan.CandidateRef) -DocumentationRelevant ([bool]$plan.DocumentationRelevant) -SupabaseRelevant ([bool]$plan.SupabaseRelevant) -WebRelevant ([bool]$plan.WebRelevant)
 
         if ([bool]$plan.Policy.scriptsRelevant) {
-            Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "script tests" -Command "npm" -CommandArguments @("run", "test:scripts")
+            Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "script tests" -Command "npm" -DependencyMode "reuse" -CommandArguments @("run", "test:scripts")
         } else {
             Write-SkippedGuardStep "script tests ($($plan.CandidateRef))" "no scripts changes in this candidate"
         }
@@ -486,8 +491,8 @@ function Invoke-GuardStep {
         if ([bool]$plan.WebRelevant) {
             # DYNAMIC_CANDIDATE: these gates execute in a materialized candidate
             # tree and remain distinct from STATIC_CANDIDATE checks above.
-            Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "lint" -Command "npm" -CommandArguments @("run", "lint")
-            Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "typecheck" -Command "npm" -CommandArguments @("run", "typecheck")
+            Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "lint" -Command "npm" -DependencyMode "reuse" -CommandArguments @("run", "lint")
+            Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "typecheck" -Command "npm" -DependencyMode "reuse" -CommandArguments @("run", "typecheck")
 
             $targetedArgs = @(
                 "scripts/checks/validation-policy.mjs",
@@ -498,10 +503,10 @@ function Invoke-GuardStep {
             foreach ($file in @($plan.Policy.targetedVitestFiles)) {
                 $targetedArgs += @("--test-file", [string]$file)
             }
-            Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "Vitest targeted security/regression" -Command "node" -CommandArguments $targetedArgs
+            Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "Vitest targeted security/regression" -Command "node" -DependencyMode "reuse" -CommandArguments $targetedArgs
 
             if ([bool]$plan.BuildRelevant) {
-                Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "build" -Command "npm" -CommandArguments @("run", "build")
+                Invoke-DynamicCandidateCommand -CandidateRef $plan.CandidateRef -Label "build" -Command "npm" -DependencyMode "isolated" -CommandArguments @("run", "build")
             } else {
                 Write-SkippedGuardStep "build ($($plan.CandidateRef))" "changed web scope does not require a production build"
             }

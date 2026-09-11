@@ -72,6 +72,10 @@ test("pre-push derives gates from the Git protocol candidate and keeps manual fa
   assert.match(guard, /STATIC_CANDIDATE/);
   assert.match(guard, /exact Git tree named by --ref/);
   assert.match(guard, /DYNAMIC_CANDIDATE/);
+  assert.match(guard, /--dependency-mode=\$DependencyMode/);
+  assert.match(guard, /-DependencyMode "reuse"/);
+  assert.match(guard, /-DependencyMode "isolated"/);
+  assert.match(guard, /--dependency-mode=isolated/);
   assert.doesNotMatch(guard, /(?<!run-dynamic-candidate-check\.mjs[^\r\n]*)npm run (?:test:scripts|lint|typecheck|build)/);
   assert.doesNotMatch(guard, /npm run check:doc-governance \}/);
   assert.doesNotMatch(guard, /npm run test:regression-gates/);
@@ -128,9 +132,8 @@ test("governance keeps parallel dirty work separate from published commits", asy
   assert.match(rootAgents, /WORKTREE/);
   assert.match(rootAgents, /STAGED/);
   assert.match(rootAgents, /PUSH_CANDIDATE/);
-  assert.match(rootAgents, /worktree lié créé et géré par le coordinateur/);
-  assert.match(rootAgents, /workspace:publication-integrate/);
-  assert.doesNotMatch(rootAgents, /ne pas exiger l'égalité\s+littérale `HEAD == origin\/main`/);
+  assert.match(rootAgents, /sandbox de publication éphémère/);
+  assert.match(rootAgents, /ne pas exiger l'égalité\s+littérale `HEAD == origin\/main`/);
   assert.match(chatgpt, /ne doit pas recommander d'attendre un chantier parallèle indépendant/);
   assert.match(scriptsAgents, /pré-commit doit utiliser exclusivement la portée `STAGED`/);
   assert.match(scriptsAgents, /pré-push réel doit utiliser exclusivement la portée\s+`PUSH_CANDIDATE`/);

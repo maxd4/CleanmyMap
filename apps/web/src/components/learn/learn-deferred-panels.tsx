@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import type { LearnLocale } from "@/lib/learning/learn-rubric-data";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import type { QuizSentrainerEntryState } from "@/lib/learning/quiz/quiz-entry-state";
+import type { EnvironmentalQuizProps } from "@/components/learn/quiz/environmental-quiz";
 
 const DeferredLearnArtworkAccordionComponent = dynamic(
   () =>
@@ -82,7 +83,7 @@ const DeferredSustainableGoalsInteractiveComponent = dynamic(
   },
 );
 
-const DeferredEnvironmentalQuizComponent = dynamic(
+const DeferredEnvironmentalQuizComponent = dynamic<EnvironmentalQuizProps>(
   () => import("@/components/learn/quiz/environmental-quiz").then((module) => module.EnvironmentalQuiz),
   {
     ssr: false,
