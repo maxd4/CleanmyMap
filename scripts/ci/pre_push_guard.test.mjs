@@ -172,11 +172,12 @@ function candidateCheckCommand(ref, script, extraArguments = []) {
   ].join(" ");
 }
 
-function dynamicCandidateCommand(ref, command, commandArguments = []) {
+function dynamicCandidateCommand(ref, command, commandArguments = [], dependencyMode = "reuse") {
   return [
     "node scripts/ci/run-dynamic-candidate-check.mjs",
     `--ref=${ref}`,
     `--command=${command}`,
+    `--dependency-mode=${dependencyMode}`,
     "--",
     ...commandArguments,
   ].join(" ");
@@ -212,7 +213,7 @@ test("web push keeps the existing web gates", () => {
   assert.equal(result.status, 0, result.output);
   assertCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "lint"]));
   assertCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "typecheck"]));
-  assertCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "build"]));
+  assertCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "build"], "isolated"));
   assertCommandPrefix(result.log, dynamicCandidateCommand("refs/web-local", "node", [
     "scripts/checks/validation-policy.mjs",
     "--run-vitest",
@@ -240,7 +241,7 @@ test("web candidate ignores a foreign artifact lockfile and runs scoped static g
   assertNoCommand(result.log, "npm run quality:top-heavy");
   assertCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "lint"]));
   assertCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "typecheck"]));
-  assertCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "build"]));
+  assertCommand(result.log, dynamicCandidateCommand("refs/web-local", "npm", ["run", "build"], "isolated"));
   assert.doesNotMatch(result.output, /foreign-invalid\.test\.ts|artifacts[\\/]foreign[\\/]package-lock\.json/);
 });
 
