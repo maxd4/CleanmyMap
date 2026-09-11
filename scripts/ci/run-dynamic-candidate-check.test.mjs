@@ -21,9 +21,12 @@ function createFixture() {
   const checkerPath = join(root, "scripts", "checks", "dynamic-check.mjs");
   mkdirSync(join(root, "scripts", "checks"), { recursive: true });
   mkdirSync(join(root, "apps", "web", "src"), { recursive: true });
+  mkdirSync(join(root, "apps", "mobile"), { recursive: true });
   writeFileSync(join(root, "apps", "web", "src", "candidate.ts"), "export const candidate = true;\n");
-  writeFileSync(join(root, "package.json"), '{"name":"dynamic-fixture","private":true}\n');
-  writeFileSync(join(root, "package-lock.json"), '{"name":"dynamic-fixture","lockfileVersion":3,"requires":true,"packages":{"":{"name":"dynamic-fixture"}}}\n');
+  writeFileSync(join(root, "package.json"), '{"name":"dynamic-fixture","private":true,"workspaces":["apps/web","apps/mobile"]}\n');
+  writeFileSync(join(root, "package-lock.json"), '{"name":"dynamic-fixture","lockfileVersion":3,"requires":true,"packages":{"":{"name":"dynamic-fixture","workspaces":["apps/web","apps/mobile"]}}}\n');
+  writeFileSync(join(root, "apps", "web", "package.json"), '{"name":"dynamic-web","private":true}\n');
+  writeFileSync(join(root, "apps", "mobile", "package.json"), '{"name":"dynamic-mobile","private":true}\n');
   writeFileSync(
     checkerPath,
     [
@@ -45,6 +48,10 @@ function createFixture() {
   git(root, ["commit", "--quiet", "-m", "candidate dynamic checker"]);
   mkdirSync(join(root, "node_modules", "eslint"), { recursive: true });
   writeFileSync(join(root, "node_modules", "eslint", "package.json"), '{"name":"eslint","version":"fixture"}\n');
+  mkdirSync(join(root, "apps", "web", "node_modules", "workspace-only"), { recursive: true });
+  writeFileSync(join(root, "apps", "web", "node_modules", "workspace-only", "package.json"), '{"name":"workspace-only","version":"fixture"}\n');
+  mkdirSync(join(root, "apps", "mobile", "node_modules", "mobile-only"), { recursive: true });
+  writeFileSync(join(root, "apps", "mobile", "node_modules", "mobile-only", "package.json"), '{"name":"mobile-only","version":"fixture"}\n');
   return root;
 }
 
@@ -98,9 +105,22 @@ test("resolves npm packages from the canonical checkout for a linked worktree", 
     git(root, ["worktree", "add", "--detach", linked, "HEAD"]);
     assert.equal(existsSync(join(linked, "node_modules")), false);
     const ref = git(linked, ["rev-parse", "HEAD"]);
-    const result = runRunner(linked, ref, "node", ["-e", "console.log(require.resolve('eslint/package.json'))"]);
+    const result = runRunner(linked, ref, "node", ["-e", [
+      "const { existsSync, lstatSync } = require('node:fs');",
+      "const resolve = (name, from) => require.resolve(name + '/package.json', { paths: [from] });",
+      "if (!lstatSync('node_modules').isSymbolicLink()) process.exit(21);",
+      "if (!lstatSync('apps/web/node_modules').isSymbolicLink()) process.exit(22);",
+      "if (!lstatSync('apps/mobile/node_modules').isSymbolicLink()) process.exit(23);",
+      "if (!existsSync('apps/web/node_modules/workspace-only/package.json')) process.exit(24);",
+      "if (!existsSync('apps/mobile/node_modules/mobile-only/package.json')) process.exit(25);",
+      "console.log(resolve('eslint', '.'));",
+      "console.log(resolve('workspace-only', 'apps/web'));",
+      "console.log(resolve('mobile-only', 'apps/mobile'));",
+    ].join(" ")]);
     assert.equal(result.status, 0, result.stderr + result.stdout);
     assert.match(result.stdout, /node_modules[\\/]eslint[\\/]package\.json/);
+    assert.match(result.stdout, /workspace-only[\\/]package\.json/);
+    assert.match(result.stdout, /mobile-only[\\/]package\.json/);
     assert.equal(existsSync(join(root, ".artifacts", "validation", "prepush-candidate")), false);
   } finally {
     try { git(root, ["worktree", "remove", "--", linked]); } catch { /* fixture cleanup is authoritative */ }
