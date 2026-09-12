@@ -45,6 +45,7 @@ type CmmDropdownProps = {
   triggerHasPopup?: "menu" | "dialog" | null;
   panelClassName?: string;
   panelStyle?: CSSProperties;
+  panelAlignment?: "center" | "start";
   wrapperClassName?: string;
   verticalGap?: number;
   hoverCloseDelayMs?: number;
@@ -64,6 +65,7 @@ export function CmmDropdown({
   triggerHasPopup = "menu",
   panelClassName,
   panelStyle,
+  panelAlignment = "center",
   wrapperClassName,
   verticalGap = DEFAULT_DROPDOWN_VERTICAL_GAP_PX,
   hoverCloseDelayMs = DEFAULT_HOVER_CLOSE_DELAY_MS,
@@ -259,9 +261,15 @@ export function CmmDropdown({
   const triggerCenter = triggerRect
     ? `${(triggerRect.left + triggerRect.width / 2) / layoutScale}px`
     : "50%";
+  const panelLeft = panelAlignment === "start" && triggerRect
+    ? `${triggerRect.left / layoutScale}px`
+    : triggerCenter;
+  const arrowStyle = panelAlignment === "start" && triggerRect
+    ? { left: `${triggerRect.width / (2 * layoutScale)}px` }
+    : undefined;
   const fixedPositionStyle: CSSProperties = {
     ...panelStyle,
-    left: triggerCenter,
+    left: panelLeft,
     ...(triggerRect
       ? placement.openUp
         ? {
@@ -285,7 +293,8 @@ export function CmmDropdown({
           role={panelRole}
           aria-label={ariaLabel}
           className={cn(
-            "fixed z-[70] max-w-[calc(100vw-1rem)] -translate-x-1/2 overflow-visible",
+            "fixed z-[70] max-w-[calc(100vw-1rem)] overflow-visible",
+            panelAlignment === "center" && "-translate-x-1/2",
             panelClassName,
           )}
           style={fixedPositionStyle}
@@ -310,7 +319,7 @@ export function CmmDropdown({
                 ? "-bottom-2 rotate-[225deg] border-b border-l-0 border-r border-t-0"
                 : "-top-2",
             )}
-            style={panelStyle}
+            style={{ ...panelStyle, ...arrowStyle }}
           />
           {children}
         </div>

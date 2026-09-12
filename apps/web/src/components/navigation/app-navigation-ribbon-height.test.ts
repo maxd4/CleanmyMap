@@ -20,7 +20,7 @@ describe("desktop ribbon control geometry", () => {
     expect(source).toContain('xl:col-start-2');
     expect(source).toContain('xl:col-start-3');
     expect(source).toContain('aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"}');
-    expect(source).toContain('className="flex shrink-0 flex-nowrap items-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px');
+    expect(source).toContain('className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px');
   });
 
   it("uses the canonical desktop height for home and search without changing mobile layout", () => {
@@ -29,6 +29,9 @@ describe("desktop ribbon control geometry", () => {
 
     expect(ribbonSource).toContain("xl:h-10 xl:min-h-0");
     expect(searchSource).toContain("inline-flex h-10 min-h-10 w-full");
+    expect(searchSource).toContain('panelAlignment="start"');
+    expect(ribbonSource).toContain("max-w-[15rem]");
+    expect(ribbonSource).toContain("w-[15rem] shrink-0 flex-nowrap items-center justify-center");
     expect(ribbonSource).toContain("<AppNavigationTreeMenu");
     expect(ribbonSource).toContain('className="lg:hidden"');
   });
