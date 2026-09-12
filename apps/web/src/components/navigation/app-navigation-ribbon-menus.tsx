@@ -77,13 +77,13 @@ export function RibbonMenus({
           <button
             {...triggerProps}
             aria-label={locale === "fr" ? "Menu des préférences d'affichage et langue" : "Display and language preferences menu"}
-            className="cmm-dropdown-trigger inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-0 text-white transition-colors hover:border-cyan-200/32 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 sm:w-auto sm:px-3 xl:h-10"
+            className="cmm-dropdown-trigger inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-0 text-white transition-colors hover:border-cyan-200/32 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 lg:w-auto lg:px-3 xl:h-10"
           >
             <Settings2 className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
-            <span className="hidden text-sm font-semibold sm:inline">
+            <span className="hidden text-sm font-semibold lg:inline">
               {locale === "fr" ? "Préférences" : "Preferences"}
             </span>
-            <ChevronDown className="hidden h-4 w-4 shrink-0 text-slate-300 sm:inline" aria-hidden="true" />
+            <ChevronDown className="hidden h-4 w-4 shrink-0 text-slate-300 lg:inline" aria-hidden="true" />
           </button>
         )}
       >
@@ -133,11 +133,11 @@ export function RibbonMenus({
           <button
             {...triggerProps}
             aria-label={locale === "fr" ? "Menu Feedback" : "Feedback menu"}
-            className="cmm-dropdown-trigger inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-0 text-white transition-colors hover:border-rose-200/30 hover:bg-rose-300/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/40 sm:w-auto sm:px-3 xl:h-10"
+            className="cmm-dropdown-trigger inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-0 text-white transition-colors hover:border-rose-200/30 hover:bg-rose-300/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/40 lg:w-auto lg:px-3 xl:h-10"
           >
             <MessageSquare className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
-            <span className="hidden text-sm font-semibold sm:inline">Feedback</span>
-            <ChevronDown className="hidden h-4 w-4 shrink-0 text-slate-300 sm:inline" aria-hidden="true" />
+            <span className="hidden text-sm font-semibold lg:inline">Feedback</span>
+            <ChevronDown className="hidden h-4 w-4 shrink-0 text-slate-300 lg:inline" aria-hidden="true" />
           </button>
         )}
       >
