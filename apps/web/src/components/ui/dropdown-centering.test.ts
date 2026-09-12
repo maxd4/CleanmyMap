@@ -17,7 +17,8 @@ describe("dropdown centering contract", () => {
     const primitiveSource = readSource("ui/cmm-dropdown.tsx");
 
     expect(primitiveSource).toContain("useDropdownPlacement");
-    expect(primitiveSource).toContain("left: triggerCenter");
+    expect(primitiveSource).toContain("left: panelLeft");
+    expect(primitiveSource).toContain('panelAlignment?: "center" | "start"');
     expect(primitiveSource).toContain("-translate-x-1/2");
     expect(primitiveSource).toContain("Escape");
     expect(primitiveSource).toContain("pointerdown");
@@ -73,7 +74,7 @@ describe("dropdown centering contract", () => {
     expect(placementSource).not.toContain("minPanelWidth");
   });
 
-  it("keeps navigation rows geometrically stable across hover and focus", () => {
+  it("keeps reduced-mode navigation rows geometrically stable across hover and focus", () => {
     const sizeTheme = readSource("navigation/navigation-dropdown-size-theme.ts");
     const itemTone = readSource("navigation/navigation-dropdown-item-theme.ts");
     const borderTheme = readSource("navigation/navigation-dropdown-border-theme.ts");
@@ -90,17 +91,17 @@ describe("dropdown centering contract", () => {
     expect(helpText).toContain("NAVIGATION_DROPDOWN_HELP_TEXT_CLASS_NAME");
   });
 
-  it("keeps all item accents in the shared theme helpers", () => {
-    const home = readSource("navigation/app-navigation-block-dropdown-home.tsx");
-    const act = readSource("navigation/app-navigation-block-dropdown-act.tsx");
-    const network = readSource("navigation/app-navigation-block-dropdown-network.tsx");
-    const learn = readSource("navigation/app-navigation-block-dropdown-learn.tsx");
+  it("keeps item rendering and accents in the shared navigation renderer", () => {
+    const content = readSource("navigation/navigation-dropdown-content.tsx");
+    const iconResolver = readSource("navigation/navigation-dropdown-item-icon.ts");
 
-    for (const source of [home, act, network, learn]) {
-      expect(source).toContain("getNavigationDropdownItemIconClassName");
-      expect(source).not.toContain("bg-gradient-to-br");
-    }
-    expect(network).not.toContain("getNetworkItemAccent");
+    expect(content).toContain("NavigationDropdownItemCard");
+    expect(content).toContain("getNavigationDropdownItemIcon");
+    expect(content).toContain("getNavigationDropdownItemIconClassName");
+    expect(content).toContain("getNavigationDropdownCardBorderTokens");
+    expect(iconResolver).toContain('funding: HandCoins');
+    expect(iconResolver).toContain('"rejoindre-un-formulaire": UserPlus');
+    expect(iconResolver).toContain("Missing navigation dropdown item icon");
   });
 
   it("keeps the dropdown surface compatible with minimal and sober modes", () => {

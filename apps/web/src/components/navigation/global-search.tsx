@@ -128,7 +128,7 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
               {locale === "fr" ? "Rechercher" : "Search"}
             </span>
           </span>
-          <kbd className="hidden shrink-0 items-center gap-1 rounded-full border border-white/15 bg-black/30 px-2 py-1 text-[10px] font-semibold tracking-[0.08em] text-white/70 sm:inline-flex">
+          <kbd className="hidden shrink-0 items-center gap-1 rounded-full border border-white/15 bg-black/30 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.06em] text-white/70 sm:inline-flex">
             Ctrl K / ⌘ K
           </kbd>
         </button>

@@ -1,5 +1,5 @@
 export const NAVIGATION_DROPDOWN_SHELL_CLASS_NAME =
-  "cmm-navigation-dropdown-surface cmm-minimal cmm-minimal-animate cmm-sober cmm-sober-animate z-50 w-[min(27rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.5rem] border text-black shadow-[0_24px_52px_-26px_rgba(15,23,42,0.16)]";
+  "cmm-navigation-dropdown-surface cmm-minimal cmm-minimal-animate cmm-sober cmm-sober-animate z-50 w-[min(24rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.5rem] border text-black shadow-[0_24px_52px_-26px_rgba(15,23,42,0.16)]";
 
 export const NAVIGATION_DROPDOWN_PANEL_CONTENT_CLASS_NAME =
   "px-3 pb-2 pt-2 sm:px-3.5 sm:pt-2.5";
