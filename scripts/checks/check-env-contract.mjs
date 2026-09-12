@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -56,17 +55,6 @@ function extractProcessEnvKeys(source) {
     [...source.matchAll(/process\.env(?:\.([A-Z][A-Z0-9_]*)|\[["']([A-Z][A-Z0-9_]*)["']\])/g)]
       .map((match) => match[1] || match[2]),
   );
-}
-
-function extractProcessEnvFromView(view) {
-  const keys = new Set();
-  for (const filePath of view.listFiles("apps/web")) {
-    if (!SOURCE_EXTENSIONS.test(filePath)) continue;
-    for (const key of extractProcessEnvKeys(view.readText(filePath))) {
-      keys.add(key);
-    }
-  }
-  return keys;
 }
 
 function withoutPlatformVariables(keys) {
