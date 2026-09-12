@@ -42,7 +42,9 @@ CleanMyMap rassemble ces étapes dans un même parcours local. La plateforme rel
 
 ## La boucle produit
 
-<p align="center"><strong>Repérer → Préparer → Agir → Mesurer → Partager</strong></p>
+<p align="center">
+  <img src="./documentation/resume-projet.png" alt="Boucle produit CleanMyMap : repérer, préparer, agir, mesurer et partager" />
+</p>
 
 Ces étapes forment une boucle continue de connaissance et d'action terrain : les observations aident à préparer les interventions, les actions produisent des éléments mesurables, puis les résultats rendent les prochaines décisions plus lisibles.
 
