@@ -189,8 +189,9 @@ export function verifyWorktreeMatchesTree({ gitCommonDir, worktree, tip }) {
     runGit(["read-tree", tip]);
     try { runGit(["update-index", "--refresh", "--ignore-submodules"]); } catch { /* changed tracked files are reported by diff-files below */ }
     const trackedDelta = runGit(["diff-files", "--name-status", "--", ":(exclude).git"]);
+    const nonDeletionDelta = trackedDelta.split(/\r?\n/).filter((line) => line && line.split("\t", 1)[0] !== "D");
     const untracked = runGit(["ls-files", "--others", "--exclude-standard", "--", ":(exclude).git"]).split(/\r?\n/).filter((item) => item && item !== ".git");
-    if (trackedDelta) throw workspaceError("ORPHAN_RUN_WORKTREE_CONTENT_MISMATCH", `worktree ${worktree} differs from ${tip}: ${trackedDelta}`, { worktree, tip, trackedDelta });
+    if (nonDeletionDelta.length > 0) throw workspaceError("ORPHAN_RUN_WORKTREE_CONTENT_MISMATCH", `worktree ${worktree} differs from ${tip}: ${nonDeletionDelta.join("\n")}`, { worktree, tip, trackedDelta: nonDeletionDelta.join("\n") });
     if (untracked.length > 0) throw workspaceError("ORPHAN_RUN_WORKTREE_UNTRACKED", `worktree ${worktree} contains untracked files: ${untracked.join(", ")}`, { worktree, tip, untracked });
   } catch (error) {
     if (error?.code === "ORPHAN_RUN_WORKTREE_CONTENT_MISMATCH" || error?.code === "ORPHAN_RUN_WORKTREE_UNTRACKED") throw error;

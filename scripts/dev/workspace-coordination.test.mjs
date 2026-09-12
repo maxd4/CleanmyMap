@@ -689,13 +689,16 @@ test("verifyWorktreeMatchesTree uses an isolated index and excludes only the git
     realGit(source, ["config", "user.email", "tests@cleanmymap.local"]);
     realGit(source, ["config", "user.name", "CleanMyMap tests"]);
     fs.writeFileSync(path.join(source, "tracked.txt"), "stable\n");
-    realGit(source, ["add", "tracked.txt"]);
+    fs.writeFileSync(path.join(source, "deleted.txt"), "already absent\n");
+    realGit(source, ["add", "tracked.txt", "deleted.txt"]);
     realGit(source, ["commit", "-m", "base"]);
     const tip = realGit(source, ["rev-parse", "HEAD"]);
     fs.mkdirSync(worktree, { recursive: true });
     fs.writeFileSync(path.join(worktree, "tracked.txt"), "stable\n");
+    fs.writeFileSync(path.join(worktree, "deleted.txt"), "already absent\n");
     fs.writeFileSync(path.join(worktree, ".git"), "gitdir: missing\n");
 
+    fs.rmSync(path.join(worktree, "deleted.txt"));
     assert.doesNotThrow(() => verifyWorktreeMatchesTree({ gitCommonDir: path.join(source, ".git"), worktree, tip }));
     fs.writeFileSync(path.join(worktree, "tracked.txt"), "changed\n");
     assert.throws(() => verifyWorktreeMatchesTree({ gitCommonDir: path.join(source, ".git"), worktree, tip }), { code: "ORPHAN_RUN_WORKTREE_CONTENT_MISMATCH" });
