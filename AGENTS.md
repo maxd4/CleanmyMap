@@ -94,6 +94,27 @@ intermédiaires ne doivent pas commencer par ce canari.
 - un commit doit contenir exclusivement les fichiers du lot courant ; les
   changements parallèles hors périmètre ne sont jamais ajoutés au lot et sont
   préservés, y compris s'ils étaient déjà stagés avant l'intervention ;
+- lorsqu'un lot a déjà produit des modifications et qu'un changement étranger
+  apparaît ensuite dans le working tree, l'agent ne doit pas abandonner
+  silencieusement son propre diff. Si son allowlist reste attribuable sans
+  ambiguïté, qu'aucun fichier de son lot n'a été modifié concurremment et que
+  la validation `STAGED` peut isoler exactement son candidat, il termine son
+  lot : stage ciblé, validation, commit signé, puis STOP avant toute nouvelle
+  modification. Il ne doit laisser ses propres changements non commités que
+  si l'attribution des fichiers est ambiguë, qu'un fichier est partagé avec le
+  writer concurrent ou que le candidat ne peut plus être validé
+  indépendamment. Dans ce cas, il rapporte `DIRTY_HANDOFF_REQUIRED` et aucun
+  nouveau chantier d'écriture ne doit commencer avant résolution.
+
+  ```text
+  FOREIGN_DIRTY != automatic STOP before commit
+
+  STOP before commit only if:
+  - overlap on same files/contracts;
+  - ownership ambiguous;
+  - staged candidate cannot be isolated;
+  - validation of own candidate is impossible.
+  ```
 - le dossier du projet est l'unique source canonique ; ne pas créer ni
   conserver de copie persistante du dépôt, copie manuelle de fichiers, branche
   temporaire, clone Git isolé ou worktree mutable ;
