@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { getCurrentUserActiveRole } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import {
@@ -49,7 +49,6 @@ const BLOCK_THEME: Record<NavigationBlockId, {
   badge: string;      // badge compteur
   border: string;     // bordure carte
   glow: string;       // glow hover
-  cta: string;        // bouton CTA
   text: string;       // texte principal
   mutedText: string;  // texte secondaire
   dot: string;        // pastille coin
@@ -64,7 +63,6 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     badge:     "border-orange-200/25 bg-orange-100/12 text-white",
     border:    "border-orange-200/18",
     glow:      "group-hover:shadow-orange-950/30",
-    cta:       "border-white/14 bg-white/10 text-white hover:bg-white/16",
     text:      "text-white",
     mutedText: "text-white/82",
     dot:       "bg-orange-300",
@@ -79,7 +77,6 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     badge:     "border-emerald-200/25 bg-emerald-100/12 text-white",
     border:    "border-emerald-200/18",
     glow:      "group-hover:shadow-emerald-950/28",
-    cta:       "border-white/14 bg-white/10 text-white hover:bg-white/16",
     text:      "text-white",
     mutedText: "text-white/82",
     dot:       "bg-emerald-300",
@@ -94,7 +91,6 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     badge:     "border-sky-200/25 bg-sky-100/12 text-white",
     border:    "border-sky-200/18",
     glow:      "group-hover:shadow-sky-950/28",
-    cta:       "border-white/14 bg-white/10 text-white hover:bg-white/16",
     text:      "text-white",
     mutedText: "text-white/82",
     dot:       "bg-sky-300",
@@ -109,7 +105,6 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     badge:     "border-red-200/25 bg-red-100/12 text-white",
     border:    "border-red-200/18",
     glow:      "group-hover:shadow-red-950/28",
-    cta:       "border-white/14 bg-white/10 text-white hover:bg-white/16",
     text:      "text-white",
     mutedText: "text-white/82",
     dot:       "bg-red-300",
@@ -124,7 +119,6 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     badge:     "border-indigo-200/25 bg-indigo-100/12 text-white",
     border:    "border-indigo-200/18",
     glow:      "group-hover:shadow-indigo-950/28",
-    cta:       "border-white/14 bg-white/10 text-white hover:bg-white/16",
     text:      "text-white",
     mutedText: "text-white/82",
     dot:       "bg-indigo-300",
@@ -139,7 +133,6 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     badge:     "border-pink-200/25 bg-pink-100/12 text-white",
     border:    "border-pink-200/18",
     glow:      "group-hover:shadow-pink-950/28",
-    cta:       "border-white/14 bg-white/10 text-white hover:bg-white/16",
     text:      "text-white",
     mutedText: "text-white/82",
     dot:       "bg-pink-300",
@@ -154,7 +147,6 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     badge:     "border-yellow-200/25 bg-yellow-100/12 text-white",
     border:    "border-yellow-200/18",
     glow:      "group-hover:shadow-yellow-950/28",
-    cta:       "border-white/14 bg-white/10 text-white hover:bg-white/16",
     text:      "text-white",
     mutedText: "text-white/82",
     dot:       "bg-yellow-300",
@@ -196,8 +188,8 @@ export default async function ExplorerPage() {
           </h1>
           <p className="max-w-xl text-base font-medium leading-relaxed text-black">
             {locale === "fr"
-              ? "Accédez à toutes les rubriques disponibles pour votre profil."
-              : "Access all sections available for your profile."}
+              ? "CleanMyMap en un coup d'œil"
+              : "CleanMyMap at a glance"}
           </p>
         </div>
 
@@ -205,7 +197,6 @@ export default async function ExplorerPage() {
         <div className="flex flex-wrap justify-center gap-4 xl:flex-nowrap">
           {visibleSpaces.map((space) => {
             const orderedItems = getOrderedPreviewItems(space.id, space.items);
-            const firstHref = orderedItems[0]?.href ?? EXPLORER_ROUTE;
             const t = BLOCK_THEME[space.id];
 
             return (
@@ -225,7 +216,7 @@ export default async function ExplorerPage() {
                 </div>
 
                 <div className="relative mb-2 flex items-start justify-between gap-3">
-                  <h2 className={`min-w-0 text-[18px] font-black leading-tight ${t.text}`}>
+                  <h2 className={`min-w-0 break-words text-[21px] font-black leading-tight ${t.text}`}>
                     {formatBlockLabel(space.label[locale])}
                   </h2>
                 </div>
@@ -241,7 +232,7 @@ export default async function ExplorerPage() {
                         <li key={item.id}>
                           <Link
                             href={item.href}
-                            className={`group/item flex min-h-9 items-center gap-2 rounded-xl border border-transparent px-2.5 py-1.5 text-[13px] font-semibold ${t.mutedText} transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${t.itemHover}`}
+                            className={`group/item flex min-h-9 items-center gap-2 rounded-xl border border-transparent px-2.5 py-1.5 text-[14px] font-semibold ${t.mutedText} transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${t.itemHover}`}
                           >
                             <span className={`h-1 w-1 shrink-0 rounded-full opacity-80 ${t.dot}`} />
                             <span className="flex-1 leading-snug">{item.label[locale]}</span>
@@ -260,16 +251,6 @@ export default async function ExplorerPage() {
                   )}
                 </div>
 
-                {/* CTA — même style que les piliers */}
-                <div className="relative mt-6">
-                  <Link
-                    href={firstHref}
-                    className={`inline-flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border px-4 text-[11px] font-black uppercase tracking-[0.14em] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${t.cta}`}
-                  >
-                    <span>{locale === "fr" ? "Ouvrir" : "Open"}</span>
-                    <ArrowRight size={13} className="transition-transform duration-300 group-hover:translate-x-1" />
-                  </Link>
-                </div>
               </article>
             );
           })}
