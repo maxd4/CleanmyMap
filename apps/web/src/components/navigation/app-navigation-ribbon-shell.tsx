@@ -145,7 +145,7 @@ function AppNavigationRibbonShell({
             </Link>
 
             <div className="hidden min-w-0 flex-1 items-center xl:flex">
-              <div className="w-full max-w-[24rem] xl:max-w-[26rem]">
+              <div className="w-full max-w-[12rem]">
                 <GlobalSearch currentProfile={effectiveProfile} />
               </div>
             </div>
