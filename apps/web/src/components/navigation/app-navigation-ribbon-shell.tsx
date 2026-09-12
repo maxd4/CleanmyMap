@@ -160,6 +160,7 @@ function AppNavigationRibbonShell({
                 <AppNavigationBlockDropdown
                   key={space.id}
                   activeSpaceId={activeSpaceId}
+                  displayMode={displayMode}
                   locale={locale}
                   onTrackNavigation={onTrackNavigation}
                   pathname={pathname}

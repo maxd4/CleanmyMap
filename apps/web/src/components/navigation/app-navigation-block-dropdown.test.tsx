@@ -27,15 +27,17 @@ describe("app navigation block dropdown contract", () => {
     expect(source).not.toContain("AnimatePresence");
   });
 
-  it("uses stable Lucide block triggers instead of platform-dependent emoji", () => {
+  it("keeps exhaustive block icons distinct from reduced-mode Lucide icons", () => {
     expect(source).toContain("CmmIcon");
     expect(source).toContain("data-navigation-block-trigger");
+    expect(source).toContain('displayMode === "exhaustif"');
+    expect(source).toContain("{space.icon}");
+    expect(source).toContain("getNavigationBlockIcon(space.id)");
     expect(source).toContain("return House");
     expect(source).toContain("return Zap");
     expect(source).toContain("return Map");
     expect(source).toContain("return Users");
     expect(source).toContain("return BookOpen");
-    expect(source).not.toContain("space.icon");
     expect(source).not.toMatch(/[🏠⚡🗺️🤝📚]/u);
   });
 

@@ -48,7 +48,7 @@ export function RibbonMenus({
     },
     {
       href: "/sections/feedback#collaboration",
-      label: "Nous contacter pour travailler ensemble",
+      label: "Nous contacter",
       icon: UsersRound,
       iconClassName: "text-emerald-300",
     },

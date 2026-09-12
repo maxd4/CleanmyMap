@@ -27,7 +27,8 @@ describe("top ribbon dropdown sizing contract", () => {
     expect(source).toContain("compact");
     expect(source).toContain("Signaler un problème technique");
     expect(source).toContain("Proposer une idée ou suggestion");
-    expect(source).toContain("Nous contacter pour travailler ensemble");
+    expect(source).toContain('label: "Nous contacter"');
+    expect(source).not.toContain("Nous contacter pour travailler ensemble");
   });
 
   it("keeps the feedback compact treatment local to RibbonDropdownItem", () => {
