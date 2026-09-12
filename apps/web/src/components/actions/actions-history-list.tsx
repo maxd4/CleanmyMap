@@ -159,11 +159,20 @@ export function ActionsHistoryList() {
  const selectedCanModerateGroupJoin = Boolean(
  selectedItem && canManageGroupJoin(selectedItem, currentUserId, isAdminLikeUser),
  );
- const selectedCanViewActionAudit = Boolean(
+  const selectedCanViewActionAudit = Boolean(
   selectedItem &&
    (isAdminLikeUser || selectedItem.created_by_clerk_id === currentUserId),
- );
- const actionAudit = useSWR<{ items?: AdminOperationAuditEntry[] }>(
+  );
+  const visiblePendingGroupJoinRequests = selectedCanModerateGroupJoin
+    ? pendingGroupJoinRequests
+    : [];
+  const visiblePendingGroupJoinLoading = selectedCanModerateGroupJoin
+    ? pendingGroupJoinLoading
+    : false;
+  const visiblePendingGroupJoinError = selectedCanModerateGroupJoin
+    ? pendingGroupJoinError
+    : null;
+  const actionAudit = useSWR<{ items?: AdminOperationAuditEntry[] }>(
   selectedActionId && selectedCanViewActionAudit
    ? ["action-operation-audit", selectedActionId]
    : null,
@@ -232,15 +241,9 @@ export function ActionsHistoryList() {
  :"Corriger les champs incomplets et valeurs incoherentes."
  : null;
 
- const loadPendingGroupJoinRequests = useCallback(
-  async (actionId: string, signal?: AbortSignal) => {
-   if (!selectedCanModerateGroupJoin) {
-    setPendingGroupJoinRequests([]);
-    setPendingGroupJoinError(null);
-    return;
-   }
-
-   setPendingGroupJoinLoading(true);
+  const loadPendingGroupJoinRequests = useCallback(
+   async (actionId: string, signal?: AbortSignal) => {
+    setPendingGroupJoinLoading(true);
    setPendingGroupJoinError(null);
 
    try {
@@ -296,22 +299,21 @@ export function ActionsHistoryList() {
     setPendingGroupJoinLoading(false);
    }
   },
-  [fr, selectedCanModerateGroupJoin],
- );
+   [fr],
+  );
 
- useEffect(() => {
-  if (!selectedActionId || !selectedCanModerateGroupJoin) {
-   setPendingGroupJoinRequests([]);
-   setPendingGroupJoinError(null);
-   setPendingGroupJoinLoading(false);
-   return undefined;
-  }
+  useEffect(() => {
+   if (!selectedActionId || !selectedCanModerateGroupJoin) {
+    return undefined;
+   }
 
-  const controller = new AbortController();
-  void loadPendingGroupJoinRequests(selectedActionId, controller.signal);
+   const controller = new AbortController();
+   void (async () => {
+    await loadPendingGroupJoinRequests(selectedActionId, controller.signal);
+   })();
 
-  return () => controller.abort();
- }, [loadPendingGroupJoinRequests, selectedActionId, selectedCanModerateGroupJoin]);
+   return () => controller.abort();
+  }, [loadPendingGroupJoinRequests, selectedActionId, selectedCanModerateGroupJoin]);
 
  async function handleToggleGroupJoin(
  item: ActionListItem,
@@ -558,9 +560,9 @@ export function ActionsHistoryList() {
     correctiveAction={correctiveAction}
     selectedCanModerateGroupJoin={selectedCanModerateGroupJoin}
     selectedCanViewActionAudit={selectedCanViewActionAudit}
-    pendingGroupJoinRequests={pendingGroupJoinRequests}
-    pendingGroupJoinLoading={pendingGroupJoinLoading}
-    pendingGroupJoinError={pendingGroupJoinError}
+    pendingGroupJoinRequests={visiblePendingGroupJoinRequests}
+    pendingGroupJoinLoading={visiblePendingGroupJoinLoading}
+    pendingGroupJoinError={visiblePendingGroupJoinError}
     reviewingParticipantId={reviewingParticipantId}
     actionAudit={{
       data: actionAudit.data,

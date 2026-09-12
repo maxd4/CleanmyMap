@@ -9,9 +9,18 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function ExplorerBadgeWrapper({ userId }: { userId: string }) {
   const { getToken, isLoaded, isSignedIn } = useAuth();
-  const [tiers, setTiers] = React.useState<
-    Array<{ id: string; title: string; icon: string; min: number; max: number; texture?: string }>
-  >([]);
+  const tiers = React.useMemo(
+    () =>
+      EXPLORER_TIERS.map((tier) => ({
+        id: tier.id,
+        title: tier.title,
+        icon: tier.icon,
+        min: tier.min,
+        max: tier.max,
+        texture: tier.texture,
+      })),
+    [],
+  );
   const [current, setCurrent] = React.useState(0);
 
   React.useEffect(() => {
@@ -44,15 +53,6 @@ export default function ExplorerBadgeWrapper({ userId }: { userId: string }) {
       }
     }
 
-    const explorerTiers = EXPLORER_TIERS.map((tier) => ({
-      id: tier.id,
-      title: tier.title,
-      icon: tier.icon,
-      min: tier.min,
-      max: tier.max,
-      texture: tier.texture,
-    }));
-    setTiers(explorerTiers);
     void loadExplorerCount();
 
     return () => {

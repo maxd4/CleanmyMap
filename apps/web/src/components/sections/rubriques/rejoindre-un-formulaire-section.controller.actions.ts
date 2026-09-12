@@ -86,7 +86,9 @@ export function useJoinFormSectionActions({
 
   useEffect(() => {
     const controller = new AbortController();
-    void loadActions(controller.signal);
+    void (async () => {
+      await loadActions(controller.signal);
+    })();
     return () => controller.abort();
   }, [loadActions]);
 

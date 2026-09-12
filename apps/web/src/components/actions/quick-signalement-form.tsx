@@ -61,50 +61,54 @@ export function TrashSpotterObservationForm({
   const isCleanPlace = recordType === "clean_place";
 
   useEffect(() => {
-    try {
-      const rawDraft = window.sessionStorage.getItem(PENDING_DRAFT_STORAGE_KEY);
-      if (rawDraft) {
-        const draft = parseQuickSignalementDraft(rawDraft);
-        if (draft?.recordType) {
-          setRecordType(draft.recordType);
-        }
-        if (draft?.selectedCategories) {
-          setSelectedCategories(draft.selectedCategories);
-        }
+    const timer = window.setTimeout(() => {
+      try {
+        const rawDraft = window.sessionStorage.getItem(PENDING_DRAFT_STORAGE_KEY);
+        if (rawDraft) {
+          const draft = parseQuickSignalementDraft(rawDraft);
+          if (draft?.recordType) {
+            setRecordType(draft.recordType);
+          }
+          if (draft?.selectedCategories) {
+            setSelectedCategories(draft.selectedCategories);
+          }
 
-        if (draft) {
-          // Also migrate legacy drafts so precise coordinates do not remain in storage.
-          window.sessionStorage.setItem(
-            PENDING_DRAFT_STORAGE_KEY,
-            serializeQuickSignalementDraft(draft),
-          );
-        } else {
-          window.sessionStorage.removeItem(PENDING_DRAFT_STORAGE_KEY);
+          if (draft) {
+            // Also migrate legacy drafts so precise coordinates do not remain in storage.
+            window.sessionStorage.setItem(
+              PENDING_DRAFT_STORAGE_KEY,
+              serializeQuickSignalementDraft(draft),
+            );
+          } else {
+            window.sessionStorage.removeItem(PENDING_DRAFT_STORAGE_KEY);
+          }
         }
+      } catch {
+        // Local resume data is optional and must never block the form.
       }
-    } catch {
-      // Local resume data is optional and must never block the form.
-    }
 
-    if (initialLocation) {
-      setLocation(initialLocation);
-      setLocStatus("success");
-      return;
-    }
+      if (initialLocation) {
+        setLocation(initialLocation);
+        setLocStatus("success");
+        return;
+      }
 
-    if (canRequestGeolocation()) {
-      setLocStatus("locating");
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-          setLocStatus("success");
-        },
-        () => setLocStatus("error"),
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    } else {
-      setLocStatus("error");
-    }
+      if (canRequestGeolocation()) {
+        setLocStatus("locating");
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            setLocStatus("success");
+          },
+          () => setLocStatus("error"),
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      } else {
+        setLocStatus("error");
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [initialLocation]);
 
   const handleSubmit = async () => {

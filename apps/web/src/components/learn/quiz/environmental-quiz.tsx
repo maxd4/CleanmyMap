@@ -84,7 +84,9 @@ export function EnvironmentalQuiz({
   const { user } = useUser();
   const { locale } = useSitePreferences();
   const [srsData, setSrsData] = useState<Record<string, SRSStats>>({});
-  const [personalProgress, setPersonalProgress] = useState<QuizPersonalProgressState | null>(null);
+  const [personalProgress, setPersonalProgress] = useState<QuizPersonalProgressState | null>(() =>
+    readQuizPersonalProgress(),
+  );
   const [loading, setLoading] = useState(true);
   const [isDemoMode, setIsDemoMode] = useState(initialDemoMode);
   const [selectedAccessType, setSelectedAccessType] = useState<QuizAccessTypeId | null>(initialAccessType);
@@ -99,8 +101,6 @@ export function EnvironmentalQuiz({
     let cancelled = false;
 
     if (selectedAccessType === "ecole") {
-      setSrsData({});
-      setLoading(false);
       return () => {
         cancelled = true;
       };
@@ -131,13 +131,9 @@ export function EnvironmentalQuiz({
     };
   }, [getToken, selectedAccessType, user?.id]);
 
-  useEffect(() => {
-    setPersonalProgress(readQuizPersonalProgress());
-  }, []);
-
   const filteredQuestions = useMemo(() => {
     if (!selectedAccessType) return [];
-    return buildQuizSessionDeck(QUIZ_QUESTIONS, srsData, {
+    return buildQuizSessionDeck(QUIZ_QUESTIONS, selectedAccessType === "ecole" ? {} : srsData, {
       mode: selectedAccessType,
       accessTypeId: selectedAccessType,
       trapLevel: selectedTrapLevel,
@@ -200,7 +196,7 @@ export function EnvironmentalQuiz({
   };
 
   const sessionController = useQuizSessionController({
-    sessionQuestions,
+    sessionQuestions: sessionQuestions.length > 0 ? sessionQuestions : initialQuestions,
     getErrorType: (item) => item.errorType ?? buildQuizErrorGrid(item).errorType,
     onResetSessionQuestions: () => setSessionQuestions([]),
     onCorrectAnswer: (answeredQuestion) => {
@@ -215,7 +211,7 @@ export function EnvironmentalQuiz({
     onIncorrectAnswer: ({ question: answeredQuestion, questionIndex, errorCount }) => {
       setSessionQuestions((prev) =>
         insertAdaptiveReinforcement(
-          prev,
+          prev.length > 0 ? prev : initialQuestions,
           questionIndex,
           answeredQuestion,
           errorCount,
@@ -239,7 +235,6 @@ export function EnvironmentalQuiz({
     sessionErrorCounts,
     sessionCompleted,
     persistedSessionRef,
-    setCurrentQuestionIdx,
     setSelectedOption,
     toggleSelectedOption,
     checkAnswer,
@@ -250,24 +245,13 @@ export function EnvironmentalQuiz({
     resetSessionState,
     resetQuestionSequence,
   } = sessionController;
-  useEffect(() => {
-    if (!selectedAccessType || (loading && selectedAccessType !== "ecole" && !isDemoMode) || sessionQuestions.length > 0) {
-      return;
-    }
-
-    if (!isDemoMode && selectedAccessType === "ecole" && (!selectedSchoolLevel || selectedSchoolFormat === "atelier-60")) {
-      return;
-    }
-
-    if (!isDemoMode && selectedAccessType !== "mixte" && selectedAccessType !== "ecole" && !selectedReasoningType) {
-      return;
-    }
-
-    setSessionQuestions(initialQuestions);
-    setCurrentQuestionIdx(0);
-  }, [initialQuestions, isDemoMode, loading, selectedAccessType, selectedReasoningType, selectedSchoolFormat, selectedSchoolLevel, sessionQuestions.length, setCurrentQuestionIdx]);
-  const quizSummary = useMemo(() => summarizeQuizStates(srsData, QUIZ_QUESTION_IDS), [srsData]);
-  const currentQuestionStats = question ? srsData[question.id] : undefined;
+  const activeSessionQuestions = sessionQuestions.length > 0 ? sessionQuestions : initialQuestions;
+  const effectiveSrsData = useMemo(
+    () => (selectedAccessType === "ecole" ? {} : srsData),
+    [selectedAccessType, srsData],
+  );
+  const quizSummary = useMemo(() => summarizeQuizStates(effectiveSrsData, QUIZ_QUESTION_IDS), [effectiveSrsData]);
+  const currentQuestionStats = question ? effectiveSrsData[question.id] : undefined;
   const currentQuestionState = useMemo(
     () => (question ? getQuizStateFromStats(currentQuestionStats) : null),
     [question, currentQuestionStats],
@@ -278,13 +262,13 @@ export function EnvironmentalQuiz({
       return [];
     }
 
-    return buildQuizSessionDeck(QUIZ_QUESTIONS, srsData, {
+    return buildQuizSessionDeck(QUIZ_QUESTIONS, effectiveSrsData, {
       mode: selectedAccessType,
       accessTypeId: selectedAccessType,
       trapLevel: selectedTrapLevel,
       reasoningType: nextReasoningType,
     });
-  }, [nextReasoningType, selectedAccessType, selectedTrapLevel, srsData]);
+  }, [effectiveSrsData, nextReasoningType, selectedAccessType, selectedTrapLevel]);
   const shouldOfferMiniChallenge =
     correctStreak >= 2 && nextReasoningType !== null && nextReasoningTypeQuestions.length > 0;
   const currentQuestionReviewDate = useMemo(
@@ -304,10 +288,10 @@ export function EnvironmentalQuiz({
         selectedAccessType,
         sessionCompleted,
         sessionResults,
-        sessionQuestions,
+        sessionQuestions: activeSessionQuestions,
         questions: QUIZ_QUESTIONS,
       }),
-    [score, selectedAccessType, sessionCompleted, sessionResults, sessionQuestions],
+    [activeSessionQuestions, score, selectedAccessType, sessionCompleted, sessionResults],
   );
   const personalProgressSnapshot = useMemo(
     () => buildQuizPersonalProgressSnapshot(personalProgress),
@@ -330,7 +314,7 @@ export function EnvironmentalQuiz({
       mode: selectedAccessType,
       score: sessionSummary.score,
       totalQuestions: sessionSummary.totalQuestions,
-      questions: sessionQuestions,
+      questions: activeSessionQuestions,
       results: sessionResults,
       errorCounts: sessionErrorCounts,
     });
@@ -343,7 +327,7 @@ export function EnvironmentalQuiz({
       playedAt: new Date().toISOString(),
       totalQuestions: sessionSummary.totalQuestions,
       score: sessionSummary.score,
-      questions: Array.from(new Map(sessionQuestions.map((question) => [question.id, question])).values()).map((question) => ({
+      questions: Array.from(new Map(activeSessionQuestions.map((question) => [question.id, question])).values()).map((question) => ({
         questionId: question.id,
         correct: Boolean(sessionResults[question.id]),
         skill: question.skill ?? question.reasoningType,
@@ -360,7 +344,7 @@ export function EnvironmentalQuiz({
     selectedAccessType,
     sessionCompleted,
     sessionErrorCounts,
-    sessionQuestions,
+    activeSessionQuestions,
     sessionResults,
     sessionSummary,
     persistedSessionRef,
@@ -589,7 +573,7 @@ export function EnvironmentalQuiz({
       schoolTrackLabel={selectedSchoolLevel ? `${getQuizUiCopy(locale, "school.levelChip")} ${selectedSchoolLevel}` : undefined}
       question={question}
       questionIndex={currentQuestionIdx}
-      totalQuestions={sessionQuestions.length}
+      totalQuestions={activeSessionQuestions.length}
       currentQuestionState={currentQuestionState}
       currentQuestionReviewDate={currentQuestionReviewDate}
       currentQuestionStreak={currentQuestionStats?.streak ?? 0}
@@ -619,4 +603,3 @@ export function EnvironmentalQuiz({
     />
   );
 }
-

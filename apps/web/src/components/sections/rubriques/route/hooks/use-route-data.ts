@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import useSWR from "swr";
 import type {
   RouteOptions,
@@ -12,6 +12,7 @@ import type {
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
   DEFAULT_ROUTE_OPTIONS,
+  ROUTE_DRAFT_STORAGE_KEY,
   readRouteDraftOptions,
   writeRouteDraftOptions,
 } from "../route-draft-storage";
@@ -24,14 +25,73 @@ import {
 } from "../route-request";
 import { resolveBrowserRouteOrigin } from "../route-geolocation";
 
+type RouteDraftSnapshot = {
+  options: RouteOptions;
+  hydrated: boolean;
+};
+
+const serverRouteDraftSnapshot: RouteDraftSnapshot = {
+  options: { ...DEFAULT_ROUTE_OPTIONS },
+  hydrated: false,
+};
+let cachedRouteDraftRaw: string | null | undefined;
+let cachedRouteDraftSnapshot = serverRouteDraftSnapshot;
+
+function readRouteDraftStorage(): Storage | undefined {
+  try {
+    return window.sessionStorage;
+  } catch {
+    return undefined;
+  }
+}
+
+function getClientRouteDraftSnapshot(): RouteDraftSnapshot {
+  const storage = readRouteDraftStorage();
+  let raw: string | null = null;
+  try {
+    raw = storage?.getItem(ROUTE_DRAFT_STORAGE_KEY) ?? null;
+  } catch {
+    raw = null;
+  }
+
+  if (raw === cachedRouteDraftRaw && cachedRouteDraftSnapshot !== serverRouteDraftSnapshot) {
+    return cachedRouteDraftSnapshot;
+  }
+
+  cachedRouteDraftRaw = raw;
+  cachedRouteDraftSnapshot = {
+    options: readRouteDraftOptions(storage),
+    hydrated: true,
+  };
+  return cachedRouteDraftSnapshot;
+}
+
+function subscribeToRouteDraft(onStoreChange: () => void): () => void {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === ROUTE_DRAFT_STORAGE_KEY) {
+      onStoreChange();
+    }
+  };
+  window.addEventListener("storage", handleStorage);
+  return () => window.removeEventListener("storage", handleStorage);
+}
+
 export function useRouteData() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
 
-  const [options, setOptionsState] = useState<RouteOptions>(() => ({
+  const [optionsState, setOptionsState] = useState<RouteOptions>(() => ({
     ...DEFAULT_ROUTE_OPTIONS,
   }));
-  const [isDraftHydrated, setIsDraftHydrated] = useState(false);
+  const routeDraftSnapshot = useSyncExternalStore(
+    subscribeToRouteDraft,
+    getClientRouteDraftSnapshot,
+    () => serverRouteDraftSnapshot,
+  );
   const [recommendationRequest, setRecommendationRequest] =
     useState<RouteRecommendationSubmission | null>(null);
   const [planningMode, setPlanningModeState] = useState<RoutePlanningMode>({ type: "free" });
@@ -43,12 +103,22 @@ export function useRouteData() {
   const [isRequestInFlight, setIsRequestInFlight] = useState(false);
   const requestSequence = useRef(0);
   const requestGate = useRef(createRouteRequestGate());
-  const draftEditedBeforeHydration = useRef(false);
+  const [draftEditedBeforeHydration, setDraftEditedBeforeHydration] = useState(false);
+
+  const options = routeDraftSnapshot.hydrated && !draftEditedBeforeHydration
+    ? routeDraftSnapshot.options
+    : optionsState;
+  const isDraftHydrated = routeDraftSnapshot.hydrated;
 
   const setOptions = useCallback<React.Dispatch<React.SetStateAction<RouteOptions>>>((update) => {
-    draftEditedBeforeHydration.current = true;
-    setOptionsState(update);
-  }, []);
+    const shouldApplyHydratedDraft =
+      routeDraftSnapshot.hydrated && !draftEditedBeforeHydration;
+    const baseOptions = shouldApplyHydratedDraft ? routeDraftSnapshot.options : optionsState;
+    setDraftEditedBeforeHydration(true);
+    setOptionsState(() =>
+      typeof update === "function" ? update(baseOptions) : update,
+    );
+  }, [draftEditedBeforeHydration, optionsState, routeDraftSnapshot]);
 
   const setOriginMode = useCallback((mode: RouteOriginMode) => {
     setOriginModeState(mode);
@@ -70,28 +140,9 @@ export function useRouteData() {
   }, []);
 
   useEffect(() => {
-    let storage: Storage | undefined;
-    try {
-      storage = window.sessionStorage;
-    } catch {
-      storage = undefined;
-    }
-    if (!draftEditedBeforeHydration.current) {
-      setOptionsState(readRouteDraftOptions(storage));
-    }
-    setIsDraftHydrated(true);
-  }, []);
-
-  useEffect(() => {
     if (!isDraftHydrated) return;
 
-    let storage: Storage | undefined;
-    try {
-      storage = window.sessionStorage;
-    } catch {
-      storage = undefined;
-    }
-    writeRouteDraftOptions(storage, options);
+    writeRouteDraftOptions(readRouteDraftStorage(), options);
   }, [options, isDraftHydrated]);
 
   const { data, isLoading, error } = useSWR<RouteResponse>(

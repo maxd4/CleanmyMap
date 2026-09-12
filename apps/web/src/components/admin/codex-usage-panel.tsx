@@ -101,7 +101,7 @@ function parseNumber(value: string): number {
 export function CodexUsagePanel() {
   const [result, setResult] = useState<CodexUsageAdminResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [form, setForm] = useState<FormState>(() => {
     const week = getCurrentWeekRange();
@@ -123,7 +123,6 @@ export function CodexUsagePanel() {
   });
 
   useEffect(() => {
-    setIsLoading(true);
     void (async () => {
       try {
         const response = await fetch("/api/admin/codex-usage?historyLimit=12", {

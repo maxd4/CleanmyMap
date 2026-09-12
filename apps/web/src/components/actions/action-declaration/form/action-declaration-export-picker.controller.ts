@@ -73,6 +73,7 @@ function useCompactViewport(): boolean {
 export type ActionDeclarationExportPickerController = {
   targets: ReturnType<typeof getActionDeclarationExportTargets>;
   isCompactViewport: boolean;
+  onClose: () => void;
   status: ExportStatus;
   errorMessage: string | null;
   shareMessage: string | null;
@@ -96,7 +97,6 @@ export type ActionDeclarationExportPickerController = {
 };
 
 export function useActionDeclarationExportPickerController({
-  isOpen,
   onClose,
   form,
   actorName,
@@ -157,31 +157,21 @@ export function useActionDeclarationExportPickerController({
   const shareUrl = typeof window !== "undefined" ? window.location.href : "";
 
   useEffect(() => {
-    if (!isOpen) {
-      setStatus("idle");
-      setErrorMessage(null);
-      setShareMessage(null);
-      setActiveBundleId(getDefaultBundleId(isCompactViewport));
-      setSelectedTargetId(getDefaultTargetId(isCompactViewport));
-    }
-  }, [isCompactViewport, isOpen]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const source = readActionDeclarationExportHistory();
-    setHistory(source);
-  }, [isOpen]);
-
-  useEffect(() => {
     try {
       writeActionDeclarationExportHistory(history);
     } catch {
       // localStorage can be unavailable in private or restricted contexts.
     }
   }, [history]);
+
+  function handleClose(): void {
+    setStatus("idle");
+    setErrorMessage(null);
+    setShareMessage(null);
+    setActiveBundleId(getDefaultBundleId(isCompactViewport));
+    setSelectedTargetId(getDefaultTargetId(isCompactViewport));
+    onClose();
+  }
 
   function onSelectBundle(bundleId: ActionDeclarationExportBundleId): void {
     const bundle = bundles.find((item) => item.id === bundleId);
@@ -227,7 +217,7 @@ export function useActionDeclarationExportPickerController({
       nextHistoryEntry.generatedAt = generatedAt;
       setHistory((previous) => mergeActionDeclarationExportHistory(previous, [nextHistoryEntry]));
 
-      onClose();
+      handleClose();
     } catch (error: unknown) {
       setErrorMessage(
         error instanceof Error && error.message
@@ -276,7 +266,7 @@ export function useActionDeclarationExportPickerController({
 
       setHistory((previous) => mergeActionDeclarationExportHistory(previous, bundleEntries));
 
-      onClose();
+      handleClose();
     } catch (error: unknown) {
       setErrorMessage(
         error instanceof Error && error.message
@@ -395,6 +385,7 @@ export function useActionDeclarationExportPickerController({
   return {
     targets,
     isCompactViewport,
+    onClose: handleClose,
     status,
     errorMessage,
     shareMessage,

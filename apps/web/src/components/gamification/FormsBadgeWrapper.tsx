@@ -24,7 +24,7 @@ function buildFormsGrades(): FormsGrade[] {
 export default function FormsBadgeWrapper() {
   const { getToken, isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [formsData, setFormsData] = React.useState<{
     current: number;
@@ -37,8 +37,6 @@ export default function FormsBadgeWrapper() {
     }
 
     if (!isSignedIn || !user?.id) {
-      setIsLoading(false);
-      setError("access_denied");
       return;
     }
 
@@ -67,8 +65,11 @@ export default function FormsBadgeWrapper() {
     })();
   }, [getToken, isLoaded, isSignedIn, user?.id]);
 
+  const displayLoading = !isLoaded || (Boolean(isSignedIn && user?.id) && isLoading);
+  const displayError = isLoaded && (!isSignedIn || !user?.id) ? "access_denied" : error;
+
   // Loading state
-  if (isLoading) {
+  if (displayLoading) {
     return (
       <div
         style={{
@@ -84,7 +85,7 @@ export default function FormsBadgeWrapper() {
   }
 
   // Access denied state
-  if (error === "access_denied") {
+  if (displayError === "access_denied") {
     return (
       <div
         style={{
@@ -100,7 +101,7 @@ export default function FormsBadgeWrapper() {
   }
 
   // Error state
-  if (error) {
+  if (displayError) {
     return (
       <div
         style={{
