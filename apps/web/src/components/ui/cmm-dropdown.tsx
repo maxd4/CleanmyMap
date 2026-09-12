@@ -229,8 +229,7 @@ export function CmmDropdown({
       clearHoverOpenTimer();
       if (hoverOpenedRef.current) {
         clearHoverOpenedMarker();
-        clickToggleOpenRef.current = false;
-        setOpen(false);
+        clickToggleOpenRef.current = true;
         return;
       }
       clickToggleOpenRef.current = isOpen;
