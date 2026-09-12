@@ -81,4 +81,11 @@ describe("CmmDropdown", () => {
     expect(source).not.toContain('top-[calc(100%+0.75rem)]');
     expect(source).not.toContain('bottom-[calc(100%+0.75rem)]');
   });
+
+  it("uses the panel surface with a visible dark pointer border", () => {
+    expect(source).toContain("backgroundColor: panelStyle?.backgroundColor");
+    expect(source).toContain("backgroundImage: panelStyle?.backgroundImage");
+    expect(source).toContain('borderColor: "rgba(15, 23, 42, 0.34)"');
+    expect(source).not.toContain("border-white/15");
+  });
 });
