@@ -1,7 +1,7 @@
 # Plan de découpage des monolithes
 
 **État :** plan documentaire et radar de suivi, sans refactor applicatif dans ce lot
-**Mis à jour :** 2026-09-07
+**Mis à jour :** 2026-09-12
 **Portée :** `apps/web/src`, fichiers suivis `.ts` et `.tsx`
 **Règle durable :** cohésion, responsabilités, couplage et testabilité > nombre de lignes
 
@@ -11,28 +11,28 @@ Le radar courant a été mesuré exclusivement depuis la ref Git suivante, aprè
 `git fetch origin main` :
 
 ```text
-RADAR_REF=ebd22b799bd057d50a048ab57abf7eade662bb8a
+RADAR_REF=123b17fcb01ccb51ab857623219f7ab5a1a5921d
 ```
 
 Commande informative exécutée :
 
 ```text
-node scripts/checks/check-top-heavy-files.mjs --ref=ebd22b799bd057d50a048ab57abf7eade662bb8a --max-lines=100000 --max-kb=7 --top=25
+node scripts/checks/check-top-heavy-files.mjs --ref=123b17fcb01ccb51ab857623219f7ab5a1a5921d --max-lines=100000 --max-kb=7 --top=25
 ```
 
 Commande enforcement exécutée :
 
 ```text
-node scripts/checks/check-top-heavy-files.mjs --ref=ebd22b799bd057d50a048ab57abf7eade662bb8a --max-lines=1000 --max-kb=50 --top=25 --enforce
+node scripts/checks/check-top-heavy-files.mjs --ref=123b17fcb01ccb51ab857623219f7ab5a1a5921d --max-lines=1000 --max-kb=50 --top=25 --enforce
 ```
 
 ### Mesures exactes
 
-- `2011` fichiers `.ts/.tsx` sont présents sous `apps/web/src` sur cette ref.
-- `511` dépassent le seuil informatif de `7 KiB`, soit `7168` octets.
+- `2104` fichiers `.ts/.tsx` sont présents sous `apps/web/src` sur cette ref.
+- `535` dépassent le seuil informatif de `7 KiB`, soit `7168` octets.
 - Maximum en lignes : `991`, pour `app/api/actions/group-join/route.test.ts`.
-- Maximum en octets : `34167` octets, soit `33.4 KiB`, pour
-  `lib/actions/organizer-directory-catalog.ts`.
+- Maximum en octets : `38960` octets, soit `38.0 KiB`, pour
+  `app/api/route/recommend/route.test.ts`.
 - Seuil enforcement : `>1000` lignes ou `>50 KiB`, soit `51200` octets.
 - Violations enforcement : `0` (`POLICY_OK`, commande terminée avec le code
   `0`).
@@ -49,32 +49,32 @@ seul un découpage.
 | Rang | Lignes | Octets | KiB | Fichier | Statut architectural |
 | ---: | ---: | ---: | ---: | --- | --- |
 | 1 | 991 | 31398 | 30.7 | `app/api/actions/group-join/route.test.ts` | À REQUALIFIER |
-| 2 | 940 | 25811 | 25.2 | `app/api/admin/moderation/route.ts` | À REQUALIFIER |
+| 2 | 962 | 38960 | 38.0 | `app/api/route/recommend/route.test.ts` | À REQUALIFIER |
 | 3 | 929 | 30270 | 29.6 | `app/api/chat/route.test.ts` | À REQUALIFIER |
 | 4 | 928 | 29778 | 29.1 | `components/chat/chat-shell.tsx` | À DÉCOUPER |
-| 5 | 856 | 34167 | 33.4 | `lib/actions/organizer-directory-catalog.ts` | À REQUALIFIER |
-| 6 | 845 | 33925 | 33.1 | `app/api/route/recommend/route.test.ts` | À REQUALIFIER |
-| 7 | 801 | 25297 | 24.7 | `app/api/actions/route.submit.test.ts` | À REQUALIFIER |
-| 8 | 795 | 24352 | 23.8 | `app/api/actions/[actionId]/group-join/route.ts` | À REQUALIFIER |
-| 9 | 768 | 27711 | 27.1 | `lib/geo/greater-paris-select.tsx` | À DÉCOUPER |
-| 10 | 759 | 25419 | 24.8 | `lib/learning/quiz/quiz-personal-progress.ts` | À REQUALIFIER |
-| 11 | 753 | 28521 | 27.9 | `lib/auth/api-authorization-contract.ts` | COHÉSIF / NE PAS DÉCOUPER PAR TAILLE |
-| 12 | 729 | 26183 | 25.6 | `components/reports/web-document/reports-web-document.shared.tsx` | À REQUALIFIER |
-| 13 | 721 | 26819 | 26.2 | `lib/environmental-impact-estimator/constants.ts` | À REQUALIFIER |
-| 14 | 718 | 24975 | 24.4 | `lib/supabase/storage-business-contribution.ts` | À REQUALIFIER |
-| 15 | 708 | 30807 | 30.1 | `components/sections/rubriques/partners-network-section.tsx` | À DÉCOUPER |
-| 16 | 703 | 22010 | 21.5 | `lib/environmental-impact-estimator/project-signals.calculations.ts` | À REQUALIFIER |
-| 17 | 696 | 19845 | 19.4 | `app/api/admin/creator-inbox/route.ts` | À REQUALIFIER |
-| 18 | 694 | 20357 | 19.9 | `lib/gamification/progression-data.ts` | À REQUALIFIER |
-| 19 | 693 | 34095 | 33.3 | `components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | DÉJÀ STRUCTURÉ / REQUALIFICATION NON JUSTIFIÉE |
-| 20 | 691 | 23470 | 22.9 | `lib/route/route-predicted-targets.ts` | À REQUALIFIER |
-| 21 | 685 | 25305 | 24.7 | `lib/environmental-impact-estimator/services/infrastructure.ts` | À REQUALIFIER |
-| 22 | 680 | 18772 | 18.3 | `app/docs/[...segments]/route.ts` | À REQUALIFIER |
-| 23 | 679 | 25443 | 24.8 | `components/environmental-impact-estimator/environmental-impact-curve-chart.tsx` | À REQUALIFIER |
-| 24 | 677 | 27122 | 26.5 | `app/learn/ressources/learn-ressources-client.data.ts` | COHÉSIF / NE PAS DÉCOUPER PAR TAILLE |
-| 25 | 675 | 21079 | 20.6 | `lib/actions/participation/group-participation.ts` | À REQUALIFIER |
+| 5 | 856 | 34176 | 33.4 | `lib/actions/organizer-directory-catalog.ts` | À REQUALIFIER |
+| 6 | 850 | 26900 | 26.3 | `app/api/actions/route.submit.test.ts` | À REQUALIFIER |
+| 7 | 768 | 27711 | 27.1 | `lib/geo/greater-paris-select.tsx` | À DÉCOUPER |
+| 8 | 762 | 28866 | 28.2 | `lib/auth/api-authorization-contract.ts` | COHÉSIF / NE PAS DÉCOUPER PAR TAILLE |
+| 9 | 759 | 25419 | 24.8 | `lib/learning/quiz/quiz-personal-progress.ts` | À REQUALIFIER |
+| 10 | 721 | 26819 | 26.2 | `lib/environmental-impact-estimator/constants.ts` | À REQUALIFIER |
+| 11 | 718 | 24975 | 24.4 | `lib/supabase/storage-business-contribution.ts` | À REQUALIFIER |
+| 12 | 708 | 30807 | 30.1 | `components/sections/rubriques/partners-network-section.tsx` | À DÉCOUPER |
+| 13 | 703 | 22010 | 21.5 | `lib/environmental-impact-estimator/project-signals.calculations.ts` | À REQUALIFIER |
+| 14 | 694 | 20357 | 19.9 | `lib/gamification/progression-data.ts` | À REQUALIFIER |
+| 15 | 693 | 34095 | 33.3 | `components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | DÉJÀ STRUCTURÉ / REQUALIFICATION NON JUSTIFIÉE |
+| 16 | 690 | 19146 | 18.7 | `app/docs/[...segments]/route.ts` | À REQUALIFIER |
+| 17 | 685 | 25305 | 24.7 | `lib/environmental-impact-estimator/services/infrastructure.ts` | À REQUALIFIER |
+| 18 | 679 | 25443 | 24.8 | `components/environmental-impact-estimator/environmental-impact-curve-chart.tsx` | À REQUALIFIER |
+| 19 | 677 | 27122 | 26.5 | `app/learn/ressources/learn-ressources-client.data.ts` | COHÉSIF / NE PAS DÉCOUPER PAR TAILLE |
+| 20 | 675 | 21079 | 20.6 | `lib/actions/participation/group-participation.ts` | À REQUALIFIER |
+| 21 | 674 | 26321 | 25.7 | `components/reports/web-document/sections.tsx` | À REQUALIFIER |
+| 22 | 674 | 20105 | 19.6 | `lib/actions/store.ts` | À REQUALIFIER |
+| 23 | 668 | 19095 | 18.6 | `lib/pdf-export/simple-pdf.ts` | À REQUALIFIER |
+| 24 | 660 | 16393 | 16.0 | `lib/geo/greater-paris.ts` | À REQUALIFIER |
+| 25 | 652 | 18798 | 18.4 | `lib/environmental-impact-estimator/types.ts` | À REQUALIFIER |
 
-Le top 25 ne constitue pas la liste complète des fichiers informatifs : `486`
+Le top 25 ne constitue pas la liste complète des fichiers informatifs : `510`
 autres fichiers dépassent `7 KiB`. Ils restent des éléments de radar, sans
 décision architecturale automatique.
 
@@ -121,9 +121,9 @@ demande pas au radar de les déduire de la taille.
 
 | Fichier | Mesure actuelle | Motif |
 | --- | ---: | --- |
-| `lib/auth/api-authorization-contract.ts` | `753` lignes / `28521` octets | Contrat d'autorisation cohésif ; la taille seule ne justifie pas une extraction. |
+| `lib/auth/api-authorization-contract.ts` | `762` lignes / `28866` octets | Contrat d'autorisation cohésif ; la taille seule ne justifie pas une extraction. |
 | `app/learn/ressources/learn-ressources-client.data.ts` | `677` / `27122` | Données du client Learn Ressources conservées comme unité cohésive. |
-| `components/sections/rubriques/methodologie-page-client.tsx` | `629` / `27946` | Client de page cohésif ; aucune extraction mécanique par taille. |
+| `components/sections/rubriques/methodologie-page-client.tsx` | `638` / `28366` | Client de page cohésif ; aucune extraction mécanique par taille. |
 
 ### DÉJÀ STRUCTURÉ / REQUALIFICATION NON JUSTIFIÉE
 
@@ -135,7 +135,7 @@ demande pas au radar de les déduire de la taille.
 
 Les candidats actuellement visibles sont les fichiers du radar qui ne sont ni
 sortis, ni couverts par une décision déjà prise. Le top 25 les rend mesurables
-et traçables ; les autres `486` fichiers informatifs restent à inventorier au
+et traçables ; les autres `510` fichiers informatifs restent à inventorier au
 fil des décisions, sans classement architectural implicite.
 
 ### À REQUALIFIER
@@ -144,24 +144,24 @@ Les fichiers suivants, présents dans le top 25 et sans décision préalable,
 sont à requalifier par ChatGPT avant tout futur lot :
 
 - `app/api/actions/group-join/route.test.ts`
-- `app/api/admin/moderation/route.ts`
+- `app/api/route/recommend/route.test.ts`
 - `app/api/chat/route.test.ts`
 - `lib/actions/organizer-directory-catalog.ts`
-- `app/api/route/recommend/route.test.ts`
 - `app/api/actions/route.submit.test.ts`
-- `app/api/actions/[actionId]/group-join/route.ts`
 - `lib/learning/quiz/quiz-personal-progress.ts`
-- `components/reports/web-document/reports-web-document.shared.tsx`
 - `lib/environmental-impact-estimator/constants.ts`
 - `lib/supabase/storage-business-contribution.ts`
 - `lib/environmental-impact-estimator/project-signals.calculations.ts`
-- `app/api/admin/creator-inbox/route.ts`
 - `lib/gamification/progression-data.ts`
-- `lib/route/route-predicted-targets.ts`
 - `lib/environmental-impact-estimator/services/infrastructure.ts`
 - `app/docs/[...segments]/route.ts`
 - `components/environmental-impact-estimator/environmental-impact-curve-chart.tsx`
 - `lib/actions/participation/group-participation.ts`
+- `components/reports/web-document/sections.tsx`
+- `lib/actions/store.ts`
+- `lib/pdf-export/simple-pdf.ts`
+- `lib/geo/greater-paris.ts`
+- `lib/environmental-impact-estimator/types.ts`
 - `components/learn/learn-practice-theme-tabs.tsx`
 - `components/sections/rubriques/rejoindre-un-formulaire-section.controller.ts`
 
@@ -198,7 +198,7 @@ parallèles ne constituent jamais une baseline.
 ## PROVENANCE ET VALIDATION DU RADAR
 
 Les commandes ref-based ci-dessus ont été exécutées sur
-`ebd22b799bd057d50a048ab57abf7eade662bb8a`. Le contrôle informatif s'est
+`123b17fcb01ccb51ab857623219f7ab5a1a5921d`. Le contrôle informatif s'est
 terminé avec `INFORMATIVE_EXIT=0` et le contrôle enforcement avec
 `ENFORCEMENT_EXIT=0`. Aucun `ENOBUFS` n'a été reproduit. Le présent lot ne
 modifie ni le checker, ni la baseline heavy-files, ni le code applicatif.
