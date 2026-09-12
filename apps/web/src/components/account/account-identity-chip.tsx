@@ -144,7 +144,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
             <button
               {...triggerProps}
               aria-label={locale === "fr" ? "Menu du profil actif" : "Active profile menu"}
-              className="cmm-dropdown-trigger inline-flex min-h-11 max-w-[13rem] items-center gap-2 rounded-xl border border-white/12 bg-white/[0.06] px-3 text-left text-white transition-colors hover:border-white/25 hover:bg-white/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 active:scale-[0.99]"
+              className="cmm-dropdown-trigger inline-flex min-h-11 max-w-[13rem] items-center gap-2 rounded-xl border border-white/12 bg-white/[0.06] px-3 text-left text-white transition-colors hover:border-white/25 hover:bg-white/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 active:scale-[0.99] xl:h-10 xl:min-h-0"
             >
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10 text-emerald-200">
               <BadgePictogram

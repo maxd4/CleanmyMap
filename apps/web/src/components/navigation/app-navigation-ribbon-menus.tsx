@@ -77,7 +77,7 @@ export function RibbonMenus({
           <button
             {...triggerProps}
             aria-label={locale === "fr" ? "Menu des préférences d'affichage et langue" : "Display and language preferences menu"}
-            className="cmm-dropdown-trigger inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-0 text-white transition-colors hover:border-cyan-200/32 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 sm:w-auto sm:px-3"
+            className="cmm-dropdown-trigger inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-0 text-white transition-colors hover:border-cyan-200/32 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 sm:w-auto sm:px-3 xl:h-10"
           >
             <Settings2 className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
             <span className="hidden text-sm font-semibold sm:inline">
@@ -133,7 +133,7 @@ export function RibbonMenus({
           <button
             {...triggerProps}
             aria-label={locale === "fr" ? "Menu Feedback" : "Feedback menu"}
-            className="cmm-dropdown-trigger inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-0 text-white transition-colors hover:border-rose-200/30 hover:bg-rose-300/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/40 sm:w-auto sm:px-3"
+            className="cmm-dropdown-trigger inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full border border-white/10 bg-white/8 px-0 text-white transition-colors hover:border-rose-200/30 hover:bg-rose-300/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/40 sm:w-auto sm:px-3 xl:h-10"
           >
             <MessageSquare className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
             <span className="hidden text-sm font-semibold sm:inline">Feedback</span>

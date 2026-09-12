@@ -53,13 +53,13 @@ export function AccountUserBubble({
     activityStatus === "active" ? "Statut : actif" : "Statut : inactif";
 
   return (
-    <div className="relative flex min-w-0 max-w-[18rem] items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.07] px-2 py-1.5 text-white shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)]">
-      <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-700/80">
+    <div className="relative flex min-w-0 max-w-[18rem] items-center gap-2 rounded-2xl border border-white/12 bg-white/[0.07] px-2 py-1.5 text-white shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)] xl:h-10 xl:py-0">
+      <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-700/80 xl:h-8 xl:w-8">
         <UserButton
           appearance={{
             elements: {
-              userButtonTrigger: "h-10 w-10 rounded-full",
-              userButtonAvatarBox: "h-10 w-10 rounded-full ring-1 ring-white/20",
+              userButtonTrigger: "h-10 w-10 rounded-full xl:h-8 xl:w-8",
+              userButtonAvatarBox: "h-10 w-10 rounded-full ring-1 ring-white/20 xl:h-8 xl:w-8",
             },
           }}
         />
@@ -128,7 +128,7 @@ export function RibbonAccountActions({
                   prefetch={false}
                   aria-label={locale === "fr" ? "Se connecter à CleanMyMap" : "Sign in to CleanMyMap"}
                   onClick={() => onTrackNavigation("/sign-in", locale === "fr" ? "Se connecter" : "Sign in", null)}
-                  className="inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full px-0 cmm-text-caption font-bold text-white transition hover:text-white sm:h-auto sm:w-auto sm:px-3"
+                  className="inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full px-0 cmm-text-caption font-bold text-white transition hover:text-white sm:h-auto sm:w-auto sm:px-3 xl:h-10 xl:min-h-0"
                 >
                   <LogIn className="h-4 w-4 sm:hidden" aria-hidden="true" />
                   <span className="hidden sm:inline">
@@ -140,7 +140,7 @@ export function RibbonAccountActions({
                   prefetch={false}
                   aria-label={locale === "fr" ? "Créer un compte CleanMyMap" : "Sign up for CleanMyMap"}
                   onClick={() => onTrackNavigation("/sign-up", locale === "fr" ? "S'inscrire" : "Sign up", null)}
-                  className="inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#27C3D9] to-[#18B68F] px-0 cmm-text-caption font-bold text-[#16313b] shadow-lg shadow-cyan-900/15 transition hover:from-[#2F80C3] hover:to-[#27C3D9] active:scale-95 sm:h-auto sm:w-auto sm:px-4"
+                  className="inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#27C3D9] to-[#18B68F] px-0 cmm-text-caption font-bold text-[#16313b] shadow-lg shadow-cyan-900/15 transition hover:from-[#2F80C3] hover:to-[#27C3D9] active:scale-95 sm:h-auto sm:w-auto sm:px-4 xl:h-10 xl:min-h-0"
                 >
                   <UserPlus className="h-4 w-4 sm:hidden" aria-hidden="true" />
                   <span className="hidden sm:inline">

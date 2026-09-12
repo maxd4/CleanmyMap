@@ -118,7 +118,7 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
       renderTrigger={(triggerProps) => (
         <button
           {...triggerProps}
-          className="group inline-flex min-h-10 w-full items-center justify-between gap-2.5 rounded-full border border-cyan-100/30 bg-slate-950/70 px-3.5 text-white shadow-[0_18px_38px_-30px_rgba(2,6,23,0.95)] backdrop-blur-xl transition-colors hover:border-cyan-100/50 hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
+          className="group inline-flex h-10 min-h-10 w-full items-center justify-between gap-2.5 rounded-full border border-cyan-100/30 bg-slate-950/70 px-3.5 text-white shadow-[0_18px_38px_-30px_rgba(2,6,23,0.95)] backdrop-blur-xl transition-colors hover:border-cyan-100/50 hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
           aria-label={locale === "fr" ? "Rechercher" : "Search"}
         >
           <span className="flex min-w-0 items-center gap-2">
