@@ -9,11 +9,6 @@ import {
 } from "@/lib/chat/channels";
 import type { ChatNotificationUnreadCounts } from "@/lib/chat/chat-notification-unreads";
 import type { ChatTopicId } from "@/lib/chat/topics";
-import {
-  type CommunityAnnouncementTemplateKey,
-  type ChatRelatedEvent,
-} from "@/lib/chat/announcements";
-import { createInitialChatPollOptionDraft } from "@/lib/chat/polls";
 import type { ChatTopicDefinition } from "../discussion-guidance";
 import { CHANNEL_VISUALS, getChannelTitle } from "../chat-shell.utils";
 
@@ -30,10 +25,7 @@ type UseChatShellSidebarParams = {
   channelTopics: ChatTopicDefinition[];
   activeTopicId: ChatTopicId | null;
   locale: string;
-  setComposerMode: Dispatch<SetStateAction<"message" | "announcement" | "poll">>;
-  setAnnouncementTemplate: Dispatch<SetStateAction<CommunityAnnouncementTemplateKey | null>>;
-  setRelatedEvent: Dispatch<SetStateAction<ChatRelatedEvent | null>>;
-  setPollOptions: Dispatch<SetStateAction<string[]>>;
+  resetComposerForChannelChange: () => void;
   setActiveTopicId: Dispatch<SetStateAction<ChatTopicId | null>>;
   setActiveChannelType: Dispatch<SetStateAction<ChatChannelType>>;
   setIsDmThreadOpen: Dispatch<SetStateAction<boolean>>;
@@ -52,10 +44,7 @@ export function useChatShellSidebar({
   channelTopics,
   activeTopicId,
   locale,
-  setComposerMode,
-  setAnnouncementTemplate,
-  setRelatedEvent,
-  setPollOptions,
+  resetComposerForChannelChange,
   setActiveTopicId,
   setActiveChannelType,
   setIsDmThreadOpen,
@@ -122,10 +111,7 @@ export function useChatShellSidebar({
       if (!isAvailable) {
         return;
       }
-      setComposerMode("message");
-      setAnnouncementTemplate(null);
-      setRelatedEvent(null);
-      setPollOptions(createInitialChatPollOptionDraft());
+      resetComposerForChannelChange();
       setActiveTopicId(null);
       setActiveChannelType(channelType);
       if (channelType !== "dm") {
@@ -138,10 +124,7 @@ export function useChatShellSidebar({
       hasGreaterParisZone,
       effectiveZone,
       territoryFocus,
-      setComposerMode,
-      setAnnouncementTemplate,
-      setRelatedEvent,
-      setPollOptions,
+      resetComposerForChannelChange,
       setActiveTopicId,
       setActiveChannelType,
       setIsDmThreadOpen,
