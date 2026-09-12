@@ -93,13 +93,22 @@ function buildSearchPageKey(
 
 export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) {
   const [debouncedQuery, setDebouncedQuery] = useState(() => normalizeChatSearchQuery(params.query));
-  const [extraResults, setExtraResults] = useState<ChatSearchResult[]>([]);
-  const [pagination, setPagination] = useState<{
+  const [continuation, setContinuation] = useState<{
+    searchKey: string | null;
+    sourceData: ChatSearchResponse | undefined;
+    extraResults: ChatSearchResult[];
     nextCursor: ChatHistoryCursor | null;
     hasMore: boolean;
-  }>({ nextCursor: null, hasMore: false });
+    loadMoreError: string | null;
+  }>({
+    searchKey: null,
+    sourceData: undefined,
+    extraResults: [],
+    nextCursor: null,
+    hasMore: false,
+    loadMoreError: null,
+  });
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -136,14 +145,23 @@ export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) 
     { revalidateOnFocus: false, revalidateOnReconnect: false },
   );
 
-  useEffect(() => {
-    setExtraResults([]);
-    setLoadMoreError(null);
-    setPagination({
-      nextCursor: data?.nextCursor ?? null,
-      hasMore: data?.hasMore ?? false,
-    });
-  }, [data, searchKey]);
+  const continuationIsCurrent =
+    continuation.searchKey === searchKey && continuation.sourceData === data;
+  const extraResults = continuationIsCurrent ? continuation.extraResults : [];
+  const pagination = useMemo(
+    () =>
+      continuationIsCurrent
+        ? { nextCursor: continuation.nextCursor, hasMore: continuation.hasMore }
+        : { nextCursor: data?.nextCursor ?? null, hasMore: data?.hasMore ?? false },
+    [
+      continuation.hasMore,
+      continuation.nextCursor,
+      continuationIsCurrent,
+      data?.hasMore,
+      data?.nextCursor,
+    ],
+  );
+  const loadMoreError = continuationIsCurrent ? continuation.loadMoreError : null;
 
   const loadMore = useCallback(async () => {
     if (!searchKey || !pagination.hasMore || !pagination.nextCursor || isLoadingMore) {
@@ -151,29 +169,51 @@ export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) 
     }
 
     setIsLoadingMore(true);
-    setLoadMoreError(null);
+    setContinuation((current) => ({
+      ...current,
+      searchKey,
+      sourceData: data,
+      extraResults: continuationIsCurrent ? current.extraResults : [],
+      nextCursor: pagination.nextCursor,
+      hasMore: pagination.hasMore,
+      loadMoreError: null,
+    }));
     try {
       const nextPage = await fetchSearchResults(
         buildSearchPageKey(searchKey, pagination.nextCursor),
       );
-      setExtraResults((current) => {
-        const ids = new Set(current.map((result) => result.messageId));
-        return [
-          ...current,
-          ...nextPage.results.filter((result) => !ids.has(result.messageId)),
-        ];
+      setContinuation((current) => {
+        const currentResults =
+          current.searchKey === searchKey && current.sourceData === data
+            ? current.extraResults
+            : [];
+        const currentIds = new Set(currentResults.map((result) => result.messageId));
+        return {
+          searchKey,
+          sourceData: data,
+          extraResults: [
+            ...currentResults,
+            ...nextPage.results.filter((result) => !currentIds.has(result.messageId)),
+          ],
+          nextCursor: nextPage.nextCursor,
+          hasMore: nextPage.hasMore,
+          loadMoreError: null,
+        };
       });
-      setPagination({ nextCursor: nextPage.nextCursor, hasMore: nextPage.hasMore });
     } catch (loadError) {
-      setLoadMoreError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Les résultats suivants ne peuvent pas être chargés.",
-      );
+      setContinuation((current) => ({
+        ...current,
+        searchKey,
+        sourceData: data,
+        loadMoreError:
+          loadError instanceof Error
+            ? loadError.message
+            : "Les résultats suivants ne peuvent pas être chargés.",
+      }));
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, pagination, searchKey]);
+  }, [continuationIsCurrent, data, isLoadingMore, pagination, searchKey]);
 
   return {
     results: [...(data?.results ?? []), ...extraResults],

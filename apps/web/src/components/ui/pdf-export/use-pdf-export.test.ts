@@ -10,7 +10,6 @@ function renderHookApi(params: Parameters<typeof usePdfExport>[0]) {
 
   function Harness() {
     // This SSR-only harness exposes the hook result to the test caller.
-    // eslint-disable-next-line react-hooks/globals
     result = usePdfExport(params);
     return null;
   }

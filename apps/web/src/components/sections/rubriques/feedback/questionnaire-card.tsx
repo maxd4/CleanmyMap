@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type SetStateAction,
+} from "react";
 import { useUser } from "@clerk/nextjs";
 import { ArrowRight } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
@@ -42,39 +49,29 @@ export function QuestionnaireCard({
 }) {
   const { locale } = useSitePreferences();
   const { isLoaded, isSignedIn } = useUser();
-  const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(
-      questionnaire.fields.map((field) => [field.key, initialValues?.[field.key] ?? ""]),
-    ),
+  const initialQuestionnaireValues = useMemo(
+    () =>
+      Object.fromEntries(
+        questionnaire.fields.map((field) => [field.key, initialValues?.[field.key] ?? ""]),
+      ),
+    [initialValues, questionnaire.fields],
   );
+  const [valuesOverride, setValuesOverride] = useState<Record<string, string>>();
+  const values = valuesOverride ?? initialQuestionnaireValues;
+  const setValues = (nextValue: SetStateAction<Record<string, string>>) => {
+    setValuesOverride((current) => {
+      const currentValues = current ?? initialQuestionnaireValues;
+      return typeof nextValue === "function" ? nextValue(currentValues) : nextValue;
+    });
+  };
   const [honeypot, setHoneypot] = useState("");
-  const [formStartedAt, setFormStartedAt] = useState<number | null>(null);
+  const formStartedAt = useRef<number | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    setFormStartedAt(Date.now());
+    formStartedAt.current = Date.now();
   }, []);
-
-  useEffect(() => {
-    if (!initialValues) {
-      return;
-    }
-
-    setValues((current) => {
-      const hasUserInput = Object.values(current).some((value) => value.trim().length > 0);
-      if (hasUserInput) {
-        return current;
-      }
-
-      return Object.fromEntries(
-        questionnaire.fields.map((field) => [
-          field.key,
-          initialValues[field.key] ?? "",
-        ]),
-      );
-    });
-  }, [initialValues, questionnaire.fields]);
 
   const canSubmit = questionnaire.fields.every((field) => {
     const value = values[field.key]?.trim() ?? "";
@@ -115,7 +112,7 @@ export function QuestionnaireCard({
           pagePath: questionnairePagePath,
           source,
           honeypot,
-          submittedAt: formStartedAt ?? Date.now(),
+          submittedAt: formStartedAt.current ?? Date.now(),
         }),
       });
 

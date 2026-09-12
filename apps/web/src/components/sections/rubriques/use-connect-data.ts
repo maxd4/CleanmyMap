@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { isChatChannelType, type ChatChannelType } from "@/lib/chat/channels";
@@ -89,7 +89,6 @@ export function resolveInitialConnectTab({
 }
 
 export function useConnectData(defaultTab: ConnectTab = "discussions") {
-  const [activeTab, setActiveTab] = useState<ConnectTab>(defaultTab);
   const searchParams = useSearchParams();
 
   const requestedTab = searchParams.get("tab");
@@ -169,15 +168,34 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
     [defaultTab, initialChannelType, requestedAnnouncementTemplate, requestedTab],
   );
 
+  const [activeTabState, setActiveTabState] = useState<{
+    source: ConnectTab;
+    value: ConnectTab;
+  }>({ source: initialTab, value: initialTab });
+  const activeTab =
+    activeTabState.source === initialTab ? activeTabState.value : initialTab;
+  const setActiveTab = useCallback<Dispatch<SetStateAction<ConnectTab>>>(
+    (nextValue) => {
+      setActiveTabState((current) => {
+        const currentValue =
+          current.source === initialTab ? current.value : initialTab;
+        return {
+          source: initialTab,
+          value:
+            typeof nextValue === "function"
+              ? nextValue(currentValue)
+              : nextValue,
+        };
+      });
+    },
+    [initialTab],
+  );
+
   const initialArrondissement = Number.isInteger(requestedArrondissement)
     ? requestedArrondissement
     : 11;
     
   const initialZoneName = requestedZoneName?.trim().length ? requestedZoneName.trim() : null;
-
-  useEffect(() => {
-    setActiveTab(initialTab);
-  }, [initialTab]);
 
   const initialMessageId = requestedMessageId?.trim() || null;
   const discussionShellKey = `discussions:${initialChannelType}:${initialTopicId ?? "global"}:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}:${initialAnnouncementTemplate ?? "none"}:${requestedEventId ?? "none"}:${initialMessageId ?? "none"}`;

@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { Copy, QrCode, Share2, Users } from "lucide-react";
 import { QRCodeDialog } from "@/components/ui/qrcode-dialog";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -19,15 +25,30 @@ function buildShareText(inviteUrl: string): string {
 }
 
 export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
-  const [currentSummary, setCurrentSummary] = useState(summary);
+  const [summaryState, setSummaryState] = useState(() => ({
+    source: summary,
+    value: summary,
+  }));
+  const currentSummary = summaryState.source === summary ? summaryState.value : summary;
+  const setCurrentSummary = useCallback<Dispatch<SetStateAction<ReferralSummary>>>(
+    (nextValue) => {
+      setSummaryState((current) => {
+        const currentSummaryValue = current.source === summary ? current.value : summary;
+        return {
+          source: summary,
+          value:
+            typeof nextValue === "function"
+              ? nextValue(currentSummaryValue)
+              : nextValue,
+        };
+      });
+    },
+    [summary],
+  );
   const [isCreating, setIsCreating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    setCurrentSummary(summary);
-  }, [summary]);
 
   const shareText = useMemo(() => {
     if (!currentSummary.inviteUrl) {

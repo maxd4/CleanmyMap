@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { ErrorMessage } from "@/components/ui/error-message";
@@ -59,17 +59,28 @@ export function UserLocationOnboardingForm({
   const territoryPreference = extractTerritoryLocationPreferenceFromMetadata(
     user?.unsafeMetadata as Record<string, unknown> | undefined,
   );
-  const [locationType, setLocationType] = useState<UserLocationType>(
-    territoryPreference?.locationType ?? currentPreference?.locationType ?? "residence",
-  );
-  const [territorySelection, setTerritorySelection] =
-    useState<TerritoryLocationSelection | null>(
-      territoryPreference ??
-        createInitialTerritorySelection(currentPreference?.arrondissement ?? null),
-    );
-  const hasHydratedTerritorySelection = useRef(
-    Boolean(territoryPreference || currentPreference?.arrondissement),
-  );
+  const initialLocationType =
+    territoryPreference?.locationType ?? currentPreference?.locationType ?? "residence";
+  const initialTerritorySelection =
+    territoryPreference ??
+    createInitialTerritorySelection(currentPreference?.arrondissement ?? null);
+  const [locationTypeOverride, setLocationTypeOverride] = useState<
+    UserLocationType | undefined
+  >();
+  const [territorySelectionOverride, setTerritorySelectionOverride] = useState<
+    TerritoryLocationSelection | null | undefined
+  >();
+  const locationType = locationTypeOverride ?? initialLocationType;
+  const territorySelection =
+    territorySelectionOverride === undefined
+      ? initialTerritorySelection
+      : territorySelectionOverride;
+  const setLocationType = (value: UserLocationType) => {
+    setLocationTypeOverride(value);
+  };
+  const setTerritorySelection = (value: TerritoryLocationSelection | null) => {
+    setTerritorySelectionOverride(value);
+  };
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
 
@@ -77,30 +88,6 @@ export function UserLocationOnboardingForm({
     Boolean(territorySelection?.label.trim()) &&
     (territorySelection?.level !== "arrondissement" ||
       territorySelection.arrondissement != null);
-
-  useEffect(() => {
-    if (!isLoaded || !user) {
-      return;
-    }
-
-    if (territorySelection) {
-      hasHydratedTerritorySelection.current = true;
-      return;
-    }
-
-    if (hasHydratedTerritorySelection.current) {
-      return;
-    }
-
-    const existingSelection = extractTerritoryLocationPreferenceFromMetadata(
-      user.unsafeMetadata as Record<string, unknown> | undefined,
-    );
-    if (existingSelection) {
-      setTerritorySelection(existingSelection);
-      setLocationType(existingSelection.locationType);
-    }
-    hasHydratedTerritorySelection.current = true;
-  }, [isLoaded, territorySelection, user]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

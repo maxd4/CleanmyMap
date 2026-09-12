@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useSubmissionLock } from "@/hooks/use-submission-lock";
 import {
@@ -32,13 +32,9 @@ export function usePartnerOnboarding() {
   ]);
   const [availabilityNote, setAvailabilityNote] = useState("");
   
-  const [contactName, setContactName] = useState(
-    user?.firstName?.trim() || user?.username?.trim() || ""
-  );
+  const [contactNameOverride, setContactNameOverride] = useState("");
   const [contactChannel, setContactChannel] = useState("Email");
-  const [contactDetails, setContactDetails] = useState(
-    user?.primaryEmailAddress?.emailAddress ?? ""
-  );
+  const [contactDetailsOverride, setContactDetailsOverride] = useState("");
   
   const [contactNameTouched, setContactNameTouched] = useState(false);
   const [contactDetailsTouched, setContactDetailsTouched] = useState(false);
@@ -48,7 +44,7 @@ export function usePartnerOnboarding() {
   const [contributionTypes, setContributionTypes] = useState<ContributionType[]>(["accueil"]);
   
   const [honeypot, setHoneypot] = useState("");
-  const [formStartedAt, setFormStartedAt] = useState<number | null>(null);
+  const formStartedAt = useRef<number | null>(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -57,7 +53,7 @@ export function usePartnerOnboarding() {
   const { acquire, release } = useSubmissionLock();
 
   useEffect(() => {
-    setFormStartedAt(Date.now());
+    formStartedAt.current = Date.now();
   }, []);
 
   const coverage: PartnerCoverage = useMemo(
@@ -68,21 +64,22 @@ export function usePartnerOnboarding() {
     [coverageArrondissements, coverageQuartiers]
   );
 
-  useEffect(() => {
-    if (!user) return;
-    if (!contactNameTouched) {
-      const fallbackName = user.firstName?.trim() || user.username?.trim() || "";
-      if (fallbackName.length > 0) {
-        setContactName((current) => (current.trim().length > 0 ? current : fallbackName));
-      }
-    }
-    if (!contactDetailsTouched) {
-      const fallbackContact = user.primaryEmailAddress?.emailAddress ?? "";
-      if (fallbackContact.length > 0) {
-        setContactDetails((current) => (current.trim().length > 0 ? current : fallbackContact));
-      }
-    }
-  }, [contactDetailsTouched, contactNameTouched, user]);
+  const fallbackContactName = user?.firstName?.trim() || user?.username?.trim() || "";
+  const fallbackContactDetails = user?.primaryEmailAddress?.emailAddress ?? "";
+  const contactName =
+    contactNameTouched || contactNameOverride.trim().length > 0
+      ? contactNameOverride
+      : fallbackContactName;
+  const contactDetails =
+    contactDetailsTouched || contactDetailsOverride.trim().length > 0
+      ? contactDetailsOverride
+      : fallbackContactDetails;
+  const setContactName = (value: string) => {
+    setContactNameOverride(value);
+  };
+  const setContactDetails = (value: string) => {
+    setContactDetailsOverride(value);
+  };
 
   const estimatedDuration = useMemo(() => {
     const completedFields = [
@@ -222,7 +219,7 @@ export function usePartnerOnboarding() {
           contactDetails,
           motivation,
           honeypot,
-          submittedAt: formStartedAt ?? Date.now(),
+          submittedAt: formStartedAt.current ?? Date.now(),
         }),
       });
 

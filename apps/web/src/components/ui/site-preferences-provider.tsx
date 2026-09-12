@@ -9,6 +9,7 @@ import {
   useMemo,
   useRef,
   useState,
+  startTransition,
 } from "react";
 import {
   parseDisplayMode,
@@ -105,20 +106,24 @@ export function SitePreferencesProvider({
   // Après le premier rendu (client uniquement), on synchronise avec le localStorage
   useEffect(() => {
     const storedLocale = siteLocaleStorage.read();
-    setLocaleState(() => resolveInitialLocale(initialLocale, storedLocale));
-
     const storedTheme = siteThemeStorage.read();
-    if (storedTheme) setThemeState(storedTheme);
+    const storedDisplayMode = !initialDisplayModeExplicit
+      ? siteDisplayModeStorage.read()
+      : null;
 
-    if (!initialDisplayModeExplicit) {
-      const storedDisplayMode = siteDisplayModeStorage.read();
+    startTransition(() => {
+      setLocaleState(resolveInitialLocale(initialLocale, storedLocale));
+      if (storedTheme) {
+        setThemeState(storedTheme);
+      }
+
       if (storedDisplayMode) {
         setDisplayModeState(storedDisplayMode);
         setIsDisplayModeExplicitlySet(true);
       }
-    }
+      setHasResolvedClientPreferences(true);
+    });
     removeLocalStorageEntry(STORAGE_KEYS.displayModePendingSync);
-    setHasResolvedClientPreferences(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
