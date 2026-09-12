@@ -43,6 +43,11 @@ describe("CmmDropdown", () => {
     expect(source).toContain("window.setTimeout(() => triggerRef.current?.focus(), 0)");
   });
 
+  it("closes when clicking immediately after a hover-open", () => {
+    expect(source).toContain("clickToggleOpenRef.current = true;");
+    expect(source).not.toContain("clickToggleOpenRef.current = false;\n        setOpen(false);");
+  });
+
   it("can expose a non-menu navigation trigger without aria-haspopup", () => {
     const markup = renderToStaticMarkup(
       <CmmDropdown
