@@ -123,7 +123,7 @@ export function RibbonMenus({
           }
         }}
         wrapperClassName="shrink-0 max-[380px]:hidden"
-        panelClassName="cmm-dropdown-panel w-[min(18rem,calc(100vw-1rem))] rounded-2xl border border-white/15 bg-slate-950/95 p-1.5 text-white shadow-[0_20px_40px_-24px_rgba(2,6,23,0.76)]"
+        panelClassName="cmm-dropdown-panel w-[min(17rem,calc(100vw-1rem))] rounded-2xl border border-white/15 bg-slate-950/95 p-1 text-white shadow-[0_16px_32px_-22px_rgba(2,6,23,0.72)]"
         panelStyle={{
           backgroundImage: ribbonChrome.backgroundImage,
           backgroundColor: ribbonChrome.backgroundColor,
