@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { delimiter, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDir = resolve(fileURLToPath(new URL(".", import.meta.url)));
@@ -8,6 +8,8 @@ export const repoRoot = resolve(scriptDir, "../..");
 export const webDir = resolve(repoRoot, "apps/web");
 export const devServerScript = resolve(scriptDir, "dev-with-fallback-port.mjs");
 const WINDOWS_CTRL_C_EXIT_CODES = new Set([-1073741510, 3221225786]);
+const VERCEL_CLI_MISSING_MESSAGE =
+  "[launcher] CLI Vercel introuvable dans le PATH. Installe-la avec 'npm install --global vercel', puis relance le launcher.";
 
 export const LOCAL_ROLE_CONFIGS = Object.freeze({
   max: Object.freeze({
@@ -47,7 +49,69 @@ export function buildRoleEnvironment(role, baseEnv = process.env) {
 }
 
 export function getVercelEnvPullArgs() {
-  return ["env", "pull", ".env.local", "development", "--yes"];
+  return ["env", "pull", ".env.local", "--environment", "development", "--yes"];
+}
+
+function getPathEntries(env, pathDelimiter) {
+  return (env.PATH ?? "")
+    .split(pathDelimiter)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function isPathLike(value) {
+  return value.includes("/") || value.includes("\\");
+}
+
+function getVercelCliCandidates({ env, platform, pathDelimiter }) {
+  const configuredPath = env.VERCEL_CLI_PATH?.trim();
+  if (configuredPath && isPathLike(configuredPath)) {
+    return [configuredPath];
+  }
+
+  const commandName = configuredPath || "vercel";
+  const names =
+    platform === "win32"
+      ? [commandName, `${commandName}.cmd`, `${commandName}.exe`, `${commandName}.ps1`]
+      : [commandName];
+
+  return getPathEntries(env, pathDelimiter).flatMap((entry) => names.map((name) => join(entry, name)));
+}
+
+function getAdjacentVercelScript(candidate, existsImpl) {
+  const scriptPath = join(dirname(candidate), "node_modules", "vercel", "dist", "vc.js");
+  return existsImpl(scriptPath) ? resolve(scriptPath) : null;
+}
+
+export function resolveVercelCliInvocation({
+  env = process.env,
+  platform = process.platform,
+  existsImpl = existsSync,
+  nodePath = process.execPath,
+  pathDelimiter = delimiter,
+} = {}) {
+  for (const candidate of getVercelCliCandidates({ env, platform, pathDelimiter })) {
+    if (!existsImpl(candidate)) {
+      continue;
+    }
+
+    const extension = extname(candidate).toLowerCase();
+    if (extension === ".js" || extension === ".mjs" || extension === ".cjs") {
+      return { command: nodePath, args: [candidate] };
+    }
+
+    if (platform === "win32" && [".bat", ".cmd", ".ps1", ""].includes(extension)) {
+      const scriptPath = getAdjacentVercelScript(candidate, existsImpl);
+      if (scriptPath) {
+        return { command: nodePath, args: [scriptPath] };
+      }
+      continue;
+    }
+
+    return { command: candidate, args: [] };
+  }
+
+  throw new Error(VERCEL_CLI_MISSING_MESSAGE);
 }
 
 export function isValidVercelProjectConfig(config) {
@@ -79,17 +143,29 @@ export function isVercelProjectLinked(
   return isValidVercelProjectConfig(readVercelProjectConfig(projectConfigPath, readFileImpl));
 }
 
-export function runVercelEnvPull({ cwd = webDir, spawnSyncImpl = spawnSync } = {}) {
-  const command = process.env.VERCEL_CLI_PATH?.trim() || "vercel";
-  const result = spawnSyncImpl(command, getVercelEnvPullArgs(), {
+export function runVercelEnvPull({
+  cwd = webDir,
+  env = process.env,
+  platform = process.platform,
+  existsImpl = existsSync,
+  spawnSyncImpl = spawnSync,
+  nodePath = process.execPath,
+  pathDelimiter = delimiter,
+} = {}) {
+  const invocation = resolveVercelCliInvocation({ env, platform, existsImpl, nodePath, pathDelimiter });
+  const result = spawnSyncImpl(invocation.command, [...invocation.args, ...getVercelEnvPullArgs()], {
     cwd,
+    env,
     encoding: "utf8",
     stdio: "inherit",
-    shell: process.platform === "win32",
+    shell: false,
     windowsHide: false,
   });
 
   if (result.error) {
+    if (["ENOENT", "EINVAL", "EFTYPE"].includes(result.error.code)) {
+      throw new Error(VERCEL_CLI_MISSING_MESSAGE);
+    }
     throw new Error(`[launcher] Échec du lancement de Vercel CLI: ${result.error.message}`);
   }
   if (result.status !== 0) {
