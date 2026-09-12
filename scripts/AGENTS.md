@@ -21,10 +21,9 @@ la fois, et les analyses read-only peuvent être parallèles. Aucun nouveau
 worktree, clone, claim, lock, run ou branche de chantier n'est créé.
 
 Chaque lot fait `git fetch origin main`, vérifie `main`, stage une allowlist,
-valide `STAGED`, crée un commit local signé, puis valide le SHA exact avec
-`PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE` avant le push. Les commits locaux
-séquentiels sur `main` restent permis lorsque le push est temporairement
-interdit ; chaque lot part du HEAD précédent.
+valide `STAGED` et crée un commit local isolé. Un push est une publication
+explicitement demandée, pas une release implicite ; les commits locaux
+séquentiels sur `main` restent permis lorsque le push n'est pas demandé.
 
 ### LEGACY / COMPATIBILITY
 
@@ -47,19 +46,19 @@ guards CURRENT.
   l'arbre Git exact correspondant, sans staged, unstaged, untracked ni commit
   local étranger. Les SHA identiques sont dédupliqués ; une ref supprimée n'a
   pas d'arbre candidat ;
-- les gates dynamiques du pre-push (`test:scripts`, lint, typecheck, Vitest et
-  build) doivent utiliser `DYNAMIC_CANDIDATE` et un arbre éphémère construit
-  exclusivement depuis le SHA candidat sous
+- le pre-push courant conserve uniquement protocole Git, fast-forward,
+  `git diff --check`, audit secrets et contrôles statiques critiques sur le
+  `PUSH_CANDIDATE` exact. Il ne lance pas automatiquement `test:scripts`, lint,
+  typecheck, Vitest, build ou Vercel et n'installe aucune dépendance ;
+- les gates dynamiques lourdes du pre-push complet (`test:scripts`, lint,
+  typecheck, Vitest et build) utilisent `DYNAMIC_CANDIDATE` et un arbre
+  éphémère construit exclusivement depuis le SHA candidat sous
   `.artifacts/validation/prepush-candidate/<sha>/`. Elles ne doivent jamais
-  lire le WORKTREE ni ses fichiers étrangers ; les gates compatibles
-  (scripts, lint, typecheck, tests) invoquent le matérialiseur avec
-  `--dependency-mode=reuse` et peuvent réutiliser les installations canoniques
-  lorsque les manifests correspondent. Les builds npm/Vercel invoquent
-  explicitement `--dependency-mode=isolated`, sans lien vers un
-  `node_modules` canonique, puis exécutent `npm ci --prefer-offline --no-audit
-  --no-fund` dans la candidate. Dans les deux modes, les dépendances sont
-  temporaires sous cette racine, l’index normal reste inchangé et le cleanup
-  est obligatoire sur succès comme sur erreur ;
+  lire le WORKTREE ni ses fichiers étrangers ; les gates compatibles invoquent
+  le matérialiseur avec `--dependency-mode=reuse`, tandis que les builds
+  npm/Vercel utilisent explicitement `--dependency-mode=isolated`. Cette voie
+  complète est opt-in avec `npm run prepush:guard -- -Full`; les validations
+  larges restent disponibles via les commandes de release canoniques ;
 - les lifecycle de candidates doivent réutiliser le helper
   `scripts/ci/candidate-lifecycle.mjs` et la seule racine
   `.artifacts/validation/prepush-candidate/<sha>/`. Toute candidate porte un
@@ -85,15 +84,16 @@ guards CURRENT.
   `origin/main...HEAD`, affiché explicitement comme `manual-fallback`, mais
   ses checks statiques doivent utiliser `--ref=HEAD` ;
 - le hook `.githooks/pre-commit` reste automatique et bloquant sur `STAGED` ; le
-  hook `.githooks/pre-push` doit exécuter le garde sur le `PUSH_CANDIDATE` exact
-  transmis par Git ; si une ressource temporaire est indisponible, attendre
-  puis réessayer avec un backoff borné (30 s, 60 s, 120 s ; maximum environ
-  5 minutes) ; ne pas abandonner au premier échec transitoire ; si le blocage
-  est structurel (outil absent, authentification/permission manquante ou
-  contrat impossible à satisfaire), arrêter avec le diagnostic exact ; ne
-  jamais contourner le garde ni pousser un candidat non validé. Les
-  validations larges relèvent de la CI ou d'une préparation explicite de
-  release ;
+  hook `.githooks/pre-push` doit exécuter le garde rapide sur le
+  `PUSH_CANDIDATE` exact transmis par Git ; les contrôles statiques du candidat
+  doivent rester sans installation de dépendances. Si une ressource temporaire
+  est indisponible, attendre puis réessayer avec un backoff borné (30 s, 60 s,
+  120 s ; maximum environ 5 minutes) ; ne pas abandonner au premier échec
+  transitoire ; si le blocage est structurel (outil absent,
+  authentification/permission manquante ou contrat impossible à satisfaire),
+  arrêter avec le diagnostic exact ; ne jamais contourner le garde ni pousser
+  un candidat non validé. Les validations larges relèvent de la CI ou d'une
+  préparation explicite de release ;
 - `npm run checks:changed` reste un contrôle `WORKTREE` de développement et ne
   constitue pas une preuve de publication. Un échec prouvé étranger peut être
   classé `SKIPPED_PARALLEL_CHANTIER` si `STAGED` et `PUSH_CANDIDATE` restent
