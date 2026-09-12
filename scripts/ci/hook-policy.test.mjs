@@ -59,6 +59,20 @@ test("pre-push derives gates from the Git protocol candidate and keeps manual fa
   assert.match(guard, /\[Console\]::In\.ReadToEnd/);
   assert.match(guard, /mode = manual-fallback/);
   assert.match(guard, /\.\.\.HEAD/);
+  assert.match(guard, /\[switch\]\$Full/);
+  assert.match(guard, /Quick PUSH_CANDIDATE checks/);
+  assert.match(guard, /Pre-push quick guardrail passed/);
+  assert.match(guard, /Invoke-CriticalStaticCandidateChecks/);
+  assert.match(guard, /if \(-not \$Full\)/);
+  for (const criticalCheck of [
+    "scripts/checks/check-env-contract.mjs",
+    "scripts/checks/check-root-file-hygiene.mjs",
+    "scripts/checks/check-canonical-workspaces.mjs",
+    "scripts/checks/check-github-actions-security.mjs",
+    "scripts/checks/check-lockfile-policy.mjs",
+  ]) {
+    assert.match(guard, new RegExp(criticalCheck.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
   assert.doesNotMatch(guard, /git diff --name-only --diff-filter=ACMRTUXB HEAD --/);
   assert.doesNotMatch(guard, /git diff --cached --name-only/);
   assert.doesNotMatch(guard, /git ls-files --others/);
@@ -85,6 +99,8 @@ test("pre-push leaves the complete release validation available separately", asy
   const guard = await readRepoFile("scripts/ci/pre_push_guard.ps1");
 
   assert.match(packageJson.scripts["checks:full"], /run_checks2\.ps1 -Scope full/);
+  assert.match(guard, /Full PUSH_CANDIDATE checks \(-Full\)/);
+  assert.match(guard, /-Full/);
   assert.match(guard, /No changed files detected in manual fallback; validating the HEAD candidate tree only/);
   assert.doesNotMatch(guard, /Invoke-GuardStep "full validation"/);
   for (const requiredStep of [

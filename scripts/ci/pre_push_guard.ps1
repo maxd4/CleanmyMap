@@ -1,7 +1,8 @@
 param(
     [string]$RemoteName,
     [string]$RemoteUrl,
-    [switch]$SkipVercel
+    [switch]$SkipVercel,
+    [switch]$Full
 )
 
 Set-StrictMode -Version Latest
@@ -360,6 +361,31 @@ function Invoke-GuardStep {
         }
     }
 
+    function Invoke-CriticalStaticCandidateChecks {
+        # The normal Git push path is intentionally quick. These checks remain
+        # blocking, read the exact candidate tree, and do not install or run
+        # application dependencies. The explicit -Full path below retains the
+        # broader release-oriented candidate validation.
+        param(
+            [Parameter(Mandatory = $true)]
+            [string]$CandidateRef
+        )
+
+        $criticalChecks = @(
+            "scripts/checks/check-env-contract.mjs",
+            "scripts/checks/check-root-file-hygiene.mjs",
+            "scripts/checks/check-canonical-workspaces.mjs",
+            "scripts/checks/check-github-actions-security.mjs",
+            "scripts/checks/check-lockfile-policy.mjs"
+        )
+
+        foreach ($script in $criticalChecks) {
+            Invoke-GuardStep "critical static check $script ($CandidateRef)" {
+                node scripts/ci/run-static-candidate-check.mjs "--ref=$CandidateRef" "--script=$script" -- "--ref=$CandidateRef"
+            }
+        }
+    }
+
     function Invoke-DynamicCandidateCommand {
         param(
             [Parameter(Mandatory = $true)]
@@ -443,6 +469,21 @@ function Invoke-GuardStep {
     }
     $secretCommandArgs = @("run", "security:secrets", "--") + $secretArgs
     Invoke-GuardStep "secret audit" { & npm @secretCommandArgs }
+
+    if (-not $Full) {
+        Write-Host ""
+        Write-Host "Quick PUSH_CANDIDATE checks"
+        foreach ($candidateRef in @($candidates | Select-Object -ExpandProperty LocalSha -Unique)) {
+            Invoke-CriticalStaticCandidateChecks -CandidateRef $candidateRef
+        }
+
+        Write-Host ""
+        Write-Host "Pre-push quick guardrail passed. Heavy checks remain explicit."
+        return
+    }
+
+    Write-Host ""
+    Write-Host "Full PUSH_CANDIDATE checks (-Full)"
     $candidatePlans = @()
     $candidateRefs = @($candidates | Select-Object -ExpandProperty LocalSha -Unique)
     foreach ($candidateRef in $candidateRefs) {

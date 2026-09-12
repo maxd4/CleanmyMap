@@ -558,9 +558,10 @@ git fetch origin main
 → working tree/index
 → stage ciblé
 → STAGED
-→ commit local signé
-→ PUSH_CANDIDATE / DYNAMIC_CANDIDATE
-→ push origin/main
+→ commit local
+→ validations ciblées
+→ pré-push rapide sur le PUSH_CANDIDATE exact
+→ push origin/main sur demande explicite
 ```
 
 Si le push est temporairement interdit, plusieurs lots peuvent être commités
@@ -602,27 +603,26 @@ effectivement poussé via `--ref=<local-sha>` ; les SHA identiques sont
 dédupliqués et une suppression de ref ne possède aucun arbre à scanner. En
 fallback manuel, la plage reste `origin/main...HEAD`, mais les checks statiques
 utilisent `--ref=HEAD` et ignorent le worktree dirty.
-Les validations dynamiques du pre-push utilisent la portée `DYNAMIC_CANDIDATE` :
-`test:scripts`, lint, typecheck, Vitest et build s'exécutent dans un arbre
-éphémère matérialisé exclusivement depuis le SHA candidat sous
-`.artifacts/validation/prepush-candidate/<sha>/`, jamais dans le WORKTREE. Les
-Les dépendances locales peuvent être reliées ou matérialisées temporairement
-sous cette racine sans modifier l'index ni les refs Git. Un outil ou une
-dépendance absente est un blocage explicite
-`HOST_ENVIRONMENT`, pas un chantier parallèle ; le fallback manuel utilise
-`HEAD` comme candidat dynamique matérialisé.
+Le hook pre-push automatique est volontairement rapide : protocole Git,
+fast-forward, `git diff --check`, audit secrets et contrôles statiques
+critiques de sécurité/gouvernance du `PUSH_CANDIDATE` exact. Il n'installe pas
+de dépendances et ne lance pas automatiquement `test:scripts`, lint,
+typecheck, Vitest, build ou Vercel.
+Les validations dynamiques lourdes utilisent toujours la portée
+`DYNAMIC_CANDIDATE` lorsqu'elles sont demandées explicitement : elles
+s'exécutent dans un arbre éphémère matérialisé exclusivement depuis le SHA
+candidat sous `.artifacts/validation/prepush-candidate/<sha>/`, jamais dans le
+WORKTREE. Un outil ou une dépendance absente est un blocage explicite
+`HOST_ENVIRONMENT`, pas un chantier parallèle.
 L'invocation manuelle de `npm run prepush:guard` sans protocole conserve le
-fallback `origin/main...HEAD` et doit afficher `mode = manual-fallback`.
+fallback `origin/main...HEAD` et doit afficher `mode = manual-fallback` ; la
+voie complète est opt-in avec `npm run prepush:guard -- -Full`.
 Le hook `.githooks/pre-commit` reste automatique et bloquant sur `STAGED`.
-Le hook `.githooks/pre-push` doit exécuter le garde sur le `PUSH_CANDIDATE` exact
-transmis par Git. Si une ressource temporaire est indisponible, il doit attendre
-puis réessayer avec un backoff borné (30 s, 60 s, 120 s ; maximum environ
-5 minutes) et ne pas abandonner au premier échec transitoire. Si le blocage est
-structurel (outil absent, authentification/permission manquante ou contrat
-impossible à satisfaire), il doit s'arrêter avec le diagnostic exact. Il ne
-doit jamais contourner le garde ni pousser un candidat non validé. Les
-validations larges sont exécutées par la CI ou avant une release lorsque cela
-est explicitement requis.
+Le hook `.githooks/pre-push` doit exécuter le garde rapide sur le
+`PUSH_CANDIDATE` exact transmis par Git. Il ne doit jamais contourner un
+contrôle ni pousser un candidat invalide. Les validations larges sont
+exécutées par la CI ou avant une release lorsqu'elles sont explicitement
+requises, notamment via `checks:full`, `pre-release:check` et les builds.
 `npm run checks:changed` est un contrôle de développement `WORKTREE`, et non
 une preuve de publication. Un échec démontré comme étranger peut être signalé
 `SKIPPED_PARALLEL_CHANTIER` lorsque `STAGED` et `PUSH_CANDIDATE` sont verts ;
