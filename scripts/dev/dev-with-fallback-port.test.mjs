@@ -7,12 +7,22 @@ import {
   classifyChildExit,
   chooseAvailablePort,
   openUrlInBrowser,
+  parseDevHost,
   parsePortArgs,
   runDevServer,
   waitForServerReady,
 } from "./dev-with-fallback-port.mjs";
 
 describe("dev-with-fallback-port", () => {
+  it("accepts only explicit local development hosts", () => {
+    assert.equal(parseDevHost(undefined), "localhost");
+    assert.equal(parseDevHost("127.0.0.1"), "127.0.0.1");
+    assert.equal(parseDevHost("0.0.0.0"), "0.0.0.0");
+    assert.equal(parseDevHost("::1"), "::1");
+    assert.throws(() => parseDevHost("localhost; whoami"), /DEV_HOST/);
+    assert.throws(() => parseDevHost("//attacker.example"), /DEV_HOST/);
+  });
+
   it("keeps browser opening opt-in and passes through unrelated arguments", () => {
     assert.deepEqual(parsePortArgs(["--port", "3010", "--open-browser", "--", "--verbose"]), {
       preferredPort: 3010,

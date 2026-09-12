@@ -12,10 +12,6 @@ function git(fixtureRoot, args) {
   return execFileSync("git", args, { cwd: fixtureRoot, encoding: "utf8" }).trim();
 }
 
-function gitFromRepository(args) {
-  return execFileSync("git", args, { cwd: REPO_ROOT, encoding: "utf8" }).trim();
-}
-
 function createFixture() {
   const fixtureRoot = mkdtempSync(join(tmpdir(), "cleanmymap-static-candidate-"));
   mkdirSync(join(fixtureRoot, "scripts", "checks"), { recursive: true });

@@ -14,8 +14,20 @@ const turbopackCacheDirs = [
   resolve(webDir, ".next/dev/cache/turbopack"),
 ];
 const require = createRequire(import.meta.url);
-const defaultHost = process.env.DEV_HOST ?? "localhost";
+const defaultHost = "localhost";
 const WINDOWS_CTRL_C_EXIT_CODES = new Set([-1073741510, 3221225786]);
+
+const SAFE_DEV_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0", "::1"]);
+
+export function parseDevHost(value) {
+  const candidate = value ?? defaultHost;
+  if (SAFE_DEV_HOSTS.has(candidate)) {
+    return candidate;
+  }
+  throw new Error(
+    `[dev] DEV_HOST doit être l'un des hôtes de développement autorisés : ${[...SAFE_DEV_HOSTS].join(", ")}.`,
+  );
+}
 
 export function parsePortArgs(argv) {
   const passthrough = [];
@@ -331,7 +343,7 @@ export async function runDevServer(
     consoleImpl = console,
   } = {},
 ) {
-  const host = env.DEV_HOST ?? defaultHost;
+  const host = parseDevHost(env.DEV_HOST);
   const strictPort = env.DEV_STRICT_PORT === "1";
   const requestedBundler = env.DEV_BUNDLER?.toLowerCase();
   if (requestedBundler === "webpack") {
