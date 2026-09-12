@@ -87,7 +87,7 @@ export function AppNavigationBlockDropdown({
           aria-label={getLocalizedText(space.label, locale, space.id)}
           style={buildNavigationBlockTriggerStyle(space.id)}
           className={cn(
-            "group inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.8rem] border border-transparent bg-transparent leading-none motion-safe:transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+            "group inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.8rem] border border-transparent bg-transparent leading-none motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:bg-white/10",
             isActiveSpace
               ? "bg-white/[0.08] text-white"
               : "text-white hover:bg-white/[0.07] hover:text-white",
