@@ -1,8 +1,16 @@
 # Gouvernance locale — `apps/mobile`
 
-Héritage : gouvernance racine → ce périmètre mobile. `apps/mobile` est une
-application déployable distincte du web, actuellement gelée sur les contrats
-stabilisés ; ce fichier ne rouvre pas son architecture.
+Héritage : gouvernance racine → ce périmètre mobile. `apps/mobile` est
+`CURRENT / FROZEN`, pas `LEGACY` : c'est une application déployable distincte
+du web, actuellement gelée sur les contrats stabilisés. « Gelé » signifie
+qu'aucun développement fonctionnel ne reprend sans décision explicite ; cela
+ne rend pas le workspace supprimable et ce fichier ne rouvre pas son
+architecture.
+
+Le workspace `apps/mobile`, son `package.json`, cet `AGENTS.md` et ses contrats
+essentiels restent présents tant qu'une décision d'architecture explicite ne
+les retire pas simultanément avec les contrats, la documentation et les
+consommateurs concernés.
 
 ## Identité et accès
 

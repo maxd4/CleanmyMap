@@ -337,6 +337,7 @@ function Invoke-GuardStep {
             Write-Host "==> static candidate checks ($candidateRef)"
             Invoke-GuardStep "environment contract ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-env-contract.mjs -- "--ref=$candidateRef" }
             Invoke-GuardStep "root file hygiene ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-root-file-hygiene.mjs -- "--ref=$candidateRef" }
+            Invoke-GuardStep "canonical workspace sentinels ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-canonical-workspaces.mjs -- "--ref=$candidateRef" }
             Invoke-GuardStep "GitNexus hygiene ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-gitnexus-hygiene.mjs -- "--ref=$candidateRef" }
             Invoke-GuardStep "documentation governance ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-documentation-governance.mjs -- "--ref=$candidateRef" }
             Invoke-GuardStep "AGENTS governance ($candidateRef)" { node scripts/ci/run-static-candidate-check.mjs "--ref=$candidateRef" --script=scripts/checks/check-agent-governance.mjs -- "--ref=$candidateRef" }
