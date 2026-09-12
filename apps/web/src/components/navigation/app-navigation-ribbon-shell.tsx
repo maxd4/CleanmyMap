@@ -131,7 +131,7 @@ function AppNavigationRibbonShell({
               href="/"
               prefetch={false}
               onClick={() => onTrackNavigation("/", "Accueil", null)}
-              className="group inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[1.15rem] border border-sky-100/18 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3.5 pr-4 text-white shadow-[0_18px_36px_-22px_rgba(37,99,235,0.92)] transition-transform hover:scale-[1.01] hover:border-sky-50/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+              className="group inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[1.15rem] border border-sky-100/18 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3.5 pr-4 text-white shadow-[0_18px_36px_-22px_rgba(37,99,235,0.92)] transition-transform hover:scale-[1.01] hover:border-sky-50/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 xl:h-10 xl:min-h-0"
               aria-label="Accueil"
             >
               <span
@@ -154,7 +154,7 @@ function AppNavigationRibbonShell({
           <div className="hidden items-center justify-center xl:col-start-2 xl:flex">
             <nav
               aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"}
-              className="flex shrink-0 flex-nowrap items-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-1 shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)]"
+              className="flex shrink-0 flex-nowrap items-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)]"
             >
               {spaces.map((space) => (
                 <AppNavigationBlockDropdown
