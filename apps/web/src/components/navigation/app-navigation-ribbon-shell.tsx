@@ -121,55 +121,55 @@ function AppNavigationRibbonShell({
         )}
         style={ribbonChrome}
       >
-        <div className="flex w-full min-w-0 items-center gap-2 px-3 py-2.5 sm:px-5 lg:gap-2 xl:px-7 xl:py-3">
+        <div className="flex w-full min-w-0 items-center gap-2 px-3 py-2.5 sm:px-5 lg:gap-2 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:px-7 xl:py-3">
           <p className="sr-only">
             {locale === "fr" ? "Profil actif" : "Active profile"}: {effectiveProfileLabel}
           </p>
 
-          <Link
-            href="/"
-            prefetch={false}
-            onClick={() => onTrackNavigation("/", "Accueil", null)}
-            className="group inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[1.15rem] border border-sky-100/18 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3.5 pr-4 text-white shadow-[0_18px_36px_-22px_rgba(37,99,235,0.92)] transition-transform hover:scale-[1.01] hover:border-sky-50/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
-            aria-label="Accueil"
-          >
-            <span
-              aria-hidden="true"
-              data-site-logo-slot
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.9rem] border border-white/12 bg-white/12"
-            />
-            <span className="hidden xl:inline cmm-text-caption font-black uppercase tracking-[0.18em]">
-              Accueil
-            </span>
-          </Link>
+          <div className="flex min-w-0 items-center gap-2 xl:col-start-1">
+            <Link
+              href="/"
+              prefetch={false}
+              onClick={() => onTrackNavigation("/", "Accueil", null)}
+              className="group inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[1.15rem] border border-sky-100/18 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3.5 pr-4 text-white shadow-[0_18px_36px_-22px_rgba(37,99,235,0.92)] transition-transform hover:scale-[1.01] hover:border-sky-50/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+              aria-label="Accueil"
+            >
+              <span
+                aria-hidden="true"
+                data-site-logo-slot
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.9rem] border border-white/12 bg-white/12"
+              />
+              <span className="hidden xl:inline cmm-text-caption font-black uppercase tracking-[0.18em]">
+                Accueil
+              </span>
+            </Link>
 
-          <div className="hidden min-w-0 flex-1 items-center gap-1.5 xl:flex">
-            <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
-              <nav
-                aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"}
-                className="flex shrink-0 flex-nowrap items-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-1 shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)]"
-              >
-                {spaces.map((space) => (
-                  <AppNavigationBlockDropdown
-                    key={space.id}
-                    activeSpaceId={activeSpaceId}
-                    locale={locale}
-                    onTrackNavigation={onTrackNavigation}
-                    pathname={pathname}
-                    space={space}
-                  />
-                ))}
-              </nav>
-
-              <div className="flex min-w-0 flex-1 justify-center">
+            <div className="hidden min-w-0 flex-1 items-center xl:flex">
               <div className="w-full max-w-[24rem] xl:max-w-[26rem]">
-                  <GlobalSearch currentProfile={effectiveProfile} />
-                </div>
+                <GlobalSearch currentProfile={effectiveProfile} />
               </div>
             </div>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-2.5">
+          <div className="hidden items-center justify-center xl:col-start-2 xl:flex">
+            <nav
+              aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"}
+              className="flex shrink-0 flex-nowrap items-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-1 shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)]"
+            >
+              {spaces.map((space) => (
+                <AppNavigationBlockDropdown
+                  key={space.id}
+                  activeSpaceId={activeSpaceId}
+                  locale={locale}
+                  onTrackNavigation={onTrackNavigation}
+                  pathname={pathname}
+                  space={space}
+                />
+              ))}
+            </nav>
+          </div>
+
+          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-2.5 xl:col-start-3 xl:ml-0 xl:justify-end">
             <div className="lg:hidden">
               <AppNavigationTreeMenu
                 key={`mobile-tree-${pathname}`}
