@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -179,6 +180,26 @@ function branchExists(repositoryRoot, branchName, gitRunner = git) {
   try { gitRunner(repositoryRoot, ["show-ref", "--verify", "--quiet", `refs/heads/${branchName}`]); return true; } catch { return false; }
 }
 
+export function verifyWorktreeMatchesTree({ gitCommonDir, worktree, tip }) {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-worktree-index-"));
+  const indexPath = path.join(temporaryRoot, "index");
+  const environment = { ...process.env, GIT_DIR: path.resolve(gitCommonDir), GIT_WORK_TREE: path.resolve(worktree), GIT_INDEX_FILE: indexPath, GIT_OPTIONAL_LOCKS: "0" };
+  const runGit = (args) => execFileSync("git", args, { cwd: path.resolve(worktree), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: environment, windowsHide: true }).trim();
+  try {
+    runGit(["read-tree", tip]);
+    try { runGit(["update-index", "--refresh", "--ignore-submodules"]); } catch { /* changed tracked files are reported by diff-files below */ }
+    const trackedDelta = runGit(["diff-files", "--name-status", "--", ":(exclude).git"]);
+    const untracked = runGit(["ls-files", "--others", "--exclude-standard", "--", ":(exclude).git"]).split(/\r?\n/).filter((item) => item && item !== ".git");
+    if (trackedDelta) throw workspaceError("ORPHAN_RUN_WORKTREE_CONTENT_MISMATCH", `worktree ${worktree} differs from ${tip}: ${trackedDelta}`, { worktree, tip, trackedDelta });
+    if (untracked.length > 0) throw workspaceError("ORPHAN_RUN_WORKTREE_UNTRACKED", `worktree ${worktree} contains untracked files: ${untracked.join(", ")}`, { worktree, tip, untracked });
+  } catch (error) {
+    if (error?.code === "ORPHAN_RUN_WORKTREE_CONTENT_MISMATCH" || error?.code === "ORPHAN_RUN_WORKTREE_UNTRACKED") throw error;
+    throw workspaceError("ORPHAN_RUN_WORKTREE_CONTENT_UNPROVABLE", `cannot prove worktree ${worktree} matches ${tip}: ${error instanceof Error ? error.message : String(error)}`, { worktree, tip, cause: error instanceof Error ? error.message : String(error) });
+  } finally {
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+}
+
 function gitAt(repositoryRoot, worktree, args, gitRunner = git) { return gitRunner(worktree ?? repositoryRoot, args); }
 function scopeLockPath(root, domain) { return path.join(root, "locks", `scope-${domain}.json`); }
 function claimPath(root, repoPath) { return path.join(root, "claims", `${pathHash(repoPath)}.json`); }
@@ -223,6 +244,7 @@ export function createWorkspaceCoordinator({
   leaseMs = DEFAULT_LEASE_MS,
   publicationWaitMs = DEFAULT_PUBLICATION_WAIT_MS,
   backoffMs = DEFAULT_BACKOFF_MS,
+  worktreeTreeChecker = verifyWorktreeMatchesTree,
   onPublicationWait = ({ owner, waitMs }) => console.error(`PUBLICATION_WAIT owner=${owner} retry_in_ms=${waitMs}`),
 } = {}) {
   const repo = path.resolve(repositoryRoot ?? process.cwd());
@@ -601,6 +623,8 @@ export function createWorkspaceCoordinator({
     const listedPaths = new Set(worktreeList(repo, gitRunner).map((item) => path.resolve(item.path)));
     const canonicalPublishPath = path.resolve(publishPathFor(run.runId));
     const recordedPublishPath = path.resolve(run.publishWorktreePath ?? canonicalPublishPath);
+    const canonicalRunPath = path.resolve(ownPath(run.runId));
+    const recordedRunPath = path.resolve(run.worktreePath ?? canonicalRunPath);
 
     function assertOrphanPublicationWorktree(candidate) {
       if (path.resolve(candidate) !== canonicalPublishPath || recordedPublishPath !== canonicalPublishPath) {
@@ -641,6 +665,44 @@ export function createWorkspaceCoordinator({
       return { publishedSha, originMain };
     }
 
+    function assertOrphanRunWorktree(candidate) {
+      if (run.publication?.state !== "COMPLETE") throw workspaceError("ORPHAN_RUN_WORKTREE_REFUSED", `run ${run.runId} is not COMPLETE`, { runId: run.runId, state: run.publication?.state ?? null, worktree: candidate });
+      if (path.resolve(candidate) !== canonicalRunPath || recordedRunPath !== canonicalRunPath) throw workspaceError("ORPHAN_RUN_WORKTREE_REFUSED", `run worktree path is not canonical for ${run.runId}`, { runId: run.runId, worktree: candidate, canonicalRunPath, recordedRunPath });
+      const expectedBranch = `codex/${run.runId}`;
+      if ((run.branchName ?? expectedBranch) !== expectedBranch) throw workspaceError("ORPHAN_RUN_WORKTREE_REFUSED", `run branch is not canonical for ${run.runId}`, { runId: run.runId, branchName: run.branchName ?? null, expectedBranch });
+
+      let candidateStat;
+      try { candidateStat = fs.lstatSync(candidate); } catch (error) { throw workspaceError("ORPHAN_RUN_WORKTREE_REFUSED", `run worktree cannot be inspected: ${error.message}`, { runId: run.runId, worktree: candidate }); }
+      if (!candidateStat.isDirectory() || candidateStat.isSymbolicLink()) throw workspaceError("ORPHAN_RUN_WORKTREE_REFUSED", `run worktree is not a real directory`, { runId: run.runId, worktree: candidate });
+
+      const gitFile = path.join(candidate, ".git");
+      let gitFileStat = null;
+      try { gitFileStat = fs.lstatSync(gitFile); } catch (error) { if (error.code !== "ENOENT") throw workspaceError("ORPHAN_RUN_WORKTREE_REFUSED", `run worktree .git cannot be checked: ${error.message}`, { runId: run.runId, worktree: candidate }); }
+      if (gitFileStat) {
+        if (!gitFileStat.isFile() || gitFileStat.isSymbolicLink()) throw workspaceError("ORPHAN_RUN_WORKTREE_REFUSED", `run worktree .git must be absent or a regular gitdir file`, { runId: run.runId, worktree: candidate });
+        const gitFileContents = fs.readFileSync(gitFile, "utf8").trim();
+        const gitdirMatch = /^gitdir:[ \t]*(.+)$/u.exec(gitFileContents);
+        if (!gitdirMatch) throw workspaceError("ORPHAN_RUN_WORKTREE_REFUSED", `run worktree .git has no canonical gitdir pointer`, { runId: run.runId, worktree: candidate });
+        const gitCommonDir = path.resolve(getGitCommonDir(repo, gitRunner));
+        const administrativeRoot = path.resolve(gitCommonDir, "worktrees");
+        const administrativePath = path.resolve(path.dirname(gitFile), gitdirMatch[1]);
+        if (!isStrictlyWithin(administrativeRoot, administrativePath)) throw workspaceError("ORPHAN_RUN_WORKTREE_REFUSED", `run worktree gitdir points outside the repository worktree metadata`, { runId: run.runId, worktree: candidate, administrativePath, administrativeRoot });
+        try { fs.lstatSync(administrativePath); throw workspaceError("ORPHAN_RUN_WORKTREE_REFUSED", `run worktree administrative descriptor still exists`, { runId: run.runId, worktree: candidate, administrativePath }); } catch (error) {
+          if (error?.code !== "ENOENT") throw error;
+        }
+      }
+
+      const publishedSha = run.publication?.publishedSha;
+      const originMain = runGit(["rev-parse", "origin/main"]);
+      if (!publishedSha || !isAncestor(publishedSha, originMain)) throw workspaceError("PUBLICATION_NOT_CONVERGED", `published SHA ${publishedSha ?? "none"} is not an ancestor of origin/main ${originMain}`, { runId: run.runId, publishedSha, originMain });
+      const branchRef = `refs/heads/${expectedBranch}`;
+      let branchTip;
+      try { branchTip = runGit(["rev-parse", "--verify", branchRef]); } catch (error) { throw workspaceError("ORPHAN_RUN_WORKTREE_REFUSED", `run branch ${branchRef} does not exist`, { runId: run.runId, branchRef, cause: error instanceof Error ? error.message : String(error) }); }
+      if (!isAncestor(branchTip, originMain)) throw workspaceError("ORPHAN_RUN_WORKTREE_REFUSED", `run branch ${branchRef} is not published on origin/main`, { runId: run.runId, branchRef, branchTip, originMain });
+      worktreeTreeChecker({ gitCommonDir: getGitCommonDir(repo, gitRunner), worktree: candidate, tip: branchTip });
+      return { publishedSha, originMain, branchTip };
+    }
+
     const cleanupPlan = [];
     for (const candidate of [run.publishWorktreePath ?? publishPathFor(run.runId), run.worktreePath ?? ownPath(run.runId)]) {
       if (!fs.existsSync(candidate)) continue;
@@ -648,8 +710,10 @@ export function createWorkspaceCoordinator({
         if (path.resolve(candidate) === canonicalPublishPath && recordedPublishPath === canonicalPublishPath) {
           assertOrphanPublicationWorktree(candidate);
           cleanupPlan.push({ kind: "orphan-publication", candidate });
-        }
-        else throw workspaceError("WORKTREE_NOT_REGISTERED", `run worktree is not registered by Git: ${candidate}`, { runId: run.runId, worktree: candidate });
+        } else if (path.resolve(candidate) === canonicalRunPath && recordedRunPath === canonicalRunPath) {
+          assertOrphanRunWorktree(candidate);
+          cleanupPlan.push({ kind: "orphan-run", candidate });
+        } else throw workspaceError("WORKTREE_NOT_REGISTERED", `run worktree is not registered by Git: ${candidate}`, { runId: run.runId, worktree: candidate });
         continue;
       }
       const dirty = readDirtyPaths(candidate, (cwd, args) => gitRunner(cwd, args));
@@ -659,6 +723,10 @@ export function createWorkspaceCoordinator({
 
     for (const { kind, candidate } of cleanupPlan) {
       if (kind === "orphan-publication") {
+        fs.rmSync(candidate, { recursive: true, force: false });
+        continue;
+      }
+      if (kind === "orphan-run") {
         fs.rmSync(candidate, { recursive: true, force: false });
         continue;
       }
