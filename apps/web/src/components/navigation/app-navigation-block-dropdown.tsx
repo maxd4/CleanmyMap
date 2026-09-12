@@ -4,20 +4,26 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   BarChart3,
+  BookOpen,
   ChevronRight,
+  House,
   Info,
+  Map,
   MapPinned,
   Medal,
+  Users,
+  Zap,
+  type LucideIcon,
 } from "lucide-react";
 import type { NavigationSpace } from "@/lib/navigation";
 import { getLocalizedText } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
 import { CmmDropdown } from "@/components/ui/cmm-dropdown";
+import { CmmIcon } from "@/components/ui/cmm-icon";
 import { DEFAULT_DROPDOWN_VERTICAL_GAP_PX } from "@/components/ui/use-dropdown-placement";
 import { cn } from "@/lib/utils";
 import { AppNavigationBlockDropdownAct } from "./app-navigation-block-dropdown-act";
 import { AppNavigationBlockDropdownHome } from "./app-navigation-block-dropdown-home";
-import type { RibbonChrome } from "./app-navigation-ribbon-theme";
 import { AppNavigationBlockDropdownLearn } from "./app-navigation-block-dropdown-learn";
 import { AppNavigationBlockDropdownNetwork } from "./app-navigation-block-dropdown-network";
 import { NavigationDropdownItemCard } from "./navigation-dropdown-item-card";
@@ -47,13 +53,32 @@ type AppNavigationBlockDropdownProps = {
   locale: Locale;
   onTrackNavigation: (href: string, label: string, spaceId: string | null) => void;
   pathname: string;
-  ribbonChrome?: RibbonChrome; // conservé pour compatibilité, non utilisé
   space: NavigationSpace;
 };
 
 function isActivePath(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
+
+function getNavigationBlockIcon(spaceId: NavigationSpace["id"]): LucideIcon {
+  switch (spaceId) {
+    case "home":
+      return House;
+    case "act":
+      return Zap;
+    case "visualize":
+    case "impact":
+      return Map;
+    case "network":
+    case "connect":
+      return Users;
+    case "learn":
+      return BookOpen;
+    default:
+      return House;
+  }
+}
+
 function getVisualizeItemIcon(routeId: string) {
   switch (routeId) {
     case "map":
@@ -107,17 +132,16 @@ export function AppNavigationBlockDropdown({
       renderTrigger={(triggerProps) => (
         <button
           {...triggerProps}
+          data-navigation-block-trigger
           aria-label={getLocalizedText(space.label, locale, space.id)}
           className={cn(
-            "group inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[0.8rem] border border-transparent bg-transparent text-[20px] leading-none transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+            "group inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[0.8rem] border border-transparent bg-transparent leading-none motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
             isActiveSpace
               ? "bg-white/[0.08] text-white"
               : "text-white hover:bg-white/[0.07] hover:text-white",
           )}
         >
-          <span className="select-none" aria-hidden="true">
-            {space.icon}
-          </span>
+          <CmmIcon icon={getNavigationBlockIcon(space.id)} size="md" />
           <span className="sr-only">{getLocalizedText(space.label, locale, space.id)}</span>
         </button>
       )}

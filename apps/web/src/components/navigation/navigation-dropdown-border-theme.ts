@@ -17,13 +17,13 @@ type NavigationDropdownCardBorderTokens = {
 
 const NAVIGATION_DROPDOWN_CARD_BORDER_CLASS_NAMES = {
   outer:
-    "bg-[linear-gradient(90deg,var(--nav-outer-start)_0%,var(--nav-outer-mid)_46%,var(--nav-outer-end)_100%)] transition-all duration-200",
+    "bg-[linear-gradient(90deg,var(--nav-outer-start)_0%,var(--nav-outer-mid)_46%,var(--nav-outer-end)_100%)] motion-safe:transition-shadow motion-safe:duration-200",
   body:
-    "border border-[color:var(--nav-body-border)] bg-[color:var(--nav-body-bg)] transition-all duration-200 group-hover/item:border-[color:var(--nav-body-border-hover)] group-hover/item:bg-[color:var(--nav-body-bg-hover)] group-hover/item:ring-1 group-hover/item:ring-[color:var(--nav-body-ring)]",
+    "border border-[color:var(--nav-body-border)] bg-[color:var(--nav-body-bg)] motion-safe:transition-colors motion-safe:duration-200 group-hover/item:border-[color:var(--nav-body-border-hover)] group-hover/item:bg-[color:var(--nav-body-bg-hover)] group-hover/item:ring-1 group-hover/item:ring-[color:var(--nav-body-ring)]",
   icon:
     "border-[color:var(--nav-icon-border)] text-[color:var(--nav-icon-color)]",
   chevron:
-    "stroke-[2.35] text-black transition-[color,stroke-width] duration-200 group-hover/item:text-[color:var(--nav-chevron-hover)] group-hover/item:[stroke-width:2.95]",
+    "stroke-[2.35] text-black motion-safe:transition-colors motion-safe:duration-200 group-hover/item:text-[color:var(--nav-chevron-hover)]",
 };
 
 function getNavigationDropdownCardBorderState(

@@ -156,7 +156,6 @@ function AppNavigationRibbonShell({
                     locale={locale}
                     onTrackNavigation={onTrackNavigation}
                     pathname={pathname}
-                    ribbonChrome={ribbonChrome}
                     space={space}
                   />
                 ))}

@@ -1,7 +1,5 @@
-export const NAVIGATION_DROPDOWN_PANEL_MIN_WIDTH = 432;
-
 export const NAVIGATION_DROPDOWN_SHELL_CLASS_NAME =
-  "z-50 w-[min(27rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.5rem] border text-black shadow-[0_24px_52px_-26px_rgba(15,23,42,0.16)]";
+  "cmm-navigation-dropdown-surface cmm-minimal cmm-minimal-animate cmm-sober cmm-sober-animate z-50 w-[min(27rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.5rem] border text-black shadow-[0_24px_52px_-26px_rgba(15,23,42,0.16)]";
 
 export const NAVIGATION_DROPDOWN_PANEL_CONTENT_CLASS_NAME =
   "px-3 pb-2 pt-2 sm:px-3.5 sm:pt-2.5";
@@ -15,35 +13,35 @@ export const NAVIGATION_DROPDOWN_TITLE_CLASS_NAME =
   "w-full whitespace-nowrap text-center text-[0.92rem] font-black leading-tight tracking-[-0.03em] sm:text-[1rem]";
 
 export const NAVIGATION_DROPDOWN_CARD_OUTER_CLASS_NAME =
-  "rounded-[0.9rem] p-[1px] transition-all duration-200";
+  "cmm-navigation-dropdown-item rounded-[0.9rem] p-[1px] motion-safe:transition-shadow motion-safe:duration-200";
 
 export const NAVIGATION_DROPDOWN_CARD_OUTER_SHADOW_CLASS_NAME =
   "shadow-[0_7px_16px_rgba(15,23,42,0.05)]";
 
 export const NAVIGATION_DROPDOWN_CARD_OUTER_HOVER_CLASS_NAME =
-  "group-hover/item:p-[1.5px] group-hover/item:shadow-[0_10px_24px_rgba(15,23,42,0.09)]";
+  "group-hover/item:shadow-[0_10px_24px_rgba(15,23,42,0.09)]";
 
 export const NAVIGATION_DROPDOWN_CARD_BODY_CLASS_NAME =
-  "flex min-h-[1.5rem] items-center gap-1.5 rounded-[calc(0.9rem-1px)] border px-[0.4rem] py-[0.18rem] text-left transition-all duration-200";
+  "flex min-h-[1.5rem] items-center gap-1.5 rounded-[calc(0.9rem-1px)] border px-[0.4rem] py-[0.18rem] text-left motion-safe:transition-colors motion-safe:duration-200";
 
 export const NAVIGATION_DROPDOWN_CARD_ICON_CLASS_NAME =
-  "flex h-[1.28rem] w-[1.28rem] shrink-0 items-center justify-center rounded-full border transition-transform duration-200 group-hover/item:scale-[1.03] sm:h-[1.4rem] sm:w-[1.4rem]";
+  "flex h-[1.28rem] w-[1.28rem] shrink-0 items-center justify-center rounded-full border sm:h-[1.4rem] sm:w-[1.4rem]";
 
 export const NAVIGATION_DROPDOWN_CARD_ICON_GLYPH_CLASS_NAME =
   "h-[0.55rem] w-[0.55rem] sm:h-[0.8rem] sm:w-[0.8rem]";
 
 export const NAVIGATION_DROPDOWN_CARD_LABEL_CLASS_NAME =
-  "block whitespace-nowrap text-[0.86rem] font-normal tracking-tight transition-colors duration-200 group-hover/item:font-semibold sm:text-[0.92rem]";
+  "block whitespace-nowrap text-[0.86rem] font-normal tracking-tight sm:text-[0.92rem]";
 
 export const NAVIGATION_DROPDOWN_CARD_CHEVRON_CLASS_NAME =
-  "h-[0.58rem] w-[0.58rem] shrink-0 transition-colors duration-200 sm:h-[0.82rem] sm:w-[0.82rem]";
+  "h-[0.58rem] w-[0.58rem] shrink-0 sm:h-[0.82rem] sm:w-[0.82rem]";
 
 export const NAVIGATION_DROPDOWN_ITEM_CONTENT_GAP_CLASS_NAME = "gap-1";
 
 export const NAVIGATION_DROPDOWN_ITEM_LINK_GAP_CLASS_NAME = "gap-1";
 
 export const NAVIGATION_DROPDOWN_HELP_TEXT_CLASS_NAME =
-  "max-w-0 flex-1 overflow-hidden whitespace-normal break-words cmm-line-clamp-2 text-center text-[0.56rem] italic leading-tight text-black opacity-0 transition-all duration-200 group-hover/item:max-w-[11rem] group-hover/item:opacity-100 group-focus-within/item:max-w-[11rem] group-focus-within/item:opacity-100";
+  "w-[min(11rem,35%)] shrink-0 overflow-hidden whitespace-normal break-words cmm-line-clamp-2 text-center text-[0.56rem] italic leading-tight text-black opacity-100";
 
 export const NAVIGATION_DROPDOWN_TREE_SECTION_LABEL_CLASS_NAME =
   "block cmm-text-small font-bold tracking-[-0.02em]";

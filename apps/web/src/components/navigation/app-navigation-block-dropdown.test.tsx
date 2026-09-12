@@ -21,4 +21,20 @@ describe("app navigation block dropdown contract", () => {
     expect(source).not.toContain("framer-motion");
     expect(source).not.toContain("AnimatePresence");
   });
+
+  it("uses stable Lucide block triggers instead of platform-dependent emoji", () => {
+    expect(source).toContain("CmmIcon");
+    expect(source).toContain("data-navigation-block-trigger");
+    expect(source).toContain("return House");
+    expect(source).toContain("return Zap");
+    expect(source).toContain("return Map");
+    expect(source).toContain("return Users");
+    expect(source).toContain("return BookOpen");
+    expect(source).not.toContain("space.icon");
+    expect(source).not.toMatch(/[🏠⚡🗺️🤝📚]/u);
+  });
+
+  it("does not pass unused ribbon chrome into the block dropdown", () => {
+    expect(source).not.toContain("ribbonChrome");
+  });
 });

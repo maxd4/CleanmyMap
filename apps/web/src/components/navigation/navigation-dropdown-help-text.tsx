@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { NAVIGATION_DROPDOWN_HELP_TEXT_CLASS_NAME } from "./navigation-dropdown-help-text-theme";
+import { NAVIGATION_DROPDOWN_HELP_TEXT_CLASS_NAME } from "./navigation-dropdown-size-theme";
 
 type NavigationDropdownHelpTextProps = {
   id?: string;
