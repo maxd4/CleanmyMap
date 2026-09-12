@@ -15,10 +15,6 @@ type VolunteerActionSubmissionLike = Pick<
   | "wasteBreakdown"
 >;
 
-function toNumber(value: number | null | undefined): number {
-  return Number.isFinite(Number(value)) ? Number(value) : 0;
-}
-
 export function getVolunteerActionValidationIssues(
   payload: VolunteerActionSubmissionLike,
 ): VolunteerActionValidationIssue[] {
@@ -27,10 +23,10 @@ export function getVolunteerActionValidationIssues(
   }
 
   const issues: VolunteerActionValidationIssue[] = [];
-  const volunteersCount = Math.trunc(toNumber(payload.volunteersCount));
-  const wasteKg = toNumber(payload.wasteKg);
-  const cigaretteButts = Math.trunc(toNumber(payload.cigaretteButts));
-  const breakdownMegotsKg = toNumber(payload.wasteBreakdown?.megotsKg);
+  const volunteersCount = Math.trunc(payload.volunteersCount);
+  const wasteKg = payload.wasteKg ?? 0;
+  const cigaretteButts = Math.trunc(payload.cigaretteButts ?? 0);
+  const breakdownMegotsKg = payload.wasteBreakdown?.megotsKg ?? 0;
 
   if (volunteersCount < 1) {
     issues.push({

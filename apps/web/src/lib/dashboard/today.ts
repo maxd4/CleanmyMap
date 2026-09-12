@@ -112,8 +112,9 @@ function formatActivityDetail(
   locale: Locale,
 ): string {
   const parts = [formatTypeLabel(contract, locale), contract.location.label];
-  if (contract.metadata.wasteKg > 0) {
-    parts.push(`${toNumberFormat(locale).format(contract.metadata.wasteKg)} kg`);
+  const wasteKg = contract.metadata.wasteKg ?? 0;
+  if (wasteKg > 0) {
+    parts.push(`${toNumberFormat(locale).format(wasteKg)} kg`);
   }
   if (contract.metadata.volunteersCount > 0) {
     parts.push(

@@ -200,6 +200,23 @@ describe("PATCH /api/actions/:actionId", () => {
     );
   });
 
+  it("persists explicit null measurements without converting them to zero", async () => {
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({ wasteKg: null, cigaretteButts: null }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ waste_kg: null, cigarette_butts: null }),
+    );
+  });
+
   it("auto-approves an admin-like user's own final declaration", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "user-test-1",

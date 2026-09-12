@@ -99,8 +99,8 @@ function fromActionRow(
     },
     eventDate: row.action_date,
     metrics: {
-      wasteKg: row.waste_kg ?? 0,
-      cigaretteButts: row.cigarette_butts ?? 0,
+      wasteKg: row.waste_kg,
+      cigaretteButts: row.cigarette_butts,
       volunteersCount: row.volunteers_count ?? 0,
       durationMinutes: row.duration_minutes ?? 0,
     },
@@ -142,8 +142,8 @@ function fromLegacySubmissionRow(
     metrics: row.est_propre
       ? undefined
       : {
-          wasteKg: row.dechets_kg ?? 0,
-          cigaretteButts: row.megots ?? 0,
+          wasteKg: row.dechets_kg,
+          cigaretteButts: row.megots,
           volunteersCount: row.benevoles ?? 0,
           durationMinutes: row.temps_min ?? 0,
         },

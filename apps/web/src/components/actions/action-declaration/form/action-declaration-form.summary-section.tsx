@@ -53,7 +53,7 @@ export function ActionDeclarationSummarySection({
         <strong>+{2 + photoCount} XP</strong> estimés après validation (+2 pour l&apos;action, +{photoCount} pour les photos). Un bonus supplémentaire sera accordé s&apos;il s&apos;agit d&apos;un nouveau lieu.
       </p>
       <p className="cmm-text-small text-emerald-800">
-        <strong>Badges en progression :</strong> Déchets (+{form.wasteKg || "0"} kg), Mégots (+{form.wasteMegotsKg || "0"} kg), et Explorateur (nouveaux lieux).
+        <strong>Badges en progression :</strong> Déchets (+{form.wasteKg ? `${form.wasteKg} kg` : "Non mesuré"}), Mégots (+{form.wasteMegotsKg ? `${form.wasteMegotsKg} kg` : "Non mesuré"}), et Explorateur (nouveaux lieux).
       </p>
     </div>
   </div>
@@ -73,7 +73,7 @@ export function ActionDeclarationSummarySection({
  Quantité
  </p>
  <p className="mt-1 cmm-text-small font-semibold cmm-text-primary">
- {form.wasteKg ||"0"} kg collectés
+  {form.wasteKg ? `${form.wasteKg} kg collectés` : "Non mesuré"}
  </p>
  <p className="mt-1 cmm-text-caption cmm-text-muted">
  Bénévoles: {form.volunteersCount ||"1"} · {form.durationMinutes ||"0"} min
@@ -93,7 +93,7 @@ export function ActionDeclarationSummarySection({
  Mégots
  </p>
  <p className="mt-1 cmm-text-small font-semibold cmm-text-primary">
- {form.wasteMegotsKg ||"0"} {Number(form.wasteMegotsKg) > 1 ?"kg" :"kg"}
+  {form.wasteMegotsKg ? `${form.wasteMegotsKg} kg` : "Non mesuré"}
  </p>
  <p className="mt-1 cmm-text-caption cmm-text-muted">
  {form.wasteMegotsCondition}

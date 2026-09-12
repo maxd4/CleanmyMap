@@ -3,8 +3,20 @@ import assert from "node:assert/strict";
 import {
   createGeocodeResolver,
   geocodeAddress,
+  findColumnIndex,
   normalizeGeocodeLabel,
+  toNullableNumber,
 } from "./sheet-ingestion-core.mjs";
+
+assert.equal(
+  findColumnIndex(["Déchets (kg)"], ["dechets (kg)", "dechets(kg)"]),
+  0,
+);
+assert.equal(toNullableNumber(""), null);
+assert.equal(toNullableNumber("  "), null);
+assert.equal(toNullableNumber("0"), 0);
+assert.equal(toNullableNumber("20"), 20);
+assert.throws(() => toNullableNumber("not-a-number"), /invalide/);
 
 assert.equal(normalizeGeocodeLabel("  Rue de Rivoli\nParis  "), "Rue de Rivoli Paris");
 assert.equal(normalizeGeocodeLabel("https://example.com"), null);

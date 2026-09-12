@@ -143,6 +143,24 @@ export function toNumber(raw, fallback = 0) {
   return Number.isFinite(value) ? value : fallback;
 }
 
+export function toNullableNumber(raw, fieldLabel = "Valeur numérique") {
+  if (raw === null || raw === undefined) {
+    return null;
+  }
+  const text = String(raw).trim();
+  if (!text) {
+    return null;
+  }
+  if (!/^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(text)) {
+    throw new Error(`${fieldLabel} invalide: ${String(raw)}`);
+  }
+  const value = Number(text.replace(",", "."));
+  if (!Number.isFinite(value)) {
+    throw new Error(`${fieldLabel} invalide: ${String(raw)}`);
+  }
+  return value;
+}
+
 export function toInteger(raw, fallback = 0) {
   return Math.trunc(toNumber(raw, fallback));
 }

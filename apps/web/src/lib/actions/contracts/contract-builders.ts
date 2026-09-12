@@ -41,8 +41,8 @@ export type ActionContractCreatePayload = {
     actionPhase?: ActionPhase;
     preparationData?: ActionPreparationData | null;
     placeType?: string;
-    wasteKg: number;
-    cigaretteButts?: number;
+    wasteKg?: number | null;
+    cigaretteButts?: number | null;
     volunteersCount?: number;
     durationMinutes?: number;
     notes?: string;
@@ -175,8 +175,8 @@ function normalizeContractCreatePayload(
     routeAdjustmentMessage: payload.routeAdjustmentMessage ?? payload.metadata.routeAdjustmentMessage ?? undefined,
     latitude: payload.location.latitude,
     longitude: payload.location.longitude,
-    wasteKg: payload.metadata.wasteKg,
-    cigaretteButts: fallbackNumber(payload.metadata.cigaretteButts, 0),
+    wasteKg: payload.metadata.wasteKg ?? null,
+    cigaretteButts: payload.metadata.cigaretteButts ?? null,
     volunteersCount: fallbackNumber(payload.metadata.volunteersCount, 1),
     durationMinutes: fallbackNumber(payload.metadata.durationMinutes, 0),
     notes: payload.metadata.notes,
@@ -193,11 +193,16 @@ export function normalizeCreatePayload(
   payload: CreateActionPayload | ActionContractCreatePayload,
 ): CreateActionPayload {
   if ("actionDate" in payload) {
-    if (!payload.routeCalibrationContext) return payload;
-    return {
+    const normalizedMeasurements = {
       ...payload,
+      wasteKg: payload.wasteKg ?? null,
+      cigaretteButts: payload.cigaretteButts ?? null,
+    };
+    if (!payload.routeCalibrationContext) return normalizedMeasurements;
+    return {
+      ...normalizedMeasurements,
       preparationData: withRouteCalibrationContext(
-        payload.preparationData,
+        normalizedMeasurements.preparationData,
         payload.routeCalibrationContext,
       ),
     };

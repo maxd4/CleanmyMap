@@ -63,8 +63,8 @@ export type ActionDataMetadata = {
   wasteCategories?: WasteCategorySlug[] | null;
   photos: ActionPhotoAsset[] | null;
   visionEstimate: ActionVisionEstimate | null;
-  wasteKg: number;
-  cigaretteButts: number;
+  wasteKg: number | null;
+  cigaretteButts: number | null;
   /** Explicit residual pollution measured after the action, when available. */
   postActionPollutionScore?: number | null;
   /** Future canonical quantitative Trash Spotter observation, when available. */
@@ -274,8 +274,8 @@ function buildActionMeasureMetadata(
     | "volunteersCount"
     | "durationMinutes"
   > & { observedPollutionScore?: number | null } = {
-    wasteKg: normalizeOptionalNumber(params.wasteKg),
-    cigaretteButts: normalizeCount(params.cigaretteButts),
+    wasteKg: normalizeNullableNumber(params.wasteKg),
+    cigaretteButts: normalizeNullableCount(params.cigaretteButts),
     postActionPollutionScore:
       params.postActionPollutionScore === null ||
       params.postActionPollutionScore === undefined
@@ -295,8 +295,16 @@ function buildActionMeasureMetadata(
   return metadata;
 }
 
-function normalizeOptionalNumber(value: number | null | undefined): number {
-  return value === undefined || value === null ? 0 : toFiniteNumber(value, 0);
+function normalizeNullableNumber(value: number | null | undefined): number | null {
+  return value === undefined || value === null ? null : toFiniteNumber(value, 0);
+}
+
+function normalizeNullableCount(
+  value: number | null | undefined,
+): number | null {
+  return value === undefined || value === null
+    ? null
+    : Math.max(0, Math.trunc(toFiniteNumber(value, 0)));
 }
 
 function buildActionMetadata(

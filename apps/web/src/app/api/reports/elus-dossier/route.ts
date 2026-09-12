@@ -426,7 +426,7 @@ export async function GET(request: Request) {
  createdAt: contract.dates.createdAt ?? contract.dates.importedAt,
  latitude: contract.location.latitude,
  longitude: contract.location.longitude,
- wasteKg: contract.metadata.wasteKg,
+  wasteKg: contract.metadata.wasteKg ?? 0,
  })),
  days,
  );
@@ -436,7 +436,7 @@ export async function GET(request: Request) {
    type: contract.type,
    status: contract.status,
    locationLabel: contract.location.label,
-   wasteKg: contract.metadata.wasteKg,
+    wasteKg: contract.metadata.wasteKg ?? 0,
    volunteersCount: contract.metadata.volunteersCount,
   })),
  );

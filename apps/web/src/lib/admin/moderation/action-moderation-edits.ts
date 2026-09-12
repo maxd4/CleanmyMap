@@ -56,8 +56,8 @@ export const actionEditsSchema = z
     routeAdjustmentMessage: z.string().trim().max(500).nullable().optional(),
     latitude: z.number().min(-90).max(90).nullable().optional(),
     longitude: z.number().min(-180).max(180).nullable().optional(),
-    wasteKg: z.number().min(0).max(100000).optional(),
-    cigaretteButts: z.number().int().min(0).max(5000000).optional(),
+    wasteKg: z.number().min(0).max(100000).nullable().optional(),
+    cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
     volunteersCount: z.number().int().min(1).max(500).optional(),
     durationMinutes: z.number().int().min(0).max(24 * 60).optional(),
     notes: z.string().trim().max(1000).nullable().optional(),
@@ -181,8 +181,18 @@ export async function buildAdminActionUpdates(
         : parsedMetadata.routeAdjustmentMessage ?? undefined,
     latitude: edits.latitude ?? existing.latitude ?? undefined,
     longitude: edits.longitude ?? existing.longitude ?? undefined,
-    wasteKg: edits.wasteKg ?? Number(existing.waste_kg ?? 0),
-    cigaretteButts: edits.cigaretteButts ?? Number(existing.cigarette_butts ?? 0),
+    wasteKg:
+      edits.wasteKg !== undefined
+        ? edits.wasteKg
+        : existing.waste_kg === null
+          ? null
+          : Number(existing.waste_kg),
+    cigaretteButts:
+      edits.cigaretteButts !== undefined
+        ? edits.cigaretteButts
+        : existing.cigarette_butts === null
+          ? null
+          : Number(existing.cigarette_butts),
     volunteersCount: edits.volunteersCount ?? Number(existing.volunteers_count ?? 1),
     durationMinutes: edits.durationMinutes ?? Number(existing.duration_minutes ?? 0),
     notes:

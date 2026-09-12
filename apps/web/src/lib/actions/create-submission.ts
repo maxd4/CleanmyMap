@@ -186,7 +186,7 @@ export async function createActionSubmission(
     actionId: created.id,
     userId: params.userId,
     locationLabel: payload.locationLabel,
-    wasteKg: Number(payload.wasteKg) || 0,
+    wasteKg: payload.wasteKg,
   });
 
   void trackNewPlaceVisited(params.supabase, {

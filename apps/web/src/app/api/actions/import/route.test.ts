@@ -93,7 +93,7 @@ describe("POST /api/actions/import", () => {
         latitude: input.location.latitude,
         longitude: input.location.longitude,
         wasteKg: input.metadata.wasteKg,
-        cigaretteButts: input.metadata.cigaretteButts ?? 0,
+        cigaretteButts: input.metadata.cigaretteButts,
         volunteersCount: input.metadata.volunteersCount ?? 1,
         durationMinutes: input.metadata.durationMinutes ?? 0,
         notes: input.metadata.notes,

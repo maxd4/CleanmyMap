@@ -46,6 +46,16 @@ describe("resolvePersistedCigaretteButts", () => {
 
     expect(resolvePersistedCigaretteButts(payload)).toBe(120);
   });
+
+  it("preserves an unknown cigarette measurement as null", () => {
+    const payload = buildPayload({
+      wasteKg: null,
+      cigaretteButts: null,
+      cigaretteButtsCount: null,
+    });
+
+    expect(resolvePersistedCigaretteButts(payload)).toBeNull();
+  });
 });
 
 describe("resolveActionCreationStatus", () => {

@@ -308,8 +308,8 @@ export type ActionEditorRecord = {
   locationLabel: string;
   latitude: number | null;
   longitude: number | null;
-  wasteKg: number;
-  cigaretteButts: number;
+  wasteKg: number | null;
+  cigaretteButts: number | null;
   volunteersCount: number;
   durationMinutes: number;
   notes: string | null;

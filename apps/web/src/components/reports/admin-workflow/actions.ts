@@ -195,8 +195,11 @@ function buildActionEditPayload(
  routeAdjustmentMessage: toOptionalText(draft.routeAdjustmentMessage),
  latitude: toOptionalNumber(draft.latitude,"Latitude"),
  longitude: toOptionalNumber(draft.longitude,"Longitude"),
- wasteKg: toRequiredNumber(draft.wasteKg,"Poids total"),
- cigaretteButts: Math.trunc(toRequiredNumber(draft.cigaretteButts,"Mégots")),
+  wasteKg: toOptionalNumber(draft.wasteKg,"Poids total"),
+  cigaretteButts: (() => {
+  const value = toOptionalNumber(draft.cigaretteButts,"Mégots");
+  return value === null ? null : Math.trunc(value);
+  })(),
  volunteersCount: Math.trunc(toRequiredNumber(draft.volunteersCount,"Bénévoles")),
  durationMinutes: Math.trunc(toRequiredNumber(draft.durationMinutes,"Durée")),
  notes: toOptionalText(draft.notes),

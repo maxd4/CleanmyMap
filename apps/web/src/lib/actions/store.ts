@@ -99,13 +99,17 @@ function isMissingActionColumnError(error: unknown): boolean {
 function normalizeStoredAction(row: ActionRow): ActionRow {
   return {
     ...row,
-    waste_kg: Number(row.waste_kg ?? 0),
-    cigarette_butts: Number(row.cigarette_butts ?? 0),
+    waste_kg: normalizeNullableStoredNumber(row.waste_kg),
+    cigarette_butts: normalizeNullableStoredNumber(row.cigarette_butts),
     volunteers_count: Number(row.volunteers_count ?? 0),
     duration_minutes: Number(row.duration_minutes ?? 0),
     action_phase: row.action_phase ?? "post_action_complete",
     preparation_data: (row.preparation_data ?? {}) as ActionRow["preparation_data"],
   };
+}
+
+function normalizeNullableStoredNumber(value: number | null): number | null {
+  return value === null || !Number.isFinite(Number(value)) ? null : Number(value);
 }
 
 function buildActionListQuery(
@@ -281,7 +285,7 @@ export function buildPersistedNotes(
 
 export function resolvePersistedCigaretteButts(
   payload: CreateActionPayload,
-): number {
+): number | null {
   const megotsKg = payload.wasteBreakdown?.megotsKg ?? null;
   const megotsCondition = payload.wasteBreakdown?.megotsCondition ?? "propre";
 
@@ -293,7 +297,9 @@ export function resolvePersistedCigaretteButts(
     return Math.max(0, Math.trunc(payload.cigaretteButtsCount));
   }
 
-  return Math.max(0, Math.trunc(payload.cigaretteButts));
+  return payload.cigaretteButts === null
+    ? null
+    : Math.max(0, Math.trunc(payload.cigaretteButts));
 }
 
 export async function fetchActions(
