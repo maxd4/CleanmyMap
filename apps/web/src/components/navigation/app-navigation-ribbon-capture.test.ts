@@ -30,6 +30,26 @@ describe("global ribbon capture contract", () => {
     expect(source).toContain("<AppNavigationTreeMenu");
   });
 
+  it("keeps the desktop block navigation centered independently of side controls", () => {
+    const source = fs.readFileSync(
+      path.join(navigationDirectory, "app-navigation-ribbon-shell.tsx"),
+      "utf8",
+    );
+    const searchIndex = source.indexOf("<GlobalSearch");
+    const blockNavigationIndex = source.indexOf(
+      'aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"}',
+    );
+
+    expect(source).toContain(
+      "xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]",
+    );
+    expect(searchIndex).toBeGreaterThan(-1);
+    expect(blockNavigationIndex).toBeGreaterThan(searchIndex);
+    expect(source).toContain('xl:col-start-1');
+    expect(source).toContain('xl:col-start-2');
+    expect(source).toContain('xl:col-start-3');
+  });
+
   it("uses a root capture attribute to make marked chrome static", () => {
     const source = fs.readFileSync(
       path.join(sourceDirectory, "styles/base.css"),
