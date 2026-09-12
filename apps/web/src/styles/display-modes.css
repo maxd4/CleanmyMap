@@ -103,6 +103,12 @@
   box-shadow: var(--shadow-soft);
 }
 
+/* Les triggers du ruban possèdent chacun leur bordure réservée : l'accent
+   est local au trigger survolé et ne peut pas se propager à ses voisins. */
+[data-display-mode="minimaliste"] [data-navigation-block-trigger]:hover {
+  border-color: var(--navigation-block-accent);
+}
+
 [data-display-mode="sobre"] .cmm-navigation-dropdown-surface {
   background: var(--background) !important;
   box-shadow: none !important;
@@ -113,6 +119,21 @@
   background-image: none !important;
   box-shadow: none !important;
   transition: none !important;
+}
+
+/* Le mode sobre reste statique et neutre au survol; le focus conserve un
+   indicateur visible sans reprendre l'accent thématique du bloc. */
+[data-display-mode="sobre"] [data-navigation-block-trigger]:hover {
+  border-color: var(--border-default) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+[data-display-mode="sobre"] [data-navigation-block-trigger]:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+  box-shadow: none !important;
 }
 
 /* Les helpers Motion canoniques restent plats en mode minimaliste. */
