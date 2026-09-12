@@ -224,6 +224,43 @@ cleanupWorkload → contexte historique → données terrain → readiness
 → artefact calibré versionné → estimation de durée
 ```
 
+### Budget opérationnel
+
+Le budget opérationnel est un contrat distinct et versionné :
+`route-operational-budget-v1`. Il sépare toujours :
+
+- `travelMinutes` : déplacement réseau ou estimation de fallback ;
+- `serviceMinutes` : collecte fournie uniquement par
+  `route-cleanup-duration-v1` ;
+- `uncertaintyReserveMinutes` : réserve fournie uniquement par le même modèle
+  calibré ;
+- `totalMinutes` : composition `travel + service + uncertaintyReserve`, créée
+  seulement lorsque les trois composantes existent ;
+- `withinBudget` : conformité au budget opérationnel, `null` lorsque le total
+  est inconnu.
+
+Le paramètre historique `travelBudgetMinutes` reste exclusivement un budget de
+déplacement. Dans l’état `DATA_INSUFFICIENT`, le déplacement reste disponible,
+mais collecte, réserve, total et conformité opérationnelle restent `null`. Le
+planner conserve donc exactement son admission travel-only et aucune route ne
+disparaît à cause de l’absence de calibration.
+
+Le planner et la partition multi-groupe reçoivent une dépendance explicite vers
+l’estimateur de durée. Lorsqu’un artefact calibré est injecté, le coût
+opérationnel incluant la branche de retour à l’origine peut devenir le coût
+d’admission et d’équilibrage ; lorsqu’il est indisponible, le coût de
+déplacement historique reste la seule contrainte. Chaque groupe porte son
+propre contrat. L’équilibrage par durée totale n’est déclaré disponible que si
+les contrats de tous les groupes sont complets.
+
+La réponse serveur et la trace exposent séparément déplacement, collecte,
+réserve et total. `trace.duration.totalMinutes` reste `null` quand la collecte
+est inconnue ; le déplacement demeure dans `networkMinutes` ou
+`estimatedMinutes`. Le frontend et l’export PDF consomment uniquement ces
+valeurs serveur et signalent sobrement l’absence de total opérationnel fiable.
+La réserve d’incertitude n’est jamais fabriquée par le planner, l’API ou le
+client.
+
 La readiness est structurelle, sans seuil statistique arbitraire. Elle vérifie
 la variation des déchets ordinaires, la diversité des workloads, la
 dissociabilité de la charge et des bénévoles, l’existence du bridge runtime
@@ -237,8 +274,10 @@ Les états à distinguer sont :
 - `FUTURE CALIBRATED` : un artefact versionné pourra fournir minutes et
   incertitude après validation indépendante.
 
-Cette infrastructure ne modifie ni le ranking, ni le budget, ni le planner et
-ne crée pas de migration : le champ JSONB `preparation_data` existant suffit.
+Avec `DATA_INSUFFICIENT`, cette infrastructure ne modifie ni le ranking ni le
+planner existants et ne crée pas de migration : le champ JSONB
+`preparation_data` existant suffit. Le chemin `CALIBRATED` est activé uniquement
+par injection explicite d’un artefact versionné et validé.
 
 À entrées identiques et à données snapshotées identiques, l’ordre de sélection
 est déterministe. Le frontend affiche le résultat et sa trace ; il ne recalcule

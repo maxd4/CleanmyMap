@@ -86,6 +86,38 @@ function input(
 }
 
 describe("route group partition contract", () => {
+  it("tracks calibrated total duration for balancing without changing the travel budget contract", () => {
+    const result = partitionRouteCandidates(input([
+      observedCandidate("left", 48.857, 2.3522, 90),
+      observedCandidate("right", 48.8562, 2.353, 88),
+    ], {
+      groupCount: 2,
+      maxStops: 1,
+      operationalBudget: {
+        generatedAt: "2026-09-12T00:00:00.000Z",
+        estimateDuration: ({ context }) => ({
+          contractVersion: "route-cleanup-duration-v1",
+          minutes: 10 + context.candidates.length,
+          uncertaintyMinutes: 5,
+          modelVersion: "fixture-calibrated-v1",
+          calibrationStatus: "calibrated",
+          reason: "fixture",
+          provenance: {
+            source: "route-calibration",
+            contextVersion: context.version,
+            artifactVersion: "fixture-artifact-v1",
+          },
+        }),
+      },
+    }));
+
+    expect(result.groups.every(({ estimatedOperationalDurationMinutes }) =>
+      typeof estimatedOperationalDurationMinutes === "number",
+    )).toBe(true);
+    expect(result.metrics.balanceOperationalDuration).not.toBeNull();
+    expect(result.metrics.balanceDuration).toBeGreaterThanOrEqual(0);
+  });
+
   it("balances 11 volunteers across 3 groups as 4/4/3", () => {
     expect(balancedVolunteerCounts(11, 3)).toEqual([4, 4, 3]);
   });

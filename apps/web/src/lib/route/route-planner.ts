@@ -3,6 +3,16 @@ import {
   type TrashSpotterActionableCandidate,
 } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { RouteGeometry } from "./route-contract";
+import {
+  buildRouteCalibrationContext,
+  type RouteCalibrationContext,
+} from "./route-calibration";
+import {
+  buildRouteOperationalBudget,
+  type RouteOperationalBudget,
+  type RouteOperationalBudgetDependency,
+} from "./route-operational-budget";
+import { buildCleanupWorkload } from "./route-cleanup-workload";
 import type { RoutePlannerContribution } from "./route-additionality";
 import type {
   RouteObservedEvidence,
@@ -37,6 +47,8 @@ export type PlannedRouteStop = {
   returnTravelMinutes: number;
   loopDistanceKm: number;
   loopTravelMinutes: number;
+  loopOperationalMinutes?: number | null;
+  operationalBudget?: RouteOperationalBudget | null;
 };
 
 export type RoutePlannerResult = {
@@ -68,6 +80,10 @@ export type RoutePlannerCandidateEvaluation = {
   returnTravelMinutes: number;
   loopDistanceKm: number;
   loopTravelMinutes: number;
+  loopOperationalMinutes?: number | null;
+  operationalBudgetAvailable?: boolean;
+  operationalBudgetAfterReturnMinutes?: number | null;
+  operationalBudget?: RouteOperationalBudget | null;
   budgetAfterReturnMinutes: number;
   normalizedPriority: number;
   normalizedTravel: number;
@@ -92,6 +108,9 @@ export type RoutePlannerInput = {
   maxStops: number;
   priorityVsTravel: number;
   effectiveRiskFocus?: RouteRiskFocus;
+  operationalBudget?: RouteOperationalBudgetDependency;
+  volunteersExpected?: number;
+  groupCount?: number;
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -153,13 +172,15 @@ function compareCandidates(
 ): number {
   const leftPriority = clamp(plannerContribution(left.candidate) / 100, 0, 1);
   const rightPriority = clamp(plannerContribution(right.candidate) / 100, 0, 1);
+  const leftCost = left.loopOperationalMinutes ?? left.loopTravelMinutes;
+  const rightCost = right.loopOperationalMinutes ?? right.loopTravelMinutes;
   const leftProximity = clamp(
-    1 - left.loopTravelMinutes / budgetMinutes,
+    1 - leftCost / budgetMinutes,
     0,
     1,
   );
   const rightProximity = clamp(
-    1 - right.loopTravelMinutes / budgetMinutes,
+    1 - rightCost / budgetMinutes,
     0,
     1,
   );
@@ -203,6 +224,31 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
   let excludedByTravelBudget = 0;
   const evaluations: RoutePlannerCandidateEvaluation[] = [];
   const selections: RoutePlannerSelection[] = [];
+  const calibrationGeneratedAt = input.operationalBudget?.generatedAt ?? new Date().toISOString();
+
+  function buildOperationalBudget(
+    candidates: readonly RoutePlannerCandidate[],
+    travelMinutes: number,
+  ): RouteOperationalBudget | null {
+    if (!input.operationalBudget) return null;
+    const context: RouteCalibrationContext = buildRouteCalibrationContext({
+      generatedAt: calibrationGeneratedAt,
+      routeEngineVersion: ROUTE_PLANNER_ENGINE_VERSION,
+      volunteersExpected: input.volunteersExpected ?? 0,
+      groupCount: input.groupCount ?? 1,
+      candidates: candidates.map((candidate) => ({
+        candidateId: candidate.id,
+        family: candidate.family,
+        cleanupWorkload: buildCleanupWorkload(candidate),
+      })),
+    });
+    return buildRouteOperationalBudget({
+      travelMinutes,
+      budgetMinutes,
+      calibrationContext: context,
+      durationDependency: input.operationalBudget,
+    });
+  }
 
   while (stops.length < input.maxStops && remaining.length > 0) {
     const evaluated = remaining
@@ -219,6 +265,12 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
           cumulativeTravelMinutes +
           incrementalTravelMinutes +
           returnTravelMinutes;
+        const operationalBudget = buildOperationalBudget(
+          [...stops.map(({ candidate }) => candidate), candidate],
+          loopTravelMinutes,
+        );
+        const loopOperationalMinutes = operationalBudget?.totalMinutes ?? null;
+        const budgetCost = loopOperationalMinutes ?? loopTravelMinutes;
         const finalPlannerContribution = plannerContribution(candidate);
         const normalizedPriority = clamp(finalPlannerContribution / 100, 0, 1);
         const normalizedTravel = clamp(
@@ -236,7 +288,13 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
           returnTravelMinutes,
           loopDistanceKm,
           loopTravelMinutes,
+          loopOperationalMinutes,
+          operationalBudgetAvailable: loopOperationalMinutes !== null,
           budgetAfterReturnMinutes: Math.max(0, budgetMinutes - loopTravelMinutes),
+          operationalBudgetAfterReturnMinutes:
+            loopOperationalMinutes === null
+              ? null
+              : Math.max(0, budgetMinutes - loopOperationalMinutes),
           normalizedPriority,
           normalizedTravel,
           combinedScore:
@@ -247,8 +305,9 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
           finalPlannerContribution,
           additionalityWeight: candidate.additionalityWeight ?? 0,
           feasible:
-            loopTravelMinutes <=
+            budgetCost <=
             budgetMinutes + 1e-9,
+          operationalBudget,
         };
       });
     evaluations.push(
@@ -282,6 +341,8 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
       returnTravelMinutes: next.returnTravelMinutes,
       loopDistanceKm: next.loopDistanceKm,
       loopTravelMinutes: next.loopTravelMinutes,
+      loopOperationalMinutes: next.loopOperationalMinutes,
+      operationalBudgetAvailable: next.operationalBudgetAvailable,
       budgetAfterReturnMinutes: next.budgetAfterReturnMinutes,
       normalizedPriority: next.normalizedPriority,
       normalizedTravel: next.normalizedTravel,
@@ -293,6 +354,7 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
           (next.cumulativeTravelMinutes - next.incrementalTravelMinutes),
       ),
       budgetAfterMinutes: next.budgetAfterReturnMinutes,
+      operationalBudgetAfterReturnMinutes: next.operationalBudgetAfterReturnMinutes,
       selectionReason: "score_combine_priorite_deplacement",
     });
     const nextIndex = remaining.findIndex(
@@ -302,6 +364,10 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
     current = next.candidate;
     cumulativeDistanceKm = next.loopDistanceKm - next.returnDistanceKm;
     cumulativeTravelMinutes = next.cumulativeTravelMinutes;
+    stops[stops.length - 1]!.loopOperationalMinutes = next.loopOperationalMinutes;
+    if (next.operationalBudget) {
+      stops[stops.length - 1]!.operationalBudget = next.operationalBudget;
+    }
   }
 
   return {

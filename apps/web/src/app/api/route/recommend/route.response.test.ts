@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RouteRecommendationResponse } from "@/lib/route/route-response-contract";
 import type { RouteGroupPartitionResult } from "@/lib/route/route-group-partition";
+import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import { buildRouteRecommendationResponse } from "./route.response";
 
 const resolveRouteDataLayersMock = vi.hoisted(() => vi.fn());
@@ -366,7 +367,68 @@ describe("route recommendation response trace contract", () => {
     expect(payload.serviceMinutesEstimate).toBeNull();
     expect(payload.totalMinutesEstimate).toBeNull();
     expect(payload.trace.duration.serviceMinutes).toBeNull();
-    expect(payload.trace.duration.totalMinutes).not.toBeNull();
+    expect(payload.trace.duration.uncertaintyReserveMinutes).toBeNull();
+    expect(payload.trace.duration.totalMinutes).toBeNull();
+  });
+
+  it("composes the API and trace budget only when a calibrated estimator is injected", async () => {
+    installDefaultMocks();
+    const observed = candidate("observed");
+    const response = buildRouteRecommendationResponse(responseInput({
+      candidateData: {
+        candidates: [observed],
+        spatialCandidates: [observed],
+        actionableCandidates: [observed],
+        parisPressureSnapshot: null,
+        contracts: [{}],
+        dataStatus: "complete",
+        isTruncated: false,
+        sourceHealth: completeSourceHealth,
+      },
+      planning: {
+        plannedStops: [plannedStop(observed)],
+        routeGeometry: routeGeometry(),
+        plannerResult: plannerResult(observed.id),
+        predictionSummary: predictionSummary(),
+        eventCenteredContext: null,
+        budgetPrefixApplied: false,
+      },
+      operationalBudget: {
+        generatedAt: "2026-09-12T00:00:00.000Z",
+        estimateDuration: ({ context }: { context: RouteCalibrationContext }) => ({
+          contractVersion: "route-cleanup-duration-v1",
+          minutes: context.candidates.length === 1 ? 18 : null,
+          uncertaintyMinutes: context.candidates.length === 1 ? 4 : null,
+          modelVersion: "fixture-calibrated-v1",
+          calibrationStatus: "calibrated",
+          reason: "fixture",
+          provenance: {
+            source: "route-calibration",
+            contextVersion: context.version,
+            artifactVersion: "fixture-artifact-v1",
+          },
+        }),
+      },
+    }));
+    const payload: RouteRecommendationResponse = await response.json();
+
+    expect(payload.serviceMinutesEstimate).toBe(18);
+    expect(payload.totalMinutesEstimate).toBe(34);
+    expect(payload.operationalBudget).toMatchObject({
+      contractVersion: "route-operational-budget-v1",
+      travelMinutes: 12,
+      serviceMinutes: 18,
+      uncertaintyReserveMinutes: 4,
+      totalMinutes: 34,
+      withinBudget: true,
+    });
+    expect(payload.trace.duration).toMatchObject({
+      networkMinutes: 12,
+      estimatedMinutes: null,
+      serviceMinutes: 18,
+      uncertaintyReserveMinutes: 4,
+      totalMinutes: 34,
+    });
   });
 
   it("keeps prediction evidence distinct from observed evidence", async () => {
@@ -397,6 +459,106 @@ describe("route recommendation response trace contract", () => {
     expect(payload.trace.selectedStops[0]?.targetFamily).toBe("predicted");
     expect(payload.dataLayers.prediction).toBe("available");
     expect(payload.dataLayers.observed).toBe("complete");
+  });
+
+  it("exposes one operational budget per group and calibrated total balance", async () => {
+    installDefaultMocks();
+    const first = candidate("observed");
+    const second = { ...candidate("observed"), id: "observed-2" };
+    const response = buildRouteRecommendationResponse(responseInput({
+      volunteers: 4,
+      groupCount: 2,
+      candidateData: {
+        candidates: [first, second],
+        spatialCandidates: [first, second],
+        actionableCandidates: [first, second],
+        parisPressureSnapshot: null,
+        contracts: [{}, {}],
+        dataStatus: "complete",
+        isTruncated: false,
+        sourceHealth: completeSourceHealth,
+      },
+      planning: {
+        plannedStops: [plannedStop(first), plannedStop(second)],
+        routeGeometry: routeGeometry(),
+        plannerResult: plannerResult(),
+        predictionSummary: predictionSummary(),
+        eventCenteredContext: null,
+        budgetPrefixApplied: false,
+        groupRoutes: [
+          {
+            groupIndex: 1,
+            volunteerCount: 2,
+            origin,
+            candidateIds: [first.id],
+            reservedCandidateIds: [second.id],
+            stops: [],
+            routeGeometry: routeGeometry(),
+            travelDistanceKm: 2,
+            travelMinutes: 12,
+            travelBudgetMinutes: 60,
+            withinBudget: true,
+          },
+          {
+            groupIndex: 2,
+            volunteerCount: 2,
+            origin,
+            candidateIds: [second.id],
+            reservedCandidateIds: [first.id],
+            stops: [],
+            routeGeometry: routeGeometry(),
+            travelDistanceKm: 2,
+            travelMinutes: 12,
+            travelBudgetMinutes: 60,
+            withinBudget: true,
+          },
+        ],
+        multiRouteMetrics: {
+          groupCount: 2,
+          volunteers: 4,
+          totalDistanceKm: 4,
+          totalDurationMinutes: 24,
+          coverageGain: 0.8,
+          sharedTargetRatio: 0,
+          sharedDistanceKm: null,
+          sharedDistanceRatio: null,
+          balanceDistance: 0,
+          balanceDuration: 0,
+          balanceTargetCount: 0,
+          balanceVolunteerCount: 0,
+          fallbackGroupCount: 0,
+          networkDistanceMeasured: true,
+        },
+      },
+      operationalBudget: {
+        generatedAt: "2026-09-12T00:00:00.000Z",
+        estimateDuration: ({ context }: { context: RouteCalibrationContext }) => ({
+          contractVersion: "route-cleanup-duration-v1",
+          minutes: 10 * context.candidates.length,
+          uncertaintyMinutes: 2,
+          modelVersion: "fixture-calibrated-v1",
+          calibrationStatus: "calibrated",
+          reason: "fixture",
+          provenance: {
+            source: "route-calibration",
+            contextVersion: context.version,
+            artifactVersion: "fixture-artifact-v1",
+          },
+        }),
+      },
+    }));
+    const payload: RouteRecommendationResponse = await response.json();
+
+    expect(payload.groupRoutes.map(({ operationalBudget }) => operationalBudget?.totalMinutes))
+      .toEqual([24, 24]);
+    expect(payload.multiRoute).toMatchObject({
+      operationalBudgetAvailable: true,
+      totalOperationalMinutes: 48,
+      balanceOperationalDuration: 0,
+    });
+    expect(payload.trace.multiRoute?.groups.every(({ operationalBudget }) =>
+      operationalBudget?.totalMinutes === 24,
+    )).toBe(true);
   });
 
   it("keeps degraded status aligned with the recommendation layer", async () => {
