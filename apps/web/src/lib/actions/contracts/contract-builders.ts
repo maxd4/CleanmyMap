@@ -8,6 +8,7 @@ import {
   ActionVisionEstimate,
   CreateActionPayload,
 } from "../types";
+import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { OrganizerType } from "../organizer-type";
 
 export type ActionContractCreatePayload = {
@@ -91,7 +92,10 @@ export function toContractCreatePayload(
       participantAccounts: payload.participantAccounts,
       groupJoinEnabled: payload.groupJoinEnabled,
       actionPhase: payload.actionPhase,
-      preparationData: payload.preparationData ?? null,
+      preparationData: withRouteCalibrationContext(
+        payload.preparationData,
+        payload.routeCalibrationContext,
+      ),
       placeType: payload.placeType,
       wasteKg: payload.wasteKg,
       cigaretteButts: payload.cigaretteButts,
@@ -105,6 +109,17 @@ export function toContractCreatePayload(
       photos: payload.photos,
       visionEstimate: payload.visionEstimate,
     },
+  };
+}
+
+function withRouteCalibrationContext(
+  preparationData: ActionPreparationData | null | undefined,
+  context: RouteCalibrationContext | null | undefined,
+): ActionPreparationData | null {
+  if (!context) return preparationData ?? null;
+  return {
+    ...(preparationData ?? {}),
+    routeCalibrationContext: context,
   };
 }
 
@@ -178,7 +193,14 @@ export function normalizeCreatePayload(
   payload: CreateActionPayload | ActionContractCreatePayload,
 ): CreateActionPayload {
   if ("actionDate" in payload) {
-    return payload;
+    if (!payload.routeCalibrationContext) return payload;
+    return {
+      ...payload,
+      preparationData: withRouteCalibrationContext(
+        payload.preparationData,
+        payload.routeCalibrationContext,
+      ),
+    };
   }
   return normalizeContractCreatePayload(payload);
 }

@@ -7,6 +7,8 @@ import { isValidAssociationName } from "@/lib/actions/association-options";
 import { isOrganizerType, type OrganizerType } from "@/lib/actions/organizer-type";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import { isWasteCategorySlug } from "@/lib/waste";
+import { isRouteCalibrationContext } from "@/lib/route/route-calibration";
+import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 
 const coordinateSchema = z.tuple([
   z.number().min(-90).max(90),
@@ -120,6 +122,10 @@ const preparationDataSchema = z
     volunteersExpected: z.number().int().min(0).max(500).optional(),
     groupJoinEnabled: z.boolean().optional(),
     expectedWasteCategories: z.array(wasteCategorySlugSchema).max(20).optional(),
+    routeCalibrationContext: z.custom<RouteCalibrationContext>(
+      isRouteCalibrationContext,
+      "Contexte historique de calibration invalide.",
+    ).optional(),
   })
   .strict();
 
@@ -155,6 +161,10 @@ const createActionLegacySchema = z.object({
   longitude: z.number().min(-180).max(180).optional(),
   actionPhase: actionPhaseSchema.optional(),
   preparationData: preparationDataSchema.nullable().optional(),
+  routeCalibrationContext: z.custom<RouteCalibrationContext>(
+    isRouteCalibrationContext,
+    "Contexte historique de calibration invalide.",
+  ).nullable().optional(),
   wasteKg: z.number().min(0).max(100000),
   cigaretteButts: z.number().int().min(0).max(5000000).default(0),
   cigaretteButtsCount: z.number().int().min(1).max(10000).optional(),

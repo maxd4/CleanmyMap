@@ -281,6 +281,13 @@ describe("route recommendation response trace contract", () => {
 
     expect(payload.trace).toBeDefined();
     expect(payload.trace.selectedStops).toEqual([]);
+    expect(payload.calibrationContext).toMatchObject({
+      version: "action-route-calibration-v1",
+      routeEngineVersion: "route-planner-v2",
+      volunteersExpected: 1,
+      groupCount: 1,
+      candidates: [],
+    });
     expect(payload.dataLayers).toBeDefined();
     expect(payload.status).toBe(payload.dataLayers.recommendation);
     expect(payload).toMatchObject({
@@ -326,6 +333,15 @@ describe("route recommendation response trace contract", () => {
       id: observed.id,
       targetFamily: "observed",
       evidence: observed.evidence,
+    });
+    expect(payload.calibrationContext?.candidates).toHaveLength(1);
+    expect(payload.calibrationContext?.candidates[0]).toMatchObject({
+      candidateId: observed.id,
+      family: "observed",
+      cleanupWorkload: {
+        modelVersion: "route-cleanup-workload-v1",
+        status: "excluded",
+      },
     });
     expect(payload.dataLayers).toBeDefined();
     expect(payload.status).toBe(payload.dataLayers.recommendation);
