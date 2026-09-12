@@ -112,6 +112,7 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
       onOpenChange={setIsOpen}
       panelRole="region"
       triggerHasPopup="dialog"
+      panelAlignment="start"
       panelClassName="w-[min(42rem,calc(100vw-1rem))]"
       wrapperClassName="w-full"
       verticalGap={8}

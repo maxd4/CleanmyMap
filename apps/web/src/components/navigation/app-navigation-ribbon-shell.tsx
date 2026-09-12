@@ -145,7 +145,7 @@ function AppNavigationRibbonShell({
             </Link>
 
             <div className="hidden min-w-0 flex-1 items-center xl:flex">
-              <div className="w-full max-w-[12rem]">
+              <div className="w-full max-w-[15rem]">
                 <GlobalSearch currentProfile={effectiveProfile} />
               </div>
             </div>
@@ -154,7 +154,7 @@ function AppNavigationRibbonShell({
           <div className="hidden items-center justify-center xl:col-start-2 xl:flex">
             <nav
               aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"}
-              className="flex shrink-0 flex-nowrap items-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)]"
+              className="flex w-[15rem] shrink-0 flex-nowrap items-center justify-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-px shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)]"
             >
               {spaces.map((space) => (
                 <AppNavigationBlockDropdown
