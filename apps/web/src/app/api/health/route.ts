@@ -29,13 +29,11 @@ export async function GET() {
  .map(([key]) => key);
 
  let supabaseConnectivity = false;
- let supabaseError: string | null = null;
 
  if (
  missingConfigKeys.includes("NEXT_PUBLIC_SUPABASE_URL") ||
  missingConfigKeys.includes("SUPABASE_SERVICE_ROLE_KEY")
  ) {
- supabaseError ="Unavailable";
  } else {
   try {
    const supabase = getSupabaseServerClient(false);
@@ -44,27 +42,19 @@ export async function GET() {
    .select("id", { head: true })
    .limit(1);
    if (result.error) {
-    supabaseError = "Unavailable";
    } else {
     supabaseConnectivity = true;
    }
   } catch {
-   supabaseError = "Unavailable";
   }
  }
 
  const ok = missingConfigKeys.length === 0 && supabaseConnectivity;
  const payload = {
- ok,
- status: ok ?"ok" :"degraded",
- service:"cleanmymap",
- checks: {
- requiredConfigPresent: missingConfigKeys.length === 0,
- supabaseConnectivity,
- },
- missingConfigKeys,
- errors: supabaseError ? { supabase: supabaseError } : {},
- timestamp: new Date().toISOString(),
+  ok,
+  status: ok ?"ok" :"degraded",
+  service:"cleanmymap",
+  timestamp: new Date().toISOString(),
  };
 
  return NextResponse.json(payload, {

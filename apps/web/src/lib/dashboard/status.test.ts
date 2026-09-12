@@ -10,32 +10,19 @@ describe("dashboard status helpers", () => {
     const payload: UptimePayload = {
       status: "ok",
       timestamp: "2026-04-02T00:00:00.000Z",
-      checks: {
-        app: "ok",
-        supabase: "configured",
-        clerk: "configured",
-        sentry: "configured",
-      },
-      categories: {
-        critical: {
-          app: "ok",
-          supabase: "configured",
-          clerk: "configured",
-        },
-        optional: {
-          sentry: "configured",
-        },
-      },
+      criticalStatus: "ok",
+      optionalStatus: "ok",
+      criticalConfiguredCount: 3,
+      criticalAlertCount: 0,
+      optionalConfiguredCount: 1,
+      optionalAlertCount: 0,
     };
     expect(summarizeUptime(payload)).toEqual({
       state: "healthy",
-      configuredCount: 4,
-      missingCount: 0,
-      warningCount: 0,
       criticalConfiguredCount: 3,
-      criticalMissingCount: 0,
+      criticalAlertCount: 0,
       optionalConfiguredCount: 1,
-      optionalWarningCount: 0,
+      optionalAlertCount: 0,
       criticalStatus: "ok",
       optionalStatus: "ok",
     });
@@ -47,32 +34,17 @@ describe("dashboard status helpers", () => {
       criticalStatus: "degraded",
       optionalStatus: "warning",
       timestamp: "2026-04-02T00:00:00.000Z",
-      checks: {
-        app: "ok",
-        supabase: "missing",
-        clerk: "configured",
-        sentry: "missing",
-      },
-      categories: {
-        critical: {
-          app: "ok",
-          supabase: "missing",
-          clerk: "configured",
-        },
-        optional: {
-          sentry: "missing",
-        },
-      },
+      criticalConfiguredCount: 2,
+      criticalAlertCount: 1,
+      optionalConfiguredCount: 0,
+      optionalAlertCount: 1,
     };
     expect(summarizeUptime(payload)).toEqual({
       state: "degraded",
-      configuredCount: 2,
-      missingCount: 2,
-      warningCount: 0,
       criticalConfiguredCount: 2,
-      criticalMissingCount: 1,
+      criticalAlertCount: 1,
       optionalConfiguredCount: 0,
-      optionalWarningCount: 1,
+      optionalAlertCount: 1,
       criticalStatus: "degraded",
       optionalStatus: "warning",
     });

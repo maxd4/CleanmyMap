@@ -43,6 +43,7 @@ describe("health route", () => {
 
   it("returns a cacheable response and uses a lightweight Supabase health probe", async () => {
     const response = await GET();
+    const body = (await response.json()) as Record<string, unknown>;
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe(
@@ -52,6 +53,15 @@ describe("health route", () => {
     expect(fromMock).toHaveBeenCalledWith("actions");
     expect(selectMock).toHaveBeenCalledWith("id", { head: true });
     expect(limitMock).toHaveBeenCalledWith(1);
+    expect(Object.keys(body).sort()).toEqual([
+      "ok",
+      "service",
+      "status",
+      "timestamp",
+    ]);
+    expect(JSON.stringify(body)).not.toMatch(
+      /checks|missingConfigKeys|errors|SUPABASE_SERVICE_ROLE_KEY|CLERK_SECRET_KEY/,
+    );
   });
 
   it("returns a degraded response without hitting Supabase when the config is incomplete", async () => {
@@ -67,5 +77,25 @@ describe("health route", () => {
     expect(body.ok).toBe(false);
     expect(body.status).toBe("degraded");
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+    expect(JSON.stringify(body)).not.toMatch(
+      /checks|missingConfigKeys|errors|SUPABASE_SERVICE_ROLE_KEY|CLERK_SECRET_KEY/,
+    );
+  });
+
+  it("returns a degraded response when the Supabase probe is unavailable", async () => {
+    limitMock.mockResolvedValue({ error: { message: "database unavailable" } });
+
+    const response = await GET();
+    const body = (await response.json()) as {
+      ok: boolean;
+      status: string;
+    };
+
+    expect(response.status).toBe(503);
+    expect(body.ok).toBe(false);
+    expect(body.status).toBe("degraded");
+    expect(JSON.stringify(body)).not.toMatch(
+      /checks|missingConfigKeys|errors|database unavailable|SUPABASE_SERVICE_ROLE_KEY|CLERK_SECRET_KEY/,
+    );
   });
 });

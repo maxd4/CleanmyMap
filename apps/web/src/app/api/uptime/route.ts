@@ -46,7 +46,7 @@ export async function GET() {
  ?"configured"
  :"missing") as CheckState,
  clerk: (clerkConfigured ?"configured" :"missing") as CheckState,
- clerk_keys: (!clerkConfigured
+ clerkKeyConsistency: (!clerkConfigured
  ?"missing"
  : !sameMode || usesTestKeysInProduction
  ?"warning"
@@ -73,24 +73,24 @@ export async function GET() {
  ?"ok"
  :"warning";
 
+ const criticalConfiguredCount = criticalStates.filter(
+  (state) => state ==="ok" || state ==="configured",
+ ).length;
+ const criticalAlertCount = criticalStates.length - criticalConfiguredCount;
+ const optionalConfiguredCount = optionalStates.filter(
+  (state) => state ==="ok" || state ==="configured",
+ ).length;
+ const optionalAlertCount = optionalStates.length - optionalConfiguredCount;
+
  return NextResponse.json(
  {
   status: criticalStatus,
  criticalStatus,
  optionalStatus,
- checks: {
- ...criticalChecks,
- ...optionalChecks,
- },
- categories: {
- critical: criticalChecks,
- optional: optionalChecks,
- },
- diagnostics: {
- clerk_publishable_mode: publishableMode,
- clerk_secret_mode: secretMode,
- node_env: process.env.NODE_ENV ??"unknown",
-  },
+  criticalConfiguredCount,
+  criticalAlertCount,
+  optionalConfiguredCount,
+  optionalAlertCount,
   timestamp: new Date().toISOString(),
  },
  { status: 200, headers: UPTIME_CACHE_HEADERS },

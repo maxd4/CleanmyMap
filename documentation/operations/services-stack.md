@@ -94,14 +94,18 @@ Code clé:
 
 Logs:
 
-- route `GET /api/health`
-- route `GET /api/services`
+- route `GET /api/health` pour un état public minimal (`ok`, `status`, `service`, `timestamp`)
+- route `GET /api/uptime` pour les statuts et compteurs publics agrégés
+- route `GET /api/services` pour le diagnostic détaillé réservé aux administrateurs
 - proxy server logs sur Vercel
 
-Statut observé au moment de cette passe:
-
-- `GET /api/uptime` remonte `clerk_keys: warning` si les clés Clerk en prod sont encore des clés test.
-- le proxy Vercel renvoie des headers `x-clerk-auth-status` et `x-clerk-auth-reason` utiles pour distinguer un vrai refus d'une session absente en navigateur.
+Les endpoints publics de supervision ne renvoient ni noms de variables, ni
+détails de checks, ni modes de clés Clerk, ni diagnostics fournisseur. Les
+détails complets restent disponibles uniquement via `GET /api/services` après
+contrôle d'accès administrateur.
+Le proxy Vercel renvoie des headers `x-clerk-auth-status` et
+`x-clerk-auth-reason` utiles pour distinguer un vrai refus d'une session
+absente en navigateur.
 
 ### PostHog
 

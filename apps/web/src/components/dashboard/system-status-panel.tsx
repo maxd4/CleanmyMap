@@ -100,7 +100,7 @@ export function SystemStatusPanel() {
  Checks critiques en alerte
  </p>
  <p className="mt-1 text-lg font-semibold cmm-text-primary">
- {uptimeSummary?.criticalMissingCount ?? 0}
+ {uptimeSummary?.criticalAlertCount ?? 0}
  </p>
  </article>
  <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -108,7 +108,7 @@ export function SystemStatusPanel() {
  Optionnels en alerte
  </p>
  <p className="mt-1 text-lg font-semibold cmm-text-primary">
- {uptimeSummary?.optionalWarningCount ?? 0}
+ {uptimeSummary?.optionalAlertCount ?? 0}
  </p>
  </article>
  </div>
@@ -134,7 +134,7 @@ export function SystemStatusPanel() {
  {uptimeSummary?.optionalStatus ==="ok" ?"OK" :"Alerte"}
  </p>
  <p className="mt-1 cmm-text-caption cmm-text-secondary">
- Alertes detectees: {uptimeSummary?.optionalWarningCount ?? 0}
+ Alertes detectees: {uptimeSummary?.optionalAlertCount ?? 0}
  </p>
  </article>
  </div>
