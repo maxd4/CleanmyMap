@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import { env } from "@/lib/env";
+import {
+  BRAND_ASSET_DIMENSIONS,
+  BRAND_ASSET_PATHS,
+} from "@/components/brand/brand-assets";
 
 const appUrl = env["NEXT_PUBLIC_APP_URL"] || "https://cleanmymap.fr";
 
@@ -82,9 +86,9 @@ export const metadata: Metadata = {
       "La carte citoyenne de dépollution urbaine partout en France. Signalez, nettoyez et organisez vos cleanwalks avec un site distinct, clair et orienté impact.",
     images: [
       {
-        url: `${appUrl}/brand/logo-cleanmymap.svg`,
-        width: 1200,
-        height: 630,
+        url: `${appUrl}${BRAND_ASSET_PATHS.light}`,
+        width: BRAND_ASSET_DIMENSIONS.light.width,
+        height: BRAND_ASSET_DIMENSIONS.light.height,
         alt: "CleanMyMap - Carte citoyenne de dépollution urbaine en France",
       },
     ],
@@ -94,7 +98,7 @@ export const metadata: Metadata = {
     title: "CleanMyMap - Carte citoyenne de dépollution",
     description:
       "La carte citoyenne de dépollution urbaine partout en France. Signalez, nettoyez et suivez vos actions.",
-    images: [`${appUrl}/brand/logo-cleanmymap.svg`],
+    images: [`${appUrl}${BRAND_ASSET_PATHS.light}`],
   },
   robots: {
     index: true,
@@ -108,9 +112,9 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: "/brand/pictogramme-cleanmymap.svg",
-    apple: "/brand/pictogramme-cleanmymap.svg",
-    shortcut: "/brand/pictogramme-cleanmymap.svg",
+    icon: BRAND_ASSET_PATHS.compact,
+    apple: BRAND_ASSET_PATHS.compact,
+    shortcut: BRAND_ASSET_PATHS.compact,
   },
   manifest: "/api/manifest",
   appleWebApp: {

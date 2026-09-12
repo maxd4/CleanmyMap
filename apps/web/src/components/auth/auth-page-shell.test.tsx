@@ -17,5 +17,7 @@ describe("AuthPageShell", () => {
     expect(markup).toContain(title);
     expect(markup).toContain('class="rounded-2xl border border-slate-200 bg-white');
     expect(markup).toContain(`href="${switchHref}"`);
+    expect(markup).toContain("logo-grand-sombre.png");
+    expect(markup).toContain("logo-court.png");
   });
 });

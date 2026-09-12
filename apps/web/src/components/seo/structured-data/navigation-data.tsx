@@ -1,6 +1,7 @@
 // Structured data for website navigation and breadcrumbs
 import { JsonLd } from "./json-ld-wrapper";
 import { env } from "@/lib/env";
+import { BRAND_ASSET_PATHS } from "@/components/brand/brand-assets";
 
 const appUrl = env["NEXT_PUBLIC_APP_URL"] || "https://cleanmymap.fr";
 
@@ -32,7 +33,7 @@ export function WebPageJsonLd() {
     url: appUrl,
     primaryImageOfPage: {
       "@type": "ImageObject",
-      url: `${appUrl}/brand/nouveau-logo.svg`,
+      url: `${appUrl}${BRAND_ASSET_PATHS.light}`,
     },
     inLanguage: "fr-FR",
     datePublished: "2024-01-01",
@@ -46,7 +47,7 @@ export function WebPageJsonLd() {
       name: "CleanMyMap",
       logo: {
         "@type": "ImageObject",
-        url: `${appUrl}/brand/nouveau-logo.svg`,
+        url: `${appUrl}${BRAND_ASSET_PATHS.light}`,
       },
     },
     about: {

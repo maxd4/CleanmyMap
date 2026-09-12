@@ -12,6 +12,7 @@ import {
 import Image from "next/image";
 import { useRef } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { BRAND_ASSET_PATHS } from "@/components/brand/brand-assets";
 import type { DecisionSummary } from "@/lib/pilotage/overview";
 import type { ZoneComparisonRow } from "@/lib/pilotage/prioritization";
 import { REPORTS_ROUTE } from "@/lib/accueil-pilotage-routes";
@@ -151,7 +152,7 @@ export function HomeImpactSummary({
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_42%_at_12%_0%,rgba(16,185,129,0.12),transparent),radial-gradient(ellipse_50%_36%_at_88%_12%,rgba(132,204,22,0.08),transparent)]" />
           <div className="pointer-events-none absolute right-0 bottom-0 h-[220px] w-[420px] opacity-[0.03]">
             <Image
-              src="/brand/logo-cleanmymap-officiel.svg"
+              src={BRAND_ASSET_PATHS.dark}
               alt=""
               fill
               sizes="420px"
@@ -181,7 +182,7 @@ export function HomeImpactSummary({
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_42%_at_12%_0%,rgba(16,185,129,0.12),transparent),radial-gradient(ellipse_50%_36%_at_88%_12%,rgba(132,204,22,0.08),transparent)]" />
         <div className="pointer-events-none absolute right-0 bottom-0 h-[220px] w-[420px] opacity-[0.03]">
           <Image
-            src="/brand/logo-cleanmymap-officiel.svg"
+            src={BRAND_ASSET_PATHS.dark}
             alt=""
             fill
             sizes="420px"

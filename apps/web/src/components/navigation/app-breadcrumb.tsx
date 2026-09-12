@@ -1,8 +1,8 @@
 "use client";
 
 import Link from"next/link";
-import Image from"next/image";
 import { usePathname } from"next/navigation";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { useSitePreferences } from"@/components/ui/site-preferences-provider";
 import {
  getActiveSpaceForPath,
@@ -36,12 +36,11 @@ export function AppBreadcrumb({ currentProfile, profileLabel }: AppBreadcrumbPro
  prefetch={false}
  className="inline-flex shrink-0 items-center gap-1.5 font-medium transition hover:text-emerald-700"
 >
- <Image
- src="/brand/pictogramme-cleanmymap.svg"
+ <BrandLogo
+ variant="compact"
  alt="Logo CleanMyMap"
- width={24}
- height={24}
  className="h-3 w-auto shrink-0"
+ sizes="0.75rem"
  />
  CleanMyMap
  </Link>

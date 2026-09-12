@@ -1,7 +1,7 @@
 "use client";
 
 import { User, Shield, Droplets } from"lucide-react";
-import Image from"next/image";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import {
  BadgePictogram,
  getGamificationBadgeIconName,
@@ -83,12 +83,11 @@ export function ImpactCard({
 
  {/* Logo footer */}
  <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center space-y-1">
- <Image
- src="/brand/pictogramme-cleanmymap.svg"
+ <BrandLogo
+ variant="compact"
  alt="Logo CleanMyMap"
- width={54}
- height={54}
  className="h-6 w-auto opacity-55"
+ sizes="1.5rem"
  priority
  />
  <p className="text-[8px] font-bold tracking-widest uppercase opacity-40">Méthodologie CMM-v1 Scientifique</p>

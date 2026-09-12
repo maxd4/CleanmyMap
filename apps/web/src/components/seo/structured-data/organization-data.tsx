@@ -2,6 +2,7 @@
 import { JsonLd } from "./json-ld-wrapper";
 import { env } from "@/lib/env";
 import { resolvePublicContactEmail } from "@/lib/email-config";
+import { BRAND_ASSET_PATHS } from "@/components/brand/brand-assets";
 
 const appUrl = env["NEXT_PUBLIC_APP_URL"] || "https://cleanmymap.fr";
 
@@ -12,7 +13,7 @@ export function OrganizationJsonLd() {
     "@type": "Organization",
     name: "CleanMyMap",
     url: appUrl,
-    logo: `${appUrl}/brand/nouveau-logo.svg`,
+    logo: `${appUrl}${BRAND_ASSET_PATHS.light}`,
     description:
       "Plateforme citoyenne de dépollution urbaine en France. CleanMyMap aide à signaler les pollutions, organiser des cleanwalks et suivre l'impact des actions de terrain.",
     sameAs: [
@@ -40,7 +41,7 @@ export function LocalBusinessJsonLd() {
     "@type": "Organization",
     name: "CleanMyMap",
     url: appUrl,
-    image: `${appUrl}/brand/nouveau-logo.svg`,
+    image: `${appUrl}${BRAND_ASSET_PATHS.light}`,
     areaServed: {
       "@type": "Country",
       name: "France",

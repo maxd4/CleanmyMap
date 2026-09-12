@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
 import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
 import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
@@ -11,6 +10,7 @@ import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { reportPdfColors } from "@/lib/pdf-export/report-pdf-theme";
 import { resolvePageFamily } from "@/lib/ui/page-families";
+import { BrandLogo } from "@/components/brand/brand-logo";
 
 export const metadata: Metadata = {
   title: "Rapport d'impact imprimable - CleanMyMap",
@@ -137,12 +137,11 @@ export default async function PrintReportPage() {
             <div className="grid gap-4 lg:grid-cols-[1.35fr_0.65fr] lg:items-start">
               <div className="space-y-3">
                 <div className="flex items-center gap-3 font-bold tracking-tighter text-slate-950 print:text-[18pt]">
-                  <Image
-                    src="/brand/logo-cleanmymap-officiel.svg"
+                  <BrandLogo
+                    variant="light"
                     alt="Logo CleanMyMap"
-                    width={160}
-                    height={48}
                     className="h-8 w-auto"
+                    sizes="10rem"
                     priority
                   />
                   <span>
@@ -284,12 +283,11 @@ export default async function PrintReportPage() {
           <footer className="cmm-print-report__section cmm-ribbon-surface mt-auto flex items-end justify-between gap-6 pt-12 print:border-t print:border-slate-200 print:bg-white print:text-slate-700 print:shadow-none">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <Image
-                  src="/brand/pictogramme-cleanmymap.svg"
+                <BrandLogo
+                  variant="dark"
                   alt="Logo CleanMyMap"
-                  width={50}
-                  height={50}
-                  className="h-5 w-auto opacity-70"
+                  className="h-6 w-auto max-w-[9rem] opacity-70"
+                  sizes="9rem"
                 />
                 <p className="cmm-text-caption font-bold uppercase tracking-[0.2em] text-slate-100/70 print:text-slate-500">
                   CleanMyMap - Intelligence Environnementale

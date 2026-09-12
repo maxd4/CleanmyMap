@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { BRAND_ASSET_PATHS } from "@/components/brand/brand-assets";
 
 export const runtime = "nodejs";
 
@@ -11,7 +12,14 @@ export async function GET() {
       display: "standalone",
       background_color: "#ffffff",
       theme_color: "#0f766e",
-      icons: [],
+      icons: [
+        {
+          src: BRAND_ASSET_PATHS.compact,
+          sizes: "any",
+          type: "image/png",
+          purpose: "any",
+        },
+      ],
     },
     {
       headers: {
@@ -20,4 +28,3 @@ export async function GET() {
     },
   );
 }
-

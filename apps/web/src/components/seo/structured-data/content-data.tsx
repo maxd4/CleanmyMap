@@ -2,6 +2,7 @@
 import { JsonLd } from "./json-ld-wrapper";
 import { env } from "@/lib/env";
 import { resolvePublicContactEmail } from "@/lib/email-config";
+import { BRAND_ASSET_PATHS } from "@/components/brand/brand-assets";
 
 const appUrl = env["NEXT_PUBLIC_APP_URL"] || "https://cleanmymap.fr";
 
@@ -126,7 +127,7 @@ export function ArticleRessourceJsonLd() {
     headline: "Bonnes pratiques",
     description:
       "Repères courts pour bien trier, composter et éviter les déchets abandonnés.",
-    image: `${appUrl}/brand/nouveau-logo.svg`,
+    image: `${appUrl}${BRAND_ASSET_PATHS.light}`,
     author: {
       "@type": "Organization",
       name: "CleanMyMap",
@@ -136,7 +137,7 @@ export function ArticleRessourceJsonLd() {
       name: "CleanMyMap",
       logo: {
         "@type": "ImageObject",
-        url: `${appUrl}/brand/nouveau-logo.svg`,
+        url: `${appUrl}${BRAND_ASSET_PATHS.light}`,
       },
     },
     datePublished: "2026-01-15",
@@ -171,7 +172,7 @@ export function VideoTutorialJsonLd() {
     name: "Comment déclarer une action sur CleanMyMap",
     description:
       "Tutoriel vidéo pour apprendre à déclarer vos actions de nettoyage et suivre leur impact sur CleanMyMap.",
-    thumbnailUrl: `${appUrl}/brand/nouveau-logo.svg`,
+    thumbnailUrl: `${appUrl}${BRAND_ASSET_PATHS.light}`,
     uploadDate: "2026-01-15",
     duration: "PT5M30S",
     contentUrl: `${appUrl}/videos/declaration-action.mp4`,
@@ -181,7 +182,7 @@ export function VideoTutorialJsonLd() {
       name: "CleanMyMap",
       logo: {
         "@type": "ImageObject",
-        url: `${appUrl}/brand/nouveau-logo.svg`,
+        url: `${appUrl}${BRAND_ASSET_PATHS.light}`,
       },
     },
     author: {
@@ -220,7 +221,7 @@ export function EventCleanwalkJsonLd() {
       name: "CleanMyMap",
       url: appUrl,
     },
-    image: `${appUrl}/brand/nouveau-logo.svg`,
+    image: `${appUrl}${BRAND_ASSET_PATHS.light}`,
     offers: {
       "@type": "Offer",
       price: "0",

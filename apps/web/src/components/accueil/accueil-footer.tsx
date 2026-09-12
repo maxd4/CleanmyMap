@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Mail } from "lucide-react";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 import { requestCookieConsentPreferences } from "@/lib/storage/ui-state-storage";
 import { shouldUseFullFooter } from "@/lib/ui/footer-variant";
@@ -51,13 +52,21 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
       <footer className="cmm-ribbon-surface relative w-full overflow-hidden">
 
         <div className="relative z-10 mx-auto flex w-full max-w-none flex-col items-center justify-between gap-3 px-1 py-4 text-center sm:px-2 md:flex-row md:gap-5 md:py-5 md:text-left lg:px-4">
-          <div className="flex flex-col items-center gap-1 md:items-start">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white">
-              Cultivons l&apos;entraide
-            </p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
-              © 2026 CleanMyMap
-            </p>
+          <div className="flex items-center gap-3">
+            <BrandLogo
+              variant="dark"
+              alt="CleanMyMap"
+              className="h-7 w-auto max-w-[9rem] object-contain object-left"
+              sizes="9rem"
+            />
+            <div className="flex flex-col items-center gap-1 md:items-start">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white">
+                Cultivons l&apos;entraide
+              </p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
+                © 2026 CleanMyMap
+              </p>
+            </div>
           </div>
 
           <nav
@@ -99,7 +108,13 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
     <footer className="cmm-ribbon-surface relative w-full overflow-hidden">
       <div className="relative z-10 mx-auto w-full max-w-none px-1 py-6 sm:px-2 sm:py-7 lg:px-4 lg:py-8">
         <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(18rem,auto)_minmax(0,1fr)_auto] lg:items-center lg:gap-6">
-          <div className="flex min-w-0 flex-col gap-2 text-center sm:flex-row sm:items-center sm:gap-2.5 sm:text-left">
+          <div className="flex min-w-0 items-center gap-3 text-center sm:gap-2.5 sm:text-left">
+            <BrandLogo
+              variant="dark"
+              alt="CleanMyMap"
+              className="h-7 w-auto max-w-[9rem] shrink-0 object-contain object-left"
+              sizes="9rem"
+            />
             <div className="flex shrink-0 items-center gap-2">
               <span className="h-px w-4 bg-slate-400/50" />
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-white">

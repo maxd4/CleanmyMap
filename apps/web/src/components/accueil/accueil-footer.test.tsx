@@ -15,6 +15,7 @@ describe("HomeFooter cookie preferences", () => {
 
       expect(html).toContain("Gérer mes cookies");
       expect(html).toContain('type="button"');
+      expect(html).toContain("logo-grand-sombre.png");
     },
   );
 });
