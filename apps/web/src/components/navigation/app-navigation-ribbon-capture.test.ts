@@ -43,7 +43,7 @@ describe("global ribbon capture contract", () => {
     expect(source).toContain(
       "xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]",
     );
-    expect(source).toContain('max-w-[12rem]');
+    expect(source).toContain('max-w-[15rem]');
     expect(searchIndex).toBeGreaterThan(-1);
     expect(blockNavigationIndex).toBeGreaterThan(searchIndex);
     expect(source).toContain('xl:col-start-1');
