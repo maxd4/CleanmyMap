@@ -1,23 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useCallback, useState } from "react";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useMemo, useCallback } from "react";
 import { usePathname } from "next/navigation";
-import useSWR from "swr";
-import { buildClerkSupabaseAccessTokenProvider } from "@/lib/clerk-supabase-token";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import {
-  fetchCurrentAccountIdentity,
-  type CurrentAccountIdentity,
-} from "@/lib/account/current-account-identity";
 import { FeedbackSection } from "@/components/sections/rubriques/feedback-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
-  extractZoneContextFromMetadata,
   getChatChannelDefinition,
   type ChatChannelType,
 } from "@/lib/chat/channels";
-import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
 import {
   getDiscussionTopic,
   getDiscussionTopics,
@@ -38,34 +28,24 @@ import { useChatShellNotificationEffects } from "./hooks/use-chat-shell-notifica
 import { useChatShellProfileActions } from "./hooks/use-chat-shell-profile-actions";
 import { useChatShellSearch } from "./hooks/use-chat-shell-search";
 import { useChatShellSidebar } from "./hooks/use-chat-shell-sidebar";
-import type { ChatUser, DmConversation } from "./chat-types";
+import { useChatShellRuntimeContext } from "./hooks/use-chat-shell-runtime-context";
+import { useChatShellComposer } from "./hooks/use-chat-shell-composer";
+import { useChatShellPollVoting } from "./hooks/use-chat-shell-poll-voting";
+import { useChatShellDmNavigation } from "./hooks/use-chat-shell-dm-navigation";
+import type { ChatUser } from "./chat-types";
 import type { ChatTopicId } from "@/lib/chat/topics";
 import {
-  buildAnnouncementDraft,
-  getAnnouncementTopicId,
   type ChatRelatedEvent,
   type CommunityAnnouncementTemplateKey,
 } from "@/lib/chat/announcements";
-import {
-  createInitialChatPollOptionDraft,
-  getChatPollOptionsValidationError,
-} from "@/lib/chat/polls";
-import {
-  applyChatPollVoteSummary,
-  applyOptimisticChatPollVote,
-  normalizeChatPollVoteResponse,
-} from "@/lib/chat/poll-votes";
 import type { SendChatMessageParams } from "./hooks/use-chat-data";
 import { ChatMessageFeed } from "./ui/chat-message-feed";
 import {
   CHANNEL_VISUALS,
   getChannelPlaceholder,
   getChannelTitle,
-  getClerkArrondissement,
-  getClerkRoleLabel,
   getEmptyStateCopy,
   type ChatMetaItem,
-  toMetadataRecord,
 } from "./chat-shell.utils";
 import { useChatSearch } from "./hooks/use-chat-search";
 
@@ -107,25 +87,8 @@ export function ChatShell({
   messagerieMode = false,
 }: ChatShellProps) {
   const isLight = tone === "light";
-  const { getToken, isLoaded, isSignedIn } = useAuth();
-  const { user } = useUser();
   const { locale } = useSitePreferences();
   const pathname = usePathname();
-  const userId = user?.id;
-  const supabase = useMemo(() => {
-    try {
-      return getSupabaseBrowserClient(
-        buildClerkSupabaseAccessTokenProvider(getToken),
-      );
-    } catch {
-      return null;
-    }
-  }, [getToken]);
-
-  const { data: currentAccountIdentity = null } = useSWR<CurrentAccountIdentity | null>(
-    userId ? ["current-account-identity", userId] : null,
-    fetchCurrentAccountIdentity,
-  );
 
   const {
     activeChannelType,
@@ -172,51 +135,23 @@ export function ChatShell({
     initialTopicId,
     initialMessage,
   });
-
-  const currentRoleLabel = useMemo(() => getClerkRoleLabel(user), [user]);
-  const clerkArrondissement = useMemo(
-    () => getClerkArrondissement(user),
-    [user],
-  );
-  const publicMetadata = useMemo(
-    () => toMetadataRecord(user?.publicMetadata),
-    [user?.publicMetadata],
-  );
-  const clerkZoneContext = useMemo(
-    () => extractZoneContextFromMetadata(publicMetadata),
-    [publicMetadata],
-  );
-
-  const effectiveZone = useMemo(
-    () =>
-      selectedZone ||
-      clerkZoneContext.zoneName ||
-      (clerkArrondissement ? `${clerkArrondissement}e arrondissement` : ""),
-    [selectedZone, clerkZoneContext.zoneName, clerkArrondissement],
-  );
-
-  const territoryFocus = useMemo(
-    () => initialArrondissement ?? clerkArrondissement,
-    [initialArrondissement, clerkArrondissement],
-  );
-
-  const hasArrondissement = useMemo(
-    () => territoryFocus !== null || clerkArrondissement !== null,
-    [territoryFocus, clerkArrondissement],
-  );
-
-  const hasGreaterParisZone = useMemo(
-    () => effectiveZone !== "" && findZoneWithNeighbors(effectiveZone) !== null,
-    [effectiveZone],
-  );
-
-  const senderDisplayName =
-    currentAccountIdentity?.displayName ||
-    user?.fullName ||
-    user?.username ||
-    "Moi";
-  const senderHandle =
-    currentAccountIdentity?.handle || user?.username || "moi";
+  const {
+    currentRoleLabel,
+    effectiveZone,
+    hasArrondissement,
+    hasGreaterParisZone,
+    isLoaded,
+    isSignedIn,
+    senderDisplayName,
+    senderHandle,
+    supabase,
+    territoryFocus,
+    user,
+    userId,
+  } = useChatShellRuntimeContext({
+    selectedZone,
+    initialArrondissement,
+  });
   const {
     isSearchOpen,
     searchQuery,
@@ -298,68 +233,6 @@ export function ChatShell({
     supabase,
   });
 
-  const [composerMode, setComposerMode] = useState<"message" | "announcement" | "poll">(
-    initialComposerMode,
-  );
-  const [announcementTemplate, setAnnouncementTemplate] =
-    useState<CommunityAnnouncementTemplateKey | null>(initialAnnouncementTemplate);
-  const [relatedEvent, setRelatedEvent] = useState<ChatRelatedEvent | null>(
-    initialRelatedEvent,
-  );
-  const [pollOptions, setPollOptions] = useState<string[]>(
-    createInitialChatPollOptionDraft,
-  );
-  const [pollVoteStates, setPollVoteStates] = useState<
-    Record<string, { pending: boolean; error: string | null }>
-  >({});
-  const announcementMode = composerMode === "announcement";
-
-  useEffect(() => {
-    setRelatedEvent(initialRelatedEvent);
-  }, [initialRelatedEvent]);
-
-  const handleComposerModeChange = useCallback(
-    (mode: "message" | "announcement" | "poll") => {
-      setComposerMode(mode);
-      if (mode === "poll") {
-        setAnnouncementTemplate(null);
-        setRelatedEvent(null);
-        setFile(null);
-        setPollOptions((current) =>
-          current.length >= 2 ? current : createInitialChatPollOptionDraft(),
-        );
-      } else if (mode === "message") {
-        setAnnouncementTemplate(null);
-        setRelatedEvent(null);
-      } else if (mode === "announcement" && !announcementTemplate) {
-        setActiveTopicId(null);
-      }
-    },
-    [announcementTemplate, setActiveTopicId, setFile, setPollOptions],
-  );
-
-  const handleAnnouncementTemplateChange = useCallback(
-    (template: CommunityAnnouncementTemplateKey) => {
-      setAnnouncementTemplate(template);
-      setActiveTopicId(getAnnouncementTopicId(template));
-      setMessage(buildAnnouncementDraft(template));
-      setSendError(null);
-    },
-    [setActiveTopicId, setMessage, setSendError],
-  );
-
-  const handleSelectTopic = useCallback(
-    (topicId: ChatTopicId) => {
-      setActiveTopicId(topicId);
-      if (announcementMode) {
-        setComposerMode("message");
-        setAnnouncementTemplate(null);
-        setRelatedEvent(null);
-      }
-    },
-    [announcementMode, setActiveTopicId],
-  );
-
   const sendChatMessageWithInboxRefresh = useCallback(
     async (params: SendChatMessageParams) => {
       await sendChatMessage(params);
@@ -370,93 +243,45 @@ export function ChatShell({
     [refreshInbox, sendChatMessage],
   );
 
-  const handlePollVote = useCallback(
-    async (messageId: string, optionId: string | null) => {
-      const currentMessage = messages.find((candidate) => candidate.id === messageId);
-      if (!currentMessage || currentMessage.message_kind !== "poll") {
-        return;
-      }
+  const {
+    announcementTemplate,
+    canSubmitMessage,
+    composerMode,
+    handleAnnouncementTemplateChange,
+    handleComposerModeChange,
+    handleSelectTopic,
+    pollOptions,
+    relatedEvent,
+    resetComposerForChannelChange,
+    setPollOptions,
+  } = useChatShellComposer({
+    initialComposerMode,
+    initialAnnouncementTemplate,
+    initialRelatedEvent,
+    announcementEventRequested,
+    announcementEventLoading,
+    announcementEventError,
+    userId,
+    isLoaded,
+    isSignedIn,
+    message,
+    file,
+    isSending,
+    isUploading,
+    activeChannelType,
+    selectedRecipient,
+    effectiveZone,
+    territoryFocus,
+    setActiveTopicId,
+    setFile,
+    setMessage,
+    setSendError,
+  });
 
-      const currentState = pollVoteStates[messageId];
-      if (currentState?.pending || currentMessage.selectedOptionId === optionId) {
-        return;
-      }
-
-      setPollVoteStates((states) => ({
-        ...states,
-        [messageId]: { pending: true, error: null },
-      }));
-      await mutateMessages(
-        (data) => ({
-          ...(data ?? { previousCursor: null, hasMore: false }),
-          messages: (data?.messages ?? []).map((message) =>
-            message.id === messageId
-              ? applyOptimisticChatPollVote(message, optionId)
-              : message,
-          ),
-        }),
-        { revalidate: false },
-      );
-
-      try {
-        const response = await fetch(`/api/chat/polls/${encodeURIComponent(messageId)}/vote`, {
-          method: optionId ? "PUT" : "DELETE",
-          headers: optionId ? { "Content-Type": "application/json" } : undefined,
-          body: optionId ? JSON.stringify({ optionId }) : undefined,
-        });
-        const payload = await response.json().catch(() => null);
-        if (!response.ok) {
-          const errorPayload = payload as { hint?: unknown; error?: unknown } | null;
-          throw new Error(
-            typeof errorPayload?.hint === "string"
-              ? errorPayload.hint
-              : typeof errorPayload?.error === "string"
-                ? errorPayload.error
-                : "Votre vote n'a pas pu être enregistré.",
-          );
-        }
-
-        const summary = normalizeChatPollVoteResponse(payload);
-        if (!summary) {
-          throw new Error("La réponse du sondage est invalide.");
-        }
-
-        await mutateMessages(
-          (data) => ({
-            ...(data ?? { previousCursor: null, hasMore: false }),
-            messages: (data?.messages ?? []).map((message) =>
-              message.id === messageId
-                ? applyChatPollVoteSummary(message, summary)
-                : message,
-            ),
-          }),
-          { revalidate: false },
-        );
-        setPollVoteStates((states) => ({
-          ...states,
-          [messageId]: { pending: false, error: null },
-        }));
-      } catch (error) {
-        await mutateMessages(
-          (data) => ({
-            ...(data ?? { previousCursor: null, hasMore: false }),
-            messages: (data?.messages ?? []).map((message) =>
-              message.id === messageId ? currentMessage : message,
-            ),
-          }),
-          { revalidate: false },
-        );
-        setPollVoteStates((states) => ({
-          ...states,
-          [messageId]: {
-            pending: false,
-            error: error instanceof Error ? error.message : "Vote indisponible.",
-          },
-        }));
-      }
-    },
-    [messages, mutateMessages, pollVoteStates],
-  );
+  const { handlePollVote, pollVoteStates } = useChatShellPollVoting({
+    messages,
+    mutateMessages,
+  });
 
   const { handleSend } = useChatSubmit({
     submitLockRef,
@@ -520,8 +345,6 @@ export function ChatShell({
       ),
     [activeChannelType, activeTopicId, locale, recipientLabel, territoryLabel],
   );
-  const [isDmThreadOpen, setIsDmThreadOpen] = useState(Boolean(initialRecipient));
-
   const metaItems: ChatMetaItem[] = useMemo(
     () => [
       {
@@ -581,6 +404,24 @@ export function ChatShell({
     setIsEditingHandle,
   });
 
+  const {
+    handleBackToDmInbox,
+    handleClearRecipient,
+    handleRecipientQueryChange,
+    handleSelectDmConversation,
+    handleSelectRecipient,
+    handleStartDmConversation,
+    isDmThreadOpen,
+    setIsDmThreadOpen,
+  } = useChatShellDmNavigation({
+    initialRecipient,
+    setActiveTopicId,
+    setActiveChannelType,
+    setSelectedRecipient,
+    setRecipientQuery,
+    setIsRecipientPickerOpen,
+  });
+
   const activeChannelVisual = useMemo(
     () => CHANNEL_VISUALS[activeChannelType],
     [activeChannelType],
@@ -594,50 +435,6 @@ export function ChatShell({
     () => getChannelPlaceholder(activeChannelType),
     [activeChannelType],
   );
-  const canSubmitMessage = useMemo(
-    () =>
-      Boolean(
-        userId &&
-        isLoaded &&
-        isSignedIn &&
-        (message.trim().length > 0 || file) &&
-        !isSending &&
-        !isUploading &&
-        (composerMode !== "poll" || !getChatPollOptionsValidationError(pollOptions)) &&
-        (!announcementMode || Boolean(announcementTemplate)) &&
-        (!announcementMode || !announcementEventRequested || Boolean(relatedEvent)) &&
-        (!announcementMode || !announcementEventLoading) &&
-        (!announcementMode || !announcementEventError) &&
-        !(activeChannelType === "dm" && !selectedRecipient) &&
-        !(
-          activeChannelType === "territory" &&
-          !effectiveZone &&
-          territoryFocus === null
-        ),
-      ),
-    [
-      userId,
-      isLoaded,
-      isSignedIn,
-      message,
-      file,
-      isSending,
-      isUploading,
-      composerMode,
-      pollOptions,
-      announcementMode,
-      announcementTemplate,
-      announcementEventRequested,
-      relatedEvent,
-      announcementEventLoading,
-      announcementEventError,
-      activeChannelType,
-      selectedRecipient,
-      effectiveZone,
-      territoryFocus,
-    ],
-  );
-
   const {
     sidebarChannels,
     sidebarTopics,
@@ -657,10 +454,7 @@ export function ChatShell({
     channelTopics,
     activeTopicId,
     locale,
-    setComposerMode,
-    setAnnouncementTemplate,
-    setRelatedEvent,
-    setPollOptions,
+    resetComposerForChannelChange,
     setActiveTopicId,
     setActiveChannelType,
     setIsDmThreadOpen,
@@ -682,60 +476,6 @@ export function ChatShell({
       setNewHandle(value.toLowerCase().replace(/[^a-z0-9_]/g, ""));
     },
     [setNewHandle],
-  );
-
-  const handleSelectRecipient = useCallback(
-    (recipient: ChatUser) => {
-      setSelectedRecipient(recipient);
-      setRecipientQuery("");
-      setIsRecipientPickerOpen(false);
-      setIsDmThreadOpen(true);
-    },
-    [setIsDmThreadOpen, setSelectedRecipient, setRecipientQuery, setIsRecipientPickerOpen],
-  );
-
-  const handleClearRecipient = useCallback(() => {
-    setSelectedRecipient(null);
-    setRecipientQuery("");
-    setIsRecipientPickerOpen(true);
-    setIsDmThreadOpen(true);
-  }, [setIsDmThreadOpen, setSelectedRecipient, setRecipientQuery, setIsRecipientPickerOpen]);
-
-  const handleSelectDmConversation = useCallback(
-    (conversation: DmConversation) => {
-      setActiveTopicId(null);
-      setActiveChannelType("dm");
-      setSelectedRecipient(conversation.peer);
-      setRecipientQuery("");
-      setIsRecipientPickerOpen(false);
-      setIsDmThreadOpen(true);
-    },
-    [setActiveChannelType, setActiveTopicId, setIsDmThreadOpen, setIsRecipientPickerOpen, setRecipientQuery, setSelectedRecipient],
-  );
-
-  const handleStartDmConversation = useCallback(() => {
-    setActiveTopicId(null);
-    setActiveChannelType("dm");
-    setSelectedRecipient(null);
-    setRecipientQuery("");
-    setIsRecipientPickerOpen(true);
-    setIsDmThreadOpen(true);
-  }, [setActiveChannelType, setActiveTopicId, setIsDmThreadOpen, setIsRecipientPickerOpen, setRecipientQuery, setSelectedRecipient]);
-
-  const handleBackToDmInbox = useCallback(() => {
-    setActiveTopicId(null);
-    setSelectedRecipient(null);
-    setRecipientQuery("");
-    setIsRecipientPickerOpen(false);
-    setIsDmThreadOpen(false);
-  }, [setActiveTopicId, setIsDmThreadOpen, setIsRecipientPickerOpen, setRecipientQuery, setSelectedRecipient]);
-
-  const handleRecipientQueryChange = useCallback(
-    (value: string) => {
-      setRecipientQuery(value);
-      setIsRecipientPickerOpen(true);
-    },
-    [setRecipientQuery, setIsRecipientPickerOpen],
   );
 
   useChatShellNotificationEffects({
