@@ -72,4 +72,45 @@ describe("dropdown centering contract", () => {
     expect(placementSource).not.toContain("alignRight");
     expect(placementSource).not.toContain("minPanelWidth");
   });
+
+  it("keeps navigation rows geometrically stable across hover and focus", () => {
+    const sizeTheme = readSource("navigation/navigation-dropdown-size-theme.ts");
+    const itemTone = readSource("navigation/navigation-dropdown-item-theme.ts");
+    const borderTheme = readSource("navigation/navigation-dropdown-border-theme.ts");
+    const helpText = readSource("navigation/navigation-dropdown-help-text.tsx");
+
+    expect(sizeTheme).toContain("w-[min(11rem,35%)]");
+    expect(sizeTheme).not.toContain("max-w-0");
+    expect(sizeTheme).not.toContain("group-hover/item:font-semibold");
+    expect(sizeTheme).not.toContain("group-hover/item:p-[1.5px]");
+    expect(sizeTheme).not.toContain("group-hover/item:scale-[1.03]");
+    expect(itemTone).not.toContain("group-hover/item:font-bold");
+    expect(itemTone).not.toContain("group-hover/item:text-transparent");
+    expect(borderTheme).not.toContain("group-hover/item:[stroke-width");
+    expect(helpText).toContain("NAVIGATION_DROPDOWN_HELP_TEXT_CLASS_NAME");
+  });
+
+  it("keeps all item accents in the shared theme helpers", () => {
+    const home = readSource("navigation/app-navigation-block-dropdown-home.tsx");
+    const act = readSource("navigation/app-navigation-block-dropdown-act.tsx");
+    const network = readSource("navigation/app-navigation-block-dropdown-network.tsx");
+    const learn = readSource("navigation/app-navigation-block-dropdown-learn.tsx");
+
+    for (const source of [home, act, network, learn]) {
+      expect(source).toContain("getNavigationDropdownItemIconClassName");
+      expect(source).not.toContain("bg-gradient-to-br");
+    }
+    expect(network).not.toContain("getNetworkItemAccent");
+  });
+
+  it("keeps the dropdown surface compatible with minimal and sober modes", () => {
+    const sizeTheme = readSource("navigation/navigation-dropdown-size-theme.ts");
+    const displayModes = readSource("../styles/display-modes.css");
+
+    expect(sizeTheme).toContain("cmm-minimal");
+    expect(sizeTheme).toContain("cmm-sober");
+    expect(displayModes).toContain(".cmm-navigation-dropdown-surface");
+    expect(displayModes).toContain(".cmm-navigation-dropdown-item");
+    expect(displayModes).toContain("prefers-reduced-motion");
+  });
 });

@@ -92,6 +92,29 @@
   background-color: var(--bg-muted);
 }
 
+/* Dropdowns de navigation : même contenu, surface allégée sans géométrie variable. */
+[data-display-mode="minimaliste"] .cmm-navigation-dropdown-surface,
+[data-display-mode="sobre"] .cmm-navigation-dropdown-surface {
+  background-image: none !important;
+}
+
+[data-display-mode="minimaliste"] .cmm-navigation-dropdown-item {
+  background-image: none !important;
+  box-shadow: var(--shadow-soft);
+}
+
+[data-display-mode="sobre"] .cmm-navigation-dropdown-surface {
+  background: var(--background) !important;
+  box-shadow: none !important;
+}
+
+[data-display-mode="sobre"] .cmm-navigation-dropdown-item,
+[data-display-mode="sobre"] .cmm-navigation-dropdown-item * {
+  background-image: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+}
+
 /* Les helpers Motion canoniques restent plats en mode minimaliste. */
 [data-display-mode="minimaliste"] .cmm-hover-lift:hover,
 [data-display-mode="minimaliste"] .cmm-active-press:active,

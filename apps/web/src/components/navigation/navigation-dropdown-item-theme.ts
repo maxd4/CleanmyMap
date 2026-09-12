@@ -19,8 +19,8 @@ export function getNavigationDropdownItemTone(
 
   return {
     labelClassName:
-      "bg-clip-text text-black transition-all duration-200 group-hover/item:text-transparent group-hover/item:[-webkit-text-fill-color:transparent] group-hover/item:font-bold group-hover/item:[filter:saturate(1.3)_brightness(1.06)]",
+      "bg-clip-text text-black group-hover/item:text-black group-focus-visible/item:text-black",
     labelStyle: buildNavigationDropdownGradientStyle([accent]),
-    chevronClassName: "transition-[color,stroke-width] duration-200",
+    chevronClassName: "motion-safe:transition-colors motion-safe:duration-200",
   };
 }

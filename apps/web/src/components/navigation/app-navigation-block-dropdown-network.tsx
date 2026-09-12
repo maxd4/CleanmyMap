@@ -16,6 +16,7 @@ import {
   getNavigationDropdownTitleGradientStyle,
   getNavigationDropdownTitlePrefix,
 } from "./navigation-dropdown-theme";
+import { getNavigationDropdownItemIconClassName } from "./navigation-dropdown-accent-theme";
 
 type AppNavigationBlockDropdownNetworkProps = {
   locale: Locale;
@@ -39,27 +40,6 @@ function getNetworkItemIcon(routeId: string) {
     default:
       return Users;
   }
-}
-
-function getNetworkItemAccent(routeId: string) {
-  if (routeId === "community" || routeId === "feedback" || routeId === "messagerie") {
-    return {
-      iconClassName:
-        "bg-gradient-to-br from-pink-100 via-white to-rose-100 shadow-[0_0_0_2px_rgba(236,72,153,0.10)]",
-    };
-  }
-
-  if (routeId === "open-data") {
-    return {
-      iconClassName:
-        "bg-gradient-to-br from-indigo-100 via-white to-violet-100 shadow-[0_0_0_2px_rgba(99,102,241,0.10)]",
-    };
-  }
-
-  return {
-    iconClassName:
-      "bg-gradient-to-br from-violet-100 via-white to-pink-100 shadow-[0_0_0_2px_rgba(124,58,237,0.10)]",
-  };
 }
 
 export function AppNavigationBlockDropdownNetwork({
@@ -87,7 +67,6 @@ export function AppNavigationBlockDropdownNetwork({
             space.items.map((item) => {
               const Icon = getNetworkItemIcon(item.routeId);
               const cardBorderTokens = getNavigationDropdownCardBorderTokens(space.id, item.routeId);
-              const itemAccent = getNetworkItemAccent(item.routeId);
               return (
                 <NavigationDropdownItemCard
                   key={item.id}
@@ -97,7 +76,7 @@ export function AppNavigationBlockDropdownNetwork({
                   spaceId={space.id}
                   onTrackNavigation={onTrackNavigation}
                   Icon={Icon}
-                  iconClassName={itemAccent.iconClassName}
+                  iconClassName={getNavigationDropdownItemIconClassName(space.id, item.routeId)}
                   iconStrokeWidth={2.05}
                   cardGeometry={cardGeometry}
                   cardBorderTokens={cardBorderTokens}

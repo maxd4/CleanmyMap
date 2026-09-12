@@ -16,6 +16,7 @@ import {
   getNavigationDropdownTitleGradientStyle,
   getNavigationDropdownTitlePrefix,
 } from "./navigation-dropdown-theme";
+import { getNavigationDropdownItemIconClassName } from "./navigation-dropdown-accent-theme";
 
 type AppNavigationBlockDropdownHomeProps = {
   locale: Locale;
@@ -81,7 +82,7 @@ export function AppNavigationBlockDropdownHome({
                   spaceId={space.id}
                   onTrackNavigation={onTrackNavigation}
                   Icon={Icon}
-                  iconClassName="bg-gradient-to-br from-amber-50 via-white to-orange-50 shadow-[0_0_0_2px_rgba(180,83,9,0.08)]"
+                  iconClassName={getNavigationDropdownItemIconClassName(space.id, item.routeId)}
                   iconStrokeWidth={2.05}
                   cardGeometry={cardGeometry}
                   cardBorderTokens={cardBorderTokens}
