@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { BRAND_ASSET_DIMENSIONS, BRAND_ASSET_PATHS } from "@/components/brand/brand-assets";
 
 export const metadata: Metadata = {
   title: "CleanMyMap | Urban Cleanup & Citizen Action",
@@ -40,9 +41,9 @@ export const metadata: Metadata = {
       "The national citizen platform for urban cleanup in France. Report pollution, organize cleanwalks, and act for the environment. Sustainable development, volunteer action, community coordination.",
     images: [
       {
-        url: "/brand/nouveau-logo.svg",
-        width: 1200,
-        height: 630,
+        url: BRAND_ASSET_PATHS.light,
+        width: BRAND_ASSET_DIMENSIONS.light.width,
+        height: BRAND_ASSET_DIMENSIONS.light.height,
         alt: "CleanMyMap - Urban cleanup map and cleanwalks in France",
       },
     ],

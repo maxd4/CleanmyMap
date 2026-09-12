@@ -8,6 +8,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { BrandLogo } from "@/components/brand/brand-logo";
 
 type AuthPageVariant = "sign-in" | "sign-up";
 
@@ -98,10 +99,12 @@ export function AuthPageShell({ children, variant }: AuthPageShellProps) {
           <section className="hidden min-h-[38rem] flex-col justify-between rounded-3xl border border-slate-700/80 bg-[linear-gradient(145deg,rgba(15,23,42,0.98)_0%,rgba(30,41,59,0.97)_52%,rgba(49,46,129,0.95)_100%)] p-8 text-white shadow-xl shadow-slate-950/20 lg:flex xl:p-10">
             <div className="space-y-8">
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/30 bg-emerald-300/10 text-emerald-200">
-                  <Leaf className="h-6 w-6" aria-hidden="true" />
-                </div>
-                <p className="text-2xl font-bold tracking-tight">CleanMyMap</p>
+                <BrandLogo
+                  variant="dark"
+                  alt="CleanMyMap"
+                  className="h-12 w-auto max-w-[15rem] object-contain object-left"
+                  sizes="15rem"
+                />
               </div>
 
               <div className="max-w-md space-y-4">
@@ -149,10 +152,12 @@ export function AuthPageShell({ children, variant }: AuthPageShellProps) {
             <div className="mx-auto flex w-full max-w-xl flex-col">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 lg:hidden">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-300/30 bg-emerald-300/10 text-emerald-200">
-                    <Leaf className="h-5 w-5" aria-hidden="true" />
-                  </div>
-                  <p className="font-bold text-white">CleanMyMap</p>
+                  <BrandLogo
+                    variant="compact"
+                    alt="CleanMyMap"
+                    className="h-10 w-10 object-contain"
+                    sizes="2.5rem"
+                  />
                 </div>
                 <p className="cmm-text-caption text-emerald-200">
                   {copy.eyebrow}

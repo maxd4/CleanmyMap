@@ -10,7 +10,7 @@ import {
 test("builds when a web runtime or build input changes", () => {
   const buildInputs = [
     "apps/web/src/app/page.tsx",
-    "apps/web/public/brand/logo-cleanmymap.svg",
+    "apps/web/public/brand/logo-court.png",
     "apps/web/next.config.ts",
     "apps/web/package.json",
     "package.json",

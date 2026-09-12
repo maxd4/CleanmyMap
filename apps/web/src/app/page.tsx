@@ -14,6 +14,7 @@ import {
 } from "@/lib/accueil/config";
 import type { Metadata } from "next";
 import { metadata as appMetadata } from "@/lib/metadata";
+import { BRAND_ASSET_DIMENSIONS, BRAND_ASSET_PATHS } from "@/components/brand/brand-assets";
 
 // Stable landing content is regenerated hourly; recent activity refreshes independently.
 export const revalidate = 3600;
@@ -68,9 +69,9 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/brand/logo-cleanmymap.svg",
-        width: 1200,
-        height: 630,
+        url: BRAND_ASSET_PATHS.light,
+        width: BRAND_ASSET_DIMENSIONS.light.width,
+        height: BRAND_ASSET_DIMENSIONS.light.height,
         alt: "CleanMyMap - Carte de dépollution citoyenne et cleanwalks en France",
       },
     ],
@@ -81,7 +82,7 @@ export const metadata: Metadata = {
     title: "CleanMyMap - Dépollution citoyenne & actions écologiques",
     description:
       "La carte citoyenne de dépollution urbaine partout en France - Bénévolat, écologie, impact terrain",
-    images: ["/brand/logo-cleanmymap.svg"],
+    images: [BRAND_ASSET_PATHS.light],
   },
   robots: {
     index: true,

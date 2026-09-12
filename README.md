@@ -1,7 +1,7 @@
 # CleanMyMap
 
 <p align="center">
-  <img src="./documentation/logo-grand.png" alt="CleanMyMap — plateforme citoyenne de dépollution" width="640" />
+  <img src="./documentation/logo-grand-clair.png" alt="CleanMyMap — plateforme citoyenne de dépollution" width="640" />
 </p>
 
 <p align="center">

@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { GlobalSearch } from "./global-search";
 import { useAdaptiveRibbonChrome } from "./app-navigation-ribbon-theme";
 import { AppNavigationBlockDropdown } from "./app-navigation-block-dropdown";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { AppNavigationTreeMenu } from "./app-navigation-tree-menu";
 import {
   RibbonAccountActions,
@@ -134,10 +135,11 @@ function AppNavigationRibbonShell({
               className="group inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[1.15rem] border border-sky-100/18 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3.5 pr-4 text-white shadow-[0_18px_36px_-22px_rgba(37,99,235,0.92)] transition-transform hover:scale-[1.01] hover:border-sky-50/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 xl:h-10 xl:min-h-0"
               aria-label="Accueil"
             >
-              <span
-                aria-hidden="true"
-                data-site-logo-slot
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.9rem] border border-white/12 bg-white/12"
+              <BrandLogo
+                alt=""
+                className="h-8 w-8 shrink-0 object-contain"
+                priority
+                sizes="2rem"
               />
               <span className="hidden xl:inline cmm-text-caption font-black uppercase tracking-[0.18em]">
                 Accueil
