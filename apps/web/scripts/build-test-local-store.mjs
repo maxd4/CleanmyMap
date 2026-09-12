@@ -47,8 +47,12 @@ async function main() {
       metrics: row.est_propre
         ? undefined
         : {
-            wasteKg: Number(row.dechets_kg ?? 0),
-            cigaretteButts: Number(row.megots ?? 0),
+            wasteKg: row.dechets_kg === null || row.dechets_kg === undefined
+              ? null
+              : Number(row.dechets_kg),
+            cigaretteButts: row.megots === null || row.megots === undefined
+              ? null
+              : Number(row.megots),
             volunteersCount: Number(row.benevoles ?? 0),
             durationMinutes: Number(row.temps_min ?? 0),
           },

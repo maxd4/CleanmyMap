@@ -94,14 +94,14 @@ export const initialState: FormState = {
  recordType:"action",
  latitude:"",
  longitude:"",
- wasteKg:"0",
- cigaretteButts:"0",
+  wasteKg:"",
+  cigaretteButts:"",
  cigaretteButtsCount:"", // Optionnel par défaut
  cigaretteButtsCondition:"propre", // État par défaut
  volunteersCount:"1",
  durationMinutes:"60",
  notes:"",
- wasteMegotsKg:"0",
+  wasteMegotsKg:"",
  wasteMegotsCondition:"propre",
  wastePlastiqueKg:"",
  wasteVerreKg:"",

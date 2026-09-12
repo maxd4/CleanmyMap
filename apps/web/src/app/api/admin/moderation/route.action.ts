@@ -201,8 +201,12 @@ function applyExpectedActionAuditChanges(
     status: params.status,
     moderationVisibility:
       params.moderationVisibility ?? state.moderationVisibility,
-    wasteKg: edits?.wasteKg ?? state.wasteKg,
-    cigaretteButts: edits?.cigaretteButts ?? state.cigaretteButts,
+    wasteKg:
+      edits?.wasteKg !== undefined ? edits.wasteKg : state.wasteKg,
+    cigaretteButts:
+      edits?.cigaretteButts !== undefined
+        ? edits.cigaretteButts
+        : state.cigaretteButts,
     volunteersCount: edits?.volunteersCount ?? state.volunteersCount,
     durationMinutes: edits?.durationMinutes ?? state.durationMinutes,
     wasteBreakdown:

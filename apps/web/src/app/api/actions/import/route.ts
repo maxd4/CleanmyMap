@@ -42,8 +42,8 @@ const importActionSchema = z.object({
   // Les bornes sont auditees par le contrat commun pour distinguer invalide et partiel.
   latitude: z.number().nullable().optional(),
   longitude: z.number().nullable().optional(),
-  wasteKg: z.number(),
-  cigaretteButts: z.number().int(),
+  wasteKg: z.number().nullable(),
+  cigaretteButts: z.number().int().nullable(),
   volunteersCount: z.number().int(),
   durationMinutes: z.number().int(),
   notes: z.string().trim().max(2000).optional(),

@@ -165,9 +165,9 @@ const createActionLegacySchema = z.object({
     isRouteCalibrationContext,
     "Contexte historique de calibration invalide.",
   ).nullable().optional(),
-  wasteKg: z.number().min(0).max(100000),
-  cigaretteButts: z.number().int().min(0).max(5000000).default(0),
-  cigaretteButtsCount: z.number().int().min(1).max(10000).optional(),
+  wasteKg: z.number().min(0).max(100000).nullable().optional(),
+  cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
+  cigaretteButtsCount: z.number().int().min(0).max(10000).nullable().optional(),
   volunteersCount: z.number().int().min(1).max(500).default(1),
   durationMinutes: z
     .number()
@@ -208,8 +208,8 @@ const createActionContractSchema = z.object({
     participantAccounts: accountTokensSchema,
     groupJoinEnabled: z.boolean().optional(),
     placeType: z.string().max(80).optional(),
-    wasteKg: z.number().min(0).max(100000),
-    cigaretteButts: z.number().int().min(0).max(5000000).optional(),
+    wasteKg: z.number().min(0).max(100000).nullable().optional(),
+    cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
     volunteersCount: z.number().int().min(1).max(500).optional(),
     durationMinutes: z
       .number()

@@ -26,11 +26,11 @@ describe("sanitizePreActionForm", () => {
       wasteCategories: ["plastic"],
     });
 
-    expect(sanitized.wasteKg).toBe("0");
-    expect(sanitized.cigaretteButts).toBe("0");
+    expect(sanitized.wasteKg).toBe("");
+    expect(sanitized.cigaretteButts).toBe("");
     expect(sanitized.cigaretteButtsCount).toBe("");
     expect(sanitized.cigaretteButtsCondition).toBe("propre");
-    expect(sanitized.wasteMegotsKg).toBe("0");
+    expect(sanitized.wasteMegotsKg).toBe("");
     expect(sanitized.wasteMegotsCondition).toBe("propre");
     expect(sanitized.wastePlastiqueKg).toBe("");
     expect(sanitized.wasteVerreKg).toBe("");

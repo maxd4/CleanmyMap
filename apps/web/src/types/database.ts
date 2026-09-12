@@ -60,8 +60,8 @@ export type ActionRow = {
   derived_geometry_kind: "point" | "polyline" | "polygon" | null;
   derived_geometry_geojson: string | null;
   geometry_confidence: number | null;
-  waste_kg: number;
-  cigarette_butts: number;
+  waste_kg: number | null;
+  cigarette_butts: number | null;
   volunteers_count: number;
   duration_minutes: number;
   notes: string | null;

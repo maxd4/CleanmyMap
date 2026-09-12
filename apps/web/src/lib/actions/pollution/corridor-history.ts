@@ -434,7 +434,9 @@ function resolveActionObservedScore(
   action: ActionDataContract,
   references?: PollutionScoreReferences,
 ): number {
-  const hasPollution = action.metadata.wasteKg > 0 || action.metadata.cigaretteButts > 0;
+  const hasPollution =
+    (action.metadata.wasteKg ?? 0) > 0 ||
+    (action.metadata.cigaretteButts ?? 0) > 0;
   if (!hasPollution) {
     return computePollutionScores({
       wasteKg: action.metadata.wasteKg,
@@ -490,11 +492,12 @@ export function summarizeCorridorHistory(
     firstActionAt: oldestAction?.dates.observedAt ?? "",
     lastActionAt: latestAction?.dates.observedAt ?? "",
     totalWasteKg: actions.reduce(
-      (total, action) => total + Math.max(0, action.metadata.wasteKg),
+      (total, action) => total + Math.max(0, action.metadata.wasteKg ?? 0),
       0,
     ),
     totalCigaretteButts: actions.reduce(
-      (total, action) => total + Math.max(0, action.metadata.cigaretteButts),
+      (total, action) =>
+        total + Math.max(0, action.metadata.cigaretteButts ?? 0),
       0,
     ),
     totalVolunteers: actions.reduce(

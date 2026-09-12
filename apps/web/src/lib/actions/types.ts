@@ -244,9 +244,9 @@ export type CreateActionPayload = {
   routeAdjustmentMessage?: string;
   latitude?: number;
   longitude?: number;
-  wasteKg: number;
-  cigaretteButts: number; // Toujours présent pour la compatibilité, calculé côté client ou API
-  cigaretteButtsCount?: number; // Nouveau champ optionnel pour le nombre de mégots
+  wasteKg: number | null;
+  cigaretteButts: number | null;
+  cigaretteButtsCount?: number | null;
   volunteersCount: number;
   durationMinutes: number;
   notes?: string;

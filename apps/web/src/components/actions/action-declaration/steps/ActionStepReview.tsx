@@ -117,7 +117,7 @@ export function ActionStepReview({
         volunteersCount: String(payload.volunteersCount),
         durationMinutes: String(payload.durationMinutes),
         placeType: payload.placeType ?? "",
-        wasteMegotsKg: String(payload.wasteBreakdown?.megotsKg ?? 0),
+        wasteMegotsKg: String(payload.wasteBreakdown?.megotsKg ?? ""),
       });
 
   const readyMessage = hasWarnings

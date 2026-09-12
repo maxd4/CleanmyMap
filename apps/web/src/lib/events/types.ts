@@ -14,7 +14,7 @@ export interface EventPayload {
     actionId: string;
     userId: string;
     locationLabel: string;
-    wasteKg: number;
+    wasteKg: number | null;
   };
   ACTION_VALIDATED: {
     actionId: string;

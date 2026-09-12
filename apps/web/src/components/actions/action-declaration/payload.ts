@@ -82,14 +82,14 @@ const BASE_FORM_STATE: FormState = {
  recordType:"action",
  latitude:"",
  longitude:"",
- wasteKg:"0",
- cigaretteButts:"0",
+  wasteKg:"",
+  cigaretteButts:"",
  cigaretteButtsCount:"", // Optionnel par défaut
  cigaretteButtsCondition:"propre", // État par défaut
  volunteersCount:"1",
  durationMinutes:"60",
  notes:"",
- wasteMegotsKg:"0",
+  wasteMegotsKg:"",
  wasteMegotsCondition:"propre",
  wastePlastiqueKg:"",
  wasteVerreKg:"",
@@ -315,11 +315,12 @@ export function buildCreateActionPayload(params: {
  ? "Action spontanée"
  : form.associationName;
  const isSpontaneousAction = associationName === "Action spontanée";
- const enteredButtsCount = toOptionalNumber(form.cigaretteButtsCount);
- const estimatedButtsFromWeight =
- toOptionalNumber(form.wasteMegotsKg) && toRequiredNumber(form.wasteMegotsKg, 0) > 0
- ? computeButtsCount(
- toRequiredNumber(form.wasteMegotsKg, 0),
+  const enteredMegotsKg = toOptionalNumber(form.wasteMegotsKg);
+  const enteredButtsCount = toOptionalNumber(form.cigaretteButtsCount);
+  const estimatedButtsFromWeight =
+  enteredMegotsKg !== undefined && enteredMegotsKg > 0
+  ? computeButtsCount(
+  enteredMegotsKg,
  form.wasteMegotsCondition,
  )
  : undefined;
@@ -346,8 +347,8 @@ export function buildCreateActionPayload(params: {
  recordType: form.recordType,
  latitude,
  longitude,
- wasteKg: toRequiredNumber(form.wasteKg, 0),
- cigaretteButts: enteredButtsCount ?? estimatedButtsFromWeight ?? 0,
+  wasteKg: toOptionalNumber(form.wasteKg) ?? null,
+  cigaretteButts: enteredButtsCount ?? estimatedButtsFromWeight ?? null,
  cigaretteButtsCount: enteredButtsCount ?? estimatedButtsFromWeight,
  volunteersCount: Math.trunc(toRequiredNumber(form.volunteersCount, 0)),
  durationMinutes: Math.max(0, Math.trunc(toRequiredNumber(form.durationMinutes, 0))),

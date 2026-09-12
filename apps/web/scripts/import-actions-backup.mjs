@@ -28,6 +28,12 @@ function normalizePayload(parsed) {
   throw new Error("Invalid backup format: expected array or object with items[]");
 }
 
+function nullableNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 async function main() {
   const fullPath = resolve(process.cwd(), inputPath);
   const content = await readFile(fullPath, "utf8");
@@ -41,8 +47,8 @@ async function main() {
     location_label: item.location_label,
     latitude: item.latitude ?? null,
     longitude: item.longitude ?? null,
-    waste_kg: Number(item.waste_kg ?? 0),
-    cigarette_butts: Number(item.cigarette_butts ?? 0),
+    waste_kg: nullableNumber(item.waste_kg),
+    cigarette_butts: nullableNumber(item.cigarette_butts),
     volunteers_count: Number(item.volunteers_count ?? 1),
     duration_minutes: Number(item.duration_minutes ?? 1),
     notes: item.notes ?? null,

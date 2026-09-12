@@ -191,8 +191,12 @@ function buildActionAuditSnapshots(
       actionPhase: nextActionPhase,
       groupJoinEnabled:
         body.groupJoinEnabled ?? currentMetadata.groupJoinEnabled,
-      wasteKg: body.wasteKg ?? current.waste_kg ?? null,
-      cigaretteButts: body.cigaretteButts ?? current.cigarette_butts ?? null,
+      wasteKg:
+        body.wasteKg !== undefined ? body.wasteKg : current.waste_kg ?? null,
+      cigaretteButts:
+        body.cigaretteButts !== undefined
+          ? body.cigaretteButts
+          : current.cigarette_butts ?? null,
       volunteersCount:
         body.volunteersCount ?? current.volunteers_count ?? null,
       durationMinutes:

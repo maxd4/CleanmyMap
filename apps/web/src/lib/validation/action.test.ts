@@ -54,4 +54,39 @@ describe("createActionSchema", () => {
 
     expect(parsed.participantAccounts).toEqual(["user-1", "user-2", "user-1"]);
   });
+
+  it("accepts unknown terrain measurements without manufacturing zeroes", () => {
+    const parsed = createActionSchema.parse({
+      ...basePayload,
+      wasteKg: null,
+      cigaretteButts: null,
+      organizerType: "spontaneous",
+    });
+
+    expect(parsed.wasteKg).toBeNull();
+    expect(parsed.cigaretteButts).toBeNull();
+  });
+
+  it("normalizes omitted measurements to null for pre-action compatibility", () => {
+    const parsed = createActionSchema.parse({
+      ...basePayload,
+      wasteKg: undefined,
+      cigaretteButts: undefined,
+      cigaretteButtsCount: undefined,
+    });
+
+    expect(parsed.wasteKg).toBeNull();
+    expect(parsed.cigaretteButts).toBeNull();
+  });
+
+  it("accepts an explicitly measured zero cigarette count", () => {
+    const parsed = createActionSchema.parse({
+      ...basePayload,
+      cigaretteButts: 0,
+      cigaretteButtsCount: 0,
+    });
+
+    expect(parsed.cigaretteButts).toBe(0);
+    expect(parsed.cigaretteButtsCount).toBe(0);
+  });
 });

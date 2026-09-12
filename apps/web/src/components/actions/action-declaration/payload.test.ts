@@ -37,6 +37,37 @@ describe("action declaration payload helpers", () => {
     expect(toRequiredNumber("invalid", 3)).toBe(3);
   });
 
+  it("keeps blank post-action measurements unknown and explicit zero measured", () => {
+    const blankPayload = buildCreateActionPayload({
+      form: createInitialFormState("Alice"),
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(blankPayload.wasteKg).toBeNull();
+    expect(blankPayload.cigaretteButts).toBeNull();
+
+    const zeroForm = createInitialFormState("Alice");
+    zeroForm.wasteKg = "0";
+    zeroForm.cigaretteButtsCount = "0";
+    const zeroPayload = buildCreateActionPayload({
+      form: zeroForm,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(zeroPayload.wasteKg).toBe(0);
+    expect(zeroPayload.cigaretteButts).toBe(0);
+  });
+
   it("normalizes organizer account tokens before payload creation", () => {
     expect(parseOrganizerAccounts("  @alice, bob ; alice\ncarol  ")).toEqual([
       "alice",

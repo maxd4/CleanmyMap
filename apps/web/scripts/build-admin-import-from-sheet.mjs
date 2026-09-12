@@ -17,7 +17,7 @@ import {
   parseIsoDateFlexible,
   toCsv,
   toInteger,
-  toNumber,
+  toNullableNumber,
 } from "./lib/sheet-ingestion-core.mjs";
 import { assertGoogleSheetUrl, buildGoogleSheetCsvCandidates } from "./lib/google-sheet-source.mjs";
 import { normalizeLabel } from "../src/lib/actions/geometry/geometry-core.ts";
@@ -313,6 +313,7 @@ async function main() {
       "waste_kg",
       "kg dechets",
       "dechets(kg)",
+      "dechets (kg)",
       "dechets kg",
       "déchets(kg)",
     ]),
@@ -471,7 +472,9 @@ async function main() {
     const megotsQuality =
       index.megotsQuality >= 0 ? normalizeSheetText(row[index.megotsQuality]) : "";
     const megotsKg =
-      index.megotsKg >= 0 ? toNumber(row[index.megotsKg], 0) : null;
+      index.megotsKg >= 0
+        ? toNullableNumber(row[index.megotsKg], "Mégots (kg)")
+        : null;
     const systemNotes = [
       placeType ? `Type de lieu: ${placeType}` : "",
       city ? `Ville: ${city}` : "",
@@ -571,18 +574,31 @@ async function main() {
       megotsQuality: megotsQuality || undefined,
       latitude: representativeCoordinates.latitude,
       longitude: representativeCoordinates.longitude,
-      wasteKg: Math.max(0, toNumber(index.wasteKg >= 0 ? row[index.wasteKg] : 0, 0)),
-      cigaretteButts: Math.max(
-        0,
+      wasteKg:
+        index.wasteKg >= 0
+          ? (() => {
+              const value = toNullableNumber(
+                row[index.wasteKg],
+                "Déchets (kg)",
+              );
+              return value === null ? null : Math.max(0, value);
+            })()
+          : null,
+      cigaretteButts:
         index.cigaretteButts >= 0
-          ? toInteger(row[index.cigaretteButts], 0)
-          : index.megotsKg >= 0
+          ? (() => {
+              const value = toNullableNumber(
+                row[index.cigaretteButts],
+                "Nombre de mégots",
+              );
+              return value === null ? null : Math.max(0, Math.trunc(value));
+            })()
+          : index.megotsKg >= 0 && megotsKg !== null
             ? computeButtsFromMegotsKg(
-                row[index.megotsKg],
+                megotsKg,
                 index.megotsQuality >= 0 ? row[index.megotsQuality] : "",
               )
-            : 0,
-      ),
+            : null,
       volunteersCount: Math.max(
         1,
         toInteger(index.volunteersCount >= 0 ? row[index.volunteersCount] : 1, 1),

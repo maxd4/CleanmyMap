@@ -77,6 +77,11 @@ function deriveActionTitle(row) {
 export function actionToRecord(row, importedAt = new Date().toISOString()) {
   const latitude = row.latitude === null ? null : Number(row.latitude);
   const longitude = row.longitude === null ? null : Number(row.longitude);
+  const nullableMetric = (value) => {
+    if (value === null || value === undefined || value === "") return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
   return {
     id: `validated_action_${row.id}`,
     recordType: "action",
@@ -92,8 +97,8 @@ export function actionToRecord(row, importedAt = new Date().toISOString()) {
     },
     eventDate: row.action_date ?? null,
     metrics: {
-      wasteKg: Number(row.waste_kg ?? 0),
-      cigaretteButts: Number(row.cigarette_butts ?? 0),
+      wasteKg: nullableMetric(row.waste_kg),
+      cigaretteButts: nullableMetric(row.cigarette_butts),
       volunteersCount: Number(row.volunteers_count ?? 0),
       durationMinutes: Number(row.duration_minutes ?? 0),
     },

@@ -21,8 +21,8 @@ export function registerActionFormScenario({
       status: "pending" | "approved" | "rejected";
       moderation_visibility: "visible" | "hidden";
       created_by_clerk_id: string;
-      waste_kg: number;
-      cigarette_butts: number;
+      waste_kg: number | null;
+      cigarette_butts: number | null;
       volunteers_count: number;
       duration_minutes: number;
       notes: string | null;
@@ -78,8 +78,8 @@ export function registerActionFormScenario({
             status: updates["status"] as "pending" | "approved" | "rejected",
             moderation_visibility: "visible",
             created_by_clerk_id: "creator-1",
-            waste_kg: updates["waste_kg"] as number,
-            cigarette_butts: updates["cigarette_butts"] as number,
+            waste_kg: updates["waste_kg"] as number | null,
+            cigarette_butts: updates["cigarette_butts"] as number | null,
             volunteers_count: updates["volunteers_count"] as number,
             duration_minutes: updates["duration_minutes"] as number,
             notes: updates["notes"] as string,

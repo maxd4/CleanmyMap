@@ -82,6 +82,34 @@ it("keeps geometry optional when normalizing create payload", () => {
   expect(normalized.manualDrawing).toBeUndefined();
 });
 
+it("keeps missing measurements nullable across the unified contract", () => {
+  const normalized = normalizeCreatePayload({
+    type: "action",
+    source: "web_form",
+    location: { label: "Paris 12e" },
+    dates: { observedAt: "2026-04-08" },
+    metadata: { associationName: "Action spontanee" },
+  });
+
+  expect(normalized.wasteKg).toBeNull();
+  expect(normalized.cigaretteButts).toBeNull();
+
+  const contract = buildActionDataContract({
+    id: "action-unknown-measures",
+    type: "action",
+    status: "pending",
+    source: "actions",
+    observedAt: "2026-04-08",
+    locationLabel: "Paris 12e",
+    latitude: null,
+    longitude: null,
+  });
+
+  const mapItem = toActionMapItem(contract);
+  expect(mapItem.waste_kg).toBeNull();
+  expect(mapItem.cigarette_butts).toBeNull();
+});
+
 it("prefers normalized contract geometry over missing legacy manual drawing", () => {
   const contract = buildActionDataContract({
     id: "action-geometry-only",

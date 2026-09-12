@@ -22,7 +22,7 @@ export function emitActionCreated(params: {
   actionId: string;
   userId: string;
   locationLabel: string;
-  wasteKg: number;
+  wasteKg: number | null;
 }) {
   return publishEvent("ACTION_CREATED", params, "api/actions");
 }

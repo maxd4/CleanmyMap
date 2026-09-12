@@ -174,7 +174,7 @@ export function ActionDeclarationExportPickerView({
                       </div>
                       <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2">
                         <dt className="font-semibold text-slate-500">Volume</dt>
-                        <dd className="font-bold text-slate-900">{form.wasteKg || "0"} kg</dd>
+                         <dd className="font-bold text-slate-900">{form.wasteKg ? `${form.wasteKg} kg` : "Non mesuré"}</dd>
                       </div>
                       <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2">
                         <dt className="font-semibold text-slate-500">Bénévoles</dt>
