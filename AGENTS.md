@@ -70,14 +70,14 @@ intermédiaires ne doivent pas commencer par ce canari.
 - avant chaque chantier, faire `git fetch origin main`, vérifier que le
   checkout est `main` et partir de l'état Git courant. Aucun nouveau worktree,
   clone ou branche `codex/*`/`publish/*` ne fait partie du workflow normal ;
- - le lifecycle canonique est : `origin/main → main → working tree/index →
-   commit signé → validations → push`. Si le push est temporairement interdit,
-   plusieurs lots peuvent être committés séquentiellement sur ce même `main`;
-   chaque lot part du HEAD précédent ;
- - dès qu'un blocage temporaire de publication disparaît, les commits locaux
-   validés en attente sur main sont réconciliés avec origin/main, revalidés puis
-   publiés avant d'accumuler de nouveaux lots d'écriture ;
- - à chaque fin d'exécution ayant produit des modifications, clôturer
+- le lifecycle canonique est : `origin/main → main → working tree/index →
+  commit signé → validations → push`. Si le push est temporairement interdit,
+  plusieurs lots peuvent être committés séquentiellement sur ce même `main`;
+  chaque lot part du HEAD précédent ;
+- dès qu'un blocage temporaire de publication disparaît, les commits locaux
+  validés en attente sur main sont réconciliés avec origin/main, revalidés puis
+  publiés avant d'accumuler de nouveaux lots d'écriture ;
+- à chaque fin d'exécution ayant produit des modifications, clôturer
   immédiatement le lot : vérifier son allowlist, committer uniquement ses
   fichiers, puis pousser ce commit vers `origin/main` avant toute nouvelle
   exécution ; si le push est bloqué, conserver le commit local et signaler
