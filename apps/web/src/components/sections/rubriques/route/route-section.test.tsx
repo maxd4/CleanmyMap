@@ -37,6 +37,8 @@ vi.mock("./hooks/use-route-data", () => ({
     picks: [],
     totalKm: 0,
     totalMinutes: 0,
+    serviceMinutes: null,
+    operationalTotalMinutes: null,
     hasData: true,
     hasRoute: Array.isArray(mocks.routeData.groupRoutes) && mocks.routeData.groupRoutes.length > 0,
     fr: true,
@@ -116,5 +118,6 @@ describe("RouteSection explainability wiring", () => {
     expect(markup).toContain("Groupe 2 — 4 bénévoles");
     expect(markup).toContain("Groupe 3 — 4 bénévoles");
     expect(markup).toContain('aria-label="Légende des boucles"');
+    expect(markup).toContain("Aucun total opérationnel fiable n’est encore disponible.");
   });
 });

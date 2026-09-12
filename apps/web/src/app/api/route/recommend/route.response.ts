@@ -26,6 +26,10 @@ import {
 import {
   buildRouteCalibrationContext,
 } from "@/lib/route/route-calibration";
+import {
+  buildRouteOperationalBudget,
+  type RouteOperationalBudgetDependency,
+} from "@/lib/route/route-operational-budget";
 import { buildCleanupWorkload } from "@/lib/route/route-cleanup-workload";
 import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 import type { RouteEventPressureContext, RouteCandidateData } from "./route.candidates";
@@ -98,6 +102,7 @@ function buildMultiRouteTrace(
       targetCount: group.targetCount,
       routeMode: group.routeGeometry.mode,
       withinBudget: group.withinBudget,
+      operationalBudget: group.operationalBudget,
     })),
     metrics: {
       coverageGain: metrics.coverageGain,
@@ -141,6 +146,7 @@ export function buildRouteRecommendationResponse(input: {
   volunteers: number;
   groupCount: number;
   pickupPreference: RoutePickupPreference;
+  operationalBudget?: RouteOperationalBudgetDependency;
 }): NextResponse {
   const {
     origin,
@@ -158,8 +164,68 @@ export function buildRouteRecommendationResponse(input: {
   } = input;
   const { plannedStops, routeGeometry, plannerResult } = planning;
   const generatedAt = new Date().toISOString();
-  const groupRoutes = planning.groupRoutes ?? [];
-  const multiRoute: RouteMultiRouteMetrics = planning.multiRouteMetrics ?? {
+  const durationDependency = input.operationalBudget ?? planning.operationalBudget;
+  const calibrationContext = buildRouteCalibrationContext({
+    generatedAt,
+    routeEngineVersion: ROUTE_PLANNER_ENGINE_VERSION,
+    volunteersExpected: volunteers,
+    groupCount,
+    candidates: plannedStops.map(({ candidate }) => ({
+      candidateId: candidate.id,
+      family: candidate.family,
+      cleanupWorkload: buildCleanupWorkload(candidate),
+    })),
+  });
+  const operationalBudget = buildRouteOperationalBudget({
+    travelMinutes: groupCount === 1
+      ? routeGeometry.durationMinutes
+      : planning.multiRouteMetrics?.totalDurationMinutes ?? routeGeometry.durationMinutes,
+    budgetMinutes: travelBudgetMinutes,
+    calibrationContext,
+    durationDependency,
+  });
+  const candidateById = new Map(
+    plannedStops.map((stop) => [stop.candidate.id, stop.candidate]),
+  );
+  const groupRoutes = (planning.groupRoutes ?? []).map((group) => {
+    const groupContext = buildRouteCalibrationContext({
+      generatedAt,
+      routeEngineVersion: ROUTE_PLANNER_ENGINE_VERSION,
+      volunteersExpected: group.volunteerCount,
+      groupCount,
+      candidates: group.candidateIds.flatMap((candidateId) => {
+        const candidate = candidateById.get(candidateId);
+        return candidate
+          ? [{
+              candidateId: candidate.id,
+              family: candidate.family,
+              cleanupWorkload: buildCleanupWorkload(candidate),
+            }]
+          : [];
+      }),
+    });
+    return {
+      ...group,
+      operationalBudget: buildRouteOperationalBudget({
+        travelMinutes: group.travelMinutes,
+        budgetMinutes: group.travelBudgetMinutes,
+        calibrationContext: groupContext,
+        durationDependency,
+      }),
+    };
+  });
+  const groupBudgets = groupRoutes.map(({ operationalBudget: budget }) => budget);
+  const operationalGroupsAvailable = groupBudgets.length > 0 && groupBudgets.every(
+    (budget) => budget.totalMinutes !== null,
+  );
+  const totalOperationalMinutes = operationalGroupsAvailable
+    ? groupBudgets.reduce((total, budget) => total + (budget.totalMinutes ?? 0), 0)
+    : null;
+  const balanceOperationalDuration = operationalGroupsAvailable
+    ? Math.max(...groupBudgets.map((budget) => budget.totalMinutes ?? 0)) -
+      Math.min(...groupBudgets.map((budget) => budget.totalMinutes ?? 0))
+    : null;
+  const baseMultiRoute: RouteMultiRouteMetrics = planning.multiRouteMetrics ?? {
     groupCount,
     volunteers,
     totalDistanceKm: routeGeometry.distanceKm,
@@ -174,6 +240,15 @@ export function buildRouteRecommendationResponse(input: {
     balanceVolunteerCount: 0,
     fallbackGroupCount: routeGeometry.mode === "fallback" ? 1 : 0,
     networkDistanceMeasured: false,
+  };
+  const multiRoute: RouteMultiRouteMetrics = {
+    ...baseMultiRoute,
+    operationalBudgetAvailable:
+      groupRoutes.length > 0 ? operationalGroupsAvailable : operationalBudget.totalMinutes !== null,
+    totalOperationalMinutes:
+      groupRoutes.length > 0 ? totalOperationalMinutes : operationalBudget.totalMinutes,
+    balanceOperationalDuration:
+      groupRoutes.length > 0 ? balanceOperationalDuration : null,
   };
   const multiRouteTrace = groupRoutes.length > 1
     ? buildMultiRouteTrace(groupRoutes, multiRoute)
@@ -212,6 +287,7 @@ export function buildRouteRecommendationResponse(input: {
     groupCount,
     pickupPreference,
     multiRoute: multiRouteTrace,
+    operationalBudget,
   });
   const dataLayers = resolveRouteDataLayers({
     observed: { candidateCount: candidates.length, isTruncated, sourceHealth },
@@ -254,8 +330,9 @@ export function buildRouteRecommendationResponse(input: {
       constraintsApplied: { pickupPreference },
       loop,
       withinBudget: true,
-      serviceMinutesEstimate: null,
-      totalMinutesEstimate: null,
+      serviceMinutesEstimate: operationalBudget.serviceMinutes,
+      totalMinutesEstimate: operationalBudget.totalMinutes,
+      operationalBudget,
       diagnostics: {
         loaded: contracts.length,
         eligible: candidates.length,
@@ -267,13 +344,7 @@ export function buildRouteRecommendationResponse(input: {
       },
       generatedAt,
       engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
-      calibrationContext: buildRouteCalibrationContext({
-        generatedAt,
-        routeEngineVersion: ROUTE_PLANNER_ENGINE_VERSION,
-        volunteersExpected: volunteers,
-        groupCount,
-        candidates: [],
-      }),
+      calibrationContext,
       stops: [],
       prediction: predictionSummary,
       trace,
@@ -339,8 +410,9 @@ export function buildRouteRecommendationResponse(input: {
     withinBudget: groupRoutes.length > 1
       ? groupRoutes.every(({ withinBudget }) => withinBudget)
       : travelMinutes <= travelBudgetMinutes,
-    serviceMinutesEstimate: null,
-    totalMinutesEstimate: null,
+    serviceMinutesEstimate: operationalBudget.serviceMinutes,
+    totalMinutesEstimate: operationalBudget.totalMinutes,
+    operationalBudget,
     diagnostics: {
       loaded: contracts.length,
       eligible: candidates.length,
@@ -352,17 +424,7 @@ export function buildRouteRecommendationResponse(input: {
     },
     generatedAt,
     engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
-    calibrationContext: buildRouteCalibrationContext({
-      generatedAt,
-      routeEngineVersion: ROUTE_PLANNER_ENGINE_VERSION,
-      volunteersExpected: volunteers,
-      groupCount,
-      candidates: plannedStops.map(({ candidate }) => ({
-        candidateId: candidate.id,
-        family: candidate.family,
-        cleanupWorkload: buildCleanupWorkload(candidate),
-      })),
-    }),
+    calibrationContext,
     stops,
     prediction: predictionSummary,
     trace,

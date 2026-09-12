@@ -32,6 +32,7 @@ import {
   buildCleanupWorkload,
   type CleanupWorkload,
 } from "./route-cleanup-workload";
+import type { RouteOperationalBudget } from "./route-operational-budget";
 
 export type RouteTraceExclusionReason =
   | "not_admissible"
@@ -71,6 +72,8 @@ export type RouteTraceSelectedStop = {
   returnTravelMinutes: number;
   loopDistanceKm: number;
   loopTravelMinutes: number;
+  loopOperationalMinutes?: number | null;
+  operationalBudget?: RouteOperationalBudget | null;
   budgetAfterReturnMinutes: number;
   budgetBeforeMinutes: number;
   budgetAfterMinutes: number;
@@ -116,6 +119,7 @@ export type RouteMultiRouteTrace = {
     targetCount: number;
     routeMode: RouteGeometry["mode"];
     withinBudget: boolean;
+    operationalBudget?: RouteOperationalBudget;
   }>;
   metrics: {
     coverageGain: number;
@@ -175,9 +179,11 @@ export type RouteRecommendationTrace = {
   duration: {
     networkMinutes: number | null;
     estimatedMinutes: number | null;
-    serviceMinutes: null;
+    serviceMinutes: number | null;
+    uncertaintyReserveMinutes: number | null;
     totalMinutes: number | null;
   };
+  operationalBudget?: RouteOperationalBudget;
   routing: {
     provider: RouteGeometry["provider"];
     profile: RouteGeometry["profile"];
@@ -242,6 +248,7 @@ export type BuildRouteRecommendationTraceInput = {
   volunteers?: number;
   groupCount?: number;
   multiRoute?: RouteMultiRouteTrace | null;
+  operationalBudget?: RouteOperationalBudget;
 };
 
 const EMPTY_EVENT_SIGNAL_CONTEXT: RouteEventSignalContext = {
@@ -387,6 +394,8 @@ function selectionForStop(
     returnTravelMinutes: selection.returnTravelMinutes,
     loopDistanceKm: selection.loopDistanceKm,
     loopTravelMinutes: selection.loopTravelMinutes,
+    loopOperationalMinutes: selection.loopOperationalMinutes,
+    operationalBudget: selection.operationalBudget,
     budgetAfterReturnMinutes: selection.budgetAfterReturnMinutes,
     budgetBeforeMinutes: selection.budgetBeforeMinutes,
     budgetAfterMinutes: selection.budgetAfterMinutes,
@@ -542,9 +551,12 @@ export function buildRouteRecommendationTrace(
         input.routeGeometry.mode === "fallback"
           ? input.routeGeometry.durationMinutes
           : null,
-      serviceMinutes: null,
-      totalMinutes: consumedMinutes,
+      serviceMinutes: input.operationalBudget?.serviceMinutes ?? null,
+      uncertaintyReserveMinutes:
+        input.operationalBudget?.uncertaintyReserveMinutes ?? null,
+      totalMinutes: input.operationalBudget?.totalMinutes ?? null,
     },
+    operationalBudget: input.operationalBudget,
     routing: {
       provider: input.routeGeometry.provider,
       profile: input.routeGeometry.profile,

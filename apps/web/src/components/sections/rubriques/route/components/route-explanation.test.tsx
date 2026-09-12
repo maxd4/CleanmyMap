@@ -78,7 +78,7 @@ function dataFor(mode: "network" | "fallback"): RouteExplanationData {
       },
       budget: { requestedMinutes: 60, consumedMinutes: 32, remainingMinutes: 28 },
       distance: { totalKm: 2.4, segmentsTotalKm: 2.4 },
-      duration: { networkMinutes: mode === "network" ? 32 : null, estimatedMinutes: mode === "fallback" ? 32 : null, serviceMinutes: null, totalMinutes: 32 },
+      duration: { networkMinutes: mode === "network" ? 32 : null, estimatedMinutes: mode === "fallback" ? 32 : null, serviceMinutes: null, uncertaintyReserveMinutes: null, totalMinutes: null },
       routing: {
         provider: mode === "network" ? "fossgis-osrm" : "none",
         profile: mode === "network" ? "foot" : null,
@@ -159,6 +159,7 @@ describe("RouteExplanation", () => {
     expect(markup).toContain("Rue de Test");
     expect(markup).toContain("Mesure réseau");
     expect(markup).toContain("Boucle de 2,4 km · départ et arrivée au même endroit");
+    expect(markup).toContain("Aucun total opérationnel fiable n’est encore disponible.");
     expect(markup).toContain("retour réserve 16 min");
     expect(markup).toContain("Rue du Retour");
     expect(markup).toContain("<summary");

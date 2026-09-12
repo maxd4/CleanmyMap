@@ -234,8 +234,14 @@ function renderMetrics(data: RouteResponse, routes: ExportRoute[], multi: boolea
   const estimatedLabel = routes.some((route) => route.geometry.mode === "fallback")
     ? "Estimation / fallback"
     : "Mesure réseau";
+  const serviceLabel = data.serviceMinutesEstimate === null
+    ? "Non disponible : calibration absente"
+    : formatDuration(data.serviceMinutesEstimate);
+  const totalLabel = data.totalMinutesEstimate === null
+    ? "Non disponible : aucun total fiable"
+    : formatDuration(data.totalMinutesEstimate);
 
-  return `<dl class="route-pdf-metrics"><div><dt>Distance</dt><dd>${escapeHtml(formatDistance(distance))}</dd></div><div><dt>Durée marche</dt><dd>${escapeHtml(formatDuration(duration))}</dd></div><div><dt>Durée de collecte estimée</dt><dd>Non fournie par le planner</dd></div><div><dt>Durée totale</dt><dd>Non calculée sans durée de collecte</dd></div><div><dt>Budget déplacement</dt><dd>${escapeHtml(formatDuration(data.travelBudgetMinutes))}</dd></div><div><dt>État du tracé</dt><dd>${escapeHtml(estimatedLabel)}</dd></div></dl>`;
+  return `<dl class="route-pdf-metrics"><div><dt>Distance</dt><dd>${escapeHtml(formatDistance(distance))}</dd></div><div><dt>Durée déplacement</dt><dd>${escapeHtml(formatDuration(duration))}</dd></div><div><dt>Durée collecte</dt><dd>${escapeHtml(serviceLabel)}</dd></div><div><dt>Total opérationnel</dt><dd>${escapeHtml(totalLabel)}</dd></div><div><dt>Budget déplacement</dt><dd>${escapeHtml(formatDuration(data.travelBudgetMinutes))}</dd></div><div><dt>État du tracé</dt><dd>${escapeHtml(estimatedLabel)}</dd></div></dl>`;
 }
 
 function renderStops(routes: ExportRoute[]): string {

@@ -16,6 +16,7 @@ import {
   type RoutePlannerOrigin,
   type RoutePlannerResult,
 } from "@/lib/route/route-planner";
+import type { RouteOperationalBudgetDependency } from "@/lib/route/route-operational-budget";
 import type { RouteGeometry } from "@/lib/route/route-contract";
 import type { TrashSpotterRouteCandidate } from "@/lib/route/trash-spotter-recommendation";
 import {
@@ -56,6 +57,7 @@ export type RoutePlanningResult = {
   groupPartition: RouteGroupPartitionResult;
   groupRoutes?: RouteGroupRoute[];
   multiRouteMetrics?: RouteMultiRouteMetrics;
+  operationalBudget?: RouteOperationalBudgetDependency;
 };
 
 function fallbackGeometryForPrefix(
@@ -85,6 +87,7 @@ export async function planRouteRecommendation(input: {
   planningMode: RoutePlanningMode;
   eventCenteredAnchor: RouteEventCenteredAnchor | null;
   eventSignalContext: RouteEventSignalContext;
+  operationalBudget?: RouteOperationalBudgetDependency;
 }): Promise<RoutePlanningResult> {
   const effectiveRiskFocus = input.effectiveRiskFocus;
   const baselinePlannerResult = planRoute({
@@ -94,6 +97,13 @@ export async function planRouteRecommendation(input: {
     maxStops: input.maxStops,
     priorityVsTravel: input.priorityVsTravel,
     effectiveRiskFocus,
+    ...(input.operationalBudget
+      ? {
+          operationalBudget: input.operationalBudget,
+          volunteersExpected: input.volunteers,
+          groupCount: input.groupCount,
+        }
+      : {}),
   });
   const predictionBuild = buildPredictedRouteCandidates({
     snapshot: input.parisPressureSnapshot,
@@ -150,6 +160,13 @@ export async function planRouteRecommendation(input: {
     maxStops: input.maxStops,
     priorityVsTravel: input.priorityVsTravel,
     effectiveRiskFocus,
+    ...(input.operationalBudget
+      ? {
+          operationalBudget: input.operationalBudget,
+          volunteersExpected: input.volunteers,
+          groupCount: input.groupCount,
+        }
+      : {}),
   });
   const partitionInput = {
     origin: input.origin,
@@ -161,6 +178,7 @@ export async function planRouteRecommendation(input: {
     priorityVsTravel: input.priorityVsTravel,
     planningMode: input.planningMode,
     effectiveRiskFocus,
+    operationalBudget: input.operationalBudget,
   };
   let groupPartition: RouteGroupPartitionResult | null =
     input.groupCount === 1
@@ -286,6 +304,7 @@ export async function planRouteRecommendation(input: {
         ...plannerResult,
         stops: plannedStops,
       },
+      operationalBudget: input.operationalBudget,
     });
     groupRoutes = [buildSingleGroupRoute({
       group: groupPartition.groups[0]!,
@@ -319,6 +338,7 @@ export async function planRouteRecommendation(input: {
       partition: groupPartition,
       travelBudgetMinutes: input.travelBudgetMinutes,
       effectiveRiskFocus,
+      operationalBudget: input.operationalBudget,
     });
     groupPartition = multiRouteResult.partition;
     groupRoutes = multiRouteResult.groupRoutes;
@@ -371,5 +391,6 @@ export async function planRouteRecommendation(input: {
     groupPartition,
     groupRoutes,
     multiRouteMetrics,
+    operationalBudget: input.operationalBudget,
   };
 }

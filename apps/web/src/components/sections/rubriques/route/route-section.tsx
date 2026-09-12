@@ -62,6 +62,8 @@ export function RouteSection() {
     picks,
     totalKm,
     totalMinutes,
+    serviceMinutes,
+    operationalTotalMinutes,
     hasData,
     hasRoute,
     fr,
@@ -334,8 +336,30 @@ export function RouteSection() {
                             <span className="text-xl font-black text-slate-500 tracking-widest uppercase">km</span>
                             <span className="text-4xl font-black text-white/20 mx-4">/</span>
                             <span className="text-5xl font-black text-white tracking-tighter">{totalMinutes}</span>
-                            <span className="text-xl font-black text-slate-500 tracking-widest uppercase">min</span>
+                            <span className="text-xl font-black text-slate-500 tracking-widest uppercase">min déplacement</span>
                          </div>
+                         <dl
+                           className="grid gap-3 text-sm text-white/80 sm:grid-cols-3"
+                           data-route-operational-budget
+                         >
+                           <div>
+                             <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Déplacement</dt>
+                             <dd className="mt-1 font-bold">{totalMinutes} min</dd>
+                           </div>
+                           <div>
+                             <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Collecte</dt>
+                             <dd className="mt-1 font-bold">{serviceMinutes === null ? "Non calibrée" : `${serviceMinutes} min`}</dd>
+                           </div>
+                           <div>
+                             <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Total opérationnel</dt>
+                             <dd className="mt-1 font-bold">{operationalTotalMinutes === null ? "Non disponible" : `${operationalTotalMinutes} min`}</dd>
+                           </div>
+                         </dl>
+                         {serviceMinutes === null ? (
+                           <p className="text-xs font-semibold text-amber-100/80">
+                             Aucun total opérationnel fiable n’est encore disponible.
+                           </p>
+                         ) : null}
                          {data.isLoop ? (
                          <p className="text-sm font-semibold text-emerald-100/80">
                              {groupRoutes.length > 1
@@ -460,7 +484,7 @@ export function RouteSection() {
                               <span className="font-black text-white">{groupLabel}</span>
                             </span>
                             <p className="mt-2 text-xs text-slate-300">
-                              {group.travelDistanceKm.toFixed(2)} km · {group.travelMinutes} min · {group.targetCount} {fr ? "stops" : "stops"}
+                              {group.travelDistanceKm.toFixed(2)} km · {group.travelMinutes} min déplacement · {group.operationalBudget?.totalMinutes === null || group.operationalBudget?.totalMinutes === undefined ? "total opérationnel indisponible" : `${group.operationalBudget.totalMinutes} min total`} · {group.targetCount} {fr ? "stops" : "stops"}
                             </p>
                             {multiRouteDisplayMode === "patterns" ? (
                               <p className="mt-1 text-[11px] font-semibold text-emerald-100/70">

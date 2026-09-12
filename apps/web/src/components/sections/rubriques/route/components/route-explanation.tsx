@@ -17,6 +17,8 @@ import { MetricValue, SelectionDetail } from "./route-explanation-stop";
 
 export function RouteExplanation({ data, fr }: RouteExplanationProps) {
   const trace = data.trace;
+  const serviceMinutes = data.serviceMinutesEstimate ?? null;
+  const operationalTotalMinutes = data.totalMinutesEstimate ?? null;
   const originLabel = getRouteOriginLabel(data.origin.source, fr);
   const providerLabel = trace.routing.provider === "none"
     ? "aucun fournisseur externe"
@@ -86,6 +88,33 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
                 ? `Déplacement estimé : ${formatDuration(trace.duration.estimatedMinutes)}.`
                 : `Déplacement réseau : ${formatDuration(trace.duration.networkMinutes)}.`}
           </p>
+          <dl className="mt-3 grid gap-3 text-sm text-slate-200 sm:grid-cols-3" data-route-duration-breakdown>
+            <div>
+              <dt className="text-slate-500">Déplacement</dt>
+              <dd className="font-semibold text-white">{formatDuration(data.travelMinutes)}</dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Collecte</dt>
+              <dd className="font-semibold text-white">
+                {serviceMinutes === null
+                  ? "Non calibrée"
+                  : formatDuration(serviceMinutes)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-slate-500">Total opérationnel</dt>
+              <dd className="font-semibold text-white">
+                {operationalTotalMinutes === null
+                  ? "Non disponible"
+                  : formatDuration(operationalTotalMinutes)}
+              </dd>
+            </div>
+          </dl>
+          {operationalTotalMinutes === null ? (
+            <p className="mt-2 text-xs text-amber-100/80">
+              Aucun total opérationnel fiable n’est encore disponible.
+            </p>
+          ) : null}
           <p className="mt-2 rounded-xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm font-semibold text-emerald-50">
             Boucle de {formatNumber(data.travelDistanceKm)} km · départ et arrivée au même endroit. Le retour réserve {formatDuration(data.loop.returnMinutes)} du budget ; il reste {formatDuration(data.loop.budgetRemainingMinutes)} après la boucle.
           </p>

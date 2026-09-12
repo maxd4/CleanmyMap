@@ -95,6 +95,71 @@ function fallbackGeometry(
 }
 
 describe("route planner V1", () => {
+  it("keeps the main travel-only selection when calibration is data-insufficient", () => {
+    const candidates = [candidate("first", 0.001, 0, 80), candidate("second", 0.002, 0, 70)];
+    const withoutDependency = planRoute(plannerInput({ candidates, maxStops: 1 }));
+    const withInsufficientCalibration = planRoute(plannerInput({
+      candidates,
+      maxStops: 1,
+      operationalBudget: {
+        generatedAt: "2026-09-12T00:00:00.000Z",
+        estimateDuration: () => ({
+          contractVersion: "route-cleanup-duration-v1",
+          minutes: null,
+          uncertaintyMinutes: null,
+          modelVersion: "route-cleanup-duration-v1",
+          calibrationStatus: "data_insufficient",
+          reason: "no_active_calibrated_artifact",
+          provenance: {
+            source: "route-calibration",
+            contextVersion: "action-route-calibration-v1",
+            artifactVersion: null,
+          },
+        }),
+      },
+    }));
+
+    expect(withInsufficientCalibration.stops.map(({ candidate: item }) => item.id))
+      .toEqual(withoutDependency.stops.map(({ candidate: item }) => item.id));
+    expect(withInsufficientCalibration.audit.evaluations.every((evaluation) =>
+      evaluation.loopOperationalMinutes === null,
+    )).toBe(true);
+  });
+
+  it("uses the injected operational cost for admission while retaining the return leg", () => {
+    const cheap = candidate("cheap", 0.001, 0, 70);
+    const expensive = candidate("expensive", 0.002, 0, 99);
+    const result = planRoute(plannerInput({
+      candidates: [expensive, cheap],
+      travelBudgetMinutes: 50,
+      maxStops: 1,
+      operationalBudget: {
+        generatedAt: "2026-09-12T00:00:00.000Z",
+        estimateDuration: ({ context }) => ({
+          contractVersion: "route-cleanup-duration-v1",
+          minutes: context.candidates.some(({ candidateId }) => candidateId === "expensive") ? 50 : 10,
+          uncertaintyMinutes: 5,
+          modelVersion: "fixture-calibrated-v1",
+          calibrationStatus: "calibrated",
+          reason: "fixture",
+          provenance: {
+            source: "route-calibration",
+            contextVersion: context.version,
+            artifactVersion: "fixture-artifact-v1",
+          },
+        }),
+      },
+    }));
+
+    expect(result.stops[0]?.candidate.id).toBe("cheap");
+    const expensiveEvaluation = result.audit.evaluations.find(({ candidateId }) => candidateId === "expensive");
+    const cheapEvaluation = result.audit.evaluations.find(({ candidateId }) => candidateId === "cheap");
+    expect(expensiveEvaluation?.feasible).toBe(false);
+    expect(cheapEvaluation?.feasible).toBe(true);
+    expect(cheapEvaluation?.loopOperationalMinutes).toBeGreaterThan(
+      cheapEvaluation?.incrementalTravelMinutes ?? 0,
+    );
+  });
   it("arbitre deux pollutions proches avec une additionnalité bornée et confiante", () => {
     const municipal = candidate("municipal-frequent", 0.001, 0, 92);
     const complementary = candidate("complementary", 0.001, 0, 84);

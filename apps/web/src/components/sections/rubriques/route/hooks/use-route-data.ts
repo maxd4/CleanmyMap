@@ -121,6 +121,9 @@ export function useRouteData() {
 
   const totalMinutes = useMemo(() => data?.travelMinutes ?? 0, [data?.travelMinutes]);
 
+  const serviceMinutes = data?.serviceMinutesEstimate ?? null;
+  const operationalTotalMinutes = data?.totalMinutesEstimate ?? null;
+
   const hasData = !isLoading && !error && Boolean(data);
   const hasRoute = hasData && picks.length > 0;
 
@@ -133,6 +136,8 @@ export function useRouteData() {
     picks,
     totalKm,
     totalMinutes,
+    serviceMinutes,
+    operationalTotalMinutes,
     hasData,
     hasRoute,
     fr,

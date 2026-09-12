@@ -20,6 +20,12 @@ import type {
   RouteGroupPartitionResult,
 } from "./route-group-partition";
 import type { RouteRiskFocus } from "./route-predicted-targets";
+import { buildRouteCalibrationContext } from "./route-calibration";
+import {
+  buildRouteOperationalBudget,
+  type RouteOperationalBudgetDependency,
+} from "./route-operational-budget";
+import { buildCleanupWorkload } from "./route-cleanup-workload";
 
 type Coordinate = [number, number];
 
@@ -156,6 +162,9 @@ async function routeGroupWithinBudget(
   group: RouteGroupAssignment,
   candidatesById: Map<string, RoutePlannerCandidate>,
   travelBudgetMinutes: number,
+  operationalBudget?: RouteOperationalBudgetDependency,
+  volunteersExpected = 1,
+  groupCount = 1,
 ): Promise<RouteGroupRoutingResult> {
   const initialCandidates = group.candidateIds
     .map((id) => candidatesById.get(id))
@@ -165,6 +174,32 @@ async function routeGroupWithinBudget(
   let degraded = false;
   let warning: string | null = null;
   let budgetPrefixApplied = false;
+
+  const fitsBudget = (
+    candidateList: readonly RoutePlannerCandidate[],
+    candidateGeometry: RouteGeometry,
+  ): boolean => {
+    if (candidateGeometry.durationMinutes > travelBudgetMinutes) return false;
+    if (!operationalBudget) return true;
+    const context = buildRouteCalibrationContext({
+      generatedAt: operationalBudget.generatedAt ?? new Date().toISOString(),
+      routeEngineVersion: "route-planner-v2",
+      volunteersExpected,
+      groupCount,
+      candidates: candidateList.map((candidate) => ({
+        candidateId: candidate.id,
+        family: candidate.family,
+        cleanupWorkload: buildCleanupWorkload(candidate),
+      })),
+    });
+    const budget = buildRouteOperationalBudget({
+      travelMinutes: candidateGeometry.durationMinutes,
+      budgetMinutes: travelBudgetMinutes,
+      calibrationContext: context,
+      durationDependency: operationalBudget,
+    });
+    return budget.totalMinutes === null ? true : budget.withinBudget === true;
+  };
 
   if (initialCandidates.length === 0) {
     const geometry = fallbackGeometry(origin, []);
@@ -195,7 +230,7 @@ async function routeGroupWithinBudget(
     warning = "Le routage réseau d'un groupe a échoué ; un fallback local fermé est utilisé.";
   }
 
-  if (geometry.durationMinutes > travelBudgetMinutes) {
+  if (!fitsBudget(retainedCandidates, geometry)) {
     budgetPrefixApplied = true;
     if (geometry.mode === "network") {
       while (retainedCandidates.length > 0) {
@@ -207,7 +242,7 @@ async function routeGroupWithinBudget(
             {},
           );
           providerCalls += 1;
-          if (candidateGeometry.durationMinutes <= travelBudgetMinutes) {
+            if (fitsBudget(retainedCandidates, candidateGeometry)) {
             geometry = candidateGeometry;
             break;
           }
@@ -219,7 +254,7 @@ async function routeGroupWithinBudget(
       }
     }
 
-    if (geometry.durationMinutes > travelBudgetMinutes || retainedCandidates.length === 0) {
+    if (!fitsBudget(retainedCandidates, geometry) || retainedCandidates.length === 0) {
       degraded = true;
       warning = warning ?? "Le réseau ne permet pas de respecter le budget de ce groupe ; un fallback local fermé est utilisé.";
       retainedCandidates = [];
@@ -227,7 +262,7 @@ async function routeGroupWithinBudget(
       for (let count = initialCandidates.length; count > 0; count -= 1) {
         const prefix = initialCandidates.slice(0, count);
         const candidateGeometry = fallbackGeometry(origin, prefix);
-        if (candidateGeometry.durationMinutes <= travelBudgetMinutes) {
+        if (fitsBudget(prefix, candidateGeometry)) {
           retainedCandidates = prefix;
           geometry = candidateGeometry;
           break;
@@ -306,6 +341,7 @@ export async function routePartitionedGroups(input: {
   partition: RouteGroupPartitionResult;
   travelBudgetMinutes: number;
   effectiveRiskFocus?: RouteRiskFocus;
+  operationalBudget?: RouteOperationalBudgetDependency;
 }): Promise<RouteMultiRouteResult> {
   const candidatesById = new Map(input.candidates.map((candidate) => [candidate.id, candidate]));
   const routedGroups: RouteGroupRoutingResult[] = [];
@@ -315,6 +351,9 @@ export async function routePartitionedGroups(input: {
       group,
       candidatesById,
       input.travelBudgetMinutes,
+      input.operationalBudget,
+      group.volunteerCount,
+      input.partition.groupCount,
     ));
   }
 

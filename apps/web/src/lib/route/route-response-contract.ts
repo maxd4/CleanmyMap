@@ -15,6 +15,7 @@ import type {
 } from "./route-group-partition";
 import type { RoutePickupPreference } from "./route-pickup-preference";
 import type { RouteCalibrationContext } from "./route-calibration";
+import type { RouteOperationalBudget } from "./route-operational-budget";
 
 export {
   ROUTE_PICKUP_PREFERENCES,
@@ -84,8 +85,10 @@ export type RouteRecommendationResponse = {
     budgetRemainingMinutes: number;
   };
   withinBudget: boolean;
-  serviceMinutesEstimate: null;
-  totalMinutesEstimate: null;
+  serviceMinutesEstimate: number | null;
+  totalMinutesEstimate: number | null;
+  /** Versioned server composition; legacy scalar fields remain for compatibility. */
+  operationalBudget?: RouteOperationalBudget;
   diagnostics: {
     loaded: number;
     eligible: number;
@@ -142,6 +145,7 @@ export type RouteGroupRoute = RouteGroupAssignment & {
   travelMinutes: number;
   travelBudgetMinutes: number;
   withinBudget: boolean;
+  operationalBudget?: RouteOperationalBudget;
 };
 
 export type RouteMultiRouteMetrics = {
@@ -159,6 +163,9 @@ export type RouteMultiRouteMetrics = {
   balanceVolunteerCount: number;
   fallbackGroupCount: number;
   networkDistanceMeasured: boolean;
+  operationalBudgetAvailable?: boolean;
+  totalOperationalMinutes?: number | null;
+  balanceOperationalDuration?: number | null;
 };
 
 export type RouteResponse = RouteRecommendationResponse;

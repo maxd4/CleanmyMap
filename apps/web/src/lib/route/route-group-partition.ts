@@ -9,6 +9,12 @@ import {
   type RoutePlannerResult,
 } from "./route-planner";
 import type { RouteRiskFocus } from "./route-predicted-targets";
+import { buildRouteCalibrationContext } from "./route-calibration";
+import {
+  buildRouteOperationalBudget,
+  type RouteOperationalBudgetDependency,
+} from "./route-operational-budget";
+import { buildCleanupWorkload } from "./route-cleanup-workload";
 import type { RoutePlanningMode } from "./route-planning-mode";
 
 export const MAX_ROUTE_VOLUNTEERS = 100;
@@ -28,6 +34,7 @@ export type RouteGroupPartitionInput = {
   planningMode?: RoutePlanningMode;
   plannerResult?: RoutePlannerResult;
   effectiveRiskFocus?: RouteRiskFocus;
+  operationalBudget?: RouteOperationalBudgetDependency;
 };
 
 export type RouteGroupAssignment = {
@@ -37,6 +44,7 @@ export type RouteGroupAssignment = {
   candidateIds: string[];
   estimatedDistanceKm: number;
   estimatedDurationMinutes: number;
+  estimatedOperationalDurationMinutes?: number | null;
   targetCount: number;
 };
 
@@ -49,6 +57,7 @@ export type RoutePartitionMetrics = {
   balanceDistance: number;
   /** Max-min estimated closed-loop travel duration between groups. */
   balanceDuration: number;
+  balanceOperationalDuration?: number | null;
   /** Max-min number of targets between groups. */
   balanceTargetCount: number;
 };
@@ -59,6 +68,7 @@ export type RoutePartitionAssignmentAudit = {
   plannerValue: number;
   estimatedLoopDistanceKm: number;
   estimatedLoopDurationMinutes: number;
+  estimatedOperationalDurationMinutes?: number | null;
   overlapCost: number;
   sameTargetCost: number;
   samePredictiveZoneCost: number;
@@ -105,6 +115,8 @@ type CandidateAssignmentEvaluation = {
   returnTravelMinutes: number;
   loopDistanceKm: number;
   loopTravelMinutes: number;
+  loopOperationalMinutes: number | null;
+  operationalBudget?: ReturnType<typeof buildRouteOperationalBudget>;
   plannerValue: number;
   overlapCost: number;
   sameTargetCost: number;
@@ -167,6 +179,10 @@ function groupDuration(group: InternalGroup): number {
   return group.stops.at(-1)?.loopTravelMinutes ?? 0;
 }
 
+function groupOperationalDuration(group: InternalGroup): number | null {
+  return group.stops.at(-1)?.loopOperationalMinutes ?? null;
+}
+
 function balanceRange(values: readonly number[]): number {
   if (values.length === 0) return 0;
   return Math.max(...values) - Math.min(...values);
@@ -180,6 +196,7 @@ function groupAssignment(group: InternalGroup, origin: RoutePlannerOrigin): Rout
     candidateIds: group.stops.map(({ candidate }) => candidate.id),
     estimatedDistanceKm: round(groupDistance(group)),
     estimatedDurationMinutes: round(groupDuration(group)),
+    estimatedOperationalDurationMinutes: groupOperationalDuration(group),
     targetCount: group.stops.length,
   };
 }
@@ -234,6 +251,7 @@ function buildSingleGroupResult(
       coverageGain: round(selectedValue),
       balanceDistance: 0,
       balanceDuration: 0,
+      balanceOperationalDuration: groupOperationalDuration(group),
       balanceTargetCount: 0,
     },
     audit: {
@@ -251,6 +269,7 @@ function buildSingleGroupResult(
         plannerValue: round(plannerValue(stop.candidate)),
         estimatedLoopDistanceKm: round(stop.loopDistanceKm),
         estimatedLoopDurationMinutes: round(stop.loopTravelMinutes),
+        estimatedOperationalDurationMinutes: stop.loopOperationalMinutes ?? null,
         overlapCost: 0,
         sameTargetCost: 0,
         samePredictiveZoneCost: 0,
@@ -321,14 +340,38 @@ function evaluateCandidateForGroup(
   const cumulativeTravelMinutes = groupDuration(group) - (group.stops.at(-1)?.returnTravelMinutes ?? 0);
   const loopDistanceKm = cumulativeDistanceKm + incrementalDistanceKm + returnDistanceKm;
   const loopTravelMinutes = cumulativeTravelMinutes + incrementalTravelMinutes + returnTravelMinutes;
-  if (loopTravelMinutes > Math.max(0, input.travelBudgetMinutes) + 1e-9) return null;
+  const operationalBudget = input.operationalBudget
+    ? buildRouteOperationalBudget({
+        travelMinutes: loopTravelMinutes,
+        budgetMinutes: input.travelBudgetMinutes,
+        calibrationContext: buildRouteCalibrationContext({
+          generatedAt: input.operationalBudget.generatedAt ?? new Date().toISOString(),
+          routeEngineVersion: "route-planner-v2",
+          volunteersExpected: group.volunteerCount,
+          groupCount: input.groupCount,
+          candidates: [
+            ...group.stops.map(({ candidate: assigned }) => assigned),
+            candidate,
+          ].map((item) => ({
+            candidateId: item.id,
+            family: item.family,
+            cleanupWorkload: buildCleanupWorkload(item),
+          })),
+        }),
+        durationDependency: input.operationalBudget,
+      })
+    : null;
+  const budgetCost = operationalBudget?.totalMinutes ?? loopTravelMinutes;
+  if (budgetCost > Math.max(0, input.travelBudgetMinutes) + 1e-9) return null;
 
   const overlap = overlapEvaluation(candidate, group, groups, input.origin);
   const projectedDistances = groups.map((item) =>
     item.groupIndex === group.groupIndex ? loopDistanceKm : groupDistance(item),
   );
   const projectedDurations = groups.map((item) =>
-    item.groupIndex === group.groupIndex ? loopTravelMinutes : groupDuration(item),
+    item.groupIndex === group.groupIndex
+      ? budgetCost
+      : groupOperationalDuration(item) ?? groupDuration(item),
   );
   const projectedTargetCounts = groups.map((item) =>
     item.groupIndex === group.groupIndex ? item.stops.length + 1 : item.stops.length,
@@ -339,7 +382,7 @@ function evaluateCandidateForGroup(
     balanceRange(projectedTargetCounts) * 8;
   const priorityWeight = clamp(input.priorityVsTravel, 0, 100) / 100;
   const normalizedTravel = clamp(
-    1 - loopTravelMinutes / Math.max(1, input.travelBudgetMinutes),
+    1 - budgetCost / Math.max(1, input.travelBudgetMinutes),
     0,
     1,
   );
@@ -353,6 +396,8 @@ function evaluateCandidateForGroup(
     returnTravelMinutes,
     loopDistanceKm,
     loopTravelMinutes,
+    loopOperationalMinutes: operationalBudget?.totalMinutes ?? null,
+    operationalBudget: operationalBudget ?? undefined,
     plannerValue: plannerValue(candidate),
     ...overlap,
     balancePenalty,
@@ -376,6 +421,8 @@ function assignCandidate(
     returnTravelMinutes: evaluation.returnTravelMinutes,
     loopDistanceKm: evaluation.loopDistanceKm,
     loopTravelMinutes: evaluation.loopTravelMinutes,
+    loopOperationalMinutes: evaluation.loopOperationalMinutes,
+    ...(evaluation.operationalBudget ? { operationalBudget: evaluation.operationalBudget } : {}),
   });
 }
 
@@ -395,6 +442,9 @@ export function partitionRouteCandidates(
       maxStops: input.maxStops,
       priorityVsTravel: input.priorityVsTravel,
       effectiveRiskFocus: input.effectiveRiskFocus,
+      operationalBudget: input.operationalBudget,
+      volunteersExpected: input.volunteers,
+      groupCount: input.groupCount,
     });
     return buildSingleGroupResult(input, compatiblePlannerResult);
   }
@@ -456,6 +506,7 @@ export function partitionRouteCandidates(
         plannerValue: round(chosen.evaluation.plannerValue),
         estimatedLoopDistanceKm: round(chosen.evaluation.loopDistanceKm),
         estimatedLoopDurationMinutes: round(chosen.evaluation.loopTravelMinutes),
+        estimatedOperationalDurationMinutes: chosen.evaluation.loopOperationalMinutes,
         overlapCost: round(chosen.evaluation.overlapCost),
         sameTargetCost: round(chosen.evaluation.sameTargetCost),
         samePredictiveZoneCost: round(chosen.evaluation.samePredictiveZoneCost),
@@ -503,6 +554,12 @@ export function partitionRouteCandidates(
       coverageGain: round(selectedValue),
       balanceDistance: round(balanceRange(groupAssignments.map(({ estimatedDistanceKm }) => estimatedDistanceKm))),
       balanceDuration: round(balanceRange(groupAssignments.map(({ estimatedDurationMinutes }) => estimatedDurationMinutes))),
+      balanceOperationalDuration:
+        groupAssignments.every(({ estimatedOperationalDurationMinutes }) =>
+          estimatedOperationalDurationMinutes !== null && estimatedOperationalDurationMinutes !== undefined,
+        )
+          ? round(balanceRange(groupAssignments.map(({ estimatedOperationalDurationMinutes }) => estimatedOperationalDurationMinutes ?? 0)))
+          : null,
       balanceTargetCount: balanceRange(groupAssignments.map(({ targetCount }) => targetCount)),
     },
     audit: {
