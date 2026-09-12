@@ -22,11 +22,7 @@ const intentionalUses = [
 
 const intentionalBlackUses = [
   ["apps/web/src/components/navigation/app-navigation-tree-menu.tsx", /text-black\/(?:60|70)/],
-  ["apps/web/src/components/navigation/app-navigation-block-dropdown.tsx", /text-black\/80/],
-  ["apps/web/src/components/navigation/app-navigation-block-dropdown-act.tsx", /text-black\/80/],
-  ["apps/web/src/components/navigation/app-navigation-block-dropdown-home.tsx", /text-black\/80/],
-  ["apps/web/src/components/navigation/app-navigation-block-dropdown-learn.tsx", /text-black\/80/],
-  ["apps/web/src/components/navigation/app-navigation-block-dropdown-network.tsx", /text-black\/80/],
+  ["apps/web/src/components/navigation/navigation-dropdown-content.tsx", /text-black\/80/],
 ];
 
 function collectFiles(directory) {

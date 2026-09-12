@@ -1,11 +1,11 @@
 "use client";
 
-import { Eye, Heart, MessageCircle, Users } from "lucide-react";
 import type { NavigationSpace } from "@/lib/navigation";
 import { getLocalizedText } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
 import { getNavigationDropdownCardBorderTokens } from "./navigation-dropdown-border-theme";
-import { getNavigationDropdownCardGeometry } from "./navigation-dropdown-card-theme";
+import { NAVIGATION_DROPDOWN_CARD_GEOMETRY } from "./navigation-dropdown-card-theme";
+import { getNavigationDropdownItemIcon } from "./navigation-dropdown-item-icon";
 import { NavigationDropdownItemCard } from "./navigation-dropdown-item-card";
 import {
   NAVIGATION_DROPDOWN_PANEL_CONTENT_CLASS_NAME,
@@ -13,43 +13,26 @@ import {
   NAVIGATION_DROPDOWN_TITLE_CLASS_NAME,
 } from "./navigation-dropdown-size-theme";
 import {
+  getNavigationDropdownItemIconClassName,
+} from "./navigation-dropdown-accent-theme";
+import {
   getNavigationDropdownTitleGradientStyle,
   getNavigationDropdownTitlePrefix,
 } from "./navigation-dropdown-theme";
-import { getNavigationDropdownItemIconClassName } from "./navigation-dropdown-accent-theme";
 
-type AppNavigationBlockDropdownNetworkProps = {
+type NavigationDropdownContentProps = {
   locale: Locale;
   onTrackNavigation: (href: string, label: string, spaceId: string | null) => void;
   pathname: string;
   space: NavigationSpace;
 };
 
-function getNetworkItemIcon(routeId: string) {
-  switch (routeId) {
-    case "network":
-      return Users;
-    case "community":
-      return Heart;
-    case "feedback":
-      return MessageCircle;
-    case "messagerie":
-      return MessageCircle;
-    case "open-data":
-      return Eye;
-    default:
-      return Users;
-  }
-}
-
-export function AppNavigationBlockDropdownNetwork({
+export function NavigationDropdownContent({
   locale,
   onTrackNavigation,
   pathname,
   space,
-}: AppNavigationBlockDropdownNetworkProps) {
-  const cardGeometry = getNavigationDropdownCardGeometry(space.id);
-
+}: NavigationDropdownContentProps) {
   return (
     <div className={NAVIGATION_DROPDOWN_PANEL_CONTENT_CLASS_NAME}>
       <header className="flex items-center justify-center">
@@ -61,28 +44,27 @@ export function AppNavigationBlockDropdownNetwork({
         </h3>
       </header>
 
-      <nav className={NAVIGATION_DROPDOWN_PANEL_LIST_CLASS_NAME} aria-label={getLocalizedText(space.label, locale, space.id)}>
+      <nav
+        className={NAVIGATION_DROPDOWN_PANEL_LIST_CLASS_NAME}
+        aria-label={getLocalizedText(space.label, locale, space.id)}
+      >
         <ul className="space-y-1">
           {space.items.length > 0 ? (
-            space.items.map((item) => {
-              const Icon = getNetworkItemIcon(item.routeId);
-              const cardBorderTokens = getNavigationDropdownCardBorderTokens(space.id, item.routeId);
-              return (
-                <NavigationDropdownItemCard
-                  key={item.id}
-                  item={item}
-                  locale={locale}
-                  pathname={pathname}
-                  spaceId={space.id}
-                  onTrackNavigation={onTrackNavigation}
-                  Icon={Icon}
-                  iconClassName={getNavigationDropdownItemIconClassName(space.id, item.routeId)}
-                  iconStrokeWidth={2.05}
-                  cardGeometry={cardGeometry}
-                  cardBorderTokens={cardBorderTokens}
-                />
-              );
-            })
+            space.items.map((item) => (
+              <NavigationDropdownItemCard
+                key={item.id}
+                item={item}
+                locale={locale}
+                pathname={pathname}
+                spaceId={space.id}
+                onTrackNavigation={onTrackNavigation}
+                Icon={getNavigationDropdownItemIcon(item.routeId)}
+                iconClassName={getNavigationDropdownItemIconClassName(space.id, item.routeId)}
+                iconStrokeWidth={space.id === "visualize" ? 2.25 : 2.05}
+                cardGeometry={NAVIGATION_DROPDOWN_CARD_GEOMETRY}
+                cardBorderTokens={getNavigationDropdownCardBorderTokens(space.id, item.routeId)}
+              />
+            ))
           ) : (
             <li className="rounded-2xl border border-dashed border-black/16 px-3 py-3 text-[12px] text-black/80">
               {locale === "fr"

@@ -8,9 +8,10 @@ const displayModes = readFileSync(
 );
 
 describe("app navigation block dropdown contract", () => {
-  it("uses one close-aware navigation callback for all five blocks", () => {
+  it("uses one close-aware navigation callback through the common renderer", () => {
     expect(source).toContain("onTrackNavigation={handleTrackNavigation}");
-    expect(source.match(/onTrackNavigation=\{handleTrackNavigation\}/g)).toHaveLength(5);
+    expect(source.match(/onTrackNavigation=\{handleTrackNavigation\}/g)).toHaveLength(1);
+    expect(source).toContain("<NavigationDropdownContent");
     expect(source).not.toContain("onTrackNavigation={onTrackNavigation}");
     expect(source).toContain("setIsOpen(false);");
   });
