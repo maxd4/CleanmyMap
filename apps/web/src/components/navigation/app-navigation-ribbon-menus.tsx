@@ -67,7 +67,7 @@ export function RibbonMenus({
           }
         }}
         wrapperClassName="shrink-0"
-        panelClassName="cmm-dropdown-panel w-[min(36rem,calc(100vw-1rem))] rounded-2xl border border-white/15 bg-slate-950/95 p-4 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]"
+        panelClassName="cmm-dropdown-panel w-[min(20rem,calc(100vw-1rem))] rounded-2xl border border-white/15 bg-slate-950/95 p-2.5 text-white shadow-[0_20px_40px_-24px_rgba(2,6,23,0.76)]"
         panelStyle={{
           backgroundImage: ribbonChrome.backgroundImage,
           backgroundColor: ribbonChrome.backgroundColor,
@@ -87,12 +87,12 @@ export function RibbonMenus({
           </button>
         )}
       >
-        <SitePreferencesControls />
-        <div className="mt-4 border-t border-white/12 pt-4">
+        <SitePreferencesControls variant="compact" />
+        <div className="mt-3 border-t border-white/12 pt-3">
           <CmmButton
             asChild
             tone="primary"
-            size="md"
+            size="sm"
             className="w-full justify-center rounded-xl text-sm font-bold"
           >
             <Link
@@ -123,7 +123,7 @@ export function RibbonMenus({
           }
         }}
         wrapperClassName="shrink-0 max-[380px]:hidden"
-        panelClassName="cmm-dropdown-panel w-[min(34rem,calc(100vw-1rem))] rounded-2xl border border-white/15 bg-slate-950/95 p-2 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]"
+        panelClassName="cmm-dropdown-panel w-[min(18rem,calc(100vw-1rem))] rounded-2xl border border-white/15 bg-slate-950/95 p-1.5 text-white shadow-[0_20px_40px_-24px_rgba(2,6,23,0.76)]"
         panelStyle={{
           backgroundImage: ribbonChrome.backgroundImage,
           backgroundColor: ribbonChrome.backgroundColor,
@@ -149,6 +149,7 @@ export function RibbonMenus({
               label={item.label}
               icon={item.icon}
               iconClassName={item.iconClassName}
+              compact
               onClick={() => onTrackNavigation(item.href, item.label, null)}
             />
           ))}

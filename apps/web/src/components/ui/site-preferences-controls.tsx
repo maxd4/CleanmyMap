@@ -9,9 +9,10 @@ import {
 import { ChevronDown, CheckCircle2, Info, Languages } from "lucide-react";
 import { CmmSelect } from "@/components/ui/cmm-field";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 type SitePreferencesControlsProps = {
-  variant?: "full" | "locale";
+  variant?: "full" | "compact" | "locale";
 };
 
 export function SitePreferencesControls({
@@ -41,39 +42,54 @@ export function SitePreferencesControls({
     );
   }
 
+  const isCompact = variant === "compact";
+
   return (
-    <div className="space-y-5 text-white">
-      <div className="space-y-2">
-        <label htmlFor="locale-switch" className="block text-base font-semibold text-white">
+    <div className={cn("text-white", isCompact ? "space-y-3" : "space-y-5")}>
+      <div className={isCompact ? "space-y-1.5" : "space-y-2"}>
+        <label
+          htmlFor="locale-switch"
+          className={cn("block font-semibold text-white", isCompact ? "text-sm" : "text-base")}
+        >
           {locale === "fr" ? "Langue" : "Language"}
         </label>
         <div className="relative">
           <Languages
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300"
+            className={cn(
+              "pointer-events-none absolute top-1/2 -translate-y-1/2 text-slate-300",
+              isCompact ? "left-2.5 h-3.5 w-3.5" : "left-3 h-4 w-4",
+            )}
             aria-hidden="true"
           />
           <CmmSelect
             id="locale-switch"
             value={locale}
             onChange={(event) => setLocale(event.target.value === "en" ? "en" : "fr")}
-            className="cmm-select-control min-h-12 w-full cursor-pointer rounded-xl border-white/15 bg-slate-900/70 py-2.5 pl-10 pr-10 text-sm font-semibold text-white"
+            className={cn(
+              "cmm-select-control w-full cursor-pointer rounded-xl border-white/15 bg-slate-900/70 text-sm font-semibold text-white",
+              isCompact ? "min-h-10 py-2 pl-9 pr-9" : "min-h-12 py-2.5 pl-10 pr-10",
+            )}
             aria-label={locale === "fr" ? "Choisir la langue" : "Choose language"}
           >
             <option value="fr">Français</option>
             <option value="en">English</option>
           </CmmSelect>
           <ChevronDown
-            className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300"
+            className={cn(
+              "pointer-events-none absolute top-1/2 -translate-y-1/2 text-slate-300",
+              isCompact ? "right-2.5 h-3.5 w-3.5" : "h-4 w-4",
+              !isCompact && "right-3",
+            )}
             aria-hidden="true"
           />
         </div>
       </div>
 
-      <fieldset className="space-y-3 border-t border-white/12 pt-4">
-        <legend className="text-base font-semibold text-white">
+      <fieldset className={cn("border-t border-white/12", isCompact ? "space-y-2 pt-3" : "space-y-3 pt-4")}>
+        <legend className={cn("font-semibold text-white", isCompact ? "text-sm" : "text-base")}>
           {locale === "fr" ? "Mode d'affichage" : "Display mode"}
         </legend>
-        <div className="space-y-2">
+        <div className={isCompact ? "space-y-1.5" : "space-y-2"}>
           {ENABLED_DISPLAY_MODES.map((mode) => {
             const isActive = displayMode === mode;
             const description = DISPLAY_MODE_DESCRIPTIONS[mode][locale];
@@ -81,7 +97,9 @@ export function SitePreferencesControls({
             return (
               <label
                 key={mode}
-                className={`flex cursor-pointer items-start gap-3 rounded-xl border px-3.5 py-3 transition-colors ${
+                className={`flex cursor-pointer items-start rounded-xl border transition-colors ${
+                  isCompact ? "gap-2 px-2.5 py-2" : "gap-3 px-3.5 py-3"
+                } ${
                   isActive
                     ? "border-emerald-400 bg-emerald-400/10"
                     : "border-white/16 bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.08]"
@@ -93,13 +111,13 @@ export function SitePreferencesControls({
                   value={mode}
                   checked={isActive}
                   onChange={() => setDisplayMode(mode)}
-                  className="mt-1 h-4 w-4 shrink-0 accent-emerald-400"
+                  className={cn("h-4 w-4 shrink-0 accent-emerald-400", isCompact ? "mt-0.5" : "mt-1")}
                 />
                 <span className="min-w-0">
                   <span className="block text-sm font-bold text-white">
                     {displayModeLabels[mode][locale]}
                   </span>
-                  <span className="mt-0.5 block text-xs leading-relaxed text-slate-300">
+                  <span className={cn("mt-0.5 block text-xs text-slate-300", isCompact ? "leading-snug" : "leading-relaxed")}>
                     {description}
                   </span>
                 </span>
@@ -115,7 +133,10 @@ export function SitePreferencesControls({
       <Link
         href="/methodologie#modes-affichage"
         aria-label="Comprendre les modes d'affichage"
-        className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-200 underline-offset-4 transition-colors hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+        className={cn(
+          "inline-flex items-center text-xs font-semibold text-emerald-200 underline-offset-4 transition-colors hover:text-white hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300",
+          isCompact ? "gap-1.5" : "gap-2",
+        )}
       >
         <Info className="h-4 w-4 shrink-0" aria-hidden="true" />
         <span>
