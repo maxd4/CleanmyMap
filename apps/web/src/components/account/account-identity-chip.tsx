@@ -139,7 +139,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
               setIsBadgeMenuOpen(false);
             }
           }}
-          panelClassName="w-[min(19rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-slate-600/70 bg-slate-900/98 p-3 text-white shadow-[0_24px_52px_-28px_rgba(2,6,23,0.95)]"
+          panelClassName="w-[min(16rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-slate-600/70 bg-slate-900/98 p-3 text-white shadow-[0_24px_52px_-28px_rgba(2,6,23,0.95)]"
           renderTrigger={(triggerProps) => (
             <button
               {...triggerProps}

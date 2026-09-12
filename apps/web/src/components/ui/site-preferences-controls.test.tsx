@@ -18,4 +18,16 @@ describe("SitePreferencesControls", () => {
     expect(markup).toContain("Sobre");
     expect(markup).not.toContain("Le mode sobre utilise une police système locale");
   });
+
+  it("supports a compact dropdown variant without changing the full layout contract", () => {
+    const markup = renderToStaticMarkup(
+      <SitePreferencesProvider>
+        <SitePreferencesControls variant="compact" />
+      </SitePreferencesProvider>,
+    );
+
+    expect(markup).toContain("min-h-10");
+    expect(markup).toContain("gap-2 px-2.5 py-2");
+    expect(markup).toContain("Comprendre les modes d&#x27;affichage");
+  });
 });
