@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { COORDINATION_ROOT, createWorkspaceCoordinator } from "./workspace-coordination.mjs";
+import { COORDINATION_ROOT, createWorkspaceCoordinator, verifyWorktreeMatchesTree } from "./workspace-coordination.mjs";
 
 function fixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-coordination-"));
@@ -20,6 +21,7 @@ function fakeGit(root, options = {}) {
     status: new Map(),
     staged: new Map(),
     heads: new Map(),
+    branchTips: new Map(),
     worktrees: new Map([[path.resolve(root), "refs/heads/main"]]),
     tracked: new Set(options.tracked ?? []),
     calls: [],
@@ -31,6 +33,11 @@ function fakeGit(root, options = {}) {
     if (args[0] === "rev-parse" && args[1] === "--git-common-dir") return ".git";
     if (args[0] === "rev-parse" && args[1] === "HEAD") return state.worktrees.get(worktree) === "refs/heads/main" ? state.head : state.heads.get(worktree) ?? state.head;
     if (args[0] === "rev-parse" && args[1] === "origin/main") return state.origin;
+    if (args[0] === "rev-parse" && args[1] === "--verify") {
+      const branch = args[2].replace("refs/heads/", "");
+      if (!state.worktreesHasBranch(branch)) throw new Error("missing branch");
+      return state.branchTips.get(branch) ?? state.head;
+    }
     if (args[0] === "branch" && args[1] === "--show-current") return worktree === path.resolve(root) ? "main" : (state.worktrees.get(worktree)?.replace("refs/heads/", "") ?? "main");
     if (args[0] === "fetch") return "";
     if (args[0] === "status") return state.status.get(worktree) ?? "";
@@ -54,6 +61,7 @@ function fakeGit(root, options = {}) {
       state.worktrees.set(worktree, branch);
       state.heads.set(worktree, state.head);
       state.branches.add(branch.replace("refs/heads/", ""));
+      state.branchTips.set(branch.replace("refs/heads/", ""), state.head);
       return "";
     }
     if (args[0] === "worktree" && args[1] === "remove") {
@@ -70,6 +78,7 @@ function fakeGit(root, options = {}) {
     if (args[0] === "branch" && args[1] === "-D") {
       state.heads.delete(args[2]);
       state.branches.delete(args[2]);
+      state.branchTips.delete(args[2]);
       return "";
     }
     if (args[0] === "branch" && args[1] === "-d") {
@@ -102,6 +111,10 @@ function fakeGit(root, options = {}) {
 function cleanup(root) {
   fs.rmSync(root, { recursive: true, force: true });
   fs.rmSync(path.join(path.dirname(root), "CleanMyMap-worktrees"), { recursive: true, force: true });
+}
+
+function realGit(cwd, args) {
+  return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], windowsHide: true }).trim();
 }
 
 test("stores metadata below git-common-dir and creates one branch/worktree per run", () => {
@@ -488,6 +501,28 @@ function prepareOrphanPublication({ root, gitRunner, runId, gitdir, publishedSha
   return { coordinator, run, publishPath };
 }
 
+function prepareOrphanRun({ root, gitRunner, runId, origin = "origin-sha", publishedSha = "published-sha", branchTip = "branch-tip", ancestorFailures = [], gitFile = "orphan", publicationState = "COMPLETE", treeChecker = () => {} }) {
+  const coordinator = createWorkspaceCoordinator({ repositoryRoot: root, gitRunner, worktreeTreeChecker: treeChecker });
+  const run = coordinator.start({ runId, domain: "ROUTE" });
+  const runPath = path.resolve(run.worktreePath);
+  gitRunner.state.worktrees.delete(runPath);
+  gitRunner.state.origin = origin;
+  gitRunner.state.ancestorFailures = ancestorFailures;
+  gitRunner.state.branchTips.set(`codex/${runId}`, branchTip);
+  if (gitFile === "absent") fs.rmSync(path.join(runPath, ".git"), { force: true });
+  else if (gitFile === "live") {
+    const liveAdministrativePath = path.join(root, ".git", "worktrees", `${runId}-live`);
+    fs.mkdirSync(liveAdministrativePath, { recursive: true });
+    fs.writeFileSync(path.join(runPath, ".git"), `gitdir: ${liveAdministrativePath}\n`);
+  }
+  else fs.writeFileSync(path.join(runPath, ".git"), `gitdir: ${path.join(root, ".git", "worktrees", `${runId}-missing`)}\n`);
+  const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", `${runId}.json`);
+  const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
+  saved.publication = { state: publicationState, publishedSha };
+  fs.writeFileSync(runFile, JSON.stringify(saved));
+  return { coordinator, run, runPath };
+}
+
 test("publicationComplete removes a canonical orphan publication worktree after proving the published SHA", () => {
   const root = fixture();
   try {
@@ -527,7 +562,7 @@ test("publicationComplete refuses an unregistered normal run worktree without de
     saved.publication = { state: "COMPLETE", publishedSha: "base-sha" };
     fs.writeFileSync(runFile, JSON.stringify(saved));
 
-    assert.throws(() => coordinator.publicationComplete({ runId: run.runId }), { code: "WORKTREE_NOT_REGISTERED" });
+    assert.throws(() => coordinator.publicationComplete({ runId: run.runId }), { code: "ORPHAN_RUN_WORKTREE_CONTENT_UNPROVABLE" });
     assert.equal(fs.existsSync(run.worktreePath), true);
   } finally { cleanup(root); }
 });
@@ -542,6 +577,134 @@ test("publicationComplete refuses orphan cleanup when the published SHA is not o
     assert.throws(() => coordinator.publicationComplete({ runId: "run-unpublished-orphan" }), { code: "PUBLICATION_NOT_CONVERGED" });
     assert.equal(fs.existsSync(publishPath), true);
   } finally { cleanup(root); }
+});
+
+test("release removes a canonical orphan run with a dangling gitfile", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const { coordinator, run, runPath } = prepareOrphanRun({ root, gitRunner, runId: "run-orphan-main-gitfile" });
+
+    const result = coordinator.release({ runId: run.runId });
+
+    assert.equal(result.completed, true);
+    assert.equal(fs.existsSync(runPath), false);
+    assert.equal(fs.existsSync(path.join(root, ".git", ...COORDINATION_ROOT, "closed-runs", `${run.runId}.json`)), true);
+    assert.equal(gitRunner.state.branches.has(`codex/${run.runId}`), false);
+  } finally { cleanup(root); }
+});
+
+test("release removes a canonical orphan run when .git is already absent", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const { coordinator, run, runPath } = prepareOrphanRun({ root, gitRunner, runId: "run-orphan-main-no-git", gitFile: "absent" });
+
+    assert.equal(coordinator.release({ runId: run.runId }).completed, true);
+    assert.equal(fs.existsSync(runPath), false);
+  } finally { cleanup(root); }
+});
+
+test("release refuses an orphan run when the tracked tree has a delta", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const { coordinator, run, runPath } = prepareOrphanRun({
+      root,
+      gitRunner,
+      runId: "run-orphan-main-tracked-delta",
+      treeChecker: () => { const error = new Error("tracked file changed"); error.code = "ORPHAN_RUN_WORKTREE_CONTENT_MISMATCH"; throw error; },
+    });
+
+    assert.throws(() => coordinator.release({ runId: run.runId }), { code: "ORPHAN_RUN_WORKTREE_CONTENT_MISMATCH" });
+    assert.equal(fs.existsSync(runPath), true);
+  } finally { cleanup(root); }
+});
+
+test("release refuses an orphan run containing an untracked file", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const { coordinator, run, runPath } = prepareOrphanRun({
+      root,
+      gitRunner,
+      runId: "run-orphan-main-untracked",
+      treeChecker: () => { const error = new Error("untracked file"); error.code = "ORPHAN_RUN_WORKTREE_UNTRACKED"; throw error; },
+    });
+
+    assert.throws(() => coordinator.release({ runId: run.runId }), { code: "ORPHAN_RUN_WORKTREE_UNTRACKED" });
+    assert.equal(fs.existsSync(runPath), true);
+  } finally { cleanup(root); }
+});
+
+test("release refuses an orphan run whose branch is not published", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const { coordinator, run, runPath } = prepareOrphanRun({ root, gitRunner, runId: "run-orphan-main-unpublished", ancestorFailures: ["branch-tip..origin-sha"] });
+
+    assert.throws(() => coordinator.release({ runId: run.runId }), { code: "ORPHAN_RUN_WORKTREE_REFUSED" });
+    assert.equal(fs.existsSync(runPath), true);
+  } finally { cleanup(root); }
+});
+
+test("release refuses an orphan run that is not COMPLETE", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const { coordinator, run, runPath } = prepareOrphanRun({ root, gitRunner, runId: "run-orphan-main-incomplete", publicationState: "PUSHED_PENDING_COMPLETE" });
+
+    assert.throws(() => coordinator.release({ runId: run.runId }), { code: "PUBLICATION_COMPLETE_REQUIRED" });
+    assert.equal(fs.existsSync(runPath), true);
+  } finally { cleanup(root); }
+});
+
+test("release refuses an orphan run with a wrong path or live git descriptor", () => {
+  const root = fixture();
+  try {
+    const gitRunner = fakeGit(root);
+    const first = prepareOrphanRun({ root, gitRunner, runId: "run-orphan-main-live-git" , gitFile: "live" });
+    assert.throws(() => first.coordinator.release({ runId: first.run.runId }), { code: "ORPHAN_RUN_WORKTREE_REFUSED" });
+    assert.equal(fs.existsSync(first.runPath), true);
+
+    const second = prepareOrphanRun({ root, gitRunner, runId: "run-orphan-main-wrong-path" });
+    const runFile = path.join(root, ".git", ...COORDINATION_ROOT, "runs", `${second.run.runId}.json`);
+    const saved = JSON.parse(fs.readFileSync(runFile, "utf8"));
+    const wrongPath = path.join(path.dirname(second.runPath), "not-the-canonical-run-path");
+    fs.renameSync(second.runPath, wrongPath);
+    saved.worktreePath = wrongPath;
+    fs.writeFileSync(runFile, JSON.stringify(saved));
+    assert.throws(() => second.coordinator.release({ runId: second.run.runId }), { code: "WORKTREE_NOT_REGISTERED" });
+    assert.equal(fs.existsSync(wrongPath), true);
+  } finally { cleanup(root); }
+});
+
+test("verifyWorktreeMatchesTree uses an isolated index and excludes only the gitfile", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-orphan-tree-"));
+  const worktree = path.join(root, "orphan-worktree");
+  try {
+    const source = path.join(root, "source");
+    fs.mkdirSync(source, { recursive: true });
+    realGit(root, ["init", "source"]);
+    realGit(source, ["config", "user.email", "tests@cleanmymap.local"]);
+    realGit(source, ["config", "user.name", "CleanMyMap tests"]);
+    fs.writeFileSync(path.join(source, "tracked.txt"), "stable\n");
+    realGit(source, ["add", "tracked.txt"]);
+    realGit(source, ["commit", "-m", "base"]);
+    const tip = realGit(source, ["rev-parse", "HEAD"]);
+    fs.mkdirSync(worktree, { recursive: true });
+    fs.writeFileSync(path.join(worktree, "tracked.txt"), "stable\n");
+    fs.writeFileSync(path.join(worktree, ".git"), "gitdir: missing\n");
+
+    assert.doesNotThrow(() => verifyWorktreeMatchesTree({ gitCommonDir: path.join(source, ".git"), worktree, tip }));
+    fs.writeFileSync(path.join(worktree, "tracked.txt"), "changed\n");
+    assert.throws(() => verifyWorktreeMatchesTree({ gitCommonDir: path.join(source, ".git"), worktree, tip }), { code: "ORPHAN_RUN_WORKTREE_CONTENT_MISMATCH" });
+    fs.writeFileSync(path.join(worktree, "tracked.txt"), "stable\n");
+    fs.writeFileSync(path.join(worktree, "untracked.txt"), "unsafe\n");
+    assert.throws(() => verifyWorktreeMatchesTree({ gitCommonDir: path.join(source, ".git"), worktree, tip }), { code: "ORPHAN_RUN_WORKTREE_UNTRACKED" });
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("publicationComplete fast-forwards a clean bootstrap without copying files", () => {
