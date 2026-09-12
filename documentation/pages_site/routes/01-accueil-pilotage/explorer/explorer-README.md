@@ -17,25 +17,32 @@
 - **Couleurs actuellement détectées** : yellow — canvas #fef9c3, halo rgba(234, 179, 8, 0.30)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : moyen : la frontière rouge doit rester nette pour éviter la confusion avec les blocs d'impact et d'alerte.
-- **Niveau de surcharge textuelle** : moyen
+- **Niveau de surcharge textuelle** : réduit
 - **Textes à conserver** :
 - Titre de page
 - cartes métriques
-- CTA de navigation
+- navigation directe par rubriques
 - indicateurs prioritaires
 - **Textes à réduire ou supprimer** :
+- CTA générique « Ouvrir », supprimé car chaque rubrique est directement cliquable
 - Rappels redondants
 - badges de contexte répétés
 - blocs d'aide trop verbeux
-- **Bulles / cartes / contextes trop nombreux** : Le bloc mélange des cartes de lecture et des CTA, la densité doit rester maîtrisée.
+- **Bulles / cartes / contextes trop nombreux** : La grille conserve les cinq familles, avec une densité réduite, des gutters plus visibles et un retour naturel à la ligne selon la largeur.
 - **Composants UI concernés** :
 - Titre
 - cards métriques
-- CTA
+- liens directs de rubriques
 - nav secondaire
 - sidebar / ribbon
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : faible
+
+## Densité et responsive
+
+- Les cartes ont davantage d'espace interne et d'écart entre elles, sans grand vide après la liste.
+- Les rubriques sont directement navigables : aucun CTA générique inférieur n'est affiché.
+- La grille utilise jusqu'à cinq cartes sur une ligne lorsque la largeur le permet, puis environ deux cartes sur tablette et une carte sur mobile.
 
 
 
