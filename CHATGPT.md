@@ -567,6 +567,15 @@ Si le push est temporairement interdit, plusieurs lots peuvent être commités
 séquentiellement sur le même `main` local ; chaque nouveau lot part du HEAD
 précédent. Aucun nouveau writer parallèle n'est créé.
 
+Un moratoire Vercel est un moratoire de deployment, pas un gel Git. Pendant ce
+moratoire, ne pas demander par défaut à Codex de conserver les commits
+localement si l'auto-déploiement Vercel et les autres déclencheurs automatiques
+sont déjà désactivés et vérifiés. Dans ce cas, demander le lifecycle normal :
+`commit → validation → push main → réconciliation`. Si cette garantie n'est
+pas prouvée, demander de conserver le commit local et de ne pas pousser. Les
+détails temporaires du moratoire restent dans
+`documentation/operations/platform-cost-governance.md`.
+
 Les modifications `staged`, `unstaged` ou `untracked` étrangères au lot courant :
 
 - ne bloquent pas automatiquement le lot ;
