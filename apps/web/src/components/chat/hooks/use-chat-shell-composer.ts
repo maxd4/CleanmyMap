@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
 import {
@@ -131,31 +131,29 @@ export function useChatShellComposer({
   );
   const [announcementTemplate, setAnnouncementTemplate] =
     useState<CommunityAnnouncementTemplateKey | null>(initialAnnouncementTemplate);
-  const [relatedEvent, setRelatedEvent] = useState<ChatRelatedEvent | null>(
-    initialRelatedEvent,
-  );
+  const [relatedEventOverride, setRelatedEventOverride] = useState<
+    ChatRelatedEvent | null | undefined
+  >();
   const [pollOptions, setPollOptions] = useState<string[]>(
     createInitialChatPollOptionDraft,
   );
   const announcementMode = composerMode === "announcement";
-
-  useEffect(() => {
-    setRelatedEvent(initialRelatedEvent);
-  }, [initialRelatedEvent]);
+  const relatedEvent =
+    relatedEventOverride === undefined ? initialRelatedEvent : relatedEventOverride;
 
   const handleComposerModeChange = useCallback(
     (mode: ChatShellComposerMode) => {
       setComposerMode(mode);
       if (mode === "poll") {
         setAnnouncementTemplate(null);
-        setRelatedEvent(null);
+        setRelatedEventOverride(null);
         setFile(null);
         setPollOptions((current) =>
           current.length >= 2 ? current : createInitialChatPollOptionDraft(),
         );
       } else if (mode === "message") {
         setAnnouncementTemplate(null);
-        setRelatedEvent(null);
+        setRelatedEventOverride(null);
       } else if (mode === "announcement" && !announcementTemplate) {
         setActiveTopicId(null);
       }
@@ -179,7 +177,7 @@ export function useChatShellComposer({
       if (announcementMode) {
         setComposerMode("message");
         setAnnouncementTemplate(null);
-        setRelatedEvent(null);
+        setRelatedEventOverride(null);
       }
     },
     [announcementMode, setActiveTopicId],
@@ -188,7 +186,7 @@ export function useChatShellComposer({
   const resetComposerForChannelChange = useCallback(() => {
     setComposerMode("message");
     setAnnouncementTemplate(null);
-    setRelatedEvent(null);
+    setRelatedEventOverride(null);
     setPollOptions(createInitialChatPollOptionDraft());
   }, []);
 

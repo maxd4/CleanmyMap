@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { summarizeCreatorInboxItem, type CreatorInboxItem, type CreatorInboxSource, type CreatorInboxStatus } from "@/lib/community/creator-inbox";
 import { acceptPartnerRequest, acceptPromotionRequest, applyCreatorInboxAction, decideLegalContentReport, fetchCreatorInboxItems, rejectPartnerRequest, rejectPromotionRequest } from "./creator-inbox-service";
@@ -28,7 +34,27 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
   const inboxLocale: CreatorInboxLocale = locale === "fr" ? "fr" : "en";
   const copy = getCreatorInboxCopy(inboxLocale);
 
-  const [items, setItems] = useState(initialItems);
+  const [itemsState, setItemsState] = useState(() => ({
+    source: initialItems,
+    value: initialItems,
+  }));
+  const items = itemsState.source === initialItems ? itemsState.value : initialItems;
+  const setItems = useCallback<Dispatch<SetStateAction<CreatorInboxItem[]>>>(
+    (nextValue) => {
+      setItemsState((current) => {
+        const currentItems =
+          current.source === initialItems ? current.value : initialItems;
+        return {
+          source: initialItems,
+          value:
+            typeof nextValue === "function"
+              ? nextValue(currentItems)
+              : nextValue,
+        };
+      });
+    },
+    [initialItems],
+  );
   const [query, setQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState<"all" | CreatorInboxSource>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | CreatorInboxStatus>("all");
@@ -41,10 +67,6 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
   const [partnerReason, setPartnerReason] = useState<Record<string, string>>({});
   const [actionReasons, setActionReasons] = useState<Record<string, string>>({});
   const [promotionReasons, setPromotionReasons] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    setItems(initialItems);
-  }, [initialItems]);
 
   const summary: Summary = useMemo(
     () => ({

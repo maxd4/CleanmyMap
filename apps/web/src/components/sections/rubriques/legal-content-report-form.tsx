@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type FormState = "idle" | "submitting" | "success" | "error";
 
@@ -9,10 +9,10 @@ export function LegalContentReportForm() {
   const [trackingId, setTrackingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [identityException, setIdentityException] = useState(false);
-  const [formStartedAt, setFormStartedAt] = useState<number | null>(null);
+  const formStartedAt = useRef<number | null>(null);
 
   useEffect(() => {
-    setFormStartedAt(Date.now());
+    formStartedAt.current = Date.now();
   }, []);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -32,7 +32,7 @@ export function LegalContentReportForm() {
       allegationReason: String(form.get("allegationReason") ?? ""),
       goodFaithConfirmed: form.get("goodFaithConfirmed") === "on",
       honeypot: String(form.get("website") ?? ""),
-      submittedAt: formStartedAt ?? Date.now(),
+      submittedAt: formStartedAt.current ?? Date.now(),
     };
 
     try {
@@ -74,7 +74,7 @@ export function LegalContentReportForm() {
           type="button"
           onClick={() => {
             setState("idle");
-            setFormStartedAt(Date.now());
+            formStartedAt.current = Date.now();
           }}
           className="font-semibold text-emerald-700 underline"
         >

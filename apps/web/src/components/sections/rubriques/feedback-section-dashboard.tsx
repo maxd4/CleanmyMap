@@ -2,7 +2,7 @@
 
 import { ArrowRight, ChevronRight, Heart, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useUser } from "@clerk/nextjs";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { PageHeader } from "@/components/ui/page-header";
@@ -31,6 +31,11 @@ type FeedbackSectionDashboardProps = {
   locale: Locale;
 };
 
+function readFormStartedAt(ref: { current: number | null }): number {
+  ref.current ??= Date.now();
+  return ref.current;
+}
+
 export function FeedbackSectionDashboard({
   pagePath,
   source,
@@ -55,11 +60,15 @@ function FeedbackDashboardMode({
 }: FeedbackSectionDashboardProps) {
   const fr = locale === "fr";
   const { isLoaded, isSignedIn } = useUser();
-  const [topicId, setTopicId] = useState<FeedbackTopicId>(supportPrefill ? "signalement" : "all");
-  const [message, setMessage] = useState<string>(() => buildPrefillText(supportPrefill, locale));
+  const [topicIdOverride, setTopicIdOverride] = useState<FeedbackTopicId>();
+  const [messageOverride, setMessageOverride] = useState<string>();
+  const topicId = topicIdOverride ?? (supportPrefill ? "signalement" : "all");
+  const message = messageOverride ?? buildPrefillText(supportPrefill, locale);
+  const setTopicId = (value: FeedbackTopicId) => setTopicIdOverride(value);
+  const setMessage = (value: string) => setMessageOverride(value);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [honeypot, setHoneypot] = useState("");
-  const [formStartedAt, setFormStartedAt] = useState<number | null>(null);
+  const formStartedAt = useRef<number | null>(null);
   const [submitState, setSubmitState] = useState<"idle" | "submitting" | "success" | "error">(
     "idle",
   );
@@ -73,19 +82,8 @@ function FeedbackDashboardMode({
   const canSubmit = message.trim().length >= 10 && submitState !== "submitting";
 
   useEffect(() => {
-    setFormStartedAt(Date.now());
+    formStartedAt.current = Date.now();
   }, []);
-
-  useEffect(() => {
-    if (!supportPrefill) {
-      return;
-    }
-
-    setMessage((current) =>
-      current.trim().length > 0 ? current : buildPrefillText(supportPrefill, locale),
-    );
-    setTopicId("signalement");
-  }, [locale, supportPrefill]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,7 +111,7 @@ function FeedbackDashboardMode({
           pagePath,
           source,
           honeypot,
-          submittedAt: formStartedAt ?? Date.now(),
+          submittedAt: readFormStartedAt(formStartedAt),
         }),
       });
 

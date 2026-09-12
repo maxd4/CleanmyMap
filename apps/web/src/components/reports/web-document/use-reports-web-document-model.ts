@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { toActionListItem, toActionMapItem, type ActionDataContract } from "@/lib/actions/data-contract";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
@@ -136,34 +136,24 @@ export function useReportsWebDocumentModel({
     [actionsAllItems],
   );
 
-  useEffect(() => {
-    if (scopeKind === "global") {
-      if (scopeValue !== "") {
-        setScopeValue("");
-      }
-      return;
-    }
-    const options =
-      scopeKind === "account"
-        ? scopeOptions.accounts
-        : scopeKind === "association"
-          ? scopeOptions.associations
-          : scopeOptions.arrondissements;
-    if (options.length === 0) {
-      if (scopeValue !== "") {
-        setScopeValue("");
-      }
-      return;
-    }
-    const hasValue = options.some((option) => option.value === scopeValue);
-    if (!hasValue) {
-      setScopeValue(options[0].value);
-    }
-  }, [scopeKind, scopeOptions, scopeValue]);
+  const scopeValueOptions =
+    scopeKind === "account"
+      ? scopeOptions.accounts
+      : scopeKind === "association"
+        ? scopeOptions.associations
+        : scopeKind === "arrondissement"
+          ? scopeOptions.arrondissements
+          : [];
+  const effectiveScopeValue =
+    scopeKind === "global"
+      ? ""
+      : scopeValueOptions.find((option) => option.value === scopeValue)?.value ??
+        scopeValueOptions[0]?.value ??
+        "";
 
   const scope = useMemo(
-    () => normalizeReportScope({ kind: scopeKind, value: scopeValue }),
-    [scopeKind, scopeValue],
+    () => normalizeReportScope({ kind: scopeKind, value: effectiveScopeValue }),
+    [effectiveScopeValue, scopeKind],
   );
 
   const scopedActionsAll = useMemo(
@@ -284,7 +274,7 @@ export function useReportsWebDocumentModel({
   return {
     scopeKind,
     setScopeKind,
-    scopeValue,
+    scopeValue: effectiveScopeValue,
     setScopeValue,
     scopeOptions,
     exportRows,

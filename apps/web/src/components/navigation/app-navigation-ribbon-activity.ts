@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import {
   readActivityStatus,
@@ -25,15 +25,35 @@ export function useRibbonActivityStatus(
   user: RibbonActivityUser | null,
 ): RibbonActivityState {
   const persistedActivityStatus = readActivityStatus(user?.unsafeMetadata);
-  const [activityStatus, setActivityStatus] =
-    useState<ActivityStatus>(persistedActivityStatus);
+  const [activityStatusState, setActivityStatusState] = useState<{
+    userId: string | null;
+    persistedStatus: ActivityStatus;
+    value: ActivityStatus;
+  }>({
+    userId: user?.id ?? null,
+    persistedStatus: persistedActivityStatus,
+    value: persistedActivityStatus,
+  });
+  const activityStatus =
+    activityStatusState.userId === (user?.id ?? null) &&
+    activityStatusState.persistedStatus === persistedActivityStatus
+      ? activityStatusState.value
+      : persistedActivityStatus;
   const [isUpdatingActivityStatus, setIsUpdatingActivityStatus] = useState(false);
-  const [activityStatusError, setActivityStatusError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setActivityStatus(persistedActivityStatus);
-    setActivityStatusError(null);
-  }, [persistedActivityStatus, user?.id]);
+  const [activityStatusErrorState, setActivityStatusErrorState] = useState<{
+    userId: string | null;
+    persistedStatus: ActivityStatus;
+    message: string | null;
+  }>({
+    userId: user?.id ?? null,
+    persistedStatus: persistedActivityStatus,
+    message: null,
+  });
+  const activityStatusError =
+    activityStatusErrorState.userId === (user?.id ?? null) &&
+    activityStatusErrorState.persistedStatus === persistedActivityStatus
+      ? activityStatusErrorState.message
+      : null;
 
   async function handleActivityStatusToggle() {
     if (!user || isUpdatingActivityStatus) {
@@ -42,8 +62,16 @@ export function useRibbonActivityStatus(
 
     const previousStatus = activityStatus;
     const nextStatus = toggleActivityStatus(previousStatus);
-    setActivityStatus(nextStatus);
-    setActivityStatusError(null);
+    setActivityStatusState({
+      userId: user.id,
+      persistedStatus: persistedActivityStatus,
+      value: nextStatus,
+    });
+    setActivityStatusErrorState({
+      userId: user.id,
+      persistedStatus: persistedActivityStatus,
+      message: null,
+    });
     setIsUpdatingActivityStatus(true);
 
     try {
@@ -65,17 +93,26 @@ export function useRibbonActivityStatus(
         );
       }
 
-      setActivityStatus(
-        payload?.activityStatus === "inactive" ? "inactive" : "active",
-      );
+      setActivityStatusState({
+        userId: user.id,
+        persistedStatus: persistedActivityStatus,
+        value: payload?.activityStatus === "inactive" ? "inactive" : "active",
+      });
       void user.reload().catch(() => undefined);
     } catch (error) {
-      setActivityStatus(previousStatus);
-      setActivityStatusError(
-        error instanceof Error
-          ? error.message
-          : "Impossible de mettre à jour le statut.",
-      );
+      setActivityStatusState({
+        userId: user.id,
+        persistedStatus: persistedActivityStatus,
+        value: previousStatus,
+      });
+      setActivityStatusErrorState({
+        userId: user.id,
+        persistedStatus: persistedActivityStatus,
+        message:
+          error instanceof Error
+            ? error.message
+            : "Impossible de mettre à jour le statut.",
+      });
     } finally {
       setIsUpdatingActivityStatus(false);
     }

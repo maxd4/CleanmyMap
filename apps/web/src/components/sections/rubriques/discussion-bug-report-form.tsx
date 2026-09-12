@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { usePathname } from "next/navigation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { InlineFieldError } from "@/components/ui/inline-field-error";
@@ -24,7 +24,7 @@ export function DiscussionBugReportForm() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [honeypot, setHoneypot] = useState("");
-  const [formStartedAt, setFormStartedAt] = useState<number | null>(null);
+  const formStartedAt = useRef<number | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [error, setError] = useState<AppError | null>(null);
   const [titleTouched, setTitleTouched] = useState(false);
@@ -34,7 +34,7 @@ export function DiscussionBugReportForm() {
   const pathname = usePathname();
 
   useEffect(() => {
-    setFormStartedAt(Date.now());
+    formStartedAt.current = Date.now();
   }, []);
 
   const pagePath = pathname ?? "/sections/annuaire";
@@ -72,7 +72,7 @@ export function DiscussionBugReportForm() {
           description: description.trim(),
           pagePath,
           honeypot,
-          submittedAt: formStartedAt ?? Date.now(),
+          submittedAt: formStartedAt.current ?? Date.now(),
         }),
       });
 

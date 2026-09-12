@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from"react";
+import { useEffect, useRef, useState } from"react";
 import { Send, CheckCircle2, Leaf, Loader2 } from "lucide-react";
 import { ErrorMessage } from"@/components/ui/error-message";
 import { defaultMessageForKind, isAppError, toAppError, type AppError } from"@/lib/errors/app-errors";
@@ -11,14 +11,14 @@ export function NewsletterSignup() {
  const [email, setEmail] = useState("");
  const [consent, setConsent] = useState(false);
  const [honeypot, setHoneypot] = useState("");
- const [formStartedAt, setFormStartedAt] = useState<number | null>(null);
+ const formStartedAt = useRef<number | null>(null);
  const [status, setStatus] = useState<"idle" |"loading" |"success" |"error">("idle");
  const [message, setMessage] = useState("");
  const [error, setError] = useState<AppError | null>(null);
  const { acquire, release } = useSubmissionLock();
 
  useEffect(() => {
- setFormStartedAt(Date.now());
+ formStartedAt.current = Date.now();
  }, []);
 
  const handleSubmit = async (e: React.FormEvent) => {
@@ -46,7 +46,7 @@ export function NewsletterSignup() {
  gdprConsent: consent,
  source:"community_section",
  honeypot,
- submittedAt: formStartedAt ?? Date.now(),
+ submittedAt: formStartedAt.current ?? Date.now(),
  }),
  });
 
