@@ -179,10 +179,10 @@ export default async function ExplorerPage() {
     <div
       className="relative min-h-screen overflow-hidden font-sans text-white"
     >
-      <div className="relative z-10 mx-auto w-full max-w-[1400px] px-5 pb-20 pt-8 sm:px-8 sm:pt-10">
+      <div className="relative z-10 mx-auto w-full max-w-[1360px] px-6 pb-16 pt-10 sm:px-10 sm:pb-24 sm:pt-12 lg:px-12">
 
         {/* ── Header ── */}
-        <div className="mb-12 space-y-4">
+        <div className="mb-14 space-y-4">
           <h1 className="text-[clamp(3rem,6vw,5.5rem)] font-black leading-[0.92] tracking-[-0.05em] text-stone-950">
             {locale === "fr" ? "Sommaire" : "Summary"}
           </h1>
@@ -194,7 +194,7 @@ export default async function ExplorerPage() {
         </div>
 
         {/* ── Grille de cartes hub — inspirée des blocs de navigation visibles ── */}
-        <div className="flex flex-wrap justify-center gap-4 xl:flex-nowrap">
+        <div className="mx-auto grid w-full items-start grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] justify-center gap-6 lg:gap-7 xl:items-stretch">
           {visibleSpaces.map((space) => {
             const orderedItems = getOrderedPreviewItems(space.id, space.items);
             const t = BLOCK_THEME[space.id];
@@ -203,7 +203,7 @@ export default async function ExplorerPage() {
               <article
                 key={space.id}
                 style={{ backgroundImage: t.backgroundImage }}
-                className={`group relative flex min-h-[286px] w-full flex-col overflow-hidden rounded-[1rem] border ${t.border} p-5 ring-1 ${t.ring} shadow-[0_26px_56px_-30px_rgba(15,23,42,0.38)] transition-all duration-300 hover:-translate-y-1 hover:border-opacity-100 hover:shadow-[0_32px_68px_-34px_rgba(15,23,42,0.48)] ${t.glow} active:translate-y-0 sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.67rem)] xl:w-[calc(20%-0.8rem)] xl:min-w-[15rem] sm:p-6`}
+                className={`group relative flex min-h-[260px] h-fit w-full flex-col overflow-hidden rounded-[1rem] border ${t.border} p-6 ring-1 ${t.ring} shadow-[0_26px_56px_-30px_rgba(15,23,42,0.38)] transition-all duration-200 motion-reduce:transform-none motion-reduce:transition-none motion-safe:hover:-translate-y-0.5 hover:border-opacity-100 hover:shadow-[0_32px_68px_-34px_rgba(15,23,42,0.48)] ${t.glow} active:translate-y-0 sm:p-7 xl:h-full`}
               >
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/14 to-transparent" />
                 <div className={`pointer-events-none absolute -right-14 -top-14 h-32 w-32 rounded-full ${t.dot} opacity-[0.16]`} />
@@ -211,7 +211,7 @@ export default async function ExplorerPage() {
                 <span className={`absolute right-5 top-5 h-2 w-2 rounded-full ${t.dot} opacity-75 transition-opacity group-hover:opacity-100`} />
 
                 {/* Icône + titre — même structure que les piliers */}
-                <div className={`relative mb-5 flex h-12 w-12 items-center justify-center rounded-[0.9rem] text-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-110 ${t.iconBg}`}>
+                <div className={`relative mb-5 flex h-12 w-12 items-center justify-center rounded-[0.9rem] text-xl text-white shadow-lg transition-transform duration-200 motion-reduce:transition-none group-hover:scale-105 ${t.iconBg}`}>
                   {space.icon}
                 </div>
 
@@ -227,12 +227,12 @@ export default async function ExplorerPage() {
                 {/* Rubriques — liste cliquable compacte */}
                 <div className="relative flex-1">
                   {orderedItems.length > 0 ? (
-                    <ul className="space-y-1">
+                    <ul className="space-y-1.5">
                       {orderedItems.map((item) => (
                         <li key={item.id}>
                           <Link
                             href={item.href}
-                            className={`group/item flex min-h-9 items-center gap-2 rounded-xl border border-transparent px-2.5 py-1.5 text-[14px] font-semibold ${t.mutedText} transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${t.itemHover}`}
+                            className={`group/item flex min-h-9 items-center gap-2 rounded-xl border border-transparent px-2.5 py-1.5 text-[14px] font-semibold ${t.mutedText} transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus-visible:ring-2 focus-visible:ring-white/30 ${t.itemHover}`}
                           >
                             <span className={`h-1 w-1 shrink-0 rounded-full opacity-80 ${t.dot}`} />
                             <span className="flex-1 leading-snug">{item.label[locale]}</span>

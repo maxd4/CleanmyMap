@@ -21,5 +21,13 @@ describe("explorer summary presentation contract", () => {
     expect(source).toContain('href={item.href}');
     expect(source).toContain("text-[21px]");
     expect(source).toContain("text-[14px] font-semibold");
+    expect(source).toContain("grid-cols-[repeat(auto-fit,minmax(14rem,1fr))]");
+    expect(source).toContain("gap-6 lg:gap-7");
+    expect(source).toContain("xl:items-stretch");
+    expect(source).toContain("xl:h-full");
+    expect(source).toContain("motion-safe:hover:-translate-y-0.5");
+    expect(source).toContain("motion-reduce:transition-none");
+    expect(source).toContain("focus-visible:outline-2");
+    expect(source).not.toContain("xl:flex-nowrap");
   });
 });
