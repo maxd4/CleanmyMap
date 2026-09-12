@@ -88,6 +88,16 @@ export function getNavigationDropdownItemIconClassName(
   }
 }
 
+export function buildNavigationBlockTriggerStyle(
+  spaceId: NavigationBlockId | null,
+): NavigationDropdownStyle {
+  const tokens = getAccentTokens(getNavigationDropdownItemAccent(spaceId));
+
+  return {
+    ["--navigation-block-accent"]: tokens.DEFAULT,
+  };
+}
+
 export function buildNavigationDropdownGradientStyle(
   accents: AccentPair,
 ): NavigationDropdownStyle {

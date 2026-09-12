@@ -32,7 +32,10 @@ import { getNavigationDropdownCardBorderTokens } from "./navigation-dropdown-bor
 import { getNavigationDropdownCardGeometry } from "./navigation-dropdown-card-theme";
 import { getNavigationDropdownItemTone } from "./navigation-dropdown-item-theme";
 import { getNavigationDropdownShellTokens } from "./navigation-dropdown-shell-theme";
-import { getNavigationDropdownItemIconClassName } from "./navigation-dropdown-accent-theme";
+import {
+  buildNavigationBlockTriggerStyle,
+  getNavigationDropdownItemIconClassName,
+} from "./navigation-dropdown-accent-theme";
 import {
   NAVIGATION_DROPDOWN_PANEL_CONTENT_CLASS_NAME,
   NAVIGATION_DROPDOWN_PANEL_LIST_CLASS_NAME,
@@ -134,6 +137,7 @@ export function AppNavigationBlockDropdown({
           {...triggerProps}
           data-navigation-block-trigger
           aria-label={getLocalizedText(space.label, locale, space.id)}
+          style={buildNavigationBlockTriggerStyle(space.id)}
           className={cn(
             "group inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[0.8rem] border border-transparent bg-transparent leading-none motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
             isActiveSpace
