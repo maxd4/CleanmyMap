@@ -50,7 +50,7 @@ const refContainsLegacyCoordinatorDoctrine = (() => {
       }
       if (legacyLevel === null) currentContent.push(line);
     }
-    return /le checkout de travail reste directement sur `main`|PUBLICATION_PENDING|UNPUBLISHED_PATH_CONFLICT|WORKTREE_BASE_DIVERGED|checkout partagé|RUN_OWNED_PATHS|OWNED_FILES/i.test(currentContent.join("\n"));
+    return /le checkout de travail reste directement sur `main`|workspace:start|codex\/<run-id>|CleanMyMap-worktrees|publication-acquire|PUBLICATION_PENDING|UNPUBLISHED_PATH_CONFLICT|WORKTREE_BASE_DIVERGED|checkout partagé|RUN_OWNED_PATHS|OWNED_FILES/i.test(currentContent.join("\n"));
   } catch {
     return true;
   }

@@ -69,30 +69,6 @@ test("cleans after a failed operation without touching a foreign artifact", () =
   }
 });
 
-test("uses the publication root only with an explicit safe run id", () => {
-  const root = createFixture();
-  try {
-    const materialization = createCandidateMaterialization({
-      repositoryRoot: root,
-      family: CANDIDATE_FAMILIES.PUBLICATION,
-      key: "run-20260905-001",
-      purpose: "publication-race",
-    });
-
-    assert.equal(
-      materialization.materializedRoot.startsWith(
-        path.join(root, ".artifacts", "validation", "publication-candidate"),
-      ),
-      true,
-    );
-    materialization.cleanup();
-    assert.equal(fs.existsSync(materialization.materializedRoot), false);
-    assert.deepEqual(findCandidateResidues(root).generated, []);
-  } finally {
-    cleanupFixture(root);
-  }
-});
-
 test("preserves a parallel candidate sharing the same commit key", () => {
   const root = createFixture();
   try {
@@ -121,7 +97,7 @@ test("preserves a parallel candidate sharing the same commit key", () => {
   }
 });
 
-test("rejects arbitrary candidate roots and unsafe publication ids", () => {
+test("rejects arbitrary candidate roots, including the retired publication family", () => {
   const root = createFixture();
   try {
     assert.throws(
@@ -131,10 +107,10 @@ test("rejects arbitrary candidate roots and unsafe publication ids", () => {
     assert.throws(
       () => createCandidateMaterialization({
         repositoryRoot: root,
-        family: CANDIDATE_FAMILIES.PUBLICATION,
-        key: "../foreign",
+        family: "publication-candidate",
+        key: "run-20260905-001",
       }),
-      /safe single path segment/,
+      /Unsupported candidate family/,
     );
   } finally {
     cleanupFixture(root);

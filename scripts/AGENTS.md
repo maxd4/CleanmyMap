@@ -13,112 +13,25 @@ médias et rapports présents sous `scripts/`.
   donnée, un artefact ou un environnement ;
 - privilégier une validation ciblée avant une suite lourde.
 
-## Coordinateur local des chantiers
+## Modèle canonique de développement
 
-### Migration vers les worktrees liés
+`MAIN-ONLY / SINGLE-WRITER` est le workflow CURRENT pour les scripts et leurs
+consommateurs : `CleanmyMap-main` reste sur `main`, un seul writer travaille à
+la fois, et les analyses read-only peuvent être parallèles. Aucun nouveau
+worktree, clone, claim, lock, run ou branche de chantier n'est créé.
 
-Le checkout bootstrap `CleanmyMap-main` reste sur `main`, est le miroir local
-de `origin/main` et la source du serveur localhost ; il ne sert pas au
-développement mutable. Chaque nouveau run possède une branche
-`codex/<run-id>` et un worktree lié sous
-`<parent>/CleanMyMap-worktrees/<run-id>/`. Les métadonnées, claims advisory et
-le mutex global sont stockés sous
-`git rev-parse --git-common-dir/cleanmymap-workspace`. Le champ canonique est
-`intendedPaths`; `ownedPaths` reste une lecture de compatibilité uniquement.
-Les chevauchements ordinaires sont permis, tandis que `AUTHZ_SECURITY` reste
-exclusif. `.artifacts/coordination` est seulement signalé comme
-`LEGACY_COORDINATION_STATE` et n'est jamais écrit.
-
-La reprise recharge le même run, sa branche, son worktree et sa publication.
-`workspace:publication-integrate` intègre depuis un worktree éphémère
-`<parent>/CleanMyMap-worktrees/.publish/<run-id>/` avec `publish/<run-id>` ;
-les fast-forwards sont conservés et tout nouveau merge est signé. Un conflit
-Git devient `INTEGRATION_CONFLICT`. Après convergence, seuls les worktrees et
-branches du run sont nettoyés.
-
-Après une publication réussie et la finalisation du run, le coordinateur
-recherche ce bootstrap, vérifie `main` et l'absence de modifications, puis
-exécute `fetch origin main` et `merge --ff-only origin/main`. Un bootstrap
-dirty est signalé `BOOTSTRAP_DIRTY` et laissé intact ; aucune copie manuelle,
-aucun reset, rebase, stash ou clean automatique n'est permis. `doctor` signale
-également les runs fermés avec worktree, les runs terminés dirty/staged, les
-commits non publiés abandonnés, les worktrees sans run et les métadonnées
-`ACQUIRED` sans mutex réel.
-
-`workspace-coordination.mjs` conserve uniquement des métadonnées runtime sous
-`git rev-parse --git-common-dir/cleanmymap-workspace/`. Un `claim` représente exclusivement une intention
-d'écriture future : un fichier dirty, staged ou simplement présent dans
-`LEGACY_UNOWNED` ne constitue jamais une preuve d'ownership et ne doit pas
-être adopté par un run qui ne prévoit pas de le modifier. La lecture seule
-reste donc dans `LEGACY_UNOWNED`.
-
-Une adoption explicite d'un futur chemin d'écriture est suivie dans les
-métadonnées du run via `adoptedLegacyPaths`. Si cette intention est abandonnée,
-`unclaim --run-id <RUN_ID> [--return-legacy] -- <paths>` retire uniquement les
-chemins effectivement possédés par ce run ; il refuse les locks étrangers et
-les chemins staged sous publication. `--return-legacy` enregistre d'abord le
-retour dans `LEGACY_UNOWNED`. Lors du `release`, un chemin adopté encore dirty
-est conservativement rendu au legacy avant la suppression de son lock. Aucun
-de ces mécanismes ne modifie le fichier, l'index ou `HEAD`.
-
-Le `publication.lock` reste un mutex global, mais son acquisition attend un
-publisher concurrent avec un backoff et un timeout bornés. Cette attente est
-distincte d'un conflit réel de chemin, de scope critique ou de staged étranger.
-Les runs et le lock portent un heartbeat ; une récupération n'est autorisée
-que pour une lease expirée, avec preuve qu'aucun chemin staged du propriétaire
-ne serait mis en danger.
-La lease par défaut du mutex de publication est temporairement de 30 minutes
-pour absorber les opérations longues ; cette durée attend un remplacement par
-un heartbeat autonome et ne modifie pas le délai d'attente de publication.
-
-`workspace:start` commence par `git fetch origin main`, vérifie que le
-bootstrap est bien la référence `main`, puis crée le run depuis le SHA courant
-de `origin/main` dans une branche `codex/<run-id>` et un worktree lié. Le
-bootstrap peut être dirty ou en retard : il n'est jamais utilisé comme
-workspace mutable et n'est pas écrasé lorsqu'une synchronisation n'est pas
-sûre. Le SHA de `origin/main` est conservé comme `baseSha`.
-
-Le flux canonique est `STAGE → STAGED VALIDATION → COMMIT LOCAL SIGNÉ →
-PUBLICATION ACQUIRE → INTEGRATE → PUSH → FINALIZE`. Le staging et le contrôle
-`workspace:check-staged` précèdent donc `publication-acquire`; ce contrôle
-vérifie uniquement que les chemins staged appartiennent à `intendedPaths`.
-Après acquisition, le coordinateur refait `git fetch origin main` et laisse
-l'intégration Git trancher : même fichier ≠ conflit, tandis qu'un conflit Git
-réel devient `INTEGRATION_CONFLICT`. `workspace:stale` reste read-only et
-informatif et ne bloque pas par simple chevauchement de chemin.
-
-Après interruption, `workspace:resume -- --run-id <RUN_ID>` recharge uniquement
-le run existant, renouvelle son heartbeat et classe `WORK`, `STAGED_PENDING`,
-`COMMITTED_PENDING` ou `PUSHED_PENDING_COMPLETE` par lecture des refs, des
-staged et des chemins intended. Il refuse
-`PUBLICATION_RESUME_FOREIGN_COMMIT`, `PUBLICATION_RESUME_STALE`,
-`PUBLICATION_RESUME_AMBIGUOUS` ou `PUBLICATION_RESUME_FOREIGN_STAGED` et ne
-modifie jamais l'historique Git. `publication-acquire` est réentrant pour son
-propre run et ne permet pas à un autre run d'adopter une publication expirée.
-
-`workspace:publication-complete` est l'unique preuve de clôture d'une
-publication : après fetch, `publishedSha` doit être ancêtre de `origin/main`.
-La finalisation inscrit durablement `COMPLETE`, supprime les claims du run,
-libère les locks, ferme les métadonnées et nettoie exclusivement ses worktrees
-et branches intégrés. Elle est idempotente et reprenable ; `workspace:release`
-reste une primitive de récupération, mais n'est pas nécessaire après une
-publication normale. `doctor` détecte aussi les locks critiques orphelins ou
-expirés, les runs sans worktree et les worktrees de coordinateur sans run ; un
-lock `AUTHZ_SECURITY` vivant n'est jamais récupéré.
-
-`workspace:claim` refuse avec `ORPHAN_DIRTY` un chemin dirty qui n'est ni
-`LEGACY_UNOWNED`, ni déjà possédé par le run. L'adoption doit être explicite via
-`--adopt-legacy`; le coordinateur ne lit jamais le contenu des fichiers pour
-décider l'ownership.
+Chaque lot fait `git fetch origin main`, vérifie `main`, stage une allowlist,
+valide `STAGED`, crée un commit local signé, puis valide le SHA exact avec
+`PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE` avant le push. Les commits locaux
+séquentiels sur `main` restent permis lorsque le push est temporairement
+interdit ; chaque lot part du HEAD précédent.
 
 ### LEGACY / COMPATIBILITY
 
-`PUBLICATION_PENDING`, `UNPUBLISHED_PATH_CONFLICT`, `WORKTREE_BASE_DIVERGED`,
-`LEGACY_UNOWNED`, `ORPHAN_DIRTY`, `OWNED_FILES`, `RUN_OWNED_PATHS` et la notion
-de `checkout partagé` désignent uniquement des états ou libellés de migration
-de l'ancien coordinateur. Ils peuvent être lus pour diagnostiquer un état
-historique, mais ne gouvernent aucun nouveau run et ne constituent pas des
-conflits anticipés du modèle worktree.
+Les anciens noms `workspace:*`, `codex/*`, `publish/*`, les claims, locks,
+worktrees liés et métadonnées de runs ne décrivent que la migration historique.
+Ils ne gouvernent aucun nouveau lot et ne doivent pas être consommés par les
+guards CURRENT.
 
 ## Portée Git des contrôles
 
@@ -148,15 +61,13 @@ conflits anticipés du modèle worktree.
   temporaires sous cette racine, l’index normal reste inchangé et le cleanup
   est obligatoire sur succès comme sur erreur ;
 - les lifecycle de candidates doivent réutiliser le helper
-  `scripts/ci/candidate-lifecycle.mjs` et les seules racines
-  `.artifacts/validation/prepush-candidate/<sha>/` ou
-  `.artifacts/validation/publication-candidate/<run-id>/`. Toute candidate
-  porte un marqueur généré, est supprimée dans `finally` sur succès comme sur
-  erreur, détache ses junctions/liens avant la racine et vérifie son absence ;
-- `publication-candidate` est réservé aux races/divergences ou à une
-  resynchronisation de publication réellement nécessaire. Aucun nom ad hoc,
-  clone, worktree ou copie persistante n'est autorisé ; le check read-only
-  `check:candidate-lifecycle` signale les résidus sans les supprimer ;
+  `scripts/ci/candidate-lifecycle.mjs` et la seule racine
+  `.artifacts/validation/prepush-candidate/<sha>/`. Toute candidate porte un
+  marqueur généré, est supprimée dans `finally` sur succès comme sur erreur,
+  détache ses junctions/liens avant la racine et vérifie son absence ;
+- aucun `publication-candidate`, clone, worktree ou copie persistante n'est
+  autorisé ; le check read-only `check:candidate-lifecycle` signale les
+  résidus sans les supprimer ;
 - `npm run check:candidate-lifecycle -- --strict` applique le ratchet contre
   `scripts/checks/candidate-lifecycle-baseline.json` : les trois preuves
   historiques qui y sont documentées restent tolérées, tandis que toute

@@ -542,20 +542,32 @@ Ne pas conserver un doublon si son contenu est entièrement repris par une sourc
 
 Ne pas supprimer une compatibilité encore consommée uniquement pour « nettoyer ».
 
-## 17. Worktree dirty et chantiers parallèles
+## 17. MAIN-ONLY / SINGLE-WRITER
 
-Le checkout bootstrap `CleanmyMap-main` reste sur `main`, constitue la
-référence locale et sert au serveur localhost ; il n'est pas le workspace
-mutable d'un chantier. Il peut être dirty ou en retard : `BOOTSTRAP_DIRTY` est
-un signal de synchronisation, jamais une autorisation de l'écraser.
+`CleanmyMap-main` est l'unique checkout mutable, toujours sur `main`, et la
+source de localhost. ChatGPT peut analyser plusieurs sujets en parallèle,
+mais ne doit jamais déclencher deux Codex d'écriture simultanément. Tant qu'un
+lot mutable n'est pas stabilisé, les autres sujets restent read-only/analyse.
 
-Chaque run mutable utilise une branche `codex/<run-id>` et un worktree lié
-dédié. Son dirty state est autorisé pendant le travail ; avant publication,
-son travail utile doit être commité et le worktree doit être clean et sans
-staged. Les dirty states étrangers ne bloquent pas les autres runs : seules
-les collisions Git réelles et les scopes critiques le peuvent.
+Le workflow normal ne propose ni branche de chantier, ni worktree, ni claims,
+ni mutex. Le lifecycle est :
 
-Les modifications `staged`, `unstaged` ou `untracked` étrangères au chantier courant :
+```text
+git fetch origin main
+→ main
+→ working tree/index
+→ stage ciblé
+→ STAGED
+→ commit local signé
+→ PUSH_CANDIDATE / DYNAMIC_CANDIDATE
+→ push origin/main
+```
+
+Si le push est temporairement interdit, plusieurs lots peuvent être commités
+séquentiellement sur le même `main` local ; chaque nouveau lot part du HEAD
+précédent. Aucun nouveau writer parallèle n'est créé.
+
+Les modifications `staged`, `unstaged` ou `untracked` étrangères au lot courant :
 
 - ne bloquent pas automatiquement le lot ;
 - ne doivent pas être nettoyées ;
@@ -609,86 +621,29 @@ une violation du candidat reste bloquante.
 Les validations lourdes ne doivent pas être répétées entre phases sans raison
 liée au candidat réellement traité.
 
-ChatGPT ne doit pas recommander d'attendre un chantier parallèle indépendant.
-Codex stage uniquement l'allowlist du lot, vérifie le nom des fichiers staged et
-peut publier normalement malgré des changements dirty étrangers. Avant tout
-push, il vérifie l'ascendance de `HEAD` : un commit local étranger qui serait
-embarqué est un blocage explicite, pas une publication silencieuse.
+ChatGPT ne doit pas recommander de branche ou de worktree comme workflow
+normal. Il peut préparer plusieurs analyses read-only, mais doit attendre qu'un
+lot mutable soit stabilisé avant d'en déclencher un autre. Codex stage une
+allowlist ciblée, vérifie `git diff --cached --name-only`, conserve les dirty
+paths étrangers et ne les inclut pas dans le commit.
 
-Une publication distante réussie et un checkout local réconcilié sont deux
-preuves différentes. Après un push, Codex doit refaire le fetch et vérifier
-`git rev-list --left-right --count HEAD...origin/main`. Le résultat doit être
-`0 0` pour considérer le chantier entièrement clos ; une
-`publication-candidate` ne remplace pas la synchronisation sûre du bootstrap.
+Après un push, Codex refait le fetch et vérifie
+`git rev-list --left-right --count HEAD...origin/main`; le résultat `0 0` est
+la preuve de convergence. Le seul mécanisme de candidate materialisé est
+`.artifacts/validation/prepush-candidate/<sha>/`, avec cleanup obligatoire.
 
-Pour coordonner plusieurs chantiers, utiliser le coordinateur local depuis le
-bootstrap de référence : `workspace:start` crée une branche
-`codex/<run-id>` et un worktree lié dédié, puis `workspace:claim` enregistre des
-`intendedPaths` advisory. Le domaine `AUTHZ_SECURITY` est exclusif ; les
-claims ordinaires, le stage et le commit restent isolés dans le worktree du
-run. `workspace:publication-acquire` et `workspace:publication-integrate`
-ne sérialisent que l'intégration et le push, après le commit local signé.
-Le statut compact reste métadonnées-only ; le stale-check refetch `origin/main`
-et compare uniquement les chemins possédés depuis le base SHA. Ne jamais prendre
-un snapshot global du dirty worktree ni utiliser `git add -A` pour coordonner un
-lot. L'ordre canonique est :
+Le workflow d'écriture est séquentiel dans `CleanmyMap-main` : un seul writer
+à la fois, sans coordinateur, branche ou worktree mutable.
 
-```text
-START
-  fetch -> branch == main -> worktree lié
-WORK
-  claims advisory -> stage ciblé -> STAGED validation
-  -> commit local signé sur codex/<run-id>
-PUBLICATION
-  publication-acquire -> fetch -> publication-integrate
-  -> intégration Git -> PUSH_CANDIDATE -> push main
-FINALIZE
-  publication-complete -> cleanup du run uniquement
-```
-
-Après une interruption, `workspace:resume -- --run-id <RUN_ID>` recharge le
-run durable et classe `WORK`, `STAGED_PENDING`, `COMMITTED_PENDING` ou
-`PUSHED_PENDING_COMPLETE` sans modifier Git. La reprise retrouve le même
-`runId` et ses `intendedPaths`; elle ne crée jamais un nouveau propriétaire
-pour un commit existant. La reprise et `publication-acquire` vérifient les
-chemins intended, les staged et l'ascendance du candidat, avec refus explicite
-en cas de commit étranger, ambigu ou staged étranger. Un simple chevauchement
-de fichier n'est pas un conflit : l'intégration Git décide, et seul un conflit
-Git réel devient `INTEGRATION_CONFLICT`.
-Le mutex est réentrant pour son propre run, y compris après expiration lorsque
-le candidat reste cohérent.
-La lease par défaut du mutex de publication est temporairement fixée à
-30 minutes pour les opérations longues. Cette valeur sera remplacée par un
-heartbeat autonome ; elle ne change pas le délai d'attente de publication ni
-les garde-fous de staged et d'ownership.
-
-`workspace:claim` refuse l'adoption implicite d'un fichier dirty étranger ; une
-adoption historique reste explicite avec `--adopt-legacy`.
-`workspace:check-staged` n'exige pas le mutex : il vérifie uniquement les
-`intendedPaths`. Après preuve que `publishedSha` est ancêtre de `origin/main`,
-`workspace:publication-complete` marque `COMPLETE`, ferme les métadonnées,
-supprime claims et locks et nettoie uniquement les worktrees et branches du
-run. Cette finalisation est idempotente/reprenable ; `workspace:release` reste
-une primitive de récupération et n'est pas nécessaire après publication.
-
-Le modèle courant est : bootstrap `main` = référence locale ;
-`workspace:start` crée une branche `codex/<run-id>` et un worktree lié sous
-`<parent>/CleanMyMap-worktrees/<run-id>/`. Les métadonnées et le mutex sont
-sous le `git-common-dir`, dans `cleanmymap-workspace` ;
-`.artifacts/coordination` est legacy et lecture-seule. Les claims ordinaires
-sont advisory et utilisent `intendedPaths`; seule la scope critique
-`AUTHZ_SECURITY` reste exclusive. La publication suit
-`COMMIT → publication-acquire → fetch → publication-integrate →
-PUSH_CANDIDATE → push origin/main → publication-complete → cleanup`, puis le
-bootstrap est synchronisé uniquement s'il est clean et que le fast-forward est
-sûr.
+Chaque lot peut être repris depuis son commit local précédent sans créer un
+nouveau propriétaire. Si le push est interdit temporairement, les commits
+restent séquentiels sur `main` jusqu'à la levée du moratoire.
 
 ### LEGACY / COMPATIBILITY
 
-`PUBLICATION_PENDING`, `UNPUBLISHED_PATH_CONFLICT`, `WORKTREE_BASE_DIVERGED`,
-`LEGACY_UNOWNED`, `ORPHAN_DIRTY`, `OWNED_FILES`, `RUN_OWNED_PATHS` et la notion
-de `checkout partagé` décrivent uniquement l'ancien modèle ou des états de
-migration. Ils ne gouvernent aucun nouveau run.
+Les noms `workspace:*`, `codex/*`, `publish/*`, worktrees liés, claims, locks
+et métadonnées de runs décrivent uniquement l'ancien modèle ou ses preuves
+historiques. Ils ne gouvernent aucun nouveau lot.
 
 ## Sécurité des diagnostics host et des verrous Git
 
