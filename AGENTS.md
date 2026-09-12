@@ -71,22 +71,26 @@ intermédiaires ne doivent pas commencer par ce canari.
   checkout est `main` et partir de l'état Git courant. Aucun nouveau worktree,
   clone ou branche `codex/*`/`publish/*` ne fait partie du workflow normal ;
 - le lifecycle canonique est : `origin/main → main → working tree/index →
-  commit signé → validations → push`. Si le push est temporairement interdit,
-  plusieurs lots peuvent être committés séquentiellement sur ce même `main`;
-  chaque lot part du HEAD précédent ;
-- un moratoire ou gel d'un service externe ne bloque pas automatiquement la
-  publication Git : si un push peut déclencher ce service, prouver d'abord que
-  son déclenchement automatique est désactivé et vérifié, puis appliquer le
-  lifecycle Git normal ; si cette isolation n'est pas prouvée, conserver le
-  commit local et ne pas pousser ;
-- dès qu'un blocage temporaire de publication disparaît, les commits locaux
-  validés en attente sur main sont réconciliés avec origin/main, revalidés puis
-  publiés avant d'accumuler de nouveaux lots d'écriture ;
+  validation de l'allowlist → commit local isolé`. Chaque lot d'écriture est
+  clôturé par ce commit local après validation de son allowlist. La signature
+  du commit et la publication vers `origin/main` ne sont effectuées que sur
+  demande explicite de l'utilisateur. Plusieurs commits locaux successifs
+  peuvent s'accumuler sur ce même `main`, avec un seul writer. Par défaut,
+  créer un commit non signé, y compris si la configuration Git locale active
+  la signature automatique ; n'utiliser `--gpg-sign` qu'après demande explicite
+  de l'utilisateur ;
+- un moratoire ou gel d'un service externe ne bloque pas la clôture locale d'un
+  lot. Aucun push n'est déclenché implicitement par le lifecycle ; si un push
+  est explicitement demandé et peut déclencher ce service, vérifier son
+  déclenchement automatique avant de poursuivre ;
+- les commits locaux validés en attente restent sur `main` jusqu'à une demande
+  explicite de publication. Avant tout push demandé, auditer l'intégralité de
+  `origin/main..HEAD`, réconcilier `main` avec `origin/main` si nécessaire,
+  puis revalider le candidat exact destiné au push ;
 - à chaque fin d'exécution ayant produit des modifications, clôturer
-  immédiatement le lot : vérifier son allowlist, committer uniquement ses
-  fichiers, puis pousser ce commit vers `origin/main` avant toute nouvelle
-  exécution ; si le push est bloqué, conserver le commit local et signaler
-  explicitement le blocage ;
+  immédiatement le lot : vérifier son allowlist, valider `STAGED`, committer
+  uniquement ses fichiers et conserver le commit local sur `main`. La
+  signature et le push sont exclus de cette clôture sauf demande explicite ;
 - les modifications locales non stagées hors périmètre ne bloquent ni le commit
   ni le push d'un lot ; Codex délimite le lot, stage uniquement son allowlist
   explicite (jamais `git add -A`) et vérifie
@@ -99,8 +103,9 @@ intermédiaires ne doivent pas commencer par ce canari.
   silencieusement son propre diff. Si son allowlist reste attribuable sans
   ambiguïté, qu'aucun fichier de son lot n'a été modifié concurremment et que
   la validation `STAGED` peut isoler exactement son candidat, il termine son
-  lot : stage ciblé, validation, commit signé, puis STOP avant toute nouvelle
-  modification. Il ne doit laisser ses propres changements non commités que
+  lot : stage ciblé, validation, commit local isolé, puis STOP avant toute
+  nouvelle modification. Le commit n'est signé que si l'utilisateur l'a
+  explicitement demandé. Il ne doit laisser ses propres changements non commités que
   si l'attribution des fichiers est ambiguë, qu'un fichier est partagé avec le
   writer concurrent ou que le candidat ne peut plus être validé
   indépendamment. Dans ce cas, il rapporte `DIRTY_HANDOFF_REQUIRED` et aucun
@@ -115,24 +120,33 @@ intermédiaires ne doivent pas commencer par ce canari.
   - staged candidate cannot be isolated;
   - validation of own candidate is impossible.
   ```
+- un fichier hors allowlist modifié exclusivement par une commande de
+  validation exécutée par le lot n'est pas un chantier étranger. Si le fichier
+  était clean avant la commande, que sa provenance est démontrée et que son
+  diff est un artefact généré reproductible sans contenu métier, il est classé
+  `GENERATED_VALIDATION_SIDE_EFFECT`. Il doit être restauré à son état `HEAD`
+  après la validation s'il n'appartient pas au candidat. Une modification
+  préexistante, ambiguë ou contenant un changement métier ne doit jamais être
+  restaurée automatiquement.
 - le dossier du projet est l'unique source canonique ; ne pas créer ni
   conserver de copie persistante du dépôt, copie manuelle de fichiers, branche
   temporaire, clone Git isolé ou worktree mutable ;
-- Git pousse des commits, pas des fichiers ; avant de pousser, après
-  `git fetch origin main`, inspecter `git log --oneline origin/main..HEAD`
-  et le périmètre de chaque commit local non publié pour vérifier si `HEAD`
-  contient déjà un commit étranger au lot ;
-- s'il n'existe aucun commit local étranger dans l'ascendance à publier, le lot
-  peut être commité puis poussé normalement malgré les changements dirty hors
-  périmètre ; si un commit local étranger serait nécessairement embarqué par le
-  push, ne pas le publier silencieusement, conserver le lot et signaler
-  précisément ce seul blocage ;
-- si `origin/main` avance, faire d'abord `git fetch origin main` ; une
-  évolution distante indépendante du lot autorise une resynchronisation sûre
-  sans écraser les changements parallèles, suivie des validations et du push ;
-  si cette resynchronisation du `main` n'est pas sûre, arrêter avec un STOP
-  explicite ; un conflit réel sur les fichiers ou contrats du lot impose le
-  même arrêt ;
+- Git pousse des commits, pas des fichiers ; avant tout push explicitement
+  demandé, faire `git fetch origin main`, auditer l'intégralité de
+  `git log --oneline origin/main..HEAD` et le périmètre de chaque commit local
+  non publié, dans l'ordre, afin de vérifier la provenance, l'allowlist et
+  l'absence de commit étranger ou ambigu dans l'ascendance destinée au push ;
+- si un commit local étranger, ambigu ou non validé serait embarqué par le push,
+  ne pas le publier silencieusement, conserver les commits locaux et signaler
+  précisément le blocage ; les changements dirty hors périmètre restent
+  préservés et ne sont pas ajoutés au candidat ;
+- si `origin/main` avance avant un push explicitement demandé, faire d'abord
+  `git fetch origin main` ; une évolution distante indépendante du lot autorise
+  une resynchronisation sûre sans écraser les changements parallèles, suivie de
+  l'audit intégral de `origin/main..HEAD` et de la revalidation du candidat
+  exact ; si cette resynchronisation du `main` n'est pas sûre, arrêter avec un
+  STOP explicite ; un conflit réel sur les fichiers ou contrats du lot impose
+  le même arrêt ;
 - distinguer les trois portées de validation : `WORKTREE` pour l'itération
   manuelle (dirty et untracked inclus), `STAGED` pour le candidat de
   pré-commit (`git diff --cached`) et `PUSH_CANDIDATE` pour le vrai pré-push,
@@ -186,14 +200,18 @@ intermédiaires ne doivent pas commencer par ce canari.
   `SKIPPED_PARALLEL_CHANTIER` sans masquer une erreur du candidat ;
 - les suites lourdes ne doivent pas être répétées entre phases sans raison
   liée au candidat réellement validé ;
-- le flux normal est : stage ciblé → validation `STAGED` → commit local signé
-  sur `main` → validation `PUSH_CANDIDATE`/`DYNAMIC_CANDIDATE` → push normal.
-  Vérifier l'allowlist, les ajouts et suppressions, puis ne jamais force-push
-  ni réécrire l'historique ;
-- avant le push, vérifier le diff exact du périmètre logique, les validations
-  pertinentes, `git diff --cached --name-only` et l'ascendance réellement
-  destinée au push ; une candidate réussie ne remplace pas la vérification du
-  `main` local et du SHA candidat ;
+- le flux normal est : stage ciblé → validation `STAGED` → commit local isolé
+  sur `main` → clôture du lot. La signature du commit est optionnelle et
+  soumise à une demande explicite. Sur demande explicite de push seulement :
+  audit intégral de `origin/main..HEAD` → validation du
+  `PUSH_CANDIDATE`/`DYNAMIC_CANDIDATE` exact → push normal. Vérifier
+  l'allowlist, les ajouts et suppressions, puis ne jamais force-push ni
+  réécrire l'historique ;
+- avant tout push demandé, vérifier le diff exact du périmètre logique, les
+  validations pertinentes, `git diff --cached --name-only`, l'intégralité de
+  l'ascendance `origin/main..HEAD` et le SHA candidat exact ; une candidate
+  réussie ne remplace pas l'audit de `main` local et de tous les commits qui
+  seraient publiés ;
 - après tout push réussi, refaire `git fetch origin main`, puis vérifier
   `git rev-list --left-right --count HEAD...origin/main` ; un verdict
   `terminé` exige le résultat `0 0` et doit signaler
@@ -212,13 +230,16 @@ intermédiaires ne doivent pas commencer par ce canari.
 
 Un agent externe peut lire et préparer une analyse ou des fichiers, mais ne
 doit pas écrire sans autorisation. L'intégrateur local vérifie la cohérence du
-checkout, applique les changements autorisés, valide, committe et pousse.
+checkout, applique les changements autorisés, valide et committe le lot
+localement ; il ne signe ou ne pousse que sur demande explicite de
+l'utilisateur.
 
 `CHATGPT.md` gouverne la réflexion et la préparation côté ChatGPT ; ce fichier
 gouverne l'exécution locale Codex. ChatGPT peut analyser plusieurs sujets en
 parallèle, mais ne doit jamais déclencher deux Codex d'écriture simultanément.
 Codex écrit uniquement dans ce checkout `main`, exécute les checks puis
-committe et pousse chaque lot selon la règle ci-dessus.
+committe localement chaque lot selon la règle ci-dessus ; signature et push
+restent conditionnels à une demande explicite de l'utilisateur.
 
 ## Chantiers parallèles
 
@@ -234,8 +255,11 @@ committe et pousse chaque lot selon la règle ci-dessus.
 
 `MAIN-ONLY / SINGLE-WRITER` est le seul workflow CURRENT. Chaque lot fait un
 fetch de `origin/main`, vérifie la branche `main`, stage son allowlist, passe la
-validation `STAGED`, crée un commit signé local, puis valide le SHA exact avec
-`PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE` avant le push.
+validation `STAGED` et crée un commit local isolé. La signature et le push ne
+sont effectués que sur demande explicite de l'utilisateur. Plusieurs commits
+locaux successifs peuvent s'accumuler sur `main`. Avant tout push demandé,
+l'intégralité de `origin/main..HEAD` est auditée, puis le SHA exact est validé
+avec `PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE`.
 
 Les anciens worktrees, branches et métadonnées du coordinateur peuvent rester
 présents comme preuves historiques pendant la migration, mais ne sont ni créés,
@@ -294,8 +318,9 @@ les artefacts historiques. Ils ne gouvernent aucun nouveau lot.
   l'utilisateur dans le checkout est une source utilisateur intentionnelle ;
   il ne doit jamais être traité comme un artefact disposable ni supprimé
   parce qu'il est untracked ; s'il n'existe pas encore sur `origin/main`, il
-  doit être intégré au dépôt, commité et poussé sur `main` dans son
-  emplacement fourni ; seul un secret, une donnée sensible, un fichier
+  doit être intégré au dépôt et commité localement sur `main` dans son
+  emplacement fourni ; sa signature et son push ne sont effectués que sur
+  demande explicite de l'utilisateur ; seul un secret, une donnée sensible, un fichier
   manifestement généré ou un contenu tiers non destiné au dépôt peut bloquer
   cette intégration, avec un STOP explicite.
 
