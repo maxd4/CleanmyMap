@@ -9,6 +9,7 @@ import {
   exitCodeForChild,
   getRoleConfig,
   getVercelEnvPullArgs,
+  resolveVercelCliInvocation,
   isVercelProjectLinked,
   runVercelEnvPull,
 } from "./launch-local-role.mjs";
@@ -45,11 +46,14 @@ describe("launch-local-role", () => {
   });
 
   it("uses a non-interactive Vercel Development pull without Claude tooling", () => {
-    assert.deepEqual(getVercelEnvPullArgs(), ["env", "pull", ".env.local", "development", "--yes"]);
+    assert.deepEqual(getVercelEnvPullArgs(), ["env", "pull", ".env.local", "--environment", "development", "--yes"]);
 
     const calls = [];
     runVercelEnvPull({
       cwd: "C:\\repo\\apps\\web",
+      env: { PATH: "C:\\npm" },
+      platform: "win32",
+      existsImpl: (path) => path === "C:\\npm\\vercel.cmd" || path === "C:\\npm\\node_modules\\vercel\\dist\\vc.js",
       spawnSyncImpl: (command, args, options) => {
         calls.push({ command, args, options });
         return { status: 0 };
@@ -57,9 +61,34 @@ describe("launch-local-role", () => {
     });
 
     assert.equal(calls.length, 1);
-    assert.equal(calls[0].command, "vercel");
-    assert.deepEqual(calls[0].args, getVercelEnvPullArgs());
+    assert.equal(calls[0].command, process.execPath);
+    assert.deepEqual(calls[0].args, ["C:\\npm\\node_modules\\vercel\\dist\\vc.js", ...getVercelEnvPullArgs()]);
+    assert.equal(calls[0].options.shell, false);
+    assert.deepEqual(calls[0].options.env, { PATH: "C:\\npm" });
     assert.ok(!calls[0].args.some((value) => /claude|skills/i.test(value)));
+  });
+
+  it("fails clearly before spawning when Vercel CLI is absent from PATH", () => {
+    assert.throws(
+      () =>
+        runVercelEnvPull({
+          env: { PATH: "" },
+          platform: "win32",
+        }),
+      /CLI Vercel introuvable dans le PATH.*npm install --global vercel.*relance le launcher/,
+    );
+  });
+
+  it("resolves a Vercel CLI script from an npm Windows shim without a shell", () => {
+    assert.deepEqual(
+      resolveVercelCliInvocation({
+        env: { PATH: "C:\\npm" },
+        platform: "win32",
+        existsImpl: (path) => path === "C:\\npm\\vercel.cmd" || path === "C:\\npm\\node_modules\\vercel\\dist\\vc.js",
+        nodePath: "C:\\node\\node.exe",
+      }),
+      { command: "C:\\node\\node.exe", args: ["C:\\npm\\node_modules\\vercel\\dist\\vc.js"] },
+    );
   });
 
   it("requires a valid linked Vercel project before pulling", () => {
