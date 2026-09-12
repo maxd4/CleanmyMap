@@ -22,7 +22,7 @@ describe("top ribbon dropdown sizing contract", () => {
     const source = readSource("app-navigation-ribbon-menus.tsx");
 
     expect(source).toContain('w-[min(20rem,calc(100vw-1rem))]');
-    expect(source).toContain('w-[min(18rem,calc(100vw-1rem))]');
+    expect(source).toContain('w-[min(17rem,calc(100vw-1rem))]');
     expect(source).toContain('<SitePreferencesControls variant="compact" />');
     expect(source).toContain("compact");
     expect(source).toContain("Signaler un problème technique");
@@ -34,8 +34,9 @@ describe("top ribbon dropdown sizing contract", () => {
     const source = readSource("ribbon-dropdown-item.tsx");
 
     expect(source).toContain("compact?: boolean");
-    expect(source).toContain("min-h-12 gap-2 px-2 py-2");
-    expect(source).toContain("h-8 w-8");
+    expect(source).toContain("min-h-10 gap-1.5 px-1.5 py-1.5");
+    expect(source).toContain("h-7 w-7");
+    expect(source).toContain("whitespace-nowrap max-[320px]:whitespace-normal");
     expect(source).not.toContain("group-hover:translate-x-0.5");
   });
 });
