@@ -92,7 +92,7 @@ rester vide lorsque la fonctionnalité correspondante n’est pas activée.
 
 | VARIABLE | SERVICE | PUBLIC/SECRET | LOCAL | DEVELOPMENT | PREVIEW | PRODUCTION | SOURCE | CONSOMMATEUR |
 |---|---|---|---|---|---|---|---|---|
-| `NEXT_PUBLIC_APP_URL` | Web | PUBLIC | R | R | R | R | Vercel / template local | URLs, Clerk, liens |
+| `NEXT_PUBLIC_APP_URL` | Web | PUBLIC | R | R | P | R | template local / métadonnées système Vercel | URLs, Clerk, liens |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase | PUBLIC | R | R | R | R | Supabase / Vercel | clients Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase | PUBLIC | R | R | R | R | Supabase / Vercel | clients Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase | SECRET | R | R | R | R | Supabase / Vercel | stores serveur/admin |
@@ -162,6 +162,23 @@ rester vide lorsque la fonctionnalité correspondante n’est pas activée.
 | `IMPACT_PROXY_CO2_KG_PER_WASTE_KG` | CleanMyMap | CONFIG | O | O | O | O | Vercel / template local | impact proxy |
 | `IMPACT_PROXY_SURFACE_M2_PER_WASTE_KG` | CleanMyMap | CONFIG | O | O | O | O | Vercel / template local | impact proxy |
 | `IMPACT_PROXY_SURFACE_M2_PER_VOLUNTEER_MINUTE` | CleanMyMap | CONFIG | O | O | O | O | Vercel / template local | impact proxy |
+
+### Résolution de `NEXT_PUBLIC_APP_URL`
+
+Le resolver build-time `apps/web/src/lib/app-url.mjs` applique le contrat
+suivant :
+
+- Development : `NEXT_PUBLIC_APP_URL` explicite, sinon `http://localhost:3000` ;
+- Preview : URL explicite si présente, sinon dérivation automatique depuis
+  `VERCEL_BRANCH_URL`, puis `VERCEL_URL` ; aucune variable
+  `NEXT_PUBLIC_APP_URL` manuelle n'est nécessaire dans l'environnement Preview ;
+- Production : `NEXT_PUBLIC_APP_URL` explicite, dont la valeur canonique est
+  `https://cleanmymap.fr`, puis `VERCEL_PROJECT_PRODUCTION_URL` comme fallback
+  de résilience.
+
+Les URLs issues des variables système Vercel sont normalisées en origine HTTPS
+et les slashs finaux sont supprimés. La valeur explicite reste prioritaire dans
+tous les environnements.
 
 ### Variables plateforme et outillage hors template applicatif
 

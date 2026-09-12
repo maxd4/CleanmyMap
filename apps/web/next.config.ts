@@ -5,16 +5,19 @@ import {
   resolveSentryEnvironment,
   resolveSentryRelease,
 } from "./src/lib/observability/sentry-metadata.mjs";
+import { resolvePublicAppUrl } from "./src/lib/app-url.mjs";
 import { PUBLIC_DOCUMENTATION_TRACE_FILES } from "./src/lib/documentation/public-documentation-registry";
 
 const repoRoot = path.resolve(__dirname, "../..");
 const env = process.env;
 const sentryRelease = resolveSentryRelease(env) ?? "";
 const sentryEnvironment = resolveSentryEnvironment(env);
+const publicAppUrl = resolvePublicAppUrl(env);
 const DOCUMENTATION_TRACE_GLOB = "../../documentation/**/*";
 
 const nextConfig: NextConfig = {
   env: {
+    NEXT_PUBLIC_APP_URL: publicAppUrl,
     NEXT_PUBLIC_SENTRY_RELEASE: sentryRelease,
     NEXT_PUBLIC_SENTRY_ENVIRONMENT: sentryEnvironment,
   },
