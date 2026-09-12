@@ -1,7 +1,7 @@
 # Plan de découpage des monolithes
 
 **État :** plan documentaire et radar de suivi, sans refactor applicatif dans ce lot
-**Mis à jour :** 2026-09-07
+**Mis à jour :** 2026-09-12
 **Portée :** `apps/web/src`, fichiers suivis `.ts` et `.tsx`
 **Règle durable :** cohésion, responsabilités, couplage et testabilité > nombre de lignes
 
@@ -11,28 +11,28 @@ Le radar courant a été mesuré exclusivement depuis la ref Git suivante, aprè
 `git fetch origin main` :
 
 ```text
-RADAR_REF=ebd22b799bd057d50a048ab57abf7eade662bb8a
+RADAR_REF=123b17fcb01ccb51ab857623219f7ab5a1a5921d
 ```
 
 Commande informative exécutée :
 
 ```text
-node scripts/checks/check-top-heavy-files.mjs --ref=ebd22b799bd057d50a048ab57abf7eade662bb8a --max-lines=100000 --max-kb=7 --top=25
+node scripts/checks/check-top-heavy-files.mjs --ref=123b17fcb01ccb51ab857623219f7ab5a1a5921d --max-lines=100000 --max-kb=7 --top=25
 ```
 
 Commande enforcement exécutée :
 
 ```text
-node scripts/checks/check-top-heavy-files.mjs --ref=ebd22b799bd057d50a048ab57abf7eade662bb8a --max-lines=1000 --max-kb=50 --top=25 --enforce
+node scripts/checks/check-top-heavy-files.mjs --ref=123b17fcb01ccb51ab857623219f7ab5a1a5921d --max-lines=1000 --max-kb=50 --top=25 --enforce
 ```
 
 ### Mesures exactes
 
-- `2011` fichiers `.ts/.tsx` sont présents sous `apps/web/src` sur cette ref.
-- `511` dépassent le seuil informatif de `7 KiB`, soit `7168` octets.
+- `2104` fichiers `.ts/.tsx` sont présents sous `apps/web/src` sur cette ref.
+- `535` dépassent le seuil informatif de `7 KiB`, soit `7168` octets.
 - Maximum en lignes : `991`, pour `app/api/actions/group-join/route.test.ts`.
-- Maximum en octets : `34167` octets, soit `33.4 KiB`, pour
-  `lib/actions/organizer-directory-catalog.ts`.
+- Maximum en octets : `38960` octets, soit `38.0 KiB`, pour
+  `app/api/route/recommend/route.test.ts`.
 - Seuil enforcement : `>1000` lignes ou `>50 KiB`, soit `51200` octets.
 - Violations enforcement : `0` (`POLICY_OK`, commande terminée avec le code
   `0`).
