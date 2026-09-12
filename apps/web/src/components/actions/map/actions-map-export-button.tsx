@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useMemo, useState, type RefObject } from "react";
 import { FileSpreadsheet } from "lucide-react";
+import { CmmDropdown } from "@/components/ui/cmm-dropdown";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { buildActionsCsv, buildActionsCsvFilename } from "@/lib/reports/csv";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
@@ -70,39 +71,10 @@ export function ActionsMapExportButton({
 }: ActionsMapExportButtonProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isExporting, setIsExporting] = useState<ExportActionId | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
   const canExport = items.length > 0;
   const csvFilename = useMemo(() => buildActionsCsvFilename(), []);
   const geoJsonFilename = useMemo(() => buildActionsMapGeoJsonFilename(), []);
   const pngFilename = useMemo(() => buildActionsMapPngFilename(), []);
-
-  useEffect(() => {
-    function handlePointerDown(event: PointerEvent) {
-      if (!menuOpen) {
-        return;
-      }
-      const target = event.target;
-      if (!(target instanceof Node)) {
-        return;
-      }
-      if (!menuRef.current?.contains(target)) {
-        setMenuOpen(false);
-      }
-    }
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setMenuOpen(false);
-      }
-    }
-
-    window.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("keydown", handleEscape);
-    return () => {
-      window.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [menuOpen]);
 
   async function handleExport(format: ExportActionId) {
     if (!canExport || isExporting) {
@@ -171,30 +143,27 @@ export function ActionsMapExportButton({
   }
 
   return (
-    <div className="relative" ref={menuRef}>
-      <button
-        type="button"
-        onClick={() => setMenuOpen((current) => !current)}
-        disabled={!canExport || Boolean(isExporting)}
-        title={csvFilename}
-        className={[
-          "inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200/80 bg-sky-100 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-slate-950 transition hover:border-sky-300 hover:bg-sky-200 disabled:cursor-not-allowed disabled:opacity-50",
-          className ?? "",
-        ].join(" ")}
-        aria-haspopup="menu"
-        aria-expanded={menuOpen}
-        aria-label="Exporter la vue de la carte"
-      >
-        <FileSpreadsheet size={16} aria-hidden="true" />
-        {isExporting ? "Export..." : "Exporter la vue"}
-      </button>
-
-      {menuOpen ? (
-        <div
-          role="menu"
-          aria-label="Formats d'export"
-          className="absolute left-1/2 top-[calc(100%+0.5rem)] z-30 min-w-[18rem] -translate-x-1/2 overflow-hidden rounded-3xl border border-sky-200/90 bg-white p-2 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]"
+    <CmmDropdown
+      id="actions-map-export-menu-panel"
+      ariaLabel="Formats d'export"
+      open={menuOpen}
+      onOpenChange={setMenuOpen}
+      panelRole="menu"
+      panelClassName="min-w-[18rem] overflow-hidden rounded-3xl border border-sky-200/90 bg-white p-2 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]"
+      renderTrigger={(triggerProps) => (
+        <button
+          {...triggerProps}
+          disabled={!canExport || Boolean(isExporting)}
+          className={[
+            "inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200/80 bg-sky-100 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-slate-950 transition hover:border-sky-300 hover:bg-sky-200 disabled:cursor-not-allowed disabled:opacity-50",
+            className ?? "",
+          ].join(" ")}
         >
+          <FileSpreadsheet size={16} aria-hidden="true" />
+          {isExporting ? "Export..." : "Exporter la vue"}
+        </button>
+      )}
+    >
           {EXPORT_ACTIONS.map((action) => (
             <button
               key={action.id}
@@ -221,8 +190,6 @@ export function ActionsMapExportButton({
               </span>
             </button>
           ))}
-        </div>
-      ) : null}
-    </div>
+    </CmmDropdown>
   );
 }

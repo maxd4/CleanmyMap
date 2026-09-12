@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { ChevronDown } from "lucide-react";
 import {
@@ -11,7 +11,7 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { BadgePictogram, getAccountBadgeIconName } from "@/components/gamification/badge-icon";
 import { BadgeSurface } from "@/components/gamification/badge-surface";
 import { usePathname, useRouter } from "next/navigation";
-import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
+import { CmmDropdown } from "@/components/ui/cmm-dropdown";
 import {
   getProfileEntryPath,
   getProfileLabel,
@@ -53,54 +53,6 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
     () => [...profileMenuGroups.openProfiles, ...profileMenuGroups.obtainedProfiles],
     [profileMenuGroups],
   );
-  const roleMenuRef = useRef<HTMLDetailsElement | null>(null);
-  const roleCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const roleMenuPlacement = useDropdownPlacement({
-    isOpen: isRoleMenuOpen,
-    triggerRef: roleMenuRef,
-  });
-  const badgeMenuRef = useRef<HTMLDetailsElement | null>(null);
-  const badgeCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const badgeMenuPlacement = useDropdownPlacement({
-    isOpen: isBadgeMenuOpen,
-    triggerRef: badgeMenuRef,
-  });
-
-  const openRoleMenu = () => {
-    if (roleCloseTimerRef.current) {
-      clearTimeout(roleCloseTimerRef.current);
-      roleCloseTimerRef.current = null;
-    }
-    setIsRoleMenuOpen(true);
-  };
-
-  const closeRoleMenuAfterHover = () => {
-    if (roleCloseTimerRef.current) {
-      clearTimeout(roleCloseTimerRef.current);
-    }
-    roleCloseTimerRef.current = setTimeout(() => {
-      setIsRoleMenuOpen(false);
-      roleCloseTimerRef.current = null;
-    }, 160);
-  };
-
-  const openBadgeMenu = () => {
-    if (badgeCloseTimerRef.current) {
-      clearTimeout(badgeCloseTimerRef.current);
-      badgeCloseTimerRef.current = null;
-    }
-    setIsBadgeMenuOpen(true);
-  };
-
-  const closeBadgeMenuAfterHover = () => {
-    if (badgeCloseTimerRef.current) {
-      clearTimeout(badgeCloseTimerRef.current);
-    }
-    badgeCloseTimerRef.current = setTimeout(() => {
-      setIsBadgeMenuOpen(false);
-      badgeCloseTimerRef.current = null;
-    }, 160);
-  };
 
   useEffect(() => {
     let isMounted = true;
@@ -127,12 +79,6 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
 
     return () => {
       isMounted = false;
-      if (roleCloseTimerRef.current) {
-        clearTimeout(roleCloseTimerRef.current);
-      }
-      if (badgeCloseTimerRef.current) {
-        clearTimeout(badgeCloseTimerRef.current);
-      }
     };
   }, []);
 
@@ -183,20 +129,23 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
   return (
     <div className="flex items-center gap-2">
       {profileOptions.length > 0 ? (
-        <details
-          ref={roleMenuRef}
+        <CmmDropdown
+          id="account-role-menu-panel"
+          ariaLabel={locale === "fr" ? "Profils accessibles" : "Accessible profiles"}
           open={isRoleMenuOpen}
-          onToggle={(event) => setIsRoleMenuOpen(event.currentTarget.open)}
-          onMouseEnter={openRoleMenu}
-          onMouseLeave={closeRoleMenuAfterHover}
-          className="relative"
-        >
-          <summary
-            aria-haspopup="menu"
-            aria-expanded={isRoleMenuOpen}
-            aria-controls="account-role-menu-panel"
-            className="cmm-dropdown-trigger inline-flex min-h-11 max-w-[13rem] cursor-pointer items-center gap-2 rounded-xl border border-white/12 bg-white/[0.06] px-3 text-left text-white transition-colors hover:border-white/25 hover:bg-white/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 active:scale-[0.99] [&::-webkit-details-marker]:hidden"
-          >
+          onOpenChange={(open) => {
+            setIsRoleMenuOpen(open);
+            if (open) {
+              setIsBadgeMenuOpen(false);
+            }
+          }}
+          panelClassName="w-[min(19rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-slate-600/70 bg-slate-900/98 p-3 text-white shadow-[0_24px_52px_-28px_rgba(2,6,23,0.95)]"
+          renderTrigger={(triggerProps) => (
+            <button
+              {...triggerProps}
+              aria-label={locale === "fr" ? "Menu du profil actif" : "Active profile menu"}
+              className="cmm-dropdown-trigger inline-flex min-h-11 max-w-[13rem] items-center gap-2 rounded-xl border border-white/12 bg-white/[0.06] px-3 text-left text-white transition-colors hover:border-white/25 hover:bg-white/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 active:scale-[0.99]"
+            >
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10 text-emerald-200">
               <BadgePictogram
                 name={getAccountBadgeIconName(`role_${identity.activeRole}`)}
@@ -213,27 +162,9 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
               )}
               aria-hidden="true"
             />
-          </summary>
-          <div
-            className={cn(
-              "absolute z-40 h-3 w-full",
-              roleMenuPlacement.openUp ? "bottom-full" : "top-full",
-            )}
-            onMouseEnter={openRoleMenu}
-            aria-hidden="true"
-          />
-          <div
-            id="account-role-menu-panel"
-            role="menu"
-            aria-label={locale === "fr" ? "Profils accessibles" : "Accessible profiles"}
-            onMouseEnter={openRoleMenu}
-            onMouseLeave={closeRoleMenuAfterHover}
-            className={cn(
-              "absolute z-40 w-[min(19rem,calc(100vw-1rem))] overflow-hidden rounded-2xl border border-slate-600/70 bg-slate-900/98 p-3 text-white shadow-[0_24px_52px_-28px_rgba(2,6,23,0.95)]",
-              roleMenuPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
-              "left-1/2 -translate-x-1/2",
-            )}
-          >
+            </button>
+          )}
+        >
             <p className="px-2 pb-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-300">
               {locale === "fr" ? "UTILISER LE SITE COMME" : "USE THE SITE AS"}
             </p>
@@ -344,24 +275,32 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
                 className="w-full border-white/18 bg-white/[0.08] text-sm text-white hover:bg-white/[0.14]"
               />
             </div>
-          </div>
-        </details>
+        </CmmDropdown>
       ) : null}
 
       {gamificationBadges.length > 0 ? (
-        <details
-          ref={badgeMenuRef}
+        <CmmDropdown
+          id="account-badges-menu-panel"
+          ariaLabel={locale === "fr" ? "Badges d'engagement" : "Engagement badges"}
           open={isBadgeMenuOpen}
-          onToggle={(event) => setIsBadgeMenuOpen(event.currentTarget.open)}
-          onMouseEnter={openBadgeMenu}
-          onMouseLeave={closeBadgeMenuAfterHover}
-          className="group relative"
-        >
-          <summary
-            aria-expanded={isBadgeMenuOpen}
-            aria-controls="account-badges-menu-panel"
-            className="cmm-dropdown-trigger flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-cyan-100/12 bg-white/8 px-3 cmm-text-caption font-bold text-white transition hover:border-cyan-200/32 hover:bg-white/14 hover:text-white active:scale-95 [&::-webkit-details-marker]:hidden"
-          >
+          onOpenChange={(open) => {
+            setIsBadgeMenuOpen(open);
+            if (open) {
+              setIsRoleMenuOpen(false);
+            }
+          }}
+          panelRole="region"
+          panelClassName="w-64 overflow-hidden rounded-[1.15rem] border border-emerald-300/22 p-3 shadow-xl"
+          panelStyle={{
+            backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.98) 0%, rgba(6,78,37,0.97) 54%, rgba(4,55,28,0.97) 100%)",
+            backgroundColor: "rgba(5,46,22,0.98)",
+          }}
+          renderTrigger={(triggerProps) => (
+            <button
+              {...triggerProps}
+              aria-label={locale === "fr" ? "Menu des badges" : "Badges menu"}
+              className="cmm-dropdown-trigger flex min-h-11 items-center gap-2 rounded-full border border-cyan-100/12 bg-white/8 px-3 cmm-text-caption font-bold text-white transition hover:border-cyan-200/32 hover:bg-white/14 hover:text-white active:scale-95"
+            >
             <BadgePictogram name="award" size={14} className="cmm-text-secondary" />
             <span className="hidden sm:inline">
               {locale === "fr" ? "Badges" : "Badges"}
@@ -373,29 +312,9 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
               )}
               aria-hidden="true"
             />
-          </summary>
-          <div
-            className={cn(
-              "absolute z-40 h-3 w-full",
-              badgeMenuPlacement.openUp ? "bottom-full" : "top-full",
-            )}
-            onMouseEnter={openBadgeMenu}
-            aria-hidden="true"
-          />
-          <div
-            id="account-badges-menu-panel"
-            onMouseEnter={openBadgeMenu}
-            onMouseLeave={closeBadgeMenuAfterHover}
-            className={cn(
-              "absolute z-40 w-64 overflow-hidden rounded-[1.15rem] border border-emerald-300/22 p-3 shadow-xl",
-              badgeMenuPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
-              "left-1/2 -translate-x-1/2",
-            )}
-            style={{
-              backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.98) 0%, rgba(6,78,37,0.97) 54%, rgba(4,55,28,0.97) 100%)",
-              backgroundColor: "rgba(5,46,22,0.98)",
-            }}
-          >
+            </button>
+          )}
+        >
             <p className="text-[10px] font-semibold uppercase tracking-wide text-white">
               Badges d&apos;engagement
             </p>
@@ -416,8 +335,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
                 </li>
               ))}
             </ul>
-          </div>
-        </details>
+        </CmmDropdown>
       ) : null}
 
       {profileError ? (

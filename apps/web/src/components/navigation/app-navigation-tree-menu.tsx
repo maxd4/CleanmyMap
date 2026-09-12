@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, List, Menu } from "lucide-react";
 import Link from "next/link";
@@ -8,7 +8,7 @@ import type { NavigationSpace, NavigationItem } from "@/lib/navigation";
 import { getLocalizedText } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
-import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
+import { CmmDropdown } from "@/components/ui/cmm-dropdown";
 import type { RibbonChrome } from "./app-navigation-ribbon-theme";
 import {
   getNavigationDropdownTitleGradientStyle,
@@ -52,107 +52,33 @@ export function AppNavigationTreeMenu({
 }: AppNavigationTreeMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [openSpaceId, setOpenSpaceId] = useState<NavigationSpace["id"] | null>(null);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const panelRef = useRef<HTMLDivElement | null>(null);
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const placement = useDropdownPlacement({
-    isOpen,
-    triggerRef,
-  });
-
   const panelStyle = getNavigationDropdownPanelStyle(activeSpaceId ?? spaces[0]?.id ?? null);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    panelRef.current?.focus();
-
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-        triggerRef.current?.focus();
-      }
-    };
-
-    const closeOnPointerDown = (event: PointerEvent) => {
-      const target = event.target as Node | null;
-      if (
-        target &&
-        !triggerRef.current?.contains(target) &&
-        !panelRef.current?.contains(target)
-      ) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("keydown", closeOnEscape);
-    document.addEventListener("pointerdown", closeOnPointerDown);
-    return () => {
-      document.removeEventListener("keydown", closeOnEscape);
-      document.removeEventListener("pointerdown", closeOnPointerDown);
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    return () => {
-      if (closeTimerRef.current) {
-        clearTimeout(closeTimerRef.current);
-      }
-    };
-  }, []);
-
-  const openMenu = () => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-    setIsOpen(true);
-    setOpenSpaceId(activeSpaceId ?? spaces[0]?.id ?? null);
-  };
-
-  const closeMenuAfterHover = () => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-    }
-    closeTimerRef.current = setTimeout(() => {
-      setIsOpen(false);
-      closeTimerRef.current = null;
-    }, 160);
-  };
-
-  const toggleMenu = () => {
-    setIsOpen((current) => {
-      const next = !current;
-      if (next) {
-        setOpenSpaceId(activeSpaceId ?? spaces[0]?.id ?? null);
-      }
-      return next;
-    });
-  };
-
   return (
-    <div
-      className="relative shrink-0"
-      onMouseEnter={openMenu}
-      onMouseLeave={closeMenuAfterHover}
-    >
-      <button
-        ref={triggerRef}
-        type="button"
-        aria-label={locale === "fr" ? "Sommaire" : "Summary"}
-        aria-expanded={isOpen}
-        aria-controls={`${idBase}-panel`}
-        aria-haspopup="dialog"
-        onClick={toggleMenu}
+    <CmmDropdown
+      id={`${idBase}-panel`}
+      ariaLabel={locale === "fr" ? "Sommaire des sections et rubriques" : "Summary of sections and pages"}
+      open={isOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        if (open) {
+          setOpenSpaceId(activeSpaceId ?? spaces[0]?.id ?? null);
+        }
+      }}
+      panelRole="region"
+      triggerHasPopup="dialog"
+      panelClassName="max-h-[calc(100vh-7rem)] w-[min(34rem,calc(100vw-1rem))] overflow-hidden rounded-[1.75rem] border text-black shadow-[0_28px_70px_-30px_rgba(15,23,42,0.24)]"
+      panelStyle={panelStyle}
+      renderTrigger={(triggerProps) => (
+        <button
+          {...triggerProps}
+          aria-label={locale === "fr" ? "Sommaire" : "Summary"}
         className={cn(
           "inline-flex h-11 min-h-11 w-11 min-w-11 items-center justify-center gap-2 rounded-full border px-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:h-auto sm:min-h-11 sm:w-auto sm:min-w-[9.5rem] sm:px-4",
           "border-cyan-200/24 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 text-white shadow-[0_18px_36px_-20px_rgba(20,184,166,0.5)] hover:border-cyan-100/40 hover:from-cyan-400 hover:via-teal-400 hover:to-emerald-400",
           isOpen && "scale-[1.01]",
         )}
-      >
+        >
         <span
           className={cn(
             "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border",
@@ -169,44 +95,10 @@ export function AppNavigationTreeMenu({
           className={cn("h-4 w-4 shrink-0 transition-transform", isOpen && "rotate-180")}
           aria-hidden="true"
         />
-      </button>
-
-      <AnimatePresence initial={false}>
-        {isOpen ? (
-          <>
-            <motion.div
-              key="app-navigation-tree-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40 bg-slate-950/42"
-            />
-            <motion.div
-              key="app-navigation-tree-panel"
-              ref={panelRef}
-              id={`${idBase}-panel`}
-              role="dialog"
-              aria-modal="false"
-                aria-label={
-                  locale === "fr"
-                    ? "Sommaire des sections et rubriques"
-                    : "Summary of sections and pages"
-                }
-              tabIndex={-1}
-              initial={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98, x: "-50%" }}
-              animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
-              exit={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98, x: "-50%" }}
-              transition={{ duration: 0.16, ease: "easeOut" }}
-              className={cn(
-                "fixed inset-x-4 z-50 max-h-[calc(100vh-7rem)] overflow-hidden rounded-[1.75rem] border text-black shadow-[0_28px_70px_-30px_rgba(15,23,42,0.24)] lg:absolute lg:inset-x-auto lg:max-h-[min(72vh,42rem)] lg:w-[min(34rem,calc(100vw-5rem))]",
-                "top-[calc(var(--app-ribbon-top-offset,0.5rem)+4.75rem)] lg:top-full",
-                placement.openUp ? "lg:bottom-full lg:top-auto lg:mb-3" : "lg:mt-3",
-                "lg:left-1/2 lg:-translate-x-1/2",
-              )}
-              onMouseEnter={openMenu}
-              onMouseLeave={closeMenuAfterHover}
-              style={panelStyle}
-            >
+        </button>
+      )}
+    >
+      <div>
               <div className="flex items-center justify-end border-b border-black/10 px-3 py-2.5 sm:px-4">
                 <button
                   type="button"
@@ -325,18 +217,7 @@ export function AppNavigationTreeMenu({
                   })}
                 </div>
               </div>
-            </motion.div>
-            <div
-              className={cn(
-                "absolute z-50 hidden h-3 w-full lg:block",
-                placement.openUp ? "bottom-full" : "top-full",
-              )}
-              onMouseEnter={openMenu}
-              aria-hidden="true"
-            />
-          </>
-        ) : null}
-      </AnimatePresence>
-    </div>
+      </div>
+    </CmmDropdown>
   );
 }

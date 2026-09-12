@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { Bell, Check, MessageSquare, ShieldCheck, UserCheck, AlertTriangle } from "lucide-react";
@@ -8,6 +8,7 @@ import { formatDistanceToNow } from "date-fns";
 import { enUS, fr } from "date-fns/locale";
 
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { CmmDropdown } from "@/components/ui/cmm-dropdown";
 import { buildChatNotificationHref } from "@/lib/chat/chat-notification-targets";
 import { logFailure } from "@/lib/logging/failure-log";
 import {
@@ -16,7 +17,6 @@ import {
   type AppNotification,
 } from "@/lib/notifications/client";
 import type { RibbonChrome } from "./app-navigation-ribbon-theme";
-import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 
 function getNotificationIcon(type: AppNotification["type"]) {
   switch (type) {
@@ -44,80 +44,14 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [canHover, setCanHover] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fetchInFlightRef = useRef(false);
   const markReadInFlightRef = useRef(false);
-  const placement = useDropdownPlacement({
-    isOpen,
-    triggerRef,
-  });
-  const triggerRect = placement.triggerRect;
-  const mobilePanelTop =
-    !placement.openUp && triggerRect && typeof window !== "undefined"
-      ? `${triggerRect.bottom + 12}px`
-      : "auto";
-  const mobilePanelBottom =
-    placement.openUp && triggerRect && typeof window !== "undefined"
-      ? `${window.innerHeight - triggerRect.top + 12}px`
-      : "auto";
 
   const unreadCount = useMemo(
     () => notifications.filter((notification) => !notification.read_at).length,
     [notifications],
   );
   const pollIntervalMs = isOpen ? 300_000 : 900_000;
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
-
-    const updateCanHover = () => {
-      setCanHover(mediaQuery.matches);
-    };
-
-    updateCanHover();
-    mediaQuery.addEventListener("change", updateCanHover);
-
-    return () => {
-      mediaQuery.removeEventListener("change", updateCanHover);
-    };
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (closeTimerRef.current) {
-        clearTimeout(closeTimerRef.current);
-      }
-    };
-  }, []);
-
-  function openNotificationMenu() {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-    setIsOpen(true);
-  }
-
-  function closeNotificationMenuSoon() {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-    }
-    closeTimerRef.current = setTimeout(() => {
-      setIsOpen(false);
-      closeTimerRef.current = null;
-    }, 140);
-  }
-
-  function handleBellClick() {
-    if (canHover) {
-      openNotificationMenu();
-      return;
-    }
-
-    setIsOpen((current) => !current);
-  }
 
   const fetchNotifications = useCallback(async () => {
     if (!isLoaded || !isSignedIn || !userId) {
@@ -252,21 +186,28 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
   };
 
   return (
-    <div
-      className="relative"
-      onMouseEnter={canHover ? openNotificationMenu : undefined}
-      onMouseLeave={canHover ? closeNotificationMenuSoon : undefined}
-      onFocus={canHover ? openNotificationMenu : undefined}
-    >
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={handleBellClick}
-        className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/88 shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)] transition-all hover:border-pink-200/28 hover:bg-pink-400/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300/40"
-        aria-label={`Notifications (${unreadCount} non lues)`}
-        aria-expanded={isOpen}
-        aria-controls="notifications-menu-panel"
-      >
+    <CmmDropdown
+      id="notifications-menu-panel"
+      ariaLabel={locale === "fr" ? "Notifications" : "Notifications"}
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      panelRole="region"
+      panelClassName="w-[min(21.25rem,calc(100vw-1rem))] overflow-visible rounded-2xl border border-white/15 bg-slate-950/95 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]"
+      panelStyle={
+        ribbonChrome
+          ? {
+              backgroundImage: ribbonChrome.backgroundImage,
+              backgroundColor: ribbonChrome.backgroundColor,
+              borderColor: ribbonChrome.borderColor,
+            }
+          : undefined
+      }
+      renderTrigger={(triggerProps) => (
+        <button
+          {...triggerProps}
+          aria-label={`Notifications (${unreadCount} non lues)`}
+          className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/88 shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)] transition-all hover:border-pink-200/28 hover:bg-pink-400/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300/40"
+        >
         <Bell
           className={`h-5 w-5 ${unreadCount > 0 ? "text-pink-300 animate-swing" : "text-white/70"}`}
           aria-hidden="true"
@@ -279,50 +220,9 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
             </span>
           </span>
         ) : null}
-      </button>
-
-      {isOpen ? (
-        <>
-          <button
-            type="button"
-            className="fixed inset-0 z-40 cursor-default"
-            onClick={() => setIsOpen(false)}
-            aria-label={locale === "fr" ? "Fermer les notifications" : "Close notifications"}
-          />
-          <div
-            id="notifications-menu-panel"
-            role="dialog"
-            aria-label={locale === "fr" ? "Notifications" : "Notifications"}
-            onMouseEnter={canHover ? openNotificationMenu : undefined}
-            onMouseLeave={canHover ? closeNotificationMenuSoon : undefined}
-            className={`absolute left-1/2 z-50 w-[min(21.25rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] -translate-x-1/2 overflow-visible rounded-2xl border border-white/15 bg-slate-950/95 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)] max-sm:fixed max-sm:left-1/2 max-sm:right-auto max-sm:w-[calc(100vw-1rem)] max-sm:max-w-[calc(100vw-1rem)] max-sm:-translate-x-1/2 max-sm:top-[var(--notifications-mobile-top)] max-sm:bottom-[var(--notifications-mobile-bottom)] ${placement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]"}`}
-            style={
-              {
-                ...(ribbonChrome
-                  ? {
-                      backgroundImage: ribbonChrome.backgroundImage,
-                      backgroundColor: ribbonChrome.backgroundColor,
-                      borderColor: ribbonChrome.borderColor,
-                    }
-                  : {}),
-                "--notifications-mobile-top": mobilePanelTop,
-                "--notifications-mobile-bottom": mobilePanelBottom,
-              } as CSSProperties
-            }
-          >
-            <span
-              aria-hidden="true"
-              className={`pointer-events-none absolute left-1/2 right-auto h-4 w-4 -translate-x-1/2 rotate-45 border-l border-t border-white/15 ${placement.openUp ? "-bottom-2 rotate-[225deg] border-b border-l-0 border-r border-t-0" : "-top-2"}`}
-              style={
-                ribbonChrome
-                  ? {
-                      backgroundImage: ribbonChrome.backgroundImage,
-                      backgroundColor: ribbonChrome.backgroundColor,
-                      borderColor: ribbonChrome.borderColor,
-                    }
-                  : undefined
-              }
-            />
+        </button>
+      )}
+    >
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-3.5">
               <h3 className="text-sm font-bold text-white">
                 {locale === "fr" ? "Notifications" : "Notifications"}
@@ -410,9 +310,6 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
                 {locale === "fr" ? "Fermer" : "Close"}
               </button>
             </div>
-          </div>
-        </>
-      ) : null}
-    </div>
+    </CmmDropdown>
   );
 }

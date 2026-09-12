@@ -37,6 +37,35 @@ describe("dropdown centering contract", () => {
     expect(blockSource).not.toContain("0.75rem");
   });
 
+  it("keeps ribbon item styling and non-modal notification semantics canonical", () => {
+    const ribbonMenus = readSource("navigation/app-navigation-ribbon-menus.tsx");
+    const ribbonItem = readSource("navigation/ribbon-dropdown-item.tsx");
+    const notificationBell = readSource("navigation/notification-bell.tsx");
+
+    expect(ribbonMenus).toContain("RibbonDropdownItem");
+    expect(ribbonMenus).not.toContain('tone="tertiary"');
+    expect(ribbonMenus).not.toContain("title=");
+    expect(ribbonItem).toContain("text-white");
+    expect(ribbonItem).toContain("hover:bg-white/10");
+    expect(ribbonItem).toContain("focus-visible:ring");
+    expect(notificationBell).toContain('panelRole="region"');
+    expect(notificationBell).not.toContain('role="dialog"');
+    expect(notificationBell).not.toContain("aria-modal");
+    expect(notificationBell).not.toContain("fixed inset-0");
+  });
+
+  it("removes redundant native tooltips from the ribbon controls", () => {
+    const ribbonMenus = readSource("navigation/app-navigation-ribbon-menus.tsx");
+    const ribbonAccount = readSource("navigation/app-navigation-ribbon-account.tsx");
+    const globalSearch = readSource("navigation/global-search.tsx");
+
+    expect(ribbonMenus).not.toContain('title="Réglages"');
+    expect(ribbonMenus).not.toContain('title="Feedback"');
+    expect(ribbonMenus).not.toContain("title=");
+    expect(ribbonAccount).not.toContain("title={activityStatusLabel}");
+    expect(globalSearch).not.toContain('title={`${placeholder} (Ctrl+K)`');
+  });
+
   it("does not retain edge-alignment decisions in the placement hook", () => {
     const placementSource = readSource("ui/use-dropdown-placement.ts");
 

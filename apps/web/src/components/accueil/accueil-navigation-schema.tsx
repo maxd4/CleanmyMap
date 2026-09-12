@@ -67,7 +67,6 @@ const toneClasses = {
     card: "border-emerald-100/90 bg-white shadow-[0_30px_70px_-38px_rgba(16,185,129,0.42)]",
     icon: "bg-emerald-50 text-emerald-600",
     pill: "bg-emerald-50/75 hover:bg-emerald-100/90 focus-visible:ring-emerald-500",
-    number: "bg-emerald-100 text-emerald-700",
     arrow: "text-emerald-600",
     audience: "border-emerald-200/75 bg-emerald-50/45 text-emerald-700",
     scene: "emerald",
@@ -76,7 +75,6 @@ const toneClasses = {
     card: "border-violet-100/90 bg-white shadow-[0_30px_70px_-38px_rgba(124,58,237,0.38)]",
     icon: "bg-violet-50 text-violet-700",
     pill: "bg-violet-50/75 hover:bg-violet-100/90 focus-visible:ring-violet-500",
-    number: "bg-violet-100 text-violet-700",
     arrow: "text-violet-700",
     audience: "border-violet-200/75 bg-violet-50/45 text-violet-700",
     scene: "violet",
@@ -85,7 +83,6 @@ const toneClasses = {
     card: "border-blue-100/90 bg-white shadow-[0_30px_70px_-38px_rgba(37,99,235,0.38)]",
     icon: "bg-blue-50 text-blue-700",
     pill: "bg-blue-50/75 hover:bg-blue-100/90 focus-visible:ring-blue-500",
-    number: "bg-blue-100 text-blue-700",
     arrow: "text-blue-700",
     audience: "border-blue-200/75 bg-blue-50/45 text-blue-700",
     scene: "blue",
@@ -176,18 +173,18 @@ function NavigationScene({ tone }: { tone: (typeof toneClasses)[NavigationPath["
 
 function NavigationAudiences() {
   return (
-    <div className="relative mx-auto mt-9 hidden h-[5.65rem] max-w-[1460px] lg:block">
-      <div className="grid h-full grid-cols-[1fr_1.1fr_1fr] gap-6">
+    <div className="relative mx-auto mt-7 hidden h-[4.75rem] max-w-[1600px] lg:block">
+      <div className="grid h-full grid-cols-[1fr_1.1fr_1fr] gap-5">
         {navigationPaths.map((path) => {
           const tone = toneClasses[path.tone];
           const Icon = path.icon;
           return (
             <div
               key={path.audience}
-              className={`flex items-center justify-center gap-5 rounded-full border px-8 text-[clamp(1.15rem,1.55vw,2rem)] font-bold tracking-[-0.04em] shadow-[0_14px_32px_-24px_rgba(15,23,42,0.35)] ${tone.audience}`}
+              className={`flex items-center justify-center gap-4 rounded-full border px-6 text-[clamp(1rem,1.35vw,1.65rem)] font-bold tracking-[-0.04em] shadow-[0_14px_32px_-24px_rgba(15,23,42,0.35)] ${tone.audience}`}
             >
-              <Icon aria-hidden="true" className="size-14 shrink-0" strokeWidth={2.1} />
-              <span>{path.audience}</span>
+              <Icon aria-hidden="true" className="size-11 shrink-0" strokeWidth={2.1} />
+              <span className="whitespace-nowrap">{path.audience}</span>
             </div>
           );
         })}
@@ -210,40 +207,34 @@ function NavigationCard({ path }: { path: NavigationPath }) {
 
   return (
     <article
-      className={`group relative flex min-h-[39rem] min-w-0 flex-col overflow-visible rounded-[2rem] border-2 p-4 transition-transform duration-200 hover:-translate-y-1 motion-reduce:transform-none motion-reduce:transition-none sm:min-h-[42rem] sm:p-5 lg:min-h-[47rem] lg:p-7 ${tone.card}`}
+      className={`group relative flex min-h-[31rem] min-w-0 flex-col overflow-visible rounded-[1.75rem] border-2 p-3 transition-transform duration-200 hover:-translate-y-1 motion-reduce:transform-none motion-reduce:transition-none sm:min-h-[34rem] sm:p-4 lg:min-h-[38rem] lg:p-5 ${tone.card}`}
     >
-      <div className="relative h-[12rem] shrink-0 overflow-visible rounded-[1.55rem] sm:h-[14rem] lg:h-[15rem]">
+      <div className="relative h-[10rem] shrink-0 overflow-visible rounded-[1.4rem] sm:h-[11.5rem] lg:h-[12rem]">
         <NavigationScene tone={tone.scene} />
-        <span className={`absolute -bottom-12 left-1/2 grid size-24 -translate-x-1/2 place-items-center rounded-full border-[0.7rem] border-white ${tone.icon}`}>
-          <Icon aria-hidden="true" className="size-11" strokeWidth={2.1} />
+        <span className={`absolute -bottom-10 left-1/2 grid size-20 -translate-x-1/2 place-items-center rounded-full border-[0.55rem] border-white ${tone.icon}`}>
+          <Icon aria-hidden="true" className="size-9" strokeWidth={2.1} />
         </span>
       </div>
 
-      <div className="relative flex flex-1 flex-col px-2 pb-4 pt-16 sm:px-3 sm:pb-5 lg:px-4 lg:pb-3 lg:pt-12">
-        <p className="mb-4 text-center text-sm font-semibold tracking-tight text-slate-900 lg:hidden">
+      <div className="relative flex flex-1 flex-col px-1 pb-3 pt-12 sm:px-2 sm:pb-4 lg:px-3 lg:pb-2 lg:pt-10">
+        <p className="mb-3 text-center text-xs font-semibold tracking-tight text-slate-900 lg:hidden">
           {path.audience}
         </p>
-        <h3 className="text-center text-[clamp(1.75rem,2.7vw,3.4rem)] font-black leading-[1.06] tracking-[-0.03em] text-slate-950 lg:whitespace-nowrap">
+        <h3 className="text-center text-[clamp(1.35rem,2.2vw,2.7rem)] font-black leading-[1.06] tracking-[-0.03em] text-slate-950 lg:whitespace-nowrap">
         {path.title}
         </h3>
 
-        <nav aria-label={`Parcours ${path.audience}`} className="relative mt-7 lg:mt-7">
-          <ol className="space-y-3">
-          {path.links.map((item, index) => {
+        <nav aria-label={`Parcours ${path.audience}`} className="relative mt-5 lg:mt-5">
+          <ol className="space-y-2.5">
+          {path.links.map((item) => {
             const content = (
               <>
-                <span
-                  aria-hidden="true"
-                  className={`grid size-12 shrink-0 place-items-center rounded-full text-lg font-bold ${tone.number}`}
-                >
-                  {index + 1}
-                </span>
-                <span className="min-w-0 flex-1 text-left text-[1.35rem] font-medium tracking-[-0.03em] text-slate-900 sm:text-[1.6rem]">
+                <span className="min-w-0 flex-1 whitespace-nowrap text-left text-[1.05rem] font-medium tracking-[-0.03em] text-slate-900 sm:text-[1.25rem]">
                   {item.label}
                 </span>
                 <ArrowRight
                   aria-hidden="true"
-                  className={`size-6 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none ${tone.arrow}`}
+                  className={`size-5 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transform-none motion-reduce:transition-none ${tone.arrow}`}
                   strokeWidth={1.8}
                 />
               </>
@@ -255,7 +246,7 @@ function NavigationCard({ path }: { path: NavigationPath }) {
                   href={item.href}
                   target="_blank"
                   rel="noreferrer"
-                  className={`group flex min-h-[4.25rem] items-center gap-4 rounded-full px-4 py-2.5 outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-offset-2 ${tone.pill}`}
+                  className={`group flex min-h-[3.5rem] items-center gap-3 rounded-full px-3 py-2 outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-offset-2 ${tone.pill}`}
                 >
                   {content}
                 </a>
@@ -264,7 +255,7 @@ function NavigationCard({ path }: { path: NavigationPath }) {
               <li key={item.label}>
                 <Link
                   href={item.href}
-                  className={`group flex min-h-[4.25rem] items-center gap-4 rounded-full px-4 py-2.5 outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-offset-2 ${tone.pill}`}
+                  className={`group flex min-h-[3.5rem] items-center gap-3 rounded-full px-3 py-2 outline-none transition-colors motion-reduce:transition-none focus-visible:ring-2 focus-visible:ring-offset-2 ${tone.pill}`}
                 >
                   {content}
                 </Link>
@@ -283,37 +274,37 @@ export function HomeNavigationSchema() {
     <section
       data-homepage-section="navigation"
       aria-labelledby="home-navigation-title"
-      className="relative isolate mx-auto min-h-[112rem] w-[calc(100%_-_4px)] max-w-none overflow-hidden py-12 sm:py-16 lg:min-h-[94rem] lg:pb-[4.5rem] lg:pt-[6.5rem]"
+      className="relative isolate mx-auto min-h-[90rem] w-[calc(100%_-_4px)] max-w-none overflow-hidden py-10 sm:py-12 lg:min-h-[76rem] lg:pb-[3.5rem] lg:pt-[5rem]"
     >
       <NavigationLandscape />
       <div className="relative z-10 mx-auto w-full max-w-[1750px] px-4 sm:px-8 lg:px-0">
         <header className="mx-auto max-w-[1450px] text-center">
           <h2
             id="home-navigation-title"
-            className="whitespace-nowrap text-[clamp(2.4rem,5.5vw,6.3rem)] font-black leading-none tracking-[-0.03em] text-slate-950"
+            className="whitespace-nowrap bg-gradient-to-r from-emerald-500 via-sky-500 to-violet-600 bg-clip-text text-[clamp(2rem,4.4vw,5rem)] font-black leading-none tracking-[-0.03em] text-transparent"
           >
-            L&apos;union fait la <span className="bg-gradient-to-r from-emerald-500 via-sky-500 to-violet-600 bg-clip-text text-transparent">force</span>
+            L&apos;union fait la force
           </h2>
-          <p className="mx-auto mt-5 max-w-[1280px] text-[clamp(1.15rem,2.35vw,2.35rem)] leading-snug tracking-[-0.02em] text-indigo-900/75">
+          <p className="mx-auto mt-3 max-w-none whitespace-nowrap text-[clamp(0.7rem,1.7vw,1.85rem)] leading-snug tracking-[-0.04em] text-black">
             Partager un moment sportif et convivial tout en agissant en faveur de l&apos;environnement
           </p>
         </header>
 
         <NavigationAudiences />
 
-        <div className="relative mt-10 grid gap-6 sm:gap-8 lg:mt-[8.65rem] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-6">
+        <div className="relative mt-8 grid gap-4 sm:gap-6 lg:mt-[6.5rem] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)] lg:gap-5">
           {navigationPaths.map((path) => (
             <NavigationCard key={path.audience} path={path} />
           ))}
         </div>
 
-        <div className="relative mt-12 text-center sm:mt-14 lg:mt-[3.75rem]">
-          <p className="font-[cursive] text-[clamp(1.9rem,3.2vw,3.5rem)] italic leading-none tracking-[-0.04em] text-[#9a6a22]">
+        <div className="relative mt-8 text-center sm:mt-10 lg:mt-[3rem]">
+          <p className="font-[cursive] text-[clamp(1.55rem,2.6vw,2.8rem)] italic leading-none tracking-[-0.04em] text-[var(--action-critical-bg)]">
             Cultivons l&apos;entraide
           </p>
           <span
             aria-hidden="true"
-            className="mx-auto mt-3 block h-1 w-28 -rotate-3 rounded-full bg-[#9a6a22]"
+            className="mx-auto mt-2 block h-1 w-24 -rotate-3 rounded-full bg-[var(--action-critical-bg)]"
           />
         </div>
       </div>
