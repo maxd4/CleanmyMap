@@ -313,12 +313,17 @@ export function CmmDropdown({
           <span
             aria-hidden="true"
             className={cn(
-              "pointer-events-none absolute left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-l border-t border-white/15",
+              "pointer-events-none absolute left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-black/35",
               placement.openUp
                 ? "-bottom-2 rotate-[225deg] border-b border-l-0 border-r border-t-0"
                 : "-top-2",
             )}
-            style={{ ...panelStyle, ...arrowStyle }}
+            style={{
+              backgroundColor: panelStyle?.backgroundColor,
+              backgroundImage: panelStyle?.backgroundImage,
+              borderColor: "rgba(15, 23, 42, 0.34)",
+              ...arrowStyle,
+            }}
           />
           {children}
         </div>

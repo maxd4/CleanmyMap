@@ -69,8 +69,14 @@ describe("app navigation block dropdown contract", () => {
     expect(displayModes).toContain(
       '[data-display-mode="sobre"] [data-navigation-block-trigger]:focus-visible',
     );
-    expect(displayModes).toContain("outline: 2px solid var(--text-primary);");
+    expect(displayModes).toContain("outline: 2px solid var(--text-inverse);");
     expect(displayModes).toContain("box-shadow: none !important;");
+  });
+
+  it("uses one neutral focus ring instead of a blue trigger contour", () => {
+    expect(source).toContain("focus-visible:outline-white");
+    expect(source).toContain("focus-visible:ring-white/80");
+    expect(source).not.toContain("focus-visible:ring-cyan-300/40");
   });
 
   it("does not pass unused ribbon chrome into the block dropdown", () => {
