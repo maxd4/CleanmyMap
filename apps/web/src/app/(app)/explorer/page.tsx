@@ -194,7 +194,7 @@ export default async function ExplorerPage() {
         </div>
 
         {/* ── Grille de cartes hub — inspirée des blocs de navigation visibles ── */}
-        <div className="mx-auto grid w-full items-start grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] justify-center gap-6 lg:gap-7 xl:items-stretch">
+        <div className="mx-auto grid w-full grid-cols-1 items-start justify-center gap-5 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] lg:gap-6 xl:items-stretch">
           {visibleSpaces.map((space) => {
             const orderedItems = getOrderedPreviewItems(space.id, space.items);
             const t = BLOCK_THEME[space.id];
@@ -203,7 +203,7 @@ export default async function ExplorerPage() {
               <article
                 key={space.id}
                 style={{ backgroundImage: t.backgroundImage }}
-                className={`group relative flex min-h-[260px] h-fit w-full flex-col overflow-hidden rounded-[1rem] border ${t.border} p-6 ring-1 ${t.ring} shadow-[0_26px_56px_-30px_rgba(15,23,42,0.38)] transition-all duration-200 motion-reduce:transform-none motion-reduce:transition-none motion-safe:hover:-translate-y-0.5 hover:border-opacity-100 hover:shadow-[0_32px_68px_-34px_rgba(15,23,42,0.48)] ${t.glow} active:translate-y-0 sm:p-7 xl:h-full`}
+                className={`group relative flex min-h-[260px] h-fit w-full flex-col overflow-hidden rounded-[1rem] border ${t.border} p-6 ring-1 ${t.ring} shadow-[0_26px_56px_-30px_rgba(15,23,42,0.38)] transition-all duration-200 motion-reduce:transform-none motion-reduce:transition-none lg:hover:-translate-y-0.5 lg:hover:brightness-105 hover:border-opacity-100 hover:shadow-[0_32px_68px_-34px_rgba(15,23,42,0.48)] ${t.glow} active:translate-y-0 sm:p-7 xl:h-full xl:p-4`}
               >
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/14 to-transparent" />
                 <div className={`pointer-events-none absolute -right-14 -top-14 h-32 w-32 rounded-full ${t.dot} opacity-[0.16]`} />
@@ -235,7 +235,7 @@ export default async function ExplorerPage() {
                             className={`group/item flex min-h-9 items-center gap-2 rounded-xl border border-transparent px-2.5 py-1.5 text-[14px] font-semibold ${t.mutedText} transition-all duration-150 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus-visible:ring-2 focus-visible:ring-white/30 ${t.itemHover}`}
                           >
                             <span className={`h-1 w-1 shrink-0 rounded-full opacity-80 ${t.dot}`} />
-                            <span className="flex-1 leading-snug">{item.label[locale]}</span>
+                            <span className="flex-1 whitespace-nowrap leading-snug">{item.label[locale]}</span>
                             <ChevronRight
                               size={11}
                               className={`shrink-0 opacity-0 transition-all group-hover/item:opacity-80 group-hover/item:translate-x-0.5 ${t.iconColor}`}
