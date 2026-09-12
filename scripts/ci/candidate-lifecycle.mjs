@@ -5,25 +5,13 @@ export const CANDIDATE_MARKER = ".cleanmymap-candidate.json";
 export const VALIDATION_ROOT = [".artifacts", "validation"];
 export const CANDIDATE_FAMILIES = Object.freeze({
   PREPUSH: "prepush-candidate",
-  PUBLICATION: "publication-candidate",
 });
-
-function assertSafeSegment(value, label) {
-  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value)) {
-    throw new Error(`${label} must be a safe single path segment.`);
-  }
-}
 
 function assertCandidateKey(family, key) {
   if (family === CANDIDATE_FAMILIES.PREPUSH) {
     if (!/^[0-9a-f]{40}$/i.test(key)) {
       throw new Error("prepush-candidate key must be a 40-character commit SHA.");
     }
-    return;
-  }
-
-  if (family === CANDIDATE_FAMILIES.PUBLICATION) {
-    assertSafeSegment(key, "publication-candidate run id");
     return;
   }
 

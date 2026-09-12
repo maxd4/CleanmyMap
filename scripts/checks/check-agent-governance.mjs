@@ -35,13 +35,13 @@ const skippedDirectories = new Set([
 ]);
 
 const requiredMarkers = new Map([
-  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "workspace:start", "codex/<run-id>", "CleanMyMap-worktrees", "git-common-dir/cleanmymap-workspace", "intendedPaths", "AUTHZ_SECURITY", "claims", "advisory", "publication-acquire", "publication-integrate", "PUSH_CANDIDATE", "publication-complete", "INTEGRATION_CONFLICT"]],
+  ["AGENTS.md", ["apps/web", "scripts", "documentation", "fichiers scoped", "MAIN-ONLY / SINGLE-WRITER", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push"]],
   ["apps/web/AGENTS.md", ["Next.js", "Server/Client", "Leaflet"]],
   ["apps/web/src/app/api/AGENTS.md", ["AuthN", "AuthZ", "contrat de réponse propre"]],
   ["apps/web/supabase/AGENTS.md", ["apps/web/supabase/migrations/", "unique", "RLS"]],
   ["apps/web/scripts/AGENTS.md", ["dry-run", "--apply", "provenance"]],
   ["apps/mobile/AGENTS.md", ["ClerkProvider", "Third-Party Auth", "`sub` Clerk", "distance_m"]],
-  ["scripts/AGENTS.md", ["audit", "cleanup", "provenance", "workspace:start", "codex/<run-id>", "CleanMyMap-worktrees", "git-common-dir/cleanmymap-workspace", "intendedPaths", "advisory", "AUTHZ_SECURITY", "publication-acquire", "publication-integrate", "PUSH_CANDIDATE", "publication-complete", "INTEGRATION_CONFLICT"]],
+  ["scripts/AGENTS.md", ["audit", "cleanup", "provenance", "MAIN-ONLY / SINGLE-WRITER", "origin/main", "STAGED", "PUSH_CANDIDATE", "DYNAMIC_CANDIDATE", "pre-commit", "pre-push"]],
   [".github/AGENTS.md", ["permissions", "CodeQL", "check:github-actions"]],
   ["maintenance/python/AGENTS.md", ["hors du", "requirements", "pytest"]],
   ["documentation/AGENTS.md", ["état actuel", "historique", "public"]],

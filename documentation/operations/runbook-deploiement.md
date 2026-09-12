@@ -37,9 +37,10 @@ déjà vérifié. Après l'opération, refaire l'inspection, les contrôles de s
 le smoke ciblé.
 
 Pour un SHA historique sans deployment réutilisable, ne matérialiser ni copie
-ni environnement ad hoc. Utiliser uniquement le mécanisme canonique
-`publication-candidate`. Si aucun workflow supporté par le dépôt ne permet
-l'opération, faire STOP et signaler le blocage.
+ni environnement ad hoc. Utiliser uniquement le mécanisme canonique de
+candidate Git `prepush-candidate/<sha>`, lorsque le workflow de validation le
+supporte. Si aucun workflow supporté par le dépôt ne permet l'opération, faire
+STOP et signaler le blocage.
 
 Si Vercel répond `TEAM_ACCESS_REQUIRED` ou indique que l'auteur Git n'a pas
 accès à l'équipe, arrêter les retries. Corriger l'accès ou l'identité de

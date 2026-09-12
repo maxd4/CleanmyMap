@@ -17,9 +17,7 @@ test("pre-commit uses the changed-surface guard and fast global controls", async
   assert.match(packageJson.scripts["precommit:guard"], /pre_commit_guard\.ps1/);
   assert.match(packageJson.scripts["checks:staged:quick"], /check_changed_quick\.ps1 -StagedOnly/);
   assert.match(guard, /npm run checks:staged:quick/);
-  assert.match(guard, /workspace-coordination\.mjs/);
-  assert.match(guard, /check-staged/);
-  assert.match(guard, /CMM_WORKSPACE_RUN_ID/);
+  assert.doesNotMatch(guard, /workspace-coordination|CMM_WORKSPACE_RUN_ID|check-staged/);
   assert.match(guard, /npm run security:secrets -- --staged-only/);
   assert.match(guard, /git diff --cached --check/);
   assert.doesNotMatch(guard, /npm run checks:changed:quick/);
@@ -115,10 +113,12 @@ test("pre-commit and pre-push are blocking candidate guards", async () => {
   assert.notEqual(preCommitHook, prePushHook);
 });
 
-test("read-only workspace Git wrapper disables optional index locks", async () => {
-  const coordinator = await readRepoFile("scripts/dev/workspace-coordination.mjs");
+test("pre-commit is independent from the retired coordinator", async () => {
+  const sessionBootstrap = await readRepoFile("scripts/dev/session_bootstrap.mjs");
+  const packageJson = JSON.parse(await readRepoFile("package.json"));
 
-  assert.match(coordinator, /env:\s*\{\s*\.\.\.process\.env,\s*GIT_OPTIONAL_LOCKS:\s*"0"\s*\}/s);
+  assert.doesNotMatch(sessionBootstrap, /workspace-coordination|createWorkspaceCoordinator/);
+  assert.equal(Object.keys(packageJson.scripts).some((name) => name.startsWith("workspace:")), false);
 });
 
 test("governance keeps parallel dirty work separate from published commits", async () => {
@@ -132,14 +132,16 @@ test("governance keeps parallel dirty work separate from published commits", asy
   assert.match(rootAgents, /WORKTREE/);
   assert.match(rootAgents, /STAGED/);
   assert.match(rootAgents, /PUSH_CANDIDATE/);
-  assert.match(rootAgents, /CleanMyMap-worktrees/);
-  assert.match(rootAgents, /publication-acquire/);
-  assert.match(rootAgents, /publication-integrate/);
-  assert.match(rootAgents, /INTEGRATION_CONFLICT/);
+  assert.match(rootAgents, /MAIN-ONLY \/ SINGLE-WRITER/);
+  assert.match(rootAgents, /un seul chantier peut écrire à la fois/);
+  assert.doesNotMatch(rootAgents, /workspace:start/);
+  assert.doesNotMatch(scriptsAgents, /workspace:start/);
   assert.match(rootAgents, /### LEGACY \/ COMPATIBILITY/);
-  assert.doesNotMatch(rootAgents, /Pour coordonner plusieurs chantiers dans le checkout partagé/);
+  assert.match(chatgpt, /MAIN-ONLY \/ SINGLE-WRITER/);
+  assert.match(chatgpt, /ne doit jamais déclencher deux Codex d'écriture simultanément/);
+  assert.doesNotMatch(chatgpt, /workspace:start/);
+  assert.doesNotMatch(chatgpt, /publication-candidate/);
   assert.doesNotMatch(scriptsAgents, /HEAD == origin\/main/);
-  assert.match(chatgpt, /ne doit pas recommander d'attendre un chantier parallèle indépendant/);
   assert.match(scriptsAgents, /pré-commit doit utiliser exclusivement la portée `STAGED`/);
   assert.match(scriptsAgents, /pré-push réel doit utiliser exclusivement la portée\s+`PUSH_CANDIDATE`/);
 });

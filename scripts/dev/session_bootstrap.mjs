@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { readFileSync } from "node:fs";
-import { createWorkspaceCoordinator } from "./workspace-coordination.mjs";
+import { execFileSync } from "node:child_process";
 import { sessionMemoryStatus } from "./update_session_memory.mjs";
 
 const ROOT = process.cwd();
@@ -28,16 +28,14 @@ if (!sessionMemory.valid) {
   throw new Error(`Invalid session memory format: ${sessionMemory.errors.join("; ")}`);
 }
 
-function readRunId() {
-  const argument = process.argv.slice(2).find((value) => value.startsWith("--run-id"));
-  if (!argument) return null;
-  return argument.includes("=") ? argument.split("=", 2)[1] : process.argv[process.argv.indexOf(argument) + 1] ?? null;
+const branch = execFileSync("git", ["branch", "--show-current"], { cwd: ROOT, encoding: "utf8" }).trim();
+if (branch !== "main") {
+  throw new Error(`MAIN_ONLY_SINGLE_WRITER requires branch main; found ${branch || "detached HEAD"}.`);
 }
 
-const coordination = createWorkspaceCoordinator({ repositoryRoot: ROOT });
-const coordinationStatus = coordination.status({ runId: readRunId() });
-
 console.log("Session bootstrap ready.");
+console.log("MODEL=MAIN-ONLY/SINGLE-WRITER");
+console.log("BRANCH=main");
 console.log(`SESSION_MEMORY=VALID updated=${sessionMemory.date}`);
 if (sessionMemory.stale) {
   console.warn(`SESSION_MEMORY_STALE age_days=${sessionMemory.ageDays} threshold_days=14`);
@@ -45,15 +43,4 @@ if (sessionMemory.stale) {
 console.log("Files verified:");
 for (const file of REQUIRED) {
   console.log(`- ${file}`);
-}
-console.log(`ACTIVE_RUNS=${coordinationStatus.activeRuns.length}`);
-console.log(`ADVISORY_CLAIMS=${coordinationStatus.advisoryClaims}`);
-console.log(`LEGACY_COMPATIBILITY_RECORDS=${coordinationStatus.legacyUnowned}`);
-console.log(`OVERLAPS=${coordinationStatus.overlaps.length}`);
-console.log(`PUBLICATION_OWNER=${coordinationStatus.publicationOwner ?? "none"}`);
-console.log(`UNCLAIMED_DIRTY_PATHS=${coordinationStatus.orphanDirty.length}`);
-if (coordinationStatus.run) {
-  console.log(`RUN_ID=${coordinationStatus.run.runId}`);
-  console.log(`RUN_INTENDED_PATHS=${coordinationStatus.run.intendedPaths.length}`);
-  console.log(`RUN_REMOTE_CHANGED=${coordinationStatus.run.remoteChangedPaths.length}`);
 }
