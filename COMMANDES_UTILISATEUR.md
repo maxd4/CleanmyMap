@@ -22,7 +22,7 @@ npm run backend:supabase:push -w apps/web     # pousse les migrations Supabase v
 
 ```powershell
 npm run backend:vercel:env:sync -w apps/web   # synchronise les variables d'environnement Vercel
-git push origin $(git branch --show-current)  # déclenche le déploiement Vercel via GitHub
+git push origin $(git branch --show-current)  # peut déclencher Vercel si l'intégration Git automatique est activée
 ```
 
 ```powershell

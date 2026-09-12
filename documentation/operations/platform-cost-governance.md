@@ -72,23 +72,30 @@ Avant d'ajouter une surface ou un flux :
 
 ### Moratoire de déploiement jusqu'au 16 septembre 2026 inclus
 
-Du 10 au 16 septembre 2026 inclus, aucun déploiement Vercel n'est autorisé
-pour CleanMyMap. Cette règle temporaire de maîtrise des quotas prévaut sur les
-procédures ordinaires de publication et s'applique à tous les opérateurs,
-outils et chemins de livraison :
+Du 10 au 16 septembre 2026 inclus, aucun deployment Vercel Preview ou
+Production n'est autorisé. Les commits et pushes Git restent autorisés si,
+avant le push, tous les mécanismes automatiques susceptibles de créer un
+deployment Vercel sont désactivés et leur désactivation est vérifiée. Si cette
+garantie n'est pas établie, le push reste interdit.
 
-- ne pas exécuter `vercel deploy`, `npx vercel` ni aucune commande équivalente
-  ou appel d'API de déploiement ;
+Pendant le moratoire :
+
+- ne pas exécuter `vercel deploy`, `npx vercel deploy`, `vercel --prod`,
+  `npx vercel --prod` ni aucune commande équivalente ou appel d'API de
+  déploiement ;
 - ne créer ni déploiement Preview ni déploiement Production ;
-- ne pousser aucun commit ou ref susceptible de déclencher un déploiement
-  automatique via l'intégration Git Vercel ;
-- limiter les travaux à des builds, audits et validations locales ;
+- ne pas promouvoir un deployment existant ;
+- ne pas créer ni appeler de Deploy Hook ;
+- ne pousser un commit ou une ref que lorsque l'auto-déploiement Git Vercel et
+  tous les autres mécanismes automatiques concernés sont désactivés et vérifiés
+  avant le push ;
 - ne pas contourner cette règle avec `--force`, `--no-verify`, une autre CLI,
   un workflow manuel ou une intégration distante.
 
-Le moratoire expire à la fin du 16 septembre 2026 (reprise possible le
-17 septembre 2026). Pendant cette période, un résultat local ne constitue pas
-une preuve de déploiement ni de disponibilité distante.
+Le moratoire expire à la fin du 16 septembre 2026. La reprise des deployments
+est possible à partir du 17 septembre 2026 et doit être volontaire. Pendant
+cette période, un résultat local ou une publication Git ne constitue pas une
+preuve de déploiement ni de disponibilité distante.
 
 ### Déclenchement, mesure et rétention
 

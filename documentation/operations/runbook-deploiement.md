@@ -8,10 +8,25 @@ la gouvernance racine du dépôt ; ce runbook ne les duplique pas.
 
 Le projet Vercel utilise `apps/web` comme `rootDirectory`.
 
+## Publication Git et deployment Vercel
+
+La publication Git et le déploiement Vercel sont deux opérations distinctes.
+Un commit présent sur `origin/main` ne constitue pas nécessairement un
+deployment si l'intégration Git Vercel est désactivée. Vercel reste propriétaire
+du lifecycle de deployment ; ce runbook ne transforme pas une publication Git
+en déploiement.
+
+Pendant un moratoire Vercel, la publication Git n'est autorisée qu'après preuve
+que l'intégration Git et les autres déclencheurs automatiques sont désactivés
+et vérifiés. Aucun déploiement manuel, promotion, Deploy Hook ou appel d'API de
+déploiement n'est autorisé pendant cette période.
+
 ## Flux normal
 
 1. Effectuer la publication Git conformément à la gouvernance racine.
-2. Laisser Vercel construire et déployer automatiquement le commit publié.
+2. Lorsque l'intégration Git Vercel est active et qu'aucun moratoire ne
+   l'interdit, laisser Vercel construire et déployer automatiquement le commit
+   publié.
 3. Inspecter le deployment, son état, son projet, son environnement et ses
    alias.
 4. Vérifier `/api/health` et `/api/uptime` sur le domaine actif.

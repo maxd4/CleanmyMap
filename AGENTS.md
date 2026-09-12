@@ -74,6 +74,11 @@ intermédiaires ne doivent pas commencer par ce canari.
   commit signé → validations → push`. Si le push est temporairement interdit,
   plusieurs lots peuvent être committés séquentiellement sur ce même `main`;
   chaque lot part du HEAD précédent ;
+- un moratoire ou gel d'un service externe ne bloque pas automatiquement la
+  publication Git : si un push peut déclencher ce service, prouver d'abord que
+  son déclenchement automatique est désactivé et vérifié, puis appliquer le
+  lifecycle Git normal ; si cette isolation n'est pas prouvée, conserver le
+  commit local et ne pas pousser ;
 - dès qu'un blocage temporaire de publication disparaît, les commits locaux
   validés en attente sur main sont réconciliés avec origin/main, revalidés puis
   publiés avant d'accumuler de nouveaux lots d'écriture ;
