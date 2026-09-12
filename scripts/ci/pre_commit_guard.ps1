@@ -7,6 +7,9 @@ $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 Push-Location $RepoRoot
 
 try {
+    $GitIndexFile = $env:GIT_INDEX_FILE
+    Remove-Item Env:GIT_INDEX_FILE -ErrorAction SilentlyContinue
+
     function Invoke-GuardStep {
         param(
             [Parameter(Mandatory = $true)]
@@ -33,6 +36,7 @@ try {
         $WorkspaceCoordinationArgs += @("--run-id", $WorkspaceRunId)
     }
     Invoke-GuardStep "staged workspace ownership" { node @WorkspaceCoordinationArgs }
+    Invoke-GuardStep "staged canonical workspace sentinels" { node scripts/checks/check-canonical-workspaces.mjs --staged }
     Invoke-GuardStep "staged-surface quick checks" { npm run checks:staged:quick }
     Invoke-GuardStep "staged secret audit" { npm run security:secrets -- --staged-only }
     Invoke-GuardStep "staged diff check" { git diff --cached --check }
@@ -40,5 +44,8 @@ try {
     Write-Host ""
     Write-Host "Pre-commit guardrail passed."
 } finally {
+    if ($GitIndexFile) {
+        $env:GIT_INDEX_FILE = $GitIndexFile
+    }
     Pop-Location
 }
