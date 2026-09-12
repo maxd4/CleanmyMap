@@ -28,7 +28,7 @@ export function ActionDeclarationExportPicker({
   return (
     <ActionDeclarationExportPickerView
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={controller.onClose}
       form={form}
       controller={controller}
     />

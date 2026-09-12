@@ -141,9 +141,6 @@ function AddressAutocompleteInput({
 
   useEffect(() => {
     if (!hasVisibleSuggestions) {
-      setSuggestions([]);
-      setIsLoading(false);
-      setHighlightedIndex(0);
       return;
     }
 
@@ -211,13 +208,21 @@ function AddressAutocompleteInput({
     onChange(suggestion.label);
     setIsOpen(false);
     setSuggestions([]);
+    setIsLoading(false);
+    setHighlightedIndex(0);
+  };
+
+  const closeSuggestions = () => {
+    setIsOpen(false);
+    setSuggestions([]);
+    setIsLoading(false);
     setHighlightedIndex(0);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (!hasVisibleSuggestions || suggestions.length === 0) {
       if (event.key === "Escape") {
-        setIsOpen(false);
+        closeSuggestions();
       }
       return;
     }
@@ -238,7 +243,7 @@ function AddressAutocompleteInput({
       }
     } else if (event.key === "Escape") {
       event.preventDefault();
-      setIsOpen(false);
+      closeSuggestions();
     }
   };
 
@@ -271,19 +276,30 @@ function AddressAutocompleteInput({
             onChange(event.target.value);
             setIsOpen(true);
             setHighlightedIndex(0);
+            if (event.target.value.trim().length < 3) {
+              setSuggestions([]);
+              setIsLoading(false);
+            }
           }}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => {
+            setIsOpen(true);
+            if (trimmedValue.length < 3) {
+              setSuggestions([]);
+              setIsLoading(false);
+              setHighlightedIndex(0);
+            }
+          }}
           onBlur={() => {
             if (blurTimerRef.current !== null) {
               window.clearTimeout(blurTimerRef.current);
             }
             blurTimerRef.current = window.setTimeout(() => {
-              setIsOpen(false);
+              closeSuggestions();
             }, 120);
           }}
           onKeyDown={handleKeyDown}
         />
-        {isLoading && (
+        {hasVisibleSuggestions && isLoading && (
           <div className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-700/45">
             <Loader2 size={14} className="animate-spin" />
           </div>

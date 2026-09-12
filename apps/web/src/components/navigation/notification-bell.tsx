@@ -47,15 +47,18 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
   const fetchInFlightRef = useRef(false);
   const markReadInFlightRef = useRef(false);
 
+  const visibleNotifications = useMemo(
+    () => (isLoaded && isSignedIn ? notifications : []),
+    [isLoaded, isSignedIn, notifications],
+  );
   const unreadCount = useMemo(
-    () => notifications.filter((notification) => !notification.read_at).length,
-    [notifications],
+    () => visibleNotifications.filter((notification) => !notification.read_at).length,
+    [visibleNotifications],
   );
   const pollIntervalMs = isOpen ? 300_000 : 900_000;
 
   const fetchNotifications = useCallback(async () => {
     if (!isLoaded || !isSignedIn || !userId) {
-      setNotifications([]);
       return;
     }
 
@@ -78,7 +81,6 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) {
-      setNotifications([]);
       return;
     }
 
@@ -118,7 +120,9 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
     };
 
     // Polling remains intentional, but it pauses when hidden and slows down while closed.
-    void fetchNotifications();
+    void (async () => {
+      await fetchNotifications();
+    })();
     startPolling();
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
@@ -136,7 +140,7 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
       "navigator" in window &&
       "vibrate" in navigator
     ) {
-      const latestUnread = notifications.find((notification) => !notification.read_at);
+      const latestUnread = visibleNotifications.find((notification) => !notification.read_at);
       const isMajor = latestUnread?.type === "system" && latestUnread?.title.includes("Niveau Supérieur");
 
       try {
@@ -149,7 +153,7 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
         // Silent fail.
       }
     }
-  }, [notifications, unreadCount]);
+  }, [visibleNotifications, unreadCount]);
 
   const markAsRead = async (id: string) => {
     if (!isLoaded || !isSignedIn || !userId) {
@@ -233,7 +237,7 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
             </div>
 
             <div className="max-h-96 overflow-y-auto custom-scrollbar">
-              {notifications.length === 0 ? (
+              {visibleNotifications.length === 0 ? (
                 <div className="space-y-2 p-6 text-center">
                   <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/55">
                     <Check size={24} />
@@ -243,7 +247,7 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
                   </p>
                 </div>
               ) : (
-                notifications.map((notification) => {
+                visibleNotifications.map((notification) => {
                   const isUnread = !notification.read_at;
 
                   return (

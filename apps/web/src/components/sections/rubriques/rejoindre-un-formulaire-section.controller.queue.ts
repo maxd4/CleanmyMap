@@ -89,41 +89,31 @@ export function useJoinFormSectionQueue({
 
   useEffect(() => {
     if (!queueActionId) {
-      setQueueRequests([]);
-      setQueueConfirmedParticipants([]);
-      setQueueCanReview(false);
-      setQueueLoading(false);
-      setQueueError(null);
-      setQueueSearchResults([]);
-      setQueueSearchError(null);
-      setQueueSearchQuery("");
       return undefined;
     }
 
     const controller = new AbortController();
-    void loadQueue(queueActionId, controller.signal);
+    void (async () => {
+      await loadQueue(queueActionId, controller.signal);
+    })();
     return () => controller.abort();
   }, [loadQueue, queueActionId]);
 
   useEffect(() => {
     if (reloadAction?.actionId === queueActionId && queueActionId) {
-      void loadQueue(queueActionId);
+      void (async () => {
+        await loadQueue(queueActionId);
+      })();
     }
   }, [loadQueue, reloadAction?.actionId, reloadAction?.version, queueActionId]);
 
   useEffect(() => {
     if (!queueCanReview || !queueActionId) {
-      setQueueSearchResults([]);
-      setQueueSearchError(null);
-      setQueueSearchLoading(false);
       return undefined;
     }
 
     const query = queueSearchQuery.trim();
     if (query.length < 2) {
-      setQueueSearchResults([]);
-      setQueueSearchError(null);
-      setQueueSearchLoading(false);
       return undefined;
     }
 
@@ -165,8 +155,18 @@ export function useJoinFormSectionQueue({
     };
   }, [fr, queueActionId, queueCanReview, queueSearchQuery]);
 
+  const visibleQueueRequests = queueActionId ? queueRequests : [];
+  const visibleQueueConfirmedParticipants = queueActionId ? queueConfirmedParticipants : [];
+  const visibleQueueLoading = queueActionId ? queueLoading : false;
+  const visibleQueueError = queueActionId ? queueError : null;
+  const visibleQueueCanReview = queueActionId ? queueCanReview : false;
+  const hasActiveQueueSearch = visibleQueueCanReview && queueSearchQuery.trim().length >= 2;
+  const visibleQueueSearchResults = hasActiveQueueSearch ? queueSearchResults : [];
+  const visibleQueueSearchLoading = hasActiveQueueSearch ? queueSearchLoading : false;
+  const visibleQueueSearchError = hasActiveQueueSearch ? queueSearchError : null;
+
   async function reviewQueueRequest(requestId: string, decision: "accept" | "reject") {
-    if (!queueActionId || !queueCanReview) return;
+    if (!queueActionId || !visibleQueueCanReview) return;
 
     setReviewingQueueId(requestId);
     setQueueError(null);
@@ -252,17 +252,17 @@ export function useJoinFormSectionQueue({
   }
 
   return {
-    queueRequests,
-    queueConfirmedParticipants,
-    queueLoading,
-    queueError,
-    queueCanReview,
+    queueRequests: visibleQueueRequests,
+    queueConfirmedParticipants: visibleQueueConfirmedParticipants,
+    queueLoading: visibleQueueLoading,
+    queueError: visibleQueueError,
+    queueCanReview: visibleQueueCanReview,
     reviewingQueueId,
     addingQueueParticipantId,
     queueSearchQuery,
-    queueSearchResults,
-    queueSearchLoading,
-    queueSearchError,
+    queueSearchResults: visibleQueueSearchResults,
+    queueSearchLoading: visibleQueueSearchLoading,
+    queueSearchError: visibleQueueSearchError,
     setQueueSearchQuery,
     reviewQueueRequest,
     addQueueParticipant,
