@@ -3,11 +3,7 @@ import { describe, expect, it } from "vitest";
 import { computeImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
 import { buildImpactTerrain2026PublicResults } from "@/lib/impact/impact-terrain-2026-results";
 import type { HomeImpactSnapshot, HomeMetric } from "@/lib/accueil/config";
-import {
-  HomeImpactKpiCard,
-  shouldOpenTooltipOnFocus,
-  shouldToggleTooltipOnClick,
-} from "./accueil-impact-kpi-card";
+import { HomeImpactKpiCard } from "./accueil-impact-kpi-card";
 
 const metric: HomeMetric = {
   key: "co2",
@@ -36,20 +32,7 @@ const snapshot: HomeImpactSnapshot = {
 };
 
 describe("HomeImpactKpiCard", () => {
-  it("keeps mouse clicks hover-driven while allowing touch and pen toggles", () => {
-    expect(shouldToggleTooltipOnClick("mouse", 1)).toBe(false);
-    expect(shouldToggleTooltipOnClick("touch", 1)).toBe(true);
-    expect(shouldToggleTooltipOnClick("pen", 1)).toBe(true);
-    expect(shouldToggleTooltipOnClick(null, 0)).toBe(false);
-  });
-
-  it("opens on keyboard/programmatic focus but not pointer focus", () => {
-    expect(shouldOpenTooltipOnFocus(null)).toBe(true);
-    expect(shouldOpenTooltipOnFocus("mouse")).toBe(false);
-    expect(shouldOpenTooltipOnFocus("touch")).toBe(false);
-  });
-
-  it("consumes canonical tooltip results and keeps the accessible info control", () => {
+  it("keeps the hover explanation without a visible info control", () => {
     const html = renderToStaticMarkup(
       <HomeImpactKpiCard
         metric={metric}
@@ -58,21 +41,18 @@ describe("HomeImpactKpiCard", () => {
     );
 
     expect(html).toContain("464,8 km en voiture thermique");
-    expect(html).toContain('aria-controls="impact-tooltip-co2"');
-    expect(html).toContain('aria-expanded="false"');
-    expect(html).toContain("Afficher la méthode de calcul pour CO₂ évité");
+    expect(html).toContain('role="tooltip"');
+    expect(html).toContain("min-[1200px]:group-hover:opacity-100");
+    expect(html).not.toContain("<button");
+    expect(html).not.toContain("Afficher la méthode de calcul");
+    expect(html).not.toContain("ⓘ");
+    expect(html).not.toContain("border-2 border-[#047957]");
     expect(html).toContain("items-center gap-2 min-[768px]:gap-3");
     expect(html).toContain("min-h-[9rem]");
     expect(html).toContain("min-[1200px]:min-h-[11.25rem]");
     expect(html).toContain("min-[1200px]:text-lg");
     expect(html).toContain("text-center");
     expect(html).toContain("min-[1200px]:text-[clamp(2.5rem,2.7vw,3.2rem)]");
-    expect(html).toContain("h-8 w-8");
-    expect(html).toContain("border border-[#047957]");
-    expect(html).toContain("text-[#7c3aed]");
-    expect(html).toContain("min-[1200px]:hidden");
-    expect(html).toContain("min-[1200px]:inline-flex");
-    expect(html).toContain("border-2 border-[#047957]");
     expect(html).not.toContain("0,025");
     expect(html).not.toContain("1 000 000");
   });

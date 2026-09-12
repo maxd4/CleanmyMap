@@ -65,7 +65,6 @@ export function AccountUserBubble({
         />
         <button
           type="button"
-          title={activityStatusLabel}
           aria-label={activityStatusLabel}
           aria-pressed={activityStatus === "active"}
           disabled={isUpdatingActivityStatus}

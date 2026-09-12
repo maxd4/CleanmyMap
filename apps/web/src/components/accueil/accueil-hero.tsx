@@ -103,7 +103,7 @@ export function HomeHero({
         </div>
 
         <section className="relative mt-4 overflow-visible sm:mt-6 lg:mt-7">
-          <div className="relative z-10 flex flex-wrap items-center justify-between gap-5 px-1 sm:px-2">
+          <div className="relative z-10 flex flex-wrap items-center justify-start gap-3 px-1 sm:gap-4 sm:px-2">
             <p className="flex items-center gap-4 text-[clamp(1.9rem,3.8vw,3.35rem)] font-black leading-none tracking-[-0.055em] text-white">
               <span className="h-3 w-3 shrink-0 rounded-full bg-[#26e6a4] shadow-[0_0_15px_rgba(38,230,164,0.7)] sm:h-4 sm:w-4" />
               Impact terrain 2026
@@ -114,7 +114,6 @@ export function HomeHero({
               variant="pill"
               className="h-9 !border !border-[#047957] !bg-white/90 !text-[#047957] !shadow-[0_10px_24px_-16px_rgba(0,40,30,0.4)] hover:!bg-white"
             >
-              <span aria-hidden="true">ⓘ</span>
               <span className="text-[#7c3aed]">Méthodologie</span>
               <ArrowRight size={14} aria-hidden="true" />
             </CmmButton>

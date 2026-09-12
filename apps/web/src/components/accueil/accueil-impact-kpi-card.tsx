@@ -1,7 +1,6 @@
 "use client";
 
-import { Cloud, Droplets, Euro, Info, Leaf, Trash2, UsersRound } from "lucide-react";
-import { useRef, useState } from "react";
+import { Cloud, Droplets, Euro, Leaf, Trash2, UsersRound } from "lucide-react";
 import type {
   HomeImpactSnapshot,
   HomeMetric,
@@ -41,23 +40,10 @@ const metricIcons = {
   euro: Euro,
 } as const;
 
-export function shouldToggleTooltipOnClick(
-  pointerType: string | null,
-  clickDetail: number,
-) {
-  return (pointerType === "touch" || pointerType === "pen") && clickDetail > 0;
-}
-
-export function shouldOpenTooltipOnFocus(pointerType: string | null) {
-  return pointerType === null;
-}
-
 export function HomeImpactKpiCard({
   metric,
   impactSnapshot,
 }: HomeImpactKpiCardProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const lastPointerTypeRef = useRef<string | null>(null);
   const style = metricStyles[metric.accent];
   const tooltipId = `impact-tooltip-${metric.key}`;
   const insight = buildImpactInsight(metric.key, impactSnapshot);
@@ -74,40 +60,6 @@ export function HomeImpactKpiCard({
           <p className={`min-w-0 flex-1 text-sm font-black leading-tight tracking-[-0.015em] min-[768px]:text-base min-[1200px]:text-lg ${style.label}`}>
             {metric.label}
           </p>
-          <button
-            type="button"
-            aria-label={`Afficher la méthode de calcul pour ${metric.label}`}
-            aria-controls={tooltipId}
-            aria-describedby={isOpen ? tooltipId : undefined}
-            aria-expanded={isOpen}
-            onPointerDown={(event) => {
-              lastPointerTypeRef.current = event.pointerType || null;
-              if (event.pointerType === "mouse") {
-                setIsOpen(false);
-              }
-            }}
-            onClick={(event) => {
-              const pointerType = lastPointerTypeRef.current;
-              lastPointerTypeRef.current = null;
-              if (shouldToggleTooltipOnClick(pointerType, event.detail)) {
-                setIsOpen((current) => !current);
-              }
-            }}
-            onFocus={() => {
-              if (shouldOpenTooltipOnFocus(lastPointerTypeRef.current)) {
-                setIsOpen(true);
-              }
-            }}
-            onBlur={() => setIsOpen(false)}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") {
-                setIsOpen(false);
-              }
-            }}
-            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#047957] bg-white/65 text-[#7c3aed] transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#047957] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent min-[1200px]:hidden"
-          >
-            <Info size={16} strokeWidth={2.5} aria-hidden="true" />
-          </button>
         </div>
 
         <div className="flex min-w-0 flex-1 items-center justify-center">
@@ -120,17 +72,10 @@ export function HomeImpactKpiCard({
       <div
         id={tooltipId}
         role="tooltip"
-        aria-hidden={!isOpen}
         style={{ zIndex: 1200 }}
-        className={`invisible pointer-events-none absolute bottom-[calc(100%+0.75rem)] right-0 z-30 w-[min(19rem,calc(100vw-2.5rem))] translate-y-2 rounded-2xl border border-white/80 bg-[#f7fffb] p-4 text-left text-[#14334a] opacity-0 shadow-[0_22px_42px_-20px_rgba(0,49,36,0.55)] transition duration-200 group-hover:pointer-events-auto group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 ${isOpen ? "!pointer-events-auto !visible !translate-y-0 !opacity-100" : ""}`}
+        className="invisible pointer-events-none absolute bottom-[calc(100%+0.75rem)] right-0 z-30 w-[min(19rem,calc(100vw-2.5rem))] translate-y-2 rounded-2xl border border-white/80 bg-[#f7fffb] p-4 text-left text-[#14334a] opacity-0 shadow-[0_22px_42px_-20px_rgba(0,49,36,0.55)] transition duration-200 min-[1200px]:group-hover:pointer-events-auto min-[1200px]:group-hover:visible min-[1200px]:group-hover:translate-y-0 min-[1200px]:group-hover:opacity-100"
       >
         <div className="flex items-start gap-3">
-          <span
-            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-[#047957] bg-white/70 text-[#7c3aed] min-[1200px]:inline-flex"
-            aria-hidden="true"
-          >
-            <Info size={18} strokeWidth={2.5} />
-          </span>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[#0b7758]">
               {metric.label}
