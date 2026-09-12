@@ -14,6 +14,7 @@ import type {
   RoutePartitionMetrics,
 } from "./route-group-partition";
 import type { RoutePickupPreference } from "./route-pickup-preference";
+import type { RouteCalibrationContext } from "./route-calibration";
 
 export {
   ROUTE_PICKUP_PREFERENCES,
@@ -97,6 +98,8 @@ export type RouteRecommendationResponse = {
   };
   generatedAt: string;
   engineVersion: string;
+  /** Historical context to carry unchanged into an action preparation payload. */
+  calibrationContext?: RouteCalibrationContext;
   stops: RouteStop[];
   prediction: RoutePredictionSummary;
   trace: RouteRecommendationTrace;

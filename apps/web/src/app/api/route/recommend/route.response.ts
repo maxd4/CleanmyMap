@@ -23,6 +23,10 @@ import {
   type RouteMultiRouteTrace,
   type RouteTraceCandidateSummary,
 } from "@/lib/route/route-trace";
+import {
+  buildRouteCalibrationContext,
+} from "@/lib/route/route-calibration";
+import { buildCleanupWorkload } from "@/lib/route/route-cleanup-workload";
 import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 import type { RouteEventPressureContext, RouteCandidateData } from "./route.candidates";
 import type { RoutePlanningResult } from "./route.planning";
@@ -153,6 +157,7 @@ export function buildRouteRecommendationResponse(input: {
     pickupPreference,
   } = input;
   const { plannedStops, routeGeometry, plannerResult } = planning;
+  const generatedAt = new Date().toISOString();
   const groupRoutes = planning.groupRoutes ?? [];
   const multiRoute: RouteMultiRouteMetrics = planning.multiRouteMetrics ?? {
     groupCount,
@@ -260,8 +265,15 @@ export function buildRouteRecommendationResponse(input: {
         truncated: isTruncated,
         ...plannerResult.diagnostics,
       },
-      generatedAt: new Date().toISOString(),
+      generatedAt,
       engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
+      calibrationContext: buildRouteCalibrationContext({
+        generatedAt,
+        routeEngineVersion: ROUTE_PLANNER_ENGINE_VERSION,
+        volunteersExpected: volunteers,
+        groupCount,
+        candidates: [],
+      }),
       stops: [],
       prediction: predictionSummary,
       trace,
@@ -338,8 +350,19 @@ export function buildRouteRecommendationResponse(input: {
       truncated: isTruncated,
       ...plannerResult.diagnostics,
     },
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
+    calibrationContext: buildRouteCalibrationContext({
+      generatedAt,
+      routeEngineVersion: ROUTE_PLANNER_ENGINE_VERSION,
+      volunteersExpected: volunteers,
+      groupCount,
+      candidates: plannedStops.map(({ candidate }) => ({
+        candidateId: candidate.id,
+        family: candidate.family,
+        cleanupWorkload: buildCleanupWorkload(candidate),
+      })),
+    }),
     stops,
     prediction: predictionSummary,
     trace,

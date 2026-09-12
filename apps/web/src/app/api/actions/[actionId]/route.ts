@@ -26,6 +26,9 @@ import {
   syncActionManualParticipants,
 } from "@/lib/actions/participation/organizers";
 import { updateActionSchema } from "@/lib/validation/action";
+import {
+  preserveHistoricalRouteCalibrationContext,
+} from "@/lib/route/route-calibration";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
@@ -389,7 +392,28 @@ export async function PATCH(
     }
 
     const updateData: Record<string, unknown> = {};
-    const body = parsed.data;
+    const parsedBody = parsed.data;
+    let body = parsedBody;
+    if (parsedBody.preparationData !== undefined) {
+      let preservedPreparationData: typeof parsedBody.preparationData;
+      try {
+        preservedPreparationData = preserveHistoricalRouteCalibrationContext(
+          current.preparation_data,
+          parsedBody.preparationData,
+        );
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message === "Le contexte historique de calibration ne peut pas être réécrit."
+        ) {
+          return validationErrorResponse({
+            preparationData: [error.message],
+          });
+        }
+        throw error;
+      }
+      body = { ...parsedBody, preparationData: preservedPreparationData };
+    }
     const currentMetadata = extractActionMetadataFromNotes(current.notes);
     adminAuditActorUserId = identity?.userId ?? userId;
     adminAuditTargetUserId = current.created_by_clerk_id.trim() || null;

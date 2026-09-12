@@ -192,6 +192,54 @@ pas une quantité physique. `cleanupWorkload` n’est pas une durée de collecte
 aucune durée de nettoyage n’est actuellement calibrée. Les mesures de trajet
 restent des mesures de déplacement fournies ou estimées par le routage.
 
+### Infrastructure de calibration temporelle
+
+La durée de collecte est un contrat distinct de `cleanupWorkload` :
+`route-cleanup-duration-v1`. Il expose `minutes`, `uncertaintyMinutes`, la
+version du modèle, le statut `calibrated`, `data_insufficient`, `unavailable`
+ou `excluded`, une raison et sa provenance. Tant qu’aucun artefact calibré
+versionné n’est actif, `minutes` et `uncertaintyMinutes` restent `null`.
+Aucun coefficient, conversion risque → poids, risque → mégots ou risque →
+minutes n’est déduit des données courantes.
+
+Lorsqu’une recommandation devient le point de départ d’une action, son contrat
+transporte `calibrationContext` dans `preparationData.routeCalibrationContext`.
+Ce contexte est versionné `action-route-calibration-v1` et conserve avant
+l’action la date de génération, la version du moteur, la version de
+`cleanupWorkload`, les bénévoles et groupes prévus, ainsi que chaque candidat
+retenu avec sa famille (`observed` ou `predicted`) et le snapshot exact de sa
+charge. Les deux pressions restent individuelles : elles ne sont ni sommées ni
+moyennées.
+
+`preparation_data` demeure la source canonique. La création valide strictement
+le contexte ; une édition ordinaire conserve le snapshot historique et une
+tentative explicite de le remplacer est refusée. Une ancienne action sans ce
+contexte est exclue du dataset de calibration : son contexte n’est jamais
+reconstruit depuis l’état courant.
+
+Le flux de données est donc :
+
+```text
+cleanupWorkload → contexte historique → données terrain → readiness
+→ artefact calibré versionné → estimation de durée
+```
+
+La readiness est structurelle, sans seuil statistique arbitraire. Elle vérifie
+la variation des déchets ordinaires, la diversité des workloads, la
+dissociabilité de la charge et des bénévoles, l’existence du bridge runtime
+historique et la possibilité d’une validation indépendante.
+
+Les états à distinguer sont :
+
+- `CURRENT` : contrat, contexte historique et collecte future sont actifs ;
+- `DATA_INSUFFICIENT` : les données actuelles ne permettent pas d’activer un
+  modèle numérique ;
+- `FUTURE CALIBRATED` : un artefact versionné pourra fournir minutes et
+  incertitude après validation indépendante.
+
+Cette infrastructure ne modifie ni le ranking, ni le budget, ni le planner et
+ne crée pas de migration : le champ JSONB `preparation_data` existant suffit.
+
 À entrées identiques et à données snapshotées identiques, l’ordre de sélection
 est déterministe. Le frontend affiche le résultat et sa trace ; il ne recalcule
 pas la logique du planner.

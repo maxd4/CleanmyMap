@@ -17,6 +17,7 @@ import type { ActionDataQualitySummary } from "./quality/data-quality-types";
 import type { ActionQualityGrade } from "./quality/quality-rules";
 import type { WasteCategorySlug } from "@/lib/waste/types";
 import type { OrganizerType } from "./organizer-type";
+import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
@@ -62,6 +63,8 @@ export type ActionPreparationData = {
   volunteersExpected?: number;
   groupJoinEnabled?: boolean;
   expectedWasteCategories?: WasteCategorySlug[];
+  /** Immutable route evidence captured before this action was created. */
+  routeCalibrationContext?: RouteCalibrationContext;
 };
 
 export type ActionPhotoAsset = {
@@ -231,6 +234,8 @@ export type CreateActionPayload = {
   groupJoinEnabled?: boolean;
   actionPhase?: ActionPhase;
   preparationData?: ActionPreparationData | null;
+  /** Canonical itinerary → action handoff; persisted inside preparationData. */
+  routeCalibrationContext?: RouteCalibrationContext | null;
   actionDate: string;
   locationLabel: string;
   departureLocationLabel?: string;
