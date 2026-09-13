@@ -138,7 +138,7 @@ export default async function PrintReportPage() {
               <div className="space-y-3">
                 <div className="flex items-center gap-3 font-bold tracking-tighter text-slate-950 print:text-[18pt]">
                   <BrandLogo
-                    variant="light"
+                    variant="lightSurface"
                     alt="Logo CleanMyMap"
                     className="h-8 w-auto"
                     sizes="10rem"
@@ -284,7 +284,7 @@ export default async function PrintReportPage() {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <BrandLogo
-                  variant="dark"
+                  variant="darkSurface"
                   alt="Logo CleanMyMap"
                   className="h-6 w-auto max-w-[9rem] opacity-70"
                   sizes="9rem"

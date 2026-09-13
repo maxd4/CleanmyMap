@@ -54,7 +54,7 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
         <div className="relative z-10 mx-auto flex w-full max-w-none flex-col items-center justify-between gap-3 px-1 py-4 text-center sm:px-2 md:flex-row md:gap-5 md:py-5 md:text-left lg:px-4">
           <div className="flex items-center gap-3">
             <BrandLogo
-              variant="dark"
+              variant="darkSurface"
               alt="CleanMyMap"
               className="h-7 w-auto max-w-[9rem] object-contain object-left"
               sizes="9rem"
@@ -110,7 +110,7 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
         <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(18rem,auto)_minmax(0,1fr)_auto] lg:items-center lg:gap-6">
           <div className="flex min-w-0 items-center gap-3 text-center sm:gap-2.5 sm:text-left">
             <BrandLogo
-              variant="dark"
+              variant="darkSurface"
               alt="CleanMyMap"
               className="h-7 w-auto max-w-[9rem] shrink-0 object-contain object-left"
               sizes="9rem"

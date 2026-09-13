@@ -20,6 +20,8 @@ expérimentales. Un README oriente ; il ne remplace pas un contrat spécialisé.
 - [`theme-visibility-rules.md`](./theme-visibility-rules.md) — contraste,
   lisibilité, thèmes et tokens.
 - [`cursor-system.md`](./cursor-system.md) — curseurs effectivement fournis.
+- [`BRAND.md`](./BRAND.md) — assets, variantes sémantiques et primitive de
+  marque web CleanMyMap.
 
 Les autres contrats spécialisés (`ICONS.md`, `DISCLOSURE_ACCORDIONS.md`,
 `OVERLAYS_DIALOGS.md`, `DATA_DISPLAY_TABLES_KPI.md`, `TEXTURE_SURFACES.md`,
@@ -31,9 +33,9 @@ les titres principaux, `PageHeader` reste la référence runtime.
 
 Les contrats de surfaces, états, page headers et motion sont protégés par les
 checks correspondants : `check:surfaces`, `check:states`, `check:page-header`
-et `check:motion`. Les helpers Motion communs et les adaptations par mode sont
-portés par `motion.css` et `display-modes.css`; `CmmIcon` reste la primitive
-canonique pour les glyphes.
+et `check:motion`. Le contrat de glyphes est protégé par `check:icons`. Les
+helpers Motion communs et les adaptations par mode sont portés par `motion.css`
+et `display-modes.css`; `CmmIcon` reste la primitive canonique pour les glyphes.
 
 ## Références non canoniques
 

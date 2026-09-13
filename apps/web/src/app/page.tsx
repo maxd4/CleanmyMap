@@ -69,9 +69,9 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: BRAND_ASSET_PATHS.light,
-        width: BRAND_ASSET_DIMENSIONS.light.width,
-        height: BRAND_ASSET_DIMENSIONS.light.height,
+        url: BRAND_ASSET_PATHS.social,
+        width: BRAND_ASSET_DIMENSIONS.social.width,
+        height: BRAND_ASSET_DIMENSIONS.social.height,
         alt: "CleanMyMap - Carte de dépollution citoyenne et cleanwalks en France",
       },
     ],
@@ -82,7 +82,7 @@ export const metadata: Metadata = {
     title: "CleanMyMap - Dépollution citoyenne & actions écologiques",
     description:
       "La carte citoyenne de dépollution urbaine partout en France - Bénévolat, écologie, impact terrain",
-    images: [BRAND_ASSET_PATHS.light],
+    images: [BRAND_ASSET_PATHS.social],
   },
   robots: {
     index: true,

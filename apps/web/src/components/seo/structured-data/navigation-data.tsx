@@ -33,7 +33,7 @@ export function WebPageJsonLd() {
     url: appUrl,
     primaryImageOfPage: {
       "@type": "ImageObject",
-      url: `${appUrl}${BRAND_ASSET_PATHS.light}`,
+      url: `${appUrl}${BRAND_ASSET_PATHS.lightSurface}`,
     },
     inLanguage: "fr-FR",
     datePublished: "2024-01-01",
@@ -47,7 +47,7 @@ export function WebPageJsonLd() {
       name: "CleanMyMap",
       logo: {
         "@type": "ImageObject",
-        url: `${appUrl}${BRAND_ASSET_PATHS.light}`,
+        url: `${appUrl}${BRAND_ASSET_PATHS.lightSurface}`,
       },
     },
     about: {

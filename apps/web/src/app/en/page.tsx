@@ -41,9 +41,9 @@ export const metadata: Metadata = {
       "The national citizen platform for urban cleanup in France. Report pollution, organize cleanwalks, and act for the environment. Sustainable development, volunteer action, community coordination.",
     images: [
       {
-        url: BRAND_ASSET_PATHS.light,
-        width: BRAND_ASSET_DIMENSIONS.light.width,
-        height: BRAND_ASSET_DIMENSIONS.light.height,
+        url: BRAND_ASSET_PATHS.social,
+        width: BRAND_ASSET_DIMENSIONS.social.width,
+        height: BRAND_ASSET_DIMENSIONS.social.height,
         alt: "CleanMyMap - Urban cleanup map and cleanwalks in France",
       },
     ],
