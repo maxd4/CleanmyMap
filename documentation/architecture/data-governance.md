@@ -314,6 +314,20 @@ valeur dérivée. Chaque mesure porte une provenance parmi `counted`, `measured`
 contient au minimum les états métier `counted`, `weight_converted`,
 `volume_converted`, `estimated` et `unknown`.
 
+Les formulaires et les payloads HTTP ordinaires fournissent uniquement les
+mesures brutes (nombre, masse, volume et état). La provenance et
+`cigaretteButtsConversionFormulaVersion` sont attribuées par le serveur : un
+comptage explicite devient `counted`, une masse ou un volume explicite devient
+`measured`, et une dérivation autorisée devient `weight_converted` avec la
+version de formule canonique. Une provenance envoyée par un client est ignorée
+par la validation d'entrée et ne peut pas devenir une vérité persistée.
+
+La création et l'édition appliquent le même contrat. Un `null` explicitement
+envoyé efface la mesure correspondante ; il ne devient jamais zéro et son
+ancienne provenance ne survit pas. Les aliases historiques restent lisibles
+pour `COMPATIBILITY/LEGACY`, mais ne constituent pas une autorité concurrente
+des mesures canoniques.
+
 La conversion masse → nombre réutilise la formule runtime existante :
 `nombre = masse_kg × 2500 × facteur_état`, avec les facteurs `propre = 1`,
 `humide = 0,7` et `mouille = 0,4`. Elle est versionnée sous

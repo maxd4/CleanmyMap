@@ -90,6 +90,30 @@ describe("createActionSchema", () => {
     expect(parsed.cigaretteButtsCount).toBe(0);
   });
 
+  it("accepts canonical raw measurements and strips client provenance fields", () => {
+    const parsed = createActionSchema.parse({
+      ...basePayload,
+      wasteKg: null,
+      cigaretteButts: null,
+      cigaretteButtsMeasurements: {
+        cigaretteButtsCount: 3_000,
+        cigaretteButtsMassKg: null,
+        cigaretteButtsVolumeLiters: null,
+        cigaretteButtsCondition: "propre",
+        cigaretteButtsCountProvenance: "weight_converted",
+        cigaretteButtsMassProvenance: "estimated",
+        cigaretteButtsConversionFormulaVersion: "client-forged",
+      },
+    });
+
+    expect(parsed.cigaretteButtsMeasurements).toEqual({
+      cigaretteButtsCount: 3_000,
+      cigaretteButtsMassKg: null,
+      cigaretteButtsVolumeLiters: null,
+      cigaretteButtsCondition: "propre",
+    });
+  });
+
   it("accepts a partial event window and rejects an incoherent same-day window", () => {
     expect(
       createActionSchema.safeParse({

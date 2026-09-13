@@ -16,7 +16,6 @@ import type {
 import type { DeclarationMode, FormState } from"./types";
 import { normalizeActionDrawing } from"../map/actions-map-geometry.utils";
 import { formatWasteGuidanceLines } from "@/lib/waste";
-import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 import {
   normalizeVolunteerParticipation,
 } from "@/lib/actions/volunteer-participation";
@@ -368,13 +367,12 @@ export function buildCreateActionPayload(params: {
     form.wasteMegotsCondition === "propre"
       ? form.cigaretteButtsCondition
       : form.wasteMegotsCondition;
-  const cigaretteButtsMeasurements = normalizeCigaretteButtsMeasurements({
+  const rawCigaretteButtsMeasurements = {
     cigaretteButtsCount: enteredButtsCount,
     cigaretteButtsMassKg: enteredMegotsKg,
     cigaretteButtsVolumeLiters: enteredVolumeLiters,
     cigaretteButtsCondition,
-    deriveMissingFromMassOrCount: true,
-  });
+  };
   const volunteerParticipation = normalizeVolunteerParticipation({
     childrenCount: toOptionalNumber(form.childrenCount) ?? null,
     adultCount: toOptionalNumber(form.adultCount) ?? null,
@@ -404,14 +402,13 @@ export function buildCreateActionPayload(params: {
  latitude,
  longitude,
   wasteKg: toOptionalNumber(form.wasteKg) ?? null,
-  cigaretteButtsMeasurements,
-  cigaretteButtsMassKg: cigaretteButtsMeasurements.cigaretteButtsMassKg,
-  cigaretteButtsVolumeLiters:
-    cigaretteButtsMeasurements.cigaretteButtsVolumeLiters,
-  cigaretteButtsCondition: cigaretteButtsMeasurements.cigaretteButtsCondition,
-  cigaretteButtsKg: cigaretteButtsMeasurements.cigaretteButtsMassKg,
-  cigaretteButts: cigaretteButtsMeasurements.cigaretteButtsCount,
-  cigaretteButtsCount: cigaretteButtsMeasurements.cigaretteButtsCount,
+   cigaretteButtsMeasurements: rawCigaretteButtsMeasurements,
+   cigaretteButtsMassKg: enteredMegotsKg,
+   cigaretteButtsVolumeLiters: enteredVolumeLiters,
+   cigaretteButtsCondition,
+   cigaretteButtsKg: enteredMegotsKg,
+   cigaretteButts: enteredButtsCount,
+   cigaretteButtsCount: enteredButtsCount,
   volunteerParticipation,
   volunteersCount:
     volunteerParticipation.participantsCount ??

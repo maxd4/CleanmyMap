@@ -34,7 +34,9 @@ import {
   getTimeContractValidationMessage,
   normalizeClockTime,
 } from "@/lib/actions/time-contract";
-import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
+import {
+  normalizeCigaretteButtsMeasurementsFromUserInput,
+} from "@/lib/waste/cigarette-butts";
 import {
   normalizeVolunteerParticipation,
   resolveParticipantsCount,
@@ -578,14 +580,11 @@ export async function PATCH(
       currentMetadata.cigaretteButtsMeasurements ?? null;
     if (hasButtsMeasurementUpdate) {
       const currentMeasurements = currentMetadata.cigaretteButtsMeasurements;
-      nextCigaretteButtsMeasurements = normalizeCigaretteButtsMeasurements(
+      nextCigaretteButtsMeasurements = normalizeCigaretteButtsMeasurementsFromUserInput(
         body.cigaretteButtsMeasurements !== undefined
           ? body.cigaretteButtsMeasurements === null
-            ? { deriveMissingFromMassOrCount: false }
-            : {
-                ...body.cigaretteButtsMeasurements,
-                deriveMissingFromMassOrCount: false,
-              }
+            ? {}
+            : body.cigaretteButtsMeasurements
           : {
               cigaretteButtsCount:
                 body.cigaretteButtsCount !== undefined
@@ -609,7 +608,21 @@ export async function PATCH(
                 body.cigaretteButtsCondition !== undefined
                   ? body.cigaretteButtsCondition
                   : currentMeasurements?.cigaretteButtsCondition ?? null,
-              deriveMissingFromMassOrCount: true,
+            },
+        body.cigaretteButtsMeasurements !== undefined
+          ? { preserveExplicitNulls: true }
+          : {
+              explicitNullFields: [
+                ...(body.cigaretteButtsCount === null || body.cigaretteButts === null
+                  ? ["cigaretteButtsCount" as const]
+                  : []),
+                ...(body.cigaretteButtsMassKg === null || body.cigaretteButtsKg === null
+                  ? ["cigaretteButtsMassKg" as const]
+                  : []),
+                ...(body.cigaretteButtsVolumeLiters === null
+                  ? ["cigaretteButtsVolumeLiters" as const]
+                  : []),
+              ],
             },
       );
       updateData["cigarette_butts"] =
@@ -707,7 +720,15 @@ export async function PATCH(
         visionEstimate:
           body.visionEstimate ?? currentMetadata.visionEstimate ?? undefined,
       } satisfies Parameters<typeof buildPersistedNotes>[0];
-      const persistedNotes = buildPersistedNotes(persistedPayload);
+      const persistedNotes = buildPersistedNotes(
+        persistedPayload,
+        {
+          resolvedCigaretteButtsMeasurements:
+            hasButtsMeasurementUpdate || currentMetadata.cigaretteButtsMeasurements
+              ? nextCigaretteButtsMeasurements
+              : undefined,
+        },
+      );
       updateData["notes"] = persistedNotes;
     }
 

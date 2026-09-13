@@ -94,6 +94,35 @@ describe("resolvePersistedCigaretteButts", () => {
       cigaretteButtsVolumeProvenance: "measured",
     });
   });
+
+  it("assigns provenance on the server for a canonical raw-only payload", () => {
+    const notes = buildPersistedNotes(
+      buildPayload({
+        wasteKg: null,
+        cigaretteButts: null,
+        cigaretteButtsMeasurements: {
+          cigaretteButtsCount: null,
+          cigaretteButtsMassKg: 1.2,
+          cigaretteButtsVolumeLiters: null,
+          cigaretteButtsCondition: "propre",
+          cigaretteButtsCountProvenance: "estimated",
+          cigaretteButtsMassProvenance: "unknown",
+          cigaretteButtsVolumeProvenance: "unknown",
+          cigaretteButtsConversionFormulaVersion: "client-forged",
+        } as never,
+      }),
+    );
+    const metadata = extractActionMetadataFromNotes(notes);
+
+    expect(metadata.cigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsCount: 3_000,
+      cigaretteButtsMassKg: 1.2,
+      cigaretteButtsCountProvenance: "weight_converted",
+      cigaretteButtsMassProvenance: "measured",
+      cigaretteButtsConversionFormulaVersion:
+        "impact-terrain-2026-butts-mass-v1",
+    });
+  });
 });
 
 describe("volunteer participation persistence", () => {

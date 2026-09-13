@@ -12,7 +12,7 @@ import type { ActionGeometrySource } from "../types";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { OrganizerType } from "../organizer-type";
 import type {
-  ActionCigaretteButtsMeasurements,
+  RawCigaretteButtsMeasurementInput,
 } from "@/lib/waste/cigarette-butts";
 import type { ActionVolunteerParticipation } from "../volunteer-participation";
 
@@ -52,7 +52,7 @@ export type ActionContractCreatePayload = {
     preparationData?: ActionPreparationData | null;
     placeType?: string;
     wasteKg?: number | null;
-    cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+    cigaretteButtsMeasurements?: RawCigaretteButtsMeasurementInput | null;
     volunteerParticipation?: ActionVolunteerParticipation | null;
     cigaretteButtsMassKg?: number | null;
     cigaretteButtsVolumeLiters?: number | null;

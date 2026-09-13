@@ -1,4 +1,5 @@
 import type { CreateActionPayload } from "./types";
+import { hasCigaretteButtsMeasurement } from "@/lib/waste/cigarette-butts";
 import {
   hasCompleteVolunteerCategoryData,
   hasVolunteerCategoryData,
@@ -17,6 +18,7 @@ type VolunteerActionSubmissionLike = Pick<
   | "wasteKg"
   | "cigaretteButtsKg"
   | "cigaretteButts"
+  | "cigaretteButtsMeasurements"
   | "volunteersCount"
   | "volunteerParticipation"
   | "wasteBreakdown"
@@ -49,9 +51,10 @@ export function getVolunteerActionValidationIssues(
   );
   const hasWasteMeasurement =
     typeof payload.wasteKg === "number" && Number.isFinite(payload.wasteKg);
-  const hasCigaretteButtsMeasurement =
-    typeof payload.cigaretteButts === "number" &&
-    Number.isFinite(payload.cigaretteButts);
+  const hasAnyCigaretteButtsMeasurement =
+    hasCigaretteButtsMeasurement(payload.cigaretteButtsMeasurements) ||
+    (typeof payload.cigaretteButts === "number" &&
+      Number.isFinite(payload.cigaretteButts));
   const hasCigaretteButtsWeightMeasurement =
     typeof payload.cigaretteButtsKg === "number" &&
     Number.isFinite(payload.cigaretteButtsKg);
@@ -68,7 +71,7 @@ export function getVolunteerActionValidationIssues(
 
   if (
     !hasWasteMeasurement &&
-    !hasCigaretteButtsMeasurement &&
+    !hasAnyCigaretteButtsMeasurement &&
     !hasCigaretteButtsWeightMeasurement &&
     !hasLegacyCigaretteButtsWeightMeasurement
   ) {

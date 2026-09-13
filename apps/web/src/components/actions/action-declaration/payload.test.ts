@@ -377,7 +377,7 @@ describe("action declaration payload helpers", () => {
     expect(payload.wasteBreakdown).not.toHaveProperty("megotsKg");
   });
 
-  it("preserves the raw mass and records a derived count with its formula version", () => {
+  it("sends raw measurements without client-derived provenance", () => {
     const form = buildBaseForm();
     form.cigaretteButtsCount = "";
     form.wasteMegotsKg = "1.2";
@@ -395,15 +395,11 @@ describe("action declaration payload helpers", () => {
     });
 
     expect(payload.cigaretteButtsMeasurements).toMatchObject({
-      cigaretteButtsCount: 3_000,
+      cigaretteButtsCount: null,
       cigaretteButtsMassKg: 1.2,
       cigaretteButtsVolumeLiters: 2.5,
-      cigaretteButtsCountProvenance: "weight_converted",
-      cigaretteButtsMassProvenance: "measured",
-      cigaretteButtsConversionFormulaVersion:
-        "impact-terrain-2026-butts-mass-v1",
     });
-    expect(payload.cigaretteButts).toBe(3_000);
+    expect(payload.cigaretteButts).toBeNull();
     expect(payload.cigaretteButtsKg).toBe(1.2);
   });
 
@@ -423,13 +419,7 @@ describe("action declaration payload helpers", () => {
     });
 
     expect(payload.cigaretteButtsMeasurements?.cigaretteButtsCount).toBe(2500);
-    expect(payload.cigaretteButtsMeasurements?.cigaretteButtsCountProvenance).toBe(
-      "counted",
-    );
     expect(payload.cigaretteButtsMeasurements?.cigaretteButtsMassKg).toBe(1.2);
-    expect(payload.cigaretteButtsMeasurements?.cigaretteButtsMassProvenance).toBe(
-      "measured",
-    );
   });
 
   it("prefers a ready route preview before submission", async () => {
