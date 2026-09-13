@@ -25,6 +25,8 @@ export type ActionDataLocation = {
   label: string;
   latitude: number | null;
   longitude: number | null;
+  departmentCode: string | null;
+  departmentName: string | null;
 };
 
 export type ActionDataGeometry = {
@@ -102,6 +104,8 @@ export type BuildActionContractParams = {
   locationLabel: string;
   latitude: number | null;
   longitude: number | null;
+  departmentCode?: string | null;
+  departmentName?: string | null;
   wasteKg?: number | null;
   cigaretteButts?: number | null;
   postActionPollutionScore?: number | null;
@@ -340,6 +344,8 @@ export function buildActionDataContract(
       label: params.locationLabel,
       latitude,
       longitude,
+      departmentCode: params.departmentCode ?? null,
+      departmentName: params.departmentName ?? null,
     },
     geometry: persistedGeometry,
     dates: buildActionDates(params),

@@ -163,6 +163,8 @@ export type ActionListItem = {
       label: string;
       latitude: number | null;
       longitude: number | null;
+      departmentCode?: string | null;
+      departmentName?: string | null;
     };
     geometry: {
       kind: ActionGeometryKind;
@@ -238,6 +240,8 @@ export type CreateActionPayload = {
   routeCalibrationContext?: RouteCalibrationContext | null;
   actionDate: string;
   locationLabel: string;
+  departmentCode?: string | null;
+  departmentName?: string | null;
   departureLocationLabel?: string;
   arrivalLocationLabel?: string;
   routeStyle?: "direct" | "souple";
@@ -313,6 +317,8 @@ export type ActionMapItem = Pick<
       label: string;
       latitude: number | null;
       longitude: number | null;
+      departmentCode?: string | null;
+      departmentName?: string | null;
     };
     geometry: {
       kind: ActionGeometryKind;

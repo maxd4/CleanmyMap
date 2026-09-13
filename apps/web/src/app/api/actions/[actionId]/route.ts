@@ -226,6 +226,8 @@ function buildActionEditorPayload(
     actorName: row.actor_name,
     actionDate: row.action_date,
     locationLabel: row.location_label,
+    departmentCode: row.department_code ?? null,
+    departmentName: row.department_name ?? null,
     latitude: row.latitude,
     longitude: row.longitude,
     wasteKg: row.waste_kg,
@@ -464,6 +466,12 @@ export async function PATCH(
     }
     if (body.locationLabel !== undefined) {
       updateData["location_label"] = body.locationLabel.trim();
+    }
+    if (body.departmentCode !== undefined) {
+      updateData["department_code"] = body.departmentCode;
+    }
+    if (body.departmentName !== undefined) {
+      updateData["department_name"] = body.departmentName;
     }
     if (body.latitude !== undefined) {
       updateData["latitude"] = body.latitude;

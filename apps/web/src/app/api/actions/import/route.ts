@@ -39,6 +39,8 @@ const importActionSchema = z.object({
     .string()
     .refine(isIsoDateString, "Date attendue au format YYYY-MM-DD"),
   locationLabel: z.string().trim().min(2).max(255),
+  departmentCode: z.string().trim().max(20).nullable().optional(),
+  departmentName: z.string().trim().max(120).nullable().optional(),
   // Les bornes sont auditees par le contrat commun pour distinguer invalide et partiel.
   latitude: z.number().nullable().optional(),
   longitude: z.number().nullable().optional(),
@@ -108,6 +110,8 @@ function prepareImportItem(item: ImportItem): PreparedImport {
       label: item.locationLabel,
       latitude: item.latitude ?? undefined,
       longitude: item.longitude ?? undefined,
+      departmentCode: item.departmentCode ?? null,
+      departmentName: item.departmentName ?? null,
     },
     dates: { observedAt: item.actionDate },
     metadata: {

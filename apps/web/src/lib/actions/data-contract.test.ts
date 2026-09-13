@@ -110,6 +110,47 @@ it("keeps missing measurements nullable across the unified contract", () => {
   expect(mapItem.cigarette_butts).toBeNull();
 });
 
+it("keeps department attribution nullable and treats codes as strings", () => {
+  const empty = buildActionDataContract({
+    id: "action-no-department",
+    type: "action",
+    status: "approved",
+    source: "actions",
+    observedAt: "2026-04-08",
+    locationLabel: "Lieu sans département",
+    latitude: null,
+    longitude: null,
+  });
+
+  expect(empty.location.departmentCode).toBeNull();
+  expect(empty.location.departmentName).toBeNull();
+
+  const values = [
+    ["2A", "Corse-du-Sud"],
+    ["2B", "Haute-Corse"],
+    ["75", "Paris"],
+    ["971", "Guadeloupe"],
+  ] as const;
+
+  for (const [departmentCode, departmentName] of values) {
+    const contract = buildActionDataContract({
+      id: `action-${departmentCode}`,
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-08",
+      locationLabel: "Lieu explicite",
+      latitude: null,
+      longitude: null,
+      departmentCode,
+      departmentName,
+    });
+
+    expect(contract.location.departmentCode).toBe(departmentCode);
+    expect(contract.location.departmentName).toBe(departmentName);
+  }
+});
+
 it("prefers normalized contract geometry over missing legacy manual drawing", () => {
   const contract = buildActionDataContract({
     id: "action-geometry-only",
@@ -298,4 +339,24 @@ it("builds contract create payload from legacy create payload", () => {
   expect(contractPayload.location.label).toBe("Canal Saint-Martin");
   expect(contractPayload.geometry?.kind).toBe("polyline");
   expect(contractPayload.geometry?.coordinates.length).toBe(2);
+});
+
+it("carries explicit department fields through the contract create adapter", () => {
+  const contractPayload = toContractCreatePayload({
+    actionDate: "2026-04-08",
+    locationLabel: "Bastia",
+    departmentCode: "2B",
+    departmentName: "Haute-Corse",
+    wasteKg: null,
+    cigaretteButts: null,
+    volunteersCount: 1,
+    durationMinutes: 0,
+  });
+
+  expect(contractPayload.location.departmentCode).toBe("2B");
+  expect(contractPayload.location.departmentName).toBe("Haute-Corse");
+
+  const normalized = normalizeCreatePayload(contractPayload);
+  expect(normalized.departmentCode).toBe("2B");
+  expect(normalized.departmentName).toBe("Haute-Corse");
 });
