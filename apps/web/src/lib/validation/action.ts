@@ -6,6 +6,7 @@ import {
 import { isValidAssociationName } from "@/lib/actions/association-options";
 import { isOrganizerType, type OrganizerType } from "@/lib/actions/organizer-type";
 import type { CreateActionPayload } from "@/lib/actions/types";
+import { ACTION_GEOMETRY_SOURCES } from "@/lib/actions/types";
 import { isWasteCategorySlug } from "@/lib/waste";
 import { isRouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
@@ -19,6 +20,25 @@ const manualDrawingSchema = z
   .object({
     kind: z.enum(["polyline", "polygon"]),
     coordinates: z.array(coordinateSchema).max(400),
+  })
+  .superRefine((value, ctx) => {
+    const minimumPoints = value.kind === "polygon" ? 3 : 2;
+    if (value.coordinates.length < minimumPoints) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          value.kind === "polygon"
+            ? "Le polygone doit contenir au moins 3 points."
+            : "Le trace doit contenir au moins 2 points.",
+      });
+    }
+  });
+
+const contractGeometrySchema = z
+  .object({
+    kind: z.enum(["polyline", "polygon"]),
+    coordinates: z.array(coordinateSchema).max(400),
+    geometrySource: z.enum(ACTION_GEOMETRY_SOURCES).nullable().optional(),
   })
   .superRefine((value, ctx) => {
     const minimumPoints = value.kind === "polygon" ? 3 : 2;
@@ -179,6 +199,7 @@ const createActionLegacySchema = z.object({
     .default(0),
   notes: z.string().max(1000).optional(),
   manualDrawing: manualDrawingSchema.optional(),
+  geometrySource: z.enum(ACTION_GEOMETRY_SOURCES).nullable().optional(),
   submissionMode: z.enum(["quick", "complete"]).optional(),
   wasteBreakdown: wasteBreakdownSchema.optional(),
   photos: z.array(photoAssetSchema).max(3).optional(),
@@ -200,7 +221,7 @@ const createActionContractSchema = z.object({
   arrivalLocationLabel: z.string().min(2).max(200).optional(),
   routeStyle: z.enum(["direct", "souple"]).optional(),
   routeAdjustmentMessage: z.string().max(500).optional(),
-  geometry: manualDrawingSchema.optional(),
+  geometry: contractGeometrySchema.optional(),
   dates: z.object({
     observedAt: z.string().date(),
   }),

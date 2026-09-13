@@ -7,6 +7,7 @@ import { PLACE_TYPE_OPTIONS } from"../../../lib/actions/place-type-options";
 import { deriveAutoDrawingFromLocation } from"@/lib/actions/geometry/route-geometry";
 import type {
  ActionDrawing,
+ ActionGeometrySource,
  ActionPhotoAsset,
  ActionPreparationData,
  ActionVisionEstimate,
@@ -268,6 +269,7 @@ export function buildCreateActionPayload(params: {
  effectiveManualDrawingEnabled: boolean;
  drawingIsValid: boolean;
  manualDrawing: ActionDrawing | null;
+ manualDrawingSource?: ActionGeometrySource | null;
  isEntrepriseMode: boolean;
  linkedEventId?: string;
  photos?: ActionPhotoAsset[];
@@ -285,6 +287,7 @@ export function buildCreateActionPayload(params: {
  effectiveManualDrawingEnabled,
  drawingIsValid,
  manualDrawing,
+ manualDrawingSource,
  isEntrepriseMode,
  linkedEventId,
  } = params;
@@ -302,6 +305,11 @@ export function buildCreateActionPayload(params: {
  let longitude = fallbackLongitude;
 
  const normalizedManualDrawing = normalizeActionDrawing(manualDrawing);
+ const resolvedManualDrawingSource = normalizedManualDrawing
+  ? normalizedManualDrawing.kind === "polygon"
+   ? "manual"
+   : manualDrawingSource ?? "manual"
+  : null;
 
  if (effectiveManualDrawingEnabled && drawingIsValid && normalizedManualDrawing) {
  const centroid = getDrawingCentroid(normalizedManualDrawing);
@@ -360,6 +368,10 @@ export function buildCreateActionPayload(params: {
  effectiveManualDrawingEnabled && drawingIsValid && normalizedManualDrawing
  ? normalizedManualDrawing
  : undefined,
+ geometrySource:
+ effectiveManualDrawingEnabled && drawingIsValid && normalizedManualDrawing
+  ? resolvedManualDrawingSource
+  : undefined,
  placeType: form.placeType,
  submissionMode: declarationMode,
  wasteBreakdown: {
@@ -383,6 +395,7 @@ export async function prepareCreateActionPayload(params: {
  effectiveManualDrawingEnabled: boolean;
  drawingIsValid: boolean;
  manualDrawing: ActionDrawing | null;
+ manualDrawingSource?: ActionGeometrySource | null;
  routePreviewDrawing?: ActionDrawing | null;
  isEntrepriseMode: boolean;
  linkedEventId?: string;
@@ -406,6 +419,7 @@ export async function prepareCreateActionPayload(params: {
  return {
  ...payload,
  manualDrawing: normalizedRoutePreview,
+ geometrySource: normalizedRoutePreview.kind === "polygon" ? "manual" : "routed",
  };
  }
 
@@ -423,5 +437,6 @@ export async function prepareCreateActionPayload(params: {
  return {
  ...payload,
  manualDrawing: derivedDrawing,
+ geometrySource: derivedDrawing.kind === "polygon" ? "manual" : "routed",
  };
 }

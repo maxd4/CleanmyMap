@@ -163,7 +163,8 @@ describe("action declaration payload helpers", () => {
 
  expect(payload.latitude).toBeCloseTo(48.86, 6);
  expect(payload.longitude).toBeCloseTo(2.36, 6);
- expect(payload.manualDrawing).toEqual(drawing);
+    expect(payload.manualDrawing).toEqual(drawing);
+    expect(payload.geometrySource).toBe("manual");
  expect(payload.wasteBreakdown).toBeDefined();
  expect(payload.routeStyle).toBe("souple");
     expect(payload.routeAdjustmentMessage).toBe("Éviter l'avenue principale");
@@ -348,6 +349,48 @@ describe("action declaration payload helpers", () => {
     });
 
     expect(payload.manualDrawing).toEqual(previewDrawing);
+    expect(payload.geometrySource).toBe("routed");
+  });
+
+  it("preserves the resolved routed provenance of a snapped drawing", () => {
+    const payload = buildCreateActionPayload({
+      form: buildBaseForm(),
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: true,
+      drawingIsValid: true,
+      manualDrawing: {
+        kind: "polyline",
+        coordinates: [
+          [48.85, 2.35],
+          [48.851, 2.351],
+        ],
+      },
+      manualDrawingSource: "routed",
+      isEntrepriseMode: false,
+    });
+
+    expect(payload.geometrySource).toBe("routed");
+  });
+
+  it("keeps polygons manual even when an invalid routed source is supplied", () => {
+    const payload = buildCreateActionPayload({
+      form: buildBaseForm(),
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: true,
+      drawingIsValid: true,
+      manualDrawing: {
+        kind: "polygon",
+        coordinates: [
+          [48.85, 2.35],
+          [48.851, 2.351],
+          [48.852, 2.35],
+        ],
+      },
+      manualDrawingSource: "routed",
+      isEntrepriseMode: false,
+    });
+
+    expect(payload.geometrySource).toBe("manual");
   });
 
  it("detects park-like labels", () => {

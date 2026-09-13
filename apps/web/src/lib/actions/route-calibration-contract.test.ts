@@ -48,4 +48,27 @@ describe("route calibration action handoff", () => {
       expect(parsed.data.preparationData?.routeCalibrationContext).toEqual(routeContext);
     }
   });
+
+  it("carries final geometry provenance through the contract boundary", () => {
+    const routedPayload = {
+      ...payload,
+      geometrySource: "routed" as const,
+      manualDrawing: {
+        kind: "polyline" as const,
+        coordinates: [
+          [48.85, 2.35] as [number, number],
+          [48.851, 2.351] as [number, number],
+        ],
+      },
+    };
+
+    const contract = toContractCreatePayload(routedPayload);
+    expect(contract.geometry?.geometrySource).toBe("routed");
+
+    const parsed = createActionSchema.safeParse(contract);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.geometrySource).toBe("routed");
+    }
+  });
 });

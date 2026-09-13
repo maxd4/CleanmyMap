@@ -7,7 +7,7 @@ import { MapContainer, TileLayer, useMap } from"react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 
-import type { ActionDrawing } from"@/lib/actions/types";
+import type { ActionDrawing, ActionGeometrySource } from"@/lib/actions/types";
 
 import {
  resolveDynamicColor,
@@ -17,6 +17,7 @@ import { computePollutionScore } from"@/lib/actions/pollution/pollution-score";
 import {
  normalizeActionDrawing,
 } from"./map/actions-map-geometry.utils";
+import { resolveDrawnGeometry } from "./action-drawing-map.geometry";
 import {
   TERRITORY_CENTER,
   buildTerritoryLeafletBounds,
@@ -84,7 +85,10 @@ function DrawingController({
  readOnly = false,
 }: {
  value: ActionDrawing | null;
- onChange: (drawing: ActionDrawing | null) => void;
+ onChange: (
+  drawing: ActionDrawing | null,
+  geometrySource?: ActionGeometrySource | null,
+ ) => void;
  drawColor?: string;
  readOnly?: boolean;
 }) {
@@ -192,7 +196,7 @@ function DrawingController({
 
  if (normalizedDrawing.kind ==="polygon") {
  // Les polygones représentent une zone, pas de snap automatique
- onChange(normalizedDrawing);
+ onChange(normalizedDrawing, "manual");
  return;
  }
  
@@ -204,19 +208,17 @@ function DrawingController({
  );
  
  if (snappedCoords && snappedCoords.length > 0) {
-  // Créer une nouvelle polyline avec les coordonnées snappées
-  const snappedDrawing = normalizeActionDrawing({
-  kind: "polyline",
-  coordinates: snappedCoords,
-  });
-  onChange(snappedDrawing ?? normalizedDrawing);
+  const resolved = resolveDrawnGeometry(normalizedDrawing, snappedCoords);
+  onChange(resolved.drawing, resolved.geometrySource);
  } else {
   // Fallback vers les coordonnées brutes si le snap échoue
- onChange(normalizedDrawing);
+ const resolved = resolveDrawnGeometry(normalizedDrawing, null);
+ onChange(resolved.drawing, resolved.geometrySource);
  }
  } catch {
   // En cas d'erreur, utiliser les coordonnées brutes
- onChange(normalizedDrawing);
+ const resolved = resolveDrawnGeometry(normalizedDrawing, null);
+ onChange(resolved.drawing, resolved.geometrySource);
  } finally {
   document.body.style.cursor ="";
  }
@@ -327,9 +329,15 @@ function applyMapControlAccessibilityLabels(container: HTMLElement): void {
 
 type ActionDrawingMapProps = {
  value?: ActionDrawing | null;
- onChange?: (drawing: ActionDrawing | null) => void;
+ onChange?: (
+  drawing: ActionDrawing | null,
+  geometrySource?: ActionGeometrySource | null,
+ ) => void;
  drawing?: ActionDrawing | null;
- onDrawingChange?: (drawing: ActionDrawing | null) => void;
+ onDrawingChange?: (
+  drawing: ActionDrawing | null,
+  geometrySource?: ActionGeometrySource | null,
+ ) => void;
  wasteKg?: number;
  butts?: number;
  isCleanPlace?: boolean;

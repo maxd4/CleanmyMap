@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import {
   buildInitialActionParticipantRows,
+  buildCreateActionGeometry,
   fetchActions,
   resolveActionCreationStatus,
   resolvePersistedCigaretteButts,
@@ -65,6 +66,68 @@ describe("resolveActionCreationStatus", () => {
 
   it("keeps regular submissions pending", () => {
     expect(resolveActionCreationStatus(false)).toBe("pending");
+  });
+});
+
+describe("buildCreateActionGeometry", () => {
+  it("persists a routed final drawing as estimated geometry", () => {
+    const drawing = {
+      kind: "polyline" as const,
+      coordinates: [
+        [48.85, 2.35] as [number, number],
+        [48.851, 2.351] as [number, number],
+      ],
+    };
+
+    const geometry = buildCreateActionGeometry(
+      buildPayload({
+        manualDrawing: drawing,
+        geometrySource: "routed",
+      }),
+      drawing,
+    );
+
+    expect(geometry.geometrySource).toBe("routed");
+    expect(geometry.confidence).toBe(0.78);
+  });
+
+  it("persists a manual final drawing as real geometry", () => {
+    const drawing = {
+      kind: "polyline" as const,
+      coordinates: [
+        [48.85, 2.35] as [number, number],
+        [48.851, 2.351] as [number, number],
+      ],
+    };
+
+    const geometry = buildCreateActionGeometry(
+      buildPayload({ manualDrawing: drawing, geometrySource: "manual" }),
+      drawing,
+    );
+
+    expect(geometry.geometrySource).toBe("manual");
+    expect(geometry.confidence).toBe(1);
+  });
+
+  it("marks a final automatically constructed route as routed", () => {
+    const drawing = {
+      kind: "polyline" as const,
+      coordinates: [
+        [48.85, 2.35] as [number, number],
+        [48.851, 2.351] as [number, number],
+      ],
+    };
+
+    const geometry = buildCreateActionGeometry(buildPayload(), drawing);
+
+    expect(geometry.geometrySource).toBe("routed");
+  });
+
+  it("uses fallback_point when no final drawing can be resolved", () => {
+    const geometry = buildCreateActionGeometry(buildPayload(), null);
+
+    expect(geometry.geometrySource).toBe("fallback_point");
+    expect(geometry.confidence).toBe(0.24);
   });
 });
 

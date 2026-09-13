@@ -1,4 +1,8 @@
-import type { ActionDrawing, ActionGeometryKind } from "../types.ts";
+import type {
+  ActionDrawing,
+  ActionGeometryKind,
+  ActionGeometrySource,
+} from "../types.ts";
 import { findMatchingGeometry } from "../../geo/geometry-reference.ts";
 import {
   GEOMETRY_CONFIDENCE,
@@ -9,13 +13,6 @@ import {
   normalizeLabel,
   toPointCoordinates,
 } from "./geometry-core.ts";
-
-export type ActionGeometrySource =
-  | "manual"
-  | "reference"
-  | "routed"
-  | "estimated_area"
-  | "fallback_point";
 
 export type GeometryResolution = {
   kind: ActionGeometryKind;

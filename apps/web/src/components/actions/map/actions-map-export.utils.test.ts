@@ -98,6 +98,39 @@ describe("actions map export utils", () => {
     expect(geojson).toContain('"id": "action-geojson"');
   });
 
+  it("does not call a routed final geometry a manual drawing", () => {
+    const contract = buildActionDataContract({
+      id: "action-routed",
+      type: "action",
+      status: "approved",
+      source: "actions",
+      observedAt: "2026-04-15",
+      locationLabel: "Boulevard test",
+      latitude: 48.85,
+      longitude: 2.34,
+      wasteKg: 5.4,
+      cigaretteButts: 42,
+      volunteersCount: 6,
+      durationMinutes: 75,
+      notes: "Export",
+      geometrySource: "routed",
+      manualDrawing: {
+        kind: "polyline",
+        coordinates: [
+          [48.85, 2.34],
+          [48.851, 2.341],
+        ],
+      },
+    });
+
+    const item = toActionMapItem(contract);
+    const geojson = JSON.parse(buildActionsMapGeoJsonString([item])) as {
+      features: Array<{ properties: { has_manual_drawing: boolean } }>;
+    };
+
+    expect(geojson.features[0]?.properties.has_manual_drawing).toBe(false);
+  });
+
   it("builds stable filenames for geojson and png exports", () => {
     const date = new Date("2026-06-02T10:00:00.000Z");
 
