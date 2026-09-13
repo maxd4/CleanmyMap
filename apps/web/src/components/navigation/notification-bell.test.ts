@@ -31,4 +31,16 @@ describe("notification bell compact preview contract", () => {
     expect(itemSource).toContain("notification.type");
     expect(itemSource).toContain("formatDistanceToNow");
   });
+
+  it("isolates the compact preview per Clerk identity", () => {
+    expect(source).toContain("key={identityKey}");
+    expect(source).toContain("useNotificationRequestIdentity");
+  });
+
+  it("guards fetch, read and navigation after an identity change", () => {
+    expect(source).toContain("const request = getRequest()");
+    expect(source).toContain("if (!isCurrentRequest(request))");
+    expect(source).toContain("markReadInFlightRef");
+    expect(source).toContain("buildChatNotificationHref");
+  });
 });

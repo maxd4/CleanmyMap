@@ -12,9 +12,22 @@ import {
   type AppNotification,
   type NotificationPageCursor,
 } from "@/lib/notifications/client";
+import { useNotificationRequestIdentity } from "@/lib/notifications/use-notification-request-identity";
+
+type NotificationAuthState = Pick<
+  ReturnType<typeof useAuth>,
+  "getToken" | "isLoaded" | "isSignedIn" | "userId"
+>;
 
 export function DashboardNotificationsSection() {
-  const { getToken, isLoaded, isSignedIn, userId } = useAuth();
+  const auth = useAuth();
+  const identityKey = auth.isLoaded && auth.isSignedIn && auth.userId ? auth.userId : "signed-out";
+
+  return <DashboardNotificationsSession key={identityKey} auth={auth} />;
+}
+
+function DashboardNotificationsSession({ auth }: { auth: NotificationAuthState }) {
+  const { getToken, isLoaded, isSignedIn, userId } = auth;
   const { locale } = useSitePreferences();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,75 +35,120 @@ export function DashboardNotificationsSection() {
   const [error, setError] = useState(false);
   const [nextCursor, setNextCursor] = useState<NotificationPageCursor | null>(null);
   const [hasMore, setHasMore] = useState(false);
-  const fetchInFlightRef = useRef(false);
-  const markReadInFlightRef = useRef(false);
+  const { getRequest, isCurrentRequest } = useNotificationRequestIdentity(userId);
+  const fetchInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
+  const loadMoreInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
+  const markReadInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
 
   const fetchNotifications = useCallback(async () => {
-    if (!isLoaded || !isSignedIn || !userId || fetchInFlightRef.current) {
+    const request = getRequest();
+    if (!request.userId) {
       return;
     }
-
-    fetchInFlightRef.current = true;
-    setLoading(true);
-    setError(false);
-    try {
-      const page = await loadNotificationsPageForCurrentUser(userId, getToken);
-      setNotifications(page.notifications);
-      setNextCursor(page.nextCursor);
-      setHasMore(page.nextCursor !== null);
-    } catch (err) {
-      setError(true);
-      logFailure("Dashboard notifications", "Fetch failed", err);
-    } finally {
-      setLoading(false);
-      fetchInFlightRef.current = false;
-    }
-  }, [getToken, isLoaded, isSignedIn, userId]);
-
-  const loadMoreNotifications = async () => {
     if (
-      !isLoaded ||
-      !isSignedIn ||
-      !userId ||
-      !nextCursor ||
-      !hasMore ||
-      loadingMore
+      fetchInFlightRef.current &&
+      isCurrentRequest(fetchInFlightRef.current)
     ) {
       return;
     }
 
+    fetchInFlightRef.current = request;
+    setLoading(true);
+    setError(false);
+    try {
+      const page = await loadNotificationsPageForCurrentUser(request.userId, getToken);
+      if (!isCurrentRequest(request)) {
+        return;
+      }
+      setNotifications(page.notifications);
+      setNextCursor(page.nextCursor);
+      setHasMore(page.nextCursor !== null);
+    } catch (err) {
+      if (!isCurrentRequest(request)) {
+        return;
+      }
+      setError(true);
+      logFailure("Dashboard notifications", "Fetch failed", err);
+    } finally {
+      if (isCurrentRequest(request)) {
+        setLoading(false);
+        if (fetchInFlightRef.current === request) {
+          fetchInFlightRef.current = null;
+        }
+      }
+    }
+  }, [getRequest, getToken, isCurrentRequest]);
+
+  const loadMoreNotifications = async () => {
+    const request = getRequest();
+    if (
+      !request.userId ||
+      !nextCursor ||
+      !hasMore ||
+      loadingMore ||
+      (loadMoreInFlightRef.current &&
+        isCurrentRequest(loadMoreInFlightRef.current))
+    ) {
+      return;
+    }
+
+    const cursor = nextCursor;
+    loadMoreInFlightRef.current = request;
     setLoadingMore(true);
     setError(false);
     try {
-      const page = await loadNotificationsPageForCurrentUser(userId, getToken, nextCursor);
+      const page = await loadNotificationsPageForCurrentUser(request.userId, getToken, cursor);
+      if (!isCurrentRequest(request)) {
+        return;
+      }
       setNotifications((previous) => appendUniqueNotifications(previous, page.notifications));
       setNextCursor(page.nextCursor);
       setHasMore(page.nextCursor !== null);
     } catch (err) {
+      if (!isCurrentRequest(request)) {
+        return;
+      }
       setError(true);
       logFailure("Dashboard notifications", "Load more failed", err);
     } finally {
-      setLoadingMore(false);
+      if (isCurrentRequest(request)) {
+        setLoadingMore(false);
+        if (loadMoreInFlightRef.current === request) {
+          loadMoreInFlightRef.current = null;
+        }
+      }
     }
   };
 
   useEffect(() => {
+    if (!isLoaded || !isSignedIn || !userId) {
+      return;
+    }
     void Promise.resolve().then(() => fetchNotifications());
-  }, [fetchNotifications]);
+  }, [fetchNotifications, isLoaded, isSignedIn, userId]);
 
-  const visibleNotifications = useMemo(
-    () => (isLoaded && isSignedIn ? notifications : []),
-    [isLoaded, isSignedIn, notifications],
-  );
+  const visibleNotifications = useMemo(() => (isLoaded && isSignedIn ? notifications : []), [
+    isLoaded,
+    isSignedIn,
+    notifications,
+  ]);
 
   const markAsRead = async (notification: AppNotification) => {
-    if (!isLoaded || !isSignedIn || !userId || markReadInFlightRef.current) {
+    const request = getRequest();
+    if (
+      !request.userId ||
+      (markReadInFlightRef.current &&
+        isCurrentRequest(markReadInFlightRef.current))
+    ) {
       return;
     }
 
-    markReadInFlightRef.current = true;
+    markReadInFlightRef.current = request;
     try {
-      await markNotificationAsReadForCurrentUser(userId, notification.id, getToken);
+      await markNotificationAsReadForCurrentUser(request.userId, notification.id, getToken);
+      if (!isCurrentRequest(request)) {
+        return;
+      }
       setNotifications((previous) =>
         previous.map((item) =>
           item.id === notification.id
@@ -99,11 +157,19 @@ export function DashboardNotificationsSection() {
         ),
       );
     } catch (err) {
+      if (!isCurrentRequest(request)) {
+        return;
+      }
       logFailure("Dashboard notifications", "Mark as read failed", err, {
         id: notification.id,
       });
     } finally {
-      markReadInFlightRef.current = false;
+      if (
+        isCurrentRequest(request) &&
+        markReadInFlightRef.current === request
+      ) {
+        markReadInFlightRef.current = null;
+      }
     }
   };
 

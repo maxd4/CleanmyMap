@@ -14,6 +14,8 @@ describe("dashboard notifications section contract", () => {
     expect(source).toContain('id="notifications"');
     expect(source).toContain("loadNotificationsPageForCurrentUser");
     expect(source).toContain("markNotificationAsReadForCurrentUser");
+    expect(source).toContain("key={identityKey}");
+    expect(source).toContain("useNotificationRequestIdentity");
     expect(source).not.toContain("setInterval");
     expect(source).not.toContain("window.setInterval");
   });
@@ -47,5 +49,12 @@ describe("dashboard notifications section contract", () => {
     expect(source).toContain("Les notifications sont momentanément indisponibles.");
     expect(source).toContain("Fin de l&apos;historique des notifications");
     expect(source).toContain("visibleNotifications.map");
+  });
+
+  it("keeps late initial, load-more and read responses out of a new identity", () => {
+    expect(source).toContain("const request = getRequest()");
+    expect(source).toContain("if (!isCurrentRequest(request))");
+    expect(source).toContain("loadMoreInFlightRef");
+    expect(source).toContain("markReadInFlightRef");
   });
 });
