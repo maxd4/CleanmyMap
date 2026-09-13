@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import type { PublicImpactMetric } from "@/lib/impact/public-impact-kpis";
 
 type MapKpiRibbonProps = {
-  metrics?: PublicImpactMetric[];
+  metrics: PublicImpactMetric[];
 };
 
 const metricAccentStyles = {
@@ -38,19 +38,6 @@ function formatMetricLabel(metric: PublicImpactMetric): string {
 }
 
 export function MapKpiRibbon({ metrics }: MapKpiRibbonProps) {
-  const safeMetrics = metrics ?? [];
-  const renderedMetrics =
-    safeMetrics.length > 0
-      ? safeMetrics
-      : [
-          { key: "wasteKg", label: "Déchets récoltés", value: "n/a", unit: "kg", decimals: 1, category: "Résultat", accent: "blue", classification: "terrain" },
-          { key: "butts", label: "Mégots retirés", value: "n/a", unit: null, decimals: 0, category: "Résultat", accent: "blue", classification: "terrain" },
-          { key: "volunteers", label: "Bénévoles mobilisés", value: "n/a", unit: null, decimals: 0, category: "Résultat", accent: "blue", classification: "terrain" },
-          { key: "co2", label: "CO₂e évité", value: "n/a", unit: "kg", decimals: 1, category: "Équivalent", accent: "emerald", classification: "proxy" },
-          { key: "water", label: "Eau préservée", value: "n/a", unit: "L", decimals: 0, category: "Équivalent", accent: "emerald", classification: "proxy" },
-          { key: "euro", label: "Économie de voirie", value: "n/a", unit: "€", decimals: 0, category: "Économique", accent: "amber", classification: "proxy" },
-        ] satisfies PublicImpactMetric[];
-
   return (
     <section className="relative overflow-hidden rounded-[3rem] border border-sky-200/80 bg-sky-50/95 p-5 sm:p-6 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.16),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(186,230,253,0.28),transparent_24%)]" />
@@ -68,7 +55,7 @@ export function MapKpiRibbon({ metrics }: MapKpiRibbonProps) {
       </div>
 
       <div className="relative z-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {renderedMetrics.map((metric) => {
+        {metrics.map((metric) => {
           const accent = metricAccentStyles[metric.accent];
 
           return (

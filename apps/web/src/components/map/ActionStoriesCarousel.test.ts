@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { mapItemType } from "@/lib/actions/data-contract";
-import { selectRecentActions } from "@/app/(app)/actions/map/page";
+import { selectRecentActions } from "@/app/(app)/actions/map/page-client";
 
 function mapItem(
   id: string,
