@@ -290,6 +290,12 @@ Les seuils et interpolations exacts doivent être centralisés dans le runtime e
 
 Le choix des couleurs vise à rendre la progression immédiatement lisible tout en réservant le vert à une sémantique positive non ambiguë.
 
+Sur le plan clair, le niveau extrême conserve son noir canonique. Sur le plan
+contrasté sombre, ce même niveau est affiché en blanc pour rester lisible ; les
+autres parcours et contours de zones reçoivent un casing blanc très fin. Cette
+adaptation de contraste ne crée ni catégorie ni score supplémentaire : la
+couleur reste pilotée exclusivement par la pollution.
+
 ## 10. Grammaire géométrique
 
 La couleur ne doit pas porter l'information de fiabilité géométrique. Cette information utilise d'autres canaux.

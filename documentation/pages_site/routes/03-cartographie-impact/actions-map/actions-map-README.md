@@ -180,6 +180,12 @@ vert    = lieu explicitement propre uniquement
 
 La progression entre les repères de couleur est continue. Les seuils exacts sont centralisés dans `ACTION_POLLUTION_COLOR_THRESHOLDS` ; le vert n'est jamais un niveau de faible pollution pour une action.
 
+Sur `Plan clair`, le niveau extrême reste noir. Sur `Plan contrasté`, le même
+niveau est adapté en blanc pour l'accessibilité visuelle ; les autres parcours
+et contours de zones reçoivent un casing blanc très fin. Le casing et le blanc
+de contraste ne modifient jamais le score, la catégorie ou la grammaire
+géométrique.
+
 ## Lecture des tooltips et popups
 
 Une action doit distinguer explicitement :

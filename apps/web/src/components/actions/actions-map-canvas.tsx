@@ -46,6 +46,7 @@ import {
   toggleVisibleMapLayer,
   type VisibleMapLayerKey,
 } from "./actions-map-canvas.layers";
+import type { ShapeBasemapMode } from "./map/map-layers.shared";
 
 type ActionsMapCanvasProps = {
   items: ActionMapItem[];
@@ -132,6 +133,20 @@ function MapViewportSync({
   return null;
 }
 
+function BasemapModeReporter({
+  onChange,
+}: {
+  onChange: (mode: ShapeBasemapMode) => void;
+}) {
+  useMapEvents({
+    baselayerchange: (event) => {
+      onChange(event.name === "Plan contrasté" ? "dark" : "light");
+    },
+  });
+
+  return null;
+}
+
 export function ActionsMapCanvas({
   items,
   selectedActionId = null,
@@ -162,6 +177,7 @@ export function ActionsMapCanvas({
     initialViewport ??
     createActionsMapViewport(center, compact ? 11 : 12);
   const [visibleLayers, setVisibleLayers] = useState(DEFAULT_VISIBLE_MAP_LAYERS);
+  const [basemapMode, setBasemapMode] = useState<ShapeBasemapMode>("light");
   const [displayMode, setDisplayMode] = useState<CurrentPlaceStateMode>(
     "projected_today",
   );
@@ -318,6 +334,7 @@ export function ActionsMapCanvas({
           onViewportChange={onViewportChange}
           onViewportInteraction={onViewportInteraction}
         />
+        <BasemapModeReporter onChange={setBasemapMode} />
         {isMinimalPreview ? null : (
           <MapControls
             center={logicalRecenterViewport.center}
@@ -360,6 +377,7 @@ export function ActionsMapCanvas({
             displayMode={displayMode}
             currentPlaceStateViews={currentPlaceStateViews}
             scoreScope={scoreScope}
+            basemapMode={basemapMode}
           />
           <ShapeLayers
             items={mainItems}

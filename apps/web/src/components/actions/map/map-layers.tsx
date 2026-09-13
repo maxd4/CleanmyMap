@@ -5,7 +5,11 @@ export {
   ACTION_TRACE_HIT_AREA_WEIGHT,
   fitActionGeometryBounds,
   isTrashSpotterItem,
+  resolvePointPollutionScore,
   resolvePointColor,
+  resolveShapeCasingStyle,
+  resolveShapeDisplayColor,
+  resolveShapePollutionCategory,
 } from "./map-layers.shared";
 export { InfrastructureMarkers } from "./map-layers-infrastructure-markers";
 export { SignalementMarkers, TrashSpotterMarkers } from "./map-layers-point-markers";
