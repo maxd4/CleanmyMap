@@ -27,6 +27,8 @@ export type RecyclingTriQuality = {
 
 export type RecyclingBreakdownSnapshot = {
   totalKg: number;
+  wasteKnownActions: number;
+  wasteCoverageRate: number;
   lines: RecyclingBreakdownLine[];
   triQuality: RecyclingTriQuality;
 };
@@ -41,13 +43,27 @@ export function buildRecyclingBreakdown(
   let triQualityHigh = 0;
   let triQualityMedium = 0;
   let triQualityLow = 0;
+  let wasteKnownActions = 0;
 
   for (const contract of contracts) {
     const breakdown = contract.metadata.wasteBreakdown;
     if (!breakdown) {
-      categories.mixte.kg += Number(contract.metadata.wasteKg || 0);
-      categories.mixte.entries += 1;
+      const wasteKg = contract.metadata.wasteKg;
+      if (wasteKg !== null && wasteKg !== undefined && Number.isFinite(wasteKg) && wasteKg >= 0) {
+        categories.mixte.kg += wasteKg;
+        categories.mixte.entries += 1;
+        wasteKnownActions += 1;
+      }
       continue;
+    }
+
+    if (
+      contract.metadata.wasteKg !== null &&
+      contract.metadata.wasteKg !== undefined &&
+      Number.isFinite(contract.metadata.wasteKg) &&
+      contract.metadata.wasteKg >= 0
+    ) {
+      wasteKnownActions += 1;
     }
 
     const add = (category: WasteCategory, value: number | undefined) => {
@@ -90,6 +106,9 @@ export function buildRecyclingBreakdown(
 
   return {
     totalKg: Number(totalKg.toFixed(2)),
+    wasteKnownActions,
+    wasteCoverageRate:
+      contracts.length > 0 ? (wasteKnownActions / contracts.length) * 100 : 0,
     lines,
     triQuality: {
       elevee: triQualityHigh,

@@ -76,9 +76,17 @@ describe("buildRecyclingBreakdown", () => {
           wasteBreakdown: null,
         } as ActionDataContract["metadata"],
       }),
+      buildContract({
+        metadata: {
+          wasteKg: null,
+          wasteBreakdown: null,
+        } as ActionDataContract["metadata"],
+      }),
     ]);
 
     expect(breakdown.totalKg).toBe(12);
+    expect(breakdown.wasteKnownActions).toBe(2);
+    expect(breakdown.wasteCoverageRate).toBeCloseTo(66.7, 1);
     expect(breakdown.lines.find((line) => line.category === "megots")?.kg).toBe(2);
     expect(breakdown.lines.find((line) => line.category === "plastique")?.kg).toBe(3);
     expect(breakdown.lines.find((line) => line.category === "mixte")?.kg).toBe(6);

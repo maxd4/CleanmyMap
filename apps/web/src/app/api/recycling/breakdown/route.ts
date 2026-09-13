@@ -39,6 +39,8 @@ export async function GET() {
         return {
           status: "ok" as const,
           totalKg: breakdown.totalKg,
+          wasteKnownActions: breakdown.wasteKnownActions,
+          wasteCoverageRate: breakdown.wasteCoverageRate,
           lines: breakdown.lines,
           triQuality: breakdown.triQuality,
           generatedAt: new Date().toISOString(),
