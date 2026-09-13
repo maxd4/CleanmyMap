@@ -4,12 +4,16 @@ import type { ActionEntityType } from "@/lib/actions/contracts/contract-model";
 
 const fetchActionsMock = vi.hoisted(() => vi.fn());
 const loadLocalActionContractsMock = vi.hoisted(() => vi.fn());
+const allowLocalActionStoreMock = vi.hoisted(() => vi.fn(() => true));
 
 vi.mock("@/lib/actions/store", () => ({
   fetchActions: fetchActionsMock,
 }));
 vi.mock("@/lib/data/map-records", () => ({
   loadLocalActionContracts: loadLocalActionContractsMock,
+}));
+vi.mock("@/lib/persistence/runtime-store", () => ({
+  allowLocalActionStoreInCurrentRuntime: allowLocalActionStoreMock,
 }));
 vi.mock("@/lib/logging/failure-log", () => ({ logFailure: vi.fn() }));
 
@@ -116,6 +120,7 @@ describe("unified action source", () => {
     vi.clearAllMocks();
     fetchActionsMock.mockResolvedValue([]);
     loadLocalActionContractsMock.mockResolvedValue([]);
+    allowLocalActionStoreMock.mockReturnValue(true);
   });
 
   it("returns one canonical contract for one canonical signalement", async () => {
@@ -218,6 +223,7 @@ describe("unified action source", () => {
       type: "action",
       source: "actions",
     });
+    expect(loadLocalActionContractsMock).not.toHaveBeenCalled();
   });
 
   it("uses only remote actions when the remote source succeeds", async () => {
@@ -242,6 +248,7 @@ describe("unified action source", () => {
       "remote-3",
       "remote-4",
     ]);
+    expect(loadLocalActionContractsMock).not.toHaveBeenCalled();
   });
 
   it("keeps an empty successful remote action result empty", async () => {
@@ -257,6 +264,7 @@ describe("unified action source", () => {
     );
 
     expect(result.items).toEqual([]);
+    expect(loadLocalActionContractsMock).not.toHaveBeenCalled();
   });
 
   it("falls back to local actions when the remote source fails", async () => {
@@ -274,6 +282,53 @@ describe("unified action source", () => {
     expect(result.items).toHaveLength(5);
     expect(result.items.every((item) => item.source === "google_sheet")).toBe(true);
     expect(result.sourceHealth.failedSources).toEqual(["actions"]);
+    expect(result.sourceHealth.availableSources).toEqual(["local"]);
+    expect(result.sourceHealth.partial).toBe(true);
+    expect(loadLocalActionContractsMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not load local actions when the fallback is forbidden", async () => {
+    allowLocalActionStoreMock.mockReturnValue(false);
+    fetchActionsMock.mockRejectedValue(new Error("remote unavailable"));
+    loadLocalActionContractsMock.mockResolvedValue(
+      Array.from({ length: 5 }, (_, index) => localAction(`local-${index}`)),
+    );
+
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+    const result = await fetchUnifiedActionContracts(
+      createSupabase([]) as never,
+      params({ types: ["action"] }),
+    );
+
+    expect(result.items).toEqual([]);
+    expect(result.sourceHealth).toMatchObject({
+      partial: true,
+      failedSources: ["actions"],
+      availableSources: [],
+    });
+    expect(loadLocalActionContractsMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps canonical spots when actions are unavailable", async () => {
+    fetchActionsMock.mockRejectedValue(new Error("remote unavailable"));
+
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+    const result = await fetchUnifiedActionContracts(
+      createSupabase([canonicalSpot({ id: "spot-kept" })]) as never,
+      params(),
+    );
+
+    expect(result.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "spot-kept",
+          source: "trash_spotter_spots",
+          type: "spot",
+        }),
+      ]),
+    );
+    expect(result.sourceHealth.failedSources).toEqual(["actions"]);
+    expect(result.sourceHealth.availableSources).toEqual(["spots", "local"]);
   });
 
   it("keeps distinct canonical signalements even when coordinates are equal or close", async () => {
@@ -311,7 +366,7 @@ describe("unified action source", () => {
     expect(result.sourceHealth).toEqual({
       partial: false,
       failedSources: [],
-      availableSources: ["actions", "spots", "local"],
+      availableSources: ["actions", "spots"],
       warnings: [],
     });
   });
@@ -329,7 +384,7 @@ describe("unified action source", () => {
     expect(result.sourceHealth).toEqual({
       partial: false,
       failedSources: [],
-      availableSources: ["actions", "local"],
+      availableSources: ["actions"],
       warnings: [],
     });
   });
