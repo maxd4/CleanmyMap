@@ -174,6 +174,11 @@ export const ImpactFeedbackPanel = memo(function ImpactFeedbackPanel({
           <ShieldCheck size={12} className="text-red-300" />
           {fr ? "Mesures validées par la modération" : "Measures validated by moderation"}
         </span>
+        <span className="inline-flex items-center gap-2 rounded-full border border-white/5 bg-white/[0.03] px-3 py-1 text-slate-300">
+          {fr
+            ? `${Math.round(impact.wasteCoverageRate ?? 0)}% de couverture masse`
+            : `${Math.round(impact.wasteCoverageRate ?? 0)}% mass coverage`}
+        </span>
       </div>
     </section>
   );

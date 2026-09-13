@@ -45,6 +45,8 @@ export type ActionImpactKpis = {
 
 export type ActionImpactTotals = Omit<ActionImpactKpis, "wasteKgSource"> & {
   wasteKnownActions: number;
+  wasteActionCount: number;
+  wasteCoverageRate: number;
 };
 
 export type ActionImpactMethodology = {
@@ -128,6 +130,8 @@ export function sumActionImpactKpis(
     wasteKg: 0,
     wasteKnown: false,
     wasteKnownActions: 0,
+    wasteActionCount: 0,
+    wasteCoverageRate: 0,
     butts: 0,
     volunteers: 0,
     co2AvoidedKg: 0,
@@ -140,8 +144,10 @@ export function sumActionImpactKpis(
   };
   let totalDurationMinutes = 0;
   let wasteKnownActions = 0;
+  let wasteActionCount = 0;
 
   for (const contract of contracts) {
+    wasteActionCount += 1;
     const impact = computeActionImpactKpis(contract);
     totals.wasteKg += impact.wasteKg;
     if (impact.wasteKnown) {
@@ -167,6 +173,9 @@ export function sumActionImpactKpis(
     });
   totals.euroSaved = Math.round(totals.streetCleaningSavings.massEstimateEuros);
   totals.wasteKnownActions = wasteKnownActions;
+  totals.wasteActionCount = wasteActionCount;
+  totals.wasteCoverageRate =
+    wasteActionCount > 0 ? (wasteKnownActions / wasteActionCount) * 100 : 0;
   totals.wasteKnown = wasteKnownActions > 0;
 
   return totals;

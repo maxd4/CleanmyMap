@@ -143,7 +143,7 @@ export function BusinessAlertsPanel() {
                       {goal.area} <span className="ml-2 text-[9px] text-amber-400/60 font-black uppercase">{goal.priority}</span>
                     </p>
                     <p className="mt-1 text-[10px] font-medium text-slate-400 leading-relaxed">
-                      Cible: {goal.targetActions30d} actions | {goal.targetKg30d.toFixed(1)} kg
+                      Cible: {goal.targetActions30d} actions | {goal.targetKg30d === null ? "kg indisponibles" : `${goal.targetKg30d.toFixed(1)} kg`} · masse renseignée {goal.baselineWasteCoverageRate.toFixed(0)}%
                     </p>
                   </li>
                 ))}

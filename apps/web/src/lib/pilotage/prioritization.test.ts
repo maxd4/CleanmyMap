@@ -199,4 +199,17 @@ describe("buildOperationalPriorities", () => {
       "/docs/plans/rapport_impact/impact_IA.md",
     );
   });
+
+  it("does not use a partial waste mass for sobriety decisions", () => {
+    const comparison = buildComparisonFixture();
+    comparison.current.wasteKnownActions = 21;
+    comparison.current.wasteCoverageRate = 50;
+    comparison.current.iurIndex = 0.5;
+
+    const sobriety = buildOperationalPriorities({ comparison, zones: [] }).find(
+      (priority) => priority.id === "sobriety",
+    );
+
+    expect(sobriety).toBeUndefined();
+  });
 });

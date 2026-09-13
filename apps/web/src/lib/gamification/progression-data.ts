@@ -322,6 +322,7 @@ export async function loadUserProgressionStats(
   let validatedActions = 0;
   let qualitySum = 0;
   let totalKg = 0;
+  let wasteKnownActions = 0;
   let totalButts = 0;
 
   for (const row of actionRows) {
@@ -332,7 +333,10 @@ export async function loadUserProgressionStats(
     if (row.status === "approved" && validatedActionIds.has(row.id)) {
       validatedActions += 1;
       qualitySum += evaluateActionQualityScore(row).score;
-      totalKg += toFloat(row.waste_kg, 0);
+      if (row.waste_kg !== null && Number.isFinite(Number(row.waste_kg)) && Number(row.waste_kg) >= 0) {
+        totalKg += toFloat(row.waste_kg, 0);
+        wasteKnownActions += 1;
+      }
       totalButts += toInt(row.cigarette_butts, 0);
     }
   }
@@ -347,6 +351,9 @@ export async function loadUserProgressionStats(
     diversityTypes: diversitySet.size,
     collectiveEvents,
     totalKg,
+    wasteKnownActions,
+    wasteCoverageRate:
+      validatedActions > 0 ? (wasteKnownActions / validatedActions) * 100 : 0,
     totalButts,
   };
 }
@@ -485,6 +492,7 @@ export async function loadUserImpactStats(
       qualityAverage: number;
       validatedActions: number;
       wasteKg: number;
+      wasteCoverageRate: number;
       totalButts: number;
     }
   >
@@ -499,6 +507,7 @@ export async function loadUserImpactStats(
       qualitySum: number;
       validatedActions: number;
       wasteKg: number;
+      wasteKnownActions: number;
       totalButts: number;
     }
   >();
@@ -512,11 +521,15 @@ export async function loadUserImpactStats(
       qualitySum: 0,
       validatedActions: 0,
       wasteKg: 0,
+      wasteKnownActions: 0,
       totalButts: 0,
     };
     previous.qualitySum += quality;
     previous.validatedActions += 1;
-    previous.wasteKg += toFloat(row.waste_kg, 0);
+    if (row.waste_kg !== null && Number.isFinite(Number(row.waste_kg)) && Number(row.waste_kg) >= 0) {
+      previous.wasteKg += toFloat(row.waste_kg, 0);
+      previous.wasteKnownActions += 1;
+    }
     previous.totalButts += toInt(row.cigarette_butts, 0);
     grouped.set(row.created_by_clerk_id, previous);
   }
@@ -527,6 +540,7 @@ export async function loadUserImpactStats(
       qualityAverage: number;
       validatedActions: number;
       wasteKg: number;
+      wasteCoverageRate: number;
       totalButts: number;
     }
   >();
@@ -539,6 +553,10 @@ export async function loadUserImpactStats(
           : 0,
       validatedActions: value.validatedActions,
       wasteKg: Math.round(value.wasteKg * 10) / 10,
+      wasteCoverageRate:
+        value.validatedActions > 0
+          ? (value.wasteKnownActions / value.validatedActions) * 100
+          : 0,
       totalButts: value.totalButts,
     });
   }

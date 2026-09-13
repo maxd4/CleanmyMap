@@ -61,6 +61,7 @@ export function deriveBadges(params: {
   collectiveEvents: number;
   totalKg: number;
   totalButts: number;
+  wasteCoverageRate?: number;
 }): string[] {
   const badges: string[] = [];
 
@@ -71,10 +72,14 @@ export function deriveBadges(params: {
   else if (params.totalButts >= 2000) badges.push("Chasseur de Mégots (Argent)");
   else if (params.totalButts >= 500) badges.push("Ramasseur de Mégots (Bronze)");
 
-  // Tiers Poids (Kg)
-  if (params.totalKg >= 500) badges.push("Héros du Nettoyage (Or)");
-  else if (params.totalKg >= 100) badges.push("Force de la Nature (Argent)");
-  else if (params.totalKg >= 10) badges.push("Bras Armé (Bronze)");
+  // Tiers Poids (Kg): a partial measured population cannot complete a mass badge.
+  const wasteMassComplete =
+    params.wasteCoverageRate === undefined || params.wasteCoverageRate >= 100;
+  if (wasteMassComplete) {
+    if (params.totalKg >= 500) badges.push("Héros du Nettoyage (Or)");
+    else if (params.totalKg >= 100) badges.push("Force de la Nature (Argent)");
+    else if (params.totalKg >= 10) badges.push("Bras Armé (Bronze)");
+  }
 
   addBadgeIfEligible(badges, params.qualityAverage >= 90, "Sentinelle Exemplaire");
   if (params.qualityAverage < 90) {

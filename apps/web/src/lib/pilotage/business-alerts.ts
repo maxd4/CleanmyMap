@@ -22,8 +22,9 @@ export type CampaignZoneGoal = {
   priority: "haute" | "moyenne" | "faible";
   baselineActions90d: number;
   baselineKg90d: number;
+  baselineWasteCoverageRate: number;
   targetActions30d: number;
-  targetKg30d: number;
+  targetKg30d: number | null;
   targetVolunteers30d: number;
   justification: string;
 };
@@ -32,7 +33,7 @@ export type NeighborhoodCampaignPlan = {
   area: string;
   priority: CampaignZoneGoal["priority"];
   targetActions30d: number;
-  targetKg30d: number;
+  targetKg30d: number | null;
   targetVolunteers30d: number;
   weeklyCadence: number;
   staffingPerAction: number;
@@ -177,13 +178,20 @@ export function computeBusinessAlerts(params: {
     }
   }
 
-  const byArea = new Map<string, { actions: number; kg: number }>();
+  const byArea = new Map<
+    string,
+    { actions: number; kg: number; knownWasteActions: number }
+  >();
   for (const item of params.mapItems) {
     if (item.status !== "approved" || mapItemType(item) !== "action") {
       continue;
     }
     const area = extractArea(item.location_label || "");
-    const row = byArea.get(area) ?? { actions: 0, kg: 0 };
+    const row = byArea.get(area) ?? {
+      actions: 0,
+      kg: 0,
+      knownWasteActions: 0,
+    };
     const impact = computeActionImpactKpis(
       item.contract ?? {
         metadata: {
@@ -195,7 +203,10 @@ export function computeBusinessAlerts(params: {
       },
     );
     row.actions += 1;
-    row.kg += impact.wasteKg;
+    if (impact.wasteKnown) {
+      row.kg += impact.wasteKg;
+      row.knownWasteActions += 1;
+    }
     byArea.set(area, row);
   }
 
@@ -204,19 +215,26 @@ export function computeBusinessAlerts(params: {
       area,
       actions: stats.actions,
       kg: stats.kg,
-      score: stats.actions * 2 + stats.kg,
+      wasteCoverageRate:
+        stats.actions > 0 ? (stats.knownWasteActions / stats.actions) * 100 : 0,
+      score:
+        stats.actions * 2 +
+        (stats.knownWasteActions === stats.actions ? stats.kg : 0),
     }))
     .sort((a, b) => b.score - a.score)[0];
 
   if (criticalArea && criticalArea.actions >= 3) {
     const severity: AlertSeverity =
-      criticalArea.actions >= 8 || criticalArea.kg >= 120 ? "high" : "medium";
+      criticalArea.actions >= 8 ||
+      (criticalArea.wasteCoverageRate === 100 && criticalArea.kg >= 120)
+        ? "high"
+        : "medium";
     output.push({
       id: `critical-zone-${criticalArea.area}`,
       title: `Zone critique: ${criticalArea.area}`,
       severity,
       ageLabel: "Fenetre 120 jours",
-      impactLabel: `${criticalArea.actions} actions, ${criticalArea.kg.toFixed(1)} kg`,
+      impactLabel: `${criticalArea.actions} actions, ${criticalArea.kg.toFixed(1)} kg mesurés (${round1(criticalArea.wasteCoverageRate)}% renseigné)`,
       actionHref: "/sections/climate",
       actionLabel: "Prioriser la zone (durable)",
     });
@@ -240,6 +258,7 @@ export function computeCampaignGoalsByZone(params: {
     {
       actions: number;
       kg: number;
+      knownWasteActions: number;
       volunteers: number;
     }
   >();
@@ -253,7 +272,12 @@ export function computeCampaignGoalsByZone(params: {
       continue;
     }
     const area = extractArea(item.location_label || "");
-    const row = grouped.get(area) ?? { actions: 0, kg: 0, volunteers: 0 };
+    const row = grouped.get(area) ?? {
+      actions: 0,
+      kg: 0,
+      knownWasteActions: 0,
+      volunteers: 0,
+    };
     const impact = computeActionImpactKpis(
       item.contract ?? {
         metadata: {
@@ -265,7 +289,10 @@ export function computeCampaignGoalsByZone(params: {
       },
     );
     row.actions += 1;
-    row.kg += impact.wasteKg;
+    if (impact.wasteKnown) {
+      row.kg += impact.wasteKg;
+      row.knownWasteActions += 1;
+    }
     row.volunteers += impact.volunteers;
     grouped.set(area, row);
   }
@@ -274,22 +301,29 @@ export function computeCampaignGoalsByZone(params: {
     .map(([area, row]) => {
       const paceActionsPerDay = row.actions / 90;
       const paceKgPerDay = row.kg / 90;
+      const wasteCoverageRate =
+        row.actions > 0 ? (row.knownWasteActions / row.actions) * 100 : 0;
       const avgVolunteers = row.actions > 0 ? row.volunteers / row.actions : 0;
 
       const targetActions30d = Math.max(
         2,
         Math.round(paceActionsPerDay * 30 * 1.2),
       );
-      const targetKg30d = Math.max(8, round1(paceKgPerDay * 30 * 1.15));
+      const targetKg30d =
+        wasteCoverageRate === 100
+          ? Math.max(8, round1(paceKgPerDay * 30 * 1.15))
+          : null;
       const targetVolunteers30d = Math.max(
         4,
         Math.round(avgVolunteers * targetActions30d),
       );
 
       const priority: CampaignZoneGoal["priority"] =
-        row.actions >= 10 || row.kg >= 150
+        row.actions >= 10 ||
+        (wasteCoverageRate === 100 && row.kg >= 150)
           ? "haute"
-          : row.actions >= 5 || row.kg >= 70
+          : row.actions >= 5 ||
+              (wasteCoverageRate === 100 && row.kg >= 70)
             ? "moyenne"
             : "faible";
 
@@ -305,6 +339,7 @@ export function computeCampaignGoalsByZone(params: {
         priority,
         baselineActions90d: row.actions,
         baselineKg90d: round1(row.kg),
+        baselineWasteCoverageRate: round1(wasteCoverageRate),
         targetActions30d,
         targetKg30d,
         targetVolunteers30d,
@@ -314,7 +349,7 @@ export function computeCampaignGoalsByZone(params: {
     .sort(
       (a, b) =>
         b.targetActions30d - a.targetActions30d ||
-        b.targetKg30d - a.targetKg30d,
+        (b.targetKg30d ?? -1) - (a.targetKg30d ?? -1),
     )
     .slice(0, 6);
 }

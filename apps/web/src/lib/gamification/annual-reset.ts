@@ -22,6 +22,7 @@ export async function loadUserAnnualImpactStats(
       qualityAverage: number;
       validatedActions: number;
       wasteKg: number;
+      wasteCoverageRate: number;
       totalButts: number;
     }
   >
@@ -45,6 +46,7 @@ export async function loadUserAnnualImpactStats(
       qualitySum: number;
       validatedActions: number;
       wasteKg: number;
+      wasteKnownActions: number;
       totalButts: number;
     }
   >();
@@ -58,11 +60,15 @@ export async function loadUserAnnualImpactStats(
       qualitySum: 0,
       validatedActions: 0,
       wasteKg: 0,
+      wasteKnownActions: 0,
       totalButts: 0,
     };
     previous.qualitySum += quality;
     previous.validatedActions += 1;
-    previous.wasteKg += toFloat(row.waste_kg, 0);
+    if (row.waste_kg !== null && Number.isFinite(Number(row.waste_kg)) && Number(row.waste_kg) >= 0) {
+      previous.wasteKg += toFloat(row.waste_kg, 0);
+      previous.wasteKnownActions += 1;
+    }
     previous.totalButts += toInt(row.cigarette_butts, 0);
     grouped.set(row.created_by_clerk_id, previous);
   }
@@ -73,6 +79,7 @@ export async function loadUserAnnualImpactStats(
       qualityAverage: number;
       validatedActions: number;
       wasteKg: number;
+      wasteCoverageRate: number;
       totalButts: number;
     }
   >();
@@ -85,6 +92,10 @@ export async function loadUserAnnualImpactStats(
           : 0,
       validatedActions: value.validatedActions,
       wasteKg: Math.round(value.wasteKg * 10) / 10,
+      wasteCoverageRate:
+        value.validatedActions > 0
+          ? (value.wasteKnownActions / value.validatedActions) * 100
+          : 0,
       totalButts: value.totalButts,
     });
   }
@@ -95,7 +106,12 @@ export async function loadUserAnnualImpactStats(
 export async function getUserAnnualImpact(
   supabase: SupabaseClient,
   userId: string,
-): Promise<{ wasteKg: number; validatedActions: number }> {
+): Promise<{
+  wasteKg: number;
+  validatedActions: number;
+  wasteKnownActions: number;
+  wasteCoverageRate: number;
+}> {
   const startDate = getYearToDateStartDate();
   
   const result = await runActionQuery<Pick<ActionRow, "waste_kg" | "status" | "notes">>(supabase, (query) =>
@@ -108,19 +124,29 @@ export async function getUserAnnualImpact(
 
   let wasteKg = 0;
   let validatedActions = 0;
+  let wasteKnownActions = 0;
 
   for (const row of result) {
     if (!isSpontaneousActionNotes((row as { notes?: string | null }).notes ?? null)) {
       continue;
     }
-    wasteKg += toFloat(row.waste_kg, 0);
     validatedActions += 1;
+    if (row.waste_kg !== null && Number.isFinite(Number(row.waste_kg)) && Number(row.waste_kg) >= 0) {
+      wasteKg += toFloat(row.waste_kg, 0);
+      wasteKnownActions += 1;
+    }
   }
 
-  return { wasteKg, validatedActions };
+  return {
+    wasteKg,
+    validatedActions,
+    wasteKnownActions,
+    wasteCoverageRate:
+      validatedActions > 0 ? (wasteKnownActions / validatedActions) * 100 : 0,
+  };
 }
 
-export function getCurrentMonthlyMilestone(currentKg: number): {
+export function getCurrentMonthlyMilestone(currentKg: number, wasteCoverageRate?: number): {
   id: string;
   month: number;
   year: number;
@@ -143,6 +169,8 @@ export function getCurrentMonthlyMilestone(currentKg: number): {
     description: `Objectif du mois : Collecter ${targetKg}kg de déchets !`,
     targetKg,
     currentKg: Math.round(currentKg * 10) / 10,
-    isCompleted: currentKg >= targetKg,
+    isCompleted:
+      (wasteCoverageRate === undefined || wasteCoverageRate >= 100) &&
+      currentKg >= targetKg,
   };
 }

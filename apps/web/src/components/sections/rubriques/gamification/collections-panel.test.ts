@@ -150,6 +150,8 @@ function makeProgression(): MeResponse["progression"] {
     yearToDateImpact: {
       wasteKg: 0,
       validatedActions: 0,
+      wasteKnownActions: 0,
+      wasteCoverageRate: 0,
     },
   };
 }

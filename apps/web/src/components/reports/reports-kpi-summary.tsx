@@ -43,6 +43,7 @@ export function ReportsKpiSummary({ contracts }: ReportsKpiSummaryProps) {
 
     return {
       totalKg: impact.wasteKg,
+      wasteCoverageRate: impact.wasteCoverageRate,
       totalButts: impact.butts,
       totalMinutes,
       totalVolunteers: impact.volunteers,
@@ -105,12 +106,15 @@ export function ReportsKpiSummary({ contracts }: ReportsKpiSummaryProps) {
               <Trash2 size={20} strokeWidth={2.5} />
             </div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Matière retirée
+              Matière mesurée
             </span>
           </div>
           <div className="flex items-baseline gap-2">
             <div className="text-3xl font-black text-slate-800">{metrics.totalKg.toFixed(1)}</div>
             <div className="text-sm font-bold text-slate-400">kg</div>
+          </div>
+          <div className="mt-1 text-xs font-semibold text-slate-500">
+            {Math.round(metrics.wasteCoverageRate)}% des actions renseignées
           </div>
           <div className="mt-1 inline-block rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600">
             + {metrics.totalButts} mégots

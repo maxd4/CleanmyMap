@@ -94,6 +94,8 @@ export type UserProgressionStats = {
   diversityTypes: number;
   collectiveEvents: number;
   totalKg: number;
+  wasteKnownActions: number;
+  wasteCoverageRate: number;
   totalButts: number;
 };
 
@@ -171,6 +173,8 @@ export type ContributorRecognitionSnapshot = {
 export type YearToDateImpactSummary = {
   wasteKg: number;
   validatedActions: number;
+  wasteKnownActions: number;
+  wasteCoverageRate: number;
 };
 
 export type IndividualLeaderboardItem = {
@@ -186,6 +190,7 @@ export type IndividualLeaderboardItem = {
   qualityAverage: number;
   validatedActions: number;
   wasteKg: number;
+  wasteCoverageRate: number;
   totalButts: number;
   badges: string[];
   recognition?: ContributorRecognitionCard | null;
@@ -211,6 +216,7 @@ export type CollectiveLeaderboardItem = {
   qualityAverage: number;
   validatedActions: number;
   wasteKg: number;
+  wasteCoverageRate: number;
 };
 
 export type PersonalImpactMetrics = {
@@ -259,7 +265,7 @@ export type PersonalTimelineItem = {
   actionDate: string;
   locationLabel: string;
   status: "pending" | "approved" | "rejected";
-  wasteKg: number;
+  wasteKg: number | null;
   cigaretteButts: number;
   volunteersCount: number;
   durationMinutes: number;

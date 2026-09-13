@@ -142,7 +142,18 @@ export function buildZones(
       const deltaActionsPercent = round1(
         safePercentDelta(current.actions, previous.actions),
       );
-      const deltaKgPercent = round1(safePercentDelta(current.kg, previous.kg));
+      const currentWasteCoverageRate =
+        current.actions > 0
+          ? round1((current.knownWasteActions / current.actions) * 100)
+          : 0;
+      const previousWasteCoverageRate =
+        previous.actions > 0
+          ? round1((previous.knownWasteActions / previous.actions) * 100)
+          : 0;
+      const deltaKgPercent =
+        currentWasteCoverageRate === 100 && previousWasteCoverageRate === 100
+          ? round1(safePercentDelta(current.kg, previous.kg))
+          : 0;
       const currentCoverageRate =
         current.actions > 0 ? round1((current.geolocated / current.actions) * 100) : 0;
       const previousCoverageRate =
@@ -214,14 +225,8 @@ export function buildZones(
         previousKg: round1(previous.kg),
         currentWasteKnownActions: current.knownWasteActions,
         previousWasteKnownActions: previous.knownWasteActions,
-        currentWasteCoverageRate:
-          current.actions > 0
-            ? round1((current.knownWasteActions / current.actions) * 100)
-            : 0,
-        previousWasteCoverageRate:
-          previous.actions > 0
-            ? round1((previous.knownWasteActions / previous.actions) * 100)
-            : 0,
+        currentWasteCoverageRate,
+        previousWasteCoverageRate,
         deltaKgAbsolute,
         deltaActionsPercent,
         deltaKgPercent,

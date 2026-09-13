@@ -48,6 +48,14 @@ export function toFloat(value: unknown, fallback = 0): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+export function toNullableFloat(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export function actionRowToListItem(row: ActionRow): ActionListItem {
   return {
     id: row.id,
@@ -57,7 +65,7 @@ export function actionRowToListItem(row: ActionRow): ActionListItem {
     location_label: row.location_label,
     latitude: row.latitude,
     longitude: row.longitude,
-    waste_kg: toFloat(row.waste_kg, 0),
+    waste_kg: toNullableFloat(row.waste_kg),
     cigarette_butts: toInt(row.cigarette_butts, 0),
     volunteers_count: toInt(row.volunteers_count, 1),
     duration_minutes: toInt(row.duration_minutes, 0),
