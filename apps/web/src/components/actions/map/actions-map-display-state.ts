@@ -7,7 +7,6 @@ import {
   type CurrentPlaceStateViews,
 } from "@/lib/actions/pollution/current-place-state";
 import {
-  computeAveragePollutionScore,
   computePollutionScoresRelativeToReferences,
   type PollutionScoreReferences,
 } from "@/lib/actions/pollution/pollution-score";
@@ -47,8 +46,7 @@ export function resolveMapPlaceStateViews(
     options.historicalScoreResolver ??
     (references
       ? (action: ActionDataContract) =>
-          computeAveragePollutionScore(
-            computePollutionScoresRelativeToReferences(
+          computePollutionScoresRelativeToReferences(
               {
                 wasteKg: action.metadata.wasteKg,
                 cigaretteButts: action.metadata.cigaretteButts,
@@ -59,8 +57,7 @@ export function resolveMapPlaceStateViews(
                 actionPhase: action.metadata.actionPhase,
               },
               references.global,
-            ),
-          )
+            ).severityScore
       : undefined);
 
   return resolveCurrentPlaceStateViews(resolveMapSourceContracts(items), {

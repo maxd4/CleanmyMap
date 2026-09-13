@@ -1,6 +1,5 @@
 import type { ActionMapItem } from "@/lib/actions/types";
 import {
-  computeAveragePollutionScore,
   computePollutionScoresRelativeToReferences,
   type PollutionScoreReferences,
   type PollutionScoreScope,
@@ -102,7 +101,7 @@ function resolveGlobalActionScore(
     },
     references.global,
   );
-  const historicalScore = scores.severityScore ?? computeAveragePollutionScore(scores);
+  const historicalScore = scores.severityScore;
   if (historicalScore === null) {
     return unavailableGlobalScore();
   }
@@ -150,13 +149,13 @@ function resolveDepartmentActionScore(
 
   const departmentScoringReference = {
     ...departmentReference,
-    wastePerVolunteerHour:
+    wastePerVolunteer:
       departmentReference.wasteSourceCount >= 2
-        ? departmentReference.wastePerVolunteerHour
+        ? departmentReference.wastePerVolunteer
         : null,
-    buttsPerVolunteerHour:
+    buttsPerVolunteer:
       departmentReference.buttsSourceCount >= 2
-        ? departmentReference.buttsPerVolunteerHour
+        ? departmentReference.buttsPerVolunteer
         : null,
   };
 
@@ -174,7 +173,7 @@ function resolveDepartmentActionScore(
     },
     departmentScoringReference,
   );
-  const departmentRelativeScore = scores.severityScore ?? computeAveragePollutionScore(scores);
+  const departmentRelativeScore = scores.severityScore;
   if (departmentRelativeScore === null) {
     return unavailableDepartmentScore();
   }

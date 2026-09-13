@@ -14,7 +14,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getUtcWeekStart } from "@/lib/periodic/periodic-job-calendar";
 
 export const MAP_POLLUTION_REFERENCES_SNAPSHOT_KEY = "map-pollution-score-references";
-export const MAP_POLLUTION_REFERENCES_VERSION = "map-pollution-score-references-2026.09-v4";
+export const MAP_POLLUTION_REFERENCES_VERSION = "map-pollution-score-references-2026.09-v5-authorized-per-volunteer";
 
 export type PollutionScoreReferenceSnapshotPayload = {
   references: {
@@ -44,12 +44,12 @@ function isValidGlobalReference(value: unknown): value is PollutionScoreReferenc
   const candidate = value as Partial<PollutionScoreReference>;
   const wasteSourceCount = Number(candidate.wasteSourceCount);
   const buttsSourceCount = Number(candidate.buttsSourceCount);
-  const hasWasteReference = isValidReference(candidate.wastePerVolunteerHour);
-  const hasButtsReference = isValidReference(candidate.buttsPerVolunteerHour);
+  const hasWasteReference = isValidReference(candidate.wastePerVolunteer);
+  const hasButtsReference = isValidReference(candidate.buttsPerVolunteer);
 
   return (
-    (candidate.wastePerVolunteerHour === null || hasWasteReference) &&
-    (candidate.buttsPerVolunteerHour === null || hasButtsReference) &&
+    (candidate.wastePerVolunteer === null || hasWasteReference) &&
+    (candidate.buttsPerVolunteer === null || hasButtsReference) &&
     Number.isInteger(wasteSourceCount) &&
     wasteSourceCount >= 0 &&
     Number.isInteger(buttsSourceCount) &&
@@ -66,13 +66,13 @@ function isValidDepartmentReference(value: unknown): value is DepartmentPollutio
   const eligibleActionCount = Number(candidate.eligibleActionCount);
   const wasteSourceCount = Number(candidate.wasteSourceCount);
   const buttsSourceCount = Number(candidate.buttsSourceCount);
-  const hasWasteReference = isValidReference(candidate.wastePerVolunteerHour);
-  const hasButtsReference = isValidReference(candidate.buttsPerVolunteerHour);
+  const hasWasteReference = isValidReference(candidate.wastePerVolunteer);
+  const hasButtsReference = isValidReference(candidate.buttsPerVolunteer);
 
   return (
     (candidate.departmentName === null || typeof candidate.departmentName === "string") &&
-    (candidate.wastePerVolunteerHour === null || hasWasteReference) &&
-    (candidate.buttsPerVolunteerHour === null || hasButtsReference) &&
+    (candidate.wastePerVolunteer === null || hasWasteReference) &&
+    (candidate.buttsPerVolunteer === null || hasButtsReference) &&
     Number.isInteger(eligibleActionCount) &&
     eligibleActionCount >= 0 &&
     Number.isInteger(wasteSourceCount) &&

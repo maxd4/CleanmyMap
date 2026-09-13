@@ -14,8 +14,8 @@ import type { PollutionScoreReferences } from "@/lib/actions/pollution/pollution
 
 const references: PollutionScoreReferences = {
   global: {
-    wastePerVolunteerHour: 20,
-    buttsPerVolunteerHour: 2_000,
+    wastePerVolunteer: 20,
+    buttsPerVolunteer: 2_000,
     wasteSourceCount: 1,
     buttsSourceCount: 1,
   },
@@ -44,7 +44,7 @@ describe("map marker categories", () => {
     expect(Object.values(DEFAULT_VISIBLE_CATEGORIES).every(Boolean)).toBe(true);
   });
 
-  it("uses the global V2 reference and the average score", () => {
+  it("uses the global V2 reference and the maximum component score", () => {
     expect(
       classifyPollutionColor(
         buildItem({ waste_kg: 40, cigarette_butts: 3_000 }),

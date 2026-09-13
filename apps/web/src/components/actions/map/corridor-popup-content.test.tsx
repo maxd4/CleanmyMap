@@ -13,8 +13,8 @@ vi.mock("./action-pollution-score-references-context", () => ({
   useActionPollutionScoreReferences: () => ({
     references: {
       global: {
-        wastePerVolunteerHour: 20,
-        buttsPerVolunteerHour: 400,
+        wastePerVolunteer: 20,
+        buttsPerVolunteer: 400,
         wasteSourceCount: 2,
         buttsSourceCount: 2,
       },

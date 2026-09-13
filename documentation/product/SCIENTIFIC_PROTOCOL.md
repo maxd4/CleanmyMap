@@ -55,7 +55,26 @@ Sur la carte d'actions, ce score reste un score historique constaté avant l'act
 
 Formule de travail :
 
-`Score = (Densite_megots x 3) + (Densite_plastiques x 2) + (Densite_encombrants x 5)`
+Pour chaque action terrain approuvée et terminée, avec au moins un bénévole,
+une durée strictement positive et une métrique renseignée, chaque composante
+est normalisée par le nombre de bénévoles :
+
+`intensite_dechets = masse_dechets_kg / nombre_benevoles`
+
+`intensite_megots = nombre_megots / nombre_benevoles`
+
+Chaque intensité est rapportée à la référence maximale de sa composante puis
+bornée entre 0 et 100. Le score historique est le maximum des composantes
+disponibles ; une métrique absente n'est pas assimilée à zéro et, si aucune
+composante n'est exploitable, le score est indisponible.
+
+Ce contrat correspond au dernier contrat de la carte versionné avant
+`77e72b0b`. La recherche menée dans le dépôt ne trouve aucune décision
+canonique autorisant une normalisation par bénévole-heure ; cette formule n'est
+donc pas consacrée. La migration append-only
+`20260913000007_restore_pre77_pollution_score_contract.sql` rétablit le
+contrat antérieur dans la RPC V2, sans supprimer les références
+départementales déjà publiées.
 
 ## Gouvernance
 

@@ -6,15 +6,15 @@ import {
 } from "./pollution-score-reference-snapshot";
 
 const global = {
-  wastePerVolunteerHour: 12,
-  buttsPerVolunteerHour: 345,
+  wastePerVolunteer: 12,
+  buttsPerVolunteer: 345,
   wasteSourceCount: 7,
   buttsSourceCount: 6,
 };
 const department = {
   departmentName: "Ain",
-  wastePerVolunteerHour: 10,
-  buttsPerVolunteerHour: 300,
+  wastePerVolunteer: 10,
+  buttsPerVolunteer: 300,
   wasteSourceCount: 2,
   buttsSourceCount: 2,
   eligibleActionCount: 2,
@@ -80,7 +80,7 @@ describe("pollution score reference snapshot V2", () => {
     });
   });
 
-  it("reads one valid V4 payload and exposes global and department references", async () => {
+  it("reads one valid V5 payload and exposes global and department references", async () => {
     const loadFallback = vi.fn();
     const result = await loadPollutionScoreReferencesForMap({
       readSnapshot: async () => snapshot(),
@@ -92,11 +92,11 @@ describe("pollution score reference snapshot V2", () => {
     expect(loadFallback).not.toHaveBeenCalled();
   });
 
-  it("does not reuse a prior payload without the V4 department shape", async () => {
+  it("does not reuse a prior payload from the superseded V4 contract", async () => {
     const loadFallback = vi.fn(async () => references);
     const legacySnapshot = {
       ...snapshot(),
-      version: "map-pollution-score-references-2026.09-v3",
+      version: "map-pollution-score-references-2026.09-v4",
       payload: {
         ...snapshot().payload,
         references: { global },
