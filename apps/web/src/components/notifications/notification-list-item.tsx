@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle, Check, MessageSquare, ShieldCheck, UserCheck } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { enUS, fr } from "date-fns/locale";
 
 import type { AppNotification } from "@/lib/notifications/client";
@@ -35,6 +35,18 @@ export function NotificationListItem({
   compact = false,
 }: NotificationListItemProps) {
   const isUnread = !notification.read_at;
+  const createdAt = new Date(notification.created_at);
+  const relativeDate = formatDistanceToNow(createdAt, {
+    addSuffix: true,
+    locale: locale === "fr" ? fr : enUS,
+  });
+  const absoluteDate = format(
+    createdAt,
+    locale === "fr" ? "dd/MM/yyyy HH:mm" : "MM/dd/yyyy HH:mm",
+    {
+      locale: locale === "fr" ? fr : enUS,
+    },
+  );
 
   return (
     <button
@@ -89,16 +101,14 @@ export function NotificationListItem({
           >
             {notification.title}
           </span>
-          <span
+          <time
+            dateTime={notification.created_at}
             className={`shrink-0 cmm-text-caption ${
               compact ? "text-white/50" : "text-amber-100/58"
             }`}
           >
-            {formatDistanceToNow(new Date(notification.created_at), {
-              addSuffix: true,
-              locale: locale === "fr" ? fr : enUS,
-            })}
-          </span>
+            {compact ? relativeDate : `${absoluteDate} · ${relativeDate}`}
+          </time>
         </div>
         <p
           className={`${compact ? "line-clamp-2" : "whitespace-pre-wrap break-words"} leading-relaxed cmm-text-caption ${
