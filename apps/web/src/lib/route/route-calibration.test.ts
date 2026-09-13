@@ -4,6 +4,7 @@ import {
   buildCalibrationDataset,
   buildRouteCalibrationContext,
   estimateRouteCleanupDuration,
+  isRouteCalibrationContext,
   preserveHistoricalRouteCalibrationContext,
   type RouteCalibrationContext,
 } from "./route-calibration";
@@ -53,7 +54,7 @@ describe("route calibration infrastructure", () => {
     const serialized = JSON.parse(JSON.stringify(original));
 
     expect(serialized).toEqual(original);
-    expect(serialized.version).toBe("action-route-calibration-v1");
+    expect(serialized.version).toBe("action-route-calibration-v2");
     expect(serialized.candidates[0].cleanupWorkload.ordinaryWaste.observedPresence).toBe(true);
     expect(serialized.candidates[0].cleanupWorkload.cigaretteButts.observedPresence).toBe(false);
   });
@@ -76,6 +77,15 @@ describe("route calibration infrastructure", () => {
 
     expect(dataset.samples[0]?.historicalWorkload[0]?.cleanupWorkload).toEqual(workload);
     expect(dataset.samples[0]?.historicalWorkload[0]?.cleanupWorkload.status).toBe("presence_only");
+  });
+
+  it("keeps already persisted v1 contexts readable", () => {
+    const legacy = {
+      ...context(),
+      version: "action-route-calibration-v1" as const,
+    };
+
+    expect(isRouteCalibrationContext(legacy)).toBe(true);
   });
 
   it("excludes legacy actions instead of rebuilding their context from current state", () => {

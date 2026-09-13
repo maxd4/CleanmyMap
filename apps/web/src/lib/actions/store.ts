@@ -604,6 +604,7 @@ export function buildActionInsertPayload(params: {
     duration_minutes: params.payload.durationMinutes,
     event_start_time: params.payload.eventStartTime ?? null,
     event_end_time: params.payload.eventEndTime ?? null,
+    preparation_data: params.payload.preparationData ?? {},
     notes: buildPersistedNotes({
       ...params.payload,
       manualDrawing: params.finalDrawing ?? undefined,

@@ -204,16 +204,23 @@ minutes n’est déduit des données courantes.
 
 Lorsqu’une recommandation devient le point de départ d’une action, son contrat
 transporte `calibrationContext` dans `preparationData.routeCalibrationContext`.
-Ce contexte est versionné `action-route-calibration-v1` et conserve avant
+Ce contexte est versionné `action-route-calibration-v2` et conserve avant
 l’action la date de génération, la version du moteur, la version de
 `cleanupWorkload`, les bénévoles et groupes prévus, ainsi que chaque candidat
 retenu avec sa famille (`observed` ou `predicted`) et le snapshot exact de sa
-charge. Les deux pressions restent individuelles : elles ne sont ni sommées ni
-moyennées.
+charge. Son `plannerSnapshot` conserve en plus les paramètres ayant influencé
+la génération, les versions de modèles et de sources, la géométrie et les
+distances recommandées, l’allocation prévue des groupes et la provenance de la
+réponse. Les deux pressions restent individuelles : elles ne sont ni sommées
+ni moyennées.
 
 `preparation_data` demeure la source canonique. La création valide strictement
 le contexte ; une édition ordinaire conserve le snapshot historique et une
-tentative explicite de le remplacer est refusée. Une ancienne action sans ce
+tentative explicite de le remplacer est refusée. Le snapshot v2 est donc
+immuable après la création de l’action : une modification ultérieure du
+formulaire, de la localisation ou de l’itinéraire réel ne le réécrit jamais.
+Les contextes v1 déjà persistés restent lisibles pour compatibilité, mais ne
+peuvent pas être complétés rétroactivement. Une ancienne action sans ce
 contexte est exclue du dataset de calibration : son contexte n’est jamais
 reconstruit depuis l’état courant.
 

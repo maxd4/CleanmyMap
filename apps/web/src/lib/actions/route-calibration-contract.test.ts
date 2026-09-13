@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { toContractCreatePayload } from "./contracts/contract-builders";
 import { createActionSchema } from "@/lib/validation/action";
-import { buildRouteCalibrationContext } from "@/lib/route/route-calibration";
+import {
+  buildActionDataContract,
+} from "./contracts/contract-model";
+import {
+  buildRouteCalibrationContext,
+  buildRoutePlannerSnapshot,
+} from "@/lib/route/route-calibration";
+import { buildActionInsertPayload, buildCreateActionGeometry } from "./store";
 
 const routeContext = buildRouteCalibrationContext({
   generatedAt: "2026-09-01T09:00:00.000Z",
@@ -9,6 +16,48 @@ const routeContext = buildRouteCalibrationContext({
   volunteersExpected: 3,
   groupCount: 1,
   candidates: [],
+  plannerSnapshot: buildRoutePlannerSnapshot({
+    generatedAt: "2026-09-01T09:00:00.000Z",
+    engineVersion: "route-planner-v2",
+    selectedCandidates: [],
+    selectedStops: [],
+    origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+    planningMode: { type: "free" },
+    travelBudgetMinutes: 60,
+    maxStops: 3,
+    priorityVsTravel: 65,
+    pickupPreference: "balanced",
+    effectiveRiskFocus: "all",
+    volunteers: 3,
+    groupCount: 1,
+    routeGeometry: {
+      isLoop: true,
+      origin: [48.85, 2.35],
+      returnLeg: null,
+      coordinates: [],
+      distanceKm: 0,
+      durationMinutes: 0,
+      legs: [],
+      provider: "none",
+      profile: null,
+      mode: "fallback",
+      estimated: true,
+    },
+    travelDistanceKm: 0,
+    travelMinutes: 0,
+    returnDistanceKm: 0,
+    returnMinutes: 0,
+    groups: [],
+    dataStatus: "empty",
+    dataLayers: { observed: "empty", prediction: "unavailable", recommendation: "empty" },
+    sourceHealth: {
+      partial: false,
+      failedSources: [],
+      availableSources: ["spots"],
+      warnings: [],
+    },
+    prediction: null,
+  }),
 });
 
 const payload = {
@@ -47,6 +96,44 @@ describe("route calibration action handoff", () => {
     if (parsed.success) {
       expect(parsed.data.preparationData?.routeCalibrationContext).toEqual(routeContext);
     }
+  });
+
+  it("round trips the immutable snapshot through the API and action store payload", () => {
+    const contract = toContractCreatePayload(payload);
+    const parsed = createActionSchema.safeParse(contract);
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+
+    const row = buildActionInsertPayload({
+      userId: "user-test",
+      payload: parsed.data,
+      status: "pending",
+      persistedGeometry: buildCreateActionGeometry(parsed.data, null),
+      finalDrawing: null,
+    });
+
+    expect(row.preparation_data.routeCalibrationContext).toEqual(routeContext);
+    expect(row.preparation_data.routeCalibrationContext?.plannerSnapshot).toMatchObject({
+      version: "route-planner-snapshot-v1",
+      parameters: { travelBudgetMinutes: 60, maxStops: 3 },
+    });
+
+    const readContract = buildActionDataContract({
+      id: "action-test-1",
+      type: "action",
+      status: "pending",
+      source: "web_form",
+      observedAt: "2026-09-02",
+      locationLabel: "Paris",
+      latitude: null,
+      longitude: null,
+      preparationData: row.preparation_data,
+    });
+    expect(readContract.metadata.preparationData).toEqual(row.preparation_data);
+    expect(readContract.metadata.preparationData?.routeCalibrationContext).toEqual(
+      routeContext,
+    );
   });
 
   it("carries final geometry provenance through the contract boundary", () => {
