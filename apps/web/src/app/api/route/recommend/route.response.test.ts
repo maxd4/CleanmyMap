@@ -283,11 +283,32 @@ describe("route recommendation response trace contract", () => {
     expect(payload.trace).toBeDefined();
     expect(payload.trace.selectedStops).toEqual([]);
     expect(payload.calibrationContext).toMatchObject({
-      version: "action-route-calibration-v1",
+      version: "action-route-calibration-v2",
       routeEngineVersion: "route-planner-v2",
       volunteersExpected: 1,
       groupCount: 1,
       candidates: [],
+    });
+    expect(payload.calibrationContext?.plannerSnapshot).toMatchObject({
+      version: "route-planner-snapshot-v1",
+      generatedAt: payload.generatedAt,
+      engineVersion: "route-planner-v2",
+      cleanupWorkloadVersion: "route-cleanup-workload-v1",
+      selectedCandidateIds: [],
+      parameters: {
+        travelBudgetMinutes: 60,
+        maxStops: 3,
+        priorityVsTravel: 65,
+        volunteers: 1,
+        groupCount: 1,
+      },
+      distance: {
+        totalKm: 2,
+        travelMinutes: 12,
+        returnDistanceKm: 0.8,
+        returnMinutes: 4,
+      },
+      groups: [{ groupIndex: 1, volunteerCount: 1, targetCount: 0 }],
     });
     expect(payload.dataLayers).toBeDefined();
     expect(payload.status).toBe(payload.dataLayers.recommendation);
@@ -343,6 +364,17 @@ describe("route recommendation response trace contract", () => {
         modelVersion: "route-cleanup-workload-v1",
         status: "excluded",
       },
+    });
+    expect(payload.calibrationContext?.plannerSnapshot?.selectedCandidateIds).toEqual([
+      observed.id,
+    ]);
+    expect(payload.calibrationContext?.plannerSnapshot?.observedCandidateIds).toEqual([
+      observed.id,
+    ]);
+    expect(payload.calibrationContext?.plannerSnapshot?.selectedStops[0]).toMatchObject({
+      id: observed.id,
+      label: observed.label,
+      score: observed.score,
     });
     expect(payload.dataLayers).toBeDefined();
     expect(payload.status).toBe(payload.dataLayers.recommendation);

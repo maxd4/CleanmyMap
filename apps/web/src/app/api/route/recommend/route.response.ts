@@ -24,6 +24,7 @@ import {
   type RouteTraceCandidateSummary,
 } from "@/lib/route/route-trace";
 import {
+  buildRoutePlannerSnapshot,
   buildRouteCalibrationContext,
 } from "@/lib/route/route-calibration";
 import {
@@ -165,23 +166,24 @@ export function buildRouteRecommendationResponse(input: {
   const { plannedStops, routeGeometry, plannerResult } = planning;
   const generatedAt = new Date().toISOString();
   const durationDependency = input.operationalBudget ?? planning.operationalBudget;
-  const calibrationContext = buildRouteCalibrationContext({
+  const calibrationCandidates = plannedStops.map(({ candidate }) => ({
+    candidateId: candidate.id,
+    family: candidate.family,
+    cleanupWorkload: buildCleanupWorkload(candidate),
+  }));
+  const calibrationContextForBudget = buildRouteCalibrationContext({
     generatedAt,
     routeEngineVersion: ROUTE_PLANNER_ENGINE_VERSION,
     volunteersExpected: volunteers,
     groupCount,
-    candidates: plannedStops.map(({ candidate }) => ({
-      candidateId: candidate.id,
-      family: candidate.family,
-      cleanupWorkload: buildCleanupWorkload(candidate),
-    })),
+    candidates: calibrationCandidates,
   });
   const operationalBudget = buildRouteOperationalBudget({
     travelMinutes: groupCount === 1
       ? routeGeometry.durationMinutes
       : planning.multiRouteMetrics?.totalDurationMinutes ?? routeGeometry.durationMinutes,
     budgetMinutes: travelBudgetMinutes,
-    calibrationContext,
+    calibrationContext: calibrationContextForBudget,
     durationDependency,
   });
   const candidateById = new Map(
@@ -300,6 +302,72 @@ export function buildRouteRecommendationResponse(input: {
   });
   const returnDistanceKm = routeGeometry.returnLeg?.distanceKm ?? 0;
   const returnMinutes = routeGeometry.returnLeg?.estimatedMinutes ?? 0;
+  const snapshotStops = groupRoutes.length > 1
+    ? groupRoutes.flatMap(({ stops: groupStops }) => groupStops)
+    : applyOriginRouteGeometryLegs(buildStops(plannedStops), routeGeometry);
+  const calibrationContext = buildRouteCalibrationContext({
+    generatedAt,
+    routeEngineVersion: ROUTE_PLANNER_ENGINE_VERSION,
+    volunteersExpected: volunteers,
+    groupCount,
+    candidates: calibrationCandidates,
+    plannerSnapshot: buildRoutePlannerSnapshot({
+      generatedAt,
+      engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
+      selectedCandidates: calibrationCandidates,
+      selectedStops: snapshotStops,
+      origin,
+      planningMode,
+      travelBudgetMinutes,
+      maxStops,
+      priorityVsTravel,
+      pickupPreference,
+      effectiveRiskFocus: planning.effectiveRiskFocus,
+      volunteers,
+      groupCount,
+      routeGeometry,
+      travelDistanceKm: groupCount === 1
+        ? routeGeometry.distanceKm
+        : multiRoute.totalDistanceKm,
+      travelMinutes: groupCount === 1
+        ? routeGeometry.durationMinutes
+        : multiRoute.totalDurationMinutes,
+      returnDistanceKm,
+      returnMinutes,
+      groups: (groupRoutes.length > 0
+        ? groupRoutes.map((group) => ({
+            groupIndex: group.groupIndex,
+            volunteerCount: group.volunteerCount,
+            candidateIds: [...group.candidateIds],
+            reservedCandidateIds: [...group.reservedCandidateIds],
+            targetCount: group.targetCount,
+            travelDistanceKm: group.travelDistanceKm,
+            travelMinutes: group.travelMinutes,
+            travelBudgetMinutes: group.travelBudgetMinutes,
+            withinBudget: group.withinBudget,
+            routeGeometry: group.routeGeometry,
+            operationalBudget: group.operationalBudget ?? null,
+          }))
+        : planning.groupPartition.groups.map((group) => ({
+            groupIndex: group.groupIndex,
+            volunteerCount: group.volunteerCount,
+            candidateIds: [...group.candidateIds],
+            reservedCandidateIds: [],
+            targetCount: group.targetCount,
+            travelDistanceKm: group.estimatedDistanceKm,
+            travelMinutes: group.estimatedDurationMinutes,
+            travelBudgetMinutes,
+            withinBudget: group.estimatedDurationMinutes <= travelBudgetMinutes,
+            routeGeometry,
+            operationalBudget: null,
+          }))),
+      dataStatus,
+      dataLayers,
+      sourceHealth,
+      prediction: predictionSummary,
+      durationModelVersion: operationalBudget.durationModelVersion,
+    }),
+  });
   const budgetRemainingMinutes = Math.max(
     0,
     travelBudgetMinutes - Math.max(0, routeGeometry.durationMinutes),
@@ -368,9 +436,7 @@ export function buildRouteRecommendationResponse(input: {
     return NextResponse.json(responsePayload);
   }
 
-  const stops = groupRoutes.length > 1
-    ? groupRoutes.flatMap(({ stops: groupStops }) => groupStops)
-    : applyOriginRouteGeometryLegs(buildStops(plannedStops), routeGeometry);
+  const stops = snapshotStops;
   const totalDistance = multiRoute.totalDistanceKm;
   const travelMinutes = Math.max(0, multiRoute.totalDurationMinutes);
   const averagePriority =

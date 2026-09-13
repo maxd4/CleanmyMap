@@ -112,7 +112,7 @@ describe("route planner V1", () => {
           reason: "no_active_calibrated_artifact",
           provenance: {
             source: "route-calibration",
-            contextVersion: "action-route-calibration-v1",
+            contextVersion: "action-route-calibration-v2",
             artifactVersion: null,
           },
         }),

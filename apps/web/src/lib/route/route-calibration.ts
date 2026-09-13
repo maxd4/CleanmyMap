@@ -3,11 +3,23 @@ import {
   CLEANUP_WORKLOAD_MODEL_VERSION,
   type CleanupWorkload,
 } from "./route-cleanup-workload";
+import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
+import type { RouteDataLayers, RouteDataStatus } from "./route-data-status";
+import type { RouteGeometry, RouteStop } from "./route-contract";
+import type { RoutePlanningMode } from "./route-planning-mode";
+import type { RoutePlannerOrigin } from "./route-planner";
+import type { RoutePredictionSummary } from "./route-predicted-targets";
+import type { RoutePickupPreference } from "./route-pickup-preference";
+import type { RouteOperationalBudget } from "./route-operational-budget";
 
 export const ROUTE_CLEANUP_DURATION_CONTRACT_VERSION =
   "route-cleanup-duration-v1" as const;
 export const ROUTE_CALIBRATION_CONTEXT_VERSION =
+  "action-route-calibration-v2" as const;
+export const ROUTE_CALIBRATION_CONTEXT_LEGACY_VERSION =
   "action-route-calibration-v1" as const;
+export const ROUTE_PLANNER_SNAPSHOT_VERSION =
+  "route-planner-snapshot-v1" as const;
 
 export const ROUTE_CALIBRATION_STATUSES = [
   "calibrated",
@@ -27,7 +39,10 @@ export type RouteCleanupDurationEstimate = {
   reason: string;
   provenance: {
     source: "route-calibration";
-    contextVersion: typeof ROUTE_CALIBRATION_CONTEXT_VERSION | null;
+    contextVersion:
+      | typeof ROUTE_CALIBRATION_CONTEXT_VERSION
+      | typeof ROUTE_CALIBRATION_CONTEXT_LEGACY_VERSION
+      | null;
     artifactVersion: string | null;
   };
 };
@@ -38,14 +53,77 @@ export type RouteCalibrationContextCandidate = {
   cleanupWorkload: CleanupWorkload;
 };
 
+export type RoutePlannerSnapshotGroup = {
+  groupIndex: number;
+  volunteerCount: number;
+  candidateIds: string[];
+  reservedCandidateIds: string[];
+  targetCount: number;
+  travelDistanceKm: number;
+  travelMinutes: number;
+  travelBudgetMinutes: number;
+  withinBudget: boolean;
+  routeGeometry: RouteGeometry;
+  operationalBudget: RouteOperationalBudget | null;
+};
+
+/**
+ * Exact planner output captured for the action handoff. This is evidence of
+ * what the planner knew and recommended, not a new calibration model.
+ */
+export type RoutePlannerSnapshot = {
+  version: typeof ROUTE_PLANNER_SNAPSHOT_VERSION;
+  generatedAt: string;
+  engineVersion: string;
+  cleanupWorkloadVersion: CleanupWorkload["modelVersion"];
+  modelVersions: {
+    planner: string;
+    cleanupWorkload: CleanupWorkload["modelVersion"];
+    prediction: string | null;
+    duration: string | null;
+  };
+  parameters: {
+    origin: RoutePlannerOrigin;
+    planningMode: RoutePlanningMode;
+    travelBudgetMinutes: number;
+    maxStops: number;
+    priorityVsTravel: number;
+    pickupPreference: RoutePickupPreference;
+    effectiveRiskFocus: "all" | "waste" | "cigaretteButts";
+    volunteers: number;
+    groupCount: number;
+  };
+  selectedCandidateIds: string[];
+  observedCandidateIds: string[];
+  predictedCandidateIds: string[];
+  selectedStops: RouteStop[];
+  distance: {
+    totalKm: number;
+    travelMinutes: number;
+    returnDistanceKm: number;
+    returnMinutes: number;
+  };
+  geometry: RouteGeometry;
+  groups: RoutePlannerSnapshotGroup[];
+  provenance: {
+    dataStatus: RouteDataStatus;
+    dataLayers: RouteDataLayers;
+    sourceHealth: UnifiedSourceHealth;
+    prediction: RoutePredictionSummary | null;
+  };
+};
+
 export type RouteCalibrationContext = {
-  version: typeof ROUTE_CALIBRATION_CONTEXT_VERSION;
+  version:
+    | typeof ROUTE_CALIBRATION_CONTEXT_VERSION
+    | typeof ROUTE_CALIBRATION_CONTEXT_LEGACY_VERSION;
   generatedAt: string;
   routeEngineVersion: string;
   cleanupWorkloadVersion: CleanupWorkload["modelVersion"];
   volunteersExpected: number;
   groupCount: number;
   candidates: RouteCalibrationContextCandidate[];
+  plannerSnapshot?: RoutePlannerSnapshot;
 };
 
 export type ApprovedActionForCalibration = {
@@ -117,6 +195,7 @@ export function buildRouteCalibrationContext(input: {
   volunteersExpected: number;
   groupCount: number;
   candidates: readonly RouteCalibrationContextCandidate[];
+  plannerSnapshot?: RoutePlannerSnapshot;
 }): RouteCalibrationContext {
   return {
     version: ROUTE_CALIBRATION_CONTEXT_VERSION,
@@ -130,6 +209,89 @@ export function buildRouteCalibrationContext(input: {
       family: candidate.family,
       cleanupWorkload: structuredClone(candidate.cleanupWorkload),
     })),
+    ...(input.plannerSnapshot
+      ? { plannerSnapshot: structuredClone(input.plannerSnapshot) }
+      : {}),
+  };
+}
+
+export function buildRoutePlannerSnapshot(input: {
+  generatedAt: string;
+  engineVersion: string;
+  selectedCandidates: readonly RouteCalibrationContextCandidate[];
+  selectedStops: readonly RouteStop[];
+  origin: RoutePlannerOrigin;
+  planningMode: RoutePlanningMode;
+  travelBudgetMinutes: number;
+  maxStops: number;
+  priorityVsTravel: number;
+  pickupPreference: RoutePickupPreference;
+  effectiveRiskFocus: "all" | "waste" | "cigaretteButts";
+  volunteers: number;
+  groupCount: number;
+  routeGeometry: RouteGeometry;
+  travelDistanceKm: number;
+  travelMinutes: number;
+  returnDistanceKm: number;
+  returnMinutes: number;
+  groups: readonly RoutePlannerSnapshotGroup[];
+  dataStatus: RouteDataStatus;
+  dataLayers: RouteDataLayers;
+  sourceHealth: UnifiedSourceHealth;
+  prediction: RoutePredictionSummary | null;
+  durationModelVersion?: string | null;
+}): RoutePlannerSnapshot {
+  const selectedCandidates = input.selectedCandidates.map((candidate) =>
+    structuredClone(candidate),
+  );
+  const observedCandidateIds = selectedCandidates
+    .filter((candidate) => candidate.family === "observed")
+    .map((candidate) => candidate.candidateId);
+  const predictedCandidateIds = selectedCandidates
+    .filter((candidate) => candidate.family === "predicted")
+    .map((candidate) => candidate.candidateId);
+  const predictionModelVersion = input.prediction?.modelVersion ?? null;
+
+  return {
+    version: ROUTE_PLANNER_SNAPSHOT_VERSION,
+    generatedAt: input.generatedAt,
+    engineVersion: input.engineVersion,
+    cleanupWorkloadVersion: CLEANUP_WORKLOAD_MODEL_VERSION,
+    modelVersions: {
+      planner: input.engineVersion,
+      cleanupWorkload: CLEANUP_WORKLOAD_MODEL_VERSION,
+      prediction: predictionModelVersion,
+      duration: input.durationModelVersion ?? null,
+    },
+    parameters: {
+      origin: structuredClone(input.origin),
+      planningMode: structuredClone(input.planningMode),
+      travelBudgetMinutes: input.travelBudgetMinutes,
+      maxStops: input.maxStops,
+      priorityVsTravel: input.priorityVsTravel,
+      pickupPreference: input.pickupPreference,
+      effectiveRiskFocus: input.effectiveRiskFocus,
+      volunteers: input.volunteers,
+      groupCount: input.groupCount,
+    },
+    selectedCandidateIds: selectedCandidates.map((candidate) => candidate.candidateId),
+    observedCandidateIds,
+    predictedCandidateIds,
+    selectedStops: input.selectedStops.map((stop) => structuredClone(stop)),
+    distance: {
+      totalKm: input.travelDistanceKm,
+      travelMinutes: input.travelMinutes,
+      returnDistanceKm: input.returnDistanceKm,
+      returnMinutes: input.returnMinutes,
+    },
+    geometry: structuredClone(input.routeGeometry),
+    groups: input.groups.map((group) => structuredClone(group)),
+    provenance: {
+      dataStatus: input.dataStatus,
+      dataLayers: structuredClone(input.dataLayers),
+      sourceHealth: structuredClone(input.sourceHealth),
+      prediction: input.prediction ? structuredClone(input.prediction) : null,
+    },
   };
 }
 
@@ -175,9 +337,9 @@ function buildCalibrationDatasetEntry(
   }
   if (
     !finitePositive(action.durationMinutes) ||
-    !finiteNonNegative(action.volunteersCount) ||
-    !finiteNonNegative(action.wasteKg) ||
-    !finiteNonNegative(action.cigaretteButts)
+    !finiteNonNegativeNullable(action.volunteersCount) ||
+    !finiteNonNegativeNullable(action.wasteKg) ||
+    !finiteNonNegativeNullable(action.cigaretteButts)
   ) {
     return { status: "excluded", actionId: action.id, reason: "duration_unavailable" };
   }
@@ -311,7 +473,8 @@ export function isRouteCalibrationContext(value: unknown): value is RouteCalibra
   if (!value || typeof value !== "object") return false;
   const context = value as Partial<RouteCalibrationContext>;
   return (
-    context.version === ROUTE_CALIBRATION_CONTEXT_VERSION &&
+    (context.version === ROUTE_CALIBRATION_CONTEXT_VERSION ||
+      context.version === ROUTE_CALIBRATION_CONTEXT_LEGACY_VERSION) &&
     isIsoDate(context.generatedAt) &&
     typeof context.routeEngineVersion === "string" &&
     context.routeEngineVersion.length > 0 &&
@@ -325,8 +488,224 @@ export function isRouteCalibrationContext(value: unknown): value is RouteCalibra
     context.groupCount >= 1 &&
     context.groupCount <= 12 &&
     Array.isArray(context.candidates) &&
-    context.candidates.every(isRouteCalibrationCandidate)
+    context.candidates.every(isRouteCalibrationCandidate) &&
+    (context.plannerSnapshot === undefined ||
+      isRoutePlannerSnapshot(context.plannerSnapshot))
   );
+}
+
+function isRoutePlannerSnapshot(value: unknown): value is RoutePlannerSnapshot {
+  if (!value || typeof value !== "object") return false;
+  const snapshot = value as Partial<RoutePlannerSnapshot>;
+  const models = snapshot.modelVersions;
+  const parameters = snapshot.parameters;
+  const distance = snapshot.distance;
+  return (
+    snapshot.version === ROUTE_PLANNER_SNAPSHOT_VERSION &&
+    isIsoDate(snapshot.generatedAt) &&
+    typeof snapshot.engineVersion === "string" &&
+    snapshot.engineVersion.length > 0 &&
+    snapshot.cleanupWorkloadVersion === CLEANUP_WORKLOAD_MODEL_VERSION &&
+    Boolean(models) &&
+    typeof models?.planner === "string" &&
+    models.planner.length > 0 &&
+    models.cleanupWorkload === CLEANUP_WORKLOAD_MODEL_VERSION &&
+    (models.prediction === null || typeof models.prediction === "string") &&
+    (models.duration === null || typeof models.duration === "string") &&
+    Boolean(parameters) &&
+    isRoutePlannerOrigin(parameters?.origin) &&
+    isRoutePlanningMode(parameters?.planningMode) &&
+    finiteNonNegative(parameters?.travelBudgetMinutes) &&
+    finiteIntegerBetween(parameters?.maxStops, 1, 200) &&
+    finiteNumberBetween(parameters?.priorityVsTravel, 0, 100) &&
+    ["balanced", "waste", "cigarette_butts"].includes(
+      parameters?.pickupPreference ?? "",
+    ) &&
+    ["all", "waste", "cigaretteButts"].includes(
+      parameters?.effectiveRiskFocus ?? "",
+    ) &&
+    finiteIntegerBetween(parameters?.volunteers, 0, 500) &&
+    finiteIntegerBetween(parameters?.groupCount, 1, 12) &&
+    Array.isArray(snapshot.selectedCandidateIds) &&
+    snapshot.selectedCandidateIds.every(isNonEmptyString) &&
+    Array.isArray(snapshot.observedCandidateIds) &&
+    snapshot.observedCandidateIds.every(isNonEmptyString) &&
+    Array.isArray(snapshot.predictedCandidateIds) &&
+    snapshot.predictedCandidateIds.every(isNonEmptyString) &&
+    Array.isArray(snapshot.selectedStops) &&
+    snapshot.selectedStops.every(isRouteStop) &&
+    Boolean(distance) &&
+    finiteNonNegative(distance?.totalKm) &&
+    finiteNonNegative(distance?.travelMinutes) &&
+    finiteNonNegative(distance?.returnDistanceKm) &&
+    finiteNonNegative(distance?.returnMinutes) &&
+    isRouteGeometry(snapshot.geometry) &&
+    Array.isArray(snapshot.groups) &&
+    snapshot.groups.every(isRoutePlannerSnapshotGroup) &&
+    isRoutePlannerSnapshotProvenance(snapshot.provenance)
+  );
+}
+
+function isRoutePlannerSnapshotGroup(value: unknown): value is RoutePlannerSnapshotGroup {
+  if (!value || typeof value !== "object") return false;
+  const group = value as Partial<RoutePlannerSnapshotGroup>;
+  return (
+    finiteIntegerBetween(group.groupIndex, 1, 12) &&
+    finiteIntegerBetween(group.volunteerCount, 0, 500) &&
+    Array.isArray(group.candidateIds) &&
+    group.candidateIds.every(isNonEmptyString) &&
+    Array.isArray(group.reservedCandidateIds) &&
+    group.reservedCandidateIds.every(isNonEmptyString) &&
+    finiteIntegerBetween(group.targetCount, 0, 200) &&
+    finiteNonNegative(group.travelDistanceKm) &&
+    finiteNonNegative(group.travelMinutes) &&
+    finiteNonNegative(group.travelBudgetMinutes) &&
+    typeof group.withinBudget === "boolean" &&
+    isRouteGeometry(group.routeGeometry) &&
+    (group.operationalBudget === null ||
+      Boolean(group.operationalBudget && typeof group.operationalBudget === "object"))
+  );
+}
+
+function isRoutePlannerSnapshotProvenance(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const provenance = value as Partial<RoutePlannerSnapshot["provenance"]>;
+  const sourceHealth = provenance.sourceHealth;
+  const dataLayers = provenance.dataLayers;
+  const prediction = provenance.prediction;
+  return (
+    ["complete", "empty", "partial", "unavailable"].includes(
+      provenance.dataStatus ?? "",
+    ) &&
+    Boolean(dataLayers) &&
+    ["complete", "empty", "partial", "unavailable"].includes(dataLayers?.observed ?? "") &&
+    ["available", "partial", "unavailable"].includes(dataLayers?.prediction ?? "") &&
+    ["ok", "empty", "degraded"].includes(dataLayers?.recommendation ?? "") &&
+    Boolean(sourceHealth) &&
+    typeof sourceHealth?.partial === "boolean" &&
+    Array.isArray(sourceHealth?.failedSources) &&
+    sourceHealth.failedSources.every(isNonEmptyString) &&
+    Array.isArray(sourceHealth?.availableSources) &&
+    sourceHealth.availableSources.every(isNonEmptyString) &&
+    Array.isArray(sourceHealth?.warnings) &&
+    sourceHealth.warnings.every((warning) => typeof warning === "string") &&
+    (prediction === null ||
+      (typeof prediction === "object" &&
+        ["available", "partial", "unavailable"].includes(prediction.status ?? "") &&
+        (prediction.modelVersion === null || typeof prediction.modelVersion === "string") &&
+        Array.isArray(prediction.selectedCandidateIds) &&
+        prediction.selectedCandidateIds.every(isNonEmptyString)))
+  );
+}
+
+function isRouteStop(value: unknown): value is RouteStop {
+  if (!value || typeof value !== "object") return false;
+  const stop = value as Partial<RouteStop>;
+  return (
+    isNonEmptyString(stop.id) &&
+    typeof stop.label === "string" &&
+    typeof stop.latitude === "number" &&
+    Number.isFinite(stop.latitude) &&
+    typeof stop.longitude === "number" &&
+    Number.isFinite(stop.longitude) &&
+    finiteNonNegative(stop.segmentKm) &&
+    finiteNonNegative(stop.estimatedMinutes) &&
+    typeof stop.priorityReason === "string" &&
+    finiteNumberBetween(stop.score, 0, 100)
+  );
+}
+
+function isRoutePlannerOrigin(value: unknown): value is RoutePlannerOrigin {
+  if (!value || typeof value !== "object") return false;
+  const origin = value as Partial<RoutePlannerOrigin>;
+  return (
+    typeof origin.latitude === "number" &&
+    Number.isFinite(origin.latitude) &&
+    origin.latitude >= -90 &&
+    origin.latitude <= 90 &&
+    typeof origin.longitude === "number" &&
+    Number.isFinite(origin.longitude) &&
+    origin.longitude >= -180 &&
+    origin.longitude <= 180 &&
+    ["browser", "map", "approximate_saved_area"].includes(origin.source ?? "")
+  );
+}
+
+function isRoutePlanningMode(value: unknown): value is RoutePlanningMode {
+  if (!value || typeof value !== "object") return false;
+  const mode = value as Partial<RoutePlanningMode>;
+  return mode.type === "free" ||
+    (mode.type === "event-centered" && isNonEmptyString(mode.eventId));
+}
+
+function isRouteGeometry(value: unknown): value is RouteGeometry {
+  if (!value || typeof value !== "object") return false;
+  const geometry = value as Partial<RouteGeometry>;
+  return (
+    geometry.isLoop === true &&
+    (geometry.origin === null || isCoordinatePair(geometry.origin)) &&
+    Array.isArray(geometry.coordinates) &&
+    geometry.coordinates.every(isCoordinatePair) &&
+    finiteNonNegative(geometry.distanceKm) &&
+    finiteNonNegative(geometry.durationMinutes) &&
+    Array.isArray(geometry.legs) &&
+    geometry.legs.every((leg) =>
+      Boolean(leg) &&
+      finiteIntegerBetween(leg?.fromStopIndex, 0, 500) &&
+      finiteIntegerBetween(leg?.toStopIndex, 0, 500) &&
+      finiteNonNegative(leg?.distanceKm) &&
+      finiteNonNegative(leg?.estimatedMinutes),
+    ) &&
+    ["osrm", "fossgis-osrm", "none"].includes(geometry.provider ?? "") &&
+    (geometry.profile === null || geometry.profile === "foot") &&
+    ["network", "fallback"].includes(geometry.mode ?? "") &&
+    typeof geometry.estimated === "boolean" &&
+    (geometry.returnLeg === null ||
+      (typeof geometry.returnLeg === "object" &&
+        finiteIntegerBetween(geometry.returnLeg.fromStopIndex, 0, 500) &&
+        finiteIntegerBetween(geometry.returnLeg.toStopIndex, 0, 500) &&
+        finiteNonNegative(geometry.returnLeg.distanceKm) &&
+        finiteNonNegative(geometry.returnLeg.estimatedMinutes)))
+  );
+}
+
+function isCoordinatePair(value: unknown): value is [number, number] {
+  return Array.isArray(value) &&
+    value.length === 2 &&
+    typeof value[0] === "number" &&
+    Number.isFinite(value[0]) &&
+    typeof value[1] === "number" &&
+    Number.isFinite(value[1]);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
+function finiteNonNegative(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0;
+}
+
+function finiteIntegerBetween(
+  value: unknown,
+  minimum: number,
+  maximum: number,
+): value is number {
+  return typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= minimum &&
+    value <= maximum;
+}
+
+function finiteNumberBetween(
+  value: unknown,
+  minimum: number,
+  maximum: number,
+): value is number {
+  return typeof value === "number" &&
+    Number.isFinite(value) &&
+    value >= minimum &&
+    value <= maximum;
 }
 
 function isRouteCalibrationCandidate(value: unknown): value is RouteCalibrationContextCandidate {
@@ -422,6 +801,6 @@ function finitePositive(value: number | null): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
-function finiteNonNegative(value: number | null): value is number {
+function finiteNonNegativeNullable(value: number | null): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
