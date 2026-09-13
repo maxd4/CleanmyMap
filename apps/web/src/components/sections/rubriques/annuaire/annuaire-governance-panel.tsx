@@ -141,8 +141,7 @@ export function AnnuaireGovernancePanel({
           {pendingEntries.map((entry) => (
             <motion.li 
               key={`pending-${entry.id}`} 
-              whileHover={{ x: 4 }}
-              className="rounded-2xl border border-white/5 bg-slate-950/40 p-4 transition-all hover:bg-slate-950/60"
+              className="rounded-2xl border border-white/5 bg-slate-950/40 p-4 transition-[background-color,border-color] hover:bg-slate-950/60"
             >
               <p className="text-sm font-black text-white">{entry.name}</p>
               <div className="mt-2 flex items-center gap-3 text-[10px] font-bold text-slate-500">

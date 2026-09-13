@@ -7,6 +7,7 @@ import { Download, Share2, ArrowLeft, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { ImpactCard } from "@/components/profil/impact-card";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import {
@@ -222,7 +223,7 @@ export default function ImpactProfilePage() {
       <header className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <Link
           href={DASHBOARD_ROUTE}
-          className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-red-400/40 transition-all hover:text-red-400"
+          className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-red-400/40 transition-colors hover:text-red-400"
         >
           <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />
           Retour au cockpit
@@ -277,12 +278,13 @@ export default function ImpactProfilePage() {
           </div>
 
           <div className="flex flex-col gap-4 sm:flex-row">
-            <button
+            <CmmButton
               type="button"
               onClick={handleDownload}
               disabled={Boolean(activeCardAction)}
+              tone="destructive"
               className={cn(
-                "flex-1 flex items-center justify-center gap-3 rounded-2xl bg-red-600 px-8 py-5 text-sm font-black uppercase tracking-widest text-white shadow-2xl shadow-red-600/20 transition-all hover:scale-[1.02] hover:bg-red-500 active:scale-[0.98] disabled:opacity-50",
+                "flex-1 flex items-center justify-center gap-3 rounded-2xl bg-red-600 px-8 py-5 text-sm font-black uppercase tracking-widest text-white shadow-2xl shadow-red-600/20 hover:bg-red-500 disabled:opacity-50",
                 classes.shadow,
               )}
             >
@@ -290,18 +292,19 @@ export default function ImpactProfilePage() {
               {activeCardAction === "export"
                 ? "Génération de la carte..."
                 : "Exporter la carte"}
-            </button>
-            <button
+            </CmmButton>
+            <CmmButton
               type="button"
               onClick={handleShare}
               disabled={Boolean(activeCardAction)}
-              className="flex-1 flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-sm font-black uppercase tracking-widest text-red-100/60 transition-all hover:bg-white/10 hover:text-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+              tone="secondary"
+              className="flex-1 flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-8 py-5 text-sm font-black uppercase tracking-widest text-red-100/60 transition-[background-color,color] hover:bg-white/10 hover:text-red-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Share2 size={18} />
               {activeCardAction === "share"
                 ? "Préparation du partage..."
                 : "Partager la carte"}
-            </button>
+            </CmmButton>
           </div>
 
           <div className="min-h-6" aria-live="polite" aria-atomic="true">

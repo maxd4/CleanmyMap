@@ -86,7 +86,7 @@ export const WeatherTabs = memo(function WeatherTabs({
             type="button"
             onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "relative flex min-h-[4.5rem] flex-1 items-center gap-3 px-5 py-4 text-left transition-all duration-300",
+              "relative flex min-h-[4.5rem] flex-1 items-center gap-3 px-5 py-4 text-left transition-[color,background-color,border-color] duration-300",
               isActive ? "text-emerald-800" : "text-slate-500 hover:text-slate-800",
             )}
           >
@@ -95,7 +95,7 @@ export const WeatherTabs = memo(function WeatherTabs({
             )}
             <span
               className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border transition-all",
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border transition-[color,background-color,border-color,box-shadow]",
                 isActive
                   ? "border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm"
                   : "border-slate-200 bg-slate-50 text-slate-400",
@@ -160,7 +160,7 @@ export const WeatherZonePicker = memo(function WeatherZonePicker({
             tone={zoneMode === "auto" ? "primary" : "tertiary"}
             variant="pill"
             className={cn(
-              "px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all",
+              "px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-[color,background-color,border-color,box-shadow]",
               zoneMode === "auto" ? "bg-blue-500/20 border-blue-500/50 text-white shadow-xl" : "bg-white/5 border-white/5 text-slate-500"
             )}
           >
@@ -171,7 +171,7 @@ export const WeatherZonePicker = memo(function WeatherZonePicker({
             tone={zoneMode === "manual" ? "primary" : "tertiary"}
             variant="pill"
             className={cn(
-              "px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all",
+              "px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-[color,background-color,border-color,box-shadow]",
               zoneMode === "manual" ? "bg-blue-500/20 border-blue-500/50 text-white shadow-xl" : "bg-white/5 border-white/5 text-slate-500"
             )}
           >
@@ -184,7 +184,7 @@ export const WeatherZonePicker = memo(function WeatherZonePicker({
             value={selectedZone.id}
             onChange={(e) => setManualZoneId(e.target.value)}
             disabled={zoneMode === "auto"}
-            className="w-full bg-slate-950/50 border border-white/5 rounded-2xl px-6 py-5 text-sm font-black text-white appearance-none outline-none focus:border-blue-500/50 transition-all disabled:opacity-50"
+            className="w-full bg-slate-950/50 border border-white/5 rounded-2xl px-6 py-5 text-sm font-black text-white appearance-none outline-none focus:border-blue-500/50 transition-[border-color,background-color] disabled:opacity-50"
           >
             {OPERATIONAL_ZONES.map((zone) => (
               <option key={zone.id} value={zone.id} className="bg-slate-900">
@@ -297,7 +297,7 @@ export const WeatherForecast = memo(function WeatherForecast({
             tone={activePeriod === p.id ? "primary" : "tertiary"}
             variant="pill"
             className={cn(
-              "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all",
+              "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-[color,background-color,border-color,box-shadow]",
               activePeriod === p.id ? "bg-white text-slate-950 shadow-xl" : "text-slate-500 hover:text-white"
             )}
           >
@@ -317,7 +317,7 @@ export const WeatherForecast = memo(function WeatherForecast({
             transition={{ delay: i * 0.1 }}
             themeColor={point.temp > 20 ? "amber" : "blue"}
             withTopBar={false}
-            className="p-8 text-center space-y-6 group hover:scale-105 transition-all"
+            className="p-8 text-center space-y-6 group transition-[box-shadow,border-color,background-color] hover:shadow-lg"
           >
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-blue-400 transition-colors relative z-10">
               {point.time || point.day}
@@ -365,7 +365,7 @@ export const WeatherActionWindows = memo(function WeatherActionWindows({
               key={`recommended-${i}`}
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
-              className="p-6 rounded-[2rem] border border-white/5 bg-slate-900/20 hover:bg-white/5 transition-all flex items-center justify-between shadow-xl"
+              className="p-6 rounded-[2rem] border border-white/5 bg-slate-900/20 hover:bg-white/5 transition-[background-color,border-color] flex items-center justify-between shadow-xl"
             >
               <div className="flex items-center gap-6">
                 <div className={cn(
@@ -392,7 +392,7 @@ export const WeatherActionWindows = memo(function WeatherActionWindows({
                   </div>
                 </div>
               </div>
-              <CmmButton tone="secondary" variant="pill" className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all">
+              <CmmButton tone="secondary" variant="pill" className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white">
                 {fr ? "Planifier" : "Schedule"}
               </CmmButton>
             </motion.div>
@@ -408,7 +408,7 @@ export const WeatherActionWindows = memo(function WeatherActionWindows({
               key={`avoid-${i}`}
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
-              className="p-6 rounded-[2rem] border border-white/5 bg-slate-900/20 hover:bg-white/5 transition-all flex items-center justify-between shadow-xl opacity-80"
+              className="p-6 rounded-[2rem] border border-white/5 bg-slate-900/20 hover:bg-white/5 transition-[background-color,border-color] flex items-center justify-between shadow-xl opacity-80"
             >
               <div className="flex items-center gap-6">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
@@ -472,7 +472,7 @@ export const KitConfiguration = memo(function KitConfiguration({
               tone={packType === type ? "primary" : "tertiary"}
               variant="pill"
               className={cn(
-                "flex flex-col items-center gap-3 rounded-2xl border p-6 transition-all duration-300",
+                "flex flex-col items-center gap-3 rounded-2xl border p-6 transition-[color,background-color,border-color,box-shadow] duration-300",
                 packType === type 
                   ? "border-amber-500/50 bg-amber-500/10 text-white shadow-xl shadow-amber-500/10" 
                   : "border-white/5 bg-white/5 text-slate-500 hover:bg-white/10 hover:text-slate-300"
@@ -495,7 +495,7 @@ export const KitConfiguration = memo(function KitConfiguration({
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 group hover:border-amber-500/20 transition-all"
+                className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 group hover:border-amber-500/20 transition-[border-color,background-color]"
               >
                 <div className="h-1.5 w-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                 <span className="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">{item}</span>
@@ -528,14 +528,14 @@ export const KitChecklist = memo(function KitChecklist({
           <label 
             key={item}
             className={cn(
-              "group flex items-center gap-6 p-6 rounded-[2rem] border transition-all cursor-pointer shadow-xl",
+              "group flex items-center gap-6 p-6 rounded-[2rem] border transition-[background-color,border-color,box-shadow] cursor-pointer shadow-xl",
               checkedItems[item] 
                 ? "bg-emerald-500/10 border-emerald-500/30" 
                 : "bg-slate-900/40 border-white/5 hover:border-white/10"
             )}
           >
             <div className={cn(
-              "w-8 h-8 rounded-xl border flex items-center justify-center transition-all",
+              "w-8 h-8 rounded-xl border flex items-center justify-center transition-[color,background-color,border-color]",
               checkedItems[item] ? "bg-emerald-500 border-emerald-500 text-slate-950" : "bg-white/5 border-white/20 text-transparent"
             )}>
               <CheckCircle2 size={18} />

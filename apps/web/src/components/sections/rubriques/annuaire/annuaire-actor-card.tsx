@@ -46,7 +46,7 @@ export function AnnuaireActorCard({
     <CmmCard
       variant="elevated"
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-[2.5rem] border transition-all duration-500 backdrop-blur-3xl p-8",
+        "group relative flex flex-col overflow-hidden rounded-[2.5rem] border transition-[background-color,border-color,box-shadow] duration-500 backdrop-blur-3xl p-8",
         isFeatured
           ? "bg-violet-900/40 border-violet-500/40 shadow-[0_0_50px_rgba(139,92,246,0.15)] ring-1 ring-violet-500/50"
           : "bg-slate-900/40 border-white/10 hover:bg-white/[0.05] hover:border-white/20 shadow-2xl"
@@ -267,7 +267,7 @@ export function AnnuaireActorCard({
         <CmmButton
           tone="secondary"
           variant="default"
-          className="flex-1 h-12 rounded-xl bg-white/5 border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all shadow-2xl"
+          className="flex-1 h-12 rounded-xl bg-white/5 border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 shadow-2xl"
           onClick={() => onFocusMap(entry.id)}
         >
           <MapPin size={14} className="mr-2 text-violet-400" />
@@ -278,7 +278,7 @@ export function AnnuaireActorCard({
           <CmmButton
             tone="primary"
             variant="default"
-            className="flex-1 h-12 rounded-xl bg-violet-600 border-none text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-violet-500 transition-all shadow-[0_10px_30px_rgba(139,92,246,0.2)] group/btn"
+            className="flex-1 h-12 rounded-xl bg-violet-600 border-none text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-violet-500 shadow-[0_10px_30px_rgba(139,92,246,0.2)] group/btn"
             asChild
           >
             <a href={entry.primaryChannel.url} target="_blank" rel="noopener noreferrer">

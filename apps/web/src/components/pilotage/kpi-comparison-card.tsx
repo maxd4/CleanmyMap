@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, Minus, Info } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,11 +39,7 @@ export function KpiComparisonCard({
   icon: Icon = Info,
 }: KpiComparisonCardProps) {
   return (
-    <motion.article 
-      whileHover={{ scale: 1.02, y: -4 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className="group relative rounded-[2.5rem] border border-white/10 bg-slate-900/40 p-8 shadow-2xl backdrop-blur-3xl transition-all duration-500 hover:bg-white/[0.03] hover:border-violet-500/30 overflow-hidden"
-    >
+    <article className="group relative rounded-[2.5rem] border border-white/10 bg-slate-900/40 p-8 shadow-2xl backdrop-blur-3xl transition-[border-color,background-color,box-shadow] duration-500 hover:bg-white/[0.03] hover:border-violet-500/30 overflow-hidden">
       {/* Background Accent Glow */}
       <div className={cn(
         "absolute -right-4 -top-4 h-24 w-24 rounded-full blur-[64px] opacity-10 transition-opacity group-hover:opacity-20",
@@ -92,13 +87,13 @@ export function KpiComparisonCard({
       </div>
 
       {hint && (
-        <div className="mt-6 flex items-start gap-2 rounded-2xl bg-white/[0.02] p-4 border border-white/5 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+          <div className="mt-6 flex items-start gap-2 rounded-2xl bg-white/[0.02] p-4 border border-white/5 opacity-0 group-hover:opacity-100 transition-[opacity,transform] translate-y-2 group-hover:translate-y-0">
           <Info size={12} className="text-violet-400 shrink-0 mt-0.5" />
           <p className="text-[10px] font-bold text-slate-400 leading-relaxed italic">
             {hint}
           </p>
         </div>
       )}
-    </motion.article>
+    </article>
   );
 }

@@ -99,7 +99,7 @@ export function BusinessAlertsPanel() {
               <li
                 key={alert.id}
                 className={cn(
-                  "group/item rounded-2xl border p-4 transition-all hover:scale-[1.02]",
+                  "rounded-2xl border p-4 transition-[box-shadow,border-color] hover:shadow-md",
                   severityClasses(alert.severity)
                 )}
               >

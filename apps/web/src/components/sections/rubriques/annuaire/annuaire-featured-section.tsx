@@ -26,7 +26,7 @@ export function AnnuaireFeaturedSection({ entries, onFocusMap, fr }: AnnuaireFea
           >
             <CmmCard 
               variant="elevated" 
-              className="group relative flex h-full flex-col overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl transition-all duration-700 hover:bg-white/[0.03] hover:border-violet-500/30"
+              className="group relative flex h-full flex-col overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl transition-[background-color,border-color,box-shadow] duration-700 hover:bg-white/[0.03] hover:border-violet-500/30"
             >
               {/* Premium Glass Badge */}
               <div className="absolute top-8 right-8 z-10">
@@ -67,7 +67,7 @@ export function AnnuaireFeaturedSection({ entries, onFocusMap, fr }: AnnuaireFea
 
                 <div className="flex flex-wrap gap-2">
                   {entry.tags?.slice(1, 4).map(tag => (
-                  <span key={tag} className="rounded-xl border border-white/5 bg-white/5 px-3 py-1.5 text-[9px] font-black tracking-widest text-slate-500 transition-all group-hover:border-violet-500/20 group-hover:text-violet-300">
+                  <span key={tag} className="rounded-xl border border-white/5 bg-white/5 px-3 py-1.5 text-[9px] font-black tracking-widest text-slate-500 transition-[color,border-color] group-hover:border-violet-500/20 group-hover:text-violet-300">
                       {tag.toUpperCase()}
                     </span>
                   ))}
@@ -95,7 +95,7 @@ export function AnnuaireFeaturedSection({ entries, onFocusMap, fr }: AnnuaireFea
                 <CmmButton 
                   tone="primary"
                   variant="default"
-                  className="group/btn h-14 w-full rounded-2xl border-none bg-violet-600 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all duration-500 hover:bg-violet-500 hover:scale-[1.02]"
+                  className="group/btn h-14 w-full rounded-2xl border-none bg-violet-600 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl hover:bg-violet-500"
                   onClick={() => onFocusMap(entry.id)}
                 >
                   <span>{fr ? "Voir sur la carte" : "View on map"}</span>

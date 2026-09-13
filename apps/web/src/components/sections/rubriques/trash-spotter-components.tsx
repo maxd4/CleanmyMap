@@ -86,7 +86,6 @@ export const SpotterRecentList = memo(function SpotterRecentList({
           return (
             <motion.article
               key={spot.id}
-              whileHover={{ y: -2 }}
               className="flex items-start gap-4 rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_12px_30px_-24px_rgba(15,23,42,0.26)]"
             >
               <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700">

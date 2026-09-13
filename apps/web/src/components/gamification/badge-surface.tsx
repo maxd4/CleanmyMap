@@ -71,8 +71,8 @@ const VARIANT_CLASSNAMES: Record<
  NonNullable<BadgeSurfaceProps["variant"]>,
  string
 > = {
- pill:"inline-flex items-center gap-2 rounded-full border px-3 py-1.5 cmm-text-caption font-semibold tracking-tight backdrop-blur-sm transition-transform hover:scale-[1.02]",
- tile:"inline-flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left cmm-text-small font-semibold tracking-tight backdrop-blur-sm transition-transform hover:scale-[1.02]",
+ pill:"inline-flex items-center gap-2 rounded-full border px-3 py-1.5 cmm-text-caption font-semibold tracking-tight backdrop-blur-sm",
+ tile:"inline-flex w-full items-center gap-3 rounded-2xl border px-4 py-3 text-left cmm-text-small font-semibold tracking-tight backdrop-blur-sm",
  orb:"inline-flex items-center justify-center rounded-full border p-2 backdrop-blur-sm transition-transform hover:scale-[1.04]",
 };
 

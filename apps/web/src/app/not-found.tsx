@@ -2,6 +2,7 @@
 
 import Link from"next/link";
 import { Globe, Home, ArrowLeft } from"lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 export default function NotFound() {
  return (
@@ -30,21 +31,23 @@ export default function NotFound() {
 
  {/* Actions */}
  <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
- <Link 
- href="/"
- className="flex items-center gap-2 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-bold rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl hover:shadow-emerald-500/20"
- >
+ <CmmButton asChild tone="primary" variant="default" className="flex items-center gap-2 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-bold rounded-2xl shadow-xl hover:shadow-emerald-500/20">
+ <Link href="/">
  <Home size={18} />
  RETOUR À L&apos;ACCUEIL
  </Link>
+ </CmmButton>
  
- <button 
+ <CmmButton
+ type="button"
  onClick={() => window.history.back()}
- className="flex items-center gap-2 px-8 py-4 bg-white dark:bg-slate-800 cmm-text-primary dark:text-white border font-bold rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-lg"
+ tone="secondary"
+ variant="default"
+ className="flex items-center gap-2 px-8 py-4 bg-white dark:bg-slate-800 cmm-text-primary dark:text-white border font-bold rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 shadow-lg"
  >
  <ArrowLeft size={18} />
  PAGE PRÉCÉDENTE
- </button>
+ </CmmButton>
  </div>
  </div>
 

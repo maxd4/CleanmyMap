@@ -12,6 +12,7 @@ import { QuestionnaireCard } from "./feedback/questionnaire-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { QUESTIONNAIRES } from "./feedback/questionnaire-config";
 import { resolvePublicContactEmail } from "@/lib/email-config";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 function FeedbackDiscussionMode({
   fr,
@@ -110,13 +111,17 @@ function FeedbackDiscussionMode({
               </div>
             </div>
 
-          <a
-            href={`mailto:${contactEmail}`}
-            className="relative z-10 mt-5 inline-flex h-12 items-center gap-3 rounded-full bg-pink-500 px-6 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_40px_-22px_rgba(236,72,153,0.9)] transition-all hover:scale-[1.02] active:scale-[0.98]"
+          <CmmButton
+            asChild
+            tone="important"
+            variant="pill"
+            className="relative z-10 mt-5 h-12 px-6 text-[11px] font-black uppercase tracking-[0.18em]"
           >
+            <a href={`mailto:${contactEmail}`}>
             {fr ? "Écrire un mail" : "Write an email"}
             <ArrowRight size={18} />
-          </a>
+            </a>
+          </CmmButton>
         </div>
 
         <div className="rounded-[1.5rem] border border-rose-200/70 bg-white/92 p-5 shadow-sm">

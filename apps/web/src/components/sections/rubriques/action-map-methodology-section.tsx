@@ -13,6 +13,7 @@ import { PROJECTION_CONFIDENCE_CONSTANTS } from "@/lib/actions/pollution/project
 import {
   buildActionPollutionProjectionMethodology,
 } from "@/lib/actions/pollution/revisit-priority";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 export type OpenSourceDoc = {
   id: string;
@@ -39,7 +40,7 @@ export function ReferenceDocCard({
   isFrench: boolean;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-white/5 p-8 transition-all duration-500 hover:scale-[1.01]">
+    <div className="relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-white/5 p-8">
       <div className="mb-6 flex items-start gap-5">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-400/10 text-red-400 shadow-inner">
           {doc.icon}
@@ -59,24 +60,18 @@ export function ReferenceDocCard({
           </span>
         ) : null}
       </div>
-      <a
-        href={doc.href}
-        className="mt-6 inline-flex w-full items-center justify-center gap-3 rounded-full bg-red-500 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg transition-all hover:bg-red-400"
-      >
+      <CmmButton href={doc.href} tone="destructive" variant="pill" width="wide" className="mt-6 text-[10px] font-black uppercase tracking-widest">
         <ExternalLink size={14} />
         {isFrench ? "Consulter le fichier" : "Open file"}
-      </a>
-      <a
-        href={doc.secondaryAction?.href ?? schemaHref}
-        className="mt-3 inline-flex w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg transition-all hover:border-white/20 hover:bg-white/10"
-      >
+      </CmmButton>
+      <CmmButton href={doc.secondaryAction?.href ?? schemaHref} tone="tertiary" variant="pill" width="wide" className="mt-3 text-[10px] font-black uppercase tracking-widest">
         <ExternalLink size={14} />
         {doc.secondaryAction
           ? doc.secondaryAction.label[isFrench ? "fr" : "en"]
           : isFrench
             ? "Voir le schéma"
             : "View schema"}
-      </a>
+      </CmmButton>
     </div>
   );
 }

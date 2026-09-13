@@ -98,7 +98,7 @@ export function KpiWindowsPanel({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
-              className="group flex flex-col rounded-[2.5rem] border border-white/5 bg-white/[0.02] p-8 transition-all hover:bg-white/[0.05] hover:border-white/10 shadow-inner"
+              className="group flex flex-col rounded-[2.5rem] border border-white/5 bg-white/[0.02] p-8 transition-[background-color,border-color] hover:bg-white/[0.05] hover:border-white/10 shadow-inner"
             >
               <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-3">
@@ -109,7 +109,7 @@ export function KpiWindowsPanel({
                 </div>
                 
                 <div className={cn(
-                  "flex items-center gap-2 rounded-full border px-4 py-1.5 text-[9px] font-black uppercase tracking-widest shadow-lg transition-transform group-hover:scale-105",
+                  "flex items-center gap-2 rounded-full border px-4 py-1.5 text-[9px] font-black uppercase tracking-widest shadow-lg",
                   tone.bg,
                   tone.border,
                   tone.text

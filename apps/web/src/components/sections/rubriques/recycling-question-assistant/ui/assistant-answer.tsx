@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { ArrowRight, MapPin, Info } from "lucide-react";
 import { type Answer, type AssistantCopy } from "../assistant-constants";
 import { toneClasses } from "../assistant-utils";
 import { cn } from "@/lib/utils";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 interface AssistantAnswerProps {
   answer: Answer;
@@ -78,15 +78,18 @@ export function AssistantAnswer({ answer, copy }: AssistantAnswerProps) {
             {copy.footerNote}
           </p>
 
-          <Link
+          <CmmButton
             href="/learn/bonnes-pratiques#ressources-utiles"
-            className="group flex items-center justify-between w-full h-14 rounded-2xl bg-white px-6 py-2.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-950 transition-all hover:bg-emerald-400 hover:scale-[1.02] active:scale-[0.98]"
+            tone="secondary"
+            variant="pill"
+            width="wide"
+            className="group flex items-center justify-between w-full h-14 rounded-2xl bg-white px-6 py-2.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-950 hover:bg-emerald-400"
           >
             <span className="flex items-center gap-2">
               {copy.cta}
             </span>
             <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-          </Link>
+          </CmmButton>
         </div>
       </div>
     </div>
