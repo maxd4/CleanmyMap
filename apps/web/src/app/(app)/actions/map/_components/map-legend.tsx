@@ -189,7 +189,7 @@ export function MapLegend({ scoreScope = "global" }: { scoreScope?: PollutionSco
               title={isDepartmentScope ? "Comparaison départementale" : "Pollution projetée"}
               intro={
                 isDepartmentScope
-                  ? "100 % correspond à l'intensité de collecte de référence la plus élevée du département, normalisée par bénévole-heure. Score relatif : ne comparez directement que les actions d'un même département."
+                  ? "100 % correspond à l'intensité de collecte de référence la plus élevée du département, normalisée par bénévole. Score relatif : ne comparez directement que les actions d'un même département."
                   : "Référence globale : les cinq seuils indiquent la pollution projetée, après la projection temporelle éventuelle."
               }
               items={colorItems}
