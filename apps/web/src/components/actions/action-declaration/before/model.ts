@@ -82,6 +82,7 @@ export function sanitizePreActionForm(form: FormState): FormState {
     cigaretteButts: "",
     cigaretteButtsCount: "",
     cigaretteButtsCondition: "propre",
+    cigaretteButtsVolumeLiters: "",
     wasteMegotsKg: "",
     wasteMegotsCondition: "propre",
     wastePlastiqueKg: "",

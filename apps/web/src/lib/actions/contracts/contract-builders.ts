@@ -11,6 +11,9 @@ import {
 import type { ActionGeometrySource } from "../types";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { OrganizerType } from "../organizer-type";
+import type {
+  ActionCigaretteButtsMeasurements,
+} from "@/lib/waste/cigarette-butts";
 
 export type ActionContractCreatePayload = {
   type: ActionRecordType;
@@ -48,6 +51,10 @@ export type ActionContractCreatePayload = {
     preparationData?: ActionPreparationData | null;
     placeType?: string;
     wasteKg?: number | null;
+    cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+    cigaretteButtsMassKg?: number | null;
+    cigaretteButtsVolumeLiters?: number | null;
+    cigaretteButtsCondition?: import("../types").ActionMegotsCondition | null;
     cigaretteButtsKg?: number | null;
     cigaretteButts?: number | null;
     volunteersCount?: number;
@@ -111,6 +118,10 @@ export function toContractCreatePayload(
       ),
       placeType: payload.placeType,
       wasteKg: payload.wasteKg,
+      cigaretteButtsMeasurements: payload.cigaretteButtsMeasurements,
+      cigaretteButtsMassKg: payload.cigaretteButtsMassKg,
+      cigaretteButtsVolumeLiters: payload.cigaretteButtsVolumeLiters,
+      cigaretteButtsCondition: payload.cigaretteButtsCondition,
       cigaretteButtsKg: payload.cigaretteButtsKg,
       cigaretteButts: payload.cigaretteButts,
       volunteersCount: payload.volunteersCount,
@@ -193,6 +204,10 @@ function normalizeContractCreatePayload(
     departmentCode: payload.location.departmentCode ?? null,
     departmentName: payload.location.departmentName ?? null,
     wasteKg: payload.metadata.wasteKg ?? null,
+    cigaretteButtsMeasurements: payload.metadata.cigaretteButtsMeasurements ?? null,
+    cigaretteButtsMassKg: payload.metadata.cigaretteButtsMassKg ?? null,
+    cigaretteButtsVolumeLiters: payload.metadata.cigaretteButtsVolumeLiters ?? null,
+    cigaretteButtsCondition: payload.metadata.cigaretteButtsCondition ?? null,
     cigaretteButtsKg: payload.metadata.cigaretteButtsKg ?? null,
     cigaretteButts: payload.metadata.cigaretteButts ?? null,
     volunteersCount: fallbackNumber(payload.metadata.volunteersCount, 1),

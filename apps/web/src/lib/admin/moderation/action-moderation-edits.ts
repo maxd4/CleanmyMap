@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  CIGARETTE_BUTTS_PROVENANCES,
+  normalizeCigaretteButtsMeasurements,
+} from "@/lib/waste/cigarette-butts";
 import { parseDrawingFromNotes } from "@/lib/actions/geometry/drawing";
 import {
   buildPersistedGeometry,
@@ -59,6 +63,22 @@ export const actionEditsSchema = z
     latitude: z.number().min(-90).max(90).nullable().optional(),
     longitude: z.number().min(-180).max(180).nullable().optional(),
     wasteKg: z.number().min(0).max(100000).nullable().optional(),
+    cigaretteButtsMeasurements: z
+      .object({
+        cigaretteButtsCount: z.number().int().min(0).max(5_000_000).nullable(),
+        cigaretteButtsMassKg: z.number().min(0).max(100_000).nullable(),
+        cigaretteButtsVolumeLiters: z.number().min(0).max(100_000).nullable(),
+        cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable(),
+        cigaretteButtsCountProvenance: z.enum(CIGARETTE_BUTTS_PROVENANCES),
+        cigaretteButtsMassProvenance: z.enum(CIGARETTE_BUTTS_PROVENANCES),
+        cigaretteButtsVolumeProvenance: z.enum(CIGARETTE_BUTTS_PROVENANCES),
+        cigaretteButtsConversionFormulaVersion: z.string().max(120).nullable(),
+      })
+      .nullable()
+      .optional(),
+    cigaretteButtsMassKg: z.number().min(0).max(100000).nullable().optional(),
+    cigaretteButtsVolumeLiters: z.number().min(0).max(100000).nullable().optional(),
+    cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable().optional(),
     cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
     cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
     volunteersCount: z.number().int().min(1).max(500).optional(),
@@ -221,6 +241,47 @@ export async function buildAdminActionUpdates(
     edits.manualDrawing !== undefined
       ? edits.manualDrawing
       : parsedDrawing.manualDrawing;
+  const hasCigaretteButtsMeasurementEdit = [
+    "cigaretteButtsMeasurements",
+    "cigaretteButts",
+    "cigaretteButtsMassKg",
+    "cigaretteButtsVolumeLiters",
+    "cigaretteButtsCondition",
+    "cigaretteButtsKg",
+  ].some((key) => Object.prototype.hasOwnProperty.call(edits, key));
+  const cigaretteButtsMeasurements =
+    edits.cigaretteButtsMeasurements !== undefined
+      ? edits.cigaretteButtsMeasurements === null
+        ? normalizeCigaretteButtsMeasurements({})
+        : normalizeCigaretteButtsMeasurements({
+            ...edits.cigaretteButtsMeasurements,
+            deriveMissingFromMassOrCount: false,
+          })
+      : hasCigaretteButtsMeasurementEdit
+        ? normalizeCigaretteButtsMeasurements({
+            cigaretteButtsCount:
+              edits.cigaretteButts !== undefined
+                ? edits.cigaretteButts
+                : parsedMetadata.cigaretteButtsMeasurements?.cigaretteButtsCount ??
+                  existing.cigarette_butts,
+            cigaretteButtsMassKg:
+              edits.cigaretteButtsMassKg !== undefined
+                ? edits.cigaretteButtsMassKg
+                : edits.cigaretteButtsKg !== undefined
+                  ? edits.cigaretteButtsKg
+                  : parsedMetadata.cigaretteButtsMeasurements?.cigaretteButtsMassKg ??
+                    parsedMetadata.cigaretteButtsKg,
+            cigaretteButtsVolumeLiters:
+              edits.cigaretteButtsVolumeLiters !== undefined
+                ? edits.cigaretteButtsVolumeLiters
+                : parsedMetadata.cigaretteButtsMeasurements?.cigaretteButtsVolumeLiters,
+            cigaretteButtsCondition:
+              edits.cigaretteButtsCondition !== undefined
+                ? edits.cigaretteButtsCondition
+                : parsedMetadata.cigaretteButtsMeasurements?.cigaretteButtsCondition,
+            deriveMissingFromMassOrCount: true,
+          })
+        : parsedMetadata.cigaretteButtsMeasurements ?? undefined;
 
   const payloadForNotes: CreateActionPayload = {
     actorName:
@@ -271,10 +332,14 @@ export async function buildAdminActionUpdates(
         : existing.cigarette_butts === null
           ? null
           : Number(existing.cigarette_butts),
-    cigaretteButtsKg: preserveOptionalEdit(
-      edits.cigaretteButtsKg,
-      parsedMetadata.cigaretteButtsKg,
-    ),
+    cigaretteButtsKg: hasCigaretteButtsMeasurementEdit
+      ? cigaretteButtsMeasurements?.cigaretteButtsMassKg
+      : preserveOptionalEdit(edits.cigaretteButtsKg, parsedMetadata.cigaretteButtsKg),
+    cigaretteButtsMeasurements,
+    cigaretteButtsMassKg: cigaretteButtsMeasurements?.cigaretteButtsMassKg,
+    cigaretteButtsVolumeLiters:
+      cigaretteButtsMeasurements?.cigaretteButtsVolumeLiters,
+    cigaretteButtsCondition: cigaretteButtsMeasurements?.cigaretteButtsCondition,
     volunteersCount: edits.volunteersCount ?? Number(existing.volunteers_count ?? 1),
     durationMinutes: edits.durationMinutes ?? Number(existing.duration_minutes ?? 0),
     notes:

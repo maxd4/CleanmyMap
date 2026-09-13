@@ -350,6 +350,61 @@ describe("action declaration payload helpers", () => {
     expect(payload.wasteBreakdown).not.toHaveProperty("megotsKg");
   });
 
+  it("preserves the raw mass and records a derived count with its formula version", () => {
+    const form = buildBaseForm();
+    form.cigaretteButtsCount = "";
+    form.wasteMegotsKg = "1.2";
+    form.wasteMegotsCondition = "propre";
+    form.cigaretteButtsVolumeLiters = "2.5";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.cigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsCount: 3_000,
+      cigaretteButtsMassKg: 1.2,
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsCountProvenance: "weight_converted",
+      cigaretteButtsMassProvenance: "measured",
+      cigaretteButtsConversionFormulaVersion:
+        "impact-terrain-2026-butts-mass-v1",
+    });
+    expect(payload.cigaretteButts).toBe(3_000);
+    expect(payload.cigaretteButtsKg).toBe(1.2);
+  });
+
+  it("does not replace a counted value when a raw mass is also present", () => {
+    const form = buildBaseForm();
+    form.cigaretteButtsCount = "2500";
+    form.wasteMegotsKg = "1.2";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.cigaretteButtsMeasurements?.cigaretteButtsCount).toBe(2500);
+    expect(payload.cigaretteButtsMeasurements?.cigaretteButtsCountProvenance).toBe(
+      "counted",
+    );
+    expect(payload.cigaretteButtsMeasurements?.cigaretteButtsMassKg).toBe(1.2);
+    expect(payload.cigaretteButtsMeasurements?.cigaretteButtsMassProvenance).toBe(
+      "measured",
+    );
+  });
+
   it("prefers a ready route preview before submission", async () => {
     const form = buildBaseForm();
     form.departureLocationLabel ="Place des Vosges";

@@ -23,6 +23,8 @@ export {
 } from "./impact-terrain-2026-constants";
 
 export const BUTTS_PER_KG_REFERENCE = 2_500;
+export const CIGARETTE_BUTTS_MASS_CONVERSION_VERSION =
+  "impact-terrain-2026-butts-mass-v1" as const;
 export const WASTE_KG_PER_50L_BAG = 5;
 export const WASTE_KG_PER_MECHANICAL_BICYCLE = 20;
 export const BUTT_LENGTH_METERS = 0.025;

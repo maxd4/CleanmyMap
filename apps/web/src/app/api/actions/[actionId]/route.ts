@@ -34,6 +34,7 @@ import {
   getTimeContractValidationMessage,
   normalizeClockTime,
 } from "@/lib/actions/time-contract";
+import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
@@ -261,6 +262,14 @@ function buildActionEditorPayload(
     longitude: row.longitude,
     wasteKg: row.waste_kg,
     cigaretteButtsKg: metadata.cigaretteButtsKg,
+    cigaretteButtsMeasurements: metadata.cigaretteButtsMeasurements,
+    cigaretteButtsMassKg:
+      metadata.cigaretteButtsMeasurements?.cigaretteButtsMassKg ??
+      metadata.cigaretteButtsKg,
+    cigaretteButtsVolumeLiters:
+      metadata.cigaretteButtsMeasurements?.cigaretteButtsVolumeLiters ?? null,
+    cigaretteButtsCondition:
+      metadata.cigaretteButtsMeasurements?.cigaretteButtsCondition ?? null,
     cigaretteButts: row.cigarette_butts,
     volunteersCount: row.volunteers_count,
     durationMinutes: row.duration_minutes,
@@ -497,7 +506,6 @@ export async function PATCH(
         key !== "eventStartTime" &&
         key !== "eventEndTime" &&
         key !== "wasteMeasurementMethod" &&
-        key !== "cigaretteButtsKg" &&
         value !== undefined,
     );
 
@@ -552,8 +560,55 @@ export async function PATCH(
     if (body.wasteKg !== undefined) {
       updateData["waste_kg"] = body.wasteKg;
     }
-    if (body.cigaretteButts !== undefined) {
-      updateData["cigarette_butts"] = body.cigaretteButts;
+    const hasButtsMeasurementUpdate = [
+      "cigaretteButtsMeasurements",
+      "cigaretteButtsCount",
+      "cigaretteButtsMassKg",
+      "cigaretteButtsVolumeLiters",
+      "cigaretteButtsCondition",
+      "cigaretteButtsKg",
+      "cigaretteButts",
+    ].some((key) => Object.prototype.hasOwnProperty.call(body, key));
+    let nextCigaretteButtsMeasurements =
+      currentMetadata.cigaretteButtsMeasurements ?? null;
+    if (hasButtsMeasurementUpdate) {
+      const currentMeasurements = currentMetadata.cigaretteButtsMeasurements;
+      nextCigaretteButtsMeasurements = normalizeCigaretteButtsMeasurements(
+        body.cigaretteButtsMeasurements !== undefined
+          ? body.cigaretteButtsMeasurements === null
+            ? { deriveMissingFromMassOrCount: false }
+            : {
+                ...body.cigaretteButtsMeasurements,
+                deriveMissingFromMassOrCount: false,
+              }
+          : {
+              cigaretteButtsCount:
+                body.cigaretteButtsCount !== undefined
+                  ? body.cigaretteButtsCount
+                  : body.cigaretteButts !== undefined
+                    ? body.cigaretteButts
+                    : currentMeasurements?.cigaretteButtsCount ??
+                      current.cigarette_butts,
+              cigaretteButtsMassKg:
+                body.cigaretteButtsMassKg !== undefined
+                  ? body.cigaretteButtsMassKg
+                  : body.cigaretteButtsKg !== undefined
+                    ? body.cigaretteButtsKg
+                    : currentMeasurements?.cigaretteButtsMassKg ??
+                      currentMetadata.cigaretteButtsKg,
+              cigaretteButtsVolumeLiters:
+                body.cigaretteButtsVolumeLiters !== undefined
+                  ? body.cigaretteButtsVolumeLiters
+                  : currentMeasurements?.cigaretteButtsVolumeLiters ?? null,
+              cigaretteButtsCondition:
+                body.cigaretteButtsCondition !== undefined
+                  ? body.cigaretteButtsCondition
+                  : currentMeasurements?.cigaretteButtsCondition ?? null,
+              deriveMissingFromMassOrCount: true,
+            },
+      );
+      updateData["cigarette_butts"] =
+        nextCigaretteButtsMeasurements.cigaretteButtsCount;
     }
     if (body.volunteersCount !== undefined) {
       updateData["volunteers_count"] = body.volunteersCount;
@@ -600,9 +655,27 @@ export async function PATCH(
           currentMetadata.wasteMeasurementMethod ??
           undefined,
         cigaretteButtsKg:
-          body.cigaretteButtsKg !== undefined
-            ? body.cigaretteButtsKg
-            : currentMetadata.cigaretteButtsKg,
+          hasButtsMeasurementUpdate
+            ? nextCigaretteButtsMeasurements?.cigaretteButtsMassKg
+            : body.cigaretteButtsKg !== undefined
+              ? body.cigaretteButtsKg
+              : currentMetadata.cigaretteButtsKg,
+        cigaretteButtsMeasurements:
+          hasButtsMeasurementUpdate
+            ? nextCigaretteButtsMeasurements
+            : currentMetadata.cigaretteButtsMeasurements,
+        cigaretteButtsMassKg:
+          hasButtsMeasurementUpdate
+            ? nextCigaretteButtsMeasurements?.cigaretteButtsMassKg
+            : currentMetadata.cigaretteButtsMeasurements?.cigaretteButtsMassKg,
+        cigaretteButtsVolumeLiters:
+          hasButtsMeasurementUpdate
+            ? nextCigaretteButtsMeasurements?.cigaretteButtsVolumeLiters
+            : currentMetadata.cigaretteButtsMeasurements?.cigaretteButtsVolumeLiters,
+        cigaretteButtsCondition:
+          hasButtsMeasurementUpdate
+            ? nextCigaretteButtsMeasurements?.cigaretteButtsCondition
+            : currentMetadata.cigaretteButtsMeasurements?.cigaretteButtsCondition,
         photos:
           body.photos?.map((photo) => ({
             id: photo.id,

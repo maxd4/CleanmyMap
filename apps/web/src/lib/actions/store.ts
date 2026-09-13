@@ -19,7 +19,10 @@ import {
 } from "@/lib/actions/geometry/derived-geometry";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/geometry/route-geometry";
-import { computeButtsCount } from "@/lib/actions/impact-calculators";
+import {
+  normalizeCigaretteButtsMeasurements,
+  type ActionCigaretteButtsMeasurements,
+} from "@/lib/waste/cigarette-butts";
 import {
   buildTrainingExampleInsert,
   recordTrainingExample,
@@ -274,13 +277,14 @@ async function fetchActionRowById(
   }
 }
 
-type PersistedActionNotesPayload = Pick<
+type PersistedActionNotesPayload = Partial<Pick<
   CreateActionPayload,
   | "notes"
   | "submissionMode"
   | "wasteBreakdown"
   | "wasteMeasurementMethod"
   | "cigaretteButtsKg"
+  | "cigaretteButtsMeasurements"
   | "associationName"
   | "groupJoinEnabled"
   | "placeType"
@@ -290,7 +294,12 @@ type PersistedActionNotesPayload = Pick<
   | "routeAdjustmentMessage"
   | "visionEstimate"
   | "manualDrawing"
-> & {
+  | "cigaretteButts"
+  | "cigaretteButtsCount"
+  | "cigaretteButtsMassKg"
+  | "cigaretteButtsVolumeLiters"
+  | "cigaretteButtsCondition"
+>> & {
   photos?: Array<
     Pick<
       ActionPhotoAsset,
@@ -308,11 +317,13 @@ export function resolveActionCreationStatus(
 export function buildPersistedNotes(
   payload: PersistedActionNotesPayload,
 ): string | null {
+  const cigaretteButtsMeasurements = resolveActionCigaretteButtsMeasurements(payload);
   const baseWithMetadata = appendActionMetadataToNotes(payload.notes, {
     submissionMode: payload.submissionMode,
     wasteBreakdown: payload.wasteBreakdown,
     wasteMeasurementMethod: payload.wasteMeasurementMethod ?? undefined,
     cigaretteButtsKg: payload.cigaretteButtsKg,
+    cigaretteButtsMeasurements,
     associationName: payload.associationName,
     groupJoinEnabled: payload.groupJoinEnabled,
     placeType: payload.placeType,
@@ -337,24 +348,46 @@ export function buildPersistedNotes(
     : `${DRAWING_NOTE_PREFIX}${drawingJson}`;
 }
 
+function resolveActionCigaretteButtsMeasurements(
+  payload: Partial<Pick<
+    CreateActionPayload,
+    | "cigaretteButtsMeasurements"
+    | "cigaretteButtsCount"
+    | "cigaretteButts"
+    | "cigaretteButtsMassKg"
+    | "cigaretteButtsVolumeLiters"
+    | "cigaretteButtsCondition"
+    | "cigaretteButtsKg"
+    | "wasteBreakdown"
+  >>,
+): ActionCigaretteButtsMeasurements {
+  if (payload.cigaretteButtsMeasurements) {
+    return normalizeCigaretteButtsMeasurements({
+      ...payload.cigaretteButtsMeasurements,
+      deriveMissingFromMassOrCount: false,
+    });
+  }
+
+  return normalizeCigaretteButtsMeasurements({
+    cigaretteButtsCount: payload.cigaretteButtsCount ?? payload.cigaretteButts,
+    cigaretteButtsMassKg:
+      payload.cigaretteButtsMassKg ??
+      payload.cigaretteButtsKg ??
+      payload.wasteBreakdown?.megotsKg ??
+      null,
+    cigaretteButtsVolumeLiters: payload.cigaretteButtsVolumeLiters ?? null,
+    cigaretteButtsCondition:
+      payload.cigaretteButtsCondition ?? payload.wasteBreakdown?.megotsCondition ?? null,
+    deriveMissingFromMassOrCount: true,
+  });
+}
+
 export function resolvePersistedCigaretteButts(
   payload: CreateActionPayload,
 ): number | null {
-  const megotsKg =
-    payload.cigaretteButtsKg ?? payload.wasteBreakdown?.megotsKg ?? null;
-  const megotsCondition = payload.wasteBreakdown?.megotsCondition ?? "propre";
+  const measurements = resolveActionCigaretteButtsMeasurements(payload);
 
-  if (typeof megotsKg === "number" && Number.isFinite(megotsKg) && megotsKg > 0) {
-    return computeButtsCount(megotsKg, megotsCondition);
-  }
-
-  if (typeof payload.cigaretteButtsCount === "number" && Number.isFinite(payload.cigaretteButtsCount)) {
-    return Math.max(0, Math.trunc(payload.cigaretteButtsCount));
-  }
-
-  return payload.cigaretteButts === null
-    ? null
-    : Math.max(0, Math.trunc(payload.cigaretteButts));
+  return measurements.cigaretteButtsCount;
 }
 
 export async function fetchActions(

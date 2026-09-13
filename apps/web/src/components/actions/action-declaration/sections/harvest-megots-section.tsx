@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 type HarvestMegotsSectionProps = {
   wasteMegotsKg: string;
+  cigaretteButtsVolumeLiters: string;
   wasteMegotsCondition: ActionMegotsCondition;
   megotsKg: number;
   megotsCount: number;
@@ -15,16 +16,21 @@ type HarvestMegotsSectionProps = {
   megotsCurrentPerVolunteer: number;
   wasteBenchmarkPerVolunteer: number;
   megotsDeltaPercent: number;
+  cigaretteButtsCountProvenance: string;
+  cigaretteButtsMassProvenance: string;
+  cigaretteButtsConversionFormulaVersion: string | null;
   wasteBenchmarkKg: number;
   sourceLabel: string;
   confidenceLabel: string | null;
   onMegotsWeightChange: (value: string) => void;
+  onMegotsVolumeChange: (value: string) => void;
   onMegotsCountChange: (value: string) => void;
   onMegotsConditionChange: (value: ActionMegotsCondition) => void;
 };
 
 export function HarvestMegotsSection({
   wasteMegotsKg,
+  cigaretteButtsVolumeLiters,
   wasteMegotsCondition,
   megotsKg,
   megotsCount,
@@ -32,10 +38,14 @@ export function HarvestMegotsSection({
   megotsCurrentPerVolunteer,
   wasteBenchmarkPerVolunteer,
   megotsDeltaPercent,
+  cigaretteButtsCountProvenance,
+  cigaretteButtsMassProvenance,
+  cigaretteButtsConversionFormulaVersion,
   wasteBenchmarkKg,
   sourceLabel,
   confidenceLabel,
   onMegotsWeightChange,
+  onMegotsVolumeChange,
   onMegotsCountChange,
   onMegotsConditionChange,
 }: HarvestMegotsSectionProps) {
@@ -53,7 +63,7 @@ export function HarvestMegotsSection({
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-900">Mégots collectés</p>
-            <p className="text-xs text-slate-500">Le nombre et le poids restent synchronisés</p>
+            <p className="text-xs text-slate-500">Les mesures brutes et les dérivés restent tracés séparément</p>
           </div>
         </div>
         {megotsCount > 0 && (
@@ -64,7 +74,7 @@ export function HarvestMegotsSection({
       </div>
 
       {/* Inputs */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <label className="block space-y-1.5">
           <span className="text-xs font-medium text-slate-500">Masse (kg)</span>
           <input
@@ -79,7 +89,25 @@ export function HarvestMegotsSection({
             placeholder="Ex : 0,25"
           />
           <span className="block text-[10px] leading-snug text-slate-400">
-            Saisie manuelle possible. Le nombre est recalculé avec l’état choisi.
+            Saisie manuelle possible. Le nombre reste séparé ; un dérivé est calculé seulement s’il manque.
+          </span>
+        </label>
+
+        <label className="block space-y-1.5">
+          <span className="text-xs font-medium text-slate-500">Volume (L)</span>
+          <input
+            id="harvest-megots-volume"
+            inputMode="decimal"
+            type="number"
+            step="0.01"
+            min="0"
+            className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15 placeholder:text-slate-300"
+            value={cigaretteButtsVolumeLiters}
+            onChange={(e) => onMegotsVolumeChange(e.target.value)}
+            placeholder="Ex : 1,5"
+          />
+          <span className="block text-[10px] leading-snug text-slate-400">
+            Conservé comme mesure brute ; aucune conversion automatique sans relation documentée.
           </span>
         </label>
 
@@ -123,7 +151,7 @@ export function HarvestMegotsSection({
           <span>10 000</span>
         </div>
         <p className="text-[10px] leading-snug text-slate-500">
-          Le slider renseigne le nombre. CleanMyMap convertit ce nombre en poids estimé pour l’envoi.
+          Le slider renseigne le nombre brut. Une masse dérivée reste distincte pour l’envoi.
         </p>
       </div>
 
@@ -132,14 +160,17 @@ export function HarvestMegotsSection({
         <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-semibold text-amber-800">
-              Poids estimé envoyé
+            Masse conservée
             </p>
             <p className="text-sm font-bold text-amber-900">
               {formatKg(megotsKg)} kg
             </p>
           </div>
           <p className="mt-1 text-[10px] leading-snug text-amber-700">
-            Synchronisation active : {formatCount(megotsCount)} mégots ≈ {formatKg(megotsKg)} kg selon l’état “{wasteMegotsCondition}”.
+            Comptage : {cigaretteButtsCountProvenance} · masse : {cigaretteButtsMassProvenance} · état : “{wasteMegotsCondition}”.
+            {cigaretteButtsConversionFormulaVersion
+              ? ` Formule : ${cigaretteButtsConversionFormulaVersion}.`
+              : ""}
           </p>
         </div>
       )}

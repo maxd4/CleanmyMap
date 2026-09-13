@@ -184,11 +184,29 @@ export function useActionDeclarationForm({
           durationMinutes: String(action.durationMinutes),
           wasteKg: action.wasteKg === null ? "" : String(action.wasteKg),
           cigaretteButts: action.cigaretteButts === null ? "" : String(action.cigaretteButts),
-          cigaretteButtsCount: action.cigaretteButts === null ? "" : String(action.cigaretteButts),
+          cigaretteButtsCount:
+            action.cigaretteButtsMeasurements?.cigaretteButtsCount !== null &&
+            action.cigaretteButtsMeasurements?.cigaretteButtsCount !== undefined
+              ? String(action.cigaretteButtsMeasurements.cigaretteButtsCount)
+              : action.cigaretteButts === null
+                ? ""
+                : String(action.cigaretteButts),
+          cigaretteButtsCondition:
+            action.cigaretteButtsMeasurements?.cigaretteButtsCondition ??
+            preparedForm.cigaretteButtsCondition,
+          cigaretteButtsVolumeLiters: toFormNumber(
+            action.cigaretteButtsMeasurements?.cigaretteButtsVolumeLiters,
+          ),
           wasteMegotsKg:
-            action.cigaretteButtsKg !== undefined && action.cigaretteButtsKg !== null
-              ? String(action.cigaretteButtsKg)
+            action.cigaretteButtsMeasurements?.cigaretteButtsMassKg !== null &&
+            action.cigaretteButtsMeasurements?.cigaretteButtsMassKg !== undefined
+              ? String(action.cigaretteButtsMeasurements.cigaretteButtsMassKg)
+              : action.cigaretteButtsKg !== undefined && action.cigaretteButtsKg !== null
+                ? String(action.cigaretteButtsKg)
               : toFormNumber(storedBreakdown.megotsKg),
+          wasteMegotsCondition:
+            action.cigaretteButtsMeasurements?.cigaretteButtsCondition ??
+            preparedForm.wasteMegotsCondition,
           wasteMeasurementMethod: action.wasteMeasurementMethod ?? preparedForm.wasteMeasurementMethod,
           wasteRecyclablesKg: toFormNumber(storedBreakdown.recyclablesKg),
           wasteGlassKg: toFormNumber(storedBreakdown.glassKg),
@@ -220,6 +238,7 @@ export function useActionDeclarationForm({
           nextForm.wasteSpecialHandlingWaste = "";
           nextForm.cigaretteButts = "";
           nextForm.cigaretteButtsCount = "";
+          nextForm.cigaretteButtsVolumeLiters = "";
           nextForm.wasteMegotsKg = "";
           nextForm.wastePlastiqueKg = "";
           nextForm.wasteVerreKg = "";

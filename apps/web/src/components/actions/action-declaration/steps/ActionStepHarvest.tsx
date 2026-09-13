@@ -63,6 +63,9 @@ export function ActionStepHarvest({
     megotsCount,
     megotsCurrentPerVolunteer,
     megotsDeltaPercent,
+    cigaretteButtsCountProvenance,
+    cigaretteButtsMassProvenance,
+    cigaretteButtsConversionFormulaVersion,
     comparisonTone,
     confidenceLabel,
     sourceLabel,
@@ -101,6 +104,7 @@ export function ActionStepHarvest({
           />
           <HarvestMegotsSection
             wasteMegotsKg={form.wasteMegotsKg}
+            cigaretteButtsVolumeLiters={form.cigaretteButtsVolumeLiters}
             wasteMegotsCondition={form.wasteMegotsCondition}
             megotsKg={megotsKg}
             megotsCount={megotsCount}
@@ -108,10 +112,14 @@ export function ActionStepHarvest({
             megotsCurrentPerVolunteer={megotsCurrentPerVolunteer}
             wasteBenchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
             megotsDeltaPercent={megotsDeltaPercent}
+            cigaretteButtsCountProvenance={cigaretteButtsCountProvenance}
+            cigaretteButtsMassProvenance={cigaretteButtsMassProvenance}
+            cigaretteButtsConversionFormulaVersion={cigaretteButtsConversionFormulaVersion}
             wasteBenchmarkKg={wasteBenchmarkKg}
             sourceLabel={sourceLabel}
             confidenceLabel={confidenceLabel}
             onMegotsWeightChange={syncMegotsWeightFromWeight}
+            onMegotsVolumeChange={(value) => updateField("cigaretteButtsVolumeLiters", value)}
             onMegotsCountChange={syncMegotsWeightFromCount}
             onMegotsConditionChange={syncMegotsCondition}
           />

@@ -1,8 +1,5 @@
 import type { ActionMegotsCondition } from "@/lib/actions/types";
-import {
-  computeButtsCount,
-  estimateButtsWeightKg,
-} from "@/lib/actions/impact-calculators";
+import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 import { clamp } from "../utils/harvest-utils";
 import { useCallback, useMemo } from "react";
 
@@ -34,6 +31,13 @@ function readBoundedNumber(
   return clamp(toFiniteNumber(rawValue, fallback), min, max);
 }
 
+function readOptionalNumber(rawValue: string, min: number, max: number): number | null {
+  if (rawValue.trim() === "") {
+    return null;
+  }
+  return readBoundedNumber(rawValue, min, max, min);
+}
+
 export type UseHarvestLogicResult = {
   volunteersCount: number;
   wasteKg: number;
@@ -48,6 +52,9 @@ export type UseHarvestLogicResult = {
   megotsCount: number;
   megotsCurrentPerVolunteer: number;
   megotsDeltaPercent: number;
+  cigaretteButtsCountProvenance: string;
+  cigaretteButtsMassProvenance: string;
+  cigaretteButtsConversionFormulaVersion: string | null;
   comparisonTone: HarvestComparisonTone;
   confidenceLabel: string | null;
   sourceLabel: string;
@@ -87,23 +94,16 @@ export function useHarvestLogic({
           100
         : 0;
 
-    const wasteMegotsKg = readBoundedNumber(form.wasteMegotsKg, 0, 100, 0);
-    const cigaretteButtsCount = Math.max(
-      0,
-      Math.trunc(readBoundedNumber(form.cigaretteButtsCount, 0, 10000, 0)),
-    );
-    const megotsKg =
-      wasteMegotsKg > 0
-        ? wasteMegotsKg
-        : cigaretteButtsCount > 0
-          ? estimateButtsWeightKg(cigaretteButtsCount, form.wasteMegotsCondition)
-          : 0;
-    const megotsCount =
-      cigaretteButtsCount > 0
-        ? cigaretteButtsCount
-        : wasteMegotsKg > 0
-          ? computeButtsCount(wasteMegotsKg, form.wasteMegotsCondition)
-          : 0;
+    const cigaretteButtsMeasurements = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsCount: readOptionalNumber(form.cigaretteButtsCount, 0, 10000),
+      cigaretteButtsMassKg: readOptionalNumber(form.wasteMegotsKg, 0, 100),
+      cigaretteButtsCondition: form.wasteMegotsCondition,
+      deriveMissingFromMassOrCount: true,
+    });
+    const wasteMegotsKg = cigaretteButtsMeasurements.cigaretteButtsMassKg ?? 0;
+    const cigaretteButtsCount = cigaretteButtsMeasurements.cigaretteButtsCount ?? 0;
+    const megotsKg = wasteMegotsKg;
+    const megotsCount = cigaretteButtsCount;
     const megotsCurrentPerVolunteer = megotsKg / volunteersCount;
     const megotsDeltaPercent =
       wasteBenchmarkPerVolunteer > 0
@@ -135,6 +135,12 @@ export function useHarvestLogic({
       megotsCount,
       megotsCurrentPerVolunteer,
       megotsDeltaPercent,
+      cigaretteButtsCountProvenance:
+        cigaretteButtsMeasurements.cigaretteButtsCountProvenance,
+      cigaretteButtsMassProvenance:
+        cigaretteButtsMeasurements.cigaretteButtsMassProvenance,
+      cigaretteButtsConversionFormulaVersion:
+        cigaretteButtsMeasurements.cigaretteButtsConversionFormulaVersion,
       comparisonTone,
       confidenceLabel,
       sourceLabel,
@@ -154,59 +160,22 @@ export function useHarvestLogic({
   const syncMegotsWeightFromWeight = useCallback(
     (rawValue: string) => {
       updateField("wasteMegotsKg", rawValue);
-
-      const numericWeight = readBoundedNumber(rawValue, 0, 100, 0);
-      if (numericWeight <= 0) {
-        updateField("cigaretteButtsCount", "");
-        return;
-      }
-
-      updateField(
-        "cigaretteButtsCount",
-        String(computeButtsCount(numericWeight, form.wasteMegotsCondition)),
-      );
     },
-    [form.wasteMegotsCondition, updateField],
+    [updateField],
   );
 
   const syncMegotsWeightFromCount = useCallback(
     (rawValue: string) => {
       updateField("cigaretteButtsCount", rawValue);
-
-      const numericCount = readBoundedNumber(rawValue, 0, 10000, 0);
-      if (numericCount <= 0) {
-        updateField("wasteMegotsKg", "");
-        return;
-      }
-
-      updateField(
-        "wasteMegotsKg",
-        estimateButtsWeightKg(numericCount, form.wasteMegotsCondition).toFixed(3),
-      );
     },
-    [form.wasteMegotsCondition, updateField],
+    [updateField],
   );
 
   const syncMegotsCondition = useCallback(
     (rawValue: ActionMegotsCondition) => {
       updateField("wasteMegotsCondition", rawValue);
-
-      if (derived.wasteMegotsKg > 0) {
-        updateField(
-          "cigaretteButtsCount",
-          String(computeButtsCount(derived.wasteMegotsKg, rawValue)),
-        );
-        return;
-      }
-
-      if (derived.cigaretteButtsCount > 0) {
-        updateField(
-          "wasteMegotsKg",
-          estimateButtsWeightKg(derived.cigaretteButtsCount, rawValue).toFixed(3),
-        );
-      }
     },
-    [derived.cigaretteButtsCount, derived.wasteMegotsKg, updateField],
+    [updateField],
   );
 
   return {
