@@ -1,16 +1,13 @@
 import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
-import {
-  LEGACY_RECYCLING_CATEGORY_ORDER,
-  canonicalWasteSlugFromLegacy,
-  getCanonicalWasteQuantities,
-} from "@/lib/waste";
-import type { LegacyWasteCategory } from "@/lib/waste";
 
-/**
- * Public output values are kept for API/UI compatibility. Their meaning is
- * provided by the global waste registry through the legacy adapter.
- */
-export type WasteCategory = LegacyWasteCategory;
+export const CANONICAL_WASTE_BREAKDOWN_CATEGORIES = [
+  "recyclables",
+  "glass",
+  "household",
+  "other",
+] as const;
+
+export type WasteCategory = (typeof CANONICAL_WASTE_BREAKDOWN_CATEGORIES)[number];
 
 export type RecyclingBreakdownLine = {
   category: WasteCategory;
@@ -37,7 +34,7 @@ export function buildRecyclingBreakdown(
   contracts: ActionDataContract[],
 ): RecyclingBreakdownSnapshot {
   const categories = Object.fromEntries(
-    LEGACY_RECYCLING_CATEGORY_ORDER.map((category) => [category, { kg: 0, entries: 0 }]),
+    CANONICAL_WASTE_BREAKDOWN_CATEGORIES.map((category) => [category, { kg: 0, entries: 0 }]),
   ) as Record<WasteCategory, { kg: number; entries: number }>;
 
   let triQualityHigh = 0;
@@ -47,16 +44,6 @@ export function buildRecyclingBreakdown(
 
   for (const contract of contracts) {
     const breakdown = contract.metadata.wasteBreakdown;
-    if (!breakdown) {
-      const wasteKg = contract.metadata.wasteKg;
-      if (wasteKg !== null && wasteKg !== undefined && Number.isFinite(wasteKg) && wasteKg >= 0) {
-        categories.mixte.kg += wasteKg;
-        categories.mixte.entries += 1;
-        wasteKnownActions += 1;
-      }
-      continue;
-    }
-
     if (
       contract.metadata.wasteKg !== null &&
       contract.metadata.wasteKg !== undefined &&
@@ -66,23 +53,22 @@ export function buildRecyclingBreakdown(
       wasteKnownActions += 1;
     }
 
-    const add = (category: WasteCategory, value: number | undefined) => {
-      const kg = Number(value ?? 0);
-      if (kg <= 0) {
+    if (!breakdown) {
+      continue;
+    }
+
+    const add = (category: WasteCategory, value: number | null | undefined) => {
+      if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
         return;
       }
-      categories[category].kg += kg;
+      categories[category].kg += value;
       categories[category].entries += 1;
     };
 
-    for (const quantity of getCanonicalWasteQuantities(breakdown)) {
-      const category = LEGACY_RECYCLING_CATEGORY_ORDER.find(
-        (legacyCategory) => canonicalWasteSlugFromLegacy(legacyCategory) === quantity.slug,
-      );
-      if (category) {
-        add(category, quantity.kg);
-      }
-    }
+    add("recyclables", breakdown.recyclablesKg);
+    add("glass", breakdown.glassKg);
+    add("household", breakdown.householdWasteKg);
+    add("other", breakdown.otherWasteKg);
 
     if (breakdown.triQuality === "elevee") {
       triQualityHigh += 1;
@@ -97,7 +83,7 @@ export function buildRecyclingBreakdown(
     (acc, entry) => acc + entry.kg,
     0,
   );
-  const lines = LEGACY_RECYCLING_CATEGORY_ORDER.map((category) => ({
+  const lines = CANONICAL_WASTE_BREAKDOWN_CATEGORIES.map((category) => ({
     category,
     kg: Number(categories[category].kg.toFixed(2)),
     sharePercent: totalKg > 0 ? Number(((categories[category].kg / totalKg) * 100).toFixed(1)) : 0,

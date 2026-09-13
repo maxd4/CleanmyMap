@@ -87,11 +87,14 @@ export function ActionStepHarvest({
             sourceLabel={sourceLabel}
             confidenceLabel={confidenceLabel}
             onWasteKgChange={(value) => updateField("wasteKg", value)}
-            wastePlastiqueKg={form.wastePlastiqueKg}
-            wasteVerreKg={form.wasteVerreKg}
-            wasteMetalKg={form.wasteMetalKg}
-            wasteMixteKg={form.wasteMixteKg}
-            triQuality={form.triQuality}
+            wasteMeasurementMethod={form.wasteMeasurementMethod}
+            wasteRecyclablesKg={form.wasteRecyclablesKg}
+            wasteGlassKg={form.wasteGlassKg}
+            wasteHouseholdKg={form.wasteHouseholdKg}
+            wasteOtherKg={form.wasteOtherKg}
+            wasteUnusualObjects={form.wasteUnusualObjects}
+            wasteSpecialHandlingWaste={form.wasteSpecialHandlingWaste}
+            onMeasurementMethodChange={(value) => updateField("wasteMeasurementMethod", value)}
             notes={form.notes}
             wasteCategories={form.wasteCategories ?? []}
             onTriChange={(key, value) => updateField(key, value)}

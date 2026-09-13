@@ -16,6 +16,10 @@ export type ActionSourceName = "actions" | "spots" | "local";
 import type { ActionDataQualitySummary } from "./quality/data-quality-types";
 import type { ActionQualityGrade } from "./quality/quality-rules";
 import type { WasteCategorySlug } from "@/lib/waste/types";
+import type {
+  ActionWasteMeasurementMethod,
+  CanonicalWasteBreakdown,
+} from "@/lib/waste/measurement";
 import type { OrganizerType } from "./organizer-type";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 
@@ -98,15 +102,22 @@ export type ActionVisionEstimate = {
 
 export type ActionMegotsCondition = "propre" | "humide" | "mouille";
 
-export type ActionWasteBreakdown = {
+export type ActionWasteBreakdown = CanonicalWasteBreakdown & {
+  /** Legacy read compatibility only; new writes use the canonical fields. */
   megotsKg?: number;
   megotsCondition?: ActionMegotsCondition;
+  /** Legacy read compatibility only; new writes use recyclablesKg. */
   plastiqueKg?: number;
+  /** Legacy read compatibility only; use glassKg for new writes. */
   verreKg?: number;
+  /** Legacy read compatibility only; use recyclablesKg for new writes. */
   metalKg?: number;
+  /** Legacy read compatibility only; use householdWasteKg or otherWasteKg. */
   mixteKg?: number;
   triQuality?: "faible" | "moyenne" | "elevee";
 };
+
+export type { ActionWasteMeasurementMethod };
 
 export type ActionQualityBreakdown = {
   completeness: number;
@@ -194,12 +205,14 @@ export type ActionListItem = {
       groupJoinEnabled: boolean | null;
       actionPhase?: ActionPhase | null;
       wasteKg: number | null;
+      cigaretteButtsKg?: number | null;
       cigaretteButts: number | null;
       postActionPollutionScore?: number | null;
       volunteersCount: number;
       durationMinutes: number;
       manualDrawing: ActionDrawing | null;
       wasteBreakdown?: ActionWasteBreakdown | null;
+      wasteMeasurementMethod?: ActionWasteMeasurementMethod | null;
       placeType?: string | null;
       submissionMode?: ActionSubmissionMode | null;
       departureLocationLabel?: string | null;
@@ -255,6 +268,7 @@ export type CreateActionPayload = {
   latitude?: number;
   longitude?: number;
   wasteKg: number | null;
+  cigaretteButtsKg?: number | null;
   cigaretteButts: number | null;
   cigaretteButtsCount?: number | null;
   volunteersCount: number;
@@ -268,6 +282,7 @@ export type CreateActionPayload = {
   geometrySource?: ActionGeometrySource | null;
   submissionMode?: ActionSubmissionMode;
   wasteBreakdown?: ActionWasteBreakdown;
+  wasteMeasurementMethod?: ActionWasteMeasurementMethod | null;
   recordType?: ActionRecordType;
   photos?: ActionPhotoAsset[];
   visionEstimate?: ActionVisionEstimate | null;

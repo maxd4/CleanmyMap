@@ -180,18 +180,29 @@ export function useAdminWorkflow(
  notes: item.notes_plain ?? item.notes ?? metadata?.notesPlain ?? metadata?.notes ?? "",
  placeType: metadata?.placeType ?? "",
  submissionMode: item.submission_mode ?? metadata?.submissionMode ??"complete",
- wasteMegotsKg:
- wasteBreakdown?.megotsKg === undefined ? "" : String(wasteBreakdown.megotsKg),
- wasteMegotsCondition: wasteBreakdown?.megotsCondition ??"propre",
- wastePlastiqueKg:
- wasteBreakdown?.plastiqueKg === undefined ? "" : String(wasteBreakdown.plastiqueKg),
- wasteVerreKg:
- wasteBreakdown?.verreKg === undefined ? "" : String(wasteBreakdown.verreKg),
- wasteMetalKg:
- wasteBreakdown?.metalKg === undefined ? "" : String(wasteBreakdown.metalKg),
- wasteMixteKg:
- wasteBreakdown?.mixteKg === undefined ? "" : String(wasteBreakdown.mixteKg),
- triQuality: wasteBreakdown?.triQuality ??"moyenne",
+ cigaretteButtsKg:
+   metadata?.cigaretteButtsKg === undefined || metadata?.cigaretteButtsKg === null
+     ? ""
+     : String(metadata.cigaretteButtsKg),
+ wasteMeasurementMethod: metadata?.wasteMeasurementMethod ?? "",
+ wasteRecyclablesKg:
+   wasteBreakdown?.recyclablesKg === undefined || wasteBreakdown?.recyclablesKg === null
+     ? ""
+     : String(wasteBreakdown.recyclablesKg),
+ wasteGlassKg:
+   wasteBreakdown?.glassKg === undefined || wasteBreakdown?.glassKg === null
+     ? ""
+     : String(wasteBreakdown.glassKg),
+ wasteHouseholdKg:
+   wasteBreakdown?.householdWasteKg === undefined || wasteBreakdown?.householdWasteKg === null
+     ? ""
+     : String(wasteBreakdown.householdWasteKg),
+ wasteOtherKg:
+   wasteBreakdown?.otherWasteKg === undefined || wasteBreakdown?.otherWasteKg === null
+     ? ""
+     : String(wasteBreakdown.otherWasteKg),
+ wasteUnusualObjects: wasteBreakdown?.unusualObjects ?? "",
+ wasteSpecialHandlingWaste: wasteBreakdown?.specialHandlingWaste ?? "",
  manualDrawingJson: drawing ? JSON.stringify(drawing, null, 2) : "",
  };
  }

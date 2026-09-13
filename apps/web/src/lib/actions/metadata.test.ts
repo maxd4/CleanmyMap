@@ -13,7 +13,14 @@ describe("action metadata notes", () => {
       placeType: "Bois/Parc/Jardin/Square/Sentier",
       routeStyle: "souple",
       routeAdjustmentMessage: "Contourner l'avenue principale",
-      wasteBreakdown: { plastiqueKg: 2.4, triQuality: "elevee" },
+      wasteMeasurementMethod: "balance_suspendue",
+      cigaretteButtsKg: 0,
+      wasteBreakdown: {
+        recyclablesKg: 2.4,
+        glassKg: null,
+        householdWasteKg: 0,
+        otherWasteKg: null,
+      },
     });
     const parsed = extractActionMetadataFromNotes(notes);
 
@@ -23,8 +30,10 @@ describe("action metadata notes", () => {
     expect(parsed.placeType).toBe("Bois/Parc/Jardin/Square/Sentier");
     expect(parsed.routeStyle).toBe("souple");
     expect(parsed.routeAdjustmentMessage).toBe("Contourner l'avenue principale");
-    expect(parsed.wasteBreakdown?.plastiqueKg).toBe(2.4);
-    expect(parsed.wasteBreakdown?.triQuality).toBe("elevee");
+    expect(parsed.wasteMeasurementMethod).toBe("balance_suspendue");
+    expect(parsed.cigaretteButtsKg).toBe(0);
+    expect(parsed.wasteBreakdown?.recyclablesKg).toBe(2.4);
+    expect(parsed.wasteBreakdown?.householdWasteKg).toBe(0);
   });
 
   it("keeps plain notes when no metadata is provided", () => {

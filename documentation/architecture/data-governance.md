@@ -254,6 +254,47 @@ accuracy_m
 
 Ne pas convertir silencieusement une unité sans documenter le contrat.
 
+## Contrat de mesure des déchets hors mégots
+
+`wasteKg` désigne exclusivement la masse totale des déchets hors mégots,
+exprimée en kilogrammes. Sa sémantique est stricte : `null` signifie « non
+mesuré », `0` signifie « zéro explicitement observé » et une valeur supérieure
+à zéro est une mesure connue. Aucune couche ne doit remplacer une valeur
+inconnue par zéro pour compléter une mesure ou une ventilation.
+
+La méthode de mesure est facultative et, lorsqu'elle est renseignée, utilise
+une des valeurs suivantes : `balance_suspendue`, `balance_au_sol`,
+`estimation_visuelle`, `autre` ou `inconnue`. Elle décrit la mesure de
+`wasteKg`, pas une estimation implicite des mégots. Le nombre de mégots reste
+une mesure séparée ; sa masse éventuelle est également séparée de `wasteKg`.
+
+La ventilation canonique, également facultative et stockée dans la métadonnée
+structurée de l'action, contient uniquement :
+
+```txt
+recyclablesKg
+glassKg
+householdWasteKg
+otherWasteKg
+```
+
+Les champs descriptifs facultatifs `unusualObjects` et
+`specialHandlingWaste` conservent respectivement les objets insolites et les
+objets nécessitant une filière ou un point de collecte spécialisé. Chaque
+catégorie de masse conserve la distinction `null`/zéro/valeur positive.
+
+La somme des quatre catégories n'est comparée à `wasteKg` que lorsque les
+quatre catégories sont effectivement renseignées par des nombres valides.
+Une différence strictement supérieure à 20 % produit un avertissement non
+bloquant ; elle ne rejette jamais l'action. Une ventilation partielle reste
+partielle et ne devient pas une ventilation complète par imputation de zéros.
+
+Les anciennes clés `megotsKg`, `plastiqueKg`, `verreKg`, `metalKg`, `mixteKg`
+et `triQuality` sont conservées uniquement pour la lecture bornée de données
+historiques. Elles ne sont plus écrites par les formulaires ni converties
+silencieusement vers les quatre catégories canoniques : la répartition d'une
+ancienne mesure n'est pas connue sans nouvelle observation.
+
 ## Contrat temporel des actions
 
 Le contrat métier distingue exactement deux notions :

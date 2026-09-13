@@ -8,7 +8,11 @@ import { formatKg, formatSignedPercent } from "../utils/harvest-utils";
 import { cn } from "@/lib/utils";
 import type { FormState } from "../form/model";
 import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
-import type { WasteCategorySlug } from "@/lib/waste";
+import {
+  compareWasteBreakdownToTotal,
+  type ActionWasteMeasurementMethod,
+  type WasteCategorySlug,
+} from "@/lib/waste";
 
 type HarvestWasteSectionProps = {
   wasteKg: string;
@@ -21,14 +25,17 @@ type HarvestWasteSectionProps = {
   confidenceLabel: string | null;
   onWasteKgChange: (value: string) => void;
   // Tri détaillé
-  wastePlastiqueKg: string;
-  wasteVerreKg: string;
-  wasteMetalKg: string;
-  wasteMixteKg: string;
-  triQuality: FormState["triQuality"];
+  wasteMeasurementMethod: ActionWasteMeasurementMethod | "";
+  wasteRecyclablesKg: string;
+  wasteGlassKg: string;
+  wasteHouseholdKg: string;
+  wasteOtherKg: string;
+  wasteUnusualObjects: string;
+  wasteSpecialHandlingWaste: string;
+  onMeasurementMethodChange: (value: ActionWasteMeasurementMethod | "") => void;
   notes: string;
   wasteCategories: WasteCategorySlug[];
-  onTriChange: <K extends "wastePlastiqueKg" | "wasteVerreKg" | "wasteMetalKg" | "wasteMixteKg" | "triQuality" | "notes" | "wasteCategories">(
+  onTriChange: <K extends "wasteRecyclablesKg" | "wasteGlassKg" | "wasteHouseholdKg" | "wasteOtherKg" | "wasteUnusualObjects" | "wasteSpecialHandlingWaste" | "notes" | "wasteCategories">(
     key: K, value: FormState[K]
   ) => void;
 };
@@ -45,17 +52,32 @@ export function HarvestWasteSection({
   sourceLabel,
   confidenceLabel,
   onWasteKgChange,
-  wastePlastiqueKg,
-  wasteVerreKg,
-  wasteMetalKg,
-  wasteMixteKg,
-  triQuality,
+  wasteMeasurementMethod,
+  wasteRecyclablesKg,
+  wasteGlassKg,
+  wasteHouseholdKg,
+  wasteOtherKg,
+  wasteUnusualObjects,
+  wasteSpecialHandlingWaste,
+  onMeasurementMethodChange,
   notes,
   wasteCategories,
   onTriChange,
 }: HarvestWasteSectionProps) {
   const [triOpen, setTriOpen] = useState(false);
   const delta = wasteDeltaPercent;
+  const parseKg = (value: string): number | null => {
+    const parsed = Number(value);
+    return value.trim().length > 0 && Number.isFinite(parsed) && parsed >= 0
+      ? parsed
+      : null;
+  };
+  const coherence = compareWasteBreakdownToTotal(parseKg(wasteKg), {
+    recyclablesKg: parseKg(wasteRecyclablesKg),
+    glassKg: parseKg(wasteGlassKg),
+    householdWasteKg: parseKg(wasteHouseholdKg),
+    otherWasteKg: parseKg(wasteOtherKg),
+  });
   const TrendIcon = delta > 5 ? TrendingUp : delta < -5 ? TrendingDown : Minus;
   const trendColor = delta > 5 ? "text-emerald-600" : delta < -5 ? "text-orange-500" : "text-slate-400";
 
@@ -79,7 +101,7 @@ export function HarvestWasteSection({
 
       {/* Input */}
       <label className="block space-y-1.5">
-        <span className="text-xs font-medium text-slate-500">Masse totale (kg)</span>
+        <span className="text-xs font-medium text-slate-500">Masse totale hors mégots (kg)</span>
         <input
           id="harvest-waste-kg"
           inputMode="decimal"
@@ -92,6 +114,24 @@ export function HarvestWasteSection({
           onChange={(e) => onWasteKgChange(e.target.value)}
           placeholder="Ex : 12,5"
         />
+      </label>
+
+      <label className="block space-y-1.5">
+        <span className="text-xs font-medium text-slate-500">Méthode de mesure (facultatif)</span>
+        <select
+          value={wasteMeasurementMethod}
+          onChange={(event) =>
+            onMeasurementMethodChange(event.target.value as ActionWasteMeasurementMethod | "")
+          }
+          className={triInputCls}
+        >
+          <option value="">Non renseignée</option>
+          <option value="balance_suspendue">Balance suspendue</option>
+          <option value="balance_au_sol">Balance au sol</option>
+          <option value="estimation_visuelle">Estimation visuelle</option>
+          <option value="autre">Autre</option>
+          <option value="inconnue">Inconnue</option>
+        </select>
       </label>
 
       {/* Slider */}
@@ -134,6 +174,11 @@ export function HarvestWasteSection({
           idPrefix="harvest-waste"
         />
         <WasteFieldSummary value={wasteCategories} className="mt-4" />
+        {coherence.status === "warning" ? (
+          <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+            Attention : la somme des catégories diffère de la masse totale de plus de 20 %. La saisie reste acceptée ; vérifiez la ventilation si possible.
+          </p>
+        ) : null}
       </div>
 
       {/* ── Tri détaillé (dépliable) ──────────────────────────────────── */}
@@ -151,10 +196,10 @@ export function HarvestWasteSection({
           <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
             <div className="grid grid-cols-2 gap-3">
               {[
-                { key: "wastePlastiqueKg" as const, label: "Plastique (kg)", value: wastePlastiqueKg },
-                { key: "wasteVerreKg" as const,     label: "Verre (kg)",     value: wasteVerreKg },
-                { key: "wasteMetalKg" as const,     label: "Métal (kg)",     value: wasteMetalKg },
-                { key: "wasteMixteKg" as const,     label: "Mixte (kg)",     value: wasteMixteKg },
+                { key: "wasteRecyclablesKg" as const, label: "Recyclables (kg)", value: wasteRecyclablesKg },
+                { key: "wasteGlassKg" as const,       label: "Verre (kg)",       value: wasteGlassKg },
+                { key: "wasteHouseholdKg" as const,   label: "Déchets ménagers (kg)", value: wasteHouseholdKg },
+                { key: "wasteOtherKg" as const,       label: "Autres déchets (kg)", value: wasteOtherKg },
               ].map(({ key, label, value }) => (
                 <label key={key} className="block space-y-1">
                   <span className="text-[10px] font-medium text-slate-400">{label}</span>
@@ -171,26 +216,29 @@ export function HarvestWasteSection({
               ))}
             </div>
 
-            <div className="space-y-1">
-              <span className="text-[10px] font-medium text-slate-400">Qualité du tri</span>
-              <div className="flex gap-2">
-                {(["faible", "moyenne", "elevee"] as const).map((q) => (
-                  <button
-                    key={q}
-                    type="button"
-                    onClick={() => onTriChange("triQuality", q)}
-                    className={cn(
-                      "flex-1 rounded-lg border py-2 text-xs font-semibold transition-all",
-                      triQuality === q
-                        ? "border-emerald-400 bg-emerald-50 text-emerald-700"
-                        : "border-slate-200 bg-white text-slate-500 hover:border-slate-300"
-                    )}
-                  >
-                    {q === "faible" ? "Faible" : q === "moyenne" ? "Moyenne" : "Élevée"}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <label className="block space-y-1">
+              <span className="text-[10px] font-medium text-slate-400">Objets insolites (facultatif)</span>
+              <textarea
+                rows={2}
+                maxLength={2000}
+                placeholder="Ex. objet trouvé ou volume inhabituel"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 resize-none"
+                value={wasteUnusualObjects}
+                onChange={(e) => onTriChange("wasteUnusualObjects", e.target.value)}
+              />
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-[10px] font-medium text-slate-400">Filière ou point spécialisé (facultatif)</span>
+              <textarea
+                rows={2}
+                maxLength={2000}
+                placeholder="Ex. pile, seringue, DEEE ou objet à orienter"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 resize-none"
+                value={wasteSpecialHandlingWaste}
+                onChange={(e) => onTriChange("wasteSpecialHandlingWaste", e.target.value)}
+              />
+            </label>
 
             <label className="block space-y-1">
               <span className="text-[10px] font-medium text-slate-400">Notes sur la collecte</span>

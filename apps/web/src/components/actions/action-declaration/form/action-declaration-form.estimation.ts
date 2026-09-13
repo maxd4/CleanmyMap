@@ -4,7 +4,6 @@ type EstimateWasteInput = {
  volunteersCount: string;
  durationMinutes: string;
  placeType: string;
- wasteMegotsKg: string;
 };
 
 const PLACE_TYPE_MULTIPLIER: Record<string, number> = {
@@ -30,9 +29,6 @@ export function estimateWasteKg(input: EstimateWasteInput): number {
  const durationMinutes = clamp(toRequiredNumber(input.durationMinutes, 45), 5, 360);
  const durationHours = durationMinutes / 60;
  const placeFactor = PLACE_TYPE_MULTIPLIER[input.placeType] ?? 1;
- const megotsKg = clamp(toRequiredNumber(input.wasteMegotsKg, 0), 0, 100);
-
  const baseKg = volunteers * durationHours * 1.2 * placeFactor;
- const estimated = baseKg + megotsKg * 0.6;
- return Number(clamp(estimated, 0.1, 1000).toFixed(1));
+ return Number(clamp(baseKg, 0.1, 1000).toFixed(1));
 }

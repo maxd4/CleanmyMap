@@ -104,6 +104,7 @@ describe("global waste category contract", () => {
       { slug: "cigarette_butt", kg: 0.4 },
       { slug: "glass", kg: 2 },
     ]);
+    expect(getCanonicalWasteQuantities({ verreKg: undefined })).toEqual([]);
   });
 
   it("does not treat signalement provenance as a waste category", () => {

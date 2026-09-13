@@ -340,8 +340,14 @@ describe("action declaration payload helpers", () => {
 
     expect(payload.cigaretteButts).toBe(10000);
     expect(payload.cigaretteButtsCount).toBe(10000);
-    expect(payload.wasteBreakdown?.megotsKg).toBe(2);
-    expect(payload.wasteBreakdown?.megotsCondition).toBe("propre");
+    expect(payload.cigaretteButtsKg).toBe(2);
+    expect(payload.wasteBreakdown).toMatchObject({
+      recyclablesKg: null,
+      glassKg: null,
+      householdWasteKg: null,
+      otherWasteKg: null,
+    });
+    expect(payload.wasteBreakdown).not.toHaveProperty("megotsKg");
   });
 
   it("prefers a ready route preview before submission", async () => {

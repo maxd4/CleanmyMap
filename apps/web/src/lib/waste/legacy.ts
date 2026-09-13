@@ -51,8 +51,14 @@ export function getCanonicalWasteQuantities(
   ];
 
   return quantities.flatMap(([legacy, value]) => {
-    const kg = Number(value ?? 0);
-    return kg > 0
+    // Legacy compatibility must not turn an omitted category into an
+    // observed zero. Explicit zero remains valid but contributes no positive
+    // quantity to the historical aggregate.
+    const kg =
+      typeof value === "number" && Number.isFinite(value) && value >= 0
+        ? value
+        : null;
+    return kg !== null && kg > 0
       ? [{ slug: canonicalWasteSlugFromLegacy(legacy), kg }]
       : [];
   });

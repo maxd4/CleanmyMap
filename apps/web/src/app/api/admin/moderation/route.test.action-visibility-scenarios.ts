@@ -154,7 +154,12 @@ export function registerActionVisibilityScenarios({
             cigaretteButts: 20,
             volunteersCount: 4,
             durationMinutes: 60,
-            wasteBreakdown: { megotsKg: 0.2 },
+            wasteBreakdown: {
+              recyclablesKg: null,
+              glassKg: null,
+              householdWasteKg: null,
+              otherWasteKg: 0.2,
+            },
           },
         }),
       }),

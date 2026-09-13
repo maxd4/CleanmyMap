@@ -149,6 +149,7 @@ function toActionContractFromRow(row: ActionRow): ActionDataContract {
     geometryConfidence: row.geometry_confidence ?? null,
     geometrySource: row.geometry_source ?? null,
     wasteKg: row.waste_kg,
+    cigaretteButtsKg: parsedMetadata.cigaretteButtsKg,
     cigaretteButts: row.cigarette_butts,
     volunteersCount: row.volunteers_count,
     durationMinutes: row.duration_minutes,
@@ -169,6 +170,7 @@ function toActionContractFromRow(row: ActionRow): ActionDataContract {
     notesPlain: parsedMetadata.cleanNotes,
     submissionMode: parsedMetadata.submissionMode,
     wasteBreakdown: parsedMetadata.wasteBreakdown,
+    wasteMeasurementMethod: parsedMetadata.wasteMeasurementMethod,
     manualDrawing: parsedNotes.manualDrawing,
     manualDrawingGeoJson: toGeoJsonString(parsedNotes.manualDrawing),
   });

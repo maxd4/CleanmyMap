@@ -17,6 +17,7 @@ import {
   type PersistedDerivedGeometry,
 } from "../geometry/derived-geometry";
 import { normalizeClockTime } from "../time-contract";
+import type { ActionWasteMeasurementMethod } from "@/lib/waste/measurement";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "../organizer-type";
 
@@ -64,6 +65,8 @@ export type ActionDataMetadata = {
   notesPlain: string | null;
   submissionMode: ActionSubmissionMode | null;
   wasteBreakdown: ActionWasteBreakdown | null;
+  wasteMeasurementMethod?: ActionWasteMeasurementMethod | null;
+  cigaretteButtsKg?: number | null;
   /** Structured Trash Spotter categories read from the transient notes marker. */
   wasteCategories?: WasteCategorySlug[] | null;
   photos: ActionPhotoAsset[] | null;
@@ -110,6 +113,7 @@ export type BuildActionContractParams = {
   departmentCode?: string | null;
   departmentName?: string | null;
   wasteKg?: number | null;
+  cigaretteButtsKg?: number | null;
   cigaretteButts?: number | null;
   postActionPollutionScore?: number | null;
   /** Optional future measured score for a quantified Trash Spotter observation. */
@@ -133,6 +137,7 @@ export type BuildActionContractParams = {
   notesPlain?: string | null;
   submissionMode?: ActionSubmissionMode | null;
   wasteBreakdown?: ActionWasteBreakdown | null;
+  wasteMeasurementMethod?: ActionWasteMeasurementMethod | null;
   wasteCategories?: WasteCategorySlug[] | null;
   photos?: ActionPhotoAsset[] | null;
   visionEstimate?: ActionVisionEstimate | null;
@@ -246,13 +251,21 @@ function buildActionNoteMetadata(
   params: BuildActionContractParams,
 ): Pick<
   ActionDataMetadata,
-  "notes" | "notesPlain" | "submissionMode" | "wasteBreakdown" | "wasteCategories"
+  | "notes"
+  | "notesPlain"
+  | "submissionMode"
+  | "wasteBreakdown"
+  | "wasteMeasurementMethod"
+  | "cigaretteButtsKg"
+  | "wasteCategories"
 > {
   return {
     notes: params.notes ?? null,
     notesPlain: params.notesPlain ?? null,
     submissionMode: params.submissionMode ?? null,
     wasteBreakdown: params.wasteBreakdown ?? null,
+    wasteMeasurementMethod: params.wasteMeasurementMethod ?? null,
+    cigaretteButtsKg: params.cigaretteButtsKg ?? null,
     wasteCategories: params.wasteCategories ? [...params.wasteCategories] : null,
   };
 }

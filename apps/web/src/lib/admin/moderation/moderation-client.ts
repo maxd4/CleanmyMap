@@ -29,6 +29,7 @@ export type AdminActionEditPayload = {
   latitude?: number | null;
   longitude?: number | null;
   wasteKg?: number | null;
+  cigaretteButtsKg?: number | null;
   cigaretteButts?: number | null;
   volunteersCount?: number;
   durationMinutes?: number;
@@ -36,6 +37,13 @@ export type AdminActionEditPayload = {
   placeType?: string | null;
   submissionMode?: ActionSubmissionMode | null;
   wasteBreakdown?: ActionWasteBreakdown | null;
+  wasteMeasurementMethod?:
+    | "balance_suspendue"
+    | "balance_au_sol"
+    | "estimation_visuelle"
+    | "autre"
+    | "inconnue"
+    | null;
   manualDrawing?: ActionDrawing | null;
 };
 

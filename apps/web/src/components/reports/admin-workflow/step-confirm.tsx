@@ -313,15 +313,15 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  {[
  ["latitude","Latitude"],
  ["longitude","Longitude"],
- ["wasteKg","Poids total kg"],
+ ["wasteKg","Poids total hors mégots kg"],
  ["cigaretteButts","Mégots"],
+ ["cigaretteButtsKg","Mégots kg"],
  ["volunteersCount","Bénévoles"],
  ["durationMinutes","Durée min"],
- ["wasteMegotsKg","Mégots kg"],
- ["wastePlastiqueKg","Plastique kg"],
- ["wasteVerreKg","Verre kg"],
- ["wasteMetalKg","Métal kg"],
- ["wasteMixteKg","Mixte kg"],
+ ["wasteRecyclablesKg","Recyclables kg"],
+ ["wasteGlassKg","Verre kg"],
+ ["wasteHouseholdKg","Déchets ménagers kg"],
+ ["wasteOtherKg","Autres déchets kg"],
  ].map(([key, label]) => (
  <CmmField key={key} label={label}>
  <CmmInput
@@ -338,28 +338,35 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  />
  </CmmField>
  ))}
- <CmmField label="État mégots">
+ <CmmField label="Méthode de mesure">
  <CmmSelect
- value={workflow.actionEditDraft!.wasteMegotsCondition}
- onChange={(event) => updateActionDraft(workflow,"wasteMegotsCondition",event.target.value as ActionModerationEditDraft["wasteMegotsCondition"])}
+ value={workflow.actionEditDraft!.wasteMeasurementMethod}
+ onChange={(event) => updateActionDraft(workflow,"wasteMeasurementMethod",event.target.value as ActionModerationEditDraft["wasteMeasurementMethod"])}
  >
- <option value="propre">Propre</option>
- <option value="humide">Humide</option>
- <option value="mouille">Mouillé</option>
- </CmmSelect>
- </CmmField>
- <CmmField label="Qualité tri">
- <CmmSelect
- value={workflow.actionEditDraft!.triQuality}
- onChange={(event) => updateActionDraft(workflow,"triQuality",event.target.value as ActionModerationEditDraft["triQuality"])}
- >
- <option value="faible">Faible</option>
- <option value="moyenne">Moyenne</option>
- <option value="elevee">Élevée</option>
+ <option value="">Non renseignée</option>
+ <option value="balance_suspendue">Balance suspendue</option>
+ <option value="balance_au_sol">Balance au sol</option>
+ <option value="estimation_visuelle">Estimation visuelle</option>
+ <option value="autre">Autre</option>
+ <option value="inconnue">Inconnue</option>
  </CmmSelect>
  </CmmField>
  </div>
  <div className="mt-3 grid gap-3 md:grid-cols-2">
+ <CmmField label="Objets insolites">
+ <CmmInput
+ value={workflow.actionEditDraft!.wasteUnusualObjects}
+ onChange={(event) => updateActionDraft(workflow,"wasteUnusualObjects",event.target.value)}
+ className="font-normal"
+ />
+ </CmmField>
+ <CmmField label="Filière ou point spécialisé">
+ <CmmInput
+ value={workflow.actionEditDraft!.wasteSpecialHandlingWaste}
+ onChange={(event) => updateActionDraft(workflow,"wasteSpecialHandlingWaste",event.target.value)}
+ className="font-normal"
+ />
+ </CmmField>
  <CmmField label="Type de lieu">
  <CmmInput
  value={workflow.actionEditDraft!.placeType}

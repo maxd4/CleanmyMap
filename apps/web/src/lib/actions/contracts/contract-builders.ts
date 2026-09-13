@@ -48,6 +48,7 @@ export type ActionContractCreatePayload = {
     preparationData?: ActionPreparationData | null;
     placeType?: string;
     wasteKg?: number | null;
+    cigaretteButtsKg?: number | null;
     cigaretteButts?: number | null;
     volunteersCount?: number;
     durationMinutes?: number;
@@ -56,6 +57,7 @@ export type ActionContractCreatePayload = {
     routeAdjustmentMessage?: string;
     submissionMode?: ActionSubmissionMode;
     wasteBreakdown?: ActionWasteBreakdown;
+    wasteMeasurementMethod?: import("@/lib/waste/measurement").ActionWasteMeasurementMethod | null;
     departureLocationLabel?: string;
     arrivalLocationLabel?: string;
     photos?: ActionPhotoAsset[];
@@ -109,6 +111,7 @@ export function toContractCreatePayload(
       ),
       placeType: payload.placeType,
       wasteKg: payload.wasteKg,
+      cigaretteButtsKg: payload.cigaretteButtsKg,
       cigaretteButts: payload.cigaretteButts,
       volunteersCount: payload.volunteersCount,
       durationMinutes: payload.durationMinutes,
@@ -117,6 +120,7 @@ export function toContractCreatePayload(
       routeAdjustmentMessage: payload.routeAdjustmentMessage,
       submissionMode: payload.submissionMode,
       wasteBreakdown: payload.wasteBreakdown,
+      wasteMeasurementMethod: payload.wasteMeasurementMethod,
       photos: payload.photos,
       visionEstimate: payload.visionEstimate,
     },
@@ -189,6 +193,7 @@ function normalizeContractCreatePayload(
     departmentCode: payload.location.departmentCode ?? null,
     departmentName: payload.location.departmentName ?? null,
     wasteKg: payload.metadata.wasteKg ?? null,
+    cigaretteButtsKg: payload.metadata.cigaretteButtsKg ?? null,
     cigaretteButts: payload.metadata.cigaretteButts ?? null,
     volunteersCount: fallbackNumber(payload.metadata.volunteersCount, 1),
     durationMinutes: fallbackNumber(payload.metadata.durationMinutes, 0),
@@ -197,6 +202,7 @@ function normalizeContractCreatePayload(
     notes: payload.metadata.notes,
     submissionMode: payload.metadata.submissionMode ?? "complete",
     wasteBreakdown: payload.metadata.wasteBreakdown,
+    wasteMeasurementMethod: payload.metadata.wasteMeasurementMethod ?? undefined,
     photos: payload.metadata.photos ?? undefined,
     visionEstimate: payload.metadata.visionEstimate ?? undefined,
     manualDrawing: buildManualDrawing(payload.geometry),

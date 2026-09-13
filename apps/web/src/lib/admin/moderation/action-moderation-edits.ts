@@ -36,13 +36,12 @@ const manualDrawingSchema = z
   });
 
 const adminWasteBreakdownSchema = z.object({
-  megotsKg: z.number().min(0).max(100000).optional(),
-  megotsCondition: z.enum(["propre", "humide", "mouille"]).optional(),
-  plastiqueKg: z.number().min(0).max(100000).optional(),
-  verreKg: z.number().min(0).max(100000).optional(),
-  metalKg: z.number().min(0).max(100000).optional(),
-  mixteKg: z.number().min(0).max(100000).optional(),
-  triQuality: z.enum(["faible", "moyenne", "elevee"]).optional(),
+  recyclablesKg: z.number().min(0).max(100000).nullable().optional(),
+  glassKg: z.number().min(0).max(100000).nullable().optional(),
+  householdWasteKg: z.number().min(0).max(100000).nullable().optional(),
+  otherWasteKg: z.number().min(0).max(100000).nullable().optional(),
+  unusualObjects: z.string().trim().max(2000).nullable().optional(),
+  specialHandlingWaste: z.string().trim().max(2000).nullable().optional(),
 });
 
 export const actionEditsSchema = z
@@ -60,6 +59,7 @@ export const actionEditsSchema = z
     latitude: z.number().min(-90).max(90).nullable().optional(),
     longitude: z.number().min(-180).max(180).nullable().optional(),
     wasteKg: z.number().min(0).max(100000).nullable().optional(),
+    cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
     cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
     volunteersCount: z.number().int().min(1).max(500).optional(),
     durationMinutes: z.number().int().min(0).max(24 * 60).optional(),
@@ -67,6 +67,10 @@ export const actionEditsSchema = z
     placeType: z.string().trim().max(80).nullable().optional(),
     submissionMode: z.enum(["quick", "complete"]).nullable().optional(),
     wasteBreakdown: adminWasteBreakdownSchema.nullable().optional(),
+    wasteMeasurementMethod: z
+      .enum(["balance_suspendue", "balance_au_sol", "estimation_visuelle", "autre", "inconnue"])
+      .nullable()
+      .optional(),
     manualDrawing: manualDrawingSchema.nullable().optional(),
   })
   .optional();
@@ -116,6 +120,10 @@ function preserveNullableTextEdit(
   next: string | null | undefined,
   current: string | null,
 ): string | null {
+  return next === undefined ? current : next;
+}
+
+function preserveOptionalEdit<T>(next: T | undefined, current: T): T {
   return next === undefined ? current : next;
 }
 
@@ -263,6 +271,10 @@ export async function buildAdminActionUpdates(
         : existing.cigarette_butts === null
           ? null
           : Number(existing.cigarette_butts),
+    cigaretteButtsKg: preserveOptionalEdit(
+      edits.cigaretteButtsKg,
+      parsedMetadata.cigaretteButtsKg,
+    ),
     volunteersCount: edits.volunteersCount ?? Number(existing.volunteers_count ?? 1),
     durationMinutes: edits.durationMinutes ?? Number(existing.duration_minutes ?? 0),
     notes:
@@ -277,6 +289,10 @@ export async function buildAdminActionUpdates(
       edits.submissionMode !== undefined
         ? edits.submissionMode ?? undefined
         : parsedMetadata.submissionMode ?? undefined,
+    wasteMeasurementMethod: preserveOptionalEdit(
+      edits.wasteMeasurementMethod,
+      parsedMetadata.wasteMeasurementMethod ?? undefined,
+    ),
     wasteBreakdown:
       edits.wasteBreakdown !== undefined
         ? edits.wasteBreakdown ?? undefined
