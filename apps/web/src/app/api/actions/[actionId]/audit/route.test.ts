@@ -113,7 +113,7 @@ describe("GET /api/actions/:actionId/audit", () => {
     runSingleActionQueryMock.mockResolvedValue({
       created_by_clerk_id: "user-2",
     });
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "max" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({ activeRole: "max" });
 
     const { GET } = await import("./route");
     const response = await GET(

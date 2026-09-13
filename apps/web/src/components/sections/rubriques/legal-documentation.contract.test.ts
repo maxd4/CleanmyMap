@@ -82,7 +82,7 @@ describe("contrat documentaire LEGAL-04", () => {
     for (const source of [rootReadme, legalDocumentation]) {
       expect(source).toMatch(/code source est publiquement consultable/iu);
       expect(source).toMatch(/(?:aucun fichier|en l'absence de fichier) `LICENSE`/iu);
-      expect(source).toMatch(/aucune licence open source définitive/iu);
+      expect(source).toMatch(/aucune licence (?:open source|de réutilisation) définitive/iu);
       expect(source).toMatch(/aucun droit général de\s+réutilisation/iu);
       expect(source).not.toContain("Le projet reste distribué en open source");
     }

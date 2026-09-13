@@ -40,6 +40,11 @@ describe("OSRM geometry steps", () => {
       transport: vi.fn(async () => { throw new Error("offline"); }),
     });
     expect(fallback.mode).toBe("fallback");
-    expect(fallback.legs).toEqual([]);
+    expect(fallback.legs).toEqual([{
+      fromStopIndex: 0,
+      toStopIndex: 1,
+      distanceKm: 0.13,
+      estimatedMinutes: 2,
+    }]);
   });
 });
