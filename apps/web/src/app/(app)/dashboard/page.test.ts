@@ -37,6 +37,15 @@ vi.mock("@/components/dashboard/dashboard-overview-section", () => ({
     React.createElement("div", { "data-testid": "dashboard-overview" }, "KPI"),
 }));
 
+vi.mock("@/components/dashboard/dashboard-notifications-section", () => ({
+  DashboardNotificationsSection: () =>
+    React.createElement(
+      "section",
+      { id: "notifications", "data-testid": "dashboard-notifications" },
+      "Notifications",
+    ),
+}));
+
 vi.mock("@/components/dashboard/dashboard-entrance", () => ({
   DashboardEntrance: ({ children }: { children: React.ReactNode }) =>
     React.createElement("div", { "data-testid": "dashboard-entrance" }, children),
@@ -201,6 +210,15 @@ describe("/dashboard page contract", () => {
     expect(markup).toContain('href="/actions/new"');
     expect(markup).toContain('href="/actions/history"');
     expect(markup).toContain('href="/reports"');
+  });
+
+  it("exposes the functional notifications destination section", async () => {
+    mocks.getSafeAuthSession.mockResolvedValue({ userId: "user-1", clerkReachable: true });
+
+    const markup = renderToStaticMarkup(await DashboardPage());
+
+    expect(markup).toContain('id="notifications"');
+    expect(markup).toContain('data-testid="dashboard-notifications"');
   });
 
   it("keeps reporting and moderation workflows out of the dashboard", async () => {

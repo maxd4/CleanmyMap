@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { DashboardOverviewSection } from "@/components/dashboard/dashboard-overview-section";
+import { DashboardNotificationsSection } from "@/components/dashboard/dashboard-notifications-section";
 import { DashboardEntrance } from "@/components/dashboard/dashboard-entrance";
 import { AccountSettingsSection } from "@/components/account/account-settings-section";
 import { AccountEvolutionCta } from "@/components/account/account-evolution-cta";
@@ -262,6 +263,10 @@ export default async function DashboardPage() {
                 primaryAction={primaryAction}
               />
             </Suspense>
+          </div>
+
+          <div data-gsap-reveal>
+            <DashboardNotificationsSection />
           </div>
 
           {/* ── Séparateur ── */}
