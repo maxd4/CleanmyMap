@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  auditCmmButtonLocalScalesInSource,
   auditCanonicalTextSurfaceScales,
   auditSurfaceRepository,
   canonicalTextSurfaceSelectors,
@@ -30,4 +31,22 @@ test("allows decorative scales outside canonical text-surface states", () => {
   ].join("\n");
 
   assert.deepEqual(auditCanonicalTextSurfaceScales(css, "fixture.css"), []);
+});
+
+test("rejects local scales on a CmmButton consumer but allows decorative child scales", () => {
+  const violations = auditCmmButtonLocalScalesInSource(
+    '<CmmButton className="group active:scale-95">Texte <span className="group-hover:scale-110" /></CmmButton>',
+    "fixture.tsx",
+  );
+
+  assert.deepEqual(violations, [
+    "fixture.tsx: CmmButton className contains local text-surface scale: active:scale-95",
+  ]);
+  assert.deepEqual(
+    auditCmmButtonLocalScalesInSource(
+      '<CmmButton className="group">Texte <span className="group-hover:scale-110" /></CmmButton>',
+      "fixture.tsx",
+    ),
+    [],
+  );
 });

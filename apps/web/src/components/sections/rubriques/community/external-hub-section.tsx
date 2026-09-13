@@ -239,7 +239,7 @@ export function ExternalHubSection() {
               }
             </p>
           </div>
-          <CmmButton type="button" tone="primary" variant="pill" className="group/btn whitespace-nowrap px-10 py-5 font-black transition-all shadow-2xl shadow-emerald-500/40 active:scale-95 flex items-center gap-3">
+          <CmmButton type="button" tone="primary" variant="pill" className="group/btn whitespace-nowrap px-10 py-5 font-black shadow-2xl shadow-emerald-500/40 flex items-center gap-3">
             <span>{fr ? "Devenir Partenaire" : "Become Partner"}</span>
             <ArrowRight size={20} className="transition-transform group-hover/btn:translate-x-1" />
           </CmmButton>

@@ -107,7 +107,7 @@ export function ImmersiveLayout({
           </div>
             <button
               onClick={onReload}
-              className={`rounded-2xl px-6 py-3 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 transition active:scale-95 border ${isEmerald ? "border-emerald-200/80 bg-emerald-100 hover:border-emerald-300 hover:bg-emerald-200" : "border-sky-200/80 bg-sky-100 hover:border-sky-300 hover:bg-sky-200"}`}
+              className={`rounded-2xl px-6 py-3 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 transition border ${isEmerald ? "border-emerald-200/80 bg-emerald-100 hover:border-emerald-300 hover:bg-emerald-200" : "border-sky-200/80 bg-sky-100 hover:border-sky-300 hover:bg-sky-200"}`}
             >
               {isValidating ? "Actualisation..." : "Rafraîchir les données"}
             </button>

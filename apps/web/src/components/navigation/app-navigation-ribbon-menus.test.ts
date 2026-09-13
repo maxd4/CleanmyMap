@@ -53,6 +53,7 @@ describe("top ribbon dropdown sizing contract", () => {
     expect(treeSource).not.toContain("tracking-[0.16em] sm:inline");
     expect(accountSource).toContain("<LogIn className=\"h-4 w-4 lg:hidden\"");
     expect(accountSource).toContain("<UserPlus className=\"h-4 w-4 lg:hidden\"");
+    expect(accountSource).not.toContain("active:scale-");
     expect(identitySource).toContain("h-11 min-h-11 w-11 min-w-11");
     expect(identitySource).toContain("hidden truncate text-sm font-bold lg:inline");
   });

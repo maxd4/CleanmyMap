@@ -247,7 +247,7 @@ export const ChatHeader = memo(function ChatHeader({
           <button
             type="button"
             onClick={() => void onConfirmHandle()}
-            className={`mt-6 rounded-xl px-6 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-pink-600 shadow-pink-500/20"}`}
+            className={`mt-6 rounded-xl px-6 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-pink-600 shadow-pink-500/20"}`}
           >
             Confirmer
           </button>
