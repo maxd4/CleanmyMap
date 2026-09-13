@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
-import { Bell, Check, MessageSquare, ShieldCheck, UserCheck, AlertTriangle } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { enUS, fr } from "date-fns/locale";
+import { Bell, Check } from "lucide-react";
 
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmDropdown } from "@/components/ui/cmm-dropdown";
@@ -16,22 +15,8 @@ import {
   markNotificationAsReadForCurrentUser,
   type AppNotification,
 } from "@/lib/notifications/client";
+import { NotificationListItem } from "@/components/notifications/notification-list-item";
 import type { RibbonChrome } from "./app-navigation-ribbon-theme";
-
-function getNotificationIcon(type: AppNotification["type"]) {
-  switch (type) {
-    case "validation":
-      return <ShieldCheck className="text-pink-500" size={16} />;
-    case "security":
-      return <AlertTriangle className="text-rose-500" size={16} />;
-    case "community":
-      return <UserCheck className="text-blue-500" size={16} />;
-    case "chat":
-      return <MessageSquare className="text-violet-500" size={16} />;
-    default:
-      return <Check className="cmm-text-muted" size={16} />;
-  }
-}
 
 type NotificationBellProps = {
   ribbonChrome?: RibbonChrome;
@@ -53,6 +38,10 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
   );
   const unreadCount = useMemo(
     () => visibleNotifications.filter((notification) => !notification.read_at).length,
+    [visibleNotifications],
+  );
+  const previewNotifications = useMemo(
+    () => visibleNotifications.slice(0, 4),
     [visibleNotifications],
   );
   const pollIntervalMs = isOpen ? 300_000 : 900_000;
@@ -196,7 +185,7 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
       open={isOpen}
       onOpenChange={setIsOpen}
       panelRole="region"
-      panelClassName="w-[min(21.25rem,calc(100vw-1rem))] overflow-visible rounded-2xl border border-white/15 bg-slate-950/95 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]"
+      panelClassName="w-[min(22rem,calc(100vw-1rem))] overflow-visible rounded-2xl border border-white/15 bg-slate-950/95 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]"
       panelStyle={
         ribbonChrome
           ? {
@@ -236,8 +225,15 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
               ) : null}
             </div>
 
-            <div className="max-h-96 overflow-y-auto custom-scrollbar">
-              {visibleNotifications.length === 0 ? (
+            <div className="overflow-hidden">
+              {loading && visibleNotifications.length === 0 ? (
+                <div className="space-y-2 p-6 text-center" role="status">
+                  <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-pink-400 border-t-transparent" />
+                  <p className="text-sm font-semibold text-white">
+                    {locale === "fr" ? "Chargement des notifications" : "Loading notifications"}
+                  </p>
+                </div>
+              ) : previewNotifications.length === 0 ? (
                 <div className="space-y-2 p-6 text-center">
                   <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-white/55">
                     <Check size={24} />
@@ -247,71 +243,32 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
                   </p>
                 </div>
               ) : (
-                visibleNotifications.map((notification) => {
-                  const isUnread = !notification.read_at;
-
-                  return (
-                    <button
-                      key={notification.id}
-                      type="button"
-                      onClick={() => void handleNotificationClick(notification)}
-                      className={`relative flex w-full border-b border-white/10 px-3.5 py-3 text-left transition-colors hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-300/70 ${
-                        isUnread ? "bg-white/[0.05]" : "bg-white/[0.015]"
-                      }`}
-                    >
-                      {isUnread ? (
-                        <span className="absolute left-1.5 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.75)]" aria-label={locale === "fr" ? "Non lue" : "Unread"} />
-                      ) : null}
-                      <div className="mr-3 mt-1 flex-shrink-0">
-                        <div
-                          className={`rounded-xl border border-white/10 p-2 ${
-                            isUnread
-                              ? "bg-white/[0.06]"
-                              : "bg-white/[0.03] opacity-70"
-                          }`}
-                        >
-                          {getNotificationIcon(notification.type)}
-                        </div>
-                      </div>
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <div className="flex items-center justify-between gap-3">
-                          <span
-                            className={`truncate font-bold tracking-tight cmm-text-caption ${
-                              isUnread ? "text-white" : "text-white/60"
-                            }`}
-                          >
-                            {notification.title}
-                          </span>
-                          <span className="shrink-0 cmm-text-caption text-white/50">
-                            {formatDistanceToNow(new Date(notification.created_at), {
-                              addSuffix: true,
-                              locale: locale === "fr" ? fr : enUS,
-                            })}
-                          </span>
-                        </div>
-                        <p
-                          className={`leading-relaxed cmm-text-caption ${
-                            isUnread
-                              ? "text-white/72"
-                              : "text-white/54"
-                          }`}
-                        >
-                          {notification.content}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })
+                previewNotifications.map((notification) => (
+                  <NotificationListItem
+                    key={notification.id}
+                    notification={notification}
+                    locale={locale === "fr" ? "fr" : "en"}
+                    compact
+                    onClick={(item) => void handleNotificationClick(item)}
+                  />
+                ))
               )}
             </div>
 
-            <div className="border-t border-white/10 bg-white/[0.03] px-4 py-3 text-center">
+            <div className="flex items-center justify-between border-t border-white/10 bg-white/[0.03] px-4 py-3">
+              <Link
+                href="/dashboard#notifications"
+                onClick={() => setIsOpen(false)}
+                className="text-xs font-semibold text-sky-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
+              >
+                Ouvrir
+              </Link>
               <button
                 type="button"
                 className="text-xs font-semibold text-sky-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
                 onClick={() => setIsOpen(false)}
               >
-                {locale === "fr" ? "Fermer" : "Close"}
+                Fermer
               </button>
             </div>
     </CmmDropdown>
