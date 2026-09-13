@@ -196,18 +196,23 @@ seuil fixe.
 
 Contrat existant :
 
-- la RPC `action_pollution_score_references` calcule la référence à partir des
-  actions approuvées ;
-- cette même RPC expose une ligne globale et les lignes départementales dont le
-  code texte est connu et qui disposent d'au moins deux actions approuvées ;
+- la RPC canonique `action_pollution_score_references_v2` calcule les références
+  à partir des actions éligibles ;
+- cette RPC expose une ligne globale et les lignes départementales, avec des
+  codes texte et des comptes de sources distincts par métrique ;
 - un département ne disposant pas de ces données minimales est absent du
   dictionnaire départemental et reste indisponible dans ce scope ;
 - `apps/web/src/lib/actions/pollution/pollution-score.ts` normalise chaque
   action contre cette référence ;
 - `100 %` représente la plus grande action approuvée disponible pour l'axe
-  concerné ;
+  concerné, rapportée au nombre de bénévoles ;
 - la sévérité conserve la règle métier existante fondée sur le maximum des
   composantes utiles.
+
+L'ancienne RPC `action_pollution_score_references()` n'a plus de consommateur
+applicatif et est retirée par migration append-only. Les migrations historiques
+qui la définissaient restent conservées comme historique Git, mais elle ne
+constitue plus une source métier compatible ou concurrente.
 
 Une optimisation de ce chemin doit préserver :
 

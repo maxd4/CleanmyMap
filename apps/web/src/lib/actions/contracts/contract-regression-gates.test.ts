@@ -32,8 +32,8 @@ describe("actions contract regression gates", () => {
 
     const pollutionScoreReferences = {
       global: {
-        wastePerVolunteerHour: 10,
-        buttsPerVolunteerHour: 500,
+        wastePerVolunteer: 10,
+        buttsPerVolunteer: 500,
         wasteSourceCount: 1,
         buttsSourceCount: 1,
       },
@@ -46,8 +46,8 @@ describe("actions contract regression gates", () => {
     expect(mapItem.longitude).toBe(2.37);
     expect(mapItem.waste_kg).toBe(7.5);
     expect(mapItem.cigarette_butts).toBe(120);
-    expect(mapItem.waste_pollution_score).toBe(33);
-    expect(mapItem.cigarette_butts_pollution_score).toBe(11);
+    expect(mapItem.waste_pollution_score).toBe(25);
+    expect(mapItem.cigarette_butts_pollution_score).toBe(8);
     expect(mapItem.status).toBe("approved");
     expect(mapItem.geometry_source).toBe("estimated_area");
     expect(mapItem.contract?.metadata.volunteersCount).toBe(3);
@@ -58,8 +58,8 @@ describe("actions contract regression gates", () => {
     expect(listItem.duration_minutes).toBe(45);
     expect(listItem.association_name).toBe("Action spontanee");
     expect(listItem.contract?.dates.validatedAt).toBe("2026-04-12T11:00:00.000Z");
-    expect(listItem.waste_pollution_score).toBe(33);
-    expect(listItem.cigarette_butts_pollution_score).toBe(11);
+    expect(listItem.waste_pollution_score).toBe(25);
+    expect(listItem.cigarette_butts_pollution_score).toBe(8);
   });
 
   it("keeps entity type parsing stable for API filters", () => {

@@ -46,8 +46,8 @@ it("maps polygon geometry to map payload without breaking point fields", () => {
     undefined,
     {
       global: {
-        wastePerVolunteerHour: 5,
-        buttsPerVolunteerHour: 500,
+        wastePerVolunteer: 5,
+        buttsPerVolunteer: 500,
         wasteSourceCount: 1,
         buttsSourceCount: 1,
       },
@@ -65,8 +65,8 @@ it("maps polygon geometry to map payload without breaking point fields", () => {
   expect(mapItem.contract?.geometry.confidence).toBe(1);
   expect(mapItem.contract?.geometry.geometrySource).toBe("manual");
   expect(mapItem.contract?.geometry.origin).toBe("manual");
-  expect(mapItem.waste_pollution_score).toBe(68);
-  expect(mapItem.cigarette_butts_pollution_score).toBe(7);
+  expect(mapItem.waste_pollution_score).toBe(63);
+  expect(mapItem.cigarette_butts_pollution_score).toBe(6);
 });
 
 it("keeps geometry optional when normalizing create payload", () => {

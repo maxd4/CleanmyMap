@@ -46,16 +46,16 @@ Il est dérivé des informations disponibles lors de l'action, notamment :
 - masse de déchets collectée ;
 - nombre de mégots collectés ;
 - références de calibration utilisées par le runtime ;
-- normalisation par bénévole-heure lorsque la durée et l'effectif sont
-  renseignés.
+- normalisation par bénévole lorsque l'effectif est renseigné ; la durée reste
+  une condition d'éligibilité de l'action, mais n'entre pas dans la formule.
 
 Le runtime calcule deux composantes indépendantes : l'intensité de déchets en
-kg par bénévole-heure et l'intensité de mégots en mégots par bénévole-heure.
+kg par bénévole et l'intensité de mégots en mégots par bénévole.
 Chaque composante est comparée à sa référence globale maximale, puis bornée
-entre 0 et 100. Le score combiné est la moyenne des composantes exploitables ;
-il reprend la composante unique lorsqu'une seule est disponible et devient
-indisponible lorsqu'aucune ne l'est. La méthode actuellement utilisée doit être
-lue directement dans :
+entre 0 et 100. Le score historique retient la composante exploitable la plus
+élevée ; une métrique absente reste indisponible et, lorsqu'aucune composante
+n'est exploitable, le score est indisponible. La méthode actuellement utilisée
+doit être lue directement dans :
 
 `apps/web/src/lib/actions/pollution/pollution-score.ts`
 
@@ -266,13 +266,14 @@ RPC versionnée `action_pollution_score_references_v2()` et capturées une fois
 par semaine dans le snapshot `map-pollution-score-references` ; la carte lit ce
 snapshot une seule fois et ne fait aucun fetch par action.
 
-Pour chaque action éligible, l'intensité est calculée par bénévole-heure :
-`quantité / (bénévoles × durée en heures)`. Les composantes déchets et mégots
-sont normalisées séparément par leur référence maximale, puis le score est la
-moyenne des composantes réellement exploitables. Une mesure égale à zéro reste
-une mesure valide ; une métrique absente reste indisponible. Le score global
-`combinedGlobalScore` conserve cette référence maximale à l'échelle de toutes
-les actions éligibles.
+Pour chaque action éligible, l'intensité est calculée par bénévole :
+`quantité / bénévoles`. Les composantes déchets et mégots sont normalisées
+séparément par leur référence maximale, puis le score historique retient la
+composante la plus élevée parmi celles réellement exploitables. Une mesure
+égale à zéro reste une mesure valide ; une métrique absente reste indisponible.
+Le score global conserve cette référence maximale à l'échelle de toutes les
+actions éligibles. La durée positive reste obligatoire pour l'éligibilité, mais
+n'est pas transformée en bénévole-heure dans ce contrat.
 
 Cette distinction s'applique aussi aux agrégats Impact, aux rapports et aux
 comparaisons temporelles : `waste_kg = 0` signifie une mesure nulle, tandis que
@@ -284,7 +285,7 @@ pas remplir `waste_kg`.
 
 Le score `departmentRelativeScore` est une comparaison relative interne à un
 `department_code` conservé comme chaîne (par exemple `01`, `2A`, `2B` ou un
-code ultramarin). Sa référence est le maximum de l'intensité bénévole-heure
+code ultramarin). Sa référence est le maximum de l'intensité par bénévole
 dans ce département, avec un nombre de sources conservé séparément pour les
 déchets et les mégots. Une comparaison départementale exige au moins deux
 actions éligibles. Lorsqu'un département ou une composante n'atteint pas ce

@@ -232,8 +232,8 @@ describe("corridor history", () => {
       now: dateAt(60),
       references: {
         global: {
-          wastePerVolunteerHour: 20,
-          buttsPerVolunteerHour: 400,
+          wastePerVolunteer: 20,
+          buttsPerVolunteer: 400,
           wasteSourceCount: 2,
           buttsSourceCount: 2,
         },

@@ -81,8 +81,10 @@ Cette passe clôture l'optimisation préventive issue des commits
 - `BusinessAlertsPanel` demande désormais `types=action` au lieu de
   `types=all` et ne déclenche plus la lecture inutile de
   `trash_spotter_spots` pour cette surface.
-- `action_pollution_score_references()` est protégée par un cache serveur de
-  cinq minutes et par une coalescence des appels concurrents.
+- `action_pollution_score_references_v2()` est protégée par un cache serveur de
+  cinq minutes et par une coalescence des appels concurrents. L'ancienne RPC
+  `action_pollution_score_references()` est historique et n'est plus appelée
+  par l'application.
 - Le provider navigateur des références de pollution utilise une clé SWR
   partagée, un TTL de cinq minutes et conserve l'invalidation explicite.
 - Les reconstructions concurrentes des snapshots publics sont coalescées ;
@@ -101,7 +103,7 @@ aucune policy RLS et aucun privilège Supabase n'ont été modifiés.
 | --- | ---: | ---: | ---: | ---: | ---: |
 | `actions` | `-3393483178721463869` | `63173` | `25027.991593` | `0.3961817801` | `63173` |
 | `trash_spotter_spots` | `2002319452271838000` | `49455` | `6692.507664` | `0.1353251979` | `49455` |
-| `action_pollution_score_references()` | `6131033985496519836` | `5925` | `4015.215263` | `0.6776734621` | `5925` |
+| `action_pollution_score_references()` (historique) | `6131033985496519836` | `5925` | `4015.215263` | `0.6776734621` | `5925` |
 
 Ces nombres sont des compteurs cumulés depuis le reset du 25 mai 2026 ; ils ne
 représentent pas le trafic actuel du site. CleanMyMap est actuellement très

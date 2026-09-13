@@ -16,8 +16,8 @@ import { DEFAULT_ACTIONS_MAP_VIEWPORT, NEUTRAL_MAP_CENTER } from "../actions-map
 
 const RUNTIME_REFERENCES = {
   global: {
-    wastePerVolunteerHour: 20,
-    buttsPerVolunteerHour: 2000,
+    wastePerVolunteer: 20,
+    buttsPerVolunteer: 2000,
     wasteSourceCount: 1,
     buttsSourceCount: 1,
   },
@@ -131,8 +131,8 @@ describe("actions map initial viewport", () => {
     const reference = { latitude: 48.8566, longitude: 2.3522 };
     const dynamicReferences = {
       global: {
-        wastePerVolunteerHour: 100,
-        buttsPerVolunteerHour: 10,
+        wastePerVolunteer: 100,
+        buttsPerVolunteer: 10,
         wasteSourceCount: 1,
         buttsSourceCount: 1,
       },

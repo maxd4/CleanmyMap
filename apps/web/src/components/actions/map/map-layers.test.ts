@@ -99,8 +99,8 @@ vi.mock("./action-pollution-score-references-context", () => ({
   useActionPollutionScoreReferences: () => ({
     references: {
       global: {
-        wastePerVolunteerHour: 20,
-        buttsPerVolunteerHour: 400,
+        wastePerVolunteer: 20,
+        buttsPerVolunteer: 400,
         wasteSourceCount: 1,
         buttsSourceCount: 1,
       },
@@ -407,8 +407,8 @@ describe("ShapeLayers", () => {
     const now = new Date("2026-08-25T00:00:00.000Z");
     const references = {
       global: {
-        wastePerVolunteerHour: 20,
-        buttsPerVolunteerHour: 400,
+        wastePerVolunteer: 20,
+        buttsPerVolunteer: 400,
         wasteSourceCount: 1,
         buttsSourceCount: 1,
       },
@@ -418,6 +418,9 @@ describe("ShapeLayers", () => {
         cigaretteButts: 25,
         volunteersCount: 1,
         durationMinutes: 30,
+        actionType: "action",
+        status: "approved",
+        actionPhase: "post_action_complete",
       }, references.global).severityScore;
     const expectedActionColor = resolveDynamicColor(
       presentActionPollutionProjection(expectedActionScore ?? 0, "2026-06-01", now)
@@ -523,8 +526,8 @@ describe("ShapeLayers", () => {
         action,
         {
           global: {
-            wastePerVolunteerHour: 20,
-            buttsPerVolunteerHour: 400,
+            wastePerVolunteer: 20,
+            buttsPerVolunteer: 400,
             wasteSourceCount: 1,
             buttsSourceCount: 1,
           },

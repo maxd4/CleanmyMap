@@ -9,8 +9,8 @@ type PollutionScoreReferenceRow = {
   scope?: string | null;
   department_code?: string | null;
   department_name?: string | null;
-  waste_per_volunteer_hour?: number | null;
-  butts_per_volunteer_hour?: number | null;
+  waste_per_volunteer?: number | null;
+  butts_per_volunteer?: number | null;
   waste_source_count?: number | null;
   butts_source_count?: number | null;
   eligible_action_count?: number | null;
@@ -41,8 +41,8 @@ function toNonNegativeInteger(value: number | null | undefined): number | null {
 function toGlobalReference(row: PollutionScoreReferenceRow): PollutionScoreReference | null {
   const wasteSourceCount = toNonNegativeInteger(row.waste_source_count);
   const buttsSourceCount = toNonNegativeInteger(row.butts_source_count);
-  const wasteReference = Number(row.waste_per_volunteer_hour);
-  const buttsReference = Number(row.butts_per_volunteer_hour);
+  const wasteReference = Number(row.waste_per_volunteer);
+  const buttsReference = Number(row.butts_per_volunteer);
   const validWasteReference =
     Number.isFinite(wasteReference) &&
     wasteReference > 0;
@@ -59,8 +59,8 @@ function toGlobalReference(row: PollutionScoreReferenceRow): PollutionScoreRefer
   }
 
   return {
-    wastePerVolunteerHour: validWasteReference ? wasteReference : null,
-    buttsPerVolunteerHour: validButtsReference ? buttsReference : null,
+    wastePerVolunteer: validWasteReference ? wasteReference : null,
+    buttsPerVolunteer: validButtsReference ? buttsReference : null,
     wasteSourceCount,
     buttsSourceCount,
   };
@@ -75,8 +75,8 @@ function toDepartmentReference(
   const eligibleActionCount = toNonNegativeInteger(row.eligible_action_count);
   const wasteSourceCount = toNonNegativeInteger(row.waste_source_count);
   const buttsSourceCount = toNonNegativeInteger(row.butts_source_count);
-  const wasteReference = Number(row.waste_per_volunteer_hour);
-  const buttsReference = Number(row.butts_per_volunteer_hour);
+  const wasteReference = Number(row.waste_per_volunteer);
+  const buttsReference = Number(row.butts_per_volunteer);
 
   if (
     !code ||
@@ -94,9 +94,9 @@ function toDepartmentReference(
         typeof row.department_name === "string" && row.department_name.trim().length > 0
           ? row.department_name.trim()
           : null,
-      wastePerVolunteerHour:
+      wastePerVolunteer:
         Number.isFinite(wasteReference) && wasteReference > 0 ? wasteReference : null,
-      buttsPerVolunteerHour:
+      buttsPerVolunteer:
         Number.isFinite(buttsReference) && buttsReference > 0 ? buttsReference : null,
       wasteSourceCount,
       buttsSourceCount,

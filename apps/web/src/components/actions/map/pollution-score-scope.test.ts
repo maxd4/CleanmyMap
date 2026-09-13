@@ -10,40 +10,40 @@ import type { PollutionScoreReferences } from "@/lib/actions/pollution/pollution
 
 const references: PollutionScoreReferences = {
   global: {
-    wastePerVolunteerHour: 20,
-    buttsPerVolunteerHour: 400,
+    wastePerVolunteer: 20,
+    buttsPerVolunteer: 400,
     wasteSourceCount: 3,
     buttsSourceCount: 3,
   },
   departmentReferences: {
     "01": {
       departmentName: "Ain",
-      wastePerVolunteerHour: 20,
-      buttsPerVolunteerHour: 400,
+      wastePerVolunteer: 20,
+      buttsPerVolunteer: 400,
       wasteSourceCount: 2,
       buttsSourceCount: 2,
       eligibleActionCount: 2,
     },
     "2A": {
       departmentName: "Corse-du-Sud",
-      wastePerVolunteerHour: 40,
-      buttsPerVolunteerHour: 800,
+      wastePerVolunteer: 40,
+      buttsPerVolunteer: 800,
       wasteSourceCount: 2,
       buttsSourceCount: 2,
       eligibleActionCount: 2,
     },
     "2B": {
       departmentName: "Haute-Corse",
-      wastePerVolunteerHour: null,
-      buttsPerVolunteerHour: 400,
+      wastePerVolunteer: null,
+      buttsPerVolunteer: 400,
       wasteSourceCount: 0,
       buttsSourceCount: 2,
       eligibleActionCount: 2,
     },
     "974": {
       departmentName: "La Réunion",
-      wastePerVolunteerHour: 40,
-      buttsPerVolunteerHour: 800,
+      wastePerVolunteer: 40,
+      buttsPerVolunteer: 800,
       wasteSourceCount: 1,
       buttsSourceCount: 1,
       eligibleActionCount: 1,
@@ -74,15 +74,15 @@ function buildAction(departmentCode?: string | null): ActionMapItem {
 }
 
 describe("pollution score scope", () => {
-  it("uses the global V2 average and keeps the temporal projection input global", () => {
+  it("uses the authorized global score and keeps the temporal projection input global", () => {
     const result = resolveActionPollutionScore(buildAction("75"), references, {
       now: "2026-09-13",
     });
 
     expect(result.source).toBe("global");
-    expect(result.historicalScore).toBe(50);
-    expect(result.wasteScore).toBe(50);
-    expect(result.buttsScore).toBe(50);
+    expect(result.historicalScore).toBe(100);
+    expect(result.wasteScore).toBe(100);
+    expect(result.buttsScore).toBe(100);
   });
 
   it("keeps an unknown department explicitly unavailable", () => {
@@ -123,16 +123,16 @@ describe("pollution score scope", () => {
       scope: "department",
     });
 
-    expect(globalWithDepartments).toMatchObject({ source: "global", historicalScore: 50 });
+    expect(globalWithDepartments).toMatchObject({ source: "global", historicalScore: 100 });
     expect(globalWithDepartments).toEqual(globalWithoutDepartments);
-    expect(ain).toMatchObject({ score: 50, departmentRelativeScore: 50 });
-    expect(corse).toMatchObject({ score: 25, departmentRelativeScore: 25 });
+    expect(ain).toMatchObject({ score: 100, departmentRelativeScore: 100 });
+    expect(corse).toMatchObject({ score: 50, departmentRelativeScore: 50 });
     expect(corseLowercase).toEqual(corse);
     expect(corse.historicalScore).toBeNull();
   });
 
-  it("averages departmental components and clamps above-reference values", () => {
-    const average = resolveActionPollutionScore(
+  it("keeps the maximum departmental component and clamps above-reference values", () => {
+    const relative = resolveActionPollutionScore(
       buildAction("01"),
       {
         ...references,
@@ -140,17 +140,17 @@ describe("pollution score scope", () => {
           ...references.departmentReferences,
           "01": {
             ...references.departmentReferences!["01"],
-            wastePerVolunteerHour: 10,
-            buttsPerVolunteerHour: 400,
+            wastePerVolunteer: 10,
+            buttsPerVolunteer: 400,
           },
         },
       },
       { scope: "department" },
     );
 
-    expect(average.wasteScore).toBe(100);
-    expect(average.buttsScore).toBe(50);
-    expect(average.departmentRelativeScore).toBe(75);
+    expect(relative.wasteScore).toBe(100);
+    expect(relative.buttsScore).toBe(100);
+    expect(relative.departmentRelativeScore).toBe(100);
   });
 
   it("keeps one documented component available and marks one-action departments insufficient", () => {
@@ -162,9 +162,9 @@ describe("pollution score scope", () => {
     });
 
     expect(oneComponent).toMatchObject({
-      score: 50,
+      score: 100,
       wasteScore: null,
-      buttsScore: 50,
+      buttsScore: 100,
       availability: "available",
     });
     expect(insufficient).toMatchObject({

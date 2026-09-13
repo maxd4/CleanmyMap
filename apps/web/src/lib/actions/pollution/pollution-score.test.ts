@@ -5,8 +5,8 @@ import {
 } from "./pollution-score";
 
 const references: PollutionScoreReference = {
-  wastePerVolunteerHour: 20,
-  buttsPerVolunteerHour: 400,
+  wastePerVolunteer: 20,
+  buttsPerVolunteer: 400,
   wasteSourceCount: 3,
   buttsSourceCount: 3,
 };
@@ -21,6 +21,9 @@ function score(
       cigaretteButts: null,
       volunteersCount: 2,
       durationMinutes: 120,
+      actionType: "action",
+      status: "approved",
+      actionPhase: "post_action_complete",
       ...input,
     },
     reference,
@@ -28,8 +31,8 @@ function score(
 }
 
 describe("pollution score V2", () => {
-  it("computes volunteer-hours before normalizing each component", () => {
-    const scores = score({ wasteKg: 40, cigaretteButts: 800 });
+  it("normalizes each component per volunteer under the authorized contract", () => {
+    const scores = score({ wasteKg: 20, cigaretteButts: 400 });
 
     expect(scores).toEqual({
       wasteScore: 50,
@@ -38,22 +41,19 @@ describe("pollution score V2", () => {
     });
   });
 
-  it("averages the exploitable components instead of taking the maximum", () => {
-    expect(score({ wasteKg: 64, cigaretteButts: 640 })).toMatchObject({
-      wasteScore: 80,
-      buttsScore: 40,
-      severityScore: 60,
+  it("keeps the highest exploitable component as the historical score", () => {
+    expect(score({ wasteKg: 20, cigaretteButts: 160 })).toMatchObject({
+      wasteScore: 50,
+      buttsScore: 20,
+      severityScore: 50,
     });
-    expect(
-      score({ wasteKg: 32, cigaretteButts: 160 }),
-    ).toMatchObject({ severityScore: 25 });
   });
 
-  it("clamps each component at 100 before averaging", () => {
+  it("clamps the component above its reference at 100", () => {
     expect(score({ wasteKg: 80, cigaretteButts: 800 })).toMatchObject({
       wasteScore: 100,
-      buttsScore: 50,
-      severityScore: 75,
+      buttsScore: 100,
+      severityScore: 100,
     });
     expect(score({ wasteKg: 200, cigaretteButts: 2_000 })).toMatchObject({
       wasteScore: 100,
@@ -74,9 +74,9 @@ describe("pollution score V2", () => {
       severityScore: null,
     });
     expect(score({ wasteKg: 40, cigaretteButts: undefined })).toMatchObject({
-      wasteScore: 50,
+      wasteScore: 100,
       buttsScore: null,
-      severityScore: 50,
+      severityScore: 100,
     });
   });
 
@@ -85,8 +85,20 @@ describe("pollution score V2", () => {
     { durationMinutes: 0 },
     { volunteersCount: null },
     { durationMinutes: null },
-  ])("returns an unavailable score for invalid work-hours input %#", (input) => {
+  ])("returns an unavailable score for invalid eligibility input %#", (input) => {
     expect(score({ wasteKg: 40, cigaretteButts: 800, ...input })).toEqual({
+      wasteScore: null,
+      buttsScore: null,
+      severityScore: null,
+    });
+  });
+
+  it.each([
+    { actionType: "spot" as const },
+    { status: "pending" },
+    { actionPhase: "pre_action" },
+  ])("requires the canonical completed field-action predicate %#", (input) => {
+    expect(score({ wasteKg: 20, ...input })).toEqual({
       wasteScore: null,
       buttsScore: null,
       severityScore: null,
@@ -102,8 +114,8 @@ describe("pollution score V2", () => {
     expect(
       score({ wasteKg: 40, cigaretteButts: 800 }, {
         ...references,
-        wastePerVolunteerHour: null,
-        buttsPerVolunteerHour: null,
+        wastePerVolunteer: null,
+        buttsPerVolunteer: null,
       }),
     ).toEqual({
       wasteScore: null,
