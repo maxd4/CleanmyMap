@@ -13,10 +13,17 @@ describe("MapGeometryLegend", () => {
     const markup = renderToStaticMarkup(<MapGeometryLegend />);
 
     expect(markup).toContain("Trait plein : parcours déclaré/connu");
-    expect(markup).toContain("Trait pointillé : parcours indicatif/reconstruit");
+    expect(markup).toContain("Trait pointillé : parcours reconstruit");
     expect(markup).toMatch(/Surface remplie : zone d(?:'|&#x27;)action/);
     expect(markup).toContain("Point : localisation seule");
     expect(markup).toContain("Zone indicative : opacité réduite");
+    expect(markup).toContain("bg-slate-700");
+    expect(markup).toContain("border-dashed border-slate-700");
+    expect(markup).toContain("border-slate-700 bg-slate-500/25");
+    expect(markup).toContain("border-slate-700 bg-slate-500/60");
+    expect(markup).not.toMatch(
+      /<span[^>]*class="[^"]*(?:bg|border)-sky-[^"]*"[^>]*aria-hidden="true"/,
+    );
   });
 
   it("explains projected action colors, the clean-place exception and Trash Spotter", () => {
@@ -58,7 +65,7 @@ describe("MapGeometryLegend", () => {
       "Actions : la couleur compare l&#x27;intensité de collecte à la référence du département.",
     );
     expect(markup).toContain("Trait plein : parcours déclaré/connu");
-    expect(markup).toContain("Trait pointillé : parcours indicatif/reconstruit");
+    expect(markup).toContain("Trait pointillé : parcours reconstruit");
     expect(markup).not.toContain("pollution projetée depuis la dernière action");
   });
 });

@@ -61,26 +61,26 @@ export function MapGeometryLegend({
 
       <div className="mt-2 grid gap-1.5 border-t border-slate-200 pt-2 text-[10px] font-semibold leading-snug">
         <p className="flex items-center gap-2">
-          <span className="h-0.5 w-6 shrink-0 bg-sky-600" aria-hidden="true" />
+          <span className="h-0.5 w-6 shrink-0 bg-slate-700" aria-hidden="true" />
           Trait plein : parcours déclaré/connu
         </p>
         <p className="flex items-center gap-2">
           <span
-            className="h-0.5 w-6 shrink-0 border-t-2 border-dashed border-sky-600"
+            className="h-0.5 w-6 shrink-0 border-t-2 border-dashed border-slate-700"
             aria-hidden="true"
           />
-          Trait pointillé : parcours indicatif/reconstruit
+          Trait pointillé : parcours reconstruit
         </p>
         <p className="flex items-center gap-2">
           <span
-            className="h-3.5 w-6 shrink-0 rounded-sm border border-sky-600 bg-sky-500/25"
+            className="h-3.5 w-6 shrink-0 rounded-sm border border-slate-700 bg-slate-500/25"
             aria-hidden="true"
           />
           Surface remplie : zone d&apos;action
         </p>
         <p className="flex items-center gap-2">
           <span
-            className="h-2.5 w-2.5 shrink-0 rounded-full border border-sky-600 bg-sky-500/60"
+            className="h-2.5 w-2.5 shrink-0 rounded-full border border-slate-700 bg-slate-500/60"
             aria-hidden="true"
           />
           Point : localisation seule
