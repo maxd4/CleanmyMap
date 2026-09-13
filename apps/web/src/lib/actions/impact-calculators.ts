@@ -3,7 +3,6 @@ import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import {
   BUTTS_PER_KG_REFERENCE,
   computeImpactTerrain2026StreetCleaningSavings,
-  estimateButtsWeightKg,
   STREET_CLEANING_EUROS_PER_WASTE_KG,
   type ImpactTerrain2026StreetCleaningSavings,
   VOLUNTEER_ACTION_EUROS_PER_HOUR,
@@ -29,12 +28,11 @@ export type ActionImpactInput = {
 
 export type ActionWasteKgSource =
   | "declared"
-  | "waste_breakdown"
-  | "cigarette_butts"
   | "none";
 
 export type ActionImpactKpis = {
   wasteKg: number;
+  wasteKnown: boolean;
   wasteKgSource: ActionWasteKgSource;
   butts: number;
   volunteers: number;
@@ -45,7 +43,9 @@ export type ActionImpactKpis = {
   euroSaved: number;
 };
 
-export type ActionImpactTotals = Omit<ActionImpactKpis, "wasteKgSource">;
+export type ActionImpactTotals = Omit<ActionImpactKpis, "wasteKgSource"> & {
+  wasteKnownActions: number;
+};
 
 export type ActionImpactMethodology = {
   version: string;
@@ -64,70 +64,37 @@ export type ActionImpactMethodology = {
   };
 };
 
-/**
- * Retourne la masse d'impact la plus fiable disponible pour une action.
- *
- * Priorité:
- * 1. poids total déclaré
- * 2. poids détaillé des mégots si présent dans les métadonnées
- * 3. conversion de secours depuis le nombre de mégots
- */
+/** Retourne la mesure de déchets déclarée, sans convertir les mégots en déchets. */
 export function estimateActionWasteKg(
   contract: ActionImpactInput,
-): number {
-  const directWasteKg = Math.max(0, Number(contract.metadata.wasteKg || 0));
-  const breakdownWasteKg = Math.max(
-    0,
-    Number(contract.metadata.wasteBreakdown?.megotsKg || 0),
-  );
-  const derivedWasteKg = Math.max(
-    0,
-    estimateButtsWeightKg(
-      Number(contract.metadata.cigaretteButts || 0),
-      contract.metadata.wasteBreakdown?.megotsCondition,
-    ),
-  );
-
-  return Math.max(directWasteKg, breakdownWasteKg, derivedWasteKg);
+): number | null {
+  const value = contract.metadata.wasteKg;
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
 
 export function resolveActionWasteKgSource(
   contract: ActionImpactInput,
 ): ActionWasteKgSource {
-  const directWasteKg = Math.max(0, Number(contract.metadata.wasteKg || 0));
-  const breakdownWasteKg = Math.max(
-    0,
-    Number(contract.metadata.wasteBreakdown?.megotsKg || 0),
-  );
-  const cigaretteButts = Math.max(
-    0,
-    Number(contract.metadata.cigaretteButts || 0),
-  );
-  const wasteKg = Math.max(
-    directWasteKg,
-    breakdownWasteKg,
-    estimateButtsWeightKg(
-      cigaretteButts,
-      contract.metadata.wasteBreakdown?.megotsCondition,
-    ),
-  );
-
-  if (wasteKg <= 0) {
+  const wasteKg = estimateActionWasteKg(contract);
+  if (wasteKg === null) {
     return "none";
   }
-  if (directWasteKg === wasteKg) {
+  if (wasteKg >= 0) {
     return "declared";
   }
-  if (breakdownWasteKg === wasteKg) {
-    return "waste_breakdown";
-  }
-  return "cigarette_butts";
+  return "none";
 }
 
 export function computeActionImpactKpis(
   contract: ActionImpactInput,
 ): ActionImpactKpis {
-  const wasteKg = estimateActionWasteKg(contract);
+  const measuredWasteKg = estimateActionWasteKg(contract);
+  const wasteKnown = measuredWasteKg !== null;
+  const wasteKg = measuredWasteKg ?? 0;
   const butts = Math.max(0, Number(contract.metadata.cigaretteButts || 0));
   const volunteers = Math.max(
     0,
@@ -141,6 +108,7 @@ export function computeActionImpactKpis(
 
   return {
     wasteKg,
+    wasteKnown,
     wasteKgSource: resolveActionWasteKgSource(contract),
     butts,
     volunteers,
@@ -158,6 +126,8 @@ export function sumActionImpactKpis(
 ): ActionImpactTotals {
   const totals: ActionImpactTotals = {
     wasteKg: 0,
+    wasteKnown: false,
+    wasteKnownActions: 0,
     butts: 0,
     volunteers: 0,
     co2AvoidedKg: 0,
@@ -169,10 +139,14 @@ export function sumActionImpactKpis(
     euroSaved: 0,
   };
   let totalDurationMinutes = 0;
+  let wasteKnownActions = 0;
 
   for (const contract of contracts) {
     const impact = computeActionImpactKpis(contract);
     totals.wasteKg += impact.wasteKg;
+    if (impact.wasteKnown) {
+      wasteKnownActions += 1;
+    }
     totals.butts += impact.butts;
     totals.volunteers += impact.volunteers;
     totalDurationMinutes += Math.max(
@@ -192,6 +166,8 @@ export function sumActionImpactKpis(
       durationMinutes: totalDurationMinutes,
     });
   totals.euroSaved = Math.round(totals.streetCleaningSavings.massEstimateEuros);
+  totals.wasteKnownActions = wasteKnownActions;
+  totals.wasteKnown = wasteKnownActions > 0;
 
   return totals;
 }
@@ -210,7 +186,7 @@ export function buildActionImpactMethodology(): ActionImpactMethodology {
     factors,
     buttsPerKg: BUTTS_PER_KG_REFERENCE,
     formulas: {
-      wasteKg: `masse(cigaretteButts, état) = cigaretteButts / (${BUTTS_PER_KG_REFERENCE} * facteur_état); wasteKg = max(0, wasteKg_declare, wasteBreakdown.megotsKg, masse(cigaretteButts, megotsCondition))`,
+      wasteKg: "wasteKg = valeur déclarée de déchets; null = métrique non renseignée; les mégots restent une composante distincte",
       butts: "butts = max(0, cigaretteButts)",
       volunteers: "volunteers = max(0, volunteersCount)",
       co2e: `co2e_kg = wasteKg * ${factors.co2KgPerWasteKg}`,

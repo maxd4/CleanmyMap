@@ -35,6 +35,7 @@ const aggregate = {
   visible_actions: 3,
   distinct_locations: 2,
   waste_kg: "10",
+  waste_source_count: 2,
   cigarette_butts: 200,
   volunteers: 6,
   participants_total: 6,

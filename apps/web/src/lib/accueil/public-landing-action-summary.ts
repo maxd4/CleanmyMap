@@ -6,6 +6,7 @@ export type PublicLandingActionSummaryRow =
     visible_actions: number | string | null;
     distinct_locations: number | string | null;
     waste_kg: number | string | null;
+    waste_source_count?: number | string | null;
     cigarette_butts: number | string | null;
     volunteers: number | string | null;
   };

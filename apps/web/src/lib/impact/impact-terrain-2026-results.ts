@@ -32,6 +32,8 @@ export type ImpactTerrain2026ButtsDistributionEntry = {
 
 export type ImpactTerrain2026PublicResults = {
   wasteKg: number;
+  wasteKnownActions: number;
+  wasteCoverageRate: number;
   wasteBagsEquivalent: number;
   wasteMechanicalBicyclesEquivalent: number;
   buttsTotal: number;
@@ -75,10 +77,14 @@ function buildConditionEntries(
 
 export function buildImpactTerrain2026PublicResults(params: {
   wasteKg?: number | null;
+  wasteKnownActions?: number | null;
+  wasteActionCount?: number | null;
   buttsTotal?: number | null;
   qualifiedButtsByCondition?: ImpactTerrain2026ConditionCounts;
 }): ImpactTerrain2026PublicResults {
   const wasteKg = toFiniteNonNegativeNumber(params.wasteKg);
+  const wasteKnownActions = toFiniteNonNegativeNumber(params.wasteKnownActions);
+  const wasteActionCount = toFiniteNonNegativeNumber(params.wasteActionCount);
   const buttsTotal = toFiniteNonNegativeNumber(params.buttsTotal);
   const buttsByCondition = buildConditionEntries(
     params.qualifiedButtsByCondition ?? {},
@@ -98,6 +104,9 @@ export function buildImpactTerrain2026PublicResults(params: {
 
   return {
     wasteKg,
+    wasteKnownActions,
+    wasteCoverageRate:
+      wasteActionCount > 0 ? (wasteKnownActions / wasteActionCount) * 100 : 0,
     wasteBagsEquivalent: wasteKg / WASTE_KG_PER_50L_BAG,
     wasteMechanicalBicyclesEquivalent:
       wasteKg / WASTE_KG_PER_MECHANICAL_BICYCLE,
@@ -125,7 +134,7 @@ export function buildImpactTerrain2026PublicResults(params: {
 
 export function estimateActionWasteKgFromImpactTerrainMetrics(
   input: ImpactTerrainActionMetricsInput,
-): number {
+): number | null {
   return estimateActionWasteKg({
     metadata: {
       wasteKg: input.wasteKg,
@@ -139,12 +148,17 @@ export function buildImpactTerrain2026PublicResultsFromActions(
   actions: readonly ImpactTerrainActionMetricsInput[],
 ): ImpactTerrain2026PublicResults {
   let wasteKg = 0;
+  let wasteKnownActions = 0;
   let buttsTotal = 0;
   const qualifiedButtsByCondition: ImpactTerrain2026ConditionCounts = {};
 
   for (const action of actions) {
     const actionButts = toFiniteNonNegativeNumber(action.cigaretteButts);
-    wasteKg += estimateActionWasteKgFromImpactTerrainMetrics(action);
+    const measuredWasteKg = estimateActionWasteKgFromImpactTerrainMetrics(action);
+    if (measuredWasteKg !== null) {
+      wasteKg += measuredWasteKg;
+      wasteKnownActions += 1;
+    }
     buttsTotal += actionButts;
 
     const condition = action.wasteBreakdown?.megotsCondition;
@@ -156,6 +170,8 @@ export function buildImpactTerrain2026PublicResultsFromActions(
 
   return buildImpactTerrain2026PublicResults({
     wasteKg,
+    wasteKnownActions,
+    wasteActionCount: actions.length,
     buttsTotal,
     qualifiedButtsByCondition,
   });
@@ -163,6 +179,8 @@ export function buildImpactTerrain2026PublicResultsFromActions(
 
 export function buildImpactTerrain2026PublicResultsFromAggregate(params: {
   wasteKg?: unknown;
+  wasteKnownActions?: unknown;
+  wasteActionCount?: unknown;
   cigaretteButts?: unknown;
   buttsByCondition?: unknown;
 }): ImpactTerrain2026PublicResults {
@@ -184,6 +202,8 @@ export function buildImpactTerrain2026PublicResultsFromAggregate(params: {
 
   return buildImpactTerrain2026PublicResults({
     wasteKg: Number(params.wasteKg ?? 0),
+    wasteKnownActions: Number(params.wasteKnownActions ?? 0),
+    wasteActionCount: Number(params.wasteActionCount ?? 0),
     buttsTotal: Number(params.cigaretteButts ?? 0),
     qualifiedButtsByCondition,
   });

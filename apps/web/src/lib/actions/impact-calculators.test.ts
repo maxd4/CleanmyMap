@@ -50,18 +50,19 @@ describe("canonical action impact calculation", () => {
     });
   });
 
-  it("estimates waste from cigarette butts when weight is absent", () => {
+  it("keeps waste unavailable when only cigarette butts are present", () => {
     const impact = computeActionImpactKpis(
       makeContract({ cigaretteButts: 3750 }),
     );
 
-    expect(impact.wasteKg).toBe(1.5);
-    expect(impact.wasteKgSource).toBe("cigarette_butts");
-    expect(impact.co2AvoidedKg).toBe(1.7999999999999998);
-    expect(impact.euroSaved).toBe(2);
+    expect(impact.wasteKg).toBe(0);
+    expect(impact.wasteKnown).toBe(false);
+    expect(impact.wasteKgSource).toBe("none");
+    expect(impact.co2AvoidedKg).toBe(0);
+    expect(impact.euroSaved).toBe(0);
   });
 
-  it("uses the qualified condition for cigarette-butt mass", () => {
+  it("does not turn qualified cigarette-butt mass into waste", () => {
     const impact = computeActionImpactKpis(
       makeContract({
         cigaretteButts: 1_000,
@@ -69,21 +70,23 @@ describe("canonical action impact calculation", () => {
       }),
     );
 
-    expect(impact.wasteKg).toBe(1_000 / (BUTTS_PER_KG_REFERENCE * 0.4));
-    expect(impact.wasteKgSource).toBe("cigarette_butts");
+    expect(impact.wasteKg).toBe(0);
+    expect(impact.wasteKnown).toBe(false);
+    expect(impact.wasteKgSource).toBe("none");
   });
 
-  it("uses wasteBreakdown.megotsKg when it is the available weight signal", () => {
+  it("does not use the cigarette-butt breakdown as total waste", () => {
     const impact = computeActionImpactKpis(
       makeContract({
         wasteBreakdown: { megotsKg: 2.4 },
       }),
     );
 
-    expect(impact.wasteKg).toBe(2.4);
-    expect(impact.wasteKgSource).toBe("waste_breakdown");
-    expect(impact.co2AvoidedKg).toBe(2.88);
-    expect(impact.euroSaved).toBe(4);
+    expect(impact.wasteKg).toBe(0);
+    expect(impact.wasteKnown).toBe(false);
+    expect(impact.wasteKgSource).toBe("none");
+    expect(impact.co2AvoidedKg).toBe(0);
+    expect(impact.euroSaved).toBe(0);
   });
 
   it("does not invent collection impact for a spot without metrics", () => {
@@ -93,6 +96,7 @@ describe("canonical action impact calculation", () => {
 
     expect(impact).toEqual({
       wasteKg: 0,
+      wasteKnown: false,
       wasteKgSource: "none",
       butts: 0,
       volunteers: 0,
@@ -111,16 +115,16 @@ describe("canonical action impact calculation", () => {
     });
   });
 
-  it("derives non-zero waste, CO2e and euros for 13,875 cigarette butts", () => {
+  it("keeps waste unavailable for 13,875 cigarette butts without a waste measure", () => {
     const impact = computeActionImpactKpis(
       makeContract({ cigaretteButts: 13_875 }),
     );
 
-    expect(impact.wasteKg).toBe(13_875 / BUTTS_PER_KG_REFERENCE);
-    expect(impact.wasteKg).toBe(5.55);
-    expect(impact.wasteKgSource).toBe("cigarette_butts");
-    expect(impact.co2AvoidedKg).toBeCloseTo(6.66, 10);
-    expect(impact.euroSaved).toBe(8);
+    expect(impact.wasteKg).toBe(0);
+    expect(impact.wasteKnown).toBe(false);
+    expect(impact.wasteKgSource).toBe("none");
+    expect(impact.co2AvoidedKg).toBe(0);
+    expect(impact.euroSaved).toBe(0);
   });
 
   it("aggregates all canonical KPIs from the same contract corpus", () => {
@@ -130,21 +134,23 @@ describe("canonical action impact calculation", () => {
     ]);
 
     expect(totals).toEqual({
-      wasteKg: 3,
+      wasteKg: 2,
+      wasteKnown: true,
+      wasteKnownActions: 1,
       butts: 2600,
       volunteers: 3,
-      co2AvoidedKg: expect.closeTo(3.6, 10),
+      co2AvoidedKg: expect.closeTo(2.4, 10),
       waterSavedLiters: 1_300_000,
       streetCleaningSavings: {
-        wasteKg: 3,
+        wasteKg: 2,
         durationMinutes: 0,
         actionHours: 0,
-        massEstimateEuros: 4.5,
+        massEstimateEuros: 3,
         timeEstimateEuros: 0,
         lowerBoundEuros: 0,
-        upperBoundEuros: 4.5,
+        upperBoundEuros: 3,
       },
-      euroSaved: 5,
+      euroSaved: 3,
     });
   });
 
@@ -163,6 +169,7 @@ describe("canonical action impact calculation", () => {
       lowerBoundEuros: 15,
       upperBoundEuros: 18.465,
     });
+    expect(totals.wasteKnownActions).toBe(2);
   });
 
   it("exposes formulas from the same runtime constants as the calculator", () => {
@@ -170,7 +177,7 @@ describe("canonical action impact calculation", () => {
 
     expect(methodology.version).toBe(IMPACT_PROXY_CONFIG.version);
     expect(methodology.buttsPerKg).toBe(BUTTS_PER_KG_REFERENCE);
-    expect(methodology.formulas.wasteKg).toContain(String(BUTTS_PER_KG_REFERENCE));
+    expect(methodology.formulas.wasteKg).toContain("valeur déclarée");
     expect(methodology.formulas.wasteKg).not.toContain("cigaretteButts / 2500");
     expect(methodology.formulas.co2e).toContain(
       String(IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg),

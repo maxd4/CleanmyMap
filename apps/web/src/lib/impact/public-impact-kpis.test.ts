@@ -104,22 +104,19 @@ describe("public Impact KPI contract", () => {
     });
   });
 
-  it.each([
-    ["propre", 1],
-    ["humide", 2_500 / (2_500 * 0.7)],
-    ["mouille", 2_500 / (2_500 * 0.4)],
-  ] as const)(
-    "uses the canonical %s factor for estimated butts mass",
-    (condition, expected) => {
+  it.each(["propre", "humide", "mouille"] as const)(
+    "keeps waste unknown when only the %s butt condition is available",
+    (condition) => {
       const calculation = buildPublicImpactCalculationFromActions([
         action({ cigaretteButts: 2_500, megotsCondition: condition }),
       ]);
 
-      expect(calculation.counters.wasteKg).toBeCloseTo(expected, 10);
+      expect(calculation.counters.wasteKg).toBe(0);
+      expect(calculation.impactTerrain.wasteKnownActions).toBe(0);
     },
   );
 
-  it("keeps the maximum across declared, breakdown and estimated mass", () => {
+  it("keeps declared waste separate from butt mass", () => {
     const calculation = buildPublicImpactCalculationFromActions([
       action({
         wasteKg: 1,
@@ -129,6 +126,18 @@ describe("public Impact KPI contract", () => {
       }),
     ]);
 
-    expect(calculation.counters.wasteKg).toBeCloseTo(2, 10);
+    expect(calculation.counters.wasteKg).toBe(1);
+    expect(calculation.impactTerrain.wasteKnownActions).toBe(1);
+  });
+
+  it("preserves zero as known and null as unknown in aggregate coverage", () => {
+    const calculation = buildPublicImpactCalculationFromActions([
+      action({ wasteKg: 0, cigaretteButts: 10 }),
+      action({ wasteKg: null, cigaretteButts: 10 }),
+    ]);
+
+    expect(calculation.impactTerrain.wasteKnownActions).toBe(1);
+    expect(calculation.impactTerrain.wasteCoverageRate).toBe(50);
+    expect(calculation.counters.wasteKg).toBe(0);
   });
 });

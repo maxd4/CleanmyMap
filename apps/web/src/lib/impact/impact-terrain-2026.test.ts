@@ -60,7 +60,7 @@ describe("Impact terrain 2026 methodology domain", () => {
     expect(byKey.euro?.formula.fr).toContain(
       String(IMPACT_PROXY_CONFIG.factors.euroSavedPerWasteKg),
     );
-    expect(byKey.wasteKg?.formula.fr).toContain(
+    expect(byKey.wasteKg?.formula.fr).not.toContain(
       String(BUTTS_PER_KG_REFERENCE),
     );
   });
