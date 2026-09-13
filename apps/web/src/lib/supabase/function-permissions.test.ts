@@ -97,6 +97,25 @@ it("exposes pollution score references through a public read-only RPC", () => {
   expect(migration).toContain("grant execute on function public.action_pollution_score_references() to public;");
 });
 
+it("extends pollution score references with fail-closed department rows", () => {
+  const migration = readMigration("../../../supabase/migrations/20260913000003_action_pollution_score_department_references.sql");
+
+  expect(migration).toContain("drop function if exists public.action_pollution_score_references();");
+  expect(migration).toContain("department_code text");
+  expect(migration).toContain("eligible_action_count integer");
+  expect(migration).toContain("nullif(trim(a.department_code), '')");
+  expect(migration).toContain("where a.status = 'approved'");
+  expect(migration).toContain("coalesce(a.waste_kg, 0)::numeric");
+  expect(migration).toContain("coalesce(a.cigarette_butts, 0)::numeric");
+  expect(migration).toContain("count(*)::integer as source_count");
+  expect(migration).toContain("having count(*) >= 2");
+  expect(migration).toContain("and max(waste_per_volunteer) > 0");
+  expect(migration).toContain("and max(butts_per_volunteer) > 0");
+  expect(migration).toContain("union all");
+  expect(migration).toContain("security invoker");
+  expect(migration).toContain("set search_path = pg_catalog");
+});
+
 it("enables RLS on xp_audit and restricts it to the service role", () => {
   const migration = readMigration("../../../supabase/migrations/20260601000001_harden_xp_audit_rls.sql");
 

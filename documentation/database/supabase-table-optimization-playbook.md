@@ -198,6 +198,10 @@ Contrat existant :
 
 - la RPC `action_pollution_score_references` calcule la référence à partir des
   actions approuvées ;
+- cette même RPC expose une ligne globale et les lignes départementales dont le
+  code texte est connu et qui disposent d'au moins deux actions approuvées ;
+- un département ne disposant pas de ces données minimales est absent du
+  dictionnaire départemental et reste indisponible dans ce scope ;
 - `apps/web/src/lib/actions/pollution/pollution-score.ts` normalise chaque
   action contre cette référence ;
 - `100 %` représente la plus grande action approuvée disponible pour l'axe

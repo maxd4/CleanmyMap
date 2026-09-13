@@ -260,7 +260,7 @@ utilise exclusivement le score relatif calculé dans le département persistant
 de l'action : elle n'est ni projetée dans le temps ni transmise à `T80`.
 
 Dans ce mode, `100 %` correspond à l'intensité de collecte de référence la plus
-élevée du département, normalisée par bénévole-heure. Un score relatif ne se
+élevée du département, normalisée par bénévole. Un score relatif ne se
 compare directement qu'entre actions d'un même département. Lorsque le code
 départemental est absent ou que la référence comporte moins de deux actions
 éligibles, la comparaison départementale est explicitement indisponible ; elle

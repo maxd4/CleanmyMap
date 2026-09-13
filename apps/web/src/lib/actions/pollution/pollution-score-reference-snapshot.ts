@@ -15,7 +15,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getUtcWeekStart } from "@/lib/periodic/periodic-job-calendar";
 
 export const MAP_POLLUTION_REFERENCES_SNAPSHOT_KEY = "map-pollution-score-references";
-export const MAP_POLLUTION_REFERENCES_VERSION = "map-pollution-score-references-2026.09-v1";
+export const MAP_POLLUTION_REFERENCES_VERSION = "map-pollution-score-references-2026.09-v2";
 
 export type PollutionScoreReferenceSnapshotPayload = {
   references: PollutionScoreReferences;
@@ -31,7 +31,10 @@ export type PollutionScoreReferenceResolution = {
   warning: string | null;
 };
 
-function isValidReferences(value: unknown): value is PollutionScoreReferences {
+function isValidReferences(
+  value: unknown,
+  requireDepartmentReferences = false,
+): value is PollutionScoreReferences {
   if (!value || typeof value !== "object") {
     return false;
   }
@@ -48,6 +51,9 @@ function isValidReferences(value: unknown): value is PollutionScoreReferences {
   }
 
   if (candidate.departmentReferences === undefined) {
+    if (requireDepartmentReferences) {
+      return false;
+    }
     return true;
   }
 
@@ -67,17 +73,22 @@ function isValidReferences(value: unknown): value is PollutionScoreReferences {
         Number.isFinite(reference.buttsPerVolunteer) &&
         Number(reference.buttsPerVolunteer) > 0 &&
         Number.isFinite(reference.eligibleActionCount) &&
-        Number(reference.eligibleActionCount) >= 0,
+        Number(reference.eligibleActionCount) >= 2,
     ),
   );
 }
 
-function isValidPayload(value: unknown): value is PollutionScoreReferenceSnapshotPayload {
+function isValidPayload(
+  value: unknown,
+): value is PollutionScoreReferenceSnapshotPayload {
   if (!value || typeof value !== "object") {
     return false;
   }
   const payload = value as Partial<PollutionScoreReferenceSnapshotPayload>;
-  return isValidReferences(payload.references) && payload.source === "action_pollution_score_references";
+  return (
+    isValidReferences(payload.references, true) &&
+    payload.source === "action_pollution_score_references"
+  );
 }
 
 export function buildPollutionScoreReferenceSnapshot(params: {
@@ -94,7 +105,10 @@ export function buildPollutionScoreReferenceSnapshot(params: {
     version: MAP_POLLUTION_REFERENCES_VERSION,
     title: "Référence hebdomadaire du score pollution",
     payload: {
-      references: params.references,
+      references: {
+        ...params.references,
+        departmentReferences: params.references.departmentReferences ?? {},
+      },
       source: "action_pollution_score_references",
       weekStart,
     },

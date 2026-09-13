@@ -64,7 +64,7 @@ function toDepartmentReference(value: unknown): DepartmentPollutionScoreReferenc
     !isPositiveFiniteReference(wastePerVolunteer) ||
     !isPositiveFiniteReference(buttsPerVolunteer) ||
     !Number.isFinite(eligibleActionCount) ||
-    eligibleActionCount < 0
+    eligibleActionCount < 2
   ) {
     return null;
   }
@@ -177,9 +177,9 @@ async function fetchUncachedActionPollutionScoreReferences(
     return {
       wastePerVolunteer: Number(row.waste_per_volunteer),
       buttsPerVolunteer: Number(row.butts_per_volunteer),
-      ...(Object.keys(departmentReferences).length > 0
-        ? { departmentReferences }
-        : {}),
+      // The v2 snapshot contract needs an explicit empty object when no
+      // department has the minimum data required for comparison.
+      departmentReferences,
     };
   }
 
