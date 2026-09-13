@@ -29,6 +29,7 @@ import { updateActionSchema } from "@/lib/validation/action";
 import {
   preserveHistoricalRouteCalibrationContext,
 } from "@/lib/route/route-calibration";
+import { resolveActionDepartmentForPersistence } from "@/lib/geo/action-department-resolver";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
@@ -478,6 +479,36 @@ export async function PATCH(
     }
     if (body.longitude !== undefined) {
       updateData["longitude"] = body.longitude;
+    }
+    const hasCompleteExplicitDepartment =
+      body.departmentCode !== undefined && body.departmentName !== undefined;
+    if (!hasCompleteExplicitDepartment) {
+      const coordinatesChanged =
+        body.latitude !== undefined || body.longitude !== undefined;
+      const department = await resolveActionDepartmentForPersistence({
+        latitude: body.latitude ?? current.latitude,
+        longitude: body.longitude ?? current.longitude,
+        geometry: coordinatesChanged
+          ? null
+          : {
+              kind: current.derived_geometry_kind,
+              geojson: current.derived_geometry_geojson,
+            },
+        departmentCode:
+          body.departmentCode !== undefined
+            ? body.departmentCode
+            : coordinatesChanged
+              ? undefined
+              : current.department_code,
+        departmentName:
+          body.departmentName !== undefined
+            ? body.departmentName
+            : coordinatesChanged
+              ? undefined
+              : current.department_name,
+      });
+      updateData["department_code"] = department.departmentCode;
+      updateData["department_name"] = department.departmentName;
     }
     if (body.wasteKg !== undefined) {
       updateData["waste_kg"] = body.wasteKg;
