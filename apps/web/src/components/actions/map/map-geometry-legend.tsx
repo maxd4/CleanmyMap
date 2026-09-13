@@ -4,8 +4,13 @@ import {
   TRASH_SPOTTER_NEUTRAL_COLOR,
   resolveDynamicColor,
 } from "../map-marker-categories";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 
-export function MapGeometryLegend() {
+export function MapGeometryLegend({
+  scoreScope = "global",
+}: {
+  scoreScope?: PollutionScoreScope;
+}) {
   return (
     <div
       role="note"
@@ -17,7 +22,9 @@ export function MapGeometryLegend() {
       </p>
       <div className="mt-2 space-y-2 text-[10px] font-semibold leading-snug">
         <p className="text-slate-600">
-          Actions : la couleur représente la pollution projetée depuis la dernière action.
+          {scoreScope === "department"
+            ? "Actions : la couleur compare l'intensité de collecte à la référence du département."
+            : "Actions : la couleur représente la pollution projetée depuis la dernière action."}
         </p>
         <div className="grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-2">
           {ACTION_POLLUTION_COLOR_STOPS.map((stop) => (

@@ -5,6 +5,7 @@ import { MapEmptyState } from "./map-empty-state";
 import { MapLoadingState } from "./map-loading-state";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 
 type DefaultLayoutProps = {
   items: ActionMapItem[];
@@ -30,6 +31,8 @@ type DefaultLayoutProps = {
   recenterViewport?: MapViewportState | null;
   compact?: boolean;
   sourceCompleteness?: RepollutionDatasetCompleteness;
+  scoreScope?: PollutionScoreScope;
+  onScoreScopeChange?: (scope: PollutionScoreScope) => void;
 };
 
 export function DefaultLayout({
@@ -56,6 +59,8 @@ export function DefaultLayout({
   recenterViewport,
   compact = false,
   sourceCompleteness = "partial",
+  scoreScope = "global",
+  onScoreScopeChange,
 }: DefaultLayoutProps) {
   const isEmerald = tone === "emerald";
   const hasItems = items.length > 0;
@@ -132,6 +137,8 @@ export function DefaultLayout({
             viewportRequestKey={viewportRequestKey}
             recenterViewport={recenterViewport}
             tone={tone}
+            scoreScope={scoreScope}
+            onScoreScopeChange={onScoreScopeChange}
           />
         )}
       </div>

@@ -37,6 +37,8 @@ type ActionsMapFeedContentProps = {
   viewportRequest?: MapViewportState | null;
   viewportRequestKey?: number;
   recenterViewport?: MapViewportState | null;
+  scoreScope?: ActionsMapFeedProps["scoreScope"];
+  onScoreScopeChange?: ActionsMapFeedProps["onScoreScopeChange"];
 };
 
 export function ActionsMapFeedContent({
@@ -58,6 +60,8 @@ export function ActionsMapFeedContent({
   viewportRequest = null,
   viewportRequestKey = 0,
   recenterViewport = null,
+  scoreScope = "global",
+  onScoreScopeChange,
 }: ActionsMapFeedContentProps) {
   const [MapCanvas, setMapCanvas] = useState<ActionsMapCanvasComponent | null>(null);
   const [mapCanvasError, setMapCanvasError] = useState<string | null>(null);
@@ -173,6 +177,8 @@ export function ActionsMapFeedContent({
     sourceCompleteness: (feedData.hasPartialSource
       ? "partial"
       : "complete") as RepollutionDatasetCompleteness,
+    scoreScope,
+    onScoreScopeChange,
   };
 
   return (
@@ -237,6 +243,8 @@ export function ActionsMapFeed({
   onResetFilters,
   mapExportTargetRef,
   onViewportChange,
+  scoreScope = "global",
+  onScoreScopeChange,
 }: ActionsMapFeedProps) {
   const {
     viewport: mapViewport,
@@ -288,6 +296,8 @@ export function ActionsMapFeed({
       recenterViewport={recenterViewport}
       onViewportChange={handleViewportChange}
       onViewportInteraction={handleManualViewportInteraction}
+      scoreScope={scoreScope}
+      onScoreScopeChange={onScoreScopeChange}
     />
   );
 }

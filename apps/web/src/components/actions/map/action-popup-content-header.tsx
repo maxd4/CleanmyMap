@@ -13,6 +13,7 @@ import type {
   CurrentPlaceStateMode,
 } from "@/lib/actions/pollution/current-place-state";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
+import type { ScopedActionPollutionScore } from "./pollution-score-scope";
 
 type ActionPopupContentHeaderProps = {
   recordTypeLabel: string;
@@ -43,6 +44,9 @@ type ActionPopupContentHeaderProps = {
   currentPlaceState?: CurrentPlaceState | null;
   scoreScope?: PollutionScoreScope;
   scoreUnavailable?: boolean;
+  globalScore?: ScopedActionPollutionScore | null;
+  departmentScore?: ScopedActionPollutionScore | null;
+  departmentName?: string | null;
   hasQuantifiedPollutionScore?: boolean;
 };
 
@@ -123,6 +127,9 @@ export function ActionPopupContentHeader({
   currentPlaceState = null,
   scoreScope = "global",
   scoreUnavailable = false,
+  globalScore = null,
+  departmentScore = null,
+  departmentName = null,
   hasQuantifiedPollutionScore = true,
 }: ActionPopupContentHeaderProps) {
   const geometryTone = getGeometryTone(geometryReality, isAction);
@@ -130,10 +137,12 @@ export function ActionPopupContentHeader({
   if (isAction) {
     const scopedCurrentPlaceState = scoreScope === "global" ? currentPlaceState : null;
     const hasDisplayState = scoreScope === "global" && Boolean(displayMode || currentPlaceState);
-    const isDisplayedProjection = hasDisplayState
-      ? scopedCurrentPlaceState?.source === "projected" ||
-        (!currentPlaceState && displayMode === "projected_today")
-      : true;
+    const isDisplayedProjection =
+      scoreScope === "global" &&
+      (hasDisplayState
+        ? scopedCurrentPlaceState?.source === "projected" ||
+          (!currentPlaceState && displayMode === "projected_today")
+        : true);
     const displayedScore = scoreUnavailable
       ? 0
       : scopedCurrentPlaceState?.score ??
@@ -244,6 +253,40 @@ export function ActionPopupContentHeader({
             )}
           </p>
         )}
+
+        <div
+          className="grid gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/85 p-3 dark:border-slate-800 dark:bg-slate-900/45 sm:grid-cols-2"
+          data-testid="popup-score-references"
+        >
+          <div className="space-y-2">
+            <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
+              Pollution constatée
+            </p>
+            <div className="space-y-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+              <p>Déchets {formatScorePercent(Math.round(globalScore?.wasteScore ?? wasteScore))}</p>
+              <p>Mégots {formatScorePercent(Math.round(globalScore?.buttsScore ?? buttsScore))}</p>
+              <p>Score global {formatScorePercent(Math.round(globalScore?.historicalScore ?? score))}</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
+              Comparaison départementale
+            </p>
+            {departmentScore?.score !== null && departmentScore?.score !== undefined ? (
+              <div className="space-y-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <p>Déchets {formatScorePercent(Math.round(departmentScore.wasteScore ?? 0))}</p>
+                <p>Mégots {formatScorePercent(Math.round(departmentScore.buttsScore ?? 0))}</p>
+                <p>Score relatif {formatScorePercent(Math.round(departmentScore.score))}</p>
+                <p>Référence {departmentName ?? "département"}</p>
+              </div>
+            ) : (
+              <div className="space-y-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                <p>Comparaison départementale indisponible</p>
+                <p>Pas assez d&apos;actions de référence dans ce département.</p>
+              </div>
+            )}
+          </div>
+        </div>
 
         <div className="rounded-2xl border border-sky-100/80 bg-gradient-to-br from-sky-50 to-white p-3 shadow-sm dark:border-sky-900/60 dark:from-sky-950/30 dark:to-slate-900/40">
           <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">

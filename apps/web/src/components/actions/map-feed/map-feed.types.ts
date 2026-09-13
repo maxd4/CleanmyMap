@@ -10,6 +10,7 @@ import type { ActionsMapDateScope } from "@/components/actions/map/actions-map-f
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import type { RefObject } from "react";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 
 export type ActionsMapPresentation = "default" | "immersive" | "homepage-preview";
 
@@ -29,6 +30,8 @@ export type ActionsMapCanvasComponent = ComponentType<{
   viewportRequest?: MapViewportState | null;
   viewportRequestKey?: number;
   recenterViewport?: MapViewportState | null;
+  scoreScope?: PollutionScoreScope;
+  onScoreScopeChange?: (scope: PollutionScoreScope) => void;
 }>;
 
 export type ActionsMapFeedProps = {
@@ -52,4 +55,6 @@ export type ActionsMapFeedProps = {
   onResetFilters?: () => void;
   mapExportTargetRef?: RefObject<HTMLDivElement | null>;
   onViewportChange?: (viewport: MapViewportState) => void;
+  scoreScope?: PollutionScoreScope;
+  onScoreScopeChange?: (scope: PollutionScoreScope) => void;
 };

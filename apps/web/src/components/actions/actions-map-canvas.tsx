@@ -21,6 +21,7 @@ import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/loc
 import { isTrashSpotterSpotRecord } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { cn } from "@/lib/utils";
 import { MapControls } from "./map/map-controls";
+import { MapScoreScopeControl } from "./map/map-score-scope-control";
 import { MapGeometryLegend } from "./map/map-geometry-legend";
 import { useActionPollutionScoreReferences } from "./map/action-pollution-score-references-context";
 import { resolveMapPlaceStateViews } from "./map/actions-map-display-state";
@@ -62,6 +63,8 @@ type ActionsMapCanvasProps = {
   recenterViewport?: MapViewportState | null;
   sourceItems?: ActionMapItem[];
   sourceCompleteness?: RepollutionDatasetCompleteness;
+  scoreScope?: PollutionScoreScope;
+  onScoreScopeChange?: (scope: PollutionScoreScope) => void;
 };
 
 function MapViewportReporter({
@@ -145,6 +148,8 @@ export function ActionsMapCanvas({
   recenterViewport = null,
   sourceItems = items,
   sourceCompleteness = "partial",
+  scoreScope: controlledScoreScope,
+  onScoreScopeChange,
 }: ActionsMapCanvasProps) {
   const isHomepagePreview = presentation === "homepage-preview";
   const isMinimalPreview = compact || isHomepagePreview;
@@ -159,7 +164,15 @@ export function ActionsMapCanvas({
   const [displayMode, setDisplayMode] = useState<CurrentPlaceStateMode>(
     "projected_today",
   );
-  const [scoreScope, setScoreScope] = useState<PollutionScoreScope>("global");
+  const [internalScoreScope, setInternalScoreScope] =
+    useState<PollutionScoreScope>("global");
+  const scoreScope = controlledScoreScope ?? internalScoreScope;
+  const handleScoreScopeChange = (scope: PollutionScoreScope) => {
+    if (controlledScoreScope === undefined) {
+      setInternalScoreScope(scope);
+    }
+    onScoreScopeChange?.(scope);
+  };
   const { references } = useActionPollutionScoreReferences();
   const [displayAsOf] = useState(() => new Date());
   const currentPlaceStateViews = useMemo<CurrentPlaceStateViews[]>(
@@ -241,29 +254,11 @@ export function ActionsMapCanvas({
           role="group"
           aria-label="Mode d’affichage des états"
         >
-          <div className="pointer-events-auto flex flex-col items-end gap-1.5">
-            <div
-              className="inline-flex rounded-full border border-slate-200/70 bg-white/90 p-1 shadow-lg backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-950/90"
-              role="group"
-              aria-label="Référence du score pollution"
-            >
-              {(["global", "department"] as const).map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  className={[
-                    "rounded-full px-2.5 py-1.5 text-[10px] font-bold transition sm:px-3",
-                    scoreScope === option
-                      ? "bg-slate-900 text-white dark:bg-sky-400 dark:text-slate-950"
-                      : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
-                  ].join(" ")}
-                  aria-pressed={scoreScope === option}
-                  onClick={() => setScoreScope(option)}
-                >
-                  {option === "global" ? "Global" : "Département"}
-                </button>
-              ))}
-            </div>
+          <div className="pointer-events-auto flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-1.5">
+            <MapScoreScopeControl
+              value={scoreScope}
+              onChange={handleScoreScopeChange}
+            />
             {scoreScope === "global" ? (
               <div
                 className="inline-flex rounded-full border border-slate-200/70 bg-white/90 p-1 shadow-lg backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-950/90"
@@ -293,7 +288,7 @@ export function ActionsMapCanvas({
       )}
       {isMinimalPreview ? null : (
         <div className="pointer-events-none absolute left-3 top-40 z-[1000] md:top-44">
-          <MapGeometryLegend />
+          <MapGeometryLegend scoreScope={scoreScope} />
         </div>
       )}
 

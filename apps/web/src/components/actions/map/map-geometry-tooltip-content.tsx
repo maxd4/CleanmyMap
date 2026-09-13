@@ -10,8 +10,17 @@ type GeometryTooltipContentProps = {
   geometryConfidenceLabel: string | null;
   color: string;
   actionReading?: {
+    scoreScope?: "global" | "department";
     historicalScore: number;
     projectedScore: number;
+    globalScore?: number | null;
+    globalWasteScore?: number | null;
+    globalButtsScore?: number | null;
+    departmentScore?: number | null;
+    departmentWasteScore?: number | null;
+    departmentButtsScore?: number | null;
+    departmentName?: string | null;
+    departmentUnavailable?: boolean;
     elapsedDays: number;
     isEstimate: boolean;
     projectionConfidenceLabel: string;
@@ -64,7 +73,66 @@ export function GeometryTooltipContent({
 
       {actionReading ? (
         <div className="mt-2 space-y-0.5 border-t border-slate-200/80 pt-2 text-[9px] font-semibold text-slate-600 dark:border-slate-700/80 dark:text-slate-300">
-          {actionReading.displayMode ? (
+          {actionReading.scoreScope === "department" ? (
+            actionReading.departmentUnavailable ? (
+              <>
+                <p>Comparaison départementale indisponible</p>
+                <p>Pas assez d&apos;actions de référence dans ce département.</p>
+              </>
+            ) : (
+              <>
+                <p>Score relatif : {formatScorePercent(Math.round(actionReading.departmentScore ?? 0))}</p>
+                <p>Déchets : {formatScorePercent(Math.round(actionReading.departmentWasteScore ?? 0))}</p>
+                <p>Mégots : {formatScorePercent(Math.round(actionReading.departmentButtsScore ?? 0))}</p>
+                <p>Département : {actionReading.departmentName ?? "non renseigné"}</p>
+                <p>Comparaison au maximum départemental</p>
+              </>
+            )
+          ) : actionReading.scoreScope === "global" ? (
+            <>
+              <p>Score global : {formatScorePercent(Math.round(actionReading.globalScore ?? actionReading.historicalScore))}</p>
+              <p>Déchets : {formatScorePercent(Math.round(actionReading.globalWasteScore ?? 0))}</p>
+              <p>Mégots : {formatScorePercent(Math.round(actionReading.globalButtsScore ?? 0))}</p>
+              {actionReading.displayMode ? (
+                <>
+                  <p>
+                    {actionReading.displaySource === "projected"
+                      ? `Projeté aujourd’hui · dernière observation le ${
+                          actionReading.displayedDate
+                            ? formatObservedDate(actionReading.displayedDate)
+                            : "date inconnue"
+                        }`
+                      : `Observé le ${
+                          actionReading.displayedDate
+                            ? formatObservedDate(actionReading.displayedDate)
+                            : "date inconnue"
+                        }`}
+                  </p>
+                  <p>
+                    {actionReading.displayedScoreKind === "unavailable"
+                      ? actionReading.displayedStateLabel ?? "Niveau non quantifié"
+                      : `${actionReading.displayedStateLabel ?? "Pollution observée"} : ${formatScorePercent(
+                          Math.round(actionReading.displayedScore ?? 0),
+                        )}`}
+                  </p>
+                  {actionReading.displaySource === "projected" && (
+                    <>
+                      <p>Temps depuis la dernière action : {actionReading.elapsedDays} j</p>
+                      <p>{actionReading.projectionConfidenceLabel}</p>
+                      <p className="pt-1 text-[8px] font-bold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
+                        Estimation · pas une mesure en temps réel
+                      </p>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p>Pollution projetée : {formatScorePercent(Math.round(actionReading.projectedScore))}</p>
+                  <p>Temps depuis la dernière action : {actionReading.elapsedDays} j</p>
+                </>
+              )}
+            </>
+          ) : actionReading.displayMode ? (
             <>
               <p>
                 {actionReading.displaySource === "projected"

@@ -6,6 +6,7 @@ import { MapEmptyState } from "./map-empty-state";
 import { MapLoadingState } from "./map-loading-state";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 
 const ActionStoriesCarousel = dynamic(
   () => import("@/components/map/ActionStoriesCarousel").then((mod) => mod.ActionStoriesCarousel),
@@ -45,6 +46,8 @@ type ImmersiveLayoutProps = {
   viewportRequestKey?: number;
   recenterViewport?: MapViewportState | null;
   sourceCompleteness?: RepollutionDatasetCompleteness;
+  scoreScope?: PollutionScoreScope;
+  onScoreScopeChange?: (scope: PollutionScoreScope) => void;
 };
 
 export function ImmersiveLayout({
@@ -75,6 +78,8 @@ export function ImmersiveLayout({
   viewportRequestKey,
   recenterViewport,
   sourceCompleteness = "partial",
+  scoreScope = "global",
+  onScoreScopeChange,
 }: ImmersiveLayoutProps) {
   const isEmerald = tone === "emerald";
   const hasItems = items.length > 0;
@@ -161,6 +166,8 @@ export function ImmersiveLayout({
                 viewportRequest={viewportRequest}
                 viewportRequestKey={viewportRequestKey}
                 recenterViewport={recenterViewport}
+                scoreScope={scoreScope}
+                onScoreScopeChange={onScoreScopeChange}
               />
             )}
           </div>

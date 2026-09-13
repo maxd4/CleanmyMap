@@ -8,6 +8,7 @@ import {
   TRASH_SPOTTER_NEUTRAL_COLOR,
   resolveDynamicColor,
 } from "@/components/actions/map-marker-categories";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 
 type LegendItem = {
   label: string;
@@ -103,10 +104,23 @@ function LegendRow({ item, showThreshold = true }: { item: LegendItem; showThres
   );
 }
 
-function LegendGroup({ id, title, items, showThreshold = true }: { id: string; title: string; items: LegendItem[]; showThreshold?: boolean }) {
+function LegendGroup({
+  id,
+  title,
+  intro,
+  items,
+  showThreshold = true,
+}: {
+  id: string;
+  title: string;
+  intro?: string;
+  items: LegendItem[];
+  showThreshold?: boolean;
+}) {
   return (
     <section aria-labelledby={id} className="space-y-1.5">
       <h3 id={id} className="text-sm font-semibold text-slate-950">{title}</h3>
+      {intro ? <p className="max-w-2xl text-xs font-medium leading-relaxed text-slate-600">{intro}</p> : null}
       <div role="list" className="divide-y divide-sky-100/80">
         {items.map((item) => (
           <LegendRow key={item.label} item={item} showThreshold={showThreshold} />
@@ -116,7 +130,9 @@ function LegendGroup({ id, title, items, showThreshold = true }: { id: string; t
   );
 }
 
-export function MapLegend() {
+export function MapLegend({ scoreScope = "global" }: { scoreScope?: PollutionScoreScope }) {
+  const isDepartmentScope = scoreScope === "department";
+
   return (
     <section className="rounded-3xl border border-sky-200/80 bg-sky-50/85 p-4 shadow-[0_16px_40px_-30px_rgba(14,165,233,0.24)] sm:p-5">
       <div className="space-y-3">
@@ -126,7 +142,9 @@ export function MapLegend() {
             Légende
           </p>
           <p className="text-sm font-medium leading-snug text-slate-600">
-            Les couleurs indiquent la pollution projetée. Les résultats terrain restent distincts.
+            {isDepartmentScope
+              ? "Les couleurs comparent les actions à la référence de leur département. Les résultats terrain restent distincts."
+              : "Les couleurs indiquent la pollution projetée. Les résultats terrain restent distincts."}
           </p>
         </div>
 
@@ -137,7 +155,7 @@ export function MapLegend() {
               className="h-2.5 w-2.5 shrink-0 rounded-full"
               style={{ backgroundImage: pollutionGradient }}
             />
-            <span className="min-w-0">Bleu → noir <span className="font-medium text-slate-600">Pollution projetée</span></span>
+            <span className="min-w-0">Bleu → noir <span className="font-medium text-slate-600">{isDepartmentScope ? "Comparaison départementale" : "Pollution projetée"}</span></span>
           </div>
           <div className="flex min-w-0 items-center gap-2.5 py-0.5 text-xs font-semibold text-slate-800 sm:text-sm">
             <span
@@ -166,7 +184,16 @@ export function MapLegend() {
           summary="Détails de la légende"
         >
           <div className="mt-3 space-y-4">
-            <LegendGroup id="map-legend-pollution" title="Pollution projetée" items={colorItems} />
+            <LegendGroup
+              id="map-legend-pollution"
+              title={isDepartmentScope ? "Comparaison départementale" : "Pollution projetée"}
+              intro={
+                isDepartmentScope
+                  ? "100 % correspond à l'intensité de collecte de référence la plus élevée du département, normalisée par bénévole-heure. Score relatif : ne comparez directement que les actions d'un même département."
+                  : "Référence globale : les cinq seuils indiquent la pollution projetée, après la projection temporelle éventuelle."
+              }
+              items={colorItems}
+            />
             <LegendGroup id="map-legend-other-states" title="Autres états" items={otherStateItems} showThreshold={false} />
             <LegendGroup id="map-legend-infrastructure" title="Infrastructures" items={infrastructureItems} />
           </div>
