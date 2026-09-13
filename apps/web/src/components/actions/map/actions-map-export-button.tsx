@@ -154,6 +154,7 @@ export function ActionsMapExportButton({
         <button
           {...triggerProps}
           disabled={!canExport || Boolean(isExporting)}
+          title={csvFilename}
           className={[
             "inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200/80 bg-sky-100 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-slate-950 transition hover:border-sky-300 hover:bg-sky-200 disabled:cursor-not-allowed disabled:opacity-50",
             className ?? "",

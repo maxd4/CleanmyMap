@@ -111,6 +111,7 @@ describe("rate limit client ip extraction", () => {
 
   it("keeps the existing localhost auth bypass limited to development", async () => {
     vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("CMM_DEV_AUTH_BYPASS", "1");
     clerkMocks.getAuth.mockReturnValue({ userId: "should-not-win" });
 
     const identity = await getRateLimitIdentity(

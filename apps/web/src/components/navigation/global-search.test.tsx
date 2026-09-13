@@ -20,7 +20,7 @@ describe("GlobalSearch", () => {
     expect(searchSource).not.toContain("pt-[20vh]");
     expect(searchSource).not.toContain("CmmDialog");
     expect(searchSource).not.toContain("AnimatePresence");
-    expect(dropdownSource).toContain("left: triggerCenter");
+    expect(dropdownSource).toContain("left: panelLeft");
     expect(dropdownSource).toContain("max-w-[calc(100vw-1rem)]");
   });
 
