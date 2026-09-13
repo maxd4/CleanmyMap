@@ -145,7 +145,8 @@ export function buildPreparationDataFromForm(
   actionTitle: form.actionTitle.trim() || undefined,
   shortDescription: form.shortDescription.trim() || undefined,
   communeZoneLabel: form.communeZoneLabel.trim() || undefined,
-  pointDeRendezVous: form.departureLocationLabel.trim() || undefined,
+ pointDeRendezVous: form.departureLocationLabel.trim() || undefined,
+  midRouteLocationLabel: form.midRouteLocationLabel?.trim() || undefined,
   zoneCiblePrevue: form.arrivalLocationLabel.trim() || undefined,
   actionDate: form.actionDate.trim() || undefined,
   meetingTime: form.meetingTime.trim() || undefined,
@@ -166,6 +167,8 @@ export function buildPreparationDataFromForm(
   volunteerParticipation,
   groupJoinEnabled: form.groupJoinEnabled,
   expectedWasteCategories: wasteCategories.length > 0 ? [...wasteCategories] : undefined,
+  routeCalibrationContext: form.routeCalibrationContext ?? undefined,
+  actualRoute: form.actualRoute ?? undefined,
  };
 }
 
@@ -184,6 +187,8 @@ export function applyPreparationDataToForm(
   communeZoneLabel: preparationData.communeZoneLabel ?? form.communeZoneLabel,
   departureLocationLabel:
    preparationData.pointDeRendezVous ?? form.departureLocationLabel,
+  midRouteLocationLabel:
+   preparationData.midRouteLocationLabel ?? form.midRouteLocationLabel,
   arrivalLocationLabel: preparationData.zoneCiblePrevue ?? form.arrivalLocationLabel,
   actionDate: preparationData.actionDate ?? form.actionDate,
   meetingTime: preparationData.meetingTime ?? form.meetingTime,
@@ -232,6 +237,9 @@ export function applyPreparationDataToForm(
     ? preparationData.groupJoinEnabled
     : form.groupJoinEnabled,
   wasteCategories: preparationData.expectedWasteCategories ?? form.wasteCategories,
+  actualRoute: preparationData.actualRoute ?? form.actualRoute,
+  routeCalibrationContext:
+   preparationData.routeCalibrationContext ?? form.routeCalibrationContext,
  };
 }
 

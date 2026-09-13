@@ -49,6 +49,7 @@ import {
   type ActionPointLayerProps,
 } from "./map-layers.shared";
 import { resolveActionPollutionScore } from "./pollution-score-scope";
+import { getPublicActualRouteSegments } from "@/lib/route/route-actual";
 
 type ActionShapeLayerRef = {
   openPopup?: () => void;
@@ -73,6 +74,27 @@ function createGeometryDirectionIcon(bearing: number) {
     iconSize: [16, 16],
     iconAnchor: [8, 8],
   });
+}
+
+function ActualRouteLayers({ item }: { item: ActionMapItem }) {
+  const actualRoute = item.contract?.metadata.preparationData?.actualRoute;
+  const segments = getPublicActualRouteSegments(actualRoute);
+  return (
+    <>
+      {segments.map((segment, index) => (
+        <Polyline
+          key={`actual-route-${item.id}-${segment.routeId}`}
+          positions={segment.coordinates}
+          pathOptions={{
+            color: index % 2 === 0 ? "#059669" : "#2563eb",
+            weight: 5,
+            opacity: 0.78,
+            dashArray: "10 7",
+          }}
+        />
+      ))}
+    </>
+  );
 }
 
 export function ShapeLayers({
@@ -139,8 +161,15 @@ export function ShapeLayers({
     <>
       {items.map((item) => {
         const geometry = resolveActionMapGeometryViewModel(item);
+        const actualRouteSegments = getPublicActualRouteSegments(
+          item.contract?.metadata.preparationData?.actualRoute,
+        );
         if (geometry.renderMode !== "drawing" || geometry.positions.length === 0) {
-          return null;
+          return actualRouteSegments.length > 0 ? (
+            <Fragment key={`actual-route-only-${item.id}`}>
+              <ActualRouteLayers item={item} />
+            </Fragment>
+          ) : null;
         }
 
         const currentPlaceState = resolveMapPlaceStateForItem(
@@ -279,6 +308,7 @@ export function ShapeLayers({
 
           return (
             <Fragment key={`shape-${item.id}`}>
+              <ActualRouteLayers item={item} />
               {casingStyle ? (
                 <Polygon
                   key={`casing-${item.id}`}
@@ -395,6 +425,7 @@ export function ShapeLayers({
 
         return (
           <Fragment key={`shape-${item.id}`}>
+            <ActualRouteLayers item={item} />
             {casingStyle ? (
               <Polyline
                 key={`casing-${item.id}`}

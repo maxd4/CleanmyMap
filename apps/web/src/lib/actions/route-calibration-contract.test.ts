@@ -7,7 +7,9 @@ import {
 import {
   buildRouteCalibrationContext,
   buildRoutePlannerSnapshot,
+  preserveHistoricalRouteCalibrationContext,
 } from "@/lib/route/route-calibration";
+import { createActualRouteFromRecommendation } from "@/lib/route/route-actual";
 import { buildActionInsertPayload, buildCreateActionGeometry } from "./store";
 
 const routeContext = buildRouteCalibrationContext({
@@ -70,6 +72,15 @@ const payload = {
   volunteersCount: 3,
   durationMinutes: 60,
   routeCalibrationContext: routeContext,
+  preparationData: {
+    actualRoute: createActualRouteFromRecommendation({
+      generatedAt: "2026-09-01T09:00:00.000Z",
+      groupCount: 1,
+      routeGeometry: routeContext.plannerSnapshot!.geometry,
+      stops: [],
+      groupRoutes: [],
+    }),
+  },
 };
 
 describe("route calibration action handoff", () => {
@@ -77,6 +88,7 @@ describe("route calibration action handoff", () => {
     const contract = toContractCreatePayload(payload);
 
     expect(contract.metadata.preparationData?.routeCalibrationContext).toEqual(routeContext);
+    expect(contract.metadata.preparationData?.actualRoute?.version).toBe("actual-route-v1");
   });
 
   it("validates the context at the action API boundary", () => {
@@ -86,6 +98,7 @@ describe("route calibration action handoff", () => {
     expect(parsed.success).toBe(true);
     if (parsed.success) {
       expect(parsed.data.preparationData?.routeCalibrationContext).toEqual(routeContext);
+      expect(parsed.data.preparationData?.actualRoute?.routes).toHaveLength(1);
     }
   });
 
@@ -133,6 +146,38 @@ describe("route calibration action handoff", () => {
     expect(readContract.metadata.preparationData).toEqual(row.preparation_data);
     expect(readContract.metadata.preparationData?.routeCalibrationContext).toEqual(
       routeContext,
+    );
+    expect(readContract.metadata.preparationData?.actualRoute).toEqual(
+      row.preparation_data.actualRoute,
+    );
+  });
+
+  it("allows the actual route to change without rewriting the planner snapshot", () => {
+    const contract = toContractCreatePayload(payload);
+    const parsed = createActionSchema.safeParse(contract);
+
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+
+    const current = parsed.data.preparationData;
+    const updatedActualRoute = current?.actualRoute
+      ? {
+          ...current.actualRoute,
+          zones: {
+            ...current.actualRoute.zones,
+            midpoint: { label: "Mi-parcours réel", coordinate: null },
+          },
+        }
+      : null;
+    const next = preserveHistoricalRouteCalibrationContext(current, {
+      actualRoute: updatedActualRoute ?? undefined,
+      routeCalibrationContext: routeContext,
+    });
+
+    expect(next.actualRoute?.zones.midpoint.label).toBe("Mi-parcours réel");
+    expect(next.routeCalibrationContext).toEqual(current?.routeCalibrationContext);
+    expect(next.routeCalibrationContext?.plannerSnapshot).toEqual(
+      current?.routeCalibrationContext?.plannerSnapshot,
     );
   });
 

@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { useEffectiveAuthState } from "@/lib/auth/use-effective-auth-state";
 import { useRouteData } from "./hooks/use-route-data";
@@ -22,6 +23,8 @@ import { Navigation, Zap, Info, Route as RouteIcon, Sparkles } from "lucide-reac
 import { motion, AnimatePresence } from "framer-motion";
 import type { RouteGeometry } from "@/lib/route/route-contract";
 import type { RouteGroupRoute } from "@/lib/route/route-response-contract";
+import { createActualRouteFromRecommendation } from "@/lib/route/route-actual";
+import { writePlannerActionHandoff } from "@/lib/route/route-action-handoff";
 import {
   getRouteGroupPatternLabel,
   getRouteGroupVisualStyle,
@@ -48,6 +51,7 @@ const RouteMap = dynamic(
 );
 
 export function RouteSection() {
+  const router = useRouter();
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
   const [selectedGroupIndex, setSelectedGroupIndex] = useState<number | null>(null);
   const [multiRouteDisplayMode, setMultiRouteDisplayMode] =
@@ -86,6 +90,15 @@ export function RouteSection() {
     : groupRoutes.find(({ groupIndex }) => groupIndex === selectedGroupIndex) ?? null;
   const visibleStops = selectedGroup?.stops ?? picks;
   const visibleGeometry = selectedGroup?.routeGeometry ?? data?.routeGeometry ?? EMPTY_ROUTE_GEOMETRY;
+
+  const createActionFromRecommendation = () => {
+    if (!data) return;
+    writePlannerActionHandoff({
+      actualRoute: createActualRouteFromRecommendation(data),
+      routeCalibrationContext: data.calibrationContext ?? null,
+    });
+    router.push("/actions/new?from=planner");
+  };
 
   const dataStatusMessage = data
     ? data.status === "empty"
@@ -371,7 +384,14 @@ export function RouteSection() {
 
                       <div className="text-right space-y-2">
                          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{fr ? "Priorité moyenne" : "Average priority"}</p>
-                         <p className="text-6xl font-black text-white tracking-tighter leading-none">{data.scoreBreakdown.priority}</p>
+                        <p className="text-6xl font-black text-white tracking-tighter leading-none">{data.scoreBreakdown.priority}</p>
+                        <button
+                          type="button"
+                          onClick={createActionFromRecommendation}
+                          className="mt-4 rounded-2xl bg-emerald-400 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-950 transition hover:bg-emerald-300"
+                        >
+                          Créer une action avec ce parcours
+                        </button>
                       </div>
                    </div>
                 </div>

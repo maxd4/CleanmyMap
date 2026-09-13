@@ -11,6 +11,8 @@ import { PLACE_TYPE_OPTIONS } from"@/lib/actions/place-type-options";
 import { normalizeActionDrawing } from"../../map/actions-map-geometry.utils";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
+import type { ActualRoute } from "@/lib/route/route-actual";
+import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import { estimateButtsWeightKg } from "@/lib/impact/impact-terrain-2026";
 
 export type FormState = {
@@ -30,6 +32,7 @@ export type FormState = {
  departureTime: string;
  locationLabel: string;
  departureLocationLabel: string;
+ midRouteLocationLabel?: string;
  arrivalLocationLabel: string;
  routeStyle:"direct" |"souple";
  routeAdjustmentMessage: string;
@@ -77,6 +80,8 @@ export type FormState = {
  visionBagsCount: string;
  visionFillLevel:"" |"25" |"50" |"75" |"100";
  visionDensity:"" |"sec" |"humide_dense" |"mouille";
+ actualRoute?: ActualRoute | null;
+ routeCalibrationContext?: RouteCalibrationContext | null;
 };
 
 export const initialState: FormState = {
@@ -96,6 +101,7 @@ export const initialState: FormState = {
  departureTime:"",
  locationLabel:"",
  departureLocationLabel:"",
+ midRouteLocationLabel:"",
  arrivalLocationLabel:"",
  routeStyle:"souple",
  routeAdjustmentMessage:"",
@@ -143,6 +149,8 @@ export const initialState: FormState = {
  visionBagsCount:"",
  visionFillLevel:"",
  visionDensity:"",
+ actualRoute: null,
+ routeCalibrationContext: null,
 };
 
 export type SubmissionState ="idle" |"pending" |"success" |"error";

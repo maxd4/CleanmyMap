@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import type { FormState } from "../form/model";
 import type { ActionDrawing, ActionGeometrySource } from "@/lib/actions/types";
+import type { ActualRoute } from "@/lib/route/route-actual";
+import { ActualRouteEditor } from "../actual-route-editor";
 import type { UpdateFormField } from "../types";
 import {
   getLocalGeoAddressSuggestions,
@@ -444,6 +446,16 @@ export function ActionStepLocation({
           helperText={isCleanPlaceMode ? "Adresse exacte du lieu" : "Adresse exacte du départ"}
         />
           <AddressAutocompleteInput
+            id="midpoint"
+            icon={MapPin}
+            label="Mi-parcours"
+            placeholder="Zone intermédiaire (optionnel)"
+            value={form.midRouteLocationLabel ?? ""}
+            onChange={(v) => updateField("midRouteLocationLabel", v)}
+            optional
+            helperText="Zone intermédiaire de l'action"
+          />
+          <AddressAutocompleteInput
             id="arrival"
             icon={Navigation}
             label={isCleanPlaceMode ? "Complément" : "Arrivée"}
@@ -471,6 +483,13 @@ export function ActionStepLocation({
           )}
         </div>
       </div>
+
+      {form.actualRoute ? (
+        <ActualRouteEditor
+          actualRoute={form.actualRoute}
+          onChange={(actualRoute: ActualRoute) => updateField("actualRoute", actualRoute)}
+        />
+      ) : null}
 
       {/* ── Ligne 2a : Carte (desktop/tablette uniquement) ───────────────── */}
       <div className="hidden md:block rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)] space-y-3">
