@@ -43,7 +43,7 @@ export const ACTION_POLLUTION_COLOR_THRESHOLDS = {
 } as const;
 
 export const COLOR_TOKENS = {
- BLUE: { h: 199, s: 89, l: 48 }, // Faible
+ BLUE: { h: 199, s: 89, l: 48 }, // Premier seuil de pollution
  VIOLET: { h: 262, s: 80, l: 50 }, // Critique
  RED: { h: 2, s: 82, l: 62 }, // Fort (rouge clair)
  ORANGE: { h: 35, s: 90, l: 50 }, // Moyen
@@ -52,7 +52,7 @@ export const COLOR_TOKENS = {
 };
 
 export const ACTION_POLLUTION_COLOR_STOPS = [
- { key: "blue", label: "Bleu · pollution faible", threshold: ACTION_POLLUTION_COLOR_THRESHOLDS.BLUE, token: COLOR_TOKENS.BLUE },
+ { key: "blue", label: "Bleu · premier seuil de pollution", threshold: ACTION_POLLUTION_COLOR_THRESHOLDS.BLUE, token: COLOR_TOKENS.BLUE },
  { key: "orange", label: "Orange · pollution moyenne", threshold: ACTION_POLLUTION_COLOR_THRESHOLDS.ORANGE, token: COLOR_TOKENS.ORANGE },
  { key: "red", label: "Rouge · pollution forte", threshold: ACTION_POLLUTION_COLOR_THRESHOLDS.RED, token: COLOR_TOKENS.RED },
  { key: "violet", label: "Violet · pollution critique", threshold: ACTION_POLLUTION_COLOR_THRESHOLDS.VIOLET, token: COLOR_TOKENS.VIOLET },

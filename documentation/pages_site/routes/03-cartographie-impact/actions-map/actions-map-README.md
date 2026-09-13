@@ -170,8 +170,8 @@ Une calibration locale pourra remplacer le `T80` générique via l'option de cal
 ## Lecture rapide des couleurs
 
 ```txt
-bleu    = pollution projetée faible
-orange  = pollution projetée moyenne
+bleu    = premier seuil de pollution projetée
+orange  = seuil suivant de pollution projetée
 rouge   = pollution projetée forte
 violet  = pollution projetée critique
 noir    = pollution projetée extrême
@@ -179,6 +179,12 @@ vert    = lieu explicitement propre uniquement
 ```
 
 La progression entre les repères de couleur est continue. Les seuils exacts sont centralisés dans `ACTION_POLLUTION_COLOR_THRESHOLDS` ; le vert n'est jamais un niveau de faible pollution pour une action.
+
+Le vert est réservé aux zones explicitement déclarées propres (`clean_place`).
+Il ne signifie ni score nul, ni score très faible, ni absence de donnée, ni
+géométrie en cours d'édition. Dans `ActionDrawingMap`, toute géométrie en
+cours de création ou d'édition reste gris foncé neutre jusqu'à la résolution
+du contrat final ; elle ne prédit pas la couleur scientifique publique.
 
 Sur `Plan clair`, le niveau extrême reste noir. Sur `Plan contrasté`, le même
 niveau est adapté en blanc pour l'accessibilité visuelle ; les autres parcours

@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import type { ActionDrawing } from "@/lib/actions/types";
 import type { FormState } from "./model";
-import { toRequiredNumber } from "./model";
 import { ActionDeclarationLocationAssist } from "./action-declaration-form.smart-assist";
 import type { GpsStatus } from "./action-declaration-form.smart-assist";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
@@ -142,12 +141,6 @@ export function ActionDeclarationLocationSection({
               value={displayDrawing}
               onChange={onManualDrawingChange}
               readOnly={drawingMapReadOnly}
-              wasteKg={toRequiredNumber(form.wasteKg, 0)}
-              butts={Math.max(
-                0,
-                Math.trunc(toRequiredNumber(form.cigaretteButts, 0)),
-              )}
-              isCleanPlace={false}
             />
           ) : (
             <div className="flex h-[420px] items-center justify-center bg-slate-50">

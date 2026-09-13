@@ -33,7 +33,7 @@ describe("MapLegend", () => {
     expect(markup).toContain(`${ACTION_POLLUTION_COLOR_STOPS[2].threshold}–${ACTION_POLLUTION_COLOR_STOPS[3].threshold - 1}`);
     expect(markup).toContain(`${ACTION_POLLUTION_COLOR_STOPS[3].threshold}–${ACTION_POLLUTION_COLOR_STOPS[4].threshold - 1}`);
     expect(markup).toContain(`≥ ${ACTION_POLLUTION_COLOR_STOPS[4].threshold}`);
-    expect(markup).toContain("Faible");
+    expect(markup).toContain("Premier seuil");
     expect(markup).toContain("Moyenne");
     expect(markup).toContain("Forte");
     expect(markup).toContain("Critique");
