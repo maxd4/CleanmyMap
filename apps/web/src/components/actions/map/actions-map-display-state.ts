@@ -6,7 +6,11 @@ import {
   type CurrentPlaceStateMode,
   type CurrentPlaceStateViews,
 } from "@/lib/actions/pollution/current-place-state";
-import type { PollutionScoreReferences } from "@/lib/actions/pollution/pollution-score";
+import {
+  computeAveragePollutionScore,
+  computePollutionScoresRelativeToReferences,
+  type PollutionScoreReferences,
+} from "@/lib/actions/pollution/pollution-score";
 import type {
   LocalRepollutionScoreResolver,
   RepollutionDatasetCompleteness,
@@ -38,7 +42,26 @@ export function resolveMapPlaceStateViews(
     historicalScoreResolver?: LocalRepollutionScoreResolver;
   },
 ): CurrentPlaceStateViews[] {
-  return resolveCurrentPlaceStateViews(resolveMapSourceContracts(items), options);
+  const historicalScoreResolver =
+    options.historicalScoreResolver ??
+    (options.pollutionScoreReferences
+      ? (action: ActionDataContract) =>
+          computeAveragePollutionScore(
+            computePollutionScoresRelativeToReferences(
+              {
+                wasteKg: action.metadata.wasteKg,
+                cigaretteButts: action.metadata.cigaretteButts,
+                volunteersCount: action.metadata.volunteersCount,
+              },
+              options.pollutionScoreReferences ?? undefined,
+            ),
+          )
+      : undefined);
+
+  return resolveCurrentPlaceStateViews(resolveMapSourceContracts(items), {
+    ...options,
+    historicalScoreResolver,
+  });
 }
 
 export function resolveMapPlaceStateForItem(

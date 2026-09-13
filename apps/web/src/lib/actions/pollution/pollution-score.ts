@@ -1,9 +1,18 @@
 export const WASTE_POLLUTION_REFERENCE_KG = 20;
 export const BUTTS_POLLUTION_REFERENCE_COUNT = 2000;
 
+export type PollutionScoreScope = "global" | "department";
+
+export type DepartmentPollutionScoreReference = {
+  wastePerVolunteer: number;
+  buttsPerVolunteer: number;
+  eligibleActionCount: number;
+};
+
 export type PollutionScoreReferences = {
   wastePerVolunteer: number;
   buttsPerVolunteer: number;
+  departmentReferences?: Readonly<Record<string, DepartmentPollutionScoreReference>>;
 };
 
 export const DEFAULT_POLLUTION_SCORE_REFERENCES: PollutionScoreReferences = {
@@ -113,6 +122,16 @@ export function computePollutionScoresRelativeToReferences(
     buttsScore,
     severityScore: Math.max(wasteScore, buttsScore),
   };
+}
+
+/**
+ * The map color score combines the two observed pollution components instead
+ * of letting the largest component hide the other one.
+ */
+export function computeAveragePollutionScore(
+  scores: Pick<PollutionScoreBreakdown, "wasteScore" | "buttsScore">,
+): number {
+  return Math.round((scores.wasteScore + scores.buttsScore) / 2);
 }
 
 export function computePollutionSeverityScoreRelativeToReferences(

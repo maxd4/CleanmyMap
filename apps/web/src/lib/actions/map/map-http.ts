@@ -62,6 +62,8 @@ type ActionsMapFeedRow = {
   status: string;
   observed_at: string;
   location_label: string;
+  department_code?: string | null;
+  department_name?: string | null;
   latitude: number | string | null;
   longitude: number | string | null;
   waste_kg: number | string | null;
@@ -212,8 +214,8 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
     locationLabel: row.location_label,
     latitude: toFiniteNumber(row.latitude),
     longitude: toFiniteNumber(row.longitude),
-    departmentCode: null,
-    departmentName: null,
+    departmentCode: row.department_code ?? null,
+    departmentName: row.department_name ?? null,
     wasteKg: toFiniteNumber(row.waste_kg),
     cigaretteButts: toFiniteNumber(row.cigarette_butts),
     volunteersCount: toFiniteNumber(row.volunteers_count),

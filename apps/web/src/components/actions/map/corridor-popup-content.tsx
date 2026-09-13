@@ -7,6 +7,7 @@ import type {
   CurrentPlaceState,
   CurrentPlaceStateMode,
 } from "@/lib/actions/pollution/current-place-state";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { CorridorHistory } from "@/lib/actions/pollution/corridor-history";
 import { summarizeCorridorHistory } from "@/lib/actions/pollution/corridor-history";
 import { mapItemObservedAt } from "@/lib/actions/data-contract";
@@ -24,6 +25,7 @@ type CorridorPopupContentProps = {
   color: string;
   renderAction: (item: ActionMapItem) => ReactNode;
   displayMode?: CurrentPlaceStateMode;
+  scoreScope?: PollutionScoreScope;
   resolveCurrentPlaceStateForItem?: (item: ActionMapItem) => CurrentPlaceState | null;
 };
 

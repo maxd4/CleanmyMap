@@ -9,6 +9,10 @@ import {
   resolveDynamicColor,
 } from "@/components/actions/map-marker-categories";
 import { presentActionPollutionProjection } from "@/lib/actions/pollution/revisit-priority";
+import {
+  computeAveragePollutionScore,
+  computePollutionScoresRelativeToReferences,
+} from "@/lib/actions/pollution/pollution-score";
 
 vi.mock("react-leaflet", () => {
   const passthrough = ({ children }: { children?: React.ReactNode }) =>
@@ -220,8 +224,15 @@ describe("ShapeLayers", () => {
       }),
     );
     const now = new Date("2026-08-25T00:00:00.000Z");
+    const expectedActionScore = computeAveragePollutionScore(
+      computePollutionScoresRelativeToReferences({
+        wasteKg: 80,
+        cigaretteButts: 25,
+        volunteersCount: 1,
+      }),
+    );
     const expectedActionColor = resolveDynamicColor(
-      presentActionPollutionProjection(100, "2026-06-01", now)
+      presentActionPollutionProjection(expectedActionScore, "2026-06-01", now)
         .projectedPollutionScore,
     );
 

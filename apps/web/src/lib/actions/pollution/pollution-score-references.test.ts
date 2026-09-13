@@ -26,6 +26,34 @@ describe("fetchActionPollutionScoreReferences", () => {
     });
   });
 
+  it("keeps department reference rows in the same snapshot payload", async () => {
+    const rpc = vi.fn(async () => ({
+      data: [
+        { waste_per_volunteer: 12, butts_per_volunteer: 345 },
+        {
+          department_code: "2B",
+          waste_per_volunteer: 8,
+          butts_per_volunteer: 120,
+          eligible_action_count: 4,
+        },
+      ],
+      error: null,
+    }));
+    const supabase = { rpc } as never;
+
+    await expect(fetchActionPollutionScoreReferences(supabase)).resolves.toEqual({
+      wastePerVolunteer: 12,
+      buttsPerVolunteer: 345,
+      departmentReferences: {
+        "2B": {
+          wastePerVolunteer: 8,
+          buttsPerVolunteer: 120,
+          eligibleActionCount: 4,
+        },
+      },
+    });
+  });
+
   it("falls back to defaults when the RPC returns unusable values", async () => {
     const rpc = vi.fn(async () => ({
       data: { waste_per_volunteer: 0, butts_per_volunteer: null },

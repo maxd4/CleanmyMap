@@ -18,6 +18,7 @@ import type {
 } from "@/lib/actions/pollution/current-place-state";
 import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 import type { CorridorHistory } from "@/lib/actions/pollution/corridor-history";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import { buildActionUpdateHref } from "./action-popup-content.utils";
 import {
   formatObservedDate,
@@ -50,6 +51,7 @@ type ActionPopupContentProps = {
   resolveColorForItem?: (item: ActionMapItem) => string;
   displayMode?: CurrentPlaceStateMode;
   currentPlaceState?: CurrentPlaceState | null;
+  scoreScope?: PollutionScoreScope;
   resolveCurrentPlaceStateForItem?: (
     item: ActionMapItem,
   ) => CurrentPlaceState | null;
@@ -64,6 +66,7 @@ export function ActionPopupContent(props: ActionPopupContentProps) {
         corridorHistory={props.corridorHistory}
         color={props.color}
         displayMode={props.displayMode}
+        scoreScope={props.scoreScope}
         resolveCurrentPlaceStateForItem={props.resolveCurrentPlaceStateForItem}
         renderAction={(item) => (
           <SingleActionPopupContent
@@ -77,6 +80,7 @@ export function ActionPopupContent(props: ActionPopupContentProps) {
             currentPlaceState={
               props.resolveCurrentPlaceStateForItem?.(item) ?? null
             }
+            scoreScope={props.scoreScope}
             wrap={false}
           />
         )}
@@ -94,6 +98,7 @@ function SingleActionPopupContent({
   onViewGeometry,
   displayMode,
   currentPlaceState = null,
+  scoreScope = "global",
   wrap = true,
 }: {
   item: ActionMapItem;
@@ -102,6 +107,7 @@ function SingleActionPopupContent({
   onViewGeometry?: () => void;
   displayMode?: CurrentPlaceStateMode;
   currentPlaceState?: CurrentPlaceState | null;
+  scoreScope?: PollutionScoreScope;
   wrap?: boolean;
 }) {
   const contract = item.contract;
@@ -148,19 +154,23 @@ function SingleActionPopupContent({
     scoreReading,
     scoreLoading,
     scoreSourceLabel,
+    historicalScore,
+    scoreUnavailable,
   } = useActionPopupScores({
+    item,
     hasPollution,
     wasteKg,
     cigaretteButts: butts,
     volunteersCount: volunteers,
+    scoreScope,
   });
   const popupScore =
     !isAction && typeof dataContract?.metadata.observedPollutionScore === "number"
       ? dataContract.metadata.observedPollutionScore
       : score;
-  const actionProjection = isAction
+  const actionProjection = isAction && scoreScope === "global"
     ? presentActionPollutionProjection(
-        score,
+        historicalScore ?? 0,
         mapItemObservedAt(item),
         new Date(),
         {
@@ -212,6 +222,8 @@ function SingleActionPopupContent({
         actionProjection={actionProjection}
         displayMode={displayMode}
         currentPlaceState={currentPlaceState}
+        scoreScope={scoreScope}
+        scoreUnavailable={scoreUnavailable}
         hasQuantifiedPollutionScore={hasQuantifiedPollutionScore}
       />
 

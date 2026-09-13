@@ -12,6 +12,7 @@ import type {
   CurrentPlaceState,
   CurrentPlaceStateMode,
 } from "@/lib/actions/pollution/current-place-state";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 
 type ActionPopupContentHeaderProps = {
   recordTypeLabel: string;
@@ -40,6 +41,8 @@ type ActionPopupContentHeaderProps = {
   actionProjection: ActionPollutionProjectionPresentation | null;
   displayMode?: CurrentPlaceStateMode;
   currentPlaceState?: CurrentPlaceState | null;
+  scoreScope?: PollutionScoreScope;
+  scoreUnavailable?: boolean;
   hasQuantifiedPollutionScore?: boolean;
 };
 
@@ -118,26 +121,33 @@ export function ActionPopupContentHeader({
   actionProjection,
   displayMode,
   currentPlaceState = null,
+  scoreScope = "global",
+  scoreUnavailable = false,
   hasQuantifiedPollutionScore = true,
 }: ActionPopupContentHeaderProps) {
   const geometryTone = getGeometryTone(geometryReality, isAction);
 
   if (isAction) {
-    const hasDisplayState = Boolean(displayMode || currentPlaceState);
+    const scopedCurrentPlaceState = scoreScope === "global" ? currentPlaceState : null;
+    const hasDisplayState = scoreScope === "global" && Boolean(displayMode || currentPlaceState);
     const isDisplayedProjection = hasDisplayState
-      ? currentPlaceState?.source === "projected" ||
+      ? scopedCurrentPlaceState?.source === "projected" ||
         (!currentPlaceState && displayMode === "projected_today")
       : true;
-    const displayedScore = currentPlaceState?.score ??
-      (isDisplayedProjection
-        ? actionProjection?.projectedPollutionScore ?? score
-        : score);
+    const displayedScore = scoreUnavailable
+      ? 0
+      : scopedCurrentPlaceState?.score ??
+        (isDisplayedProjection
+          ? actionProjection?.projectedPollutionScore ?? score
+          : score);
     const displayedScoreLabel =
-      currentPlaceState?.scoreKind === "unavailable"
-        ? "Niveau non quantifié"
+      scoreUnavailable
+        ? "Score départemental indisponible"
+        : scopedCurrentPlaceState?.scoreKind === "unavailable"
+          ? "Niveau non quantifié"
         : formatScorePercent(Math.round(displayedScore));
-    const displayedDate = currentPlaceState?.date
-      ? formatObservedDate(currentPlaceState.date)
+    const displayedDate = scopedCurrentPlaceState?.date
+      ? formatObservedDate(scopedCurrentPlaceState.date)
       : observedAt;
     return (
       <div className="relative space-y-4 overflow-hidden p-5">
@@ -173,12 +183,16 @@ export function ActionPopupContentHeader({
           <div className="grid gap-2 sm:grid-cols-3">
             <div>
               <p className="cmm-text-caption font-black uppercase tracking-[0.12em] text-slate-500">
-                Pollution constatée avant l&apos;action
+                {scoreScope === "department"
+                  ? "Référence départementale"
+                  : "Pollution constatée avant l'action"}
               </p>
               <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-50">
-                {formatScorePercent(
-                  Math.round(actionProjection?.historicalScore ?? score),
-                )}
+                {scoreUnavailable
+                  ? "Indisponible"
+                  : formatScorePercent(
+                      Math.round(actionProjection?.historicalScore ?? score),
+                    )}
               </p>
             </div>
             <div>
@@ -191,7 +205,11 @@ export function ActionPopupContentHeader({
             </div>
             <div>
               <p className="cmm-text-caption font-black uppercase tracking-[0.12em] text-slate-500">
-                {isDisplayedProjection ? "Pollution projetée" : "État affiché"}
+                {scoreScope === "department"
+                  ? "Score relatif"
+                  : isDisplayedProjection
+                    ? "Pollution projetée"
+                    : "État affiché"}
               </p>
               <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-50">
                 {displayedScoreLabel}
@@ -202,14 +220,20 @@ export function ActionPopupContentHeader({
             color={color}
             score={displayedScore}
             scoreLoading={scoreLoading}
-            label={isDisplayedProjection ? "Projection" : "Observé"}
+            label={scoreScope === "department" ? "Département" : isDisplayedProjection ? "Projection" : "Observé"}
           />
         </div>
 
         <p className="cmm-text-caption font-semibold text-amber-700 dark:text-amber-300">
-          {isDisplayedProjection
+          {scoreScope === "department"
+            ? scoreUnavailable
+              ? "Référence départementale insuffisante pour comparer cette action"
+              : "Score relatif départemental · sans projection temporelle"
+            : scoreUnavailable
+            ? "Référence départementale insuffisante pour comparer cette action"
+            : isDisplayedProjection
             ? "Projection modélisée · pas une mesure en temps réel"
-            : currentPlaceState?.scoreKind === "unavailable"
+            : scopedCurrentPlaceState?.scoreKind === "unavailable"
               ? "Observation terrain · niveau non quantifié"
               : `Observé le ${displayedDate}`}
         </p>
