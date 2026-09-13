@@ -10,6 +10,10 @@ import { ACTION_GEOMETRY_SOURCES } from "@/lib/actions/types";
 import { isWasteCategorySlug } from "@/lib/waste";
 import { isRouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
+import {
+  getTimeContractValidationMessage,
+  isValidClockTime,
+} from "@/lib/actions/time-contract";
 
 const coordinateSchema = z.tuple([
   z.number().min(-90).max(90),
@@ -155,6 +159,13 @@ const actionPhaseSchema = z.enum([
   "post_action_complete",
 ]);
 
+const eventTimeSchema = z
+  .string()
+  .trim()
+  .refine(isValidClockTime, "L’heure doit respecter le format HH:MM.")
+  .nullable()
+  .optional();
+
 const userMetadataSchema = z.object({
   userId: z.string().min(1).max(120),
   username: z.string().min(1).max(120).optional(),
@@ -162,7 +173,29 @@ const userMetadataSchema = z.object({
   email: z.string().email().max(200).optional(),
 });
 
-const createActionLegacySchema = z.object({
+function addTemporalContractIssue(
+  value: {
+    durationMinutes?: number;
+    eventStartTime?: string | null;
+    eventEndTime?: string | null;
+  },
+  ctx: z.RefinementCtx,
+) {
+  const message = getTimeContractValidationMessage({
+    actionDurationMinutes: value.durationMinutes ?? 0,
+    startTime: value.eventStartTime,
+    endTime: value.eventEndTime,
+  });
+  if (message) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["eventStartTime"],
+      message,
+    });
+  }
+}
+
+const createActionLegacyBaseSchema = z.object({
   actorName: z.string().min(1).max(120).optional(),
   associationName: associationNameSchema,
   organizerType: organizerTypeSchema.nullable().optional(),
@@ -172,6 +205,8 @@ const createActionLegacySchema = z.object({
   recordType: z.enum(["action", "clean_place", "spot"]).optional(),
   placeType: z.string().max(80).optional(),
   actionDate: z.string().date(),
+  eventStartTime: eventTimeSchema,
+  eventEndTime: eventTimeSchema,
   locationLabel: z.string().min(2).max(200),
   departmentCode: z.string().trim().max(20).nullable().optional(),
   departmentName: z.string().trim().max(120).nullable().optional(),
@@ -207,6 +242,10 @@ const createActionLegacySchema = z.object({
   userMetadata: userMetadataSchema.optional(),
 });
 
+const createActionLegacySchema = createActionLegacyBaseSchema.superRefine(
+  addTemporalContractIssue,
+);
+
 const createActionContractSchema = z.object({
   type: z.enum(["action", "clean_place", "spot"]),
   source: z.string().min(1).max(80),
@@ -224,6 +263,8 @@ const createActionContractSchema = z.object({
   geometry: contractGeometrySchema.optional(),
   dates: z.object({
     observedAt: z.string().date(),
+    eventStartTime: eventTimeSchema,
+    eventEndTime: eventTimeSchema,
   }),
   metadata: z.object({
     actorName: z.string().min(1).max(120).optional(),
@@ -252,7 +293,16 @@ const createActionContractSchema = z.object({
     photos: z.array(photoAssetSchema).max(3).optional(),
     visionEstimate: visionEstimateSchema.nullable().optional(),
   }),
-});
+}).superRefine((value, ctx) =>
+  addTemporalContractIssue(
+    {
+      durationMinutes: value.metadata.durationMinutes,
+      eventStartTime: value.dates.eventStartTime,
+      eventEndTime: value.dates.eventEndTime,
+    },
+    ctx,
+  ),
+);
 
 export const createActionSchema = z
   .union([createActionLegacySchema, createActionContractSchema])
@@ -263,9 +313,12 @@ export const createActionSchema = z
       ),
   );
 
-export const updateActionSchema = createActionLegacySchema.partial().extend({
+export const updateActionSchema = createActionLegacyBaseSchema
+  .partial()
+  .extend({
   actionPhase: actionPhaseSchema.optional(),
   preparationData: preparationDataSchema.nullable().optional(),
-});
+  })
+  .superRefine(addTemporalContractIssue);
 
 export type CreateActionInput = z.infer<typeof createActionSchema>;

@@ -152,6 +152,8 @@ function toActionContractFromRow(row: ActionRow): ActionDataContract {
     cigaretteButts: row.cigarette_butts,
     volunteersCount: row.volunteers_count,
     durationMinutes: row.duration_minutes,
+    eventStartTime: row.event_start_time ?? null,
+    eventEndTime: row.event_end_time ?? null,
     actorName: row.actor_name,
     associationName: parsedMetadata.associationName,
     organizerType: row.organizer_type,

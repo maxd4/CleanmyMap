@@ -19,6 +19,10 @@ import {
   type BeforeActionFieldUpdater,
 } from "./model";
 import { FieldShell, GroupJoinPublishCard, SectionLabel, SelectShell } from "./ui";
+import {
+  deriveEventDurationMinutes,
+  deriveOrganizationMinutes,
+} from "@/lib/actions/time-contract";
 
 type BaseSectionProps = {
   form: FormState;
@@ -148,6 +152,12 @@ export function IdentityAndSharingSection({
 }
 
 export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
+  const event = deriveEventDurationMinutes(form.eventStartTime, form.eventEndTime);
+  const organization = deriveOrganizationMinutes({
+    actionDurationMinutes: Number(form.durationMinutes),
+    eventDurationMinutes: event.eventDurationMinutes,
+  });
+
   return (
             <CmmCard tone="emerald" variant="glass" size="lg">
               <div className="space-y-4">
@@ -297,7 +307,10 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                       />
                     </FieldShell>
 
-                    <FieldShell label="Durée estimée" hint="Estimation avant départ.">
+                    <FieldShell
+                      label="Temps d’action"
+                      hint="Marche + ramassage + tri + pesée, sans séparer ces étapes."
+                    >
                       <div className="relative">
                         <Clock3 size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-emerald-700/45" />
                         <input
@@ -311,6 +324,50 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                       </div>
                     </FieldShell>
                   </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <FieldShell
+                      label="Début de l’événement"
+                      hint="Heure réelle ou actuellement convenue, le même jour que l’action."
+                    >
+                      <input
+                        type="time"
+                        value={form.eventStartTime}
+                        onChange={(event) => updateField("eventStartTime", event.target.value)}
+                        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                      />
+                    </FieldShell>
+                    <FieldShell
+                      label="Fin de l’événement"
+                      hint="Laissez vide si l’horaire n’est pas encore connu."
+                    >
+                      <input
+                        type="time"
+                        value={form.eventEndTime}
+                        onChange={(event) => updateField("eventEndTime", event.target.value)}
+                        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                      />
+                    </FieldShell>
+                  </div>
+
+                  {event.status === "available" ? (
+                    <p className="text-xs leading-5 text-emerald-900/65">
+                      Créneau total : {event.eventDurationMinutes} min
+                      {organization.status === "available"
+                        ? ` · Organisation : ${organization.organizationMinutes} min`
+                        : organization.status === "inconsistent"
+                          ? " · Incohérence : le créneau est inférieur au temps d’action."
+                          : ""}
+                    </p>
+                  ) : event.status === "inconsistent" ? (
+                    <p className="text-xs font-medium leading-5 text-rose-700">
+                      Incohérence : la fin de l’événement est antérieure au début le même jour.
+                    </p>
+                  ) : event.status === "invalid" ? (
+                    <p className="text-xs font-medium leading-5 text-rose-700">
+                      Les horaires doivent respecter le format HH:MM.
+                    </p>
+                  ) : null}
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <SelectShell

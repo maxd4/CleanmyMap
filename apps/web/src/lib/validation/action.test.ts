@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createActionSchema } from "./action";
+import { createActionSchema, updateActionSchema } from "./action";
 
 describe("createActionSchema", () => {
   const basePayload = {
@@ -88,5 +88,45 @@ describe("createActionSchema", () => {
 
     expect(parsed.cigaretteButts).toBe(0);
     expect(parsed.cigaretteButtsCount).toBe(0);
+  });
+
+  it("accepts a partial event window and rejects an incoherent same-day window", () => {
+    expect(
+      createActionSchema.safeParse({
+        ...basePayload,
+        eventStartTime: "09:00",
+      }).success,
+    ).toBe(true);
+    expect(
+      createActionSchema.safeParse({
+        ...basePayload,
+        eventStartTime: "11:00",
+        eventEndTime: "10:00",
+      }).success,
+    ).toBe(false);
+    expect(
+      createActionSchema.safeParse({
+        ...basePayload,
+        eventStartTime: "09:00",
+        eventEndTime: "10:30",
+        durationMinutes: 120,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("allows an authorized update to clear or correct the event window", () => {
+    expect(updateActionSchema.safeParse({ eventStartTime: null }).success).toBe(true);
+    expect(
+      updateActionSchema.safeParse({
+        eventStartTime: "09:30",
+        eventEndTime: "11:00",
+      }).success,
+    ).toBe(true);
+    expect(
+      updateActionSchema.safeParse({
+        eventStartTime: "11:00",
+        eventEndTime: "09:30",
+      }).success,
+    ).toBe(false);
   });
 });

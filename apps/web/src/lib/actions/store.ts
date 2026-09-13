@@ -56,6 +56,8 @@ const ACTION_BASE_SELECT_FIELDS = [
   "cigarette_butts",
   "volunteers_count",
   "duration_minutes",
+  "event_start_time",
+  "event_end_time",
   "notes",
   "status",
 ] as const;
@@ -80,7 +82,13 @@ const ACTION_SELECT_FIELDS_WITH_PHASE = [
 
 const ACTION_SELECT_FIELDS_LEGACY = ACTION_BASE_SELECT_FIELDS.join(", ");
 const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT = ACTION_BASE_SELECT_FIELDS
-  .filter((field) => field !== "department_code" && field !== "department_name")
+  .filter(
+    (field) =>
+      field !== "department_code" &&
+      field !== "department_name" &&
+      field !== "event_start_time" &&
+      field !== "event_end_time",
+  )
   .join(", ");
 
 function isMissingActionColumnError(error: unknown): boolean {
@@ -103,7 +111,9 @@ function isMissingActionColumnError(error: unknown): boolean {
       normalized.includes("hidden_by_clerk_id") ||
       normalized.includes("hidden_reason") ||
       normalized.includes("department_code") ||
-      normalized.includes("department_name"))
+      normalized.includes("department_name") ||
+      normalized.includes("event_start_time") ||
+      normalized.includes("event_end_time"))
   );
 }
 
@@ -479,23 +489,27 @@ async function insertCreatedAction(
   let inserted = await supabase.from("actions").insert(insertWithPhase).select("id").single();
 
   if (inserted.error && isMissingActionColumnError(inserted.error)) {
-    const insertWithoutDepartment = inserted.error.message
-      ?.toLowerCase()
-      .includes("department_")
-      ? (() => {
-          const {
-            department_code,
-            department_name,
-            ...legacyInsert
-          } = baseInsert;
-          void department_code;
-          void department_name;
-          return legacyInsert;
-        })()
-      : baseInsert;
+    const errorMessage = inserted.error.message?.toLowerCase() ?? "";
+    const retryPayload: Record<string, unknown> = { ...insertWithPhase };
+    if (errorMessage.includes("department_")) {
+      delete retryPayload.department_code;
+      delete retryPayload.department_name;
+    }
+    if (errorMessage.includes("event_start_time")) {
+      delete retryPayload.event_start_time;
+    }
+    if (errorMessage.includes("event_end_time")) {
+      delete retryPayload.event_end_time;
+    }
+    if (errorMessage.includes("action_phase")) {
+      delete retryPayload.action_phase;
+    }
+    if (errorMessage.includes("preparation_data")) {
+      delete retryPayload.preparation_data;
+    }
     inserted = await supabase
       .from("actions")
-      .insert(insertWithoutDepartment)
+      .insert(retryPayload)
       .select("id")
       .single();
   }
@@ -532,6 +546,8 @@ export function buildActionInsertPayload(params: {
     cigarette_butts: resolvePersistedCigaretteButts(params.payload),
     volunteers_count: params.payload.volunteersCount,
     duration_minutes: params.payload.durationMinutes,
+    event_start_time: params.payload.eventStartTime ?? null,
+    event_end_time: params.payload.eventEndTime ?? null,
     notes: buildPersistedNotes({
       ...params.payload,
       manualDrawing: params.finalDrawing ?? undefined,

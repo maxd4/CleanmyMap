@@ -89,6 +89,8 @@ const BASE_FORM_STATE: FormState = {
  cigaretteButtsCondition:"propre", // État par défaut
  volunteersCount:"1",
  durationMinutes:"60",
+ eventStartTime:"",
+ eventEndTime:"",
  notes:"",
   wasteMegotsKg:"",
  wasteMegotsCondition:"propre",
@@ -130,7 +132,6 @@ export function buildPreparationDataFromForm(
   actionDate: form.actionDate.trim() || undefined,
   meetingTime: form.meetingTime.trim() || undefined,
   departureTime: form.departureTime.trim() || undefined,
-  estimatedDurationMinutes: toOptionalNumber(form.durationMinutes),
   plannedObjective: form.plannedObjective,
   placeType: form.placeType || undefined,
   estimatedDifficulty: form.estimatedDifficulty,
@@ -360,6 +361,8 @@ export function buildCreateActionPayload(params: {
  cigaretteButtsCount: enteredButtsCount ?? estimatedButtsFromWeight,
  volunteersCount: Math.trunc(toRequiredNumber(form.volunteersCount, 0)),
  durationMinutes: Math.max(0, Math.trunc(toRequiredNumber(form.durationMinutes, 0))),
+ eventStartTime: form.eventStartTime.trim() || null,
+ eventEndTime: form.eventEndTime.trim() || null,
  notes: appendEventRefToNotes(
  form.notes.trim() || undefined,
  linkedEventId,

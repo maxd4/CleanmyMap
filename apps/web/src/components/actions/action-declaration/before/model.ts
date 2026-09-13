@@ -93,6 +93,8 @@ export function sanitizePreActionForm(form: FormState): FormState {
   next.actionDate = next.actionDate.trim();
   next.meetingTime = next.meetingTime.trim();
   next.departureTime = next.departureTime.trim();
+  next.eventStartTime = next.eventStartTime.trim();
+  next.eventEndTime = next.eventEndTime.trim();
   next.locationLabel = next.departureLocationLabel.trim() || next.actionTitle;
   next.departureLocationLabel = next.departureLocationLabel.trim();
   next.accessibility = next.accessibility.trim();

@@ -66,6 +66,8 @@ export type ActionRow = {
   cigarette_butts: number | null;
   volunteers_count: number;
   duration_minutes: number;
+  event_start_time?: string | null;
+  event_end_time?: string | null;
   notes: string | null;
   status: "pending" | "approved" | "rejected";
   moderation_visibility?: "visible" | "hidden";

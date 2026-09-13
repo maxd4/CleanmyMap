@@ -15,6 +15,10 @@ import {
   ChevronDown,
   type LucideIcon,
 } from "lucide-react";
+import {
+  deriveEventDurationMinutes,
+  deriveOrganizationMinutes,
+} from "@/lib/actions/time-contract";
 import { cn } from "@/lib/utils";
 import {
   ENTREPRISE_ASSOCIATION_OPTION,
@@ -138,6 +142,11 @@ export function ActionStepIdentity({ form, updateField, updateFields, userMetada
   const organizerTypeErrorId = "action-organizer-type-error";
   const dateErrorId = "action-date-error";
   const otherVolunteerErrorId = "action-other-volunteer-error";
+  const event = deriveEventDurationMinutes(form.eventStartTime, form.eventEndTime);
+  const organization = deriveOrganizationMinutes({
+    actionDurationMinutes: Number(form.durationMinutes),
+    eventDurationMinutes: event.eventDurationMinutes,
+  });
 
   const [autreBenevoleName, setAutreBenevoleName] = useState(isAutreBénévole ? form.actorName : "");
 
@@ -366,7 +375,7 @@ export function ActionStepIdentity({ form, updateField, updateFields, userMetada
             {isActionMode && (
               <div className="space-y-6 pt-2">
                 <div>
-                  <SectionTitle color="bg-sky-500">Participants &amp; durée</SectionTitle>
+                  <SectionTitle color="bg-sky-500">Participants &amp; temps d’action</SectionTitle>
                   <div className="grid grid-cols-2 gap-3 max-w-sm">
                     <Field icon={Users}>
                       <input
@@ -382,13 +391,57 @@ export function ActionStepIdentity({ form, updateField, updateFields, userMetada
                       <input
                         type="number"
                         min="1"
-                        placeholder="Durée (min)"
+                        placeholder="Temps d’action (min)"
                         className={inputCls}
                         value={form.durationMinutes}
                         onChange={(e) => updateField("durationMinutes", e.target.value)}
                       />
+                      </Field>
+                  </div>
+                  <p className="mt-2 max-w-xl text-xs leading-5 text-emerald-900/55">
+                    Le temps d’action couvre la marche, le ramassage, le tri et la pesée, sans séparer ces étapes.
+                  </p>
+                  <div className="mt-3 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Field icon={Clock}>
+                      <input
+                        type="time"
+                        aria-label="Début de l’événement"
+                        value={form.eventStartTime}
+                        onChange={(event) => updateField("eventStartTime", event.target.value)}
+                        className={inputCls}
+                      />
+                    </Field>
+                    <Field icon={Clock}>
+                      <input
+                        type="time"
+                        aria-label="Fin de l’événement"
+                        value={form.eventEndTime}
+                        onChange={(event) => updateField("eventEndTime", event.target.value)}
+                        className={inputCls}
+                      />
                     </Field>
                   </div>
+                  <p className="mt-1 max-w-xl text-xs leading-5 text-emerald-900/55">
+                    Créneau total de l’événement — début / fin, incluant briefing, matériel, regroupement et rangement.
+                  </p>
+                  {event.status === "available" ? (
+                    <p className="mt-1 text-xs text-emerald-900/65">
+                      Total : {event.eventDurationMinutes} min
+                      {organization.status === "available"
+                        ? ` · Organisation : ${organization.organizationMinutes} min`
+                        : organization.status === "inconsistent"
+                          ? " · Incohérence : créneau inférieur au temps d’action."
+                          : ""}
+                    </p>
+                  ) : event.status === "inconsistent" ? (
+                    <p className="mt-1 text-xs font-medium text-rose-700">
+                      Incohérence : la fin est antérieure au début le même jour.
+                    </p>
+                  ) : event.status === "invalid" ? (
+                    <p className="mt-1 text-xs font-medium text-rose-700">
+                      Les horaires doivent respecter le format HH:MM.
+                    </p>
+                  ) : null}
                 </div>
               </div>
             )}
