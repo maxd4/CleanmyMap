@@ -13,6 +13,7 @@ import { MapLegend } from "./map-legend";
 describe("MapLegend", () => {
   it("keeps the color and infrastructure summary visible", () => {
     const markup = renderToStaticMarkup(React.createElement(MapLegend));
+    const expectedGradient = `linear-gradient(90deg, ${ACTION_POLLUTION_COLOR_STOPS.map((stop) => resolveDynamicColor(stop.threshold)).join(", ")})`;
 
     expect(markup).toContain("Bleu → noir");
     expect(markup).toContain("Pollution projetée");
@@ -20,6 +21,7 @@ describe("MapLegend", () => {
     expect(markup).toContain("Trash Spotter");
     expect(markup).toContain("Infrastructure");
     expect(markup).toContain("clean_place");
+    expect(markup).toContain(`background-image:${expectedGradient}`);
   });
 
   it("renders every canonical pollution threshold as a compact comparable row", () => {
