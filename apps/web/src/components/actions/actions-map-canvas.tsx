@@ -478,6 +478,35 @@ export function ActionsMapCanvas({
             text-transform: uppercase;
             opacity: 0.72;
           }
+          .cmm-action-geometry-endpoint-icon,
+          .cmm-action-geometry-direction-icon {
+            background: transparent;
+            border: none;
+            pointer-events: none;
+          }
+          .cmm-action-geometry-endpoint {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.95);
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.94);
+            color: #ffffff;
+            font-size: 0.52rem;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -0.04em;
+            box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.72), 0 2px 6px rgba(15, 23, 42, 0.42);
+          }
+          .cmm-action-geometry-direction {
+            display: block;
+            color: #ffffff;
+            font-size: 0.82rem;
+            line-height: 1;
+            text-shadow: -1px -1px 0 #0f172a, 1px -1px 0 #0f172a, -1px 1px 0 #0f172a, 1px 1px 0 #0f172a;
+          }
           @keyframes pulse-glow {
             0% { transform: scale(0.95); opacity: 0.5; }
             50% { transform: scale(1.2); opacity: 0.8; }

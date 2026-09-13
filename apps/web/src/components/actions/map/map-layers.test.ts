@@ -31,7 +31,27 @@ vi.mock("react-leaflet", () => {
         { "data-testid": "map-marker", "data-center": center?.join(",") },
         children,
       ),
-    Marker: passthrough,
+    Marker: ({
+      children,
+      icon,
+      position,
+      interactive,
+    }: {
+      children?: React.ReactNode;
+      icon?: { html?: string };
+      position?: [number, number];
+      interactive?: boolean;
+    }) =>
+      React.createElement(
+        "div",
+        {
+          "data-testid": "map-marker",
+          "data-icon-html": icon?.html,
+          "data-position": position?.join(","),
+          "data-interactive": interactive,
+        },
+        children,
+      ),
     Polygon: passthrough,
     Polyline: ({
       children,
@@ -72,7 +92,7 @@ vi.mock("react-leaflet-cluster", () => ({
 }));
 
 vi.mock("leaflet", () => ({
-  divIcon: vi.fn(() => ({})),
+  divIcon: vi.fn((options) => options),
 }));
 
 vi.mock("./action-pollution-score-references-context", () => ({
@@ -289,6 +309,28 @@ describe("ShapeLayers", () => {
     expect(markup).toContain(`data-weight="6"`);
     expect(markup).toContain(`data-weight="${ACTION_TRACE_HIT_AREA_WEIGHT}"`);
     expect(markup).toContain('data-opacity="0"');
+  });
+
+  it("keeps geometry markers absent at rest and exposes D/A plus three arrows when selected", () => {
+    const normalMarkup = renderToStaticMarkup(
+      React.createElement(ShapeLayers, {
+        items: [buildShapeItem("action", 20, "polyline", { geometrySource: "routed" })],
+        basemapMode: "dark",
+      }),
+    );
+    const selectedMarkup = renderToStaticMarkup(
+      React.createElement(ShapeLayers, {
+        items: [buildShapeItem("action", 20, "polyline", { geometrySource: "routed" })],
+        selectedActionId: "action-shape",
+        basemapMode: "dark",
+      }),
+    );
+
+    expect(normalMarkup).not.toContain("cmm-action-geometry-endpoint");
+    expect(normalMarkup).not.toContain("cmm-action-geometry-direction");
+    expect(selectedMarkup).toContain("Départ");
+    expect(selectedMarkup).toContain("Arrivée");
+    expect(selectedMarkup.match(/cmm-action-geometry-direction/g)).toHaveLength(3);
   });
 
   function buildShapeItem(
@@ -542,6 +584,7 @@ describe("ShapeLayers", () => {
     );
 
     expect(actionPolygonMarkup).toContain('data-has-view-geometry="true"');
+    expect(actionPolygonMarkup).not.toContain("cmm-action-geometry-direction");
     expect(spotMarkup).not.toContain(`data-weight="${ACTION_TRACE_HIT_AREA_WEIGHT}"`);
   });
 

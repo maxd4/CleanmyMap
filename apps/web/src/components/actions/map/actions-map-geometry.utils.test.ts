@@ -13,6 +13,7 @@ import {
   resolveActionMapGeometryViewModel,
   resolveGeometryConfidenceLabel,
   resolveInfrastructureAnchor,
+  resolvePolylineDirectionMarkers,
   resolveGeometryRenderStyle,
   resolvePolylineEndpointMarkers,
 } from "./actions-map-geometry.utils";
@@ -169,7 +170,7 @@ describe("actions map geometry utils", () => {
     ).toBe("Zone indicative");
   });
 
-  it("does not create endpoint markers for routed synthetic polylines", () => {
+  it("creates endpoint markers for manual and routed polylines", () => {
     const positions: [number, number][] = [
       [48.8566, 2.3522],
       [48.8576, 2.3532],
@@ -186,7 +187,7 @@ describe("actions map geometry utils", () => {
           strokeStyle: "dashed",
         },
       }),
-    ).toBeNull();
+    ).toEqual({ start: positions[0], end: positions[1], isLoop: false });
     expect(
       resolvePolylineEndpointMarkers({
         kind: "polyline",
@@ -198,7 +199,43 @@ describe("actions map geometry utils", () => {
           strokeStyle: "solid",
         },
       }),
-    ).toEqual({ start: positions[0], end: positions[1] });
+    ).toEqual({ start: positions[0], end: positions[1], isLoop: false });
+  });
+
+  it("collapses coincident endpoints into one loop marker", () => {
+    const positions: [number, number][] = [
+      [48.8566, 2.3522],
+      [48.8576, 2.3532],
+      [48.8566, 2.3522],
+    ];
+
+    expect(
+      resolvePolylineEndpointMarkers({
+        kind: "polyline",
+        positions,
+        presentation: {
+          origin: "routed",
+          reality: "estimated",
+          label: "Parcours reconstruit · estimation",
+          strokeStyle: "dashed",
+        },
+      }),
+    ).toEqual({ start: positions[0], end: positions[2], isLoop: true });
+  });
+
+  it("places three direction markers by cumulative distance and local bearing", () => {
+    const markers = resolvePolylineDirectionMarkers([
+      [48.8566, 2.3522],
+      [48.8566, 2.3622],
+      [48.8666, 2.3622],
+    ]);
+
+    expect(markers).toHaveLength(3);
+    expect(markers[0].position[1]).toBeGreaterThan(2.3522);
+    expect(markers[0].position[0]).toBeCloseTo(48.8566, 3);
+    expect(markers[0].bearing).toBeCloseTo(90, 0);
+    expect(markers[2].position[0]).toBeGreaterThan(48.8566);
+    expect(markers[2].bearing).toBeCloseTo(0, 0);
   });
 
   it("reserves the dashed stroke for reconstructed routed polylines", () => {

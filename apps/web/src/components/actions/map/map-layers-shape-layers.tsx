@@ -1,14 +1,16 @@
 "use client";
 
-import { Fragment, useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   CircleMarker,
+  Marker,
   Polygon,
   Polyline,
   Popup,
   Tooltip,
   useMap,
 } from "react-leaflet";
+import { divIcon } from "leaflet";
 import type { ActionMapItem } from "@/lib/actions/types";
 import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 import {
@@ -30,6 +32,7 @@ import {
   formatGeometryPointCount,
   formatActionGeometryTooltipTitle,
   resolveActionMapGeometryViewModel,
+  resolvePolylineDirectionMarkers,
   resolvePolylineEndpointMarkers,
   resolveGeometryRenderStyle,
 } from "./actions-map-geometry.utils";
@@ -47,6 +50,31 @@ import {
 } from "./map-layers.shared";
 import { resolveActionPollutionScore } from "./pollution-score-scope";
 
+type ActionShapeLayerRef = {
+  openPopup?: () => void;
+  closePopup?: () => void;
+  bringToFront?: () => void;
+};
+
+function createGeometryEndpointIcon(label: "D" | "A" | "D/A") {
+  return divIcon({
+    className: "cmm-action-geometry-endpoint-icon",
+    html: `<span class="cmm-action-geometry-endpoint" aria-label="${label === "D" ? "Départ" : label === "A" ? "Arrivée" : "Départ et arrivée"}">${label}</span>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+  });
+}
+
+function createGeometryDirectionIcon(bearing: number) {
+  const normalizedBearing = ((bearing % 360) + 360) % 360;
+  return divIcon({
+    className: "cmm-action-geometry-direction-icon",
+    html: `<span class="cmm-action-geometry-direction" aria-hidden="true" style="transform: rotate(${normalizedBearing}deg)">▲</span>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  });
+}
+
 export function ShapeLayers({
   items,
   visible = true,
@@ -60,7 +88,11 @@ export function ShapeLayers({
   const { references } = useActionPollutionScoreReferences();
   const map = useMap();
   const now = new Date();
-  const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
+  const [hoveredActionId, setHoveredActionId] = useState<string | null>(null);
+  const layerRefs = useRef<Record<string, {
+    visible?: ActionShapeLayerRef;
+    casing?: ActionShapeLayerRef;
+  }>>({});
   const actionItemsById = new Map(
     items
       .filter((item) => item.contract)
@@ -81,8 +113,23 @@ export function ShapeLayers({
     }
 
     const layer = layerRefs.current[selectedActionId];
-    layer?.openPopup?.();
+    layer?.visible?.openPopup?.();
   }, [selectedActionId]);
+
+  useEffect(() => {
+    const bringShapeToFront = (actionId: string | null) => {
+      if (!actionId) {
+        return;
+      }
+
+      const layers = layerRefs.current[actionId];
+      layers?.casing?.bringToFront?.();
+      layers?.visible?.bringToFront?.();
+    };
+
+    bringShapeToFront(hoveredActionId);
+    bringShapeToFront(selectedActionId);
+  }, [hoveredActionId, selectedActionId]);
 
   if (!visible) {
     return null;
@@ -190,6 +237,7 @@ export function ShapeLayers({
         const geometryPointsLabel = formatGeometryPointCount(geometry.pointCount);
         const geometryMetricLabel = geometry.metrics.label;
         const isSelected = selectedActionId === item.id;
+        const isHovered = hoveredActionId === item.id;
         const corridorHistory = isActionMapItem(item)
           ? findCorridorHistoryForAction(corridorHistories, item.id)
           : null;
@@ -198,9 +246,14 @@ export function ShapeLayers({
               .map((action) => actionItemsById.get(action.id))
               .filter((candidate): candidate is ActionMapItem => Boolean(candidate))
           : undefined;
-        const endpointMarkers = isActionMapItem(item)
-          ? resolvePolylineEndpointMarkers(geometry)
-          : null;
+        const endpointMarkers =
+          geometry.kind === "polyline" && (isSelected || isHovered)
+            ? resolvePolylineEndpointMarkers(geometry)
+            : null;
+        const directionMarkers =
+          geometry.kind === "polyline" && isSelected
+            ? resolvePolylineDirectionMarkers(geometry.positions)
+            : [];
         const onViewGeometry =
           isActionMapItem(item) && geometry.positions.length > 1
             ? () => fitActionGeometryBounds(map, geometry.positions)
@@ -228,6 +281,16 @@ export function ShapeLayers({
               {casingStyle ? (
                 <Polygon
                   key={`casing-${item.id}`}
+                  ref={(layer) => {
+                    const current = layerRefs.current[item.id] ?? {};
+                    if (layer) {
+                      layerRefs.current[item.id] = { ...current, casing: layer };
+                    } else if (current.visible) {
+                      layerRefs.current[item.id] = { visible: current.visible };
+                    } else {
+                      delete layerRefs.current[item.id];
+                    }
+                  }}
                   positions={geometry.positions}
                   pathOptions={casingStyle}
                 />
@@ -235,8 +298,11 @@ export function ShapeLayers({
               <Polygon
                 key={`visible-shape-${item.id}`}
                 ref={(layer) => {
+                  const current = layerRefs.current[item.id] ?? {};
                   if (layer) {
-                    layerRefs.current[item.id] = layer;
+                    layerRefs.current[item.id] = { ...current, visible: layer };
+                  } else if (current.casing) {
+                    layerRefs.current[item.id] = { casing: current.casing };
                   } else {
                     delete layerRefs.current[item.id];
                   }
@@ -246,6 +312,11 @@ export function ShapeLayers({
                   click: () => {
                     onSelectAction?.(item.id);
                   },
+                  mouseover: () => setHoveredActionId(item.id),
+                  mouseout: () =>
+                    setHoveredActionId((current) =>
+                      current === item.id ? null : current,
+                    ),
                 }}
                 pathOptions={{
                   color: displayColor,
@@ -326,6 +397,16 @@ export function ShapeLayers({
             {casingStyle ? (
               <Polyline
                 key={`casing-${item.id}`}
+                ref={(layer) => {
+                  const current = layerRefs.current[item.id] ?? {};
+                  if (layer) {
+                    layerRefs.current[item.id] = { ...current, casing: layer };
+                  } else if (current.visible) {
+                    layerRefs.current[item.id] = { visible: current.visible };
+                  } else {
+                    delete layerRefs.current[item.id];
+                  }
+                }}
                 positions={geometry.positions}
                 pathOptions={casingStyle}
               />
@@ -333,8 +414,11 @@ export function ShapeLayers({
             <Polyline
               key={`visible-shape-${item.id}`}
               ref={(layer) => {
+                const current = layerRefs.current[item.id] ?? {};
                 if (layer) {
-                  layerRefs.current[item.id] = layer;
+                  layerRefs.current[item.id] = { ...current, visible: layer };
+                } else if (current.casing) {
+                  layerRefs.current[item.id] = { casing: current.casing };
                 } else {
                   delete layerRefs.current[item.id];
                 }
@@ -344,6 +428,11 @@ export function ShapeLayers({
                 click: () => {
                   onSelectAction?.(item.id);
                 },
+                mouseover: () => setHoveredActionId(item.id),
+                mouseout: () =>
+                  setHoveredActionId((current) =>
+                    current === item.id ? null : current,
+                  ),
               }}
               pathOptions={{
                 color: displayColor,
@@ -418,37 +507,86 @@ export function ShapeLayers({
                   click: () => {
                     onSelectAction?.(item.id);
                   },
+                  mouseover: () => setHoveredActionId(item.id),
+                  mouseout: () =>
+                    setHoveredActionId((current) =>
+                      current === item.id ? null : current,
+                    ),
                 }}
               />
             )}
             {endpointMarkers ? (
-              <>
+              isSelected ? (
+                endpointMarkers.isLoop ? (
+                  <Marker
+                    position={endpointMarkers.start}
+                    icon={createGeometryEndpointIcon("D/A")}
+                    interactive={false}
+                  />
+                ) : (
+                  <>
+                    <Marker
+                      position={endpointMarkers.start}
+                      icon={createGeometryEndpointIcon("D")}
+                      interactive={false}
+                    />
+                    <Marker
+                      position={endpointMarkers.end}
+                      icon={createGeometryEndpointIcon("A")}
+                      interactive={false}
+                    />
+                  </>
+                )
+              ) : endpointMarkers.isLoop ? (
                 <CircleMarker
                   center={endpointMarkers.start}
-                  radius={3.5}
+                  radius={2.5}
                   interactive={false}
                   pathOptions={{
                     color: "#ffffff",
-                    fillColor: color,
-                    fillOpacity: 0.95,
-                    opacity: 0.95,
-                    weight: 1.5,
+                    fillColor: "#64748b",
+                    fillOpacity: 0.9,
+                    opacity: 0.9,
+                    weight: 1,
                   }}
                 />
-                <CircleMarker
-                  center={endpointMarkers.end}
-                  radius={3.5}
-                  interactive={false}
-                  pathOptions={{
-                    color: "#ffffff",
-                    fillColor: color,
-                    fillOpacity: 0.95,
-                    opacity: 0.95,
-                    weight: 1.5,
-                  }}
-                />
-              </>
+              ) : (
+                <>
+                  <CircleMarker
+                    center={endpointMarkers.start}
+                    radius={2.5}
+                    interactive={false}
+                    pathOptions={{
+                      color: "#ffffff",
+                      fillColor: "#64748b",
+                      fillOpacity: 0.9,
+                      opacity: 0.9,
+                      weight: 1,
+                    }}
+                  />
+                  <CircleMarker
+                    center={endpointMarkers.end}
+                    radius={2.5}
+                    interactive={false}
+                    pathOptions={{
+                      color: "#ffffff",
+                      fillColor: "#64748b",
+                      fillOpacity: 0.9,
+                      opacity: 0.9,
+                      weight: 1,
+                    }}
+                  />
+                </>
+              )
             ) : null}
+            {directionMarkers.map((marker, index) => (
+              <Marker
+                key={`direction-${item.id}-${index}`}
+                position={marker.position}
+                icon={createGeometryDirectionIcon(marker.bearing)}
+                interactive={false}
+              />
+            ))}
           </Fragment>
         );
       })}
