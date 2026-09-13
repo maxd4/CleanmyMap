@@ -1,7 +1,6 @@
 import { z } from "zod";
 import {
   CIGARETTE_BUTTS_PROVENANCES,
-  normalizeCigaretteButtsMeasurements,
 } from "@/lib/waste/cigarette-butts";
 import { parseDrawingFromNotes } from "@/lib/actions/geometry/drawing";
 import {
@@ -15,6 +14,7 @@ import type { ActionDrawing, CreateActionPayload } from "@/lib/actions/types";
 import type { getSupabaseServerClient } from "@/lib/supabase/server";
 import { runSingleActionQuery } from "@/lib/actions/query";
 import { resolveTrustedActionDepartmentForPersistence } from "@/lib/geo/action-department-resolver";
+import { resolveModeratedCigaretteButtsMeasurements } from "./action-moderation-measurements";
 
 const coordinateSchema = z.tuple([
   z.number().min(-90).max(90),
@@ -228,62 +228,26 @@ export function buildAdminCleanPlaceUpdates(
   };
 }
 
-export async function buildAdminActionUpdates(
-  supabase: SupabaseServerClient,
-  id: string,
-  status: "pending" | "approved" | "rejected",
-  edits: NonNullable<z.infer<typeof actionEditsSchema>>,
-) {
-  const existing = await loadExistingAction(supabase, id);
-  const parsedDrawing = parseDrawingFromNotes(existing.notes);
-  const parsedMetadata = extractActionMetadataFromNotes(parsedDrawing.cleanNotes);
-  const manualDrawing =
-    edits.manualDrawing !== undefined
-      ? edits.manualDrawing
-      : parsedDrawing.manualDrawing;
-  const hasCigaretteButtsMeasurementEdit = [
-    "cigaretteButtsMeasurements",
-    "cigaretteButts",
-    "cigaretteButtsMassKg",
-    "cigaretteButtsVolumeLiters",
-    "cigaretteButtsCondition",
-    "cigaretteButtsKg",
-  ].some((key) => Object.prototype.hasOwnProperty.call(edits, key));
-  const cigaretteButtsMeasurements =
-    edits.cigaretteButtsMeasurements !== undefined
-      ? edits.cigaretteButtsMeasurements === null
-        ? normalizeCigaretteButtsMeasurements({})
-        : normalizeCigaretteButtsMeasurements({
-            ...edits.cigaretteButtsMeasurements,
-            deriveMissingFromMassOrCount: false,
-          })
-      : hasCigaretteButtsMeasurementEdit
-        ? normalizeCigaretteButtsMeasurements({
-            cigaretteButtsCount:
-              edits.cigaretteButts !== undefined
-                ? edits.cigaretteButts
-                : parsedMetadata.cigaretteButtsMeasurements?.cigaretteButtsCount ??
-                  existing.cigarette_butts,
-            cigaretteButtsMassKg:
-              edits.cigaretteButtsMassKg !== undefined
-                ? edits.cigaretteButtsMassKg
-                : edits.cigaretteButtsKg !== undefined
-                  ? edits.cigaretteButtsKg
-                  : parsedMetadata.cigaretteButtsMeasurements?.cigaretteButtsMassKg ??
-                    parsedMetadata.cigaretteButtsKg,
-            cigaretteButtsVolumeLiters:
-              edits.cigaretteButtsVolumeLiters !== undefined
-                ? edits.cigaretteButtsVolumeLiters
-                : parsedMetadata.cigaretteButtsMeasurements?.cigaretteButtsVolumeLiters,
-            cigaretteButtsCondition:
-              edits.cigaretteButtsCondition !== undefined
-                ? edits.cigaretteButtsCondition
-                : parsedMetadata.cigaretteButtsMeasurements?.cigaretteButtsCondition,
-            deriveMissingFromMassOrCount: true,
-          })
-        : parsedMetadata.cigaretteButtsMeasurements ?? undefined;
+function buildAdminActionPayload(params: {
+  existing: ExistingActionRow;
+  edits: NonNullable<z.infer<typeof actionEditsSchema>>;
+  parsedMetadata: ReturnType<typeof extractActionMetadataFromNotes>;
+  manualDrawing: ActionDrawing | null;
+  hasCigaretteButtsMeasurementEdit: boolean;
+  cigaretteButtsMeasurements: ReturnType<
+    typeof resolveModeratedCigaretteButtsMeasurements
+  >["measurements"];
+}): CreateActionPayload {
+  const {
+    existing,
+    edits,
+    parsedMetadata,
+    manualDrawing,
+    hasCigaretteButtsMeasurementEdit,
+    cigaretteButtsMeasurements,
+  } = params;
 
-  const payloadForNotes: CreateActionPayload = {
+  return {
     actorName:
       edits.actorName !== undefined
         ? cleanText(edits.actorName)
@@ -366,6 +330,38 @@ export async function buildAdminActionUpdates(
     photos: parsedMetadata.photos as CreateActionPayload["photos"] | undefined,
     visionEstimate: parsedMetadata.visionEstimate ?? undefined,
   };
+}
+
+export async function buildAdminActionUpdates(
+  supabase: SupabaseServerClient,
+  id: string,
+  status: "pending" | "approved" | "rejected",
+  edits: NonNullable<z.infer<typeof actionEditsSchema>>,
+) {
+  const existing = await loadExistingAction(supabase, id);
+  const parsedDrawing = parseDrawingFromNotes(existing.notes);
+  const parsedMetadata = extractActionMetadataFromNotes(parsedDrawing.cleanNotes);
+  const manualDrawing =
+    edits.manualDrawing !== undefined
+      ? edits.manualDrawing
+      : parsedDrawing.manualDrawing;
+  const {
+    hasMeasurementEdit: hasCigaretteButtsMeasurementEdit,
+    measurements: cigaretteButtsMeasurements,
+  } = resolveModeratedCigaretteButtsMeasurements({
+    edits,
+    parsedMetadata,
+    existingCigaretteButts: existing.cigarette_butts,
+  });
+
+  const payloadForNotes = buildAdminActionPayload({
+    existing,
+    edits,
+    parsedMetadata,
+    manualDrawing,
+    hasCigaretteButtsMeasurementEdit,
+    cigaretteButtsMeasurements,
+  });
 
   const department = await resolveDepartmentForModeration({
     existing,
