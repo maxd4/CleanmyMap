@@ -33,15 +33,42 @@ test("allows decorative scales outside canonical text-surface states", () => {
   assert.deepEqual(auditCanonicalTextSurfaceScales(css, "fixture.css"), []);
 });
 
-test("rejects local scales on a CmmButton consumer but allows decorative child scales", () => {
+test("rejects a CmmButton scale when onClick appears before className", () => {
   const violations = auditCmmButtonLocalScalesInSource(
-    '<CmmButton className="group active:scale-95">Texte <span className="group-hover:scale-110" /></CmmButton>',
+    '<CmmButton onClick={() => doSomething()} className="group active:scale-95">Texte</CmmButton>',
     "fixture.tsx",
   );
 
   assert.deepEqual(violations, [
     "fixture.tsx: CmmButton className contains local text-surface scale: active:scale-95",
   ]);
+});
+
+test("rejects static scales in cn, template literals, and conditional branches", () => {
+  assert.equal(
+    auditCmmButtonLocalScalesInSource(
+      '<CmmButton className={cn("group", "active:scale-95")} />',
+      "cn.tsx",
+    ).length,
+    1,
+  );
+  assert.equal(
+    auditCmmButtonLocalScalesInSource(
+      '<CmmButton className={`group hover:scale-[1.02]`} />',
+      "template.tsx",
+    ).length,
+    1,
+  );
+  assert.equal(
+    auditCmmButtonLocalScalesInSource(
+      '<CmmButton className={isActive ? "active:scale-95" : "text-slate-900"} />',
+      "conditional.tsx",
+    ).length,
+    1,
+  );
+});
+
+test("allows decorative child scales outside the CmmButton className", () => {
   assert.deepEqual(
     auditCmmButtonLocalScalesInSource(
       '<CmmButton className="group">Texte <span className="group-hover:scale-110" /></CmmButton>',
