@@ -7,9 +7,10 @@ import { NotificationListItem } from "@/components/notifications/notification-li
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { logFailure } from "@/lib/logging/failure-log";
 import {
-  loadNotificationsForCurrentUser,
+  loadNotificationsPageForCurrentUser,
   markNotificationAsReadForCurrentUser,
   type AppNotification,
+  type NotificationPageCursor,
 } from "@/lib/notifications/client";
 
 export function DashboardNotificationsSection() {
@@ -17,7 +18,10 @@ export function DashboardNotificationsSection() {
   const { locale } = useSitePreferences();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(false);
+  const [nextCursor, setNextCursor] = useState<NotificationPageCursor | null>(null);
+  const [hasMore, setHasMore] = useState(false);
   const fetchInFlightRef = useRef(false);
   const markReadInFlightRef = useRef(false);
 
@@ -30,7 +34,10 @@ export function DashboardNotificationsSection() {
     setLoading(true);
     setError(false);
     try {
-      setNotifications(await loadNotificationsForCurrentUser(userId, getToken));
+      const page = await loadNotificationsPageForCurrentUser(userId, getToken);
+      setNotifications(page.notifications);
+      setNextCursor(page.nextCursor);
+      setHasMore(page.nextCursor !== null);
     } catch (err) {
       setError(true);
       logFailure("Dashboard notifications", "Fetch failed", err);
@@ -39,6 +46,33 @@ export function DashboardNotificationsSection() {
       fetchInFlightRef.current = false;
     }
   }, [getToken, isLoaded, isSignedIn, userId]);
+
+  const loadMoreNotifications = async () => {
+    if (
+      !isLoaded ||
+      !isSignedIn ||
+      !userId ||
+      !nextCursor ||
+      !hasMore ||
+      loadingMore
+    ) {
+      return;
+    }
+
+    setLoadingMore(true);
+    setError(false);
+    try {
+      const page = await loadNotificationsPageForCurrentUser(userId, getToken, nextCursor);
+      setNotifications((previous) => appendUniqueNotifications(previous, page.notifications));
+      setNextCursor(page.nextCursor);
+      setHasMore(page.nextCursor !== null);
+    } catch (err) {
+      setError(true);
+      logFailure("Dashboard notifications", "Load more failed", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     void Promise.resolve().then(() => fetchNotifications());
@@ -108,7 +142,7 @@ export function DashboardNotificationsSection() {
           <div className="h-14 animate-pulse rounded-2xl bg-amber-950/35" />
           <span className="sr-only">{locale === "fr" ? "Chargement des notifications" : "Loading notifications"}</span>
         </div>
-      ) : error ? (
+      ) : error && visibleNotifications.length === 0 ? (
         <p className="pt-5 text-sm leading-relaxed text-amber-50/78">
           {locale === "fr"
             ? "Les notifications sont momentanément indisponibles."
@@ -122,16 +156,40 @@ export function DashboardNotificationsSection() {
           </p>
         </div>
       ) : (
-        <div className="pt-2">
-          {visibleNotifications.map((notification) => (
-            <NotificationListItem
-              key={notification.id}
-              notification={notification}
-              locale={locale === "fr" ? "fr" : "en"}
-              onClick={(item) => void markAsRead(item)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="pt-2">
+            {visibleNotifications.map((notification) => (
+              <NotificationListItem
+                key={notification.id}
+                notification={notification}
+                locale={locale === "fr" ? "fr" : "en"}
+                onClick={(item) => void markAsRead(item)}
+              />
+            ))}
+          </div>
+          {error ? (
+            <p className="pt-4 text-sm leading-relaxed text-amber-100/78" role="alert">
+              {locale === "fr"
+                ? "Le chargement des notifications a échoué."
+                : "Loading notifications failed."}
+            </p>
+          ) : null}
+          {hasMore ? (
+            <button
+              type="button"
+              onClick={() => void loadMoreNotifications()}
+              disabled={loadingMore}
+              aria-busy={loadingMore}
+              className="mt-5 w-full rounded-2xl border border-amber-200/24 bg-amber-100/[0.08] px-4 py-3 text-sm font-bold text-amber-50 transition-colors hover:bg-amber-100/[0.14] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200/80 disabled:cursor-wait disabled:opacity-70"
+            >
+              {loadingMore ? "Chargement…" : "Afficher plus"}
+            </button>
+          ) : (
+            <p className="pt-5 text-center text-xs font-semibold uppercase tracking-[0.16em] text-amber-100/54">
+              Fin de l&apos;historique des notifications
+            </p>
+          )}
+        </>
       )}
     </section>
   );
@@ -143,4 +201,15 @@ function CheckMark() {
       ✓
     </div>
   );
+}
+
+export function appendUniqueNotifications(
+  current: AppNotification[],
+  incoming: AppNotification[],
+) {
+  const knownIds = new Set(current.map((notification) => notification.id));
+  return [
+    ...current,
+    ...incoming.filter((notification) => !knownIds.has(notification.id)),
+  ];
 }

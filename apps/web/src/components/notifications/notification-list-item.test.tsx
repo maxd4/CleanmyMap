@@ -28,6 +28,7 @@ describe("notification list item", () => {
     expect(markup).toContain("line-clamp-1");
     expect(markup).toContain("line-clamp-2");
     expect(markup).toContain("Validation terminée");
+    expect(markup).toContain("il y a");
   });
 
   it("keeps read entries distinguishable without the unread marker", () => {
@@ -41,5 +42,6 @@ describe("notification list item", () => {
 
     expect(markup).not.toContain('aria-label="Non lue"');
     expect(markup).toContain("Validation terminée");
+    expect(markup).toContain("/");
   });
 });

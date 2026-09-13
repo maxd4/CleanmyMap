@@ -17,6 +17,18 @@ export type AppNotification = {
 const notificationColumns =
   "id, type, title, content, read_at, created_at, payload" as const;
 
+export const NOTIFICATIONS_PAGE_SIZE = 20;
+
+export type NotificationPageCursor = {
+  createdAt: string;
+  id: string;
+};
+
+export type NotificationsPage = {
+  notifications: AppNotification[];
+  nextCursor: NotificationPageCursor | null;
+};
+
 async function getNotificationsClient(
   getToken: () => Promise<string | null>,
 ): Promise<SupabaseClient> {
@@ -32,19 +44,49 @@ export async function loadNotificationsForCurrentUser(
   userId: string,
   getToken: () => Promise<string | null>,
 ): Promise<AppNotification[]> {
+  const page = await loadNotificationsPageForCurrentUser(userId, getToken);
+  return page.notifications;
+}
+
+export async function loadNotificationsPageForCurrentUser(
+  userId: string,
+  getToken: () => Promise<string | null>,
+  cursor: NotificationPageCursor | null = null,
+): Promise<NotificationsPage> {
   const supabase = await getNotificationsClient(getToken);
-  const { data, error } = await supabase
+  let query = supabase
     .from("app_notifications")
     .select(notificationColumns)
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
-    .limit(20);
+    .order("id", { ascending: false })
+    .limit(NOTIFICATIONS_PAGE_SIZE);
+
+  if (cursor) {
+    query = query.or(
+      `created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`,
+    );
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw error;
   }
 
-  return (data ?? []) as AppNotification[];
+  const notifications = (data ?? []) as AppNotification[];
+  const lastNotification = notifications.at(-1);
+
+  return {
+    notifications,
+    nextCursor:
+      notifications.length === NOTIFICATIONS_PAGE_SIZE && lastNotification
+        ? {
+            createdAt: lastNotification.created_at,
+            id: lastNotification.id,
+          }
+        : null,
+  };
 }
 
 export async function markNotificationAsReadForCurrentUser(
