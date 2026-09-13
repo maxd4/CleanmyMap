@@ -150,6 +150,7 @@ function toActionContractFromRow(row: ActionRow): ActionDataContract {
     geometrySource: row.geometry_source ?? null,
     wasteKg: row.waste_kg,
     cigaretteButtsMeasurements: parsedMetadata.cigaretteButtsMeasurements,
+    volunteerParticipation: parsedMetadata.volunteerParticipation,
     cigaretteButtsKg: parsedMetadata.cigaretteButtsKg,
     cigaretteButts: row.cigarette_butts,
     volunteersCount: row.volunteers_count,

@@ -37,6 +37,37 @@ géométrie en cours d'édition.
 
 Le vert ne doit pas être utilisé comme niveau de « faible pollution » d'une action.
 
+### Participants et unités opérationnelles
+
+Les nouvelles actions collectent séparément trois catégories, sans âge exact ni
+date de naissance : `childrenCount`, `adultCount` et `retiredCount`. Le nombre
+public de participants est le total réel des personnes :
+
+`participantsCount = childrenCount + adultCount + retiredCount`.
+
+Cette valeur est conservée dans `volunteersCount` pour les surfaces de
+participation, les KPI et les contrats scientifiques qui comptent des personnes.
+Elle ne doit pas être remplacée par une unité pondérée.
+
+Les indicateurs opérationnels qui mesurent une charge en temps peuvent utiliser
+la dérivation distincte :
+
+`effectiveVolunteerUnits = adultCount + 0,5 × childrenCount + 0,5 × retiredCount`.
+
+La pondération est versionnée sous `effective-volunteer-units-v1` et centralisée
+dans `apps/web/src/lib/actions/volunteer-participation.ts`. Les catégories
+sources restent persistées séparément dans les métadonnées canoniques ; aucune
+répartition n'est reconstruite pour une action historique. Pour une ancienne
+action qui ne possède que `volunteersCount`, ce nombre reste le nombre historique
+de participants, les trois catégories et les unités opérationnelles restent
+inconnues (`NULL`). Il est interdit de supposer que ces participants étaient
+adultes.
+
+Les champs de durée gardent leur précision réelle pour le stockage et les
+calculs. Les surfaces UI modifiées affichent la durée métier arrondie au quart
+d'heure le plus proche ; les horaires source et la valeur stockée ne sont pas
+arrondis.
+
 ## 2. Score de pollution constatée
 
 Le score de pollution constatée est un proxy compris entre 0 et 100.

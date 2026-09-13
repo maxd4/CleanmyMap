@@ -36,7 +36,11 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Déchets attendus");
     expect(html).toContain("Point de rendez-vous précis");
     expect(html).toContain("Zone cible prévue");
-    expect(html).toContain("Nombre de bénévoles attendus");
+    expect(html).toContain("Bénévoles attendus par catégorie");
+    expect(html).toContain("Enfants");
+    expect(html).toContain("Adultes");
+    expect(html).toContain("Retraités");
+    expect(html).toContain("Total calculé");
     expect(html).toContain("Message pour les participants");
     expect(html).toContain("Commentaire logistique");
     expect(html).toContain("Checklist avant départ");

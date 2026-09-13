@@ -17,6 +17,9 @@ import type { DeclarationMode, FormState } from"./types";
 import { normalizeActionDrawing } from"../map/actions-map-geometry.utils";
 import { formatWasteGuidanceLines } from "@/lib/waste";
 import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
+import {
+  normalizeVolunteerParticipation,
+} from "@/lib/actions/volunteer-participation";
 
 export const PARK_PLACE_TYPE ="Bois/Parc/Jardin/Square/Sentier";
 export const OTHER_VOLUNTEER_ASSOCIATION_VALUE = "__autre_benevole__";
@@ -96,6 +99,9 @@ const BASE_FORM_STATE: FormState = {
  cigaretteButtsCondition:"propre", // État par défaut
  cigaretteButtsVolumeLiters:"",
  volunteersCount:"1",
+ childrenCount:"0",
+ adultCount:"1",
+ retiredCount:"0",
  durationMinutes:"60",
  eventStartTime:"",
  eventEndTime:"",
@@ -124,6 +130,11 @@ export function buildPreparationDataFromForm(
  form: FormState,
 ): ActionPreparationData {
  const wasteCategories = form.wasteCategories ?? [];
+ const volunteerParticipation = normalizeVolunteerParticipation({
+  childrenCount: toOptionalNumber(form.childrenCount) ?? null,
+  adultCount: toOptionalNumber(form.adultCount) ?? null,
+  retiredCount: toOptionalNumber(form.retiredCount) ?? null,
+ });
  const guidance = formatWasteGuidanceLines(wasteCategories);
  const supplement = (manual: string, derived: string, title: string) => {
   const value = manual.trim();
@@ -151,7 +162,9 @@ export function buildPreparationDataFromForm(
   preparationState: form.preparationState,
   logisticsNotes: form.logisticsNotes.trim() || undefined,
   checklistBeforeDeparture: form.checklistBeforeDeparture.trim() || undefined,
-  volunteersExpected: toOptionalNumber(form.volunteersCount),
+  volunteersExpected:
+   volunteerParticipation.participantsCount ?? toOptionalNumber(form.volunteersCount),
+  volunteerParticipation,
   groupJoinEnabled: form.groupJoinEnabled,
   expectedWasteCategories: wasteCategories.length > 0 ? [...wasteCategories] : undefined,
  };
@@ -200,6 +213,21 @@ export function applyPreparationDataToForm(
    typeof preparationData.volunteersExpected === "number"
     ? String(preparationData.volunteersExpected)
     : form.volunteersCount,
+  childrenCount:
+   preparationData.volunteerParticipation?.childrenCount !== null &&
+   preparationData.volunteerParticipation?.childrenCount !== undefined
+    ? String(preparationData.volunteerParticipation.childrenCount)
+    : form.childrenCount,
+  adultCount:
+   preparationData.volunteerParticipation?.adultCount !== null &&
+   preparationData.volunteerParticipation?.adultCount !== undefined
+    ? String(preparationData.volunteerParticipation.adultCount)
+    : form.adultCount,
+  retiredCount:
+   preparationData.volunteerParticipation?.retiredCount !== null &&
+   preparationData.volunteerParticipation?.retiredCount !== undefined
+    ? String(preparationData.volunteerParticipation.retiredCount)
+    : form.retiredCount,
   groupJoinEnabled:
    typeof preparationData.groupJoinEnabled === "boolean"
     ? preparationData.groupJoinEnabled
@@ -347,6 +375,11 @@ export function buildCreateActionPayload(params: {
     cigaretteButtsCondition,
     deriveMissingFromMassOrCount: true,
   });
+  const volunteerParticipation = normalizeVolunteerParticipation({
+    childrenCount: toOptionalNumber(form.childrenCount) ?? null,
+    adultCount: toOptionalNumber(form.adultCount) ?? null,
+    retiredCount: toOptionalNumber(form.retiredCount) ?? null,
+  });
 
  return {
     actorName: form.actorName.trim() || undefined,
@@ -379,7 +412,10 @@ export function buildCreateActionPayload(params: {
   cigaretteButtsKg: cigaretteButtsMeasurements.cigaretteButtsMassKg,
   cigaretteButts: cigaretteButtsMeasurements.cigaretteButtsCount,
   cigaretteButtsCount: cigaretteButtsMeasurements.cigaretteButtsCount,
- volunteersCount: Math.trunc(toRequiredNumber(form.volunteersCount, 0)),
+  volunteerParticipation,
+  volunteersCount:
+    volunteerParticipation.participantsCount ??
+    Math.trunc(toRequiredNumber(form.volunteersCount, 0)),
  durationMinutes: Math.max(0, Math.trunc(toRequiredNumber(form.durationMinutes, 0))),
  eventStartTime: form.eventStartTime.trim() || null,
  eventEndTime: form.eventEndTime.trim() || null,

@@ -97,6 +97,18 @@ const cigaretteButtsMeasurementsSchema = z
   .nullable()
   .optional();
 
+const volunteerParticipationSchema = z
+  .object({
+    childrenCount: z.number().int().min(0).max(500).nullable(),
+    adultCount: z.number().int().min(0).max(500).nullable(),
+    retiredCount: z.number().int().min(0).max(500).nullable(),
+    participantsCount: z.number().int().min(0).max(500).nullable(),
+    effectiveVolunteerUnits: z.number().min(0).max(500).nullable(),
+    effectiveVolunteerUnitsFormulaVersion: z.string().max(120).nullable(),
+  })
+  .nullable()
+  .optional();
+
 const photoAssetSchema = z.object({
   id: z.string().min(1).max(120),
   name: z.string().min(1).max(200),
@@ -174,6 +186,7 @@ const preparationDataSchema = z
     logisticsNotes: z.string().max(2000).optional(),
     checklistBeforeDeparture: z.string().max(2000).optional(),
     volunteersExpected: z.number().int().min(0).max(500).optional(),
+    volunteerParticipation: volunteerParticipationSchema,
     groupJoinEnabled: z.boolean().optional(),
     expectedWasteCategories: z.array(wasteCategorySlugSchema).max(20).optional(),
     routeCalibrationContext: z.custom<RouteCalibrationContext>(
@@ -260,6 +273,7 @@ const createActionLegacyBaseSchema = z.object({
   cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
   cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
   cigaretteButtsCount: z.number().int().min(0).max(10000).nullable().optional(),
+  volunteerParticipation: volunteerParticipationSchema,
   volunteersCount: z.number().int().min(1).max(500).default(1),
   durationMinutes: z
     .number()
@@ -317,6 +331,7 @@ const createActionContractSchema = z.object({
       cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable().optional(),
       cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
       cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
+      volunteerParticipation: volunteerParticipationSchema,
     volunteersCount: z.number().int().min(1).max(500).optional(),
     durationMinutes: z
       .number()

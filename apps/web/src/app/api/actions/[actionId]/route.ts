@@ -35,6 +35,10 @@ import {
   normalizeClockTime,
 } from "@/lib/actions/time-contract";
 import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
+import {
+  normalizeVolunteerParticipation,
+  resolveParticipantsCount,
+} from "@/lib/actions/volunteer-participation";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
@@ -272,6 +276,7 @@ function buildActionEditorPayload(
       metadata.cigaretteButtsMeasurements?.cigaretteButtsCondition ?? null,
     cigaretteButts: row.cigarette_butts,
     volunteersCount: row.volunteers_count,
+    volunteerParticipation: metadata.volunteerParticipation,
     durationMinutes: row.duration_minutes,
     eventStartTime: normalizeClockTime(row.event_start_time),
     eventEndTime: normalizeClockTime(row.event_end_time),
@@ -610,8 +615,21 @@ export async function PATCH(
       updateData["cigarette_butts"] =
         nextCigaretteButtsMeasurements.cigaretteButtsCount;
     }
-    if (body.volunteersCount !== undefined) {
-      updateData["volunteers_count"] = body.volunteersCount;
+    const hasVolunteerParticipationUpdate = Object.prototype.hasOwnProperty.call(
+      body,
+      "volunteerParticipation",
+    );
+    const nextVolunteerParticipation = hasVolunteerParticipationUpdate
+      ? body.volunteerParticipation === null || body.volunteerParticipation === undefined
+        ? null
+        : normalizeVolunteerParticipation(body.volunteerParticipation)
+      : currentMetadata.volunteerParticipation;
+    if (hasVolunteerParticipationUpdate || body.volunteersCount !== undefined) {
+      updateData["volunteers_count"] = resolveParticipantsCount({
+        volunteerParticipation: nextVolunteerParticipation,
+        legacyVolunteersCount:
+          body.volunteersCount ?? current.volunteers_count,
+      });
     }
     if (body.durationMinutes !== undefined) {
       updateData["duration_minutes"] = body.durationMinutes;
@@ -664,6 +682,7 @@ export async function PATCH(
           hasButtsMeasurementUpdate
             ? nextCigaretteButtsMeasurements
             : currentMetadata.cigaretteButtsMeasurements,
+        volunteerParticipation: nextVolunteerParticipation,
         cigaretteButtsMassKg:
           hasButtsMeasurementUpdate
             ? nextCigaretteButtsMeasurements?.cigaretteButtsMassKg

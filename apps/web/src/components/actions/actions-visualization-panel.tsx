@@ -53,9 +53,15 @@ export function ActionsVisualizationPanel({
       }
       butts += Number(item.cigarette_butts || 0);
       const volunteersCount = Number(item.contract?.metadata.volunteersCount || 0);
+      const effectiveVolunteerUnits =
+        item.contract?.metadata.volunteerParticipation?.effectiveVolunteerUnits;
+      const operationalVolunteerUnits =
+        typeof effectiveVolunteerUnits === "number" && Number.isFinite(effectiveVolunteerUnits)
+          ? effectiveVolunteerUnits
+          : volunteersCount;
       const durationMinutes = Number(item.contract?.metadata.durationMinutes || 0);
       volunteers += volunteersCount;
-      citizenHours += (volunteersCount * Math.max(0, durationMinutes)) / 60;
+      citizenHours += (operationalVolunteerUnits * Math.max(0, durationMinutes)) / 60;
 
       const level =
         item.impact_level && IMPACT_LEVELS.includes(item.impact_level as ImpactLevel)

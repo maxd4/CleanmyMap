@@ -21,6 +21,7 @@ import type {
   CanonicalWasteBreakdown,
 } from "@/lib/waste/measurement";
 import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
+import type { ActionVolunteerParticipation } from "./volunteer-participation";
 import type { OrganizerType } from "./organizer-type";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 
@@ -69,6 +70,7 @@ export type ActionPreparationData = {
   logisticsNotes?: string;
   checklistBeforeDeparture?: string;
   volunteersExpected?: number;
+  volunteerParticipation?: ActionVolunteerParticipation | null;
   groupJoinEnabled?: boolean;
   expectedWasteCategories?: WasteCategorySlug[];
   /** Immutable route evidence captured before this action was created. */
@@ -207,6 +209,7 @@ export type ActionListItem = {
       actionPhase?: ActionPhase | null;
       wasteKg: number | null;
       cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+      volunteerParticipation?: ActionVolunteerParticipation | null;
       cigaretteButtsKg?: number | null;
       cigaretteButts: number | null;
       postActionPollutionScore?: number | null;
@@ -271,6 +274,7 @@ export type CreateActionPayload = {
   longitude?: number;
   wasteKg: number | null;
   cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+  volunteerParticipation?: ActionVolunteerParticipation | null;
   cigaretteButtsMassKg?: number | null;
   cigaretteButtsVolumeLiters?: number | null;
   cigaretteButtsCondition?: ActionMegotsCondition | null;
@@ -381,6 +385,7 @@ export type ActionMapItem = Pick<
       cigaretteButts: number | null;
       postActionPollutionScore?: number | null;
       wasteCategories?: WasteCategorySlug[] | null;
+      volunteerParticipation?: ActionVolunteerParticipation | null;
       volunteersCount: number;
       durationMinutes: number;
       manualDrawing: ActionDrawing | null;

@@ -1,7 +1,12 @@
 import type { CreateActionPayload } from "./types";
+import {
+  hasCompleteVolunteerCategoryData,
+  hasVolunteerCategoryData,
+  normalizeVolunteerParticipation,
+} from "./volunteer-participation";
 
 export type VolunteerActionValidationIssue = {
-  field: "volunteersCount" | "wasteKg";
+  field: "volunteersCount" | "volunteerParticipation" | "wasteKg";
   message: string;
 };
 
@@ -13,6 +18,7 @@ type VolunteerActionSubmissionLike = Pick<
   | "cigaretteButtsKg"
   | "cigaretteButts"
   | "volunteersCount"
+  | "volunteerParticipation"
   | "wasteBreakdown"
 >;
 
@@ -24,7 +30,23 @@ export function getVolunteerActionValidationIssues(
   }
 
   const issues: VolunteerActionValidationIssue[] = [];
-  const volunteersCount = Math.trunc(payload.volunteersCount);
+  const participation = payload.volunteerParticipation
+    ? normalizeVolunteerParticipation(payload.volunteerParticipation)
+    : null;
+  const hasCategoryData = hasVolunteerCategoryData(participation);
+  const hasCompleteCategoryData = participation
+    ? hasCompleteVolunteerCategoryData(participation)
+    : false;
+  if (hasCategoryData && !hasCompleteCategoryData) {
+    issues.push({
+      field: "volunteerParticipation",
+      message:
+        "Renseignez les trois catégories de bénévoles pour calculer le total.",
+    });
+  }
+  const volunteersCount = Math.trunc(
+    participation?.participantsCount ?? payload.volunteersCount,
+  );
   const hasWasteMeasurement =
     typeof payload.wasteKg === "number" && Number.isFinite(payload.wasteKg);
   const hasCigaretteButtsMeasurement =

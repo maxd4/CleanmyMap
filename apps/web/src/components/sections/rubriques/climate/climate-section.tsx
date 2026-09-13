@@ -50,6 +50,8 @@ export function ClimateSection() {
       cigaretteButts: Number(item.cigarette_butts || 0),
       durationMinutes: Number(item.duration_minutes || 0),
       volunteersCount: Number(item.volunteers_count || 0),
+      effectiveVolunteerUnits:
+        item.contract?.metadata.volunteerParticipation?.effectiveVolunteerUnits ?? null,
       latitude: item.contract?.geometry?.coordinates?.[0]?.[1] ?? null,
       longitude: item.contract?.geometry?.coordinates?.[0]?.[0] ?? null,
     }));

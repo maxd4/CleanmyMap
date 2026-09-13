@@ -13,6 +13,7 @@ export type ClimateInputRecord = {
   cigaretteButts: number;
   durationMinutes: number;
   volunteersCount: number;
+  effectiveVolunteerUnits?: number | null;
   latitude: number | null;
   longitude: number | null;
   plasticKg?: number | null;
@@ -143,7 +144,12 @@ function aggregate(
       (acc, record) =>
         acc +
         Number(record.durationMinutes || 0) *
-          Math.max(0, Number(record.volunteersCount || 0)),
+          Math.max(
+            0,
+            Number(
+              record.effectiveVolunteerUnits ?? record.volunteersCount ?? 0,
+            ),
+          ),
       0,
     ) / 60;
   const geolocated = records.filter((record) => isGeolocated(record)).length;
@@ -201,8 +207,9 @@ function buildMethods(): ClimateMethodDefinition[] {
     },
     {
       metric: "Heures citoyennes",
-      formula: "somme(duration_minutes * volunteers_count) / 60",
-      source: "Declarations actions validees.",
+      formula:
+        "somme(duration_minutes * effectiveVolunteerUnits) / 60, avec volunteers_count historique en repli",
+      source: "Declarations actions validees et categorie sources lorsqu'elles existent.",
       frequency: "Recalcul a chaque chargement de la rubrique.",
       version: CLIMATE_PROXY_MODEL_VERSION,
     },

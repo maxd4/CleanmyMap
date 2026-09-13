@@ -21,6 +21,7 @@ export type PostActionSummary = {
     wasteKg: number;
     cigaretteButts: number;
     volunteersCount: number;
+    effectiveVolunteerUnits: number | null;
     durationMinutes: number;
   };
   quality: {
@@ -72,6 +73,11 @@ export function buildPostActionSummary(
   const wasteKg = toNonNegativeNumber(action.wasteKg);
   const cigaretteButts = Math.trunc(toNonNegativeNumber(action.cigaretteButts));
   const volunteersCount = Math.max(1, Math.trunc(toNonNegativeNumber(action.volunteersCount)));
+  const effectiveVolunteerUnits =
+    typeof action.volunteerParticipation?.effectiveVolunteerUnits === "number"
+      ? Math.max(0, action.volunteerParticipation.effectiveVolunteerUnits)
+      : null;
+  const operationalVolunteerUnits = effectiveVolunteerUnits ?? volunteersCount;
   const durationMinutes = Math.trunc(toNonNegativeNumber(action.durationMinutes));
   const quality = evaluateActionQuality(toActionListItem(action));
   const factors = IMPACT_PROXY_CONFIG.factors;
@@ -85,6 +91,7 @@ export function buildPostActionSummary(
       wasteKg: round(wasteKg),
       cigaretteButts,
       volunteersCount,
+      effectiveVolunteerUnits,
       durationMinutes,
     },
     quality: {
@@ -114,7 +121,7 @@ export function buildPostActionSummary(
         label: "Surface nettoyée",
         value: round(
           wasteKg * factors.surfaceM2PerWasteKg +
-            durationMinutes * volunteersCount * factors.surfaceM2PerVolunteerMinute,
+            durationMinutes * operationalVolunteerUnits * factors.surfaceM2PerVolunteerMinute,
         ),
         unit: "m²",
         method: `Proxy ${IMPACT_PROXY_CONFIG.version} · poids + temps bénévole`,

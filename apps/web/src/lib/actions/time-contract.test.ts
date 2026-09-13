@@ -4,6 +4,8 @@ import {
   deriveOrganizationMinutes,
   getTimeContractValidationMessage,
   normalizeClockTime,
+  formatBusinessDurationMinutes,
+  roundBusinessDurationMinutes,
 } from "./time-contract";
 
 describe("action temporal contract", () => {
@@ -62,5 +64,12 @@ describe("action temporal contract", () => {
       eventDurationMinutes: 0,
       status: "available",
     });
+  });
+
+  it("rounds only the business display duration to the nearest quarter hour", () => {
+    expect(roundBusinessDurationMinutes(62)).toBe(60);
+    expect(roundBusinessDurationMinutes(68)).toBe(75);
+    expect(formatBusinessDurationMinutes(62)).toBe("60 min");
+    expect(formatBusinessDurationMinutes(68)).toBe("75 min");
   });
 });

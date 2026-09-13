@@ -89,6 +89,33 @@ describe("action declaration payload helpers", () => {
     expect(payload.preparationData).not.toHaveProperty("estimatedDurationMinutes");
   });
 
+  it("uses category sources for participants and keeps operational units separate", () => {
+    const form = buildBaseForm();
+    form.childrenCount = "2";
+    form.adultCount = "4";
+    form.retiredCount = "2";
+    form.volunteersCount = "999";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.volunteersCount).toBe(8);
+    expect(payload.volunteerParticipation).toMatchObject({
+      childrenCount: 2,
+      adultCount: 4,
+      retiredCount: 2,
+      participantsCount: 8,
+      effectiveVolunteerUnits: 6,
+    });
+  });
+
   it("normalizes organizer account tokens before payload creation", () => {
     expect(parseOrganizerAccounts("  @alice, bob ; alice\ncarol  ")).toEqual([
       "alice",

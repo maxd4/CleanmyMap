@@ -181,6 +181,18 @@ export function useActionDeclarationForm({
           notes: action.notes ?? preparedForm.notes,
           placeType: action.placeType ?? preparedForm.placeType,
           volunteersCount: String(action.volunteersCount),
+          childrenCount:
+            action.volunteerParticipation?.childrenCount == null
+              ? ""
+              : String(action.volunteerParticipation.childrenCount),
+          adultCount:
+            action.volunteerParticipation?.adultCount == null
+              ? ""
+              : String(action.volunteerParticipation.adultCount),
+          retiredCount:
+            action.volunteerParticipation?.retiredCount == null
+              ? ""
+              : String(action.volunteerParticipation.retiredCount),
           durationMinutes: String(action.durationMinutes),
           wasteKg: action.wasteKg === null ? "" : String(action.wasteKg),
           cigaretteButts: action.cigaretteButts === null ? "" : String(action.cigaretteButts),
@@ -374,7 +386,7 @@ export function useActionDeclarationForm({
     inferActionVisionEstimate(photoAssets, {
       locationLabel: form.locationLabel,
       placeType: form.placeType,
-      volunteersCount: Number(form.volunteersCount),
+      volunteersCount: payload.volunteersCount,
       durationMinutes: Number(form.durationMinutes),
     }).then(result => {
       if (!active) return;
@@ -385,7 +397,7 @@ export function useActionDeclarationForm({
       setVisionStatus("error");
     });
     return () => { active = false; };
-  }, [photoAssets, form.locationLabel, form.placeType, form.volunteersCount, form.durationMinutes]);
+  }, [photoAssets, form.locationLabel, form.placeType, payload.volunteersCount, form.durationMinutes]);
 
   function trackFormStart() {
     if (!hasTrackedStartRef.current) {

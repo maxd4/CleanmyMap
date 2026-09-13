@@ -14,6 +14,7 @@ import type { OrganizerType } from "../organizer-type";
 import type {
   ActionCigaretteButtsMeasurements,
 } from "@/lib/waste/cigarette-butts";
+import type { ActionVolunteerParticipation } from "../volunteer-participation";
 
 export type ActionContractCreatePayload = {
   type: ActionRecordType;
@@ -52,6 +53,7 @@ export type ActionContractCreatePayload = {
     placeType?: string;
     wasteKg?: number | null;
     cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+    volunteerParticipation?: ActionVolunteerParticipation | null;
     cigaretteButtsMassKg?: number | null;
     cigaretteButtsVolumeLiters?: number | null;
     cigaretteButtsCondition?: import("../types").ActionMegotsCondition | null;
@@ -119,6 +121,7 @@ export function toContractCreatePayload(
       placeType: payload.placeType,
       wasteKg: payload.wasteKg,
       cigaretteButtsMeasurements: payload.cigaretteButtsMeasurements,
+      volunteerParticipation: payload.volunteerParticipation,
       cigaretteButtsMassKg: payload.cigaretteButtsMassKg,
       cigaretteButtsVolumeLiters: payload.cigaretteButtsVolumeLiters,
       cigaretteButtsCondition: payload.cigaretteButtsCondition,
@@ -205,6 +208,7 @@ function normalizeContractCreatePayload(
     departmentName: payload.location.departmentName ?? null,
     wasteKg: payload.metadata.wasteKg ?? null,
     cigaretteButtsMeasurements: payload.metadata.cigaretteButtsMeasurements ?? null,
+    volunteerParticipation: payload.metadata.volunteerParticipation ?? null,
     cigaretteButtsMassKg: payload.metadata.cigaretteButtsMassKg ?? null,
     cigaretteButtsVolumeLiters: payload.metadata.cigaretteButtsVolumeLiters ?? null,
     cigaretteButtsCondition: payload.metadata.cigaretteButtsCondition ?? null,
