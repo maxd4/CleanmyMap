@@ -136,6 +136,24 @@ it("exposes the global V2 pollution reference RPC with metric-specific counts", 
   expect(migration).toContain("grant execute on function public.action_pollution_score_references_v2() to public;");
 });
 
+it("extends the canonical V2 RPC with string-keyed department references", () => {
+  const migration = readMigration("../../../supabase/migrations/20260913000005_action_pollution_score_references_v2_departments.sql");
+
+  expect(migration).toContain("drop function if exists public.action_pollution_score_references_v2();");
+  expect(migration).toContain("eligible_action_count integer");
+  expect(migration).toContain("upper(nullif(trim(a.department_code), ''))");
+  expect(migration).toContain("group by department_code");
+  expect(migration).toContain("count(*)::integer as eligible_action_count");
+  expect(migration).toContain("'global'::text as scope");
+  expect(migration).toContain("'department'::text as scope");
+  expect(migration).toContain("from department_references");
+  expect(migration).toContain("union all");
+  expect(migration).toContain("security invoker");
+  expect(migration).toContain("set search_path = pg_catalog");
+  expect(migration).toContain("revoke all on function public.action_pollution_score_references_v2() from public;");
+  expect(migration).toContain("grant execute on function public.action_pollution_score_references_v2() to public;");
+});
+
 it("enables RLS on xp_audit and restricts it to the service role", () => {
   const migration = readMigration("../../../supabase/migrations/20260601000001_harden_xp_audit_rls.sql");
 

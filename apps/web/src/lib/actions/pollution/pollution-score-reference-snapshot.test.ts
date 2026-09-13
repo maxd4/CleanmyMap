@@ -11,7 +11,15 @@ const global = {
   wasteSourceCount: 7,
   buttsSourceCount: 6,
 };
-const references = { global };
+const department = {
+  departmentName: "Ain",
+  wastePerVolunteerHour: 10,
+  buttsPerVolunteerHour: 300,
+  wasteSourceCount: 2,
+  buttsSourceCount: 2,
+  eligibleActionCount: 2,
+};
+const references = { global, departmentReferences: { "01": department } };
 
 function snapshot(date = "2026-09-07") {
   return {
@@ -22,7 +30,7 @@ function snapshot(date = "2026-09-07") {
     version: MAP_POLLUTION_REFERENCES_VERSION,
     title: "Référence hebdomadaire du score pollution",
     payload: {
-      references,
+      references: { global, departments: references.departmentReferences },
       source: "action_pollution_score_references_v2" as const,
       weekStart: date,
     },
@@ -51,7 +59,10 @@ describe("pollution score reference snapshot V2", () => {
     expect(second.status).toBe("reused");
     expect(loadReferences).toHaveBeenCalledOnce();
     expect(writeSnapshot).toHaveBeenCalledOnce();
-    expect(first.snapshot.payload.references).toEqual(references);
+    expect(first.snapshot.payload.references).toEqual({
+      global,
+      departments: references.departmentReferences,
+    });
   });
 
   it("uses the V2 RPC fallback when the weekly snapshot is missing", async () => {
@@ -69,7 +80,7 @@ describe("pollution score reference snapshot V2", () => {
     });
   });
 
-  it("reads one valid V3 payload and exposes only its global reference", async () => {
+  it("reads one valid V4 payload and exposes global and department references", async () => {
     const loadFallback = vi.fn();
     const result = await loadPollutionScoreReferencesForMap({
       readSnapshot: async () => snapshot(),
@@ -81,14 +92,14 @@ describe("pollution score reference snapshot V2", () => {
     expect(loadFallback).not.toHaveBeenCalled();
   });
 
-  it("does not reuse a prior payload without the V2 global shape", async () => {
+  it("does not reuse a prior payload without the V4 department shape", async () => {
     const loadFallback = vi.fn(async () => references);
     const legacySnapshot = {
       ...snapshot(),
-      version: "map-pollution-score-references-2026.09-v2",
+      version: "map-pollution-score-references-2026.09-v3",
       payload: {
         ...snapshot().payload,
-        references: { wastePerVolunteer: 20, buttsPerVolunteer: 2_000 },
+        references: { global },
       },
     };
 

@@ -170,6 +170,6 @@ describe("geometry tooltip action reading", () => {
     );
 
     expect(markup).toContain("Comparaison départementale indisponible");
-    expect(markup).toContain("Pas assez d&#x27;actions de référence dans ce département.");
+    expect(markup).toContain("Aucune référence départementale disponible.");
   });
 });

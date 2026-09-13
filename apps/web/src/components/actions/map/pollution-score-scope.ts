@@ -19,7 +19,8 @@ import {
 export type ActionPollutionScoreAvailability =
   | "available"
   | "global_unavailable"
-  | "department_unavailable";
+  | "department_unavailable"
+  | "department_insufficient_data";
 
 export type ScopedActionPollutionScore = {
   score: number | null;
@@ -36,7 +37,7 @@ export const POLLUTION_SCORE_UNAVAILABLE_COLOR = "#94a3b8";
 function resolveDepartmentCode(item: ActionMapItem): string | null {
   const value = item.contract?.location.departmentCode;
   return typeof value === "string" && value.trim().length > 0
-    ? value.trim()
+    ? value.trim().toUpperCase()
     : null;
 }
 
@@ -48,6 +49,18 @@ function unavailableDepartmentScore(): ScopedActionPollutionScore {
     buttsScore: null,
     departmentRelativeScore: null,
     availability: "department_unavailable",
+    source: "department",
+  };
+}
+
+function insufficientDepartmentScore(): ScopedActionPollutionScore {
+  return {
+    score: null,
+    historicalScore: null,
+    wasteScore: null,
+    buttsScore: null,
+    departmentRelativeScore: null,
+    availability: "department_insufficient_data",
     source: "department",
   };
 }
@@ -124,13 +137,28 @@ function resolveDepartmentActionScore(
     ? references?.departmentReferences?.[departmentCode]
     : undefined;
 
+  if (!departmentReference) {
+    return unavailableDepartmentScore();
+  }
+
   if (
-    !departmentReference ||
     !Number.isFinite(departmentReference.eligibleActionCount) ||
     departmentReference.eligibleActionCount < 2
   ) {
-    return unavailableDepartmentScore();
+    return insufficientDepartmentScore();
   }
+
+  const departmentScoringReference = {
+    ...departmentReference,
+    wastePerVolunteerHour:
+      departmentReference.wasteSourceCount >= 2
+        ? departmentReference.wastePerVolunteerHour
+        : null,
+    buttsPerVolunteerHour:
+      departmentReference.buttsSourceCount >= 2
+        ? departmentReference.buttsPerVolunteerHour
+        : null,
+  };
 
   const scores = computePollutionScoresRelativeToReferences(
     {
@@ -144,7 +172,7 @@ function resolveDepartmentActionScore(
       status: item.status,
       actionPhase: item.contract?.metadata.actionPhase,
     },
-    departmentReference,
+    departmentScoringReference,
   );
   const departmentRelativeScore = scores.severityScore ?? computeAveragePollutionScore(scores);
   if (departmentRelativeScore === null) {
@@ -153,7 +181,8 @@ function resolveDepartmentActionScore(
 
   return {
     score: departmentRelativeScore,
-    historicalScore: departmentRelativeScore,
+    // Relative departmental values never become temporal model input.
+    historicalScore: null,
     wasteScore: scores.wasteScore,
     buttsScore: scores.buttsScore,
     departmentRelativeScore,

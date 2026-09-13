@@ -251,7 +251,7 @@ describe("action popup presentation", () => {
   it("shows global and department score references together", () => {
     const score = (source: "global" | "department", value: number): ScopedActionPollutionScore => ({
       score: value,
-      historicalScore: value,
+      historicalScore: source === "department" ? null : value,
       wasteScore: value - 4,
       buttsScore: value + 4,
       departmentRelativeScore: source === "department" ? value : null,
@@ -342,13 +342,21 @@ describe("action popup presentation", () => {
         scoreScope: "department",
         scoreUnavailable: true,
         globalScore: null,
-        departmentScore: null,
+        departmentScore: {
+          score: null,
+          historicalScore: null,
+          wasteScore: null,
+          buttsScore: null,
+          departmentRelativeScore: null,
+          availability: "department_insufficient_data",
+          source: "department",
+        },
         departmentName: "Paris",
       }),
     );
 
-    expect(markup).toContain("Comparaison départementale indisponible");
-    expect(markup).toContain("Pas assez d&#x27;actions de référence dans ce département.");
+    expect(markup).toContain("Données départementales insuffisantes");
+    expect(markup).toContain("Au moins deux actions éligibles sont nécessaires.");
     expect(markup).toContain("Référence départementale");
     expect(markup).toContain("Score départemental indisponible");
   });
