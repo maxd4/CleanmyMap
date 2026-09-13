@@ -1,7 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import {
+  getNavigationBlockTriggerStateClassName,
+  resolveOpenNavigationSpaceId,
+} from "./navigation-block-trigger-state";
 
 const source = readFileSync(new URL("./app-navigation-block-dropdown.tsx", import.meta.url), "utf8");
+const shellSource = readFileSync(new URL("./app-navigation-ribbon-shell.tsx", import.meta.url), "utf8");
 const displayModes = readFileSync(
   new URL("../../styles/display-modes.css", import.meta.url),
   "utf8",
@@ -13,7 +18,7 @@ describe("app navigation block dropdown contract", () => {
     expect(source.match(/onTrackNavigation=\{handleTrackNavigation\}/g)).toHaveLength(1);
     expect(source).toContain("<NavigationDropdownContent");
     expect(source).not.toContain("onTrackNavigation={onTrackNavigation}");
-    expect(source).toContain("setIsOpen(false);");
+    expect(source).toContain("onOpenChange(space.id, false);");
   });
 
   it("uses the shared non-menu navigation semantics and one gap contract", () => {
@@ -45,6 +50,8 @@ describe("app navigation block dropdown contract", () => {
     expect(source).toContain("buildNavigationBlockTriggerStyle(space.id)");
     expect(source).toContain("border border-transparent");
     expect(source).toContain("data-navigation-block-trigger");
+    expect(source).not.toContain('"group inline-flex');
+    expect(source).not.toContain("motion-safe:transition-colors");
     expect(displayModes).toContain(
       '[data-display-mode="minimaliste"] [data-navigation-block-trigger]:hover',
     );
@@ -59,6 +66,40 @@ describe("app navigation block dropdown contract", () => {
     )?.[1] ?? "";
     expect(minimalHoverRule).toContain("border-color");
     expect(minimalHoverRule).not.toMatch(/(?:width|height|padding|transform|box-shadow)/u);
+  });
+
+  it("isolates hover/open illumination and keeps only one block open", () => {
+    const activeState = getNavigationBlockTriggerStateClassName({
+      isActiveSpace: true,
+      isOpen: false,
+    });
+    const neutralState = getNavigationBlockTriggerStateClassName({
+      isActiveSpace: false,
+      isOpen: false,
+    });
+    const openState = getNavigationBlockTriggerStateClassName({
+      isActiveSpace: false,
+      isOpen: true,
+    });
+
+    expect(activeState).toContain("bg-white/[0.08]");
+    expect(activeState).not.toContain("bg-white/[0.16]");
+    expect(neutralState).toContain("hover:bg-white/[0.16]");
+    expect(openState).toContain("bg-white/[0.16]");
+
+    expect(resolveOpenNavigationSpaceId("network", "learn", true)).toBe("learn");
+    expect(resolveOpenNavigationSpaceId("learn", "network", false)).toBe("learn");
+    expect(resolveOpenNavigationSpaceId("network", "network", false)).toBeNull();
+
+    expect(shellSource).toContain("openSpaceId");
+    expect(shellSource).toContain("open={openSpaceId === space.id}");
+    expect(shellSource).toContain("resolveOpenNavigationSpaceId");
+    expect(source).not.toMatch(/\[data-navigation-block-trigger\][^\n]*~/u);
+    expect(source).not.toContain(".group:hover [data-navigation-block-trigger]");
+    expect(displayModes).not.toContain(
+      '[data-navigation-block-trigger] ~ [data-navigation-block-trigger]',
+    );
+    expect(displayModes).not.toContain(".group:hover [data-navigation-block-trigger]");
   });
 
   it("keeps sober hover neutral while preserving visible focus", () => {

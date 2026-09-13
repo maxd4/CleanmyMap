@@ -14,6 +14,7 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
   getActiveSpaceForPath,
   getNavigationSpacesForProfile,
+  type NavigationSpace,
 } from "@/lib/navigation";
 import { getProfileLabel } from "@/lib/profiles";
 import { trackNavigationClick } from "@/lib/analytics/navigation-client";
@@ -30,6 +31,7 @@ import {
 } from "./app-navigation-ribbon-account";
 import { useRibbonActivityStatus } from "./app-navigation-ribbon-activity";
 import { RibbonMenus } from "./app-navigation-ribbon-menus";
+import { resolveOpenNavigationSpaceId } from "./navigation-block-trigger-state";
 
 type AppNavigationRibbonShellProps = AppNavigationRibbonProps & {
   pathname: string;
@@ -50,6 +52,7 @@ function AppNavigationRibbonShell({
   const { locale, displayMode } = useSitePreferences();
   const ribbonRef = useRef<HTMLElement | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [openSpaceId, setOpenSpaceId] = useState<NavigationSpace["id"] | null>(null);
   const { data: hydratedIdentity } = useSWR<CurrentAccountIdentity | null>(
     authStateReady
       ? ["current-account-identity", user?.id ?? "anonymous-session"]
@@ -165,6 +168,12 @@ function AppNavigationRibbonShell({
                   displayMode={displayMode}
                   locale={locale}
                   onTrackNavigation={onTrackNavigation}
+                  onOpenChange={(spaceId, open) => {
+                    setOpenSpaceId((currentSpaceId) =>
+                      resolveOpenNavigationSpaceId(currentSpaceId, spaceId, open),
+                    );
+                  }}
+                  open={openSpaceId === space.id}
                   pathname={pathname}
                   space={space}
                 />
