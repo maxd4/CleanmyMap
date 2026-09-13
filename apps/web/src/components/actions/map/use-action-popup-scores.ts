@@ -66,10 +66,22 @@ export function useActionPopupScores({
         wasteKg,
         cigaretteButts,
         volunteersCount,
+        durationMinutes: item.contract?.metadata.durationMinutes ?? item.duration_minutes,
+        actionType: mapItemType(item),
+        status: item.status,
+        actionPhase: item.contract?.metadata.actionPhase,
       },
-      references,
+      references?.global,
     );
-  }, [hasPollution, fallbackScores, references, volunteersCount, wasteKg, cigaretteButts]);
+  }, [
+    hasPollution,
+    fallbackScores,
+    item,
+    references,
+    volunteersCount,
+    wasteKg,
+    cigaretteButts,
+  ]);
 
   const globalActionScore = useMemo(
     () =>
@@ -92,23 +104,30 @@ export function useActionPopupScores({
     mapItemType(item) === "action" &&
     scoreScope === "department" &&
     scopedActionScore?.score === null;
+  const isGlobalScoreUnavailable =
+    mapItemType(item) === "action" &&
+    scoreScope === "global" &&
+    scopedActionScore?.score === null;
+  const isScoreUnavailable = isDepartmentScoreUnavailable || isGlobalScoreUnavailable;
 
-  const score = isDepartmentScoreUnavailable
+  const score = isScoreUnavailable
     ? 0
-    : scopedActionScore?.score ?? pollutionScores.severityScore;
-  const wasteScore = isDepartmentScoreUnavailable
+    : scopedActionScore?.score ?? pollutionScores.severityScore ?? 0;
+  const wasteScore = isScoreUnavailable
     ? 0
-    : scopedActionScore?.wasteScore ?? pollutionScores.wasteScore;
-  const buttsScore = isDepartmentScoreUnavailable
+    : scopedActionScore?.wasteScore ?? pollutionScores.wasteScore ?? 0;
+  const buttsScore = isScoreUnavailable
     ? 0
-    : scopedActionScore?.buttsScore ?? pollutionScores.buttsScore;
+    : scopedActionScore?.buttsScore ?? pollutionScores.buttsScore ?? 0;
   const scoreReading = getScoreReading(score);
   const scoreLoading = hasPollution && isLoading;
 
   const scoreSourceLabel = !hasPollution
     ? "Aucun calcul nécessaire"
-    : isDepartmentScoreUnavailable
-      ? "Score départemental indisponible"
+      : isScoreUnavailable
+        ? scoreScope === "department"
+          ? "Score départemental indisponible"
+          : "Score global indisponible"
       : scoreLoading
         ? "Référence locale provisoire"
         : error
@@ -117,7 +136,7 @@ export function useActionPopupScores({
 
   return {
     score,
-    historicalScore: isDepartmentScoreUnavailable
+    historicalScore: isScoreUnavailable
       ? null
       : scopedActionScore?.historicalScore ?? pollutionScores.severityScore,
     wasteScore,
@@ -125,7 +144,7 @@ export function useActionPopupScores({
     scoreReading,
     scoreLoading,
     scoreSourceLabel,
-    scoreUnavailable: isDepartmentScoreUnavailable,
+    scoreUnavailable: isScoreUnavailable,
     globalScore: globalActionScore,
     departmentScore: departmentActionScore,
   };

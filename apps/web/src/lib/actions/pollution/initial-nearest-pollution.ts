@@ -1,7 +1,11 @@
 import type { ActionMapItem, ActionMapViewportQuery } from "../types";
-import { mapItemCoordinates, mapItemType } from "../contracts/contract-mappers";
+import {
+  mapItemCigaretteButts,
+  mapItemCoordinates,
+  mapItemType,
+  mapItemWasteKg,
+} from "../contracts/contract-mappers";
 import type { PollutionScoreReferences } from "./pollution-score";
-import { resolveItemPollutionScores } from "@/components/actions/map-marker-categories";
 
 export const INITIAL_MAP_SEARCH_RADII_KM = [5, 20, 75, 150] as const;
 export const DISTANCE_TIE_EPSILON_KM = 0.001;
@@ -73,7 +77,22 @@ export function isActivePollutionItem(
     return false;
   }
 
-  return resolveItemPollutionScores(item, pollutionScoreReferences).severityScore > 0;
+  void pollutionScoreReferences;
+  const wasteKg = mapItemWasteKg(item);
+  const cigaretteButts = mapItemCigaretteButts(item);
+  return (wasteKg !== null && wasteKg > 0) ||
+    (cigaretteButts !== null && cigaretteButts > 0);
+}
+
+function resolveOperationalSeverity(item: ActionMapItem): number {
+  const observedScore = (
+    item.contract?.metadata as { observedPollutionScore?: unknown } | undefined
+  )?.observedPollutionScore;
+  if (typeof observedScore === "number" && Number.isFinite(observedScore)) {
+    return observedScore;
+  }
+
+  return Math.max(mapItemWasteKg(item) ?? 0, mapItemCigaretteButts(item) ?? 0);
 }
 
 export function selectNearestActivePollution(
@@ -103,10 +122,7 @@ export function selectNearestActivePollution(
       latitude: coordinates.latitude,
       longitude: coordinates.longitude,
     });
-    const candidateSeverity = resolveItemPollutionScores(
-      item,
-      pollutionScoreReferences,
-    ).severityScore;
+    const candidateSeverity = resolveOperationalSeverity(item);
     const isCloser = candidateDistance < selectedDistance - DISTANCE_TIE_EPSILON_KM;
     const isEquivalentAndMoreSevere =
       Math.abs(candidateDistance - selectedDistance) <= DISTANCE_TIE_EPSILON_KM &&

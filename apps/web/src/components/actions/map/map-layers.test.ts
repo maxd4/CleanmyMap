@@ -10,9 +10,9 @@ import {
 } from "@/components/actions/map-marker-categories";
 import { presentActionPollutionProjection } from "@/lib/actions/pollution/revisit-priority";
 import {
-  computeAveragePollutionScore,
   computePollutionScoresRelativeToReferences,
 } from "@/lib/actions/pollution/pollution-score";
+import { POLLUTION_SCORE_UNAVAILABLE_COLOR } from "./pollution-score-scope";
 
 vi.mock("react-leaflet", () => {
   const passthrough = ({ children }: { children?: React.ReactNode }) =>
@@ -96,7 +96,16 @@ vi.mock("leaflet", () => ({
 }));
 
 vi.mock("./action-pollution-score-references-context", () => ({
-  useActionPollutionScoreReferences: () => ({ references: null }),
+  useActionPollutionScoreReferences: () => ({
+    references: {
+      global: {
+        wastePerVolunteerHour: 20,
+        buttsPerVolunteerHour: 400,
+        wasteSourceCount: 1,
+        buttsSourceCount: 1,
+      },
+    },
+  }),
 }));
 
 vi.mock("./action-popup-content", () => ({
@@ -396,25 +405,33 @@ describe("ShapeLayers", () => {
       }),
     );
     const now = new Date("2026-08-25T00:00:00.000Z");
-    const expectedActionScore = computeAveragePollutionScore(
-      computePollutionScoresRelativeToReferences({
+    const references = {
+      global: {
+        wastePerVolunteerHour: 20,
+        buttsPerVolunteerHour: 400,
+        wasteSourceCount: 1,
+        buttsSourceCount: 1,
+      },
+    };
+    const expectedActionScore = computePollutionScoresRelativeToReferences({
         wasteKg: 80,
         cigaretteButts: 25,
         volunteersCount: 1,
-      }),
-    );
+        durationMinutes: 30,
+      }, references.global).severityScore;
     const expectedActionColor = resolveDynamicColor(
-      presentActionPollutionProjection(expectedActionScore, "2026-06-01", now)
+      presentActionPollutionProjection(expectedActionScore ?? 0, "2026-06-01", now)
         .projectedPollutionScore,
     );
 
-    expect(resolvePointColor(action, null, now)).toBe(expectedActionColor);
-    expect(resolvePointColor(lowPollutionAction, null, now)).not.toBe(
-      resolvePointColor(action, null, now),
+    expect(resolvePointColor(action, references, now)).toBe(expectedActionColor);
+    expect(resolvePointColor(lowPollutionAction, references, now)).not.toBe(
+      resolvePointColor(action, references, now),
     );
-    expect(resolvePointColor(action, null, now)).not.toBe(CLEAN_PLACE_COLOR);
-    expect(resolvePointColor(spot, null, now)).not.toBe(CLEAN_PLACE_COLOR);
+    expect(resolvePointColor(action, references, now)).not.toBe(CLEAN_PLACE_COLOR);
+    expect(resolvePointColor(spot, null, now)).toBe(TRASH_SPOTTER_NEUTRAL_COLOR);
     expect(resolvePointColor(cleanPlace, null, now)).toBe(CLEAN_PLACE_COLOR);
+    expect(resolvePointColor(action, null, now)).toBe(POLLUTION_SCORE_UNAVAILABLE_COLOR);
 
     const reliableGeometryAction = buildShapeItem("action", 80, "polyline", {
       id: "reliable-geometry-action",
@@ -495,11 +512,26 @@ describe("ShapeLayers", () => {
         latitude: 48.8566,
         longitude: 2.3522,
         wasteKg: 20,
+        volunteersCount: 1,
+        durationMinutes: 60,
         postActionPollutionScore: 18,
       }),
     );
 
-    expect(resolvePointColor(action, null, now)).toBe(resolveDynamicColor(18));
+    expect(
+      resolvePointColor(
+        action,
+        {
+          global: {
+            wastePerVolunteerHour: 20,
+            buttsPerVolunteerHour: 400,
+            wasteSourceCount: 1,
+            buttsSourceCount: 1,
+          },
+        },
+        now,
+      ),
+    ).toBe(resolveDynamicColor(18));
   });
 
   it("uses the action tooltip title for polyline shapes", () => {

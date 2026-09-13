@@ -58,7 +58,7 @@ function expectMapActionsFallbackResult(
     expect.arrayContaining(["map-1", "validated-spot"]),
   );
   const action = result.items.find((item) => item.id === "map-1");
-  expect(action?.waste_pollution_score).toBe(40);
+  expect(action?.waste_pollution_score).toBe(53);
   expect(action?.cigarette_butts_pollution_score).toBe(100);
   expect(action?.impact_level).toBe("fort");
   expect(action?.contract?.metadata.associationName).toBe("Collectif Demo");
@@ -301,8 +301,12 @@ describe("fetchMapActions", () => {
 
     mocks.getSupabaseBrowserClientMock.mockReturnValue(supabaseClient);
     mocks.fetchActionPollutionScoreReferencesMock.mockResolvedValue({
-      wastePerVolunteer: 5,
-      buttsPerVolunteer: 50,
+      global: {
+        wastePerVolunteerHour: 5,
+        buttsPerVolunteerHour: 50,
+        wasteSourceCount: 1,
+        buttsSourceCount: 1,
+      },
     });
     vi.stubGlobal(
       "fetch",

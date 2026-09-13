@@ -68,6 +68,9 @@ export async function GET(request: Request) {
       loadInitialPollutionItems(supabase, bounds),
       fetchActionPollutionScoreReferences(supabase),
     ]);
+    if (!pollutionScoreReferences) {
+      return NextResponse.json({ item: null });
+    }
     const reference = deriveReferenceFromBounds(bounds);
     const item = selectNearestActivePollution(
       items,

@@ -18,6 +18,7 @@ import {
 
 export type ActionPollutionScoreAvailability =
   | "available"
+  | "global_unavailable"
   | "department_unavailable";
 
 export type ScopedActionPollutionScore = {
@@ -51,6 +52,18 @@ function unavailableDepartmentScore(): ScopedActionPollutionScore {
   };
 }
 
+function unavailableGlobalScore(): ScopedActionPollutionScore {
+  return {
+    score: null,
+    historicalScore: null,
+    wasteScore: null,
+    buttsScore: null,
+    departmentRelativeScore: null,
+    availability: "global_unavailable",
+    source: "global",
+  };
+}
+
 function resolveGlobalActionScore(
   item: ActionMapItem,
   references: PollutionScoreReferences | null | undefined,
@@ -58,15 +71,28 @@ function resolveGlobalActionScore(
   displayMode: CurrentPlaceStateMode,
   currentPlaceState: CurrentPlaceState | null,
 ): ScopedActionPollutionScore {
+  if (!references) {
+    return unavailableGlobalScore();
+  }
+
   const scores = computePollutionScoresRelativeToReferences(
     {
       wasteKg: item.waste_kg,
       cigaretteButts: item.cigarette_butts,
-      volunteersCount: item.volunteers_count,
+      volunteersCount:
+        item.contract?.metadata.volunteersCount ?? item.volunteers_count,
+      durationMinutes:
+        item.contract?.metadata.durationMinutes ?? item.duration_minutes,
+      actionType: mapItemType(item),
+      status: item.status,
+      actionPhase: item.contract?.metadata.actionPhase,
     },
-    references ?? undefined,
+    references.global,
   );
-  const historicalScore = computeAveragePollutionScore(scores);
+  const historicalScore = scores.severityScore ?? computeAveragePollutionScore(scores);
+  if (historicalScore === null) {
+    return unavailableGlobalScore();
+  }
   const observedScore = mapItemPostActionPollutionScore(item) ?? historicalScore;
   const score = currentPlaceState?.score ??
     (displayMode === "observed"
@@ -110,11 +136,20 @@ function resolveDepartmentActionScore(
     {
       wasteKg: item.waste_kg,
       cigaretteButts: item.cigarette_butts,
-      volunteersCount: item.volunteers_count,
+      volunteersCount:
+        item.contract?.metadata.volunteersCount ?? item.volunteers_count,
+      durationMinutes:
+        item.contract?.metadata.durationMinutes ?? item.duration_minutes,
+      actionType: mapItemType(item),
+      status: item.status,
+      actionPhase: item.contract?.metadata.actionPhase,
     },
     departmentReference,
   );
-  const departmentRelativeScore = computeAveragePollutionScore(scores);
+  const departmentRelativeScore = scores.severityScore ?? computeAveragePollutionScore(scores);
+  if (departmentRelativeScore === null) {
+    return unavailableDepartmentScore();
+  }
 
   return {
     score: departmentRelativeScore,

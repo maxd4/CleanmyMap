@@ -46,9 +46,16 @@ Il est dérivé des informations disponibles lors de l'action, notamment :
 - masse de déchets collectée ;
 - nombre de mégots collectés ;
 - références de calibration utilisées par le runtime ;
-- lorsque le contrat le prévoit, normalisation par le nombre de bénévoles.
+- normalisation par bénévole-heure lorsque la durée et l'effectif sont
+  renseignés.
 
-Le runtime combine les contributions déchets et mégots selon le contrat de score courant. La méthode actuellement utilisée doit être lue directement dans :
+Le runtime calcule deux composantes indépendantes : l'intensité de déchets en
+kg par bénévole-heure et l'intensité de mégots en mégots par bénévole-heure.
+Chaque composante est comparée à sa référence globale maximale, puis bornée
+entre 0 et 100. Le score combiné est la moyenne des composantes exploitables ;
+il reprend la composante unique lorsqu'une seule est disponible et devient
+indisponible lorsqu'aucune ne l'est. La méthode actuellement utilisée doit être
+lue directement dans :
 
 `apps/web/src/lib/actions/pollution/pollution-score.ts`
 
@@ -253,21 +260,17 @@ uniquement avec la référence globale.
 
 ### Références de score
 
-La carte permet de choisir la référence **Globale** ou **Départementale** sans
-recharger le jeu de données ni modifier la géométrie. La référence globale
-conserve la projection temporelle décrite ci-dessus. La référence départementale
-utilise exclusivement le score relatif calculé dans le département persistant
-de l'action : elle n'est ni projetée dans le temps ni transmise à `T80`.
+Le contrat actuel expose une seule référence **Globale**. Elle est produite par
+la RPC versionnée `action_pollution_score_references_v2()` et capturée une fois
+par semaine dans le snapshot `map-pollution-score-references`. Les références
+de déchets et de mégots sont calculées séparément à partir des actions terrain
+approuvées et terminées, avec au moins un bénévole, une durée strictement
+positive et la métrique correspondante renseignée. Une mesure égale à zéro
+reste une mesure valide ; une métrique absente reste indisponible.
 
-Dans ce mode, `100 %` correspond à l'intensité de collecte de référence la plus
-élevée du département, normalisée par bénévole. Un score relatif ne se
-compare directement qu'entre actions d'un même département. Lorsque le code
-départemental est absent ou que la référence comporte moins de deux actions
-éligibles, la comparaison départementale est explicitement indisponible ; elle
-ne retombe pas silencieusement sur le score global.
-
-Le choix de référence modifie uniquement le score et la couleur affichés. Il
-ne modifie ni le dataset, ni la palette canonique, ni la grammaire géométrique.
+Sans référence globale v2 positive, aucun ancien défaut d'unité différente
+n'est réutilisé : le score reste indisponible. La référence globale conserve
+la projection temporelle décrite ci-dessus.
 Les polylines restent hors du rapprochement point/zone ; un spot ponctuel ne
 peut pas recolorer un parcours.
 

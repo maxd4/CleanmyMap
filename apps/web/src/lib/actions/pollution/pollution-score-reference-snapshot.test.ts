@@ -5,18 +5,13 @@ import {
   runPollutionScoreReferencesJob,
 } from "./pollution-score-reference-snapshot";
 
-const references = { wastePerVolunteer: 12, buttsPerVolunteer: 345 };
-
-const referencesWithDepartments = {
-  ...references,
-  departmentReferences: {
-    "01": {
-      wastePerVolunteer: 6,
-      buttsPerVolunteer: 120,
-      eligibleActionCount: 2,
-    },
-  },
+const global = {
+  wastePerVolunteerHour: 12,
+  buttsPerVolunteerHour: 345,
+  wasteSourceCount: 7,
+  buttsSourceCount: 6,
 };
+const references = { global };
 
 function snapshot(date = "2026-09-07") {
   return {
@@ -27,27 +22,16 @@ function snapshot(date = "2026-09-07") {
     version: MAP_POLLUTION_REFERENCES_VERSION,
     title: "Référence hebdomadaire du score pollution",
     payload: {
-      references: referencesWithDepartments,
-      source: "action_pollution_score_references" as const,
+      references,
+      source: "action_pollution_score_references_v2" as const,
       weekStart: date,
     },
     meta: {},
   };
 }
 
-function snapshotWithoutDepartmentReferences(date = "2026-09-07") {
-  const value = snapshot(date);
-  return {
-    ...value,
-    payload: {
-      ...value.payload,
-      references,
-    },
-  };
-}
-
-describe("pollution score reference snapshot", () => {
-  it("capture et réutilise une référence hebdomadaire sans doublon", async () => {
+describe("pollution score reference snapshot V2", () => {
+  it("captures once and reuses the same weekly V2 snapshot", async () => {
     const loadReferences = vi.fn(async () => references);
     const writeSnapshot = vi.fn(async () => undefined);
     const first = await runPollutionScoreReferencesJob({
@@ -67,10 +51,10 @@ describe("pollution score reference snapshot", () => {
     expect(second.status).toBe("reused");
     expect(loadReferences).toHaveBeenCalledOnce();
     expect(writeSnapshot).toHaveBeenCalledOnce();
-    expect(first.snapshot.payload.references.departmentReferences).toEqual({});
+    expect(first.snapshot.payload.references).toEqual(references);
   });
 
-  it("fait apparaître le fallback RPC lorsque le snapshot manque", async () => {
+  it("uses the V2 RPC fallback when the weekly snapshot is missing", async () => {
     const result = await loadPollutionScoreReferencesForMap({
       readSnapshot: async () => null,
       loadFallback: async () => references,
@@ -81,11 +65,11 @@ describe("pollution score reference snapshot", () => {
       source: "rpc_fallback",
       snapshotDate: null,
       generatedAt: null,
-      warning: "Référence hebdomadaire indisponible : fallback RPC utilisé.",
+      warning: "Référence hebdomadaire indisponible : fallback RPC V2 utilisé.",
     });
   });
 
-  it("privilégie la petite référence persistée", async () => {
+  it("reads one valid V3 payload and exposes only its global reference", async () => {
     const loadFallback = vi.fn();
     const result = await loadPollutionScoreReferencesForMap({
       readSnapshot: async () => snapshot(),
@@ -93,57 +77,52 @@ describe("pollution score reference snapshot", () => {
     });
 
     expect(result.source).toBe("weekly_snapshot");
-    expect(result.references).toEqual(referencesWithDepartments);
+    expect(result.references).toEqual(references);
     expect(loadFallback).not.toHaveBeenCalled();
   });
 
-  it("ne réutilise pas un payload de la version courante sans références départementales", async () => {
-    const loadReferences = vi.fn(async () => referencesWithDepartments);
-    const writeSnapshot = vi.fn(async () => undefined);
-    const legacyPayload = snapshotWithoutDepartmentReferences();
-
-    const result = await runPollutionScoreReferencesJob({
-      now: new Date("2026-09-08T11:00:00.000Z"),
-      loadReferences,
-      readSnapshot: async () => legacyPayload,
-      writeSnapshot,
-    });
-
-    expect(result.status).toBe("captured");
-    expect(loadReferences).toHaveBeenCalledOnce();
-    expect(writeSnapshot).toHaveBeenCalledOnce();
-    expect(result.snapshot.payload.references.departmentReferences).toEqual(
-      referencesWithDepartments.departmentReferences,
-    );
-  });
-
-  it("utilise le fallback RPC pour un payload v2 sans références départementales", async () => {
-    const loadFallback = vi.fn(async () => referencesWithDepartments);
-
-    const result = await loadPollutionScoreReferencesForMap({
-      readSnapshot: async () => snapshotWithoutDepartmentReferences(),
-      loadFallback,
-    });
-
-    expect(result.source).toBe("rpc_fallback");
-    expect(result.references).toEqual(referencesWithDepartments);
-    expect(loadFallback).toHaveBeenCalledOnce();
-  });
-
-  it("ne réutilise pas un snapshot v1 sans références départementales", async () => {
-    const loadFallback = vi.fn(async () => referencesWithDepartments);
-    const oldSnapshot = {
-      ...snapshotWithoutDepartmentReferences(),
-      version: "map-pollution-score-references-2026.09-v1",
+  it("does not reuse a prior payload without the V2 global shape", async () => {
+    const loadFallback = vi.fn(async () => references);
+    const legacySnapshot = {
+      ...snapshot(),
+      version: "map-pollution-score-references-2026.09-v2",
+      payload: {
+        ...snapshot().payload,
+        references: { wastePerVolunteer: 20, buttsPerVolunteer: 2_000 },
+      },
     };
 
     const result = await loadPollutionScoreReferencesForMap({
-      readSnapshot: async () => oldSnapshot,
+      readSnapshot: async () => legacySnapshot as never,
       loadFallback,
     });
 
     expect(result.source).toBe("rpc_fallback");
-    expect(result.references).toEqual(referencesWithDepartments);
+    expect(result.references).toEqual(references);
     expect(loadFallback).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the map score unavailable when neither V2 source is valid", async () => {
+    const result = await loadPollutionScoreReferencesForMap({
+      readSnapshot: async () => null,
+      loadFallback: async () => null,
+    });
+
+    expect(result.references).toBeNull();
+    expect(result.warning).toContain("indisponible");
+  });
+
+  it("does not write an invalid weekly snapshot", async () => {
+    const writeSnapshot = vi.fn(async () => undefined);
+
+    await expect(
+      runPollutionScoreReferencesJob({
+        now: new Date("2026-09-08T10:00:00.000Z"),
+        loadReferences: async () => null,
+        readSnapshot: async () => null,
+        writeSnapshot,
+      }),
+    ).rejects.toThrow("Aucune référence globale V2 valide");
+    expect(writeSnapshot).not.toHaveBeenCalled();
   });
 });

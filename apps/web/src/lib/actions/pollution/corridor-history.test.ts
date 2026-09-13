@@ -230,6 +230,14 @@ describe("corridor history", () => {
     const [history] = groupActionsByCorridor([recentAction, oldAction]);
     const summary = summarizeCorridorHistory(history, {
       now: dateAt(60),
+      references: {
+        global: {
+          wastePerVolunteerHour: 20,
+          buttsPerVolunteerHour: 400,
+          wasteSourceCount: 2,
+          buttsSourceCount: 2,
+        },
+      },
     });
 
     expect(summary.isRecurring).toBe(true);

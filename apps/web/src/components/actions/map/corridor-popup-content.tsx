@@ -40,7 +40,7 @@ export function CorridorPopupContent({
   const [activeTab, setActiveTab] = useState(0);
   const { references } = useActionPollutionScoreReferences();
   const summary = useMemo(
-    () => summarizeCorridorHistory(corridorHistory, { references }),
+    () => summarizeCorridorHistory(corridorHistory, { references: references ?? undefined }),
     [corridorHistory, references],
   );
   const activeItem = corridorItems[activeTab] ?? corridorItems[0];

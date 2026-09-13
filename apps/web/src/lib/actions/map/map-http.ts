@@ -20,7 +20,6 @@ import { parseDrawingFromNotes } from "../geometry/drawing";
 import { extractActionMetadataFromNotes } from "../metadata";
 import { fetchActionPollutionScoreReferences } from "../pollution/pollution-score-references";
 import {
-  DEFAULT_POLLUTION_SCORE_REFERENCES,
   type PollutionScoreReferences,
 } from "../pollution/pollution-score";
 import type { ActionDataContract, ActionEntityType } from "../contracts/contract-model";
@@ -309,7 +308,7 @@ function buildMapContracts(
 
 function buildMapItems(
   contracts: ActionDataContract[],
-  pollutionScoreReferences: PollutionScoreReferences,
+  pollutionScoreReferences: PollutionScoreReferences | null,
   impact: ActionImpactLevel | null,
   qualityMin: number | null,
   limit: number,
@@ -518,10 +517,8 @@ export async function fetchMapActions(
   const [rpcResult, refsResult] = await loadMapActionSources(config);
 
   const rpcPayload = unwrapMapRpcResult(rpcResult);
-  const pollutionScoreReferences: PollutionScoreReferences =
-    refsResult.status === "fulfilled"
-      ? refsResult.value
-      : DEFAULT_POLLUTION_SCORE_REFERENCES;
+  const pollutionScoreReferences: PollutionScoreReferences | null =
+    refsResult.status === "fulfilled" ? refsResult.value : null;
 
   const remoteContracts = Array.isArray(rpcPayload.data)
     ? (rpcPayload.data as ActionsMapFeedRow[])

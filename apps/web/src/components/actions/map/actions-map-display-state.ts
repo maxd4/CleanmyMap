@@ -42,9 +42,10 @@ export function resolveMapPlaceStateViews(
     historicalScoreResolver?: LocalRepollutionScoreResolver;
   },
 ): CurrentPlaceStateViews[] {
+  const references = options.pollutionScoreReferences;
   const historicalScoreResolver =
     options.historicalScoreResolver ??
-    (options.pollutionScoreReferences
+    (references
       ? (action: ActionDataContract) =>
           computeAveragePollutionScore(
             computePollutionScoresRelativeToReferences(
@@ -52,8 +53,12 @@ export function resolveMapPlaceStateViews(
                 wasteKg: action.metadata.wasteKg,
                 cigaretteButts: action.metadata.cigaretteButts,
                 volunteersCount: action.metadata.volunteersCount,
+                durationMinutes: action.metadata.durationMinutes,
+                actionType: action.type,
+                status: action.status,
+                actionPhase: action.metadata.actionPhase,
               },
-              options.pollutionScoreReferences ?? undefined,
+              references.global,
             ),
           )
       : undefined);

@@ -189,6 +189,7 @@ export type ActionListItem = {
       notes: string | null;
       notesPlain: string | null;
       groupJoinEnabled: boolean | null;
+      actionPhase?: ActionPhase | null;
       wasteKg: number | null;
       cigaretteButts: number | null;
       postActionPollutionScore?: number | null;
@@ -347,6 +348,7 @@ export type ActionMapItem = Pick<
       notes: string | null;
       notesPlain: string | null;
       groupJoinEnabled: boolean | null;
+      actionPhase?: ActionPhase | null;
       wasteKg: number | null;
       cigaretteButts: number | null;
       postActionPollutionScore?: number | null;

@@ -8,8 +8,6 @@ import {
 } from"../../lib/actions/data-contract";
 import {
   computePollutionScoresRelativeToReferences,
-  computeButtsContributionScore,
-  computeWasteContributionScore,
  type PollutionScoreReferences,
 } from"@/lib/actions/pollution/pollution-score";
 import { presentActionPollutionProjection } from "@/lib/actions/pollution/revisit-priority";
@@ -75,37 +73,29 @@ export function resolveItemPollutionScores(
  item: ActionMapItem,
  references?: PollutionScoreReferences | null,
 ): {
- wasteScore: number;
- buttsScore: number;
- severityScore: number;
+ wasteScore: number | null;
+ buttsScore: number | null;
+ severityScore: number | null;
 } {
- if (references) {
+ if (!references) {
+   return { wasteScore: null, buttsScore: null, severityScore: null };
+ }
+
  const pollutionScores = computePollutionScoresRelativeToReferences(
  {
  wasteKg: mapItemWasteKg(item),
  cigaretteButts: mapItemCigaretteButts(item),
- volunteersCount: item.contract?.metadata.volunteersCount,
+      volunteersCount:
+        item.contract?.metadata.volunteersCount ?? item.volunteers_count,
+ durationMinutes: item.contract?.metadata.durationMinutes ?? item.duration_minutes,
+ actionType: mapItemType(item),
+ status: item.status,
+ actionPhase: item.contract?.metadata.actionPhase,
  },
- references,
+ references.global,
  );
 
  return pollutionScores;
- }
-
- const wasteScore =
- typeof item.waste_pollution_score === "number"
- ? item.waste_pollution_score
- : computeWasteContributionScore(mapItemWasteKg(item));
- const buttsScore =
- typeof item.cigarette_butts_pollution_score === "number"
- ? item.cigarette_butts_pollution_score
- : computeButtsContributionScore(mapItemCigaretteButts(item));
-
- return {
- wasteScore,
- buttsScore,
- severityScore: Math.max(wasteScore, buttsScore),
- };
 }
 
 export function resolveDynamicColor(score: number): string {
@@ -131,8 +121,11 @@ function resolveCategoryScore(
  item: ActionMapItem,
  references?: PollutionScoreReferences | null,
  now: string | Date | number = new Date(),
-): number {
+): number | null {
  const observedScore = resolveItemPollutionScores(item, references).severityScore;
+ if (observedScore === null) {
+  return null;
+ }
  return mapItemType(item) === "action"
   ? presentActionPollutionProjection(
       observedScore,
@@ -153,6 +146,7 @@ export function classifyPollutionColor(
  const score = resolveCategoryScore(item, references, now);
 
  if (mapItemType(item) === "clean_place") return"green";
+ if (score === null) return"blue";
  if (score >= ACTION_POLLUTION_COLOR_THRESHOLDS.BLACK) return"black";
  if (score >= ACTION_POLLUTION_COLOR_THRESHOLDS.VIOLET) return"violet";
  if (score >= ACTION_POLLUTION_COLOR_THRESHOLDS.RED) return"red";
@@ -182,8 +176,8 @@ export function resolveInfrastructureNeed(
  const pollutionScores = resolveItemPollutionScores(item, references);
  const wasteScore = pollutionScores.wasteScore;
  const buttsScore = pollutionScores.buttsScore;
- const needsBin = wasteScore >= INFRASTRUCTURE_ALERT_THRESHOLD;
- const needsAshtray = buttsScore >= INFRASTRUCTURE_ALERT_THRESHOLD;
+ const needsBin = wasteScore !== null && wasteScore >= INFRASTRUCTURE_ALERT_THRESHOLD;
+ const needsAshtray = buttsScore !== null && buttsScore >= INFRASTRUCTURE_ALERT_THRESHOLD;
 
  if (needsBin && needsAshtray) {
  return"combo";

@@ -153,7 +153,9 @@ export function ActionPopupContentHeader({
           : score);
     const displayedScoreLabel =
       scoreUnavailable
-        ? "Score départemental indisponible"
+        ? scoreScope === "department"
+          ? "Score départemental indisponible"
+          : "Score global indisponible"
         : scopedCurrentPlaceState?.scoreKind === "unavailable"
           ? "Niveau non quantifié"
         : formatScorePercent(Math.round(displayedScore));
@@ -241,7 +243,7 @@ export function ActionPopupContentHeader({
               ? "Référence départementale insuffisante pour comparer cette action"
               : "Score relatif départemental · sans projection temporelle"
             : scoreUnavailable
-            ? "Référence départementale insuffisante pour comparer cette action"
+            ? "Référence globale V2 indisponible pour comparer cette action"
             : isDisplayedProjection
             ? "Projection modélisée · pas une mesure en temps réel"
             : scopedCurrentPlaceState?.scoreKind === "unavailable"
