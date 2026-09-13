@@ -40,6 +40,8 @@ const ACTION_BASE_SELECT_FIELDS = [
   "organizer_type",
   "action_date",
   "location_label",
+  "department_code",
+  "department_name",
   "latitude",
   "longitude",
   "derived_geometry_kind",
@@ -73,6 +75,9 @@ const ACTION_SELECT_FIELDS_WITH_PHASE = [
 ].join(", ");
 
 const ACTION_SELECT_FIELDS_LEGACY = ACTION_BASE_SELECT_FIELDS.join(", ");
+const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT = ACTION_BASE_SELECT_FIELDS
+  .filter((field) => field !== "department_code" && field !== "department_name")
+  .join(", ");
 
 function isMissingActionColumnError(error: unknown): boolean {
   const message =
@@ -92,13 +97,17 @@ function isMissingActionColumnError(error: unknown): boolean {
       normalized.includes("moderation_visibility") ||
       normalized.includes("hidden_at") ||
       normalized.includes("hidden_by_clerk_id") ||
-      normalized.includes("hidden_reason"))
+      normalized.includes("hidden_reason") ||
+      normalized.includes("department_code") ||
+      normalized.includes("department_name"))
   );
 }
 
 function normalizeStoredAction(row: ActionRow): ActionRow {
   return {
     ...row,
+    department_code: row.department_code ?? null,
+    department_name: row.department_name ?? null,
     waste_kg: normalizeNullableStoredNumber(row.waste_kg),
     cigarette_butts: normalizeNullableStoredNumber(row.cigarette_butts),
     volunteers_count: Number(row.volunteers_count ?? 0),
@@ -179,14 +188,28 @@ async function fetchActionRows(
       throw error;
     }
 
-    const rows = await runActionQuery<ActionRow>(supabase, (query) =>
-      buildActionListQuery(
-        query,
-        { ...params, includeFuturePublicActions: false },
-        ACTION_SELECT_FIELDS_LEGACY,
-      ),
-    );
-    return rows.map(normalizeStoredAction);
+    try {
+      const rows = await runActionQuery<ActionRow>(supabase, (query) =>
+        buildActionListQuery(
+          query,
+          { ...params, includeFuturePublicActions: false },
+          ACTION_SELECT_FIELDS_LEGACY,
+        ),
+      );
+      return rows.map(normalizeStoredAction);
+    } catch (legacyError) {
+      if (!isMissingActionColumnError(legacyError)) {
+        throw legacyError;
+      }
+      const rows = await runActionQuery<ActionRow>(supabase, (query) =>
+        buildActionListQuery(
+          query,
+          { ...params, includeFuturePublicActions: false },
+          ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT,
+        ),
+      );
+      return rows.map(normalizeStoredAction);
+    }
   }
 }
 
@@ -212,9 +235,22 @@ async function fetchActionRowById(
       throw error;
     }
 
-    const row = await runSingleActionQuery<ActionRow>(supabase, (query) =>
-      query.select(ACTION_SELECT_FIELDS_LEGACY).eq("id", actionId).maybeSingle(),
-    );
+    let row: ActionRow | null;
+    try {
+      row = await runSingleActionQuery<ActionRow>(supabase, (query) =>
+        query.select(ACTION_SELECT_FIELDS_LEGACY).eq("id", actionId).maybeSingle(),
+      );
+    } catch (legacyError) {
+      if (!isMissingActionColumnError(legacyError)) {
+        throw legacyError;
+      }
+      row = await runSingleActionQuery<ActionRow>(supabase, (query) =>
+        query
+          .select(ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT)
+          .eq("id", actionId)
+          .maybeSingle(),
+      );
+    }
 
     if (!row) {
       return null;
@@ -334,14 +370,28 @@ export async function fetchRecentActionsByUser(
       throw error;
     }
 
-    const rows = await runActionQuery<ActionRow>(supabase, (query) =>
-      query
-        .select(ACTION_SELECT_FIELDS_LEGACY)
-        .eq("created_by_clerk_id", params.userId)
-        .order("action_date", { ascending: false })
-        .limit(params.limit),
-    );
-    return rows.map(normalizeStoredAction);
+    try {
+      const rows = await runActionQuery<ActionRow>(supabase, (query) =>
+        query
+          .select(ACTION_SELECT_FIELDS_LEGACY)
+          .eq("created_by_clerk_id", params.userId)
+          .order("action_date", { ascending: false })
+          .limit(params.limit),
+      );
+      return rows.map(normalizeStoredAction);
+    } catch (legacyError) {
+      if (!isMissingActionColumnError(legacyError)) {
+        throw legacyError;
+      }
+      const rows = await runActionQuery<ActionRow>(supabase, (query) =>
+        query
+          .select(ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT)
+          .eq("created_by_clerk_id", params.userId)
+          .order("action_date", { ascending: false })
+          .limit(params.limit),
+      );
+      return rows.map(normalizeStoredAction);
+    }
   }
 }
 
@@ -406,12 +456,60 @@ async function insertCreatedAction(
     status: ActionStatus | undefined;
   },
 ): Promise<string> {
-  const baseInsert = {
+  const baseInsert = buildActionInsertPayload(params);
+
+  const insertWithPhase = {
+    ...baseInsert,
+    action_phase: params.payload.actionPhase ?? "post_action_complete",
+    preparation_data: params.payload.preparationData ?? {},
+  };
+
+  let inserted = await supabase.from("actions").insert(insertWithPhase).select("id").single();
+
+  if (inserted.error && isMissingActionColumnError(inserted.error)) {
+    const insertWithoutDepartment = inserted.error.message
+      ?.toLowerCase()
+      .includes("department_")
+      ? (() => {
+          const {
+            department_code,
+            department_name,
+            ...legacyInsert
+          } = baseInsert;
+          void department_code;
+          void department_name;
+          return legacyInsert;
+        })()
+      : baseInsert;
+    inserted = await supabase
+      .from("actions")
+      .insert(insertWithoutDepartment)
+      .select("id")
+      .single();
+  }
+
+  if (inserted.error) {
+    throw inserted.error;
+  }
+
+  return inserted.data.id;
+}
+
+export function buildActionInsertPayload(params: {
+  userId: string;
+  payload: CreateActionPayload;
+  persistedGeometry: ReturnType<typeof buildCreateActionGeometry>;
+  finalDrawing: ActionDrawing | null;
+  status: ActionStatus | undefined;
+}) {
+  return {
     created_by_clerk_id: params.userId,
     actor_name: params.payload.actorName ?? null,
     organizer_type: params.payload.organizerType ?? null,
     action_date: params.payload.actionDate,
     location_label: params.payload.locationLabel,
+    department_code: params.payload.departmentCode ?? null,
+    department_name: params.payload.departmentName ?? null,
     latitude: params.payload.latitude ?? null,
     longitude: params.payload.longitude ?? null,
     derived_geometry_kind: params.persistedGeometry.kind,
@@ -428,24 +526,6 @@ async function insertCreatedAction(
     }),
     status: params.status ?? "pending",
   };
-
-  const insertWithPhase = {
-    ...baseInsert,
-    action_phase: params.payload.actionPhase ?? "post_action_complete",
-    preparation_data: params.payload.preparationData ?? {},
-  };
-
-  let inserted = await supabase.from("actions").insert(insertWithPhase).select("id").single();
-
-  if (inserted.error && isMissingActionColumnError(inserted.error)) {
-    inserted = await supabase.from("actions").insert(baseInsert).select("id").single();
-  }
-
-  if (inserted.error) {
-    throw inserted.error;
-  }
-
-  return inserted.data.id;
 }
 
 async function insertActionOrganizers(

@@ -142,6 +142,8 @@ function toActionContractFromRow(row: ActionRow): ActionDataContract {
     locationLabel: row.location_label,
     latitude: row.latitude,
     longitude: row.longitude,
+    departmentCode: row.department_code ?? null,
+    departmentName: row.department_name ?? null,
     derivedGeometryKind: row.derived_geometry_kind ?? null,
     derivedGeometryGeoJson: row.derived_geometry_geojson ?? null,
     geometryConfidence: row.geometry_confidence ?? null,

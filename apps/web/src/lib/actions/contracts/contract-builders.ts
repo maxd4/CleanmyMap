@@ -19,6 +19,8 @@ export type ActionContractCreatePayload = {
     label: string;
     latitude?: number;
     longitude?: number;
+    departmentCode?: string | null;
+    departmentName?: string | null;
   };
   departureLocationLabel?: string;
   arrivalLocationLabel?: string;
@@ -70,6 +72,8 @@ export function toContractCreatePayload(
       label: payload.locationLabel,
       latitude: payload.latitude,
       longitude: payload.longitude,
+      departmentCode: payload.departmentCode ?? null,
+      departmentName: payload.departmentName ?? null,
     },
     departureLocationLabel: payload.departureLocationLabel,
     arrivalLocationLabel: payload.arrivalLocationLabel,
@@ -175,6 +179,8 @@ function normalizeContractCreatePayload(
     routeAdjustmentMessage: payload.routeAdjustmentMessage ?? payload.metadata.routeAdjustmentMessage ?? undefined,
     latitude: payload.location.latitude,
     longitude: payload.location.longitude,
+    departmentCode: payload.location.departmentCode ?? null,
+    departmentName: payload.location.departmentName ?? null,
     wasteKg: payload.metadata.wasteKg ?? null,
     cigaretteButts: payload.metadata.cigaretteButts ?? null,
     volunteersCount: fallbackNumber(payload.metadata.volunteersCount, 1),

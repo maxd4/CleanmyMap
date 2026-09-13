@@ -212,6 +212,8 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
     locationLabel: row.location_label,
     latitude: toFiniteNumber(row.latitude),
     longitude: toFiniteNumber(row.longitude),
+    departmentCode: null,
+    departmentName: null,
     wasteKg: toFiniteNumber(row.waste_kg),
     cigaretteButts: toFiniteNumber(row.cigarette_butts),
     volunteersCount: toFiniteNumber(row.volunteers_count),

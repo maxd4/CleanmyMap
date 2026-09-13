@@ -55,6 +55,8 @@ export type ActionRow = {
   organizer_type?: OrganizerType | null;
   action_date: string;
   location_label: string;
+  department_code?: string | null;
+  department_name?: string | null;
   latitude: number | null;
   longitude: number | null;
   derived_geometry_kind: "point" | "polyline" | "polygon" | null;

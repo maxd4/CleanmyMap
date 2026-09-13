@@ -14,7 +14,13 @@ const contract: ActionDataContract = {
   status: "approved",
   source: "actions",
   createdByClerkId: "user-1",
-  location: { label: "Paris 11e - Bastille", latitude: 48.85, longitude: 2.35 },
+  location: {
+    label: "Paris 11e - Bastille",
+    latitude: 48.85,
+    longitude: 2.35,
+    departmentCode: null,
+    departmentName: null,
+  },
   geometry: {
     kind: "point",
     coordinates: [[48.85, 2.35] as [number, number]],

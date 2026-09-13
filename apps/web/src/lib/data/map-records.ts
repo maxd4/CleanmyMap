@@ -93,6 +93,8 @@ function buildLocalContractInput(
     locationLabel: record.location.label,
     latitude,
     longitude,
+    departmentCode: null,
+    departmentName: null,
     wasteKg: parseRecordMetric(record.metrics?.wasteKg),
     cigaretteButts: parseRecordMetric(record.metrics?.cigaretteButts),
     volunteersCount: parseRecordMetric(record.metrics?.volunteersCount),

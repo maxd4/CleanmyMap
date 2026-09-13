@@ -50,6 +50,8 @@ export const actionEditsSchema = z
     associationName: z.string().trim().max(120).nullable().optional(),
     actionDate: z.string().date().optional(),
     locationLabel: z.string().trim().min(2).max(200).optional(),
+    departmentCode: z.string().trim().max(20).nullable().optional(),
+    departmentName: z.string().trim().max(120).nullable().optional(),
     departureLocationLabel: z.string().trim().max(200).nullable().optional(),
     arrivalLocationLabel: z.string().trim().max(200).nullable().optional(),
     routeStyle: z.enum(["direct", "souple"]).nullable().optional(),
@@ -83,6 +85,8 @@ export type AdminCleanPlaceEdits = z.infer<typeof cleanPlaceEditsSchema>;
 type ExistingActionRow = {
   action_date: string;
   location_label: string;
+  department_code?: string | null;
+  department_name?: string | null;
   latitude: number | null;
   longitude: number | null;
   waste_kg: number | null;
@@ -105,18 +109,41 @@ function nullableText(value: string | null | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
+function preserveNullableTextEdit(
+  next: string | null | undefined,
+  current: string | null,
+): string | null {
+  return next === undefined ? current : next;
+}
+
 async function loadExistingAction(
   supabase: SupabaseServerClient,
   id: string,
 ): Promise<ExistingActionRow> {
-  const row = await runSingleActionQuery<ExistingActionRow>(supabase, (query) =>
-    query
-      .select(
-        "action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, actor_name, notes",
-      )
-      .eq("id", id)
-      .maybeSingle(),
-  );
+  let row: ExistingActionRow | null;
+  try {
+    row = await runSingleActionQuery<ExistingActionRow>(supabase, (query) =>
+      query
+        .select(
+          "action_date, location_label, department_code, department_name, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, actor_name, notes",
+        )
+        .eq("id", id)
+        .maybeSingle(),
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message.toLowerCase() : "";
+    if (!message.includes("does not exist") || !message.includes("department_")) {
+      throw error;
+    }
+    row = await runSingleActionQuery<ExistingActionRow>(supabase, (query) =>
+      query
+        .select(
+          "action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, actor_name, notes",
+        )
+        .eq("id", id)
+        .maybeSingle(),
+    );
+  }
 
   if (!row) {
     throw new Error("Action not found");
@@ -163,6 +190,14 @@ export async function buildAdminActionUpdates(
         : parsedMetadata.associationName ?? undefined,
     actionDate: edits.actionDate ?? existing.action_date,
     locationLabel: edits.locationLabel ?? existing.location_label,
+    departmentCode: preserveNullableTextEdit(
+      edits.departmentCode,
+      existing.department_code ?? null,
+    ),
+    departmentName: preserveNullableTextEdit(
+      edits.departmentName,
+      existing.department_name ?? null,
+    ),
     departureLocationLabel:
       edits.departureLocationLabel !== undefined
         ? cleanText(edits.departureLocationLabel)
@@ -224,6 +259,8 @@ export async function buildAdminActionUpdates(
         : nullableText(existing.actor_name),
     action_date: payloadForNotes.actionDate,
     location_label: payloadForNotes.locationLabel,
+    department_code: nullableText(payloadForNotes.departmentCode),
+    department_name: nullableText(payloadForNotes.departmentName),
     latitude: edits.latitude !== undefined ? edits.latitude : existing.latitude,
     longitude: edits.longitude !== undefined ? edits.longitude : existing.longitude,
     waste_kg: payloadForNotes.wasteKg,
