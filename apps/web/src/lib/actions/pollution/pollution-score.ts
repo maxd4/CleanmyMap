@@ -44,21 +44,9 @@ function isValidMetric(value: number | null | undefined): value is number {
   return value !== null && value !== undefined && Number.isFinite(value) && value >= 0;
 }
 
-function resolveVolunteerCount(inputs: PollutionScoreInputs): number | null {
-  const volunteersCount = Number(inputs.volunteersCount);
-  return Number.isInteger(volunteersCount) && volunteersCount >= 1
-    ? volunteersCount
-    : null;
-}
-
-function isEligibleAction(inputs: PollutionScoreInputs): boolean {
-  return (
-    inputs.actionType === "action" &&
-    inputs.status === "approved" &&
-    (inputs.actionPhase ?? "post_action_complete") === "post_action_complete" &&
-    Number.isFinite(Number(inputs.durationMinutes)) &&
-    Number(inputs.durationMinutes) > 0
-  );
+function resolveVolunteerCount(inputs: PollutionScoreInputs): number {
+  const volunteersCount = Math.trunc(Number(inputs.volunteersCount ?? 1) || 1);
+  return Math.max(1, volunteersCount);
 }
 
 function resolveReference(value: number | null | undefined): number | null {
@@ -87,7 +75,10 @@ export function computePollutionScoresRelativeToReferences(
   inputs: PollutionScoreInputs,
   references?: PollutionScoreReference | null,
 ): PollutionScoreBreakdown {
-  if (!isEligibleAction(inputs) || !references) {
+  // The pre-77 scorer is a pure normalization helper. Population selection
+  // belongs to the reference RPC/public map boundary, not to this calculation;
+  // duration, entity type, status and phase are intentionally not score inputs.
+  if (!references) {
     return { wasteScore: null, buttsScore: null, severityScore: null };
   }
 

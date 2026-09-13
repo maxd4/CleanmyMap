@@ -55,9 +55,8 @@ Sur la carte d'actions, ce score reste un score historique constaté avant l'act
 
 Formule de travail :
 
-Pour chaque action terrain approuvée et terminée, avec au moins un bénévole,
-une durée strictement positive et une métrique renseignée, chaque composante
-est normalisée par le nombre de bénévoles :
+Pour chaque mesure renseignée, chaque composante est normalisée par le nombre
+de bénévoles selon le dénominateur historique sûr `max(1, volunteersCount)` :
 
 `intensite_dechets = masse_dechets_kg / nombre_benevoles`
 
@@ -68,13 +67,21 @@ bornée entre 0 et 100. Le score historique est le maximum des composantes
 disponibles ; une métrique absente n'est pas assimilée à zéro et, si aucune
 composante n'est exploitable, le score est indisponible.
 
-Ce contrat correspond au dernier contrat de la carte versionné avant
-`77e72b0b`. La recherche menée dans le dépôt ne trouve aucune décision
-canonique autorisant une normalisation par bénévole-heure ; cette formule n'est
-donc pas consacrée. La migration append-only
-`20260913000007_restore_pre77_pollution_score_contract.sql` rétablit le
-contrat antérieur dans la RPC V2, sans supprimer les références
-départementales déjà publiées.
+La population de référence correspond au contrat de la carte versionné avant
+`77e72b0b` : actions `approved`. La frontière publique actuelle conserve en
+plus `moderation_visibility = 'visible'`, conformément au contrat de sécurité
+des surfaces publiques ; cette restriction est contemporaine et ne doit pas
+être présentée comme une règle scientifique pré-77. Aucun filtre supplémentaire
+sur `duration_minutes`, `action_phase` ou `action_date` n'est autorisé dans la
+population de référence. Le scorer TypeScript reste une fonction de calcul et
+ne filtre pas `actionType`, `status`, `actionPhase` ou `durationMinutes`.
+
+La recherche menée dans le dépôt ne trouve aucune décision canonique autorisant
+une normalisation par bénévole-heure ; cette formule n'est donc pas consacrée.
+La migration append-only
+`20260913000009_restore_pre77_pollution_reference_population.sql` aligne la
+RPC V2 globale et départementale sur cette population, sans modifier la
+formule par bénévole ni supprimer les références départementales.
 
 ## Gouvernance
 

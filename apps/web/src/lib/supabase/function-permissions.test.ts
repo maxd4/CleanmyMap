@@ -169,6 +169,22 @@ it("restores the pre-77 V2 contract and removes the unconsumed legacy RPC", () =
   expect(migration).toContain("grant execute on function public.action_pollution_score_references_v2() to public;");
 });
 
+it("keeps the append-only V2 population aligned with the pre-77 contract", () => {
+  const migration = readMigration("../../../supabase/migrations/20260913000009_restore_pre77_pollution_reference_population.sql");
+
+  expect(migration).toContain("create or replace function public.action_pollution_score_references_v2()");
+  expect(migration).toContain("where a.status = 'approved'");
+  expect(migration).toContain("coalesce(a.moderation_visibility, 'visible') = 'visible'");
+  expect(migration).toContain("greatest(coalesce(a.volunteers_count, 0), 1)::numeric as volunteer_count");
+  expect(migration).not.toContain("a.duration_minutes > 0");
+  expect(migration).not.toContain("a.action_phase");
+  expect(migration).not.toContain("a.action_date <= current_date");
+  expect(migration).toContain("security invoker");
+  expect(migration).toContain("set search_path = pg_catalog");
+  expect(migration).toContain("revoke all on function public.action_pollution_score_references_v2() from public;");
+  expect(migration).toContain("grant execute on function public.action_pollution_score_references_v2() to public;");
+});
+
 it("enables RLS on xp_audit and restricts it to the service role", () => {
   const migration = readMigration("../../../supabase/migrations/20260601000001_harden_xp_audit_rls.sql");
 

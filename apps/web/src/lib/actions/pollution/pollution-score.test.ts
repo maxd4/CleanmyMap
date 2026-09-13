@@ -81,27 +81,27 @@ describe("pollution score V2", () => {
   });
 
   it.each([
-    { volunteersCount: 0 },
     { durationMinutes: 0 },
-    { volunteersCount: null },
     { durationMinutes: null },
-  ])("returns an unavailable score for invalid eligibility input %#", (input) => {
-    expect(score({ wasteKg: 40, cigaretteButts: 800, ...input })).toEqual({
-      wasteScore: null,
-      buttsScore: null,
-      severityScore: null,
-    });
-  });
-
-  it.each([
     { actionType: "spot" as const },
     { status: "pending" },
     { actionPhase: "pre_action" },
-  ])("requires the canonical completed field-action predicate %#", (input) => {
+  ])("keeps the pre-77 population independent from extra fields %#", (input) => {
     expect(score({ wasteKg: 20, ...input })).toEqual({
-      wasteScore: null,
+      wasteScore: 50,
       buttsScore: null,
-      severityScore: null,
+      severityScore: 50,
+    });
+  });
+
+  it("keeps the legacy safe denominator when volunteer count is absent or zero", () => {
+    expect(score({ wasteKg: 20, volunteersCount: null })).toMatchObject({
+      wasteScore: 100,
+      severityScore: 100,
+    });
+    expect(score({ wasteKg: 20, volunteersCount: 0 })).toMatchObject({
+      wasteScore: 100,
+      severityScore: 100,
     });
   });
 
