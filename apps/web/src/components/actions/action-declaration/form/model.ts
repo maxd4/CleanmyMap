@@ -57,6 +57,7 @@ export type FormState = {
  cigaretteButts: string;
  cigaretteButtsCount: string; // Nouveau champ pour le nombre de mégots
  cigaretteButtsCondition: ActionMegotsCondition; // État des mégots pour conversion
+ cigaretteButtsVolumeLiters: string;
  volunteersCount: string;
  durationMinutes: string;
  eventStartTime: string;
@@ -119,6 +120,7 @@ export const initialState: FormState = {
   cigaretteButts:"",
  cigaretteButtsCount:"", // Optionnel par défaut
  cigaretteButtsCondition:"propre", // État par défaut
+ cigaretteButtsVolumeLiters:"",
  volunteersCount:"1",
  durationMinutes:"60",
  eventStartTime:"",

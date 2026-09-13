@@ -4,6 +4,7 @@ import {
   extractActionMetadataFromNotes,
   setActionGroupJoinEnabledInNotes,
 } from "./metadata";
+import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 
 describe("action metadata notes", () => {
   it("appends and extracts submission mode and waste breakdown", () => {
@@ -93,5 +94,40 @@ describe("action metadata notes", () => {
     expect(parsed.cleanNotes).toBe("Observation terrain");
     expect(parsed.submissionMode).toBe("complete");
     expect(parsed.groupJoinEnabled).toBe(true);
+  });
+
+  it("round-trips raw, derived and provenance fields without collapsing them", () => {
+    const cigaretteButtsMeasurements = normalizeCigaretteButtsMeasurements({
+      cigaretteButtsMassKg: 1.2,
+      cigaretteButtsCondition: "propre",
+      deriveMissingFromMassOrCount: true,
+    });
+    const notes = appendActionMetadataToNotes("Observation terrain", {
+      cigaretteButtsMeasurements,
+    });
+    const parsed = extractActionMetadataFromNotes(notes);
+
+    expect(parsed.cigaretteButtsMeasurements).toEqual(
+      cigaretteButtsMeasurements,
+    );
+    expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsMassKg).toBe(1.2);
+    expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsCount).toBe(3_000);
+    expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsCountProvenance).toBe(
+      "weight_converted",
+    );
+    expect(parsed.cigaretteButtsKg).toBe(1.2);
+  });
+
+  it("keeps a measured volume and leaves unavailable derivatives null", () => {
+    const notes = appendActionMetadataToNotes(undefined, {
+      cigaretteButtsMeasurements: normalizeCigaretteButtsMeasurements({
+        cigaretteButtsVolumeLiters: 2,
+      }),
+    });
+    const parsed = extractActionMetadataFromNotes(notes);
+
+    expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsVolumeLiters).toBe(2);
+    expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsMassKg).toBeNull();
+    expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsCount).toBeNull();
   });
 });

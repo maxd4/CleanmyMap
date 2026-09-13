@@ -3,10 +3,12 @@ import type { CreateActionPayload } from "@/lib/actions/types";
 import {
   buildInitialActionParticipantRows,
   buildCreateActionGeometry,
+  buildPersistedNotes,
   fetchActions,
   resolveActionCreationStatus,
   resolvePersistedCigaretteButts,
 } from "./store";
+import { extractActionMetadataFromNotes } from "./metadata";
 
 function buildPayload(overrides: Partial<CreateActionPayload> = {}): CreateActionPayload {
   return {
@@ -24,7 +26,7 @@ function buildPayload(overrides: Partial<CreateActionPayload> = {}): CreateActio
 }
 
 describe("resolvePersistedCigaretteButts", () => {
-  it("derives butts from megots weight when available", () => {
+  it("keeps the explicit count when a raw mass is also present", () => {
     const payload = buildPayload({
       wasteBreakdown: {
         megotsKg: 0.4,
@@ -33,7 +35,7 @@ describe("resolvePersistedCigaretteButts", () => {
       cigaretteButtsCount: 120,
     });
 
-    expect(resolvePersistedCigaretteButts(payload)).toBe(1000);
+    expect(resolvePersistedCigaretteButts(payload)).toBe(120);
   });
 
   it("falls back to the count slider when no megots weight is present", () => {
@@ -56,6 +58,40 @@ describe("resolvePersistedCigaretteButts", () => {
     });
 
     expect(resolvePersistedCigaretteButts(payload)).toBeNull();
+  });
+
+  it("does not invent a count from volume alone", () => {
+    const payload = buildPayload({
+      cigaretteButts: null,
+      cigaretteButtsCount: null,
+      cigaretteButtsVolumeLiters: 2,
+      cigaretteButtsMassKg: null,
+    });
+
+    expect(resolvePersistedCigaretteButts(payload)).toBeNull();
+  });
+
+  it("round trips raw count, mass and volume without collapsing provenance", () => {
+    const notes = buildPersistedNotes(
+      buildPayload({
+        cigaretteButts: 3_000,
+        cigaretteButtsCount: 3_000,
+        cigaretteButtsMassKg: 1.2,
+        cigaretteButtsVolumeLiters: 2.5,
+        cigaretteButtsCondition: "propre",
+        cigaretteButtsKg: 1.2,
+      }),
+    );
+    const metadata = extractActionMetadataFromNotes(notes);
+
+    expect(metadata.cigaretteButtsMeasurements).toMatchObject({
+      cigaretteButtsCount: 3_000,
+      cigaretteButtsMassKg: 1.2,
+      cigaretteButtsVolumeLiters: 2.5,
+      cigaretteButtsCountProvenance: "counted",
+      cigaretteButtsMassProvenance: "measured",
+      cigaretteButtsVolumeProvenance: "measured",
+    });
   });
 });
 

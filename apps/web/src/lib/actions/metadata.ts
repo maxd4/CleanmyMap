@@ -5,6 +5,11 @@ import type {
   ActionVisionEstimate,
   ActionWasteMeasurementMethod,
 } from "@/lib/actions/types";
+import {
+  hasCigaretteButtsMeasurement,
+  normalizeCigaretteButtsMeasurements,
+  type ActionCigaretteButtsMeasurements,
+} from "@/lib/waste/cigarette-butts";
 
 const META_PREFIX = "[cmm-meta]";
 const INGESTION_SYNC_MARKER = "[google-sheet-sync]";
@@ -14,6 +19,7 @@ type ActionNotesMeta = {
   wasteBreakdown?: ActionWasteBreakdown;
   wasteMeasurementMethod?: ActionWasteMeasurementMethod;
   cigaretteButtsKg?: number | null;
+  cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements;
   associationName?: string;
   groupJoinEnabled?: boolean;
   placeType?: string;
@@ -42,6 +48,7 @@ type ActionNotesExtractionState = {
   wasteBreakdown: ActionWasteBreakdown | null;
   wasteMeasurementMethod: ActionWasteMeasurementMethod | null;
   cigaretteButtsKg: number | null;
+  cigaretteButtsMeasurements: ActionCigaretteButtsMeasurements | null;
   associationName: string | null;
   groupJoinEnabled: boolean;
   placeType: string | null;
@@ -62,6 +69,7 @@ function hasStructuredActionMetadata(metadata: {
   wasteBreakdown?: ActionWasteBreakdown;
   wasteMeasurementMethod?: ActionWasteMeasurementMethod;
   cigaretteButtsKg?: number | null;
+  cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
   associationName?: string;
   groupJoinEnabled?: boolean;
   placeType?: string;
@@ -78,6 +86,7 @@ function hasStructuredActionMetadata(metadata: {
     hasWasteBreakdown ||
       metadata.wasteMeasurementMethod ||
       metadata.cigaretteButtsKg !== undefined ||
+      hasCigaretteButtsMeasurement(metadata.cigaretteButtsMeasurements) ||
       associationName ||
       typeof metadata.groupJoinEnabled === "boolean" ||
       metadata.placeType ||
@@ -108,6 +117,7 @@ function hasActionMetadata(
     wasteBreakdown?: ActionWasteBreakdown;
     wasteMeasurementMethod?: ActionWasteMeasurementMethod;
     cigaretteButtsKg?: number | null;
+    cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
     associationName?: string;
     groupJoinEnabled?: boolean;
     placeType?: string;
@@ -130,6 +140,7 @@ function buildStructuredMetadataPayload(
     wasteBreakdown?: ActionWasteBreakdown;
     wasteMeasurementMethod?: ActionWasteMeasurementMethod;
     cigaretteButtsKg?: number | null;
+    cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
     associationName?: string;
     groupJoinEnabled?: boolean;
     placeType?: string;
@@ -154,6 +165,9 @@ function buildStructuredMetadataPayload(
   }
   if (metadata.cigaretteButtsKg !== undefined) {
     metaPayload.cigaretteButtsKg = metadata.cigaretteButtsKg;
+  }
+  if (hasCigaretteButtsMeasurement(metadata.cigaretteButtsMeasurements)) {
+    metaPayload.cigaretteButtsMeasurements = metadata.cigaretteButtsMeasurements!;
   }
   if (metadata.associationName?.trim()) {
     metaPayload.associationName = metadata.associationName.trim();
@@ -238,6 +252,7 @@ function initializeActionNotesExtractionState(): ActionNotesExtractionState {
     wasteBreakdown: null,
     wasteMeasurementMethod: null,
     cigaretteButtsKg: null,
+    cigaretteButtsMeasurements: null,
     associationName: null,
     groupJoinEnabled: false,
     placeType: null,
@@ -288,6 +303,15 @@ function applyParsedStructuredActionNotesMeta(
       parsed.cigaretteButtsKg >= 0)
   ) {
     state.cigaretteButtsKg = parsed.cigaretteButtsKg;
+  }
+  if (
+    parsed.cigaretteButtsMeasurements &&
+    typeof parsed.cigaretteButtsMeasurements === "object"
+  ) {
+    state.cigaretteButtsMeasurements = normalizeCigaretteButtsMeasurements({
+      ...parsed.cigaretteButtsMeasurements,
+      deriveMissingFromMassOrCount: false,
+    });
   }
   if (
     typeof parsed.associationName === "string" &&
@@ -346,6 +370,7 @@ export function appendActionMetadataToNotes(
     wasteBreakdown?: ActionWasteBreakdown;
     wasteMeasurementMethod?: ActionWasteMeasurementMethod;
     cigaretteButtsKg?: number | null;
+    cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
     associationName?: string;
     groupJoinEnabled?: boolean;
     placeType?: string;
@@ -377,7 +402,8 @@ export function extractActionMetadataFromNotes(
   submissionMode: ActionSubmissionMode | null;
   wasteBreakdown: ActionWasteBreakdown | null;
   wasteMeasurementMethod: ActionWasteMeasurementMethod | null;
-  cigaretteButtsKg: number | null;
+    cigaretteButtsKg: number | null;
+    cigaretteButtsMeasurements: ActionCigaretteButtsMeasurements | null;
   associationName: string | null;
   groupJoinEnabled: boolean;
   placeType: string | null;
@@ -395,6 +421,7 @@ export function extractActionMetadataFromNotes(
       wasteBreakdown: null,
       wasteMeasurementMethod: null,
       cigaretteButtsKg: null,
+      cigaretteButtsMeasurements: null,
       associationName: null,
       groupJoinEnabled: false,
       placeType: null,
@@ -441,7 +468,11 @@ export function extractActionMetadataFromNotes(
     submissionMode: state.submissionMode,
     wasteBreakdown: state.wasteBreakdown,
     wasteMeasurementMethod: state.wasteMeasurementMethod,
-    cigaretteButtsKg: state.cigaretteButtsKg,
+    cigaretteButtsKg:
+      state.cigaretteButtsKg ??
+      state.cigaretteButtsMeasurements?.cigaretteButtsMassKg ??
+      null,
+    cigaretteButtsMeasurements: state.cigaretteButtsMeasurements,
     associationName: state.associationName,
     groupJoinEnabled: state.groupJoinEnabled,
     placeType: state.placeType,

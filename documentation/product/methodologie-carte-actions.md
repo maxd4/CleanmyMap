@@ -286,8 +286,12 @@ comparaisons temporelles : `waste_kg = 0` signifie une mesure nulle, tandis que
 `waste_kg = NULL` signifie que la masse n'a pas été renseignée. Une somme peut
 représenter les seules valeurs connues, mais elle doit conserver le nombre
 d'actions éligibles, le nombre de masses connues et le taux de couverture. Une
-masse de mégots, même qualifiée, reste la métrique `cigarette_butts` et ne peut
-pas remplir `waste_kg`.
+masse de mégots, même qualifiée, reste distincte de `waste_kg` et les mesures
+exposent séparément compteur, masse, volume, état et provenance. Une masse brute
+de `1,2 kg` peut donc conserver un nombre dérivé de `3000` avec la provenance
+`weight_converted` et sa version de formule sans remplacer une éventuelle valeur
+de comptage brute. Un volume sans relation de conversion fiable reste stocké
+seul, avec les dérivés à `NULL`.
 
 Le score `departmentRelativeScore` est une comparaison relative interne à un
 `department_code` conservé comme chaîne (par exemple `01`, `2A`, `2B` ou un

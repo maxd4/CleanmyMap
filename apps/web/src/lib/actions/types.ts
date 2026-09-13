@@ -20,6 +20,7 @@ import type {
   ActionWasteMeasurementMethod,
   CanonicalWasteBreakdown,
 } from "@/lib/waste/measurement";
+import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 import type { OrganizerType } from "./organizer-type";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 
@@ -205,6 +206,7 @@ export type ActionListItem = {
       groupJoinEnabled: boolean | null;
       actionPhase?: ActionPhase | null;
       wasteKg: number | null;
+      cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
       cigaretteButtsKg?: number | null;
       cigaretteButts: number | null;
       postActionPollutionScore?: number | null;
@@ -268,6 +270,10 @@ export type CreateActionPayload = {
   latitude?: number;
   longitude?: number;
   wasteKg: number | null;
+  cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+  cigaretteButtsMassKg?: number | null;
+  cigaretteButtsVolumeLiters?: number | null;
+  cigaretteButtsCondition?: ActionMegotsCondition | null;
   cigaretteButtsKg?: number | null;
   cigaretteButts: number | null;
   cigaretteButtsCount?: number | null;

@@ -9,6 +9,7 @@ import type {
   ActionWasteMeasurementMethod,
   CreateActionPayload,
 } from "@/lib/actions/types";
+import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
 import { AppError, type AppErrorKind, defaultMessageForKind } from "@/lib/errors/app-errors";
 import { toContractCreatePayload } from "./contracts/contract-builders";
@@ -310,6 +311,10 @@ export type ActionEditorRecord = {
   latitude: number | null;
   longitude: number | null;
   wasteKg: number | null;
+  cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+  cigaretteButtsMassKg?: number | null;
+  cigaretteButtsVolumeLiters?: number | null;
+  cigaretteButtsCondition?: import("@/lib/actions/types").ActionMegotsCondition | null;
   cigaretteButtsKg?: number | null;
   cigaretteButts: number | null;
   volunteersCount: number;

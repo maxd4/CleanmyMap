@@ -83,12 +83,14 @@ ne mesurent ni le volume réellement utilisé, ni le poids d’un vélo particul
 
 ### KPI 2 — Mégots retirés
 
-La donnée principale est le nombre de mégots déclaré ou enregistré. Le runtime
-conserve exactement les trois états disponibles : `propre`, `humide` et
-`mouille` (affichés « Propre », « Humide » et « Mouillé »). Aucun quatrième état
-n’est créé.
+Le contrat conserve séparément le nombre, la masse et le volume des mégots :
+`cigaretteButtsCount`, `cigaretteButtsMassKg` et
+`cigaretteButtsVolumeLiters`. `NULL` signifie non mesuré et `0` signifie zéro
+explicitement observé pour chaque mesure. Le runtime conserve exactement les
+trois états disponibles : `propre`, `humide` et `mouille` (affichés « Propre »,
+« Humide » et « Mouillé »). Aucun quatrième état n’est créé.
 
-La masse estimée réutilise `BUTTS_PER_KG_REFERENCE` et
+La masse ou le nombre dérivé réutilise `BUTTS_PER_KG_REFERENCE` et
 `CONDITION_WEIGHT_FACTORS` :
 
 ```txt
@@ -100,7 +102,12 @@ masse_estimée_kg = masse_qualifiée_kg + masse_non_qualifiée_kg
 La qualification est comptée uniquement lorsque l’état est réellement présent
 dans les métadonnées de l’action. Les mégots historiques sans qualification ne
 sont pas attribués arbitrairement à `propre`, `humide` ou `mouille` ; ils sont
-signalés séparément comme non qualifiés. La conversion pédagogique de distance
+signalés séparément comme non qualifiés. Chaque mesure porte une provenance
+(`counted`, `measured`, `weight_converted`, `volume_converted`, `estimated` ou
+`unknown`) et la conversion masse ↔ nombre conserve la version
+`impact-terrain-2026-butts-mass-v1`. Une mesure brute n'est jamais remplacée
+par son dérivé. Le volume est conservé sans conversion lorsqu'aucune relation
+fiable et documentée n'est disponible. La conversion pédagogique de distance
 reste : `distance_m = mégots × 0,025`, soit un repère de 2,5 cm par mégot. Ce
 repère ne modifie ni le compteur ni la masse canonique.
 

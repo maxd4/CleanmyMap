@@ -15,6 +15,7 @@ import {
   isValidClockTime,
 } from "@/lib/actions/time-contract";
 import { ACTION_WASTE_MEASUREMENT_METHODS } from "@/lib/waste/measurement";
+import { CIGARETTE_BUTTS_PROVENANCES } from "@/lib/waste/cigarette-butts";
 
 const coordinateSchema = z.tuple([
   z.number().min(-90).max(90),
@@ -77,6 +78,22 @@ const wasteBreakdownSchema = z.object({
 
 const wasteMeasurementMethodSchema = z
   .enum(ACTION_WASTE_MEASUREMENT_METHODS)
+  .nullable()
+  .optional();
+
+const cigaretteButtsMeasurementsSchema = z
+  .object({
+    cigaretteButtsCount: z.number().int().min(0).max(5_000_000).nullable(),
+    cigaretteButtsMassKg: z.number().min(0).max(100_000).nullable(),
+    cigaretteButtsVolumeLiters: z.number().min(0).max(100_000).nullable(),
+    cigaretteButtsCondition: z
+      .enum(["propre", "humide", "mouille"])
+      .nullable(),
+    cigaretteButtsCountProvenance: z.enum(CIGARETTE_BUTTS_PROVENANCES),
+    cigaretteButtsMassProvenance: z.enum(CIGARETTE_BUTTS_PROVENANCES),
+    cigaretteButtsVolumeProvenance: z.enum(CIGARETTE_BUTTS_PROVENANCES),
+    cigaretteButtsConversionFormulaVersion: z.string().max(120).nullable(),
+  })
   .nullable()
   .optional();
 
@@ -236,6 +253,10 @@ const createActionLegacyBaseSchema = z.object({
     "Contexte historique de calibration invalide.",
   ).nullable().optional(),
   wasteKg: z.number().min(0).max(100000).nullable().optional(),
+  cigaretteButtsMeasurements: cigaretteButtsMeasurementsSchema,
+  cigaretteButtsMassKg: z.number().min(0).max(100000).nullable().optional(),
+  cigaretteButtsVolumeLiters: z.number().min(0).max(100000).nullable().optional(),
+  cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable().optional(),
   cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
   cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
   cigaretteButtsCount: z.number().int().min(0).max(10000).nullable().optional(),
@@ -290,6 +311,10 @@ const createActionContractSchema = z.object({
     groupJoinEnabled: z.boolean().optional(),
     placeType: z.string().max(80).optional(),
       wasteKg: z.number().min(0).max(100000).nullable().optional(),
+      cigaretteButtsMeasurements: cigaretteButtsMeasurementsSchema,
+      cigaretteButtsMassKg: z.number().min(0).max(100000).nullable().optional(),
+      cigaretteButtsVolumeLiters: z.number().min(0).max(100000).nullable().optional(),
+      cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable().optional(),
       cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
       cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
     volunteersCount: z.number().int().min(1).max(500).optional(),

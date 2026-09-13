@@ -295,6 +295,34 @@ historiques. Elles ne sont plus écrites par les formulaires ni converties
 silencieusement vers les quatre catégories canoniques : la répartition d'une
 ancienne mesure n'est pas connue sans nouvelle observation.
 
+## Contrat des mesures de mégots
+
+Les mesures de mégots sont conservées séparément dans le marqueur structuré de
+l'action. Le contrat canonique expose :
+
+```txt
+cigaretteButtsCount
+cigaretteButtsMassKg
+cigaretteButtsVolumeLiters
+cigaretteButtsCondition = propre | humide | mouille | NULL
+```
+
+Pour chacun des trois nombres, `NULL` signifie « non mesuré » et `0` signifie
+« zéro explicitement observé ». Une valeur brute n'est jamais remplacée par une
+valeur dérivée. Chaque mesure porte une provenance parmi `counted`, `measured`,
+`weight_converted`, `volume_converted`, `estimated` et `unknown` ; la liste
+contient au minimum les états métier `counted`, `weight_converted`,
+`volume_converted`, `estimated` et `unknown`.
+
+La conversion masse → nombre réutilise la formule runtime existante :
+`nombre = masse_kg × 2500 × facteur_état`, avec les facteurs `propre = 1`,
+`humide = 0,7` et `mouille = 0,4`. Elle est versionnée sous
+`impact-terrain-2026-butts-mass-v1` et conserve l'état utilisé. La conversion
+volume → masse ou nombre n'est pas effectuée tant qu'aucune relation fiable et
+documentée n'existe ; le volume reste alors présent et les dérivés restent
+`NULL`. Les champs historiques `cigaretteButtsKg` et `cigarette_butts` sont
+des projections de lecture/compatibilité, jamais une seconde source de vérité.
+
 ## Contrat temporel des actions
 
 Le contrat métier distingue exactement deux notions :

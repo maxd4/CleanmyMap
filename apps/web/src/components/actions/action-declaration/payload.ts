@@ -13,10 +13,10 @@ import type {
  ActionVisionEstimate,
  CreateActionPayload,
 } from"../../../lib/actions/types";
-import { computeButtsCount } from"../../../lib/actions/impact-calculators";
 import type { DeclarationMode, FormState } from"./types";
 import { normalizeActionDrawing } from"../map/actions-map-geometry.utils";
 import { formatWasteGuidanceLines } from "@/lib/waste";
+import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 
 export const PARK_PLACE_TYPE ="Bois/Parc/Jardin/Square/Sentier";
 export const OTHER_VOLUNTEER_ASSOCIATION_VALUE = "__autre_benevole__";
@@ -94,6 +94,7 @@ const BASE_FORM_STATE: FormState = {
   cigaretteButts:"",
  cigaretteButtsCount:"", // Optionnel par défaut
  cigaretteButtsCondition:"propre", // État par défaut
+ cigaretteButtsVolumeLiters:"",
  volunteersCount:"1",
  durationMinutes:"60",
  eventStartTime:"",
@@ -331,15 +332,21 @@ export function buildCreateActionPayload(params: {
  ? "Action spontanée"
  : form.associationName;
  const isSpontaneousAction = associationName === "Action spontanée";
-  const enteredMegotsKg = toOptionalNumber(form.wasteMegotsKg);
-  const enteredButtsCount = toOptionalNumber(form.cigaretteButtsCount);
-  const estimatedButtsFromWeight =
-  enteredMegotsKg !== undefined && enteredMegotsKg > 0
-  ? computeButtsCount(
-  enteredMegotsKg,
- form.wasteMegotsCondition,
- )
- : undefined;
+  const enteredMegotsKg = toOptionalNumber(form.wasteMegotsKg) ?? null;
+  const enteredButtsCount = toOptionalNumber(form.cigaretteButtsCount) ?? null;
+  const enteredVolumeLiters =
+    toOptionalNumber(form.cigaretteButtsVolumeLiters) ?? null;
+  const cigaretteButtsCondition =
+    form.wasteMegotsCondition === "propre"
+      ? form.cigaretteButtsCondition
+      : form.wasteMegotsCondition;
+  const cigaretteButtsMeasurements = normalizeCigaretteButtsMeasurements({
+    cigaretteButtsCount: enteredButtsCount,
+    cigaretteButtsMassKg: enteredMegotsKg,
+    cigaretteButtsVolumeLiters: enteredVolumeLiters,
+    cigaretteButtsCondition,
+    deriveMissingFromMassOrCount: true,
+  });
 
  return {
     actorName: form.actorName.trim() || undefined,
@@ -364,9 +371,14 @@ export function buildCreateActionPayload(params: {
  latitude,
  longitude,
   wasteKg: toOptionalNumber(form.wasteKg) ?? null,
-  cigaretteButtsKg: toOptionalNumber(form.wasteMegotsKg) ?? null,
-  cigaretteButts: enteredButtsCount ?? estimatedButtsFromWeight ?? null,
- cigaretteButtsCount: enteredButtsCount ?? estimatedButtsFromWeight,
+  cigaretteButtsMeasurements,
+  cigaretteButtsMassKg: cigaretteButtsMeasurements.cigaretteButtsMassKg,
+  cigaretteButtsVolumeLiters:
+    cigaretteButtsMeasurements.cigaretteButtsVolumeLiters,
+  cigaretteButtsCondition: cigaretteButtsMeasurements.cigaretteButtsCondition,
+  cigaretteButtsKg: cigaretteButtsMeasurements.cigaretteButtsMassKg,
+  cigaretteButts: cigaretteButtsMeasurements.cigaretteButtsCount,
+  cigaretteButtsCount: cigaretteButtsMeasurements.cigaretteButtsCount,
  volunteersCount: Math.trunc(toRequiredNumber(form.volunteersCount, 0)),
  durationMinutes: Math.max(0, Math.trunc(toRequiredNumber(form.durationMinutes, 0))),
  eventStartTime: form.eventStartTime.trim() || null,
