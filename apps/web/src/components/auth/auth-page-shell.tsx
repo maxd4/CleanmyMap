@@ -100,7 +100,7 @@ export function AuthPageShell({ children, variant }: AuthPageShellProps) {
             <div className="space-y-8">
               <div className="flex items-center gap-3">
                 <BrandLogo
-                  variant="dark"
+                  variant="darkSurface"
                   alt="CleanMyMap"
                   className="h-12 w-auto max-w-[15rem] object-contain object-left"
                   sizes="15rem"

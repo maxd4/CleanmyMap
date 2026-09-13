@@ -13,7 +13,7 @@ export function OrganizationJsonLd() {
     "@type": "Organization",
     name: "CleanMyMap",
     url: appUrl,
-    logo: `${appUrl}${BRAND_ASSET_PATHS.light}`,
+    logo: `${appUrl}${BRAND_ASSET_PATHS.lightSurface}`,
     description:
       "Plateforme citoyenne de dépollution urbaine en France. CleanMyMap aide à signaler les pollutions, organiser des cleanwalks et suivre l'impact des actions de terrain.",
     sameAs: [
@@ -41,7 +41,7 @@ export function LocalBusinessJsonLd() {
     "@type": "Organization",
     name: "CleanMyMap",
     url: appUrl,
-    image: `${appUrl}${BRAND_ASSET_PATHS.light}`,
+    image: `${appUrl}${BRAND_ASSET_PATHS.lightSurface}`,
     areaServed: {
       "@type": "Country",
       name: "France",
