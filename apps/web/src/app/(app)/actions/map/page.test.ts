@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const source = readFileSync(new URL("./page-client.tsx", import.meta.url), "utf8");
+const serverSource = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 const controlTowerSource = readFileSync(
   new URL("./_components/map-control-tower.tsx", import.meta.url),
   "utf8",
@@ -33,5 +34,16 @@ describe("actions map public semantics", () => {
     expect(controlTowerSource).toContain("ActionsMapExportButton");
     expect(controlTowerSource).toContain("visibleCount");
     expect(controlTowerSource).toContain("loadedCount");
+  });
+
+  it("passes canonical public Impact metrics from the server boundary", () => {
+    expect(serverSource).toContain("loadLandingSummary");
+    expect(serverSource).toContain("summary.counters");
+    expect(serverSource).toContain("buildPublicImpactMetrics");
+    expect(source).toContain("impactMetrics: PublicImpactMetric[]");
+    expect(source).toContain("<MapKpiRibbon metrics={impactMetrics} />");
+    expect(source).not.toContain("useMapKpiStats");
+    expect(source).not.toContain("buildPublicImpactMetrics");
+    expect(source).not.toContain("sumActionImpactKpis");
   });
 });
