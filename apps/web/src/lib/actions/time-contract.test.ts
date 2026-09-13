@@ -72,4 +72,17 @@ describe("action temporal contract", () => {
     expect(formatBusinessDurationMinutes(62)).toBe("60 min");
     expect(formatBusinessDurationMinutes(68)).toBe("75 min");
   });
+
+  it("keeps the exact duration for calculations while formatting only the UX label", () => {
+    const exactDurationMinutes = 68;
+
+    expect(formatBusinessDurationMinutes(exactDurationMinutes)).toBe("75 min");
+    expect(
+      deriveOrganizationMinutes({
+        actionDurationMinutes: exactDurationMinutes,
+        eventDurationMinutes: 90,
+      }),
+    ).toEqual({ organizationMinutes: 22, status: "available" });
+    expect(exactDurationMinutes).toBe(68);
+  });
 });

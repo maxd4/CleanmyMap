@@ -4,6 +4,7 @@ import type { FormState } from "./model";
 import { convertCigaretteButtsToKg } from "./model";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
 import { CmmField, CmmInput, CmmSelect } from "@/components/ui/cmm-field";
+import { ACTION_WASTE_MASS_RESOLUTION_KG } from "@/lib/waste";
 
 type ActionDeclarationMainFieldsProps = {
   form: FormState;
@@ -144,7 +145,7 @@ export function ActionDeclarationMainFields({
         <CmmField label="Déchets collectés (kg)" required hint="Poids total des déchets ramassés">
           <CmmInput
             type="number"
-            step="0.1"
+            step={ACTION_WASTE_MASS_RESOLUTION_KG}
             min="0"
             value={form.wasteKg}
             onChange={(event) => onWasteKgChange(event.target.value)}

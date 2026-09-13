@@ -2,6 +2,7 @@ import { PLACE_TYPE_FORM_OPTIONS, normalizePlaceTypeForUi } from"@/lib/actions/p
 import type { FormState } from"./model";
 import { ActionDeclarationWasteAssist } from"./action-declaration-form.smart-assist";
 import { CmmField, CmmInput, CmmSelect } from "@/components/ui/cmm-field";
+import { ACTION_WASTE_MASS_RESOLUTION_KG } from "@/lib/waste";
 
 type ActionDeclarationWasteSectionProps = {
  form: FormState;
@@ -64,7 +65,7 @@ onChange={(event) => onPlaceTypeChange(event.target.value)}
  >
  <CmmInput
  type="number"
- step="0.1"
+ step={ACTION_WASTE_MASS_RESOLUTION_KG}
  min="0"
  value={form.wasteKg}
  onChange={(event) => onWasteKgChange(event.target.value)}

@@ -24,12 +24,14 @@ export type {
   WastePickupPolicy,
 } from "./types";
 export {
+  ACTION_WASTE_MASS_RESOLUTION_KG,
   ACTION_WASTE_MEASUREMENT_METHODS,
   compareWasteBreakdownToTotal,
 } from "./measurement";
 export type {
   ActionWasteMeasurementMethod,
   CanonicalWasteBreakdown,
+  WasteBreakdownComparisonOptions,
   WasteBreakdownCoherence,
 } from "./measurement";
 export {
