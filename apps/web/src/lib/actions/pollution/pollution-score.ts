@@ -8,12 +8,12 @@ export type PollutionScoreReference = {
 };
 
 export type DepartmentPollutionScoreReference = PollutionScoreReference & {
+  departmentName: string | null;
   eligibleActionCount: number;
 };
 
 export type PollutionScoreReferences = {
   global: PollutionScoreReference;
-  /** Compatibility seam only: the V2 RPC and snapshot do not populate it. */
   departmentReferences?: Readonly<Record<string, DepartmentPollutionScoreReference>>;
 };
 

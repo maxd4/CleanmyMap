@@ -285,8 +285,16 @@ export function ActionPopupContentHeader({
               </div>
             ) : (
               <div className="space-y-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
-                <p>Comparaison départementale indisponible</p>
-                <p>Pas assez d&apos;actions de référence dans ce département.</p>
+                <p>
+                  {departmentScore?.availability === "department_insufficient_data"
+                    ? "Données départementales insuffisantes"
+                    : "Comparaison départementale indisponible"}
+                </p>
+                <p>
+                  {departmentScore?.availability === "department_insufficient_data"
+                    ? "Au moins deux actions éligibles sont nécessaires."
+                    : "Aucune référence départementale disponible."}
+                </p>
               </div>
             )}
           </div>

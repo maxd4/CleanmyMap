@@ -226,6 +226,7 @@ export function ShapeLayers({
               departmentButtsScore: departmentActionScore?.buttsScore,
               departmentName: item.contract?.location.departmentName ?? null,
               departmentUnavailable: departmentActionScore?.score === null,
+              departmentAvailability: departmentActionScore?.availability,
             }
           : undefined;
         const coords = mapItemCoordinates(item);

@@ -1,6 +1,7 @@
 import { formatObservedDate } from "./action-popup-content.helpers";
 import { CmmBadge } from "@/components/ui/cmm-badge";
 import { formatScorePercent } from "@/lib/formatters/score";
+import type { ActionPollutionScoreAvailability } from "./pollution-score-scope";
 
 type GeometryTooltipContentProps = {
   title: string;
@@ -20,6 +21,7 @@ type GeometryTooltipContentProps = {
     departmentButtsScore?: number | null;
     departmentName?: string | null;
     departmentUnavailable?: boolean;
+    departmentAvailability?: ActionPollutionScoreAvailability;
     elapsedDays: number;
     isEstimate: boolean;
     projectionConfidenceLabel: string;
@@ -69,8 +71,16 @@ export function GeometryTooltipContent({
           {actionReading.scoreScope === "department" ? (
             actionReading.departmentUnavailable ? (
               <>
-                <p>Comparaison départementale indisponible</p>
-                <p>Pas assez d&apos;actions de référence dans ce département.</p>
+                <p>
+                  {actionReading.departmentAvailability === "department_insufficient_data"
+                    ? "Données départementales insuffisantes"
+                    : "Comparaison départementale indisponible"}
+                </p>
+                <p>
+                  {actionReading.departmentAvailability === "department_insufficient_data"
+                    ? "Au moins deux actions éligibles sont nécessaires."
+                    : "Aucune référence départementale disponible."}
+                </p>
               </>
             ) : (
               <>

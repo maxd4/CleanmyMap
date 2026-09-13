@@ -260,13 +260,36 @@ uniquement avec la référence globale.
 
 ### Références de score
 
-Le contrat actuel expose une seule référence **Globale**. Elle est produite par
-la RPC versionnée `action_pollution_score_references_v2()` et capturée une fois
-par semaine dans le snapshot `map-pollution-score-references`. Les références
-de déchets et de mégots sont calculées séparément à partir des actions terrain
-approuvées et terminées, avec au moins un bénévole, une durée strictement
-positive et la métrique correspondante renseignée. Une mesure égale à zéro
-reste une mesure valide ; une métrique absente reste indisponible.
+Le contrat expose une référence **Globale** et, lorsque les données le
+permettent, une référence départementale. Elles sont produites ensemble par la
+RPC versionnée `action_pollution_score_references_v2()` et capturées une fois
+par semaine dans le snapshot `map-pollution-score-references` ; la carte lit ce
+snapshot une seule fois et ne fait aucun fetch par action.
+
+Pour chaque action éligible, l'intensité est calculée par bénévole-heure :
+`quantité / (bénévoles × durée en heures)`. Les composantes déchets et mégots
+sont normalisées séparément par leur référence maximale, puis le score est la
+moyenne des composantes réellement exploitables. Une mesure égale à zéro reste
+une mesure valide ; une métrique absente reste indisponible. Le score global
+`combinedGlobalScore` conserve cette référence maximale à l'échelle de toutes
+les actions éligibles.
+
+Le score `departmentRelativeScore` est une comparaison relative interne à un
+`department_code` conservé comme chaîne (par exemple `01`, `2A`, `2B` ou un
+code ultramarin). Sa référence est le maximum de l'intensité bénévole-heure
+dans ce département, avec un nombre de sources conservé séparément pour les
+déchets et les mégots. Une comparaison départementale exige au moins deux
+actions éligibles. Lorsqu'un département ou une composante n'atteint pas ce
+minimum, le statut `insufficient_data` est exposé et aucun score artificiel de
+100 n'est produit ; une autre composante suffisamment documentée peut toutefois
+rester exploitable. Un département absent des références reste indisponible.
+
+`departmentRelativeScore` ne signifie donc pas « pollution actuelle » et ne
+remplace jamais le score global. Il est interdit de le transmettre à `T80(S)`,
+à la calibration locale de re-pollution, au ledger d'évaluation ou à un modèle
+de projection. La projection temporelle reçoit exclusivement le
+`combinedGlobalScore` global historique, puis applique exactement la formule de
+re-pollution existante.
 
 Sans référence globale v2 positive, aucun ancien défaut d'unité différente
 n'est réutilisé : le score reste indisponible. La référence globale conserve

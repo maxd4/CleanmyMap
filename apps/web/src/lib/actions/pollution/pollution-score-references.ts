@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   type PollutionScoreReference,
   type PollutionScoreReferences,
+  type DepartmentPollutionScoreReference,
 } from "./pollution-score";
 
 type PollutionScoreReferenceRow = {
@@ -12,6 +13,7 @@ type PollutionScoreReferenceRow = {
   butts_per_volunteer_hour?: number | null;
   waste_source_count?: number | null;
   butts_source_count?: number | null;
+  eligible_action_count?: number | null;
   updated_at?: string | null;
 };
 
@@ -64,6 +66,45 @@ function toGlobalReference(row: PollutionScoreReferenceRow): PollutionScoreRefer
   };
 }
 
+function toDepartmentReference(
+  row: PollutionScoreReferenceRow,
+): { code: string; reference: DepartmentPollutionScoreReference } | null {
+  const code = typeof row.department_code === "string"
+    ? row.department_code.trim().toUpperCase()
+    : "";
+  const eligibleActionCount = toNonNegativeInteger(row.eligible_action_count);
+  const wasteSourceCount = toNonNegativeInteger(row.waste_source_count);
+  const buttsSourceCount = toNonNegativeInteger(row.butts_source_count);
+  const wasteReference = Number(row.waste_per_volunteer_hour);
+  const buttsReference = Number(row.butts_per_volunteer_hour);
+
+  if (
+    !code ||
+    eligibleActionCount === null ||
+    wasteSourceCount === null ||
+    buttsSourceCount === null
+  ) {
+    return null;
+  }
+
+  return {
+    code,
+    reference: {
+      departmentName:
+        typeof row.department_name === "string" && row.department_name.trim().length > 0
+          ? row.department_name.trim()
+          : null,
+      wastePerVolunteerHour:
+        Number.isFinite(wasteReference) && wasteReference > 0 ? wasteReference : null,
+      buttsPerVolunteerHour:
+        Number.isFinite(buttsReference) && buttsReference > 0 ? buttsReference : null,
+      wasteSourceCount,
+      buttsSourceCount,
+      eligibleActionCount,
+    },
+  };
+}
+
 export async function fetchActionPollutionScoreReferences(
   supabase: SupabaseClient,
 ): Promise<PollutionScoreReferences | null> {
@@ -107,12 +148,34 @@ async function fetchUncachedActionPollutionScoreReferences(
     throw result.error;
   }
 
-  const row = normalizeRows(result.data).find(
+  const rows = normalizeRows(result.data);
+  const row = rows.find(
     (candidate) =>
       candidate.scope === "global" &&
       candidate.department_code === null &&
       candidate.department_name === null,
   );
   const global = row ? toGlobalReference(row) : null;
-  return global ? { global } : null;
+  if (!global) {
+    return null;
+  }
+
+  const departmentReferences = rows.reduce<Record<string, DepartmentPollutionScoreReference>>(
+    (references, candidate) => {
+      if (candidate.scope !== "department") {
+        return references;
+      }
+      const department = toDepartmentReference(candidate);
+      if (department) {
+        references[department.code] = department.reference;
+      }
+      return references;
+    },
+    {},
+  );
+
+  return {
+    global,
+    departmentReferences,
+  };
 }

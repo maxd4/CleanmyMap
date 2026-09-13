@@ -138,7 +138,9 @@ export function useActionPopupScores({
     score,
     historicalScore: isScoreUnavailable
       ? null
-      : scopedActionScore?.historicalScore ?? pollutionScores.severityScore,
+      : scoreScope === "department"
+        ? null
+        : scopedActionScore?.historicalScore ?? pollutionScores.severityScore,
     wasteScore,
     buttsScore,
     scoreReading,

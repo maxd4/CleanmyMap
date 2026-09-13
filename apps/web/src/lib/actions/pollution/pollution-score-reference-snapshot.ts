@@ -1,5 +1,6 @@
 import { fetchActionPollutionScoreReferences } from "./pollution-score-references";
 import type {
+  DepartmentPollutionScoreReference,
   PollutionScoreReference,
   PollutionScoreReferences,
 } from "./pollution-score";
@@ -13,11 +14,12 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getUtcWeekStart } from "@/lib/periodic/periodic-job-calendar";
 
 export const MAP_POLLUTION_REFERENCES_SNAPSHOT_KEY = "map-pollution-score-references";
-export const MAP_POLLUTION_REFERENCES_VERSION = "map-pollution-score-references-2026.09-v3";
+export const MAP_POLLUTION_REFERENCES_VERSION = "map-pollution-score-references-2026.09-v4";
 
 export type PollutionScoreReferenceSnapshotPayload = {
   references: {
     global: PollutionScoreReference;
+    departments: Readonly<Record<string, DepartmentPollutionScoreReference>>;
   };
   source: "action_pollution_score_references_v2";
   weekStart: string;
@@ -56,16 +58,50 @@ function isValidGlobalReference(value: unknown): value is PollutionScoreReferenc
   );
 }
 
+function isValidDepartmentReference(value: unknown): value is DepartmentPollutionScoreReference {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const candidate = value as Partial<DepartmentPollutionScoreReference>;
+  const eligibleActionCount = Number(candidate.eligibleActionCount);
+  const wasteSourceCount = Number(candidate.wasteSourceCount);
+  const buttsSourceCount = Number(candidate.buttsSourceCount);
+  const hasWasteReference = isValidReference(candidate.wastePerVolunteerHour);
+  const hasButtsReference = isValidReference(candidate.buttsPerVolunteerHour);
+
+  return (
+    (candidate.departmentName === null || typeof candidate.departmentName === "string") &&
+    (candidate.wastePerVolunteerHour === null || hasWasteReference) &&
+    (candidate.buttsPerVolunteerHour === null || hasButtsReference) &&
+    Number.isInteger(eligibleActionCount) &&
+    eligibleActionCount >= 0 &&
+    Number.isInteger(wasteSourceCount) &&
+    wasteSourceCount >= 0 &&
+    Number.isInteger(buttsSourceCount) &&
+    buttsSourceCount >= 0
+  );
+}
+
 function isValidPayload(value: unknown): value is PollutionScoreReferenceSnapshotPayload {
   if (!value || typeof value !== "object") {
     return false;
   }
   const payload = value as Partial<PollutionScoreReferenceSnapshotPayload>;
+  const departments = payload.references?.departments;
+  if (!departments || Array.isArray(departments)) {
+    return false;
+  }
   return (
     payload.source === "action_pollution_score_references_v2" &&
     typeof payload.weekStart === "string" &&
     Boolean(payload.references) &&
-    isValidGlobalReference(payload.references?.global)
+    isValidGlobalReference(payload.references?.global) &&
+    Object.entries(departments).every(
+      ([code, reference]) =>
+        code.trim().length > 0 &&
+        code === code.trim().toUpperCase() &&
+        isValidDepartmentReference(reference),
+    )
   );
 }
 
@@ -75,6 +111,17 @@ export function buildPollutionScoreReferenceSnapshot(params: {
 }): PublicSurfaceSnapshotRecord<PollutionScoreReferenceSnapshotPayload> {
   if (!isValidGlobalReference(params.references.global)) {
     throw new Error("Une référence globale V2 valide est nécessaire pour le snapshot.");
+  }
+  const departments = params.references.departmentReferences ?? {};
+  if (
+    !Object.entries(departments).every(
+      ([code, reference]) =>
+        code.trim().length > 0 &&
+        code === code.trim().toUpperCase() &&
+        isValidDepartmentReference(reference),
+    )
+  ) {
+    throw new Error("Les références départementales V2 sont invalides.");
   }
 
   const weekStart = getUtcWeekStart(params.now);
@@ -87,7 +134,7 @@ export function buildPollutionScoreReferenceSnapshot(params: {
     version: MAP_POLLUTION_REFERENCES_VERSION,
     title: "Référence hebdomadaire du score pollution",
     payload: {
-      references: { global: params.references.global },
+      references: { global: params.references.global, departments },
       source: "action_pollution_score_references_v2",
       weekStart,
     },
@@ -161,7 +208,10 @@ export async function loadPollutionScoreReferencesForMap(params: {
     isValidPayload(snapshot.payload)
   ) {
     return {
-      references: { global: snapshot.payload.references.global },
+      references: {
+        global: snapshot.payload.references.global,
+        departmentReferences: snapshot.payload.references.departments,
+      },
       source: "weekly_snapshot",
       snapshotDate: snapshot.snapshotDate,
       generatedAt: snapshot.generatedAt,
@@ -174,7 +224,7 @@ export async function loadPollutionScoreReferencesForMap(params: {
   const references = await loadFallback();
   return {
     references: references?.global && isValidGlobalReference(references.global)
-      ? { global: references.global }
+      ? references
       : null,
     source: "rpc_fallback",
     snapshotDate: null,
