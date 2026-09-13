@@ -3,13 +3,13 @@
 import { Cloud, Droplets, Euro, Leaf, Trash2, UsersRound } from "lucide-react";
 import type {
   HomeImpactSnapshot,
-  HomeMetric,
 } from "@/lib/accueil/config";
+import type { PublicImpactMetric } from "@/lib/impact/public-impact-kpis";
 import { buildImpactInsight } from "./accueil-impact-copy";
 import { ParticipantsDistribution } from "./accueil-participants-distribution";
 
 type HomeImpactKpiCardProps = {
-  metric: HomeMetric;
+  metric: PublicImpactMetric;
   impactSnapshot: HomeImpactSnapshot | null;
 };
 

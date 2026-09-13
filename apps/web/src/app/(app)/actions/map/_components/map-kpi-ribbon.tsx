@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
-import type { HomeMetric } from "@/lib/accueil/config";
+import type { PublicImpactMetric } from "@/lib/impact/public-impact-kpis";
 
 type MapKpiRibbonProps = {
-  metrics?: HomeMetric[];
+  metrics?: PublicImpactMetric[];
 };
 
 const metricAccentStyles = {
@@ -24,7 +24,7 @@ function formatValue(value: string): string {
   return value.replace(/^n\/a$/i, "—");
 }
 
-function formatMetricLabel(metric: HomeMetric): string {
+function formatMetricLabel(metric: PublicImpactMetric): string {
   switch (metric.key) {
     case "co2":
       return "CO₂e évité (proxy)";
@@ -43,13 +43,13 @@ export function MapKpiRibbon({ metrics }: MapKpiRibbonProps) {
     safeMetrics.length > 0
       ? safeMetrics
       : [
-          { key: "wasteKg", label: "Déchets récoltés", value: "n/a", category: "Résultat", accent: "blue" },
-          { key: "butts", label: "Mégots retirés", value: "n/a", category: "Résultat", accent: "blue" },
-          { key: "volunteers", label: "Bénévoles mobilisés", value: "n/a", category: "Résultat", accent: "blue" },
-          { key: "co2", label: "CO₂e évité", value: "n/a", category: "Équivalent", accent: "emerald" },
-          { key: "water", label: "Eau préservée", value: "n/a", category: "Équivalent", accent: "emerald" },
-          { key: "euro", label: "Économie de voirie", value: "n/a", category: "Économique", accent: "amber" },
-        ] satisfies HomeMetric[];
+          { key: "wasteKg", label: "Déchets récoltés", value: "n/a", unit: "kg", decimals: 1, category: "Résultat", accent: "blue", classification: "terrain" },
+          { key: "butts", label: "Mégots retirés", value: "n/a", unit: null, decimals: 0, category: "Résultat", accent: "blue", classification: "terrain" },
+          { key: "volunteers", label: "Bénévoles mobilisés", value: "n/a", unit: null, decimals: 0, category: "Résultat", accent: "blue", classification: "terrain" },
+          { key: "co2", label: "CO₂e évité", value: "n/a", unit: "kg", decimals: 1, category: "Équivalent", accent: "emerald", classification: "proxy" },
+          { key: "water", label: "Eau préservée", value: "n/a", unit: "L", decimals: 0, category: "Équivalent", accent: "emerald", classification: "proxy" },
+          { key: "euro", label: "Économie de voirie", value: "n/a", unit: "€", decimals: 0, category: "Économique", accent: "amber", classification: "proxy" },
+        ] satisfies PublicImpactMetric[];
 
   return (
     <section className="relative overflow-hidden rounded-[3rem] border border-sky-200/80 bg-sky-50/95 p-5 sm:p-6 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]">

@@ -1,5 +1,4 @@
 import type { ActionDataContract } from "@/lib/actions/data-contract";
-import { sumActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { fetchCachedUnifiedActionContracts } from "@/lib/actions/unified-source/unified-source-cache";
 import type { UnifiedActionContractsCacheOptions } from "@/lib/actions/unified-source/unified-source-cache";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
@@ -9,7 +8,10 @@ import {
   type PublicImpactSnapshotRecord,
   type PublicImpactSnapshotPayload,
 } from "@/lib/impact/public-impact-snapshot";
-import type { HomeCounters } from "./config";
+import {
+  buildPublicImpactCalculationFromActions,
+  type PublicImpactCounters,
+} from "@/lib/impact/public-impact-kpis";
 import {
   getUserProvidedActionImageUrl,
   selectActionFallback,
@@ -71,7 +73,7 @@ export type LandingDataAvailability = {
 };
 
 export type LandingSummary = {
-  counters: HomeCounters;
+  counters: PublicImpactCounters;
   activity: HomeCommunityActivitySummary;
   dataAvailability: LandingDataAvailability;
 } & PublicLandingActionAggregation;
@@ -445,13 +447,9 @@ export function buildHomeCommunityActivityFromRecentContracts(
 export function computeLandingCounters(
   contracts: ActionDataContract[],
   floorDate: string,
-) {
+): PublicImpactCounters {
   const inWindow = getAccueilVisibleContracts(contracts, floorDate);
-  const impact = sumActionImpactKpis(inWindow);
-
-  return {
-    ...impact,
-  };
+  return buildPublicImpactCalculationFromActions(inWindow).counters;
 }
 
 const DEFAULT_LANDING_SOURCE_HEALTH: UnifiedSourceHealth = {
@@ -487,13 +485,13 @@ export function buildLandingSummaryFromImpactSnapshot(
   sourceHealth: UnifiedSourceHealth = DEFAULT_LANDING_SOURCE_HEALTH,
 ): LandingSummary {
   const { kpis } = payload;
-  const counters: HomeCounters = {
+  const counters: PublicImpactCounters = {
     wasteKg: kpis.impactTerrain.wasteKg,
     butts: kpis.impactTerrain.buttsTotal,
     volunteers: kpis.participantsTotal,
-    co2AvoidedKg: kpis.impactTerrain.co2eKg,
-    waterSavedLiters: kpis.impactTerrain.waterLiters,
-    euroSaved: Math.round(kpis.streetCleaningSavings.massEstimateEuros),
+    co2: kpis.impactTerrain.co2eKg,
+    water: kpis.impactTerrain.waterLiters,
+    euro: Math.round(kpis.streetCleaningSavings.massEstimateEuros),
   };
   const activity = buildHomeCommunityActivityFromRecentContracts(
     recentContracts,

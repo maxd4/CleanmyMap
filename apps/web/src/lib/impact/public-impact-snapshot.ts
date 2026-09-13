@@ -114,6 +114,7 @@ export function buildPublicImpactSnapshotPayload(params: {
       calculationDomain: [
         "apps/web/src/lib/impact/impact-terrain-2026.ts",
         "apps/web/src/lib/impact/impact-terrain-2026-results.ts",
+        "apps/web/src/lib/impact/public-impact-kpis.ts",
         "apps/web/src/lib/accueil/action-participant-aggregation.ts",
         "apps/web/supabase/migrations/20260908000001_incremental_public_impact_state.sql",
       ],

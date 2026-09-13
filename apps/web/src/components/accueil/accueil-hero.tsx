@@ -10,13 +10,13 @@ import {
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import type {
   HomeImpactSnapshot,
-  HomeMetric,
 } from "@/lib/accueil/config";
+import type { PublicImpactMetric } from "@/lib/impact/public-impact-kpis";
 import { HomeImpactKpiCard } from "./accueil-impact-kpi-card";
 import { HomeMapPreview } from "./accueil-map-preview";
 
 interface HomeHeroProps {
-  metrics: HomeMetric[];
+  metrics: PublicImpactMetric[];
   impactSnapshot: HomeImpactSnapshot | null;
 }
 

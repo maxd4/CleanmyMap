@@ -3,15 +3,13 @@ import {
   isOrganizerType,
   type OrganizerType,
 } from "@/lib/actions/organizer-type";
+import type { ImpactTerrain2026PublicResults } from "@/lib/impact/impact-terrain-2026-results";
 import {
-  buildImpactTerrain2026PublicResultsFromActions,
-  buildImpactTerrain2026PublicResultsFromAggregate,
-  type ImpactTerrain2026PublicResults,
-} from "@/lib/impact/impact-terrain-2026-results";
-import {
-  computeImpactTerrain2026StreetCleaningSavings,
-  type ImpactTerrain2026StreetCleaningSavings,
-} from "@/lib/impact/impact-terrain-2026";
+  buildPublicImpactCalculationFromAggregate,
+  buildPublicImpactCalculationFromActions,
+  isPublicImpactActionInputEligible,
+} from "@/lib/impact/public-impact-kpis";
+import type { ImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
 
 export type ActionAggregationAction = {
   metadata: Pick<
@@ -19,6 +17,7 @@ export type ActionAggregationAction = {
     "volunteersCount" | "durationMinutes"
   > & {
     organizerType?: OrganizerType | null;
+    actionPhase?: string | null;
     volunteersCount?: number | null;
     durationMinutes?: number | null;
     wasteKg?: number | null;
@@ -152,12 +151,13 @@ function compareDistributionEntries(
 export function aggregatePublicActionMetrics(
   actions: readonly ActionAggregationAction[],
 ): PublicLandingActionAggregation {
+  const eligibleActions = actions.filter(isPublicImpactActionInputEligible);
   let participantsTotal = 0;
   let totalDurationMinutes = 0;
   const distribution = new Map<string, ActionDistributionEntry>();
   const warnings = new Map<string, number>();
 
-  for (const action of actions) {
+  for (const action of eligibleActions) {
     participantsTotal += toFiniteNonNegativeInteger(
       action.metadata.volunteersCount,
     );
@@ -180,8 +180,8 @@ export function aggregatePublicActionMetrics(
     }
   }
 
-  const impactTerrain = buildImpactTerrain2026PublicResultsFromActions(
-    actions.map((action) => action.metadata),
+  const publicImpact = buildPublicImpactCalculationFromActions(
+    eligibleActions.map((action) => ({ metadata: action.metadata })),
   );
 
   return {
@@ -195,11 +195,8 @@ export function aggregatePublicActionMetrics(
       .filter(([, count]) => count > 0)
       .map(([code, count]) => ({ code, count }))
       .sort((left, right) => left.code.localeCompare(right.code)),
-    streetCleaningSavings: computeImpactTerrain2026StreetCleaningSavings({
-      wasteKg: impactTerrain.wasteKg,
-      durationMinutes: totalDurationMinutes,
-    }),
-    impactTerrain,
+    streetCleaningSavings: publicImpact.streetCleaningSavings,
+    impactTerrain: publicImpact.impactTerrain,
   };
 }
 
@@ -257,20 +254,20 @@ export function buildPublicLandingActionMetricsFromAggregate(
         .sort((left, right) => left.code.localeCompare(right.code))
     : [];
 
+  const publicImpact = buildPublicImpactCalculationFromAggregate({
+    wasteKg: row.waste_kg,
+    cigaretteButts: row.cigarette_butts,
+    buttsByCondition: row.butts_by_condition,
+    durationMinutes: totalDurationMinutes,
+  });
+
   return {
     participantsTotal,
     totalDurationMinutes,
     totalDurationHours: totalDurationMinutes / 60,
     actionDistribution,
     classificationWarnings,
-    streetCleaningSavings: computeImpactTerrain2026StreetCleaningSavings({
-      wasteKg: Number(row.waste_kg ?? 0),
-      durationMinutes: totalDurationMinutes,
-    }),
-    impactTerrain: buildImpactTerrain2026PublicResultsFromAggregate({
-      wasteKg: row.waste_kg,
-      cigaretteButts: row.cigarette_butts,
-      buttsByCondition: row.butts_by_condition,
-    }),
+    streetCleaningSavings: publicImpact.streetCleaningSavings,
+    impactTerrain: publicImpact.impactTerrain,
   };
 }
