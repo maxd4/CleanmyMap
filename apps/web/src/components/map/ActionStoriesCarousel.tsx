@@ -55,7 +55,7 @@ export function ActionStoriesCarousel({ items, onOpenAction, compact = false }: 
             Dernières actions
           </h3>
           <p className="cmm-text-caption font-semibold tracking-[0.14em] text-slate-600">
-            Flux temps réel • {items.length} incidents
+            {items.length} actions récentes
           </p>
         </div>
         <div className="flex gap-2">

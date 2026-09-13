@@ -9,6 +9,8 @@ import { ActionsMapFeedContent } from "@/components/actions/map-feed/actions-map
 import { ActionsMapTable } from "@/components/actions/actions-map-table";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+import { mapItemType } from "@/lib/actions/data-contract";
+import type { ActionMapItem } from "@/lib/actions/types";
 import { useActionsMapFilters } from "@/components/actions/map/use-actions-map-filters";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 import { PageHeader } from "@/components/ui/page-header";
@@ -59,6 +61,10 @@ const INITIAL_DAYS = Math.ceil(
   (new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) /
     (1000 * 60 * 60 * 24),
 );
+
+export function selectRecentActions(items: ActionMapItem[]): ActionMapItem[] {
+  return items.filter((item) => mapItemType(item) === "action");
+}
 
 export default function ActionsMapPage() {
   return (
@@ -144,6 +150,10 @@ function ActionsMapPageContent() {
   });
   const filteredMapItems = useMemo(() => mapFeedData.items ?? [], [mapFeedData.items]);
   const loadedItems = useMemo(() => mapFeedData.allItems ?? [], [mapFeedData.allItems]);
+  const recentActions = useMemo(
+    () => selectRecentActions(filteredMapItems),
+    [filteredMapItems],
+  );
   const visibleCount = filteredMapItems.length;
   const loadedCount = loadedItems.length;
   const stats = useMapKpiStats(filteredMapItems);
@@ -311,7 +321,7 @@ function ActionsMapPageContent() {
 
             <aside className="min-w-0 space-y-4 self-start xl:sticky xl:top-8">
               <section className={cn(surfaceCard, "p-5 sm:p-6")}>
-                <ActionStoriesCarousel items={filteredMapItems} onOpenAction={handleSelectAction} compact />
+                <ActionStoriesCarousel items={recentActions} onOpenAction={handleSelectAction} compact />
               </section>
             </aside>
           </div>
