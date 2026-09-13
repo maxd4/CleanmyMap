@@ -142,9 +142,9 @@
     "supabase": "^2.116.0"
   },
   "optionalDependencies": {
-    "@rolldown/binding-linux-x64-gnu": "1.2.6",
-    "@rollup/rollup-linux-x64-gnu": "4.63.0",
-    "@sentry/cli-linux-x64": "3.6.2",
+    "@rolldown/binding-linux-x64-gnu": "1.2.8",
+    "@rollup/rollup-linux-x64-gnu": "4.63.1",
+    "@sentry/cli-linux-x64": "3.7.0",
     "@tailwindcss/oxide-linux-x64-gnu": "4.3.3"
   },
   "overrides": {
