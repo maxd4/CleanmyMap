@@ -162,8 +162,6 @@
   --cmm-surface-blur: blur(10px);
   --cmm-surface-texture-opacity: 1;
   --cmm-surface-hover-translate: -2px;
-  --cmm-surface-hover-scale: 1.01;
-  --cmm-surface-active-scale: 0.99;
   --cmm-surface-transition-duration: 180ms;
   --cmm-surface-transition-easing: ease;
   --cmm-card-radius: var(--radius-md);
@@ -198,16 +196,14 @@
   --cmm-button-transition-duration: 180ms;
   --cmm-button-transition-easing: ease;
   --cmm-button-shadow: var(--shadow-soft);
-  --cmm-button-hover-transform: translateY(-1px);
-  --cmm-button-active-transform: scale(0.98);
+  --cmm-button-shadow-hover: var(--shadow-elevated);
   --cmm-button-disabled-opacity: 0.6;
   --cmm-button-focus-ring: var(--focus-ring);
   --cmm-button-transition: background-color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
     background-image var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
     border-color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
     color var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
-    box-shadow var(--cmm-button-transition-duration) var(--cmm-button-transition-easing),
-    transform var(--cmm-button-transition-duration) var(--cmm-button-transition-easing);
+    box-shadow var(--cmm-button-transition-duration) var(--cmm-button-transition-easing);
 
   /* ============================================================
      FORMS & CONTROLS - primitive canonique

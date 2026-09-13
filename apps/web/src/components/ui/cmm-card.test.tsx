@@ -99,8 +99,10 @@ describe("canonical surface cards", () => {
     expect(css).toContain(".cmm-card--interactive:not([aria-disabled=\"true\"]):hover");
     expect(css).toContain("--cmm-surface-blur: blur(10px);");
     expect(css).toContain("--cmm-surface-hover-translate: -2px;");
-    expect(css).toContain("--cmm-surface-hover-scale: 1.01;");
-    expect(css).toContain("--cmm-surface-active-scale: 0.99;");
+    expect(css).not.toContain("--cmm-surface-hover-scale");
+    expect(css).not.toContain("--cmm-surface-active-scale");
+    expect(css).toContain("transform: translateY(var(--cmm-surface-hover-translate));");
+    expect(css).toContain(".cmm-card--interactive:not([aria-disabled=\"true\"]):active");
     expect(css).toContain("--cmm-surface-transition-duration: 180ms;");
     expect(css).toContain("--cmm-surface-shadow: none;");
     expect(css).toContain("--cmm-surface-shadow-elevated: var(--shadow-soft);");

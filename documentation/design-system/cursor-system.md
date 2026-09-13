@@ -16,8 +16,9 @@ ne promet pas un curseur pour un composant qui ne l’emploie pas.
   `not-allowed` ;
 - `[draggable="true"]` et `.cursor-grab` utilisent `grab`, puis `grabbing`
   pendant l’action ;
-- `.cmm-clickable` et `.cmm-interactive` sont des classes explicites pour les
-  surfaces ou actions qui portent déjà une interaction ;
+- `.cmm-surface-action` est la primitive générique pour les petites surfaces
+  interactives qui ne sont ni `CmmCard` ni `CmmButton` ; les deux primitives
+  canoniques portent leurs propres états ;
 - `.cmm-input` utilise `text`, revient à `default` en lecture seule et à
   `not-allowed` lorsqu’il est désactivé.
 

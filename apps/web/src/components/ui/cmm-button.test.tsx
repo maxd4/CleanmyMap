@@ -141,6 +141,12 @@ describe("CmmButton", () => {
     expect(css).toContain('[data-display-mode="minimaliste"] .cmm-button');
     expect(css).toContain('[data-display-mode="sobre"] .cmm-button');
     expect(css).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(css).toContain("--cmm-button-shadow-hover: var(--shadow-elevated);");
+    expect(css).not.toContain("--cmm-button-hover-transform");
+    expect(css).not.toContain("--cmm-button-active-transform");
+    expect(css).toContain("box-shadow: var(--cmm-button-shadow-hover);");
+    expect(css).not.toContain("transform: var(--cmm-button-hover-transform)");
+    expect(css).not.toContain("transform: var(--cmm-button-active-transform)");
     expect(source).not.toContain('tone?: ButtonTone | "muted"');
     expect(source).not.toContain("cmm-interactive");
   });

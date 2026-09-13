@@ -92,67 +92,6 @@
     border-color: rgba(16, 185, 129, 0.25);
   }
 
-  /* ============================================================
-     INTERACTION POLISH — Cards, buttons, controls
-     ============================================================ */
-
-  /* Cards et surfaces cliquables */
-  .cmm-clickable {
-    cursor: pointer;
-    transition:
-      transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
-      box-shadow 0.18s ease,
-      border-color 0.18s ease;
-  }
-
-  .cmm-clickable:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-elevated);
-    border-color: rgba(16, 185, 129, 0.3);
-  }
-
-  .cmm-clickable:active {
-    transform: translateY(0) scale(0.99);
-    box-shadow: var(--shadow-soft);
-    transition-duration: 0.08s;
-  }
-
-  /* S'assurer que les enfants d'éléments cliquables héritent correctement */
-  .cmm-clickable > * {
-    cursor: inherit;
-  }
-
-  /* Liens et boutons avec indicateur visuel supplémentaire */
-  .cmm-interactive {
-    cursor: pointer;
-    position: relative;
-    transition:
-      background 0.15s ease,
-      color 0.15s ease,
-      box-shadow 0.18s ease,
-      transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .cmm-interactive::after {
-    content: '';
-    position: absolute;
-    inset: -2px;
-    border-radius: inherit;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-    pointer-events: none;
-    background: radial-gradient(circle at center, rgba(16, 185, 129, 0.06), transparent 70%);
-  }
-
-  .cmm-interactive:hover::after {
-    opacity: 1;
-  }
-
-  .cmm-interactive:active {
-    transform: scale(0.98);
-    transition-duration: 0.08s;
-  }
-
   /* Primitive bouton : géométrie, états et surfaces sont exclusivement tokenisés. */
   .cmm-button {
     --cmm-button-height: var(--cmm-button-height-md);
@@ -229,6 +168,7 @@
     --cmm-button-border-hover: var(--border-strong);
     --cmm-button-color: var(--text-primary);
     --cmm-button-shadow: none;
+    --cmm-button-shadow-hover: none;
   }
 
   .cmm-button[data-cmm-button-tone="destructive"] {
@@ -265,6 +205,7 @@
     --cmm-button-border: transparent;
     --cmm-button-border-hover: transparent;
     --cmm-button-shadow: none;
+    --cmm-button-shadow-hover: none;
   }
 
   .cmm-button[data-cmm-button-width="wide"] {
@@ -300,11 +241,11 @@
     border-color: var(--cmm-button-border-hover);
     background-color: var(--cmm-button-background-hover);
     background-image: var(--cmm-button-background-image-hover);
-    transform: var(--cmm-button-hover-transform);
+    box-shadow: var(--cmm-button-shadow-hover);
   }
 
   .cmm-button:not([data-cmm-button-disabled="true"]):not([data-cmm-button-loading="true"]):active {
-    transform: var(--cmm-button-active-transform);
+    box-shadow: var(--cmm-button-shadow);
   }
 
   .cmm-button:focus-visible {
