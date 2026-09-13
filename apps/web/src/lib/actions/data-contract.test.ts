@@ -13,7 +13,7 @@ it("maps polygon geometry to map payload without breaking point fields", () => {
   const contract = buildActionDataContract({
     id: "action-1",
     type: "action",
-    status: "pending",
+    status: "approved",
     source: "actions",
     observedAt: "2026-04-08",
     createdAt: "2026-04-08T10:00:00.000Z",
@@ -44,7 +44,14 @@ it("maps polygon geometry to map payload without breaking point fields", () => {
   const mapItem = toActionMapItem(
     contract,
     undefined,
-    { wastePerVolunteer: 5, buttsPerVolunteer: 500 },
+    {
+      global: {
+        wastePerVolunteerHour: 5,
+        buttsPerVolunteerHour: 500,
+        wasteSourceCount: 1,
+        buttsSourceCount: 1,
+      },
+    },
   );
   expect(mapItem.latitude).toBe(48.87);
   expect(mapItem.longitude).toBe(2.36);
@@ -58,8 +65,8 @@ it("maps polygon geometry to map payload without breaking point fields", () => {
   expect(mapItem.contract?.geometry.confidence).toBe(1);
   expect(mapItem.contract?.geometry.geometrySource).toBe("manual");
   expect(mapItem.contract?.geometry.origin).toBe("manual");
-  expect(mapItem.waste_pollution_score).toBe(63);
-  expect(mapItem.cigarette_butts_pollution_score).toBe(6);
+  expect(mapItem.waste_pollution_score).toBe(68);
+  expect(mapItem.cigarette_butts_pollution_score).toBe(7);
 });
 
 it("keeps geometry optional when normalizing create payload", () => {

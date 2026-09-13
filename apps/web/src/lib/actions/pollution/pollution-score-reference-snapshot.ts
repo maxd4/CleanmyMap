@@ -1,9 +1,7 @@
-import {
-  fetchActionPollutionScoreReferences,
-} from "./pollution-score-references";
-import {
-  DEFAULT_POLLUTION_SCORE_REFERENCES,
-  type PollutionScoreReferences,
+import { fetchActionPollutionScoreReferences } from "./pollution-score-references";
+import type {
+  PollutionScoreReference,
+  PollutionScoreReferences,
 } from "./pollution-score";
 import {
   getPublicSurfaceSnapshotDate,
@@ -15,79 +13,59 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getUtcWeekStart } from "@/lib/periodic/periodic-job-calendar";
 
 export const MAP_POLLUTION_REFERENCES_SNAPSHOT_KEY = "map-pollution-score-references";
-export const MAP_POLLUTION_REFERENCES_VERSION = "map-pollution-score-references-2026.09-v2";
+export const MAP_POLLUTION_REFERENCES_VERSION = "map-pollution-score-references-2026.09-v3";
 
 export type PollutionScoreReferenceSnapshotPayload = {
-  references: PollutionScoreReferences;
-  source: "action_pollution_score_references";
+  references: {
+    global: PollutionScoreReference;
+  };
+  source: "action_pollution_score_references_v2";
   weekStart: string;
 };
 
 export type PollutionScoreReferenceResolution = {
-  references: PollutionScoreReferences;
+  references: PollutionScoreReferences | null;
   source: "weekly_snapshot" | "rpc_fallback";
   snapshotDate: string | null;
   generatedAt: string | null;
   warning: string | null;
 };
 
-function isValidReferences(
-  value: unknown,
-  requireDepartmentReferences = false,
-): value is PollutionScoreReferences {
+function isValidReference(value: number | null | undefined): boolean {
+  return value !== null && value !== undefined && Number.isFinite(value) && value > 0;
+}
+
+function isValidGlobalReference(value: unknown): value is PollutionScoreReference {
   if (!value || typeof value !== "object") {
     return false;
   }
-  const candidate = value as Partial<PollutionScoreReferences>;
-  const globalReferencesValid = (
-    Number.isFinite(candidate.wastePerVolunteer) &&
-    Number(candidate.wastePerVolunteer) > 0 &&
-    Number.isFinite(candidate.buttsPerVolunteer) &&
-    Number(candidate.buttsPerVolunteer) > 0
-  );
+  const candidate = value as Partial<PollutionScoreReference>;
+  const wasteSourceCount = Number(candidate.wasteSourceCount);
+  const buttsSourceCount = Number(candidate.buttsSourceCount);
+  const hasWasteReference = isValidReference(candidate.wastePerVolunteerHour);
+  const hasButtsReference = isValidReference(candidate.buttsPerVolunteerHour);
 
-  if (!globalReferencesValid) {
-    return false;
-  }
-
-  if (candidate.departmentReferences === undefined) {
-    if (requireDepartmentReferences) {
-      return false;
-    }
-    return true;
-  }
-
-  if (
-    !candidate.departmentReferences ||
-    typeof candidate.departmentReferences !== "object" ||
-    Array.isArray(candidate.departmentReferences)
-  ) {
-    return false;
-  }
-
-  return Object.values(candidate.departmentReferences).every((reference) =>
-    Boolean(
-      reference &&
-        Number.isFinite(reference.wastePerVolunteer) &&
-        Number(reference.wastePerVolunteer) > 0 &&
-        Number.isFinite(reference.buttsPerVolunteer) &&
-        Number(reference.buttsPerVolunteer) > 0 &&
-        Number.isFinite(reference.eligibleActionCount) &&
-        Number(reference.eligibleActionCount) >= 2,
-    ),
+  return (
+    (candidate.wastePerVolunteerHour === null || hasWasteReference) &&
+    (candidate.buttsPerVolunteerHour === null || hasButtsReference) &&
+    Number.isInteger(wasteSourceCount) &&
+    wasteSourceCount >= 0 &&
+    Number.isInteger(buttsSourceCount) &&
+    buttsSourceCount >= 0 &&
+    (hasWasteReference || hasButtsReference)
   );
 }
 
-function isValidPayload(
-  value: unknown,
-): value is PollutionScoreReferenceSnapshotPayload {
+function isValidPayload(value: unknown): value is PollutionScoreReferenceSnapshotPayload {
   if (!value || typeof value !== "object") {
     return false;
   }
   const payload = value as Partial<PollutionScoreReferenceSnapshotPayload>;
   return (
-    isValidReferences(payload.references, true) &&
-    payload.source === "action_pollution_score_references"
+    payload.source === "action_pollution_score_references_v2" &&
+    typeof payload.weekStart === "string" &&
+    Boolean(payload.references) &&
+    isValidGlobalReference(payload.references?.global)
   );
 }
 
@@ -95,6 +73,10 @@ export function buildPollutionScoreReferenceSnapshot(params: {
   now: Date;
   references: PollutionScoreReferences;
 }): PublicSurfaceSnapshotRecord<PollutionScoreReferenceSnapshotPayload> {
+  if (!isValidGlobalReference(params.references.global)) {
+    throw new Error("Une référence globale V2 valide est nécessaire pour le snapshot.");
+  }
+
   const weekStart = getUtcWeekStart(params.now);
   const snapshotDate = getPublicSurfaceSnapshotDate(weekStart);
   return {
@@ -105,17 +87,14 @@ export function buildPollutionScoreReferenceSnapshot(params: {
     version: MAP_POLLUTION_REFERENCES_VERSION,
     title: "Référence hebdomadaire du score pollution",
     payload: {
-      references: {
-        ...params.references,
-        departmentReferences: params.references.departmentReferences ?? {},
-      },
-      source: "action_pollution_score_references",
+      references: { global: params.references.global },
+      source: "action_pollution_score_references_v2",
       weekStart,
     },
     meta: {
       job: "MAP_POLLUTION_REFERENCES",
       cadence: "weekly",
-      formula: "action_pollution_score_references()",
+      formula: "action_pollution_score_references_v2()",
     },
   };
 }
@@ -123,7 +102,7 @@ export function buildPollutionScoreReferenceSnapshot(params: {
 export async function runPollutionScoreReferencesJob(params: {
   now?: Date;
   force?: boolean;
-  loadReferences?: () => Promise<PollutionScoreReferences>;
+  loadReferences?: () => Promise<PollutionScoreReferences | null>;
   readSnapshot?: () => Promise<PublicSurfaceSnapshotRecord<PollutionScoreReferenceSnapshotPayload> | null>;
   writeSnapshot?: (
     snapshot: Omit<PublicSurfaceSnapshotRecord<PollutionScoreReferenceSnapshotPayload>, "id">,
@@ -150,6 +129,9 @@ export async function runPollutionScoreReferencesJob(params: {
   const loadReferences = params.loadReferences ?? (() =>
     fetchActionPollutionScoreReferences(getSupabaseServerClient()));
   const references = await loadReferences();
+  if (!references) {
+    throw new Error("Aucune référence globale V2 valide à capturer.");
+  }
   const snapshot = buildPollutionScoreReferenceSnapshot({ now, references });
   const writeSnapshot =
     params.writeSnapshot ?? ((value) => upsertPublicSurfaceSnapshot(value));
@@ -168,7 +150,7 @@ export async function runPollutionScoreReferencesJob(params: {
 
 export async function loadPollutionScoreReferencesForMap(params: {
   readSnapshot?: () => Promise<PublicSurfaceSnapshotRecord<PollutionScoreReferenceSnapshotPayload> | null>;
-  loadFallback?: () => Promise<PollutionScoreReferences>;
+  loadFallback?: () => Promise<PollutionScoreReferences | null>;
 } = {}): Promise<PollutionScoreReferenceResolution> {
   const readSnapshot =
     params.readSnapshot ?? (() => readLatestPublicSurfaceSnapshot<PollutionScoreReferenceSnapshotPayload>(MAP_POLLUTION_REFERENCES_SNAPSHOT_KEY));
@@ -179,7 +161,7 @@ export async function loadPollutionScoreReferencesForMap(params: {
     isValidPayload(snapshot.payload)
   ) {
     return {
-      references: snapshot.payload.references,
+      references: { global: snapshot.payload.references.global },
       source: "weekly_snapshot",
       snapshotDate: snapshot.snapshotDate,
       generatedAt: snapshot.generatedAt,
@@ -191,10 +173,14 @@ export async function loadPollutionScoreReferencesForMap(params: {
     fetchActionPollutionScoreReferences(getSupabaseServerClient()));
   const references = await loadFallback();
   return {
-    references: isValidReferences(references) ? references : DEFAULT_POLLUTION_SCORE_REFERENCES,
+    references: references?.global && isValidGlobalReference(references.global)
+      ? { global: references.global }
+      : null,
     source: "rpc_fallback",
     snapshotDate: null,
     generatedAt: null,
-    warning: "Référence hebdomadaire indisponible : fallback RPC utilisé.",
+    warning: references
+      ? "Référence hebdomadaire indisponible : fallback RPC V2 utilisé."
+      : "Aucune référence V2 valide : score pollution indisponible.",
   };
 }

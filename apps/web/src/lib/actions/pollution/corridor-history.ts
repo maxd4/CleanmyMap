@@ -1,8 +1,5 @@
 import type { PollutionScoreReferences } from "./pollution-score";
-import {
-  computePollutionScores,
-  computePollutionScoresRelativeToReferences,
-} from "./pollution-score";
+import { computePollutionScoresRelativeToReferences } from "./pollution-score";
 import type { ActionDataContract } from "../contracts/contract-model";
 import { auditActionContract } from "../quality/data-quality";
 import { presentActionPollutionProjection } from "./revisit-priority";
@@ -56,7 +53,7 @@ export type CorridorHistory = {
 export type CorridorObservedScore = {
   actionId: string;
   observedAt: string;
-  score: number;
+  score: number | null;
 };
 
 export type CorridorHistorySummary = {
@@ -433,23 +430,18 @@ export function findCorridorHistoryForAction(
 function resolveActionObservedScore(
   action: ActionDataContract,
   references?: PollutionScoreReferences,
-): number {
-  const hasPollution =
-    (action.metadata.wasteKg ?? 0) > 0 ||
-    (action.metadata.cigaretteButts ?? 0) > 0;
-  if (!hasPollution) {
-    return computePollutionScores({
-      wasteKg: action.metadata.wasteKg,
-      cigaretteButts: action.metadata.cigaretteButts,
-    }).severityScore;
-  }
+): number | null {
   return computePollutionScoresRelativeToReferences(
     {
       wasteKg: action.metadata.wasteKg,
       cigaretteButts: action.metadata.cigaretteButts,
       volunteersCount: action.metadata.volunteersCount,
+      durationMinutes: action.metadata.durationMinutes,
+      actionType: action.type,
+      status: action.status,
+      actionPhase: action.metadata.actionPhase,
     },
-    references,
+    references?.global,
   ).severityScore;
 }
 

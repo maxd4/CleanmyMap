@@ -1,8 +1,5 @@
 import type { PollutionScoreReferences } from "./pollution-score";
-import {
-  computePollutionScores,
-  computePollutionScoresRelativeToReferences,
-} from "./pollution-score";
+import { computePollutionScoresRelativeToReferences } from "./pollution-score";
 import {
   ACTION_POLLUTION_PROJECTION_CONSTANTS,
   presentActionPollutionProjection,
@@ -102,6 +99,7 @@ export type LocalRepollutionExcludedAction = {
     | "not_action"
     | "not_completed"
     | "data_quality_blocking"
+    | "pollution_score_unavailable"
     | "invalid_coordinates"
     | "invalid_observed_at"
     | "missing_label"
@@ -110,7 +108,7 @@ export type LocalRepollutionExcludedAction = {
 
 export type LocalRepollutionScoreResolver = (
   action: ActionDataContract,
-) => number;
+) => number | null;
 
 export type DeriveLocalRepollutionHistoriesOptions = {
   sourceCompleteness: RepollutionDatasetCompleteness;
@@ -235,9 +233,10 @@ function compareObservations(
 function resolveHistoricalScore(
   action: ActionDataContract,
   options: DeriveLocalRepollutionHistoriesOptions,
-): number {
+): number | null {
   if (options.historicalScoreResolver) {
-    return clampScore(options.historicalScoreResolver(action));
+    const score = options.historicalScoreResolver(action);
+    return score === null ? null : clampScore(score);
   }
 
   const inputs = {
@@ -245,17 +244,20 @@ function resolveHistoricalScore(
     cigaretteButts: action.metadata.cigaretteButts,
   };
   if (options.pollutionScoreReferences) {
-    return clampScore(
-      computePollutionScoresRelativeToReferences(
+    const score = computePollutionScoresRelativeToReferences(
         {
           ...inputs,
           volunteersCount: action.metadata.volunteersCount,
+          durationMinutes: action.metadata.durationMinutes,
+          actionType: action.type,
+          status: action.status,
+          actionPhase: action.metadata.actionPhase,
         },
-        options.pollutionScoreReferences,
-      ).severityScore,
-    );
+        options.pollutionScoreReferences.global,
+      ).severityScore;
+    return score === null ? null : clampScore(score);
   }
-  return clampScore(computePollutionScores(inputs).severityScore);
+  return null;
 }
 
 function toDerivedObservation(
@@ -317,6 +319,16 @@ function toDerivedObservation(
   const postActionScore = action.metadata.postActionPollutionScore;
   const hasMeasuredPostActionScore =
     typeof postActionScore === "number" && Number.isFinite(postActionScore);
+  const historicalScore = resolveHistoricalScore(action, options);
+  if (historicalScore === null) {
+    return {
+      observation: null,
+      rejection: {
+        actionId: action.id,
+        reason: "pollution_score_unavailable",
+      },
+    };
+  }
 
   return {
     rejection: null,
@@ -329,7 +341,7 @@ function toDerivedObservation(
       longitude: longitude as number,
       normalizedLabel,
       geometryKind: action.geometry.kind === "polygon" ? "polygon" : "point",
-      historicalScore: resolveHistoricalScore(action, options),
+      historicalScore,
       postActionScore: clampScore(hasMeasuredPostActionScore ? postActionScore : 0),
       postActionScoreSource: hasMeasuredPostActionScore
         ? "measured"

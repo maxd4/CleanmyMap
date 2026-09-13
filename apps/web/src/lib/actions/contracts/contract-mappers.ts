@@ -39,8 +39,8 @@ function buildActionPollutionScores(
   pollutionScoreReferences?: PollutionScoreReferences | null,
 ):
   | {
-      wasteScore?: number;
-      buttsScore?: number;
+      wasteScore: number | null;
+      buttsScore: number | null;
     }
   | null {
   if (!pollutionScoreReferences) {
@@ -52,8 +52,12 @@ function buildActionPollutionScores(
       wasteKg: contract.metadata.wasteKg,
       cigaretteButts: contract.metadata.cigaretteButts,
       volunteersCount: contract.metadata.volunteersCount,
+      durationMinutes: contract.metadata.durationMinutes,
+      actionType: contract.type,
+      status: contract.status,
+      actionPhase: contract.metadata.actionPhase,
     },
-    pollutionScoreReferences,
+    pollutionScoreReferences.global,
   );
 }
 

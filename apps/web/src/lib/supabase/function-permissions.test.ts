@@ -116,6 +116,26 @@ it("extends pollution score references with fail-closed department rows", () => 
   expect(migration).toContain("set search_path = pg_catalog");
 });
 
+it("exposes the global V2 pollution reference RPC with metric-specific counts", () => {
+  const migration = readMigration("../../../supabase/migrations/20260913000004_action_pollution_score_references_v2.sql");
+
+  expect(migration).toContain("create function public.action_pollution_score_references_v2()");
+  expect(migration).toContain("scope text");
+  expect(migration).toContain("department_code text");
+  expect(migration).toContain("department_name text");
+  expect(migration).toContain("waste_per_volunteer_hour numeric");
+  expect(migration).toContain("butts_per_volunteer_hour numeric");
+  expect(migration).toContain("waste_source_count integer");
+  expect(migration).toContain("butts_source_count integer");
+  expect(migration).toContain("a.action_phase, 'post_action_complete') = 'post_action_complete'");
+  expect(migration).toContain("a.volunteers_count >= 1");
+  expect(migration).toContain("a.duration_minutes > 0");
+  expect(migration).toContain("security invoker");
+  expect(migration).toContain("set search_path = pg_catalog");
+  expect(migration).toContain("revoke all on function public.action_pollution_score_references_v2() from public;");
+  expect(migration).toContain("grant execute on function public.action_pollution_score_references_v2() to public;");
+});
+
 it("enables RLS on xp_audit and restricts it to the service role", () => {
   const migration = readMigration("../../../supabase/migrations/20260601000001_harden_xp_audit_rls.sql");
 

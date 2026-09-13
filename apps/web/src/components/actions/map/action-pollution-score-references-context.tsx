@@ -5,7 +5,6 @@ import {
 } from "react";
 import useSWR from "swr";
 import {
-  DEFAULT_POLLUTION_SCORE_REFERENCES,
   type PollutionScoreReferences,
 } from "@/lib/actions/pollution/pollution-score";
 import {
@@ -14,14 +13,14 @@ import {
 import { swrSupervisionOptions } from "@/lib/swr-config";
 
 type ActionPollutionScoreReferencesContextValue = {
-  references: PollutionScoreReferences;
+  references: PollutionScoreReferences | null;
   isLoading: boolean;
   error: string | null;
   reload: () => void;
 };
 
 const DEFAULT_ACTION_POLLUTION_SCORE_REFERENCES_CONTEXT: ActionPollutionScoreReferencesContextValue = {
-  references: DEFAULT_POLLUTION_SCORE_REFERENCES,
+  references: null,
   isLoading: false,
   error: null,
   reload: () => {},
@@ -30,18 +29,15 @@ const DEFAULT_ACTION_POLLUTION_SCORE_REFERENCES_CONTEXT: ActionPollutionScoreRef
 const ActionPollutionScoreReferencesContext =
   createContext<ActionPollutionScoreReferencesContextValue | null>(null);
 
-async function fetchPollutionScoreReferences(): Promise<PollutionScoreReferences> {
+async function fetchPollutionScoreReferences(): Promise<PollutionScoreReferences | null> {
   const response = await fetch("/api/actions/map/pollution-score-references", {
     cache: "no-store",
   });
   if (!response.ok) {
     throw new Error("Impossible de charger la référence du score.");
   }
-  const payload = (await response.json()) as { references?: PollutionScoreReferences };
-  if (!payload.references) {
-    throw new Error("Référence du score absente de la réponse.");
-  }
-  return payload.references;
+  const payload = (await response.json()) as { references?: PollutionScoreReferences | null };
+  return payload.references ?? null;
 }
 
 const POLLUTION_SCORE_REFERENCES_KEY = "action-pollution-score-references";
@@ -61,7 +57,7 @@ export function ActionPollutionScoreReferencesProvider({
     },
   );
 
-  const references = data ?? DEFAULT_POLLUTION_SCORE_REFERENCES;
+  const references = data ?? null;
   const error = fetchError
     ? fetchError instanceof Error && fetchError.message
       ? fetchError.message

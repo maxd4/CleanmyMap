@@ -1,35 +1,36 @@
-export const WASTE_POLLUTION_REFERENCE_KG = 20;
-export const BUTTS_POLLUTION_REFERENCE_COUNT = 2000;
-
 export type PollutionScoreScope = "global" | "department";
 
-export type DepartmentPollutionScoreReference = {
-  wastePerVolunteer: number;
-  buttsPerVolunteer: number;
+export type PollutionScoreReference = {
+  wastePerVolunteerHour: number | null;
+  buttsPerVolunteerHour: number | null;
+  wasteSourceCount: number;
+  buttsSourceCount: number;
+};
+
+export type DepartmentPollutionScoreReference = PollutionScoreReference & {
   eligibleActionCount: number;
 };
 
 export type PollutionScoreReferences = {
-  wastePerVolunteer: number;
-  buttsPerVolunteer: number;
+  global: PollutionScoreReference;
+  /** Compatibility seam only: the V2 RPC and snapshot do not populate it. */
   departmentReferences?: Readonly<Record<string, DepartmentPollutionScoreReference>>;
 };
 
-export const DEFAULT_POLLUTION_SCORE_REFERENCES: PollutionScoreReferences = {
-  wastePerVolunteer: WASTE_POLLUTION_REFERENCE_KG,
-  buttsPerVolunteer: BUTTS_POLLUTION_REFERENCE_COUNT,
-};
-
 export type PollutionScoreBreakdown = {
-  wasteScore: number;
-  buttsScore: number;
-  severityScore: number;
+  wasteScore: number | null;
+  buttsScore: number | null;
+  severityScore: number | null;
 };
 
 export type PollutionScoreInputs = {
   wasteKg?: number | null;
   cigaretteButts?: number | null;
   volunteersCount?: number | null;
+  durationMinutes?: number | null;
+  actionType?: "action" | "spot" | "clean_place";
+  status?: string | null;
+  actionPhase?: string | null;
 };
 
 function clampScore(value: number): number {
@@ -39,130 +40,143 @@ function clampScore(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
-function computeScoreFromReference(
-  amount: number | null | undefined,
-  reference: number,
-): number {
-  const numericAmount = Number(amount ?? 0);
-  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-    return 0;
-  }
-
-  return clampScore((numericAmount / reference) * 100);
+function isValidMetric(value: number | null | undefined): value is number {
+  return value !== null && value !== undefined && Number.isFinite(value) && value >= 0;
 }
 
-function computeScorePerVolunteer(
-  amount: number | null | undefined,
-  volunteersCount: number | null | undefined,
-  referencePerVolunteer: number,
-): number {
-  const volunteerCount = Math.max(
-    1,
-    Math.trunc(Number(volunteersCount ?? 1) || 1),
-  );
-  const numericAmount = Number(amount ?? 0);
-  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-    return 0;
-  }
-  const normalizedReference = Number(referencePerVolunteer ?? 0);
-  if (!Number.isFinite(normalizedReference) || normalizedReference <= 0) {
-    return 0;
+function resolveWorkHours(inputs: PollutionScoreInputs): number | null {
+  const volunteersCount = Number(inputs.volunteersCount);
+  const durationMinutes = Number(inputs.durationMinutes);
+  if (
+    !Number.isInteger(volunteersCount) ||
+    volunteersCount < 1 ||
+    !Number.isFinite(durationMinutes) ||
+    durationMinutes <= 0
+  ) {
+    return null;
   }
 
-  const perVolunteerAmount = numericAmount / volunteerCount;
-  return clampScore((perVolunteerAmount / normalizedReference) * 100);
+  const workHours = (volunteersCount * durationMinutes) / 60;
+  return Number.isFinite(workHours) && workHours > 0 ? workHours : null;
 }
 
-export function computeWastePollutionScore(
-  wasteKg: number | null | undefined,
-): number {
-  return computeScoreFromReference(wasteKg, WASTE_POLLUTION_REFERENCE_KG);
-}
-
-export function computeButtsPollutionScore(
-  cigaretteButts: number | null | undefined,
-): number {
-  return computeScoreFromReference(
-    cigaretteButts,
-    BUTTS_POLLUTION_REFERENCE_COUNT,
+function isEligibleAction(inputs: PollutionScoreInputs): boolean {
+  return (
+    (inputs.actionType ?? "action") === "action" &&
+    (inputs.status ?? "approved") === "approved" &&
+    (inputs.actionPhase ?? "post_action_complete") === "post_action_complete"
   );
 }
 
-export function computePollutionScores(inputs: {
-  wasteKg?: number | null;
-  cigaretteButts?: number | null;
-}): PollutionScoreBreakdown {
-  const wasteScore = computeWastePollutionScore(inputs.wasteKg ?? null);
-  const buttsScore = computeButtsPollutionScore(inputs.cigaretteButts ?? null);
+function resolveReference(value: number | null | undefined): number | null {
+  return value !== null && value !== undefined && Number.isFinite(value) && value > 0
+    ? value
+    : null;
+}
 
-  return {
-    wasteScore,
-    buttsScore,
-    severityScore: Math.max(wasteScore, buttsScore),
-  };
+function computeComponentScore(
+  amount: number | null | undefined,
+  workHours: number | null,
+  reference: number | null | undefined,
+): number | null {
+  if (!isValidMetric(amount) || workHours === null) {
+    return null;
+  }
+  const normalizedReference = resolveReference(reference);
+  if (normalizedReference === null) {
+    return null;
+  }
+
+  return clampScore((100 * (amount / workHours)) / normalizedReference);
 }
 
 export function computePollutionScoresRelativeToReferences(
   inputs: PollutionScoreInputs,
-  references: PollutionScoreReferences = DEFAULT_POLLUTION_SCORE_REFERENCES,
+  references?: PollutionScoreReference | null,
 ): PollutionScoreBreakdown {
-  const wasteScore = computeScorePerVolunteer(
-    inputs.wasteKg ?? null,
-    inputs.volunteersCount ?? null,
-    references.wastePerVolunteer,
+  if (!isEligibleAction(inputs) || !references) {
+    return { wasteScore: null, buttsScore: null, severityScore: null };
+  }
+
+  const workHours = resolveWorkHours(inputs);
+  const wasteScore = computeComponentScore(
+    inputs.wasteKg,
+    workHours,
+    references.wastePerVolunteerHour,
   );
-  const buttsScore = computeScorePerVolunteer(
-    inputs.cigaretteButts ?? null,
-    inputs.volunteersCount ?? null,
-    references.buttsPerVolunteer,
+  const buttsScore = computeComponentScore(
+    inputs.cigaretteButts,
+    workHours,
+    references.buttsPerVolunteerHour,
+  );
+  const availableScores = [wasteScore, buttsScore].filter(
+    (score): score is number => score !== null,
   );
 
   return {
     wasteScore,
     buttsScore,
-    severityScore: Math.max(wasteScore, buttsScore),
+    severityScore:
+      availableScores.length === 0
+        ? null
+        : Math.round(
+            availableScores.reduce((total, score) => total + score, 0) /
+              availableScores.length,
+          ),
   };
 }
 
-/**
- * The map color score combines the two observed pollution components instead
- * of letting the largest component hide the other one.
- */
 export function computeAveragePollutionScore(
   scores: Pick<PollutionScoreBreakdown, "wasteScore" | "buttsScore">,
-): number {
-  return Math.round((scores.wasteScore + scores.buttsScore) / 2);
+): number | null {
+  const availableScores = [scores.wasteScore, scores.buttsScore].filter(
+    (score): score is number => score !== null,
+  );
+  return availableScores.length === 0
+    ? null
+    : Math.round(
+        availableScores.reduce((total, score) => total + score, 0) /
+          availableScores.length,
+      );
 }
 
 export function computePollutionSeverityScoreRelativeToReferences(
   inputs: PollutionScoreInputs,
-  references: PollutionScoreReferences = DEFAULT_POLLUTION_SCORE_REFERENCES,
-): number {
+  references?: PollutionScoreReference | null,
+): number | null {
   return computePollutionScoresRelativeToReferences(inputs, references).severityScore;
 }
 
-export function computePollutionSeverityScore(inputs: {
-  wasteKg?: number | null;
-  cigaretteButts?: number | null;
-}): number {
-  return computePollutionScores(inputs).severityScore;
+/** Compatibility helper: without a V2 reference it deliberately stays unavailable. */
+export function computePollutionScores(
+  inputs: PollutionScoreInputs,
+  references?: PollutionScoreReference | null,
+): PollutionScoreBreakdown {
+  return computePollutionScoresRelativeToReferences(inputs, references);
+}
+
+export function computePollutionSeverityScore(
+  inputs: PollutionScoreInputs,
+  references?: PollutionScoreReference | null,
+): number | null {
+  return computePollutionScores(inputs, references).severityScore;
 }
 
 export function computeWasteContributionScore(
   wasteKg: number | null | undefined,
-): number {
-  return computeWastePollutionScore(wasteKg);
+): number | null {
+  return isValidMetric(wasteKg) ? wasteKg : null;
 }
 
 export function computeButtsContributionScore(
   cigaretteButts: number | null | undefined,
-): number {
-  return computeButtsPollutionScore(cigaretteButts);
+): number | null {
+  return isValidMetric(cigaretteButts) ? cigaretteButts : null;
 }
 
-export function computePollutionScore(inputs: {
-  wasteKg?: number | null;
-  cigaretteButts?: number | null;
-}): number {
-  return computePollutionSeverityScore(inputs);
+export function computePollutionScore(
+  inputs: PollutionScoreInputs,
+  references?: PollutionScoreReference | null,
+): number | null {
+  return computePollutionSeverityScore(inputs, references);
 }

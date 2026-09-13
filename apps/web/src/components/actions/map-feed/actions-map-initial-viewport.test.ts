@@ -15,8 +15,12 @@ import { shouldApplyAutomaticViewport } from "./use-actions-map-viewport";
 import { DEFAULT_ACTIONS_MAP_VIEWPORT, NEUTRAL_MAP_CENTER } from "../actions-map-canvas.utils";
 
 const RUNTIME_REFERENCES = {
-  wastePerVolunteer: 20,
-  buttsPerVolunteer: 2000,
+  global: {
+    wastePerVolunteerHour: 20,
+    buttsPerVolunteerHour: 2000,
+    wasteSourceCount: 1,
+    buttsSourceCount: 1,
+  },
 };
 
 function buildItem(overrides: Partial<ActionMapItem> = {}): ActionMapItem {
@@ -125,7 +129,14 @@ describe("actions map initial viewport", () => {
 
   it("uses the same dynamic references for activity and severity tie-break", () => {
     const reference = { latitude: 48.8566, longitude: 2.3522 };
-    const dynamicReferences = { wastePerVolunteer: 100, buttsPerVolunteer: 10 };
+    const dynamicReferences = {
+      global: {
+        wastePerVolunteerHour: 100,
+        buttsPerVolunteerHour: 10,
+        wasteSourceCount: 1,
+        buttsSourceCount: 1,
+      },
+    };
     const wasteCandidate = buildItem({
       id: "waste",
       waste_kg: 5,

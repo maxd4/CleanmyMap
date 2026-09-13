@@ -8,8 +8,8 @@ export function formatNumber(value: number, suffix = ""): string {
   return `${value.toLocaleString("fr-FR")}${suffix}`;
 }
 
-export function formatThresholdScore(value: number): string {
-  return formatScorePercent(value, 1);
+export function formatThresholdScore(value: number | null): string {
+  return value === null ? "Indisponible" : formatScorePercent(value, 1);
 }
 
 export function getInfrastructureReading(
@@ -21,8 +21,8 @@ export function getInfrastructureReading(
   const pollutionScores = resolveItemPollutionScores(item, references);
   const wasteScore = pollutionScores.wasteScore;
   const buttsScore = pollutionScores.buttsScore;
-  const needsBin = wasteScore >= 75;
-  const needsAshtray = buttsScore >= 75;
+  const needsBin = wasteScore !== null && wasteScore >= 75;
+  const needsAshtray = buttsScore !== null && buttsScore >= 75;
   const needLabel =
     needsBin && needsAshtray
       ? "Combiné"

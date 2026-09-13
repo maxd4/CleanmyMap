@@ -1,6 +1,6 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
 import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 import {
@@ -8,6 +8,19 @@ import {
   type CorridorHistory,
 } from "@/lib/actions/pollution/corridor-history";
 import { CorridorPopupContent } from "./corridor-popup-content";
+
+vi.mock("./action-pollution-score-references-context", () => ({
+  useActionPollutionScoreReferences: () => ({
+    references: {
+      global: {
+        wastePerVolunteerHour: 20,
+        buttsPerVolunteerHour: 400,
+        wasteSourceCount: 2,
+        buttsSourceCount: 2,
+      },
+    },
+  }),
+}));
 
 function dateAt(day: number): string {
   return new Date(Date.UTC(2026, 0, 1 + day)).toISOString();

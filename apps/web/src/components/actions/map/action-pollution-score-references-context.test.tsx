@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { renderToString } from "react-dom/server";
-import { DEFAULT_POLLUTION_SCORE_REFERENCES } from "@/lib/actions/pollution/pollution-score";
 import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
 
 function HookConsumer() {
@@ -8,8 +7,9 @@ function HookConsumer() {
 
   return (
     <div>
-      <output data-field="waste-reference">{references.wastePerVolunteer}</output>
-      <output data-field="butts-reference">{references.buttsPerVolunteer}</output>
+      <output data-field="references">
+        {references ? JSON.stringify(references.global) : "null"}
+      </output>
       <output data-field="is-loading">{String(isLoading)}</output>
       <output data-field="error">{error === null ? "null" : error}</output>
     </div>
@@ -17,11 +17,10 @@ function HookConsumer() {
 }
 
 describe("action pollution score references context", () => {
-  it("falls back to safe defaults outside the provider", () => {
+  it("stays explicitly unavailable outside the provider instead of using old defaults", () => {
     const html = renderToString(<HookConsumer />);
 
-    expect(html).toContain(`data-field="waste-reference">${DEFAULT_POLLUTION_SCORE_REFERENCES.wastePerVolunteer}`);
-    expect(html).toContain(`data-field="butts-reference">${DEFAULT_POLLUTION_SCORE_REFERENCES.buttsPerVolunteer}`);
+    expect(html).toContain('data-field="references">null');
     expect(html).toContain('data-field="is-loading">false');
     expect(html).toContain('data-field="error">null');
   });
