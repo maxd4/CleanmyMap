@@ -117,7 +117,6 @@ export function ActionStepReview({
         volunteersCount: String(payload.volunteersCount),
         durationMinutes: String(payload.durationMinutes),
         placeType: payload.placeType ?? "",
-        wasteMegotsKg: String(payload.wasteBreakdown?.megotsKg ?? ""),
       });
 
   const readyMessage = hasWarnings
@@ -165,7 +164,7 @@ export function ActionStepReview({
           ) : (
             <>
               <DataRow icon={Trash2} label="Déchets" value={fmtKg(payload.wasteKg)} valueClass="text-emerald-700 font-bold" />
-              <DataRow icon={Cigarette} label="Mégots" value={fmtKg(payload.wasteBreakdown?.megotsKg)} valueClass="text-amber-700" />
+              <DataRow icon={Cigarette} label="Mégots" value={fmtKg(payload.cigaretteButtsKg)} valueClass="text-amber-700" />
               <DataRow icon={Users} label="Participants" value={payload.volunteersCount > 0 ? `${payload.volunteersCount} personne${payload.volunteersCount > 1 ? "s" : ""}` : "Non renseigné"} />
             </>
           )}

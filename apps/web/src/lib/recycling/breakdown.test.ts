@@ -55,17 +55,16 @@ function buildContract(overrides: Partial<ActionDataContract>): ActionDataContra
 }
 
 describe("buildRecyclingBreakdown", () => {
-  it("aggregates category weights and tri quality counts", () => {
+  it("aggregates the canonical breakdown and keeps legacy data unmapped", () => {
     const breakdown = buildRecyclingBreakdown([
       buildContract({
         metadata: {
           wasteKg: 8,
           wasteBreakdown: {
-            megotsKg: 2,
-            plastiqueKg: 3,
-            verreKg: 0,
-            metalKg: 1,
-            mixteKg: 2,
+            recyclablesKg: 3,
+            glassKg: 0,
+            householdWasteKg: 1,
+            otherWasteKg: 2,
             triQuality: "elevee",
           },
         } as ActionDataContract["metadata"],
@@ -84,12 +83,13 @@ describe("buildRecyclingBreakdown", () => {
       }),
     ]);
 
-    expect(breakdown.totalKg).toBe(12);
+    expect(breakdown.totalKg).toBe(6);
     expect(breakdown.wasteKnownActions).toBe(2);
     expect(breakdown.wasteCoverageRate).toBeCloseTo(66.7, 1);
-    expect(breakdown.lines.find((line) => line.category === "megots")?.kg).toBe(2);
-    expect(breakdown.lines.find((line) => line.category === "plastique")?.kg).toBe(3);
-    expect(breakdown.lines.find((line) => line.category === "mixte")?.kg).toBe(6);
+    expect(breakdown.lines.find((line) => line.category === "recyclables")?.kg).toBe(3);
+    expect(breakdown.lines.find((line) => line.category === "glass")?.kg).toBe(0);
+    expect(breakdown.lines.find((line) => line.category === "household")?.kg).toBe(1);
+    expect(breakdown.lines.find((line) => line.category === "other")?.kg).toBe(2);
     expect(breakdown.triQuality.elevee).toBe(1);
     expect(breakdown.triQuality.moyenne).toBe(0);
     expect(breakdown.triQuality.faible).toBe(0);

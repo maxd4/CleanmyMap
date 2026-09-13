@@ -1,4 +1,8 @@
-import type { ActionMegotsCondition, ActionRecordType } from"@/lib/actions/types";
+import type {
+ ActionMegotsCondition,
+ ActionRecordType,
+ ActionWasteMeasurementMethod,
+} from"@/lib/actions/types";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
 
@@ -36,6 +40,13 @@ export type FormState = {
  latitude: string;
  longitude: string;
  wasteKg: string;
+ wasteMeasurementMethod: ActionWasteMeasurementMethod | "";
+ wasteRecyclablesKg: string;
+ wasteGlassKg: string;
+ wasteHouseholdKg: string;
+ wasteOtherKg: string;
+ wasteUnusualObjects: string;
+ wasteSpecialHandlingWaste: string;
  cigaretteButts: string;
  cigaretteButtsCount: string; // Nouveau champ pour le nombre de mégots
  cigaretteButtsCondition: ActionMegotsCondition; // État des mégots pour conversion

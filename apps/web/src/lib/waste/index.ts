@@ -24,6 +24,15 @@ export type {
   WastePickupPolicy,
 } from "./types";
 export {
+  ACTION_WASTE_MEASUREMENT_METHODS,
+  compareWasteBreakdownToTotal,
+} from "./measurement";
+export type {
+  ActionWasteMeasurementMethod,
+  CanonicalWasteBreakdown,
+  WasteBreakdownCoherence,
+} from "./measurement";
+export {
   WASTE_CATEGORY_DEFINITIONS as FIELD_WASTE_CATEGORY_DEFINITIONS,
   WASTE_CATEGORY_SLUGS as FIELD_WASTE_CATEGORY_SLUGS,
   WASTE_DISPOSAL_LABELS,

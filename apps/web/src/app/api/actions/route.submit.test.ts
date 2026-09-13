@@ -691,7 +691,7 @@ describe("POST /api/actions", () => {
     expect(createActionMock).not.toHaveBeenCalled();
   }, 15000);
 
-  it("rejects volunteer actions without waste or cigarette butts", async () => {
+  it("rejects volunteer actions without a waste or cigarette measurement", async () => {
     const { POST } = await import("./route");
 
     const payload = {
@@ -706,8 +706,8 @@ describe("POST /api/actions", () => {
       metadata: {
         associationName: "Action spontanée",
         organizerType: "spontaneous",
-        wasteKg: 0,
-        cigaretteButts: 0,
+        wasteKg: null,
+        cigaretteButts: null,
         volunteersCount: 1,
         durationMinutes: 45,
         notes: "Formulaire bénévole de test",
@@ -725,7 +725,7 @@ describe("POST /api/actions", () => {
       details?: { wasteKg?: string[] };
     };
     expect(response.status).toBe(422);
-    expect(body.details?.wasteKg?.[0]).toContain("déchets ou des mégots");
+    expect(body.details?.wasteKg?.[0]).toContain("une mesure de déchets ou de mégots");
     expect(createActionMock).not.toHaveBeenCalled();
     expect(resolveActionOrganizersMock).not.toHaveBeenCalled();
   }, 15000);

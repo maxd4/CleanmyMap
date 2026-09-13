@@ -279,6 +279,8 @@ type PersistedActionNotesPayload = Pick<
   | "notes"
   | "submissionMode"
   | "wasteBreakdown"
+  | "wasteMeasurementMethod"
+  | "cigaretteButtsKg"
   | "associationName"
   | "groupJoinEnabled"
   | "placeType"
@@ -309,6 +311,8 @@ export function buildPersistedNotes(
   const baseWithMetadata = appendActionMetadataToNotes(payload.notes, {
     submissionMode: payload.submissionMode,
     wasteBreakdown: payload.wasteBreakdown,
+    wasteMeasurementMethod: payload.wasteMeasurementMethod ?? undefined,
+    cigaretteButtsKg: payload.cigaretteButtsKg,
     associationName: payload.associationName,
     groupJoinEnabled: payload.groupJoinEnabled,
     placeType: payload.placeType,
@@ -336,7 +340,8 @@ export function buildPersistedNotes(
 export function resolvePersistedCigaretteButts(
   payload: CreateActionPayload,
 ): number | null {
-  const megotsKg = payload.wasteBreakdown?.megotsKg ?? null;
+  const megotsKg =
+    payload.cigaretteButtsKg ?? payload.wasteBreakdown?.megotsKg ?? null;
   const megotsCondition = payload.wasteBreakdown?.megotsCondition ?? "propre";
 
   if (typeof megotsKg === "number" && Number.isFinite(megotsKg) && megotsKg > 0) {

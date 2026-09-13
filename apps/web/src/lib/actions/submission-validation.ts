@@ -10,6 +10,7 @@ type VolunteerActionSubmissionLike = Pick<
   | "recordType"
   | "submissionMode"
   | "wasteKg"
+  | "cigaretteButtsKg"
   | "cigaretteButts"
   | "volunteersCount"
   | "wasteBreakdown"
@@ -24,9 +25,17 @@ export function getVolunteerActionValidationIssues(
 
   const issues: VolunteerActionValidationIssue[] = [];
   const volunteersCount = Math.trunc(payload.volunteersCount);
-  const wasteKg = payload.wasteKg ?? 0;
-  const cigaretteButts = Math.trunc(payload.cigaretteButts ?? 0);
-  const breakdownMegotsKg = payload.wasteBreakdown?.megotsKg ?? 0;
+  const hasWasteMeasurement =
+    typeof payload.wasteKg === "number" && Number.isFinite(payload.wasteKg);
+  const hasCigaretteButtsMeasurement =
+    typeof payload.cigaretteButts === "number" &&
+    Number.isFinite(payload.cigaretteButts);
+  const hasCigaretteButtsWeightMeasurement =
+    typeof payload.cigaretteButtsKg === "number" &&
+    Number.isFinite(payload.cigaretteButtsKg);
+  const hasLegacyCigaretteButtsWeightMeasurement =
+    typeof payload.wasteBreakdown?.megotsKg === "number" &&
+    Number.isFinite(payload.wasteBreakdown.megotsKg);
 
   if (volunteersCount < 1) {
     issues.push({
@@ -35,10 +44,16 @@ export function getVolunteerActionValidationIssues(
     });
   }
 
-  if (wasteKg <= 0 && cigaretteButts <= 0 && breakdownMegotsKg <= 0) {
+  if (
+    !hasWasteMeasurement &&
+    !hasCigaretteButtsMeasurement &&
+    !hasCigaretteButtsWeightMeasurement &&
+    !hasLegacyCigaretteButtsWeightMeasurement
+  ) {
     issues.push({
       field: "wasteKg",
-      message: "Renseignez au moins des déchets ou des mégots non nuls.",
+      message:
+        "Renseignez au moins une mesure de déchets ou de mégots ; 0 reste une mesure valide.",
     });
   }
 

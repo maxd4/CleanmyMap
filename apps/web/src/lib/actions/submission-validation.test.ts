@@ -18,7 +18,7 @@ describe("getVolunteerActionValidationIssues", () => {
     ]);
   });
 
-  it("rejects action submissions with no waste and no cigarette butts", () => {
+  it("accepts an explicitly observed zero", () => {
     const issues = getVolunteerActionValidationIssues({
       recordType: "action",
       wasteKg: 0,
@@ -26,10 +26,21 @@ describe("getVolunteerActionValidationIssues", () => {
       volunteersCount: 1,
     });
 
+    expect(issues).toEqual([]);
+  });
+
+  it("rejects an action when both measurements are unknown", () => {
+    const issues = getVolunteerActionValidationIssues({
+      recordType: "action",
+      wasteKg: null,
+      cigaretteButts: null,
+      volunteersCount: 1,
+    });
+
     expect(issues).toEqual([
       {
         field: "wasteKg",
-        message: "Renseignez au moins des déchets ou des mégots non nuls.",
+        message: "Renseignez au moins une mesure de déchets ou de mégots ; 0 reste une mesure valide.",
       },
     ]);
   });

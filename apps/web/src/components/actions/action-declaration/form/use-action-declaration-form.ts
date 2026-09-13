@@ -153,6 +153,12 @@ export function useActionDeclarationForm({
 
         const baseForm = createCleanForm();
         const preparedForm = applyPreparationDataToForm(baseForm, action.preparationData);
+        const storedBreakdown =
+          action.wasteBreakdown && typeof action.wasteBreakdown === "object"
+            ? (action.wasteBreakdown as Record<string, unknown>)
+            : {};
+        const toFormNumber = (value: unknown): string =>
+          typeof value === "number" && Number.isFinite(value) ? String(value) : "";
         const nextForm: FormState = {
           ...preparedForm,
           actorName: action.actorName ?? preparedForm.actorName,
@@ -176,6 +182,26 @@ export function useActionDeclarationForm({
           placeType: action.placeType ?? preparedForm.placeType,
           volunteersCount: String(action.volunteersCount),
           durationMinutes: String(action.durationMinutes),
+          wasteKg: action.wasteKg === null ? "" : String(action.wasteKg),
+          cigaretteButts: action.cigaretteButts === null ? "" : String(action.cigaretteButts),
+          cigaretteButtsCount: action.cigaretteButts === null ? "" : String(action.cigaretteButts),
+          wasteMegotsKg:
+            action.cigaretteButtsKg !== undefined && action.cigaretteButtsKg !== null
+              ? String(action.cigaretteButtsKg)
+              : toFormNumber(storedBreakdown.megotsKg),
+          wasteMeasurementMethod: action.wasteMeasurementMethod ?? preparedForm.wasteMeasurementMethod,
+          wasteRecyclablesKg: toFormNumber(storedBreakdown.recyclablesKg),
+          wasteGlassKg: toFormNumber(storedBreakdown.glassKg),
+          wasteHouseholdKg: toFormNumber(storedBreakdown.householdWasteKg),
+          wasteOtherKg: toFormNumber(storedBreakdown.otherWasteKg),
+          wasteUnusualObjects:
+            typeof storedBreakdown.unusualObjects === "string"
+              ? storedBreakdown.unusualObjects
+              : "",
+          wasteSpecialHandlingWaste:
+            typeof storedBreakdown.specialHandlingWaste === "string"
+              ? storedBreakdown.specialHandlingWaste
+              : "",
           eventStartTime: action.eventStartTime ?? preparedForm.eventStartTime,
           eventEndTime: action.eventEndTime ?? preparedForm.eventEndTime,
         };
@@ -185,6 +211,13 @@ export function useActionDeclarationForm({
           action.actionPhase === "post_action_draft"
         ) {
           nextForm.wasteKg = "";
+          nextForm.wasteMeasurementMethod = "";
+          nextForm.wasteRecyclablesKg = "";
+          nextForm.wasteGlassKg = "";
+          nextForm.wasteHouseholdKg = "";
+          nextForm.wasteOtherKg = "";
+          nextForm.wasteUnusualObjects = "";
+          nextForm.wasteSpecialHandlingWaste = "";
           nextForm.cigaretteButts = "";
           nextForm.cigaretteButtsCount = "";
           nextForm.wasteMegotsKg = "";

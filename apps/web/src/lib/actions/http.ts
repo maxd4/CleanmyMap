@@ -6,6 +6,7 @@ import type {
   ActionQualityGrade,
   ActionStatus,
   ActionPreparationData,
+  ActionWasteMeasurementMethod,
   CreateActionPayload,
 } from "@/lib/actions/types";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
@@ -309,6 +310,7 @@ export type ActionEditorRecord = {
   latitude: number | null;
   longitude: number | null;
   wasteKg: number | null;
+  cigaretteButtsKg?: number | null;
   cigaretteButts: number | null;
   volunteersCount: number;
   durationMinutes: number;
@@ -326,6 +328,7 @@ export type ActionEditorRecord = {
   routeStyle: "direct" | "souple" | null;
   routeAdjustmentMessage: string | null;
   wasteBreakdown?: unknown;
+  wasteMeasurementMethod?: ActionWasteMeasurementMethod | null;
   photos?: unknown;
   visionEstimate?: unknown;
   manualDrawing?: {

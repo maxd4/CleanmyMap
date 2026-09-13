@@ -3,7 +3,6 @@ import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit
 import type { ActionQualityResult } from"@/lib/actions/quality/quality";
 import type {
  ActionListItem,
- ActionMegotsCondition,
  ActionStatus,
  ActionSubmissionMode,
  ActionWasteBreakdown,
@@ -73,13 +72,14 @@ export type ActionModerationEditDraft = {
  notes: string;
  placeType: string;
  submissionMode: ActionSubmissionMode;
- wasteMegotsKg: string;
- wasteMegotsCondition: ActionMegotsCondition;
- wastePlastiqueKg: string;
- wasteVerreKg: string;
- wasteMetalKg: string;
- wasteMixteKg: string;
- triQuality: "faible" |"moyenne" |"elevee";
+ cigaretteButtsKg: string;
+ wasteMeasurementMethod: "balance_suspendue" | "balance_au_sol" | "estimation_visuelle" | "autre" | "inconnue" | "";
+ wasteRecyclablesKg: string;
+ wasteGlassKg: string;
+ wasteHouseholdKg: string;
+ wasteOtherKg: string;
+ wasteUnusualObjects: string;
+ wasteSpecialHandlingWaste: string;
  manualDrawingJson: string;
 };
 

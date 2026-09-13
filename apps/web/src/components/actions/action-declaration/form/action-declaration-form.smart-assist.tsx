@@ -28,17 +28,15 @@ export function useActionDeclarationSmartAssist({
 
  const fallbackEstimatedWasteKg = useMemo(
  () =>
- estimateWasteKg({
- volunteersCount: form.volunteersCount,
- durationMinutes: form.durationMinutes,
- placeType: form.placeType,
- wasteMegotsKg: form.wasteMegotsKg,
- }),
+   estimateWasteKg({
+   volunteersCount: form.volunteersCount,
+   durationMinutes: form.durationMinutes,
+   placeType: form.placeType,
+   }),
  [
  form.durationMinutes,
  form.placeType,
  form.volunteersCount,
- form.wasteMegotsKg,
  ],
  );
  const wasteSuggestion = resolveWasteSuggestion({

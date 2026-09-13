@@ -175,13 +175,12 @@ function buildActionEditPayload(
  draft: ActionModerationEditDraft,
 ): AdminActionEditPayload {
  const wasteBreakdown = {
- megotsKg: toOptionalNumber(draft.wasteMegotsKg,"Mégots kg") ?? undefined,
- megotsCondition: draft.wasteMegotsCondition,
- plastiqueKg: toOptionalNumber(draft.wastePlastiqueKg,"Plastique kg") ?? undefined,
- verreKg: toOptionalNumber(draft.wasteVerreKg,"Verre kg") ?? undefined,
- metalKg: toOptionalNumber(draft.wasteMetalKg,"Métal kg") ?? undefined,
- mixteKg: toOptionalNumber(draft.wasteMixteKg,"Mixte kg") ?? undefined,
- triQuality: draft.triQuality,
+ recyclablesKg: toOptionalNumber(draft.wasteRecyclablesKg,"Recyclables kg") ?? null,
+ glassKg: toOptionalNumber(draft.wasteGlassKg,"Verre kg") ?? null,
+ householdWasteKg: toOptionalNumber(draft.wasteHouseholdKg,"Déchets ménagers kg") ?? null,
+ otherWasteKg: toOptionalNumber(draft.wasteOtherKg,"Autres déchets kg") ?? null,
+ unusualObjects: toOptionalText(draft.wasteUnusualObjects),
+ specialHandlingWaste: toOptionalText(draft.wasteSpecialHandlingWaste),
  };
 
  return {
@@ -196,6 +195,7 @@ function buildActionEditPayload(
  latitude: toOptionalNumber(draft.latitude,"Latitude"),
  longitude: toOptionalNumber(draft.longitude,"Longitude"),
   wasteKg: toOptionalNumber(draft.wasteKg,"Poids total"),
+  cigaretteButtsKg: toOptionalNumber(draft.cigaretteButtsKg,"Mégots kg"),
   cigaretteButts: (() => {
   const value = toOptionalNumber(draft.cigaretteButts,"Mégots");
   return value === null ? null : Math.trunc(value);
@@ -204,7 +204,8 @@ function buildActionEditPayload(
  durationMinutes: Math.trunc(toRequiredNumber(draft.durationMinutes,"Durée")),
  notes: toOptionalText(draft.notes),
  placeType: toOptionalText(draft.placeType),
- submissionMode: draft.submissionMode,
+  submissionMode: draft.submissionMode,
+  wasteMeasurementMethod: draft.wasteMeasurementMethod || undefined,
  wasteBreakdown,
  manualDrawing: parseManualDrawing(draft.manualDrawingJson),
  };

@@ -14,6 +14,7 @@ import {
   getTimeContractValidationMessage,
   isValidClockTime,
 } from "@/lib/actions/time-contract";
+import { ACTION_WASTE_MEASUREMENT_METHODS } from "@/lib/waste/measurement";
 
 const coordinateSchema = z.tuple([
   z.number().min(-90).max(90),
@@ -58,6 +59,13 @@ const contractGeometrySchema = z
   });
 
 const wasteBreakdownSchema = z.object({
+  recyclablesKg: z.number().min(0).max(100000).nullable().optional(),
+  glassKg: z.number().min(0).max(100000).nullable().optional(),
+  householdWasteKg: z.number().min(0).max(100000).nullable().optional(),
+  otherWasteKg: z.number().min(0).max(100000).nullable().optional(),
+  unusualObjects: z.string().max(2000).nullable().optional(),
+  specialHandlingWaste: z.string().max(2000).nullable().optional(),
+  // Bounded read compatibility for existing metadata markers.
   megotsKg: z.number().min(0).max(100000).optional(),
   megotsCondition: z.enum(["propre", "humide", "mouille"]).optional(),
   plastiqueKg: z.number().min(0).max(100000).optional(),
@@ -66,6 +74,11 @@ const wasteBreakdownSchema = z.object({
   mixteKg: z.number().min(0).max(100000).optional(),
   triQuality: z.enum(["faible", "moyenne", "elevee"]).optional(),
 });
+
+const wasteMeasurementMethodSchema = z
+  .enum(ACTION_WASTE_MEASUREMENT_METHODS)
+  .nullable()
+  .optional();
 
 const photoAssetSchema = z.object({
   id: z.string().min(1).max(120),
@@ -223,6 +236,7 @@ const createActionLegacyBaseSchema = z.object({
     "Contexte historique de calibration invalide.",
   ).nullable().optional(),
   wasteKg: z.number().min(0).max(100000).nullable().optional(),
+  cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
   cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
   cigaretteButtsCount: z.number().int().min(0).max(10000).nullable().optional(),
   volunteersCount: z.number().int().min(1).max(500).default(1),
@@ -237,6 +251,7 @@ const createActionLegacyBaseSchema = z.object({
   geometrySource: z.enum(ACTION_GEOMETRY_SOURCES).nullable().optional(),
   submissionMode: z.enum(["quick", "complete"]).optional(),
   wasteBreakdown: wasteBreakdownSchema.optional(),
+  wasteMeasurementMethod: wasteMeasurementMethodSchema,
   photos: z.array(photoAssetSchema).max(3).optional(),
   visionEstimate: visionEstimateSchema.nullable().optional(),
   userMetadata: userMetadataSchema.optional(),
@@ -266,7 +281,7 @@ const createActionContractSchema = z.object({
     eventStartTime: eventTimeSchema,
     eventEndTime: eventTimeSchema,
   }),
-  metadata: z.object({
+    metadata: z.object({
     actorName: z.string().min(1).max(120).optional(),
     associationName: associationNameSchema,
     organizerType: organizerTypeSchema.nullable().optional(),
@@ -274,8 +289,9 @@ const createActionContractSchema = z.object({
     participantAccounts: accountTokensSchema,
     groupJoinEnabled: z.boolean().optional(),
     placeType: z.string().max(80).optional(),
-    wasteKg: z.number().min(0).max(100000).nullable().optional(),
-    cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
+      wasteKg: z.number().min(0).max(100000).nullable().optional(),
+      cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
+      cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
     volunteersCount: z.number().int().min(1).max(500).optional(),
     durationMinutes: z
       .number()
@@ -289,7 +305,8 @@ const createActionContractSchema = z.object({
     submissionMode: z.enum(["quick", "complete"]).optional(),
     actionPhase: actionPhaseSchema.optional(),
     preparationData: preparationDataSchema.nullable().optional(),
-    wasteBreakdown: wasteBreakdownSchema.optional(),
+      wasteBreakdown: wasteBreakdownSchema.optional(),
+      wasteMeasurementMethod: wasteMeasurementMethodSchema,
     photos: z.array(photoAssetSchema).max(3).optional(),
     visionEstimate: visionEstimateSchema.nullable().optional(),
   }),

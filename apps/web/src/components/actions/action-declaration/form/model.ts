@@ -1,4 +1,9 @@
-import type { ActionDrawing, ActionMegotsCondition, ActionRecordType } from"@/lib/actions/types";
+import type {
+ ActionDrawing,
+ ActionMegotsCondition,
+ ActionRecordType,
+ ActionWasteMeasurementMethod,
+} from"@/lib/actions/types";
 import {
  ASSOCIATION_SELECTION_OPTIONS,
 } from"@/lib/actions/association-options";
@@ -42,6 +47,13 @@ export type FormState = {
  latitude: string;
  longitude: string;
  wasteKg: string;
+ wasteMeasurementMethod: ActionWasteMeasurementMethod | "";
+ wasteRecyclablesKg: string;
+ wasteGlassKg: string;
+ wasteHouseholdKg: string;
+ wasteOtherKg: string;
+ wasteUnusualObjects: string;
+ wasteSpecialHandlingWaste: string;
  cigaretteButts: string;
  cigaretteButtsCount: string; // Nouveau champ pour le nombre de mégots
  cigaretteButtsCondition: ActionMegotsCondition; // État des mégots pour conversion
@@ -96,7 +108,14 @@ export const initialState: FormState = {
  recordType:"action",
  latitude:"",
  longitude:"",
-  wasteKg:"",
+ wasteKg:"",
+ wasteMeasurementMethod:"",
+ wasteRecyclablesKg:"",
+ wasteGlassKg:"",
+ wasteHouseholdKg:"",
+ wasteOtherKg:"",
+ wasteUnusualObjects:"",
+ wasteSpecialHandlingWaste:"",
   cigaretteButts:"",
  cigaretteButtsCount:"", // Optionnel par défaut
  cigaretteButtsCondition:"propre", // État par défaut

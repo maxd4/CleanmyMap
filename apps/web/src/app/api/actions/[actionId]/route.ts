@@ -48,9 +48,11 @@ type ActionAuditSnapshot = {
   actionPhase: ActionSnapshotSource["action_phase"];
   groupJoinEnabled: boolean;
   wasteKg: number | null;
+  cigaretteButtsKg: number | null;
   cigaretteButts: number | null;
   volunteersCount: number | null;
   durationMinutes: number | null;
+  wasteMeasurementMethod: string | null;
   eventStartTime: string | null;
   eventEndTime: string | null;
   actorNameChanged: boolean;
@@ -188,9 +190,11 @@ function buildActionAuditSnapshots(
       actionPhase: current.action_phase,
       groupJoinEnabled: currentMetadata.groupJoinEnabled,
       wasteKg: current.waste_kg ?? null,
+      cigaretteButtsKg: currentMetadata.cigaretteButtsKg,
       cigaretteButts: current.cigarette_butts ?? null,
       volunteersCount: current.volunteers_count ?? null,
       durationMinutes: current.duration_minutes ?? null,
+      wasteMeasurementMethod: currentMetadata.wasteMeasurementMethod,
       eventStartTime: normalizeClockTime(current.event_start_time),
       eventEndTime: normalizeClockTime(current.event_end_time),
       ...flags,
@@ -202,6 +206,10 @@ function buildActionAuditSnapshots(
         body.groupJoinEnabled ?? currentMetadata.groupJoinEnabled,
       wasteKg:
         body.wasteKg !== undefined ? body.wasteKg : current.waste_kg ?? null,
+      cigaretteButtsKg:
+        body.cigaretteButtsKg !== undefined
+          ? body.cigaretteButtsKg
+          : currentMetadata.cigaretteButtsKg,
       cigaretteButts:
         body.cigaretteButts !== undefined
           ? body.cigaretteButts
@@ -210,6 +218,10 @@ function buildActionAuditSnapshots(
         body.volunteersCount ?? current.volunteers_count ?? null,
       durationMinutes:
         body.durationMinutes ?? current.duration_minutes ?? null,
+      wasteMeasurementMethod:
+        body.wasteMeasurementMethod !== undefined
+          ? body.wasteMeasurementMethod
+          : currentMetadata.wasteMeasurementMethod,
       eventStartTime:
         body.eventStartTime !== undefined
           ? body.eventStartTime
@@ -248,6 +260,7 @@ function buildActionEditorPayload(
     latitude: row.latitude,
     longitude: row.longitude,
     wasteKg: row.waste_kg,
+    cigaretteButtsKg: metadata.cigaretteButtsKg,
     cigaretteButts: row.cigarette_butts,
     volunteersCount: row.volunteers_count,
     durationMinutes: row.duration_minutes,
@@ -264,6 +277,7 @@ function buildActionEditorPayload(
     routeStyle: metadata.routeStyle,
     routeAdjustmentMessage: metadata.routeAdjustmentMessage,
     wasteBreakdown: metadata.wasteBreakdown,
+    wasteMeasurementMethod: metadata.wasteMeasurementMethod,
     photos: metadata.photos,
     visionEstimate: metadata.visionEstimate,
     manualDrawing: parsedDrawing.manualDrawing,
@@ -482,6 +496,8 @@ export async function PATCH(
         key !== "departmentName" &&
         key !== "eventStartTime" &&
         key !== "eventEndTime" &&
+        key !== "wasteMeasurementMethod" &&
+        key !== "cigaretteButtsKg" &&
         value !== undefined,
     );
 
@@ -579,6 +595,14 @@ export async function PATCH(
           body.submissionMode ?? currentMetadata.submissionMode ?? undefined,
         wasteBreakdown:
           body.wasteBreakdown ?? currentMetadata.wasteBreakdown ?? undefined,
+        wasteMeasurementMethod:
+          body.wasteMeasurementMethod ??
+          currentMetadata.wasteMeasurementMethod ??
+          undefined,
+        cigaretteButtsKg:
+          body.cigaretteButtsKg !== undefined
+            ? body.cigaretteButtsKg
+            : currentMetadata.cigaretteButtsKg,
         photos:
           body.photos?.map((photo) => ({
             id: photo.id,

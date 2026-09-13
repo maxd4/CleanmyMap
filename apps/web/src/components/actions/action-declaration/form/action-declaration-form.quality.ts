@@ -52,6 +52,13 @@ export function computeActionDataQuality({
 
  const hasExplicitDetails =
  form.notes.trim().length > 10 ||
+ form.wasteRecyclablesKg.trim().length > 0 ||
+ form.wasteGlassKg.trim().length > 0 ||
+ form.wasteHouseholdKg.trim().length > 0 ||
+ form.wasteOtherKg.trim().length > 0 ||
+ form.wasteUnusualObjects.trim().length > 0 ||
+ form.wasteSpecialHandlingWaste.trim().length > 0 ||
+ // Old draft fields remain readable but are not serialized by new writes.
  form.wastePlastiqueKg.trim().length > 0 ||
  form.wasteVerreKg.trim().length > 0 ||
  form.wasteMetalKg.trim().length > 0 ||

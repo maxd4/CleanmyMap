@@ -193,7 +193,7 @@ export function ActionDeclarationMainFields({
                   = {cigaretteButtsKg.toFixed(3)} kg
                 </p>
                 <p className="cmm-text-caption text-orange-700 mt-1">
-                  Cette masse sera ajoutée automatiquement au poids total
+                  Cette masse reste distincte du poids total hors mégots
                 </p>
               </div>
             )}
