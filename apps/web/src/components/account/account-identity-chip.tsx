@@ -144,7 +144,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
             <button
               {...triggerProps}
               aria-label={locale === "fr" ? "Menu du profil actif" : "Active profile menu"}
-              className="cmm-dropdown-trigger inline-flex h-11 min-h-11 w-11 min-w-11 max-w-[13rem] items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.06] px-0 text-left text-white transition-colors hover:border-white/25 hover:bg-white/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 active:scale-[0.99] lg:h-auto lg:w-auto lg:min-w-0 lg:px-3 xl:h-10 xl:min-h-0"
+              className="cmm-dropdown-trigger inline-flex h-11 min-h-11 w-11 min-w-11 max-w-[13rem] items-center justify-center gap-2 rounded-xl border border-white/12 bg-white/[0.06] px-0 text-left text-white transition-colors hover:border-white/25 hover:bg-white/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60 lg:h-auto lg:w-auto lg:min-w-0 lg:px-3 xl:h-10 xl:min-h-0"
             >
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/10 text-emerald-200">
               <BadgePictogram
@@ -299,7 +299,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
             <button
               {...triggerProps}
               aria-label={locale === "fr" ? "Menu des badges" : "Badges menu"}
-              className="cmm-dropdown-trigger flex min-h-11 items-center gap-2 rounded-full border border-cyan-100/12 bg-white/8 px-3 cmm-text-caption font-bold text-white transition hover:border-cyan-200/32 hover:bg-white/14 hover:text-white active:scale-95"
+              className="cmm-dropdown-trigger flex min-h-11 items-center gap-2 rounded-full border border-cyan-100/12 bg-white/8 px-3 cmm-text-caption font-bold text-white transition hover:border-cyan-200/32 hover:bg-white/14 hover:text-white"
             >
             <BadgePictogram name="award" size={14} className="cmm-text-secondary" />
             <span className="hidden sm:inline">

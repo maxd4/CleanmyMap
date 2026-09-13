@@ -70,7 +70,7 @@ function GpsButton({
             ? "border-emerald-300 bg-[#ECF8EF] text-emerald-800 hover:bg-[#E0F4E6]"
             : isError
               ? "border-rose-200 bg-[#FFF7F8] text-rose-700 hover:bg-[#FFEFF2]"
-              : "border-sky-200 bg-[#EFFAF3] text-sky-800 hover:bg-[#EAF7EF] active:scale-[0.98]",
+              : "border-sky-200 bg-[#EFFAF3] text-sky-800 hover:bg-[#EAF7EF]",
           isLocating && "cursor-not-allowed opacity-70"
         )}
       >

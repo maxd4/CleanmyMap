@@ -46,6 +46,53 @@ export const canonicalTextSurfaceSelectors = [
   ".cmm-surface-action:hover",
 ];
 
+const cmmButtonOpeningTagPattern = /<CmmButton\b[^>]*>/g;
+const cmmButtonClassNamePattern = /\bclassName\s*=\s*(?:"([^"]*)"|'([^']*)'|\{`([^`]*)`\})/;
+const cmmButtonScalePattern = /\b(?:hover|active|group-hover):scale-[^\s"'`}]+/g;
+
+export function auditCmmButtonLocalScalesInSource(source, sourceName = "source") {
+  const violations = [];
+
+  for (const match of source.matchAll(cmmButtonOpeningTagPattern)) {
+    const openingTag = match[0];
+    const classNameMatch = openingTag.match(cmmButtonClassNamePattern);
+    if (!classNameMatch) continue;
+
+    const className = classNameMatch.slice(1).find(Boolean) ?? "";
+    for (const token of className.matchAll(cmmButtonScalePattern)) {
+      violations.push(`${sourceName}: CmmButton className contains local text-surface scale: ${token[0]}`);
+    }
+  }
+
+  return violations;
+}
+
+export function auditCmmButtonLocalScales(root = repositoryRoot) {
+  const sourceRoot = path.join(root, "apps", "web", "src");
+  const violations = [];
+
+  function visit(directory) {
+    if (!fs.existsSync(directory)) return;
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        visit(entryPath);
+        continue;
+      }
+      if (!entry.isFile() || !/\.(?:ts|tsx)$/.test(entry.name)) continue;
+
+      const relativePath = path.relative(root, entryPath).split(path.sep).join("/");
+      violations.push(...auditCmmButtonLocalScalesInSource(
+        fs.readFileSync(entryPath, "utf8"),
+        relativePath,
+      ));
+    }
+  }
+
+  visit(sourceRoot);
+  return violations;
+}
+
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -133,6 +180,7 @@ export function auditSurfaceRepository(root = repositoryRoot) {
   }
 
   violations.push(...auditCanonicalTextSurfaceScales(globals, globalsPath));
+  violations.push(...auditCmmButtonLocalScales(root));
 
   return { violations, globals };
 }

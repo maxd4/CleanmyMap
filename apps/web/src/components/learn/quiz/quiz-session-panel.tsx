@@ -380,7 +380,7 @@ export function QuizSessionPanel({
                       <button
                         type="button"
                         onClick={onNextQuestion}
-                        className={`${INTERACTIVE_FOCUS_RING} inline-flex flex-1 items-center justify-center rounded-[1.5rem] bg-emerald-600 py-4 font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95`}
+                        className={`${INTERACTIVE_FOCUS_RING} inline-flex flex-1 items-center justify-center rounded-[1.5rem] bg-emerald-600 py-4 font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700`}
                       >
                         {getQuizUiCopy(locale, "session.school.nextQuestion")}
                       </button>
@@ -388,7 +388,7 @@ export function QuizSessionPanel({
                       <button
                         type="button"
                         onClick={onNextQuestion}
-                        className={`${INTERACTIVE_FOCUS_RING} inline-flex flex-1 items-center justify-center rounded-[1.5rem] bg-emerald-600 py-4 font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95`}
+                        className={`${INTERACTIVE_FOCUS_RING} inline-flex flex-1 items-center justify-center rounded-[1.5rem] bg-emerald-600 py-4 font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700`}
                       >
                         {getQuizUiCopy(locale, "session.school.finishWorkshop")}
                       </button>
@@ -410,7 +410,7 @@ export function QuizSessionPanel({
                     <button
                       type="button"
                       onClick={onNextQuestion}
-                      className={`${INTERACTIVE_FOCUS_RING} flex-1 rounded-[1.5rem] bg-emerald-600 py-4 font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95`}
+                      className={`${INTERACTIVE_FOCUS_RING} flex-1 rounded-[1.5rem] bg-emerald-600 py-4 font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700`}
                     >
                       {getQuizUiCopy(locale, "session.school.nextQuestion")}
                     </button>
@@ -418,7 +418,7 @@ export function QuizSessionPanel({
                     <button
                       type="button"
                       onClick={onNextQuestion}
-                      className={`${INTERACTIVE_FOCUS_RING} flex-1 rounded-[1.5rem] bg-emerald-600 py-4 font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95`}
+                      className={`${INTERACTIVE_FOCUS_RING} flex-1 rounded-[1.5rem] bg-emerald-600 py-4 font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700`}
                     >
                       {getQuizUiCopy(locale, "session.viewSummary")}
                     </button>

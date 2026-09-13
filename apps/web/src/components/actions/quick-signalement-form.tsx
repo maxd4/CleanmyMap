@@ -236,7 +236,7 @@ export function TrashSpotterObservationForm({
                setPendingPhotoUploads([]);
                setSubmittedSignalementId(null);
              }}
-            className="flex-1 py-6 rounded-[2rem] bg-white text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-400 transition-all active:scale-95"
+            className="flex-1 py-6 rounded-[2rem] bg-white text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-400 transition-all"
           >
             Nouveau Signalement
           </button>
@@ -273,7 +273,7 @@ export function TrashSpotterObservationForm({
           <button
             onClick={retryPhotoUploads}
             disabled={isPreparingPhotos}
-            className="flex-1 py-6 rounded-[2rem] bg-amber-300 text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-amber-200 transition-all active:scale-95 disabled:opacity-50"
+            className="flex-1 py-6 rounded-[2rem] bg-amber-300 text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-amber-200 transition-all disabled:opacity-50"
           >
             {isPreparingPhotos ? "Nouvel essai..." : "Réessayer les photos"}
           </button>
@@ -415,7 +415,7 @@ export function TrashSpotterObservationForm({
          <button
            onClick={handleSubmit}
            disabled={(!isCleanPlace && selectedCategories.length === 0) || !location || isSubmitting || isPreparingPhotos}
-          className="group relative w-full overflow-hidden rounded-[2.5rem] bg-emerald-500 p-8 text-black transition-all hover:bg-emerald-400 disabled:opacity-20 disabled:grayscale active:scale-[0.98] shadow-2xl shadow-emerald-500/20"
+          className="group relative w-full overflow-hidden rounded-[2.5rem] bg-emerald-500 p-8 text-black transition-all hover:bg-emerald-400 disabled:opacity-20 disabled:grayscale shadow-2xl shadow-emerald-500/20"
         >
           <div className="relative z-10 flex items-center justify-center gap-4">
             {isSubmitting || isPreparingPhotos ? (

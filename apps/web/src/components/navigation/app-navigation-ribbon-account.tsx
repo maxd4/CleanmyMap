@@ -140,7 +140,7 @@ export function RibbonAccountActions({
                   prefetch={false}
                   aria-label={locale === "fr" ? "Créer un compte CleanMyMap" : "Sign up for CleanMyMap"}
                   onClick={() => onTrackNavigation("/sign-up", locale === "fr" ? "S'inscrire" : "Sign up", null)}
-                  className="inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#27C3D9] to-[#18B68F] px-0 cmm-text-caption font-bold text-[#16313b] shadow-lg shadow-cyan-900/15 transition hover:from-[#2F80C3] hover:to-[#27C3D9] active:scale-95 lg:h-auto lg:w-auto lg:px-4 xl:h-10 xl:min-h-0"
+                  className="inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#27C3D9] to-[#18B68F] px-0 cmm-text-caption font-bold text-[#16313b] shadow-lg shadow-cyan-900/15 transition hover:from-[#2F80C3] hover:to-[#27C3D9] lg:h-auto lg:w-auto lg:px-4 xl:h-10 xl:min-h-0"
                 >
                   <UserPlus className="h-4 w-4 lg:hidden" aria-hidden="true" />
                   <span className="hidden lg:inline">
