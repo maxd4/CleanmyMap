@@ -8,6 +8,7 @@ import {
   ActionVisionEstimate,
   CreateActionPayload,
 } from "../types";
+import type { ActionGeometrySource } from "../types";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { OrganizerType } from "../organizer-type";
 
@@ -29,6 +30,7 @@ export type ActionContractCreatePayload = {
   geometry?: {
     kind: "polyline" | "polygon";
     coordinates: [number, number][];
+    geometrySource?: ActionGeometrySource | null;
   };
   dates: {
     observedAt: string;
@@ -83,6 +85,7 @@ export function toContractCreatePayload(
       ? {
           kind: payload.manualDrawing.kind,
           coordinates: payload.manualDrawing.coordinates,
+          geometrySource: payload.geometrySource ?? null,
         }
       : undefined,
     dates: {
@@ -191,6 +194,7 @@ function normalizeContractCreatePayload(
     photos: payload.metadata.photos ?? undefined,
     visionEstimate: payload.metadata.visionEstimate ?? undefined,
     manualDrawing: buildManualDrawing(payload.geometry),
+    geometrySource: payload.geometry?.geometrySource ?? undefined,
     placeType: payload.metadata.placeType ?? undefined,
   };
 }

@@ -1,16 +1,14 @@
-import type { ActionDrawing, ActionGeometryKind } from "@/lib/actions/types";
+import type {
+  ActionDrawing,
+  ActionGeometryKind,
+  ActionGeometryOrigin,
+} from "@/lib/actions/types";
+export type { ActionGeometryOrigin } from "@/lib/actions/types";
 export { GEOMETRY_CONFIDENCE } from "./geometry-core.ts";
 import {
   resolveBestGeometry as resolveBestGeometryResolution,
   resolveGeometrySourceFromConfidence as resolveGeometrySourceFromConfidenceResolution,
 } from "./geometry-resolution.ts";
-
-export type ActionGeometryOrigin =
-  | "manual"
-  | "reference"
-  | "routed"
-  | "estimated_area"
-  | "fallback_point";
 
 export type PersistedDerivedGeometry = {
   kind: ActionGeometryKind;

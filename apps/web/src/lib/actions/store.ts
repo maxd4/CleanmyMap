@@ -421,23 +421,31 @@ async function resolveCreateActionDrawing(
   );
 }
 
-function buildCreateActionGeometry(
+export function buildCreateActionGeometry(
   payload: CreateActionPayload,
   finalDrawing: ActionDrawing | null,
 ) {
+  const geometrySource = finalDrawing
+    ? finalDrawing.kind === "polygon"
+      ? "manual"
+      : payload.geometrySource === "manual" || payload.geometrySource === "routed"
+        ? payload.geometrySource
+        : payload.manualDrawing
+          ? "manual"
+          : "routed"
+    : "fallback_point";
+
   return buildPersistedGeometry({
     drawing: finalDrawing,
     geojson: finalDrawing ? toGeoJsonString(finalDrawing) : null,
     confidence: finalDrawing
-      ? payload.manualDrawing
+      ? geometrySource === "manual"
         ? GEOMETRY_CONFIDENCE.MANUAL_DRAWING
-        : GEOMETRY_CONFIDENCE.AUTO_ROUTE
+        : geometrySource === "routed"
+          ? GEOMETRY_CONFIDENCE.AUTO_ROUTE
+          : null
       : GEOMETRY_CONFIDENCE.POINT_FALLBACK,
-    geometrySourceHint: finalDrawing
-      ? payload.manualDrawing
-        ? "manual"
-        : "routed"
-      : "fallback_point",
+    geometrySourceHint: geometrySource,
     latitude: payload.latitude ?? null,
     longitude: payload.longitude ?? null,
     locationLabel: payload.locationLabel,

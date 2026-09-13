@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import type { FormState } from "../form/model";
-import type { ActionDrawing } from "@/lib/actions/types";
+import type { ActionDrawing, ActionGeometrySource } from "@/lib/actions/types";
 import type { UpdateFormField } from "../types";
 import {
   getLocalGeoAddressSuggestions,
@@ -34,7 +34,10 @@ interface ActionStepLocationProps {
   updateField: UpdateFormField;
   recordType: FormState["recordType"];
   manualDrawing: ActionDrawing | null;
-  setManualDrawing: (drawing: ActionDrawing | null) => void;
+  setManualDrawing: (
+    drawing: ActionDrawing | null,
+    geometrySource?: ActionGeometrySource | null,
+  ) => void;
   routePreviewDrawing: ActionDrawing | null;
   onResetManualDrawing?: () => void;
   gpsStatus: "idle" | "locating" | "success" | "error";

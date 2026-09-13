@@ -151,6 +151,9 @@ function resolveGeoJsonGeometry(item: ActionMapItem): GeoJsonGeometry | null {
 }
 
 function buildFeatureProperties(item: ActionMapItem): Record<string, unknown> {
+  const geometrySource =
+    item.contract?.geometry.geometrySource ?? item.geometry_source ?? null;
+
   return {
     id: item.id,
     created_at: resolveCreatedAt(item),
@@ -167,8 +170,8 @@ function buildFeatureProperties(item: ActionMapItem): Record<string, unknown> {
     notes_plain: item.contract?.metadata.notesPlain ?? item.notes_plain ?? null,
     geometry_kind: item.contract?.geometry.kind ?? item.geometry_kind ?? null,
     geometry_confidence: item.contract?.geometry.confidence ?? item.geometry_confidence ?? null,
-    geometry_source: item.contract?.geometry.geometrySource ?? item.geometry_source ?? null,
-    has_manual_drawing: Boolean(item.contract?.metadata.manualDrawing ?? item.manual_drawing),
+    geometry_source: geometrySource,
+    has_manual_drawing: geometrySource === "manual",
   };
 }
 

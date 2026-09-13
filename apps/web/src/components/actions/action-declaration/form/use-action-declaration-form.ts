@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useSyncExternalStore } from "react";
+import { useState, useEffect, useRef, useMemo, useSyncExternalStore, useCallback } from "react";
 import {
   createAction,
   fetchActionById,
@@ -12,6 +12,7 @@ import {
 } from "@/lib/actions/association-options";
 import type {
   ActionDrawing,
+  ActionGeometrySource,
   ActionPhotoAsset,
   ActionVisionEstimate,
 } from "@/lib/actions/types";
@@ -91,7 +92,8 @@ export function useActionDeclarationForm({
     () => null,
   );
   const [manualDrawingEnabled] = useState<boolean>(true);
-  const [manualDrawing, setManualDrawing] = useState<ActionDrawing | null>(null);
+  const [manualDrawing, setManualDrawingState] = useState<ActionDrawing | null>(null);
+  const [manualDrawingSource, setManualDrawingSource] = useState<ActionGeometrySource | null>(null);
   const [photoAssets, setPhotoAssets] = useState<ActionPhotoAsset[]>([]);
   const [visionEstimate, setVisionEstimate] = useState<ActionVisionEstimate | null>(null);
   const [visionStatus, setVisionStatus] = useState<"idle" | "processing" | "ready" | "error">("idle");
@@ -111,6 +113,14 @@ export function useActionDeclarationForm({
   const [isHydratingAction, setIsHydratingAction] = useState<boolean>(Boolean(initialActionId));
   const [hydrationError, setHydrationError] = useState<string | null>(null);
   const hasTrackedStartRef = useRef<boolean>(false);
+
+  const setManualDrawing = useCallback((
+    drawing: ActionDrawing | null,
+    geometrySource?: ActionGeometrySource | null,
+  ) => {
+    setManualDrawingState(drawing);
+    setManualDrawingSource(drawing ? geometrySource ?? "manual" : null);
+  }, []);
 
   const isCleanPlaceMode = form.recordType === "clean_place";
 
@@ -229,13 +239,14 @@ export function useActionDeclarationForm({
         effectiveManualDrawingEnabled: manualDrawingEnabled,
         drawingIsValid,
         manualDrawing,
+        manualDrawingSource,
         isEntrepriseMode,
         linkedEventId,
         photos: photoAssets,
         visionEstimate,
         userMetadata,
       }),
-    [declarationMode, drawingIsValid, manualDrawingEnabled, form, isEntrepriseMode, linkedEventId, manualDrawing, photoAssets, visionEstimate, userMetadata]
+    [declarationMode, drawingIsValid, manualDrawingEnabled, form, isEntrepriseMode, linkedEventId, manualDrawing, manualDrawingSource, photoAssets, visionEstimate, userMetadata]
   );
 
   const dataQuality = useMemo(
@@ -444,6 +455,7 @@ export function useActionDeclarationForm({
         effectiveManualDrawingEnabled: manualDrawingEnabled,
         drawingIsValid: manualDrawingValidation.isValid,
         manualDrawing,
+        manualDrawingSource,
         routePreviewDrawing: effectiveRoutePreviewDrawing,
         isEntrepriseMode,
         linkedEventId,

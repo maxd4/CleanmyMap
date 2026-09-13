@@ -22,12 +22,14 @@ import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
 export type ActionGeometryKind = "point" | "polyline" | "polygon";
-export type ActionGeometryOrigin =
-  | "manual"
-  | "reference"
-  | "routed"
-  | "estimated_area"
-  | "fallback_point";
+export const ACTION_GEOMETRY_SOURCES = [
+  "manual",
+  "reference",
+  "routed",
+  "estimated_area",
+  "fallback_point",
+] as const;
+export type ActionGeometryOrigin = (typeof ACTION_GEOMETRY_SOURCES)[number];
 export type ActionGeometrySource = ActionGeometryOrigin;
 export type ActionSubmissionMode = "quick" | "complete";
 export type ActionPhase =
@@ -256,6 +258,8 @@ export type CreateActionPayload = {
   notes?: string;
   placeType?: string;
   manualDrawing?: ActionDrawing;
+  /** Provenance of the final geometry represented by manualDrawing. */
+  geometrySource?: ActionGeometrySource | null;
   submissionMode?: ActionSubmissionMode;
   wasteBreakdown?: ActionWasteBreakdown;
   recordType?: ActionRecordType;

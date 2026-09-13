@@ -61,7 +61,9 @@ function hasValidCoordinates(item: ActionListItem): boolean {
   );
 }
 
-function hasManualDrawing(item: ActionListItem): boolean {
+// Historical drawing fields prove that a geometry exists, not that its final
+// provenance is manual. geometry_source remains the provenance contract.
+function hasDrawingEvidence(item: ActionListItem): boolean {
   if (item.contract?.metadata.manualDrawing) {
     return true;
   }
@@ -141,13 +143,13 @@ function computeGeoloc(item: ActionListItem): {
   score: number;
   flags: string[];
 } {
-  if (hasValidCoordinates(item) && hasManualDrawing(item)) {
+  if (hasValidCoordinates(item) && hasDrawingEvidence(item)) {
     return { score: 100, flags: [] };
   }
   if (hasValidCoordinates(item)) {
     return { score: 80, flags: ["Trace geometrique manquante"] };
   }
-  if (hasManualDrawing(item)) {
+  if (hasDrawingEvidence(item)) {
     return { score: 65, flags: ["Centroide geoloc manquant"] };
   }
   return { score: 30, flags: ["Geolocalisation faible"] };
