@@ -29,6 +29,24 @@ describe("getVolunteerActionValidationIssues", () => {
     expect(issues).toEqual([]);
   });
 
+  it("accepts a canonical raw cigarette-butt measurement without a legacy alias", () => {
+    const issues = getVolunteerActionValidationIssues({
+      recordType: "action",
+      submissionMode: "complete",
+      wasteKg: null,
+      cigaretteButts: null,
+      cigaretteButtsMeasurements: {
+        cigaretteButtsCount: 0,
+        cigaretteButtsMassKg: null,
+        cigaretteButtsVolumeLiters: null,
+        cigaretteButtsCondition: "propre",
+      },
+      volunteersCount: 1,
+    });
+
+    expect(issues).toEqual([]);
+  });
+
   it("rejects an action when both measurements are unknown", () => {
     const issues = getVolunteerActionValidationIssues({
       recordType: "action",

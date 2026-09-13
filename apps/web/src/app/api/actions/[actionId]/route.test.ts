@@ -228,6 +228,68 @@ describe("PATCH /api/actions/:actionId", () => {
     );
   });
 
+  it("treats canonical raw PATCH input as server-authoritative and preserves explicit nulls", async () => {
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "pending",
+      action_phase: "post_action_complete",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-1",
+      cigarette_butts: 3_000,
+      notes: "Anciennes notes",
+    });
+    extractActionMetadataFromNotesMock.mockReturnValueOnce({
+      cleanNotes: "Anciennes notes",
+      cigaretteButtsKg: 1.2,
+      cigaretteButtsMeasurements: {
+        cigaretteButtsCount: 3_000,
+        cigaretteButtsMassKg: 1.2,
+        cigaretteButtsVolumeLiters: null,
+        cigaretteButtsCondition: "propre",
+        cigaretteButtsCountProvenance: "weight_converted",
+        cigaretteButtsMassProvenance: "measured",
+        cigaretteButtsVolumeProvenance: "unknown",
+        cigaretteButtsConversionFormulaVersion:
+          "impact-terrain-2026-butts-mass-v1",
+      },
+      associationName: null,
+      groupJoinEnabled: false,
+      departureLocationLabel: null,
+      arrivalLocationLabel: null,
+      routeStyle: "souple",
+      routeAdjustmentMessage: null,
+      placeType: null,
+      submissionMode: "complete",
+      wasteBreakdown: null,
+      wasteMeasurementMethod: null,
+      photos: null,
+      visionEstimate: null,
+    });
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({
+          cigaretteButtsMeasurements: {
+            cigaretteButtsCount: null,
+            cigaretteButtsMassKg: 1.2,
+            cigaretteButtsVolumeLiters: null,
+            cigaretteButtsCondition: "propre",
+            cigaretteButtsCountProvenance: "estimated",
+            cigaretteButtsConversionFormulaVersion: "client-forged",
+          },
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ cigarette_butts: null }),
+    );
+  });
+
   it("does not let a user PATCH department fields bypass server attribution", async () => {
     loadActionByIdMock.mockResolvedValueOnce({
       id: "action-test-1",

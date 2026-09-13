@@ -42,6 +42,14 @@ export type CigaretteButtsMeasurementInput = {
   deriveMissingFromMassOrCount?: boolean;
 };
 
+export type RawCigaretteButtsMeasurementInput = Pick<
+  CigaretteButtsMeasurementInput,
+  | "cigaretteButtsCount"
+  | "cigaretteButtsMassKg"
+  | "cigaretteButtsVolumeLiters"
+  | "cigaretteButtsCondition"
+>;
+
 function normalizeNullableNonNegative(
   value: number | null | undefined,
 ): number | null {
@@ -123,8 +131,71 @@ export function normalizeCigaretteButtsMeasurements(
   };
 }
 
+/**
+ * Resolves ordinary user input on the server. Provenance and formula version
+ * are deliberately not read from the input: they are assigned from the raw
+ * measurements and the canonical conversion rule here.
+ */
+export function normalizeCigaretteButtsMeasurementsFromUserInput(
+  input: RawCigaretteButtsMeasurementInput,
+  options: {
+    preserveExplicitNulls?: boolean;
+    explicitNullFields?: Array<
+      "cigaretteButtsCount" | "cigaretteButtsMassKg" | "cigaretteButtsVolumeLiters"
+    >;
+  } = {},
+): ActionCigaretteButtsMeasurements {
+  const normalized = normalizeCigaretteButtsMeasurements({
+    cigaretteButtsCount: input.cigaretteButtsCount,
+    cigaretteButtsMassKg: input.cigaretteButtsMassKg,
+    cigaretteButtsVolumeLiters: input.cigaretteButtsVolumeLiters,
+    cigaretteButtsCondition: input.cigaretteButtsCondition,
+    deriveMissingFromMassOrCount: true,
+  });
+
+  if (!options.preserveExplicitNulls && !options.explicitNullFields?.length) {
+    return normalized;
+  }
+
+  const result = { ...normalized };
+  let hadExplicitNull = false;
+  const shouldPreserveNull = (
+    field: "cigaretteButtsCount" | "cigaretteButtsMassKg" | "cigaretteButtsVolumeLiters",
+  ) =>
+    input[field] === null &&
+    (options.preserveExplicitNulls || options.explicitNullFields?.includes(field));
+
+  if (shouldPreserveNull("cigaretteButtsCount")) {
+    result.cigaretteButtsCount = null;
+    result.cigaretteButtsCountProvenance = "unknown";
+    hadExplicitNull = true;
+  }
+  if (shouldPreserveNull("cigaretteButtsMassKg")) {
+    result.cigaretteButtsMassKg = null;
+    result.cigaretteButtsMassProvenance = "unknown";
+    hadExplicitNull = true;
+  }
+  if (shouldPreserveNull("cigaretteButtsVolumeLiters")) {
+    result.cigaretteButtsVolumeLiters = null;
+    result.cigaretteButtsVolumeProvenance = "unknown";
+  }
+  if (hadExplicitNull) {
+    result.cigaretteButtsConversionFormulaVersion = null;
+  }
+
+  return result;
+}
+
 export function hasCigaretteButtsMeasurement(
-  measurements: ActionCigaretteButtsMeasurements | null | undefined,
+  measurements:
+    | Pick<
+        RawCigaretteButtsMeasurementInput,
+        | "cigaretteButtsCount"
+        | "cigaretteButtsMassKg"
+        | "cigaretteButtsVolumeLiters"
+      >
+    | null
+    | undefined,
 ): boolean {
   return Boolean(
     measurements &&

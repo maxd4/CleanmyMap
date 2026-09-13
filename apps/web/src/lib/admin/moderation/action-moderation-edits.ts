@@ -390,7 +390,11 @@ export async function buildAdminActionUpdates(
     cigarette_butts: payloadForNotes.cigaretteButts,
     volunteers_count: payloadForNotes.volunteersCount,
     duration_minutes: payloadForNotes.durationMinutes,
-    notes: buildPersistedNotes(payloadForNotes),
+    notes: buildPersistedNotes(payloadForNotes, {
+      resolvedCigaretteButtsMeasurements: hasCigaretteButtsMeasurementEdit
+        ? cigaretteButtsMeasurements ?? null
+        : undefined,
+    }),
   };
 
   if (edits.manualDrawing !== undefined) {

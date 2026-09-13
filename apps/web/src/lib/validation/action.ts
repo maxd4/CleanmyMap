@@ -15,7 +15,6 @@ import {
   isValidClockTime,
 } from "@/lib/actions/time-contract";
 import { ACTION_WASTE_MEASUREMENT_METHODS } from "@/lib/waste/measurement";
-import { CIGARETTE_BUTTS_PROVENANCES } from "@/lib/waste/cigarette-butts";
 
 const coordinateSchema = z.tuple([
   z.number().min(-90).max(90),
@@ -83,16 +82,15 @@ const wasteMeasurementMethodSchema = z
 
 const cigaretteButtsMeasurementsSchema = z
   .object({
-    cigaretteButtsCount: z.number().int().min(0).max(5_000_000).nullable(),
-    cigaretteButtsMassKg: z.number().min(0).max(100_000).nullable(),
-    cigaretteButtsVolumeLiters: z.number().min(0).max(100_000).nullable(),
+    // Ordinary HTTP payloads carry raw measurements only. Provenance and
+    // formula versions are assigned by the server and are not input fields.
+    cigaretteButtsCount: z.number().int().min(0).max(5_000_000).nullable().optional(),
+    cigaretteButtsMassKg: z.number().min(0).max(100_000).nullable().optional(),
+    cigaretteButtsVolumeLiters: z.number().min(0).max(100_000).nullable().optional(),
     cigaretteButtsCondition: z
       .enum(["propre", "humide", "mouille"])
-      .nullable(),
-    cigaretteButtsCountProvenance: z.enum(CIGARETTE_BUTTS_PROVENANCES),
-    cigaretteButtsMassProvenance: z.enum(CIGARETTE_BUTTS_PROVENANCES),
-    cigaretteButtsVolumeProvenance: z.enum(CIGARETTE_BUTTS_PROVENANCES),
-    cigaretteButtsConversionFormulaVersion: z.string().max(120).nullable(),
+      .nullable()
+      .optional(),
   })
   .nullable()
   .optional();

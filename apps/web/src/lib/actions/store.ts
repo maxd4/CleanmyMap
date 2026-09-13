@@ -20,7 +20,7 @@ import {
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/geometry/route-geometry";
 import {
-  normalizeCigaretteButtsMeasurements,
+  normalizeCigaretteButtsMeasurementsFromUserInput,
   type ActionCigaretteButtsMeasurements,
 } from "@/lib/waste/cigarette-butts";
 import {
@@ -314,6 +314,11 @@ type PersistedActionNotesPayload = Partial<Pick<
   >;
 };
 
+type PersistedActionNotesOptions = {
+  /** Internal server resolution; never sourced from an HTTP payload. */
+  resolvedCigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+};
+
 export function resolveActionCreationStatus(
   isAutoApprovedSubmission: boolean,
 ): ActionStatus {
@@ -322,8 +327,12 @@ export function resolveActionCreationStatus(
 
 export function buildPersistedNotes(
   payload: PersistedActionNotesPayload,
+  options: PersistedActionNotesOptions = {},
 ): string | null {
-  const cigaretteButtsMeasurements = resolveActionCigaretteButtsMeasurements(payload);
+  const cigaretteButtsMeasurements =
+    options.resolvedCigaretteButtsMeasurements !== undefined
+      ? options.resolvedCigaretteButtsMeasurements
+      : resolveActionCigaretteButtsMeasurements(payload);
   const baseWithMetadata = appendActionMetadataToNotes(payload.notes, {
     submissionMode: payload.submissionMode,
     wasteBreakdown: payload.wasteBreakdown,
@@ -377,13 +386,12 @@ function resolveActionCigaretteButtsMeasurements(
   >>,
 ): ActionCigaretteButtsMeasurements {
   if (payload.cigaretteButtsMeasurements) {
-    return normalizeCigaretteButtsMeasurements({
-      ...payload.cigaretteButtsMeasurements,
-      deriveMissingFromMassOrCount: false,
-    });
+    return normalizeCigaretteButtsMeasurementsFromUserInput(
+      payload.cigaretteButtsMeasurements,
+    );
   }
 
-  return normalizeCigaretteButtsMeasurements({
+  return normalizeCigaretteButtsMeasurementsFromUserInput({
     cigaretteButtsCount: payload.cigaretteButtsCount ?? payload.cigaretteButts,
     cigaretteButtsMassKg:
       payload.cigaretteButtsMassKg ??
@@ -393,7 +401,6 @@ function resolveActionCigaretteButtsMeasurements(
     cigaretteButtsVolumeLiters: payload.cigaretteButtsVolumeLiters ?? null,
     cigaretteButtsCondition:
       payload.cigaretteButtsCondition ?? payload.wasteBreakdown?.megotsCondition ?? null,
-    deriveMissingFromMassOrCount: true,
   });
 }
 

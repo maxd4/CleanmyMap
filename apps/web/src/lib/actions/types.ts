@@ -20,7 +20,10 @@ import type {
   ActionWasteMeasurementMethod,
   CanonicalWasteBreakdown,
 } from "@/lib/waste/measurement";
-import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
+import type {
+  ActionCigaretteButtsMeasurements,
+  RawCigaretteButtsMeasurementInput,
+} from "@/lib/waste/cigarette-butts";
 import type { ActionVolunteerParticipation } from "./volunteer-participation";
 import type { OrganizerType } from "./organizer-type";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
@@ -273,7 +276,7 @@ export type CreateActionPayload = {
   latitude?: number;
   longitude?: number;
   wasteKg: number | null;
-  cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+  cigaretteButtsMeasurements?: RawCigaretteButtsMeasurementInput | null;
   volunteerParticipation?: ActionVolunteerParticipation | null;
   cigaretteButtsMassKg?: number | null;
   cigaretteButtsVolumeLiters?: number | null;
