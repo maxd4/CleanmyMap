@@ -10,6 +10,7 @@ import { buildPersistedNotes } from "@/lib/actions/store";
 import type { ActionDrawing, CreateActionPayload } from "@/lib/actions/types";
 import type { getSupabaseServerClient } from "@/lib/supabase/server";
 import { runSingleActionQuery } from "@/lib/actions/query";
+import { resolveActionDepartmentForPersistence } from "@/lib/geo/action-department-resolver";
 
 const coordinateSchema = z.tuple([
   z.number().min(-90).max(90),
@@ -89,6 +90,8 @@ type ExistingActionRow = {
   department_name?: string | null;
   latitude: number | null;
   longitude: number | null;
+  derived_geometry_kind?: "point" | "polyline" | "polygon" | null;
+  derived_geometry_geojson?: string | null;
   waste_kg: number | null;
   cigarette_butts: number | null;
   volunteers_count: number | null;
@@ -125,7 +128,7 @@ async function loadExistingAction(
     row = await runSingleActionQuery<ExistingActionRow>(supabase, (query) =>
       query
         .select(
-          "action_date, location_label, department_code, department_name, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, actor_name, notes",
+          "action_date, location_label, department_code, department_name, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, waste_kg, cigarette_butts, volunteers_count, duration_minutes, actor_name, notes",
         )
         .eq("id", id)
         .maybeSingle(),
@@ -149,6 +152,39 @@ async function loadExistingAction(
     throw new Error("Action not found");
   }
   return row;
+}
+
+async function resolveDepartmentForModeration(params: {
+  existing: ExistingActionRow;
+  payload: CreateActionPayload;
+  edits: NonNullable<z.infer<typeof actionEditsSchema>>;
+  manualDrawing: ActionDrawing | null;
+}) {
+  const { existing, payload, edits, manualDrawing } = params;
+  const spatiallyChanged =
+    edits.manualDrawing !== undefined ||
+    edits.latitude !== undefined ||
+    edits.longitude !== undefined;
+  const preserveDepartmentFields =
+    !spatiallyChanged ||
+    edits.departmentCode !== undefined ||
+    edits.departmentName !== undefined;
+  return resolveActionDepartmentForPersistence({
+    latitude: payload.latitude,
+    longitude: payload.longitude,
+    geometry:
+      edits.manualDrawing !== undefined
+        ? {
+            kind: manualDrawing?.kind ?? "point",
+            coordinates: manualDrawing?.coordinates ?? [],
+          }
+        : {
+            kind: existing.derived_geometry_kind,
+            geojson: existing.derived_geometry_geojson,
+          },
+    departmentCode: preserveDepartmentFields ? payload.departmentCode : undefined,
+    departmentName: preserveDepartmentFields ? payload.departmentName : undefined,
+  });
 }
 
 export function buildAdminCleanPlaceUpdates(
@@ -251,6 +287,13 @@ export async function buildAdminActionUpdates(
     visionEstimate: parsedMetadata.visionEstimate ?? undefined,
   };
 
+  const department = await resolveDepartmentForModeration({
+    existing,
+    payload: payloadForNotes,
+    edits,
+    manualDrawing,
+  });
+
   const updates: Record<string, unknown> = {
     status,
     actor_name:
@@ -259,8 +302,8 @@ export async function buildAdminActionUpdates(
         : nullableText(existing.actor_name),
     action_date: payloadForNotes.actionDate,
     location_label: payloadForNotes.locationLabel,
-    department_code: nullableText(payloadForNotes.departmentCode),
-    department_name: nullableText(payloadForNotes.departmentName),
+    department_code: department.departmentCode,
+    department_name: department.departmentName,
     latitude: edits.latitude !== undefined ? edits.latitude : existing.latitude,
     longitude: edits.longitude !== undefined ? edits.longitude : existing.longitude,
     waste_kg: payloadForNotes.wasteKg,

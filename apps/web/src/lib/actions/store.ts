@@ -30,6 +30,7 @@ import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 import { toActionContract } from "@/lib/actions/unified-source/contracts";
 import { evaluateRepollutionPredictionBeforeObservation } from "@/lib/actions/pollution/repollution-prediction-evaluation";
 import { persistRepollutionPredictionEvaluation } from "@/lib/actions/pollution/repollution-prediction-evaluation-store";
+import { resolveActionDepartmentForPersistence } from "@/lib/geo/action-department-resolver";
 
 const ACTION_BASE_SELECT_FIELDS = [
   "id",
@@ -684,9 +685,24 @@ export async function createAction(
 
   const finalDrawing = await resolveCreateActionDrawing(payload);
   const persistedGeometry = buildCreateActionGeometry(payload, finalDrawing);
+  const department = await resolveActionDepartmentForPersistence({
+    latitude: payload.latitude,
+    longitude: payload.longitude,
+    geometry: {
+      kind: persistedGeometry.kind,
+      coordinates: persistedGeometry.coordinates,
+    },
+    departmentCode: payload.departmentCode,
+    departmentName: payload.departmentName,
+  });
+  const payloadWithDepartment: CreateActionPayload = {
+    ...payload,
+    departmentCode: department.departmentCode ?? undefined,
+    departmentName: department.departmentName ?? undefined,
+  };
   const actionId = await insertCreatedAction(supabase, {
     userId: params.userId,
-    payload,
+    payload: payloadWithDepartment,
     persistedGeometry,
     finalDrawing,
     status: params.status,
@@ -703,7 +719,10 @@ export async function createAction(
       manualParticipants: params.manualParticipants ?? [],
     }),
   );
-  await recordCreateActionTrainingExample(supabase, { actionId, payload });
+  await recordCreateActionTrainingExample(supabase, {
+    actionId,
+    payload: payloadWithDepartment,
+  });
 
   if (params.status === "approved") {
     await recordRepollutionPredictionEvaluationForAction(supabase, actionId);
