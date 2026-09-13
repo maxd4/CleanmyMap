@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { fetchActions } from "@/lib/actions/store";
 import { loadLocalActionContracts } from "@/lib/data/map-records";
 import { logFailure } from "@/lib/logging/failure-log";
+import { allowLocalActionStoreInCurrentRuntime } from "@/lib/persistence/runtime-store";
 import type {
   UnifiedActionContractsParams,
   UnifiedActionSourceLoadResult,
@@ -62,28 +63,34 @@ export async function loadUnifiedActionSourceData(
     params.types.includes("spot") ||
     params.types.includes("clean_place");
 
-  const [remoteRowsResult, remoteSpotsResult, localContracts] =
-    await Promise.allSettled([
-      wantsActions
-        ? fetchActions(supabase, {
-            limit: params.limit + 1,
-            status: params.status,
-            includeFuturePublicActions: params.includeFuturePublicActions,
-            floorDate: params.floorDate ?? undefined,
-            requireCoordinates: params.requireCoordinates,
-            viewport: params.viewport,
-          })
-        : Promise.resolve([]),
-      wantsSpots ? loadCanonicalSpots(supabase, params) : Promise.resolve([]),
-      wantsActions
-        ? loadLocalActionContracts({
-            status: params.status,
-            floorDate: params.floorDate,
-            limit: params.limit + 1,
-            requireCoordinates: params.requireCoordinates,
-          })
-        : Promise.resolve([]),
-    ]);
+  const [remoteRowsResult, remoteSpotsResult] = await Promise.allSettled([
+    wantsActions
+      ? fetchActions(supabase, {
+          limit: params.limit + 1,
+          status: params.status,
+          includeFuturePublicActions: params.includeFuturePublicActions,
+          floorDate: params.floorDate ?? undefined,
+          requireCoordinates: params.requireCoordinates,
+          viewport: params.viewport,
+        })
+      : Promise.resolve([]),
+    wantsSpots ? loadCanonicalSpots(supabase, params) : Promise.resolve([]),
+  ]);
+
+  const shouldUseLocalFallback =
+    wantsActions &&
+    remoteRowsResult.status === "rejected" &&
+    allowLocalActionStoreInCurrentRuntime();
+  const localContractsResult = shouldUseLocalFallback
+    ? (await Promise.allSettled([
+        loadLocalActionContracts({
+          status: params.status,
+          floorDate: params.floorDate,
+          limit: params.limit + 1,
+          requireCoordinates: params.requireCoordinates,
+        }),
+      ]))[0]
+    : null;
 
   const failedSources: UnifiedActionSourceLoadResult["failedSources"] = [];
   const availableSources: UnifiedActionSourceLoadResult["availableSources"] = [];
@@ -106,15 +113,17 @@ export async function loadUnifiedActionSourceData(
     availableSources.push("spots");
   }
 
-  if (wantsActions && localContracts.status === "rejected") {
-    throw localContracts.reason;
-  }
-  if (wantsActions) {
+  if (shouldUseLocalFallback && localContractsResult?.status === "fulfilled") {
     availableSources.push("local");
+  } else if (shouldUseLocalFallback && localContractsResult?.status === "rejected") {
+    failedSources.push("local");
+    logFailure("UnifiedSource", "Local actions fallback failed", localContractsResult.reason, {
+      source: "local",
+    });
   }
 
   const localContractsValue =
-    localContracts.status === "fulfilled" ? localContracts.value : [];
+    localContractsResult?.status === "fulfilled" ? localContractsResult.value : [];
 
   return {
     remoteRows: remoteRowsResult.status === "fulfilled" ? remoteRowsResult.value : [],
