@@ -80,6 +80,7 @@ export function CmmDropdown({
   const hoverOpenedMarkerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoverOpenedRef = useRef(false);
   const clickToggleOpenRef = useRef<boolean | null>(null);
+  const restoreFocusOnCloseRef = useRef(true);
   const wasOpenRef = useRef(isOpen);
   const [canHover, setCanHover] = useState(false);
   const placement = useDropdownPlacement({
@@ -139,6 +140,7 @@ export function CmmDropdown({
     clearHoverOpenTimer();
     clearHoverOpenedMarker();
     clearCloseTimer();
+    restoreFocusOnCloseRef.current = false;
     closeTimerRef.current = setTimeout(() => {
       setOpen(false);
       closeTimerRef.current = null;
@@ -149,6 +151,7 @@ export function CmmDropdown({
     clearHoverOpenTimer();
     clearHoverOpenedMarker();
     clearCloseTimer();
+    restoreFocusOnCloseRef.current = true;
     setOpen(false);
     triggerRef.current?.focus();
     window.setTimeout(() => triggerRef.current?.focus(), 0);
@@ -160,6 +163,7 @@ export function CmmDropdown({
     clearCloseTimer();
     const openBeforeClick = clickToggleOpenRef.current ?? isOpen;
     clickToggleOpenRef.current = null;
+    restoreFocusOnCloseRef.current = openBeforeClick;
     setOpen(!openBeforeClick);
   }, [clearCloseTimer, clearHoverOpenTimer, clearHoverOpenedMarker, isOpen, setOpen]);
 
@@ -173,9 +177,12 @@ export function CmmDropdown({
   }, []);
 
   useEffect(() => {
-    if (wasOpenRef.current && !isOpen) {
+    if (wasOpenRef.current && !isOpen && restoreFocusOnCloseRef.current) {
       triggerRef.current?.focus();
       window.setTimeout(() => triggerRef.current?.focus(), 0);
+    }
+    if (wasOpenRef.current && !isOpen) {
+      restoreFocusOnCloseRef.current = true;
     }
     wasOpenRef.current = isOpen;
   }, [isOpen]);

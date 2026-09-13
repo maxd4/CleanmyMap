@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   BookOpen,
   House,
@@ -19,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { NavigationDropdownContent } from "./navigation-dropdown-content";
 import { getNavigationDropdownShellTokens } from "./navigation-dropdown-shell-theme";
 import { buildNavigationBlockTriggerStyle } from "./navigation-dropdown-accent-theme";
+import { getNavigationBlockTriggerStateClassName } from "./navigation-block-trigger-state";
 
 const NAVIGATION_DROPDOWN_HOVER_CLOSE_DELAY_MS = 160;
 
@@ -27,6 +27,8 @@ type AppNavigationBlockDropdownProps = {
   displayMode: DisplayMode;
   locale: Locale;
   onTrackNavigation: (href: string, label: string, spaceId: string | null) => void;
+  onOpenChange: (spaceId: NavigationSpace["id"], open: boolean) => void;
+  open: boolean;
   pathname: string;
   space: NavigationSpace;
 };
@@ -55,16 +57,16 @@ export function AppNavigationBlockDropdown({
   displayMode,
   locale,
   onTrackNavigation,
+  onOpenChange,
+  open,
   pathname,
   space,
 }: AppNavigationBlockDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-
   const shellTokens = getNavigationDropdownShellTokens(space.id);
   const isActiveSpace = space.id === activeSpaceId;
 
   function handleTrackNavigation(href: string, label: string, spaceId: string | null) {
-    setIsOpen(false);
+    onOpenChange(space.id, false);
     onTrackNavigation(href, label, spaceId);
   }
 
@@ -72,8 +74,8 @@ export function AppNavigationBlockDropdown({
     <CmmDropdown
       id={`block-${space.id}-menu`}
       ariaLabel={`${getLocalizedText(space.label, locale, space.id)} - ${locale === "fr" ? "rubriques" : "pages"}`}
-      open={isOpen}
-      onOpenChange={setIsOpen}
+      open={open}
+      onOpenChange={(nextOpen) => onOpenChange(space.id, nextOpen)}
       panelRole="region"
       triggerHasPopup={null}
       verticalGap={DEFAULT_DROPDOWN_VERTICAL_GAP_PX}
@@ -87,10 +89,8 @@ export function AppNavigationBlockDropdown({
           aria-label={getLocalizedText(space.label, locale, space.id)}
           style={buildNavigationBlockTriggerStyle(space.id)}
           className={cn(
-            "group inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.8rem] border border-transparent bg-transparent leading-none motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:bg-white/10",
-            isActiveSpace
-              ? "bg-white/[0.08] text-white"
-              : "text-white hover:bg-white/[0.07] hover:text-white",
+            "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[0.8rem] border border-transparent bg-transparent leading-none focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:bg-white/10",
+            getNavigationBlockTriggerStateClassName({ isActiveSpace, isOpen: open }),
           )}
         >
           {displayMode === "exhaustif" ? (

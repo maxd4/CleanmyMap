@@ -48,6 +48,14 @@ describe("CmmDropdown", () => {
     expect(source).not.toContain("clickToggleOpenRef.current = false;\n        setOpen(false);");
   });
 
+  it("does not restore focus during a hover transition to another trigger", () => {
+    expect(source).toContain("restoreFocusOnCloseRef");
+    expect(source).toContain("restoreFocusOnCloseRef.current = false;");
+    expect(source).toContain(
+      "if (wasOpenRef.current && !isOpen && restoreFocusOnCloseRef.current)",
+    );
+  });
+
   it("can expose a non-menu navigation trigger without aria-haspopup", () => {
     const markup = renderToStaticMarkup(
       <CmmDropdown
