@@ -243,19 +243,25 @@ export function useReportsWebDocumentModel({
           Lieu: item.location_label,
           Compte: item.created_by_clerk_id ?? item.actor_name ?? "Inconnu",
           Association: item.association_name ?? "Sans association",
-          Masse_Kg: Number(item.waste_kg ?? 0),
-          Masse_Kg_Declaree: Number(item.waste_kg ?? 0),
-          Masse_Kg_Impact: impact.wasteKg,
+          Masse_Kg: item.waste_kg,
+          Masse_Kg_Declaree: item.waste_kg,
+          Masse_Kg_Impact: impact.wasteKnown ? impact.wasteKg : null,
           Origine_Masse: impact.wasteKgSource,
           Megots: impact.butts,
           Bénévoles: impact.volunteers,
-          CO2e_Proxy_Kg: impact.co2AvoidedKg,
+          CO2e_Proxy_Kg: impact.wasteKnown ? impact.co2AvoidedKg : null,
           Eau_Proxy_L: impact.waterSavedLiters,
-          Economie_Voirie_Proxy_Masse_EUR: impact.streetCleaningSavings.massEstimateEuros,
+          Economie_Voirie_Proxy_Masse_EUR: impact.wasteKnown
+            ? impact.streetCleaningSavings.massEstimateEuros
+            : null,
           Economie_Voirie_Proxy_Temps_EUR: impact.streetCleaningSavings.timeEstimateEuros,
-          Economie_Voirie_Proxy_Min_EUR: impact.streetCleaningSavings.lowerBoundEuros,
-          Economie_Voirie_Proxy_Max_EUR: impact.streetCleaningSavings.upperBoundEuros,
-          Economie_Voirie_Proxy_EUR: impact.euroSaved,
+          Economie_Voirie_Proxy_Min_EUR: impact.wasteKnown
+            ? impact.streetCleaningSavings.lowerBoundEuros
+            : null,
+          Economie_Voirie_Proxy_Max_EUR: impact.wasteKnown
+            ? impact.streetCleaningSavings.upperBoundEuros
+            : null,
+          Economie_Voirie_Proxy_EUR: impact.wasteKnown ? impact.euroSaved : null,
           Durée_Min: Number(item.duration_minutes ?? 0),
           Type: item.record_type ?? item.contract?.type ?? "action",
           Source: item.source ?? item.contract?.source ?? "web_form",

@@ -65,6 +65,7 @@ function computeTotals(approvedActions: ActionListItem[]) {
   );
   return {
     totalKg: impact.wasteKg,
+    wasteKnownActions: impact.wasteKnownActions,
     totalButts: impact.butts,
     totalVolunteers: impact.volunteers,
     totalHours,
@@ -237,18 +238,22 @@ function formatAreaLabel(label: string): string {
 }
 
 function computeAreaStats(mapApprovedActions: ActionMapItem[]) {
-  const byAreaMap = new Map<string, { actions: number; kg: number; butts: number; labels: Set<string> }>();
+  const byAreaMap = new Map<string, { actions: number; kg: number; knownWasteActions: number; butts: number; labels: Set<string> }>();
   for (const item of mapApprovedActions) {
     const area = formatAreaLabel(mapItemLocationLabel(item));
     const previous = byAreaMap.get(area) ?? {
       actions: 0,
       kg: 0,
+      knownWasteActions: 0,
       butts: 0,
       labels: new Set<string>(),
     };
     previous.actions += 1;
     const impact = computeActionImpactKpis(toMapImpactInput(item));
-    previous.kg += impact.wasteKg;
+    if (impact.wasteKnown) {
+      previous.kg += impact.wasteKg;
+      previous.knownWasteActions += 1;
+    }
     previous.butts += impact.butts;
     previous.labels.add(mapItemLocationLabel(item).trim().toLowerCase());
     byAreaMap.set(area, previous);
@@ -262,6 +267,7 @@ function computeAreaStats(mapApprovedActions: ActionMapItem[]) {
         area,
         actions: stats.actions,
         kg: stats.kg,
+        knownWasteActions: stats.knownWasteActions,
         butts: stats.butts,
         recurrence,
         score,
@@ -382,6 +388,7 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
     totals: {
       actions: approvedActions.length,
       kg: totals.totalKg,
+      knownWasteActions: totals.wasteKnownActions,
       butts: totals.totalButts,
       volunteers: totals.totalVolunteers,
       hours: totals.totalHours,

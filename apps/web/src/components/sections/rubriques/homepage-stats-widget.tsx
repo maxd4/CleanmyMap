@@ -19,9 +19,23 @@ function formatNumber(num: number): string {
 }
 
 function computeStats(actions: HomepageStatsAction[]) {
-  const totalKg = actions.reduce((sum, a) => sum + Number(a.waste_kg || 0), 0);
+  const knownWasteActions = actions.filter(
+    (action) =>
+      action.waste_kg !== null &&
+      Number.isFinite(Number(action.waste_kg)) &&
+      Number(action.waste_kg) >= 0,
+  ).length;
+  const totalKg = actions.reduce(
+    (sum, a) => sum + (a.waste_kg === null || a.waste_kg === undefined ? 0 : Number(a.waste_kg)),
+    0,
+  );
   const volunteers = new Set(actions.map(a => a.created_by)).size;
-  return { totalKg: Math.round(totalKg), totalActions: actions.length, volunteers };
+  return {
+    totalKg: Math.round(totalKg),
+    totalActions: actions.length,
+    volunteers,
+    wasteCoverageRate: actions.length > 0 ? (knownWasteActions / actions.length) * 100 : 0,
+  };
 }
 
 export function HomepageStatsWidget() {
@@ -33,7 +47,7 @@ export function HomepageStatsWidget() {
   const stats = data?.items ? computeStats(data.items) : null;
   
   const items = [
-    { label: "kg collectés", value: stats ? formatNumber(stats.totalKg) : "—", icon: Trash2, color: "text-emerald-300" },
+    { label: stats ? `kg mesurés (${Math.round(stats.wasteCoverageRate)}%)` : "kg mesurés", value: stats ? formatNumber(stats.totalKg) : "—", icon: Trash2, color: "text-emerald-300" },
     { label: "actions", value: stats ? formatNumber(stats.totalActions) : "—", icon: TrendingUp, color: "text-lime-300" },
     { label: "bénévoles", value: stats ? formatNumber(stats.volunteers) : "—", icon: Users, color: "text-teal-300" },
   ];

@@ -46,7 +46,7 @@ describe("accueil data", () => {
     expect(counters.volunteers).toBe(10);
   });
 
-  it("falls back to cigarette butts when the explicit waste mass is missing", () => {
+  it("keeps missing waste mass unavailable when only cigarette butts are known", () => {
     const counters = computeLandingCounters(
       [
         buildActionDataContract({
@@ -67,8 +67,8 @@ describe("accueil data", () => {
       "2026-01-01",
     );
 
-    expect(counters.wasteKg).toBe(1.5);
-    expect(counters.euro).toBe(2);
+    expect(counters.wasteKg).toBe(0);
+    expect(counters.euro).toBe(0);
   });
 
   it("ignores approved spots and clean places even when they contain metrics", () => {

@@ -46,4 +46,20 @@ describe("computeZoneCompare", () => {
     expect(row10?.recurrenceScore).toBeGreaterThanOrEqual(0);
     expect(result.priorityZones.length).toBeGreaterThan(0);
   });
+
+  it("does not treat NULL as zero-known waste", () => {
+    const result = computeZoneCompare({
+      periodDays: 30,
+      now: new Date("2026-04-10T00:00:00.000Z"),
+      records: [
+        { observedAt: "2026-04-08", locationLabel: "Lyon 10e", wasteKg: 0, butts: 10, volunteersCount: 2 },
+        { observedAt: "2026-04-07", locationLabel: "Lyon 10e", wasteKg: null, butts: 10, volunteersCount: 2 },
+      ],
+    });
+
+    const row = result.rows.find((item) => item.area === "10e");
+    expect(row?.currentKg).toBe(0);
+    expect(row?.wasteKnownActions).toBe(1);
+    expect(row?.wasteCoverageRate).toBe(50);
+  });
 });

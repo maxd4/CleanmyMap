@@ -26,6 +26,7 @@ export function buildZones(
     {
       actions: number;
       kg: number;
+      knownWasteActions: number;
       geolocated: number;
       pendingAgesDays: number[];
     }
@@ -35,6 +36,7 @@ export function buildZones(
     {
       actions: number;
       kg: number;
+      knownWasteActions: number;
       geolocated: number;
       pendingAgesDays: number[];
     }
@@ -64,12 +66,16 @@ export function buildZones(
       const row = currentByArea.get(area) ?? {
         actions: 0,
         kg: 0,
+        knownWasteActions: 0,
         geolocated: 0,
         pendingAgesDays: [],
       };
       if (contract.status === "approved") {
         row.actions += 1;
-        row.kg += impact.wasteKg;
+        if (impact.wasteKnown) {
+          row.kg += impact.wasteKg;
+          row.knownWasteActions += 1;
+        }
         row.geolocated += isGeolocated ? 1 : 0;
       }
       if (pendingAgeDays !== null) {
@@ -83,12 +89,16 @@ export function buildZones(
       const row = previousByArea.get(area) ?? {
         actions: 0,
         kg: 0,
+        knownWasteActions: 0,
         geolocated: 0,
         pendingAgesDays: [],
       };
       if (contract.status === "approved") {
         row.actions += 1;
-        row.kg += impact.wasteKg;
+        if (impact.wasteKnown) {
+          row.kg += impact.wasteKg;
+          row.knownWasteActions += 1;
+        }
         row.geolocated += isGeolocated ? 1 : 0;
       }
       if (pendingAgeDays !== null) {
@@ -103,7 +113,7 @@ export function buildZones(
       type: contract.type,
       status: contract.status,
       locationLabel: contract.location.label,
-      wasteKg: computeActionImpactKpis(contract).wasteKg,
+      wasteKg: contract.metadata.wasteKg,
       volunteersCount: computeActionImpactKpis(contract).volunteers,
     })),
   );
@@ -116,12 +126,14 @@ export function buildZones(
       const current = currentByArea.get(area) ?? {
         actions: 0,
         kg: 0,
+        knownWasteActions: 0,
         geolocated: 0,
         pendingAgesDays: [],
       };
       const previous = previousByArea.get(area) ?? {
         actions: 0,
         kg: 0,
+        knownWasteActions: 0,
         geolocated: 0,
         pendingAgesDays: [],
       };
@@ -200,6 +212,16 @@ export function buildZones(
         deltaActionsAbsolute,
         currentKg: round1(current.kg),
         previousKg: round1(previous.kg),
+        currentWasteKnownActions: current.knownWasteActions,
+        previousWasteKnownActions: previous.knownWasteActions,
+        currentWasteCoverageRate:
+          current.actions > 0
+            ? round1((current.knownWasteActions / current.actions) * 100)
+            : 0,
+        previousWasteCoverageRate:
+          previous.actions > 0
+            ? round1((previous.knownWasteActions / previous.actions) * 100)
+            : 0,
         deltaKgAbsolute,
         deltaActionsPercent,
         deltaKgPercent,

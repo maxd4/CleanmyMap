@@ -97,7 +97,7 @@ export function computeCommunityEngagementMetrics(params: {
       );
       map.set(actor, {
         actions: previous.actions + 1,
-        kg: previous.kg + impact.wasteKg,
+        kg: previous.kg + (impact.wasteKnown ? impact.wasteKg : 0),
         butts: previous.butts + impact.butts,
       });
       return map;

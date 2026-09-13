@@ -10,6 +10,7 @@ type ZoneStats = {
   zone: string;
   actions: number;
   wasteKg: number;
+  knownWasteActions: number;
   butts: number;
 };
 
@@ -36,6 +37,7 @@ export function ActionsVisualizationPanel({
     let butts = 0;
     let volunteers = 0;
     let citizenHours = 0;
+    let knownWasteActions = 0;
     const impacts = new Map<ImpactLevel, number>();
     const byZone = new Map<string, ZoneStats>();
     const byMonth = new Map<string, number>();
@@ -45,7 +47,10 @@ export function ActionsVisualizationPanel({
     }
 
     for (const item of items) {
-      wasteKg += Number(item.waste_kg || 0);
+      if (item.waste_kg !== null && Number.isFinite(Number(item.waste_kg)) && Number(item.waste_kg) >= 0) {
+        wasteKg += Number(item.waste_kg);
+        knownWasteActions += 1;
+      }
       butts += Number(item.cigarette_butts || 0);
       const volunteersCount = Number(item.contract?.metadata.volunteersCount || 0);
       const durationMinutes = Number(item.contract?.metadata.durationMinutes || 0);
@@ -59,9 +64,12 @@ export function ActionsVisualizationPanel({
       impacts.set(level, (impacts.get(level) ?? 0) + 1);
 
       const zone = extractArrondissement(item.location_label || "");
-      const current = byZone.get(zone) ?? { zone, actions: 0, wasteKg: 0, butts: 0 };
+      const current = byZone.get(zone) ?? { zone, actions: 0, wasteKg: 0, knownWasteActions: 0, butts: 0 };
       current.actions += 1;
-      current.wasteKg += Number(item.waste_kg || 0);
+      if (item.waste_kg !== null && Number.isFinite(Number(item.waste_kg)) && Number(item.waste_kg) >= 0) {
+        current.wasteKg += Number(item.waste_kg);
+        current.knownWasteActions += 1;
+      }
       current.butts += Number(item.cigarette_butts || 0);
       byZone.set(zone, current);
 
@@ -88,6 +96,8 @@ export function ActionsVisualizationPanel({
       totals: {
         actions: items.length,
         wasteKg,
+        knownWasteActions,
+        wasteCoverageRate: items.length > 0 ? (knownWasteActions / items.length) * 100 : 0,
         butts,
         volunteers,
         citizenHours,

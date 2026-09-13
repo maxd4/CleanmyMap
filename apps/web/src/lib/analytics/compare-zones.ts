@@ -1,7 +1,7 @@
 export type ZoneCompareInput = {
   observedAt: string;
   locationLabel: string;
-  wasteKg: number;
+  wasteKg: number | null;
   butts: number;
   volunteersCount: number;
 };
@@ -16,6 +16,8 @@ export type ZoneCompareRow = {
   currentButts: number;
   previousButts: number;
   kgPerAction: number;
+  wasteKnownActions: number;
+  wasteCoverageRate: number;
   buttsPerAction: number;
   densityActions: number;
   participationPerAction: number;
@@ -113,6 +115,7 @@ export function computeZoneCompare(params: {
       current: {
         actions: number;
         kg: number;
+        knownWasteActions: number;
         butts: number;
         volunteers: number;
         pointKeys: Set<string>;
@@ -120,6 +123,7 @@ export function computeZoneCompare(params: {
       previous: {
         actions: number;
         kg: number;
+        knownWasteActions: number;
         butts: number;
         volunteers: number;
         pointKeys: Set<string>;
@@ -137,6 +141,7 @@ export function computeZoneCompare(params: {
       current: {
         actions: 0,
         kg: 0,
+        knownWasteActions: 0,
         butts: 0,
         volunteers: 0,
         pointKeys: new Set<string>(),
@@ -144,6 +149,7 @@ export function computeZoneCompare(params: {
       previous: {
         actions: 0,
         kg: 0,
+        knownWasteActions: 0,
         butts: 0,
         volunteers: 0,
         pointKeys: new Set<string>(),
@@ -154,13 +160,19 @@ export function computeZoneCompare(params: {
 
     if (observedMs >= currentFloor && observedMs <= nowMs) {
       row.current.actions += 1;
-      row.current.kg += Number(record.wasteKg || 0);
+      if (record.wasteKg !== null && Number.isFinite(record.wasteKg) && record.wasteKg >= 0) {
+        row.current.kg += record.wasteKg;
+        row.current.knownWasteActions += 1;
+      }
       row.current.butts += Number(record.butts || 0);
       row.current.volunteers += Number(record.volunteersCount || 0);
       row.current.pointKeys.add(pointKey);
     } else if (observedMs >= previousFloor && observedMs < currentFloor) {
       row.previous.actions += 1;
-      row.previous.kg += Number(record.wasteKg || 0);
+      if (record.wasteKg !== null && Number.isFinite(record.wasteKg) && record.wasteKg >= 0) {
+        row.previous.kg += record.wasteKg;
+        row.previous.knownWasteActions += 1;
+      }
       row.previous.butts += Number(record.butts || 0);
       row.previous.volunteers += Number(record.volunteersCount || 0);
       row.previous.pointKeys.add(pointKey);
@@ -178,7 +190,9 @@ export function computeZoneCompare(params: {
     const currentButts = row.current.butts;
     const previousButts = row.previous.butts;
 
-    const kgPerAction = currentActions > 0 ? currentKg / currentActions : 0;
+    const kgPerAction = row.current.knownWasteActions > 0
+      ? currentKg / row.current.knownWasteActions
+      : 0;
     const buttsPerAction =
       currentActions > 0 ? currentButts / currentActions : 0;
     const densityActions = currentActions / Math.max(surfaceKm2, 0.1);
@@ -203,6 +217,12 @@ export function computeZoneCompare(params: {
       currentButts,
       previousButts,
       kgPerAction,
+      wasteKnownActions: row.current.knownWasteActions,
+      previousWasteKnownActions: row.previous.knownWasteActions,
+      wasteCoverageRate:
+        currentActions > 0
+          ? (row.current.knownWasteActions / currentActions) * 100
+          : 0,
       buttsPerAction,
       densityActions,
       participationPerAction,
@@ -225,17 +245,34 @@ export function computeZoneCompare(params: {
 
   const rows: ZoneCompareRow[] = baseRows
     .map((row) => {
+      const scoreParts = [
+        { value: (row.densityActions / maxDensity) * 100, weight: 0.35 },
+        { value: (row.buttsPerAction / maxButtsPerAction) * 100, weight: 0.2 },
+        { value: (row.recurrenceScore / maxRecurrence) * 100, weight: 0.15 },
+      ];
+      if (row.wasteKnownActions > 0) {
+        scoreParts.push({
+          value: (row.kgPerAction / maxKgPerAction) * 100,
+          weight: 0.3,
+        });
+      }
+      const scoreWeight = scoreParts.reduce((sum, part) => sum + part.weight, 0);
       const score =
-        (row.densityActions / maxDensity) * 100 * 0.35 +
-        (row.kgPerAction / maxKgPerAction) * 100 * 0.3 +
-        (row.buttsPerAction / maxButtsPerAction) * 100 * 0.2 +
-        (row.recurrenceScore / maxRecurrence) * 100 * 0.15;
+        scoreWeight > 0
+          ? scoreParts.reduce((sum, part) => sum + part.value * part.weight, 0) /
+            scoreWeight
+          : 0;
 
-      const previousIntensity =
-        row.previousActions > 0 ? row.previousKg / row.previousActions : 0;
-      const currentIntensity =
-        row.currentActions > 0 ? row.currentKg / row.currentActions : 0;
-      const deltaIntensity = currentIntensity - previousIntensity;
+      const previousIntensity = row.previousWasteKnownActions > 0
+        ? row.previousKg / row.previousWasteKnownActions
+        : 0;
+      const currentIntensity = row.wasteKnownActions > 0
+        ? row.currentKg / row.wasteKnownActions
+        : 0;
+      const deltaIntensity =
+        row.wasteKnownActions > 0 && row.previousWasteKnownActions > 0
+          ? currentIntensity - previousIntensity
+          : 0;
 
       const trend: ZoneCompareRow["trend"] =
         deltaIntensity < -0.3
@@ -257,6 +294,8 @@ export function computeZoneCompare(params: {
         currentButts: Math.round(row.currentButts),
         previousButts: Math.round(row.previousButts),
         kgPerAction: round2(row.kgPerAction),
+        wasteKnownActions: row.wasteKnownActions,
+        wasteCoverageRate: round2(row.wasteCoverageRate),
         buttsPerAction: round2(row.buttsPerAction),
         densityActions: round2(row.densityActions),
         participationPerAction: round2(row.participationPerAction),

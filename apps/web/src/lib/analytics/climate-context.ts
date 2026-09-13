@@ -9,7 +9,7 @@ export const CLIMATE_PROXY_FACTORS = {
 
 export type ClimateInputRecord = {
   observedAt: string;
-  wasteKg: number;
+  wasteKg: number | null;
   cigaretteButts: number;
   durationMinutes: number;
   volunteersCount: number;
@@ -38,6 +38,8 @@ export type ClimateComparison = {
   current: {
     actionsTotal: number;
     volumeKg: number;
+    wasteKnownActions: number;
+    wasteCoverageRate: number;
     butts: number;
     citizenHours: number;
     geocoverageRate: number;
@@ -48,6 +50,8 @@ export type ClimateComparison = {
   previous: {
     actionsTotal: number;
     volumeKg: number;
+    wasteKnownActions: number;
+    wasteCoverageRate: number;
     butts: number;
     citizenHours: number;
     geocoverageRate: number;
@@ -124,9 +128,12 @@ function aggregate(
 ): ClimateComparison["current"] {
   const actionsTotal = records.length;
   const volumeKg = records.reduce(
-    (acc, record) => acc + Number(record.wasteKg || 0),
+    (acc, record) => acc + (record.wasteKg ?? 0),
     0,
   );
+  const wasteKnownActions = records.filter(
+    (record) => record.wasteKg !== null && Number.isFinite(record.wasteKg) && record.wasteKg >= 0,
+  ).length;
   const butts = records.reduce(
     (acc, record) => acc + Number(record.cigaretteButts || 0),
     0,
@@ -162,6 +169,9 @@ function aggregate(
   return {
     actionsTotal,
     volumeKg: round1(volumeKg),
+    wasteKnownActions,
+    wasteCoverageRate:
+      actionsTotal > 0 ? round1((wasteKnownActions / actionsTotal) * 100) : 0,
     butts: Math.round(butts),
     citizenHours: round1(citizenHours),
     geocoverageRate: round1(geocoverageRate),

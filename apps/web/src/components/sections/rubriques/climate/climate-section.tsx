@@ -46,7 +46,7 @@ export function ClimateSection() {
   const context = useMemo(() => {
     const records = (data?.items ?? []).map((item) => ({
       observedAt: item.action_date,
-      wasteKg: Number(item.waste_kg || 0),
+      wasteKg: item.waste_kg === null ? null : Number(item.waste_kg),
       cigaretteButts: Number(item.cigarette_butts || 0),
       durationMinutes: Number(item.duration_minutes || 0),
       volunteersCount: Number(item.volunteers_count || 0),

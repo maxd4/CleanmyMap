@@ -41,4 +41,19 @@ describe("computePeriodComparison", () => {
     expect(result.current.moderationDelayDays).toBeGreaterThan(0);
     expect(result.deltas.volumeKg.direction).toBe("up");
   });
+
+  it("sums known waste only and exposes coverage", () => {
+    const result = computePeriodComparison(
+      [
+        { status: "approved", observedAt: "2026-04-08", createdAt: null, latitude: null, longitude: null, wasteKg: 0 },
+        { status: "approved", observedAt: "2026-04-07", createdAt: null, latitude: null, longitude: null, wasteKg: null },
+      ],
+      15,
+      new Date("2026-04-10T00:00:00.000Z"),
+    );
+
+    expect(result.current.volumeKg).toBe(0);
+    expect(result.current.wasteKnownActions).toBe(1);
+    expect(result.current.wasteCoverageRate).toBe(50);
+  });
 });

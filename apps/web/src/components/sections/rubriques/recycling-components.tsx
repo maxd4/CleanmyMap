@@ -19,6 +19,7 @@ import { formatScorePercent } from "@/lib/formatters/score";
 
 type RecyclingStats = {
   totalKg: number;
+  wasteCoverageRate: number;
   totalButts: number;
   withTrace: number;
   mixedIndex: number;
@@ -50,7 +51,9 @@ export const RecyclingKpiGrid = memo(function RecyclingKpiGrid({
 }) {
   const cards = [
     {
-      label: fr ? "Volume triable" : "Sortable volume",
+      label: fr
+        ? `Volume triable (${Math.round(stats.wasteCoverageRate)}% renseigné)`
+        : `Sortable volume (${Math.round(stats.wasteCoverageRate)}% reported)`,
       value: `${stats.totalKg.toFixed(1)} kg`,
       icon: Recycle,
       color: "text-emerald-400",

@@ -12,6 +12,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export type PilotageWindowMetrics = {
   approvedActions: number;
   impactVolumeKg: number;
+  wasteKnownActions: number;
+  wasteCoverageRate: number;
   mobilizationCount: number;
   totalDurationMinutes: number;
   qualityScore: number;
@@ -189,10 +191,14 @@ function computeWindowMetrics(
   const pending = records.filter((record) => record.status === "pending");
 
   const approvedActions = approvedActionsRecords.length;
+  const impactKpis = approvedActionsRecords.map((record) =>
+    computeActionImpactKpis(record),
+  );
   const impactVolumeKg = approvedActionsRecords.reduce(
     (acc, record) => acc + computeActionImpactKpis(record).wasteKg,
     0,
   );
+  const wasteKnownActions = impactKpis.filter((impact) => impact.wasteKnown).length;
   const mobilizationCount = approvedActionsRecords.reduce(
     (acc, record) => acc + computeActionImpactKpis(record).volunteers,
     0,
@@ -241,6 +247,9 @@ function computeWindowMetrics(
   return {
     approvedActions,
     impactVolumeKg: round1(impactVolumeKg),
+    wasteKnownActions,
+    wasteCoverageRate:
+      approvedActions > 0 ? round1((wasteKnownActions / approvedActions) * 100) : 0,
     mobilizationCount,
     totalDurationMinutes,
     qualityScore: round1(qualityScore),

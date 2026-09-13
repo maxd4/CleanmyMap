@@ -89,13 +89,17 @@ export function buildMonthRows(items: ActionListItem[]): MonthRow[] {
       month: key,
       actions: 0,
       kg: 0,
+      knownWasteActions: 0,
       butts: 0,
       volunteers: 0,
       minutes: 0,
     };
     previous.actions += 1;
     const impact = computeActionImpactKpis(toImpactInput(item));
-    previous.kg += impact.wasteKg;
+    if (impact.wasteKnown) {
+      previous.kg += impact.wasteKg;
+      previous.knownWasteActions = (previous.knownWasteActions ?? 0) + 1;
+    }
     previous.butts += impact.butts;
     previous.volunteers += impact.volunteers;
     previous.minutes += Number(

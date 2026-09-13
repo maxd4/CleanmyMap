@@ -8,12 +8,14 @@ export type PeriodComparisonRecord = {
   createdAt: string | null;
   latitude: number | null;
   longitude: number | null;
-  wasteKg: number;
+  wasteKg: number | null;
 };
 
 export type WindowMetrics = {
   actionsCount: number;
   volumeKg: number;
+  wasteKnownActions: number;
+  wasteCoverageRate: number;
   coverageRate: number;
   moderationDelayDays: number;
   pendingCount: number;
@@ -93,8 +95,11 @@ function computeWindowMetrics(
 ): WindowMetrics {
   const approved = records.filter((item) => item.status === "approved");
   const actionsCount = approved.length;
+  const knownWaste = approved.filter(
+    (item) => item.wasteKg !== null && Number.isFinite(item.wasteKg) && item.wasteKg >= 0,
+  );
   const volumeKg = round1(
-    approved.reduce((acc, item) => acc + Number(item.wasteKg || 0), 0),
+    knownWaste.reduce((acc, item) => acc + (item.wasteKg as number), 0),
   );
   const geolocatedApproved = approved.filter(
     (item) =>
@@ -124,6 +129,9 @@ function computeWindowMetrics(
   return {
     actionsCount,
     volumeKg,
+    wasteKnownActions: knownWaste.length,
+    wasteCoverageRate:
+      actionsCount > 0 ? round1((knownWaste.length / actionsCount) * 100) : 0,
     coverageRate,
     moderationDelayDays: round1(median(pendingAges)),
     pendingCount: pendingItems.length,

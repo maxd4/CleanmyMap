@@ -20,6 +20,7 @@ export type AreaStats = {
   area: string;
   actions: number;
   kg: number;
+  knownWasteActions?: number;
   butts: number;
   recurrence: number;
   score: number;
@@ -39,6 +40,7 @@ export type MonthRow = {
   month: string;
   actions: number;
   kg: number;
+  knownWasteActions?: number;
   butts: number;
   volunteers: number;
   minutes: number;
@@ -49,6 +51,7 @@ export type ReportModel = {
   totals: {
     actions: number;
     kg: number;
+    knownWasteActions?: number;
     butts: number;
     volunteers: number;
     hours: number;

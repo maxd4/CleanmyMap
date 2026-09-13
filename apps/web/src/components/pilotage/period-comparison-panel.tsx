@@ -62,7 +62,7 @@ export function PeriodComparisonPanel({
     },
     { 
       label: fr ? "Volume" : "Volume", 
-      value: `${result.current.volumeKg.toFixed(1)} kg`, 
+      value: `${result.current.volumeKg.toFixed(1)} kg (${result.current.wasteCoverageRate.toFixed(0)}% renseigné)`,
       delta: result.deltas.volumeKg, 
       betterWhenLower: false,
       unit: "%"

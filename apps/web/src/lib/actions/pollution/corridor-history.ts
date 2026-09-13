@@ -64,6 +64,8 @@ export type CorridorHistorySummary = {
   firstActionAt: string;
   lastActionAt: string;
   totalWasteKg: number;
+  wasteKnownActions: number;
+  wasteCoverageRate: number;
   totalCigaretteButts: number;
   totalVolunteers: number;
   totalDurationMinutes: number;
@@ -484,9 +486,32 @@ export function summarizeCorridorHistory(
     firstActionAt: oldestAction?.dates.observedAt ?? "",
     lastActionAt: latestAction?.dates.observedAt ?? "",
     totalWasteKg: actions.reduce(
-      (total, action) => total + Math.max(0, action.metadata.wasteKg ?? 0),
+      (total, action) =>
+        total +
+        (action.metadata.wasteKg !== null &&
+        Number.isFinite(action.metadata.wasteKg) &&
+        action.metadata.wasteKg >= 0
+          ? action.metadata.wasteKg
+          : 0),
       0,
     ),
+    wasteKnownActions: actions.filter(
+      (action) =>
+        action.metadata.wasteKg !== null &&
+        Number.isFinite(action.metadata.wasteKg) &&
+        action.metadata.wasteKg >= 0,
+    ).length,
+    wasteCoverageRate:
+      actions.length > 0
+        ? (actions.filter(
+            (action) =>
+              action.metadata.wasteKg !== null &&
+              Number.isFinite(action.metadata.wasteKg) &&
+              action.metadata.wasteKg >= 0,
+          ).length /
+            actions.length) *
+          100
+        : 0,
     totalCigaretteButts: actions.reduce(
       (total, action) =>
         total + Math.max(0, action.metadata.cigaretteButts ?? 0),
