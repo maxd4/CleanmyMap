@@ -55,13 +55,34 @@ la dérivation distincte :
 `effectiveVolunteerUnits = adultCount + 0,5 × childrenCount + 0,5 × retiredCount`.
 
 La pondération est versionnée sous `effective-volunteer-units-v1` et centralisée
-dans `apps/web/src/lib/actions/volunteer-participation.ts`. Les catégories
-sources restent persistées séparément dans les métadonnées canoniques ; aucune
-répartition n'est reconstruite pour une action historique. Pour une ancienne
-action qui ne possède que `volunteersCount`, ce nombre reste le nombre historique
-de participants, les trois catégories et les unités opérationnelles restent
-inconnues (`NULL`). Il est interdit de supposer que ces participants étaient
-adultes.
+dans `apps/web/src/lib/actions/volunteer-participation.ts`. Le coefficient `1`
+est l'unité de référence d'un adulte ; les coefficients `0,5` appliqués à un
+enfant et à une personne retraitée sont une hypothèse métier d'efficacité
+opérationnelle relative. Ils servent à représenter une contribution moyenne
+estimée à la moitié de l'unité adulte dans les tâches de dépollution lorsque le
+système ne collecte pas de mesure individuelle plus fine. Cette pondération ne
+prétend pas que chaque enfant ou personne retraitée est exactement deux fois
+moins efficace qu'un adulte : elle fournit une approximation commune, explicite
+et versionnée pour les indicateurs qui ont besoin d'une unité opérationnelle.
+Elle ne doit pas être lue comme une mesure de la valeur des personnes, de leur
+engagement ou de leur performance individuelle. Une modification de cette
+hypothèse doit faire évoluer la version de la formule et être motivée par une
+décision métier documentée.
+
+Les trois catégories ont aussi une fonction descriptive : elles permettent
+d'estimer la répartition des générations de bénévoles mobilisées sur les actions
+de dépollution lorsque les trois valeurs sont connues. Cette répartition décrit
+la composition des groupes ; elle ne remplace ni le nombre réel de participants,
+ni une analyse démographique exhaustive, et ne doit pas être utilisée pour
+inférer une efficacité individuelle.
+
+Les catégories sources restent persistées séparément dans les métadonnées
+canoniques ; aucune répartition n'est reconstruite pour une action historique.
+Pour une ancienne action qui ne possède que `volunteersCount`, ce nombre reste
+le nombre historique de participants, les trois catégories et les unités
+opérationnelles restent inconnues (`NULL`). Il est interdit de supposer que ces
+participants étaient adultes. Le contrat détaillé de stockage et de compatibilité
+est défini dans `documentation/architecture/data-governance.md`.
 
 Les champs de durée gardent leur précision réelle pour le stockage et les
 calculs. Les surfaces UI modifiées affichent la durée métier arrondie au quart
