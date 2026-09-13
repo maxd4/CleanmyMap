@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { buildHomeMetrics } from "@/lib/accueil/config";
+import { buildPublicImpactMetrics } from "@/lib/impact/public-impact-kpis";
 
 vi.mock("./accueil-map-preview", () => ({
   HomeMapPreview: () => <div data-testid="home-map-preview" />,
@@ -13,14 +13,14 @@ describe("HomeHero impact methodology link", () => {
     const html = renderToStaticMarkup(
       <HomeHero
         metrics={
-          buildHomeMetrics(
+          buildPublicImpactMetrics(
             {
               wasteKg: 0,
               butts: 0,
               volunteers: 0,
-              co2AvoidedKg: 0,
-              waterSavedLiters: 0,
-              euroSaved: 0,
+              co2: 0,
+              water: 0,
+              euro: 0,
             },
             false,
           )
@@ -46,14 +46,14 @@ describe("HomeHero impact methodology link", () => {
     const html = renderToStaticMarkup(
       <HomeHero
         metrics={
-          buildHomeMetrics(
+          buildPublicImpactMetrics(
             {
               wasteKg: 0,
               butts: 0,
               volunteers: 0,
-              co2AvoidedKg: 0,
-              waterSavedLiters: 0,
-              euroSaved: 0,
+              co2: 0,
+              water: 0,
+              euro: 0,
             },
             false,
           )

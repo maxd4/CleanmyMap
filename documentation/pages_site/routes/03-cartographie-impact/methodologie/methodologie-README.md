@@ -40,7 +40,7 @@ Cette section documente les six KPI présents sur la surface Impact terrain :
 - Déchets récoltés ;
 - Mégots retirés ;
 - Bénévoles mobilisés ;
-- CO₂ évité ;
+- CO₂e évité ;
 - Eau préservée ;
 - Économie de voirie.
 
@@ -50,7 +50,10 @@ formule runtime, hypothèses/références et limites. Une conversion pédagogiqu
 ne modifie jamais la donnée source et un proxy ne doit pas être présenté comme
 une mesure instrumentale.
 
-La source domaine commune est
+Le contrat public des six KPI (structure, ordre, labels, unités, formatage et
+classification terrain/proxy) est porté par
+`apps/web/src/lib/impact/public-impact-kpis.ts`. Les calculs réutilisent la
+source domaine
 `apps/web/src/lib/impact/impact-terrain-2026.ts`, avec les références de
 conversion centralisées dans
 `apps/web/src/lib/impact/impact-terrain-2026-constants.ts`. Elle compose les
@@ -124,9 +127,9 @@ les autres actions utilisent leur `organizerType` (`Entreprise`, `Association`,
 jamais de catégorie statistique et une donnée legacy sans type exploitable tombe
 dans `Autres` avec un warning administratif, sans modifier l’action d’origine.
 
-Le contrat public est porté par
-`apps/web/src/lib/accueil/action-participant-aggregation.ts` et fournit aussi
-`totalDurationMinutes`/`totalDurationHours`. La durée est additionnée par
+L’agrégation d’accueil porte uniquement la répartition contextuelle et
+`totalDurationMinutes`/`totalDurationHours`; le contrat KPI public reste dans
+`apps/web/src/lib/impact/public-impact-kpis.ts`. La durée est additionnée par
 action, sans multiplication par le nombre de participants.
 
 ### KPI 4 — CO₂e évité

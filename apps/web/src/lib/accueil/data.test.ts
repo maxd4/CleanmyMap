@@ -68,7 +68,7 @@ describe("accueil data", () => {
     );
 
     expect(counters.wasteKg).toBe(1.5);
-    expect(counters.euroSaved).toBe(2);
+    expect(counters.euro).toBe(2);
   });
 
   it("ignores approved spots and clean places even when they contain metrics", () => {
@@ -168,8 +168,8 @@ describe("accueil data", () => {
     expect(activity.items[0]).toMatchObject({
       title: "Bénévole a réuni 3 bénévoles le 10/04/2026",
       location: "Forêt de Meudon, 92360 Meudon",
-      cigaretteButts: 0,
-      wasteKg: 0,
+      cigaretteButts: null,
+      wasteKg: null,
     });
   });
 

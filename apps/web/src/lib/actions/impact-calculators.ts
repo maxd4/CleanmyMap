@@ -18,6 +18,7 @@ export {
 
 export type ActionImpactInput = {
   metadata: {
+    actionPhase?: string | null;
     wasteKg?: number | null;
     cigaretteButts?: number | null;
     volunteersCount?: number | null;

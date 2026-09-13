@@ -2,23 +2,30 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { computeImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
 import { buildImpactTerrain2026PublicResults } from "@/lib/impact/impact-terrain-2026-results";
-import type { HomeImpactSnapshot, HomeMetric } from "@/lib/accueil/config";
+import type { HomeImpactSnapshot } from "@/lib/accueil/config";
+import type { PublicImpactMetric } from "@/lib/impact/public-impact-kpis";
 import { HomeImpactKpiCard } from "./accueil-impact-kpi-card";
 
-const metric: HomeMetric = {
+const metric: PublicImpactMetric = {
   key: "co2",
-  label: "CO₂ évité",
+  label: "CO₂e évité",
   value: "6,7 kg",
+  unit: "kg",
+  decimals: 1,
   category: "Équivalent",
   accent: "emerald",
+  classification: "proxy",
 };
 
-const participantsMetric: HomeMetric = {
+const participantsMetric: PublicImpactMetric = {
   key: "volunteers",
   label: "Bénévoles mobilisés",
   value: "12",
+  unit: null,
+  decimals: 0,
   category: "Résultat",
   accent: "blue",
+  classification: "terrain",
 };
 
 const snapshot: HomeImpactSnapshot = {

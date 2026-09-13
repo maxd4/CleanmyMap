@@ -17,14 +17,6 @@ export type HomeImpactSnapshot = Readonly<{
   streetCleaningSavings: ImpactTerrain2026StreetCleaningSavings;
 }>;
 
-export interface HomeMetric {
-  key: string;
-  label: string;
-  value: string;
-  category: string;
-  accent: 'blue' | 'emerald' | 'amber';
-}
-
 export type HomeIconName =
   | 'layout-dashboard'
   | 'zap'
@@ -45,77 +37,6 @@ export interface HomeBenefit {
   color: string;
   bg: string;
   border: string;
-}
-
-export interface HomeCounters {
-  wasteKg: number;
-  butts: number;
-  volunteers: number;
-  co2AvoidedKg: number;
-  waterSavedLiters: number;
-  euroSaved: number;
-}
-
-/**
- * Génère les métriques d'impact pour la page d'accueil
- */
-export function buildHomeMetrics(
-  counters: HomeCounters,
-  hasData: boolean,
-  participantsTotal = counters.volunteers,
-): HomeMetric[] {
-  return [
-    {
-      key: 'wasteKg',
-      label: 'Déchets récoltés',
-      value: hasData
-        ? `${counters.wasteKg.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg`
-        : 'n/a',
-      category: 'Résultat',
-      accent: 'blue' as const,
-    },
-    {
-      key: 'butts',
-      label: 'Mégots retirés',
-      value: hasData ? `${counters.butts.toLocaleString('fr-FR')}` : 'n/a',
-      category: 'Résultat',
-      accent: 'blue' as const,
-    },
-    {
-      key: 'volunteers',
-      label: 'Bénévoles mobilisés',
-      value: hasData
-        ? `${participantsTotal.toLocaleString('fr-FR')}`
-        : 'n/a',
-      category: 'Résultat',
-      accent: 'blue' as const,
-    },
-    {
-      key: 'co2',
-      label: 'CO₂ évité',
-      value: hasData
-        ? `${counters.co2AvoidedKg.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg`
-        : 'n/a',
-      category: 'Équivalent',
-      accent: 'emerald' as const,
-    },
-    {
-      key: 'water',
-      label: 'Eau préservée',
-      value: hasData
-        ? `${counters.waterSavedLiters.toLocaleString('fr-FR')} L`
-        : 'n/a',
-      category: 'Équivalent',
-      accent: 'emerald' as const,
-    },
-    {
-      key: 'euro',
-      label: 'Économie de voirie',
-      value: hasData ? `${counters.euroSaved.toLocaleString('fr-FR')} €` : 'n/a',
-      category: 'Économique',
-      accent: 'amber' as const,
-    },
-  ];
 }
 
 /**

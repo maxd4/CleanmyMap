@@ -4,7 +4,9 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { BarChart3, Table2, ArrowRight } from "lucide-react";
-import { buildHomeMetrics } from "@/lib/accueil/config";
+import {
+  buildPublicImpactMetrics,
+} from "@/lib/impact/public-impact-kpis";
 import { ActionsMapFeedContent } from "@/components/actions/map-feed/actions-map-feed";
 import { ActionsMapTable } from "@/components/actions/actions-map-table";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -159,14 +161,14 @@ function ActionsMapPageContent() {
   const stats = useMapKpiStats(filteredMapItems);
   const impactMetrics = useMemo(
     () =>
-      buildHomeMetrics(
+      buildPublicImpactMetrics(
         {
           wasteKg: stats.wasteKg,
           butts: stats.butts,
           volunteers: stats.volunteers,
-          co2AvoidedKg: stats.co2AvoidedKg,
-          waterSavedLiters: stats.waterSavedLiters,
-          euroSaved: stats.euroSaved,
+          co2: stats.co2AvoidedKg,
+          water: stats.waterSavedLiters,
+          euro: stats.euroSaved,
         },
         stats.visibleActions > 0,
       ),

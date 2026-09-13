@@ -9,9 +9,9 @@ import {
 } from "@/lib/accueil/data";
 import { HOME_ROUTE } from "@/lib/home-routes";
 import {
-  buildHomeMetrics,
-  type HomeCounters,
-} from "@/lib/accueil/config";
+  buildPublicImpactMetrics,
+  type PublicImpactCounters,
+} from "@/lib/impact/public-impact-kpis";
 import type { Metadata } from "next";
 import { metadata as appMetadata } from "@/lib/metadata";
 import { BRAND_ASSET_DIMENSIONS, BRAND_ASSET_PATHS } from "@/components/brand/brand-assets";
@@ -106,23 +106,19 @@ export default async function HomePage() {
     overviewLoadError = formatLandingOverviewErrorMessage(error);
   }
 
-  const counters: HomeCounters = landingSummary
+  const counters: PublicImpactCounters = landingSummary
     ? landingSummary.counters
     : {
         wasteKg: 0,
         butts: 0,
         volunteers: 0,
-        co2AvoidedKg: 0,
-        waterSavedLiters: 0,
-        euroSaved: 0,
+        co2: 0,
+        water: 0,
+        euro: 0,
       };
 
   const hasOverviewData = Boolean(landingSummary);
-  const metrics = buildHomeMetrics(
-    counters,
-    hasOverviewData,
-    landingSummary?.participantsTotal,
-  );
+  const metrics = buildPublicImpactMetrics(counters, hasOverviewData);
   const impactSnapshot = landingSummary
     ? {
         participantsTotal: landingSummary.participantsTotal,
