@@ -312,6 +312,8 @@ export type ActionEditorRecord = {
   cigaretteButts: number | null;
   volunteersCount: number;
   durationMinutes: number;
+  eventStartTime?: string | null;
+  eventEndTime?: string | null;
   notes: string | null;
   submissionMode: "quick" | "complete" | null;
   associationName: string | null;

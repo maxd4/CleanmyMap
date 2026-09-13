@@ -30,6 +30,10 @@ import {
   preserveHistoricalRouteCalibrationContext,
 } from "@/lib/route/route-calibration";
 import { resolveActionDepartmentForPersistence } from "@/lib/geo/action-department-resolver";
+import {
+  getTimeContractValidationMessage,
+  normalizeClockTime,
+} from "@/lib/actions/time-contract";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
@@ -47,6 +51,8 @@ type ActionAuditSnapshot = {
   cigaretteButts: number | null;
   volunteersCount: number | null;
   durationMinutes: number | null;
+  eventStartTime: string | null;
+  eventEndTime: string | null;
   actorNameChanged: boolean;
   locationChanged: boolean;
   coordinatesChanged: boolean;
@@ -185,6 +191,8 @@ function buildActionAuditSnapshots(
       cigaretteButts: current.cigarette_butts ?? null,
       volunteersCount: current.volunteers_count ?? null,
       durationMinutes: current.duration_minutes ?? null,
+      eventStartTime: normalizeClockTime(current.event_start_time),
+      eventEndTime: normalizeClockTime(current.event_end_time),
       ...flags,
     },
     newValue: {
@@ -202,6 +210,14 @@ function buildActionAuditSnapshots(
         body.volunteersCount ?? current.volunteers_count ?? null,
       durationMinutes:
         body.durationMinutes ?? current.duration_minutes ?? null,
+      eventStartTime:
+        body.eventStartTime !== undefined
+          ? body.eventStartTime
+          : normalizeClockTime(current.event_start_time),
+      eventEndTime:
+        body.eventEndTime !== undefined
+          ? body.eventEndTime
+          : normalizeClockTime(current.event_end_time),
       ...flags,
     },
   };
@@ -235,6 +251,8 @@ function buildActionEditorPayload(
     cigaretteButts: row.cigarette_butts,
     volunteersCount: row.volunteers_count,
     durationMinutes: row.duration_minutes,
+    eventStartTime: normalizeClockTime(row.event_start_time),
+    eventEndTime: normalizeClockTime(row.event_end_time),
     notes: metadata.cleanNotes,
     submissionMode: metadata.submissionMode,
     associationName: metadata.associationName,
@@ -422,6 +440,25 @@ export async function PATCH(
       body = { ...parsedBody, preparationData: preservedPreparationData };
     }
     const currentMetadata = extractActionMetadataFromNotes(current.notes);
+    const temporalMessage = getTimeContractValidationMessage({
+      actionDurationMinutes:
+        body.durationMinutes !== undefined
+          ? body.durationMinutes
+          : current.duration_minutes,
+      startTime:
+        body.eventStartTime !== undefined
+          ? body.eventStartTime
+          : current.event_start_time,
+      endTime:
+        body.eventEndTime !== undefined
+          ? body.eventEndTime
+          : current.event_end_time,
+    });
+    if (temporalMessage) {
+      return validationErrorResponse({
+        eventStartTime: [temporalMessage],
+      });
+    }
     adminAuditActorUserId = identity?.userId ?? userId;
     adminAuditTargetUserId = current.created_by_clerk_id.trim() || null;
     shouldAuditModeration =
@@ -443,6 +480,8 @@ export async function PATCH(
         key !== "organizerType" &&
         key !== "departmentCode" &&
         key !== "departmentName" &&
+        key !== "eventStartTime" &&
+        key !== "eventEndTime" &&
         value !== undefined,
     );
 
@@ -505,6 +544,12 @@ export async function PATCH(
     }
     if (body.durationMinutes !== undefined) {
       updateData["duration_minutes"] = body.durationMinutes;
+    }
+    if (body.eventStartTime !== undefined) {
+      updateData["event_start_time"] = body.eventStartTime;
+    }
+    if (body.eventEndTime !== undefined) {
+      updateData["event_end_time"] = body.eventEndTime;
     }
     if (body.organizerType !== undefined) {
       updateData["organizer_type"] = body.organizerType;

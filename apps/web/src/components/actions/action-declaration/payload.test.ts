@@ -68,6 +68,27 @@ describe("action declaration payload helpers", () => {
     expect(zeroPayload.cigaretteButts).toBe(0);
   });
 
+  it("keeps action time canonical and carries an optional event window", () => {
+    const form = buildBaseForm();
+    form.eventStartTime = "09:00";
+    form.eventEndTime = "10:45";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.durationMinutes).toBe(75);
+    expect(payload.eventStartTime).toBe("09:00");
+    expect(payload.eventEndTime).toBe("10:45");
+    expect(payload.preparationData).not.toHaveProperty("estimatedDurationMinutes");
+  });
+
   it("normalizes organizer account tokens before payload creation", () => {
     expect(parseOrganizerAccounts("  @alice, bob ; alice\ncarol  ")).toEqual([
       "alice",

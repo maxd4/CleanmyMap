@@ -34,6 +34,8 @@ export type ActionContractCreatePayload = {
   };
   dates: {
     observedAt: string;
+    eventStartTime?: string | null;
+    eventEndTime?: string | null;
   };
   metadata: {
     actorName?: string;
@@ -90,6 +92,8 @@ export function toContractCreatePayload(
       : undefined,
     dates: {
       observedAt: payload.actionDate,
+      eventStartTime: payload.eventStartTime ?? null,
+      eventEndTime: payload.eventEndTime ?? null,
     },
     metadata: {
       actorName: payload.actorName,
@@ -188,6 +192,8 @@ function normalizeContractCreatePayload(
     cigaretteButts: payload.metadata.cigaretteButts ?? null,
     volunteersCount: fallbackNumber(payload.metadata.volunteersCount, 1),
     durationMinutes: fallbackNumber(payload.metadata.durationMinutes, 0),
+    eventStartTime: payload.dates.eventStartTime ?? null,
+    eventEndTime: payload.dates.eventEndTime ?? null,
     notes: payload.metadata.notes,
     submissionMode: payload.metadata.submissionMode ?? "complete",
     wasteBreakdown: payload.metadata.wasteBreakdown,

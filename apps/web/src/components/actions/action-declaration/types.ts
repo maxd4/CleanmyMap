@@ -41,6 +41,8 @@ export type FormState = {
  cigaretteButtsCondition: ActionMegotsCondition; // État des mégots pour conversion
  volunteersCount: string;
  durationMinutes: string;
+ eventStartTime: string;
+ eventEndTime: string;
  notes: string;
  wasteMegotsKg: string;
  wasteMegotsCondition: ActionMegotsCondition;
@@ -67,7 +69,9 @@ export type ValidationIssue = {
  |"locationLabel"
  |"manualDrawing"
  |"wasteKg"
- |"volunteersCount";
+ |"volunteersCount"
+ |"eventStartTime"
+ |"eventEndTime";
  message: string;
 };
 

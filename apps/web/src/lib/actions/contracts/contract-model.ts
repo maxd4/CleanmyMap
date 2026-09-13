@@ -16,6 +16,7 @@ import {
   buildPersistedGeometryFromStoredFields,
   type PersistedDerivedGeometry,
 } from "../geometry/derived-geometry";
+import { normalizeClockTime } from "../time-contract";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "../organizer-type";
 
@@ -43,6 +44,8 @@ export type ActionDataDates = {
   createdAt: string | null;
   importedAt: string | null;
   validatedAt: string | null;
+  eventStartTime?: string | null;
+  eventEndTime?: string | null;
 };
 
 export type ActionDataMetadata = {
@@ -113,6 +116,8 @@ export type BuildActionContractParams = {
   observedPollutionScore?: number | null;
   volunteersCount?: number | null;
   durationMinutes?: number | null;
+  eventStartTime?: string | null;
+  eventEndTime?: string | null;
   actorName?: string | null;
   associationName?: string | null;
   organizerType?: OrganizerType | null;
@@ -197,6 +202,8 @@ function buildActionDates(params: BuildActionContractParams): ActionDataDates {
     createdAt: params.createdAt ?? null,
     importedAt: params.importedAt ?? null,
     validatedAt: params.validatedAt ?? null,
+    eventStartTime: normalizeClockTime(params.eventStartTime),
+    eventEndTime: normalizeClockTime(params.eventEndTime),
   };
 }
 

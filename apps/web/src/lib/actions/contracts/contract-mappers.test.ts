@@ -24,6 +24,8 @@ function buildRow(overrides: Record<string, unknown> = {}) {
     cigarette_butts: null,
     volunteers_count: 1,
     duration_minutes: 0,
+    event_start_time: null,
+    event_end_time: null,
     notes: null,
     status: "approved" as const,
     action_phase: "post_action_complete" as const,
@@ -89,5 +91,19 @@ describe("canonical department attribution", () => {
     });
     expect(withoutDepartment.department_code).toBeNull();
     expect(withoutDepartment.department_name).toBeNull();
+  });
+
+  it("round-trips the nullable event window without changing historical action time", () => {
+    const contract = toActionContract(
+      buildRow({
+        duration_minutes: 75,
+        event_start_time: "09:00:00",
+        event_end_time: "10:45:00",
+      }) as never,
+    );
+
+    expect(contract.metadata.durationMinutes).toBe(75);
+    expect(contract.dates.eventStartTime).toBe("09:00");
+    expect(contract.dates.eventEndTime).toBe("10:45");
   });
 });

@@ -8,6 +8,10 @@ import {
 } from "../../map/actions-map-geometry.utils";
 import { formatKg } from "../utils/harvest-utils";
 import { getOrganizerTypeLabel } from "@/lib/actions/organizer-type";
+import {
+  deriveEventDurationMinutes,
+  deriveOrganizationMinutes,
+} from "@/lib/actions/time-contract";
 
 type ActionDeclarationFormConfirmationProps = {
   form: FormState;
@@ -35,6 +39,11 @@ export function ActionDeclarationFormConfirmation({
     payload.recordType === "clean_place" || payload.recordType === "spot";
   const impact = computeActionImpactKpis({ metadata: payload });
   const drawingSummary = summarizeActionDrawingValidation(payload.manualDrawing ?? null);
+  const event = deriveEventDurationMinutes(payload.eventStartTime, payload.eventEndTime);
+  const organization = deriveOrganizationMinutes({
+    actionDurationMinutes: payload.durationMinutes,
+    eventDurationMinutes: event.eventDurationMinutes,
+  });
 
   return (
     <CmmDialog
@@ -126,6 +135,25 @@ export function ActionDeclarationFormConfirmation({
                 {form.placeType}
               </p>
             </div>
+          </div>
+
+          <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
+              Temporalité de l’action
+            </p>
+            <p className="text-sm font-semibold text-emerald-950">
+              Temps d’action : {payload.durationMinutes} min
+            </p>
+            <p className="mt-1 text-sm text-emerald-900/70">
+              Créneau total : {event.status === "available"
+                ? `${payload.eventStartTime} — ${payload.eventEndTime} (${event.eventDurationMinutes} min)`
+                : "non renseigné"}
+            </p>
+            {organization.status === "available" ? (
+              <p className="mt-1 text-sm text-emerald-900/70">
+                Organisation dérivée : {organization.organizationMinutes} min
+              </p>
+            ) : null}
           </div>
 
           {/* Localisation */}

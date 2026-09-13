@@ -36,6 +36,7 @@ import { deriveAutoDrawingFromLocation } from "@/lib/actions/geometry/route-geom
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
 import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart-assist";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
+import { getTimeContractValidationMessage } from "@/lib/actions/time-contract";
 import type {
   FormState,
   PostActionRetentionLoop,
@@ -173,6 +174,10 @@ export function useActionDeclarationForm({
             action.routeAdjustmentMessage ?? preparedForm.routeAdjustmentMessage,
           notes: action.notes ?? preparedForm.notes,
           placeType: action.placeType ?? preparedForm.placeType,
+          volunteersCount: String(action.volunteersCount),
+          durationMinutes: String(action.durationMinutes),
+          eventStartTime: action.eventStartTime ?? preparedForm.eventStartTime,
+          eventEndTime: action.eventEndTime ?? preparedForm.eventEndTime,
         };
 
         if (
@@ -182,8 +187,6 @@ export function useActionDeclarationForm({
           nextForm.wasteKg = "";
           nextForm.cigaretteButts = "";
           nextForm.cigaretteButtsCount = "";
-          nextForm.volunteersCount = "";
-          nextForm.durationMinutes = "";
           nextForm.wasteMegotsKg = "";
           nextForm.wastePlastiqueKg = "";
           nextForm.wasteVerreKg = "";
@@ -563,6 +566,15 @@ function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
       field: "actionDate",
       message: "Indiquez la date de l’action avant l’envoi.",
     });
+  }
+
+  const timeMessage = getTimeContractValidationMessage({
+    actionDurationMinutes: Number(form.durationMinutes),
+    startTime: form.eventStartTime,
+    endTime: form.eventEndTime,
+  });
+  if (timeMessage) {
+    issues.push({ field: "eventStartTime", message: timeMessage });
   }
 
   return issues;

@@ -254,6 +254,36 @@ accuracy_m
 
 Ne pas convertir silencieusement une unité sans documenter le contrat.
 
+## Contrat temporel des actions
+
+Le contrat métier distingue exactement deux notions :
+
+- le `duration_minutes` existant est le temps d’action de dépollution. Il
+  couvre la marche sur le parcours, le ramassage, le tri et la pesée, sans
+  saisir ces étapes séparément ;
+- `event_start_time` et `event_end_time` sont les heures du créneau total de
+  l’événement, sur `action_date`. Ce créneau inclut l’action, le briefing, la
+  constitution des groupes, la distribution du matériel, les regroupements et
+  le rangement.
+
+Les deux heures sont nullable. La durée totale de l’événement est dérivée
+comme `event_end_time - event_start_time` lorsque les deux valeurs sont
+connues et cohérentes le même jour. Le temps d’organisation est également
+dérivé :
+
+```txt
+organizationMinutes = eventDurationMinutes - actionDurationMinutes
+```
+
+Une heure absente rend les deux durées dérivées indisponibles. Une heure
+invalide, une fin antérieure au début ou un créneau inférieur au temps
+d’action est signalé comme incohérence ; aucune durée de passage à minuit,
+valeur historique d’événement ou valeur fictive n’est reconstruite. Les
+anciennes valeurs de `duration_minutes` restent intactes et représentent le
+temps d’action déclaré. `estimatedDurationMinutes` dans d’anciens
+`preparation_data` est lu uniquement pour compatibilité ; les nouveaux
+formulaires n’enregistrent pas une seconde durée planifiée.
+
 ## Ingestion multi-source
 
 Le module :

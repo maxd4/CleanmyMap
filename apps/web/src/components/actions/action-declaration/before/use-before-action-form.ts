@@ -15,6 +15,7 @@ import {
   type BeforeActionFieldUpdater,
 } from "./model";
 import { ENTREPRISE_ASSOCIATION_OPTION } from "@/lib/actions/association-options";
+import { getTimeContractValidationMessage } from "@/lib/actions/time-contract";
 
 function buildPrefillForm(
   actorNameOptions: string[],
@@ -110,6 +111,14 @@ export function useBeforeActionForm({
     }
     if (!form.departureLocationLabel.trim()) {
       issues.push("Indiquez le point de rendez-vous avant de publier.");
+    }
+    const timeMessage = getTimeContractValidationMessage({
+      actionDurationMinutes: Number(form.durationMinutes),
+      startTime: form.eventStartTime,
+      endTime: form.eventEndTime,
+    });
+    if (timeMessage) {
+      issues.push(timeMessage);
     }
 
     if (issues.length > 0) {

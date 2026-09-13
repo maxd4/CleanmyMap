@@ -50,6 +50,7 @@ export type ActionPreparationData = {
   actionDate?: string;
   meetingTime?: string;
   departureTime?: string;
+  /** Legacy compatibility only; new forms keep action duration on the row. */
   estimatedDurationMinutes?: number;
   plannedObjective?: "repérage" | "nettoyage" | "collecte_mégots" | "action_mixte" | "sensibilisation" | "autre";
   placeType?: string;
@@ -181,6 +182,8 @@ export type ActionListItem = {
       createdAt: string | null;
       importedAt: string | null;
       validatedAt: string | null;
+      eventStartTime?: string | null;
+      eventEndTime?: string | null;
     };
     metadata: {
       actorName: string | null;
@@ -256,6 +259,8 @@ export type CreateActionPayload = {
   cigaretteButtsCount?: number | null;
   volunteersCount: number;
   durationMinutes: number;
+  eventStartTime?: string | null;
+  eventEndTime?: string | null;
   notes?: string;
   placeType?: string;
   manualDrawing?: ActionDrawing;
@@ -338,6 +343,8 @@ export type ActionMapItem = Pick<
       createdAt: string | null;
       importedAt: string | null;
       validatedAt: string | null;
+      eventStartTime?: string | null;
+      eventEndTime?: string | null;
     };
     metadata: {
       actorName: string | null;

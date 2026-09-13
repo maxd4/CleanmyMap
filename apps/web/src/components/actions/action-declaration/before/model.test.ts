@@ -60,4 +60,18 @@ describe("sanitizePreActionForm", () => {
     expect(sanitized.participantAccounts).toEqual(["alice", "bob"]);
     expect(sanitized.volunteersCount).toBe("1");
   });
+
+  it("preserves the declared action time and event window in the pre-form", () => {
+    const form = createInitialFormState("Maxence", "action");
+    const sanitized = sanitizePreActionForm({
+      ...form,
+      durationMinutes: "75",
+      eventStartTime: " 09:00 ",
+      eventEndTime: "10:45",
+    });
+
+    expect(sanitized.durationMinutes).toBe("75");
+    expect(sanitized.eventStartTime).toBe("09:00");
+    expect(sanitized.eventEndTime).toBe("10:45");
+  });
 });

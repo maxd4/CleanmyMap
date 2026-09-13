@@ -61,6 +61,25 @@ describe("ActionStepIdentity", () => {
     expect(html).not.toContain("Lieu propre");
   });
 
+  it("explains the unified action time and event window", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    const html = readableMarkup(renderToStaticMarkup(
+      React.createElement(ActionStepIdentity, {
+        form,
+        updateField: () => undefined,
+        updateFields: () => undefined,
+        userMetadata: { userId: "preview-local" },
+        recordType: "action",
+        hasAttemptedSubmit: false,
+      } as ComponentProps<typeof ActionStepIdentity>),
+    ));
+
+    expect(html).toContain("Participants & temps d’action");
+    expect(html).toContain("marche, le ramassage, le tri et la pesée");
+    expect(html).toContain("Début de l’événement");
+    expect(html).toContain("Fin de l’événement");
+  });
+
   it("renders the catalogue selected by each organizer type and no structure selector for spontaneous actions", () => {
     for (const organizerType of ORGANIZER_TYPE_VALUES) {
       const form = createInitialFormState("Aperçu local", "action");
