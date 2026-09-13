@@ -274,6 +274,14 @@ une mesure valide ; une métrique absente reste indisponible. Le score global
 `combinedGlobalScore` conserve cette référence maximale à l'échelle de toutes
 les actions éligibles.
 
+Cette distinction s'applique aussi aux agrégats Impact, aux rapports et aux
+comparaisons temporelles : `waste_kg = 0` signifie une mesure nulle, tandis que
+`waste_kg = NULL` signifie que la masse n'a pas été renseignée. Une somme peut
+représenter les seules valeurs connues, mais elle doit conserver le nombre
+d'actions éligibles, le nombre de masses connues et le taux de couverture. Une
+masse de mégots, même qualifiée, reste la métrique `cigarette_butts` et ne peut
+pas remplir `waste_kg`.
+
 Le score `departmentRelativeScore` est une comparaison relative interne à un
 `department_code` conservé comme chaîne (par exemple `01`, `2A`, `2B` ou un
 code ultramarin). Sa référence est le maximum de l'intensité bénévole-heure

@@ -24,6 +24,8 @@ const comparison: PilotageComparisonResult = {
   current: {
     approvedActions: 1,
     impactVolumeKg: 1,
+    wasteKnownActions: 1,
+    wasteCoverageRate: 100,
     mobilizationCount: 1,
     totalDurationMinutes: 60,
     qualityScore: 1,
@@ -45,6 +47,8 @@ const comparison: PilotageComparisonResult = {
   previous: {
     approvedActions: 1,
     impactVolumeKg: 1,
+    wasteKnownActions: 1,
+    wasteCoverageRate: 100,
     mobilizationCount: 1,
     totalDurationMinutes: 60,
     qualityScore: 1,

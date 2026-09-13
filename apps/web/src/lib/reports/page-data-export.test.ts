@@ -20,13 +20,13 @@ describe("reports export impact fields", () => {
 
     const row = toReportsExportRow(contract);
 
-    expect(row.Masse_Kg).toBe(0);
-    expect(row.Masse_Kg_Declaree).toBe(0);
-    expect(row.Masse_Kg_Impact).toBe(5.55);
-    expect(row.Origine_Masse).toBe("cigarette_butts");
-    expect(row.CO2e_Proxy_Kg).toBeCloseTo(6.66, 10);
+    expect(row.Masse_Kg).toBeNull();
+    expect(row.Masse_Kg_Declaree).toBeNull();
+    expect(row.Masse_Kg_Impact).toBeNull();
+    expect(row.Origine_Masse).toBe("none");
+    expect(row.CO2e_Proxy_Kg).toBeNull();
     expect(row.Eau_Proxy_L).toBe(6_937_500);
-    expect(row.Economie_Voirie_Proxy_EUR).toBe(8);
+    expect(row.Economie_Voirie_Proxy_EUR).toBeNull();
     expect(row.Bénévoles).toBe(3);
   });
 });

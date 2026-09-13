@@ -10,6 +10,8 @@ function buildComparisonFixture(): PilotageComparisonResult {
     current: {
       approvedActions: 42,
       impactVolumeKg: 180,
+      wasteKnownActions: 42,
+      wasteCoverageRate: 100,
       mobilizationCount: 120,
       totalDurationMinutes: 1200,
       iurIndex: 3.1,
@@ -31,6 +33,8 @@ function buildComparisonFixture(): PilotageComparisonResult {
     previous: {
       approvedActions: 36,
       impactVolumeKg: 140,
+      wasteKnownActions: 36,
+      wasteCoverageRate: 100,
       mobilizationCount: 96,
       totalDurationMinutes: 900,
       iurIndex: 2.6,

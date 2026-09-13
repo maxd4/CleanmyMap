@@ -59,4 +59,15 @@ describe("buildTerritorialBenchmark", () => {
       ]),
     ).toEqual(buildTerritorialBenchmark([approvedAction]));
   });
+
+  it("keeps NULL out of the waste denominator while preserving observed zero", () => {
+    const rows = buildTerritorialBenchmark([
+      { type: "action", status: "approved", locationLabel: "Paris 10e", wasteKg: 0, volunteersCount: 2 },
+      { type: "action", status: "approved", locationLabel: "Paris 10e", wasteKg: null, volunteersCount: 2 },
+    ]);
+
+    expect(rows[0]?.totalKg).toBe(0);
+    expect(rows[0]?.knownWasteActions).toBe(1);
+    expect(rows[0]?.wasteCoverageRate).toBe(50);
+  });
 });

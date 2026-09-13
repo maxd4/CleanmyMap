@@ -13,6 +13,10 @@ export type ZoneComparisonRow = {
   deltaActionsAbsolute: number;
   currentKg: number;
   previousKg: number;
+  currentWasteKnownActions?: number;
+  previousWasteKnownActions?: number;
+  currentWasteCoverageRate?: number;
+  previousWasteCoverageRate?: number;
   deltaKgAbsolute: number;
   deltaActionsPercent: number;
   deltaKgPercent: number;

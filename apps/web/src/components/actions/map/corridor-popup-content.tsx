@@ -146,7 +146,7 @@ export function CorridorPopupContent({
             <SummaryMetric
               icon={<Sparkles size={13} />}
               label="Déchets / mégots"
-              value={`${formatNumber(summary.totalWasteKg, " kg")} · ${formatNumber(summary.totalCigaretteButts)}`}
+              value={`${formatNumber(summary.totalWasteKg, " kg")} (${Math.round(summary.wasteCoverageRate)}% renseigné) · ${formatNumber(summary.totalCigaretteButts)}`}
             />
             <SummaryMetric
               icon={<Users size={13} />}

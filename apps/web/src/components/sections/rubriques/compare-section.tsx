@@ -56,7 +56,7 @@ export function CompareSection() {
     const records = (data?.items ?? []).map((item) => ({
       observedAt: item.action_date,
       locationLabel: item.location_label || "Hors arrondissement",
-      wasteKg: Number(item.waste_kg || 0),
+      wasteKg: item.waste_kg === null ? null : Number(item.waste_kg),
       butts: Number(item.cigarette_butts || 0),
       volunteersCount: Number(item.volunteers_count || 0),
     }));

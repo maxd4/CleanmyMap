@@ -5,7 +5,7 @@ export type TerritorialInput = {
   type: ActionEntityType;
   status: ActionStatus;
   locationLabel: string;
-  wasteKg: number;
+  wasteKg: number | null;
   volunteersCount: number;
   actionsCount?: number;
 };
@@ -20,6 +20,8 @@ export type TerritorialBenchmarkRow = {
   totalVolunteers: number;
   actionsPerKm2: number;
   kgPerKm2: number;
+  knownWasteActions: number;
+  wasteCoverageRate: number;
   volunteersPer10k: number;
   normalizedScore: number;
   decisionLabel: "Priorite haute" | "Priorite moyenne" | "Priorite de fond";
@@ -78,7 +80,7 @@ export function buildTerritorialBenchmark(
 ): TerritorialBenchmarkRow[] {
   const grouped = new Map<
     string,
-    { actionsCount: number; totalKg: number; totalVolunteers: number }
+    { actionsCount: number; totalKg: number; totalVolunteers: number; knownWasteActions: number }
   >();
   for (const row of rows) {
     if (row.type !== "action" || row.status !== "approved") {
@@ -89,9 +91,13 @@ export function buildTerritorialBenchmark(
       actionsCount: 0,
       totalKg: 0,
       totalVolunteers: 0,
+      knownWasteActions: 0,
     };
     previous.actionsCount += row.actionsCount ?? 1;
-    previous.totalKg += Number(row.wasteKg || 0);
+    if (row.wasteKg !== null && Number.isFinite(row.wasteKg) && row.wasteKg >= 0) {
+      previous.totalKg += row.wasteKg;
+      previous.knownWasteActions += 1;
+    }
     previous.totalVolunteers += Number(row.volunteersCount || 0);
     grouped.set(area, previous);
   }
@@ -117,6 +123,9 @@ export function buildTerritorialBenchmark(
       actionsCount: stats.actionsCount,
       totalKg: stats.totalKg,
       totalVolunteers: stats.totalVolunteers,
+      knownWasteActions: stats.knownWasteActions,
+      wasteCoverageRate:
+        stats.actionsCount > 0 ? (stats.knownWasteActions / stats.actionsCount) * 100 : 0,
       actionsPerKm2,
       kgPerKm2,
       volunteersPer10k,
@@ -137,17 +146,23 @@ export function buildTerritorialBenchmark(
   return computed
     .map((row) => {
       const actionsScore = normalized(row.actionsPerKm2, maxActionsPerKm2);
-      const kgScore = normalized(row.kgPerKm2, maxKgPerKm2);
+      const kgScore = row.knownWasteActions > 0
+        ? normalized(row.kgPerKm2, maxKgPerKm2)
+        : null;
       const volunteersScore = normalized(
         row.volunteersPer10k,
         maxVolunteersPer10k,
       );
       const densityPressure = normalized(row.densityPerKm2, maxDensity);
+      const weightedParts = [
+        { score: actionsScore, weight: 0.35 },
+        ...(kgScore === null ? [] : [{ score: kgScore, weight: 0.35 }]),
+        { score: volunteersScore, weight: 0.2 },
+        { score: densityPressure, weight: 0.1 },
+      ];
       const normalizedScore = round1(
-        actionsScore * 0.35 +
-          kgScore * 0.35 +
-          volunteersScore * 0.2 +
-          densityPressure * 0.1,
+        weightedParts.reduce((sum, part) => sum + part.score * part.weight, 0) /
+          weightedParts.reduce((sum, part) => sum + part.weight, 0),
       );
       const decisionLabel: TerritorialBenchmarkRow["decisionLabel"] =
         normalizedScore >= 66
@@ -159,6 +174,8 @@ export function buildTerritorialBenchmark(
         ...row,
         actionsPerKm2: round1(row.actionsPerKm2),
         kgPerKm2: round1(row.kgPerKm2),
+        knownWasteActions: row.knownWasteActions,
+        wasteCoverageRate: round1(row.wasteCoverageRate),
         volunteersPer10k: round1(row.volunteersPer10k),
         normalizedScore,
         decisionLabel,

@@ -83,6 +83,17 @@ function sumApprovedMetric<T>(
  return contracts.reduce((acc, contract) => acc + toFiniteNumber(selector(contract)), 0);
 }
 
+function countKnownMetric<T>(
+ contracts: Array<T>,
+ selector: (contract: T) => unknown,
+): number {
+ return contracts.reduce((count, contract) => {
+  const value = selector(contract);
+  const parsed = typeof value === "number" ? value : Number(value);
+  return count + (Number.isFinite(parsed) && parsed >= 0 ? 1 : 0);
+ }, 0);
+}
+
 function countGeolocatedContracts<T extends {
  location: { latitude: number | null; longitude: number | null };
 }>(contracts: Array<T>): number {
@@ -412,6 +423,7 @@ export async function GET(request: Request) {
 
  const approved = scopeContracts.filter((contract) => contract.status ==="approved");
  const totalKg = sumApprovedMetric(approved, (contract) => contract.metadata.wasteKg);
+ const knownWasteActions = countKnownMetric(approved, (contract) => contract.metadata.wasteKg);
  const totalActions = approved.length;
  const totalVolunteers = sumApprovedMetric(
   approved,
@@ -426,7 +438,7 @@ export async function GET(request: Request) {
  createdAt: contract.dates.createdAt ?? contract.dates.importedAt,
  latitude: contract.location.latitude,
  longitude: contract.location.longitude,
-  wasteKg: contract.metadata.wasteKg ?? 0,
+  wasteKg: contract.metadata.wasteKg,
  })),
  days,
  );
@@ -436,7 +448,7 @@ export async function GET(request: Request) {
    type: contract.type,
    status: contract.status,
    locationLabel: contract.location.label,
-    wasteKg: contract.metadata.wasteKg ?? 0,
+    wasteKg: contract.metadata.wasteKg,
    volunteersCount: contract.metadata.volunteersCount,
   })),
  );
@@ -461,7 +473,8 @@ export async function GET(request: Request) {
  packVersion: methodology.version,
  summary: {
  totalActions,
- totalKg: Number(totalKg.toFixed(1)),
+  totalKg: Number(totalKg.toFixed(1)),
+  knownWasteActions,
  totalVolunteers,
  geocoverageRate:
  totalActions > 0 ? Math.round((geolocated / totalActions) * 100) : 0,

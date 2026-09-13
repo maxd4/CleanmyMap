@@ -35,7 +35,7 @@ function buildAction(params: {
       kind: "polyline",
       coordinates: params.coordinates,
     },
-    wasteKg: params.wasteKg ?? 0,
+    wasteKg: params.wasteKg ?? null,
     cigaretteButts: params.cigaretteButts ?? 0,
     volunteersCount: params.volunteersCount ?? 1,
     durationMinutes: params.durationMinutes ?? 30,
@@ -245,6 +245,8 @@ describe("corridor history", () => {
     expect(summary.firstActionAt).toBe(oldAction.dates.observedAt);
     expect(summary.lastActionAt).toBe(recentAction.dates.observedAt);
     expect(summary.totalWasteKg).toBe(14);
+    expect(summary.wasteKnownActions).toBe(2);
+    expect(summary.wasteCoverageRate).toBe(100);
     expect(summary.totalCigaretteButts).toBe(300);
     expect(summary.totalVolunteers).toBe(5);
     expect(summary.totalDurationMinutes).toBe(150);

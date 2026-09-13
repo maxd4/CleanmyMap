@@ -64,7 +64,7 @@ describe("computePilotageComparison", () => {
     expect(result.current.reliability.score).toBeLessThanOrEqual(100);
   });
 
-  it("uses the best available waste proxy when the kg field is empty", () => {
+  it("does not use cigarette butts as a waste proxy when kg is empty", () => {
     const contracts = [
       buildActionDataContract({
         id: "sheet-import",
@@ -88,7 +88,7 @@ describe("computePilotageComparison", () => {
       new Date("2026-04-10T00:00:00.000Z"),
     );
 
-    expect(result.current.impactVolumeKg).toBe(1.5);
+    expect(result.current.impactVolumeKg).toBe(0);
   });
 
   it("keeps approved metrics reliable without treating approved-only moderation as zero", () => {

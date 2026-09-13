@@ -65,7 +65,20 @@ export function RecyclingSection() {
 
   const stats = useMemo(() => {
     const items = actions.data?.items ?? [];
-    const totalKg = items.reduce((acc, item) => acc + Number(item.waste_kg || 0), 0);
+    const knownWasteActions = items.filter(
+      (item) =>
+        item.waste_kg !== null &&
+        Number.isFinite(Number(item.waste_kg)) &&
+        Number(item.waste_kg) >= 0,
+    ).length;
+    const totalKg = items.reduce(
+      (acc, item) =>
+        acc +
+        (item.waste_kg === null || item.waste_kg === undefined
+          ? 0
+          : Number(item.waste_kg)),
+      0,
+    );
     const totalButts = items.reduce((acc, item) => acc + Number(item.cigarette_butts || 0), 0);
     const avgKg = items.length > 0 ? totalKg / items.length : 0;
     const withTrace = (map.data?.items ?? []).filter((item) =>
@@ -73,7 +86,15 @@ export function RecyclingSection() {
     ).length;
     const mixedIndex = totalKg > 0 ? Math.max(0, 100 - Math.round((totalButts / Math.max(totalKg, 1)) * 0.8)) : 0;
     
-    return { totalKg, totalButts, avgKg, withTrace, mixedIndex, count: items.length };
+    return {
+      totalKg,
+      totalButts,
+      avgKg,
+      withTrace,
+      mixedIndex,
+      count: items.length,
+      wasteCoverageRate: items.length > 0 ? (knownWasteActions / items.length) * 100 : 0,
+    };
   }, [actions.data?.items, map.data?.items]);
 
   const isLoading = actions.isLoading || map.isLoading || breakdown.isLoading;

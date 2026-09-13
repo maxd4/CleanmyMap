@@ -113,7 +113,20 @@ function formatNumber(num: number): string {
 }
 
 function computePlatformStats(actions: PlatformStatAction[]) {
-  const totalKg = actions.reduce((sum, a) => sum + Number(a.waste_kg || 0), 0);
+  const knownWasteActions = actions.filter(
+    (action) =>
+      action.waste_kg !== null &&
+      Number.isFinite(Number(action.waste_kg)) &&
+      Number(action.waste_kg) >= 0,
+  ).length;
+  const totalKg = actions.reduce(
+    (sum, a) =>
+      sum +
+      (a.waste_kg === null || a.waste_kg === undefined
+        ? 0
+        : Number(a.waste_kg)),
+    0,
+  );
   const totalButts = actions.reduce((sum, a) => sum + Number(a.cigarette_butts || 0), 0);
   const totalMinutes = actions.reduce((sum, a) => sum + Number(a.duration_minutes || 0), 0);
   const volunteers = new Set(
@@ -127,6 +140,7 @@ function computePlatformStats(actions: PlatformStatAction[]) {
   
   return {
     totalKg: Math.round(totalKg),
+    wasteCoverageRate: actions.length > 0 ? (knownWasteActions / actions.length) * 100 : 0,
     totalActions: actions.length,
     totalVolunteers: volunteers,
     waterSaved: Math.round(waterSaved),
@@ -255,7 +269,7 @@ export function NationalStatsSection() {
                 <div className="grid grid-cols-2 gap-8">
                   <div className="space-y-2">
                     <p className="text-5xl font-black text-white tracking-tighter">{formatNumber(platformStats.totalKg)}</p>
-                    <p className="text-[10px] font-black text-sky-400 uppercase tracking-[0.2em]">KG Collectés</p>
+                    <p className="text-[10px] font-black text-sky-400 uppercase tracking-[0.2em]">KG Mesurés ({Math.round(platformStats.wasteCoverageRate)}% renseigné)</p>
                   </div>
                   <div className="space-y-2">
                     <p className="text-5xl font-black text-white tracking-tighter">{formatNumber(platformStats.totalVolunteers)}</p>
