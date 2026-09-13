@@ -254,6 +254,54 @@ accuracy_m
 
 Ne pas convertir silencieusement une unité sans documenter le contrat.
 
+## Contrat de participation bénévole
+
+Les nouvelles actions distinguent les trois catégories sources suivantes :
+`childrenCount`, `adultCount` et `retiredCount`. Elles décrivent la répartition
+des générations présentes sur l'action sans collecter l'âge exact ni la date de
+naissance. Une valeur absente reste `NULL` ; elle ne doit pas être remplacée par
+zéro pour rendre une catégorie artificiellement complète.
+
+Lorsque les trois catégories sont renseignées, le nombre réel de personnes est
+recalculé par la règle canonique :
+
+```text
+participantsCount = childrenCount + adultCount + retiredCount
+```
+
+Ce total est le nombre public de bénévoles et reste distinct de l'unité utilisée
+pour certains indicateurs opérationnels. La dérivation versionnée
+`effective-volunteer-units-v1` applique :
+
+```text
+effectiveVolunteerUnits =
+  adultCount + 0,5 × childrenCount + 0,5 × retiredCount
+```
+
+Le coefficient `1` constitue l'unité de référence d'un adulte. Les coefficients
+`0,5` pour un enfant et une personne retraitée sont une hypothèse métier
+d'efficacité opérationnelle relative : ils représentent, à défaut d'une mesure
+individuelle plus précise, une contribution moyenne estimée à la moitié de
+l'unité adulte dans les tâches de dépollution. Ils ne signifient pas que chaque
+enfant ou chaque personne retraitée a exactement la moitié de la capacité d'un
+adulte et ne constituent pas une loi scientifique ou une évaluation de la valeur
+des personnes. Toute évolution de cette hypothèse doit changer la version de la
+formule et être justifiée par une décision métier documentée.
+
+Les catégories sources permettent en parallèle d'observer la composition
+générationnelle des actions et, lorsque les données sont complètes, d'en décrire
+la répartition. Cette lecture descriptive ne doit pas être confondue avec une
+mesure individuelle de performance ni avec le nombre de participants : les
+KPI de participation utilisent `participantsCount`, tandis que les indicateurs
+qui exigent une unité opérationnelle peuvent utiliser
+`effectiveVolunteerUnits`.
+
+Pour une action historique qui ne possède que `volunteersCount`, ce nombre reste
+le total historique de participants ; `childrenCount`, `adultCount`,
+`retiredCount` et `effectiveVolunteerUnits` restent inconnus. Le système ne doit
+pas reconstruire la répartition générationnelle ni supposer que les participants
+étaient adultes.
+
 ## Contrat de mesure des déchets hors mégots
 
 `wasteKg` désigne exclusivement la masse totale des déchets hors mégots,
