@@ -186,7 +186,7 @@ describe("action popup presentation", () => {
 
     expect(markup).toContain("Nouvelle action ici");
     expect(markup).toContain("Rejoindre un formulaire");
-    expect(markup).toContain("Voir tout le tracé");
+    expect(markup).toContain("Voir tout le parcours");
     expect(markup).toContain("max-w-full px-3");
     expect(markup).not.toContain("h-11 w-full");
   });
@@ -214,6 +214,7 @@ describe("action popup presentation", () => {
         quality: null,
         geometryLabel: "Parcours déclaré",
         geometryModeLabel: "Parcours connu",
+        geometryKind: "polyline",
         geometryPointLabel: "2 points",
         geometryConfidenceLabel: null,
         geometryMetricLabel: "Longueur ~ 1 km",
@@ -279,6 +280,7 @@ describe("action popup presentation", () => {
         quality: null,
         geometryLabel: "Parcours déclaré",
         geometryModeLabel: "Parcours connu",
+        geometryKind: "polyline",
         geometryPointLabel: "2 points",
         geometryConfidenceLabel: null,
         geometryMetricLabel: "Longueur ~ 1 km",
@@ -328,6 +330,7 @@ describe("action popup presentation", () => {
         quality: null,
         geometryLabel: "Point",
         geometryModeLabel: "Point",
+        geometryKind: "point",
         geometryPointLabel: "1 point",
         geometryConfidenceLabel: null,
         geometryMetricLabel: null,
@@ -368,10 +371,11 @@ describe("action popup presentation", () => {
         hasPollution: false,
         isAction: true,
         onViewGeometry: () => undefined,
+        geometryKind: "polygon",
       }),
     );
 
-    expect(markup).toContain("Voir tout le tracé");
+    expect(markup).toContain("Voir toute la zone");
   });
 
   it("routes a clean-place context to the observation entry", () => {

@@ -32,6 +32,7 @@ type ActionPopupContentHeaderProps = {
   quality: string | null;
   geometryLabel: string;
   geometryModeLabel: string;
+  geometryKind: "polyline" | "polygon" | "point" | null;
   geometryPointLabel: string;
   geometryConfidenceLabel: string | null;
   geometryMetricLabel: string | null;
@@ -115,6 +116,7 @@ export function ActionPopupContentHeader({
   quality,
   geometryLabel,
   geometryModeLabel,
+  geometryKind,
   geometryPointLabel,
   geometryConfidenceLabel,
   geometryMetricLabel,
@@ -312,7 +314,11 @@ export function ActionPopupContentHeader({
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-slate-500">
-                Tracé de l&apos;action
+                {geometryKind === "polygon"
+                  ? "Zone de l&apos;action"
+                  : geometryKind === "polyline"
+                    ? "Parcours de l&apos;action"
+                    : "Localisation de l&apos;action"}
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-50">
                 {geometryMetricLabel ?? geometryLabel}

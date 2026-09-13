@@ -33,13 +33,33 @@ function buildMapItem(partial: Partial<ActionMapItem>): ActionMapItem {
 }
 
 describe("actions map geometry utils", () => {
+  it.each([
+    ["polyline", "manual", "Parcours déclaré"],
+    ["polyline", "routed", "Parcours reconstruit"],
+    ["polygon", "manual", "Zone déclarée"],
+    ["polygon", "reference", "Zone de référence"],
+    ["polygon", "estimated_area", "Zone indicative"],
+  ] as const)("maps %s/%s to %s", (kind, origin, expected) => {
+    expect(
+      formatGeometryModeLabel(kind, {
+        origin,
+        reality: origin === "routed" || origin === "estimated_area" ? "estimated" : "real",
+        label: expected,
+        strokeStyle: origin === "routed" ? "dashed" : "solid",
+      }),
+    ).toBe(expected);
+  });
+
   it("uses métier labels for action polyline and polygon tooltips", () => {
     expect(
       formatActionGeometryTooltipTitle("polyline", "Longueur ~ 1,2 km"),
-    ).toBe("Action · Longueur ~ 1,2 km");
+    ).toBe("Parcours d'action · Longueur ~ 1,2 km");
     expect(
       formatActionGeometryTooltipTitle("polygon", "Surface ~ 850 m²"),
     ).toBe("Zone d'action · Surface ~ 850 m²");
+    expect(formatActionGeometryTooltipTitle("polyline", null)).toBe(
+      "Parcours d'action",
+    );
   });
 
   it("shows confidence only for estimated geometry and preserves stroke semantics", () => {
@@ -88,13 +108,13 @@ describe("actions map geometry utils", () => {
     expect(style.strokeOpacity).toBe(0.95);
     expect(style.dashArray).toBeUndefined();
     expect(
-      formatGeometryModeLabel({
+      formatGeometryModeLabel("polygon", {
         origin: "reference",
         reality: "real",
         label: "Zone réelle · référence",
         strokeStyle: "solid",
       }),
-    ).toBe("Zone réelle");
+    ).toBe("Zone de référence");
   });
 
   it("renders estimated_area as a transparent solid indicative zone", () => {
@@ -140,7 +160,7 @@ describe("actions map geometry utils", () => {
     expect(style.strokeOpacity).toBe(0.68);
     expect(style.dashArray).toBeUndefined();
     expect(
-      formatGeometryModeLabel({
+      formatGeometryModeLabel("polygon", {
         origin: "estimated_area",
         reality: "estimated",
         label: "Zone indicative · emprise estimée",
@@ -195,7 +215,7 @@ describe("actions map geometry utils", () => {
     expect(style.dashArray).toBe("8 8");
     expect(style.fillOpacity).toBeNull();
     expect(
-      formatGeometryModeLabel({
+      formatGeometryModeLabel("polyline", {
         origin: "routed",
         reality: "estimated",
         label: "Parcours reconstruit · estimation",
@@ -316,12 +336,12 @@ describe("actions map geometry utils", () => {
       [48.856, 2.359],
     ]);
     expect(geometry.anchor).toEqual([48.855, 2.357]);
-    expect(geometry.label).toContain("Géométrie réelle");
+    expect(geometry.label).toBe("Parcours déclaré");
     expect(geometry.pointCount).toBe(3);
     expect(geometry.confidence).toBe(1);
     expect(formatGeometryPointCount(geometry.pointCount)).toBe("3 points");
-    expect(formatGeometryModeLabel(geometry.presentation)).toBe(
-      "Géométrie réelle",
+    expect(formatGeometryModeLabel(geometry.kind, geometry.presentation)).toBe(
+      "Parcours déclaré",
     );
     expect(formatGeometryConfidenceLabel(geometry.confidence)).toBe(
       "Confiance 100%",

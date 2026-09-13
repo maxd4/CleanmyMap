@@ -34,6 +34,7 @@ type ActionPopupContentBodyProps = {
   isAction: boolean;
   signalementId?: string | null;
   onViewGeometry?: () => void;
+  geometryKind?: "polyline" | "polygon" | "point" | null;
 };
 
 export function ActionPopupContentBody({
@@ -55,6 +56,7 @@ export function ActionPopupContentBody({
   isAction,
   signalementId = null,
   onViewGeometry,
+  geometryKind,
 }: ActionPopupContentBodyProps) {
   const [isNotesExpanded, setIsNotesExpanded] = useState(false);
   const wasteLabel = isAction ? "Déchets collectés" : "Déchets";
@@ -259,7 +261,9 @@ export function ActionPopupContentBody({
               size="sm"
               className="min-h-9 max-w-full px-3 text-[10px] font-black uppercase tracking-[0.12em]"
             >
-              Voir tout le tracé
+              {geometryKind === "polygon"
+                ? "Voir toute la zone"
+                : "Voir tout le parcours"}
             </CmmButton>
           ) : null}
         </div>

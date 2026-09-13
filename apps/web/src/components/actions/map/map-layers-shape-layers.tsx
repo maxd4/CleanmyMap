@@ -16,7 +16,6 @@ import {
   mapItemObservedAt,
   mapItemPostActionPollutionScore,
 } from "@/lib/actions/data-contract";
-import { resolveItemPollutionScores } from "@/components/actions/map-marker-categories";
 import { presentActionPollutionProjection } from "@/lib/actions/pollution/revisit-priority";
 import { formatProjectionConfidenceLabel } from "@/lib/actions/pollution/projection-confidence";
 import {
@@ -30,7 +29,6 @@ import {
   formatGeometryModeLabel,
   formatGeometryPointCount,
   formatActionGeometryTooltipTitle,
-  resolveGeometryConfidenceLabel,
   resolveActionMapGeometryViewModel,
   resolvePolylineEndpointMarkers,
   resolveGeometryRenderStyle,
@@ -93,7 +91,6 @@ export function ShapeLayers({
           return null;
         }
 
-        const pollutionScores = resolveItemPollutionScores(item, references);
         const currentPlaceState = resolveMapPlaceStateForItem(
           currentPlaceStateViews,
           item,
@@ -118,12 +115,6 @@ export function ShapeLayers({
         const departmentActionScore = isActionMapItem(item)
           ? resolveActionPollutionScore(item, references, { scope: "department" })
           : null;
-        const scopedActionScore = scoreScope === "department"
-          ? departmentActionScore
-          : globalActionScore;
-        const score = isActionMapItem(item)
-          ? scopedActionScore?.score ?? 0
-          : pollutionScores.severityScore;
         const actionProjection = isActionMapItem(item) && scoreScope === "global" && globalActionScore?.historicalScore != null
           ? presentActionPollutionProjection(
               globalActionScore.historicalScore,
@@ -172,12 +163,11 @@ export function ShapeLayers({
           : undefined;
         const coords = mapItemCoordinates(item);
         const renderStyle = resolveGeometryRenderStyle(geometry);
-        const geometryModeLabel = formatGeometryModeLabel(geometry.presentation);
-        const geometryPointsLabel = formatGeometryPointCount(geometry.pointCount);
-        const geometryConfidenceLabel = resolveGeometryConfidenceLabel(
+        const geometryModeLabel = formatGeometryModeLabel(
+          geometry.kind,
           geometry.presentation,
-          geometry.confidence,
         );
+        const geometryPointsLabel = formatGeometryPointCount(geometry.pointCount);
         const geometryMetricLabel = geometry.metrics.label;
         const isSelected = selectedActionId === item.id;
         const corridorHistory = isActionMapItem(item)
@@ -230,17 +220,14 @@ export function ShapeLayers({
             <Tooltip className="glass-tooltip" direction="auto" sticky>
                 <GeometryTooltipContent
                   title={
-                    isActionMapItem(item)
-                      ? formatActionGeometryTooltipTitle(
-                          "polygon",
-                          geometryMetricLabel,
-                        )
-                      : `Zone ${Math.round(score)}%`
+                    formatActionGeometryTooltipTitle(
+                      "polygon",
+                      geometryMetricLabel,
+                    )
                   }
                   geometryModeLabel={geometryModeLabel}
                   geometryPointsLabel={geometryPointsLabel}
                   geometryMetricLabel={geometryMetricLabel}
-                  geometryConfidenceLabel={geometryConfidenceLabel}
                   color={color}
                   actionReading={actionTooltipReading}
                 />
@@ -312,17 +299,14 @@ export function ShapeLayers({
               <Tooltip className="glass-tooltip" direction="auto" sticky>
                 <GeometryTooltipContent
                   title={
-                    isActionMapItem(item)
-                      ? formatActionGeometryTooltipTitle(
-                          "polyline",
-                          geometryMetricLabel,
-                        )
-                      : `Trace ${Math.round(score)}%`
+                    formatActionGeometryTooltipTitle(
+                      "polyline",
+                      geometryMetricLabel,
+                    )
                   }
                   geometryModeLabel={geometryModeLabel}
                   geometryPointsLabel={geometryPointsLabel}
                   geometryMetricLabel={geometryMetricLabel}
-                  geometryConfidenceLabel={geometryConfidenceLabel}
                   color={color}
                   actionReading={actionTooltipReading}
                 />

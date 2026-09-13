@@ -42,6 +42,7 @@ import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
 import type { ActionsMapPresentation } from "./map-feed/map-feed.types";
 import {
   DEFAULT_VISIBLE_MAP_LAYERS,
+  MAP_LAYER_LABELS,
   toggleVisibleMapLayer,
   type VisibleMapLayerKey,
 } from "./actions-map-canvas.layers";
@@ -223,10 +224,10 @@ export function ActionsMapCanvas({
     >
       <div className="pointer-events-none absolute left-3 top-28 z-[1000] flex flex-wrap gap-2 md:top-32">
         {isMinimalPreview ? null : [
-          { key: "points" as const, label: "Points" },
-          { key: "shapes" as const, label: "Tracés" },
-          { key: "infrastructure" as const, label: "Infras" },
-          { key: "trashSpotter" as const, label: "Trash Spotter" },
+          { key: "points" as const, label: MAP_LAYER_LABELS.points },
+          { key: "shapes" as const, label: MAP_LAYER_LABELS.shapes },
+          { key: "infrastructure" as const, label: MAP_LAYER_LABELS.infrastructure },
+          { key: "trashSpotter" as const, label: MAP_LAYER_LABELS.trashSpotter },
         ].map((layer) => {
           const active = visibleLayers[layer.key];
           return (
