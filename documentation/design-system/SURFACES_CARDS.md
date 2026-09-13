@@ -106,9 +106,12 @@ une nouvelle surface standard.
 
 ## Gouvernance
 
-Le garde-fou ciblé est `npm run check:surfaces`. Il contrôle les sources
+Le garde-fou ciblé est `npm run check:surfaces`. Il contrôle les primitives
 canoniques (`CmmCard`, `CmmBlockAccent`, `RubriqueCard`, `CmmButton` et les
-presets de famille), ainsi que la présence des tokens et sélecteurs de mode.
+presets de famille), la présence des tokens et sélecteurs de mode, ainsi que
+les `className` statiques des consommateurs `CmmButton` dans
+`apps/web/src` (chaînes, templates, `cn(...)` et branches conditionnelles).
 Il refuse les `scale()` et `filter` dans les états des surfaces textuelles
-canoniques, tout en laissant les scales décoratifs hors de ces sélecteurs. Il
-ne scanne pas les surfaces spécialisées afin d'éviter les faux positifs.
+canoniques, tout en laissant les scales décoratifs présents sur les enfants
+hors de ces contrôles. Il ne scanne pas arbitrairement les surfaces
+spécialisées afin d'éviter les faux positifs.

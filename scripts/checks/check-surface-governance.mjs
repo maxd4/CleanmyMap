@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 
@@ -46,24 +47,141 @@ export const canonicalTextSurfaceSelectors = [
   ".cmm-surface-action:hover",
 ];
 
-const cmmButtonOpeningTagPattern = /<CmmButton\b[^>]*>/g;
-const cmmButtonClassNamePattern = /\bclassName\s*=\s*(?:"([^"]*)"|'([^']*)'|\{`([^`]*)`\})/;
 const cmmButtonScalePattern = /\b(?:hover|active|group-hover):scale-[^\s"'`}]+/g;
 
-export function auditCmmButtonLocalScalesInSource(source, sourceName = "source") {
-  const violations = [];
+function collectStaticClassTexts(expression, texts = []) {
+  if (!expression) return texts;
 
-  for (const match of source.matchAll(cmmButtonOpeningTagPattern)) {
-    const openingTag = match[0];
-    const classNameMatch = openingTag.match(cmmButtonClassNamePattern);
-    if (!classNameMatch) continue;
+  if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) {
+    texts.push(expression.text);
+    return texts;
+  }
 
-    const className = classNameMatch.slice(1).find(Boolean) ?? "";
-    for (const token of className.matchAll(cmmButtonScalePattern)) {
-      violations.push(`${sourceName}: CmmButton className contains local text-surface scale: ${token[0]}`);
+  if (ts.isTemplateExpression(expression)) {
+    texts.push(expression.head.text);
+    for (const span of expression.templateSpans) {
+      collectStaticClassTexts(span.expression, texts);
+      texts.push(span.literal.text);
+    }
+    return texts;
+  }
+
+  if (ts.isConditionalExpression(expression)) {
+    collectStaticClassTexts(expression.whenTrue, texts);
+    collectStaticClassTexts(expression.whenFalse, texts);
+    return texts;
+  }
+
+  if (
+    ts.isParenthesizedExpression(expression) ||
+    ts.isAsExpression(expression) ||
+    ts.isTypeAssertionExpression(expression) ||
+    ts.isNonNullExpression(expression) ||
+    ts.isSatisfiesExpression(expression)
+  ) {
+    collectStaticClassTexts(expression.expression, texts);
+    return texts;
+  }
+
+  if (ts.isBinaryExpression(expression)) {
+    const operator = expression.operatorToken.kind;
+    if (
+      operator === ts.SyntaxKind.AmpersandAmpersandToken ||
+      operator === ts.SyntaxKind.BarBarToken ||
+      operator === ts.SyntaxKind.QuestionQuestionToken
+    ) {
+      collectStaticClassTexts(expression.left, texts);
+      collectStaticClassTexts(expression.right, texts);
+    }
+    return texts;
+  }
+
+  if (ts.isCallExpression(expression)) {
+    const callee = expression.expression;
+    if (ts.isIdentifier(callee) && callee.text === "cn") {
+      for (const argument of expression.arguments) {
+        collectStaticClassTexts(argument, texts);
+      }
+    }
+    return texts;
+  }
+
+  if (ts.isArrayLiteralExpression(expression)) {
+    for (const element of expression.elements) {
+      collectStaticClassTexts(element, texts);
+    }
+    return texts;
+  }
+
+  if (ts.isObjectLiteralExpression(expression)) {
+    for (const property of expression.properties) {
+      if (ts.isPropertyAssignment(property)) {
+        collectStaticClassTexts(property.name, texts);
+        collectStaticClassTexts(property.initializer, texts);
+      } else if (ts.isSpreadAssignment(property)) {
+        collectStaticClassTexts(property.expression, texts);
+      }
     }
   }
 
+  return texts;
+}
+
+function collectCmmButtonClassTexts(openingElement) {
+  const classNameProperty = openingElement.attributes.properties.find(
+    (property) =>
+      ts.isJsxAttribute(property) &&
+      property.name.text === "className",
+  );
+
+  if (!classNameProperty || !ts.isJsxAttribute(classNameProperty)) {
+    return [];
+  }
+
+  if (!classNameProperty.initializer) {
+    return [];
+  }
+
+  if (ts.isStringLiteral(classNameProperty.initializer)) {
+    return [classNameProperty.initializer.text];
+  }
+
+  if (!ts.isJsxExpression(classNameProperty.initializer)) {
+    return [];
+  }
+
+  return collectStaticClassTexts(classNameProperty.initializer.expression);
+}
+
+function isCmmButtonOpeningElement(node) {
+  if (!ts.isJsxOpeningLikeElement(node)) return false;
+  const tagName = node.tagName;
+  return ts.isIdentifier(tagName) && tagName.text === "CmmButton";
+}
+
+export function auditCmmButtonLocalScalesInSource(source, sourceName = "source") {
+  const violations = [];
+  const sourceFile = ts.createSourceFile(
+    sourceName,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+
+  function visit(node) {
+    if (isCmmButtonOpeningElement(node)) {
+      for (const className of collectCmmButtonClassTexts(node)) {
+        for (const token of className.matchAll(cmmButtonScalePattern)) {
+          violations.push(`${sourceName}: CmmButton className contains local text-surface scale: ${token[0]}`);
+        }
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
   return violations;
 }
 
