@@ -4,6 +4,7 @@ import {
   resolveActionDepartment,
   resolveActionDepartmentAnchor,
   resolveActionDepartmentForPersistence,
+  resolveTrustedActionDepartmentForPersistence,
 } from "./action-department-resolver";
 
 function jsonResponse(value: unknown, status = 200): Response {
@@ -121,20 +122,102 @@ describe("action department resolver", () => {
     ).resolves.toBeNull();
   });
 
-  it("keeps complete explicit persistence values without a geographic call", async () => {
-    const fetchImpl = vi.fn();
+  it("derives Paris instead of trusting a false client couple", async () => {
+    const { calls, fetchImpl } = fetchForDepartment("75", "Paris");
     await expect(
       resolveActionDepartmentForPersistence(
         {
-          latitude: 48,
-          longitude: 2,
+          latitude: 48.8566,
+          longitude: 2.3522,
           departmentCode: "2B",
           departmentName: "Haute-Corse",
         },
         { fetchImpl: fetchImpl as typeof fetch },
       ),
+    ).resolves.toEqual({ departmentCode: "75", departmentName: "Paris" });
+    expect(calls).toHaveLength(2);
+  });
+
+  it("does not treat an explicit null couple as authoritative", async () => {
+    const { fetchImpl } = fetchForDepartment("75", "Paris");
+    await expect(
+      resolveActionDepartmentForPersistence(
+        {
+          latitude: 48.8566,
+          longitude: 2.3522,
+          departmentCode: null,
+          departmentName: null,
+        },
+        { fetchImpl: fetchImpl as typeof fetch },
+      ),
+    ).resolves.toEqual({ departmentCode: "75", departmentName: "Paris" });
+  });
+
+  it("clears an old attribution after a changed geography cannot be resolved", async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw new Error("network unavailable");
+    });
+    await expect(
+      resolveActionDepartmentForPersistence(
+        {
+          latitude: 48.8566,
+          longitude: 2.3522,
+          existingDepartmentCode: "75",
+          existingDepartmentName: "Paris",
+          spatiallyChanged: true,
+        },
+        { fetchImpl: fetchImpl as typeof fetch },
+      ),
+    ).resolves.toEqual({ departmentCode: null, departmentName: null });
+  });
+
+  it("keeps the server attribution when geography did not change and cannot be resolved", async () => {
+    const fetchImpl = vi.fn(async () => {
+      throw new Error("network unavailable");
+    });
+    await expect(
+      resolveActionDepartmentForPersistence(
+        {
+          existingDepartmentCode: "01",
+          existingDepartmentName: "Ain",
+          spatiallyChanged: false,
+        },
+        { fetchImpl: fetchImpl as typeof fetch },
+      ),
+    ).resolves.toEqual({ departmentCode: "01", departmentName: "Ain" });
+  });
+
+  it("accepts an explicit couple only through the trusted import/moderation path", async () => {
+    const fetchImpl = vi.fn();
+    await expect(
+      resolveTrustedActionDepartmentForPersistence(
+        {
+          latitude: 48.8566,
+          longitude: 2.3522,
+          departmentCode: "2B",
+          departmentName: "Haute-Corse",
+          spatiallyChanged: false,
+        },
+        { fetchImpl: fetchImpl as typeof fetch },
+      ),
     ).resolves.toEqual({ departmentCode: "2B", departmentName: "Haute-Corse" });
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("re-resolves a trusted attribution when the geography changes", async () => {
+    const { fetchImpl } = fetchForDepartment("75", "Paris");
+    await expect(
+      resolveTrustedActionDepartmentForPersistence(
+        {
+          latitude: 48.8566,
+          longitude: 2.3522,
+          departmentCode: "2B",
+          departmentName: "Haute-Corse",
+          spatiallyChanged: true,
+        },
+        { fetchImpl: fetchImpl as typeof fetch },
+      ),
+    ).resolves.toEqual({ departmentCode: "75", departmentName: "Paris" });
   });
 
   it("exposes a bounded timeout contract", () => {

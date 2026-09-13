@@ -20,6 +20,18 @@ export type ActionDepartmentResolutionInput = {
   geometry?: ActionDepartmentGeometry | null;
 };
 
+type DepartmentPersistenceInput = ActionDepartmentResolutionInput & {
+  /**
+   * Legacy/client fields are accepted for contract compatibility, but are not
+   * authoritative on the ordinary persistence path.
+   */
+  departmentCode?: string | null;
+  departmentName?: string | null;
+  existingDepartmentCode?: string | null;
+  existingDepartmentName?: string | null;
+  spatiallyChanged?: boolean;
+};
+
 export type ResolvedDepartment = {
   departmentCode: string;
   departmentName: string;
@@ -216,6 +228,22 @@ function readStringField(value: unknown): string | null {
   return trimmed ? trimmed : null;
 }
 
+function readCompleteDepartment(
+  code: unknown,
+  name: unknown,
+): ResolvedDepartment | null {
+  const departmentCode = readStringField(code);
+  const departmentName = readStringField(name);
+  return departmentCode && departmentName ? { departmentCode, departmentName } : null;
+}
+
+function emptyDepartment(): {
+  departmentCode: string | null;
+  departmentName: string | null;
+} {
+  return { departmentCode: null, departmentName: null };
+}
+
 function parseCommunePayload(value: unknown): string | null {
   if (!Array.isArray(value) || value.length === 0) {
     return null;
@@ -301,20 +329,55 @@ export async function resolveActionDepartment(
 }
 
 export async function resolveActionDepartmentForPersistence(
-  input: ActionDepartmentResolutionInput & {
-    departmentCode?: string | null;
-    departmentName?: string | null;
-  },
+  input: DepartmentPersistenceInput,
   options: { fetchImpl?: FetchLike } = {},
 ): Promise<{ departmentCode: string | null; departmentName: string | null }> {
-  const explicitCode = readStringField(input.departmentCode);
-  const explicitName = readStringField(input.departmentName);
-  if (explicitCode && explicitName) {
-    return { departmentCode: explicitCode, departmentName: explicitName };
+  const resolved = await resolveActionDepartment(input, options);
+  if (resolved) {
+    return resolved;
+  }
+
+  if (input.spatiallyChanged === false) {
+    return (
+      readCompleteDepartment(
+        input.existingDepartmentCode,
+        input.existingDepartmentName,
+      ) ?? emptyDepartment()
+    );
+  }
+
+  return emptyDepartment();
+}
+
+/**
+ * Privileged import/moderation path. Explicit attribution is accepted only
+ * through this named function; a spatial change still forces a fresh
+ * geographic resolution.
+ */
+export async function resolveTrustedActionDepartmentForPersistence(
+  input: DepartmentPersistenceInput,
+  options: { fetchImpl?: FetchLike } = {},
+): Promise<{ departmentCode: string | null; departmentName: string | null }> {
+  if (input.spatiallyChanged !== true) {
+    const explicit = readCompleteDepartment(input.departmentCode, input.departmentName);
+    if (explicit) {
+      return explicit;
+    }
   }
 
   const resolved = await resolveActionDepartment(input, options);
-  return resolved
-    ? resolved
-    : { departmentCode: explicitCode, departmentName: explicitName };
+  if (resolved) {
+    return resolved;
+  }
+
+  if (input.spatiallyChanged === false) {
+    return (
+      readCompleteDepartment(
+        input.existingDepartmentCode,
+        input.existingDepartmentName,
+      ) ?? emptyDepartment()
+    );
+  }
+
+  return emptyDepartment();
 }

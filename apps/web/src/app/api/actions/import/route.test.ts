@@ -239,6 +239,10 @@ describe("POST /api/actions/import", () => {
       expect.objectContaining({
         payload: expect.objectContaining({ recordType: "action" }),
         organizers: [expect.objectContaining({ userId: "admin-1", isPrimary: true })],
+        departmentAttribution: {
+          trust: "trusted",
+          source: "admin_import",
+        },
       }),
     );
     expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);

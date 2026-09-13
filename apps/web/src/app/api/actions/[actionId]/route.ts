@@ -441,6 +441,8 @@ export async function PATCH(
         key !== "actionPhase" &&
         key !== "preparationData" &&
         key !== "organizerType" &&
+        key !== "departmentCode" &&
+        key !== "departmentName" &&
         value !== undefined,
     );
 
@@ -468,48 +470,30 @@ export async function PATCH(
     if (body.locationLabel !== undefined) {
       updateData["location_label"] = body.locationLabel.trim();
     }
-    if (body.departmentCode !== undefined) {
-      updateData["department_code"] = body.departmentCode;
-    }
-    if (body.departmentName !== undefined) {
-      updateData["department_name"] = body.departmentName;
-    }
     if (body.latitude !== undefined) {
       updateData["latitude"] = body.latitude;
     }
     if (body.longitude !== undefined) {
       updateData["longitude"] = body.longitude;
     }
-    const hasCompleteExplicitDepartment =
-      body.departmentCode !== undefined && body.departmentName !== undefined;
-    if (!hasCompleteExplicitDepartment) {
-      const coordinatesChanged =
-        body.latitude !== undefined || body.longitude !== undefined;
-      const department = await resolveActionDepartmentForPersistence({
-        latitude: body.latitude ?? current.latitude,
-        longitude: body.longitude ?? current.longitude,
-        geometry: coordinatesChanged
-          ? null
-          : {
-              kind: current.derived_geometry_kind,
-              geojson: current.derived_geometry_geojson,
-            },
-        departmentCode:
-          body.departmentCode !== undefined
-            ? body.departmentCode
-            : coordinatesChanged
-              ? undefined
-              : current.department_code,
-        departmentName:
-          body.departmentName !== undefined
-            ? body.departmentName
-            : coordinatesChanged
-              ? undefined
-              : current.department_name,
-      });
-      updateData["department_code"] = department.departmentCode;
-      updateData["department_name"] = department.departmentName;
-    }
+    const coordinatesChanged =
+      (body.latitude !== undefined && body.latitude !== current.latitude) ||
+      (body.longitude !== undefined && body.longitude !== current.longitude);
+    const department = await resolveActionDepartmentForPersistence({
+      latitude: body.latitude ?? current.latitude,
+      longitude: body.longitude ?? current.longitude,
+      geometry: coordinatesChanged
+        ? null
+        : {
+            kind: current.derived_geometry_kind,
+            geojson: current.derived_geometry_geojson,
+          },
+      existingDepartmentCode: current.department_code,
+      existingDepartmentName: current.department_name,
+      spatiallyChanged: coordinatesChanged,
+    });
+    updateData["department_code"] = department.departmentCode;
+    updateData["department_name"] = department.departmentName;
     if (body.wasteKg !== undefined) {
       updateData["waste_kg"] = body.wasteKg;
     }

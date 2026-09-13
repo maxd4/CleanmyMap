@@ -220,6 +220,27 @@ Vérifier :
 - format GeoJSON si utilisé ;
 - cohérence avec le type de géométrie.
 
+### Attribution départementale des actions
+
+`public.actions.department_code` et `public.actions.department_name` forment
+une attribution persistée dérivée de la géométrie ou des coordonnées de
+l'action. Pour une création ou une modification utilisateur, le serveur est
+l'autorité : les valeurs éventuellement présentes dans le payload client ne
+peuvent jamais remplacer la résolution géographique serveur.
+
+Lorsqu'une géographie change, l'attribution est recalculée ; si aucune
+géographie résoluble n'est disponible, les deux champs redeviennent `null`.
+Une attribution serveur existante peut uniquement être conservée lorsqu'il
+n'y a pas de changement spatial. Les imports administrateur et les opérations
+de modération peuvent conserver une attribution explicite, mais seulement via
+leur voie serveur explicitement qualifiée `trusted`, séparée du payload
+utilisateur ordinaire.
+
+Le code reste une chaîne afin de préserver `01`, `2A`, `2B` et les codes
+d'outre-mer. Cette attribution géographique sert au contrat de données et aux
+comparaisons départementales ; elle ne constitue pas, à elle seule, une preuve
+d'AuthZ territoriale.
+
 ## Unités
 
 Utiliser des unités explicites dans les noms et contrats :
