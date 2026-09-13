@@ -10,52 +10,55 @@ import {
 type LegendItem = {
   label: string;
   threshold: string;
-  note: string;
+  description: string;
   icon: ReactNode;
 };
 
 const colorItems: LegendItem[] = [
   {
     label: "Bleu",
-    threshold: `projection < ${ACTION_POLLUTION_COLOR_THRESHOLDS.ORANGE}`,
-    note: "Faible pollution projetée",
-    icon: <span className="h-2.5 w-2.5 rounded-full bg-sky-500 shadow-[0_0_12px_rgba(14,165,233,0.5)]" />,
+    threshold: `< ${ACTION_POLLUTION_COLOR_THRESHOLDS.ORANGE}`,
+    description: "Faible",
+    icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-sky-500" />,
   },
   {
     label: "Orange",
-    threshold: `projection ${ACTION_POLLUTION_COLOR_THRESHOLDS.ORANGE}-${ACTION_POLLUTION_COLOR_THRESHOLDS.RED - 1}`,
-    note: "Pollution projetée moyenne",
-    icon: <span className="h-2.5 w-2.5 rounded-full bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.5)]" />,
+    threshold: `${ACTION_POLLUTION_COLOR_THRESHOLDS.ORANGE}–${ACTION_POLLUTION_COLOR_THRESHOLDS.RED - 1}`,
+    description: "Moyenne",
+    icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-orange-500" />,
   },
   {
     label: "Rouge",
-    threshold: `projection ${ACTION_POLLUTION_COLOR_THRESHOLDS.RED}-${ACTION_POLLUTION_COLOR_THRESHOLDS.VIOLET - 1}`,
-    note: "Pollution projetée forte",
-    icon: <span className="h-2.5 w-2.5 rounded-full bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.5)]" />,
+    threshold: `${ACTION_POLLUTION_COLOR_THRESHOLDS.RED}–${ACTION_POLLUTION_COLOR_THRESHOLDS.VIOLET - 1}`,
+    description: "Forte",
+    icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-red-500" />,
   },
   {
     label: "Violet",
-    threshold: `projection ${ACTION_POLLUTION_COLOR_THRESHOLDS.VIOLET}-${ACTION_POLLUTION_COLOR_THRESHOLDS.BLACK - 1}`,
-    note: "Pollution projetée critique",
-    icon: <span className="h-2.5 w-2.5 rounded-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.5)]" />,
+    threshold: `${ACTION_POLLUTION_COLOR_THRESHOLDS.VIOLET}–${ACTION_POLLUTION_COLOR_THRESHOLDS.BLACK - 1}`,
+    description: "Critique",
+    icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-violet-500" />,
   },
   {
     label: "Noir",
-    threshold: `projection ≥ ${ACTION_POLLUTION_COLOR_THRESHOLDS.BLACK}`,
-    note: "Pollution projetée extrême",
-    icon: <span className="h-2.5 w-2.5 rounded-full bg-slate-950 shadow-[0_0_12px_rgba(15,23,42,0.45)]" />,
+    threshold: `≥ ${ACTION_POLLUTION_COLOR_THRESHOLDS.BLACK}`,
+    description: "Extrême",
+    icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-slate-950" />,
   },
+];
+
+const otherStateItems: LegendItem[] = [
   {
     label: "Vert",
     threshold: "clean_place",
-    note: "Lieu explicitement propre",
-    icon: <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)]" />,
+    description: "Lieu propre · clean_place",
+    icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-emerald-500" />,
   },
   {
     label: "Trash Spotter",
     threshold: "niveau non quantifié",
-    note: "Signalement neutre, sans score de pollution",
-    icon: <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: TRASH_SPOTTER_NEUTRAL_COLOR }} />,
+    description: "Signalement neutre, non quantifié",
+    icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: TRASH_SPOTTER_NEUTRAL_COLOR }} />,
   },
 ];
 
@@ -63,37 +66,46 @@ const infrastructureItems: LegendItem[] = [
   {
     label: "Bac",
     threshold: `≥ ${INFRASTRUCTURE_ALERT_THRESHOLD}`,
-    note: "Besoin collecte",
+    description: "Besoin collecte",
     icon: <Trash2 size={14} className="text-slate-700" />,
   },
   {
     label: "Cendrier",
     threshold: `≥ ${INFRASTRUCTURE_ALERT_THRESHOLD}`,
-    note: "Besoin mégots",
+    description: "Besoin mégots",
     icon: <Cigarette size={14} className="text-slate-700" />,
   },
   {
     label: "Combiné",
-    threshold: "bac + cendrier",
-    note: "Double besoin",
-    icon: <span className="h-2.5 w-2.5 rounded-full bg-violet-600 shadow-[0_0_12px_rgba(124,58,237,0.5)]" />,
+    threshold: "",
+    description: "Bac + cendrier",
+    icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-violet-600" />,
   },
 ];
 
-function LegendChip({ item }: { item: LegendItem }) {
+function LegendRow({ item, showThreshold = true }: { item: LegendItem; showThreshold?: boolean }) {
   return (
-    <div className="flex items-start gap-3 rounded-2xl border border-sky-100 bg-white px-4 py-3 shadow-[0_10px_24px_-20px_rgba(6,17,30,0.18)]">
-      <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200/80 bg-slate-50">
-        {item.icon}
-      </div>
-      <div className="min-w-0 space-y-0.5">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-          <span className="text-xs font-black uppercase tracking-[0.14em] text-slate-950">{item.label}</span>
-          <span className="text-[10px] font-semibold text-slate-500">{item.threshold}</span>
-        </div>
-        <p className="text-[11px] font-medium leading-snug text-slate-600">{item.note}</p>
-      </div>
+    <div role="listitem" className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-baseline gap-x-2.5 border-b border-sky-100/80 py-1.5 last:border-b-0">
+      <span className="flex shrink-0 items-center justify-center">{item.icon}</span>
+      <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-sm">
+        <span className="font-semibold text-slate-950">{item.label}</span>
+        <span className="font-medium text-slate-600">{item.description}</span>
+      </span>
+      {showThreshold && item.threshold ? <span className="whitespace-nowrap text-xs font-semibold text-slate-700">{item.threshold}</span> : null}
     </div>
+  );
+}
+
+function LegendGroup({ id, title, items, showThreshold = true }: { id: string; title: string; items: LegendItem[]; showThreshold?: boolean }) {
+  return (
+    <section aria-labelledby={id} className="space-y-1.5">
+      <h3 id={id} className="text-sm font-semibold text-slate-950">{title}</h3>
+      <div role="list" className="divide-y divide-sky-100/80">
+        {items.map((item) => (
+          <LegendRow key={item.label} item={item} showThreshold={showThreshold} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -134,28 +146,10 @@ export function MapLegend() {
           tone="sky"
           summary="Détails de la légende"
         >
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <div className="space-y-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
-                Couleurs
-              </p>
-              <div className="grid gap-3">
-                {colorItems.map((item) => (
-                  <LegendChip key={item.label} item={item} />
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
-                Infra
-              </p>
-              <div className="grid gap-3">
-                {infrastructureItems.map((item) => (
-                  <LegendChip key={item.label} item={item} />
-                ))}
-              </div>
-            </div>
+          <div className="mt-3 space-y-4">
+            <LegendGroup id="map-legend-pollution" title="Pollution projetée" items={colorItems} />
+            <LegendGroup id="map-legend-other-states" title="Autres états" items={otherStateItems} showThreshold={false} />
+            <LegendGroup id="map-legend-infrastructure" title="Infrastructures" items={infrastructureItems} />
           </div>
         </CmmDisclosure>
       </div>
