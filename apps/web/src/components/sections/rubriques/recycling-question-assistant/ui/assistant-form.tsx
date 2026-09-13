@@ -22,7 +22,7 @@ export function AssistantForm({ question, setQuestion, copy, locale }: Assistant
           onChange={(event) => setQuestion(event.target.value)}
           rows={6}
           placeholder={copy.placeholder}
-          className="w-full rounded-2xl border border-white/5 bg-slate-950/40 px-6 py-4 text-sm text-white outline-none transition-all placeholder:text-slate-600 focus:border-emerald-500/50 focus:bg-slate-950/60 resize-none font-medium"
+          className="w-full rounded-2xl border border-white/5 bg-slate-950/40 px-6 py-4 text-sm text-white outline-none transition-[border-color,background-color] placeholder:text-slate-600 focus:border-emerald-500/50 focus:bg-slate-950/60 resize-none font-medium"
         />
 
         <div className="flex flex-wrap gap-2">
@@ -33,7 +33,7 @@ export function AssistantForm({ question, setQuestion, copy, locale }: Assistant
               onClick={() => setQuestion(item)}
               tone="tertiary"
               variant="pill"
-              className="rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-all hover:border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-400"
+              className="rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-[color,background-color,border-color] hover:border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-400"
             >
               {item}
             </CmmButton>
@@ -48,7 +48,7 @@ export function AssistantForm({ question, setQuestion, copy, locale }: Assistant
             onClick={() => setQuestion("")}
             tone="tertiary"
             variant="pill"
-            className="flex h-12 w-12 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-white/10 hover:text-white"
+            className="flex h-12 w-12 items-center justify-center rounded-xl text-slate-400 transition-[color,background-color] hover:bg-white/10 hover:text-white"
           >
             <RotateCcw size={18} />
           </CmmButton>
@@ -62,7 +62,7 @@ export function AssistantForm({ question, setQuestion, copy, locale }: Assistant
         <CmmButton
           tone="primary"
           variant="pill"
-          className="group flex items-center justify-center w-full h-14 rounded-2xl px-6 py-2.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-950 transition-all hover:bg-emerald-400 hover:scale-[1.02] active:scale-[0.98]"
+          className="group flex items-center justify-center w-full h-14 rounded-2xl px-6 py-2.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-950 hover:bg-emerald-400"
         >
           <Search size={18} className="mr-2" />
           {fr ? "Analyser le déchet" : "Analyze waste"}

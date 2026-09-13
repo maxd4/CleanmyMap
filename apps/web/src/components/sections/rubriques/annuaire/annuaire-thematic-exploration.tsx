@@ -85,9 +85,9 @@ export function AnnuaireThematicExploration({
             tone={isActive ? "primary" : "tertiary"}
             variant="pill"
             className={cn(
-              "text-left group relative p-6 rounded-[2.5rem] border transition-all duration-500 backdrop-blur-xl overflow-hidden",
+              "text-left group relative p-6 rounded-[2.5rem] border transition-[background-color,border-color,box-shadow] duration-500 backdrop-blur-xl overflow-hidden",
               isActive 
-                ? "bg-white/10 border-white/20 shadow-2xl scale-105" 
+                ? "bg-white/10 border-white/20 shadow-2xl ring-1 ring-white/20"
                 : "bg-white/5 border-white/5 hover:bg-white/[0.08] hover:border-white/10"
             )}
           >
@@ -100,7 +100,7 @@ export function AnnuaireThematicExploration({
             
             <div className="space-y-6 relative z-10">
               <div className={cn(
-                "flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-500 border",
+                "flex h-12 w-12 items-center justify-center rounded-2xl transition-[background-color,border-color,box-shadow] duration-500 border",
                 isActive 
                   ? "bg-white text-slate-950 border-white shadow-2xl scale-110" 
                   : cn("bg-slate-950/40 text-slate-400 group-hover:scale-110 group-hover:text-white transition-transform", theme.border)
@@ -124,7 +124,7 @@ export function AnnuaireThematicExploration({
             </div>
             
             <div className={cn(
-               "absolute -right-8 -bottom-8 opacity-5 transition-all duration-700 group-hover:scale-125 group-hover:opacity-10",
+               "absolute -right-8 -bottom-8 opacity-5 transition-[opacity,transform] duration-700 group-hover:scale-125 group-hover:opacity-10",
                theme.color
             )}>
                <Icon size={120} />

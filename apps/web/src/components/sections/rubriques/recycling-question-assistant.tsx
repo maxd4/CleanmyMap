@@ -104,7 +104,7 @@ export function RecyclingQuestionAssistant() {
               onChange={(event) => setQuestion(event.target.value)}
               rows={3}
               placeholder={copy.placeholder}
-              className="w-full rounded-3xl border border-slate-800/60 bg-slate-950/40 px-6 py-5 text-base cmm-text-primary outline-none transition-all placeholder:text-slate-600 focus:border-emerald-500/50 focus:bg-slate-950/60 focus:shadow-[0_0_20px_-5px_rgba(16,185,129,0.2)] resize-none"
+              className="w-full rounded-3xl border border-slate-800/60 bg-slate-950/40 px-6 py-5 text-base cmm-text-primary outline-none transition-[border-color,background-color,box-shadow] placeholder:text-slate-600 focus:border-emerald-500/50 focus:bg-slate-950/60 focus:shadow-[0_0_20px_-5px_rgba(16,185,129,0.2)] resize-none"
             />
             <div className="absolute right-4 bottom-4 flex items-center gap-2">
                {question && (
@@ -134,7 +134,7 @@ export function RecyclingQuestionAssistant() {
                   onClick={() => setQuestion(item)}
                   tone="tertiary"
                   variant="pill"
-                  className="rounded-2xl px-4 py-2 text-xs font-bold text-slate-400 transition-all active:scale-95"
+                  className="rounded-2xl px-4 py-2 text-xs font-bold text-slate-400"
                 >
                   {item}
                 </CmmButton>
@@ -194,7 +194,7 @@ export function RecyclingQuestionAssistant() {
                   <p className="text-sm font-black cmm-text-primary group-hover:text-emerald-400 transition-colors">
                     {answer.nextStep}
                   </p>
-                  <ArrowRight size={16} className="text-emerald-500 opacity-0 group-hover:opacity-100 transition-all translate-x-[-10px] group-hover:translate-x-0" />
+                  <ArrowRight size={16} className="text-emerald-500 opacity-0 group-hover:opacity-100 transition-[opacity,transform] translate-x-[-10px] group-hover:translate-x-0" />
                 </div>
               </div>
 
@@ -211,7 +211,7 @@ export function RecyclingQuestionAssistant() {
                 href="/learn/bonnes-pratiques#ressources-utiles"
                 tone="secondary"
                 variant="pill"
-                className="group flex items-center justify-center gap-3 rounded-2xl px-6 py-4 text-sm font-black text-slate-950 transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-white/5"
+                className="group flex items-center justify-center gap-3 rounded-2xl px-6 py-4 text-sm font-black text-slate-950 shadow-xl shadow-white/5"
               >
                 {copy.cta}
                 <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />

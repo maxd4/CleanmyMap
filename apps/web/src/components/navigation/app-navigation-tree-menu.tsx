@@ -74,9 +74,8 @@ export function AppNavigationTreeMenu({
           {...triggerProps}
           aria-label={locale === "fr" ? "Sommaire" : "Summary"}
         className={cn(
-          "inline-flex h-11 min-h-11 w-11 min-w-11 items-center justify-center gap-2 rounded-full border px-0 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent lg:h-auto lg:min-h-11 lg:w-auto lg:min-w-[9.5rem] lg:px-4",
+          "inline-flex h-11 min-h-11 w-11 min-w-11 items-center justify-center gap-2 rounded-full border px-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent lg:h-auto lg:min-h-11 lg:w-auto lg:min-w-[9.5rem] lg:px-4",
           "border-cyan-200/24 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 text-white shadow-[0_18px_36px_-20px_rgba(20,184,166,0.5)] hover:border-cyan-100/40 hover:from-cyan-400 hover:via-teal-400 hover:to-emerald-400",
-          isOpen && "scale-[1.01]",
         )}
         >
         <span

@@ -206,16 +206,18 @@ export function ActionPopupContentBody({
       ) : null}
 
       {updateHref ? (
-        <a
+        <CmmButton
           href={updateHref}
-          className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-sky-200 px-4 py-4 text-center shadow-lg shadow-slate-950/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+          tone="secondary"
+          width="wide"
+          className="group relative overflow-hidden rounded-2xl bg-sky-200 px-4 py-4 text-center shadow-lg shadow-slate-950/10"
         >
           <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-emerald-500/0 via-white/10 to-emerald-500/0 transition-transform duration-1000 group-hover:translate-x-[100%]" />
           <span className="cmm-text-small font-bold text-slate-950">
             {actionLabel}
           </span>
           <ArrowRight size={16} className="text-slate-700 transition-transform group-hover:translate-x-1" />
-        </a>
+        </CmmButton>
       ) : (
         <div className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-center dark:border-slate-700 dark:bg-slate-800/60">
           <span className="cmm-text-small font-bold text-slate-500 dark:text-slate-300">

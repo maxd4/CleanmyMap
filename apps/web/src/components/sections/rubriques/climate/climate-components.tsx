@@ -54,9 +54,8 @@ export function ClimateKpiCard({ label, value, unit, delta, icon, confidence, cl
 
   return (
     <motion.div
-      whileHover={{ y: -8, scale: 1.02 }}
       className={cn(
-        "relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900/40 p-8 backdrop-blur-3xl shadow-2xl transition-all group",
+        "relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900/40 p-8 backdrop-blur-3xl shadow-2xl transition-[background-color,border-color,box-shadow] group",
         className
       )}
     >
@@ -144,10 +143,7 @@ export function ClimateAlertBanner({ indicator, fr }: { indicator: ClimateIndica
   if (!indicator) return null;
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.01 }}
-      className="relative overflow-hidden rounded-[3rem] border border-rose-500/20 bg-rose-500/5 p-8 lg:p-12 backdrop-blur-3xl shadow-2xl flex flex-col md:flex-row items-center gap-8 group"
-    >
+    <motion.div className="relative overflow-hidden rounded-[3rem] border border-rose-500/20 bg-rose-500/5 p-8 lg:p-12 backdrop-blur-3xl shadow-2xl flex flex-col md:flex-row items-center gap-8 group">
       <div className="absolute -left-12 -bottom-12 w-48 h-48 bg-rose-500/10 blur-[80px] rounded-full" />
       
       <div className="relative z-10 flex h-20 w-20 shrink-0 items-center justify-center rounded-[1.5rem] bg-rose-500/10 text-rose-500 border border-rose-500/20 shadow-2xl shadow-rose-500/20 group-hover:scale-110 transition-transform">
@@ -171,7 +167,7 @@ export function ClimateAlertBanner({ indicator, fr }: { indicator: ClimateIndica
       </div>
 
       <div className="relative z-10">
-        <CmmButton type="button" tone="primary" variant="pill" className="px-8 py-4 text-white font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-rose-500/40">
+        <CmmButton type="button" tone="primary" variant="pill" className="px-8 py-4 text-white font-black text-sm uppercase tracking-widest shadow-xl shadow-rose-500/40">
           {fr ? "Détails" : "Details"}
         </CmmButton>
       </div>
@@ -196,7 +192,7 @@ export function ClimateDecisionList({ decisions, fr }: { decisions: ClimateDecis
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="p-6 rounded-3xl border border-white/5 bg-slate-900/20 hover:bg-white/5 transition-all group cursor-default"
+            className="p-6 rounded-3xl border border-white/5 bg-slate-900/20 hover:bg-white/5 transition-colors group cursor-default"
           >
             <div className="flex gap-6">
               <div className="mt-1">
@@ -234,7 +230,7 @@ export function ClimateMethodology({ methods, limits, version, fr }: { methods: 
         tone="secondary"
         variant="pill"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-8 flex items-center justify-between transition-all group"
+        className="w-full p-8 flex items-center justify-between transition-colors group"
       >
         <div className="flex items-center gap-4">
           <div className="p-3 rounded-2xl bg-white/5 border border-white/10 group-hover:scale-110 transition-transform">

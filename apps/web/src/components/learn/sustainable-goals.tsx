@@ -32,12 +32,12 @@ export function SustainableGoalsInteractive() {
  onMouseEnter={() => setHoveredGoal(goal)}
  onMouseLeave={() => setHoveredGoal(null)}
  className={`
- relative aspect-square rounded-2xl backdrop-blur-sm border transition-all duration-300 overflow-hidden
+ relative aspect-square rounded-2xl backdrop-blur-sm border transition-[box-shadow,border-color,background-color] duration-300 overflow-hidden
  ${selectedGoal?.id === goal.id
- ? 'scale-110 shadow-2xl z-10'
+ ? 'shadow-2xl z-10'
  : hoveredGoal?.id === goal.id
- ? 'scale-105 shadow-lg'
- : 'hover:scale-102'
+ ? 'shadow-lg'
+ : 'hover:shadow-lg'
  }
  `}
  style={{
@@ -55,7 +55,7 @@ export function SustainableGoalsInteractive() {
  {/* Content */}
  <div className="relative h-full flex flex-col items-center justify-center p-4 text-center">
  <div className={`
- p-3 rounded-xl mb-3 transition-all
+ p-3 rounded-xl mb-3 transition-[background-color,box-shadow]
  ${selectedGoal?.id === goal.id ? goal.color : 'bg-white/80'}
  `}>
  <Icon

@@ -191,7 +191,7 @@ export function DiscussionBugReportForm() {
                     tone={reportType === "bug" ? "primary" : "tertiary"}
                     variant="pill"
                     className={cn(
-                       "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                       "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-[color,background-color,border-color,box-shadow]",
                        reportType === "bug" ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20" : "text-slate-500 hover:text-white"
                     )}
                  >
@@ -204,7 +204,7 @@ export function DiscussionBugReportForm() {
                     tone={reportType === "idea" ? "primary" : "tertiary"}
                     variant="pill"
                     className={cn(
-                       "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                       "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-[color,background-color,border-color,box-shadow]",
                        reportType === "idea" ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20" : "text-slate-500 hover:text-white"
                     )}
                  >
@@ -224,7 +224,7 @@ export function DiscussionBugReportForm() {
                   if (error) setError(null);
                 }}
                 placeholder={fr ? "Ex: Carte qui ne charge pas..." : "E.g. Map does not load..."}
-                className="w-full rounded-xl border border-white/5 bg-white/5 px-5 py-3 text-sm font-bold text-white placeholder:text-slate-600 focus:border-white/20 focus:bg-white/10 focus:outline-none transition-all"
+                className="w-full rounded-xl border border-white/5 bg-white/5 px-5 py-3 text-sm font-bold text-white placeholder:text-slate-600 focus:border-white/20 focus:bg-white/10 focus:outline-none transition-[border-color,background-color]"
                 maxLength={160}
               />
               {titleError && <InlineFieldError message={titleError} />}
@@ -241,7 +241,7 @@ export function DiscussionBugReportForm() {
                if (error) setError(null);
              }}
              placeholder={fr ? "Contexte, étapes, résultat observé, résultat attendu." : "Context, steps, observed result, expected result."}
-             className="min-h-[160px] w-full rounded-2xl border border-white/5 bg-white/5 px-5 py-4 text-sm font-bold text-white placeholder:text-slate-600 focus:border-white/20 focus:bg-white/10 focus:outline-none transition-all resize-none"
+             className="min-h-[160px] w-full rounded-2xl border border-white/5 bg-white/5 px-5 py-4 text-sm font-bold text-white placeholder:text-slate-600 focus:border-white/20 focus:bg-white/10 focus:outline-none transition-[border-color,background-color] resize-none"
              maxLength={3000}
            />
            {descriptionError && <InlineFieldError message={descriptionError} />}
@@ -263,7 +263,7 @@ export function DiscussionBugReportForm() {
             tone={reportType === 'bug' ? "primary" : "secondary"}
             variant="pill"
             className={cn(
-               "w-full md:w-auto flex items-center justify-center gap-4 px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all hover:scale-105 disabled:scale-100 disabled:opacity-40 disabled:cursor-not-allowed",
+               "w-full md:w-auto flex items-center justify-center gap-4 px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl disabled:opacity-40 disabled:cursor-not-allowed",
                reportType === 'bug' ? "bg-rose-500 text-white shadow-rose-500/20" : "bg-amber-500 text-slate-950 shadow-amber-500/20"
             )}
           >
@@ -311,7 +311,7 @@ export function DiscussionBugReportForm() {
                        onClick={() => void submitReport()} 
                        tone="primary"
                        variant="pill"
-                       className="px-4 py-2 rounded-xl text-white text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 transition-all"
+                       className="px-4 py-2 rounded-xl text-white text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 transition-colors"
                     >
                        {fr ? "Réessayer" : "Retry"}
                     </CmmButton>

@@ -139,7 +139,7 @@ export function FAQSection() {
                 tone={activeCategory === "all" ? "primary" : "tertiary"}
                 variant="pill"
                 className={cn(
-                  "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all",
+                  "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-[color,background-color,border-color,box-shadow]",
                   activeCategory === "all" ? "bg-white text-slate-950 shadow-2xl" : "text-slate-500 hover:text-white hover:bg-white/5"
                 )}
               >
@@ -152,7 +152,7 @@ export function FAQSection() {
                   tone={activeCategory === cat.id ? "primary" : "tertiary"}
                   variant="pill"
                   className={cn(
-                    "flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all",
+                    "flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-[color,background-color,border-color,box-shadow]",
                     activeCategory === cat.id ? "bg-white text-slate-950 shadow-2xl" : "text-slate-500 hover:text-white hover:bg-white/5"
                   )}
                 >
@@ -170,7 +170,7 @@ export function FAQSection() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Rechercher une question..."
-                className="w-full h-14 rounded-2xl border border-white/5 bg-slate-950/40 pl-14 pr-6 text-sm font-bold text-white shadow-inner transition-all focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/10 placeholder:text-slate-600"
+                className="w-full h-14 rounded-2xl border border-white/5 bg-slate-950/40 pl-14 pr-6 text-sm font-bold text-white shadow-inner transition-[border-color,background-color,box-shadow] focus:border-blue-500/40 focus:outline-none focus:ring-4 focus:ring-blue-500/10 placeholder:text-slate-600"
               />
            </div>
         </div>
@@ -194,7 +194,7 @@ export function FAQSection() {
                   }
                   withTopBar={false}
                   className={cn(
-                    "transition-all duration-500 overflow-hidden",
+                    "transition-[box-shadow] duration-500 overflow-hidden",
                     openItems.includes(item.question) ? "shadow-2xl" : ""
                   )}
                 >
@@ -259,7 +259,7 @@ export function FAQSection() {
                onClick={() => { setActiveCategory("all"); setSearchQuery(""); }}
                tone="primary"
                variant="pill"
-               className="px-8 py-4 rounded-xl bg-white text-slate-950 text-xs font-black uppercase tracking-[0.2em] shadow-2xl hover:scale-105 transition-all"
+               className="px-8 py-4 rounded-xl bg-white text-slate-950 text-xs font-black uppercase tracking-[0.2em] shadow-2xl"
              >
                 Réinitialiser
              </CmmButton>
@@ -281,7 +281,7 @@ export function FAQSection() {
                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Notre équipe support vous répond sous 24h</p>
               </div>
            </div>
-          <CmmButton type="button" tone="secondary" variant="pill" className="relative z-10 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all">
+          <CmmButton type="button" tone="secondary" variant="pill" className="relative z-10 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em]">
               Contacter le support
           </CmmButton>
         </RubriqueCard>

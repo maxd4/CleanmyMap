@@ -11,6 +11,7 @@ import {
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { ChatAvatar } from "./chat-avatar";
 import type { ChatUser } from "./chat-types";
+import { CmmButton } from "@/components/ui/cmm-button";
 import {
   COMMUNITY_ANNOUNCEMENT_TEMPLATES,
   type ChatRelatedEvent,
@@ -472,7 +473,7 @@ export const ChatComposer = memo(function ChatComposer({
         </div>
       ) : null}
 
-      <div className={`relative flex items-end gap-3 rounded-3xl p-3 border transition-all duration-300 shadow-inner ${isLight ? "border-rose-100 bg-white/90 focus-within:border-rose-300 focus-within:bg-white" : "border-white/5 bg-white/5 focus-within:border-violet-500/30 focus-within:bg-white/10"}`}>
+      <div className={`relative flex items-end gap-3 rounded-3xl p-3 border transition-[border-color,background-color,box-shadow] duration-300 shadow-inner ${isLight ? "border-rose-100 bg-white/90 focus-within:border-rose-300 focus-within:bg-white" : "border-white/5 bg-white/5 focus-within:border-violet-500/30 focus-within:bg-white/10"}`}>
         <input
           type="file"
           ref={fileInputRef}
@@ -485,7 +486,7 @@ export const ChatComposer = memo(function ChatComposer({
           disabled={composerMode === "poll" || !userId || isSending || isUploading}
           onClick={() => fileInputRef.current?.click()}
           aria-label="Joindre un fichier"
-          className={`p-3 rounded-2xl transition-all disabled:opacity-30 ${isLight ? "text-slate-400 hover:text-rose-500 hover:bg-rose-50" : "text-slate-400 hover:text-violet-400 hover:bg-white/5"}`}
+          className={`p-3 rounded-2xl transition-[color,background-color] disabled:opacity-30 ${isLight ? "text-slate-400 hover:text-rose-500 hover:bg-rose-50" : "text-slate-400 hover:text-violet-400 hover:bg-white/5"}`}
         >
           <Paperclip size={20} />
         </button>
@@ -498,14 +499,15 @@ export const ChatComposer = memo(function ChatComposer({
           className={`flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium py-3 px-1 max-h-40 resize-none ${isLight ? "text-slate-900 placeholder:text-slate-400" : "text-white placeholder:text-slate-500"}`}
           placeholder={userId ? placeholder : "Connectez-vous pour participer"}
         />
-        <button
+        <CmmButton
           disabled={!canSubmit}
           type="submit"
           aria-label={composerMode === "poll" ? "Publier le sondage" : "Envoyer le message"}
-          className={`w-12 h-12 text-white rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-30 disabled:grayscale flex items-center justify-center ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-violet-600 shadow-violet-600/30"}`}
+          tone={isLight ? "destructive" : "important"}
+          className={`w-12 h-12 text-white rounded-2xl shadow-xl disabled:opacity-30 disabled:grayscale ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-violet-600 shadow-violet-600/30"}`}
         >
           <Send size={20} />
-        </button>
+        </CmmButton>
       </div>
     </form>
   );

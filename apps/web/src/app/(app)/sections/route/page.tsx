@@ -46,7 +46,7 @@ export default async function RoutePage() {
                 variant="pill"
                 size="lg"
                 className={cn(
-                  "rounded-[2rem] px-8 py-5 transition-all duration-300 hover:scale-[1.02]",
+                  "rounded-[2rem] px-8 py-5",
                   classes.surface,
                   classes.borderStrong,
                 )}
@@ -62,7 +62,7 @@ export default async function RoutePage() {
                 variant="pill"
                 size="lg"
                 className={cn(
-                  "rounded-[2rem] px-8 py-5 transition-all duration-300 hover:scale-[1.02] bg-white/5 border-white/5",
+                  "rounded-[2rem] px-8 py-5 bg-white/5 border-white/5",
                 )}
               >
                 <MapPin className="h-4 w-4 text-emerald-400/60" />
@@ -76,7 +76,7 @@ export default async function RoutePage() {
                 variant="pill"
                 size="lg"
                 className={cn(
-                  "rounded-[2rem] px-8 py-5 transition-all duration-300 hover:scale-[1.02] bg-white/5 border-white/5",
+                  "rounded-[2rem] px-8 py-5 bg-white/5 border-white/5",
                 )}
               >
                 <History className="h-4 w-4 text-emerald-400/60" />

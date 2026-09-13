@@ -37,16 +37,14 @@ export function VisualOptionCard({
 
   return (
     <motion.button
-      whileHover={{ y: -2 }}
-      whileTap={{ scale: 0.98 }}
       onClick={onClick}
       className={cn(
-        "relative flex flex-col items-center gap-4 p-6 rounded-[2rem] border-2 transition-all duration-300 text-center w-full",
+        "relative flex flex-col items-center gap-4 p-6 rounded-[2rem] border-2 transition-[background-color,border-color,color,box-shadow] duration-300 text-center w-full",
         colorStyles[color]
       )}
     >
       <div className={cn(
-        "w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500",
+        "w-16 h-16 rounded-2xl flex items-center justify-center transition-[background-color,color,box-shadow] duration-500",
         iconStyles[color]
       )}>
         <Icon size={32} />

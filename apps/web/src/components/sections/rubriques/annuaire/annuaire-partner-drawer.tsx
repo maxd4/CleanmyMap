@@ -60,7 +60,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                   onClick={onClose}
                   tone="tertiary"
                   variant="pill"
-                  className="rounded-2xl p-4 text-white/60 backdrop-blur-xl transition-all hover:text-white active:scale-90 shadow-2xl"
+                  className="rounded-2xl p-4 text-white/60 backdrop-blur-xl hover:text-white shadow-2xl"
                 >
                   <X size={20} />
                 </CmmButton>
@@ -268,9 +268,9 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.1 + idx * 0.05 }}
-                      className="group/item flex flex-col gap-4 rounded-[2rem] border border-white/5 bg-white/5 p-6 shadow-2xl transition-all hover:bg-white/10 hover:border-violet-500/30"
+                      className="group/item flex flex-col gap-4 rounded-[2rem] border border-white/5 bg-white/5 p-6 shadow-2xl transition-[background-color,border-color] hover:bg-white/10 hover:border-violet-500/30"
                     >
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950/40 text-slate-500 transition-all group-hover/item:bg-violet-500 group-hover/item:text-white">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950/40 text-slate-500 transition-[background-color,color] group-hover/item:bg-violet-500 group-hover/item:text-white">
                         <Heart size={16} />
                       </div>
                       <span className="text-[11px] font-black uppercase tracking-widest text-white group-hover/item:text-white">
@@ -304,15 +304,12 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                       ))}
                     </div>
 
-                    <a
-                      href={entry.websiteUrl || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex h-16 w-full items-center justify-center gap-3 rounded-2xl bg-white text-slate-950 text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all hover:scale-[1.02] active:scale-95"
-                    >
-                      <Globe size={18} />
-                      <span>{fr ? "Consulter le site" : "Visit website"}</span>
-                    </a>
+                    <CmmButton asChild tone="secondary" width="wide" className="h-16 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl">
+                      <a href={entry.websiteUrl || "#"} target="_blank" rel="noopener noreferrer">
+                        <Globe size={18} />
+                        <span>{fr ? "Consulter le site" : "Visit website"}</span>
+                      </a>
+                    </CmmButton>
                   </div>
                 </div>
               </section>
@@ -324,14 +321,14 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                 onClick={onClose}
                 tone="tertiary"
                 variant="pill"
-                className="h-16 flex-1 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-white hover:bg-white/10 transition-all"
+                className="h-16 flex-1 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-white hover:bg-white/10"
               >
                 {fr ? "Fermer" : "Close"}
               </CmmButton>
               <CmmButton 
                 tone="primary"
                 variant="default"
-                className="group/cta h-16 flex-[2] rounded-2xl bg-violet-600 text-[11px] font-black uppercase tracking-[0.2em] text-white shadow-[0_10px_30px_rgba(139,92,246,0.3)] transition-all hover:bg-violet-500 hover:scale-[1.02]"
+                className="group/cta h-16 flex-[2] rounded-2xl bg-violet-600 text-[11px] font-black uppercase tracking-[0.2em] text-white shadow-[0_10px_30px_rgba(139,92,246,0.3)] hover:bg-violet-500"
               >
                 <span>{isEditorial ? (fr ? "Consulter la ressource" : "View resource") : (fr ? "Engager le contact" : "Get in touch")}</span>
                 <MessageSquare size={18} className="ml-3 group-hover/cta:scale-110 transition-transform" />

@@ -233,7 +233,7 @@ export function PromotionRequestForm({ currentRole, onSubmitted }: PromotionRequ
                 <select
                   value={requestedRole}
                   onChange={(event) => setRequestedRole(event.target.value as "elu" | "admin")}
-                  className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-5 py-3.5 text-sm font-bold text-white focus:border-amber-500/50 focus:outline-none transition-all appearance-none"
+                  className="w-full rounded-2xl border border-white/10 bg-slate-950/40 px-5 py-3.5 text-sm font-bold text-white focus:border-amber-500/50 focus:outline-none transition-[border-color,background-color] appearance-none"
                 >
                   {options.map((option) => (
                     <option key={option.requestedRole} value={option.requestedRole} className="bg-slate-900">
@@ -271,7 +271,7 @@ export function PromotionRequestForm({ currentRole, onSubmitted }: PromotionRequ
                   ? "Expliquez brièvement pourquoi ce niveau est justifié..."
                   : "Briefly explain why this level is justified..."
               }
-              className="min-h-[160px] w-full rounded-[2rem] border border-white/10 bg-slate-950/40 px-6 py-5 text-sm font-bold text-white placeholder:text-slate-600 focus:border-amber-500/50 focus:outline-none transition-all resize-none"
+              className="min-h-[160px] w-full rounded-[2rem] border border-white/10 bg-slate-950/40 px-6 py-5 text-sm font-bold text-white placeholder:text-slate-600 focus:border-amber-500/50 focus:outline-none transition-[border-color,background-color] resize-none"
               maxLength={1200}
             />
             <AnimatePresence>
@@ -296,7 +296,7 @@ export function PromotionRequestForm({ currentRole, onSubmitted }: PromotionRequ
                 href="/sections/feedback#collaboration"
                 tone="secondary"
                 variant="pill"
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10"
               >
                 {fr ? "Guide Rôles" : "Role Guide"}
                 <ArrowUpRight size={14} />
@@ -308,8 +308,8 @@ export function PromotionRequestForm({ currentRole, onSubmitted }: PromotionRequ
                 tone="primary"
                 variant="pill"
                 className={cn(
-                  "flex-1 sm:flex-none flex items-center justify-center gap-3 px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden group/btn",
-                  canSubmit ? "hover:scale-[1.02] active:scale-[0.98]" : "cursor-not-allowed"
+                  "flex-1 sm:flex-none flex items-center justify-center gap-3 px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] relative overflow-hidden group/btn",
+                  canSubmit ? "" : "cursor-not-allowed"
                 )}
               >
                 {submitState === "submitting" ? (
