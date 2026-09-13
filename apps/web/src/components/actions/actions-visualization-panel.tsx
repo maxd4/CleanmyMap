@@ -5,6 +5,7 @@ import { extractArrondissement, monthKey } from "@/components/sections/rubriques
 import type { ActionMapItem } from "@/lib/actions/types";
 import { cn } from "@/lib/utils";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+import { resolveEffectiveVolunteerUnits } from "@/lib/actions/volunteer-participation";
 
 type ZoneStats = {
   zone: string;
@@ -53,12 +54,10 @@ export function ActionsVisualizationPanel({
       }
       butts += Number(item.cigarette_butts || 0);
       const volunteersCount = Number(item.contract?.metadata.volunteersCount || 0);
-      const effectiveVolunteerUnits =
-        item.contract?.metadata.volunteerParticipation?.effectiveVolunteerUnits;
-      const operationalVolunteerUnits =
-        typeof effectiveVolunteerUnits === "number" && Number.isFinite(effectiveVolunteerUnits)
-          ? effectiveVolunteerUnits
-          : volunteersCount;
+      const effectiveVolunteerUnits = resolveEffectiveVolunteerUnits(
+        item.contract?.metadata.volunteerParticipation,
+      );
+      const operationalVolunteerUnits = effectiveVolunteerUnits ?? volunteersCount;
       const durationMinutes = Number(item.contract?.metadata.durationMinutes || 0);
       volunteers += volunteersCount;
       citizenHours += (operationalVolunteerUnits * Math.max(0, durationMinutes)) / 60;

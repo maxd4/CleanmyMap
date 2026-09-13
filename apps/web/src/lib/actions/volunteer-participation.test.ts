@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,
   normalizeVolunteerParticipation,
+  resolveEffectiveVolunteerUnits,
   resolveParticipantsCount,
 } from "./volunteer-participation";
 
@@ -52,5 +53,22 @@ describe("volunteer participation contract", () => {
     expect(result.retiredCount).toBeNull();
     expect(result.effectiveVolunteerUnits).toBeNull();
     expect(resolveParticipantsCount({ legacyVolunteersCount: 7 })).toBe(7);
+  });
+
+  it("recalculates derived fields from category sources instead of trusting payload totals", () => {
+    const participation = {
+      childrenCount: 2,
+      adultCount: 4,
+      retiredCount: 2,
+      participantsCount: 999,
+      effectiveVolunteerUnits: 999,
+      effectiveVolunteerUnitsFormulaVersion: "forged-version",
+    };
+
+    expect(resolveParticipantsCount({
+      volunteerParticipation: participation,
+      legacyVolunteersCount: 1,
+    })).toBe(8);
+    expect(resolveEffectiveVolunteerUnits(participation)).toBe(6);
   });
 });

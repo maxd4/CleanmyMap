@@ -2,6 +2,7 @@ import type { ActionListItem } from "@/lib/actions/types";
 import type { ActionEditorRecord } from "./http";
 import { evaluateActionQuality } from "./quality/quality";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { resolveEffectiveVolunteerUnits } from "./volunteer-participation";
 
 export type PostActionImpactMetric = {
   id: "co2" | "water" | "surface";
@@ -73,10 +74,9 @@ export function buildPostActionSummary(
   const wasteKg = toNonNegativeNumber(action.wasteKg);
   const cigaretteButts = Math.trunc(toNonNegativeNumber(action.cigaretteButts));
   const volunteersCount = Math.max(1, Math.trunc(toNonNegativeNumber(action.volunteersCount)));
-  const effectiveVolunteerUnits =
-    typeof action.volunteerParticipation?.effectiveVolunteerUnits === "number"
-      ? Math.max(0, action.volunteerParticipation.effectiveVolunteerUnits)
-      : null;
+  const effectiveVolunteerUnits = resolveEffectiveVolunteerUnits(
+    action.volunteerParticipation,
+  );
   const operationalVolunteerUnits = effectiveVolunteerUnits ?? volunteersCount;
   const durationMinutes = Math.trunc(toNonNegativeNumber(action.durationMinutes));
   const quality = evaluateActionQuality(toActionListItem(action));

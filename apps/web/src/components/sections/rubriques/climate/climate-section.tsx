@@ -52,6 +52,7 @@ export function ClimateSection() {
       volunteersCount: Number(item.volunteers_count || 0),
       effectiveVolunteerUnits:
         item.contract?.metadata.volunteerParticipation?.effectiveVolunteerUnits ?? null,
+      volunteerParticipation: item.contract?.metadata.volunteerParticipation ?? null,
       latitude: item.contract?.geometry?.coordinates?.[0]?.[1] ?? null,
       longitude: item.contract?.geometry?.coordinates?.[0]?.[0] ?? null,
     }));

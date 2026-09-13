@@ -36,4 +36,33 @@ describe("computeClimateContext", () => {
     expect(output.methods.length).toBeGreaterThanOrEqual(4);
     expect(output.weeklyDecisions.length).toBeGreaterThan(0);
   });
+
+  it("derives citizen hours from category sources when available", () => {
+    const output = computeClimateContext({
+      periodDays: 30,
+      now: new Date("2026-04-10T00:00:00.000Z"),
+      records: [
+        {
+          observedAt: "2026-04-09",
+          wasteKg: 10,
+          cigaretteButts: 0,
+          durationMinutes: 60,
+          volunteersCount: 999,
+          effectiveVolunteerUnits: 999,
+          volunteerParticipation: {
+            childrenCount: 2,
+            adultCount: 4,
+            retiredCount: 2,
+            participantsCount: 999,
+            effectiveVolunteerUnits: 999,
+            effectiveVolunteerUnitsFormulaVersion: "forged-version",
+          },
+          latitude: null,
+          longitude: null,
+        },
+      ],
+    });
+
+    expect(output.comparison.current.citizenHours).toBe(6);
+  });
 });

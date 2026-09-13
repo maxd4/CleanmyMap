@@ -1,3 +1,8 @@
+import {
+  resolveEffectiveVolunteerUnits,
+  type ActionVolunteerParticipation,
+} from "@/lib/actions/volunteer-participation";
+
 export const CLIMATE_PROXY_MODEL_VERSION = "v1.2";
 
 export const CLIMATE_PROXY_FACTORS = {
@@ -14,6 +19,7 @@ export type ClimateInputRecord = {
   durationMinutes: number;
   volunteersCount: number;
   effectiveVolunteerUnits?: number | null;
+  volunteerParticipation?: ActionVolunteerParticipation | null;
   latitude: number | null;
   longitude: number | null;
   plasticKg?: number | null;
@@ -147,7 +153,10 @@ function aggregate(
           Math.max(
             0,
             Number(
-              record.effectiveVolunteerUnits ?? record.volunteersCount ?? 0,
+              record.volunteerParticipation
+                ? resolveEffectiveVolunteerUnits(record.volunteerParticipation) ??
+                  record.volunteersCount
+                : record.effectiveVolunteerUnits ?? record.volunteersCount ?? 0,
             ),
           ),
       0,

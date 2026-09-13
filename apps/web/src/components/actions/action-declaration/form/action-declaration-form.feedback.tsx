@@ -16,6 +16,7 @@ import type {
 } from "./model";
 import type { ActionEditorRecord } from "@/lib/actions/http";
 import { buildPostActionSummary } from "@/lib/actions/post-action-summary";
+import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 import { formatScorePercent } from "@/lib/formatters/score";
 
 type ActionDeclarationFormFeedbackProps = {
@@ -192,7 +193,7 @@ export function ActionDeclarationFormFeedback({
                 </div>
                 <div className="rounded-xl border border-emerald-100 bg-[#F3FBF6] p-3">
                   <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">Durée</p>
-                  <p className="mt-1 text-lg font-black text-emerald-950">{postActionSummary.action.durationMinutes} min</p>
+                  <p className="mt-1 text-lg font-black text-emerald-950">{formatBusinessDurationMinutes(postActionSummary.action.durationMinutes)}</p>
                 </div>
               </div>
 

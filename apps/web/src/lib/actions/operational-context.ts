@@ -1,4 +1,7 @@
-import type { ActionVolunteerParticipation } from "./volunteer-participation";
+import {
+  resolveEffectiveVolunteerUnits,
+  type ActionVolunteerParticipation,
+} from "./volunteer-participation";
 
 export type ActionOperationalContext = {
   placeType: string | null;
@@ -80,11 +83,9 @@ export function getActionOperationalContext(
     metadata?.routeAdjustmentMessage,
   );
   const volunteersCount = normalizeOperationalCount(metadata?.volunteersCount);
-  const effectiveVolunteerUnits =
-    typeof metadata?.volunteerParticipation?.effectiveVolunteerUnits === "number" &&
-    Number.isFinite(metadata.volunteerParticipation.effectiveVolunteerUnits)
-      ? Math.max(0, metadata.volunteerParticipation.effectiveVolunteerUnits)
-      : null;
+  const effectiveVolunteerUnits = resolveEffectiveVolunteerUnits(
+    metadata?.volunteerParticipation,
+  );
   const operationalVolunteerUnits = effectiveVolunteerUnits ?? volunteersCount;
   const durationMinutes = normalizeOperationalCount(metadata?.durationMinutes);
   const engagementMinutes = operationalVolunteerUnits * durationMinutes;

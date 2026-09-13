@@ -108,7 +108,10 @@ export function resolveParticipantsCount(params: {
   volunteerParticipation?: ActionVolunteerParticipation | null;
   legacyVolunteersCount?: number | null;
 }): number {
-  const derived = params.volunteerParticipation?.participantsCount;
+  const normalized = params.volunteerParticipation
+    ? normalizeVolunteerParticipation(params.volunteerParticipation)
+    : null;
+  const derived = normalized?.participantsCount;
   if (typeof derived === "number" && Number.isFinite(derived)) {
     return Math.max(0, Math.trunc(derived));
   }
@@ -122,6 +125,8 @@ export function resolveParticipantsCount(params: {
 export function resolveEffectiveVolunteerUnits(
   participation: ActionVolunteerParticipation | null | undefined,
 ): number | null {
-  const units = participation?.effectiveVolunteerUnits;
+  const units = participation
+    ? normalizeVolunteerParticipation(participation).effectiveVolunteerUnits
+    : null;
   return typeof units === "number" && Number.isFinite(units) ? units : null;
 }
