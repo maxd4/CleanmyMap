@@ -30,7 +30,10 @@ import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 import { toActionContract } from "@/lib/actions/unified-source/contracts";
 import { evaluateRepollutionPredictionBeforeObservation } from "@/lib/actions/pollution/repollution-prediction-evaluation";
 import { persistRepollutionPredictionEvaluation } from "@/lib/actions/pollution/repollution-prediction-evaluation-store";
-import { resolveActionDepartmentForPersistence } from "@/lib/geo/action-department-resolver";
+import {
+  resolveActionDepartmentForPersistence,
+  resolveTrustedActionDepartmentForPersistence,
+} from "@/lib/geo/action-department-resolver";
 
 const ACTION_BASE_SELECT_FIELDS = [
   "id",
@@ -687,13 +690,20 @@ export async function createAction(
     organizers: ResolvedActionOrganizer[];
     manualParticipants?: ResolvedActionParticipant[];
     status?: ActionStatus;
+    departmentAttribution?: {
+      trust: "trusted";
+      source: "admin_import";
+    };
   },
 ): Promise<{ id: string }> {
   const payload = params.payload;
 
   const finalDrawing = await resolveCreateActionDrawing(payload);
   const persistedGeometry = buildCreateActionGeometry(payload, finalDrawing);
-  const department = await resolveActionDepartmentForPersistence({
+  const departmentResolver = params.departmentAttribution?.trust === "trusted"
+    ? resolveTrustedActionDepartmentForPersistence
+    : resolveActionDepartmentForPersistence;
+  const department = await departmentResolver({
     latitude: payload.latitude,
     longitude: payload.longitude,
     geometry: {
@@ -702,6 +712,7 @@ export async function createAction(
     },
     departmentCode: payload.departmentCode,
     departmentName: payload.departmentName,
+    spatiallyChanged: params.departmentAttribution?.trust !== "trusted",
   });
   const payloadWithDepartment: CreateActionPayload = {
     ...payload,

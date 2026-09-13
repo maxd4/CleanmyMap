@@ -13,6 +13,7 @@ const appendActionModerationAuditMock = vi.hoisted(() => vi.fn());
 const unauthorizedJsonResponseMock = vi.hoisted(() => vi.fn());
 const handleApiErrorMock = vi.hoisted(() => vi.fn());
 const canAutoApproveOwnActionMock = vi.hoisted(() => vi.fn());
+const resolveActionDepartmentForPersistenceMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
@@ -64,6 +65,10 @@ vi.mock("@/lib/http/api-errors", () => ({
 
 vi.mock("@/lib/http/auth-responses", () => ({
   unauthorizedJsonResponse: unauthorizedJsonResponseMock,
+}));
+
+vi.mock("@/lib/geo/action-department-resolver", () => ({
+  resolveActionDepartmentForPersistence: resolveActionDepartmentForPersistenceMock,
 }));
 
 describe("PATCH /api/actions/:actionId", () => {
@@ -137,6 +142,10 @@ describe("PATCH /api/actions/:actionId", () => {
         ),
     );
     recordRepollutionPredictionEvaluationForActionMock.mockResolvedValue(undefined);
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
     unauthorizedJsonResponseMock.mockReturnValue({ status: 401 });
     handleApiErrorMock.mockResolvedValue(new Response("error", { status: 500 }));
   });
@@ -215,6 +224,61 @@ describe("PATCH /api/actions/:actionId", () => {
     expect(updateMock).toHaveBeenCalledWith(
       expect.objectContaining({ waste_kg: null, cigarette_butts: null }),
     );
+  });
+
+  it("does not let a user PATCH department fields bypass server attribution", async () => {
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "pending",
+      action_phase: "pre_action",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-1",
+      actor_name: "Auteur",
+      action_date: "2026-09-13",
+      location_label: "Paris",
+      department_code: "75",
+      department_name: "Paris",
+      latitude: 48.8566,
+      longitude: 2.3522,
+      derived_geometry_kind: "point",
+      derived_geometry_geojson: null,
+      notes: null,
+    });
+    resolveActionDepartmentForPersistenceMock.mockResolvedValueOnce({
+      departmentCode: "75",
+      departmentName: "Paris",
+    });
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({
+          departmentCode: "2B",
+          departmentName: "Haute-Corse",
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        department_code: "75",
+        department_name: "Paris",
+      }),
+    );
+    expect(resolveActionDepartmentForPersistenceMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        existingDepartmentCode: "75",
+        existingDepartmentName: "Paris",
+        spatiallyChanged: false,
+      }),
+    );
+    expect(resolveActionDepartmentForPersistenceMock.mock.calls[0][0]).not.toMatchObject({
+      departmentCode: "2B",
+      departmentName: "Haute-Corse",
+    });
   });
 
   it("auto-approves an admin-like user's own final declaration", async () => {

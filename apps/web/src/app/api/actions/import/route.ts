@@ -389,6 +389,10 @@ export async function POST(request: Request) {
         payload: item.payload,
         organizers: [organizer],
         status: item.status,
+        departmentAttribution: {
+          trust: "trusted",
+          source: "admin_import",
+        },
       });
       importedCount += 1;
     }

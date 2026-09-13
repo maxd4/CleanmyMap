@@ -10,7 +10,7 @@ import { buildPersistedNotes } from "@/lib/actions/store";
 import type { ActionDrawing, CreateActionPayload } from "@/lib/actions/types";
 import type { getSupabaseServerClient } from "@/lib/supabase/server";
 import { runSingleActionQuery } from "@/lib/actions/query";
-import { resolveActionDepartmentForPersistence } from "@/lib/geo/action-department-resolver";
+import { resolveTrustedActionDepartmentForPersistence } from "@/lib/geo/action-department-resolver";
 
 const coordinateSchema = z.tuple([
   z.number().min(-90).max(90),
@@ -163,13 +163,9 @@ async function resolveDepartmentForModeration(params: {
   const { existing, payload, edits, manualDrawing } = params;
   const spatiallyChanged =
     edits.manualDrawing !== undefined ||
-    edits.latitude !== undefined ||
-    edits.longitude !== undefined;
-  const preserveDepartmentFields =
-    !spatiallyChanged ||
-    edits.departmentCode !== undefined ||
-    edits.departmentName !== undefined;
-  return resolveActionDepartmentForPersistence({
+    (edits.latitude !== undefined && edits.latitude !== existing.latitude) ||
+    (edits.longitude !== undefined && edits.longitude !== existing.longitude);
+  return resolveTrustedActionDepartmentForPersistence({
     latitude: payload.latitude,
     longitude: payload.longitude,
     geometry:
@@ -182,8 +178,11 @@ async function resolveDepartmentForModeration(params: {
             kind: existing.derived_geometry_kind,
             geojson: existing.derived_geometry_geojson,
           },
-    departmentCode: preserveDepartmentFields ? payload.departmentCode : undefined,
-    departmentName: preserveDepartmentFields ? payload.departmentName : undefined,
+    departmentCode: payload.departmentCode,
+    departmentName: payload.departmentName,
+    existingDepartmentCode: existing.department_code,
+    existingDepartmentName: existing.department_name,
+    spatiallyChanged,
   });
 }
 
