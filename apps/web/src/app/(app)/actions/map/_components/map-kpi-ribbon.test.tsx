@@ -1,7 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { PublicImpactMetric } from "@/lib/impact/public-impact-kpis";
 import { MapKpiRibbon } from "./map-kpi-ribbon";
+
+const source = readFileSync(new URL("./map-kpi-ribbon.tsx", import.meta.url), "utf8");
 
 const metrics: PublicImpactMetric[] = [
   { key: "wasteKg", label: "Déchets récoltés", value: "12 kg", unit: "kg", decimals: 1, category: "Résultat", accent: "blue", classification: "terrain" },
@@ -16,13 +19,24 @@ describe("MapKpiRibbon", () => {
   it("separates measured field results from explicitly labelled proxies", () => {
     const markup = renderToStaticMarkup(<MapKpiRibbon metrics={metrics} />);
 
-    expect(markup).toContain("Résultats terrain et proxys");
+    expect(markup).toContain("Indicateurs publics consolidés");
+    expect(markup).toContain("identiques à ceux de la page");
     expect(markup).toContain("Déchets récoltés");
     expect(markup).toContain("Mégots retirés");
     expect(markup).toContain("Bénévoles mobilisés");
     expect(markup).toContain("CO₂e évité (proxy)");
     expect(markup).toContain("Eau préservée (proxy)");
     expect(markup).toContain("Économie de voirie (proxy)");
-    expect(markup).not.toContain("Impact terrain · vue actuelle");
+    expect(markup).not.toContain("actions visibles après les filtres courants");
+  });
+
+  it("renders the canonical metric fields without redefining the Impact contract", () => {
+    expect(source).toContain("metrics.map");
+    expect(source).toContain("metric.label");
+    expect(source).toContain("metric.value");
+    expect(source).toContain("metric.classification");
+    expect(source).not.toContain("CO₂e évité (proxy)");
+    expect(source).not.toContain("Eau préservée (proxy)");
+    expect(source).not.toContain("Économie de voirie (proxy)");
   });
 });
