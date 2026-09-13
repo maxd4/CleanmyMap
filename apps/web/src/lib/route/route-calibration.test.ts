@@ -3,6 +3,7 @@ import type { ActionPreparationData } from "@/lib/actions/types";
 import {
   buildCalibrationDataset,
   buildRouteCalibrationContext,
+  buildRoutePlannerSnapshot,
   estimateRouteCleanupDuration,
   isRouteCalibrationContext,
   preserveHistoricalRouteCalibrationContext,
@@ -86,6 +87,80 @@ describe("route calibration infrastructure", () => {
     };
 
     expect(isRouteCalibrationContext(legacy)).toBe(true);
+  });
+
+  it("rejects malformed snapshots without changing the public boolean contract", () => {
+    const validContext = context({
+      plannerSnapshot: buildRoutePlannerSnapshot({
+        generatedAt: "2026-09-01T09:00:00.000Z",
+        engineVersion: "route-planner-v2",
+        selectedCandidates: [],
+        selectedStops: [],
+        origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+        planningMode: { type: "free" },
+        travelBudgetMinutes: 60,
+        maxStops: 3,
+        priorityVsTravel: 65,
+        pickupPreference: "balanced",
+        effectiveRiskFocus: "all",
+        volunteers: 3,
+        groupCount: 1,
+        routeGeometry: {
+          isLoop: true,
+          origin: [48.85, 2.35],
+          returnLeg: null,
+          coordinates: [],
+          distanceKm: 0,
+          durationMinutes: 0,
+          legs: [],
+          provider: "none",
+          profile: null,
+          mode: "fallback",
+          estimated: true,
+        },
+        travelDistanceKm: 0,
+        travelMinutes: 0,
+        returnDistanceKm: 0,
+        returnMinutes: 0,
+        groups: [],
+        dataStatus: "empty",
+        dataLayers: { observed: "empty", prediction: "unavailable", recommendation: "empty" },
+        sourceHealth: {
+          partial: false,
+          failedSources: [],
+          availableSources: ["spots"],
+          warnings: [],
+        },
+        prediction: null,
+      }),
+    });
+    const snapshot = validContext.plannerSnapshot!;
+    const invalidContexts: unknown[] = [
+      { ...validContext, plannerSnapshot: null },
+      {
+        ...validContext,
+        plannerSnapshot: { ...snapshot, version: "route-planner-snapshot-unknown" },
+      },
+      {
+        ...validContext,
+        plannerSnapshot: {
+          ...snapshot,
+          parameters: { ...snapshot.parameters, maxStops: 0 },
+        },
+      },
+      {
+        ...validContext,
+        plannerSnapshot: {
+          ...snapshot,
+          version: "route-planner-snapshot-unknown",
+          distance: { ...snapshot.distance, totalKm: -1 },
+        },
+      },
+    ];
+
+    for (const invalidContext of invalidContexts) {
+      expect(isRouteCalibrationContext(invalidContext)).toBe(false);
+    }
   });
 
   it("excludes legacy actions instead of rebuilding their context from current state", () => {
