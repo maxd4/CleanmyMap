@@ -14,7 +14,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getUtcWeekStart } from "@/lib/periodic/periodic-job-calendar";
 
 export const MAP_POLLUTION_REFERENCES_SNAPSHOT_KEY = "map-pollution-score-references";
-export const MAP_POLLUTION_REFERENCES_VERSION = "map-pollution-score-references-2026.09-v5-authorized-per-volunteer";
+export const MAP_POLLUTION_REFERENCES_VERSION = "map-pollution-score-references-2026.09-v6-pre77-approved-visible-population";
 
 export type PollutionScoreReferenceSnapshotPayload = {
   references: {
@@ -142,6 +142,7 @@ export function buildPollutionScoreReferenceSnapshot(params: {
       job: "MAP_POLLUTION_REFERENCES",
       cadence: "weekly",
       formula: "action_pollution_score_references_v2()",
+      population: "status=approved AND moderation_visibility=visible",
     },
   };
 }

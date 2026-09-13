@@ -109,12 +109,12 @@ describe("map marker categories", () => {
     ).toContain("0%, 8%");
   });
 
-  it("uses neutral categories when work-hours are invalid", () => {
+  it("keeps the pre-77 score population independent from duration", () => {
     expect(
       deriveMarkerCategories(
         buildItem({ duration_minutes: 0, waste_kg: 20 }),
         references,
       ),
-    ).toEqual(["blue"]);
+    ).toEqual(["red", "bin"]);
   });
 });

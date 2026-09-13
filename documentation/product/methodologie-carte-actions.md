@@ -46,8 +46,9 @@ Il est dérivé des informations disponibles lors de l'action, notamment :
 - masse de déchets collectée ;
 - nombre de mégots collectés ;
 - références de calibration utilisées par le runtime ;
-- normalisation par bénévole lorsque l'effectif est renseigné ; la durée reste
-  une condition d'éligibilité de l'action, mais n'entre pas dans la formule.
+- normalisation par bénévole selon le dénominateur historique sûr
+  `max(1, volunteersCount)` ; la durée n'entre pas dans la formule et ne fait
+  pas partie de la population de référence pré-77.
 
 Le runtime calcule deux composantes indépendantes : l'intensité de déchets en
 kg par bénévole et l'intensité de mégots en mégots par bénévole.
@@ -266,14 +267,19 @@ RPC versionnée `action_pollution_score_references_v2()` et capturées une fois
 par semaine dans le snapshot `map-pollution-score-references` ; la carte lit ce
 snapshot une seule fois et ne fait aucun fetch par action.
 
-Pour chaque action éligible, l'intensité est calculée par bénévole :
+Pour chaque action de référence, l'intensité est calculée par bénévole avec le
+dénominateur historique sûr `max(1, volunteersCount)` :
 `quantité / bénévoles`. Les composantes déchets et mégots sont normalisées
 séparément par leur référence maximale, puis le score historique retient la
 composante la plus élevée parmi celles réellement exploitables. Une mesure
 égale à zéro reste une mesure valide ; une métrique absente reste indisponible.
 Le score global conserve cette référence maximale à l'échelle de toutes les
-actions éligibles. La durée positive reste obligatoire pour l'éligibilité, mais
-n'est pas transformée en bénévole-heure dans ce contrat.
+actions de référence. La population restaurée est `status = 'approved'`.
+La visibilité publique actuelle ajoute `moderation_visibility = 'visible'` à
+la RPC, uniquement pour respecter la frontière de sécurité des surfaces
+publiques. Aucun filtre supplémentaire `duration_minutes > 0`,
+`action_phase` ou date n'appartient à ce contrat, et la RPC ne transforme pas
+la formule en bénévole-heure.
 
 Cette distinction s'applique aussi aux agrégats Impact, aux rapports et aux
 comparaisons temporelles : `waste_kg = 0` signifie une mesure nulle, tandis que

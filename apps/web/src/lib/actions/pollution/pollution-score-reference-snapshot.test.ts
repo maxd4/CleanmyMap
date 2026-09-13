@@ -63,6 +63,9 @@ describe("pollution score reference snapshot V2", () => {
       global,
       departments: references.departmentReferences,
     });
+    expect(first.snapshot.meta.population).toBe(
+      "status=approved AND moderation_visibility=visible",
+    );
   });
 
   it("uses the V2 RPC fallback when the weekly snapshot is missing", async () => {
@@ -80,7 +83,7 @@ describe("pollution score reference snapshot V2", () => {
     });
   });
 
-  it("reads one valid V5 payload and exposes global and department references", async () => {
+  it("reads one valid V6 payload and exposes global and department references", async () => {
     const loadFallback = vi.fn();
     const result = await loadPollutionScoreReferencesForMap({
       readSnapshot: async () => snapshot(),
@@ -92,11 +95,11 @@ describe("pollution score reference snapshot V2", () => {
     expect(loadFallback).not.toHaveBeenCalled();
   });
 
-  it("does not reuse a prior payload from the superseded V4 contract", async () => {
+  it("does not reuse a prior payload from the superseded V5 population", async () => {
     const loadFallback = vi.fn(async () => references);
     const legacySnapshot = {
       ...snapshot(),
-      version: "map-pollution-score-references-2026.09-v4",
+      version: "map-pollution-score-references-2026.09-v5-authorized-per-volunteer",
       payload: {
         ...snapshot().payload,
         references: { global },
