@@ -15,6 +15,7 @@ import {
   markNotificationAsReadForCurrentUser,
   type AppNotification,
 } from "@/lib/notifications/client";
+import { useNotificationRequestIdentity } from "@/lib/notifications/use-notification-request-identity";
 import { NotificationListItem } from "@/components/notifications/notification-list-item";
 import type { RibbonChrome } from "./app-navigation-ribbon-theme";
 
@@ -23,14 +24,30 @@ type NotificationBellProps = {
 };
 
 export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
-  const { getToken, isLoaded, isSignedIn, userId } = useAuth();
+  const auth = useAuth();
+  const identityKey = auth.isLoaded && auth.isSignedIn && auth.userId ? auth.userId : "signed-out";
+
+  return <NotificationBellSession key={identityKey} auth={auth} ribbonChrome={ribbonChrome} />;
+}
+
+type NotificationAuthState = Pick<
+  ReturnType<typeof useAuth>,
+  "getToken" | "isLoaded" | "isSignedIn" | "userId"
+>;
+
+function NotificationBellSession({
+  auth,
+  ribbonChrome,
+}: NotificationBellProps & { auth: NotificationAuthState }) {
+  const { getToken, isLoaded, isSignedIn, userId } = auth;
   const router = useRouter();
   const { locale } = useSitePreferences();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const fetchInFlightRef = useRef(false);
-  const markReadInFlightRef = useRef(false);
+  const { getRequest, isCurrentRequest } = useNotificationRequestIdentity(userId);
+  const fetchInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
+  const markReadInFlightRef = useRef<ReturnType<typeof getRequest> | null>(null);
 
   const visibleNotifications = useMemo(
     () => (isLoaded && isSignedIn ? notifications : []),
@@ -47,26 +64,40 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
   const pollIntervalMs = isOpen ? 300_000 : 900_000;
 
   const fetchNotifications = useCallback(async () => {
-    if (!isLoaded || !isSignedIn || !userId) {
+    const request = getRequest();
+    if (!request.userId) {
       return;
     }
 
-    if (fetchInFlightRef.current) {
+    if (
+      fetchInFlightRef.current &&
+      isCurrentRequest(fetchInFlightRef.current)
+    ) {
       return;
     }
 
-    fetchInFlightRef.current = true;
+    fetchInFlightRef.current = request;
     setLoading(true);
     try {
-      const loadedNotifications = await loadNotificationsForCurrentUser(userId, getToken);
+      const loadedNotifications = await loadNotificationsForCurrentUser(request.userId, getToken);
+      if (!isCurrentRequest(request)) {
+        return;
+      }
       setNotifications(loadedNotifications);
     } catch (err) {
+      if (!isCurrentRequest(request)) {
+        return;
+      }
       logFailure("Notifications", "Fetch failed", err);
     } finally {
-      setLoading(false);
-      fetchInFlightRef.current = false;
+      if (isCurrentRequest(request)) {
+        setLoading(false);
+        if (fetchInFlightRef.current === request) {
+          fetchInFlightRef.current = null;
+        }
+      }
     }
-  }, [getToken, isLoaded, isSignedIn, userId]);
+  }, [getRequest, getToken, isCurrentRequest]);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn) {
@@ -145,16 +176,27 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
   }, [visibleNotifications, unreadCount]);
 
   const markAsRead = async (id: string) => {
-    if (!isLoaded || !isSignedIn || !userId) {
+    const request = getRequest();
+    if (
+      !request.userId ||
+      (markReadInFlightRef.current &&
+        isCurrentRequest(markReadInFlightRef.current))
+    ) {
       return;
     }
 
     try {
-      if (fetchInFlightRef.current || markReadInFlightRef.current) {
+      if (
+        fetchInFlightRef.current &&
+        isCurrentRequest(fetchInFlightRef.current)
+      ) {
         return;
       }
-      markReadInFlightRef.current = true;
-      await markNotificationAsReadForCurrentUser(userId, id, getToken);
+      markReadInFlightRef.current = request;
+      await markNotificationAsReadForCurrentUser(request.userId, id, getToken);
+      if (!isCurrentRequest(request)) {
+        return;
+      }
       setNotifications((previous) =>
         previous.map((notification) =>
           notification.id === id
@@ -163,14 +205,26 @@ export function NotificationBell({ ribbonChrome }: NotificationBellProps) {
         ),
       );
     } catch (err) {
+      if (!isCurrentRequest(request)) {
+        return;
+      }
       logFailure("Notifications", "Mark as read failed", err, { id });
     } finally {
-      markReadInFlightRef.current = false;
+      if (
+        isCurrentRequest(request) &&
+        markReadInFlightRef.current === request
+      ) {
+        markReadInFlightRef.current = null;
+      }
     }
   };
 
   const handleNotificationClick = async (notification: AppNotification) => {
+    const request = getRequest();
     await markAsRead(notification.id);
+    if (!isCurrentRequest(request)) {
+      return;
+    }
     const href = buildChatNotificationHref(notification.payload);
     if (href) {
       setIsOpen(false);
