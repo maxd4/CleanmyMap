@@ -38,7 +38,6 @@
   .cmm-hover-lift,
   .cmm-active-press,
   .cmm-icon-nudge-x,
-  .cmm-clickable:hover,
   .cmm-hover-lift:hover,
   .group:hover .cmm-icon-nudge-x {
     transition: none !important;

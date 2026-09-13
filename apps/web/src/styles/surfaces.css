@@ -196,12 +196,12 @@
   .cmm-card--interactive:not([aria-disabled="true"]):hover {
     border-color: var(--cmm-surface-border-strong);
     box-shadow: var(--cmm-card-hover-shadow);
-    transform: translateY(var(--cmm-surface-hover-translate)) scale(var(--cmm-surface-hover-scale));
+    transform: translateY(var(--cmm-surface-hover-translate));
   }
 
   .cmm-card--interactive:not([aria-disabled="true"]):active {
     box-shadow: var(--cmm-card-shadow);
-    transform: scale(var(--cmm-surface-active-scale));
+    transform: none;
   }
 
   .cmm-card--interactive:focus-visible {
@@ -370,11 +370,11 @@
   .cmm-rubrique-card--interactive:hover {
     border-color: var(--cmm-surface-border-strong);
     box-shadow: var(--cmm-rubrique-shadow);
-    transform: translateY(var(--cmm-surface-hover-translate)) scale(var(--cmm-surface-hover-scale));
+    transform: translateY(var(--cmm-surface-hover-translate));
   }
 
   .cmm-rubrique-card--interactive:active {
-    transform: scale(var(--cmm-surface-active-scale));
+    transform: none;
   }
 
   .cmm-rubrique-card__topbar {

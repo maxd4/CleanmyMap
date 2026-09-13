@@ -25,8 +25,6 @@
   --cmm-surface-blur: none;
   --cmm-surface-texture-opacity: 0;
   --cmm-surface-hover-translate: 0;
-  --cmm-surface-hover-scale: 1;
-  --cmm-surface-active-scale: 1;
   --cmm-surface-transition-duration: 150ms;
   --shadow-elevated: var(--shadow-soft);
   --shadow-vibrant: var(--shadow-soft);
@@ -167,8 +165,6 @@
   --cmm-surface-blur: none;
   --cmm-surface-texture-opacity: 0;
   --cmm-surface-hover-translate: 0;
-  --cmm-surface-hover-scale: 1;
-  --cmm-surface-active-scale: 1;
   --cmm-surface-transition-duration: 0ms;
   /* Couleurs unies uniquement */
   --bg-elevated: var(--background);
@@ -243,8 +239,7 @@ html[data-theme="dark"][data-display-mode="sobre"] .cmm-sober {
 /* Boutons : les modes ne changent que les effets, jamais la géométrie. */
 [data-display-mode="minimaliste"] .cmm-button {
   --cmm-button-shadow: none;
-  --cmm-button-hover-transform: none;
-  --cmm-button-active-transform: none;
+  --cmm-button-shadow-hover: none;
   --cmm-button-background-image: none;
   --cmm-button-background-image-hover: none;
   --cmm-button-transition-duration: 150ms;
@@ -255,8 +250,7 @@ html[data-theme="dark"][data-display-mode="sobre"] .cmm-sober {
 
 [data-display-mode="sobre"] .cmm-button {
   --cmm-button-shadow: none;
-  --cmm-button-hover-transform: none;
-  --cmm-button-active-transform: none;
+  --cmm-button-shadow-hover: none;
   --cmm-button-background-image: none;
   --cmm-button-background-image-hover: none;
   --cmm-button-transition-duration: 0ms;
@@ -265,14 +259,12 @@ html[data-theme="dark"][data-display-mode="sobre"] .cmm-sober {
 
 @media (prefers-reduced-motion: reduce) {
   .cmm-button {
-    --cmm-button-hover-transform: none;
-    --cmm-button-active-transform: none;
     --cmm-button-transition: none;
     transition: none !important;
   }
 
   .cmm-button:hover,
   .cmm-button:active {
-    transform: none !important;
+    box-shadow: var(--cmm-button-shadow) !important;
   }
 }
