@@ -2,9 +2,11 @@ import type { ReactNode } from "react";
 import { Cigarette, Info, Trash2 } from "lucide-react";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import {
-  ACTION_POLLUTION_COLOR_THRESHOLDS,
+  ACTION_POLLUTION_COLOR_STOPS,
+  CLEAN_PLACE_COLOR,
   INFRASTRUCTURE_ALERT_THRESHOLD,
   TRASH_SPOTTER_NEUTRAL_COLOR,
+  resolveDynamicColor,
 } from "@/components/actions/map-marker-categories";
 
 type LegendItem = {
@@ -14,45 +16,48 @@ type LegendItem = {
   icon: ReactNode;
 };
 
-const colorItems: LegendItem[] = [
-  {
-    label: "Bleu",
-    threshold: `< ${ACTION_POLLUTION_COLOR_THRESHOLDS.ORANGE}`,
-    description: "Faible",
-    icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-sky-500" />,
-  },
-  {
-    label: "Orange",
-    threshold: `${ACTION_POLLUTION_COLOR_THRESHOLDS.ORANGE}–${ACTION_POLLUTION_COLOR_THRESHOLDS.RED - 1}`,
-    description: "Moyenne",
-    icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-orange-500" />,
-  },
-  {
-    label: "Rouge",
-    threshold: `${ACTION_POLLUTION_COLOR_THRESHOLDS.RED}–${ACTION_POLLUTION_COLOR_THRESHOLDS.VIOLET - 1}`,
-    description: "Forte",
-    icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-red-500" />,
-  },
-  {
-    label: "Violet",
-    threshold: `${ACTION_POLLUTION_COLOR_THRESHOLDS.VIOLET}–${ACTION_POLLUTION_COLOR_THRESHOLDS.BLACK - 1}`,
-    description: "Critique",
-    icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-violet-500" />,
-  },
-  {
-    label: "Noir",
-    threshold: `≥ ${ACTION_POLLUTION_COLOR_THRESHOLDS.BLACK}`,
-    description: "Extrême",
-    icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-slate-950" />,
-  },
-];
+const pollutionLevelLabels = {
+  blue: "Faible",
+  orange: "Moyenne",
+  red: "Forte",
+  violet: "Critique",
+  black: "Extrême",
+} as const;
+
+const colorItems: LegendItem[] = ACTION_POLLUTION_COLOR_STOPS.map((stop, index) => {
+  const nextStop = ACTION_POLLUTION_COLOR_STOPS[index + 1];
+  const threshold = nextStop
+    ? index === 0
+      ? `< ${nextStop.threshold}`
+      : `${stop.threshold}–${nextStop.threshold - 1}`
+    : `≥ ${stop.threshold}`;
+
+  return {
+    label: stop.label.split(" · ")[0],
+    threshold,
+    description: pollutionLevelLabels[stop.key],
+    icon: (
+      <span
+        aria-hidden="true"
+        className="h-2.5 w-2.5 rounded-full"
+        style={{ backgroundColor: resolveDynamicColor(stop.threshold) }}
+      />
+    ),
+  };
+});
 
 const otherStateItems: LegendItem[] = [
   {
     label: "Vert",
     threshold: "clean_place",
     description: "Lieu propre · clean_place",
-    icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-emerald-500" />,
+    icon: (
+      <span
+        aria-hidden="true"
+        className="h-2.5 w-2.5 rounded-full"
+        style={{ backgroundColor: CLEAN_PLACE_COLOR }}
+      />
+    ),
   },
   {
     label: "Trash Spotter",
@@ -82,6 +87,8 @@ const infrastructureItems: LegendItem[] = [
     icon: <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-violet-600" />,
   },
 ];
+
+const pollutionGradient = `linear-gradient(90deg, ${ACTION_POLLUTION_COLOR_STOPS.map((stop) => resolveDynamicColor(stop.threshold)).join(", ")})`;
 
 function LegendRow({ item, showThreshold = true }: { item: LegendItem; showThreshold?: boolean }) {
   return (
@@ -125,15 +132,27 @@ export function MapLegend() {
 
         <div className="grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2" aria-label="Catégories de la légende">
           <div className="flex min-w-0 items-center gap-2.5 py-0.5 text-xs font-semibold text-slate-800 sm:text-sm">
-            <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-gradient-to-r from-sky-500 via-orange-500 to-slate-950" />
+            <span
+              aria-hidden="true"
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundImage: pollutionGradient }}
+            />
             <span className="min-w-0">Bleu → noir <span className="font-medium text-slate-600">Pollution projetée</span></span>
           </div>
           <div className="flex min-w-0 items-center gap-2.5 py-0.5 text-xs font-semibold text-slate-800 sm:text-sm">
-            <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
+            <span
+              aria-hidden="true"
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: CLEAN_PLACE_COLOR }}
+            />
             <span className="min-w-0">Lieu propre</span>
           </div>
           <div className="flex min-w-0 items-center gap-2.5 py-0.5 text-xs font-semibold text-slate-800 sm:text-sm">
-            <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-slate-400" />
+            <span
+              aria-hidden="true"
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: TRASH_SPOTTER_NEUTRAL_COLOR }}
+            />
             <span className="min-w-0">Signalement <span className="font-medium text-slate-600">Trash Spotter</span></span>
           </div>
           <div className="flex min-w-0 items-center gap-2.5 py-0.5 text-xs font-semibold text-slate-800 sm:text-sm">

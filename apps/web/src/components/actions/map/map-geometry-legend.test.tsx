@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   ACTION_POLLUTION_COLOR_STOPS,
   CLEAN_PLACE_COLOR,
+  TRASH_SPOTTER_NEUTRAL_COLOR,
+  resolveDynamicColor,
 } from "../map-marker-categories";
 import { MapGeometryLegend } from "./map-geometry-legend";
 
@@ -32,8 +34,10 @@ describe("MapGeometryLegend", () => {
 
     for (const stop of ACTION_POLLUTION_COLOR_STOPS) {
       expect(markup).toContain(stop.label);
+      expect(markup).toContain(`background-color:${resolveDynamicColor(stop.threshold)}`);
     }
     expect(markup).toContain(`background-color:${CLEAN_PLACE_COLOR}`);
+    expect(markup).toContain(`background-color:${TRASH_SPOTTER_NEUTRAL_COLOR}`);
   });
 
   it("exposes the detailed methodology link without duplicating score thresholds", () => {
