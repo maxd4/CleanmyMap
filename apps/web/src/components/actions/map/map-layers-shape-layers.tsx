@@ -43,6 +43,7 @@ import {
   resolvePointColor,
   type ActionPointLayerProps,
 } from "./map-layers.shared";
+import { resolveActionPollutionScore } from "./pollution-score-scope";
 
 export function ShapeLayers({
   items,
@@ -51,6 +52,7 @@ export function ShapeLayers({
   onSelectAction,
   displayMode = "projected_today",
   currentPlaceStateViews = [],
+  scoreScope = "global",
 }: ActionPointLayerProps) {
   const { references } = useActionPollutionScoreReferences();
   const map = useMap();
@@ -103,11 +105,22 @@ export function ShapeLayers({
           now,
           displayMode,
           currentPlaceState,
+          scoreScope,
         );
-        const score = pollutionScores.severityScore;
-        const actionProjection = isActionMapItem(item)
+        const scopedActionScore = isActionMapItem(item)
+          ? resolveActionPollutionScore(item, references, {
+              scope: scoreScope,
+              now,
+              displayMode,
+              currentPlaceState,
+            })
+          : null;
+        const score = isActionMapItem(item)
+          ? scopedActionScore?.score ?? 0
+          : pollutionScores.severityScore;
+        const actionProjection = isActionMapItem(item) && scoreScope === "global" && scopedActionScore?.historicalScore != null
           ? presentActionPollutionProjection(
-              score,
+              scopedActionScore.historicalScore,
               mapItemObservedAt(item),
               now,
               {
@@ -230,6 +243,7 @@ export function ShapeLayers({
                   onViewGeometry={onViewGeometry}
                   displayMode={displayMode}
                   currentPlaceState={currentPlaceState}
+                  scoreScope={scoreScope}
                   resolveCurrentPlaceStateForItem={(targetItem) =>
                     resolveMapPlaceStateForItem(
                       currentPlaceStateViews,
@@ -251,6 +265,7 @@ export function ShapeLayers({
                         targetItem,
                         displayMode,
                       ),
+                      scoreScope,
                     )
                   }
                 />
@@ -310,6 +325,7 @@ export function ShapeLayers({
                   onViewGeometry={onViewGeometry}
                   displayMode={displayMode}
                   currentPlaceState={currentPlaceState}
+                  scoreScope={scoreScope}
                   resolveCurrentPlaceStateForItem={(targetItem) =>
                     resolveMapPlaceStateForItem(
                       currentPlaceStateViews,
@@ -331,6 +347,7 @@ export function ShapeLayers({
                         targetItem,
                         displayMode,
                       ),
+                      scoreScope,
                     )
                   }
                 />

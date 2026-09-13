@@ -36,11 +36,39 @@ function isValidReferences(value: unknown): value is PollutionScoreReferences {
     return false;
   }
   const candidate = value as Partial<PollutionScoreReferences>;
-  return (
+  const globalReferencesValid = (
     Number.isFinite(candidate.wastePerVolunteer) &&
     Number(candidate.wastePerVolunteer) > 0 &&
     Number.isFinite(candidate.buttsPerVolunteer) &&
     Number(candidate.buttsPerVolunteer) > 0
+  );
+
+  if (!globalReferencesValid) {
+    return false;
+  }
+
+  if (candidate.departmentReferences === undefined) {
+    return true;
+  }
+
+  if (
+    !candidate.departmentReferences ||
+    typeof candidate.departmentReferences !== "object" ||
+    Array.isArray(candidate.departmentReferences)
+  ) {
+    return false;
+  }
+
+  return Object.values(candidate.departmentReferences).every((reference) =>
+    Boolean(
+      reference &&
+        Number.isFinite(reference.wastePerVolunteer) &&
+        Number(reference.wastePerVolunteer) > 0 &&
+        Number.isFinite(reference.buttsPerVolunteer) &&
+        Number(reference.buttsPerVolunteer) > 0 &&
+        Number.isFinite(reference.eligibleActionCount) &&
+        Number(reference.eligibleActionCount) >= 0,
+    ),
   );
 }
 

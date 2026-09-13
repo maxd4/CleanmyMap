@@ -1,12 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   DEFAULT_POLLUTION_SCORE_REFERENCES,
+  type DepartmentPollutionScoreReference,
   type PollutionScoreReferences,
 } from "./pollution-score";
 
 type PollutionScoreReferenceRow = {
   waste_per_volunteer: number | null;
   butts_per_volunteer: number | null;
+  department_code?: string | null;
+  department_name?: string | null;
+  eligible_action_count?: number | null;
+  action_count?: number | null;
+  department_references?: unknown;
+  departments?: unknown;
 };
 
 // The function reads only publicly selectable approved actions. Keep this
@@ -33,6 +40,59 @@ function normalizePollutionScoreReferenceRows(
 function isPositiveFiniteReference(value: number | null | undefined): value is number {
   const candidate = Number(value ?? 0);
   return Number.isFinite(candidate) && candidate > 0;
+}
+
+function toDepartmentReference(value: unknown): DepartmentPollutionScoreReference | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+  const candidate = value as Record<string, unknown>;
+  const wastePerVolunteer = Number(
+    candidate.wastePerVolunteer ?? candidate.waste_per_volunteer,
+  );
+  const buttsPerVolunteer = Number(
+    candidate.buttsPerVolunteer ?? candidate.butts_per_volunteer,
+  );
+  const eligibleActionCount = Number(
+    candidate.eligibleActionCount ??
+      candidate.eligible_action_count ??
+      candidate.actionCount ??
+      candidate.action_count,
+  );
+
+  if (
+    !isPositiveFiniteReference(wastePerVolunteer) ||
+    !isPositiveFiniteReference(buttsPerVolunteer) ||
+    !Number.isFinite(eligibleActionCount) ||
+    eligibleActionCount < 0
+  ) {
+    return null;
+  }
+
+  return {
+    wastePerVolunteer,
+    buttsPerVolunteer,
+    eligibleActionCount: Math.trunc(eligibleActionCount),
+  };
+}
+
+function normalizeDepartmentReferences(
+  value: unknown,
+): Readonly<Record<string, DepartmentPollutionScoreReference>> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return Object.entries(value as Record<string, unknown>).reduce<
+    Record<string, DepartmentPollutionScoreReference>
+  >((result, [rawCode, rawReference]) => {
+    const code = rawCode.trim();
+    const reference = toDepartmentReference(rawReference);
+    if (code && reference) {
+      result[code] = reference;
+    }
+    return result;
+  }, {});
 }
 
 export async function fetchActionPollutionScoreReferences(
@@ -79,15 +139,47 @@ async function fetchUncachedActionPollutionScoreReferences(
   }
 
   const rows = normalizePollutionScoreReferenceRows(result.data);
-  const row = rows[0] ?? null;
+  const row = rows.find((candidate) =>
+    isPositiveFiniteReference(candidate?.waste_per_volunteer) &&
+    isPositiveFiniteReference(candidate?.butts_per_volunteer) &&
+    !candidate?.department_code,
+  ) ?? rows[0] ?? null;
 
   if (
     isPositiveFiniteReference(row?.waste_per_volunteer) &&
     isPositiveFiniteReference(row?.butts_per_volunteer)
   ) {
+    const departmentReferences = rows.reduce<
+      Record<string, DepartmentPollutionScoreReference>
+    >((result, candidate) => {
+      const departmentCode = candidate.department_code?.trim();
+      const eligibleActionCount =
+        candidate.eligible_action_count ?? candidate.action_count;
+      const reference = toDepartmentReference({
+        waste_per_volunteer: candidate.waste_per_volunteer,
+        butts_per_volunteer: candidate.butts_per_volunteer,
+        eligible_action_count: eligibleActionCount,
+      });
+      if (departmentCode && reference) {
+        result[departmentCode] = reference;
+      }
+      return result;
+    }, {});
+
+    for (const candidate of rows) {
+      const nestedReferences = normalizeDepartmentReferences(
+        candidate.department_references,
+      );
+      const nestedDepartments = normalizeDepartmentReferences(candidate.departments);
+      Object.assign(departmentReferences, nestedReferences, nestedDepartments);
+    }
+
     return {
       wastePerVolunteer: Number(row.waste_per_volunteer),
       buttsPerVolunteer: Number(row.butts_per_volunteer),
+      ...(Object.keys(departmentReferences).length > 0
+        ? { departmentReferences }
+        : {}),
     };
   }
 

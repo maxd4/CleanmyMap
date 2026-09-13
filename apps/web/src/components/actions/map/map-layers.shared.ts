@@ -1,11 +1,7 @@
 import type { Map as LeafletMap } from "leaflet";
 import type { ActionMapItem } from "@/lib/actions/types";
 import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
-import {
-  mapItemObservedAt,
-  mapItemPostActionPollutionScore,
-  mapItemType,
-} from "@/lib/actions/data-contract";
+import { mapItemType } from "@/lib/actions/data-contract";
 import { isTrashSpotterActionableItem } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { PollutionScoreReferences } from "@/lib/actions/pollution/pollution-score";
 import type {
@@ -17,10 +13,12 @@ import {
   CLEAN_PLACE_COLOR,
   TRASH_SPOTTER_NEUTRAL_COLOR,
   resolveDynamicColor,
-  resolveItemPollutionScores,
 } from "@/components/actions/map-marker-categories";
-import { presentActionPollutionProjection } from "@/lib/actions/pollution/revisit-priority";
-import { isActionMapItem } from "./action-popup-content.helpers";
+import {
+  POLLUTION_SCORE_UNAVAILABLE_COLOR,
+  resolveActionPollutionScore,
+} from "./pollution-score-scope";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 
 export type LeafletClusterLike = {
   getChildCount: () => number;
@@ -51,6 +49,7 @@ export function resolvePointColor(
   now: string | Date | number = new Date(),
   displayMode: CurrentPlaceStateMode = "projected_today",
   currentPlaceState: CurrentPlaceState | null = null,
+  scoreScope: PollutionScoreScope = "global",
 ): string {
   const itemType = mapItemType(item);
   if (itemType === "clean_place") {
@@ -75,19 +74,16 @@ export function resolvePointColor(
       : resolveDynamicColor(measuredScore);
   }
 
-  const observedScore = resolveItemPollutionScores(item, references).severityScore;
-  const score = currentPlaceState?.score ?? (isActionMapItem(item)
-    ? displayMode === "observed"
-      ? mapItemPostActionPollutionScore(item) ?? observedScore
-      : presentActionPollutionProjection(
-          observedScore,
-          mapItemObservedAt(item),
-          now,
-          { postActionScore: mapItemPostActionPollutionScore(item) },
-        ).projectedPollutionScore
-    : observedScore);
+  const resolved = resolveActionPollutionScore(item, references, {
+    scope: scoreScope,
+    now,
+    displayMode,
+    currentPlaceState,
+  });
 
-  return resolveDynamicColor(score);
+  return resolved.score === null
+    ? POLLUTION_SCORE_UNAVAILABLE_COLOR
+    : resolveDynamicColor(resolved.score);
 }
 
 export function isTrashSpotterItem(item: ActionMapItem): boolean {
@@ -101,6 +97,7 @@ export type ActionPointLayerProps = {
   onSelectAction?: (actionId: string) => void;
   displayMode?: CurrentPlaceStateMode;
   currentPlaceStateViews?: readonly CurrentPlaceStateViews[];
+  scoreScope?: PollutionScoreScope;
 };
 
 export type InfrastructureLayerProps = {

@@ -16,6 +16,7 @@ import type {
   CurrentPlaceStateMode,
   CurrentPlaceStateViews,
 } from "@/lib/actions/pollution/current-place-state";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 import { isTrashSpotterSpotRecord } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { cn } from "@/lib/utils";
@@ -158,6 +159,7 @@ export function ActionsMapCanvas({
   const [displayMode, setDisplayMode] = useState<CurrentPlaceStateMode>(
     "projected_today",
   );
+  const [scoreScope, setScoreScope] = useState<PollutionScoreScope>("global");
   const { references } = useActionPollutionScoreReferences();
   const [displayAsOf] = useState(() => new Date());
   const currentPlaceStateViews = useMemo<CurrentPlaceStateViews[]>(
@@ -239,23 +241,53 @@ export function ActionsMapCanvas({
           role="group"
           aria-label="Mode d’affichage des états"
         >
-          <div className="pointer-events-auto inline-flex rounded-full border border-slate-200/70 bg-white/90 p-1 shadow-lg backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-950/90">
-            {ACTIONS_MAP_DISPLAY_MODE_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={[
-                  "rounded-full px-2.5 py-1.5 text-[10px] font-bold transition sm:px-3",
-                  displayMode === option.value
-                    ? "bg-slate-900 text-white dark:bg-sky-400 dark:text-slate-950"
-                    : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
-                ].join(" ")}
-                aria-pressed={displayMode === option.value}
-                onClick={() => setDisplayMode(option.value)}
+          <div className="pointer-events-auto flex flex-col items-end gap-1.5">
+            <div
+              className="inline-flex rounded-full border border-slate-200/70 bg-white/90 p-1 shadow-lg backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-950/90"
+              role="group"
+              aria-label="Référence du score pollution"
+            >
+              {(["global", "department"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={[
+                    "rounded-full px-2.5 py-1.5 text-[10px] font-bold transition sm:px-3",
+                    scoreScope === option
+                      ? "bg-slate-900 text-white dark:bg-sky-400 dark:text-slate-950"
+                      : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
+                  ].join(" ")}
+                  aria-pressed={scoreScope === option}
+                  onClick={() => setScoreScope(option)}
+                >
+                  {option === "global" ? "Global" : "Département"}
+                </button>
+              ))}
+            </div>
+            {scoreScope === "global" ? (
+              <div
+                className="inline-flex rounded-full border border-slate-200/70 bg-white/90 p-1 shadow-lg backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-950/90"
+                role="group"
+                aria-label="Mode temporel du score global"
               >
-                {option.label}
-              </button>
-            ))}
+                {ACTIONS_MAP_DISPLAY_MODE_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={[
+                      "rounded-full px-2.5 py-1.5 text-[10px] font-bold transition sm:px-3",
+                      displayMode === option.value
+                        ? "bg-slate-900 text-white dark:bg-sky-400 dark:text-slate-950"
+                        : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
+                    ].join(" ")}
+                    aria-pressed={displayMode === option.value}
+                    onClick={() => setDisplayMode(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
       )}
@@ -331,6 +363,7 @@ export function ActionsMapCanvas({
             onSelectAction={onSelectAction}
             displayMode={displayMode}
             currentPlaceStateViews={currentPlaceStateViews}
+            scoreScope={scoreScope}
           />
           <ShapeLayers
             items={mainItems}
@@ -339,6 +372,7 @@ export function ActionsMapCanvas({
             onSelectAction={onSelectAction}
             displayMode={displayMode}
             currentPlaceStateViews={currentPlaceStateViews}
+            scoreScope={scoreScope}
           />
           {isMinimalPreview ? null : (
             <>
@@ -355,6 +389,7 @@ export function ActionsMapCanvas({
                 onSelectAction={onSelectAction}
                 displayMode={displayMode}
                 currentPlaceStateViews={currentPlaceStateViews}
+                scoreScope={scoreScope}
               />
             </>
           )}

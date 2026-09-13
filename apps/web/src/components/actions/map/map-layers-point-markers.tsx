@@ -39,6 +39,7 @@ export function SignalementMarkers({
   onSelectAction,
   displayMode = "projected_today",
   currentPlaceStateViews = [],
+  scoreScope = "global",
 }: ActionPointLayerProps) {
   const { references } = useActionPollutionScoreReferences();
   const now = new Date();
@@ -115,6 +116,7 @@ export function SignalementMarkers({
           now,
           displayMode,
           currentPlaceState,
+          scoreScope,
         );
         const geometry = resolveActionMapGeometryViewModel(item);
         const renderStyle = resolveGeometryRenderStyle(geometry);
@@ -157,6 +159,7 @@ export function SignalementMarkers({
                 coords={coords}
                 displayMode={displayMode}
                 currentPlaceState={currentPlaceState}
+                scoreScope={scoreScope}
               />
             </Popup>
           </CircleMarker>
@@ -173,6 +176,7 @@ export function TrashSpotterMarkers({
   onSelectAction,
   displayMode = "projected_today",
   currentPlaceStateViews = [],
+  scoreScope = "global",
 }: ActionPointLayerProps) {
   const spotItems = items.filter(isTrashSpotterItem);
   const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
@@ -250,6 +254,7 @@ export function TrashSpotterMarkers({
           now,
           displayMode,
           currentPlaceState,
+          scoreScope,
         );
 
         return (
@@ -285,6 +290,7 @@ export function TrashSpotterMarkers({
                 coords={coords}
                 displayMode={displayMode}
                 currentPlaceState={currentPlaceState}
+                scoreScope={scoreScope}
               />
             </Popup>
           </CircleMarker>
