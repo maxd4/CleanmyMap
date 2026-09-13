@@ -115,4 +115,21 @@ describe("ActionDeclarationFormFeedback", () => {
     expect(markup).toContain("/reports");
     expect(markup).toContain("/actions/new");
   });
+
+  it("rounds only the displayed duration to the nearest quarter hour", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionDeclarationFormFeedback, {
+        submissionState: "success",
+        createdId: "action-123",
+        errorMessage: null,
+        hasAttemptedSubmit: false,
+        validationIssues: [],
+        retentionLoop: null,
+        recordedAction: { ...recordedAction, durationMinutes: 68 },
+      }),
+    );
+
+    expect(markup).toContain(">75 min</p>");
+    expect(markup).not.toContain(">68 min</p>");
+  });
 });

@@ -5,6 +5,7 @@ import { motion, type Variants } from "framer-motion";
 import { Activity, CheckCircle2, MapPin, Route, Trash2, Users } from "lucide-react";
 import { toActionListItem, toActionMapItem, type ActionDataContract } from "@/lib/actions/data-contract";
 import { sumActionImpactKpis } from "@/lib/actions/impact-calculators";
+import { resolveEffectiveVolunteerUnits } from "@/lib/actions/volunteer-participation";
 
 const containerVariant = {
   hidden: { opacity: 0 },
@@ -35,7 +36,7 @@ export function ReportsKpiSummary({ contracts }: ReportsKpiSummaryProps) {
       (acc, item) =>
         acc +
         Number(item.duration_minutes || 0) *
-          (item.contract?.metadata.volunteerParticipation?.effectiveVolunteerUnits ??
+          (resolveEffectiveVolunteerUnits(item.contract?.metadata.volunteerParticipation) ??
             Math.max(1, Number(item.volunteers_count || 0))),
       0,
     );

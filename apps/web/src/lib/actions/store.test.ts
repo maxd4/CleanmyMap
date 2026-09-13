@@ -133,9 +133,9 @@ describe("volunteer participation persistence", () => {
         childrenCount: 2,
         adultCount: 4,
         retiredCount: 2,
-        participantsCount: 8,
-        effectiveVolunteerUnits: 6,
-        effectiveVolunteerUnitsFormulaVersion: "effective-volunteer-units-v1",
+        participantsCount: 999,
+        effectiveVolunteerUnits: 999,
+        effectiveVolunteerUnitsFormulaVersion: "forged-version",
       },
     });
     const notes = buildPersistedNotes(payload);
