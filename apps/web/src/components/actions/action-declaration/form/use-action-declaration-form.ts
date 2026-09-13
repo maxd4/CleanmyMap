@@ -37,6 +37,7 @@ import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/
 import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart-assist";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
 import { getTimeContractValidationMessage } from "@/lib/actions/time-contract";
+import { consumePlannerActionHandoff } from "@/lib/route/route-action-handoff";
 import type {
   FormState,
   PostActionRetentionLoop,
@@ -114,6 +115,7 @@ export function useActionDeclarationForm({
   const [isHydratingAction, setIsHydratingAction] = useState<boolean>(Boolean(initialActionId));
   const [hydrationError, setHydrationError] = useState<string | null>(null);
   const hasTrackedStartRef = useRef<boolean>(false);
+  const plannerHandoffConsumedRef = useRef<boolean>(false);
 
   const setManualDrawing = useCallback((
     drawing: ActionDrawing | null,
@@ -137,6 +139,29 @@ export function useActionDeclarationForm({
     setForm(createCleanForm());
     setHasAttemptedSubmit(false);
   }
+
+  useEffect(() => {
+    if (initialActionId || pendingDraft || plannerHandoffConsumedRef.current) {
+      return;
+    }
+    plannerHandoffConsumedRef.current = true;
+    const handoff = consumePlannerActionHandoff();
+    if (!handoff) return;
+    // The planner handoff is an external session-storage snapshot, so hydrate the
+    // form once after the client-only boundary has been established.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional external handoff hydration
+    setForm((current) => ({
+      ...current,
+      actualRoute: handoff.actualRoute,
+      routeCalibrationContext: handoff.routeCalibrationContext,
+      departureLocationLabel:
+        handoff.actualRoute.zones.departure.label ?? current.departureLocationLabel,
+      midRouteLocationLabel:
+        handoff.actualRoute.zones.midpoint.label ?? current.midRouteLocationLabel,
+      arrivalLocationLabel:
+        handoff.actualRoute.zones.arrival.label ?? current.arrivalLocationLabel,
+    }));
+  }, [initialActionId, pendingDraft]);
 
   useEffect(() => {
     if (!initialActionId) {
@@ -173,6 +198,7 @@ export function useActionDeclarationForm({
           locationLabel: action.locationLabel,
           departureLocationLabel:
             action.departureLocationLabel ?? preparedForm.departureLocationLabel,
+          midRouteLocationLabel: preparedForm.midRouteLocationLabel,
           arrivalLocationLabel:
             action.arrivalLocationLabel ?? preparedForm.arrivalLocationLabel,
           routeStyle: action.routeStyle ?? preparedForm.routeStyle,

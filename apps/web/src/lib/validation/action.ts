@@ -10,6 +10,8 @@ import { ACTION_GEOMETRY_SOURCES } from "@/lib/actions/types";
 import { isWasteCategorySlug } from "@/lib/waste";
 import { isRouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
+import { isActualRoute } from "@/lib/route/route-actual";
+import type { ActualRoute } from "@/lib/route/route-actual";
 import {
   getTimeContractValidationMessage,
   isValidClockTime,
@@ -187,9 +189,14 @@ const preparationDataSchema = z
     volunteerParticipation: volunteerParticipationSchema,
     groupJoinEnabled: z.boolean().optional(),
     expectedWasteCategories: z.array(wasteCategorySlugSchema).max(20).optional(),
+    midRouteLocationLabel: z.string().max(200).optional(),
     routeCalibrationContext: z.custom<RouteCalibrationContext>(
       isRouteCalibrationContext,
       "Contexte historique de calibration invalide.",
+    ).optional(),
+    actualRoute: z.custom<ActualRoute>(
+      isActualRoute,
+      "Parcours réel invalide.",
     ).optional(),
   })
   .strict();

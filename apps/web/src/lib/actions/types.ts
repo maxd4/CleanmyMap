@@ -27,6 +27,7 @@ import type {
 import type { ActionVolunteerParticipation } from "./volunteer-participation";
 import type { OrganizerType } from "./organizer-type";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
+import type { ActualRoute } from "@/lib/route/route-actual";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
@@ -76,8 +77,11 @@ export type ActionPreparationData = {
   volunteerParticipation?: ActionVolunteerParticipation | null;
   groupJoinEnabled?: boolean;
   expectedWasteCategories?: WasteCategorySlug[];
+  midRouteLocationLabel?: string;
   /** Immutable route evidence captured before this action was created. */
   routeCalibrationContext?: RouteCalibrationContext;
+  /** Mutable route actually executed, kept separate from the planner snapshot. */
+  actualRoute?: ActualRoute;
 };
 
 export type ActionPhotoAsset = {
@@ -210,6 +214,7 @@ export type ActionListItem = {
       notesPlain: string | null;
       groupJoinEnabled: boolean | null;
       actionPhase?: ActionPhase | null;
+      preparationData?: ActionPreparationData | null;
       wasteKg: number | null;
       cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
       volunteerParticipation?: ActionVolunteerParticipation | null;
@@ -384,6 +389,7 @@ export type ActionMapItem = Pick<
       notesPlain: string | null;
       groupJoinEnabled: boolean | null;
       actionPhase?: ActionPhase | null;
+      preparationData?: ActionPreparationData | null;
       wasteKg: number | null;
       cigaretteButts: number | null;
       postActionPollutionScore?: number | null;

@@ -224,6 +224,28 @@ peuvent pas être complétés rétroactivement. Une ancienne action sans ce
 contexte est exclue du dataset de calibration : son contexte n’est jamais
 reconstruit depuis l’état courant.
 
+### Parcours réel après création
+
+Le parcours proposé et le parcours réellement exécuté sont deux objets
+distincts. Lorsqu’une action est créée depuis le planner, le client initialise
+`preparationData.actualRoute` avec une copie opérationnelle de la ou des boucles
+recommandées. Cette copie peut ensuite être modifiée, remplacée ou supprimée
+boucle par boucle sans toucher à `routeCalibrationContext.plannerSnapshot`.
+
+`actualRoute` conserve les géométries des boucles réelles et les arrêts
+techniques utiles à la trace scientifique, mais ne demande ni ne stocke de durée
+par stop. Le rendu public de la carte ne dessine que les lignes des boucles et
+les trois zones éditables — départ, mi-parcours et arrivée — ; les arrêts
+techniques du planner ne sont pas affichés comme étapes publiques. Lorsque la
+source de groupes n’est pas meilleure, le nombre réel de groupes peut être
+déduit du nombre de boucles restantes. Aucune répartition des bénévoles par
+groupe n’est reconstruite à partir de ce seul nombre.
+
+La validation du contrat réel reste bornée par `actual-route-v1`. Le flux
+planner → création d’action utilise un handoff de session temporaire ; la
+persistance durable reste le champ JSONB existant `preparation_data`, sans
+nouvelle table ni nouvel endpoint.
+
 Le flux de données est donc :
 
 ```text

@@ -27,6 +27,7 @@ type ActionDeclarationLocationSectionProps = {
   gpsMessage: string | null;
   effectiveManualDrawingEnabled: boolean;
   onDepartureLocationChange: (value: string) => void;
+  onMidRouteLocationChange: (value: string) => void;
   onArrivalLocationChange: (value: string) => void;
   onManualDrawingChange: (drawing: ActionDrawing | null) => void;
   onManualDrawingEnabledChange: (enabled: boolean) => void;
@@ -47,6 +48,7 @@ export function ActionDeclarationLocationSection({
   gpsMessage,
   effectiveManualDrawingEnabled,
   onDepartureLocationChange,
+  onMidRouteLocationChange,
   onArrivalLocationChange,
   onManualDrawingChange,
   onManualDrawingEnabledChange,
@@ -86,6 +88,15 @@ export function ActionDeclarationLocationSection({
             value={form.departureLocationLabel}
             onChange={(event) => onDepartureLocationChange(event.target.value)}
             placeholder="Ex: Place de la République"
+          />
+        </CmmField>
+
+        <CmmField label="Mi-parcours">
+          <CmmInput
+            type="text"
+            value={form.midRouteLocationLabel}
+            onChange={(event) => onMidRouteLocationChange(event.target.value)}
+            placeholder="Optionnel — zone intermédiaire"
           />
         </CmmField>
 

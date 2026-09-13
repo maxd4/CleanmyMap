@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@clerk/nextjs", () => ({ useUser: mocks.useUser }));
 vi.mock("next/dynamic", () => ({ default: () => () => null }));
 vi.mock("next/link", () => ({ default: ({ children }: { children: React.ReactNode }) => <a>{children}</a> }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/components/ui/cmm-skeleton", () => ({ CmmSkeleton: () => null }));
 vi.mock("@/components/sections/rubriques/shared", () => ({ SectionShell: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
 vi.mock("lucide-react", () => ({ FileDown: "span", Info: "span", Navigation: "span", Route: "span", Sparkles: "span", Zap: "span" }));

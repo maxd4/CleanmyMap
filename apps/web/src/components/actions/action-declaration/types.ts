@@ -5,6 +5,8 @@ import type {
 } from"@/lib/actions/types";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
+import type { ActualRoute } from "@/lib/route/route-actual";
+import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 
 export type FormState = {
  actorName: string;
@@ -23,6 +25,7 @@ export type FormState = {
  departureTime: string;
  locationLabel: string;
  departureLocationLabel: string;
+ midRouteLocationLabel?: string;
  arrivalLocationLabel: string;
  routeStyle:"direct" |"souple";
  routeAdjustmentMessage: string;
@@ -70,6 +73,8 @@ export type FormState = {
  visionBagsCount: string;
  visionFillLevel:"" |"25" |"50" |"75" |"100";
  visionDensity:"" |"sec" |"humide_dense" |"mouille";
+ actualRoute?: ActualRoute | null;
+ routeCalibrationContext?: RouteCalibrationContext | null;
 };
 
 export type SubmissionState ="idle" |"pending" |"success" |"error";
