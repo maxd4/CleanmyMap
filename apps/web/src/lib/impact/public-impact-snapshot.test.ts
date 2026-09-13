@@ -126,6 +126,9 @@ describe("public monthly impact snapshot", () => {
       "public.load_public_landing_action_summary_incremental",
     );
     expect(payload.provenance.sourceMode).toBe("incremental");
+    expect(payload.provenance.calculationDomain).toContain(
+      "apps/web/supabase/migrations/20260913000002_public_impact_kpi_parity.sql",
+    );
   });
 
   it("does not recalculate or persist a second snapshot in the same month", async () => {

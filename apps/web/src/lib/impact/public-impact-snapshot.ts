@@ -117,6 +117,7 @@ export function buildPublicImpactSnapshotPayload(params: {
         "apps/web/src/lib/impact/public-impact-kpis.ts",
         "apps/web/src/lib/accueil/action-participant-aggregation.ts",
         "apps/web/supabase/migrations/20260908000001_incremental_public_impact_state.sql",
+        "apps/web/supabase/migrations/20260913000002_public_impact_kpi_parity.sql",
       ],
     },
   };
