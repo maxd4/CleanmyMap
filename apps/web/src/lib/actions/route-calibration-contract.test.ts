@@ -9,7 +9,10 @@ import {
   buildRoutePlannerSnapshot,
   preserveHistoricalRouteCalibrationContext,
 } from "@/lib/route/route-calibration";
-import { createActualRouteFromRecommendation } from "@/lib/route/route-actual";
+import {
+  createActualRouteFromRecommendation,
+  replaceActualRouteLoop,
+} from "@/lib/route/route-actual";
 import { buildActionInsertPayload, buildCreateActionGeometry } from "./store";
 
 const routeContext = buildRouteCalibrationContext({
@@ -162,7 +165,10 @@ describe("route calibration action handoff", () => {
     const current = parsed.data.preparationData;
     const updatedActualRoute = current?.actualRoute
       ? {
-          ...current.actualRoute,
+          ...replaceActualRouteLoop(current.actualRoute, "planner-group-1", {
+            ...current.actualRoute.routes[0]!.geometry,
+            coordinates: [[48.86, 2.35], [48.861, 2.351], [48.86, 2.35]],
+          }),
           zones: {
             ...current.actualRoute.zones,
             midpoint: { label: "Mi-parcours réel", coordinate: null },
