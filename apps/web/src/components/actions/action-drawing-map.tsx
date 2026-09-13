@@ -9,15 +9,12 @@ import "leaflet-draw/dist/leaflet.draw.css";
 
 import type { ActionDrawing, ActionGeometrySource } from"@/lib/actions/types";
 
-import {
- resolveDynamicColor,
-} from"./map-marker-categories";
 import { snapPolylineToStreetNetwork } from"@/lib/geo/osrm-routing";
-import { computePollutionScore } from"@/lib/actions/pollution/pollution-score";
 import {
  normalizeActionDrawing,
 } from"./map/actions-map-geometry.utils";
 import { resolveDrawnGeometry } from "./action-drawing-map.geometry";
+import { ACTION_DRAWING_EDIT_COLOR } from "./action-drawing-map.presentation";
 import {
   TERRITORY_CENTER,
   buildTerritoryLeafletBounds,
@@ -27,8 +24,6 @@ const FRANCE_TERRITORY_LAT_LNG_BOUNDS = L.latLngBounds(buildTerritoryLeafletBoun
 const MOBILE_MEDIA_QUERY = "(max-width: 768px)";
 
 type DrawingLayer = L.Polyline | L.Polygon;
-
-const COLOR_BLUE ="#0284c7"; // Lieu Propre
 
 function subscribeToMediaQuery(
  query: string,
@@ -81,7 +76,6 @@ function asCoordinates(latLngs: L.LatLng[]): [number, number][] {
 function DrawingController({
  value,
  onChange,
- drawColor = COLOR_BLUE,
  readOnly = false,
 }: {
  value: ActionDrawing | null;
@@ -89,7 +83,6 @@ function DrawingController({
   drawing: ActionDrawing | null,
   geometrySource?: ActionGeometrySource | null,
  ) => void;
- drawColor?: string;
  readOnly?: boolean;
 }) {
  const map = useMap();
@@ -115,8 +108,8 @@ function DrawingController({
  circlemarker: false,
  polyline: {
  metric: true,
- shapeOptions: { 
- color: drawColor, 
+ shapeOptions: {
+ color: ACTION_DRAWING_EDIT_COLOR,
  weight: 4,
  opacity: 0.8
  },
@@ -127,8 +120,8 @@ function DrawingController({
  polygon: {
  allowIntersection: false,
  showArea: true,
- shapeOptions: { 
- color: drawColor, 
+ shapeOptions: {
+ color: ACTION_DRAWING_EDIT_COLOR,
  weight: 3, 
  fillOpacity: 0.25,
  opacity: 0.8
@@ -262,7 +255,7 @@ function DrawingController({
  map.removeLayer(layerGroup);
  layerGroupRef.current = null;
  };
- }, [map, onChange, drawColor, readOnly, isMobile]);
+ }, [map, onChange, readOnly, isMobile]);
 
  useEffect(() => {
  const layerGroup = layerGroupRef.current;
@@ -279,17 +272,17 @@ function DrawingController({
  const layer =
  normalizedValue.kind ==="polygon"
  ? L.polygon(latLngs, { 
- color: drawColor, 
+ color: ACTION_DRAWING_EDIT_COLOR,
  weight: 3, 
  fillOpacity: 0.25 
  })
  : L.polyline(latLngs, { 
- color: drawColor, 
+ color: ACTION_DRAWING_EDIT_COLOR,
  weight: 4,
  className:"leaflet-ant-path"
  });
  layerGroup.addLayer(layer);
- }, [value, drawColor]);
+ }, [value]);
 
  return null;
 }
@@ -338,9 +331,6 @@ type ActionDrawingMapProps = {
   drawing: ActionDrawing | null,
   geometrySource?: ActionGeometrySource | null,
  ) => void;
- wasteKg?: number;
- butts?: number;
- isCleanPlace?: boolean;
  readOnly?: boolean;
 };
 
@@ -349,28 +339,12 @@ export function ActionDrawingMap({
  onChange,
  drawing,
  onDrawingChange,
- wasteKg = 0,
- butts = 0,
- isCleanPlace = false,
  readOnly = false,
 }: ActionDrawingMapProps) {
  const mapStyle = useMemo(() => ({ height:"400px", width:"100%" }), []);
  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
  const currentValue = normalizeActionDrawing(value ?? drawing ?? null);
  const handleChange = onChange ?? onDrawingChange ?? (() => undefined);
-
- const drawColor = useMemo(() => {
- if (isCleanPlace) {
- return COLOR_BLUE;
- }
-
- const score = computePollutionScore({
- wasteKg,
- cigaretteButts: butts,
- });
-
- return resolveDynamicColor(score);
- }, [wasteKg, butts, isCleanPlace]);
 
  const effectiveReadOnly = readOnly || isMobile;
 
@@ -402,7 +376,6 @@ export function ActionDrawingMap({
  <DrawingController
  value={currentValue}
  onChange={handleChange}
- drawColor={drawColor}
  readOnly={effectiveReadOnly}
  />
  </MapContainer>

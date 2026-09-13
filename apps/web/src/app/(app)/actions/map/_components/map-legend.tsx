@@ -18,7 +18,7 @@ type LegendItem = {
 };
 
 const pollutionLevelLabels = {
-  blue: "Faible",
+  blue: "Premier seuil",
   orange: "Moyenne",
   red: "Forte",
   violet: "Critique",

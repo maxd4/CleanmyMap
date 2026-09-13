@@ -31,7 +31,9 @@ Il sert de lecture opérationnelle de la pollution signalée, distincte de la m�
 
 ### Lieux propres
 
-Le vert est réservé aux lieux explicitement déclarés propres (`clean_place`) ou à un état propre réellement représenté comme tel par le contrat.
+Le vert est réservé aux zones explicitement déclarées propres (`clean_place`).
+Il ne signifie ni score nul, ni score très faible, ni absence de donnée, ni
+géométrie en cours d'édition.
 
 Le vert ne doit pas être utilisé comme niveau de « faible pollution » d'une action.
 
@@ -279,8 +281,8 @@ La progression visuelle est :
 
 avec :
 
-- bleu : niveau faible ;
-- orange : niveau moyen ;
+- bleu : premier seuil de pollution ;
+- orange : seuil suivant de pollution ;
 - rouge : niveau fort ;
 - violet : niveau critique ;
 - noir : niveau extrême ;
@@ -295,6 +297,11 @@ contrasté sombre, ce même niveau est affiché en blanc pour rester lisible ; l
 autres parcours et contours de zones reçoivent un casing blanc très fin. Cette
 adaptation de contraste ne crée ni catégorie ni score supplémentaire : la
 couleur reste pilotée exclusivement par la pollution.
+
+Pendant la création ou l'édition dans `ActionDrawingMap`, les parcours et les
+zones sont affichés en gris foncé neutre. Cette prévisualisation représente la
+géométrie en cours d'édition ; elle ne prédit ni le score final, ni la palette
+scientifique, ni l'état `clean_place`.
 
 ## 10. Grammaire géométrique
 

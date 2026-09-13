@@ -8,7 +8,7 @@ import type {
 } from "./actions-map-filters.utils";
 
 const CATEGORY_LABELS: Array<{ value: MarkerCategory; label: string }> = [
-  { value: "blue", label: "Faible" },
+  { value: "blue", label: "Premier seuil" },
   { value: "orange", label: "Moyen" },
   { value: "red", label: "Fort" },
   { value: "violet", label: "Critique" },

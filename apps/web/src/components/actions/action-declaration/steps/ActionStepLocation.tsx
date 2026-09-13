@@ -496,7 +496,6 @@ export function ActionStepLocation({
                 drawing={displayedDrawing}
                 onDrawingChange={setManualDrawing}
                 readOnly={false}
-                isCleanPlace={isCleanPlaceMode}
               />
 
               {/* Overlay si aucun repère */}
