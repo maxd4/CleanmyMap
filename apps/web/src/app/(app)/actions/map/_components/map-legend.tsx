@@ -99,40 +99,40 @@ function LegendChip({ item }: { item: LegendItem }) {
 
 export function MapLegend() {
   return (
-    <section className="rounded-[2.5rem] border border-sky-200/80 bg-sky-50/85 p-6 shadow-[0_16px_40px_-30px_rgba(14,165,233,0.24)]">
-      <div className="space-y-4">
-        <div className="space-y-1">
-          <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
+    <section className="rounded-3xl border border-sky-200/80 bg-sky-50/85 p-4 shadow-[0_16px_40px_-30px_rgba(14,165,233,0.24)] sm:p-5">
+      <div className="space-y-3">
+        <div className="space-y-1.5">
+          <p className="flex items-center gap-2.5 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
             <Info size={14} className="text-sky-700" />
             Légende
           </p>
-          <p className="text-sm font-medium leading-relaxed text-slate-600">
-            Les couleurs résument la pollution projetée des actions ; les résultats terrain restent distincts. Les infrastructures indiquent un besoin de collecte ou de traitement des mégots.
+          <p className="text-sm font-medium leading-snug text-slate-600">
+            Les couleurs indiquent la pollution projetée. Les résultats terrain restent distincts.
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700">
-            <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-r from-sky-500 via-orange-500 to-slate-950" />
-            Actions : bleu → noir, pollution projetée
-          </span>
-          <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-            Vert : lieu propre
-          </span>
-          <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700">
-            <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
-            Trash Spotter : signalement neutre
-          </span>
-          <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700">
-            <span className="h-2.5 w-2.5 rounded-full bg-violet-600" />
-            Infra : bac, cendrier, combiné
-          </span>
+        <div className="grid grid-cols-1 gap-x-4 gap-y-2.5 sm:grid-cols-2" aria-label="Catégories de la légende">
+          <div className="flex min-w-0 items-center gap-2.5 py-0.5 text-xs font-semibold text-slate-800 sm:text-sm">
+            <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-gradient-to-r from-sky-500 via-orange-500 to-slate-950" />
+            <span className="min-w-0">Bleu → noir <span className="font-medium text-slate-600">Pollution projetée</span></span>
+          </div>
+          <div className="flex min-w-0 items-center gap-2.5 py-0.5 text-xs font-semibold text-slate-800 sm:text-sm">
+            <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
+            <span className="min-w-0">Lieu propre</span>
+          </div>
+          <div className="flex min-w-0 items-center gap-2.5 py-0.5 text-xs font-semibold text-slate-800 sm:text-sm">
+            <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full bg-slate-400" />
+            <span className="min-w-0">Signalement <span className="font-medium text-slate-600">Trash Spotter</span></span>
+          </div>
+          <div className="flex min-w-0 items-center gap-2.5 py-0.5 text-xs font-semibold text-slate-800 sm:text-sm">
+            <span aria-hidden="true" className="shrink-0 text-base leading-none text-violet-600">◇</span>
+            <span className="min-w-0">Infrastructure</span>
+          </div>
         </div>
 
         <CmmDisclosure
           tone="sky"
-          summary="Détails des couleurs, de l'infrastructure et des seuils"
+          summary="Détails de la légende"
         >
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
             <div className="space-y-3">

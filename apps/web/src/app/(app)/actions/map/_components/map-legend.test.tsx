@@ -7,10 +7,12 @@ describe("MapLegend", () => {
   it("keeps the color and infrastructure summary visible", () => {
     const markup = renderToStaticMarkup(React.createElement(MapLegend));
 
-    expect(markup).toContain("Actions : bleu → noir, pollution projetée");
-    expect(markup).toContain("Vert : lieu propre");
-    expect(markup).toContain("Trash Spotter : signalement neutre");
-    expect(markup).toContain("Infra : bac, cendrier, combiné");
+    expect(markup).toContain("Bleu → noir");
+    expect(markup).toContain("Pollution projetée");
+    expect(markup).toContain("Lieu propre");
+    expect(markup).toContain("Trash Spotter");
+    expect(markup).toContain("Infrastructure");
+    expect(markup).toContain("clean_place");
   });
 
   it("keeps detailed thresholds behind an accessible disclosure", () => {
@@ -19,7 +21,7 @@ describe("MapLegend", () => {
     expect(markup).toContain("<details");
     expect(markup).toContain('data-disclosure-tone="sky"');
     expect(markup).toContain('class="cmm-disclosure__summary"');
-    expect(markup).toContain("Détails des couleurs, de l&#x27;infrastructure et des seuils");
+    expect(markup).toContain("Détails de la légende");
     expect(markup).toContain("projection &lt; 30");
     expect(markup).toContain("≥ 75");
   });
