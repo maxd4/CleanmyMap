@@ -30,7 +30,7 @@ services ne sont pas présentés comme l'hébergeur du site.
 | --- | --- | --- |
 | [Conditions générales d'utilisation](conditions-generales-utilisation.md) | Accès, usages, contenus, actions et modération | [CGU](https://cleanmymap.fr/conditions-generales-utilisation) |
 | [Politique de confidentialité](politique-confidentialite.md) | Données personnelles, finalités, bases légales, conservation et droits | [Confidentialité](https://cleanmymap.fr/politique-confidentialite) |
-| [Politique des cookies](politique-cookies.md) | Consentement, cookies, analytics et préférences | [Cookies](https://cleanmymap.fr/politique-cookies) |
+| [Politique des cookies](politique-cookies.md) | Consentement, cookies, analytics et préférences | [Politique cookies](https://cleanmymap.fr/politique-cookies) |
 | [Charte de sécurité et de comportement](charte-benevole.md) | Bonnes pratiques de sécurité et participation terrain | — |
 | [Notification et modération](dsa-signalement-moderation.md) | Signalement de contenu et décision administrative | [Signaler un contenu](https://cleanmymap.fr/signaler-contenu-illicite) |
 

@@ -89,7 +89,7 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
               Confidentialité
             </Link>
             <Link href="/politique-cookies" className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50">
-              Cookies
+              Politique cookies
             </Link>
             <button
               type="button"
@@ -181,7 +181,7 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
               href="/politique-cookies"
               className="whitespace-nowrap transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
-              Cookies
+              Politique cookies
             </Link>
             <button
               type="button"

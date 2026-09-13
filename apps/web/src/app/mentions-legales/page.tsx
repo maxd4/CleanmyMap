@@ -85,7 +85,7 @@ export default function MentionsLegalesPage() {
             className="rounded-3xl border border-slate-200 bg-slate-50 p-5 transition hover:border-emerald-300 hover:bg-emerald-50/70"
           >
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">
-              Cookies
+              Politique cookies
             </p>
             <h2 className="mt-2 text-xl font-bold text-slate-950">
               Politique cookies

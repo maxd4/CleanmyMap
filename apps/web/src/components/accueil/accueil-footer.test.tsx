@@ -13,6 +13,7 @@ describe("HomeFooter cookie preferences", () => {
     (variant) => {
       const html = renderToStaticMarkup(<HomeFooter variant={variant} />);
 
+      expect(html).toContain("Politique cookies");
       expect(html).toContain("Gérer mes cookies");
       expect(html).toContain('type="button"');
       expect(html).toContain("logo-grand-sombre.png");
