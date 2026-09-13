@@ -38,6 +38,9 @@ export type ActionAggregationWarning = {
 };
 
 export type PublicLandingActionAggregation = {
+  actionsCount?: number;
+  wasteKnownActions?: number;
+  wasteCoverageRate?: number;
   participantsTotal: number;
   totalDurationMinutes: number;
   totalDurationHours: number;
@@ -185,6 +188,9 @@ export function aggregatePublicActionMetrics(
   );
 
   return {
+    actionsCount: eligibleActions.length,
+    wasteKnownActions: publicImpact.impactTerrain.wasteKnownActions,
+    wasteCoverageRate: publicImpact.impactTerrain.wasteCoverageRate,
     participantsTotal,
     totalDurationMinutes,
     totalDurationHours: totalDurationMinutes / 60,
@@ -201,12 +207,14 @@ export function aggregatePublicActionMetrics(
 }
 
 export type PublicLandingActionAggregationRow = {
+  visible_actions?: number | string | null;
   participants_total?: number | string | null;
   volunteers?: number | string | null;
   total_duration_minutes?: number | string | null;
   action_distribution?: unknown;
   classification_warnings?: unknown;
   waste_kg?: number | string | null;
+  waste_source_count?: number | string | null;
   cigarette_butts?: number | string | null;
   butts_by_condition?: unknown;
 };
@@ -256,12 +264,17 @@ export function buildPublicLandingActionMetricsFromAggregate(
 
   const publicImpact = buildPublicImpactCalculationFromAggregate({
     wasteKg: row.waste_kg,
+    wasteKnownActions: row.waste_source_count,
+    wasteActionCount: row.visible_actions,
     cigaretteButts: row.cigarette_butts,
     buttsByCondition: row.butts_by_condition,
     durationMinutes: totalDurationMinutes,
   });
 
   return {
+    actionsCount: toFiniteNonNegativeNumber(row.visible_actions),
+    wasteKnownActions: publicImpact.impactTerrain.wasteKnownActions,
+    wasteCoverageRate: publicImpact.impactTerrain.wasteCoverageRate,
     participantsTotal,
     totalDurationMinutes,
     totalDurationHours: totalDurationMinutes / 60,

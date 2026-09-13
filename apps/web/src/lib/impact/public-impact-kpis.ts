@@ -219,12 +219,16 @@ export function buildPublicImpactCalculationFromActions(
 
 export function buildPublicImpactCalculationFromAggregate(params: {
   wasteKg?: unknown;
+  wasteKnownActions?: unknown;
+  wasteActionCount?: unknown;
   cigaretteButts?: unknown;
   buttsByCondition?: unknown;
   durationMinutes: number;
 }): PublicImpactCalculation {
   const impactTerrain = buildImpactTerrain2026PublicResultsFromAggregate({
     wasteKg: params.wasteKg,
+    wasteKnownActions: params.wasteKnownActions,
+    wasteActionCount: params.wasteActionCount,
     cigaretteButts: params.cigaretteButts,
     buttsByCondition: params.buttsByCondition,
   });

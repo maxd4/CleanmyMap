@@ -23,6 +23,7 @@ export function computePersonalImpactMetrics(
   const factors = IMPACT_PROXY_CONFIG.factors;
   let totalButts = 0;
   let totalWasteKg = 0;
+  let wasteKnownActions = 0;
   let totalVolunteerMinutes = 0;
 
   for (const row of rows) {
@@ -31,13 +32,16 @@ export function computePersonalImpactMetrics(
     }
     const impact = computeActionImpactKpis({
       metadata: {
-        wasteKg: toFloat(row.waste_kg, 0),
+        wasteKg: row.waste_kg === null ? null : toFloat(row.waste_kg, 0),
         cigaretteButts: toInt(row.cigarette_butts, 0),
         volunteersCount: toInt(row.volunteers_count, 0),
         wasteBreakdown: row.waste_breakdown,
       },
     });
     totalButts += impact.butts;
+    if (impact.wasteKnown) {
+      wasteKnownActions += 1;
+    }
     totalWasteKg += impact.wasteKg;
     totalVolunteerMinutes +=
       Math.max(0, toInt(row.duration_minutes, 0)) *
@@ -54,6 +58,13 @@ export function computePersonalImpactMetrics(
         totalVolunteerMinutes * factors.surfaceM2PerVolunteerMinute,
     ),
     wasteKg: round1(totalWasteKg),
+    wasteKnownActions,
+    wasteCoverageRate:
+      rows.filter((row) => row.status === "approved").length > 0
+        ? (wasteKnownActions /
+            rows.filter((row) => row.status === "approved").length) *
+          100
+        : 0,
     cigaretteButts: totalButts,
   };
 }

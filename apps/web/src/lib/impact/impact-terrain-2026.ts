@@ -226,12 +226,12 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
         label: text("Déchets récoltés", "Collected waste"),
         semantics: {
           terrainData: text(
-            "Poids déclaré, poids de mégots détaillé, ou nombre de mégots utilisé comme signal de secours.",
-            "Declared weight, detailed cigarette-butt weight, or cigarette-butt count used as a fallback signal.",
+            "Poids déclaré lorsque la mesure est renseignée ; une absence de poids reste inconnue.",
+            "Declared weight when the measurement is provided; an absent weight remains unknown.",
           ),
           aggregation: text(
-            "Pour chaque action, on retient la masse la plus élevée disponible, puis on additionne les actions éligibles.",
-            "For each action, the highest available mass is retained, then eligible actions are summed.",
+            "On additionne uniquement les poids déclarés connus ; les mégots restent un KPI distinct.",
+            "Only known declared weights are summed; cigarette butts remain a separate KPI.",
           ),
           result: text(
             "Résultat terrain agrégé en kilogrammes ; il ne prétend pas mesurer les déchets non déclarés.",
@@ -243,17 +243,17 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
           ),
         },
         formula: text(
-          `masse(cigaretteButts, état) = cigaretteButts / (${BUTTS_PER_KG_REFERENCE} × facteur_état) ; wasteKg_action = max(0, wasteKg_declare, wasteBreakdown.megotsKg, masse(cigaretteButts, megotsCondition)) ; total = somme(wasteKg_action)`,
-          `mass(cigaretteButts, condition) = cigaretteButts / (${BUTTS_PER_KG_REFERENCE} × condition_factor); wasteKg_action = max(0, declared_wasteKg, wasteBreakdown.megotsKg, mass(cigaretteButts, megotsCondition)); total = sum(wasteKg_action)`,
+          "wasteKg_action = wasteKg_declare lorsque renseigné, sinon NULL ; total = somme des wasteKg connus ; couverture = actions avec wasteKg connu / actions éligibles",
+          "wasteKg_action = declared wasteKg when provided, otherwise NULL; total = sum of known wasteKg values; coverage = actions with known wasteKg / eligible actions",
         ),
         assumptions: [
           text(
-            `La conversion de secours utilise ${BUTTS_PER_KG_REFERENCE} mégots par kilogramme, ajustée par l’état lorsqu’il est qualifié.`,
-            `The fallback conversion uses ${BUTTS_PER_KG_REFERENCE} cigarette butts per kilogram, adjusted by the condition when qualified.`,
+            "NULL signifie mesure inconnue ou non réalisée ; 0 signifie mesure explicitement nulle.",
+            "NULL means unknown or unperformed measurement; 0 means an explicitly measured zero.",
           ),
           text(
-            "Les valeurs négatives ou non exploitables sont ramenées à zéro.",
-            "Negative or unusable values are clamped to zero.",
+            "Une masse de mégots historique ou estimée ne remplit pas wasteKg.",
+            "Historical or estimated cigarette-butt mass does not fill wasteKg.",
           ),
         ],
         references: [
@@ -262,8 +262,8 @@ export function buildImpactTerrain2026Methodology(): ImpactTerrain2026Methodolog
             "CleanMyMap action contract and runtime calculator.",
           ),
           text(
-            "Référence de conversion mégots → masse du domaine Impact terrain 2026.",
-            "Cigarette-butt-to-mass conversion reference from the Impact terrain 2026 domain.",
+            "Les mégots sont comptés séparément et ne sont pas convertis en wasteKg.",
+            "Cigarette butts are counted separately and are not converted into wasteKg.",
           ),
         ],
         limits: [

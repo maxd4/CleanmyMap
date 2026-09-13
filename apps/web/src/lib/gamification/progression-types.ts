@@ -34,7 +34,7 @@ export type ActionRow = {
   location_label: string;
   latitude: number | null;
   longitude: number | null;
-  waste_kg: number;
+  waste_kg: number | null;
   waste_breakdown?: import("@/lib/actions/types").ActionWasteBreakdown | null;
   cigarette_butts: number;
   volunteers_count: number;
@@ -218,6 +218,8 @@ export type PersonalImpactMetrics = {
   co2AvoidedKg: number;
   surfaceCleanedM2: number;
   wasteKg: number;
+  wasteKnownActions?: number;
+  wasteCoverageRate?: number;
   cigaretteButts: number;
 };
 

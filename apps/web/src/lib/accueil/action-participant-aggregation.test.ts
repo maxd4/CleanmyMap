@@ -109,6 +109,9 @@ describe("action participant aggregation", () => {
         classification_warnings: [{ code: "missing_organizer_type", count: 1 }],
       }),
     ).toEqual({
+      actionsCount: 0,
+      wasteKnownActions: 0,
+      wasteCoverageRate: 0,
       participantsTotal: 12,
       totalDurationMinutes: 90,
       totalDurationHours: 1.5,
@@ -127,6 +130,8 @@ describe("action participant aggregation", () => {
       },
       impactTerrain: {
         wasteKg: 0,
+        wasteKnownActions: 0,
+        wasteCoverageRate: 0,
         wasteBagsEquivalent: 0,
         wasteMechanicalBicyclesEquivalent: 0,
         buttsTotal: 0,
