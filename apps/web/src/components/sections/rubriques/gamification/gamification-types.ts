@@ -8,7 +8,7 @@ export type PersonalHistoryItem = {
   actionDate: string;
   locationLabel: string;
   status: "pending" | "approved" | "rejected";
-  wasteKg: number;
+  wasteKg: number | null;
   cigaretteButts: number;
   volunteersCount: number;
   durationMinutes: number;
@@ -45,6 +45,8 @@ export type MeResponse = {
       waterSavedLiters: number;
       co2AvoidedKg: number;
       surfaceCleanedM2: number;
+      wasteKnownActions?: number;
+      wasteCoverageRate?: number;
     };
     impactMethodology: {
       proxyVersion: string;
@@ -89,6 +91,8 @@ export type MeResponse = {
     yearToDateImpact: {
       wasteKg: number;
       validatedActions: number;
+      wasteKnownActions: number;
+      wasteCoverageRate: number;
     };
   };
 };
@@ -106,6 +110,7 @@ export type IndividualItem = {
   qualityAverage: number;
   validatedActions: number;
   wasteKg: number;
+  wasteCoverageRate: number;
   badges: string[];
 };
 
@@ -119,6 +124,7 @@ export type CollectiveItem = {
   qualityAverage: number;
   validatedActions: number;
   wasteKg: number;
+  wasteCoverageRate: number;
 };
 
 export type LeaderboardResponse = {

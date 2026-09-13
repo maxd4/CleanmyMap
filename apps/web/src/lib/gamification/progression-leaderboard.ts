@@ -42,7 +42,7 @@ import type {
   ContributorRecognitionSummary,
   ContributorRecognitionSnapshot,
 } from "./progression-types";
-import { actionRowToDrawing, toFloat, toInt } from "./progression-utils";
+import { actionRowToDrawing, toFloat, toInt, toNullableFloat } from "./progression-utils";
 
 type UserProgressionResponse = {
   userId: string;
@@ -72,6 +72,8 @@ type UserProgressionResponse = {
   yearToDateImpact: {
     wasteKg: number;
     validatedActions: number;
+    wasteKnownActions: number;
+    wasteCoverageRate: number;
   };
 };
 
@@ -85,7 +87,10 @@ function buildTimelineItems(rows: ActionRow[]): PersonalTimelineItem[] {
       actionDate: row.action_date || row.created_at.slice(0, 10),
       locationLabel: row.location_label,
       status: row.status,
-      wasteKg: Math.round(toFloat(row.waste_kg, 0) * 10) / 10,
+      wasteKg:
+        toNullableFloat(row.waste_kg) === null
+          ? null
+          : Math.round(toNullableFloat(row.waste_kg)! * 10) / 10,
       cigaretteButts: toInt(row.cigarette_butts, 0),
       volunteersCount: toInt(row.volunteers_count, 1),
       durationMinutes: toInt(row.duration_minutes, 0),
@@ -108,6 +113,7 @@ function buildCollectiveLeaderboardItems(
       qualitySum: number;
       validatedActions: number;
       wasteKg: number;
+      wasteKnownActions: number;
       members: Set<string>;
     }
   >();
@@ -119,12 +125,16 @@ function buildCollectiveLeaderboardItems(
       qualitySum: 0,
       validatedActions: 0,
       wasteKg: 0,
+      wasteKnownActions: 0,
       members: new Set<string>(),
     };
 
     current.qualitySum += quality;
     current.validatedActions += 1;
-    current.wasteKg += toFloat(row.waste_kg, 0);
+    if (row.waste_kg !== null && Number.isFinite(Number(row.waste_kg)) && Number(row.waste_kg) >= 0) {
+      current.wasteKg += toFloat(row.waste_kg, 0);
+      current.wasteKnownActions += 1;
+    }
     current.members.add(row.created_by_clerk_id);
     grouped.set(associationName, current);
   }
@@ -137,7 +147,9 @@ function buildCollectiveLeaderboardItems(
           : 0;
       const score =
         qualityAverage * 0.6 +
-        Math.min(500, value.wasteKg) * 0.25 +
+        (value.wasteKnownActions === value.validatedActions
+          ? Math.min(500, value.wasteKg) * 0.25
+          : 0) +
         value.validatedActions * 0.15;
       const structureXp = Math.round(score * 10);
       const structureLevel = computePotentialLevel(structureXp);
@@ -152,6 +164,10 @@ function buildCollectiveLeaderboardItems(
         qualityAverage,
         validatedActions: value.validatedActions,
         wasteKg: Math.round(value.wasteKg * 10) / 10,
+        wasteCoverageRate:
+          value.validatedActions > 0
+            ? (value.wasteKnownActions / value.validatedActions) * 100
+            : 0,
       } as CollectiveLeaderboardItem;
     })
     .sort(
@@ -208,12 +224,15 @@ async function buildIndividualLeaderboard(
         qualityAverage: 0,
         validatedActions: 0,
         wasteKg: 0,
+        wasteCoverageRate: 0,
         totalButts: 0,
       };
 
       const score =
         impact.qualityAverage * 3 +
-        Math.min(300, impact.wasteKg) * 0.2 +
+        (impact.wasteCoverageRate === 100
+          ? Math.min(300, impact.wasteKg) * 0.2
+          : 0) +
         impact.validatedActions * 0.5;
 
       return {
@@ -229,6 +248,7 @@ async function buildIndividualLeaderboard(
         qualityAverage: impact.qualityAverage,
         validatedActions: impact.validatedActions,
         wasteKg: impact.wasteKg,
+        wasteCoverageRate: impact.wasteCoverageRate,
         badges: deriveBadges({
           currentLevel: toInt(row.current_level, 1),
           qualityAverage: impact.qualityAverage,
@@ -242,6 +262,7 @@ async function buildIndividualLeaderboard(
           collectiveEvents: 0,
           totalKg: impact.wasteKg,
           totalButts: impact.totalButts,
+          wasteCoverageRate: impact.wasteCoverageRate,
         }),
       } as IndividualLeaderboardItem;
     })
@@ -340,6 +361,7 @@ export async function getUserProgression(
       collectiveEvents: stats.collectiveEvents,
       totalKg: stats.totalKg,
       totalButts: stats.totalButts,
+      wasteCoverageRate: stats.wasteCoverageRate,
     }),
     impact: computePersonalImpactMetrics(rows),
     impactMethodology: buildPersonalImpactMethodology(stats.qualityAverage),
@@ -360,7 +382,10 @@ export async function getUserProgression(
           item.manualDrawing !== null,
       ),
     },
-    monthlyMilestone: getCurrentMonthlyMilestone(annualImpact.wasteKg),
+    monthlyMilestone: getCurrentMonthlyMilestone(
+      annualImpact.wasteKg,
+      annualImpact.wasteCoverageRate,
+    ),
     recognition: {
       currentContributor: recognitionIndex.currentContributor,
     },
@@ -408,7 +433,9 @@ export async function buildPostActionRetentionLoop(
       : `${action.actor_name?.trim() || "Contributeur"} renforce l'action locale à ${action.location_label}.`;
 
   const summary = [
-    `${Math.round(toFloat(action.waste_kg, 0) * 10) / 10} kg collectes`,
+    action.waste_kg === null
+      ? "masse de déchets non renseignée"
+      : `${Math.round(toFloat(action.waste_kg, 0) * 10) / 10} kg collectes`,
     `${toInt(action.cigarette_butts, 0)} megots retires`,
     `qualite ${qualityLabel} (${formatScorePercent(qualityScore)})`,
   ].join(" - ");

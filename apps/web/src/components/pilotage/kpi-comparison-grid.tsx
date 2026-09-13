@@ -49,6 +49,8 @@ export function KpiComparisonGrid({
  className ="grid gap-3 md:grid-cols-2 lg:grid-cols-3",
 }: KpiComparisonGridProps) {
  const mergedLabels = { ...DEFAULT_LABELS, ...labels };
+ const wasteComparable =
+  comparison.current.wasteCoverageRate === 100 && comparison.previous.wasteCoverageRate === 100;
 
  const cards: Record<KpiCardKey, ReactNode> = {
  actions: (
@@ -64,11 +66,11 @@ export function KpiComparisonGrid({
  volume: (
  <KpiComparisonCard
  label={mergedLabels.volume}
- value={`${comparison.current.impactVolumeKg.toFixed(1)} kg`}
- previousValue={`${comparison.previous.impactVolumeKg.toFixed(1)} kg`}
- deltaAbsolute={signed(comparison.metrics.impactVolumeKg.deltaAbsolute," kg")}
- deltaPercent={signed(comparison.metrics.impactVolumeKg.deltaPercent,"%")}
- interpretation={comparison.metrics.impactVolumeKg.interpretation}
+ value={`${comparison.current.impactVolumeKg.toFixed(1)} kg (${comparison.current.wasteCoverageRate.toFixed(0)}% renseigné)`}
+ previousValue={`${comparison.previous.impactVolumeKg.toFixed(1)} kg (${comparison.previous.wasteCoverageRate.toFixed(0)}% renseigné)`}
+ deltaAbsolute={wasteComparable ? signed(comparison.metrics.impactVolumeKg.deltaAbsolute," kg") : "Non comparable"}
+ deltaPercent={wasteComparable ? signed(comparison.metrics.impactVolumeKg.deltaPercent,"%") : "Non comparable"}
+ interpretation={wasteComparable ? comparison.metrics.impactVolumeKg.interpretation : "neutral"}
  />
  ),
  coverage: (

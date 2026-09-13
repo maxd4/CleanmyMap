@@ -94,4 +94,15 @@ describe("buildRecyclingBreakdown", () => {
     expect(breakdown.triQuality.moyenne).toBe(0);
     expect(breakdown.triQuality.faible).toBe(0);
   });
+
+  it("computes coverage only from collection actions", () => {
+    const action = buildContract({ id: "action", metadata: { wasteKg: null } as ActionDataContract["metadata"] });
+    const spot = buildContract({ id: "spot", type: "spot", metadata: { wasteKg: null } as ActionDataContract["metadata"] });
+    const cleanPlace = buildContract({ id: "clean-place", type: "clean_place", metadata: { wasteKg: null } as ActionDataContract["metadata"] });
+
+    expect(buildRecyclingBreakdown([action, spot, cleanPlace])).toMatchObject({
+      wasteKnownActions: 0,
+      wasteCoverageRate: 0,
+    });
+  });
 });

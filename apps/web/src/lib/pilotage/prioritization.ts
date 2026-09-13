@@ -151,7 +151,10 @@ function territorialPriority(zones: ZoneComparisonRow[]): OperationalPriority {
     };
   }
 
-  const progression = Math.max(0, top.deltaKgPercent);
+  const massComparable =
+    (top.currentWasteCoverageRate ?? 100) >= 100 &&
+    (top.previousWasteCoverageRate ?? 100) >= 100;
+  const progression = massComparable ? Math.max(0, top.deltaKgPercent) : 0;
   const score = round1(
     Math.min(100, top.normalizedScore * 0.75 + progression * 0.25),
   );
@@ -172,7 +175,9 @@ function territorialPriority(zones: ZoneComparisonRow[]): OperationalPriority {
     },
     evidence: [
       `Score normalise: ${top.normalizedScore.toFixed(1)}`,
-      `Variation kg: ${top.deltaKgPercent.toFixed(1)}%`,
+      massComparable
+        ? `Variation kg: ${top.deltaKgPercent.toFixed(1)}%`
+        : "Variation kg: indisponible (couverture partielle)",
     ],
     engineVersion: PRIORITIZATION_RULESET.version,
   };
@@ -211,6 +216,24 @@ function sobrietyPriority(
   comparison: PilotageComparisonResult,
 ): OperationalPriority {
   const iur = comparison.current.iurIndex;
+  const wasteCoverageRate = comparison.current.wasteCoverageRate;
+  if (wasteCoverageRate < 100) {
+    return {
+      id: "sobriety",
+      title: "Fiabiliser la mesure des déchets",
+      severity: "low",
+      score: 0,
+      reason: `L'IUR est indisponible pour une décision métier : seulement ${wasteCoverageRate.toFixed(1)}% des actions ont une masse renseignée.`,
+      impactEstimate: "Compléter les mesures de masse avant d'interpréter le rendement écologique.",
+      suggestedOwner: "Equipe terrain",
+      recommendedAction: {
+        href: "/actions/history",
+        label: "Compléter les mesures",
+      },
+      evidence: [`Couverture masse: ${wasteCoverageRate.toFixed(1)}%`, "IUR non exploitable"],
+      engineVersion: PRIORITIZATION_RULESET.version,
+    };
+  }
   // Si l'IUR est inférieur à 1, l'impact numérique dépasse l'impact terrain (DANGER)
   const risk = Math.max(0, (2.0 - iur) * 20); 
   const score = round1(Math.min(100, risk));

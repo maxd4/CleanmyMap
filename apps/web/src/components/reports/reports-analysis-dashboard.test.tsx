@@ -38,7 +38,14 @@ const method: MethodDefinition = {
   limits: "Proxy, non mesure instrumentale.",
 };
 
-const monthlyData: MonthlyAnalyticsPoint[] = [{ month: "2026-08", kg: 12.3, volunteers: 3 }];
+const monthlyData: MonthlyAnalyticsPoint[] = [{
+  month: "2026-08",
+  kg: 12.3,
+  actionCount: 1,
+  wasteKnownActions: 1,
+  wasteCoverageRate: 100,
+  volunteers: 3,
+}];
 
 describe("ReportsAnalysisDashboard contract", () => {
   it("renders ReportModel fields with qualified labels and native units", () => {

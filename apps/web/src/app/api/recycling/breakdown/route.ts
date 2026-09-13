@@ -32,7 +32,7 @@ export async function GET() {
           status: "approved",
           floorDate: null,
           requireCoordinates: false,
-          types: ["action", "clean_place", "spot"],
+          types: ["action"],
         });
 
         const breakdown = buildRecyclingBreakdown(contracts);

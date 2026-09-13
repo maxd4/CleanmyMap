@@ -165,7 +165,7 @@ export function PersonalProgress({
                     <AnimatedCounter value={progression.yearToDateImpact.wasteKg} direction="up" />
                   </p>
                   <p className="mt-1 text-[10px] font-semibold text-slate-500">
-                    kg
+                    kg · {Math.round(progression.yearToDateImpact.wasteCoverageRate)}% renseigné
                   </p>
                 </article>
               </div>

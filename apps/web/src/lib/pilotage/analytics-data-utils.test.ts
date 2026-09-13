@@ -5,7 +5,7 @@ import { aggregateMonthlyAnalytics } from "./analytics-data-utils";
 function makeContract(
   id: string,
   type: "action" | "spot" | "clean_place",
-  wasteKg: number,
+  wasteKg: number | null,
   volunteersCount: number,
 ) {
   return buildActionDataContract({
@@ -32,5 +32,19 @@ describe("aggregateMonthlyAnalytics", () => {
     expect(aggregateMonthlyAnalytics([action, spot, cleanPlace])).toEqual(
       aggregateMonthlyAnalytics([action]),
     );
+  });
+
+  it("keeps monthly waste coverage separate from measured mass", () => {
+    const points = aggregateMonthlyAnalytics([
+      makeContract("known", "action", 10, 3),
+      makeContract("unknown", "action", null, 2),
+    ]);
+
+    expect(points[0]).toMatchObject({
+      kg: 10,
+      actionCount: 2,
+      wasteKnownActions: 1,
+      wasteCoverageRate: 50,
+    });
   });
 });

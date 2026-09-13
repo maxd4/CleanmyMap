@@ -33,6 +33,7 @@ export type RecyclingBreakdownSnapshot = {
 export function buildRecyclingBreakdown(
   contracts: ActionDataContract[],
 ): RecyclingBreakdownSnapshot {
+  const collectionActions = contracts.filter((contract) => contract.type === "action");
   const categories = Object.fromEntries(
     CANONICAL_WASTE_BREAKDOWN_CATEGORIES.map((category) => [category, { kg: 0, entries: 0 }]),
   ) as Record<WasteCategory, { kg: number; entries: number }>;
@@ -42,7 +43,7 @@ export function buildRecyclingBreakdown(
   let triQualityLow = 0;
   let wasteKnownActions = 0;
 
-  for (const contract of contracts) {
+  for (const contract of collectionActions) {
     const breakdown = contract.metadata.wasteBreakdown;
     if (
       contract.metadata.wasteKg !== null &&
@@ -94,7 +95,9 @@ export function buildRecyclingBreakdown(
     totalKg: Number(totalKg.toFixed(2)),
     wasteKnownActions,
     wasteCoverageRate:
-      contracts.length > 0 ? (wasteKnownActions / contracts.length) * 100 : 0,
+      collectionActions.length > 0
+        ? (wasteKnownActions / collectionActions.length) * 100
+        : 0,
     lines,
     triQuality: {
       elevee: triQualityHigh,

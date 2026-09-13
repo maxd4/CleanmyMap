@@ -94,4 +94,18 @@ describe("KpiComparisonGrid", () => {
     expect(markup.match(/Indisponible/g)).toHaveLength(4);
     expect(markup).not.toContain("NaN");
   });
+
+  it("labels partial waste masses and suppresses their comparison delta", () => {
+    const partialComparison = {
+      ...comparison,
+      current: { ...comparison.current, wasteKnownActions: 1, wasteCoverageRate: 50 },
+      previous: { ...comparison.previous, wasteKnownActions: 1, wasteCoverageRate: 100 },
+    };
+    const markup = renderToStaticMarkup(
+      React.createElement(KpiComparisonGrid, { comparison: partialComparison }),
+    );
+
+    expect(markup).toContain("50% renseigné");
+    expect(markup).toContain("Non comparable");
+  });
 });

@@ -317,7 +317,7 @@ export function ActionsVisualizationPanel({
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold tracking-[-0.01em] text-slate-950">{row.zone}</span>
                         <span className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-600">
-                          {row.actions} Actions • {row.wasteKg.toFixed(1)}kg
+                          {row.actions} Actions • {row.wasteKg.toFixed(1)}kg mesurés ({row.actions > 0 ? ((row.knownWasteActions / row.actions) * 100).toFixed(0) : 0}% renseigné)
                         </span>
                       </div>
                       <div className="h-1.5 w-full rounded-full bg-cyan-100 overflow-hidden">

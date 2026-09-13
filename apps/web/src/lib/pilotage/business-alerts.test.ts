@@ -147,6 +147,19 @@ describe("computeCampaignGoalsByZone", () => {
     expect(goals[0]?.targetActions30d).toBeGreaterThanOrEqual(2);
     expect(goals[0]?.targetKg30d).toBeGreaterThan(0);
   });
+
+  it("does not derive a kg objective from partially measured actions", () => {
+    const goals = computeCampaignGoalsByZone({
+      now: new Date("2026-04-11T10:00:00.000Z"),
+      actions: [
+        makeAction({ id: "known", action_date: "2026-04-08", waste_kg: 20 }),
+        makeAction({ id: "unknown", action_date: "2026-04-02", waste_kg: null }),
+      ],
+    });
+
+    expect(goals[0]?.baselineWasteCoverageRate).toBe(50);
+    expect(goals[0]?.targetKg30d).toBeNull();
+  });
 });
 
 describe("computeNeighborhoodCampaignPlan", () => {

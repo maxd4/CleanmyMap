@@ -7,6 +7,7 @@ import {
   xpStep,
   syncUserActionProgression,
 } from "@/lib/gamification/progression";
+import { deriveBadges } from "./progression-formulas";
 
 describe("gamification progression formulas", () => {
   it("computes a linear xp step", () => {
@@ -39,5 +40,19 @@ describe("gamification progression formulas", () => {
 
   it("exports syncUserActionProgression from the public barrel", () => {
     expect(typeof syncUserActionProgression).toBe("function");
+  });
+
+  it("does not award a mass badge from a partially measured population", () => {
+    expect(
+      deriveBadges({
+        currentLevel: 1,
+        qualityAverage: 90,
+        validationRatio: 1,
+        collectiveEvents: 0,
+        totalKg: 100,
+        totalButts: 0,
+        wasteCoverageRate: 50,
+      }),
+    ).not.toContain("Force de la Nature (Argent)");
   });
 });

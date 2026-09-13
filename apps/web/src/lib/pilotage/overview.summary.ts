@@ -72,6 +72,9 @@ export function buildSummary(
   comparison: PilotageComparisonResult,
   priorities: OperationalPriority[],
 ): DecisionSummary {
+  const wasteComparable =
+    comparison.current.wasteCoverageRate === 100 && comparison.previous.wasteCoverageRate === 100;
+  const iurAvailable = wasteComparable;
   const topPriority = priorities.find(
     (priority) =>
       priority.id !== "admin-backlog" ||
@@ -84,20 +87,20 @@ export function buildSummary(
       {
         id: "impact",
         label: "Impact terrain",
-        value: `${comparison.current.impactVolumeKg.toFixed(1)} kg`,
-        previousValue: `${comparison.previous.impactVolumeKg.toFixed(1)} kg`,
-        deltaAbsolute: `${formatSigned(comparison.metrics.impactVolumeKg.deltaAbsolute)} kg`,
-        deltaPercent: `${formatSigned(comparison.metrics.impactVolumeKg.deltaPercent)}%`,
-        interpretation: comparison.metrics.impactVolumeKg.interpretation,
+        value: `${comparison.current.impactVolumeKg.toFixed(1)} kg (${comparison.current.wasteCoverageRate.toFixed(0)}% renseigné)`,
+        previousValue: `${comparison.previous.impactVolumeKg.toFixed(1)} kg (${comparison.previous.wasteCoverageRate.toFixed(0)}% renseigné)`,
+        deltaAbsolute: wasteComparable ? `${formatSigned(comparison.metrics.impactVolumeKg.deltaAbsolute)} kg` : "Non comparable",
+        deltaPercent: wasteComparable ? `${formatSigned(comparison.metrics.impactVolumeKg.deltaPercent)}%` : "Non comparable",
+        interpretation: wasteComparable ? comparison.metrics.impactVolumeKg.interpretation : "neutral",
       },
       {
         id: "mobilization",
         label: "IUR (Sobriété)",
-        value: `${comparison.current.iurIndex.toFixed(2)}`,
-        previousValue: `${comparison.previous.iurIndex.toFixed(2)}`,
-        deltaAbsolute: formatSigned(comparison.metrics.iurIndex.deltaAbsolute),
-        deltaPercent: `${formatSigned(comparison.metrics.iurIndex.deltaPercent)}%`,
-        interpretation: comparison.metrics.iurIndex.interpretation,
+        value: iurAvailable ? `${comparison.current.iurIndex.toFixed(2)}` : "Indisponible",
+        previousValue: iurAvailable ? `${comparison.previous.iurIndex.toFixed(2)}` : "Indisponible",
+        deltaAbsolute: iurAvailable ? formatSigned(comparison.metrics.iurIndex.deltaAbsolute) : "Non comparable",
+        deltaPercent: iurAvailable ? `${formatSigned(comparison.metrics.iurIndex.deltaPercent)}%` : "Non comparable",
+        interpretation: iurAvailable ? comparison.metrics.iurIndex.interpretation : "neutral",
       },
       {
         id: "quality",

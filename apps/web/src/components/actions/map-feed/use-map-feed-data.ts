@@ -141,7 +141,12 @@ export function useMapFeedData({
           },
       ),
     );
-    return { totalKg: totals.wasteKg, totalButts: totals.butts };
+    return {
+      totalKg: totals.wasteKg,
+      totalButts: totals.butts,
+      wasteKnownActions: totals.wasteKnownActions,
+      wasteCoverageRate: totals.wasteCoverageRate,
+    };
   }, [items]);
 
   const failedSources = data?.sourceHealth?.failedSources ?? [];

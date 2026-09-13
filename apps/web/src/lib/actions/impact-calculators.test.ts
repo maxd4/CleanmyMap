@@ -137,6 +137,8 @@ describe("canonical action impact calculation", () => {
       wasteKg: 2,
       wasteKnown: true,
       wasteKnownActions: 1,
+      wasteActionCount: 2,
+      wasteCoverageRate: 50,
       butts: 2600,
       volunteers: 3,
       co2AvoidedKg: expect.closeTo(2.4, 10),
