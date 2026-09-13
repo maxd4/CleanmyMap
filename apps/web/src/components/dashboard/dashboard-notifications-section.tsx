@@ -41,7 +41,7 @@ export function DashboardNotificationsSection() {
   }, [getToken, isLoaded, isSignedIn, userId]);
 
   useEffect(() => {
-    void fetchNotifications();
+    void Promise.resolve().then(() => fetchNotifications());
   }, [fetchNotifications]);
 
   const visibleNotifications = useMemo(
