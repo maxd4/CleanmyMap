@@ -46,4 +46,13 @@ describe("actions map public semantics", () => {
     expect(source).not.toContain("buildPublicImpactMetrics");
     expect(source).not.toContain("sumActionImpactKpis");
   });
+
+  it("keeps map counts contextual and separate from public Impact metrics", () => {
+    expect(source).toContain("const visibleCount = filteredMapItems.length");
+    expect(source).toContain("const loadedCount = loadedItems.length");
+    expect(source).not.toContain("useMapKpiStats");
+    expect(source).not.toContain("stats.wasteKg");
+    expect(source).not.toContain("stats.co2AvoidedKg");
+    expect(source).not.toContain("stats.euroSaved");
+  });
 });

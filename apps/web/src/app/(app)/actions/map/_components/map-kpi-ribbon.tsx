@@ -20,23 +20,6 @@ const metricAccentStyles = {
   },
 } as const;
 
-function formatValue(value: string): string {
-  return value.replace(/^n\/a$/i, "—");
-}
-
-function formatMetricLabel(metric: PublicImpactMetric): string {
-  switch (metric.key) {
-    case "co2":
-      return "CO₂e évité (proxy)";
-    case "water":
-      return "Eau préservée (proxy)";
-    case "euro":
-      return "Économie de voirie (proxy)";
-    default:
-      return metric.label;
-  }
-}
-
 export function MapKpiRibbon({ metrics }: MapKpiRibbonProps) {
   return (
     <section className="relative overflow-hidden rounded-[3rem] border border-sky-200/80 bg-sky-50/95 p-5 sm:p-6 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]">
@@ -46,10 +29,10 @@ export function MapKpiRibbon({ metrics }: MapKpiRibbonProps) {
         <div className="space-y-1">
           <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
             <span className="h-4 w-4 rounded-full bg-sky-500 shadow-[0_0_18px_rgba(56,189,248,0.45)]" />
-            Résultats terrain et proxys
+            Indicateurs publics consolidés
           </p>
           <p className="max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
-            Les kg, mégots et bénévoles sont des résultats terrain. Le CO₂e, l&apos;eau et l&apos;économie de voirie sont des proxys calculés sur les actions visibles après les filtres courants.
+            Les indicateurs publics consolidés CleanMyMap sont identiques à ceux de la page d&apos;accueil.
           </p>
         </div>
       </div>
@@ -67,10 +50,11 @@ export function MapKpiRibbon({ metrics }: MapKpiRibbonProps) {
             >
               <div className={cn("absolute inset-y-4 left-0 w-1 rounded-r-full", accent.bar)} />
               <p className="mb-4 min-h-[2.5rem] cmm-text-caption font-semibold leading-snug tracking-[0.12em] text-slate-600">
-                {formatMetricLabel(metric)}
+                {metric.label}
+                {metric.classification === "proxy" ? " (proxy)" : null}
               </p>
               <div className={cn("text-[clamp(2.1rem,4vw,3rem)] font-black leading-none tracking-tight", accent.value)}>
-                {formatValue(metric.value)}
+                {metric.value}
               </div>
             </div>
           );

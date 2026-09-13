@@ -46,6 +46,26 @@ La page ne présente pas les diagnostics techniques de qualité géométrique da
 la vue publique. La carte conserve sa géométrie et ses interactions ; les
 informations utiles à la lecture restent accessibles via la légende compacte.
 
+## KPI publics et statistiques contextuelles
+
+Les six KPI affichés dans le ruban (`wasteKg`, `butts`, `volunteers`, `co2`,
+`water`, `euro`) sont les indicateurs publics consolidés CleanMyMap. Ils
+proviennent du même `PublicImpactSnapshot` et du même contrat
+`PublicImpactMetric[]` que les KPI de la page d'accueil. Ils ne dépendent ni du
+viewport, ni des catégories visibles, ni de la recherche, ni de la période
+locale de la carte. Les pré-actions peuvent rester visibles sur la carte, mais
+ne contribuent pas à ces six KPI.
+
+Les statistiques de carte sont d'un autre niveau : `visibleCount` et
+`loadedCount` décrivent respectivement les objets cartographiques actuellement
+affichés et chargés dans le flux courant. Elles peuvent varier avec les filtres,
+la recherche ou le viewport sans modifier les KPI publics consolidés.
+
+Le ruban rend directement les champs du contrat partagé (`label`, `value` et
+`classification`) ; il ne redéfinit ni les libellés, ni l'ordre, ni les unités,
+ni les arrondis. Aucun endpoint, polling ou agrégat supplémentaire n'est
+introduit pour cette présentation.
+
 ## Séparation des calques
 
 La carte ne doit pas confondre mémoire des interventions et pollution actuellement actionnable :
