@@ -139,7 +139,10 @@ function SingleActionPopupContent({
     geometryView.presentation,
     geometryView.confidence,
   );
-  const geometryModeLabel = formatGeometryModeLabel(geometryView.presentation);
+  const geometryModeLabel = formatGeometryModeLabel(
+    geometryView.kind,
+    geometryView.presentation,
+  );
   const geometryPointLabel = formatGeometryPointCount(geometryView.pointCount);
   const geometryMetricLabel = geometryView.metrics.label;
   const dataContract = contract as unknown as ActionDataContract | undefined;
@@ -214,6 +217,7 @@ function SingleActionPopupContent({
         quality={quality}
         geometryLabel={geometry.label}
         geometryModeLabel={geometryModeLabel}
+        geometryKind={geometryView.kind}
         geometryPointLabel={geometryPointLabel}
         geometryConfidenceLabel={geometryConfidenceLabel}
         geometryMetricLabel={geometryMetricLabel}
@@ -254,6 +258,7 @@ function SingleActionPopupContent({
         isAction={isAction}
         signalementId={isSignalementMapItem(item) ? item.id : null}
         onViewGeometry={onViewGeometry}
+        geometryKind={geometryView.kind}
       />
     </>
   );

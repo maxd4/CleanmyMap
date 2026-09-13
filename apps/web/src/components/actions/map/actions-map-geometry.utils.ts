@@ -171,10 +171,10 @@ export function formatActionGeometryTooltipTitle(
   metricLabel: string | null,
 ): string {
   if (kind === "polygon") {
-    return `Zone d'action · ${metricLabel ?? "Surface ~ …"}`;
+    return metricLabel ? `Zone d'action · ${metricLabel}` : "Zone d'action";
   }
 
-  return `Action · ${metricLabel ?? "Longueur ~ …"}`;
+  return metricLabel ? `Parcours d'action · ${metricLabel}` : "Parcours d'action";
 }
 
 function resolveGeometryMetric(
@@ -441,27 +441,32 @@ export function resolvePolylineEndpointMarkers(
 }
 
 export function formatGeometryModeLabel(
+  kind: ActionGeometryKind | "point" | null,
   presentation: GeometryPresentation,
 ): string {
-  if (presentation.origin === "reference") {
-    return "Zone réelle";
-  }
-  if (presentation.origin === "estimated_area") {
-    return "Zone indicative";
-  }
-  if (presentation.origin === "routed") {
-    return "Parcours reconstruit";
-  }
-  if (presentation.origin === "fallback_point") {
+  if (kind === "point" || presentation.origin === "fallback_point") {
     return "Localisation seule";
   }
-  if (presentation.reality === "real") {
-    return "Géométrie réelle";
+
+  if (kind === "polyline") {
+    return presentation.origin === "routed"
+      ? "Parcours reconstruit"
+      : "Parcours déclaré";
   }
-  if (presentation.reality === "estimated") {
-    return "Géométrie estimée";
+
+  if (kind === "polygon") {
+    if (presentation.origin === "reference") {
+      return "Zone de référence";
+    }
+    if (presentation.origin === "estimated_area") {
+      return "Zone indicative";
+    }
+    return "Zone déclarée";
   }
-  return "Point fallback";
+
+  return presentation.origin === "estimated_area"
+    ? "Zone indicative"
+    : "Localisation seule";
 }
 
 export function resolveActionMapGeometryViewModel(
@@ -474,15 +479,16 @@ export function resolveActionMapGeometryViewModel(
     item.contract?.geometry.confidence ?? item.geometry_confidence ?? null;
 
   if (drawing && coordinates.length > 0) {
+    const kind = drawing.kind;
     return {
-      kind: drawing.kind,
+      kind,
       renderMode: "drawing",
       positions: coordinates,
       anchor: resolveAnchorFromCoordinates(coordinates),
       pointCount: coordinates.length,
       confidence,
       metrics: resolveGeometryMetric(drawing.kind, coordinates),
-      label: presentation.label,
+      label: formatGeometryModeLabel(kind, presentation),
       presentation,
       drawing,
     };
@@ -503,7 +509,7 @@ export function resolveActionMapGeometryViewModel(
       pointCount: 1,
       confidence,
       metrics: resolveGeometryMetric("point", [anchor]),
-      label: presentation.label,
+      label: formatGeometryModeLabel("point", presentation),
       presentation,
       drawing: null,
     };
@@ -517,7 +523,7 @@ export function resolveActionMapGeometryViewModel(
     pointCount: 0,
     confidence,
     metrics: resolveGeometryMetric(null, []),
-    label: presentation.label,
+    label: formatGeometryModeLabel(null, presentation),
     presentation,
     drawing: null,
   };

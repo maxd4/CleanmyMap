@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_VISIBLE_MAP_LAYERS,
+  MAP_LAYER_LABELS,
   toggleVisibleMapLayer,
 } from "./actions-map-canvas.layers";
 
 describe("actions map canvas layers", () => {
+  it("names the combined geometry layer with parcours and zones", () => {
+    expect(MAP_LAYER_LABELS.shapes).toBe("Parcours & zones");
+  });
+
   it("starts with all local layers visible", () => {
     expect(DEFAULT_VISIBLE_MAP_LAYERS).toEqual({
       points: true,

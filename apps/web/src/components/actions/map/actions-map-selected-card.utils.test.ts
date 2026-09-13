@@ -34,7 +34,7 @@ describe("selected action card utils", () => {
     expect(summary.id).toBe("action-selected");
     expect(summary.title).toBe("Rue de Rivoli");
     expect(summary.statusLabel).toBe("Validée");
-    expect(summary.geometryModeLabel).toContain("Géométrie");
+    expect(summary.geometryModeLabel).toBe("Parcours déclaré");
     expect(summary.geometryPointLabel).toBe("3 points");
     expect(summary.wasteLabel).toBe("12.4 kg");
     expect(summary.buttsLabel).toBe("320");

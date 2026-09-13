@@ -7,7 +7,6 @@ type GeometryTooltipContentProps = {
   geometryModeLabel: string;
   geometryPointsLabel: string;
   geometryMetricLabel: string | null;
-  geometryConfidenceLabel: string | null;
   color: string;
   actionReading?: {
     scoreScope?: "global" | "department";
@@ -38,7 +37,6 @@ export function GeometryTooltipContent({
   geometryModeLabel,
   geometryPointsLabel,
   geometryMetricLabel,
-  geometryConfidenceLabel,
   color,
   actionReading,
 }: GeometryTooltipContentProps) {
@@ -62,11 +60,6 @@ export function GeometryTooltipContent({
         {geometryMetricLabel && (
           <CmmBadge tone="slate" size="sm" shape="pill">
             {geometryMetricLabel}
-          </CmmBadge>
-        )}
-        {geometryConfidenceLabel && (
-          <CmmBadge tone="slate" size="sm" shape="pill">
-            {geometryConfidenceLabel}
           </CmmBadge>
         )}
       </div>

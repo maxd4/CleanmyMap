@@ -108,7 +108,7 @@ export function buildSelectedActionCardModel(
     recordTypeLabel: formatRecordType(item),
     statusLabel: formatStatusLabel(contract?.status ?? item.status),
     geometryLabel: geometry.label,
-    geometryModeLabel: formatGeometryModeLabel(geometry.presentation),
+    geometryModeLabel: formatGeometryModeLabel(geometry.kind, geometry.presentation),
     geometryPointLabel: formatGeometryPointCount(geometry.pointCount),
     geometryConfidenceLabel: formatGeometryConfidenceLabel(geometry.confidence),
     wasteLabel: `${mapItemWasteKg(item) ?? 0} kg`,
