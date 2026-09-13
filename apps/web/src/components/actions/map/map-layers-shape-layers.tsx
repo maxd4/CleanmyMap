@@ -38,7 +38,11 @@ import { resolveMapPlaceStateForItem } from "./actions-map-display-state";
 import {
   ACTION_TRACE_HIT_AREA_WEIGHT,
   fitActionGeometryBounds,
+  resolvePointPollutionScore,
   resolvePointColor,
+  resolveShapeCasingStyle,
+  resolveShapeDisplayColor,
+  resolveShapePollutionCategory,
   type ActionPointLayerProps,
 } from "./map-layers.shared";
 import { resolveActionPollutionScore } from "./pollution-score-scope";
@@ -51,6 +55,7 @@ export function ShapeLayers({
   displayMode = "projected_today",
   currentPlaceStateViews = [],
   scoreScope = "global",
+  basemapMode = "light",
 }: ActionPointLayerProps) {
   const { references } = useActionPollutionScoreReferences();
   const map = useMap();
@@ -104,6 +109,21 @@ export function ShapeLayers({
           currentPlaceState,
           scoreScope,
         );
+        const pollutionCategory = resolveShapePollutionCategory(
+          resolvePointPollutionScore(
+            item,
+            references,
+            now,
+            displayMode,
+            currentPlaceState,
+            scoreScope,
+          ),
+        );
+        const displayColor = resolveShapeDisplayColor({
+          pollutionCategory,
+          baseColor: color,
+          basemapMode,
+        });
         const globalActionScore = isActionMapItem(item)
           ? resolveActionPollutionScore(item, references, {
               scope: "global",
@@ -193,87 +213,123 @@ export function ShapeLayers({
         };
 
         if (geometry.kind === "polygon") {
+          const visibleWeight =
+            (renderStyle.strokeWeight ?? 2) + (isSelected ? 2 : 0);
+          const casingStyle = resolveShapeCasingStyle({
+            pollutionCategory,
+            basemapMode,
+            geometryKind: "polygon",
+            visibleWeight,
+            dashArray: renderStyle.dashArray,
+          });
+
           return (
-            <Polygon
-              key={`shape-${item.id}`}
-              ref={(layer) => {
-                if (layer) {
-                  layerRefs.current[item.id] = layer;
-                } else {
-                  delete layerRefs.current[item.id];
-                }
-              }}
-              positions={geometry.positions}
-              eventHandlers={{
-                click: () => {
-                  onSelectAction?.(item.id);
-                },
-              }}
-              pathOptions={{
-                color: color,
-                weight: (renderStyle.strokeWeight ?? 2) + (isSelected ? 2 : 0),
-                opacity: isSelected ? 1 : renderStyle.strokeOpacity ?? 0.95,
-                fillOpacity: (renderStyle.fillOpacity ?? 0.24) + (isSelected ? 0.08 : 0),
-                dashArray: renderStyle.dashArray,
-              }}
-            >
-            <Tooltip className="glass-tooltip" direction="auto" sticky>
-                <GeometryTooltipContent
-                  title={
-                    formatActionGeometryTooltipTitle(
-                      "polygon",
-                      geometryMetricLabel,
-                    )
-                  }
-                  geometryModeLabel={geometryModeLabel}
-                  geometryPointsLabel={geometryPointsLabel}
-                  geometryMetricLabel={geometryMetricLabel}
-                  color={color}
-                  actionReading={actionTooltipReading}
+            <Fragment key={`shape-${item.id}`}>
+              {casingStyle ? (
+                <Polygon
+                  key={`casing-${item.id}`}
+                  positions={geometry.positions}
+                  pathOptions={casingStyle}
                 />
-              </Tooltip>
-              <Popup className="glass-popup custom-popup">
-                <ActionPopupContent
-                  key={item.id}
-                  item={item}
-                  color={color}
-                  coords={coords}
-                  onViewGeometry={onViewGeometry}
-                  displayMode={displayMode}
-                  currentPlaceState={currentPlaceState}
-                  scoreScope={scoreScope}
-                  resolveCurrentPlaceStateForItem={(targetItem) =>
-                    resolveMapPlaceStateForItem(
-                      currentPlaceStateViews,
-                      targetItem,
-                      displayMode,
-                    )
+              ) : null}
+              <Polygon
+                key={`visible-shape-${item.id}`}
+                ref={(layer) => {
+                  if (layer) {
+                    layerRefs.current[item.id] = layer;
+                  } else {
+                    delete layerRefs.current[item.id];
                   }
-                  corridorItems={corridorItems}
-                  corridorHistory={corridorHistory ?? undefined}
-                  onViewGeometryForItem={onViewGeometryForItem}
-                  resolveColorForItem={(targetItem) =>
-                    resolvePointColor(
-                      targetItem,
-                      references,
-                      now,
-                      displayMode,
+                }}
+                positions={geometry.positions}
+                eventHandlers={{
+                  click: () => {
+                    onSelectAction?.(item.id);
+                  },
+                }}
+                pathOptions={{
+                  color: displayColor,
+                  weight: visibleWeight,
+                  opacity: isSelected ? 1 : renderStyle.strokeOpacity ?? 0.95,
+                  fillOpacity: (renderStyle.fillOpacity ?? 0.24) + (isSelected ? 0.08 : 0),
+                  dashArray: renderStyle.dashArray,
+                }}
+              >
+                <Tooltip className="glass-tooltip" direction="auto" sticky>
+                  <GeometryTooltipContent
+                    title={
+                      formatActionGeometryTooltipTitle(
+                        "polygon",
+                        geometryMetricLabel,
+                      )
+                    }
+                    geometryModeLabel={geometryModeLabel}
+                    geometryPointsLabel={geometryPointsLabel}
+                    geometryMetricLabel={geometryMetricLabel}
+                    color={color}
+                    actionReading={actionTooltipReading}
+                  />
+                </Tooltip>
+                <Popup className="glass-popup custom-popup">
+                  <ActionPopupContent
+                    key={item.id}
+                    item={item}
+                    color={color}
+                    coords={coords}
+                    onViewGeometry={onViewGeometry}
+                    displayMode={displayMode}
+                    currentPlaceState={currentPlaceState}
+                    scoreScope={scoreScope}
+                    resolveCurrentPlaceStateForItem={(targetItem) =>
                       resolveMapPlaceStateForItem(
                         currentPlaceStateViews,
                         targetItem,
                         displayMode,
-                      ),
-                      scoreScope,
-                    )
-                  }
-                />
-              </Popup>
-            </Polygon>
+                      )
+                    }
+                    corridorItems={corridorItems}
+                    corridorHistory={corridorHistory ?? undefined}
+                    onViewGeometryForItem={onViewGeometryForItem}
+                    resolveColorForItem={(targetItem) =>
+                      resolvePointColor(
+                        targetItem,
+                        references,
+                        now,
+                        displayMode,
+                        resolveMapPlaceStateForItem(
+                          currentPlaceStateViews,
+                          targetItem,
+                          displayMode,
+                        ),
+                        scoreScope,
+                      )
+                    }
+                  />
+                </Popup>
+              </Polygon>
+            </Fragment>
           );
         }
 
+        const visibleWeight =
+          (renderStyle.strokeWeight ?? 4) + (isSelected ? 2 : 0);
+        const casingStyle = resolveShapeCasingStyle({
+          pollutionCategory,
+          basemapMode,
+          geometryKind: "polyline",
+          visibleWeight,
+          dashArray: renderStyle.dashArray,
+        });
+
         return (
           <Fragment key={`shape-${item.id}`}>
+            {casingStyle ? (
+              <Polyline
+                key={`casing-${item.id}`}
+                positions={geometry.positions}
+                pathOptions={casingStyle}
+              />
+            ) : null}
             <Polyline
               key={`visible-shape-${item.id}`}
               ref={(layer) => {
@@ -290,8 +346,8 @@ export function ShapeLayers({
                 },
               }}
               pathOptions={{
-                color: color,
-                weight: (renderStyle.strokeWeight ?? 4) + (isSelected ? 2 : 0),
+                color: displayColor,
+                weight: visibleWeight,
                 opacity: isSelected ? 1 : renderStyle.strokeOpacity ?? 0.92,
                 dashArray: renderStyle.dashArray,
               }}

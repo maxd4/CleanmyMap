@@ -38,14 +38,24 @@ vi.mock("react-leaflet", () => {
       pathOptions,
     }: {
       children?: React.ReactNode;
-      pathOptions?: { weight?: number; opacity?: number; interactive?: boolean };
+      pathOptions?: {
+        color?: string;
+        weight?: number;
+        opacity?: number;
+        fillOpacity?: number;
+        dashArray?: string;
+        interactive?: boolean;
+      };
     }) =>
       React.createElement(
         "div",
         {
           "data-testid": "map-polyline",
+          "data-color": pathOptions?.color,
           "data-weight": pathOptions?.weight,
           "data-opacity": pathOptions?.opacity,
+          "data-fill-opacity": pathOptions?.fillOpacity,
+          "data-dash-array": pathOptions?.dashArray,
           "data-interactive": pathOptions?.interactive,
         },
         children,
@@ -101,6 +111,9 @@ import {
   ACTION_TRACE_HIT_AREA_WEIGHT,
   fitActionGeometryBounds,
   isTrashSpotterItem,
+  resolveShapeCasingStyle,
+  resolveShapeDisplayColor,
+  resolveShapePollutionCategory,
   resolvePointColor,
   ShapeLayers,
   SignalementMarkers,
@@ -163,6 +176,121 @@ describe("Trash Spotter layer classification", () => {
 });
 
 describe("ShapeLayers", () => {
+  it("adapts the extreme score to a dark basemap without changing the score category", () => {
+    const category = resolveShapePollutionCategory(100);
+
+    expect(category).toBe("black");
+    expect(
+      resolveShapeDisplayColor({
+        pollutionCategory: category,
+        baseColor: "hsl(0, 0%, 8%)",
+        basemapMode: "light",
+      }),
+    ).toBe("hsl(0, 0%, 8%)");
+    expect(
+      resolveShapeDisplayColor({
+        pollutionCategory: category,
+        baseColor: "hsl(0, 0%, 8%)",
+        basemapMode: "dark",
+      }),
+    ).toBe("#ffffff");
+    expect(
+      resolveShapeCasingStyle({
+        pollutionCategory: category,
+        basemapMode: "dark",
+        geometryKind: "polyline",
+        visibleWeight: 4,
+        dashArray: "8 8",
+      }),
+    ).toBeNull();
+  });
+
+  it("keeps non-extreme colors and adds a thin dark-basemap casing", () => {
+    const category = resolveShapePollutionCategory(63);
+    const casing = resolveShapeCasingStyle({
+      pollutionCategory: category,
+      basemapMode: "dark",
+      geometryKind: "polyline",
+      visibleWeight: 4,
+      dashArray: "8 8",
+    });
+
+    expect(category).toBe("other");
+    expect(
+      resolveShapeDisplayColor({
+        pollutionCategory: category,
+        baseColor: "hsl(2, 82%, 62%)",
+        basemapMode: "dark",
+      }),
+    ).toBe("hsl(2, 82%, 62%)");
+    expect(casing).toMatchObject({
+      color: "#ffffff",
+      weight: 6,
+      dashArray: "8 8",
+      interactive: false,
+    });
+
+    expect(
+      resolveShapeCasingStyle({
+        pollutionCategory: category,
+        basemapMode: "dark",
+        geometryKind: "polygon",
+        visibleWeight: 2,
+      }),
+    ).toMatchObject({
+      color: "#ffffff",
+      weight: 4,
+      fillOpacity: 0,
+      interactive: false,
+    });
+  });
+
+  it.each([
+    ["blue", 0],
+    ["orange", 30],
+    ["red", 60],
+    ["violet", 80],
+  ])("preserves the %s pollution color on a dark basemap", (_label, score) => {
+    const baseColor = resolveDynamicColor(score);
+    const category = resolveShapePollutionCategory(score);
+
+    expect(
+      resolveShapeDisplayColor({
+        pollutionCategory: category,
+        baseColor,
+        basemapMode: "dark",
+      }),
+    ).toBe(baseColor);
+    expect(
+      resolveShapeCasingStyle({
+        pollutionCategory: category,
+        basemapMode: "dark",
+        geometryKind: "polyline",
+        visibleWeight: 4,
+        dashArray: undefined,
+      }),
+    ).toMatchObject({ color: "#ffffff", weight: 6 });
+  });
+
+  it("renders a dark-basemap casing behind the visible stroke", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ShapeLayers, {
+        items: [
+          buildShapeItem("action", 20, "polyline", {
+            geometrySource: "routed",
+          }),
+        ],
+        basemapMode: "dark",
+      }),
+    );
+
+    expect(markup).toContain('data-color="#ffffff"');
+    expect(markup).toContain('data-dash-array="8 8"');
+    expect(markup).toContain(`data-weight="6"`);
+    expect(markup).toContain(`data-weight="${ACTION_TRACE_HIT_AREA_WEIGHT}"`);
+    expect(markup).toContain('data-opacity="0"');
+  });
+
   function buildShapeItem(
     type: "action" | "spot",
     wasteKg: number,
@@ -172,6 +300,7 @@ describe("ShapeLayers", () => {
       day?: number;
       coordinates?: [number, number][];
       geometryConfidence?: number;
+      geometrySource?: "manual" | "routed";
     } = {},
   ): ActionMapItem {
     return toActionMapItem(
@@ -203,6 +332,7 @@ describe("ShapeLayers", () => {
                 ]),
         },
         geometryConfidence: overrides.geometryConfidence,
+        geometrySource: overrides.geometrySource,
       }),
     );
   }

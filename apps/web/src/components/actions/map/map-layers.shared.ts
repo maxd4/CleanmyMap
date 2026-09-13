@@ -10,6 +10,7 @@ import type {
   CurrentPlaceStateViews,
 } from "@/lib/actions/pollution/current-place-state";
 import {
+  ACTION_POLLUTION_COLOR_THRESHOLDS,
   CLEAN_PLACE_COLOR,
   TRASH_SPOTTER_NEUTRAL_COLOR,
   resolveDynamicColor,
@@ -26,6 +27,68 @@ export type LeafletClusterLike = {
 
 export const ACTION_TRACE_HIT_AREA_WEIGHT = 18;
 export const ACTION_TRACE_FIT_PADDING: [number, number] = [32, 32];
+
+export type ShapeBasemapMode = "light" | "dark";
+export type ShapePollutionCategory = "black" | "other";
+export type ShapeGeometryKind = "polyline" | "polygon";
+
+export type ShapeCasingStyle = {
+  color: "#ffffff";
+  weight: number;
+  opacity: number;
+  fillOpacity?: number;
+  dashArray?: string;
+  interactive: false;
+};
+
+export function resolveShapePollutionCategory(
+  score: number | null,
+): ShapePollutionCategory {
+  return score !== null && score >= ACTION_POLLUTION_COLOR_THRESHOLDS.BLACK
+    ? "black"
+    : "other";
+}
+
+export function resolveShapeDisplayColor({
+  pollutionCategory,
+  baseColor,
+  basemapMode,
+}: {
+  pollutionCategory: ShapePollutionCategory;
+  baseColor: string;
+  basemapMode: ShapeBasemapMode;
+}): string {
+  return basemapMode === "dark" && pollutionCategory === "black"
+    ? "#ffffff"
+    : baseColor;
+}
+
+export function resolveShapeCasingStyle({
+  pollutionCategory,
+  basemapMode,
+  geometryKind,
+  visibleWeight,
+  dashArray,
+}: {
+  pollutionCategory: ShapePollutionCategory;
+  basemapMode: ShapeBasemapMode;
+  geometryKind: ShapeGeometryKind;
+  visibleWeight: number;
+  dashArray?: string;
+}): ShapeCasingStyle | null {
+  if (basemapMode !== "dark" || pollutionCategory === "black") {
+    return null;
+  }
+
+  return {
+    color: "#ffffff",
+    weight: visibleWeight + 2,
+    opacity: 0.95,
+    fillOpacity: geometryKind === "polygon" ? 0 : undefined,
+    dashArray,
+    interactive: false,
+  };
+}
 
 export function fitActionGeometryBounds(
   map: Pick<LeafletMap, "fitBounds">,
@@ -56,34 +119,54 @@ export function resolvePointColor(
     return CLEAN_PLACE_COLOR;
   }
 
+  const resolvedScore = resolvePointPollutionScore(
+    item,
+    references,
+    now,
+    displayMode,
+    currentPlaceState,
+    scoreScope,
+  );
+
+  return resolvedScore === null
+    ? itemType === "spot"
+      ? TRASH_SPOTTER_NEUTRAL_COLOR
+      : POLLUTION_SCORE_UNAVAILABLE_COLOR
+    : resolveDynamicColor(resolvedScore);
+}
+
+export function resolvePointPollutionScore(
+  item: ActionMapItem,
+  references?: PollutionScoreReferences | null,
+  now: string | Date | number = new Date(),
+  displayMode: CurrentPlaceStateMode = "projected_today",
+  currentPlaceState: CurrentPlaceState | null = null,
+  scoreScope: PollutionScoreScope = "global",
+): number | null {
+  const itemType = mapItemType(item);
+  if (itemType === "clean_place") {
+    return null;
+  }
+
   if (itemType === "spot") {
     const contractScore = (
       item.contract as unknown as ActionDataContract | undefined
     )?.metadata.observedPollutionScore;
-    const measuredScore =
-      typeof contractScore === "number" && Number.isFinite(contractScore)
-        ? contractScore
-        : currentPlaceState?.scoreKind === "measured" &&
-            typeof currentPlaceState.score === "number" &&
-            Number.isFinite(currentPlaceState.score)
-          ? currentPlaceState.score
-          : null;
-
-    return measuredScore === null
-      ? TRASH_SPOTTER_NEUTRAL_COLOR
-      : resolveDynamicColor(measuredScore);
+    return typeof contractScore === "number" && Number.isFinite(contractScore)
+      ? contractScore
+      : currentPlaceState?.scoreKind === "measured" &&
+          typeof currentPlaceState.score === "number" &&
+          Number.isFinite(currentPlaceState.score)
+        ? currentPlaceState.score
+        : null;
   }
 
-  const resolved = resolveActionPollutionScore(item, references, {
+  return resolveActionPollutionScore(item, references, {
     scope: scoreScope,
     now,
     displayMode,
     currentPlaceState,
-  });
-
-  return resolved.score === null
-    ? POLLUTION_SCORE_UNAVAILABLE_COLOR
-    : resolveDynamicColor(resolved.score);
+  }).score;
 }
 
 export function isTrashSpotterItem(item: ActionMapItem): boolean {
@@ -98,6 +181,7 @@ export type ActionPointLayerProps = {
   displayMode?: CurrentPlaceStateMode;
   currentPlaceStateViews?: readonly CurrentPlaceStateViews[];
   scoreScope?: PollutionScoreScope;
+  basemapMode?: ShapeBasemapMode;
 };
 
 export type InfrastructureLayerProps = {
