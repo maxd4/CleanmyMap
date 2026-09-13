@@ -33,7 +33,10 @@ export function ReportsKpiSummary({ contracts }: ReportsKpiSummaryProps) {
     const impact = sumActionImpactKpis(contracts);
     const totalMinutes = actions.reduce(
       (acc, item) =>
-        acc + Number(item.duration_minutes || 0) * Math.max(1, Number(item.volunteers_count || 0)),
+        acc +
+        Number(item.duration_minutes || 0) *
+          (item.contract?.metadata.volunteerParticipation?.effectiveVolunteerUnits ??
+            Math.max(1, Number(item.volunteers_count || 0))),
       0,
     );
     const geolocated = mapItems.filter((item) => item.latitude !== null && item.longitude !== null).length;

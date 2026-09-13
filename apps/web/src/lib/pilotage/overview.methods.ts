@@ -26,8 +26,10 @@ export function buildMethods(): MethodDefinition[] {
     {
       id: "field-load",
       kpi: "Charge terrain",
-      formula: "Somme de volunteersCount x durationMinutes sur actions approuvees.",
-      source: "Champs volunteersCount et durationMinutes des declarations valides.",
+      formula:
+        "Somme de effectiveVolunteerUnits x durationMinutes sur actions approuvees, avec volunteersCount historique en repli.",
+      source:
+        "Categories enfants/adultes/retraites derivees et durationMinutes des declarations valides.",
       recalc: OVERVIEW_RECALC_DESCRIPTION,
       limits: "Mesure d'intensite utile, mais pas une duree d'intervention reelle.",
     },

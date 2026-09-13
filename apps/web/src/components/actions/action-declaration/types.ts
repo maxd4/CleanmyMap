@@ -52,6 +52,9 @@ export type FormState = {
  cigaretteButtsCondition: ActionMegotsCondition; // État des mégots pour conversion
  cigaretteButtsVolumeLiters: string;
  volunteersCount: string;
+ childrenCount: string;
+ adultCount: string;
+ retiredCount: string;
  durationMinutes: string;
  eventStartTime: string;
  eventEndTime: string;

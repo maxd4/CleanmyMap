@@ -59,6 +59,9 @@ export type FormState = {
  cigaretteButtsCondition: ActionMegotsCondition; // État des mégots pour conversion
  cigaretteButtsVolumeLiters: string;
  volunteersCount: string;
+ childrenCount: string;
+ adultCount: string;
+ retiredCount: string;
  durationMinutes: string;
  eventStartTime: string;
  eventEndTime: string;
@@ -122,6 +125,9 @@ export const initialState: FormState = {
  cigaretteButtsCondition:"propre", // État par défaut
  cigaretteButtsVolumeLiters:"",
  volunteersCount:"1",
+ childrenCount:"0",
+ adultCount:"1",
+ retiredCount:"0",
  durationMinutes:"60",
  eventStartTime:"",
  eventEndTime:"",
@@ -202,6 +208,7 @@ export type ValidationIssue = {
  |"manualDrawing"
  |"wasteKg"
  |"volunteersCount"
+ |"volunteerParticipation"
  |"durationMinutes"
  |"eventStartTime"
  |"eventEndTime";

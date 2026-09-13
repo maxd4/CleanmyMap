@@ -111,6 +111,9 @@ export function sanitizePreActionForm(form: FormState): FormState {
   next.groupJoinEnabled = Boolean(next.groupJoinEnabled);
   next.participantAccounts = normalizeParticipantAccounts(next.participantAccounts);
   next.volunteersCount = next.volunteersCount.trim() || "1";
+  next.childrenCount = next.childrenCount.trim();
+  next.adultCount = next.adultCount.trim();
+  next.retiredCount = next.retiredCount.trim();
   const enterpriseFromAssociation = extractEntrepriseName(next.associationName);
   const normalizedAssociation = normalizeAssociationSelectionForPrefill(next.associationName);
   next.associationName = normalizedAssociation ?? next.associationName.trim();

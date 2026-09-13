@@ -21,6 +21,7 @@ import type { ActionWasteMeasurementMethod } from "@/lib/waste/measurement";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "../organizer-type";
 import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
+import type { ActionVolunteerParticipation } from "../volunteer-participation";
 
 export type ActionEntityType = ActionRecordType;
 
@@ -68,6 +69,7 @@ export type ActionDataMetadata = {
   wasteBreakdown: ActionWasteBreakdown | null;
   wasteMeasurementMethod?: ActionWasteMeasurementMethod | null;
   cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+  volunteerParticipation?: ActionVolunteerParticipation | null;
   cigaretteButtsKg?: number | null;
   /** Structured Trash Spotter categories read from the transient notes marker. */
   wasteCategories?: WasteCategorySlug[] | null;
@@ -141,6 +143,7 @@ export type BuildActionContractParams = {
   wasteBreakdown?: ActionWasteBreakdown | null;
   wasteMeasurementMethod?: ActionWasteMeasurementMethod | null;
   cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+  volunteerParticipation?: ActionVolunteerParticipation | null;
   wasteCategories?: WasteCategorySlug[] | null;
   photos?: ActionPhotoAsset[] | null;
   visionEstimate?: ActionVisionEstimate | null;
@@ -260,6 +263,7 @@ function buildActionNoteMetadata(
   | "wasteBreakdown"
   | "wasteMeasurementMethod"
   | "cigaretteButtsMeasurements"
+  | "volunteerParticipation"
   | "cigaretteButtsKg"
   | "wasteCategories"
 > {
@@ -270,6 +274,7 @@ function buildActionNoteMetadata(
     wasteBreakdown: params.wasteBreakdown ?? null,
     wasteMeasurementMethod: params.wasteMeasurementMethod ?? null,
     cigaretteButtsMeasurements: params.cigaretteButtsMeasurements ?? null,
+    volunteerParticipation: params.volunteerParticipation ?? null,
     cigaretteButtsKg: params.cigaretteButtsKg ?? null,
     wasteCategories: params.wasteCategories ? [...params.wasteCategories] : null,
   };

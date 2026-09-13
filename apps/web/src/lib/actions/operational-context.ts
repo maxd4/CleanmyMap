@@ -1,8 +1,12 @@
+import type { ActionVolunteerParticipation } from "./volunteer-participation";
+
 export type ActionOperationalContext = {
   placeType: string | null;
   routeStyle: "direct" | "souple" | null;
   routeAdjustmentMessage: string | null;
   volunteersCount: number;
+  effectiveVolunteerUnits: number | null;
+  operationalVolunteerUnits: number;
   durationMinutes: number;
   engagementMinutes: number;
   engagementHours: number;
@@ -16,6 +20,7 @@ export type ActionOperationalContextSource = {
     routeStyle?: "direct" | "souple" | null;
     routeAdjustmentMessage?: string | null;
     volunteersCount?: number | null;
+    volunteerParticipation?: ActionVolunteerParticipation | null;
     durationMinutes?: number | null;
   } | null;
 } | null | undefined;
@@ -75,14 +80,22 @@ export function getActionOperationalContext(
     metadata?.routeAdjustmentMessage,
   );
   const volunteersCount = normalizeOperationalCount(metadata?.volunteersCount);
+  const effectiveVolunteerUnits =
+    typeof metadata?.volunteerParticipation?.effectiveVolunteerUnits === "number" &&
+    Number.isFinite(metadata.volunteerParticipation.effectiveVolunteerUnits)
+      ? Math.max(0, metadata.volunteerParticipation.effectiveVolunteerUnits)
+      : null;
+  const operationalVolunteerUnits = effectiveVolunteerUnits ?? volunteersCount;
   const durationMinutes = normalizeOperationalCount(metadata?.durationMinutes);
-  const engagementMinutes = volunteersCount * durationMinutes;
+  const engagementMinutes = operationalVolunteerUnits * durationMinutes;
 
   return {
     placeType,
     routeStyle,
     routeAdjustmentMessage,
     volunteersCount,
+    effectiveVolunteerUnits,
+    operationalVolunteerUnits,
     durationMinutes,
     engagementMinutes,
     engagementHours: Number((engagementMinutes / 60).toFixed(1)),

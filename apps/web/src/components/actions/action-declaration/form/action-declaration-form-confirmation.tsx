@@ -11,6 +11,7 @@ import { getOrganizerTypeLabel } from "@/lib/actions/organizer-type";
 import {
   deriveEventDurationMinutes,
   deriveOrganizationMinutes,
+  formatBusinessDurationMinutes,
 } from "@/lib/actions/time-contract";
 
 type ActionDeclarationFormConfirmationProps = {
@@ -142,16 +143,16 @@ export function ActionDeclarationFormConfirmation({
               Temporalité de l’action
             </p>
             <p className="text-sm font-semibold text-emerald-950">
-              Temps d’action : {payload.durationMinutes} min
+              Temps d’action : {formatBusinessDurationMinutes(payload.durationMinutes)}
             </p>
             <p className="mt-1 text-sm text-emerald-900/70">
               Créneau total : {event.status === "available"
-                ? `${payload.eventStartTime} — ${payload.eventEndTime} (${event.eventDurationMinutes} min)`
+                ? `${payload.eventStartTime} — ${payload.eventEndTime} (${formatBusinessDurationMinutes(event.eventDurationMinutes)})`
                 : "non renseigné"}
             </p>
             {organization.status === "available" ? (
               <p className="mt-1 text-sm text-emerald-900/70">
-                Organisation dérivée : {organization.organizationMinutes} min
+                Organisation dérivée : {formatBusinessDurationMinutes(organization.organizationMinutes)}
               </p>
             ) : null}
           </div>
@@ -224,6 +225,13 @@ export function ActionDeclarationFormConfirmation({
               <p className="text-2xl font-bold text-emerald-950 tracking-tight">
                 {payload.volunteersCount}
               </p>
+              {payload.volunteerParticipation ? (
+                <p className="mt-2 text-sm text-emerald-900/70">
+                  Enfants {payload.volunteerParticipation.childrenCount ?? "—"} · Adultes {payload.volunteerParticipation.adultCount ?? "—"} · Retraités {payload.volunteerParticipation.retiredCount ?? "—"}
+                  <br />
+                  Unités opérationnelles : {payload.volunteerParticipation.effectiveVolunteerUnits ?? "—"}
+                </p>
+              ) : null}
             </div>
 
             <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
@@ -231,7 +239,7 @@ export function ActionDeclarationFormConfirmation({
                 Durée
               </p>
               <p className="text-2xl font-bold text-emerald-950 tracking-tight">
-                {payload.durationMinutes} min
+                {formatBusinessDurationMinutes(payload.durationMinutes)}
               </p>
             </div>
           </div>

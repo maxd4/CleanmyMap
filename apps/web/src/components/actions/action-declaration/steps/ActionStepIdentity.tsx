@@ -34,6 +34,10 @@ import { ORGANIZER_TYPE_OPTIONS } from "@/lib/actions/organizer-type";
 import { OTHER_VOLUNTEER_ASSOCIATION_VALUE } from "../payload";
 import type { FormState } from "../form/model";
 import { ActionParticipantPicker } from "../../action-participant-picker";
+import {
+  formatBusinessDurationMinutes,
+} from "@/lib/actions/time-contract";
+import { normalizeVolunteerParticipation } from "@/lib/actions/volunteer-participation";
 
 const PLACE_TYPE_TILE_OPTIONS = [
   {
@@ -146,6 +150,11 @@ export function ActionStepIdentity({ form, updateField, updateFields, userMetada
   const organization = deriveOrganizationMinutes({
     actionDurationMinutes: Number(form.durationMinutes),
     eventDurationMinutes: event.eventDurationMinutes,
+  });
+  const volunteerParticipation = normalizeVolunteerParticipation({
+    childrenCount: form.childrenCount.trim() === "" ? null : Number(form.childrenCount),
+    adultCount: form.adultCount.trim() === "" ? null : Number(form.adultCount),
+    retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount),
   });
 
   const [autreBenevoleName, setAutreBenevoleName] = useState(isAutreBénévole ? form.actorName : "");
@@ -376,17 +385,53 @@ export function ActionStepIdentity({ form, updateField, updateFields, userMetada
               <div className="space-y-6 pt-2">
                 <div>
                   <SectionTitle color="bg-sky-500">Participants &amp; temps d’action</SectionTitle>
-                  <div className="grid grid-cols-2 gap-3 max-w-sm">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 max-w-xl">
                     <Field icon={Users}>
+                      <label className="sr-only" htmlFor="action-children-count">Enfants</label>
                       <input
+                        id="action-children-count"
                         type="number"
-                        min="1"
-                        placeholder="Participants"
+                        min="0"
+                        placeholder="Enfants"
                         className={inputCls}
-                        value={form.volunteersCount}
-                        onChange={(e) => updateField("volunteersCount", e.target.value)}
+                        value={form.childrenCount}
+                        onChange={(e) => updateField("childrenCount", e.target.value)}
                       />
                     </Field>
+                    <Field icon={Users}>
+                      <label className="sr-only" htmlFor="action-adult-count">Adultes</label>
+                      <input
+                        id="action-adult-count"
+                        type="number"
+                        min="0"
+                        placeholder="Adultes"
+                        className={inputCls}
+                        value={form.adultCount}
+                        onChange={(e) => updateField("adultCount", e.target.value)}
+                      />
+                    </Field>
+                    <Field icon={Users}>
+                      <label className="sr-only" htmlFor="action-retired-count">Retraités</label>
+                      <input
+                        id="action-retired-count"
+                        type="number"
+                        min="0"
+                        placeholder="Retraités"
+                        className={inputCls}
+                        value={form.retiredCount}
+                        onChange={(e) => updateField("retiredCount", e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs font-semibold text-emerald-900/65">
+                    <span>
+                      Total calculé : {volunteerParticipation.participantsCount ?? "—"} participant(s)
+                    </span>
+                    <span>
+                      Unités opérationnelles : {volunteerParticipation.effectiveVolunteerUnits ?? "—"}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 max-w-xl">
                     <Field icon={Clock}>
                       <input
                         type="number"
@@ -400,6 +445,7 @@ export function ActionStepIdentity({ form, updateField, updateFields, userMetada
                   </div>
                   <p className="mt-2 max-w-xl text-xs leading-5 text-emerald-900/55">
                     Le temps d’action couvre la marche, le ramassage, le tri et la pesée, sans séparer ces étapes.
+                    {" "}La durée enregistrée reste précise ; affichage métier : {formatBusinessDurationMinutes(Number(form.durationMinutes))}.
                   </p>
                   <div className="mt-3 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
                     <Field icon={Clock}>
@@ -426,9 +472,9 @@ export function ActionStepIdentity({ form, updateField, updateFields, userMetada
                   </p>
                   {event.status === "available" ? (
                     <p className="mt-1 text-xs text-emerald-900/65">
-                      Total : {event.eventDurationMinutes} min
+                      Total : {formatBusinessDurationMinutes(event.eventDurationMinutes)}
                       {organization.status === "available"
-                        ? ` · Organisation : ${organization.organizationMinutes} min`
+                        ? ` · Organisation : ${formatBusinessDurationMinutes(organization.organizationMinutes)}`
                         : organization.status === "inconsistent"
                           ? " · Incohérence : créneau inférieur au temps d’action."
                           : ""}

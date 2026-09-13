@@ -115,3 +115,19 @@ export function getTimeContractValidationMessage(params: {
 
   return null;
 }
+
+export function roundBusinessDurationMinutes(
+  value: number | null | undefined,
+): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return null;
+  }
+  return Math.round(value / 15) * 15;
+}
+
+export function formatBusinessDurationMinutes(
+  value: number | null | undefined,
+): string {
+  const rounded = roundBusinessDurationMinutes(value);
+  return rounded === null ? "Durée non renseignée" : `${rounded} min`;
+}

@@ -130,4 +130,27 @@ describe("action metadata notes", () => {
     expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsMassKg).toBeNull();
     expect(parsed.cigaretteButtsMeasurements?.cigaretteButtsCount).toBeNull();
   });
+
+  it("round-trips volunteer sources and derived values without changing legacy notes", () => {
+    const notes = appendActionMetadataToNotes("Action", {
+      volunteerParticipation: {
+        childrenCount: 2,
+        adultCount: 4,
+        retiredCount: 2,
+        participantsCount: 8,
+        effectiveVolunteerUnits: 6,
+        effectiveVolunteerUnitsFormulaVersion: "effective-volunteer-units-v1",
+      },
+    });
+    const parsed = extractActionMetadataFromNotes(notes);
+
+    expect(parsed.volunteerParticipation).toMatchObject({
+      childrenCount: 2,
+      adultCount: 4,
+      retiredCount: 2,
+      participantsCount: 8,
+      effectiveVolunteerUnits: 6,
+    });
+    expect(extractActionMetadataFromNotes("Legacy action").volunteerParticipation).toBeNull();
+  });
 });

@@ -10,6 +10,11 @@ import {
   normalizeCigaretteButtsMeasurements,
   type ActionCigaretteButtsMeasurements,
 } from "@/lib/waste/cigarette-butts";
+import {
+  hasVolunteerCategoryData,
+  normalizeVolunteerParticipation,
+  type ActionVolunteerParticipation,
+} from "@/lib/actions/volunteer-participation";
 
 const META_PREFIX = "[cmm-meta]";
 const INGESTION_SYNC_MARKER = "[google-sheet-sync]";
@@ -20,6 +25,7 @@ type ActionNotesMeta = {
   wasteMeasurementMethod?: ActionWasteMeasurementMethod;
   cigaretteButtsKg?: number | null;
   cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements;
+  volunteerParticipation?: ActionVolunteerParticipation;
   associationName?: string;
   groupJoinEnabled?: boolean;
   placeType?: string;
@@ -49,6 +55,7 @@ type ActionNotesExtractionState = {
   wasteMeasurementMethod: ActionWasteMeasurementMethod | null;
   cigaretteButtsKg: number | null;
   cigaretteButtsMeasurements: ActionCigaretteButtsMeasurements | null;
+  volunteerParticipation: ActionVolunteerParticipation | null;
   associationName: string | null;
   groupJoinEnabled: boolean;
   placeType: string | null;
@@ -70,6 +77,7 @@ function hasStructuredActionMetadata(metadata: {
   wasteMeasurementMethod?: ActionWasteMeasurementMethod;
   cigaretteButtsKg?: number | null;
   cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+  volunteerParticipation?: ActionVolunteerParticipation | null;
   associationName?: string;
   groupJoinEnabled?: boolean;
   placeType?: string;
@@ -87,6 +95,7 @@ function hasStructuredActionMetadata(metadata: {
       metadata.wasteMeasurementMethod ||
       metadata.cigaretteButtsKg !== undefined ||
       hasCigaretteButtsMeasurement(metadata.cigaretteButtsMeasurements) ||
+      hasVolunteerCategoryData(metadata.volunteerParticipation) ||
       associationName ||
       typeof metadata.groupJoinEnabled === "boolean" ||
       metadata.placeType ||
@@ -118,6 +127,7 @@ function hasActionMetadata(
     wasteMeasurementMethod?: ActionWasteMeasurementMethod;
     cigaretteButtsKg?: number | null;
     cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+    volunteerParticipation?: ActionVolunteerParticipation | null;
     associationName?: string;
     groupJoinEnabled?: boolean;
     placeType?: string;
@@ -141,6 +151,7 @@ function buildStructuredMetadataPayload(
     wasteMeasurementMethod?: ActionWasteMeasurementMethod;
     cigaretteButtsKg?: number | null;
     cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+    volunteerParticipation?: ActionVolunteerParticipation | null;
     associationName?: string;
     groupJoinEnabled?: boolean;
     placeType?: string;
@@ -168,6 +179,11 @@ function buildStructuredMetadataPayload(
   }
   if (hasCigaretteButtsMeasurement(metadata.cigaretteButtsMeasurements)) {
     metaPayload.cigaretteButtsMeasurements = metadata.cigaretteButtsMeasurements!;
+  }
+  if (hasVolunteerCategoryData(metadata.volunteerParticipation)) {
+    metaPayload.volunteerParticipation = normalizeVolunteerParticipation(
+      metadata.volunteerParticipation,
+    );
   }
   if (metadata.associationName?.trim()) {
     metaPayload.associationName = metadata.associationName.trim();
@@ -253,6 +269,7 @@ function initializeActionNotesExtractionState(): ActionNotesExtractionState {
     wasteMeasurementMethod: null,
     cigaretteButtsKg: null,
     cigaretteButtsMeasurements: null,
+    volunteerParticipation: null,
     associationName: null,
     groupJoinEnabled: false,
     placeType: null,
@@ -314,6 +331,14 @@ function applyParsedStructuredActionNotesMeta(
     });
   }
   if (
+    parsed.volunteerParticipation &&
+    typeof parsed.volunteerParticipation === "object"
+  ) {
+    state.volunteerParticipation = normalizeVolunteerParticipation(
+      parsed.volunteerParticipation,
+    );
+  }
+  if (
     typeof parsed.associationName === "string" &&
     parsed.associationName.trim().length > 0
   ) {
@@ -371,6 +396,7 @@ export function appendActionMetadataToNotes(
     wasteMeasurementMethod?: ActionWasteMeasurementMethod;
     cigaretteButtsKg?: number | null;
     cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+    volunteerParticipation?: ActionVolunteerParticipation | null;
     associationName?: string;
     groupJoinEnabled?: boolean;
     placeType?: string;
@@ -402,8 +428,9 @@ export function extractActionMetadataFromNotes(
   submissionMode: ActionSubmissionMode | null;
   wasteBreakdown: ActionWasteBreakdown | null;
   wasteMeasurementMethod: ActionWasteMeasurementMethod | null;
-    cigaretteButtsKg: number | null;
-    cigaretteButtsMeasurements: ActionCigaretteButtsMeasurements | null;
+  cigaretteButtsKg: number | null;
+  cigaretteButtsMeasurements: ActionCigaretteButtsMeasurements | null;
+  volunteerParticipation: ActionVolunteerParticipation | null;
   associationName: string | null;
   groupJoinEnabled: boolean;
   placeType: string | null;
@@ -422,6 +449,7 @@ export function extractActionMetadataFromNotes(
       wasteMeasurementMethod: null,
       cigaretteButtsKg: null,
       cigaretteButtsMeasurements: null,
+      volunteerParticipation: null,
       associationName: null,
       groupJoinEnabled: false,
       placeType: null,
@@ -473,6 +501,7 @@ export function extractActionMetadataFromNotes(
       state.cigaretteButtsMeasurements?.cigaretteButtsMassKg ??
       null,
     cigaretteButtsMeasurements: state.cigaretteButtsMeasurements,
+    volunteerParticipation: state.volunteerParticipation,
     associationName: state.associationName,
     groupJoinEnabled: state.groupJoinEnabled,
     placeType: state.placeType,

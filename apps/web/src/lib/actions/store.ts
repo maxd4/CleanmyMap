@@ -24,6 +24,11 @@ import {
   type ActionCigaretteButtsMeasurements,
 } from "@/lib/waste/cigarette-butts";
 import {
+  normalizeVolunteerParticipation,
+  resolveParticipantsCount,
+  type ActionVolunteerParticipation,
+} from "@/lib/actions/volunteer-participation";
+import {
   buildTrainingExampleInsert,
   recordTrainingExample,
 } from "@/lib/actions/training";
@@ -299,6 +304,7 @@ type PersistedActionNotesPayload = Partial<Pick<
   | "cigaretteButtsMassKg"
   | "cigaretteButtsVolumeLiters"
   | "cigaretteButtsCondition"
+  | "volunteerParticipation"
 >> & {
   photos?: Array<
     Pick<
@@ -324,6 +330,7 @@ export function buildPersistedNotes(
     wasteMeasurementMethod: payload.wasteMeasurementMethod ?? undefined,
     cigaretteButtsKg: payload.cigaretteButtsKg,
     cigaretteButtsMeasurements,
+    volunteerParticipation: resolveActionVolunteerParticipation(payload),
     associationName: payload.associationName,
     groupJoinEnabled: payload.groupJoinEnabled,
     placeType: payload.placeType,
@@ -346,6 +353,14 @@ export function buildPersistedNotes(
   return base
     ? `${base}\n${DRAWING_NOTE_PREFIX}${drawingJson}`
     : `${DRAWING_NOTE_PREFIX}${drawingJson}`;
+}
+
+function resolveActionVolunteerParticipation(
+  payload: Partial<Pick<CreateActionPayload, "volunteerParticipation">>,
+): ActionVolunteerParticipation | null {
+  return payload.volunteerParticipation
+    ? normalizeVolunteerParticipation(payload.volunteerParticipation)
+    : null;
 }
 
 function resolveActionCigaretteButtsMeasurements(
@@ -582,7 +597,10 @@ export function buildActionInsertPayload(params: {
     geometry_source: params.persistedGeometry.geometrySource,
     waste_kg: params.payload.wasteKg,
     cigarette_butts: resolvePersistedCigaretteButts(params.payload),
-    volunteers_count: params.payload.volunteersCount,
+    volunteers_count: resolveParticipantsCount({
+      volunteerParticipation: params.payload.volunteerParticipation,
+      legacyVolunteersCount: params.payload.volunteersCount,
+    }),
     duration_minutes: params.payload.durationMinutes,
     event_start_time: params.payload.eventStartTime ?? null,
     event_end_time: params.payload.eventEndTime ?? null,

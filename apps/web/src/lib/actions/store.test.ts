@@ -3,6 +3,7 @@ import type { CreateActionPayload } from "@/lib/actions/types";
 import {
   buildInitialActionParticipantRows,
   buildCreateActionGeometry,
+  buildActionInsertPayload,
   buildPersistedNotes,
   fetchActions,
   resolveActionCreationStatus,
@@ -92,6 +93,39 @@ describe("resolvePersistedCigaretteButts", () => {
       cigaretteButtsMassProvenance: "measured",
       cigaretteButtsVolumeProvenance: "measured",
     });
+  });
+});
+
+describe("volunteer participation persistence", () => {
+  it("persists categories in metadata and participants in the legacy row field", () => {
+    const payload = buildPayload({
+      volunteersCount: 999,
+      volunteerParticipation: {
+        childrenCount: 2,
+        adultCount: 4,
+        retiredCount: 2,
+        participantsCount: 8,
+        effectiveVolunteerUnits: 6,
+        effectiveVolunteerUnitsFormulaVersion: "effective-volunteer-units-v1",
+      },
+    });
+    const notes = buildPersistedNotes(payload);
+    const metadata = extractActionMetadataFromNotes(notes);
+
+    expect(metadata.volunteerParticipation).toMatchObject({
+      childrenCount: 2,
+      adultCount: 4,
+      retiredCount: 2,
+    });
+
+    const row = buildActionInsertPayload({
+      payload,
+      userId: "user-test",
+      status: "pending",
+      persistedGeometry: buildCreateActionGeometry(payload, null),
+      finalDrawing: null,
+    });
+    expect(row.volunteers_count).toBe(8);
   });
 });
 

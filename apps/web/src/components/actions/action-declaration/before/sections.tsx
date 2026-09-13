@@ -22,7 +22,9 @@ import { FieldShell, GroupJoinPublishCard, SectionLabel, SelectShell } from "./u
 import {
   deriveEventDurationMinutes,
   deriveOrganizationMinutes,
+  formatBusinessDurationMinutes,
 } from "@/lib/actions/time-contract";
+import { normalizeVolunteerParticipation } from "@/lib/actions/volunteer-participation";
 
 type BaseSectionProps = {
   form: FormState;
@@ -157,6 +159,11 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
     actionDurationMinutes: Number(form.durationMinutes),
     eventDurationMinutes: event.eventDurationMinutes,
   });
+  const volunteerParticipation = normalizeVolunteerParticipation({
+    childrenCount: form.childrenCount.trim() === "" ? null : Number(form.childrenCount),
+    adultCount: form.adultCount.trim() === "" ? null : Number(form.adultCount),
+    retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount),
+  });
 
   return (
             <CmmCard tone="emerald" variant="glass" size="lg">
@@ -226,19 +233,29 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                       />
                     </FieldShell>
 
-                    <FieldShell
-                      label="Nombre de bénévoles attendus"
-                      hint="Estimation avant départ, pas le nombre final."
-                    >
-                      <input
-                        type="number"
-                        min="0"
-                        value={form.volunteersCount}
-                        onChange={(event) => updateField("volunteersCount", event.target.value)}
-                        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
-                        placeholder="8"
-                      />
-                    </FieldShell>
+                    <div className="space-y-2 md:col-span-2">
+                      <p className="text-sm font-semibold text-emerald-950">Bénévoles attendus par catégorie</p>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        {([
+                          ["Enfants", "childrenCount"],
+                          ["Adultes", "adultCount"],
+                          ["Retraités", "retiredCount"],
+                        ] as const).map(([label, field]) => (
+                          <FieldShell key={field} label={label} hint="Estimation avant départ.">
+                            <input
+                              type="number"
+                              min="0"
+                              value={form[field]}
+                              onChange={(event) => updateField(field, event.target.value)}
+                              className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                            />
+                          </FieldShell>
+                        ))}
+                      </div>
+                      <p className="text-xs font-semibold text-emerald-900/65">
+                        Total calculé : {volunteerParticipation.participantsCount ?? "—"} participant(s) · unités opérationnelles : {volunteerParticipation.effectiveVolunteerUnits ?? "—"}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-2">
@@ -322,6 +339,9 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                           placeholder="60"
                         />
                       </div>
+                      <p className="mt-1 text-xs text-emerald-900/55">
+                        Stockage précis ; affichage métier : {formatBusinessDurationMinutes(Number(form.durationMinutes))}.
+                      </p>
                     </FieldShell>
                   </div>
 
@@ -352,9 +372,9 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
 
                   {event.status === "available" ? (
                     <p className="text-xs leading-5 text-emerald-900/65">
-                      Créneau total : {event.eventDurationMinutes} min
+                      Créneau total : {formatBusinessDurationMinutes(event.eventDurationMinutes)}
                       {organization.status === "available"
-                        ? ` · Organisation : ${organization.organizationMinutes} min`
+                        ? ` · Organisation : ${formatBusinessDurationMinutes(organization.organizationMinutes)}`
                         : organization.status === "inconsistent"
                           ? " · Incohérence : le créneau est inférieur au temps d’action."
                           : ""}

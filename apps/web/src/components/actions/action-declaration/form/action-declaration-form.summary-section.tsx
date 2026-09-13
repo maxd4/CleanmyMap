@@ -1,5 +1,7 @@
 import type { FormState } from"./model";
 import { CmmField, CmmTextarea } from "@/components/ui/cmm-field";
+import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
+import { normalizeVolunteerParticipation } from "@/lib/actions/volunteer-participation";
 
 type ActionDeclarationSummarySectionProps = {
  form: FormState;
@@ -16,6 +18,11 @@ export function ActionDeclarationSummarySection({
  photoCount,
  onNotesChange,
 }: ActionDeclarationSummarySectionProps) {
+ const volunteerParticipation = normalizeVolunteerParticipation({
+  childrenCount: form.childrenCount.trim() === "" ? null : Number(form.childrenCount),
+  adultCount: form.adultCount.trim() === "" ? null : Number(form.adultCount),
+  retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount),
+ });
  return (
  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
  <div className="flex flex-wrap items-start justify-between gap-3">
@@ -76,7 +83,7 @@ export function ActionDeclarationSummarySection({
   {form.wasteKg ? `${form.wasteKg} kg collectés` : "Non mesuré"}
  </p>
  <p className="mt-1 cmm-text-caption cmm-text-muted">
- Bénévoles: {form.volunteersCount ||"1"} · {form.durationMinutes ||"0"} min
+ Participants: {volunteerParticipation.participantsCount ?? "—"} · {formatBusinessDurationMinutes(Number(form.durationMinutes))}
  </p>
  </div>
  <div className="rounded-xl border border-white/70 bg-white p-3">
