@@ -27,6 +27,12 @@ export type ActionMapGeometryViewModel = {
 export type ActionPolylineEndpointMarkers = {
   start: CoordinatePair;
   end: CoordinatePair;
+  isLoop: boolean;
+};
+
+export type ActionPolylineDirectionMarker = {
+  position: CoordinatePair;
+  bearing: number;
 };
 
 export type ActionMapGeometryMetric = {
@@ -92,6 +98,21 @@ function toRadians(value: number): number {
   return (value * Math.PI) / 180;
 }
 
+function computeCoordinateDistanceMeters(
+  left: CoordinatePair,
+  right: CoordinatePair,
+): number {
+  const deltaLat = toRadians(right[0] - left[0]);
+  const deltaLng = toRadians(right[1] - left[1]);
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(toRadians(left[0])) *
+      Math.cos(toRadians(right[0])) *
+      Math.sin(deltaLng / 2) *
+      Math.sin(deltaLng / 2);
+  return 2 * 6_371_000 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 function computePolylineLengthMeters(coordinates: CoordinatePair[]): number | null {
   if (coordinates.length < 2) {
     return null;
@@ -99,17 +120,10 @@ function computePolylineLengthMeters(coordinates: CoordinatePair[]): number | nu
 
   let total = 0;
   for (let index = 1; index < coordinates.length; index += 1) {
-    const [previousLat, previousLng] = coordinates[index - 1];
-    const [currentLat, currentLng] = coordinates[index];
-    const deltaLat = toRadians(currentLat - previousLat);
-    const deltaLng = toRadians(currentLng - previousLng);
-    const a =
-      Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
-      Math.cos(toRadians(previousLat)) *
-        Math.cos(toRadians(currentLat)) *
-        Math.sin(deltaLng / 2) *
-        Math.sin(deltaLng / 2);
-    total += 2 * 6_371_000 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    total += computeCoordinateDistanceMeters(
+      coordinates[index - 1],
+      coordinates[index],
+    );
   }
 
   return total;
@@ -426,18 +440,99 @@ export function resolvePolylineEndpointMarkers(
     "kind" | "positions" | "presentation"
   >,
 ): ActionPolylineEndpointMarkers | null {
-  if (
-    geometry.kind !== "polyline" ||
-    geometry.presentation.origin !== "manual" ||
-    geometry.positions.length < 2
-  ) {
+  if (geometry.kind !== "polyline" || geometry.positions.length < 2) {
     return null;
   }
 
   return {
     start: geometry.positions[0],
     end: geometry.positions[geometry.positions.length - 1],
+    isLoop:
+      computeCoordinateDistanceMeters(
+        geometry.positions[0],
+        geometry.positions[geometry.positions.length - 1],
+      ) <= 5,
   };
+}
+
+function computeBearing(
+  start: CoordinatePair,
+  end: CoordinatePair,
+): number {
+  const startLatitude = toRadians(start[0]);
+  const endLatitude = toRadians(end[0]);
+  const deltaLongitude = toRadians(end[1] - start[1]);
+  const y = Math.sin(deltaLongitude) * Math.cos(endLatitude);
+  const x =
+    Math.cos(startLatitude) * Math.sin(endLatitude) -
+    Math.sin(startLatitude) *
+      Math.cos(endLatitude) *
+      Math.cos(deltaLongitude);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+
+export function resolvePolylineDirectionMarkers(
+  positions: CoordinatePair[],
+): ActionPolylineDirectionMarker[] {
+  if (positions.length < 2) {
+    return [];
+  }
+
+  const segmentDistances = positions.slice(1).map((position, index) =>
+    computeCoordinateDistanceMeters(positions[index], position),
+  );
+  const totalDistance = segmentDistances.reduce(
+    (total, distance) => total + distance,
+    0,
+  );
+  if (totalDistance <= 0) {
+    return [];
+  }
+
+  return [0.25, 0.5, 0.75].map((ratio) => {
+    const targetDistance = totalDistance * ratio;
+    let traversedDistance = 0;
+    let segmentIndex = 0;
+
+    for (let index = 0; index < segmentDistances.length; index += 1) {
+      const segmentDistance = segmentDistances[index];
+      if (
+        segmentDistance > 0 &&
+        targetDistance <= traversedDistance + segmentDistance
+      ) {
+        segmentIndex = index;
+        break;
+      }
+      traversedDistance += segmentDistance;
+      segmentIndex = index;
+    }
+
+    const segmentDistance = segmentDistances[segmentIndex];
+    const start = positions[segmentIndex];
+    const end = positions[segmentIndex + 1];
+    const segmentProgress =
+      segmentDistance > 0
+        ? Math.max(
+            0,
+            Math.min(
+              1,
+              (targetDistance -
+                segmentDistances
+                  .slice(0, segmentIndex)
+                  .reduce((total, distance) => total + distance, 0)) /
+                segmentDistance,
+            ),
+          )
+        : 0;
+
+    return {
+      position: [
+        start[0] + (end[0] - start[0]) * segmentProgress,
+        start[1] + (end[1] - start[1]) * segmentProgress,
+      ],
+      bearing: computeBearing(start, end),
+    };
+  });
 }
 
 export function formatGeometryModeLabel(
