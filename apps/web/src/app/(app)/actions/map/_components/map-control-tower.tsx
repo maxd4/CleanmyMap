@@ -16,6 +16,7 @@ import {
 import { MapLegend } from "./map-legend";
 import { useActionPollutionScoreReferences } from "@/components/actions/map/action-pollution-score-references-context";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 
 type MapControlTowerProps = {
   filters: ActionsMapFilters;
@@ -30,6 +31,7 @@ type MapControlTowerProps = {
   onDateScopeChange: (dateScope: ActionsMapDateScope) => void;
   onCategoryToggle: (category: MarkerCategory) => void;
   onReset: () => void;
+  scoreScope?: PollutionScoreScope;
 };
 
 export function MapControlTower({
@@ -45,6 +47,7 @@ export function MapControlTower({
   onDateScopeChange,
   onCategoryToggle,
   onReset,
+  scoreScope = "global",
 }: MapControlTowerProps) {
   const { references } = useActionPollutionScoreReferences();
   const classes = getBlockClasses("visualize");
@@ -113,7 +116,7 @@ export function MapControlTower({
         onReset={onReset}
       />
 
-      <MapLegend />
+      <MapLegend scoreScope={scoreScope} />
     </section>
   );
 }

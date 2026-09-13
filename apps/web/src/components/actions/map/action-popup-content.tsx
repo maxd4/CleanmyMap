@@ -156,6 +156,8 @@ function SingleActionPopupContent({
     scoreSourceLabel,
     historicalScore,
     scoreUnavailable,
+    globalScore,
+    departmentScore,
   } = useActionPopupScores({
     item,
     hasPollution,
@@ -224,6 +226,9 @@ function SingleActionPopupContent({
         currentPlaceState={currentPlaceState}
         scoreScope={scoreScope}
         scoreUnavailable={scoreUnavailable}
+        globalScore={globalScore}
+        departmentScore={departmentScore}
+        departmentName={contract?.location.departmentName ?? null}
         hasQuantifiedPollutionScore={hasQuantifiedPollutionScore}
       />
 

@@ -9,6 +9,7 @@ import { ActionPopupContentBody } from "./action-popup-content-body";
 import { ActionPopupContentHeader } from "./action-popup-content-header";
 import { buildActionUpdateHref } from "./action-popup-content.utils";
 import { resolveProjectionConfidence } from "@/lib/actions/pollution/projection-confidence";
+import type { ScopedActionPollutionScore } from "./pollution-score-scope";
 
 function buildActionItem(
   preparationData: { actionTitle?: string } | null,
@@ -244,6 +245,109 @@ describe("action popup presentation", () => {
     expect(markup).toContain("pas une mesure en temps réel");
     expect(markup).not.toContain("Priorité de revisite");
     expect(markup).not.toContain("pollution actuelle");
+  });
+
+  it("shows global and department score references together", () => {
+    const score = (source: "global" | "department", value: number): ScopedActionPollutionScore => ({
+      score: value,
+      historicalScore: value,
+      wasteScore: value - 4,
+      buttsScore: value + 4,
+      departmentRelativeScore: source === "department" ? value : null,
+      availability: "available",
+      source,
+    });
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionPopupContentHeader, {
+        recordTypeLabel: "Action terrain",
+        locationLabel: "Quai de test",
+        actionTitle: "Nettoyage du quai",
+        isAction: true,
+        color: "#f97316",
+        score: 48,
+        scoreLoading: false,
+        scoreReading: {
+          label: "Moyen/Fort",
+          guidance: "Passage à planifier",
+          tone: "amber",
+        },
+        scoreSourceLabel: "Référence terrain",
+        wasteScore: 44,
+        buttsScore: 52,
+        statusLabel: "Validée",
+        placeType: null,
+        quality: null,
+        geometryLabel: "Parcours déclaré",
+        geometryModeLabel: "Parcours connu",
+        geometryPointLabel: "2 points",
+        geometryConfidenceLabel: null,
+        geometryMetricLabel: "Longueur ~ 1 km",
+        geometryReality: "real",
+        observedAt: "08/04/2026",
+        wasteKg: 5,
+        butts: 42,
+        actionProjection: null,
+        scoreScope: "department",
+        scoreUnavailable: false,
+        globalScore: score("global", 48),
+        departmentScore: score("department", 62),
+        departmentName: "Paris",
+      }),
+    );
+
+    expect(markup).toContain("Pollution constatée");
+    expect(markup).toContain("Déchets 44 %");
+    expect(markup).toContain("Mégots 52 %");
+    expect(markup).toContain("Score global 48 %");
+    expect(markup).toContain("Comparaison départementale");
+    expect(markup).toContain("Score relatif 62 %");
+    expect(markup).toContain("Référence Paris");
+    expect(markup).not.toContain("Projection modélisée");
+  });
+
+  it("states when the department reference is unavailable without falling back", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionPopupContentHeader, {
+        recordTypeLabel: "Action terrain",
+        locationLabel: "Quai de test",
+        actionTitle: "Nettoyage du quai",
+        isAction: true,
+        color: "#94a3b8",
+        score: 0,
+        scoreLoading: false,
+        scoreReading: {
+          label: "Non disponible",
+          guidance: "Référence insuffisante",
+          tone: "sky",
+        },
+        scoreSourceLabel: "Score départemental indisponible",
+        wasteScore: 0,
+        buttsScore: 0,
+        statusLabel: "Validée",
+        placeType: null,
+        quality: null,
+        geometryLabel: "Point",
+        geometryModeLabel: "Point",
+        geometryPointLabel: "1 point",
+        geometryConfidenceLabel: null,
+        geometryMetricLabel: null,
+        geometryReality: "real",
+        observedAt: "08/04/2026",
+        wasteKg: 5,
+        butts: 42,
+        actionProjection: null,
+        scoreScope: "department",
+        scoreUnavailable: true,
+        globalScore: null,
+        departmentScore: null,
+        departmentName: "Paris",
+      }),
+    );
+
+    expect(markup).toContain("Comparaison départementale indisponible");
+    expect(markup).toContain("Pas assez d&#x27;actions de référence dans ce département.");
+    expect(markup).toContain("Référence départementale");
+    expect(markup).toContain("Score départemental indisponible");
   });
 
   it("offers explicit trace framing when the map provides the action", () => {

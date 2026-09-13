@@ -48,4 +48,17 @@ describe("MapGeometryLegend", () => {
     expect(markup).not.toContain("30 + 30");
     expect(markup).not.toContain("28 + 152");
   });
+
+  it("explains the department reference without changing geometry grammar", () => {
+    const markup = renderToStaticMarkup(
+      <MapGeometryLegend scoreScope="department" />,
+    );
+
+    expect(markup).toContain(
+      "Actions : la couleur compare l&#x27;intensité de collecte à la référence du département.",
+    );
+    expect(markup).toContain("Trait plein : parcours déclaré/connu");
+    expect(markup).toContain("Trait pointillé : parcours indicatif/reconstruit");
+    expect(markup).not.toContain("pollution projetée depuis la dernière action");
+  });
 });

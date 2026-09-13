@@ -246,10 +246,28 @@ sources :
   lecture.
 
 La provenance affichée est donc « Observé le … » ou « Projeté aujourd'hui ·
-dernière observation le … ». Le mode change uniquement l'état/source présenté :
-il ne modifie ni le score historique, ni la palette, ni la grammaire
-géométrique. Les polylines restent hors du rapprochement point/zone ; un spot
-ponctuel ne peut pas recolorer un parcours.
+dernière observation le … ». Cette lecture temporelle reste disponible
+uniquement avec la référence globale.
+
+### Références de score
+
+La carte permet de choisir la référence **Globale** ou **Départementale** sans
+recharger le jeu de données ni modifier la géométrie. La référence globale
+conserve la projection temporelle décrite ci-dessus. La référence départementale
+utilise exclusivement le score relatif calculé dans le département persistant
+de l'action : elle n'est ni projetée dans le temps ni transmise à `T80`.
+
+Dans ce mode, `100 %` correspond à l'intensité de collecte de référence la plus
+élevée du département, normalisée par bénévole-heure. Un score relatif ne se
+compare directement qu'entre actions d'un même département. Lorsque le code
+départemental est absent ou que la référence comporte moins de deux actions
+éligibles, la comparaison départementale est explicitement indisponible ; elle
+ne retombe pas silencieusement sur le score global.
+
+Le choix de référence modifie uniquement le score et la couleur affichés. Il
+ne modifie ni le dataset, ni la palette canonique, ni la grammaire géométrique.
+Les polylines restent hors du rapprochement point/zone ; un spot ponctuel ne
+peut pas recolorer un parcours.
 
 ## 9. Couleurs de la carte d'actions
 

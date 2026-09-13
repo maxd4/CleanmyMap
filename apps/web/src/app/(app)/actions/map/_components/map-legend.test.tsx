@@ -76,4 +76,25 @@ describe("MapLegend", () => {
     expect(markup).not.toContain("shadow-[0_10px_24px_-20px");
     expect(markup).not.toContain("rounded-2xl border border-sky-100");
   });
+
+  it("explains the department reference without changing the canonical stops", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(MapLegend, { scoreScope: "department" }),
+    );
+
+    expect(markup).toContain("Comparaison départementale");
+    expect(markup).toContain(
+      "100 % correspond à l&#x27;intensité de collecte de référence la plus élevée du département, normalisée par bénévole-heure.",
+    );
+    expect(markup).toContain(
+      "Score relatif : ne comparez directement que les actions d&#x27;un même département.",
+    );
+    expect(markup).toContain("Détails de la légende");
+    expect(markup).toContain("Lieu propre");
+    expect(markup).toContain("Trash Spotter");
+
+    for (const stop of ACTION_POLLUTION_COLOR_STOPS) {
+      expect(markup).toContain(`background-color:${resolveDynamicColor(stop.threshold)}`);
+    }
+  });
 });

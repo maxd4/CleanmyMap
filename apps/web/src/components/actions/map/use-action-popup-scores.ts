@@ -8,7 +8,10 @@ import {
 } from "@/lib/actions/pollution/pollution-score";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { mapItemType } from "@/lib/actions/data-contract";
-import { resolveActionPollutionScore } from "./pollution-score-scope";
+import {
+  resolveActionPollutionScore,
+  type ScopedActionPollutionScore,
+} from "./pollution-score-scope";
 import { getScoreReading, type ScoreReading } from "./action-popup-content.helpers";
 import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
 
@@ -30,6 +33,8 @@ type UseActionPopupScoresResult = {
   scoreLoading: boolean;
   scoreSourceLabel: string;
   scoreUnavailable: boolean;
+  globalScore: ScopedActionPollutionScore | null;
+  departmentScore: ScopedActionPollutionScore | null;
 };
 
 export function useActionPopupScores({
@@ -66,13 +71,23 @@ export function useActionPopupScores({
     );
   }, [hasPollution, fallbackScores, references, volunteersCount, wasteKg, cigaretteButts]);
 
-  const scopedActionScore = useMemo(
+  const globalActionScore = useMemo(
     () =>
       mapItemType(item) === "action"
-        ? resolveActionPollutionScore(item, references, { scope: scoreScope })
+        ? resolveActionPollutionScore(item, references, { scope: "global" })
         : null,
-    [item, references, scoreScope],
+    [item, references],
   );
+  const departmentActionScore = useMemo(
+    () =>
+      mapItemType(item) === "action"
+        ? resolveActionPollutionScore(item, references, { scope: "department" })
+        : null,
+    [item, references],
+  );
+  const scopedActionScore = scoreScope === "department"
+    ? departmentActionScore
+    : globalActionScore;
   const isDepartmentScoreUnavailable =
     mapItemType(item) === "action" &&
     scoreScope === "department" &&
@@ -111,5 +126,7 @@ export function useActionPopupScores({
     scoreLoading,
     scoreSourceLabel,
     scoreUnavailable: isDepartmentScoreUnavailable,
+    globalScore: globalActionScore,
+    departmentScore: departmentActionScore,
   };
 }

@@ -107,20 +107,26 @@ export function ShapeLayers({
           currentPlaceState,
           scoreScope,
         );
-        const scopedActionScore = isActionMapItem(item)
+        const globalActionScore = isActionMapItem(item)
           ? resolveActionPollutionScore(item, references, {
-              scope: scoreScope,
+              scope: "global",
               now,
               displayMode,
               currentPlaceState,
             })
           : null;
+        const departmentActionScore = isActionMapItem(item)
+          ? resolveActionPollutionScore(item, references, { scope: "department" })
+          : null;
+        const scopedActionScore = scoreScope === "department"
+          ? departmentActionScore
+          : globalActionScore;
         const score = isActionMapItem(item)
           ? scopedActionScore?.score ?? 0
           : pollutionScores.severityScore;
-        const actionProjection = isActionMapItem(item) && scoreScope === "global" && scopedActionScore?.historicalScore != null
+        const actionProjection = isActionMapItem(item) && scoreScope === "global" && globalActionScore?.historicalScore != null
           ? presentActionPollutionProjection(
-              scopedActionScore.historicalScore,
+              globalActionScore.historicalScore,
               mapItemObservedAt(item),
               now,
               {
@@ -130,33 +136,38 @@ export function ShapeLayers({
               },
             )
           : null;
-        const actionTooltipReading = actionProjection
+        const actionTooltipReading = isActionMapItem(item) && globalActionScore
           ? {
-              historicalScore: actionProjection.historicalScore,
-              projectedScore: actionProjection.projectedPollutionScore,
-              elapsedDays: actionProjection.elapsedDays,
-              isEstimate: actionProjection.isEstimate,
-              projectionConfidenceLabel: formatProjectionConfidenceLabel(
-                actionProjection.projectionConfidence.level,
-              ),
-              displayMode,
-              displaySource:
-                currentPlaceState?.source ??
-                (displayMode === "projected_today" ? "projected" : "observed"),
-              displayedScore:
-                currentPlaceState?.score ??
-                (displayMode === "projected_today"
-                  ? actionProjection.projectedPollutionScore
-                  : mapItemPostActionPollutionScore(item) ?? score),
-              displayedScoreKind:
-                currentPlaceState?.scoreKind ??
-                (displayMode === "projected_today" ? "projected" : "measured"),
-              displayedStateLabel:
-                currentPlaceState?.stateLabel ??
-                (displayMode === "projected_today"
-                  ? "Pollution projetée"
-                  : "Pollution observée"),
+              scoreScope,
+              historicalScore: globalActionScore.historicalScore ?? 0,
+              projectedScore: actionProjection?.projectedPollutionScore ?? globalActionScore.score ?? 0,
+              elapsedDays: actionProjection?.elapsedDays ?? 0,
+              isEstimate: actionProjection?.isEstimate ?? false,
+              projectionConfidenceLabel: actionProjection
+                ? formatProjectionConfidenceLabel(actionProjection.projectionConfidence.level)
+                : "",
+              displayMode: scoreScope === "global" ? displayMode : undefined,
+              displaySource: scoreScope === "global"
+                ? currentPlaceState?.source ?? (displayMode === "projected_today" ? "projected" : "observed")
+                : undefined,
+              displayedScore: scoreScope === "global"
+                ? currentPlaceState?.score ?? (displayMode === "projected_today" ? actionProjection?.projectedPollutionScore : mapItemPostActionPollutionScore(item) ?? globalActionScore.historicalScore)
+                : departmentActionScore?.score,
+              displayedScoreKind: scoreScope === "global"
+                ? currentPlaceState?.scoreKind ?? (displayMode === "projected_today" ? "projected" : "measured")
+                : departmentActionScore?.score === null ? "unavailable" : "measured",
+              displayedStateLabel: scoreScope === "global"
+                ? currentPlaceState?.stateLabel ?? (displayMode === "projected_today" ? "Pollution projetée" : "Pollution observée")
+                : departmentActionScore?.score === null ? "Comparaison départementale indisponible" : "Score relatif départemental",
               displayedDate: currentPlaceState?.date ?? mapItemObservedAt(item),
+              globalScore: globalActionScore.historicalScore,
+              globalWasteScore: globalActionScore.wasteScore,
+              globalButtsScore: globalActionScore.buttsScore,
+              departmentScore: departmentActionScore?.score,
+              departmentWasteScore: departmentActionScore?.wasteScore,
+              departmentButtsScore: departmentActionScore?.buttsScore,
+              departmentName: item.contract?.location.departmentName ?? null,
+              departmentUnavailable: departmentActionScore?.score === null,
             }
           : undefined;
         const coords = mapItemCoordinates(item);

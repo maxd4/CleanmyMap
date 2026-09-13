@@ -11,6 +11,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { mapItemType } from "@/lib/actions/data-contract";
 import type { ActionMapItem } from "@/lib/actions/types";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import { useActionsMapFilters } from "@/components/actions/map/use-actions-map-filters";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 import { PageHeader } from "@/components/ui/page-header";
@@ -108,6 +109,7 @@ function ActionsMapPageContent({
   const [selectedActionId, setSelectedActionId] = useState<string | null>(
     requestedActionId,
   );
+  const [scoreScope, setScoreScope] = useState<PollutionScoreScope>("global");
   const {
     viewport: mapViewport,
     viewportRequest,
@@ -176,7 +178,11 @@ function ActionsMapPageContent({
           <PageHeader
             family={pageFamily}
             title="Cartographie des actions"
-            subtitle="Les couleurs représentent une pollution projetée à partir de la dernière action ; elles ne constituent pas une mesure actuelle du terrain. La pollution constatée avant l’action et le temps écoulé alimentent cette estimation."
+            subtitle={
+              scoreScope === "department"
+                ? "Les couleurs comparent l'intensité de collecte à la référence du département. Ce score relatif n'est pas projeté dans le temps."
+                : "Les couleurs représentent une pollution projetée à partir de la dernière action ; elles ne constituent pas une mesure actuelle du terrain. La pollution constatée avant l’action et le temps écoulé alimentent cette estimation."
+            }
             className="w-full"
           />
 
@@ -208,6 +214,8 @@ function ActionsMapPageContent({
             recenterViewport={recenterViewport}
             onViewportChange={handleViewportChange}
             onViewportInteraction={handleManualViewportInteraction}
+            scoreScope={scoreScope}
+            onScoreScopeChange={setScoreScope}
           />
         </section>
 
@@ -229,6 +237,7 @@ function ActionsMapPageContent({
                 onDateScopeChange={handleDateScopeChange}
                 onCategoryToggle={handleCategoryToggle}
                 onReset={handleResetFilters}
+                scoreScope={scoreScope}
               />
 
               <section className={cn(surfaceCard, "p-8 space-y-8")}>
