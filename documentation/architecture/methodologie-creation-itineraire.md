@@ -239,7 +239,9 @@ les trois zones éditables — départ, mi-parcours et arrivée — ; les arrêt
 techniques du planner ne sont pas affichés comme étapes publiques. Lorsque la
 source de groupes n’est pas meilleure, le nombre réel de groupes peut être
 déduit du nombre de boucles restantes. Aucune répartition des bénévoles par
-groupe n’est reconstruite à partir de ce seul nombre.
+groupe n’est reconstruite à partir de ce seul nombre. Le planner ne reçoit pas
+la ventilation enfants/adultes/retraités de l’action ; cette allocation par
+groupe reste donc inconnue et n’est jamais inventée.
 
 La validation du contrat réel reste bornée par `actual-route-v1`. Le flux
 planner → création d’action utilise un handoff de session temporaire ; la
@@ -452,7 +454,8 @@ actuel :
 - la météo et les conditions dépendantes de la date ou de l’heure ;
 - la durée d’intervention et l’estimation du temps de nettoyage, qui ne sont
   pas encore calibrées par `route-cleanup-workload-v1` ;
-- les groupes, équipes et la génération de plusieurs itinéraires.
+- une allocation détaillée des catégories de bénévoles par groupe, lorsque
+  cette information n’a pas été fournie au planner.
 
 Ces évolutions devront conserver la séparation entre observation, prédiction,
 décision du planner et résultat du routage. Toute modification de contrat ou

@@ -3,6 +3,8 @@ import type {
   RouteGeometry,
   RouteStop,
 } from "./route-contract";
+import type { ActionDrawing } from "@/lib/actions/types";
+import { createFallbackRouteGeometry } from "@/lib/geo/osrm-routing";
 import type {
   RouteGroupRoute,
   RouteRecommendationResponse,
@@ -136,6 +138,32 @@ export function replaceActualRouteLoop(
         : route,
     ),
   };
+}
+
+/**
+ * Converts the editable action polyline into a real closed loop without
+ * inventing network routing or per-stop timings.
+ */
+export function buildActualRouteGeometryFromDrawing(
+  drawing: ActionDrawing | null | undefined,
+): RouteGeometry | null {
+  if (drawing?.kind !== "polyline" || drawing.coordinates.length < 2) {
+    return null;
+  }
+
+  const coordinates = drawing.coordinates.map(([latitude, longitude]) => [
+    latitude,
+    longitude,
+  ] as [number, number]);
+  const first = coordinates[0];
+  const last = coordinates.at(-1);
+  if (!first || !last) return null;
+
+  const closedCoordinates =
+    first[0] === last[0] && first[1] === last[1]
+      ? coordinates
+      : [...coordinates, first];
+  return createFallbackRouteGeometry(closedCoordinates);
 }
 
 /** Public map segments intentionally omit technical stops and per-stop timings. */

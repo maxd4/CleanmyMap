@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createFallbackRouteGeometry } from "@/lib/geo/osrm-routing";
 import {
+  buildActualRouteGeometryFromDrawing,
   createActualRouteFromRecommendation,
   getActualRouteGroupCount,
   getPublicActualRouteSegments,
@@ -98,5 +99,27 @@ describe("actual route contract", () => {
     expect(deleted.routes).toHaveLength(1);
     expect(getActualRouteGroupCount(deleted)).toBe(1);
     expect(deleted.routes[0]?.geometry.coordinates[0]).toEqual([48.86, 2.35]);
+  });
+
+  it("converts an open user drawing into a closed actual loop without stop timings", () => {
+    const geometryFromDrawing = buildActualRouteGeometryFromDrawing({
+      kind: "polyline",
+      coordinates: [
+        [48.86, 2.35],
+        [48.861, 2.351],
+      ],
+    });
+
+    expect(geometryFromDrawing?.isLoop).toBe(true);
+    expect(geometryFromDrawing?.coordinates).toEqual([
+      [48.86, 2.35],
+      [48.861, 2.351],
+      [48.86, 2.35],
+    ]);
+    expect(geometryFromDrawing?.legs[0]).not.toHaveProperty("durationMinutes");
+    expect(buildActualRouteGeometryFromDrawing({
+      kind: "polygon",
+      coordinates: [[48.86, 2.35], [48.861, 2.351]],
+    })).toBeNull();
   });
 });

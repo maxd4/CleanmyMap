@@ -1,10 +1,13 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { ActionDrawing } from "@/lib/actions/types";
 import type { ActualRoute, ActualRouteZoneKey } from "@/lib/route/route-actual";
 import {
+  buildActualRouteGeometryFromDrawing,
   getActualRouteGroupCount,
   removeActualRouteLoop,
+  replaceActualRouteLoop,
   updateActualRouteZone,
 } from "@/lib/route/route-actual";
 import { CmmInput } from "@/components/ui/cmm-field";
@@ -16,11 +19,14 @@ const ActualRouteMap = dynamic(
 
 export function ActualRouteEditor({
   actualRoute,
+  replacementDrawing,
   onChange,
 }: {
   actualRoute: ActualRoute;
+  replacementDrawing?: ActionDrawing | null;
   onChange: (actualRoute: ActualRoute) => void;
 }) {
+  const replacementGeometry = buildActualRouteGeometryFromDrawing(replacementDrawing);
   const updateZoneLabel = (zone: ActualRouteZoneKey, label: string) => {
     onChange(updateActualRouteZone(actualRoute, zone, { label: label.trim() || null }));
   };
@@ -37,6 +43,10 @@ export function ActualRouteEditor({
         <p className="mt-1 text-xs leading-5 text-emerald-900/60">
           Cette copie opérationnelle peut changer sans modifier la recommandation originale.
           Les arrêts techniques restent dans la trace scientifique et ne sont pas affichés sur le parcours public.
+        </p>
+        <p className="mt-2 text-xs leading-5 text-emerald-900/60">
+          Pour remplacer une boucle, dessinez un nouveau tracé linéaire dans la carte de localisation,
+          puis utilisez le bouton de remplacement correspondant.
         </p>
       </div>
 
@@ -77,6 +87,17 @@ export function ActualRouteEditor({
               className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700"
             >
               Supprimer cette boucle
+            </button>
+            <button
+              type="button"
+              disabled={!replacementGeometry}
+              onClick={() => {
+                if (!replacementGeometry) return;
+                onChange(replaceActualRouteLoop(actualRoute, route.routeId, replacementGeometry));
+              }}
+              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              Remplacer par le tracé dessiné
             </button>
           </div>
         )) : (

@@ -487,6 +487,7 @@ export function ActionStepLocation({
       {form.actualRoute ? (
         <ActualRouteEditor
           actualRoute={form.actualRoute}
+          replacementDrawing={manualDrawing}
           onChange={(actualRoute: ActualRoute) => updateField("actualRoute", actualRoute)}
         />
       ) : null}
