@@ -74,10 +74,13 @@ export async function fetchUnifiedActionContracts(
     failedSources,
     availableSources,
   } = await loadUnifiedActionSourceData(supabase, params);
+  const fallbackLocalContracts = failedSources.includes("actions")
+    ? filterContractsByViewport(localContracts, params.viewport)
+    : [];
   const { items, isTruncated } = buildUnifiedActionContracts(
     remoteRows,
     remoteSpots,
-    filterContractsByViewport(localContracts, params.viewport),
+    fallbackLocalContracts,
     params.types,
     params.limit,
   );

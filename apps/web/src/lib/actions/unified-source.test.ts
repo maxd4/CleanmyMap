@@ -220,6 +220,62 @@ describe("unified action source", () => {
     });
   });
 
+  it("uses only remote actions when the remote source succeeds", async () => {
+    fetchActionsMock.mockResolvedValue(
+      Array.from({ length: 5 }, (_, index) => remoteAction(`remote-${index}`)),
+    );
+    loadLocalActionContractsMock.mockResolvedValue(
+      Array.from({ length: 5 }, (_, index) => localAction(`local-${index}`)),
+    );
+
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+    const result = await fetchUnifiedActionContracts(
+      createSupabase([]) as never,
+      params({ types: ["action"] }),
+    );
+
+    expect(result.items).toHaveLength(5);
+    expect(result.items.map((item) => item.id)).toEqual([
+      "remote-0",
+      "remote-1",
+      "remote-2",
+      "remote-3",
+      "remote-4",
+    ]);
+  });
+
+  it("keeps an empty successful remote action result empty", async () => {
+    fetchActionsMock.mockResolvedValue([]);
+    loadLocalActionContractsMock.mockResolvedValue(
+      Array.from({ length: 5 }, (_, index) => localAction(`local-${index}`)),
+    );
+
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+    const result = await fetchUnifiedActionContracts(
+      createSupabase([]) as never,
+      params({ types: ["action"] }),
+    );
+
+    expect(result.items).toEqual([]);
+  });
+
+  it("falls back to local actions when the remote source fails", async () => {
+    fetchActionsMock.mockRejectedValue(new Error("remote unavailable"));
+    loadLocalActionContractsMock.mockResolvedValue(
+      Array.from({ length: 5 }, (_, index) => localAction(`local-${index}`)),
+    );
+
+    const { fetchUnifiedActionContracts } = await import("./unified-source");
+    const result = await fetchUnifiedActionContracts(
+      createSupabase([]) as never,
+      params({ types: ["action"] }),
+    );
+
+    expect(result.items).toHaveLength(5);
+    expect(result.items.every((item) => item.source === "google_sheet")).toBe(true);
+    expect(result.sourceHealth.failedSources).toEqual(["actions"]);
+  });
+
   it("keeps distinct canonical signalements even when coordinates are equal or close", async () => {
     const { fetchUnifiedActionContracts } = await import("./unified-source");
     const result = await fetchUnifiedActionContracts(
