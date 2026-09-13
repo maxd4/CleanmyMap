@@ -333,9 +333,21 @@ catégorie de masse conserve la distinction `null`/zéro/valeur positive.
 
 La somme des quatre catégories n'est comparée à `wasteKg` que lorsque les
 quatre catégories sont effectivement renseignées par des nombres valides.
-Une différence strictement supérieure à 20 % produit un avertissement non
-bloquant ; elle ne rejette jamais l'action. Une ventilation partielle reste
+Les valeurs saisies dans les formulaires ont actuellement une résolution
+canonique de `0,1 kg`, exposée par
+`ACTION_WASTE_MASS_RESOLUTION_KG`. Chaque valeur `x` est donc interprétée,
+pour cette comparaison numérique uniquement, par l'intervalle
+`[max(0, x - r/2), x + r/2]`, avec `r` égal à la résolution déclarée. Les
+intervalles de `wasteKg` et de la somme des quatre catégories sont compatibles
+s'ils se recouvrent ; sinon un avertissement non bloquant est affiché.
+
+Ce contrôle décrit uniquement la compatibilité numérique avec la précision de
+saisie. Il ne modélise ni l'incertitude d'une balance, ni l'erreur humaine,
+ni la précision d'une estimation visuelle, et n'introduit aucun coefficient
+d'incertitude lié à `wasteMeasurementMethod`. Une ventilation partielle reste
 partielle et ne devient pas une ventilation complète par imputation de zéros.
+La différence absolue et `differencePercent` restent des informations
+explicatives ; le pourcentage ne décide plus du statut.
 
 Les anciennes clés `megotsKg`, `plastiqueKg`, `verreKg`, `metalKg`, `mixteKg`
 et `triQuality` sont conservées uniquement pour la lecture bornée de données
@@ -405,6 +417,13 @@ dérivé :
 ```txt
 organizationMinutes = eventDurationMinutes - actionDurationMinutes
 ```
+
+Les durées sont stockées et calculées en minutes exactes. Sur certaines
+surfaces de synthèse destinées aux bénévoles, CleanMyMap arrondit uniquement
+l'affichage au quart d'heure le plus proche afin de faciliter la lecture. Cet
+arrondi UX ne modifie jamais la donnée source ni les calculs ; il ne s'applique
+pas aux champs d'édition, aux exports, aux contrôles administratifs ou aux
+preuves techniques qui attendent la minute exacte.
 
 Une heure absente rend les deux durées dérivées indisponibles. Une heure
 invalide, une fin antérieure au début ou un créneau inférieur au temps

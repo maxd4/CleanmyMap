@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import type { FormState } from "../form/model";
 import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
 import {
+  ACTION_WASTE_MASS_RESOLUTION_KG,
   compareWasteBreakdownToTotal,
   type ActionWasteMeasurementMethod,
   type WasteCategorySlug,
@@ -106,7 +107,7 @@ export function HarvestWasteSection({
           id="harvest-waste-kg"
           inputMode="decimal"
           type="number"
-          step="0.1"
+          step={ACTION_WASTE_MASS_RESOLUTION_KG}
           min="0"
           max="100"
           className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 placeholder:text-slate-300"
@@ -176,7 +177,7 @@ export function HarvestWasteSection({
         <WasteFieldSummary value={wasteCategories} className="mt-4" />
         {coherence.status === "warning" ? (
           <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
-            Attention : la somme des catégories diffère de la masse totale de plus de 20 %. La saisie reste acceptée ; vérifiez la ventilation si possible.
+            La somme de la ventilation diffère du poids total au-delà de la précision de saisie. La saisie reste acceptée ; vérifiez les valeurs si nécessaire.
           </p>
         ) : null}
       </div>
@@ -206,7 +207,7 @@ export function HarvestWasteSection({
                   <input
                     type="number"
                     min="0"
-                    step="0.1"
+                    step={ACTION_WASTE_MASS_RESOLUTION_KG}
                     placeholder="0"
                     className={triInputCls}
                     value={value}

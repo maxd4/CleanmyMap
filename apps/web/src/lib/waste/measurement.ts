@@ -9,6 +9,9 @@ export const ACTION_WASTE_MEASUREMENT_METHODS = [
 export type ActionWasteMeasurementMethod =
   (typeof ACTION_WASTE_MEASUREMENT_METHODS)[number];
 
+/** Resolution used by the current kilogram inputs and their coherence check. */
+export const ACTION_WASTE_MASS_RESOLUTION_KG = 0.1;
+
 /** Canonical field contract for waste other than cigarette butts. */
 export type CanonicalWasteBreakdown = {
   recyclablesKg?: number | null;
@@ -22,7 +25,12 @@ export type CanonicalWasteBreakdown = {
 export type WasteBreakdownCoherence = {
   status: "not_comparable" | "coherent" | "warning";
   totalBreakdownKg: number | null;
+  differenceKg: number | null;
   differencePercent: number | null;
+};
+
+export type WasteBreakdownComparisonOptions = {
+  resolutionKg?: number;
 };
 
 const CANONICAL_BREAKDOWN_KEYS = [
@@ -42,11 +50,14 @@ function isKnownKg(value: unknown): value is number {
 export function compareWasteBreakdownToTotal(
   wasteKg: number | null | undefined,
   breakdown: CanonicalWasteBreakdown | null | undefined,
+  options: WasteBreakdownComparisonOptions = {},
 ): WasteBreakdownCoherence {
-  if (!isKnownKg(wasteKg) || !breakdown) {
+  const resolutionKg = options.resolutionKg ?? ACTION_WASTE_MASS_RESOLUTION_KG;
+  if (!isKnownKg(wasteKg) || !breakdown || !isValidResolution(resolutionKg)) {
     return {
       status: "not_comparable",
       totalBreakdownKg: null,
+      differenceKg: null,
       differencePercent: null,
     };
   }
@@ -56,11 +67,15 @@ export function compareWasteBreakdownToTotal(
     return {
       status: "not_comparable",
       totalBreakdownKg: null,
+      differenceKg: null,
       differencePercent: null,
     };
   }
 
-  const totalBreakdownKg = values.reduce((sum, value) => sum + value, 0);
+  const knownValues = values.filter(isKnownKg);
+
+  const totalBreakdownKg = knownValues.reduce((sum, value) => sum + value, 0);
+  const differenceKg = Math.abs(totalBreakdownKg - wasteKg);
   const differencePercent =
     wasteKg === 0
       ? totalBreakdownKg === 0
@@ -68,9 +83,48 @@ export function compareWasteBreakdownToTotal(
         : 100
       : (Math.abs(totalBreakdownKg - wasteKg) / wasteKg) * 100;
 
+  const breakdownInterval = sumQuantificationIntervals(knownValues, resolutionKg);
+  const totalInterval = quantificationInterval(wasteKg, resolutionKg);
+  const tolerance = Number.EPSILON *
+    Math.max(1, breakdownInterval.max, totalInterval.max) * 16;
+  const intervalsOverlap =
+    breakdownInterval.max + tolerance >= totalInterval.min &&
+    totalInterval.max + tolerance >= breakdownInterval.min;
+
   return {
-    status: differencePercent > 20 ? "warning" : "coherent",
+    status: intervalsOverlap ? "coherent" : "warning",
     totalBreakdownKg,
+    differenceKg,
     differencePercent,
   };
+}
+
+function isValidResolution(value: number): boolean {
+  return Number.isFinite(value) && value > 0;
+}
+
+function quantificationInterval(value: number, resolutionKg: number): {
+  min: number;
+  max: number;
+} {
+  return {
+    min: Math.max(0, value - resolutionKg / 2),
+    max: value + resolutionKg / 2,
+  };
+}
+
+function sumQuantificationIntervals(
+  values: number[],
+  resolutionKg: number,
+): { min: number; max: number } {
+  return values.reduce(
+    (interval, value) => {
+      const valueInterval = quantificationInterval(value, resolutionKg);
+      return {
+        min: interval.min + valueInterval.min,
+        max: interval.max + valueInterval.max,
+      };
+    },
+    { min: 0, max: 0 },
+  );
 }

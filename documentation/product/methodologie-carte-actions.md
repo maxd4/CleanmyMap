@@ -85,9 +85,13 @@ participants étaient adultes. Le contrat détaillé de stockage et de compatibi
 est défini dans `documentation/architecture/data-governance.md`.
 
 Les champs de durée gardent leur précision réelle pour le stockage et les
-calculs. Les surfaces UI modifiées affichent la durée métier arrondie au quart
-d'heure le plus proche ; les horaires source et la valeur stockée ne sont pas
-arrondis.
+calculs. Sur les surfaces de synthèse destinées aux bénévoles, l'affichage
+peut être arrondi au quart d'heure le plus proche pour faciliter la lecture ;
+les horaires source, la valeur stockée et tous les calculs restent exacts à la
+minute. Cette convention UX ne s'applique pas aux éditions, exports, contrôles
+administratifs ou preuves techniques qui attendent la minute exacte. Le
+contrat détaillé est défini dans
+[`data-governance.md`](../architecture/data-governance.md).
 
 ## 2. Score de pollution constatée
 
