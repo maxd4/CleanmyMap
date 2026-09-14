@@ -102,11 +102,14 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
   const requestedArrondissement = Number.parseInt(searchParams.get("arrondissementId") ?? "", 10);
   const requestedTemplate = searchParams.get("template");
   const requestedEventId = searchParams.get("eventId");
+  const requestedActionId = searchParams.get("actionId")?.trim() || null;
 
   const requestedAnnouncementTemplate = buildInitialAnnouncementTemplate(requestedTemplate);
 
   const initialChannelType: ChatChannelType = requestedAnnouncementTemplate
     ? "community"
+    : requestedActionId
+      ? "action"
     : isChatChannelType(requestedChannel)
     ? requestedChannel
     : defaultTab === "dm" || requestedTab === "dm"
@@ -198,13 +201,14 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
   const initialZoneName = requestedZoneName?.trim().length ? requestedZoneName.trim() : null;
 
   const initialMessageId = requestedMessageId?.trim() || null;
-  const discussionShellKey = `discussions:${initialChannelType}:${initialTopicId ?? "global"}:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}:${initialAnnouncementTemplate ?? "none"}:${requestedEventId ?? "none"}:${initialMessageId ?? "none"}`;
+  const discussionShellKey = `discussions:${initialChannelType}:${requestedActionId ?? "none"}:${initialTopicId ?? "global"}:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}:${initialAnnouncementTemplate ?? "none"}:${requestedEventId ?? "none"}:${initialMessageId ?? "none"}`;
   const dmShellKey = `dm:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}:${initialMessageId ?? "none"}`;
 
   return {
     activeTab,
     setActiveTab,
     initialChannelType,
+    initialActionId: requestedActionId,
     initialRecipient,
     initialTopicId,
     initialComposerMode: initialAnnouncementTemplate ? ("announcement" as const) : ("message" as const),

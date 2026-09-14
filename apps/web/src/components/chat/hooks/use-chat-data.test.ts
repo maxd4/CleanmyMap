@@ -114,4 +114,23 @@ describe("chat topic feed keys", () => {
       "/api/chat?channelType=dm&recipientId=user-2&messageId=11111111-1111-4111-8111-111111111111",
     );
   });
+
+  it("builds an action key from the action id and rejects a bare action scope", () => {
+    expect(buildMessagesKey({
+      activeChannelType: "action",
+      activeActionId: "11111111-1111-4111-8111-111111111111",
+      activeTopicId: null,
+      selectedRecipientId: null,
+      effectiveZone: "",
+      territoryFocus: null,
+    })).toBe("/api/chat?channelType=action&actionId=11111111-1111-4111-8111-111111111111");
+    expect(buildMessagesKey({
+      activeChannelType: "action",
+      activeActionId: null,
+      activeTopicId: null,
+      selectedRecipientId: null,
+      effectiveZone: "",
+      territoryFocus: null,
+    })).toBeNull();
+  });
 });

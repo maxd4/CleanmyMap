@@ -371,6 +371,7 @@ function createSupabaseMock(params: {
   participants: ParticipantRow[];
 }) {
   return {
+    rpc: vi.fn(async () => ({ data: "conversation-test", error: null })),
     from: vi.fn((table: string) => {
       if (table === "actions") {
         return createActionsChain(params.actions);

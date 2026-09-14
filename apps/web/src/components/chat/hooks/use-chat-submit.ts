@@ -27,6 +27,7 @@ type UseChatSubmitParams = {
   isSending: boolean;
   isUploading: boolean;
   activeChannelType: ChatChannelType;
+  activeActionId?: string | null;
   activeTopicId: ChatTopicId | null;
   messageKind: ChatMessageKind;
   pollOptions: string[];
@@ -101,6 +102,7 @@ export function useChatSubmit({
   isSending,
   isUploading,
   activeChannelType,
+  activeActionId,
   activeTopicId,
   messageKind,
   pollOptions,
@@ -142,6 +144,11 @@ export function useChatSubmit({
 
     if (activeChannelType === "dm" && !selectedRecipient) {
       setSendError("Choisissez un destinataire pour envoyer un message privé.");
+      return;
+    }
+
+    if (activeChannelType === "action" && !activeActionId) {
+      setSendError("Sélectionnez une action publiée avant d'écrire.");
       return;
     }
 
@@ -262,6 +269,7 @@ export function useChatSubmit({
         optimisticMessage: optimisticMsg,
         body: {
           channelType: activeChannelType,
+          actionId: activeChannelType === "action" ? activeActionId ?? undefined : undefined,
           messageKind,
           pollOptions: messageKind === "poll" ? pollOptions : undefined,
           relatedEventId: relatedEvent?.id,
@@ -316,6 +324,7 @@ export function useChatSubmit({
     }
   }, [
     activeChannelType,
+    activeActionId,
     activeTopicId,
     messageKind,
     pollOptions,

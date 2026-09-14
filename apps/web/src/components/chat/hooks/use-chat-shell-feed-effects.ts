@@ -10,6 +10,7 @@ import type { ChatMessage } from "../chat-types";
 
 type UseChatShellFeedEffectsParams = {
   activeChannelType: ChatChannelType;
+  selectedActionId?: string | null;
   activeTopicId: ChatTopicId | null;
   selectedRecipientId: string | null;
   effectiveZone: string;
@@ -26,6 +27,7 @@ type UseChatShellFeedEffectsParams = {
 
 export function useChatShellFeedEffects({
   activeChannelType,
+  selectedActionId,
   activeTopicId,
   selectedRecipientId,
   effectiveZone,
@@ -42,7 +44,7 @@ export function useChatShellFeedEffects({
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const initialScrollScopeRef = useRef<string | null>(null);
   const latestMessageIdRef = useRef<string | null>(null);
-  const scrollScopeKey = `${activeChannelType}:${activeTopicId ?? "global"}:${selectedRecipientId ?? "none"}:${effectiveZone}:${territoryFocus ?? "none"}`;
+  const scrollScopeKey = `${activeChannelType}:${selectedActionId ?? "none"}:${activeTopicId ?? "global"}:${selectedRecipientId ?? "none"}:${effectiveZone}:${territoryFocus ?? "none"}`;
 
   useEffect(() => {
     if (initialScrollScopeRef.current !== scrollScopeKey) {

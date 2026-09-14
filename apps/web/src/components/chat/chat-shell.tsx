@@ -19,6 +19,7 @@ import { ChatSidebar } from "./chat-sidebar";
 import { DmInbox } from "./dm-inbox";
 import { ChatContextSidebar } from "./chat-context-sidebar";
 import { useChatData } from "./hooks/use-chat-data";
+import { useChatActionDiscussions } from "./hooks/use-chat-action-discussions";
 import { useDmInbox } from "./hooks/use-dm-inbox";
 import { useChatNotificationUnreads } from "./hooks/use-chat-notification-unreads";
 import { useChatState } from "./hooks/use-chat-state";
@@ -48,6 +49,7 @@ import {
   type ChatMetaItem,
 } from "./chat-shell.utils";
 import { useChatSearch } from "./hooks/use-chat-search";
+import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 
 export type ChatShellProps = {
   initialChannelType?: ChatChannelType;
@@ -55,6 +57,7 @@ export type ChatShellProps = {
   initialZoneName?: string | null;
   initialRecipient?: ChatUser | null;
   initialMessageId?: string | null;
+  initialActionId?: string | null;
   initialTopicId?: ChatTopicId | null;
   initialComposerMode?: "message" | "announcement" | "poll";
   initialAnnouncementTemplate?: CommunityAnnouncementTemplateKey | null;
@@ -74,6 +77,7 @@ export function ChatShell({
   initialZoneName,
   initialRecipient,
   initialMessageId = null,
+  initialActionId = null,
   initialTopicId,
   initialComposerMode = "message",
   initialAnnouncementTemplate = null,
@@ -92,6 +96,8 @@ export function ChatShell({
 
   const {
     activeChannelType,
+    selectedActionId,
+    setSelectedActionId,
     setActiveChannelType,
     viewMode,
     setViewMode,
@@ -134,6 +140,7 @@ export function ChatShell({
     initialRecipient,
     initialTopicId,
     initialMessage,
+    initialActionId,
   });
   const {
     currentRoleLabel,
@@ -189,6 +196,7 @@ export function ChatShell({
     isLive,
   } = useChatData({
     activeChannelType,
+    activeActionId: selectedActionId,
     activeTopicId,
     selectedRecipientId: selectedRecipient?.id ?? null,
     effectiveZone,
@@ -201,6 +209,8 @@ export function ChatShell({
     canAccessProtectedChat: isLoaded && isSignedIn,
     supabase,
   });
+
+  const actionDiscussions = useChatActionDiscussions(messagerieMode && isLoaded);
 
   const chatSearch = useChatSearch({
     activeChannelType,
@@ -269,6 +279,7 @@ export function ChatShell({
     isSending,
     isUploading,
     activeChannelType,
+    activeActionId: selectedActionId,
     selectedRecipient,
     effectiveZone,
     territoryFocus,
@@ -294,6 +305,7 @@ export function ChatShell({
     isSending,
     isUploading,
     activeChannelType,
+    activeActionId: selectedActionId,
     activeTopicId,
     messageKind: composerMode,
     pollOptions,
@@ -326,6 +338,10 @@ export function ChatShell({
     () => getChatChannelDefinition(activeChannelType),
     [activeChannelType],
   );
+  const activeAction = useMemo(
+    () => actionDiscussions.items.find((item) => item.id === selectedActionId) ?? null,
+    [actionDiscussions.items, selectedActionId],
+  );
   const activeTopic = useMemo(
     () => getDiscussionTopic(activeChannelType, activeTopicId),
     [activeChannelType, activeTopicId],
@@ -349,8 +365,17 @@ export function ChatShell({
     () => [
       {
         label: locale === "fr" ? "Canal" : "Channel",
-        value: getChannelTitle(activeChannelType),
+        value: activeAction ? "Actions" : getChannelTitle(activeChannelType),
       },
+      ...(activeAction
+        ? [
+            { label: locale === "fr" ? "Date" : "Date", value: activeAction.action_date },
+            { label: locale === "fr" ? "Lieu" : "Location", value: activeAction.location_label },
+            { label: locale === "fr" ? "Organisateur" : "Organizer", value: activeAction.association_name || activeAction.actor_name || "—" },
+            { label: locale === "fr" ? "Participants prévus" : "Planned participants", value: String(activeAction.contract?.metadata.preparationData?.volunteerParticipation?.participantsCount ?? activeAction.volunteers_count) },
+            { label: locale === "fr" ? "Durée estimée" : "Estimated duration", value: formatBusinessDurationMinutes(activeAction.duration_minutes) },
+          ]
+        : []),
       ...(activeTopic
         ? [
             {
@@ -379,12 +404,14 @@ export function ChatShell({
       discussionGuidance.visibilityLabel,
       locale,
       isLive,
+      activeAction,
     ],
   );
 
   const { highlightedMessageId, handleLoadPreviousMessages } =
     useChatShellFeedEffects({
       activeChannelType,
+      selectedActionId,
       activeTopicId,
       selectedRecipientId: selectedRecipient?.id ?? null,
       effectiveZone,
@@ -428,12 +455,12 @@ export function ChatShell({
   );
   const ActiveChannelIcon = activeChannelVisual.icon;
   const activeChannelLabel = useMemo(
-    () => getChannelTitle(activeChannelType),
-    [activeChannelType],
+    () => activeAction ? activeAction.contract?.metadata.preparationData?.actionTitle?.trim() || activeAction.location_label : getChannelTitle(activeChannelType),
+    [activeAction, activeChannelType],
   );
   const composerPlaceholder = useMemo(
-    () => getChannelPlaceholder(activeChannelType),
-    [activeChannelType],
+    () => activeAction ? "Écrivez un message de coordination pour cette action." : getChannelPlaceholder(activeChannelType),
+    [activeAction, activeChannelType],
   );
   const {
     sidebarChannels,
@@ -460,6 +487,17 @@ export function ChatShell({
     setIsDmThreadOpen,
   });
 
+  const handleSelectAction = useCallback(
+    (actionId: string) => {
+      resetComposerForChannelChange();
+      setActiveTopicId(null);
+      setSelectedActionId(actionId);
+      setActiveChannelType("action");
+      setIsDmThreadOpen(false);
+    },
+    [resetComposerForChannelChange, setActiveChannelType, setActiveTopicId, setIsDmThreadOpen, setSelectedActionId],
+  );
+
   const handleViewModeChange = useCallback(
     (mode: "messages" | "graph") => {
       setViewMode(mode);
@@ -480,6 +518,7 @@ export function ChatShell({
 
   useChatShellNotificationEffects({
     activeChannelType,
+    selectedActionId,
     activeTopicId,
     feedState,
     messagerieMode,
@@ -540,13 +579,20 @@ export function ChatShell({
             topics={sidebarTopics}
             tone={isLight ? "light" : "dark"}
             presentation={messagerieMode ? "messagerie" : "default"}
+            actionItems={actionDiscussions.items}
+            activeActionId={selectedActionId}
+            actionLoading={actionDiscussions.isLoading}
+            actionError={actionDiscussions.error}
+            onSelectAction={handleSelectAction}
           />
         )}
         <div className={`min-h-0 min-w-0 flex-1 flex-col relative ${isDmSurface && !showDmThreadOnMobile ? "hidden md:flex" : "flex"} ${isLight ? "bg-white/60" : "bg-white/5 dark:bg-slate-950/20"}`}>
           <ChatHeader
             activeChannelType={activeChannelType}
             activeChannelLabel={activeChannelLabel}
-            activeChannelDescription={discussionGuidance.cardSummary || activeChannelDefinition.description}
+            activeChannelDescription={activeAction
+              ? `${activeAction.location_label} · ${activeAction.action_date} · ${activeAction.association_name || activeAction.actor_name || "Organisateur non renseigné"}`
+              : discussionGuidance.cardSummary || activeChannelDefinition.description}
             activeChannelIcon={ActiveChannelIcon}
             activeChannelAccentClass={activeChannelVisual.accentClass}
             metaItems={metaItems}
@@ -563,7 +609,7 @@ export function ChatShell({
             showControls={!isLight}
             isLive={isLive}
             onBackToDmInbox={isDmSurface && showDmThreadOnMobile ? handleBackToDmInbox : undefined}
-            showSearch={messagerieMode && !isBugReportChannel}
+            showSearch={messagerieMode && !isBugReportChannel && activeChannelType !== "action"}
             isSearchOpen={isSearchOpen}
             searchQuery={searchQuery}
             searchResults={chatSearch.results}

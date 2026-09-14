@@ -27,6 +27,7 @@ export const CHANNEL_TYPES = [
   "admin_elu",
   "territory",
   "bug_report",
+  "action",
 ] as const satisfies readonly ChatChannelType[];
 
 export const sendMessageSchema = z.object({
@@ -36,6 +37,7 @@ export const sendMessageSchema = z.object({
   pollOptions: z.array(z.string()).optional(),
   relatedEventId: z.string().uuid().optional(),
   topicId: z.string().optional(),
+  actionId: z.string().uuid().optional(),
   recipientId: z.string().optional(),
   arrondissementId: z.number().int().min(1).max(20).optional(),
   zoneName: z.string().optional(),
@@ -92,6 +94,10 @@ export function validateMessageKind(
   attachmentUrl: string | undefined,
   pollOptions: string[] | undefined,
 ): { error?: string } {
+  if (channelType === "action" && messageKind !== "message") {
+    return { error: "Les discussions d'action acceptent uniquement les messages standard." };
+  }
+
   if (messageKind === "message") {
     if (relatedEventId || pollOptions !== undefined) {
       return { error: "Un message standard ne peut pas contenir de contexte de sondage ou d'événement." };

@@ -7,6 +7,8 @@ import { Leaf } from "lucide-react";
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicDefinition, ChatTopicId } from "./discussion-guidance";
 import { ChannelButton } from "./ui/channel-button";
+import { ChatActionSurface } from "./chat-action-surface";
+import type { ActionListItem } from "@/lib/actions/types";
 
 export type ChatSidebarChannel = {
   channelType: ChatChannelType;
@@ -37,6 +39,11 @@ type ChatSidebarProps = {
   topics: ChatSidebarTopic[];
   tone?: "light" | "dark";
   presentation?: "default" | "messagerie";
+  actionItems?: ActionListItem[];
+  activeActionId?: string | null;
+  actionLoading?: boolean;
+  actionError?: string | null;
+  onSelectAction?: (actionId: string) => void;
 };
 
 export const ChatSidebar = memo(function ChatSidebar({
@@ -47,6 +54,11 @@ export const ChatSidebar = memo(function ChatSidebar({
   topics,
   tone = "dark",
   presentation = "default",
+  actionItems = [],
+  activeActionId = null,
+  actionLoading = false,
+  actionError = null,
+  onSelectAction,
 }: ChatSidebarProps) {
   const isLight = tone === "light";
   const isMessagerie = presentation === "messagerie";
@@ -146,6 +158,17 @@ export const ChatSidebar = memo(function ChatSidebar({
           {currentChannelType === "territory" ? renderTopics() : null}
         </div>
       </section>
+
+      {isMessagerie ? (
+        <ChatActionSurface
+          items={actionItems}
+          activeActionId={activeActionId}
+          onSelectAction={onSelectAction ?? (() => undefined)}
+          loading={actionLoading}
+          error={actionError}
+          tone={tone}
+        />
+      ) : null}
 
       {!isMessagerie ? (
         <section className="space-y-2">

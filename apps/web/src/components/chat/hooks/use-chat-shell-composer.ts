@@ -35,6 +35,7 @@ type CanSubmitChatMessageParams = {
   announcementEventLoading: boolean;
   announcementEventError: Error | null;
   activeChannelType: ChatChannelType;
+  activeActionId?: string | null;
   selectedRecipient: ChatUser | null;
   effectiveZone: string;
   territoryFocus: number | null;
@@ -59,6 +60,7 @@ export function canSubmitChatMessage({
   selectedRecipient,
   effectiveZone,
   territoryFocus,
+  activeActionId,
 }: CanSubmitChatMessageParams): boolean {
   const announcementMode = composerMode === "announcement";
 
@@ -75,7 +77,8 @@ export function canSubmitChatMessage({
       (!announcementMode || !announcementEventLoading) &&
       (!announcementMode || !announcementEventError) &&
       !(activeChannelType === "dm" && !selectedRecipient) &&
-      !(activeChannelType === "territory" && !effectiveZone && territoryFocus === null),
+      !(activeChannelType === "territory" && !effectiveZone && territoryFocus === null) &&
+      !(activeChannelType === "action" && (!activeActionId || composerMode !== "message")),
   );
 }
 
@@ -94,6 +97,7 @@ type UseChatShellComposerParams = {
   isSending: boolean;
   isUploading: boolean;
   activeChannelType: ChatChannelType;
+  activeActionId?: string | null;
   selectedRecipient: ChatUser | null;
   effectiveZone: string;
   territoryFocus: number | null;
@@ -118,6 +122,7 @@ export function useChatShellComposer({
   isSending,
   isUploading,
   activeChannelType,
+  activeActionId,
   selectedRecipient,
   effectiveZone,
   territoryFocus,
@@ -208,6 +213,7 @@ export function useChatShellComposer({
         announcementEventLoading,
         announcementEventError,
         activeChannelType,
+        activeActionId,
         selectedRecipient,
         effectiveZone,
         territoryFocus,
@@ -228,6 +234,7 @@ export function useChatShellComposer({
       announcementEventLoading,
       announcementEventError,
       activeChannelType,
+      activeActionId,
       selectedRecipient,
       effectiveZone,
       territoryFocus,

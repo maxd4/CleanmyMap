@@ -11,6 +11,7 @@ export type ChatNotificationPayload = {
   messageId?: string;
   topicId?: ChatTopicId;
   messageKind?: ChatMessageKind;
+  actionId?: string;
   zoneName?: string | null;
   arrondissementId?: number | null;
   conversationPartnerId?: string;
@@ -78,6 +79,7 @@ export function normalizeChatNotificationPayload(
     messageId: readString(raw["messageId"]) ?? undefined,
     topicId: topicId ?? undefined,
     messageKind: isChatMessageKind(messageKindValue) ? messageKindValue : undefined,
+    actionId: readString(raw["actionId"]) ?? undefined,
     zoneName: readString(raw["zoneName"]),
     arrondissementId: readNumber(raw["arrondissementId"]),
     conversationPartnerId: aliases.conversationPartnerId,
@@ -145,6 +147,12 @@ export function buildChatNotificationHref(payload: unknown): string | null {
 
   if (normalized.messageId) {
     params.set("messageId", normalized.messageId);
+  }
+
+  if (normalized.channelType === "action" && normalized.actionId) {
+    params.set("actionId", normalized.actionId);
+  } else if (normalized.channelType === "action") {
+    return null;
   }
 
   if (normalized.channelType === "dm") {

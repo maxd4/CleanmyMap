@@ -21,6 +21,7 @@ import type { ChatHistoryCursor } from "@/lib/chat/chat-pagination";
 
 type UseChatDataParams = {
   activeChannelType: ChatChannelType;
+  activeActionId?: string | null;
   activeTopicId: ChatTopicId | null;
   selectedRecipientId: string | null;
   effectiveZone: string;
@@ -48,6 +49,7 @@ export type SendChatMessageParams = {
     zoneName?: string;
     attachmentUrl?: string;
     attachmentType?: string;
+    actionId?: string;
   };
 };
 
@@ -63,6 +65,7 @@ type ChatMessageChange = {
   zone_name?: string | null;
   arrondissement_id?: number | null;
   topic_id?: string | null;
+  conversation_id?: string | null;
 };
 
 type ChatRefreshContext = {
@@ -84,6 +87,7 @@ const CHAT_REFRESH_INTERVALS_MS: Record<
   admin_elu: { realtime: 300_000, fallback: 900_000 },
   territory: { realtime: 240_000, fallback: 720_000 },
   bug_report: { realtime: 180_000, fallback: 600_000 },
+  action: { realtime: 180_000, fallback: 600_000 },
 };
 
 export function getChatRefreshIntervalMs({
@@ -119,6 +123,7 @@ const fetcher = async <T>(url: string): Promise<T> => {
 
 export function buildMessagesKey({
   activeChannelType,
+  activeActionId,
   activeTopicId,
   selectedRecipientId,
   effectiveZone,
@@ -127,6 +132,7 @@ export function buildMessagesKey({
 }: Pick<
   UseChatDataParams,
   | "activeChannelType"
+  | "activeActionId"
   | "activeTopicId"
   | "selectedRecipientId"
   | "effectiveZone"
@@ -143,6 +149,12 @@ export function buildMessagesKey({
   if (activeChannelType === "dm") {
     return selectedRecipientId
       ? `/api/chat?channelType=dm&recipientId=${encodeURIComponent(selectedRecipientId)}${messageParam}`
+      : null;
+  }
+
+  if (activeChannelType === "action") {
+    return activeActionId
+      ? `/api/chat?channelType=action&actionId=${encodeURIComponent(activeActionId)}${messageParam}`
       : null;
   }
 
@@ -179,6 +191,7 @@ function getRecentMessagesKey(messagesKey: string): string {
 
 export function useChatData({
   activeChannelType,
+  activeActionId,
   activeTopicId,
   selectedRecipientId,
   effectiveZone,
@@ -204,6 +217,7 @@ export function useChatData({
   const messagesKey = canQueryProtectedChat
     ? buildMessagesKey({
         activeChannelType,
+        activeActionId,
         activeTopicId,
         selectedRecipientId,
         effectiveZone,
@@ -402,6 +416,10 @@ export function useChatData({
               ) {
                 scheduleMessagesRefresh();
               }
+            } else if (activeChannelType === "action") {
+              if (newMsg.conversation_id === activeActionId) {
+                scheduleMessagesRefresh();
+              }
             } else {
               // Global channels (community, admin_elu, etc.)
               scheduleMessagesRefresh();
@@ -432,6 +450,7 @@ export function useChatData({
     messagesKey,
     canQueryProtectedChat,
     activeChannelType,
+    activeActionId,
     activeTopicId,
     selectedRecipientId,
     currentUserId,

@@ -50,6 +50,7 @@ export async function GET(request: Request) {
   const requestedArrondissement = parseArrondissement(searchParams.get("arrondissementId"));
   const requestedZoneName = searchParams.get("zoneName");
   const requestedMessageId = searchParams.get("messageId")?.trim() || null;
+  const requestedActionId = searchParams.get("actionId")?.trim() || null;
   const beforeCreatedAt = searchParams.get("beforeCreatedAt");
   const beforeId = searchParams.get("beforeId");
   const beforeCursor = parseChatHistoryCursor(beforeCreatedAt, beforeId);
@@ -85,6 +86,19 @@ export async function GET(request: Request) {
     );
   }
   const topicId = topicValidation.topicId;
+
+  if (channelType === "action" && !requestedActionId) {
+    return NextResponse.json(
+      { error: "Action requise", hint: "Sélectionnez une action publiée." },
+      { status: 400 },
+    );
+  }
+  if (channelType !== "action" && requestedActionId) {
+    return NextResponse.json(
+      { error: "Paramètre action invalide", hint: "actionId est réservé au canal action." },
+      { status: 400 },
+    );
+  }
 
   const supabase = await getSupabaseClerkRlsClient();
   if (!supabase) {
@@ -126,6 +140,23 @@ export async function GET(request: Request) {
   }
 
   try {
+    let actionConversationId: string | null = null;
+    if (channelType === "action" && requestedActionId) {
+      const { data: conversation, error: conversationError } = await supabase
+        .from("action_conversations")
+        .select("id")
+        .eq("action_id", requestedActionId)
+        .maybeSingle();
+      if (conversationError) throw conversationError;
+      actionConversationId = typeof conversation?.id === "string" ? conversation.id : null;
+      if (!actionConversationId) {
+        return NextResponse.json(
+          { error: "Discussion d'action introuvable." },
+          { status: 404 },
+        );
+      }
+    }
+
     const createMessageQuery = () =>
       supabase
         .from("app_messages")
@@ -224,6 +255,12 @@ export async function GET(request: Request) {
       scopeQueryFactories.push(
         () => createMessageQuery().eq("channel_type", "bug_report").eq("sender_id", userId),
         () => createMessageQuery().eq("channel_type", "bug_report").eq("recipient_id", userId),
+      );
+    } else if (channelType === "action" && actionConversationId) {
+      scopeQueryFactories.push(() =>
+        createMessageQuery()
+          .eq("channel_type", "action")
+          .eq("conversation_id", actionConversationId),
       );
     }
 

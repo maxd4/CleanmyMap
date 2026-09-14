@@ -11,6 +11,7 @@ import type { ChatNotificationReadScope } from "./use-chat-notification-unreads"
 type UseChatShellNotificationEffectsParams = {
   activeChannelType: ChatChannelType;
   activeTopicId: ChatTopicId | null;
+  selectedActionId?: string | null;
   feedState: ChatFeedState;
   messagerieMode: boolean;
   selectedRecipient: ChatUser | null;
@@ -24,6 +25,7 @@ type UseChatShellNotificationEffectsParams = {
 export function useChatShellNotificationEffects({
   activeChannelType,
   activeTopicId,
+  selectedActionId,
   feedState,
   messagerieMode,
   selectedRecipient,
@@ -123,5 +125,32 @@ export function useChatShellNotificationEffects({
     feedState,
     markChatNotificationsRead,
     messagerieMode,
+  ]);
+
+  useEffect(() => {
+    if (
+      !messagerieMode ||
+      activeChannelType !== "action" ||
+      !selectedActionId ||
+      feedState === "loading" ||
+      feedState === "degraded"
+    ) {
+      return;
+    }
+    const markKey = `action:${selectedActionId}:${latestMessageId}`;
+    if (lastMarkedChatNotificationRef.current === markKey) return;
+    lastMarkedChatNotificationRef.current = markKey;
+    void markChatNotificationsRead({ channelType: "action", actionId: selectedActionId }).catch(() => {
+      if (lastMarkedChatNotificationRef.current === markKey) {
+        lastMarkedChatNotificationRef.current = null;
+      }
+    });
+  }, [
+    activeChannelType,
+    feedState,
+    latestMessageId,
+    markChatNotificationsRead,
+    messagerieMode,
+    selectedActionId,
   ]);
 }

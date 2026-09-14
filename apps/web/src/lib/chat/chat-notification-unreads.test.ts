@@ -18,6 +18,7 @@ describe("chat notification unread aggregation", () => {
       territory: 4,
       territoryByTopic: { mon_territoire: 4 },
       dm: 5,
+      actions: 0,
     });
   });
 });

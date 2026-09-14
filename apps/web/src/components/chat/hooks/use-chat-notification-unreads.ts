@@ -19,6 +19,10 @@ export type ChatNotificationReadScope =
   | {
       channelType: "dm";
       peerId: string;
+    }
+  | {
+      channelType: "action";
+      actionId: string;
     };
 
 type UseChatNotificationUnreadsParams = {
@@ -74,8 +78,9 @@ export function useChatNotificationUnreads({
         "mark_my_chat_notifications_read",
         {
           p_channel_type: scope.channelType,
-          p_topic_id: scope.channelType === "dm" ? null : scope.topicId,
+          p_topic_id: scope.channelType === "dm" || scope.channelType === "action" ? null : scope.topicId,
           p_dm_peer_id: scope.channelType === "dm" ? scope.peerId : null,
+          p_action_id: scope.channelType === "action" ? scope.actionId : null,
         },
       );
       if (updateError) {
