@@ -62,11 +62,17 @@ La source spécialisée est
 
 - Traiter une cible principale à la fois.
 - Conserver props, exports, routes et contrats publics sauf décision distincte.
-- Utiliser la taille comme signal de revue, jamais comme objectif d'extraction
-  isolé.
+- `REVIEW_THRESHOLD` est `>500` lignes ou `>40 KiB` et produit
+  `REVIEW_REQUIRED`, un signal d'audit sans split automatique.
+- `HARD_THRESHOLD` est `>1000` lignes ou `>50 KiB`; un nouveau dépassement est
+  bloquant en mode `--enforce`.
+- Utiliser la taille comme signal, jamais comme décision d'extraction isolée.
+- Les statuts sont `REVIEW_REQUIRED`, `PROACTIVE_SPLIT`,
+  `COHESIVE_SINGLE_FILE`, `ALREADY_MODULARIZED` et `DEFERRED_SPLIT`.
+- `DEFERRED_SPLIT` exige une raison et un déclencheur de reprise.
 - Ajouter ou conserver les tests avant de supprimer une implémentation legacy.
-- Ne pas ajouter un fichier au baseline des monolithes sans justification et
-  mesure actuelle.
+- Ne jamais ajouter une exception au baseline sans justification, ref de revue,
+  plafonds `maxLines`/`maxBytes` et décision architecturale explicite.
 - Régénérer ou revalider le radar avant de choisir le lot suivant.
 
 ## 6. Performance, dépendances et sobriété

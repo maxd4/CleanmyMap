@@ -983,7 +983,7 @@ try {
     $structuralWriter.WriteLine("")
     $structuralWriter.WriteLine("Ce classement sert a choisir les zones a **analyser**. Il ne constitue jamais une instruction automatique de scinder, de deplacer ou de supprimer des fichiers.")
     $structuralWriter.WriteLine("")
-    $structuralWriter.WriteLine("Le score combine densite de fichiers tracked/source, nombre de sous-dossiers, profondeur, empreinte detaillee et presence de fichiers source depassant les seuils informatifs de ``quality:top-heavy`` (>1000 lignes ou >50 KB).")
+    $structuralWriter.WriteLine("Le score combine densite de fichiers tracked/source, nombre de sous-dossiers, profondeur, empreinte detaillee et presence de fichiers source depassant le seuil HARD de ``quality:top-heavy`` (>1000 lignes ou >50 KiB). Ce signal ne declenche jamais un split automatique.")
     $structuralWriter.WriteLine("")
     $structuralWriter.WriteLine("| # | Dossier | Score | Tracked | Source | Direct tracked | Sous-dossiers | Profondeur interne | Top-heavy source | Max lignes source | Signaux |")
     $structuralWriter.WriteLine("| ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |")

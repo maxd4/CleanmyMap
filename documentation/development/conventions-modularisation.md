@@ -27,6 +27,24 @@ Un fichier long et linéaire avec une responsabilité claire peut rester
 acceptable. Un fichier plus court mais dense, multi-responsabilités ou très
 couplé peut justifier une extraction plus tôt.
 
+## Politique des fichiers volumineux
+
+Deux seuils communs sont utilisés par les contrôles du dépôt :
+
+- `REVIEW_THRESHOLD` : `>500` lignes ou `>40 KiB`, signal d'audit
+  `REVIEW_REQUIRED` uniquement ;
+- `HARD_THRESHOLD` : `>1000` lignes ou `>50 KiB`, nouveau dépassement bloquant.
+
+Le seuil ne déclenche jamais un split automatique. La décision repose sur la
+cohésion, les responsabilités, le couplage, la testabilité et les contrats.
+Une exception de baseline doit être explicitement ratifiée, justifiée et
+bornée par `maxLines` et `maxBytes`; elle ne peut pas croître silencieusement.
+
+Les statuts architecturaux sont `REVIEW_REQUIRED`, `PROACTIVE_SPLIT`,
+`COHESIVE_SINGLE_FILE`, `ALREADY_MODULARIZED` et `DEFERRED_SPLIT`.
+`REVIEW_REQUIRED` est un état d'audit, pas une décision. `DEFERRED_SPLIT`
+exige une raison et un déclencheur de reprise explicite.
+
 ## Signaux qui justifient une revue structurelle
 
 Évaluer une modularisation lorsqu'un fichier cumule un ou plusieurs signaux :

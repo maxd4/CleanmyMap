@@ -349,15 +349,12 @@ Server/Client. Toute restructuration importante suit :
 2. architecture logique, dépendances, responsabilités et testabilité ;
 3. garde-fous de gouvernance, dépendances et documentation canonique.
 
-La taille seule n'impose pas une extraction. Les seuils de 900 à 1200 lignes
-et de 1200 lignes sont des garde-fous tardifs complémentaires, pas le point de
-départ de la modularisation. Rechercher activement les frontières au-delà de
-1200 lignes, revoir un module de 900 à 1200 lignes lors d'une modification
-significative, et éviter les micro-extractions artificielles ou les façades qui
-ne préservent pas les contrats, l'ordre d'exécution, les exceptions et les
-effets de bord. Pour le réseau, SQL, concurrence, transactions, navigateur,
-lifecycle et orchestration, caractériser d'abord le comportement avant toute
-extraction.
+La taille seule n'impose pas une extraction. La politique commune des fichiers
+volumineux comporte deux niveaux : `REVIEW_THRESHOLD` (`>500` lignes ou
+`>40 KiB`), signal d'audit uniquement, et `HARD_THRESHOLD` (`>1000` lignes ou
+`>50 KiB`), dont un nouveau dépassement est bloquant. Aucun de ces seuils ne
+déclenche un split automatique. La décision dépend de la cohésion, des
+responsabilités, du couplage, de la testabilité et des contrats.
 
 ### Modularité préventive
 
@@ -387,10 +384,13 @@ pendant l'implémentation.
 
 #### Déclencheurs précoces de revue
 
-Les déclencheurs suivants imposent une décision d'architecture avant de
+Les déclencheurs suivants imposent une revue de l'architecture avant de
 poursuivre :
 
-- nouveau fichier raisonnablement attendu autour de 500 lignes ou davantage ;
+- `REVIEW_THRESHOLD` dépassé : `REVIEW_REQUIRED`, état d'audit sans décision
+  automatique ;
+- `HARD_THRESHOLD` dépassé : nouveau dépassement bloquant sauf exception
+  explicitement ratifiée par la baseline ;
 - lot ajoutant environ 250 lignes ou davantage dans un même fichier ;
 - fichier existant au-dessus d'environ 600 lignes auquel le lot ajoute une
   nouvelle responsabilité indépendante ;
@@ -399,7 +399,9 @@ poursuivre :
   importants dans le même module.
 
 Ces valeurs sont des déclencheurs de revue d'architecture, jamais des tailles
-cibles ni une obligation de créer de petits fichiers artificiels. Lorsqu'un
+cibles ni une obligation de créer de petits fichiers artificiels. Les statuts
+architecturaux autorisés sont `REVIEW_REQUIRED`, `PROACTIVE_SPLIT`,
+`COHESIVE_SINGLE_FILE`, `ALREADY_MODULARIZED` et `DEFERRED_SPLIT`. Lorsqu'un
 déclencheur est rencontré, choisir avant de poursuivre :
 
 `PROACTIVE_SPLIT`
@@ -409,8 +411,10 @@ ou
 `COHESIVE_SINGLE_FILE`
 
 `COHESIVE_SINGLE_FILE` exige une justification fondée sur la cohésion, le
-couplage, la testabilité et le nombre réel de raisons de changement. « Le
-fichier fonctionne » ou « il reste sous le seuil heavy-files » ne sont pas des
+couplage, la testabilité et le nombre réel de raisons de changement.
+`DEFERRED_SPLIT` exige en plus une raison et un déclencheur explicite de
+reprise. `REVIEW_REQUIRED` est un état d'audit, pas une décision. « Le fichier
+fonctionne » ou « il reste sous le seuil heavy-files » ne sont pas des
 justifications suffisantes.
 
 #### Qualité d'un découpage
@@ -432,7 +436,7 @@ justifications suffisantes.
 
 Le rapport d'un lot substantiel doit indiquer :
 
-`ARCHITECTURE_DECISION: PROACTIVE_SPLIT | COHESIVE_SINGLE_FILE`
+`ARCHITECTURE_DECISION: PROACTIVE_SPLIT | COHESIVE_SINGLE_FILE | ALREADY_MODULARIZED | DEFERRED_SPLIT`
 
 Lorsqu'un déclencheur précoce a été rencontré, fournir une justification
 courte. Si une dette structurelle est volontairement différée pour une raison

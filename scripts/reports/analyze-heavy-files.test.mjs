@@ -16,7 +16,7 @@ try {
 
   fs.writeFileSync(
     largeFile,
-    `import React from 'react';\n${'export const A = 1;\n'.repeat(450)}`,
+    `import React from 'react';\n${'export const A = 1;\n'.repeat(510)}`,
     'utf8',
   );
   fs.writeFileSync(
@@ -30,7 +30,7 @@ try {
   assert.equal(results.length, 1);
   assert.equal(results[0].path, largeFile);
   assert.equal(results[0].size > 7000, true);
-  assert.equal(results[0].lines > 400, true);
+  assert.equal(results[0].lines > 500, true);
 } finally {
   fs.rmSync(tempDir, { recursive: true, force: true });
 }
