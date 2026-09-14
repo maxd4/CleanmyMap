@@ -15,7 +15,23 @@ describe("chat channels", () => {
     expect(isChatChannelType("admin_elu")).toBe(true);
     expect(isChatChannelType("territory")).toBe(true);
     expect(isChatChannelType("bug_report")).toBe(true);
+    expect(isChatChannelType("action")).toBe(true);
     expect(isChatChannelType("neighborhood")).toBe(false);
+  });
+
+  it("keeps action discussions scoped outside the global channel order", () => {
+    expect(canAccessChatChannel("action", {
+      roleLabel: "benevole",
+      hasArrondissement: false,
+      hasGreaterParisZone: false,
+      zoneContext: null,
+    })).toBe(true);
+    expect(getVisibleChatChannelTypes({
+      roleLabel: "benevole",
+      hasArrondissement: false,
+      hasGreaterParisZone: false,
+      zoneContext: null,
+    })).not.toContain("action");
   });
 
   it("limits the admin channel to admin or elected profiles", () => {

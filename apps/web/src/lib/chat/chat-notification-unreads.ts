@@ -13,6 +13,7 @@ export type ChatNotificationUnreadCounts = {
   territory: number;
   territoryByTopic: Partial<Record<ChatTopicId, number>>;
   dm: number;
+  actions: number;
 };
 
 export function createEmptyChatNotificationUnreadCounts(): ChatNotificationUnreadCounts {
@@ -22,6 +23,7 @@ export function createEmptyChatNotificationUnreadCounts(): ChatNotificationUnrea
     territory: 0,
     territoryByTopic: {},
     dm: 0,
+    actions: 0,
   };
 }
 function readNonNegativeCount(value: unknown): number {
@@ -47,6 +49,11 @@ export function normalizeChatNotificationUnreadCounts(
 
     if (channelType === "dm") {
       counts.dm += unreadCount;
+      continue;
+    }
+
+    if (channelType === "action") {
+      counts.actions += unreadCount;
       continue;
     }
 

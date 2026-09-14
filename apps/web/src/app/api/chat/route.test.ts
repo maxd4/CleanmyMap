@@ -142,6 +142,35 @@ describe("GET /api/chat and POST /api/chat", () => {
     expect(supabaseMock.messagesQuery.limit).toHaveBeenCalledWith(51);
   }, 15000);
 
+  it("loads only the canonical conversation selected by action id", async () => {
+    const actionId = "11111111-1111-4111-8111-111111111111";
+    const conversationId = "22222222-2222-4222-8222-222222222222";
+    const supabaseMock = buildSupabaseMock({
+      profile: {
+        id: "user-1", display_name: "Alex", handle: "alex", paris_arrondissement: null,
+        role_label: "member", metadata: null,
+      },
+      actionConversation: { id: conversationId, action_id: actionId },
+      messages: [{
+        id: "action-message", created_at: "2026-05-01T09:00:00.000Z", content: "Rendez-vous confirmé",
+        channel_type: "action", sender_id: "user-1", recipient_id: null, arrondissement_id: null,
+        zone_name: null, conversation_id: conversationId,
+      }],
+      insertedMessage: {
+        id: "inserted", created_at: "2026-05-01T10:00:00.000Z", content: "ok", channel_type: "action",
+        sender_id: "user-1", recipient_id: null, arrondissement_id: null, zone_name: null,
+      },
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    const { GET } = await import("./route");
+    const response = await GET(new Request(`http://localhost/api/chat?channelType=action&actionId=${actionId}`));
+    const body = (await response.json()) as { messages?: Array<{ id: string }> };
+    expect(response.status).toBe(200);
+    expect(body.messages?.map((message) => message.id)).toEqual(["action-message"]);
+    expect(supabaseMock.actionConversationQuery.eq).toHaveBeenCalledWith("action_id", actionId);
+    expect(supabaseMock.messagesQuery.eq).toHaveBeenCalledWith("conversation_id", conversationId);
+  }, 15000);
+
   it("resolves an old message in one targeted page and continues with a stable cursor", async () => {
     const messageId = (index: number) =>
       `00000000-0000-4000-8000-${index.toString(16).padStart(12, "0")}`;

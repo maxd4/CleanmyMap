@@ -82,6 +82,18 @@ export async function POST(request: Request) {
   }
 
   const messageKind = parsed.data.messageKind;
+  if (parsed.data.channelType === "action" && !parsed.data.actionId) {
+    return NextResponse.json(
+      { error: "Action requise", hint: "Sélectionnez une action publiée." },
+      { status: 400 },
+    );
+  }
+  if (parsed.data.channelType !== "action" && parsed.data.actionId) {
+    return NextResponse.json(
+      { error: "Paramètre action invalide", hint: "actionId est réservé au canal action." },
+      { status: 400 },
+    );
+  }
   const messageKindValidation = validateMessageKind(
     parsed.data.channelType,
     messageKind,
@@ -177,6 +189,7 @@ export async function POST(request: Request) {
     }
 
     let recipientId: string | null = null;
+    let actionConversationId: string | null = null;
     let targetArrondissementId: number | null = null;
     let targetZoneName: string | null = null;
     let relatedEvent: ChatRelatedEvent | null = null;
@@ -246,6 +259,19 @@ export async function POST(request: Request) {
         }
         break;
       }
+      case "action": {
+        const { data: conversation, error: conversationError } = await supabase
+          .from("action_conversations")
+          .select("id")
+          .eq("action_id", parsed.data.actionId!)
+          .maybeSingle();
+        if (conversationError) return handleApiError(conversationError, "POST /api/chat (action conversation)");
+        actionConversationId = typeof conversation?.id === "string" ? conversation.id : null;
+        if (!actionConversationId) {
+          return NextResponse.json({ error: "Discussion d'action introuvable." }, { status: 404 });
+        }
+        break;
+      }
       case "community":
       case "admin_elu":
         break;
@@ -286,6 +312,7 @@ export async function POST(request: Request) {
           sender_id: userId,
           recipient_id: recipientId,
           channel_type: parsed.data.channelType,
+          conversation_id: actionConversationId,
           topic_id: topicValidation.topicId,
           message_kind: messageKind,
           related_event_id: relatedEvent?.id ?? null,

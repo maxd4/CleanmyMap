@@ -13,6 +13,7 @@ import {
   requireAuthenticatedAccess,
 } from "@/lib/authz";
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
+import { ensureActionConversationMember } from "@/lib/chat/action-conversations";
 
 export const runtime = "nodejs";
 // Justification Vercel: l'adhesion a un groupe depend de la requete courante et du contexte Clerk.
@@ -107,6 +108,10 @@ export async function POST(request: Request) {
       userId,
       isAdminLike: false,
     });
+
+    if (joined.participationStatus === "pending" || joined.participationStatus === "confirmed") {
+      await ensureActionConversationMember(supabase, parsed.data.actionId, userId);
+    }
 
     if (joined.participationStatus === "confirmed") {
       await refreshProgressionProfile(supabase, userId).catch(() => null);

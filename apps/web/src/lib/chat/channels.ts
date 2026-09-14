@@ -14,7 +14,8 @@ export type ChatChannelType =
   | "dm"
   | "admin_elu"
   | "territory"
-  | "bug_report";
+  | "bug_report"
+  | "action";
 
 export type ZoneContext = {
   zoneName: string | null;
@@ -62,6 +63,11 @@ const CHAT_CHANNEL_DEFINITIONS: Record<ChatChannelType, ChatChannelDefinition> =
     label: "Feedback",
     description: "Signaler un bug, proposer une amélioration ou une collaboration.",
   },
+  action: {
+    type: "action",
+    label: "Actions",
+    description: "Discussion liée à une action publiée.",
+  },
 };
 
 export const CHAT_CHANNEL_ORDER: ChatChannelType[] = [
@@ -91,6 +97,7 @@ export function canAccessChatChannel(
     case "community":
     case "dm":
     case "bug_report":
+    case "action":
       return true;
     case "admin_elu":
       return roleLabel === "admin" || roleLabel === "max" || roleLabel === "elu";
@@ -198,6 +205,8 @@ export function buildChannelAccessHint(channelType: ChatChannelType): string {
       return "Votre profil doit avoir une zone (arrondissement ou commune) pour ouvrir ce canal.";
     case "bug_report":
       return "Le canal de feedback est indisponible tant qu'aucun compte administrateur n'est configuré.";
+    case "action":
+      return "Sélectionnez une action publiée pour ouvrir sa discussion.";
     default:
       return "Canal indisponible.";
   }

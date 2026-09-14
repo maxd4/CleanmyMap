@@ -20,11 +20,14 @@ type UseChatStateParams = {
   initialZoneName?: string | null;
   initialRecipient?: ChatUser | null;
   initialTopicId?: ChatTopicId | null;
+  initialActionId?: string | null;
   initialMessage?: string;
 };
 
 export type UseChatStateModel = {
   activeChannelType: ChatChannelType;
+  selectedActionId: string | null;
+  setSelectedActionId: Dispatch<SetStateAction<string | null>>;
   setActiveChannelType: Dispatch<SetStateAction<ChatChannelType>>;
   viewMode: "messages" | "graph";
   setViewMode: Dispatch<SetStateAction<"messages" | "graph">>;
@@ -69,6 +72,7 @@ export function useChatState({
   initialZoneName,
   initialRecipient,
   initialTopicId,
+  initialActionId,
   initialMessage,
 }: UseChatStateParams): UseChatStateModel {
   const [activeChannelType, setActiveChannelTypeState] =
@@ -93,6 +97,7 @@ export function useChatState({
   const [activeTopicId, setActiveTopicId] = useState<ChatTopicId | null>(
     initialTopicId ?? null,
   );
+  const [selectedActionId, setSelectedActionId] = useState<string | null>(initialActionId ?? null);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -112,6 +117,9 @@ export function useChatState({
         const resolvedValue =
           typeof nextValue === "function" ? nextValue(currentValue) : nextValue;
         setIsRecipientPickerOpen(resolvedValue === "dm");
+        if (resolvedValue !== "action") {
+          setSelectedActionId(null);
+        }
         setSendError(null);
         return resolvedValue;
       });
@@ -159,6 +167,8 @@ export function useChatState({
 
   return {
     activeChannelType,
+    selectedActionId,
+    setSelectedActionId,
     setActiveChannelType,
     viewMode,
     setViewMode,

@@ -57,4 +57,13 @@ describe("chat notification targets", () => {
       })?.topicId,
     ).toBeUndefined();
   });
+
+  it("targets the canonical action discussion by action id", () => {
+    expect(buildChatNotificationHref({
+      channelType: "action",
+      actionId: "11111111-1111-4111-8111-111111111111",
+      messageId: "message-1",
+    })).toBe("/sections/messagerie?channel=action&messageId=message-1&actionId=11111111-1111-4111-8111-111111111111");
+    expect(buildChatNotificationHref({ channelType: "action" })).toBeNull();
+  });
 });

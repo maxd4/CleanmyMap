@@ -21,6 +21,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
     activeTab,
     setActiveTab,
     initialChannelType,
+    initialActionId,
     initialTopicId,
     initialComposerMode,
     initialAnnouncementTemplate,
@@ -75,6 +76,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
               <DeferredChatShell
                 key={discussionShellKey}
                 initialChannelType={discussionChannelType}
+                initialActionId={initialActionId}
                 initialTopicId={discussionTopicId}
                 initialComposerMode={initialComposerMode}
                 initialAnnouncementTemplate={initialAnnouncementTemplate}

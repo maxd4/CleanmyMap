@@ -21,6 +21,7 @@ export type ChatMessageRow = {
   topic_id?: string | null;
   message_kind?: "message" | "announcement" | "poll";
   related_event_id?: string | null;
+  conversation_id?: string | null;
   related_event?: {
     id: string;
     title: string;
@@ -46,6 +47,7 @@ export function buildSupabaseMock(options: {
     location_label: string;
   } | null;
   pollMessage?: ChatMessageRow;
+  actionConversation?: { id: string; action_id: string } | null;
 }) {
   const profileQuery = {
     select: vi.fn(() => profileQuery),
@@ -58,6 +60,15 @@ export function buildSupabaseMock(options: {
     eq: vi.fn(() => relatedEventQuery),
     maybeSingle: vi.fn().mockResolvedValue({
       data: options.relatedEvent ?? null,
+      error: null,
+    }),
+  };
+
+  const actionConversationQuery = {
+    select: vi.fn(() => actionConversationQuery),
+    eq: vi.fn(() => actionConversationQuery),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: options.actionConversation ?? null,
       error: null,
     }),
   };
@@ -198,6 +209,9 @@ export function buildSupabaseMock(options: {
       if (table === "community_events") {
         return relatedEventQuery;
       }
+      if (table === "action_conversations") {
+        return actionConversationQuery;
+      }
       throw new Error(`Unexpected table: ${table}`);
     }),
     rpc: vi.fn((functionName: string) => {
@@ -215,6 +229,7 @@ export function buildSupabaseMock(options: {
     supabase,
     profileQuery,
     relatedEventQuery,
+    actionConversationQuery,
     messagesQuery,
     appMessagesTable,
     insertBuilder,

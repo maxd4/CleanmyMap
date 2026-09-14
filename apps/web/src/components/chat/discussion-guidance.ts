@@ -270,6 +270,36 @@ const GUIDANCE: Record<
       channelGoal: "Product improvement",
     },
   },
+  action: {
+    fr: {
+      cardTitle: "Discussion de l'action",
+      cardSummary: "Coordination liée à l'action publiée, sans remplacer sa fiche source.",
+      visibilityLabel: () => "Visible aux personnes autorisées par l'action",
+      audienceLabel: () => "Organisateur et participants autorisés",
+      purposeTags: ["Coordination", "Logistique", "Terrain"],
+      messagePattern: "Point d'action → besoin → réponse attendue",
+      emptyTitle: "Lancez la coordination de l'action",
+      emptyDescription: "Les messages de cette action restent attachés à sa fiche et à son historique.",
+      starterTitle: "Premiers messages utiles",
+      starterPrompts: ["Je confirme ce point d'organisation...", "J'ai une question sur le rendez-vous..."],
+      composerHint: "Écrivez un message de coordination lié à cette action.",
+      channelGoal: "Coordination de l'action",
+    },
+    en: {
+      cardTitle: "Action discussion",
+      cardSummary: "Coordination tied to the published action without replacing its source record.",
+      visibilityLabel: () => "Visible to people authorized for the action",
+      audienceLabel: () => "Organizer and authorized participants",
+      purposeTags: ["Coordination", "Logistics", "Field"],
+      messagePattern: "Action point → need → expected answer",
+      emptyTitle: "Start coordinating the action",
+      emptyDescription: "These messages remain attached to the action record and its history.",
+      starterTitle: "Useful first messages",
+      starterPrompts: ["I confirm this organization point...", "I have a question about the meeting point..."],
+      composerHint: "Write a coordination message related to this action.",
+      channelGoal: "Action coordination",
+    },
+  },
 };
 
 const CHAT_TOPIC_DEFINITIONS: Record<ChatChannelType, ChatTopicDefinition[]> = {
@@ -343,6 +373,7 @@ const CHAT_TOPIC_DEFINITIONS: Record<ChatChannelType, ChatTopicDefinition[]> = {
     },
   ],
   bug_report: [],
+  action: [],
 };
 
 export function getDiscussionTopics(channelType: ChatChannelType): ChatTopicDefinition[] {

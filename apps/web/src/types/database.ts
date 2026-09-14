@@ -46,6 +46,20 @@ export type ActionParticipantRow = {
     | "import";
 };
 
+export type ActionConversationRow = {
+  id: string;
+  action_id: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ActionConversationMemberRow = {
+  conversation_id: string;
+  user_id: string;
+  granted_at: string;
+  access_source: "owner" | "action_participant";
+};
+
 export type ActionRow = {
   id: string;
   created_at: string;

@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 import { enUS, fr } from "date-fns/locale";
-import { Bug, Mail, MapPin, Shield, Users, type LucideIcon } from "lucide-react";
+import { Bug, Mail, MapPin, MessageCircle, Shield, Users, type LucideIcon } from "lucide-react";
 import type { useUser } from "@clerk/nextjs";
 import {
   getChatChannelDefinition,
@@ -42,6 +42,11 @@ export const CHANNEL_VISUALS: Record<ChatChannelType, ChannelVisual> = {
     icon: Bug,
     accentClass: "text-rose-500",
     chipClass: "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300",
+  },
+  action: {
+    icon: MessageCircle,
+    accentClass: "text-sky-500",
+    chipClass: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300",
   },
 };
 
@@ -111,6 +116,8 @@ export function getChannelPlaceholder(channelType: ChatChannelType): string {
       return "Partagez une information liée à votre arrondissement ou à son voisinage.";
     case "bug_report":
       return "Ouvrez le panneau feedback pour signaler un bug, proposer une amélioration ou une collaboration.";
+    case "action":
+      return "Sélectionnez une action publiée pour coordonner son déroulement.";
     default:
       return "Écrivez votre message ici.";
   }
