@@ -1,32 +1,119 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActiveRole } from "@/lib/domain-language";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { canModerateActionConversationForIdentity, isPublishedVisibleAction } from "./action-conversations";
+import {
+  canModerateActionConversationForIdentity,
+  isPublishedVisibleAction,
+  resolveActionDiscussionAccess,
+} from "./action-conversations";
 
-const migration = readFileSync(
+const loadActionByIdMock = vi.hoisted(() => vi.fn());
+
+vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionByIdMock }));
+vi.mock("@/lib/actions/participation/organizers", () => ({
+  loadActionOrganizerIdsForAction: vi.fn().mockResolvedValue([]),
+}));
+
+const appliedMigration = readFileSync(
   resolve(process.cwd(), "supabase/migrations/20260915000006_action_conversation_exclusions.sql"),
   "utf8",
 );
+const correctiveMigration = readFileSync(
+  resolve(process.cwd(), "supabase/migrations/20260915000007_action_conversation_access_and_audit.sql"),
+  "utf8",
+);
+
+const publicFutureAction = {
+  action_date: "2099-01-01",
+  event_start_time: "10:00",
+  action_phase: "pre_action" as const,
+  status: "pending" as const,
+  moderation_visibility: "visible" as const,
+  published_at: "2098-12-01T10:00:00.000Z",
+};
+
+function buildSupabaseMock(exclusionActive = false) {
+  const conversationQuery = {
+    select: vi.fn(() => conversationQuery),
+    eq: vi.fn(() => conversationQuery),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: { id: "conversation-1" },
+      error: null,
+    }),
+  };
+  const exclusionQuery = {
+    select: vi.fn(() => exclusionQuery),
+    eq: vi.fn(() => exclusionQuery),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: exclusionActive ? { active: true } : null,
+      error: null,
+    }),
+  };
+  return {
+    from: vi.fn((table: string) => {
+      if (table === "action_conversations") return conversationQuery;
+      if (table === "action_conversation_exclusions") return exclusionQuery;
+      throw new Error(`Unexpected table: ${table}`);
+    }),
+  };
+}
 
 describe("action discussion access contract", () => {
+  beforeEach(() => {
+    loadActionByIdMock.mockReset();
+  });
+
   it.each([
-    ["published approved visible", { status: "approved", published_at: "2026-01-01", moderation_visibility: "visible" }, true],
-    ["pending is not public", { status: "pending", published_at: "2026-01-01", moderation_visibility: "visible" }, false],
-    ["unpublished is not public", { status: "approved", published_at: null, moderation_visibility: "visible" }, false],
-    ["hidden is not public", { status: "approved", published_at: "2026-01-01", moderation_visibility: "hidden" }, false],
+    ["published pending future pre-action", publicFutureAction, true],
+    ["published approved future pre-action", { ...publicFutureAction, status: "approved" as const }, true],
+    ["published approved completed action", { ...publicFutureAction, action_phase: "post_action_complete" as const, status: "approved" as const }, true],
+    ["published pending completed action", { ...publicFutureAction, action_phase: "post_action_complete" as const }, false],
+    ["rejected", { ...publicFutureAction, status: "rejected" as const }, false],
+    ["unpublished", { ...publicFutureAction, published_at: null }, false],
+    ["hidden", { ...publicFutureAction, moderation_visibility: "hidden" as const }, false],
   ])("classifies %s", (_label, action, expected) => {
     expect(isPublishedVisibleAction(action)).toBe(expected);
   });
 
-  it("uses an append-only exclusion source without membership-based access", () => {
-    expect(migration).toContain("create table if not exists public.action_conversation_exclusions");
-    expect(migration).toContain("reinstated_at timestamptz");
-    expect(migration).toContain("and a.status = 'approved'");
-    expect(migration).toContain("action_conversation_exclusions e");
-    expect(migration).toContain("and e.active");
-    expect(migration).not.toContain("exists (\n              select 1 from public.action_conversation_members");
-    expect(migration).toContain("not exists (\n        select 1 from public.action_conversation_exclusions e");
+  it("uses the existing public predicate and keeps the applied migration untouched", () => {
+    expect(appliedMigration).toContain("create table if not exists public.action_conversation_exclusions");
+    expect(appliedMigration).toContain("reinstated_at timestamptz");
+    expect(appliedMigration).toContain("and a.status = 'approved'");
+    expect(appliedMigration).toContain("action_conversation_exclusions e");
+    expect(appliedMigration).toContain("and e.active");
+    expect(appliedMigration).not.toContain("exists (\n              select 1 from public.action_conversation_members");
+    expect(correctiveMigration).toContain("public.is_public_future_pre_action(");
+    expect(correctiveMigration).toContain("a.status = 'approved'");
+    expect(correctiveMigration).toContain("action_conversation_exclusions e");
+    expect(correctiveMigration).not.toContain("action_participants");
+  });
+
+  it("authorizes every participation state equally when there is no exclusion", async () => {
+    for (const participationStatus of ["pending", "confirmed", "cancelled", "refused"]) {
+      loadActionByIdMock.mockResolvedValue(publicFutureAction);
+      const supabase = buildSupabaseMock(false);
+      const result = await resolveActionDiscussionAccess(
+        supabase as never,
+        "action-1",
+        `user-${participationStatus}`,
+      );
+
+      expect(result).toEqual({ state: "allowed", conversationId: "conversation-1" });
+      expect(supabase.from).not.toHaveBeenCalledWith("action_participants");
+    }
+  });
+
+  it("refuses an active exclusion and restores access after reintroduction", async () => {
+    loadActionByIdMock.mockResolvedValue(publicFutureAction);
+    expect(await resolveActionDiscussionAccess(buildSupabaseMock(true) as never, "action-1", "user-1")).toEqual({
+      state: "excluded",
+      conversationId: "conversation-1",
+    });
+    expect(await resolveActionDiscussionAccess(buildSupabaseMock(false) as never, "action-1", "user-1")).toEqual({
+      state: "allowed",
+      conversationId: "conversation-1",
+    });
   });
 
   it("does not couple participation routes to discussion membership", () => {

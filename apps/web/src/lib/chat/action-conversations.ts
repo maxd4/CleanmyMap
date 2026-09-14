@@ -2,6 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { UserIdentity } from "@/lib/authz";
 import { loadActionById } from "@/lib/actions/store";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import { isPublicActionReferenceAvailable } from "./action-sharing";
+import type { ActionRow } from "@/types/database";
 
 export type ActionConversationRow = {
   id: string;
@@ -34,15 +36,14 @@ export type ActionDiscussionAccess =
   | { state: "allowed"; conversationId: string };
 
 export function isPublishedVisibleAction(action: {
-  status?: string | null;
-  published_at?: string | null;
-  moderation_visibility?: string | null;
+  action_date: ActionRow["action_date"];
+  event_start_time?: ActionRow["event_start_time"];
+  action_phase: ActionRow["action_phase"];
+  status: ActionRow["status"];
+  moderation_visibility?: ActionRow["moderation_visibility"];
+  published_at?: ActionRow["published_at"];
 } | null): boolean {
-  return Boolean(
-    action?.published_at &&
-      action.status === "approved" &&
-      action.moderation_visibility !== "hidden",
-  );
+  return Boolean(action && isPublicActionReferenceAvailable(action));
 }
 
 export async function resolveActionDiscussionAccess(
