@@ -86,6 +86,7 @@ describe("coordinated multi-route routing", () => {
     expect(routeProviderMock).toHaveBeenCalledTimes(2);
     expect(result.groupRoutes).toHaveLength(2);
     expect(result.groupRoutes.every(({ routeGeometry }) => routeGeometry.isLoop)).toBe(true);
+    expect(result.groupRoutes.every(({ routeGeometry }) => routeGeometry.returnLeg !== null)).toBe(true);
     expect(result.groupRoutes.every(({ routeGeometry }) => {
       const first = routeGeometry.coordinates[0];
       const last = routeGeometry.coordinates.at(-1);
@@ -93,6 +94,9 @@ describe("coordinated multi-route routing", () => {
     })).toBe(true);
     expect(new Set(result.groupRoutes.flatMap(({ candidateIds }) => candidateIds)).size).toBe(2);
     expect(result.groupRoutes.every(({ withinBudget }) => withinBudget)).toBe(true);
+    expect(result.groupRoutes.every(({ travelMinutes, travelBudgetMinutes }) =>
+      travelMinutes <= travelBudgetMinutes,
+    )).toBe(true);
     expect(result.metrics.networkDistanceMeasured).toBe(true);
     expect(result.metrics.sharedTargetRatio).toBe(0);
     expect(result.partition.audit.overlapCosts.networkDistanceMeasured).toBe(true);

@@ -295,7 +295,11 @@ déplacement historique reste la seule contrainte. Chaque groupe porte son
 propre contrat. Pour des groupes exécutés en parallèle, le créneau global est
 `max(actionMinutes des groupes) + 15` : la marge organisationnelle n’est pas
 répétée une fois par groupe. Le système ne fabrique pas de répartition de
-bénévoles entre routes.
+bénévoles entre routes. Si seule la composition globale est disponible,
+`balancedVolunteerCounts` conserve une allocation déterministe ; elle ne
+prétend pas connaître la composition enfants/adultes/retraités de chaque
+groupe. Une composition ou un effectif différent peut donc modifier la
+proposition lorsque l’estimateur actif en tient compte.
 
 La réponse serveur et la trace exposent séparément déplacement réseau, durée
 d’action, marge, réserve diagnostique et créneau total. `trace.duration.totalMinutes`
@@ -304,6 +308,9 @@ reste `null` quand la durée d’action est inconnue ; le déplacement demeure d
 les estimations utilisateur comme un intervalle au quart d’heure, sans
 modifier la précision interne ni les calculs. La réserve d’incertitude n’est
 jamais ajoutée ni fabriquée par le planner, l’API ou le client.
+Le frontend affiche les budgets, durées, charges, allocations et états
+`withinBudget` fournis par le serveur ; l’édition du brouillon local ne déclenche
+aucune requête tant que l’utilisateur n’a pas demandé explicitement le calcul.
 
 La readiness est structurelle, sans seuil statistique arbitraire. Elle vérifie
 la couverture et la variation des déchets ordinaires et des mégots séparément,

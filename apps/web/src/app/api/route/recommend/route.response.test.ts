@@ -591,6 +591,12 @@ describe("route recommendation response trace contract", () => {
 
     expect(payload.groupRoutes.map(({ operationalBudget }) => operationalBudget?.totalMinutes))
       .toEqual([25, 25]);
+    expect(payload.groupRoutes.every(({ operationalBudget, withinBudget }) =>
+      operationalBudget?.eventBudgetMinutes === 60 &&
+      operationalBudget.actionBudgetMinutes === 45 &&
+      operationalBudget.withinBudget === true &&
+      withinBudget === true,
+    )).toBe(true);
     expect(payload.multiRoute).toMatchObject({
       operationalBudgetAvailable: true,
       totalOperationalMinutes: 25,
