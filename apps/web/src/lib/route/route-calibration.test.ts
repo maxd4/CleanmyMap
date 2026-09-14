@@ -245,7 +245,7 @@ describe("route calibration infrastructure", () => {
     }
   });
 
-  it("relates planner, actual route and contract provenance without rebuilding history", () => {
+  it("relates planner, operational route and contract provenance without rebuilding history", () => {
     const plannerSnapshot = buildRoutePlannerSnapshot({
       generatedAt: "2026-09-01T09:00:00.000Z",
       engineVersion: "route-planner-v2",
@@ -288,7 +288,7 @@ describe("route calibration infrastructure", () => {
       },
       prediction: null,
     });
-    const actualRoute: NonNullable<ActionPreparationData["actualRoute"]> = {
+    const legacyActualRoute: NonNullable<ActionPreparationData["actualRoute"]> = {
       version: "actual-route-v1",
       initializedAt: "2026-09-01T09:00:00.000Z",
       source: "planner",
@@ -321,15 +321,15 @@ describe("route calibration infrastructure", () => {
           candidates: [],
           volunteersExpected: 3,
         }),
-        actualRoute,
+        actualRoute: legacyActualRoute,
       },
     }]);
 
     expect(dataset.samples[0]?.plannerSnapshot?.distance.totalKm).toBe(1.5);
-    expect(dataset.samples[0]?.actualRoute?.routes[0]?.geometry.distanceKm).toBe(2.25);
+    expect(dataset.samples[0]?.operationalRoute?.routes[0]?.geometry.distanceKm).toBe(2.25);
     expect(dataset.samples[0]?.distance).toEqual({
       plannerRecommendedKm: 1.5,
-      actualRouteKm: 2.25,
+      operationalRouteKm: 2.25,
     });
     expect(dataset.samples[0]?.duration).toMatchObject({
       totalMinutes: 90,
@@ -345,7 +345,7 @@ describe("route calibration infrastructure", () => {
     expect(dataset.samples[0]?.contractVersions).toMatchObject({
       routeCalibration: "action-route-calibration-v2",
       plannerSnapshot: "route-planner-snapshot-v1",
-      actualRoute: "actual-route-v1",
+      operationalRoute: "operational-route-v1",
     });
   });
 

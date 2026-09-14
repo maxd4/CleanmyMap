@@ -152,15 +152,15 @@ export function useActionDeclarationForm({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional external handoff hydration
     setForm((current) => ({
       ...current,
-      actualRoute: handoff.actualRoute,
+      operationalRoute: handoff.operationalRoute,
       routeCalibrationContext: handoff.routeCalibrationContext,
       plannerProof: handoff.plannerProof,
       departureLocationLabel:
-        handoff.actualRoute.zones.departure.label ?? current.departureLocationLabel,
+        handoff.operationalRoute.zones.departure.label ?? current.departureLocationLabel,
       midRouteLocationLabel:
-        handoff.actualRoute.zones.midpoint.label ?? current.midRouteLocationLabel,
+        handoff.operationalRoute.zones.midpoint.label ?? current.midRouteLocationLabel,
       arrivalLocationLabel:
-        handoff.actualRoute.zones.arrival.label ?? current.arrivalLocationLabel,
+        handoff.operationalRoute.zones.arrival.label ?? current.arrivalLocationLabel,
     }));
   }, [initialActionId, pendingDraft]);
 

@@ -1,6 +1,6 @@
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import type { RouteDataLayers } from "./route-data-status";
-import type { RouteGeometry, RouteStop } from "./route-contract";
+import type { RouteStop } from "./route-contract";
 import type { RoutePlanningMode } from "./route-planning-mode";
 import type { RoutePlannerOrigin } from "./route-planner";
 import type { RoutePredictionSummary } from "./route-predicted-targets";
@@ -8,6 +8,7 @@ import type {
   RoutePlannerSnapshot,
   RoutePlannerSnapshotGroup,
 } from "./route-calibration";
+import { isRouteGeometry } from "./route-geometry-validation";
 import { isPlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 export function isRoutePlannerSnapshot(
@@ -272,54 +273,6 @@ function isRoutePlanningMode(value: unknown): value is RoutePlanningMode {
   const mode = value as Partial<RoutePlanningMode>;
   return mode.type === "free" ||
     (mode.type === "event-centered" && isNonEmptyString(mode.eventId));
-}
-
-function isRouteGeometry(value: unknown): value is RouteGeometry {
-  if (!value || typeof value !== "object") return false;
-  const geometry = value as Partial<RouteGeometry>;
-  return (
-    geometry.isLoop === true &&
-    (geometry.origin === null || isCoordinatePair(geometry.origin)) &&
-    Array.isArray(geometry.coordinates) &&
-    geometry.coordinates.every(isCoordinatePair) &&
-    finiteNonNegative(geometry.distanceKm) &&
-    finiteNonNegative(geometry.durationMinutes) &&
-    Array.isArray(geometry.legs) &&
-    geometry.legs.every((leg) =>
-      Boolean(leg) &&
-      finiteIntegerBetween(leg?.fromStopIndex, 0, 500) &&
-      finiteIntegerBetween(leg?.toStopIndex, 0, 500) &&
-      finiteNonNegative(leg?.distanceKm) &&
-      finiteNonNegative(leg?.estimatedMinutes),
-    ) &&
-    ["osrm", "fossgis-osrm", "none"].includes(geometry.provider ?? "") &&
-    (geometry.profile === null || geometry.profile === "foot") &&
-    ["network", "fallback"].includes(geometry.mode ?? "") &&
-    typeof geometry.estimated === "boolean" &&
-    (geometry.returnLeg === null || isReturnLeg(geometry.returnLeg))
-  );
-}
-
-function isReturnLeg(
-  value: NonNullable<RouteGeometry["returnLeg"]> | null | undefined,
-): boolean {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    finiteIntegerBetween(value.fromStopIndex, 0, 500) &&
-    finiteIntegerBetween(value.toStopIndex, 0, 500) &&
-    finiteNonNegative(value.distanceKm) &&
-    finiteNonNegative(value.estimatedMinutes)
-  );
-}
-
-function isCoordinatePair(value: unknown): value is [number, number] {
-  return (
-    Array.isArray(value) &&
-    value.length === 2 &&
-    finiteNumber(value[0]) &&
-    finiteNumber(value[1])
-  );
 }
 
 function isStringArray(value: unknown): value is string[] {

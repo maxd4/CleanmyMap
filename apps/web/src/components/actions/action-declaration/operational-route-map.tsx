@@ -3,27 +3,27 @@
 import { useEffect } from "react";
 import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import type { ActualRoute } from "@/lib/route/route-actual";
-import { getPublicActualRouteSegments } from "@/lib/route/route-actual";
+import type { OperationalRoute } from "@/lib/route/route-operational";
+import { getPublicOperationalRouteSegments } from "@/lib/route/route-operational";
 import { TERRITORY_CENTER, buildTerritoryLeafletBounds } from "@/lib/geo/territory";
 
-function FitActualRouteBounds({ actualRoute }: { actualRoute: ActualRoute }) {
+function FitOperationalRouteBounds({ operationalRoute }: { operationalRoute: OperationalRoute }) {
   const map = useMap();
   useEffect(() => {
-    const points = getPublicActualRouteSegments(actualRoute).flatMap(({ coordinates }) => coordinates);
+    const points = getPublicOperationalRouteSegments(operationalRoute).flatMap(({ coordinates }) => coordinates);
     if (points.length >= 2) {
       map.fitBounds(points, { padding: [24, 24], maxZoom: 16, animate: false });
     }
-  }, [actualRoute, map]);
+  }, [operationalRoute, map]);
   return null;
 }
 
-export function ActualRouteMap({ actualRoute }: { actualRoute: ActualRoute }) {
-  const segments = getPublicActualRouteSegments(actualRoute);
+export function OperationalRouteMap({ operationalRoute }: { operationalRoute: OperationalRoute }) {
+  const segments = getPublicOperationalRouteSegments(operationalRoute);
   const zones = [
-    ["Départ", actualRoute.zones.departure.coordinate],
-    ["Mi-parcours", actualRoute.zones.midpoint.coordinate],
-    ["Arrivée", actualRoute.zones.arrival.coordinate],
+    ["Départ", operationalRoute.zones.departure.coordinate],
+    ["Mi-parcours", operationalRoute.zones.midpoint.coordinate],
+    ["Arrivée", operationalRoute.zones.arrival.coordinate],
   ] as const;
 
   return (
@@ -43,7 +43,7 @@ export function ActualRouteMap({ actualRoute }: { actualRoute: ActualRoute }) {
           url="https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png"
           maxZoom={18}
         />
-        <FitActualRouteBounds actualRoute={actualRoute} />
+        <FitOperationalRouteBounds operationalRoute={operationalRoute} />
         {segments.map((segment, index) => (
           <Polyline
             key={segment.routeId}

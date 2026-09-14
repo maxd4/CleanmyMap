@@ -10,9 +10,10 @@ import {
   preserveHistoricalRouteCalibrationContext,
 } from "@/lib/route/route-calibration";
 import {
-  createActualRouteFromRecommendation,
-  replaceActualRouteLoop,
-} from "@/lib/route/route-actual";
+  createOperationalRouteFromRecommendation,
+  removeOperationalRouteLoop,
+  updateOperationalRouteZone,
+} from "@/lib/route/route-operational";
 import { buildActionInsertPayload, buildCreateActionGeometry } from "./store";
 
 const routeContext = buildRouteCalibrationContext({
@@ -100,7 +101,7 @@ const payload = {
   durationMinutes: 60,
   routeCalibrationContext: routeContext,
   preparationData: {
-    actualRoute: createActualRouteFromRecommendation({
+    operationalRoute: createOperationalRouteFromRecommendation({
       generatedAt: "2026-09-01T09:00:00.000Z",
       groupCount: 1,
       routeGeometry: routeContext.plannerSnapshot!.geometry,
@@ -115,7 +116,8 @@ describe("route calibration action handoff", () => {
     const contract = toContractCreatePayload(payload);
 
     expect(contract.metadata.preparationData?.routeCalibrationContext).toEqual(routeContext);
-    expect(contract.metadata.preparationData?.actualRoute?.version).toBe("actual-route-v1");
+    expect(contract.metadata.preparationData?.operationalRoute?.version).toBe("operational-route-v1");
+    expect(contract.metadata.preparationData).not.toHaveProperty("actualRoute");
   });
 
   it("validates the context at the action API boundary", () => {
@@ -125,7 +127,8 @@ describe("route calibration action handoff", () => {
     expect(parsed.success).toBe(true);
     if (parsed.success) {
       expect(parsed.data.preparationData?.routeCalibrationContext).toEqual(routeContext);
-      expect(parsed.data.preparationData?.actualRoute?.routes).toHaveLength(1);
+      expect(parsed.data.preparationData?.operationalRoute?.routes).toHaveLength(1);
+      expect(parsed.data.preparationData).not.toHaveProperty("actualRoute");
     }
   });
 
@@ -154,6 +157,8 @@ describe("route calibration action handoff", () => {
     });
 
     expect(row.preparation_data.routeCalibrationContext).toEqual(routeContext);
+    expect(row.preparation_data).toHaveProperty("operationalRoute");
+    expect(row.preparation_data).not.toHaveProperty("actualRoute");
     expect(row.preparation_data.routeCalibrationContext?.plannerSnapshot).toMatchObject({
       version: "route-planner-snapshot-v1",
       parameters: { travelBudgetMinutes: 60, maxStops: 3 },
@@ -174,12 +179,13 @@ describe("route calibration action handoff", () => {
     expect(readContract.metadata.preparationData?.routeCalibrationContext).toEqual(
       routeContext,
     );
-    expect(readContract.metadata.preparationData?.actualRoute).toEqual(
-      row.preparation_data.actualRoute,
+    expect(readContract.metadata.preparationData?.operationalRoute).toEqual(
+      row.preparation_data.operationalRoute,
     );
+    expect(readContract.metadata.preparationData).not.toHaveProperty("actualRoute");
   });
 
-  it("allows the actual route to change without rewriting the planner snapshot", () => {
+  it("allows the operational route to change without rewriting the planner snapshot", () => {
     const contract = toContractCreatePayload(payload);
     const parsed = createActionSchema.safeParse(contract);
 
@@ -187,24 +193,21 @@ describe("route calibration action handoff", () => {
     if (!parsed.success) return;
 
     const current = parsed.data.preparationData;
-    const updatedActualRoute = current?.actualRoute
-      ? {
-          ...replaceActualRouteLoop(current.actualRoute, "planner-group-1", {
-            ...current.actualRoute.routes[0]!.geometry,
-            coordinates: [[48.86, 2.35], [48.861, 2.351], [48.86, 2.35]],
+    const updatedOperationalRoute = current?.operationalRoute
+      ? removeOperationalRouteLoop(
+          updateOperationalRouteZone(current.operationalRoute, "midpoint", {
+            label: "Mi-parcours ajusté",
           }),
-          zones: {
-            ...current.actualRoute.zones,
-            midpoint: { label: "Mi-parcours réel", coordinate: null },
-          },
-        }
+          "planner-group-1",
+        )
       : null;
     const next = preserveHistoricalRouteCalibrationContext(current, {
-      actualRoute: updatedActualRoute ?? undefined,
+      operationalRoute: updatedOperationalRoute ?? undefined,
       routeCalibrationContext: routeContext,
     });
 
-    expect(next.actualRoute?.zones.midpoint.label).toBe("Mi-parcours réel");
+    expect(next.operationalRoute?.zones.midpoint.label).toBe("Mi-parcours ajusté");
+    expect(next.operationalRoute?.routes).toEqual([]);
     expect(next.routeCalibrationContext).toEqual(current?.routeCalibrationContext);
     expect(next.routeCalibrationContext?.plannerSnapshot).toEqual(
       current?.routeCalibrationContext?.plannerSnapshot,

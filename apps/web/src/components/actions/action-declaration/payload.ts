@@ -168,7 +168,7 @@ export function buildPreparationDataFromForm(
   groupJoinEnabled: form.groupJoinEnabled,
   expectedWasteCategories: wasteCategories.length > 0 ? [...wasteCategories] : undefined,
   routeCalibrationContext: form.routeCalibrationContext ?? undefined,
-    actualRoute: form.actualRoute ?? undefined,
+    operationalRoute: form.operationalRoute ?? undefined,
   };
 }
 
@@ -237,7 +237,7 @@ export function applyPreparationDataToForm(
     ? preparationData.groupJoinEnabled
     : form.groupJoinEnabled,
   wasteCategories: preparationData.expectedWasteCategories ?? form.wasteCategories,
-  actualRoute: preparationData.actualRoute ?? form.actualRoute,
+  operationalRoute: preparationData.operationalRoute ?? form.operationalRoute,
   routeCalibrationContext:
    preparationData.routeCalibrationContext ?? form.routeCalibrationContext,
  };

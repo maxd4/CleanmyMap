@@ -1,8 +1,8 @@
 import {
-  isActualRoute,
-  type ActualRoute,
+  normalizeOperationalRoute,
+  type OperationalRoute,
   type PlannerActionHandoff,
-} from "./route-actual";
+} from "./route-operational";
 import { isRouteCalibrationContext } from "./route-calibration";
 import { isRoutePlannerProofShape } from "./route-planner-proof-contract";
 
@@ -33,10 +33,17 @@ export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
   if (!raw) return null;
 
   try {
-    const parsed = JSON.parse(raw) as Partial<PlannerActionHandoff>;
+    const parsed = JSON.parse(raw) as Partial<PlannerActionHandoff> & {
+      actualRoute?: unknown;
+      operationalRoute?: unknown;
+    };
+    const operationalRoute = normalizeOperationalRoute(
+      parsed.operationalRoute ?? parsed.actualRoute,
+    );
     if (
-      !isActualRoute(parsed.actualRoute) ||
-      (parsed.routeCalibrationContext !== null &&
+      !operationalRoute ||
+      (parsed.routeCalibrationContext !== undefined &&
+        parsed.routeCalibrationContext !== null &&
         !isRouteCalibrationContext(parsed.routeCalibrationContext)) ||
       !isIsoDateInFuture(parsed.expiresAt) ||
       (parsed.routeCalibrationContext?.plannerSnapshot !== undefined &&
@@ -46,7 +53,7 @@ export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
       return null;
     }
     return {
-      actualRoute: parsed.actualRoute,
+      operationalRoute,
       routeCalibrationContext: parsed.routeCalibrationContext ?? null,
       plannerProof: parsed.plannerProof ?? null,
       expiresAt: parsed.expiresAt,
@@ -60,6 +67,6 @@ function isIsoDateInFuture(value: unknown): value is string {
   return typeof value === "string" && !Number.isNaN(Date.parse(value)) && Date.parse(value) > Date.now();
 }
 
-export function cloneActualRoute(value: ActualRoute): ActualRoute {
+export function cloneOperationalRoute(value: OperationalRoute): OperationalRoute {
   return structuredClone(value);
 }

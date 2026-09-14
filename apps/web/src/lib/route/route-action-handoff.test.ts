@@ -5,10 +5,12 @@ import {
   writePlannerActionHandoff,
 } from "./route-action-handoff";
 
-const actualRoute = {
-  version: "actual-route-v1" as const,
+const operationalRoute = {
+  version: "operational-route-v1" as const,
   initializedAt: "2026-09-14T10:00:00.000Z",
+  updatedAt: "2026-09-14T10:00:00.000Z",
   source: "planner" as const,
+  state: "planner_copy" as const,
   plannerGroupCount: 1,
   routes: [],
   zones: {
@@ -36,22 +38,43 @@ describe("planner action handoff", () => {
   it("is one-shot and does not retain an expired handoff", () => {
     const storage = installStorage();
     writePlannerActionHandoff({
-      actualRoute,
+      operationalRoute,
       routeCalibrationContext: null,
       plannerProof: null,
       expiresAt: new Date(Date.now() + 60_000).toISOString(),
     });
 
-    expect(consumePlannerActionHandoff()?.actualRoute).toEqual(actualRoute);
+    expect(consumePlannerActionHandoff()?.operationalRoute).toEqual(operationalRoute);
     expect(consumePlannerActionHandoff()).toBeNull();
 
     storage.set(ROUTE_ACTION_HANDOFF_STORAGE_KEY, JSON.stringify({
-      actualRoute,
+      operationalRoute,
       routeCalibrationContext: null,
       plannerProof: null,
       expiresAt: new Date(Date.now() - 60_000).toISOString(),
     }));
     expect(consumePlannerActionHandoff()).toBeNull();
     expect(storage.has(ROUTE_ACTION_HANDOFF_STORAGE_KEY)).toBe(false);
+  });
+
+  it("reads a legacy actualRoute handoff and returns the canonical key", () => {
+    const storage = installStorage();
+    storage.set(ROUTE_ACTION_HANDOFF_STORAGE_KEY, JSON.stringify({
+      actualRoute: {
+        version: "actual-route-v1",
+        initializedAt: operationalRoute.initializedAt,
+        source: "planner",
+        plannerGroupCount: 1,
+        routes: [],
+        zones: operationalRoute.zones,
+      },
+      routeCalibrationContext: null,
+      plannerProof: null,
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    }));
+
+    expect(consumePlannerActionHandoff()?.operationalRoute.version).toBe(
+      "operational-route-v1",
+    );
   });
 });

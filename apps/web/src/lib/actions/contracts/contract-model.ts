@@ -22,6 +22,7 @@ import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "../organizer-type";
 import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 import type { ActionVolunteerParticipation } from "../volunteer-participation";
+import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 
 export type ActionEntityType = ActionRecordType;
 
@@ -230,7 +231,9 @@ function buildActionIdentityMetadata(
     organizerType: params.organizerType ?? null,
     groupJoinEnabled: params.groupJoinEnabled ?? false,
     actionPhase: params.actionPhase ?? "post_action_complete",
-    preparationData: params.preparationData ?? null,
+    preparationData: params.preparationData
+      ? normalizeActionPreparationData(params.preparationData)
+      : null,
   };
 }
 
