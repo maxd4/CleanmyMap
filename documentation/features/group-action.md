@@ -16,6 +16,7 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 6. Les membres ajoutés manuellement à l'action sont enregistrés séparément dans `action_participants` avec la source `manual_add`, sans passer par la file publique.
 7. La participation est ensuite enregistrée dans `action_participants` avec un statut, une origine et une date de jonction, puis remonte dans les badges et les stats collectives.
 8. Si le bénévole s'est trompé, il peut annuler une demande en attente ou quitter un formulaire accepté, tout en conservant la trace historique.
+9. Depuis `Actions passées`, un bénévole peut demander son rattachement à une action publique terminée. Cette demande réutilise la même ligne `action_participants`, avec la source `post_action_claim`, puis passe par la review de l'organisateur ou d'un administrateur autorisé.
 
 ## Placement dans le bloc Agir
 
@@ -43,14 +44,16 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 - Une seule participation active est conservee par benevole et par action.
 - L'organisateur peut fermer ou rouvrir les inscriptions apres publication.
 - La participation reste tracée, mais la page benevole permet d'annuler une demande en attente ou de quitter un formulaire accepté.
+- Un claim post-action suit `pending → confirmed | cancelled` ; avec l'unicité `(action_id, user_id)`, un état `cancelled` reste terminal dans ce lot et n'est jamais reconverti silencieusement en `pending`.
+- Un claim ne reconstitue pas les effectifs terrain et ne modifie ni `volunteersCount`, ni `volunteerParticipation`, ni `effectiveVolunteerUnits`, ni les résultats collectifs. Les statistiques personnelles et la gamification sont hors périmètre de ce lot.
 
 ## Données
 
 - Source d'affichage: table `actions` filtree sur `status = approved`.
 - Source de participation: table `action_participants` avec `participation_status`, `participation_source` et `joined_at`.
-- Origine de participation: `group_form` pour les demandes publiques, `manual_add` pour les membres ajoutés directement, `admin` pour la modération, `import` pour les reprises.
+- Origine de participation: `group_form` pour les demandes publiques futures, `manual_add` pour les membres ajoutés directement, `admin` pour la modération, `import` pour les reprises et `post_action_claim` pour une demande de rattachement après une action terminée.
 - Source badge: `action_participants` alimente la famille `Participant`.
-- Source stats: `action_participants` compte pour la progression collective.
+- Source stats: `action_participants` reste la source des participations confirmées existantes ; le claim post-action n'ajoute aucune dérivation statistique dans ce lot.
 - Source fermeture: metadata de `actions.notes` via `groupJoinEnabled`.
 - Source dérogation: les opérations admin sont journalisées séparément et ne modifient pas le parcours normal.
 
@@ -62,3 +65,4 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 - Verifier qu'une participation acceptée peut etre quittée par son auteur.
 - Verifier qu'aucune action non validée n'affiche de CTA de jonction.
 - Verifier qu'un lien profond `actionId` affiche bien l'action cible, meme hors du lot par défaut.
+- Verifier qu'une action terminée publique peut recevoir un claim idempotent et qu'un claim refusé reste terminal.

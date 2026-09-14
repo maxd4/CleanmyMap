@@ -8,6 +8,7 @@ import {
   ActionParticipationOperationError,
   reviewActionParticipation,
 } from "@/lib/actions/participation/group-participation";
+import { POST_ACTION_CLAIM_PARTICIPATION_SOURCE } from "@/lib/actions/participation/group-participation.helpers";
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
 import { ensureActionConversationMember } from "@/lib/chat/action-conversations";
 import type { UserIdentity } from "@/lib/authz";
@@ -208,7 +209,11 @@ export async function handleGroupJoinReview(
             decision: parsed.data.decision,
           });
 
+    const isPostActionClaim =
+      result.participationSource === POST_ACTION_CLAIM_PARTICIPATION_SOURCE;
+
     if (
+      !isPostActionClaim &&
       ("participantUserId" in parsed.data || parsed.data.decision === "accept") &&
       (result.participationStatus === "pending" || result.participationStatus === "confirmed")
     ) {
@@ -216,8 +221,8 @@ export async function handleGroupJoinReview(
     }
 
     if (
-      "participantUserId" in parsed.data ||
-      parsed.data.decision === "accept"
+      !isPostActionClaim &&
+      ("participantUserId" in parsed.data || parsed.data.decision === "accept")
     ) {
       await refreshProgressionProfile(
         supabase,
@@ -225,13 +230,14 @@ export async function handleGroupJoinReview(
       ).catch(() => null);
     }
 
-    if (canUseAdminOverride(access.identity)) {
+    if (isPostActionClaim || canUseAdminOverride(access.identity)) {
       await appendAdminParticipationAuditOnce({
         operationId: `action-group-join-${trimmedActionId}-${Date.now()}`,
         actorUserId: access.identity?.userId ?? userId,
         targetActionId: trimmedActionId,
-        operation:
-          "participantUserId" in parsed.data
+        operation: isPostActionClaim
+          ? "post_action_claim_review"
+          : "participantUserId" in parsed.data
             ? "admin_add_participant"
             : parsed.data.decision === "reject" &&
                 result.previousValue?.participationStatus === "confirmed"

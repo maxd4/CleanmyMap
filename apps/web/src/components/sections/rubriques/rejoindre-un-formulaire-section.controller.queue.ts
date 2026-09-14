@@ -179,7 +179,7 @@ export function useJoinFormSectionQueue({
       });
 
       const payload = (await response.json()) as
-        | { status: "ok"; participantId: string; participationStatus: "pending" | "confirmed" | "cancelled"; participationSource: "group_form" | "admin" | "admin_override" | "import"; participantsCount: number }
+        | { status: "ok"; participantId: string; participationStatus: "pending" | "confirmed" | "cancelled"; participationSource: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim"; participantsCount: number }
         | { error?: string };
 
       if (!response.ok) {
@@ -222,7 +222,7 @@ export function useJoinFormSectionQueue({
       });
 
       const payload = (await response.json()) as
-        | { status: "ok"; participantId: string; participantUserId: string; participationStatus: "pending" | "confirmed" | "cancelled"; participationSource: "group_form" | "admin" | "admin_override" | "import"; participantsCount: number }
+        | { status: "ok"; participantId: string; participantUserId: string; participationStatus: "pending" | "confirmed" | "cancelled"; participationSource: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim"; participantsCount: number }
         | { error?: string };
 
       if (!response.ok) {

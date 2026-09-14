@@ -48,7 +48,7 @@ export function useJoinFormSectionController() {
   const requestedTab: JoinActionTab = resolveJoinActionTab(searchParams.get("tab"));
 
   const listUrl = useMemo(() => {
-    const params = new URLSearchParams({ limit: "24", historyLimit: "12" });
+    const params = new URLSearchParams({ limit: "24", historyLimit: "200" });
     if (isCanonicalActionId(focusActionId)) params.set("actionId", focusActionId);
     return `/api/actions/group-join?${params.toString()}`;
   }, [focusActionId]);

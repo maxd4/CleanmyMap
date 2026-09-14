@@ -237,6 +237,18 @@ export const API_AUTHORIZATION_CONTRACT = {
       evidence: ["requireAuthenticatedAccess", "cancelActionParticipation"],
     },
   },
+  "actions/[actionId]/participation-claim": {
+    POST: {
+      expected: "Authenticated user creates or reuses only their own eligible post-action claim",
+      dimensions: ["authentication", "ownership", "business permission", "audit"],
+      actual: "requireAuthenticatedAccess + server-side finished-public action eligibility + user-scoped action_participants mutation + moderation audit",
+      evidence: [
+        "requireAuthenticatedAccess",
+        "claimFinishedActionParticipation",
+        "appendActionModerationAudit",
+      ],
+    },
+  },
   "actions/[actionId]": {
     GET: {
       expected: "Authenticated creator/organizer/admin-like action-management read",

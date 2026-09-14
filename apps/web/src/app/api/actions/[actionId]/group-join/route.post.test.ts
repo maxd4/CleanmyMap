@@ -558,3 +558,67 @@ describe("POST /api/actions/:actionId/group-join", () => {
     expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
   }, 15000);
 });
+
+describe("POST /api/actions/:actionId/group-join post-action claims", () => {
+  beforeEach(() => {
+    seedGroupJoinTestDefaults();
+    authMock.mockResolvedValue({ userId: "user-1" });
+    getCurrentUserIdentityMock.mockResolvedValue({
+      userId: "user-1",
+      role: "benevole",
+      activeRole: "benevole",
+    });
+    appendActionModerationAuditMock.mockResolvedValue(undefined);
+    refreshProgressionProfileMock.mockResolvedValue(undefined);
+  });
+
+  it.each([
+    ["accept", "confirmed" as const],
+    ["reject", "cancelled" as const],
+  ])("lets the action owner %s a claim without changing group access or progression", async (decision, expectedStatus) => {
+    const supabase = createGroupJoinSupabaseMock({
+      action: createGroupJoinAction({
+        createdByClerkId: "user-1",
+        actionPhase: "post_action_complete",
+        actionDate: "2026-09-13",
+      }),
+      participants: [
+        createGroupJoinParticipant({
+          id: "claim-1",
+          action_id: "action-1",
+          user_id: "user-2",
+          created_at: "2026-09-12T10:00:00.000Z",
+          participation_status: "pending",
+          participation_source: "post_action_claim",
+        }),
+      ],
+    });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({ participantId: "claim-1", decision }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      participationStatus: expectedStatus,
+      participationSource: "post_action_claim",
+    });
+    expect(supabase.rpc).not.toHaveBeenCalled();
+    expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "post_action_claim_review",
+        actorUserId: "user-1",
+        targetUserId: "user-2",
+        details: expect.objectContaining({ decision }),
+      }),
+    );
+  });
+});

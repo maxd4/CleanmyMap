@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, MapPin, Route, Users2 } from "lucide-react";
 import type { ActionListItem } from "@/lib/actions/types";
+import type { JoinableActionHistoryItem } from "@/lib/actions/participation/group-participation";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 
@@ -15,19 +17,86 @@ function finalParticipants(item: ActionListItem): number | null {
   return typeof count === "number" && Number.isFinite(count) ? Math.max(0, Math.trunc(count)) : null;
 }
 
+type ClaimState = Pick<
+  JoinableActionHistoryItem,
+  "participationStatus" | "participationSource"
+>;
+
+function claimStatusLabel(state: ClaimState, fr: boolean): string {
+  if (state.participationStatus === "confirmed") {
+    return fr ? "Participation confirmée" : "Participation confirmed";
+  }
+  if (state.participationStatus === "pending") {
+    return fr ? "Participation à confirmer" : "Participation awaiting confirmation";
+  }
+  return fr ? "Demande refusée" : "Request refused";
+}
+
 export function PastActionsPanel({
   items,
   loading,
   error,
   fr,
   focusedActionId,
+  authenticated = false,
+  historyItems = [],
 }: {
   items: ActionListItem[];
   loading: boolean;
   error: string | null;
   fr: boolean;
   focusedActionId?: string | null;
+  authenticated?: boolean;
+  historyItems?: readonly JoinableActionHistoryItem[];
 }) {
+  const [claimOverrides, setClaimOverrides] = useState<Record<string, ClaimState>>({});
+  const [claimingActionId, setClaimingActionId] = useState<string | null>(null);
+  const [claimErrors, setClaimErrors] = useState<Record<string, string>>({});
+  const historyByActionId = useMemo(
+    () => new Map(historyItems.map((item) => [item.id, {
+      participationStatus: item.participationStatus,
+      participationSource: item.participationSource,
+    }] as const)),
+    [historyItems],
+  );
+
+  async function requestClaim(actionId: string) {
+    if (claimingActionId) return;
+    setClaimingActionId(actionId);
+    setClaimErrors((previous) => ({ ...previous, [actionId]: "" }));
+    try {
+      const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/participation-claim`, {
+        method: "POST",
+      });
+      const payload = (await response.json()) as {
+        participationStatus?: ClaimState["participationStatus"];
+        participationSource?: ClaimState["participationSource"];
+        error?: string;
+      };
+      if (!response.ok || !payload.participationStatus || !payload.participationSource) {
+        setClaimErrors((previous) => ({
+          ...previous,
+          [actionId]: payload.error || (fr ? "La demande n’a pas pu être envoyée." : "The request could not be sent."),
+        }));
+        return;
+      }
+      setClaimOverrides((previous) => ({
+        ...previous,
+        [actionId]: {
+          participationStatus: payload.participationStatus!,
+          participationSource: payload.participationSource!,
+        },
+      }));
+    } catch {
+      setClaimErrors((previous) => ({
+        ...previous,
+        [actionId]: fr ? "La demande n’a pas pu être envoyée." : "The request could not be sent.",
+      }));
+    } finally {
+      setClaimingActionId(null);
+    }
+  }
+
   useEffect(() => {
     if (!focusedActionId || loading) return;
     const target = document.getElementById(`join-action-${focusedActionId}`);
@@ -44,7 +113,7 @@ export function PastActionsPanel({
           <span className="rounded-full bg-slate-200 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-700">{formatCount(items.length)}</span>
         </div>
         <p className="text-sm leading-relaxed text-slate-600">
-          {fr ? "Les résultats affichés proviennent des déclarations publiques terminées. Aucune participation ne peut être ajoutée depuis cette vue." : "These results come from public completed declarations. Participation cannot be added from this view."}
+          {fr ? "Les résultats affichés proviennent des déclarations publiques terminées. Si vous y avez réellement participé, vous pouvez demander votre rattachement." : "These results come from public completed declarations. If you actually participated, you can request to be linked."}
         </p>
       </div>
 
@@ -56,6 +125,7 @@ export function PastActionsPanel({
         {items.map((item) => {
           const participants = finalParticipants(item);
           const hasRoute = Boolean(item.geometry_kind || item.contract?.geometry.coordinates.length);
+          const claimState = claimOverrides[item.id] ?? historyByActionId.get(item.id) ?? null;
           return (
             <article
               key={item.id}
@@ -83,6 +153,32 @@ export function PastActionsPanel({
                   <p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "finales" : "final"}</p>
                 </div>
                 <p className="text-xs text-slate-500">{fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}</p>
+                <div className="space-y-2 border-t border-slate-100 pt-3">
+                  {claimState ? (
+                    <p className="text-sm font-bold text-emerald-800" role="status">{claimStatusLabel(claimState, fr)}</p>
+                  ) : authenticated ? (
+                    <CmmButton
+                      type="button"
+                      tone="primary"
+                      variant="pill"
+                      className="w-full justify-center text-xs"
+                      loading={claimingActionId === item.id}
+                      onClick={() => void requestClaim(item.id)}
+                    >
+                      {fr ? "J’ai participé à cette action" : "I participated in this action"}
+                    </CmmButton>
+                  ) : (
+                    <CmmButton
+                      href={`/sign-in?redirect_url=${encodeURIComponent("/sections/rejoindre-une-action?tab=past")}`}
+                      tone="primary"
+                      variant="pill"
+                      className="w-full justify-center text-xs"
+                    >
+                      {fr ? "J’ai participé à cette action" : "I participated in this action"}
+                    </CmmButton>
+                  )}
+                  {claimErrors[item.id] ? <p className="text-xs font-semibold text-rose-700" role="alert">{claimErrors[item.id]}</p> : null}
+                </div>
               </div>
             </article>
           );

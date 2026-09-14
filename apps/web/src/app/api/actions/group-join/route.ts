@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 
 const listQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(24).default(8),
-  historyLimit: z.coerce.number().int().min(1).max(12).default(8),
+  historyLimit: z.coerce.number().int().min(1).max(200).default(8),
   actionId: z.string().trim().min(1).optional(),
 });
 
@@ -45,6 +45,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const parsed = listQuerySchema.safeParse({
     limit: url.searchParams.get("limit"),
+    historyLimit: url.searchParams.get("historyLimit"),
     actionId: url.searchParams.get("actionId") ?? undefined,
   });
 

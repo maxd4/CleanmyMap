@@ -45,4 +45,43 @@ describe("PastActionsPanel", () => {
     expect(markup).not.toContain("participants prévus");
     expect(markup).not.toContain("Rejoindre");
   });
+
+  it("expose le CTA anonyme vers le flux d'authentification canonique", () => {
+    const item = {
+      id: "past-action",
+      created_at: "2026-08-01T10:00:00.000Z",
+      action_date: "2026-08-01",
+      location_label: "Quai de Seine",
+      contract: { geometry: { coordinates: [] }, metadata: { actionPhase: "post_action_complete" } },
+    } as unknown as ActionListItem;
+
+    const markup = renderToStaticMarkup(
+      <PastActionsPanel items={[item]} loading={false} error={null} fr authenticated={false} />,
+    );
+
+    expect(markup).toContain("J’ai participé à cette action");
+    expect(markup).toContain("/sign-in?redirect_url=%2Fsections%2Frejoindre-une-action%3Ftab%3Dpast");
+  });
+
+  it("affiche l'état canonique d'une demande existante au lieu du CTA", () => {
+    const item = {
+      id: "past-action",
+      created_at: "2026-08-01T10:00:00.000Z",
+      action_date: "2026-08-01",
+      location_label: "Quai de Seine",
+      contract: { geometry: { coordinates: [] }, metadata: { actionPhase: "post_action_complete" } },
+    } as unknown as ActionListItem;
+    const historyItem = {
+      id: "past-action",
+      participationStatus: "pending",
+      participationSource: "post_action_claim",
+    } as unknown as import("@/lib/actions/participation/group-participation").JoinableActionHistoryItem;
+
+    const markup = renderToStaticMarkup(
+      <PastActionsPanel items={[item]} loading={false} error={null} fr authenticated historyItems={[historyItem]} />,
+    );
+
+    expect(markup).toContain("Participation à confirmer");
+    expect(markup).not.toContain("J’ai participé à cette action");
+  });
 });
