@@ -144,6 +144,7 @@ export function ActionCard({
   index,
   fr,
   authenticated,
+  isFocused = false,
   joining,
   leaving,
   onRequestJoin,
@@ -154,6 +155,7 @@ export function ActionCard({
   index: number;
   fr: boolean;
   authenticated: boolean;
+  isFocused?: boolean;
   joining: boolean;
   leaving: boolean;
   onRequestJoin: (actionId: string) => void;
@@ -175,7 +177,17 @@ export function ActionCard({
   const requestCountLabel = `${formatCount(item.pendingRequestsCount)} ${fr ? "demandes" : "requests"}`;
 
   return (
-    <article className="rounded-[1.4rem] border border-slate-200 bg-white p-4 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.35)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_56px_-34px_rgba(15,23,42,0.38)]">
+    <article
+      id={`join-action-${item.id}`}
+      tabIndex={isFocused ? -1 : undefined}
+      aria-describedby={isFocused ? `join-action-${item.id}-target` : undefined}
+      className={`rounded-[1.4rem] border bg-white p-4 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.35)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_56px_-34px_rgba(15,23,42,0.38)] ${isFocused ? "border-emerald-500 bg-emerald-50/30 ring-2 ring-emerald-300/80 ring-offset-2" : "border-slate-200"}`}
+    >
+      {isFocused ? (
+        <p id={`join-action-${item.id}-target`} className="mb-3 inline-flex rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-900">
+          {fr ? "Action ciblée par le lien" : "Action targeted by this link"}
+        </p>
+      ) : null}
       <div className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)_auto] md:items-stretch">
         <ActionThumbnail item={item} index={index} />
 

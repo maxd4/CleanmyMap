@@ -18,9 +18,13 @@ import { fetchActions } from "@/lib/actions/http";
 import type { ActionListItem } from "@/lib/actions/types";
 import {
   isPastPublicAction,
+  isCanonicalActionId,
+  prioritizeAction,
   resolveJoinActionTab,
+  resolveJoinActionTarget,
   sortPastActions,
   type JoinActionTab,
+  type JoinActionTargetResolution,
 } from "./rejoindre-une-action.model";
 
 export type { LocationFilter, PeriodFilter } from "./rejoindre-un-formulaire-section.utils";
@@ -41,13 +45,13 @@ export function useJoinFormSectionController() {
   const [pastError, setPastError] = useState<string | null>(null);
   const [queueReloadAction, setQueueReloadAction] = useState<{ actionId: string; version: number } | null>(null);
   const focusActionId = searchParams.get("actionId")?.trim() || null;
-  const activeTab: JoinActionTab = resolveJoinActionTab(searchParams.get("tab"));
+  const requestedTab: JoinActionTab = resolveJoinActionTab(searchParams.get("tab"));
 
   const listUrl = useMemo(() => {
     const params = new URLSearchParams({ limit: "24", historyLimit: "12" });
-    if (activeTab === "future" && focusActionId) params.set("actionId", focusActionId);
+    if (isCanonicalActionId(focusActionId)) params.set("actionId", focusActionId);
     return `/api/actions/group-join?${params.toString()}`;
-  }, [activeTab, focusActionId]);
+  }, [focusActionId]);
 
   const actions = useJoinFormSectionActions({
     fr,
@@ -61,7 +65,7 @@ export function useJoinFormSectionController() {
 
   useEffect(() => {
     let active = true;
-    void fetchActions({ status: "approved", types: "action", limit: 48 })
+    void fetchActions({ status: "approved", types: "action", limit: 200 })
       .then((result) => {
         if (!active) return;
         setPastItems(sortPastActions(result.items.filter((item) => isPastPublicAction(item))));
@@ -77,6 +81,19 @@ export function useJoinFormSectionController() {
       active = false;
     };
   }, [fr]);
+
+  const targetResolution: JoinActionTargetResolution = useMemo(
+    () =>
+      resolveJoinActionTarget({
+        actionId: focusActionId,
+        futureActionIds: actions.items.map((item) => item.id),
+        pastActionIds: pastItems.map((item) => item.id),
+        futureLoading: actions.loading,
+        pastLoading,
+      }),
+    [actions.items, actions.loading, focusActionId, pastItems, pastLoading],
+  );
+  const activeTab: JoinActionTab = resolveJoinActionTab(requestedTab, targetResolution);
 
   const orderedItems = useMemo(
     () =>
@@ -111,6 +128,10 @@ export function useJoinFormSectionController() {
   const preActionVisibleItems = useMemo(
     () => visibleItems.filter((item) => item.actionPhase === "pre_action"),
     [visibleItems],
+  );
+  const visiblePastItems = useMemo(
+    () => prioritizeAction(pastItems, focusActionId),
+    [focusActionId, pastItems],
   );
   const activeParticipationItems = useMemo(
     () => actions.historyItems.filter((item) => item.joined),
@@ -160,9 +181,11 @@ export function useJoinFormSectionController() {
   return {
     fr,
     focusActionId,
+    targetResolution,
     items: actions.items,
     activeTab,
     pastItems,
+    visiblePastItems,
     pastLoading,
     pastError,
     loading: actions.loading,

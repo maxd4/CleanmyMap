@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { CalendarDays, MapPin, Route, Users2 } from "lucide-react";
 import type { ActionListItem } from "@/lib/actions/types";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
@@ -19,12 +20,22 @@ export function PastActionsPanel({
   loading,
   error,
   fr,
+  focusedActionId,
 }: {
   items: ActionListItem[];
   loading: boolean;
   error: string | null;
   fr: boolean;
+  focusedActionId?: string | null;
 }) {
+  useEffect(() => {
+    if (!focusedActionId || loading) return;
+    const target = document.getElementById(`join-action-${focusedActionId}`);
+    if (!(target instanceof HTMLElement)) return;
+    target.scrollIntoView({ block: "center", behavior: "smooth" });
+    target.focus({ preventScroll: true });
+  }, [focusedActionId, items.length, loading]);
+
   return (
     <section className="space-y-4 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4 md:p-5">
       <div className="space-y-1">
@@ -46,7 +57,18 @@ export function PastActionsPanel({
           const participants = finalParticipants(item);
           const hasRoute = Boolean(item.geometry_kind || item.contract?.geometry.coordinates.length);
           return (
-            <article key={item.id} className="rounded-[1.2rem] border border-slate-200 bg-white p-4 shadow-sm">
+            <article
+              key={item.id}
+              id={`join-action-${item.id}`}
+              tabIndex={focusedActionId === item.id ? -1 : undefined}
+              aria-describedby={focusedActionId === item.id ? `join-action-${item.id}-target` : undefined}
+              className={`rounded-[1.2rem] border bg-white p-4 shadow-sm ${focusedActionId === item.id ? "border-emerald-500 bg-emerald-50/30 ring-2 ring-emerald-300/80 ring-offset-2" : "border-slate-200"}`}
+            >
+              {focusedActionId === item.id ? (
+                <p id={`join-action-${item.id}-target`} className="mb-3 inline-flex rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-900">
+                  {fr ? "Action ciblée par le lien" : "Action targeted by this link"}
+                </p>
+              ) : null}
               <div className="space-y-3">
                 <div>
                   <h3 className="text-lg font-black tracking-tight text-slate-950">{actionTitle(item)}</h3>
