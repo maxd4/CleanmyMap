@@ -80,6 +80,165 @@ describe("route calibration infrastructure", () => {
     expect(dataset.samples[0]?.historicalWorkload[0]?.cleanupWorkload.status).toBe("presence_only");
   });
 
+  it("keeps an action usable per axis when ordinary waste is missing", () => {
+    const dataset = buildCalibrationDataset([
+      {
+        id: "partial-action",
+        status: "approved",
+        actionDate: "2026-09-03",
+        locationLabel: "Lyon",
+        wasteKg: null,
+        cigaretteButts: null,
+        volunteersCount: null,
+        durationMinutes: 75,
+        placeType: "quai",
+        cigaretteButtsMeasurements: {
+          cigaretteButtsCount: 12,
+          cigaretteButtsMassKg: null,
+          cigaretteButtsVolumeLiters: null,
+          cigaretteButtsCondition: "propre",
+          cigaretteButtsCountProvenance: "counted",
+          cigaretteButtsMassProvenance: "unknown",
+          cigaretteButtsVolumeProvenance: "unknown",
+          cigaretteButtsConversionFormulaVersion: null,
+        },
+        volunteerParticipation: {
+          childrenCount: 2,
+          adultCount: 4,
+          retiredCount: 2,
+          participantsCount: null,
+          effectiveVolunteerUnits: null,
+          effectiveVolunteerUnitsFormulaVersion: null,
+        },
+        preparationData: { routeCalibrationContext: context() },
+      },
+    ]);
+
+    const sample = dataset.samples[0];
+    expect(sample).toBeDefined();
+    expect(sample?.wasteKg).toBeNull();
+    expect(sample?.cigaretteButts).toBe(12);
+    expect(sample?.ordinaryWaste.provenance).toBe("missing");
+    expect(sample?.cigaretteButtsMeasurement.provenance).toBe("counted");
+    expect(sample?.volunteers).toMatchObject({
+      childrenCount: 2,
+      adultCount: 4,
+      retiredCount: 2,
+      participantsCount: 8,
+      effectiveVolunteerUnits: 6,
+      effectiveVolunteerUnitsFormulaVersion: "effective-volunteer-units-v1",
+    });
+    expect(sample?.quality.status).toBe("partial");
+    expect(dataset.readiness.axisCoverage).toEqual({
+      ordinaryWaste: { available: 0, total: 1, rate: 0 },
+      cigaretteButts: { available: 1, total: 1, rate: 1 },
+    });
+  });
+
+  it("keeps explicitly measured zero distinct from missing data", () => {
+    const dataset = buildCalibrationDataset([
+      {
+        id: "zero-action",
+        status: "approved",
+        actionDate: "2026-09-04",
+        locationLabel: "Marseille",
+        wasteKg: 0,
+        cigaretteButts: 0,
+        volunteersCount: 1,
+        durationMinutes: 30,
+        wasteMeasurementMethod: "balance_au_sol",
+        preparationData: { routeCalibrationContext: context() },
+      },
+    ]);
+
+    expect(dataset.samples[0]?.wasteKg).toBe(0);
+    expect(dataset.samples[0]?.cigaretteButts).toBe(0);
+    expect(dataset.samples[0]?.quality.ordinaryWasteAvailable).toBe(true);
+    expect(dataset.samples[0]?.quality.cigaretteButtsAvailable).toBe(true);
+  });
+
+  it("relates planner, actual route and contract provenance without rebuilding history", () => {
+    const plannerSnapshot = buildRoutePlannerSnapshot({
+      generatedAt: "2026-09-01T09:00:00.000Z",
+      engineVersion: "route-planner-v2",
+      selectedCandidates: [],
+      selectedStops: [],
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+      planningMode: { type: "free" },
+      travelBudgetMinutes: 60,
+      maxStops: 3,
+      priorityVsTravel: 65,
+      pickupPreference: "balanced",
+      effectiveRiskFocus: "all",
+      volunteers: 3,
+      groupCount: 1,
+      routeGeometry: routeGeometry(1.5),
+      travelDistanceKm: 1.5,
+      travelMinutes: 20,
+      returnDistanceKm: 0,
+      returnMinutes: 0,
+      groups: [],
+      dataStatus: "empty",
+      dataLayers: { observed: "empty", prediction: "unavailable", recommendation: "empty" },
+      sourceHealth: {
+        partial: false,
+        failedSources: [],
+        availableSources: ["spots"],
+        warnings: [],
+      },
+      prediction: null,
+    });
+    const actualRoute: NonNullable<ActionPreparationData["actualRoute"]> = {
+      version: "actual-route-v1",
+      initializedAt: "2026-09-01T09:00:00.000Z",
+      source: "planner",
+      plannerGroupCount: 1,
+      routes: [{
+        routeId: "real-1",
+        groupIndex: 1,
+        geometry: routeGeometry(2.25),
+        technicalStops: [],
+      }],
+      zones: {
+        departure: { label: null, coordinate: [48.85, 2.35] },
+        midpoint: { label: null, coordinate: [48.851, 2.351] },
+        arrival: { label: null, coordinate: [48.85, 2.35] },
+      },
+    };
+    const dataset = buildCalibrationDataset([{
+      id: "traceable-action",
+      status: "approved",
+      actionDate: "2026-09-05",
+      locationLabel: "Paris",
+      wasteKg: 2,
+      cigaretteButts: 5,
+      volunteersCount: 3,
+      durationMinutes: 90,
+      placeType: "parc",
+      preparationData: {
+        routeCalibrationContext: context({ plannerSnapshot }),
+        actualRoute,
+      },
+    }]);
+
+    expect(dataset.samples[0]?.plannerSnapshot?.distance.totalKm).toBe(1.5);
+    expect(dataset.samples[0]?.actualRoute?.routes[0]?.geometry.distanceKm).toBe(2.25);
+    expect(dataset.samples[0]?.distance).toEqual({
+      plannerRecommendedKm: 1.5,
+      actualRouteKm: 2.25,
+    });
+    expect(dataset.samples[0]?.duration).toMatchObject({
+      totalMinutes: 90,
+      definition: "walking_plus_collection_sorting_weighing",
+      source: "action.duration_minutes",
+    });
+    expect(dataset.samples[0]?.contractVersions).toMatchObject({
+      routeCalibration: "action-route-calibration-v2",
+      plannerSnapshot: "route-planner-snapshot-v1",
+      actualRoute: "actual-route-v1",
+    });
+  });
+
   it("keeps already persisted v1 contexts readable", () => {
     const legacy = {
       ...context(),
@@ -209,7 +368,11 @@ describe("route calibration infrastructure", () => {
 
     expect(readiness.calibrationStatus).toBe("data_insufficient");
     expect(readiness.reasons).toEqual([
-      "ordinary_waste_has_no_variation",
+      "no_samples",
+      "ordinary_waste_has_no_coverage",
+      "cigarette_butts_has_no_coverage",
+      "place_type_has_no_diversity",
+      "volunteer_composition_has_no_diversity",
       "workload_has_no_diversity",
       "workload_and_volunteers_are_not_dissociable",
       "historical_runtime_bridge_missing",
@@ -229,4 +392,20 @@ describe("route calibration infrastructure", () => {
 
 function historicalPreparation(routeCalibrationContext: RouteCalibrationContext): ActionPreparationData {
   return { actionTitle: "Ancien titre", routeCalibrationContext };
+}
+
+function routeGeometry(distanceKm: number) {
+  return {
+    isLoop: true,
+    origin: [48.85, 2.35] as [number, number],
+    returnLeg: null,
+    coordinates: [[48.85, 2.35]] as [number, number][],
+    distanceKm,
+    durationMinutes: 20,
+    legs: [],
+    provider: "none" as const,
+    profile: null,
+    mode: "fallback" as const,
+    estimated: true,
+  };
 }

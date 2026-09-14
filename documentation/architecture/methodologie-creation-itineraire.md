@@ -293,9 +293,46 @@ La réserve d’incertitude n’est jamais fabriquée par le planner, l’API ou
 client.
 
 La readiness est structurelle, sans seuil statistique arbitraire. Elle vérifie
-la variation des déchets ordinaires, la diversité des workloads, la
-dissociabilité de la charge et des bénévoles, l’existence du bridge runtime
-historique et la possibilité d’une validation indépendante.
+la couverture et la variation des déchets ordinaires et des mégots séparément,
+la diversité des workloads, des types de lieu et des compositions bénévoles,
+la couverture des snapshots planner, la dissociabilité de la charge et des
+bénévoles, l’existence du bridge runtime historique et la possibilité d’une
+validation indépendante. Ces indicateurs décrivent l’état du dataset ; ils ne
+déclenchent pas à eux seuls l’activation d’un modèle.
+
+### Dataset de calibration traçable
+
+Le dataset de calibration est construit par action à partir de l’infrastructure
+`route-calibration` existante. Une action approuvée et dotée d’un contexte
+historique reste exploitable sur chaque axe disponible : `wasteKg = null`
+n’exclut donc pas l’analyse des mégots, et l’inverse est également vrai. Les
+valeurs absentes restent `null` et leur absence est portée par la qualité de la
+ligne ; un zéro explicitement mesuré reste une observation disponible.
+
+Chaque ligne conserve, lorsque ces éléments existent, le snapshot planner
+original, le parcours réel déclaré, les distances recommandée et exécutée, le
+type de lieu, la durée totale de l’action, les mesures ordinaires et mégots,
+leurs méthodes/provenances, ainsi que les versions de contrat. La durée
+`duration_minutes` est la durée réelle couvrant la marche, le ramassage, le
+tri et la pesée. Les quatre composantes ne sont pas séparées dans le contrat
+actuel : elles restent donc inconnues individuellement au lieu d’être
+inventées.
+
+Les bénévoles sont conservés sous leurs trois catégories sources
+(`childrenCount`, `adultCount`, `retiredCount`). `participantsCount` reste le
+nombre réel de personnes. `effectiveVolunteerUnits` est une dérivation
+distincte, calculée par la règle versionnée `effective-volunteer-units-v1`
+(`1 adulte`, `0,5 enfant`, `0,5 retraité`) ; elle ne remplace jamais les
+catégories dans le dataset scientifique. Une action historique qui ne possède
+que `volunteersCount` conserve ce nombre comme participation historique, avec
+les catégories et les unités effectives à `null`.
+
+La readiness reste `data_insufficient` tant que les données ne permettent pas
+une calibration défendable. Le diagnostic expose le nombre d’échantillons, la
+couverture de chaque axe, les diversités observées, la couverture des snapshots
+et les raisons de l’insuffisance. Il n’invente ni seuil scientifique, ni
+mesure, ni provenance. Tant qu’un artefact versionné n’a pas été validé
+indépendamment et activé explicitement, aucune durée calibrée n’est produite.
 
 Les états à distinguer sont :
 

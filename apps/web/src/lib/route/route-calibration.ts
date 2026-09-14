@@ -1,4 +1,22 @@
-import type { ActionPreparationData } from "@/lib/actions/types";
+import type {
+  ActionPreparationData,
+  ActionWasteBreakdown,
+} from "@/lib/actions/types";
+import type { ActionDataQualitySummary } from "@/lib/actions/quality/data-quality-types";
+import type {
+  ActionVolunteerParticipation,
+} from "@/lib/actions/volunteer-participation";
+import {
+  normalizeVolunteerParticipation,
+  resolveEffectiveVolunteerUnits,
+} from "@/lib/actions/volunteer-participation";
+import type {
+  ActionWasteMeasurementMethod,
+} from "@/lib/waste/measurement";
+import type {
+  ActionCigaretteButtsMeasurements,
+  CigaretteButtsProvenance,
+} from "@/lib/waste/cigarette-butts";
 import {
   CLEANUP_WORKLOAD_MODEL_VERSION,
   type CleanupWorkload,
@@ -11,6 +29,7 @@ import type { RoutePlannerOrigin } from "./route-planner";
 import type { RoutePredictionSummary } from "./route-predicted-targets";
 import type { RoutePickupPreference } from "./route-pickup-preference";
 import type { RouteOperationalBudget } from "./route-operational-budget";
+import type { ActualRoute } from "./route-actual";
 import { isRoutePlannerSnapshot as validateRoutePlannerSnapshot } from "./route-planner-snapshot-validation";
 
 export const ROUTE_CLEANUP_DURATION_CONTRACT_VERSION =
@@ -137,17 +156,98 @@ export type ApprovedActionForCalibration = {
   volunteersCount: number | null;
   durationMinutes: number | null;
   preparationData: ActionPreparationData | null | undefined;
+  placeType?: string | null;
+  wasteMeasurementMethod?: ActionWasteMeasurementMethod | null;
+  wasteBreakdown?: ActionWasteBreakdown | null;
+  cigaretteButtsMeasurements?: ActionCigaretteButtsMeasurements | null;
+  volunteerParticipation?: ActionVolunteerParticipation | null;
+  dataQuality?: ActionDataQualitySummary | null;
+};
+
+export type RouteCalibrationMeasurementProvenance =
+  | "measured"
+  | "counted"
+  | "derived"
+  | "estimated"
+  | "unknown"
+  | "missing";
+
+export type RouteCalibrationDuration = {
+  totalMinutes: number | null;
+  definition: "walking_plus_collection_sorting_weighing";
+  source: "action.duration_minutes" | "missing";
+  components: {
+    walkingMinutes: number | null;
+    collectionMinutes: number | null;
+    sortingMinutes: number | null;
+    weighingMinutes: number | null;
+  };
+};
+
+export type RouteCalibrationOrdinaryWaste = {
+  wasteKg: number | null;
+  measurementMethod: ActionWasteMeasurementMethod | null;
+  provenance: RouteCalibrationMeasurementProvenance;
+  breakdown: ActionWasteBreakdown | null;
+};
+
+export type RouteCalibrationCigaretteButts = {
+  measurements: ActionCigaretteButtsMeasurements | null;
+  legacyCount: number | null;
+  provenance: CigaretteButtsProvenance | "missing";
+};
+
+export type RouteCalibrationVolunteerData = {
+  childrenCount: number | null;
+  adultCount: number | null;
+  retiredCount: number | null;
+  participantsCount: number | null;
+  effectiveVolunteerUnits: number | null;
+  effectiveVolunteerUnitsFormulaVersion: string | null;
+};
+
+export type RouteCalibrationQuality = {
+  status: "complete" | "partial" | "insufficient";
+  ordinaryWasteAvailable: boolean;
+  cigaretteButtsAvailable: boolean;
+  missing: string[];
+  dataQuality: ActionDataQualitySummary | null;
+};
+
+export type RouteCalibrationContractVersions = {
+  routeCalibration: RouteCalibrationContext["version"];
+  plannerSnapshot: RoutePlannerSnapshot["version"] | null;
+  actualRoute: ActualRoute["version"] | null;
+  cleanupWorkload: CleanupWorkload["modelVersion"];
+  effectiveVolunteerUnits: string | null;
+  cigaretteButtsConversion: string | null;
+  dataQuality: string | null;
 };
 
 export type RouteCalibrationSample = {
   actionId: string;
   historicalWorkload: RouteCalibrationContextCandidate[];
-  volunteersPresent: number;
-  durationMinutes: number;
-  wasteKg: number;
-  cigaretteButts: number;
+  volunteersPresent: number | null;
+  durationMinutes: number | null;
+  wasteKg: number | null;
+  cigaretteButts: number | null;
   actionDate: string;
   locationLabel: string;
+  plannerSnapshot: RoutePlannerSnapshot | null;
+  actualRoute: ActualRoute | null;
+  placeType: string | null;
+  distance: {
+    plannerRecommendedKm: number | null;
+    actualRouteKm: number | null;
+  };
+  duration: RouteCalibrationDuration;
+  ordinaryWaste: RouteCalibrationOrdinaryWaste;
+  cigaretteButtsMeasurement: RouteCalibrationCigaretteButts;
+  volunteers: RouteCalibrationVolunteerData;
+  participantsCount: number | null;
+  effectiveVolunteerUnits: number | null;
+  contractVersions: RouteCalibrationContractVersions;
+  quality: RouteCalibrationQuality;
 };
 
 export type RouteCalibrationDatasetEntry =
@@ -170,7 +270,14 @@ export type RouteCalibrationDataset = {
 };
 
 export type RouteCalibrationReadinessReason =
+  | "no_samples"
+  | "ordinary_waste_has_no_coverage"
+  | "cigarette_butts_has_no_coverage"
   | "ordinary_waste_has_no_variation"
+  | "cigarette_butts_has_no_variation"
+  | "place_type_has_no_diversity"
+  | "volunteer_composition_has_no_diversity"
+  | "planner_snapshot_coverage_insufficient"
   | "workload_has_no_diversity"
   | "workload_and_volunteers_are_not_dissociable"
   | "historical_runtime_bridge_missing"
@@ -179,6 +286,19 @@ export type RouteCalibrationReadinessReason =
 export type RouteCalibrationReadiness = {
   calibrationStatus: "data_insufficient" | "ready";
   reasons: RouteCalibrationReadinessReason[];
+  sampleCount: number;
+  axisCoverage: {
+    ordinaryWaste: { available: number; total: number; rate: number | null };
+    cigaretteButts: { available: number; total: number; rate: number | null };
+  };
+  diversity: {
+    ordinaryWaste: number;
+    cigaretteButts: number;
+    placeTypes: number;
+    volunteerCompositions: number;
+    historicalWorkloads: number;
+  };
+  plannerSnapshotCoverage: { available: number; total: number; rate: number | null };
 };
 
 export type ActiveRouteDurationArtifact = {
@@ -336,14 +456,54 @@ function buildCalibrationDatasetEntry(
       reason: "invalid_historical_context",
     };
   }
-  if (
-    !finitePositive(action.durationMinutes) ||
-    !finiteNonNegativeNullable(action.volunteersCount) ||
-    !finiteNonNegativeNullable(action.wasteKg) ||
-    !finiteNonNegativeNullable(action.cigaretteButts)
-  ) {
-    return { status: "excluded", actionId: action.id, reason: "duration_unavailable" };
-  }
+
+  const plannerSnapshot = context.plannerSnapshot
+    ? structuredClone(context.plannerSnapshot)
+    : null;
+  const actualRoute = action.preparationData?.actualRoute
+    ? structuredClone(action.preparationData.actualRoute)
+    : null;
+  const volunteerInput = action.volunteerParticipation ??
+    action.preparationData?.volunteerParticipation ??
+    null;
+  const normalizedVolunteers = volunteerInput
+    ? normalizeVolunteerParticipation(volunteerInput)
+    : null;
+  const volunteerData = normalizedVolunteers ?? {
+    childrenCount: null,
+    adultCount: null,
+    retiredCount: null,
+    participantsCount: null,
+    effectiveVolunteerUnits: null,
+    effectiveVolunteerUnitsFormulaVersion: null,
+  };
+  const participantsCount = resolveNullableParticipantsCount(
+    normalizedVolunteers,
+    action.volunteersCount,
+  );
+  const effectiveVolunteerUnits = resolveEffectiveVolunteerUnits(normalizedVolunteers);
+  const ordinaryWasteProvenance = resolveWasteProvenance(
+    action.wasteKg,
+    action.wasteMeasurementMethod,
+  );
+  const cigaretteButtsMeasurements = action.cigaretteButtsMeasurements
+    ? structuredClone(action.cigaretteButtsMeasurements)
+    : null;
+  const cigaretteButtsProvenance = cigaretteButtsMeasurements
+    ? resolveCigaretteButtsProvenance(cigaretteButtsMeasurements)
+    : action.cigaretteButts === null
+      ? "missing"
+      : "unknown";
+  const durationMinutes = finiteNonNegativeNullable(action.durationMinutes)
+    ? action.durationMinutes
+    : null;
+  const missing = resolveMissingDatasetFields({
+    action,
+    participantsCount,
+    cigaretteButtsMeasurements,
+    plannerSnapshot,
+    actualRoute,
+  });
 
   return {
     status: "included",
@@ -354,12 +514,74 @@ function buildCalibrationDatasetEntry(
         family: candidate.family,
         cleanupWorkload: structuredClone(candidate.cleanupWorkload),
       })),
-      volunteersPresent: action.volunteersCount,
-      durationMinutes: action.durationMinutes,
-      wasteKg: action.wasteKg,
-      cigaretteButts: action.cigaretteButts,
+      volunteersPresent: participantsCount,
+      durationMinutes,
+      wasteKg: finiteNonNegativeNullable(action.wasteKg) ? action.wasteKg : null,
+      cigaretteButts: finiteNonNegativeNullable(action.cigaretteButts)
+        ? action.cigaretteButts
+        : cigaretteButtsMeasurements?.cigaretteButtsCount ?? null,
       actionDate: action.actionDate,
       locationLabel: action.locationLabel,
+      plannerSnapshot,
+      actualRoute,
+      placeType: action.placeType ?? action.preparationData?.placeType ?? null,
+      distance: {
+        plannerRecommendedKm: finiteNonNegativeNullable(plannerSnapshot?.distance.totalKm)
+          ? plannerSnapshot.distance.totalKm
+          : null,
+        actualRouteKm: resolveActualRouteDistanceKm(actualRoute),
+      },
+      duration: {
+        totalMinutes: durationMinutes,
+        definition: "walking_plus_collection_sorting_weighing",
+        source: durationMinutes === null ? "missing" : "action.duration_minutes",
+        components: {
+          walkingMinutes: null,
+          collectionMinutes: null,
+          sortingMinutes: null,
+          weighingMinutes: null,
+        },
+      },
+      ordinaryWaste: {
+        wasteKg: finiteNonNegativeNullable(action.wasteKg) ? action.wasteKg : null,
+        measurementMethod: action.wasteMeasurementMethod ?? null,
+        provenance: ordinaryWasteProvenance,
+        breakdown: action.wasteBreakdown ? structuredClone(action.wasteBreakdown) : null,
+      },
+      cigaretteButtsMeasurement: {
+        measurements: cigaretteButtsMeasurements,
+        legacyCount: cigaretteButtsMeasurements ? null : action.cigaretteButts,
+        provenance: cigaretteButtsProvenance,
+      },
+      volunteers: volunteerData,
+      participantsCount,
+      effectiveVolunteerUnits,
+      contractVersions: {
+        routeCalibration: context.version,
+        plannerSnapshot: plannerSnapshot?.version ?? null,
+        actualRoute: actualRoute?.version ?? null,
+        cleanupWorkload: context.cleanupWorkloadVersion,
+        effectiveVolunteerUnits:
+          volunteerData.effectiveVolunteerUnitsFormulaVersion,
+        cigaretteButtsConversion:
+          cigaretteButtsMeasurements?.cigaretteButtsConversionFormulaVersion ?? null,
+        dataQuality: action.dataQuality?.version ?? null,
+      },
+      quality: {
+        status: missing.length === 0
+          ? "complete"
+          : (finiteNonNegativeNullable(action.wasteKg) ||
+              finiteNonNegativeNullable(action.cigaretteButts) ||
+              cigaretteButtsMeasurements?.cigaretteButtsCount != null)
+            ? "partial"
+            : "insufficient",
+        ordinaryWasteAvailable: finiteNonNegativeNullable(action.wasteKg),
+        cigaretteButtsAvailable:
+          finiteNonNegativeNullable(action.cigaretteButts) ||
+          cigaretteButtsMeasurements?.cigaretteButtsCount != null,
+        missing,
+        dataQuality: action.dataQuality ? structuredClone(action.dataQuality) : null,
+      },
     },
   };
 }
@@ -369,11 +591,40 @@ export function assessRouteCalibrationReadiness(input: {
   runtimeHistoricalBridgeAvailable?: boolean;
   independentValidationAvailable?: boolean;
 }): RouteCalibrationReadiness {
+  const sampleCount = input.samples.length;
+  const wasteSamples = input.samples.filter((sample) => sample.wasteKg !== null);
+  const buttsSamples = input.samples.filter((sample) => sample.cigaretteButts !== null);
+  const plannerSnapshotSamples = input.samples.filter(
+    (sample) => sample.plannerSnapshot !== null,
+  );
   const workloadSignatures = new Set(
     input.samples.map((sample) => JSON.stringify(sample.historicalWorkload)),
   );
-  const wasteValues = new Set(input.samples.map((sample) => sample.wasteKg));
-  const volunteerValues = new Set(input.samples.map((sample) => sample.volunteersPresent));
+  const wasteValues = new Set(wasteSamples.map((sample) => sample.wasteKg));
+  const buttsValues = new Set(buttsSamples.map((sample) => sample.cigaretteButts));
+  const volunteerValues = new Set(
+    input.samples
+      .map((sample) => sample.volunteersPresent)
+      .filter((value): value is number => value !== null),
+  );
+  const placeTypes = new Set(
+    input.samples
+      .map((sample) => sample.placeType)
+      .filter((value): value is string => Boolean(value)),
+  );
+  const volunteerCompositions = new Set(
+    input.samples
+      .map((sample) => JSON.stringify({
+        childrenCount: sample.volunteers.childrenCount,
+        adultCount: sample.volunteers.adultCount,
+        retiredCount: sample.volunteers.retiredCount,
+      }))
+      .filter((value) => value !== JSON.stringify({
+        childrenCount: null,
+        adultCount: null,
+        retiredCount: null,
+      })),
+  );
   const repeatedWorkloadWithDifferentVolunteers = hasRepeatedKeyWithDifferentValue(
     input.samples,
     (sample) => JSON.stringify(sample.historicalWorkload),
@@ -386,7 +637,21 @@ export function assessRouteCalibrationReadiness(input: {
   );
   const reasons: RouteCalibrationReadinessReason[] = [];
 
-  if (wasteValues.size < 2) reasons.push("ordinary_waste_has_no_variation");
+  if (sampleCount === 0) reasons.push("no_samples");
+  if (wasteSamples.length === 0) {
+    reasons.push("ordinary_waste_has_no_coverage");
+  } else if (wasteValues.size < 2) {
+    reasons.push("ordinary_waste_has_no_variation");
+  }
+  if (buttsSamples.length === 0) {
+    reasons.push("cigarette_butts_has_no_coverage");
+  } else if (buttsValues.size < 2) {
+    reasons.push("cigarette_butts_has_no_variation");
+  }
+  if (placeTypes.size < 2) reasons.push("place_type_has_no_diversity");
+  if (volunteerCompositions.size < 2) {
+    reasons.push("volunteer_composition_has_no_diversity");
+  }
   if (workloadSignatures.size < 2) reasons.push("workload_has_no_diversity");
   if (
     !repeatedWorkloadWithDifferentVolunteers ||
@@ -398,6 +663,9 @@ export function assessRouteCalibrationReadiness(input: {
   if (!input.runtimeHistoricalBridgeAvailable) {
     reasons.push("historical_runtime_bridge_missing");
   }
+  if (plannerSnapshotSamples.length < sampleCount) {
+    reasons.push("planner_snapshot_coverage_insufficient");
+  }
   if (!input.independentValidationAvailable) {
     reasons.push("independent_validation_unavailable");
   }
@@ -405,6 +673,19 @@ export function assessRouteCalibrationReadiness(input: {
   return {
     calibrationStatus: reasons.length === 0 ? "ready" : "data_insufficient",
     reasons,
+    sampleCount,
+    axisCoverage: {
+      ordinaryWaste: coverage(wasteSamples.length, sampleCount),
+      cigaretteButts: coverage(buttsSamples.length, sampleCount),
+    },
+    diversity: {
+      ordinaryWaste: wasteValues.size,
+      cigaretteButts: buttsValues.size,
+      placeTypes: placeTypes.size,
+      volunteerCompositions: volunteerCompositions.size,
+      historicalWorkloads: workloadSignatures.size,
+    },
+    plannerSnapshotCoverage: coverage(plannerSnapshotSamples.length, sampleCount),
   };
 }
 
@@ -573,6 +854,90 @@ function isIsoDate(value: unknown): value is string {
   return typeof value === "string" && value.length > 0 && !Number.isNaN(Date.parse(value));
 }
 
+function resolveNullableParticipantsCount(
+  participation: ActionVolunteerParticipation | null,
+  legacyVolunteersCount: number | null,
+): number | null {
+  if (participation?.participantsCount !== null && participation?.participantsCount !== undefined) {
+    return finiteNonNegativeNullable(participation.participantsCount)
+      ? Math.trunc(participation.participantsCount)
+      : null;
+  }
+  return finiteNonNegativeNullable(legacyVolunteersCount)
+    ? Math.trunc(legacyVolunteersCount)
+    : null;
+}
+
+function resolveWasteProvenance(
+  wasteKg: number | null,
+  method: ActionWasteMeasurementMethod | null | undefined,
+): RouteCalibrationMeasurementProvenance {
+  if (!finiteNonNegativeNullable(wasteKg)) return "missing";
+  if (method === "estimation_visuelle") return "estimated";
+  if (method === "balance_suspendue" || method === "balance_au_sol") {
+    return "measured";
+  }
+  return "unknown";
+}
+
+function resolveCigaretteButtsProvenance(
+  measurements: ActionCigaretteButtsMeasurements,
+): CigaretteButtsProvenance | "missing" {
+  if (measurements.cigaretteButtsCount !== null) {
+    return measurements.cigaretteButtsCountProvenance;
+  }
+  if (measurements.cigaretteButtsMassKg !== null) {
+    return measurements.cigaretteButtsMassProvenance;
+  }
+  if (measurements.cigaretteButtsVolumeLiters !== null) {
+    return measurements.cigaretteButtsVolumeProvenance;
+  }
+  return "missing";
+}
+
+function resolveActualRouteDistanceKm(actualRoute: ActualRoute | null): number | null {
+  if (!actualRoute || actualRoute.routes.length === 0) return null;
+  const distances = actualRoute.routes.map((route) => route.geometry.distanceKm);
+  return distances.every((distance) => finiteNonNegativeNullable(distance))
+    ? distances.reduce((total, distance) => total + distance, 0)
+    : null;
+}
+
+function resolveMissingDatasetFields(input: {
+  action: ApprovedActionForCalibration;
+  participantsCount: number | null;
+  cigaretteButtsMeasurements: ActionCigaretteButtsMeasurements | null;
+  plannerSnapshot: RoutePlannerSnapshot | null;
+  actualRoute: ActualRoute | null;
+}): string[] {
+  const missing: string[] = [];
+  if (!finiteNonNegativeNullable(input.action.wasteKg)) missing.push("ordinaryWaste.wasteKg");
+  const cigaretteButtsAvailable =
+    finiteNonNegativeNullable(input.action.cigaretteButts) ||
+    input.cigaretteButtsMeasurements?.cigaretteButtsCount != null;
+  if (!cigaretteButtsAvailable) missing.push("cigaretteButts.count");
+  if (!finiteNonNegativeNullable(input.action.durationMinutes)) missing.push("durationMinutes");
+  if (input.participantsCount === null) missing.push("participantsCount");
+  if (!input.plannerSnapshot) missing.push("plannerSnapshot");
+  if (!input.actualRoute) missing.push("actualRoute");
+  if (!input.action.placeType && !input.action.preparationData?.placeType) {
+    missing.push("placeType");
+  }
+  return missing;
+}
+
+function coverage(available: number, total: number): {
+  available: number;
+  total: number;
+  rate: number | null;
+} {
+  return {
+    available,
+    total,
+    rate: total === 0 ? null : available / total,
+  };
+}
+
 function hasRepeatedKeyWithDifferentValue<T>(
   samples: readonly T[],
   key: (sample: T) => string,
@@ -587,10 +952,6 @@ function hasRepeatedKeyWithDifferentValue<T>(
   return [...valuesByKey.values()].some((values) => values.size > 1);
 }
 
-function finitePositive(value: number | null): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value > 0;
-}
-
-function finiteNonNegativeNullable(value: number | null): value is number {
+function finiteNonNegativeNullable(value: number | null | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
