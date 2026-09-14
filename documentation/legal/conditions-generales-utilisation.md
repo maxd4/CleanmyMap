@@ -131,16 +131,28 @@ de sa participation à une action.
 Ces règles s'appliquent dans les limites permises par la loi et ne privent
 personne des droits impératifs dont elle dispose.
 
-## 8. Données, cookies et propriété du site
+## 8. Données, licences et propriété du site
 
 Les traitements de données personnelles sont décrits dans la [Politique de
 confidentialité](https://cleanmymap.fr/politique-confidentialite). Les cookies
 et le consentement analytics sont décrits dans la [Politique des
 cookies](https://cleanmymap.fr/politique-cookies).
 
-Les interfaces, textes, visuels, logos et composants du site restent protégés
-par les droits applicables. Le code source est publiquement visible, mais
-aucune licence de réutilisation définitive n'est publiée à ce jour.
+Le code source propre à CleanMyMap destiné au produit est distribué sous la
+GNU Affero General Public License v3.0, SPDX AGPL-3.0-only. Le texte complet
+est publié dans le fichier [LICENSE](../../LICENSE). Cette licence concerne le
+code du logiciel ; elle ne s'étend pas automatiquement aux données tierces,
+aux données personnelles, aux contenus utilisateurs, aux photos, aux jeux de
+données publiés séparément ou aux éléments de marque.
+
+Les données CleanMyMap ne sont pas toutes des données ouvertes : une licence
+ouverte est définie uniquement pour un jeu de données explicitement publié à
+cette fin. Les données tierces conservent leur licence d'origine. Les
+interfaces, textes éditoriaux, visuels, logos et composants qui ne relèvent pas
+du code AGPL restent protégés par les droits applicables. Le nom CleanMyMap,
+le logo et l'identité visuelle restent réservés et la licence du logiciel
+n'autorise pas à présenter un fork ou un service tiers comme la version
+officielle de CleanMyMap.
 
 ## 9. Modification et droit applicable
 

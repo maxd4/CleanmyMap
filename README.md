@@ -250,6 +250,18 @@ Référence : [`AUTHORS.md`](./AUTHORS.md)
 
 ## Licence
 
-Le code source est publiquement consultable, mais aucune licence de réutilisation définitive n'est publiée à ce jour.
+Le code source propre à CleanMyMap est distribué sous la
+[GNU Affero General Public License v3.0](./LICENSE), SPDX
+[AGPL-3.0-only](https://spdx.org/licenses/AGPL-3.0-only.html).
+Cette licence autorise l'utilisation, l'étude, la modification et la
+redistribution du code, y compris commerciales, selon ses conditions,
+notamment pour les versions modifiées proposées via un réseau.
 
-En l'absence de fichier `LICENSE`, aucun droit général de réutilisation n'est accordé. Aucune licence particulière ne doit être déduite.
+Cette licence couvre le code du monorepo destiné au produit : application web,
+API, application mobile, scripts et code technique propres à CleanMyMap. Elle
+ne relicencie pas automatiquement les données tierces, les données
+personnelles, les contenus utilisateurs, les photos, les jeux de données
+publiés séparément, ni le nom, le logo et l'identité visuelle CleanMyMap.
+
+La politique complète et les frontières entre code, données, contenus et marque
+sont documentées dans [documentation/legal/README.md](./documentation/legal/README.md).

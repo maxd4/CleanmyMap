@@ -44,11 +44,55 @@ Le point de contact juridique et RGPD actuellement configuré est
 <contact@cleanmymap.fr>. Il peut être utilisé pour les questions juridiques,
 l'exercice des droits et les demandes concernant le service.
 
-## Code et licence
+## Politique de licence
 
-Le code source est publiquement consultable. Aucun fichier `LICENSE` explicite
-n'est publié : aucune licence open source définitive ni aucun droit général de
-réutilisation ne sont accordés par la seule visibilité du dépôt.
+### Code source
+
+Le code du monorepo destiné au produit CleanMyMap est distribué sous la
+[GNU Affero General Public License v3.0](../../LICENSE), SPDX
+AGPL-3.0-only. Cela couvre l'application web, l'API, l'application mobile,
+les scripts et le code technique propres à CleanMyMap. La licence autorise
+l'utilisation, l'étude, la modification et la redistribution, y compris
+commerciales, sous réserve de ses conditions, notamment celles applicables aux
+versions modifiées proposées via un réseau.
+
+Le texte officiel complet est le fichier [LICENSE](../../LICENSE). Les
+licences des dépendances restent celles qui leur sont propres et ne sont pas
+modifiées par cette politique.
+
+### Frontières de licence
+
+- **Données ouvertes CleanMyMap** : la base de données n'est pas déclarée
+  ouverte dans son ensemble. Une donnée ou un jeu de données n'est open data
+  que lorsqu'il est explicitement publié comme tel. Pour un jeu de données
+  CleanMyMap effectivement destiné à l'open data, une licence est définie
+  dataset par dataset, avec une préférence pour la Licence Ouverte Etalab 2.0
+  lorsqu'elle est juridiquement pertinente. Cette licence n'est pas appliquée
+  automatiquement aux données non publiées.
+- **Données tierces** : leur licence et leurs conditions d'origine sont
+  conservées et affichées lorsqu'elles sont disponibles. Elles ne sont pas
+  relicenciées sous AGPL, CC BY-SA ou une licence ouverte CleanMyMap. Cela
+  inclut notamment OpenStreetMap sous ODbL et les données publiques sous
+  Licence Ouverte.
+- **Données personnelles** : elles ne sont soumises à aucune licence ouverte.
+  Elles restent régies par le RGPD, les CGU et la politique de confidentialité.
+  L'AGPL du code ne rend pas publics les comptes, emails, données
+  personnelles, photos privées, données non publiées ou contenus soumis à des
+  droits tiers.
+- **Contenus pédagogiques et éditoriaux originaux** : la cible est CC BY-SA
+  4.0 pour les contenus originaux CleanMyMap dont les droits et le périmètre
+  réutilisable sont établis. Aucun corpus ambigu contenant des œuvres tierces,
+  logos, photos, contenus utilisateurs ou droits non établis n'est déclaré
+  sous CC BY-SA par défaut. Tant qu'un périmètre propre n'est pas démontré,
+  cette licence reste une cible et non une licence générale du corpus.
+- **Documentation technique** : lorsqu'elle fait partie intégrante du dépôt
+  logiciel, elle peut relever de l'AGPL-3.0-only. Cette règle ne crée pas une
+  seconde doctrine documentaire concurrente.
+- **Nom et identité visuelle** : le nom CleanMyMap, le logo et l'identité
+  visuelle CleanMyMap restent réservés. L'AGPL du logiciel ne donne pas le
+  droit d'utiliser la marque de façon à présenter un fork ou un service tiers
+  comme la version officielle de CleanMyMap. Aucune affirmation de marque
+  enregistrée n'est faite ici.
 
 ## Maintenance documentaire
 

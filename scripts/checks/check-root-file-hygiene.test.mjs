@@ -37,7 +37,7 @@ test("root directory contract accepts canonical directories", () => {
 
 test("linked worktree metadata file is allowed at the repository root", () => {
   const result = validateRootFileHygiene({
-    rootFiles: () => [".git"],
+    rootFiles: () => [".git", "LICENSE"],
     rootDirectories: () => [],
   });
   assert.deepEqual(result.forbidden, []);

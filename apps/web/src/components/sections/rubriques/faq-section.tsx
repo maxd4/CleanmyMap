@@ -91,7 +91,7 @@ const FAQ_ITEMS: FAQItem[] = [
   },
   {
     question: "CleanMyMap est-il open source ?",
-    answer: "Partiellement. Les algorithmes de calcul d'impact sont transparents et documentés (page Méthodologie). Le code de la plateforme est partiellement ouvert. Contactez-nous pour plus d'informations techniques.",
+    answer: "Oui pour le code du produit : il est distribué sous GNU AGPL v3.0 (SPDX AGPL-3.0-only). Cette licence ne s'applique pas automatiquement aux données, contenus, photos ou à la marque CleanMyMap.",
     category: "partenaire",
   },
 ];
