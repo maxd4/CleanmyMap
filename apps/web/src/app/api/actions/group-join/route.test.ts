@@ -1,10 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const refreshProgressionProfileMock = vi.hoisted(() => vi.fn());
+
+beforeEach(() => vi.useFakeTimers({ now: new Date("2026-05-01T09:00:00.000Z") }));
+afterEach(() => vi.useRealTimers());
 
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
@@ -29,8 +32,7 @@ type ActionRow = {
   status: "pending" | "approved" | "rejected";
   moderation_visibility?: "visible" | "hidden";
   action_phase?: "pre_action" | "post_action_draft" | "post_action_complete";
-  published_at?: string | null;
-  notes?: string | null;
+  published_at?: string | null; notes?: string | null;
 };
 
 type ParticipantRow = {
@@ -44,20 +46,15 @@ type ParticipantRow = {
   participation_source?: "group_form" | "admin" | "admin_override" | "import";
 };
 
-type ManyResult<T> = {
-  data: T[];
-  error: null;
-};
+type ManyResult<T> = { data: T[]; error: null };
 
-type SingleResult<T> = {
-  data: T | null;
-  error: null;
-};
+type SingleResult<T> = { data: T | null; error: null };
 
 type ActionsChain = {
   select: (columns: string) => ActionsChain;
   eq: (field: string, value: string) => ActionsChain;
   in: (field: string, values: string[]) => ActionsChain;
+  not: (field: string, operator: string, value: unknown) => ActionsChain; gte: (field: string, value: string) => ActionsChain;
   order: (field: string, options?: { ascending?: boolean }) => ActionsChain;
   limit: (value: number) => Promise<ManyResult<ActionRow>>;
   maybeSingle: () => Promise<SingleResult<ActionRow>>;
@@ -124,6 +121,7 @@ function createActionsChain(actions: ActionRow[]): ActionsChain {
       state.inFilters[field] = values;
       return chain;
     }),
+    not: vi.fn(() => chain), gte: vi.fn(() => chain),
     order: vi.fn(() => chain),
     limit: vi.fn(async (limit: number) => {
       state.limitValue = limit;
@@ -394,6 +392,7 @@ function createSupabaseMock(params: {
 function makeVisibleGroupAction(action: ActionRow): ActionRow {
   return {
     ...action,
+    moderation_visibility: action.moderation_visibility ?? "visible",
     action_phase: "pre_action",
     notes: appendActionMetadataToNotes(action.notes ?? undefined, { groupJoinEnabled: true }),
   };
@@ -597,7 +596,7 @@ describe("GET /api/actions/group-join", () => {
         makeVisibleGroupAction({
           id: "action-7",
           created_at: "2026-04-01T10:00:00Z",
-          action_date: "2026-04-02",
+          action_date: "2026-05-11",
           location_label: "Zone ciblée",
           volunteers_count: 4,
           duration_minutes: 15,
@@ -924,8 +923,8 @@ describe("POST /api/actions/group-join", () => {
     );
 
     const body = (await response.json()) as { details?: { actionId?: string[] } };
-    expect(response.status).toBe(422);
-    expect(body.details?.actionId?.[0]).toContain("validée par un admin");
+    expect(response.status).toBe(404);
+    expect(body.details).toBeUndefined();
   });
 
   it("rejects joining an approved action that is closed by the organizer", async () => {
@@ -955,8 +954,8 @@ describe("POST /api/actions/group-join", () => {
     );
 
     const body = (await response.json()) as { details?: { actionId?: string[] } };
-    expect(response.status).toBe(422);
-    expect(body.details?.actionId?.[0]).toContain("n'a pas ouvert");
+    expect(response.status).toBe(404);
+    expect(body.details).toBeUndefined();
   });
 
   it("rejects unauthenticated users", async () => {

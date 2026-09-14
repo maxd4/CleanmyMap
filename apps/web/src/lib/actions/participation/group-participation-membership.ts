@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { runSingleActionQuery } from "@/lib/actions/query";
+import { isJoinableFuturePreAction } from "@/lib/actions/temporal";
 import type { ActionPhase } from "@/lib/actions/types";
 import {
   ACTION_PARTICIPATION_COLUMNS,
@@ -91,6 +92,8 @@ export async function joinActionParticipation(
     status: "pending" | "approved" | "rejected";
     moderation_visibility?: "visible" | "hidden" | null;
     action_phase: ActionPhase;
+    action_date: string;
+    event_start_time?: string | null;
     published_at?: string | null;
     notes: string | null;
   }>(supabase, (query) => query.select(ACTION_PARTICIPATION_COLUMNS).eq("id", params.actionId).maybeSingle());
@@ -101,33 +104,11 @@ export async function joinActionParticipation(
     throw notFoundError;
   }
 
-  if (actionResult.moderation_visibility === "hidden") {
-    const notFoundError = new Error("Action not found.");
-    notFoundError.name = "NotFoundError";
-    throw notFoundError;
-  }
-
-  if (!actionResult.published_at) {
-    const notFoundError = new Error("Action not found.");
-    notFoundError.name = "NotFoundError";
-    throw notFoundError;
-  }
-
-  if (actionResult.action_phase !== "pre_action" && actionResult.status !== "approved") {
-    const validationError = new Error(
-      "Le formulaire doit être ouvert en pré-action ou validée par un admin pour rejoindre son formulaire.",
-    );
-    validationError.name = "ValidationError";
-    throw validationError;
-  }
-
   const actionMetadata = extractActionMetadataFromNotes(actionResult.notes);
-  if (actionMetadata.groupJoinEnabled === false) {
-    const validationError = new Error(
-      "L'organisateur n'a pas ouvert ce formulaire.",
-    );
-    validationError.name = "ValidationError";
-    throw validationError;
+  if (!isJoinableFuturePreAction(actionResult, actionMetadata)) {
+    const notFoundError = new Error("Action not found.");
+    notFoundError.name = "NotFoundError";
+    throw notFoundError;
   }
 
   const desiredStatus = params.isAdminLike

@@ -1,7 +1,7 @@
 import { extractArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
 import { extractEventRefFromNotes } from "@/lib/actions/event-link";
 import { toActionContract } from "@/lib/actions/unified-source/contracts";
-import { isActionStartInFuture } from "@/lib/actions/temporal";
+import { isPublishedFuturePreAction } from "@/lib/actions/temporal";
 import type { ActionRow } from "@/types/database";
 import {
   extractZoneContextFromMetadata,
@@ -69,13 +69,7 @@ export function isShareableFutureAction(
   >,
   now = new Date(),
 ): boolean {
-  return (
-    action.action_phase === "pre_action" &&
-    (action.status === "pending" || action.status === "approved") &&
-    action.moderation_visibility !== "hidden" &&
-    Boolean(action.published_at) &&
-    isActionStartInFuture(action, now)
-  );
+  return isPublishedFuturePreAction(action, now);
 }
 
 export function isPublicActionReferenceAvailable(

@@ -1,6 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
-import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
+import {
+  runActionQuery,
+  runSingleActionQuery,
+  type ActionQuery,
+} from "@/lib/actions/query";
+import {
+  getActionParisDate,
+  isJoinableFuturePreAction,
+} from "@/lib/actions/temporal";
 import type { ActionParticipantSummary } from "./participant-summaries";
 import { loadActionParticipantSummaries } from "./participant-summaries";
 import type { ActionPhase } from "@/lib/actions/types";
@@ -113,14 +121,39 @@ export type JoinableActionItem = {
 export type JoinableActionHistoryItem = JoinableActionItem;
 
 export function isVisibleInGroupForms(
-  action: Pick<ActionPreviewRow, "action_phase" | "published_at">,
+  action: Pick<
+    ActionPreviewRow,
+    | "action_date"
+    | "event_start_time"
+    | "action_phase"
+    | "status"
+    | "moderation_visibility"
+    | "published_at"
+  >,
   metadata: { groupJoinEnabled: boolean },
+  now = new Date(),
 ): boolean {
-  return (
-    action.action_phase === "pre_action" &&
-    Boolean(action.published_at) &&
-    metadata.groupJoinEnabled === true
-  );
+  return isJoinableFuturePreAction(action, metadata, now);
+}
+
+function configureJoinableActionQuery(
+  query: ActionQuery,
+  now: Date,
+  actionId?: string | null,
+): ActionQuery {
+  let nextQuery = query
+    .select(ACTION_PREVIEW_COLUMNS)
+    .eq("action_phase", "pre_action")
+    .eq("moderation_visibility", "visible")
+    .in("status", ["approved", "pending"])
+    .not("published_at", "is", null)
+    .gte("action_date", getActionParisDate(now));
+
+  if (actionId) {
+    nextQuery = nextQuery.eq("id", actionId);
+  }
+
+  return nextQuery;
 }
 
 export async function loadJoinableActions(
@@ -129,15 +162,13 @@ export async function loadJoinableActions(
     limit: number;
     userId: string | null;
     actionId?: string | null;
+    now?: Date;
   },
 ): Promise<JoinableActionItem[]> {
+  const now = params.now ?? new Date();
   const fetchLimit = Math.max(params.limit * 4, params.limit);
   const actions = await runActionQuery<ActionPreviewRow>(supabase, (query) =>
-    query
-      .select(ACTION_PREVIEW_COLUMNS)
-      .eq("action_phase", "pre_action")
-      .eq("moderation_visibility", "visible")
-      .in("status", ["approved", "pending"])
+    configureJoinableActionQuery(query, now)
       .order("action_date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(fetchLimit),
@@ -149,11 +180,7 @@ export async function loadJoinableActions(
   let orderedActions = actions;
   if (params.actionId) {
     const focusedAction = await runSingleActionQuery<ActionPreviewRow>(supabase, (query) =>
-      query
-        .select(ACTION_PREVIEW_COLUMNS)
-        .eq("action_phase", "pre_action")
-        .eq("moderation_visibility", "visible")
-        .eq("id", params.actionId)
+      configureJoinableActionQuery(query, now, params.actionId)
         .maybeSingle(),
     );
 
@@ -170,7 +197,7 @@ export async function loadJoinableActions(
       action,
       metadata: extractActionMetadataFromNotes(action.notes),
     }))
-    .filter(({ action, metadata }) => isVisibleInGroupForms(action, metadata))
+    .filter(({ action, metadata }) => isVisibleInGroupForms(action, metadata, now))
     .slice(0, params.limit);
 
   if (joinableActions.length === 0) {
