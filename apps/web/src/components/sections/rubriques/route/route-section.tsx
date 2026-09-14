@@ -91,9 +91,9 @@ export function RouteSection() {
     : groupRoutes.find(({ groupIndex }) => groupIndex === selectedGroupIndex) ?? null;
   const visibleStops = selectedGroup?.stops ?? picks;
   const visibleGeometry = selectedGroup?.routeGeometry ?? data?.routeGeometry ?? EMPTY_ROUTE_GEOMETRY;
-  const eventBudgetMinutes = data?.eventBudgetMinutes ?? options.travelBudgetMinutes;
-  const actionBudgetMinutes = data?.actionBudgetMinutes ?? Math.max(0, eventBudgetMinutes - 15);
-  const organizationMarginMinutes = data?.organizationMarginMinutes ?? 15;
+  const eventBudgetMinutes = data?.eventBudgetMinutes ?? null;
+  const actionBudgetMinutes = data?.actionBudgetMinutes ?? null;
+  const organizationMarginMinutes = data?.organizationMarginMinutes ?? null;
   const actionDurationLabel = formatBusinessDurationRangeMinutes(serviceMinutes);
   const operationalTotalLabel = formatBusinessDurationRangeMinutes(operationalTotalMinutes);
 
@@ -375,7 +375,7 @@ export function RouteSection() {
                            </div>
                          </dl>
                          <p className="text-xs font-semibold text-slate-300/80">
-                           Créneau utilisateur : {formatBusinessDurationRangeMinutes(eventBudgetMinutes)} · budget d’action : {formatBusinessDurationRangeMinutes(actionBudgetMinutes)} · marge organisation : {organizationMarginMinutes} min.
+                           Créneau utilisateur : {eventBudgetMinutes === null ? "Non disponible" : formatBusinessDurationRangeMinutes(eventBudgetMinutes)} · budget d’action : {actionBudgetMinutes === null ? "Non disponible" : formatBusinessDurationRangeMinutes(actionBudgetMinutes)} · marge organisation : {organizationMarginMinutes === null ? "Non disponible" : `${organizationMarginMinutes} min`}.
                          </p>
                          {serviceMinutes === null ? (
                            <p className="text-xs font-semibold text-amber-100/80">
@@ -514,6 +514,13 @@ export function RouteSection() {
                             </span>
                             <p className="mt-2 text-xs text-slate-300">
                               {group.travelDistanceKm.toFixed(2)} km · {group.travelMinutes} min déplacement · {group.operationalBudget?.actionMinutes === null || group.operationalBudget?.actionMinutes === undefined ? "durée d’action indisponible" : `action ${formatBusinessDurationRangeMinutes(group.operationalBudget.actionMinutes)}`} · {group.targetCount} {fr ? "stops" : "stops"}
+                            </p>
+                            <p className="mt-1 text-[11px] font-semibold text-emerald-100/70">
+                              {group.operationalBudget?.withinBudget === true
+                                ? "Budget d’action respecté"
+                                : group.operationalBudget?.withinBudget === false
+                                  ? "Budget d’action dépassé"
+                                  : "Budget d’action non vérifiable"}
                             </p>
                             {multiRouteDisplayMode === "patterns" ? (
                               <p className="mt-1 text-[11px] font-semibold text-emerald-100/70">

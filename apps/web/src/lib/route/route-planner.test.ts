@@ -5,6 +5,7 @@ import {
 } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { WasteCategorySlug } from "@/lib/waste";
 import type { RouteGeometry } from "./route-contract";
+import type { RouteCalibrationContext } from "./route-calibration";
 import {
   fallbackRoutePrefixWithinBudget,
   planRoute,
@@ -159,6 +160,48 @@ describe("route planner V1", () => {
     expect(cheapEvaluation?.loopOperationalMinutes).toBeGreaterThan(
       cheapEvaluation?.incrementalTravelMinutes ?? 0,
     );
+  });
+
+  it("lets a changed volunteer count change the operationally feasible proposal", () => {
+    const nearby = candidate("nearby", 0.001, 0, 70);
+    const hotspot = candidate("hotspot-butts", 0.01, 0, 99);
+    const dependency = {
+      generatedAt: "2026-09-12T00:00:00.000Z",
+      estimateDuration: ({ context }: { context: RouteCalibrationContext }) => ({
+        contractVersion: "route-cleanup-duration-v1" as const,
+        minutes: context.candidates.some(({ candidateId }) => candidateId === "hotspot-butts")
+          ? context.volunteersExpected >= 6 ? 50 : 10
+          : 10,
+        uncertaintyMinutes: null,
+        modelVersion: "fixture-volunteer-count-v1",
+        calibrationStatus: "calibrated" as const,
+        reason: "fixture",
+        provenance: {
+          source: "route-calibration" as const,
+          contextVersion: "action-route-calibration-v2" as const,
+          artifactVersion: "fixture-volunteer-count-v1",
+        },
+      }),
+    };
+
+    const lowCount = planRoute(plannerInput({
+      candidates: [hotspot, nearby],
+      priorityVsTravel: 100,
+      maxStops: 1,
+      operationalBudget: dependency,
+      volunteersExpected: 2,
+    }));
+    const highCount = planRoute(plannerInput({
+      candidates: [hotspot, nearby],
+      priorityVsTravel: 100,
+      maxStops: 1,
+      operationalBudget: dependency,
+      volunteersExpected: 6,
+    }));
+
+    expect(lowCount.stops[0]?.candidate.id).toBe("hotspot-butts");
+    expect(highCount.stops[0]?.candidate.id).toBe("nearby");
+    expect(highCount.audit.evaluations.find(({ candidateId }) => candidateId === "hotspot-butts")?.feasible).toBe(false);
   });
   it("arbitre deux pollutions proches avec une additionnalité bornée et confiante", () => {
     const municipal = candidate("municipal-frequent", 0.001, 0, 92);

@@ -118,6 +118,47 @@ describe("route group partition contract", () => {
     expect(result.metrics.balanceDuration).toBeGreaterThanOrEqual(0);
   });
 
+  it("balances high and low operational loads across closed-loop groups", () => {
+    const candidates = [
+      observedCandidate("heavy-a", 48.857, 2.3522, 90),
+      observedCandidate("heavy-b", 48.8562, 2.353, 89),
+      observedCandidate("light-a", 48.8572, 2.3524, 88),
+      observedCandidate("light-b", 48.8564, 2.3532, 87),
+    ];
+    const result = partitionRouteCandidates(input(candidates, {
+      groupCount: 2,
+      maxStops: 2,
+      operationalBudget: {
+        generatedAt: "2026-09-12T00:00:00.000Z",
+        estimateDuration: ({ context }) => ({
+          contractVersion: "route-cleanup-duration-v1",
+          minutes: context.candidates.reduce(
+            (total, candidate) => total + (candidate.candidateId.startsWith("heavy") ? 32 : 8),
+            0,
+          ),
+          uncertaintyMinutes: null,
+          modelVersion: "fixture-load-v1",
+          calibrationStatus: "calibrated",
+          reason: "fixture",
+          provenance: {
+            source: "route-calibration",
+            contextVersion: context.version,
+            artifactVersion: "fixture-load-v1",
+          },
+        }),
+      },
+    }));
+
+    expect(result.groups.every(({ estimatedOperationalDurationMinutes }) =>
+      typeof estimatedOperationalDurationMinutes === "number" &&
+      estimatedOperationalDurationMinutes <= 60,
+    )).toBe(true);
+    expect(result.metrics.balanceOperationalDuration).toBe(0);
+    expect(result.groups.map(({ candidateIds }) =>
+      candidateIds.filter((candidateId) => candidateId.startsWith("heavy")).length,
+    )).toEqual([1, 1]);
+  });
+
   it("balances 11 volunteers across 3 groups as 4/4/3", () => {
     expect(balancedVolunteerCounts(11, 3)).toEqual([4, 4, 3]);
   });
