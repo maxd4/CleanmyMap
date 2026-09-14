@@ -102,7 +102,7 @@ describe("contrat documentaire LEGAL-04", () => {
     expect(legalDocumentation).toMatch(/Licence Ouverte Etalab 2\.0/iu);
     expect(legalDocumentation).toMatch(/OpenStreetMap.*ODbL/iu);
     expect(legalDocumentation).toMatch(/marque\s+enregistrée/iu);
-    expect(rootReadme).not.toContain("aucun droit général de réutilisation");
+    expect(rootReadme).not.toMatch(/aucun droit général de\s+réutilisation/iu);
     expect(cguPage).not.toContain("aucune licence de réutilisation");
   });
 });
