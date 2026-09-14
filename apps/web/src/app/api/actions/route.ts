@@ -37,6 +37,7 @@ import {
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
 import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
 import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
+import { isActionStartInFuture } from "@/lib/actions/temporal";
 
 export const runtime = "nodejs";
 // Justification Vercel: cette route varie selon la requete, le statut Clerk et le scope demande.
@@ -124,6 +125,7 @@ function buildActionsSnapshotKey(params: {
   qualityGrade: (typeof QUALITY_GRADES)[number] | null;
   toFixPriority: boolean | null;
   impact: (typeof IMPACT_LEVELS)[number] | null;
+  view: string;
 }): string {
   return JSON.stringify({
     route: "api/actions",
@@ -140,6 +142,7 @@ function buildActionsSnapshotKey(params: {
     toFixPriority:
       params.toFixPriority === null ? "all" : String(params.toFixPriority),
     impact: params.impact ?? "all",
+    view: params.view,
   });
 }
 
@@ -147,13 +150,14 @@ async function buildActionsRoutePayload(
   url: URL,
   statusOverride: ActionStatus | null,
 ) {
+  const futureOnly = url.searchParams.get("view") === "future";
   const reportQuery = resolveReportQuery(url);
   const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 200, 30);
   const status = statusOverride;
   const daysRaw = url.searchParams.get("days");
   const days =
     daysRaw === null ? null : parsePositiveInteger(daysRaw, 1, 3650, 90);
-  const floorDate = days === null ? null : buildDateFloor(days);
+  const floorDate = futureOnly ? null : days === null ? null : buildDateFloor(days);
   const types = parseEntityTypesParam(url.searchParams.get("types"));
   const qualityGrade = parseQualityGradeParam(
     url.searchParams.get("qualityGrade"),
@@ -165,6 +169,8 @@ async function buildActionsRoutePayload(
   const result = await fetchUnifiedActionContracts(supabase, {
     limit: Math.max(limit * 2, limit),
     status,
+    includeFuturePublicActions: futureOnly,
+    futureOnly,
     floorDate,
     requireCoordinates: false,
     types,
@@ -180,6 +186,19 @@ async function buildActionsRoutePayload(
   };
 
   const items = filterActionContractsByScope(result.items, scope)
+    .filter((contract) => {
+      if (!futureOnly) return true;
+      return (
+        contract.source === "actions" &&
+        contract.type === "action" &&
+        Boolean(contract.publishedAt) &&
+        contract.metadata?.actionPhase === "pre_action" &&
+        isActionStartInFuture({
+          action_date: contract.dates.observedAt,
+          event_start_time: contract.dates.eventStartTime,
+        })
+      );
+    })
     .map((contract) => {
       const insights = buildActionInsights(contract, now);
       return toActionListItem(contract, insights);
@@ -273,6 +292,7 @@ export async function GET(request: Request) {
       qualityGrade,
       toFixPriority,
       impact,
+      view: url.searchParams.get("view") ?? "all",
     });
 
     if (!readPolicy.usePublicSurfaceSnapshot) {

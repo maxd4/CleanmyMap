@@ -557,9 +557,13 @@ export function useActionDeclarationForm({
         visionEstimate,
         userMetadata,
       });
+      const effectiveSubmissionPayload =
+        initialActionId && loadedActionPhase === "pre_action"
+          ? { ...submissionPayload, actionPhase: "pre_action" as const }
+          : submissionPayload;
       const result = initialActionId
-        ? await updateAction(initialActionId, submissionPayload)
-        : await createAction(submissionPayload);
+        ? await updateAction(initialActionId, effectiveSubmissionPayload)
+        : await createAction(effectiveSubmissionPayload);
       const persistedActionId = "id" in result ? result.id : result.actionId;
       setCreatedId(persistedActionId);
       setRetentionLoop("retentionLoop" in result ? result.retentionLoop ?? null : null);
@@ -567,7 +571,11 @@ export function useActionDeclarationForm({
       setRecordedAction(persistedAction);
       setSubmissionState("success");
       setShowConfirmation(false);
-      setLoadedActionPhase("post_action_complete");
+      setLoadedActionPhase(
+        initialActionId && loadedActionPhase === "pre_action"
+          ? "pre_action"
+          : "post_action_complete",
+      );
       clearDraft();
     } catch (error: unknown) {
       setSubmissionState("error");

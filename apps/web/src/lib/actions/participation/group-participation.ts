@@ -113,10 +113,14 @@ export type JoinableActionItem = {
 export type JoinableActionHistoryItem = JoinableActionItem;
 
 export function isVisibleInGroupForms(
-  action: Pick<ActionPreviewRow, "action_phase">,
+  action: Pick<ActionPreviewRow, "action_phase" | "published_at">,
   metadata: { groupJoinEnabled: boolean },
 ): boolean {
-  return action.action_phase === "pre_action" && metadata.groupJoinEnabled === true;
+  return (
+    action.action_phase === "pre_action" &&
+    Boolean(action.published_at) &&
+    metadata.groupJoinEnabled === true
+  );
 }
 
 export async function loadJoinableActions(

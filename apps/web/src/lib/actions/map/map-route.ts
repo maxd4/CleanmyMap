@@ -11,6 +11,7 @@ import type {
   ActionQualityGrade,
 } from "@/lib/actions/types";
 import { buildDateFloor, parsePositiveInteger, resolveReportScopeFromQuery } from "@/lib/reports/csv";
+import { isActionStartInFuture } from "@/lib/actions/temporal";
 import type { ReportScope } from "@/lib/reports/scope";
 
 type ActionInsightsLike = {
@@ -27,10 +28,6 @@ type FetchUnifiedActionContractsResult = {
   sourceHealth: ActionMapResponse["sourceHealth"];
 };
 
-function utcDateString(now: Date): string {
-  return now.toISOString().slice(0, 10);
-}
-
 export function isPublicFutureActionContract(
   contract: ActionDataContract,
   now = new Date(),
@@ -38,14 +35,28 @@ export function isPublicFutureActionContract(
   return (
     contract.source === "actions" &&
     contract.type === "action" &&
-    contract.status === "pending" &&
-    contract.metadata.actionPhase === "pre_action" &&
-    contract.dates.observedAt > utcDateString(now)
+    (contract.status === "pending" || contract.status === "approved") &&
+    contract.metadata?.actionPhase === "pre_action" &&
+    Boolean(contract.publishedAt) &&
+    isActionStartInFuture({
+      action_date: contract.dates.observedAt,
+      event_start_time: contract.dates.eventStartTime,
+    }, now)
   );
 }
 
 function isPublicMapContract(contract: ActionDataContract, now: Date): boolean {
-  return contract.status === "approved" || isPublicFutureActionContract(contract, now);
+  if (contract.metadata?.actionPhase === "pre_action") {
+    return (
+      Boolean(contract.publishedAt) &&
+      (contract.status === "pending" || contract.status === "approved") &&
+      isActionStartInFuture({
+        action_date: contract.dates.observedAt,
+        event_start_time: contract.dates.eventStartTime,
+      }, now)
+    );
+  }
+  return contract.status === "approved";
 }
 
 function toPublicMapContract(contract: ActionDataContract, now: Date): ActionDataContract {

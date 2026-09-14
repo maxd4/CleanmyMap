@@ -94,6 +94,7 @@ export type ActionDataContract = {
   source: string;
   sourceStatus?: string | null;
   createdByClerkId?: string | null;
+  publishedAt?: string | null;
   location: ActionDataLocation;
   geometry: ActionDataGeometry;
   dates: ActionDataDates;
@@ -108,6 +109,7 @@ export type BuildActionContractParams = {
   source: string;
   sourceStatus?: string | null;
   createdByClerkId?: string | null;
+  publishedAt?: string | null;
   observedAt: string;
   createdAt?: string | null;
   importedAt?: string | null;
@@ -373,6 +375,7 @@ export function buildActionDataContract(
     source: params.source,
     sourceStatus: params.sourceStatus ?? params.status,
     createdByClerkId: params.createdByClerkId ?? null,
+    publishedAt: params.publishedAt ?? null,
     location: {
       label: params.locationLabel,
       latitude,

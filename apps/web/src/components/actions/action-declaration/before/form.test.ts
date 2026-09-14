@@ -27,7 +27,8 @@ describe("ActionBeforeDeclarationForm", () => {
 
     expect(html).toContain("Déclarer avant l&#x27;action");
     expect(html).toContain("Préparer le formulaire de groupe");
-    expect(html).toContain("Publier le pré-formulaire");
+    expect(html).toContain("Enregistrer le pré-formulaire");
+    expect(html).toContain("publication sera déclenchée explicitement");
     expect(html).toContain("Identité et partage");
     expect(html).toContain("Type de structure");
     expect(html).toContain("Sélectionnez un type de structure");
@@ -40,7 +41,7 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Enfants");
     expect(html).toContain("Adultes");
     expect(html).toContain("Retraités");
-    expect(html).toContain("Total calculé");
+    expect(html).toContain("Total attendu");
     expect(html).toContain("Message pour les participants");
     expect(html).toContain("Commentaire logistique");
     expect(html).toContain("Checklist avant départ");

@@ -163,6 +163,7 @@ export type ActionListItem = {
   duration_minutes: number;
   notes: string | null;
   status: ActionStatus;
+  published_at?: string | null;
   record_type?: LegacyActionRecordType;
   source?: string;
   source_status?: string | null;

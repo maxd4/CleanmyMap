@@ -30,6 +30,7 @@ type FetchActionsParams = {
   qualityGrade?: ActionQualityGrade;
   toFixPriority?: boolean;
   impact?: ActionImpactLevel;
+  futureOnly?: boolean;
 };
 
 function setScopeQueryParams(
@@ -248,6 +249,9 @@ export function buildActionsQueryString(
   if (params.impact) {
     query.set("impact", params.impact);
   }
+  if (params.futureOnly) {
+    query.set("view", "future");
+  }
   return query.toString();
 }
 
@@ -303,6 +307,7 @@ export type ActionEditorRecord = {
   id: string;
   createdAt: string;
   status: ActionStatus;
+  publishedAt?: string | null;
   actionPhase: ActionPhase;
   preparationData: ActionPreparationData | null;
   createdByClerkId: string | null;
@@ -427,4 +432,35 @@ export async function updateAction(
     });
   }
   return body as { actionId: string; actionPhase: ActionPhase | null };
+}
+
+export async function publishAction(actionId: string): Promise<{
+  id: string;
+  publishedAt: string;
+  alreadyPublished: boolean;
+}> {
+  const response = await fetch(`/api/actions/${encodeURIComponent(actionId)}/publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  const body = await parseJsonSafely(response);
+  if (!response.ok) {
+    throw createActionError(
+      response,
+      body,
+      parseErrorMessage(body, "Impossible de publier cette action."),
+    );
+  }
+  if (
+    !body ||
+    typeof body !== "object" ||
+    typeof (body as { id?: unknown }).id !== "string" ||
+    typeof (body as { publishedAt?: unknown }).publishedAt !== "string"
+  ) {
+    throw new AppError({
+      kind: "server",
+      message: "La réponse du service est incomplète lors de la publication.",
+    });
+  }
+  return body as { id: string; publishedAt: string; alreadyPublished: boolean };
 }

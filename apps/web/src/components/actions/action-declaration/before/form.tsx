@@ -34,6 +34,9 @@ export function ActionBeforeDeclarationForm({
     submissionState,
     errorMessage,
     createdId,
+    publishedAt,
+    publicationState,
+    publicationError,
     validationIssues,
     showGroupJoinHelp,
     setShowGroupJoinHelp,
@@ -41,6 +44,7 @@ export function ActionBeforeDeclarationForm({
     summaryNote,
     updateField,
     handleSubmit,
+    handlePublish,
     onContinueComplete,
   } = useBeforeActionForm({
     actorNameOptions,
@@ -56,7 +60,8 @@ export function ActionBeforeDeclarationForm({
   const actClasses = getBlockClasses("act");
 
   if (submissionState === "success") {
-    const isGroupFormPublished = form.groupJoinEnabled;
+    const isPublished = Boolean(publishedAt);
+    const isGroupFormPublished = isPublished && form.groupJoinEnabled;
     return (
       <div className="space-y-6 px-4 py-6 md:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-7xl">
@@ -65,19 +70,19 @@ export function ActionBeforeDeclarationForm({
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <CmmPill tone="emerald" size="sm">
-                    {isGroupFormPublished ? "Publié" : "Enregistré"}
+                    {isPublished ? "Publié" : "Privé"}
                   </CmmPill>
                   <span className="text-sm font-semibold text-emerald-950">
-                    {isGroupFormPublished ? "Pré-formulaire publié" : "Pré-formulaire enregistré"}
+                    {isPublished ? "Action future publiée" : "Pré-action enregistrée en privé"}
                   </span>
                 </div>
                 <h2 className="text-3xl font-black tracking-tight text-emerald-950">
                   Le formulaire avant action est prêt
                 </h2>
                 <p className="max-w-2xl text-sm leading-6 text-emerald-900/68">
-                  {isGroupFormPublished
-                    ? "Les bénévoles peuvent déjà consulter ce pré-formulaire, rejoindre l'action et compléter les informations utiles avant le départ terrain."
-                    : "Le pré-formulaire est enregistré avec les informations utiles avant le terrain. Vous pourrez le publier ensuite si vous souhaitez ouvrir le formulaire de groupe."}
+                  {isPublished
+                    ? "Cette action future est publique. Les bénévoles peuvent la consulter et la rejoindre si le groupe est ouvert."
+                    : "La pré-action reste privée tant que vous n'avez pas explicitement choisi de la publier."}
                 </p>
                 {summaryNote ? (
                   <div className="rounded-[1.4rem] border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm text-emerald-950">
@@ -92,8 +97,17 @@ export function ActionBeforeDeclarationForm({
                 {createdId ? (
                   <p className="text-xs font-mono text-emerald-900/60">Référence: {createdId}</p>
                 ) : null}
+                {publicationError ? (
+                  <p className="text-sm font-semibold text-rose-700">{publicationError}</p>
+                ) : null}
               </div>
               <div className="flex flex-col gap-2">
+                {!isPublished ? (
+                  <CmmButton tone="primary" variant="pill" size="md" onClick={() => void handlePublish()} disabled={publicationState === "pending"}>
+                    {publicationState === "pending" ? <Loader2 size={14} className="animate-spin" /> : null}
+                    {publicationState === "pending" ? "Publication..." : "Publier cette action"}
+                  </CmmButton>
+                ) : null}
                 <CmmButton tone="primary" variant="pill" size="md" onClick={onContinueComplete}>
                   Passer au formulaire complet
                   <ArrowRight size={14} />
@@ -101,6 +115,11 @@ export function ActionBeforeDeclarationForm({
                 {shareLink && isGroupFormPublished ? (
                   <CmmButton tone="secondary" variant="pill" size="md" href={shareLink}>
                     Ouvrir le formulaire de groupe
+                  </CmmButton>
+                ) : null}
+                {isPublished ? (
+                  <CmmButton tone="secondary" variant="pill" size="md" href="/sections/rejoindre-un-formulaire">
+                    Voir les actions futures
                   </CmmButton>
                 ) : null}
                 <CmmButton tone="tertiary" variant="pill" size="md" onClick={onReturnToChoice}>
@@ -142,7 +161,7 @@ export function ActionBeforeDeclarationForm({
               <p className="mt-1 text-emerald-950">Pré-action — les données de collecte seront ajoutées après le terrain.</p>
               <p className="mt-1">{labelForPreparationState(form.preparationState)}</p>
               <p className="mt-2 text-xs leading-5 text-emerald-900/60">
-                Le lien de partage du formulaire de groupe sera créé après publication.
+                La pré-action reste privée jusqu&apos;à la publication explicite.
               </p>
             </div>
           </div>
@@ -179,9 +198,9 @@ export function ActionBeforeDeclarationForm({
 
           {validationIssues.length > 0 || errorMessage ? (
             <div className="rounded-[1.5rem] border border-rose-200/70 bg-[#FFF7F8] px-4 py-3 text-sm leading-6 text-rose-950">
-              <div className="flex items-center gap-2 font-semibold">
+                <div className="flex items-center gap-2 font-semibold">
                 <AlertTriangle size={16} className="text-rose-500" />
-                Le pré-formulaire n&apos;a pas encore pu être publié
+                  Le pré-formulaire n&apos;a pas encore pu être enregistré
               </div>
               {validationIssues.length > 0 ? (
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-rose-800/80">
@@ -212,7 +231,7 @@ export function ActionBeforeDeclarationForm({
             <div className="space-y-1">
               <p className="text-sm font-semibold text-emerald-950">Pré-formulaire avant action</p>
               <p className="text-xs leading-5 text-emerald-900/66">
-                La publication crée un pré-formulaire visible dans la page Formulaire de groupe.
+                L&apos;enregistrement reste privé ; la publication sera déclenchée explicitement après vérification.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -224,11 +243,11 @@ export function ActionBeforeDeclarationForm({
                 {submissionState === "pending" ? (
                   <>
                     <Loader2 size={14} className="animate-spin" />
-                    Publication...
+                    Enregistrement...
                   </>
                 ) : (
                   <>
-                    Publier le pré-formulaire
+                    Enregistrer le pré-formulaire
                     <ArrowRight size={14} />
                   </>
                 )}

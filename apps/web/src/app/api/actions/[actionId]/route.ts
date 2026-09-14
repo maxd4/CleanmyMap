@@ -258,6 +258,7 @@ function buildActionEditorPayload(
     id: row.id,
     createdAt: row.created_at,
     status: row.status,
+    publishedAt: row.published_at ?? null,
     recordType: "action",
     actionPhase: row.action_phase,
     preparationData: normalizeActionPreparationData(

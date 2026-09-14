@@ -339,9 +339,17 @@ Le masquage de modération est distinct du statut métier de l'action.
 ```txt
 status = pending | approved | rejected
 moderation_visibility = visible | hidden
+published_at = NULL | timestamp de publication explicite
 ```
 
 Une action `hidden` est exclue des surfaces publiques, dont la carte, les listes publiques et la page Formulaire de groupe. Elle reste traitable par les chemins de modération autorisés.
+
+`published_at` ne remplace ni `status` ni `moderation_visibility`. Une
+pré-action créée ou seulement `pret_a_partager` conserve `published_at = NULL`
+et reste privée. Seule la commande authentifiée `Publier cette action`, après
+contrôle d'ownership/co-organisateur autorisé, renseigne ce champ. Une action
+future est ensuite une propriété dérivée : pré-action publiée et début local
+Europe/Paris strictement postérieur à l'instant courant.
 
 ### Frontière de lecture de `GET /api/actions`
 
@@ -374,7 +382,7 @@ Restaurer `moderation_visibility = visible` ne valide pas l'action et ne transfo
 modération. Quel que soit le paramètre `status` fourni (`approved`, `pending`,
 `rejected` ou `all`), le handler conserve la compatibilité de l'URL. Il expose
 les actions `approved` visibles et, dans la seule projection cartographique,
-les pré-actions `pending` valides dont `action_date` est future. Ces dernières
+les pré-actions `pending` publiées dont le début local est futur. Ces dernières
 sont normalisées en `approved` dans le DTO public de la carte, tandis que leur
 statut persisté reste `pending` et qu'elles restent exclues des KPI Impact.
 Cette règle est appliquée à la fois avec et sans viewport, y compris lorsqu'un
@@ -383,11 +391,18 @@ masquées ne sont jamais incluses.
 
 Le fallback navigateur appelle `actions_map_feed` avec le statut public
 `approved` et filtre défensivement ses lignes. La RPC restitue les actions
-approuvées visibles ainsi que les pré-actions futures `pending` valides (avec un
-statut de projection `approved`) et les lignes
+approuvées visibles ainsi que les pré-actions futures explicitement publiées
+`pending` (avec un statut de projection `approved`) et les lignes
 `trash_spotter_spots.status IN ('validated', 'cleaned')`. La RLS de cette table
 interdit également la lecture directe des lignes `new` aux rôles anon et
 authenticated.
+
+La vue publique `GET /api/actions?view=future` réutilise la même projection
+Actions et ne renvoie que les pré-actions publiées dont le début est futur.
+Les champs `volunteers_count`, `duration_minutes`, l'itinéraire et les objectifs
+restent prévisionnels ; les mesures post-action restent nulles jusqu'à une
+observation réelle. Le join continue de passer par `action_participants` et est
+refusé si `groupJoinEnabled` est faux.
 
 La lecture propriétaire `GET /api/signalements/me` reste séparée : elle utilise
 la session du compte courant et peut restituer ses propres observations `new`,

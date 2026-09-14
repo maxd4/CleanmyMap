@@ -157,6 +157,7 @@ export function toActionListItem(
     duration_minutes: contract.metadata.durationMinutes,
     notes: contract.metadata.notes,
     status: contract.status,
+    published_at: contract.publishedAt ?? null,
     record_type: toLegacyRecordType(contract.type),
     source: contract.source,
     source_status: contract.sourceStatus ?? contract.status,

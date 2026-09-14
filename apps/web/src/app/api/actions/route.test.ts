@@ -68,7 +68,49 @@ describe("GET /api/actions", () => {
 
     getSupabaseServerClientMock.mockReturnValue({});
     fetchUnifiedActionContractsMock.mockImplementation(
-      async (_supabase: unknown, params: { status: "approved" | "pending" | "rejected" | null }) => {
+      async (
+        _supabase: unknown,
+        params: {
+          status: "approved" | "pending" | "rejected" | null;
+          futureOnly?: boolean;
+        },
+      ) => {
+        if (params.futureOnly) {
+          return {
+            items: [
+              {
+                id: "future-published",
+                status: "pending",
+                type: "action",
+                source: "actions",
+                publishedAt: "2026-09-01T10:00:00.000Z",
+                dates: {
+                  observedAt: "2099-01-01",
+                  eventStartTime: "10:00",
+                },
+                metadata: { actionPhase: "pre_action" },
+              },
+              {
+                id: "past-published",
+                status: "pending",
+                type: "action",
+                source: "actions",
+                publishedAt: "2026-09-01T10:00:00.000Z",
+                dates: {
+                  observedAt: "2020-01-01",
+                  eventStartTime: "10:00",
+                },
+                metadata: { actionPhase: "pre_action" },
+              },
+            ],
+            sourceHealth: {
+              partial: false,
+              failedSources: [],
+              availableSources: ["actions"],
+              warnings: [],
+            },
+          };
+        }
         const items = [
           { id: "action-approved", status: "approved", type: "action" },
           { id: "action-pending", status: "pending", type: "action" },
@@ -220,6 +262,32 @@ describe("GET /api/actions", () => {
         expect.objectContaining({ id: "spot-cleaned", status: "approved" }),
       ]),
     );
+  });
+
+  it("exposes only explicitly published future pre-actions in the future view", async () => {
+    const { GET } = await import("./route");
+
+    const response = await GET(
+      new Request("http://localhost/api/actions?view=future&limit=10"),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(fetchUnifiedActionContractsMock).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        status: "approved",
+        includeFuturePublicActions: true,
+        futureOnly: true,
+        floorDate: null,
+      }),
+    );
+    expect(payload.items.map((item: { id: string }) => item.id)).toEqual([
+      "future-published",
+    ]);
+    expect(JSON.parse(
+      loadOrRefreshPublicSurfaceSnapshotMock.mock.calls[0][0].snapshotKey,
+    )).toMatchObject({ view: "future" });
   });
 
   it("refuses anonymous pending reads before unified loading or snapshot access", async () => {
