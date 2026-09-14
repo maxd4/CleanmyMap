@@ -575,7 +575,7 @@ describe("POST /api/actions/:actionId/group-join post-action claims", () => {
   it.each([
     ["accept", "confirmed" as const],
     ["reject", "cancelled" as const],
-  ])("lets the action owner %s a claim without changing group access or progression", async (decision, expectedStatus) => {
+  ])("lets the action owner %s a claim without changing group access", async (decision, expectedStatus) => {
     const supabase = createGroupJoinSupabaseMock({
       action: createGroupJoinAction({
         createdByClerkId: "user-1",
@@ -611,7 +611,11 @@ describe("POST /api/actions/:actionId/group-join post-action claims", () => {
       participationSource: "post_action_claim",
     });
     expect(supabase.rpc).not.toHaveBeenCalled();
-    expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
+    if (decision === "accept") {
+      expect(refreshProgressionProfileMock).toHaveBeenCalledWith(expect.anything(), "user-2");
+    } else {
+      expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
+    }
     expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({
         operation: "post_action_claim_review",

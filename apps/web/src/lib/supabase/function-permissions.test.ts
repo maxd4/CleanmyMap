@@ -76,6 +76,17 @@ it("keeps community participation summary RPCs restricted to the service role", 
   );
 });
 
+it("counts only confirmed action participation for gamification", () => {
+  const migration = readMigration("../../../supabase/migrations/20260915000005_gamification_confirmed_participation_count.sql");
+
+  expect(migration).toContain("create or replace function public.load_gamification_user_counters(p_user_id text)");
+  expect(migration).toContain("ap.participation_status = 'confirmed'");
+  expect(migration).toContain("security invoker");
+  expect(migration).toContain("set search_path = pg_catalog, public");
+  expect(migration).toContain("revoke all on function public.load_gamification_user_counters(text) from public;");
+  expect(migration).toContain("grant execute on function public.load_gamification_user_counters(text) to service_role;");
+});
+
 it("keeps profile helper functions executable without public access", () => {
   const migration = readMigration("../../../supabase/migrations/20260428000020_chat_channels_profiles.sql");
 

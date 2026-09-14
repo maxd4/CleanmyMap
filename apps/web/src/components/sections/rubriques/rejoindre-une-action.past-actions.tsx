@@ -6,6 +6,7 @@ import type { ActionListItem } from "@/lib/actions/types";
 import type { JoinableActionHistoryItem } from "@/lib/actions/participation/group-participation";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
+import { derivePersonalAttribution } from "@/lib/actions/personal-attribution";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 
 function actionTitle(item: ActionListItem): string {
@@ -20,7 +21,7 @@ function finalParticipants(item: ActionListItem): number | null {
 type ClaimState = Pick<
   JoinableActionHistoryItem,
   "participationStatus" | "participationSource"
->;
+> & { participantsCount?: number | null };
 
 function claimStatusLabel(state: ClaimState, fr: boolean): string {
   if (state.participationStatus === "confirmed") {
@@ -56,6 +57,7 @@ export function PastActionsPanel({
     () => new Map(historyItems.map((item) => [item.id, {
       participationStatus: item.participationStatus,
       participationSource: item.participationSource,
+      participantsCount: item.participantsCount,
     }] as const)),
     [historyItems],
   );
@@ -126,6 +128,12 @@ export function PastActionsPanel({
           const participants = finalParticipants(item);
           const hasRoute = Boolean(item.geometry_kind || item.contract?.geometry.coordinates.length);
           const claimState = claimOverrides[item.id] ?? historyByActionId.get(item.id) ?? null;
+          const personalAttribution = derivePersonalAttribution({
+            participationStatus: claimState?.participationStatus ?? null,
+            confirmedParticipantCount: claimState?.participantsCount,
+            finalWasteKg: item.waste_kg,
+            finalCigaretteButts: item.cigarette_butts,
+          });
           return (
             <article
               key={item.id}
@@ -146,13 +154,23 @@ export function PastActionsPanel({
                 </div>
                 <div className="grid gap-2 text-sm text-slate-600">
                   <p className="flex items-center gap-2"><CalendarDays size={14} className="text-slate-400" />{formatDate(item.action_date, fr ? "fr" : "en")}</p>
-                  {participants !== null ? <p className="flex items-center gap-2"><Users2 size={14} className="text-slate-400" />{formatCount(participants)} {fr ? "participants rattachés" : "linked participants"}</p> : null}
+                  {participants !== null ? <p className="flex items-center gap-2"><Users2 size={14} className="text-slate-400" />{formatCount(participants)} {fr ? "participants déclarés" : "reported participants"}</p> : null}
                   {item.waste_kg !== null ? <p>{formatCount(item.waste_kg)} kg {fr ? "collectés" : "collected"}</p> : null}
                   {item.cigarette_butts !== null ? <p>{formatCount(item.cigarette_butts)} {fr ? "mégots collectés" : "cigarette butts collected"}</p> : null}
                   <p className="flex items-center gap-2"><Route size={14} className="text-slate-400" />{hasRoute ? (fr ? "Parcours final/opérationnel disponible" : "Final/operational route available") : (fr ? "Localisation seule" : "Location only")}</p>
                   <p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "finales" : "final"}</p>
                 </div>
                 <p className="text-xs text-slate-500">{fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}</p>
+                {personalAttribution ? (
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-950">
+                    <p className="font-bold">{fr ? "Votre part des résultats" : "Your share of the results"}</p>
+                    <p className="mt-1">{fr ? "Quote-part attribuée à votre profil, dérivée des participants confirmés." : "Share attributed to your profile, derived from confirmed participants."}</p>
+                    <div className="mt-2 grid gap-1 font-semibold">
+                      {personalAttribution.wasteKg !== null ? <span>{personalAttribution.wasteKg.toLocaleString(fr ? "fr-FR" : "en-US", { maximumFractionDigits: 2 })} kg</span> : null}
+                      {personalAttribution.cigaretteButts !== null ? <span>{personalAttribution.cigaretteButts.toLocaleString(fr ? "fr-FR" : "en-US", { maximumFractionDigits: 2 })} {fr ? "mégots" : "cigarette butts"}</span> : null}
+                    </div>
+                  </div>
+                ) : null}
                 <div className="space-y-2 border-t border-slate-100 pt-3">
                   {claimState ? (
                     <p className="text-sm font-bold text-emerald-800" role="status">{claimStatusLabel(claimState, fr)}</p>

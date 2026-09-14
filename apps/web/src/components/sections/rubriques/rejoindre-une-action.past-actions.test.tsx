@@ -38,7 +38,7 @@ describe("PastActionsPanel", () => {
 
     expect(markup).toContain("Actions passées");
     expect(markup).toContain("Nettoyage des berges");
-    expect(markup).toContain("7 participants rattachés");
+    expect(markup).toContain("7 participants déclarés");
     expect(markup).toContain("12 kg collectés");
     expect(markup).toContain("34 mégots collectés");
     expect(markup).toContain("Parcours final/opérationnel disponible");
@@ -75,6 +75,7 @@ describe("PastActionsPanel", () => {
       id: "past-action",
       participationStatus: "pending",
       participationSource: "post_action_claim",
+      participantsCount: 2,
     } as unknown as import("@/lib/actions/participation/group-participation").JoinableActionHistoryItem;
 
     const markup = renderToStaticMarkup(
@@ -82,6 +83,35 @@ describe("PastActionsPanel", () => {
     );
 
     expect(markup).toContain("Participation à confirmer");
+    expect(markup).not.toContain("Votre part des résultats");
     expect(markup).not.toContain("J’ai participé à cette action");
+  });
+
+  it("affiche une quote-part dérivée uniquement après confirmation", () => {
+    const item = {
+      id: "past-action",
+      created_at: "2026-08-01T10:00:00.000Z",
+      action_date: "2026-08-01",
+      location_label: "Quai de Seine",
+      waste_kg: 9,
+      cigarette_butts: 12,
+      contract: { geometry: { coordinates: [] }, metadata: { actionPhase: "post_action_complete" } },
+    } as unknown as ActionListItem;
+    const historyItem = {
+      id: "past-action",
+      participationStatus: "confirmed",
+      participationSource: "post_action_claim",
+      participantsCount: 3,
+    } as unknown as import("@/lib/actions/participation/group-participation").JoinableActionHistoryItem;
+
+    const markup = renderToStaticMarkup(
+      <PastActionsPanel items={[item]} loading={false} error={null} fr authenticated historyItems={[historyItem]} />,
+    );
+
+    expect(markup).toContain("Votre part des résultats");
+    expect(markup).toContain("Quote-part attribuée à votre profil");
+    expect(markup).toContain("3 kg");
+    expect(markup).toContain("4 mégots");
+    expect(markup).not.toContain("Durée individuelle");
   });
 });
