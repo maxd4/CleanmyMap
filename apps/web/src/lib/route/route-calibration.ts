@@ -2,7 +2,10 @@ import type {
   ActionPreparationData,
   ActionWasteBreakdown,
 } from "@/lib/actions/types";
-import type { ActionDataQualitySummary } from "@/lib/actions/quality/data-quality-types";
+import {
+  ACTION_DATA_MEASURE_LIMITS,
+  type ActionDataQualitySummary,
+} from "@/lib/actions/quality/data-quality-types";
 import type {
   ActionVolunteerParticipation,
 } from "@/lib/actions/volunteer-participation";
@@ -494,7 +497,7 @@ function buildCalibrationDatasetEntry(
     : action.cigaretteButts === null
       ? "missing"
       : "unknown";
-  const durationMinutes = finiteNonNegativeNullable(action.durationMinutes)
+  const durationMinutes = isPlausibleDuration(action.durationMinutes)
     ? action.durationMinutes
     : null;
   const missing = resolveMissingDatasetFields({
@@ -916,7 +919,7 @@ function resolveMissingDatasetFields(input: {
     finiteNonNegativeNullable(input.action.cigaretteButts) ||
     input.cigaretteButtsMeasurements?.cigaretteButtsCount != null;
   if (!cigaretteButtsAvailable) missing.push("cigaretteButts.count");
-  if (!finiteNonNegativeNullable(input.action.durationMinutes)) missing.push("durationMinutes");
+  if (!isPlausibleDuration(input.action.durationMinutes)) missing.push("durationMinutes");
   if (input.participantsCount === null) missing.push("participantsCount");
   if (!input.plannerSnapshot) missing.push("plannerSnapshot");
   if (!input.actualRoute) missing.push("actualRoute");
@@ -936,6 +939,13 @@ function coverage(available: number, total: number): {
     total,
     rate: total === 0 ? null : available / total,
   };
+}
+
+function isPlausibleDuration(value: number | null | undefined): value is number {
+  return (
+    finiteNonNegativeNullable(value) &&
+    value <= ACTION_DATA_MEASURE_LIMITS.durationMinutesMax
+  );
 }
 
 function hasRepeatedKeyWithDifferentValue<T>(

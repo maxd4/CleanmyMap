@@ -157,6 +157,93 @@ describe("route calibration infrastructure", () => {
     expect(dataset.samples[0]?.quality.cigaretteButtsAvailable).toBe(true);
   });
 
+  it("keeps volunteer effects observable without imposing a returns law", () => {
+    const dataset = buildCalibrationDataset([
+      {
+        id: "volunteers-balanced",
+        status: "approved",
+        actionDate: "2026-09-06",
+        locationLabel: "Paris",
+        wasteKg: 4,
+        cigaretteButts: 20,
+        volunteersCount: null,
+        durationMinutes: 60,
+        preparationData: {
+          routeCalibrationContext: context(),
+          volunteerParticipation: {
+            childrenCount: 2,
+            adultCount: 4,
+            retiredCount: 2,
+            participantsCount: null,
+            effectiveVolunteerUnits: null,
+            effectiveVolunteerUnitsFormulaVersion: null,
+          },
+        },
+      },
+      {
+        id: "volunteers-adults",
+        status: "approved",
+        actionDate: "2026-09-07",
+        locationLabel: "Paris",
+        wasteKg: 4,
+        cigaretteButts: 20,
+        volunteersCount: null,
+        durationMinutes: 60,
+        preparationData: {
+          routeCalibrationContext: context(),
+          volunteerParticipation: {
+            childrenCount: 0,
+            adultCount: 8,
+            retiredCount: 0,
+            participantsCount: null,
+            effectiveVolunteerUnits: null,
+            effectiveVolunteerUnitsFormulaVersion: null,
+          },
+        },
+      },
+    ]);
+
+    expect(dataset.samples.map((sample) => sample.participantsCount)).toEqual([8, 8]);
+    expect(dataset.samples.map((sample) => sample.effectiveVolunteerUnits)).toEqual([6, 8]);
+    expect(dataset.samples.map((sample) => sample.wasteKg)).toEqual([4, 4]);
+    expect(dataset.samples.map((sample) => sample.cigaretteButts)).toEqual([20, 20]);
+  });
+
+  it("does not expose negative or aberrant durations as precise observations", () => {
+    const dataset = buildCalibrationDataset([
+      {
+        id: "negative-duration",
+        status: "approved",
+        actionDate: "2026-09-08",
+        locationLabel: "Paris",
+        wasteKg: 1,
+        cigaretteButts: 2,
+        volunteersCount: 2,
+        durationMinutes: -5,
+        preparationData: { routeCalibrationContext: context() },
+      },
+      {
+        id: "aberrant-duration",
+        status: "approved",
+        actionDate: "2026-09-09",
+        locationLabel: "Paris",
+        wasteKg: 1,
+        cigaretteButts: 2,
+        volunteersCount: 2,
+        durationMinutes: 100_001,
+        preparationData: { routeCalibrationContext: context() },
+      },
+    ]);
+
+    expect(dataset.samples).toHaveLength(2);
+    for (const sample of dataset.samples) {
+      expect(sample.durationMinutes).toBeNull();
+      expect(sample.duration.totalMinutes).toBeNull();
+      expect(sample.duration.source).toBe("missing");
+      expect(sample.quality.missing).toContain("durationMinutes");
+    }
+  });
+
   it("relates planner, actual route and contract provenance without rebuilding history", () => {
     const plannerSnapshot = buildRoutePlannerSnapshot({
       generatedAt: "2026-09-01T09:00:00.000Z",
@@ -231,6 +318,12 @@ describe("route calibration infrastructure", () => {
       totalMinutes: 90,
       definition: "walking_plus_collection_sorting_weighing",
       source: "action.duration_minutes",
+      components: {
+        walkingMinutes: null,
+        collectionMinutes: null,
+        sortingMinutes: null,
+        weighingMinutes: null,
+      },
     });
     expect(dataset.samples[0]?.contractVersions).toMatchObject({
       routeCalibration: "action-route-calibration-v2",
@@ -382,11 +475,13 @@ describe("route calibration infrastructure", () => {
 
   it("fails closed when no calibrated artifact is active", () => {
     const estimate = estimateRouteCleanupDuration({ context: context() });
+    const repeatedEstimate = estimateRouteCleanupDuration({ context: context() });
 
     expect(estimate.minutes).toBeNull();
     expect(estimate.uncertaintyMinutes).toBeNull();
     expect(estimate.calibrationStatus).toBe("data_insufficient");
     expect(estimate.provenance.artifactVersion).toBeNull();
+    expect(repeatedEstimate).toEqual(estimate);
   });
 });
 

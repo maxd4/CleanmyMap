@@ -1,3 +1,8 @@
+/** Shared bounds for rejecting impossible numeric measurements. */
+export const ACTION_DATA_MEASURE_LIMITS = {
+  durationMinutesMax: 100_000,
+} as const;
+
 export type ActionDataProvenance =
   | "measured"
   | "derived"
