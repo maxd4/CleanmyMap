@@ -1,6 +1,7 @@
 import type { RouteGeometry, RouteStop } from "@/lib/route/route-contract";
 import type { RouteResponse } from "@/lib/route/route-response-contract";
 import { formatScorePercent } from "@/lib/formatters/score";
+import { formatBusinessDurationRangeMinutes } from "@/lib/actions/time-contract";
 import {
   getRouteGroupPatternLabel,
   getRouteGroupVisualStyle,
@@ -236,12 +237,12 @@ function renderMetrics(data: RouteResponse, routes: ExportRoute[], multi: boolea
     : "Mesure réseau";
   const serviceLabel = data.serviceMinutesEstimate === null
     ? "Non disponible : calibration absente"
-    : formatDuration(data.serviceMinutesEstimate);
+    : formatBusinessDurationRangeMinutes(data.serviceMinutesEstimate);
   const totalLabel = data.totalMinutesEstimate === null
     ? "Non disponible : aucun total fiable"
-    : formatDuration(data.totalMinutesEstimate);
+    : formatBusinessDurationRangeMinutes(data.totalMinutesEstimate);
 
-  return `<dl class="route-pdf-metrics"><div><dt>Distance</dt><dd>${escapeHtml(formatDistance(distance))}</dd></div><div><dt>Durée déplacement</dt><dd>${escapeHtml(formatDuration(duration))}</dd></div><div><dt>Durée collecte</dt><dd>${escapeHtml(serviceLabel)}</dd></div><div><dt>Total opérationnel</dt><dd>${escapeHtml(totalLabel)}</dd></div><div><dt>Budget déplacement</dt><dd>${escapeHtml(formatDuration(data.travelBudgetMinutes))}</dd></div><div><dt>État du tracé</dt><dd>${escapeHtml(estimatedLabel)}</dd></div></dl>`;
+  return `<dl class="route-pdf-metrics"><div><dt>Distance</dt><dd>${escapeHtml(formatDistance(distance))}</dd></div><div><dt>Durée déplacement réseau</dt><dd>${escapeHtml(formatDuration(duration))}</dd></div><div><dt>Durée d’action</dt><dd>${escapeHtml(serviceLabel)}</dd></div><div><dt>Créneau total</dt><dd>${escapeHtml(totalLabel)}</dd></div><div><dt>Marge organisation</dt><dd>15 min</dd></div><div><dt>Créneau utilisateur</dt><dd>${escapeHtml(formatDuration(data.travelBudgetMinutes))}</dd></div><div><dt>État du tracé</dt><dd>${escapeHtml(estimatedLabel)}</dd></div></dl>`;
 }
 
 function renderStops(routes: ExportRoute[]): string {

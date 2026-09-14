@@ -1,6 +1,7 @@
 "use client";
 
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+import { formatBusinessDurationRangeMinutes } from "@/lib/actions/time-contract";
 import type { RouteTraceExclusionReason } from "@/lib/route/route-trace";
 import { getRouteOriginLabel } from "../route-origin";
 import { EventExplanation } from "./route-explanation-events";
@@ -63,7 +64,7 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
               <dd className="font-semibold text-white">{trace.selectedStops.length}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Budget utilisé / restant</dt>
+              <dt className="text-slate-500">Temps réseau utilisé / restant</dt>
               <dd className="font-semibold text-white">
                 {formatDuration(trace.budget.consumedMinutes)} / {formatDuration(trace.budget.remainingMinutes)}
               </dd>
@@ -83,7 +84,7 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
           </dl>
           <p className="mt-3 text-xs text-slate-400">
             {trace.duration.serviceMinutes === null && trace.duration.estimatedMinutes === null
-              ? "Temps de collecte/service non fourni : aucune durée n’est inventée."
+              ? "Durée d’action complète non fournie : aucune durée n’est inventée."
               : trace.duration.estimatedMinutes !== null
                 ? `Déplacement estimé : ${formatDuration(trace.duration.estimatedMinutes)}.`
                 : `Déplacement réseau : ${formatDuration(trace.duration.networkMinutes)}.`}
@@ -94,25 +95,25 @@ export function RouteExplanation({ data, fr }: RouteExplanationProps) {
               <dd className="font-semibold text-white">{formatDuration(data.travelMinutes)}</dd>
             </div>
             <div>
-              <dt className="text-slate-500">Collecte</dt>
+              <dt className="text-slate-500">Durée d’action</dt>
               <dd className="font-semibold text-white">
                 {serviceMinutes === null
-                  ? "Non calibrée"
-                  : formatDuration(serviceMinutes)}
+                  ? "Non fiable"
+                  : formatBusinessDurationRangeMinutes(serviceMinutes)}
               </dd>
             </div>
             <div>
-              <dt className="text-slate-500">Total opérationnel</dt>
+              <dt className="text-slate-500">Créneau total</dt>
               <dd className="font-semibold text-white">
                 {operationalTotalMinutes === null
                   ? "Non disponible"
-                  : formatDuration(operationalTotalMinutes)}
+                  : formatBusinessDurationRangeMinutes(operationalTotalMinutes)}
               </dd>
             </div>
           </dl>
           {operationalTotalMinutes === null ? (
             <p className="mt-2 text-xs text-amber-100/80">
-              Aucun total opérationnel fiable n’est encore disponible.
+              La durée d’action complète n’est pas encore fiable ; le temps réseau reste affiché séparément.
             </p>
           ) : null}
           <p className="mt-2 rounded-xl border border-emerald-300/20 bg-emerald-500/10 p-3 text-sm font-semibold text-emerald-50">

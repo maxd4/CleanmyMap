@@ -6,13 +6,22 @@ import {
 } from "./route-calibration";
 
 export const ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION =
-  "route-operational-budget-v1" as const;
+  "route-operational-budget-v2" as const;
+export const ROUTE_ORGANIZATION_MARGIN_MINUTES = 15 as const;
 
 export type RouteOperationalBudget = {
   contractVersion: typeof ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION;
   travelMinutes: number | null;
+  /** Future duration model output: walking + collection + sorting + weighing. */
+  actionMinutes: number | null;
+  eventBudgetMinutes: number | null;
+  actionBudgetMinutes: number | null;
+  organizationMarginMinutes: typeof ROUTE_ORGANIZATION_MARGIN_MINUTES;
+  /** Legacy read compatibility alias for actionMinutes. */
   serviceMinutes: number | null;
+  /** Diagnostic model uncertainty; never added to totalMinutes. */
   uncertaintyReserveMinutes: number | null;
+  /** actionMinutes + organizationMarginMinutes. */
   totalMinutes: number | null;
   withinBudget: boolean | null;
   calibrationStatus: RouteCalibrationStatus;
@@ -23,6 +32,7 @@ export type RouteOperationalBudget = {
 
 export type RouteOperationalBudgetEstimator = (input: {
   context: RouteCalibrationContext;
+  travelMinutes?: number | null;
 }) => RouteCleanupDurationEstimate;
 
 export type RouteOperationalBudgetDependency = {
@@ -36,18 +46,26 @@ const defaultEstimateDuration: RouteOperationalBudgetEstimator = ({ context }) =
 export function buildRouteOperationalBudget(input: {
   travelMinutes: number | null;
   calibrationContext?: RouteCalibrationContext | null;
+  /** Existing transport field now carries the total user event slot. */
   budgetMinutes?: number | null;
   durationDependency?: RouteOperationalBudgetDependency | null;
 }): RouteOperationalBudget {
   const travelMinutes = finiteNonNegative(input.travelMinutes)
     ? round(input.travelMinutes)
     : null;
+  const eventBudgetMinutes = finiteNonNegative(input.budgetMinutes)
+    ? round(input.budgetMinutes)
+    : null;
+  const actionBudgetMinutes = eventBudgetMinutes === null
+    ? null
+    : Math.max(0, eventBudgetMinutes - ROUTE_ORGANIZATION_MARGIN_MINUTES);
   const durationEstimate = input.calibrationContext
     ? (input.durationDependency?.estimateDuration ?? defaultEstimateDuration)({
         context: input.calibrationContext,
+        travelMinutes,
       })
     : unavailableDurationEstimate();
-  const serviceMinutes = finiteNonNegative(durationEstimate.minutes)
+  const actionMinutes = finiteNonNegative(durationEstimate.minutes)
     ? round(durationEstimate.minutes)
     : null;
   const uncertaintyReserveMinutes = finiteNonNegative(
@@ -55,23 +73,24 @@ export function buildRouteOperationalBudget(input: {
   )
     ? round(durationEstimate.uncertaintyMinutes)
     : null;
-  const totalMinutes =
-    travelMinutes !== null &&
-    serviceMinutes !== null &&
-    uncertaintyReserveMinutes !== null
-      ? round(travelMinutes + serviceMinutes + uncertaintyReserveMinutes)
+  const totalMinutes = actionMinutes !== null
+      ? round(actionMinutes + ROUTE_ORGANIZATION_MARGIN_MINUTES)
       : null;
 
   return {
     contractVersion: ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION,
     travelMinutes,
-    serviceMinutes,
+    actionMinutes,
+    eventBudgetMinutes,
+    actionBudgetMinutes,
+    organizationMarginMinutes: ROUTE_ORGANIZATION_MARGIN_MINUTES,
+    serviceMinutes: actionMinutes,
     uncertaintyReserveMinutes,
     totalMinutes,
     withinBudget:
-      totalMinutes === null || input.budgetMinutes === null || input.budgetMinutes === undefined
+      actionMinutes === null || actionBudgetMinutes === null
         ? null
-        : totalMinutes <= Math.max(0, input.budgetMinutes),
+        : actionMinutes <= actionBudgetMinutes,
     calibrationStatus:
       totalMinutes === null ? "data_insufficient" : durationEstimate.calibrationStatus,
     durationModelVersion: durationEstimate.modelVersion,
@@ -84,19 +103,25 @@ export function isOperationalBudgetAvailable(
   budget: RouteOperationalBudget,
 ): budget is RouteOperationalBudget & {
   travelMinutes: number;
+  actionMinutes: number;
+  eventBudgetMinutes: number;
+  actionBudgetMinutes: number;
   serviceMinutes: number;
-  uncertaintyReserveMinutes: number;
   totalMinutes: number;
   withinBudget: boolean;
 } {
-  return budget.totalMinutes !== null && budget.withinBudget !== null;
+  return budget.actionMinutes !== null &&
+    budget.eventBudgetMinutes !== null &&
+    budget.actionBudgetMinutes !== null &&
+    budget.totalMinutes !== null &&
+    budget.withinBudget !== null;
 }
 
 function unavailableDurationEstimate(): RouteCleanupDurationEstimate {
   return estimateRouteCleanupDuration({ context: null });
 }
 
-function finiteNonNegative(value: number | null): value is number {
+function finiteNonNegative(value: number | null | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
 

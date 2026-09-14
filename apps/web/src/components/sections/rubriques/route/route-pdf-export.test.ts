@@ -184,7 +184,7 @@ describe("route PDF export", () => {
     expect(first).toContain("Itinéraire CleanMyMap");
     expect(first).toContain("Point de rendez-vous");
     expect(first).toContain("Départ / arrivée");
-    expect(first).toContain("Durée collecte");
+    expect(first).toContain("Durée d’action");
     expect(first).toContain("Non disponible : calibration absente");
     expect(first).toContain('size: A4 landscape');
     expect(first).toContain(

@@ -159,7 +159,7 @@ describe("RouteExplanation", () => {
     expect(markup).toContain("Rue de Test");
     expect(markup).toContain("Mesure réseau");
     expect(markup).toContain("Boucle de 2,4 km · départ et arrivée au même endroit");
-    expect(markup).toContain("Aucun total opérationnel fiable n’est encore disponible.");
+    expect(markup).toContain("La durée d’action complète n’est pas encore fiable");
     expect(markup).toContain("retour réserve 16 min");
     expect(markup).toContain("Rue du Retour");
     expect(markup).toContain("<summary");

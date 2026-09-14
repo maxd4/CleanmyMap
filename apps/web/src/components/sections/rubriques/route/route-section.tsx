@@ -25,6 +25,7 @@ import type { RouteGeometry } from "@/lib/route/route-contract";
 import type { RouteGroupRoute } from "@/lib/route/route-response-contract";
 import { createActualRouteFromRecommendation } from "@/lib/route/route-actual";
 import { writePlannerActionHandoff } from "@/lib/route/route-action-handoff";
+import { formatBusinessDurationRangeMinutes } from "@/lib/actions/time-contract";
 import {
   getRouteGroupPatternLabel,
   getRouteGroupVisualStyle,
@@ -90,6 +91,11 @@ export function RouteSection() {
     : groupRoutes.find(({ groupIndex }) => groupIndex === selectedGroupIndex) ?? null;
   const visibleStops = selectedGroup?.stops ?? picks;
   const visibleGeometry = selectedGroup?.routeGeometry ?? data?.routeGeometry ?? EMPTY_ROUTE_GEOMETRY;
+  const eventBudgetMinutes = data?.eventBudgetMinutes ?? options.travelBudgetMinutes;
+  const actionBudgetMinutes = data?.actionBudgetMinutes ?? Math.max(0, eventBudgetMinutes - 15);
+  const organizationMarginMinutes = data?.organizationMarginMinutes ?? 15;
+  const actionDurationLabel = formatBusinessDurationRangeMinutes(serviceMinutes);
+  const operationalTotalLabel = formatBusinessDurationRangeMinutes(operationalTotalMinutes);
 
   const createActionFromRecommendation = () => {
     if (!data) return;
@@ -360,17 +366,20 @@ export function RouteSection() {
                              <dd className="mt-1 font-bold">{totalMinutes} min</dd>
                            </div>
                            <div>
-                             <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Collecte</dt>
-                             <dd className="mt-1 font-bold">{serviceMinutes === null ? "Non calibrée" : `${serviceMinutes} min`}</dd>
+                             <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Durée d’action</dt>
+                             <dd className="mt-1 font-bold">{serviceMinutes === null ? "Non fiable" : actionDurationLabel}</dd>
                            </div>
                            <div>
-                             <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Total opérationnel</dt>
-                             <dd className="mt-1 font-bold">{operationalTotalMinutes === null ? "Non disponible" : `${operationalTotalMinutes} min`}</dd>
+                             <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Créneau total</dt>
+                             <dd className="mt-1 font-bold">{operationalTotalMinutes === null ? "Non disponible" : operationalTotalLabel}</dd>
                            </div>
                          </dl>
+                         <p className="text-xs font-semibold text-slate-300/80">
+                           Créneau utilisateur : {formatBusinessDurationRangeMinutes(eventBudgetMinutes)} · budget d’action : {formatBusinessDurationRangeMinutes(actionBudgetMinutes)} · marge organisation : {organizationMarginMinutes} min.
+                         </p>
                          {serviceMinutes === null ? (
                            <p className="text-xs font-semibold text-amber-100/80">
-                             Aucun total opérationnel fiable n’est encore disponible.
+                             La durée d’action complète n’est pas encore fiable ; le planner conserve son fonctionnement avec le temps réseau disponible.
                            </p>
                          ) : null}
                          {data.isLoop ? (
@@ -504,7 +513,7 @@ export function RouteSection() {
                               <span className="font-black text-white">{groupLabel}</span>
                             </span>
                             <p className="mt-2 text-xs text-slate-300">
-                              {group.travelDistanceKm.toFixed(2)} km · {group.travelMinutes} min déplacement · {group.operationalBudget?.totalMinutes === null || group.operationalBudget?.totalMinutes === undefined ? "total opérationnel indisponible" : `${group.operationalBudget.totalMinutes} min total`} · {group.targetCount} {fr ? "stops" : "stops"}
+                              {group.travelDistanceKm.toFixed(2)} km · {group.travelMinutes} min déplacement · {group.operationalBudget?.actionMinutes === null || group.operationalBudget?.actionMinutes === undefined ? "durée d’action indisponible" : `action ${formatBusinessDurationRangeMinutes(group.operationalBudget.actionMinutes)}`} · {group.targetCount} {fr ? "stops" : "stops"}
                             </p>
                             {multiRouteDisplayMode === "patterns" ? (
                               <p className="mt-1 text-[11px] font-semibold text-emerald-100/70">

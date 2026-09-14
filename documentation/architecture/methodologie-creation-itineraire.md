@@ -258,39 +258,52 @@ cleanupWorkload → contexte historique → données terrain → readiness
 ### Budget opérationnel
 
 Le budget opérationnel est un contrat distinct et versionné :
-`route-operational-budget-v1`. Il sépare toujours :
+`route-operational-budget-v2`. Il sépare toujours :
 
 - `travelMinutes` : déplacement réseau ou estimation de fallback ;
-- `serviceMinutes` : collecte fournie uniquement par
-  `route-cleanup-duration-v1` ;
-- `uncertaintyReserveMinutes` : réserve fournie uniquement par le même modèle
-  calibré ;
-- `totalMinutes` : composition `travel + service + uncertaintyReserve`, créée
-  seulement lorsque les trois composantes existent ;
-- `withinBudget` : conformité au budget opérationnel, `null` lorsque le total
-  est inconnu.
+- `actionMinutes` : durée réelle future de l’action, c’est-à-dire marche,
+  ramassage, tri et pesée ; `serviceMinutes` reste un alias de lecture
+  compatible ;
+- `eventBudgetMinutes` : créneau utilisateur transporté par le champ historique
+  `travelBudgetMinutes` tant que le contrat de requête n’est pas renommé ;
+- `organizationMarginMinutes` : marge fixe de 15 minutes pour le dépôt des
+  sacs, boire, le regroupement et les petites opérations de fin ; ce n’est pas
+  une incertitude statistique ;
+- `actionBudgetMinutes` : `eventBudgetMinutes - 15`, borné à zéro ;
+- `totalMinutes` : `actionMinutes + 15`, uniquement lorsque la durée d’action
+  est disponible ;
+- `uncertaintyReserveMinutes` : diagnostic de l’estimateur, conservé pour la
+  provenance mais jamais ajouté au budget ;
+- `withinBudget` : conformité de la durée d’action au budget d’action, `null`
+  lorsque l’une des deux valeurs est inconnue.
 
-Le paramètre historique `travelBudgetMinutes` reste exclusivement un budget de
-déplacement. Dans l’état `DATA_INSUFFICIENT`, le déplacement reste disponible,
-mais collecte, réserve, total et conformité opérationnelle restent `null`. Le
-planner conserve donc exactement son admission travel-only et aucune route ne
-disparaît à cause de l’absence de calibration.
+Le champ historique `travelBudgetMinutes` est donc interprété comme le créneau
+total de l’événement dans le contrat v2. Le temps réseau reste une contrainte
+interne et un diagnostic du trajet, retour au point de départ compris ; il ne
+représente pas seul la durée réelle de l’action. Avec un estimateur calibré,
+le planner compare le total `actionMinutes + 15` au créneau. Lorsque la
+calibration est `data_insufficient`, le planner reste fonctionnel avec son
+admission réseau historique : aucune route n’est supprimée uniquement parce
+que la durée opérationnelle complète manque, et l’interface l’indique
+explicitement.
 
 Le planner et la partition multi-groupe reçoivent une dépendance explicite vers
 l’estimateur de durée. Lorsqu’un artefact calibré est injecté, le coût
 opérationnel incluant la branche de retour à l’origine peut devenir le coût
 d’admission et d’équilibrage ; lorsqu’il est indisponible, le coût de
 déplacement historique reste la seule contrainte. Chaque groupe porte son
-propre contrat. L’équilibrage par durée totale n’est déclaré disponible que si
-les contrats de tous les groupes sont complets.
+propre contrat. Pour des groupes exécutés en parallèle, le créneau global est
+`max(actionMinutes des groupes) + 15` : la marge organisationnelle n’est pas
+répétée une fois par groupe. Le système ne fabrique pas de répartition de
+bénévoles entre routes.
 
-La réponse serveur et la trace exposent séparément déplacement, collecte,
-réserve et total. `trace.duration.totalMinutes` reste `null` quand la collecte
-est inconnue ; le déplacement demeure dans `networkMinutes` ou
-`estimatedMinutes`. Le frontend et l’export PDF consomment uniquement ces
-valeurs serveur et signalent sobrement l’absence de total opérationnel fiable.
-La réserve d’incertitude n’est jamais fabriquée par le planner, l’API ou le
-client.
+La réponse serveur et la trace exposent séparément déplacement réseau, durée
+d’action, marge, réserve diagnostique et créneau total. `trace.duration.totalMinutes`
+reste `null` quand la durée d’action est inconnue ; le déplacement demeure dans
+`networkMinutes` ou `estimatedMinutes`. Le frontend et l’export PDF affichent
+les estimations utilisateur comme un intervalle au quart d’heure, sans
+modifier la précision interne ni les calculs. La réserve d’incertitude n’est
+jamais ajoutée ni fabriquée par le planner, l’API ou le client.
 
 La readiness est structurelle, sans seuil statistique arbitraire. Elle vérifie
 la couverture et la variation des déchets ordinaires et des mégots séparément,

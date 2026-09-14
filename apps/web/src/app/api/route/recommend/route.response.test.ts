@@ -445,13 +445,21 @@ describe("route recommendation response trace contract", () => {
     const payload: RouteRecommendationResponse = await response.json();
 
     expect(payload.serviceMinutesEstimate).toBe(18);
-    expect(payload.totalMinutesEstimate).toBe(34);
+    expect(payload.actionMinutesEstimate).toBe(18);
+    expect(payload.eventBudgetMinutes).toBe(60);
+    expect(payload.actionBudgetMinutes).toBe(45);
+    expect(payload.organizationMarginMinutes).toBe(15);
+    expect(payload.totalMinutesEstimate).toBe(33);
     expect(payload.operationalBudget).toMatchObject({
-      contractVersion: "route-operational-budget-v1",
+      contractVersion: "route-operational-budget-v2",
       travelMinutes: 12,
+      actionMinutes: 18,
+      eventBudgetMinutes: 60,
+      actionBudgetMinutes: 45,
+      organizationMarginMinutes: 15,
       serviceMinutes: 18,
       uncertaintyReserveMinutes: 4,
-      totalMinutes: 34,
+      totalMinutes: 33,
       withinBudget: true,
     });
     expect(payload.trace.duration).toMatchObject({
@@ -459,7 +467,7 @@ describe("route recommendation response trace contract", () => {
       estimatedMinutes: null,
       serviceMinutes: 18,
       uncertaintyReserveMinutes: 4,
-      totalMinutes: 34,
+      totalMinutes: 33,
     });
   });
 
@@ -582,14 +590,14 @@ describe("route recommendation response trace contract", () => {
     const payload: RouteRecommendationResponse = await response.json();
 
     expect(payload.groupRoutes.map(({ operationalBudget }) => operationalBudget?.totalMinutes))
-      .toEqual([24, 24]);
+      .toEqual([25, 25]);
     expect(payload.multiRoute).toMatchObject({
       operationalBudgetAvailable: true,
-      totalOperationalMinutes: 48,
+      totalOperationalMinutes: 25,
       balanceOperationalDuration: 0,
     });
     expect(payload.trace.multiRoute?.groups.every(({ operationalBudget }) =>
-      operationalBudget?.totalMinutes === 24,
+      operationalBudget?.totalMinutes === 25,
     )).toBe(true);
   });
 

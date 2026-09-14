@@ -86,6 +86,10 @@ export type RouteRecommendationResponse = {
   };
   withinBudget: boolean;
   serviceMinutesEstimate: number | null;
+  actionMinutesEstimate?: number | null;
+  eventBudgetMinutes?: number;
+  actionBudgetMinutes?: number;
+  organizationMarginMinutes?: number;
   totalMinutesEstimate: number | null;
   /** Versioned server composition; legacy scalar fields remain for compatibility. */
   operationalBudget?: RouteOperationalBudget;

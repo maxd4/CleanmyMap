@@ -227,7 +227,7 @@ export function RouteOptionsForm({
         </label>
 
         <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
-          {fr ? "Budget de déplacement (minutes)" : "Travel budget (minutes)"}
+          {fr ? "Créneau total de l’événement (minutes)" : "Total event slot (minutes)"}
           <input
             type="number"
             min={1}
@@ -243,7 +243,7 @@ export function RouteOptionsForm({
             className={buildInputClass()}
           />
           <span className="text-xs font-medium text-emerald-100/64">
-            {fr ? "Temps maximal de déplacement" : "Maximum travel time"}
+            {fr ? "Durée d’action + 15 min de marge organisationnelle" : "Action duration + 15 min organization margin"}
           </span>
         </label>
 
