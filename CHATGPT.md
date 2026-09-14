@@ -396,6 +396,99 @@ Une lecture propriétaire reste distincte d'une lecture publique, même si les d
 
 Une vue de modération ne doit pas réutiliser aveuglément un cache ou snapshot conçu pour une surface publique.
 
+### Proportionnalité, confiance et ouverture associative
+
+CleanMyMap est un projet associatif et citoyen dont la valeur dépend aussi de
+la facilité à s'informer, échanger, demander de l'aide, contribuer et entrer
+progressivement dans la communauté. Ne pas transformer par précaution un
+risque hypothétique en restriction produit.
+
+Avant de proposer une limitation d'accès, distinguer explicitement :
+
+```text
+communication / information / entraide
+≠ participation métier
+≠ mutation d'une ressource
+≠ accès à une donnée sensible
+≠ pouvoir d'organisation
+≠ pouvoir de modération
+≠ privilège administratif
+```
+
+Le principe de moindre privilège s'applique strictement aux capacités qui
+donnent un pouvoir, permettent une mutation sensible, exposent des données
+privées ou accordent un scope privilégié. Il ne signifie pas que toute
+communication ou consultation communautaire doit être conditionnée par
+l'obtention préalable d'un statut métier.
+
+Pour les fonctions d'échange, d'entraide, de découverte et de coordination
+entre bénévoles, préférer par défaut le niveau d'ouverture compatible avec la
+sécurité réelle du système.
+
+Une restriction supplémentaire doit répondre à un risque concret et
+identifiable. Avant de la recommander, préciser au minimum :
+
+- la ressource ou le pouvoir réellement protégé ;
+- le scénario d'abus crédible ;
+- l'impact attendu ;
+- pourquoi les protections existantes ne suffisent pas ;
+- pourquoi une mesure moins restrictive serait insuffisante.
+
+Une possibilité abstraite d'abus, une préférence pour un contrôle plus simple
+ou le seul fait qu'une relation métier existe déjà ne suffisent pas à justifier
+un gate supplémentaire.
+
+Lorsqu'un risque concerne principalement les comportements abusifs dans une
+surface de communication, examiner d'abord les mécanismes adaptés :
+
+```text
+modération
+signalement
+blocage / exclusion
+rate limiting
+anti-spam
+limitation des pièces jointes
+journalisation adaptée
+outils organisateur / modérateur
+```
+
+Plutôt que de réserver préventivement la communication à une catégorie étroite
+d'utilisateurs, préférer le contrôle le moins restrictif qui traite
+effectivement le risque.
+
+Ne pas coupler deux capacités uniquement parce qu'elles concernent la même
+entité. Le droit d'échanger autour d'une action peut être distinct du statut de
+participant ; modifier l'action, gérer ses participants et exercer une
+modération restent des capacités séparées et strictement autorisées.
+
+L'ouverture d'une surface communautaire ne doit jamais produire par effet de
+bord :
+
+- une élévation de rôle ;
+- une permission de mutation supplémentaire ;
+- une participation métier implicite ;
+- un accès à des données privées ;
+- un contournement de l'ownership ;
+- une capacité de modération ;
+- un élargissement de scope administratif.
+
+Réciproquement, ne pas utiliser les exigences de sécurité applicables à ces
+pouvoirs sensibles pour fermer sans nécessité les échanges ordinaires entre
+bénévoles. En cas d'arbitrage entre plusieurs solutions également sûres,
+préférer celle qui réduit les frictions inutiles, favorise l'entraide et
+permet à un nouvel utilisateur de comprendre, demander, contribuer puis
+s'engager progressivement.
+
+Cette règle ne permet jamais d'affaiblir AuthN, AuthZ, RLS, la validation des
+entrées, la protection des données personnelles, les secrets, l'audit des
+opérations sensibles ou les contrôles anti-abus réellement nécessaires.
+
+Ne jamais déduire un accès d'un nom de route ou d'un ancien document lorsque le
+runtime dit autre chose. Le coût ou la performance ne constitue pas une raison
+d'AuthZ. Une page publique et une mutation authentifiée sont parfaitement
+compatibles et ne doivent pas être fusionnées en une « route protégée » par
+simple proximité fonctionnelle.
+
 ## 13. Application mobile
 
 `apps/web/` et `apps/mobile/` sont deux applications déployables distinctes du

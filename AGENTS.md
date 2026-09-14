@@ -458,6 +458,34 @@ Il est interdit de différer silencieusement cette dette.
   de sécurité existants ;
 - tout texte public est en français sauf surface explicitement localisée.
 
+### Proportionnalité des accès communautaires
+
+Les décisions d'accès doivent distinguer explicitement la communication,
+l'information et l'entraide de la participation métier, des mutations, des
+données sensibles, de l'organisation, de la modération et des privilèges
+administratifs. Le moindre privilège protège ces pouvoirs et ces données ; il
+n'impose pas un statut métier préalable pour une communication ou une
+consultation communautaire lorsque la sécurité réelle ne le requiert pas.
+
+Toute restriction supplémentaire doit être fondée sur un risque concret et
+documenter la ressource protégée, le scénario d'abus, l'impact attendu,
+l'insuffisance des protections existantes et celle d'une mesure moins
+restrictive. Pour une surface d'échange, examiner d'abord la modération, le
+signalement, le blocage/exclusion, le rate limiting, l'anti-spam, les limites
+de pièces jointes, la journalisation adaptée et les outils d'organisateur ou
+de modérateur.
+
+Ne jamais déduire une permission d'un nom de route ou d'un ancien document si
+le runtime dit autre chose. Le coût ou la performance ne constitue pas une
+raison d'AuthZ. Une page publique et une mutation authentifiée peuvent
+coexister sans devenir une seule « route protégée ». L'ouverture d'une surface
+communautaire ne doit ni élever un rôle, ni accorder une mutation, une
+participation métier, un accès privé, un contournement d'ownership, une
+modération ou un scope administratif. Les exigences AuthN, AuthZ, RLS,
+validation, protection des données, secrets, audit et anti-abus nécessaires
+restent inchangées. Le détail de cette doctrine est canonique dans
+`CHATGPT.md`, section « Proportionnalité, confiance et ouverture associative ».
+
 Les règles propres à Next/web, API, Supabase, scripts, mobile, CI/GitHub,
 Python et documentation sont portées par les fichiers scoped correspondants.
 Les changements SQL, routes API, workflows, maintenance Python et documents
