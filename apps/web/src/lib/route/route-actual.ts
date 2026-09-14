@@ -1,4 +1,5 @@
 import type { RouteCalibrationContext } from "./route-calibration";
+import type { RoutePlannerProof } from "./route-planner-proof-contract";
 import type {
   RouteGeometry,
   RouteStop,
@@ -44,6 +45,8 @@ export type ActualRoute = {
 export type PlannerActionHandoff = {
   actualRoute: ActualRoute;
   routeCalibrationContext: RouteCalibrationContext | null;
+  plannerProof: RoutePlannerProof | null;
+  expiresAt: string;
 };
 
 export function createActualRouteFromRecommendation(

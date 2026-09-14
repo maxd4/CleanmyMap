@@ -26,7 +26,9 @@ import {
 import {
   buildRoutePlannerSnapshot,
   buildRouteCalibrationContext,
+  buildVerifiedRouteCalibrationContext,
 } from "@/lib/route/route-calibration";
+import { createRoutePlannerProof } from "@/lib/route/route-planner-proof";
 import {
   buildRouteOperationalBudget,
   ROUTE_ORGANIZATION_MARGIN_MINUTES,
@@ -313,69 +315,80 @@ export function buildRouteRecommendationResponse(input: {
   const snapshotStops = groupRoutes.length > 1
     ? groupRoutes.flatMap(({ stops: groupStops }) => groupStops)
     : applyOriginRouteGeometryLegs(buildStops(plannedStops), routeGeometry);
-  const calibrationContext = buildRouteCalibrationContext({
+  const plannerSnapshot = buildRoutePlannerSnapshot({
+    generatedAt,
+    engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
+    selectedCandidates: calibrationCandidates,
+    selectedStops: snapshotStops,
+    origin,
+    planningMode,
+    travelBudgetMinutes,
+    maxStops,
+    priorityVsTravel,
+    pickupPreference,
+    effectiveRiskFocus: planning.effectiveRiskFocus,
+    volunteers,
+    groupCount,
+    routeGeometry,
+    travelDistanceKm: groupCount === 1
+      ? routeGeometry.distanceKm
+      : multiRoute.totalDistanceKm,
+    travelMinutes: groupCount === 1
+      ? routeGeometry.durationMinutes
+      : multiRoute.totalDurationMinutes,
+    returnDistanceKm,
+    returnMinutes,
+    groups: (groupRoutes.length > 0
+      ? groupRoutes.map((group) => ({
+          groupIndex: group.groupIndex,
+          volunteerCount: group.volunteerCount,
+          candidateIds: [...group.candidateIds],
+          reservedCandidateIds: [...group.reservedCandidateIds],
+          targetCount: group.targetCount,
+          travelDistanceKm: group.travelDistanceKm,
+          travelMinutes: group.travelMinutes,
+          travelBudgetMinutes: group.travelBudgetMinutes,
+          withinBudget: group.withinBudget,
+          routeGeometry: group.routeGeometry,
+          operationalBudget: group.operationalBudget ?? null,
+        }))
+      : planning.groupPartition.groups.map((group) => ({
+          groupIndex: group.groupIndex,
+          volunteerCount: group.volunteerCount,
+          candidateIds: [...group.candidateIds],
+          reservedCandidateIds: [],
+          targetCount: group.targetCount,
+          travelDistanceKm: group.estimatedDistanceKm,
+          travelMinutes: group.estimatedDurationMinutes,
+          travelBudgetMinutes,
+          withinBudget: group.estimatedDurationMinutes <= travelBudgetMinutes,
+          routeGeometry,
+          operationalBudget: null,
+        }))),
+    dataStatus,
+    dataLayers,
+    sourceHealth,
+    prediction: predictionSummary,
+    durationModelVersion: operationalBudget.durationModelVersion,
+    weatherContext,
+  });
+  const plannerProof = createRoutePlannerProof({
+    snapshot: plannerSnapshot,
+    now: new Date(generatedAt),
+  });
+  const calibrationContext = buildVerifiedRouteCalibrationContext({
     generatedAt,
     routeEngineVersion: ROUTE_PLANNER_ENGINE_VERSION,
     volunteersExpected: volunteers,
     groupCount,
     candidates: calibrationCandidates,
-    plannerSnapshot: buildRoutePlannerSnapshot({
-      generatedAt,
-      engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
-      selectedCandidates: calibrationCandidates,
-      selectedStops: snapshotStops,
-      origin,
-      planningMode,
-      travelBudgetMinutes,
-      maxStops,
-      priorityVsTravel,
-      pickupPreference,
-      effectiveRiskFocus: planning.effectiveRiskFocus,
-      volunteers,
-      groupCount,
-      routeGeometry,
-      travelDistanceKm: groupCount === 1
-        ? routeGeometry.distanceKm
-        : multiRoute.totalDistanceKm,
-      travelMinutes: groupCount === 1
-        ? routeGeometry.durationMinutes
-        : multiRoute.totalDurationMinutes,
-      returnDistanceKm,
-      returnMinutes,
-      groups: (groupRoutes.length > 0
-        ? groupRoutes.map((group) => ({
-            groupIndex: group.groupIndex,
-            volunteerCount: group.volunteerCount,
-            candidateIds: [...group.candidateIds],
-            reservedCandidateIds: [...group.reservedCandidateIds],
-            targetCount: group.targetCount,
-            travelDistanceKm: group.travelDistanceKm,
-            travelMinutes: group.travelMinutes,
-            travelBudgetMinutes: group.travelBudgetMinutes,
-            withinBudget: group.withinBudget,
-            routeGeometry: group.routeGeometry,
-            operationalBudget: group.operationalBudget ?? null,
-          }))
-        : planning.groupPartition.groups.map((group) => ({
-            groupIndex: group.groupIndex,
-            volunteerCount: group.volunteerCount,
-            candidateIds: [...group.candidateIds],
-            reservedCandidateIds: [],
-            targetCount: group.targetCount,
-            travelDistanceKm: group.estimatedDistanceKm,
-            travelMinutes: group.estimatedDurationMinutes,
-            travelBudgetMinutes,
-            withinBudget: group.estimatedDurationMinutes <= travelBudgetMinutes,
-            routeGeometry,
-            operationalBudget: null,
-          }))),
-      dataStatus,
-      dataLayers,
-      sourceHealth,
-      prediction: predictionSummary,
-      durationModelVersion: operationalBudget.durationModelVersion,
-      weatherContext,
-    }),
+    plannerSnapshot,
+    plannerSnapshotIntegrity: {
+      status: "server_verified",
+      proofVersion: plannerProof.proofVersion,
+      snapshotHash: plannerProof.snapshotHash,
+      verifiedAt: generatedAt,
+    },
   });
   const budgetRemainingMinutes = Math.max(
     0,
@@ -426,6 +439,8 @@ export function buildRouteRecommendationResponse(input: {
       generatedAt,
       engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
       calibrationContext,
+      plannerSnapshot,
+      plannerProof,
       ...(weatherContext ? { weatherContext } : {}),
       stops: [],
       prediction: predictionSummary,
@@ -509,6 +524,8 @@ export function buildRouteRecommendationResponse(input: {
     generatedAt,
     engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
     calibrationContext,
+    plannerSnapshot,
+    plannerProof,
     ...(weatherContext ? { weatherContext } : {}),
     stops,
     prediction: predictionSummary,

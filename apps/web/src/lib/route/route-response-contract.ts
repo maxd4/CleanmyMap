@@ -15,6 +15,7 @@ import type {
 } from "./route-group-partition";
 import type { RoutePickupPreference } from "./route-pickup-preference";
 import type { RouteCalibrationContext } from "./route-calibration";
+import type { RoutePlannerProof } from "./route-planner-proof-contract";
 import type { RouteOperationalBudget } from "./route-operational-budget";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
@@ -112,6 +113,9 @@ export type RouteRecommendationResponse = {
   engineVersion: string;
   /** Historical context to carry unchanged into an action preparation payload. */
   calibrationContext?: RouteCalibrationContext;
+  /** Exact planner snapshot and server proof used by the action trust boundary. */
+  plannerSnapshot?: NonNullable<RouteCalibrationContext["plannerSnapshot"]>;
+  plannerProof?: RoutePlannerProof;
   /** Forecast known at generation time; it does not affect route calculations. */
   weatherContext?: PlannerWeatherContext;
   stops: RouteStop[];

@@ -317,12 +317,19 @@ describe("route recommendation response trace contract", () => {
     expect(payload.trace).toBeDefined();
     expect(payload.trace.selectedStops).toEqual([]);
     expect(payload.calibrationContext).toMatchObject({
-      version: "action-route-calibration-v2",
+      version: "action-route-calibration-v3",
       routeEngineVersion: "route-planner-v2",
       volunteersExpected: 1,
       groupCount: 1,
       candidates: [],
+      plannerSnapshotIntegrity: {
+        status: "server_verified",
+        proofVersion: "route-planner-proof-v1",
+      },
     });
+    expect(payload.plannerSnapshot).toEqual(payload.calibrationContext?.plannerSnapshot);
+    expect(payload.plannerProof?.proofVersion).toBe("route-planner-proof-v1");
+    expect(payload.plannerProof?.snapshotHash).toMatch(/^[a-f0-9]{64}$/);
     expect(payload.calibrationContext?.plannerSnapshot).toMatchObject({
       version: "route-planner-snapshot-v1",
       generatedAt: payload.generatedAt,

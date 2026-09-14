@@ -13,6 +13,10 @@ import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import { isActualRoute } from "@/lib/route/route-actual";
 import type { ActualRoute } from "@/lib/route/route-actual";
 import {
+  isRoutePlannerProofShape,
+  type RoutePlannerProof,
+} from "@/lib/route/route-planner-proof-contract";
+import {
   getTimeContractValidationMessage,
   isValidClockTime,
 } from "@/lib/actions/time-contract";
@@ -201,6 +205,14 @@ const preparationDataSchema = z
   })
   .strict();
 
+const routePlannerProofSchema = z
+  .custom<RoutePlannerProof>(
+    isRoutePlannerProofShape,
+    "Preuve du snapshot planner invalide.",
+  )
+  .nullable()
+  .optional();
+
 const actionPhaseSchema = z.enum([
   "pre_action",
   "post_action_draft",
@@ -297,7 +309,9 @@ const createActionLegacyBaseSchema = z.object({
   userMetadata: userMetadataSchema.optional(),
 });
 
-const createActionLegacySchema = createActionLegacyBaseSchema.superRefine(
+const createActionLegacySchema = createActionLegacyBaseSchema
+  .extend({ plannerSnapshotProof: routePlannerProofSchema })
+  .superRefine(
   addTemporalContractIssue,
 );
 
@@ -350,6 +364,7 @@ const createActionContractSchema = z.object({
     submissionMode: z.enum(["quick", "complete"]).optional(),
     actionPhase: actionPhaseSchema.optional(),
     preparationData: preparationDataSchema.nullable().optional(),
+    plannerSnapshotProof: routePlannerProofSchema,
       wasteBreakdown: wasteBreakdownSchema.optional(),
       wasteMeasurementMethod: wasteMeasurementMethodSchema,
     photos: z.array(photoAssetSchema).max(3).optional(),

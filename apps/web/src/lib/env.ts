@@ -102,6 +102,7 @@ const envSchema = z.object({
   SUPABASE_STORAGE_QUOTA_GB: z.string().optional(),
   CRON_SECRET: z.string().optional(),
   IMPORT_DRY_RUN_SECRET: z.string().optional(),
+  ROUTE_PLANNER_PROOF_SECRET: z.string().optional(),
   VISION_TRAINING_ENABLED: optionalBoolean,
   RESEND_TEST_TOKEN: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),

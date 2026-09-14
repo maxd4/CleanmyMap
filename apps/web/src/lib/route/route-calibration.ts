@@ -35,11 +35,16 @@ import type { RouteOperationalBudget } from "./route-operational-budget";
 import type { ActualRoute } from "./route-actual";
 import { isRoutePlannerSnapshot as validateRoutePlannerSnapshot } from "./route-planner-snapshot-validation";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
+import {
+  ROUTE_PLANNER_PROOF_VERSION,
+} from "./route-planner-proof-contract";
 
 export const ROUTE_CLEANUP_DURATION_CONTRACT_VERSION =
   "route-cleanup-duration-v1" as const;
 export const ROUTE_CALIBRATION_CONTEXT_VERSION =
   "action-route-calibration-v2" as const;
+export const ROUTE_CALIBRATION_CONTEXT_VERIFIED_VERSION =
+  "action-route-calibration-v3" as const;
 export const ROUTE_CALIBRATION_CONTEXT_LEGACY_VERSION =
   "action-route-calibration-v1" as const;
 export const ROUTE_PLANNER_SNAPSHOT_VERSION =
@@ -66,6 +71,7 @@ export type RouteCleanupDurationEstimate = {
     contextVersion:
       | typeof ROUTE_CALIBRATION_CONTEXT_VERSION
       | typeof ROUTE_CALIBRATION_CONTEXT_LEGACY_VERSION
+      | typeof ROUTE_CALIBRATION_CONTEXT_VERIFIED_VERSION
       | null;
     artifactVersion: string | null;
   };
@@ -141,7 +147,8 @@ export type RoutePlannerSnapshot = {
 export type RouteCalibrationContext = {
   version:
     | typeof ROUTE_CALIBRATION_CONTEXT_VERSION
-    | typeof ROUTE_CALIBRATION_CONTEXT_LEGACY_VERSION;
+    | typeof ROUTE_CALIBRATION_CONTEXT_LEGACY_VERSION
+    | typeof ROUTE_CALIBRATION_CONTEXT_VERIFIED_VERSION;
   generatedAt: string;
   routeEngineVersion: string;
   cleanupWorkloadVersion: CleanupWorkload["modelVersion"];
@@ -149,6 +156,15 @@ export type RouteCalibrationContext = {
   groupCount: number;
   candidates: RouteCalibrationContextCandidate[];
   plannerSnapshot?: RoutePlannerSnapshot;
+  /** Server-generated integrity metadata; never accepted as client authority. */
+  plannerSnapshotIntegrity?: RoutePlannerSnapshotIntegrity;
+};
+
+export type RoutePlannerSnapshotIntegrity = {
+  status: "server_verified";
+  proofVersion: typeof ROUTE_PLANNER_PROOF_VERSION;
+  snapshotHash: string;
+  verifiedAt: string;
 };
 
 export type ApprovedActionForCalibration = {
@@ -264,6 +280,7 @@ export type RouteCalibrationDatasetEntry =
         | "not_approved"
         | "missing_historical_context"
         | "invalid_historical_context"
+        | "unverified_historical_context"
         | "duration_unavailable";
     };
 
@@ -338,6 +355,22 @@ export function buildRouteCalibrationContext(input: {
     ...(input.plannerSnapshot
       ? { plannerSnapshot: structuredClone(input.plannerSnapshot) }
       : {}),
+  };
+}
+
+export function buildVerifiedRouteCalibrationContext(input: {
+  generatedAt: string;
+  routeEngineVersion: string;
+  volunteersExpected: number;
+  groupCount: number;
+  candidates: readonly RouteCalibrationContextCandidate[];
+  plannerSnapshot: RoutePlannerSnapshot;
+  plannerSnapshotIntegrity: RoutePlannerSnapshotIntegrity;
+}): RouteCalibrationContext {
+  return {
+    ...buildRouteCalibrationContext(input),
+    version: ROUTE_CALIBRATION_CONTEXT_VERIFIED_VERSION,
+    plannerSnapshotIntegrity: structuredClone(input.plannerSnapshotIntegrity),
   };
 }
 
@@ -427,9 +460,14 @@ export function buildRoutePlannerSnapshot(input: {
 
 export function buildCalibrationDataset(
   actions: readonly ApprovedActionForCalibration[],
-  options: { independentValidationAvailable?: boolean } = {},
+  options: {
+    independentValidationAvailable?: boolean;
+    requireVerifiedPlannerProvenance?: boolean;
+  } = {},
 ): RouteCalibrationDataset {
-  const entries = actions.map(buildCalibrationDatasetEntry);
+  const entries = actions.map((action) =>
+    buildCalibrationDatasetEntry(action, options),
+  );
   const samples = entries.flatMap((entry) => (entry.status === "included" ? [entry.sample] : []));
   return {
     entries,
@@ -445,6 +483,7 @@ export function buildCalibrationDataset(
 
 function buildCalibrationDatasetEntry(
   action: ApprovedActionForCalibration,
+  options: { requireVerifiedPlannerProvenance?: boolean },
 ): RouteCalibrationDatasetEntry {
   if (action.status !== "approved") {
     return { status: "excluded", actionId: action.id, reason: "not_approved" };
@@ -463,6 +502,17 @@ function buildCalibrationDatasetEntry(
       status: "excluded",
       actionId: action.id,
       reason: "invalid_historical_context",
+    };
+  }
+  if (
+    options.requireVerifiedPlannerProvenance &&
+    context.plannerSnapshot &&
+    !isServerVerifiedPlannerSnapshotContext(context)
+  ) {
+    return {
+      status: "excluded",
+      actionId: action.id,
+      reason: "unverified_historical_context",
     };
   }
 
@@ -765,11 +815,12 @@ export function isRouteCalibrationContext(value: unknown): value is RouteCalibra
   const context = value as Partial<RouteCalibrationContext>;
   return (
     (context.version === ROUTE_CALIBRATION_CONTEXT_VERSION ||
-      context.version === ROUTE_CALIBRATION_CONTEXT_LEGACY_VERSION) &&
+      context.version === ROUTE_CALIBRATION_CONTEXT_LEGACY_VERSION ||
+      context.version === ROUTE_CALIBRATION_CONTEXT_VERIFIED_VERSION) &&
     isIsoDate(context.generatedAt) &&
     typeof context.routeEngineVersion === "string" &&
     context.routeEngineVersion.length > 0 &&
-    context.cleanupWorkloadVersion === CLEANUP_WORKLOAD_MODEL_VERSION &&
+    context.cleanupWorkloadVersion === "route-cleanup-workload-v1" &&
     typeof context.volunteersExpected === "number" &&
     Number.isInteger(context.volunteersExpected) &&
     context.volunteersExpected >= 0 &&
@@ -780,12 +831,77 @@ export function isRouteCalibrationContext(value: unknown): value is RouteCalibra
     context.groupCount <= 12 &&
     Array.isArray(context.candidates) &&
     context.candidates.every(isRouteCalibrationCandidate) &&
+    new Set(context.candidates.map(({ candidateId }) => candidateId)).size ===
+      context.candidates.length &&
     (context.plannerSnapshot === undefined ||
       validateRoutePlannerSnapshot(
         context.plannerSnapshot,
-        ROUTE_PLANNER_SNAPSHOT_VERSION,
+      )) &&
+    isCalibrationVersionIntegrityCoherent(context) &&
+    (!context.plannerSnapshot ||
+      isRouteCalibrationSnapshotConsistent(
+        context as RouteCalibrationContext,
+        context.plannerSnapshot,
       ))
   );
+}
+
+export function isServerVerifiedPlannerSnapshotContext(
+  context: RouteCalibrationContext,
+): boolean {
+  return (
+    context.version === ROUTE_CALIBRATION_CONTEXT_VERIFIED_VERSION &&
+    context.plannerSnapshot !== undefined &&
+    context.plannerSnapshotIntegrity?.status === "server_verified" &&
+    context.plannerSnapshotIntegrity.proofVersion === ROUTE_PLANNER_PROOF_VERSION &&
+    /^[a-f0-9]{64}$/.test(context.plannerSnapshotIntegrity.snapshotHash) &&
+    isIsoDate(context.plannerSnapshotIntegrity.verifiedAt)
+  );
+}
+
+function isCalibrationVersionIntegrityCoherent(
+  context: Partial<RouteCalibrationContext>,
+): boolean {
+  if (context.version === ROUTE_CALIBRATION_CONTEXT_VERIFIED_VERSION) {
+    const integrity = context.plannerSnapshotIntegrity;
+    return Boolean(
+      context.plannerSnapshot &&
+        integrity &&
+        integrity.status === "server_verified" &&
+        integrity.proofVersion === ROUTE_PLANNER_PROOF_VERSION &&
+        /^[a-f0-9]{64}$/.test(integrity.snapshotHash) &&
+        isIsoDate(integrity.verifiedAt),
+    );
+  }
+  return context.plannerSnapshotIntegrity === undefined;
+}
+
+function isRouteCalibrationSnapshotConsistent(
+  context: Pick<
+    RouteCalibrationContext,
+    "generatedAt" | "routeEngineVersion" | "cleanupWorkloadVersion" | "groupCount" | "volunteersExpected" | "candidates"
+  >,
+  snapshot: RoutePlannerSnapshot,
+): boolean {
+  const contextCandidateIds = context.candidates.map(({ candidateId }) => candidateId);
+  return (
+    context.generatedAt === snapshot.generatedAt &&
+    context.routeEngineVersion === snapshot.engineVersion &&
+    context.cleanupWorkloadVersion === snapshot.cleanupWorkloadVersion &&
+    context.groupCount === snapshot.parameters.groupCount &&
+    context.volunteersExpected === snapshot.parameters.volunteers &&
+    contextCandidateIds.length === new Set(contextCandidateIds).size &&
+    sameStringSet(contextCandidateIds, snapshot.selectedCandidateIds) &&
+    context.candidates.every((candidate) =>
+      snapshot.selectedCandidateIds.includes(candidate.candidateId) &&
+      snapshot.observedCandidateIds.includes(candidate.candidateId) === (candidate.family === "observed") &&
+      snapshot.predictedCandidateIds.includes(candidate.candidateId) === (candidate.family === "predicted"),
+    )
+  );
+}
+
+function sameStringSet(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value) => right.includes(value));
 }
 
 function isRouteCalibrationCandidate(value: unknown): value is RouteCalibrationContextCandidate {
@@ -794,7 +910,9 @@ function isRouteCalibrationCandidate(value: unknown): value is RouteCalibrationC
   return (
     typeof candidate.candidateId === "string" &&
     (candidate.family === "observed" || candidate.family === "predicted") &&
-    isCleanupWorkload(candidate.cleanupWorkload)
+    isCleanupWorkload(candidate.cleanupWorkload) &&
+    candidate.cleanupWorkload.candidateId === candidate.candidateId &&
+    candidate.cleanupWorkload.family === candidate.family
   );
 }
 

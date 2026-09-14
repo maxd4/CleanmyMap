@@ -1,6 +1,3 @@
-import {
-  CLEANUP_WORKLOAD_MODEL_VERSION,
-} from "./route-cleanup-workload";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import type { RouteDataLayers } from "./route-data-status";
 import type { RouteGeometry, RouteStop } from "./route-contract";
@@ -15,43 +12,85 @@ import { isPlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 export function isRoutePlannerSnapshot(
   value: unknown,
-  expectedVersion: string,
+  expectedVersion?: string,
 ): value is RoutePlannerSnapshot {
   if (!value || typeof value !== "object") return false;
   const snapshot = value as Partial<RoutePlannerSnapshot>;
+  const version = snapshot.version;
+  if (typeof version !== "string" || !isSupportedSnapshotVersion(version)) {
+    return false;
+  }
 
   return (
-    snapshot.version === expectedVersion &&
-    isSnapshotIdentity(snapshot) &&
-    isSnapshotModels(snapshot.modelVersions) &&
+    (expectedVersion === undefined || version === expectedVersion) &&
+    SNAPSHOT_VALIDATORS[version as SupportedSnapshotVersion](snapshot)
+  );
+}
+
+const SUPPORTED_SNAPSHOT_VERSIONS = [
+  "route-planner-snapshot-v1",
+] as const;
+type SupportedSnapshotVersion = (typeof SUPPORTED_SNAPSHOT_VERSIONS)[number];
+
+const SNAPSHOT_VALIDATORS: Record<
+  SupportedSnapshotVersion,
+  (snapshot: Partial<RoutePlannerSnapshot>) => boolean
+> = {
+  "route-planner-snapshot-v1": validateRoutePlannerSnapshotV1,
+};
+
+function isSupportedSnapshotVersion(value: string): boolean {
+  return (SUPPORTED_SNAPSHOT_VERSIONS as readonly string[]).includes(value);
+}
+
+function validateRoutePlannerSnapshotV1(
+  snapshot: Partial<RoutePlannerSnapshot>,
+): boolean {
+  return (
+    isSnapshotIdentity(snapshot, "route-planner-snapshot-v1") &&
+    isSnapshotModels(snapshot.modelVersions, snapshot, "route-planner-snapshot-v1") &&
     isSnapshotParameters(snapshot.parameters) &&
     isSnapshotSelections(snapshot) &&
     isSnapshotDistance(snapshot.distance) &&
     isRouteGeometry(snapshot.geometry) &&
     Array.isArray(snapshot.groups) &&
-    snapshot.groups.every(isRoutePlannerSnapshotGroup) &&
+    isSnapshotGroups(
+      snapshot.groups,
+      snapshot.parameters,
+      snapshot.selectedCandidateIds,
+    ) &&
     isRoutePlannerSnapshotProvenance(snapshot.provenance) &&
     (snapshot.weatherContext === undefined || isPlannerWeatherContext(snapshot.weatherContext))
   );
 }
 
-function isSnapshotIdentity(snapshot: Partial<RoutePlannerSnapshot>): boolean {
+function isSnapshotIdentity(
+  snapshot: Partial<RoutePlannerSnapshot>,
+  version: string,
+): boolean {
   return (
     isIsoDate(snapshot.generatedAt) &&
     typeof snapshot.engineVersion === "string" &&
     snapshot.engineVersion.length > 0 &&
-    snapshot.cleanupWorkloadVersion === CLEANUP_WORKLOAD_MODEL_VERSION
+    (version === "route-planner-snapshot-v1"
+      ? snapshot.cleanupWorkloadVersion === "route-cleanup-workload-v1"
+      : false)
   );
 }
 
 function isSnapshotModels(
   models: RoutePlannerSnapshot["modelVersions"] | undefined,
+  snapshot: Partial<RoutePlannerSnapshot>,
+  version: string,
 ): boolean {
   return (
     Boolean(models) &&
     typeof models?.planner === "string" &&
     models.planner.length > 0 &&
-    models.cleanupWorkload === CLEANUP_WORKLOAD_MODEL_VERSION &&
+    models.planner === snapshot.engineVersion &&
+    (version === "route-planner-snapshot-v1" &&
+      models.cleanupWorkload === "route-cleanup-workload-v1") &&
+    models.cleanupWorkload === snapshot.cleanupWorkloadVersion &&
     (models.prediction === null || typeof models.prediction === "string") &&
     (models.duration === null || typeof models.duration === "string")
   );
@@ -79,12 +118,40 @@ function isSnapshotParameters(
 }
 
 function isSnapshotSelections(snapshot: Partial<RoutePlannerSnapshot>): boolean {
+  const selected = snapshot.selectedCandidateIds;
+  const observed = snapshot.observedCandidateIds;
+  const predicted = snapshot.predictedCandidateIds;
   return (
-    isStringArray(snapshot.selectedCandidateIds) &&
-    isStringArray(snapshot.observedCandidateIds) &&
-    isStringArray(snapshot.predictedCandidateIds) &&
+    isStringArray(selected) &&
+    isStringArray(observed) &&
+    isStringArray(predicted) &&
+    hasUniqueValues(selected) &&
+    hasUniqueValues(observed) &&
+    hasUniqueValues(predicted) &&
+    areDisjoint(observed, predicted) &&
+    sameStringSet([...observed, ...predicted], selected) &&
     Array.isArray(snapshot.selectedStops) &&
-    snapshot.selectedStops.every(isRouteStop)
+    snapshot.selectedStops.every(isRouteStop) &&
+    hasUniqueValues(snapshot.selectedStops.map(({ id }) => id)) &&
+    sameStringSet(snapshot.selectedStops.map(({ id }) => id), selected)
+  );
+}
+
+function isSnapshotGroups(
+  groups: unknown[],
+  parameters: RoutePlannerSnapshot["parameters"] | undefined,
+  selectedCandidateIds: string[] | undefined,
+): boolean {
+  if (!parameters || !selectedCandidateIds || groups.length !== parameters.groupCount) return false;
+  if (!groups.every(isRoutePlannerSnapshotGroup)) return false;
+  const typedGroups = groups as RoutePlannerSnapshotGroup[];
+  const groupIndexes = typedGroups.map(({ groupIndex }) => groupIndex);
+  const assignedCandidateIds = typedGroups.flatMap(({ candidateIds }) => candidateIds);
+  return (
+    sameNumberSet(groupIndexes, Array.from({ length: parameters.groupCount }, (_, index) => index + 1)) &&
+    hasUniqueValues(assignedCandidateIds) &&
+    assignedCandidateIds.every((candidateId) => selectedCandidateIds.includes(candidateId)) &&
+    typedGroups.reduce((sum, group) => sum + group.volunteerCount, 0) === parameters.volunteers
   );
 }
 
@@ -257,6 +324,23 @@ function isCoordinatePair(value: unknown): value is [number, number] {
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(isNonEmptyString);
+}
+
+function hasUniqueValues(values: readonly string[]): boolean {
+  return new Set(values).size === values.length;
+}
+
+function areDisjoint(left: readonly string[], right: readonly string[]): boolean {
+  const rightSet = new Set(right);
+  return left.every((value) => !rightSet.has(value));
+}
+
+function sameStringSet(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value) => right.includes(value));
+}
+
+function sameNumberSet(left: readonly number[], right: readonly number[]): boolean {
+  return left.length === right.length && left.every((value) => right.includes(value));
 }
 
 function isNonEmptyString(value: unknown): value is string {

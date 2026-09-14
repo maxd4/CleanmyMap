@@ -28,6 +28,7 @@ import type { ActionVolunteerParticipation } from "./volunteer-participation";
 import type { OrganizerType } from "./organizer-type";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { ActualRoute } from "@/lib/route/route-actual";
+import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
@@ -270,6 +271,8 @@ export type CreateActionPayload = {
   preparationData?: ActionPreparationData | null;
   /** Canonical itinerary → action handoff; persisted inside preparationData. */
   routeCalibrationContext?: RouteCalibrationContext | null;
+  /** Ephemeral HMAC proof; consumed by the server and never persisted. */
+  plannerSnapshotProof?: RoutePlannerProof | null;
   actionDate: string;
   locationLabel: string;
   departmentCode?: string | null;
