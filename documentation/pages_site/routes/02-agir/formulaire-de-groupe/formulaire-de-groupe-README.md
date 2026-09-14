@@ -30,6 +30,22 @@ La page canonique permet à un bénévole de :
 4. annuler une demande ou quitter une participation ;
 5. ouvrir directement une action ciblée avec `actionId`.
 
+Le paramètre `actionId` est résolu uniquement contre les deux sources déjà
+autorisées par cette page : les pré-actions futures rejoignables et les
+actions passées publiques terminées. Une cible inconnue, supprimée ou
+inaccessible produit un état neutre sans exposer de métadonnée. La cible
+résolue sélectionne automatiquement l'onglet temporel correspondant, est
+remontée en tête sans modifier le tri des autres cartes et reçoit un repère
+visuel ainsi que le focus clavier.
+
+Les onglets sont l'état de navigation canonique de l'URL (`tab=future` ou
+`tab=past`) et conservent `actionId` lorsqu'il est présent. Ils exposent la
+sémantique accessible `tablist` / `tab` / `tabpanel`, avec navigation clavier
+par flèches, `Home` et `End`. Sans deep link, l'onglet futur est sélectionné
+par défaut. Les filtres propres aux futures ne sont pas affichés dans la vue
+passée et aucune nouvelle source, aucun nouveau modèle `past` ou état de
+participation rétroactive n'est introduit.
+
 Permettre au créateur, organisateur ou coorganisateur autorisé de :
 
 1. voir les demandes de son action ;

@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { ArrowUpDown, CalendarDays, ChevronDown, ExternalLink, Filter, Loader2, MapPin, Search, ShieldCheck } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { useJoinFormSectionController } from "./rejoindre-un-formulaire-section.controller";
@@ -14,7 +15,7 @@ import type { JoinableActionSort } from "./rejoindre-un-formulaire-section.utils
 type ControllerState = ReturnType<typeof useJoinFormSectionController>;
 
 type ExplorerProps = Pick<ControllerState,
-  | "fr" | "search" | "setSearch" | "locationFilter" | "setLocationFilter"
+  | "fr" | "focusActionId" | "search" | "setSearch" | "locationFilter" | "setLocationFilter"
   | "periodFilter" | "setPeriodFilter" | "statusFilter" | "setStatusFilter"
   | "sort" | "setSort" | "preActionVisibleItems" | "resetFilters"
   | "loading" | "error" | "reloadActions" | "hasItems" | "hasVisibleItems"
@@ -31,7 +32,7 @@ type ExplorerProps = Pick<ControllerState,
 
 export function JoinFormExplorer(props: ExplorerProps) {
   const {
-    fr, search, setSearch, locationFilter, setLocationFilter, periodFilter,
+    fr, focusActionId, search, setSearch, locationFilter, setLocationFilter, periodFilter,
     setPeriodFilter, statusFilter, setStatusFilter, sort, setSort,
     preActionVisibleItems, resetFilters, loading, error, reloadActions, hasItems,
     hasVisibleItems, authenticated, joiningId, leavingId,
@@ -42,6 +43,17 @@ export function JoinFormExplorer(props: ExplorerProps) {
     reviewQueueRequest, addQueueParticipant,
     onShareAction,
   } = props;
+
+  useEffect(() => {
+    if (!focusActionId || loading) return;
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById(`join-action-${focusActionId}`);
+      if (!(target instanceof HTMLElement)) return;
+      target.scrollIntoView({ block: "center", behavior: "smooth" });
+      target.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusActionId, loading, preActionVisibleItems.length]);
 
   return (
   <div className="space-y-5">
@@ -224,6 +236,7 @@ export function JoinFormExplorer(props: ExplorerProps) {
                     index={index}
                     fr={fr}
                     authenticated={authenticated}
+                    isFocused={focusActionId === item.id}
                     joining={joiningId === item.id}
                     leaving={leavingId === item.id}
                     onRequestJoin={requestJoin}

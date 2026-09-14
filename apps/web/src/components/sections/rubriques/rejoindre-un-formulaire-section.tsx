@@ -11,7 +11,7 @@ import { HeroIllustration } from "./rejoindre-un-formulaire-section.shared";
 import { JoinFormConfirmationDialog } from "./rejoindre-un-formulaire-section-dialog";
 import { useJoinFormSectionController } from "./rejoindre-un-formulaire-section.controller";
 import { PastActionsPanel } from "./rejoindre-une-action.past-actions";
-import { buildJoinActionTabHref } from "@/lib/sections/join-action-routes";
+import { JoinActionTabs } from "./rejoindre-une-action.tabs";
 import { ChatActionShareDialog } from "@/components/chat/chat-action-share-dialog";
 
 export function JoinActionSection() {
@@ -65,32 +65,43 @@ export function JoinActionSection() {
           </div>
         </section>
 
-      <nav aria-label={fr ? "Onglets des actions" : "Action tabs"} className="flex flex-wrap gap-2 rounded-2xl border border-emerald-100 bg-white p-2 shadow-sm">
-        {(["future", "past"] as const).map((tab) => (
-          <Link
-            key={tab}
-            href={buildJoinActionTabHref(tab, controller.focusActionId)}
-            aria-current={controller.activeTab === tab ? "page" : undefined}
-            className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${controller.activeTab === tab ? "bg-emerald-700 text-white shadow-sm" : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-900"}`}
-          >
-            {tab === "future" ? (fr ? "Actions futures" : "Future actions") : (fr ? "Actions passées" : "Past actions")}
-          </Link>
-        ))}
-      </nav>
+      <JoinActionTabs
+        activeTab={controller.activeTab}
+        focusActionId={controller.focusActionId}
+        fr={fr}
+      />
 
-      {controller.activeTab === "future" ? (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
-          <JoinFormExplorer {...controller} onShareAction={setShareActionId} />
-          <JoinFormSidebar {...controller} />
-        </div>
-      ) : (
-        <PastActionsPanel
-          items={controller.pastItems}
-          loading={controller.pastLoading}
-          error={controller.pastError}
-          fr={controller.fr}
-        />
-      )}
+      <div
+        id={`join-action-panel-${controller.activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`join-action-tab-${controller.activeTab}`}
+        tabIndex={-1}
+        className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 focus-visible:ring-offset-4"
+      >
+        {controller.targetResolution === "resolving" ? (
+          <div role="status" className="rounded-[1.25rem] border border-emerald-100 bg-white px-4 py-5 text-sm font-semibold text-emerald-900 shadow-sm">
+            {fr ? "Recherche de cette action dans les publications accessibles..." : "Looking for this action in the accessible publications..."}
+          </div>
+        ) : controller.targetResolution === "unavailable" ? (
+          <div className="rounded-[1.25rem] border border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-700 shadow-sm">
+            <p className="font-bold text-slate-900">{fr ? "Cette action n’est pas disponible dans cette vue." : "This action is not available in this view."}</p>
+            <p className="mt-2 leading-relaxed">{fr ? "Aucune information supplémentaire n’est affichée." : "No additional information is displayed."}</p>
+          </div>
+        ) : controller.activeTab === "future" ? (
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
+            <JoinFormExplorer {...controller} onShareAction={setShareActionId} />
+            <JoinFormSidebar {...controller} />
+          </div>
+        ) : (
+          <PastActionsPanel
+            items={controller.visiblePastItems}
+            loading={controller.pastLoading}
+            error={controller.pastError}
+            fr={controller.fr}
+            focusedActionId={controller.focusActionId}
+          />
+        )}
+      </div>
       </div>
 
       {shareActionId ? <ChatActionShareDialog actionId={shareActionId} onClose={() => setShareActionId(null)} /> : null}
