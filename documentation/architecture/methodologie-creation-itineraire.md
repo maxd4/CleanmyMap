@@ -204,7 +204,9 @@ minutes n’est déduit des données courantes.
 
 Lorsqu’une recommandation devient le point de départ d’une action, son contrat
 transporte `calibrationContext` dans `preparationData.routeCalibrationContext`.
-Ce contexte est versionné `action-route-calibration-v2` et conserve avant
+Le contexte de préparation est versionné `action-route-calibration-v2` ; lorsqu’il
+porte une preuve serveur cohérente avec son snapshot, il est versionné
+`action-route-calibration-v3`. Il conserve avant
 l’action la date de génération, la version du moteur, la version de
 `cleanupWorkload`, les bénévoles et groupes prévus, ainsi que chaque candidat
 retenu avec sa famille (`observed` ou `predicted`) et le snapshot exact de sa
@@ -216,10 +218,11 @@ ni moyennées.
 
 `preparation_data` demeure la source canonique. La création valide strictement
 le contexte ; une édition ordinaire conserve le snapshot historique et une
-tentative explicite de le remplacer est refusée. Le snapshot v2 est donc
+tentative explicite de le remplacer est refusée. Le snapshot
+`route-planner-snapshot-v1` est donc
 immuable après la création de l’action : une modification ultérieure du
-formulaire, de la localisation ou de l’itinéraire réel ne le réécrit jamais.
-Les contextes v1 déjà persistés restent lisibles pour compatibilité, mais ne
+formulaire, de la localisation ou de l’itinéraire opérationnel ne le réécrit jamais.
+Les contextes v1 et v2 déjà persistés restent lisibles pour compatibilité, mais ne
 peuvent pas être complétés rétroactivement. Une ancienne action sans ce
 contexte est exclue du dataset de calibration : son contexte n’est jamais
 reconstruit depuis l’état courant.
@@ -262,7 +265,7 @@ Le budget opérationnel est un contrat distinct et versionné :
 `route-operational-budget-v2`. Il sépare toujours :
 
 - `travelMinutes` : déplacement réseau ou estimation de fallback ;
-- `actionMinutes` : durée réelle future de l’action, c’est-à-dire marche,
+- `actionMinutes` : durée estimée de l’action future, c’est-à-dire marche,
   ramassage, tri et pesée ; `serviceMinutes` reste un alias de lecture
   compatible ;
 - `eventBudgetMinutes` : créneau utilisateur transporté par le champ historique
@@ -331,7 +334,8 @@ valeurs absentes restent `null` et leur absence est portée par la qualité de l
 ligne ; un zéro explicitement mesuré reste une observation disponible.
 
 Chaque ligne conserve, lorsque ces éléments existent, le snapshot planner
-original, le parcours réel déclaré, les distances recommandée et exécutée, le
+original, le `operationalRoute` prévu et mutable, les distances recommandée et
+opérationnelle prévue, le
 type de lieu, la durée totale de l’action, les mesures ordinaires et mégots,
 leurs méthodes/provenances, ainsi que les versions de contrat. La durée
 `duration_minutes` est la durée réelle couvrant la marche, le ramassage, le

@@ -4,10 +4,16 @@ import {
   type RouteCleanupDurationEstimate,
   type RouteCalibrationStatus,
 } from "./route-calibration";
+import {
+  ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION,
+  ROUTE_ORGANIZATION_MARGIN_MINUTES,
+} from "./route-operational-budget-contract";
 
-export const ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION =
-  "route-operational-budget-v2" as const;
-export const ROUTE_ORGANIZATION_MARGIN_MINUTES = 15 as const;
+export {
+  ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION,
+  ROUTE_ORGANIZATION_MARGIN_MINUTES,
+  isRouteOperationalBudget,
+} from "./route-operational-budget-contract";
 
 export type RouteOperationalBudget = {
   contractVersion: typeof ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION;

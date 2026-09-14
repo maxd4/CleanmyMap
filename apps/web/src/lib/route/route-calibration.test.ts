@@ -7,9 +7,11 @@ import {
   buildVerifiedRouteCalibrationContext,
   estimateRouteCleanupDuration,
   isRouteCalibrationContext,
+  isServerVerifiedPlannerSnapshotContext,
   preserveHistoricalRouteCalibrationContext,
   type RouteCalibrationContext,
 } from "./route-calibration";
+import { hashRoutePlannerSnapshot } from "./route-planner-snapshot-hash";
 
 const workload = {
   modelVersion: "route-cleanup-workload-v1" as const,
@@ -61,6 +63,22 @@ describe("route calibration infrastructure", () => {
     expect(serialized.candidates[0].cleanupWorkload.cigaretteButts.observedPresence).toBe(false);
   });
 
+  it("dispatches cleanup workload validation by its supported model version", () => {
+    const unsupported = {
+      ...context(),
+      candidates: [{
+        candidateId: "spot-1",
+        family: "observed" as const,
+        cleanupWorkload: {
+          ...workload,
+          modelVersion: "route-cleanup-workload-v2",
+        },
+      }],
+    };
+
+    expect(isRouteCalibrationContext(unsupported)).toBe(false);
+  });
+
   it("keeps historical provenance and presence-only observations as-is", () => {
     const historical = context();
     const dataset = buildCalibrationDataset([
@@ -75,7 +93,7 @@ describe("route calibration infrastructure", () => {
         durationMinutes: 45,
         preparationData: { routeCalibrationContext: historical },
       },
-    ]);
+    ], { requireVerifiedPlannerProvenance: false });
 
     expect(dataset.samples[0]?.historicalWorkload[0]?.cleanupWorkload).toEqual(workload);
     expect(dataset.samples[0]?.historicalWorkload[0]?.cleanupWorkload.status).toBe("presence_only");
@@ -113,7 +131,7 @@ describe("route calibration infrastructure", () => {
         },
         preparationData: { routeCalibrationContext: context() },
       },
-    ]);
+    ], { requireVerifiedPlannerProvenance: false });
 
     const sample = dataset.samples[0];
     expect(sample).toBeDefined();
@@ -150,7 +168,7 @@ describe("route calibration infrastructure", () => {
         wasteMeasurementMethod: "balance_au_sol",
         preparationData: { routeCalibrationContext: context() },
       },
-    ]);
+    ], { requireVerifiedPlannerProvenance: false });
 
     expect(dataset.samples[0]?.wasteKg).toBe(0);
     expect(dataset.samples[0]?.cigaretteButts).toBe(0);
@@ -202,7 +220,7 @@ describe("route calibration infrastructure", () => {
           },
         },
       },
-    ]);
+    ], { requireVerifiedPlannerProvenance: false });
 
     expect(dataset.samples.map((sample) => sample.participantsCount)).toEqual([8, 8]);
     expect(dataset.samples.map((sample) => sample.effectiveVolunteerUnits)).toEqual([6, 8]);
@@ -234,7 +252,7 @@ describe("route calibration infrastructure", () => {
         durationMinutes: 100_001,
         preparationData: { routeCalibrationContext: context() },
       },
-    ]);
+    ], { requireVerifiedPlannerProvenance: false });
 
     expect(dataset.samples).toHaveLength(2);
     for (const sample of dataset.samples) {
@@ -323,7 +341,7 @@ describe("route calibration infrastructure", () => {
         }),
         actualRoute: legacyActualRoute,
       },
-    }]);
+    }], { requireVerifiedPlannerProvenance: false });
 
     expect(dataset.samples[0]?.plannerSnapshot?.distance.totalKm).toBe(1.5);
     expect(dataset.samples[0]?.operationalRoute?.routes[0]?.geometry.distanceKm).toBe(2.25);
@@ -501,7 +519,7 @@ describe("route calibration infrastructure", () => {
     expect(repeatedEstimate).toEqual(estimate);
   });
 
-  it("reads v1/v2/v3 and excludes legacy snapshots when proof is required", () => {
+  it("requires verified v3 provenance by default and keeps an explicit diagnostic opt-out", () => {
     const plannerSnapshot = buildRoutePlannerSnapshot({
       generatedAt: "2026-09-01T09:00:00.000Z",
       engineVersion: "route-planner-v2",
@@ -550,7 +568,7 @@ describe("route calibration infrastructure", () => {
       plannerSnapshotIntegrity: {
         status: "server_verified",
         proofVersion: "route-planner-proof-v1",
-        snapshotHash: "a".repeat(64),
+        snapshotHash: hashRoutePlannerSnapshot(plannerSnapshot),
         verifiedAt: plannerSnapshot.generatedAt,
       },
     });
@@ -581,11 +599,48 @@ describe("route calibration infrastructure", () => {
         durationMinutes: 90,
         preparationData: { routeCalibrationContext: verified },
       },
-    ], { requireVerifiedPlannerProvenance: true }).entries;
+    ]).entries;
     expect(entries.map((entry) => entry.status === "excluded" ? entry.reason : entry.status)).toEqual([
       "unverified_historical_context",
       "included",
     ]);
+    const diagnosticEntries = buildCalibrationDataset([
+      {
+        id: "legacy-diagnostic",
+        status: "approved",
+        actionDate: "2026-09-05",
+        locationLabel: "Paris",
+        wasteKg: 2,
+        cigaretteButts: 5,
+        volunteersCount: 3,
+        durationMinutes: 90,
+        preparationData: { routeCalibrationContext: legacy },
+      },
+    ], { requireVerifiedPlannerProvenance: false }).entries;
+    expect(diagnosticEntries[0]?.status).toBe("included");
+
+    const tampered = {
+      ...verified,
+      plannerSnapshot: {
+        ...verified.plannerSnapshot!,
+        distance: { ...verified.plannerSnapshot!.distance, totalKm: 1 },
+      },
+    };
+    expect(isRouteCalibrationContext(tampered)).toBe(true);
+    expect(isServerVerifiedPlannerSnapshotContext(tampered)).toBe(false);
+    expect(buildCalibrationDataset([{
+      id: "tampered",
+      status: "approved",
+      actionDate: "2026-09-05",
+      locationLabel: "Paris",
+      wasteKg: 2,
+      cigaretteButts: 5,
+      volunteersCount: 3,
+      durationMinutes: 90,
+      preparationData: { routeCalibrationContext: tampered },
+    }]).exclusions[0]).toMatchObject({
+      reason: "unverified_historical_context",
+    });
     expect(() => preserveHistoricalRouteCalibrationContext(
       { routeCalibrationContext: verified },
       { routeCalibrationContext: {

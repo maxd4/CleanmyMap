@@ -8,6 +8,7 @@ import {
   ROUTE_ORGANIZATION_MARGIN_MINUTES,
   ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION,
   buildRouteOperationalBudget,
+  isRouteOperationalBudget,
 } from "./route-operational-budget";
 
 function context(): RouteCalibrationContext {
@@ -143,5 +144,23 @@ describe("route operational budget contract", () => {
     expect(budget.totalMinutes).toBe(60);
     expect(budget.uncertaintyReserveMinutes).toBe(30);
     expect(budget.withinBudget).toBe(true);
+  });
+
+  it("validates the persisted v2 budget contract instead of accepting any object", () => {
+    const budget = buildRouteOperationalBudget({
+      travelMinutes: 24,
+      budgetMinutes: 60,
+      calibrationContext: context(),
+    });
+
+    expect(isRouteOperationalBudget(budget)).toBe(true);
+    expect(isRouteOperationalBudget({
+      ...budget,
+      actionMinutes: { value: 18 },
+    })).toBe(false);
+    expect(isRouteOperationalBudget({
+      ...budget,
+      contractVersion: "route-operational-budget-v1",
+    })).toBe(false);
   });
 });

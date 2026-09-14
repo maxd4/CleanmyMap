@@ -1,6 +1,7 @@
-import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { env } from "@/lib/env";
 import type { RoutePlannerSnapshot } from "./route-calibration";
+import { hashRoutePlannerSnapshot } from "./route-planner-snapshot-hash";
 import {
   isRoutePlannerProofShape,
   ROUTE_PLANNER_PROOF_TTL_SECONDS,
@@ -13,6 +14,7 @@ export {
   ROUTE_PLANNER_PROOF_VERSION,
   type RoutePlannerProof,
 } from "./route-planner-proof-contract";
+export { hashRoutePlannerSnapshot } from "./route-planner-snapshot-hash";
 
 type RoutePlannerProofPayload = {
   proofVersion: typeof ROUTE_PLANNER_PROOF_VERSION;
@@ -27,12 +29,6 @@ export type RoutePlannerProofVerification =
       ok: false;
       reason: "missing" | "invalid" | "expired" | "snapshot_mismatch";
     };
-
-export function hashRoutePlannerSnapshot(snapshot: RoutePlannerSnapshot): string {
-  return createHash("sha256")
-    .update(JSON.stringify(stableNormalize(snapshot)))
-    .digest("hex");
-}
 
 export function createRoutePlannerProof(input: {
   snapshot: RoutePlannerSnapshot;
@@ -124,14 +120,4 @@ function safeEqual(actual: string, expected: string): boolean {
   const actualBuffer = Buffer.from(actual, "utf8");
   const expectedBuffer = Buffer.from(expected, "utf8");
   return actualBuffer.length === expectedBuffer.length && timingSafeEqual(actualBuffer, expectedBuffer);
-}
-
-function stableNormalize(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(stableNormalize);
-  if (!value || typeof value !== "object") return value;
-  return Object.fromEntries(
-    Object.entries(value)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, nested]) => [key, stableNormalize(nested)]),
-  );
 }
