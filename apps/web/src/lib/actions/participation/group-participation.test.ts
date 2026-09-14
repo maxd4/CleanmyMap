@@ -22,6 +22,7 @@ type ActionRow = {
   moderation_visibility?: "visible" | "hidden";
   action_phase?: "pre_action" | "post_action_draft" | "post_action_complete";
   notes?: string | null;
+  published_at?: string | null;
 };
 
 function createActionsChain(actions: ActionRow[]) {
@@ -31,14 +32,17 @@ function createActionsChain(actions: ActionRow[]) {
     in: vi.fn(() => chain),
     order: vi.fn(() => chain),
     limit: vi.fn(async () => ({
-      data: actions.filter(
-        (action) => action.moderation_visibility !== "hidden",
-      ),
+      data: actions
+        .filter((action) => action.moderation_visibility !== "hidden")
+        .map((action) => ({ ...action, published_at: action.published_at ?? "2026-01-01T00:00:00.000Z" })),
       error: null,
     })),
     maybeSingle: vi.fn(async () => ({
       data:
-        actions.find((action) => action.moderation_visibility !== "hidden") ??
+        (() => {
+          const action = actions.find((candidate) => candidate.moderation_visibility !== "hidden");
+          return action ? { ...action, published_at: action.published_at ?? "2026-01-01T00:00:00.000Z" } : null;
+        })() ??
         null,
       error: null,
     })),
@@ -47,9 +51,9 @@ function createActionsChain(actions: ActionRow[]) {
       reject: (reason: unknown) => void,
     ) =>
       Promise.resolve({
-        data: actions.filter(
-          (action) => action.moderation_visibility !== "hidden",
-        ),
+        data: actions
+          .filter((action) => action.moderation_visibility !== "hidden")
+          .map((action) => ({ ...action, published_at: action.published_at ?? "2026-01-01T00:00:00.000Z" })),
         error: null,
       }).then(resolve, reject),
   };
@@ -122,6 +126,7 @@ describe("group participation fallback handling", () => {
       isVisibleInGroupForms(
         {
           action_phase: "pre_action",
+          published_at: "2026-01-01T00:00:00.000Z",
         },
         { groupJoinEnabled: true },
       ),
@@ -130,6 +135,7 @@ describe("group participation fallback handling", () => {
       isVisibleInGroupForms(
         {
           action_phase: "pre_action",
+          published_at: "2026-01-01T00:00:00.000Z",
         },
         { groupJoinEnabled: false },
       ),

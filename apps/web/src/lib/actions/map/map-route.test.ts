@@ -206,6 +206,7 @@ describe("buildMapActionsRouteResult", () => {
             status: "pending",
             dates: { observedAt: "2999-01-01" },
             metadata: { actionPhase: "pre_action" },
+            publishedAt: "2026-01-01T00:00:00.000Z",
           },
           {
             id: "pending-post-action",

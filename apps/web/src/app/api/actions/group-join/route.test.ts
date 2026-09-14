@@ -29,6 +29,7 @@ type ActionRow = {
   status: "pending" | "approved" | "rejected";
   moderation_visibility?: "visible" | "hidden";
   action_phase?: "pre_action" | "post_action_draft" | "post_action_complete";
+  published_at?: string | null;
   notes?: string | null;
 };
 
@@ -99,6 +100,11 @@ type ProgressionEventsChain = {
 };
 
 function createActionsChain(actions: ActionRow[]): ActionsChain {
+  const sourceActions = actions.map((action) => ({
+    ...action,
+    action_phase: action.action_phase ?? "post_action_complete",
+    published_at: action.published_at ?? "2026-01-01T00:00:00.000Z",
+  }));
   const state: {
     filters: Record<string, string>;
     inFilters: Record<string, string[]>;
@@ -121,7 +127,7 @@ function createActionsChain(actions: ActionRow[]): ActionsChain {
     order: vi.fn(() => chain),
     limit: vi.fn(async (limit: number) => {
       state.limitValue = limit;
-      const filtered = actions.filter((action) => {
+      const filtered = sourceActions.filter((action) => {
         if (state.filters["id"] && action["id"] !== state.filters["id"]) {
           return false;
         }
@@ -146,7 +152,7 @@ function createActionsChain(actions: ActionRow[]): ActionsChain {
       };
     }),
     maybeSingle: vi.fn(async () => {
-      const filtered = actions.filter((action) => {
+      const filtered = sourceActions.filter((action) => {
         if (state.filters["id"] && action["id"] !== state.filters["id"]) {
           return false;
         }
@@ -172,7 +178,7 @@ function createActionsChain(actions: ActionRow[]): ActionsChain {
     }),
     then: (resolve: (value: ManyResult<ActionRow>) => void, reject: (reason: unknown) => void) =>
       Promise.resolve({
-        data: actions.filter((action) => {
+        data: sourceActions.filter((action) => {
           if (state.filters["id"] && action["id"] !== state.filters["id"]) {
             return false;
           }

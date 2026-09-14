@@ -91,6 +91,7 @@ export async function joinActionParticipation(
     status: "pending" | "approved" | "rejected";
     moderation_visibility?: "visible" | "hidden" | null;
     action_phase: ActionPhase;
+    published_at?: string | null;
     notes: string | null;
   }>(supabase, (query) => query.select(ACTION_PARTICIPATION_COLUMNS).eq("id", params.actionId).maybeSingle());
 
@@ -101,6 +102,12 @@ export async function joinActionParticipation(
   }
 
   if (actionResult.moderation_visibility === "hidden") {
+    const notFoundError = new Error("Action not found.");
+    notFoundError.name = "NotFoundError";
+    throw notFoundError;
+  }
+
+  if (!actionResult.published_at) {
     const notFoundError = new Error("Action not found.");
     notFoundError.name = "NotFoundError";
     throw notFoundError;

@@ -9,6 +9,7 @@ import { JoinFormSidebar } from "./rejoindre-un-formulaire-section.sidebar";
 import { HeroIllustration } from "./rejoindre-un-formulaire-section.shared";
 import { JoinFormConfirmationDialog } from "./rejoindre-un-formulaire-section-dialog";
 import { useJoinFormSectionController } from "./rejoindre-un-formulaire-section.controller";
+import { FutureActionsPanel } from "./rejoindre-un-formulaire-section.future-actions";
 
 export function JoinFormSection() {
   const controller = useJoinFormSectionController();
@@ -60,10 +61,17 @@ export function JoinFormSection() {
           </div>
         </section>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
           <JoinFormExplorer {...controller} />
           <JoinFormSidebar {...controller} />
         </div>
+        <FutureActionsPanel
+          items={controller.futureItems}
+          loading={controller.futureLoading}
+          error={controller.futureError}
+          authenticated={controller.authenticated}
+          fr={controller.fr}
+        />
       </div>
 
       <JoinFormConfirmationDialog

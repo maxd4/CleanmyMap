@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { createAction } from "@/lib/actions/http";
+import { createAction, publishAction } from "@/lib/actions/http";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import {
   createInitialFormState,
@@ -55,6 +55,9 @@ export function useBeforeActionForm({
   const [submissionState, setSubmissionState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [publishedAt, setPublishedAt] = useState<string | null>(null);
+  const [publicationState, setPublicationState] = useState<"idle" | "pending" | "success" | "error">("idle");
+  const [publicationError, setPublicationError] = useState<string | null>(null);
   const [validationIssues, setValidationIssues] = useState<string[]>([]);
   const [showGroupJoinHelp, setShowGroupJoinHelp] = useState(false);
   const hasTrackedStartRef = useRef(false);
@@ -137,19 +140,19 @@ export function useBeforeActionForm({
 
     const issues: string[] = [];
     if (!form.actionTitle.trim()) {
-      issues.push("Indiquez un titre pour publier le pré-formulaire.");
+      issues.push("Indiquez un titre pour enregistrer le pré-formulaire.");
     }
     if (!form.actionDate.trim()) {
-      issues.push("Indiquez la date prévue avant de publier le pré-formulaire.");
+      issues.push("Indiquez la date prévue avant d'enregistrer le pré-formulaire.");
     }
     if (!form.associationName.trim()) {
       issues.push("Sélectionnez une structure ou un cadre d'engagement.");
     }
     if (!form.organizerType) {
-      issues.push("Sélectionnez un type de structure avant de publier le pré-formulaire.");
+      issues.push("Sélectionnez un type de structure avant d'enregistrer le pré-formulaire.");
     }
     if (!form.departureLocationLabel.trim()) {
-      issues.push("Indiquez le point de rendez-vous avant de publier.");
+      issues.push("Indiquez le point de rendez-vous avant d'enregistrer.");
     }
     const timeMessage = getTimeContractValidationMessage({
       actionDurationMinutes: Number(form.durationMinutes),
@@ -201,7 +204,25 @@ export function useBeforeActionForm({
       setErrorMessage(
         error instanceof Error && error.message
           ? error.message
-          : "Impossible de publier le pré-formulaire pour le moment.",
+          : "Impossible d'enregistrer le pré-formulaire pour le moment.",
+      );
+    }
+  }
+
+  async function handlePublish() {
+    if (!createdId || publicationState === "pending") return;
+    setPublicationState("pending");
+    setPublicationError(null);
+    try {
+      const result = await publishAction(createdId);
+      setPublishedAt(result.publishedAt);
+      setPublicationState("success");
+    } catch (error: unknown) {
+      setPublicationState("error");
+      setPublicationError(
+        error instanceof Error && error.message
+          ? error.message
+          : "Impossible de publier cette action pour le moment.",
       );
     }
   }
@@ -219,6 +240,9 @@ export function useBeforeActionForm({
     submissionState,
     errorMessage,
     createdId,
+    publishedAt,
+    publicationState,
+    publicationError,
     validationIssues,
     showGroupJoinHelp,
     setShowGroupJoinHelp,
@@ -226,6 +250,7 @@ export function useBeforeActionForm({
     summaryNote,
     updateField,
     handleSubmit,
+    handlePublish,
     onContinueComplete,
   };
 }

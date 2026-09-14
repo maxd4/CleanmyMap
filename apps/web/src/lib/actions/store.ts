@@ -49,6 +49,7 @@ import {
   resolveActionDepartmentForPersistence,
   resolveTrustedActionDepartmentForPersistence,
 } from "@/lib/geo/action-department-resolver";
+import { isPublishedFuturePreAction } from "./temporal";
 
 const ACTION_BASE_SELECT_FIELDS = [
   "id",
@@ -75,6 +76,7 @@ const ACTION_BASE_SELECT_FIELDS = [
   "event_end_time",
   "notes",
   "status",
+  "published_at",
 ] as const;
 
 const ACTION_MODERATION_SELECT_FIELDS = [
@@ -95,14 +97,17 @@ const ACTION_SELECT_FIELDS_WITH_PHASE = [
   "preparation_data",
 ].join(", ");
 
-const ACTION_SELECT_FIELDS_LEGACY = ACTION_BASE_SELECT_FIELDS.join(", ");
+const ACTION_SELECT_FIELDS_LEGACY = ACTION_BASE_SELECT_FIELDS
+  .filter((field) => field !== "published_at")
+  .join(", ");
 const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT = ACTION_BASE_SELECT_FIELDS
   .filter(
     (field) =>
       field !== "department_code" &&
       field !== "department_name" &&
       field !== "event_start_time" &&
-      field !== "event_end_time",
+      field !== "event_end_time" &&
+      field !== "published_at",
   )
   .join(", ");
 
@@ -128,7 +133,8 @@ function isMissingActionColumnError(error: unknown): boolean {
       normalized.includes("department_code") ||
       normalized.includes("department_name") ||
       normalized.includes("event_start_time") ||
-      normalized.includes("event_end_time"))
+      normalized.includes("event_end_time") ||
+      normalized.includes("published_at"))
   );
 }
 
@@ -156,6 +162,7 @@ function buildActionListQuery(
     limit: number;
     status: ActionStatus | null;
     includeFuturePublicActions?: boolean;
+    futureOnly?: boolean;
     floorDate?: string;
     requireCoordinates?: boolean;
     viewport?: ActionMapViewportQuery;
@@ -174,8 +181,12 @@ function buildActionListQuery(
   if (params.includeFuturePublicActions && params.status === "approved") {
     const today = new Date().toISOString().slice(0, 10);
     nextQuery = nextQuery.or(
-      `status.eq.approved,and(status.eq.pending,action_phase.eq.pre_action,action_date.gt.${today})`,
+      `and(status.eq.approved,action_phase.neq.pre_action),and(action_phase.eq.pre_action,published_at.not.is.null,status.in.(approved,pending),action_date.gte.${today})`,
     );
+  } else if (params.status === "approved" && selectFields.includes("action_phase")) {
+    // Public approved reads must never expose an unclassified/private
+    // pre-action, including one auto-approved for an admin creator.
+    nextQuery = nextQuery.eq("status", "approved").or("action_phase.neq.pre_action");
   } else if (params.status) {
     nextQuery = nextQuery.eq("status", params.status);
   }
@@ -202,6 +213,7 @@ async function fetchActionRows(
     limit: number;
     status: ActionStatus | null;
     includeFuturePublicActions?: boolean;
+    futureOnly?: boolean;
     floorDate?: string;
     requireCoordinates?: boolean;
     viewport?: ActionMapViewportQuery;
@@ -211,7 +223,10 @@ async function fetchActionRows(
     const rows = await runActionQuery<ActionRow>(supabase, (query) =>
       buildActionListQuery(query, params, ACTION_SELECT_FIELDS_WITH_PHASE),
     );
-    return rows.map(normalizeStoredAction);
+    const normalized = rows.map(normalizeStoredAction);
+    return params.futureOnly
+      ? normalized.filter((row) => isPublishedFuturePreAction(row))
+      : normalized;
   } catch (error) {
     if (!isMissingActionColumnError(error)) {
       throw error;
@@ -225,7 +240,10 @@ async function fetchActionRows(
           ACTION_SELECT_FIELDS_LEGACY,
         ),
       );
-      return rows.map(normalizeStoredAction);
+      const normalized = rows.map(normalizeStoredAction);
+      return params.futureOnly
+        ? normalized.filter((row) => isPublishedFuturePreAction(row))
+        : normalized;
     } catch (legacyError) {
       if (!isMissingActionColumnError(legacyError)) {
         throw legacyError;
@@ -237,7 +255,10 @@ async function fetchActionRows(
           ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT,
         ),
       );
-      return rows.map(normalizeStoredAction);
+      const normalized = rows.map(normalizeStoredAction);
+      return params.futureOnly
+        ? normalized.filter((row) => isPublishedFuturePreAction(row))
+        : normalized;
     }
   }
 }
@@ -425,6 +446,7 @@ export async function fetchActions(
     limit: number;
     status: ActionStatus | null;
     includeFuturePublicActions?: boolean;
+    futureOnly?: boolean;
     floorDate?: string;
     requireCoordinates?: boolean;
     viewport?: ActionMapViewportQuery;
@@ -574,6 +596,9 @@ async function insertCreatedAction(
     if (errorMessage.includes("preparation_data")) {
       delete retryPayload.preparation_data;
     }
+    if (errorMessage.includes("published_at")) {
+      delete retryPayload.published_at;
+    }
     inserted = await supabase
       .from("actions")
       .insert(retryPayload)
@@ -618,6 +643,7 @@ export function buildActionInsertPayload(params: {
     duration_minutes: params.payload.durationMinutes,
     event_start_time: params.payload.eventStartTime ?? null,
     event_end_time: params.payload.eventEndTime ?? null,
+    published_at: null,
     preparation_data: normalizeActionPreparationData(params.payload.preparationData ?? {}),
     notes: buildPersistedNotes({
       ...params.payload,

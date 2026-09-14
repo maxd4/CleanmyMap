@@ -256,6 +256,14 @@ export const API_AUTHORIZATION_CONTRACT = {
       ],
     },
   },
+  "actions/[actionId]/publish": {
+    POST: {
+      expected: "Authenticated owner/organizer/admin-like explicit pre-action publication",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + canManageAction, with canPublishPreAction keeping moderation and publication separate",
+      evidence: ["requireAuthenticatedAccess", "canManageAction", "canPublishPreAction"],
+    },
+  },
   "admin/codex-usage": {
     GET: {
       expected: "Admin-like role",

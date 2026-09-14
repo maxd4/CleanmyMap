@@ -49,6 +49,8 @@ export type GroupJoinActionRow = {
   created_by_clerk_id: string | null;
   status: "pending" | "approved" | "rejected";
   notes: string | null;
+  action_phase?: "pre_action" | "post_action_draft" | "post_action_complete";
+  published_at?: string | null;
 };
 
 export type GroupJoinParticipantRow = {
@@ -93,11 +95,13 @@ export function createGroupJoinAction(params: {
   status?: GroupJoinActionRow["status"];
   notes?: string | null;
   groupJoinEnabled?: boolean;
-}) {
+}): GroupJoinActionRow {
   return {
     id: params.id ?? "action-1",
     created_by_clerk_id: params.createdByClerkId ?? "user-1",
     status: params.status ?? "approved",
+    action_phase: "pre_action",
+    published_at: "2026-01-01T00:00:00.000Z",
     notes:
       params.notes ??
       appendActionMetadataToNotes("Observation", {

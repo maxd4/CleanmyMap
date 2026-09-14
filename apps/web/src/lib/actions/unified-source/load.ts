@@ -69,6 +69,7 @@ export async function loadUnifiedActionSourceData(
           limit: params.limit + 1,
           status: params.status,
           includeFuturePublicActions: params.includeFuturePublicActions,
+          futureOnly: params.futureOnly,
           floorDate: params.floorDate ?? undefined,
           requireCoordinates: params.requireCoordinates,
           viewport: params.viewport,

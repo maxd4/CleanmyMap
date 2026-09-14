@@ -70,6 +70,7 @@ export type ActionRow = {
   event_end_time?: string | null;
   notes: string | null;
   status: "pending" | "approved" | "rejected";
+  published_at?: string | null;
   moderation_visibility?: "visible" | "hidden";
   hidden_at?: string | null;
   hidden_by_clerk_id?: string | null;

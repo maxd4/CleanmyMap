@@ -1,9 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { useJoinFormSectionActions } from "./rejoindre-un-formulaire-section.controller.actions";
+import { fetchActions } from "@/lib/actions/http";
+import type { ActionListItem } from "@/lib/actions/types";
 import { useJoinFormSectionQueue } from "./rejoindre-un-formulaire-section.controller.queue";
 import { getActionDisplayStatus } from "./rejoindre-un-formulaire-section.status";
 import {
@@ -28,6 +30,9 @@ export function useJoinFormSectionController() {
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
   const [sort, setSort] = useState<JoinableActionSort>("soonest");
   const [search, setSearch] = useState("");
+  const [futureItems, setFutureItems] = useState<ActionListItem[]>([]);
+  const [futureLoading, setFutureLoading] = useState(true);
+  const [futureError, setFutureError] = useState<string | null>(null);
   const [queueReloadAction, setQueueReloadAction] = useState<{ actionId: string; version: number } | null>(null);
   const focusActionId = searchParams.get("actionId")?.trim() || null;
 
@@ -46,6 +51,25 @@ export function useJoinFormSectionController() {
         version: (previous?.version ?? 0) + 1,
       })),
   });
+
+  useEffect(() => {
+    let active = true;
+    void fetchActions({ futureOnly: true, types: "action", limit: 24 })
+      .then((result) => {
+        if (!active) return;
+        setFutureItems(result.items);
+        setFutureError(null);
+      })
+      .catch(() => {
+        if (active) setFutureError(fr ? "Les actions futures sont temporairement indisponibles." : "Future actions are temporarily unavailable.");
+      })
+      .finally(() => {
+        if (active) setFutureLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [fr]);
 
   const orderedItems = useMemo(
     () =>
@@ -131,6 +155,9 @@ export function useJoinFormSectionController() {
   return {
     fr,
     items: actions.items,
+    futureItems,
+    futureLoading,
+    futureError,
     loading: actions.loading,
     error: actions.error,
     joiningId: actions.joiningId,

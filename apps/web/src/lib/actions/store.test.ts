@@ -292,7 +292,7 @@ describe("fetchActions", () => {
 
     expect(orCalls).toHaveLength(1);
     expect(orCalls[0]?.[0]).toEqual(
-      expect.stringContaining("status.eq.approved,and(status.eq.pending,action_phase.eq.pre_action,action_date.gt."),
+      expect.stringContaining("and(action_phase.eq.pre_action,published_at.not.is.null"),
     );
   });
 

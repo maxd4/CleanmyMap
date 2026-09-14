@@ -27,6 +27,7 @@ export type UnifiedActionContractsParams = {
   limit: number;
   status: ActionStatus | null;
   includeFuturePublicActions?: boolean;
+  futureOnly?: boolean;
   floorDate: string | null;
   requireCoordinates: boolean;
   types: ActionEntityType[] | null;
@@ -136,6 +137,7 @@ function toActionContractFromRow(row: ActionRow): ActionDataContract {
     source: "actions",
     sourceStatus: row.status,
     createdByClerkId: row.created_by_clerk_id,
+    publishedAt: row.published_at ?? null,
     observedAt: row.action_date,
     createdAt: row.created_at,
     importedAt: row.updated_at ?? null,
