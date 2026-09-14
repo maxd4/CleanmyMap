@@ -43,8 +43,8 @@ async function resolveUserIdForGroupJoin(): Promise<string | null> {
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const parsed = listQuerySchema.safeParse({
-    limit: url.searchParams.get("limit"),
-    historyLimit: url.searchParams.get("historyLimit"),
+    limit: url.searchParams.get("limit") ?? undefined,
+    historyLimit: url.searchParams.get("historyLimit") ?? undefined,
     actionId: url.searchParams.get("actionId") ?? undefined,
   });
 
