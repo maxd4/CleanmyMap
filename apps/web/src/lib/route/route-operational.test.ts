@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createFallbackRouteGeometry } from "@/lib/geo/osrm-routing";
 import {
   createOperationalRouteFromRecommendation,
+  createPlannerActionPreparationData,
   getOperationalRouteLoopCount,
   getPublicOperationalRouteSegments,
   isOperationalRoute,
@@ -44,6 +45,33 @@ const recommendation = {
 } as const;
 
 describe("operational route contract", () => {
+  it("transfers only known planner preparation values without observations", () => {
+    const preparation = createPlannerActionPreparationData(
+      {
+        origin: { latitude: 48.85, longitude: 2.34, source: "map" },
+        volunteers: 8,
+        actionMinutesEstimate: 45,
+        operationalBudget: undefined,
+      },
+      {
+        scheduledStartAt: "2026-09-20T09:30",
+        scheduledEndAt: "2026-09-20T11:00",
+      },
+    );
+
+    expect(preparation).toEqual({
+      pointDeRendezVous: "Coordonnées du départ : 48.850000, 2.340000",
+      actionDate: "2026-09-20",
+      meetingTime: "09:30",
+      departureTime: "09:30",
+      estimatedDurationMinutes: 45,
+      volunteersExpected: 8,
+    });
+    expect(preparation).not.toHaveProperty("wasteKg");
+    expect(preparation).not.toHaveProperty("cigaretteButts");
+    expect(preparation).not.toHaveProperty("routeCalibrationContext");
+  });
+
   it("initializes operational loops with planner provenance only", () => {
     const operationalRoute = createOperationalRouteFromRecommendation(recommendation);
 
@@ -108,6 +136,8 @@ describe("operational route contract", () => {
     expect(noLoops.plannerGroupCount).toBe(2);
     expect(getOperationalRouteLoopCount(noLoops)).toBeNull();
     expect(isOperationalRoute(noLoops)).toBe(true);
+    expect(operationalRoute.routes).toHaveLength(2);
+    expect(operationalRoute.state).toBe("planner_copy");
   });
 
   it("omits plannerTechnicalStops from public map segments", () => {

@@ -47,8 +47,9 @@ export default async function NewActionPage({
 }: NewActionPageProps) {
   const params = searchParams ? await searchParams : undefined;
   const fromEventId = resolveSingleSearchParam(params?.["fromEventId"]);
+  const from = resolveSingleSearchParam(params?.["from"]);
   const actionId = resolveSingleSearchParam(params?.["actionId"]);
-  const returnUrl = buildActionReturnUrl({ fromEventId, actionId });
+  const returnUrl = buildActionReturnUrl({ fromEventId, actionId, from });
   const { userId } = await getSafeAuthSession();
 
   const isAuthenticated = Boolean(userId);
@@ -77,6 +78,7 @@ export default async function NewActionPage({
           defaultActorName={defaultActorName}
           userMetadata={userMetadata}
           linkedEventId={fromEventId}
+          initialEntryPath={from === "planner" ? "before" : undefined}
           initialActionId={actionId ?? null}
           isAuthenticated={isAuthenticated}
           isAutoApprovedSubmission={isAutoApprovedSubmission}
@@ -94,6 +96,7 @@ export default async function NewActionPage({
         defaultActorName={defaultActorName}
         userMetadata={userMetadata}
         linkedEventId={fromEventId}
+        initialEntryPath={from === "planner" ? "before" : undefined}
         initialActionId={actionId ?? null}
         isAuthenticated={isAuthenticated}
         isAutoApprovedSubmission={isAutoApprovedSubmission}
@@ -107,13 +110,16 @@ export default async function NewActionPage({
 function buildActionReturnUrl({
   fromEventId,
   actionId,
+  from,
 }: {
   fromEventId?: string;
   actionId?: string;
+  from?: string;
 }): string {
   const returnParams = new URLSearchParams();
   if (fromEventId) returnParams.set("fromEventId", fromEventId);
   if (actionId) returnParams.set("actionId", actionId);
+  if (from) returnParams.set("from", from);
   const query = returnParams.toString();
   return query ? `/actions/new?${query}` : "/actions/new";
 }

@@ -3,6 +3,7 @@ import {
   type OperationalRoute,
   type PlannerActionHandoff,
 } from "./route-operational";
+import type { ActionPreparationData } from "@/lib/actions/types";
 import { isRouteCalibrationContext } from "./route-calibration";
 import { isRoutePlannerProofShape } from "./route-planner-proof-contract";
 
@@ -36,6 +37,7 @@ export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
     const parsed = JSON.parse(raw) as Partial<PlannerActionHandoff> & {
       actualRoute?: unknown;
       operationalRoute?: unknown;
+      preparationData?: unknown;
     };
     const operationalRoute = normalizeOperationalRoute(
       parsed.operationalRoute ?? parsed.actualRoute,
@@ -48,7 +50,10 @@ export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
       !isIsoDateInFuture(parsed.expiresAt) ||
       (parsed.routeCalibrationContext?.plannerSnapshot !== undefined &&
         (!isRoutePlannerProofShape(parsed.plannerProof) ||
-          parsed.plannerProof.expiresAt !== parsed.expiresAt))
+          parsed.plannerProof.expiresAt !== parsed.expiresAt)) ||
+      (parsed.preparationData !== undefined &&
+        parsed.preparationData !== null &&
+        !isPlannerPreparationData(parsed.preparationData))
     ) {
       return null;
     }
@@ -56,11 +61,46 @@ export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
       operationalRoute,
       routeCalibrationContext: parsed.routeCalibrationContext ?? null,
       plannerProof: parsed.plannerProof ?? null,
+      ...(parsed.preparationData
+        ? { preparationData: structuredClone(parsed.preparationData) }
+        : {}),
       expiresAt: parsed.expiresAt,
     };
   } catch {
     return null;
   }
+}
+
+function isPlannerPreparationData(value: unknown): value is ActionPreparationData {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const data = value as Record<string, unknown>;
+  const stringFields = [
+    "actionDate",
+    "meetingTime",
+    "departureTime",
+    "actionTitle",
+    "shortDescription",
+    "communeZoneLabel",
+    "pointDeRendezVous",
+    "zoneCiblePrevue",
+    "midRouteLocationLabel",
+  ];
+  if (stringFields.some((field) => data[field] !== undefined && typeof data[field] !== "string")) {
+    return false;
+  }
+  return (
+    data.estimatedDurationMinutes === undefined ||
+    (typeof data.estimatedDurationMinutes === "number" &&
+      Number.isInteger(data.estimatedDurationMinutes) &&
+      data.estimatedDurationMinutes >= 0 &&
+      data.estimatedDurationMinutes <= 24 * 60)
+  ) && (
+    data.volunteersExpected === undefined ||
+    (typeof data.volunteersExpected === "number" &&
+      Number.isInteger(data.volunteersExpected) &&
+      data.volunteersExpected >= 0 &&
+      data.volunteersExpected <= 500)
+  );
 }
 
 function isIsoDateInFuture(value: unknown): value is string {

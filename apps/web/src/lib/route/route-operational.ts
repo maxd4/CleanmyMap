@@ -12,8 +12,10 @@ import {
 } from "./route-geometry-validation";
 import type {
   RouteGroupRoute,
+  RouteOptions,
   RouteRecommendationResponse,
 } from "./route-response-contract";
+import type { ActionPreparationData } from "@/lib/actions/types";
 
 export const OPERATIONAL_ROUTE_VERSION = "operational-route-v1" as const;
 
@@ -53,6 +55,8 @@ export type PlannerActionHandoff = {
   operationalRoute: OperationalRoute;
   routeCalibrationContext: RouteCalibrationContext | null;
   plannerProof: RoutePlannerProof | null;
+  /** Known editable pre-action fields; planner evidence stays in the context above. */
+  preparationData?: ActionPreparationData;
   expiresAt: string;
 };
 
@@ -102,6 +106,32 @@ export function createOperationalRouteFromRecommendation(
         coordinate: firstCoordinates.at(-1) ?? firstGeometry.origin,
       },
     },
+  };
+}
+
+export function createPlannerActionPreparationData(
+  recommendation: Pick<
+    RouteRecommendationResponse,
+    "origin" | "volunteers" | "actionMinutesEstimate" | "operationalBudget"
+  >,
+  options: Pick<RouteOptions, "scheduledStartAt" | "scheduledEndAt">,
+): ActionPreparationData {
+  const scheduledStartAt = options.scheduledStartAt;
+  const scheduledEndAt = options.scheduledEndAt;
+  const scheduledDate = scheduledStartAt?.slice(0, 10) ?? scheduledEndAt?.slice(0, 10);
+  const scheduledTime = scheduledStartAt?.slice(11, 16);
+  const actionMinutes =
+    recommendation.actionMinutesEstimate ??
+    recommendation.operationalBudget?.actionMinutes ??
+    undefined;
+  const departureLabel = `Coordonnées du départ : ${recommendation.origin.latitude.toFixed(6)}, ${recommendation.origin.longitude.toFixed(6)}`;
+
+  return {
+    pointDeRendezVous: departureLabel,
+    ...(scheduledDate ? { actionDate: scheduledDate } : {}),
+    ...(scheduledTime ? { meetingTime: scheduledTime, departureTime: scheduledTime } : {}),
+    ...(typeof actionMinutes === "number" ? { estimatedDurationMinutes: actionMinutes } : {}),
+    volunteersExpected: recommendation.volunteers,
   };
 }
 

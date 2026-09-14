@@ -14,6 +14,7 @@ import {
 import { useBeforeActionForm } from "./use-before-action-form";
 import type { ActionBeforeDeclarationFormProps } from "./model";
 import { labelForPreparationState } from "./model";
+import { OperationalRouteEditor } from "../operational-route-editor";
 
 export function ActionBeforeDeclarationForm({
   actorNameOptions,
@@ -166,6 +167,15 @@ export function ActionBeforeDeclarationForm({
           </div>
 
           <PreparationAndSafetySection form={form} updateField={updateField} />
+
+          {form.operationalRoute ? (
+            <CmmCard tone="emerald" variant="glass" size="lg">
+              <OperationalRouteEditor
+                operationalRoute={form.operationalRoute}
+                onChange={(operationalRoute) => updateField("operationalRoute", operationalRoute)}
+              />
+            </CmmCard>
+          ) : null}
 
           {validationIssues.length > 0 || errorMessage ? (
             <div className="rounded-[1.5rem] border border-rose-200/70 bg-[#FFF7F8] px-4 py-3 text-sm leading-6 text-rose-950">

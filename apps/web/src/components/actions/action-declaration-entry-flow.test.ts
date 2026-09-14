@@ -63,4 +63,20 @@ describe("ActionDeclarationEntryFlow", () => {
     expect(source).not.toContain("Le bloc Agir reste prioritaire");
     expect(source).toContain("Choisir un parcours ne crée encore aucune action.");
   });
+
+  it("ouvre directement le parcours pré-action pour un handoff planner", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(ActionDeclarationEntryFlow, {
+        actorNameOptions: ["Aperçu local"],
+        defaultActorName: "Aperçu local",
+        userMetadata: { userId: "preview-local", displayName: "Aperçu local" },
+        initialEntryPath: "before",
+        isAuthenticated: false,
+        isAutoApprovedSubmission: false,
+      } as ComponentProps<typeof ActionDeclarationEntryFlow>),
+    );
+
+    expect(html).toContain("Préparer le formulaire de groupe");
+    expect(html).not.toContain("Choisissez votre parcours");
+  });
 });

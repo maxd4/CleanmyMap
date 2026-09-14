@@ -34,6 +34,7 @@ vi.mock("@/components/actions/action-declaration-entry-flow", () => ({
       "data-auto-approved": String(props.isAutoApprovedSubmission),
       "data-action-id": String(props.initialActionId ?? ""),
       "data-event-id": String(props.linkedEventId ?? ""),
+      "data-entry-path": String(props.initialEntryPath ?? ""),
       "data-sign-in-href": String(props.signInHref ?? ""),
       "data-sign-up-href": String(props.signUpHref ?? ""),
     }),
@@ -117,6 +118,19 @@ describe("action creation entry point", () => {
     expect(html).toContain('data-event-id="event-42"');
     expect(html).not.toContain("public-preview");
     expect(html).not.toContain("Aperçu public");
+  });
+
+  it("keeps the planner entry path and linked event in the canonical auth return", async () => {
+    const html = renderToStaticMarkup(
+      await NewActionPage({
+        searchParams: Promise.resolve({ from: "planner", fromEventId: "event-42" }),
+      }),
+    );
+
+    expect(html).toContain('data-entry-path="before"');
+    expect(html).toContain(
+      'data-sign-in-href="/sign-in?redirect_url=%2Factions%2Fnew%3FfromEventId%3Devent-42%26from%3Dplanner"',
+    );
   });
 
   it("does not block the authenticated complete form by viewport", () => {
