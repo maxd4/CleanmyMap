@@ -1,12 +1,5 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
-import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
-import { parseDrawingFromNotes } from "@/lib/actions/geometry/drawing";
-import {
-  buildPersistedNotes,
-  loadActionById,
-  recordRepollutionPredictionEvaluationForAction,
-} from "@/lib/actions/store";
+import { loadActionById } from "@/lib/actions/store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
@@ -15,296 +8,31 @@ import {
   requireAuthenticatedAccess,
 } from "@/lib/authz";
 import {
-  canAutoApproveOwnAction,
   canManageAction,
   canUseAdminOverride,
 } from "@/lib/actions/permissions";
 import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
 import { loadManualParticipantIdsForAction } from "@/lib/actions/participation/group-participation.helpers";
-import {
-  loadActionOrganizerIdsForAction,
-  syncActionManualParticipants,
-} from "@/lib/actions/participation/organizers";
+import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { updateActionSchema } from "@/lib/validation/action";
+import { buildActionEditorPayload } from "@/lib/actions/action-editor-payload";
 import {
-  preserveHistoricalRouteCalibrationContext,
-} from "@/lib/route/route-calibration";
-import { normalizeActionPreparationData } from "@/lib/route/route-operational";
-import { resolveActionDepartmentForPersistence } from "@/lib/geo/action-department-resolver";
+  buildActionAuditSnapshots,
+  type ActionUpdateInput,
+} from "@/lib/actions/action-update-audit";
 import {
-  getTimeContractValidationMessage,
-  normalizeClockTime,
-} from "@/lib/actions/time-contract";
+  ActionUpdateValidationError,
+  prepareActionUpdate,
+} from "@/lib/actions/action-update-persistence";
 import {
-  normalizeCigaretteButtsMeasurementsFromUserInput,
-} from "@/lib/waste/cigarette-butts";
-import {
-  normalizeVolunteerParticipation,
-  resolveParticipantsCount,
-} from "@/lib/actions/volunteer-participation";
+  runActionUpdatePostProcessing,
+  type AdminOverrideErrorStage,
+} from "@/lib/actions/action-update-post-processing";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
 export const dynamic = "force-dynamic";
 
-type ActionUpdateInput = z.infer<typeof updateActionSchema>;
-type ActionSnapshotSource = NonNullable<Awaited<ReturnType<typeof loadActionById>>>;
-type ActionMetadata = ReturnType<typeof extractActionMetadataFromNotes>;
-
-type ActionAuditSnapshot = {
-  status: ActionSnapshotSource["status"];
-  actionPhase: ActionSnapshotSource["action_phase"];
-  groupJoinEnabled: boolean;
-  wasteKg: number | null;
-  cigaretteButtsKg: number | null;
-  cigaretteButts: number | null;
-  volunteersCount: number | null;
-  durationMinutes: number | null;
-  wasteMeasurementMethod: string | null;
-  eventStartTime: string | null;
-  eventEndTime: string | null;
-  actorNameChanged: boolean;
-  locationChanged: boolean;
-  coordinatesChanged: boolean;
-  notesChanged: boolean;
-  preparationDataChanged: boolean;
-  participantsChanged: boolean;
-  wasteBreakdownChanged: boolean;
-  photosChanged: boolean;
-};
-
-type AdminOverrideErrorStage =
-  | "action_update"
-  | "post_update"
-  | "participant_sync";
-
-function normalizeComparableValue(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(normalizeComparableValue);
-  }
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([key, nestedValue]) => [key, normalizeComparableValue(nestedValue)]),
-    );
-  }
-  return value;
-}
-
-function valuesAreEqual(left: unknown, right: unknown): boolean {
-  return (
-    JSON.stringify(normalizeComparableValue(left)) ===
-    JSON.stringify(normalizeComparableValue(right))
-  );
-}
-
-function projectPhotoMetadata(value: unknown): Array<Record<string, unknown>> {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.map((photo) => {
-    const item = photo as {
-      id?: unknown;
-      name?: unknown;
-      mimeType?: unknown;
-      size?: unknown;
-      width?: unknown;
-      height?: unknown;
-    };
-    return {
-      id: item.id ?? null,
-      name: item.name ?? null,
-      mimeType: item.mimeType ?? null,
-      size: item.size ?? null,
-      width: item.width ?? null,
-      height: item.height ?? null,
-    };
-  });
-}
-
-function buildActionAuditSnapshots(
-  current: ActionSnapshotSource,
-  body: ActionUpdateInput,
-  currentMetadata: ActionMetadata,
-  permissionIdentity: Parameters<typeof canAutoApproveOwnAction>[0],
-): { previousValue: ActionAuditSnapshot; newValue: ActionAuditSnapshot } {
-  const currentPreparationData = normalizeActionPreparationData(
-    (current.preparation_data ?? {}) as NonNullable<ActionUpdateInput["preparationData"]>,
-  );
-  const nextPreparationData =
-    body.preparationData === undefined
-      ? currentPreparationData
-      : body.preparationData ?? {};
-  const nextActionPhase = body.actionPhase ?? current.action_phase;
-  let nextStatus = current.status;
-  if (body.actionPhase === "pre_action") {
-    nextStatus = "pending";
-  } else if (body.actionPhase === "post_action_complete") {
-    nextStatus = canAutoApproveOwnAction(permissionIdentity, {
-      createdByClerkId: current.created_by_clerk_id,
-    })
-      ? "approved"
-      : "pending";
-  }
-
-  const nextActorName =
-    body.actorName === undefined
-      ? current.actor_name ?? null
-      : body.actorName.trim() || null;
-  const nextLocation =
-    body.locationLabel === undefined
-      ? current.location_label
-      : body.locationLabel.trim();
-  const nextLatitude = body.latitude ?? current.latitude;
-  const nextLongitude = body.longitude ?? current.longitude;
-  const nextNotes =
-    body.notes === undefined ? currentMetadata.cleanNotes : body.notes.trim() || null;
-  const nextWasteBreakdown =
-    body.wasteBreakdown === undefined
-      ? currentMetadata.wasteBreakdown
-      : body.wasteBreakdown;
-  const nextPhotos =
-    body.photos === undefined ? currentMetadata.photos : body.photos;
-
-  const flags = {
-    actorNameChanged:
-      body.actorName !== undefined && nextActorName !== (current.actor_name ?? null),
-    locationChanged:
-      body.locationLabel !== undefined && nextLocation !== current.location_label,
-    coordinatesChanged:
-      body.latitude !== undefined || body.longitude !== undefined
-        ? nextLatitude !== current.latitude || nextLongitude !== current.longitude
-        : false,
-    notesChanged:
-      body.notes !== undefined && nextNotes !== currentMetadata.cleanNotes,
-    preparationDataChanged:
-      body.preparationData !== undefined &&
-      !valuesAreEqual(nextPreparationData, currentPreparationData),
-    participantsChanged: body.participantAccounts !== undefined,
-    wasteBreakdownChanged:
-      body.wasteBreakdown !== undefined &&
-      !valuesAreEqual(nextWasteBreakdown, currentMetadata.wasteBreakdown),
-    photosChanged:
-      body.photos !== undefined &&
-      !valuesAreEqual(
-        projectPhotoMetadata(nextPhotos),
-        projectPhotoMetadata(currentMetadata.photos),
-      ),
-  };
-
-  return {
-    previousValue: {
-      status: current.status,
-      actionPhase: current.action_phase,
-      groupJoinEnabled: currentMetadata.groupJoinEnabled,
-      wasteKg: current.waste_kg ?? null,
-      cigaretteButtsKg: currentMetadata.cigaretteButtsKg,
-      cigaretteButts: current.cigarette_butts ?? null,
-      volunteersCount: current.volunteers_count ?? null,
-      durationMinutes: current.duration_minutes ?? null,
-      wasteMeasurementMethod: currentMetadata.wasteMeasurementMethod,
-      eventStartTime: normalizeClockTime(current.event_start_time),
-      eventEndTime: normalizeClockTime(current.event_end_time),
-      ...flags,
-    },
-    newValue: {
-      status: nextStatus,
-      actionPhase: nextActionPhase,
-      groupJoinEnabled:
-        body.groupJoinEnabled ?? currentMetadata.groupJoinEnabled,
-      wasteKg:
-        body.wasteKg !== undefined ? body.wasteKg : current.waste_kg ?? null,
-      cigaretteButtsKg:
-        body.cigaretteButtsKg !== undefined
-          ? body.cigaretteButtsKg
-          : currentMetadata.cigaretteButtsKg,
-      cigaretteButts:
-        body.cigaretteButts !== undefined
-          ? body.cigaretteButts
-          : current.cigarette_butts ?? null,
-      volunteersCount:
-        body.volunteersCount ?? current.volunteers_count ?? null,
-      durationMinutes:
-        body.durationMinutes ?? current.duration_minutes ?? null,
-      wasteMeasurementMethod:
-        body.wasteMeasurementMethod !== undefined
-          ? body.wasteMeasurementMethod
-          : currentMetadata.wasteMeasurementMethod,
-      eventStartTime:
-        body.eventStartTime !== undefined
-          ? body.eventStartTime
-          : normalizeClockTime(current.event_start_time),
-      eventEndTime:
-        body.eventEndTime !== undefined
-          ? body.eventEndTime
-          : normalizeClockTime(current.event_end_time),
-      ...flags,
-    },
-  };
-}
-
-function buildActionEditorPayload(
-  row: Awaited<ReturnType<typeof loadActionById>>,
-) {
-  if (!row) {
-    return null;
-  }
-
-  const parsedDrawing = parseDrawingFromNotes(row.notes);
-  const metadata = extractActionMetadataFromNotes(parsedDrawing.cleanNotes);
-  return {
-    id: row.id,
-    createdAt: row.created_at,
-    status: row.status,
-    publishedAt: row.published_at ?? null,
-    recordType: "action",
-    actionPhase: row.action_phase,
-    preparationData: normalizeActionPreparationData(
-      (row.preparation_data ?? {}) as NonNullable<ActionUpdateInput["preparationData"]>,
-    ),
-    createdByClerkId: row.created_by_clerk_id,
-    actorName: row.actor_name,
-    actionDate: row.action_date,
-    locationLabel: row.location_label,
-    departmentCode: row.department_code ?? null,
-    departmentName: row.department_name ?? null,
-    latitude: row.latitude,
-    longitude: row.longitude,
-    wasteKg: row.waste_kg,
-    cigaretteButtsKg: metadata.cigaretteButtsKg,
-    cigaretteButtsMeasurements: metadata.cigaretteButtsMeasurements,
-    cigaretteButtsMassKg:
-      metadata.cigaretteButtsMeasurements?.cigaretteButtsMassKg ??
-      metadata.cigaretteButtsKg,
-    cigaretteButtsVolumeLiters:
-      metadata.cigaretteButtsMeasurements?.cigaretteButtsVolumeLiters ?? null,
-    cigaretteButtsCondition:
-      metadata.cigaretteButtsMeasurements?.cigaretteButtsCondition ?? null,
-    cigaretteButts: row.cigarette_butts,
-    volunteersCount: row.volunteers_count,
-    volunteerParticipation: metadata.volunteerParticipation,
-    durationMinutes: row.duration_minutes,
-    eventStartTime: normalizeClockTime(row.event_start_time),
-    eventEndTime: normalizeClockTime(row.event_end_time),
-    notes: metadata.cleanNotes,
-    submissionMode: metadata.submissionMode,
-    associationName: metadata.associationName,
-    organizerType: row.organizer_type,
-    groupJoinEnabled: metadata.groupJoinEnabled,
-    placeType: metadata.placeType,
-    departureLocationLabel: metadata.departureLocationLabel,
-    arrivalLocationLabel: metadata.arrivalLocationLabel,
-    routeStyle: metadata.routeStyle,
-    routeAdjustmentMessage: metadata.routeAdjustmentMessage,
-    wasteBreakdown: metadata.wasteBreakdown,
-    wasteMeasurementMethod: metadata.wasteMeasurementMethod,
-    photos: metadata.photos,
-    visionEstimate: metadata.visionEstimate,
-    manualDrawing: parsedDrawing.manualDrawing,
-  };
-}
 
 export async function GET(
   _request: Request,
@@ -452,49 +180,24 @@ export async function PATCH(
       );
     }
 
-    const updateData: Record<string, unknown> = {};
-    const parsedBody = parsed.data;
-    let body = parsedBody;
-    if (parsedBody.preparationData !== undefined) {
-      let preservedPreparationData: typeof parsedBody.preparationData;
-      try {
-        preservedPreparationData = preserveHistoricalRouteCalibrationContext(
-          current.preparation_data,
-          parsedBody.preparationData,
-        );
-      } catch (error) {
-        if (
-          error instanceof Error &&
-          error.message === "Le contexte historique de calibration ne peut pas être réécrit."
-        ) {
-          return validationErrorResponse({
-            preparationData: [error.message],
-          });
-        }
-        throw error;
+    const parsedBody: ActionUpdateInput = parsed.data;
+    const preparedUpdate = await prepareActionUpdate({
+      current,
+      parsedBody,
+      permissionIdentity,
+    }).catch((error: unknown) => {
+      if (error instanceof ActionUpdateValidationError) {
+        return validationErrorResponse({
+          [error.field]: [error.message],
+        });
       }
-      body = { ...parsedBody, preparationData: preservedPreparationData };
-    }
-    const currentMetadata = extractActionMetadataFromNotes(current.notes);
-    const temporalMessage = getTimeContractValidationMessage({
-      actionDurationMinutes:
-        body.durationMinutes !== undefined
-          ? body.durationMinutes
-          : current.duration_minutes,
-      startTime:
-        body.eventStartTime !== undefined
-          ? body.eventStartTime
-          : current.event_start_time,
-      endTime:
-        body.eventEndTime !== undefined
-          ? body.eventEndTime
-          : current.event_end_time,
+      throw error;
     });
-    if (temporalMessage) {
-      return validationErrorResponse({
-        eventStartTime: [temporalMessage],
-      });
+    if (preparedUpdate instanceof Response) {
+      return preparedUpdate;
     }
+
+    const { body, currentMetadata, updateData } = preparedUpdate;
     adminAuditActorUserId = identity?.userId ?? userId;
     adminAuditTargetUserId = current.created_by_clerk_id.trim() || null;
     shouldAuditModeration =
@@ -509,237 +212,6 @@ export async function PATCH(
           permissionIdentity,
         )
       : null;
-    const shouldRefreshNotes = Object.entries(body).some(
-      ([key, value]) =>
-        key !== "actionPhase" &&
-        key !== "preparationData" &&
-        key !== "organizerType" &&
-        key !== "departmentCode" &&
-        key !== "departmentName" &&
-        key !== "eventStartTime" &&
-        key !== "eventEndTime" &&
-        key !== "wasteMeasurementMethod" &&
-        value !== undefined,
-    );
-
-    if (body.actionPhase) {
-      updateData["action_phase"] = body.actionPhase;
-      if (body.actionPhase === "pre_action") {
-        updateData["status"] = "pending";
-      } else if (body.actionPhase === "post_action_complete") {
-        updateData["status"] = canAutoApproveOwnAction(permissionIdentity, {
-          createdByClerkId: current.created_by_clerk_id,
-        })
-          ? "approved"
-          : "pending";
-      }
-    }
-    if (body.preparationData !== undefined) {
-      updateData["preparation_data"] = normalizeActionPreparationData(
-        body.preparationData ?? {},
-      );
-    }
-    if (body.actorName !== undefined) {
-      updateData["actor_name"] = body.actorName.trim() || null;
-    }
-    if (body.actionDate !== undefined) {
-      updateData["action_date"] = body.actionDate;
-    }
-    if (body.locationLabel !== undefined) {
-      updateData["location_label"] = body.locationLabel.trim();
-    }
-    if (body.latitude !== undefined) {
-      updateData["latitude"] = body.latitude;
-    }
-    if (body.longitude !== undefined) {
-      updateData["longitude"] = body.longitude;
-    }
-    const coordinatesChanged =
-      (body.latitude !== undefined && body.latitude !== current.latitude) ||
-      (body.longitude !== undefined && body.longitude !== current.longitude);
-    const department = await resolveActionDepartmentForPersistence({
-      latitude: body.latitude ?? current.latitude,
-      longitude: body.longitude ?? current.longitude,
-      geometry: coordinatesChanged
-        ? null
-        : {
-            kind: current.derived_geometry_kind,
-            geojson: current.derived_geometry_geojson,
-          },
-      existingDepartmentCode: current.department_code,
-      existingDepartmentName: current.department_name,
-      spatiallyChanged: coordinatesChanged,
-    });
-    updateData["department_code"] = department.departmentCode;
-    updateData["department_name"] = department.departmentName;
-    if (body.wasteKg !== undefined) {
-      updateData["waste_kg"] = body.wasteKg;
-    }
-    const hasButtsMeasurementUpdate = [
-      "cigaretteButtsMeasurements",
-      "cigaretteButtsCount",
-      "cigaretteButtsMassKg",
-      "cigaretteButtsVolumeLiters",
-      "cigaretteButtsCondition",
-      "cigaretteButtsKg",
-      "cigaretteButts",
-    ].some((key) => Object.prototype.hasOwnProperty.call(body, key));
-    let nextCigaretteButtsMeasurements =
-      currentMetadata.cigaretteButtsMeasurements ?? null;
-    if (hasButtsMeasurementUpdate) {
-      const currentMeasurements = currentMetadata.cigaretteButtsMeasurements;
-      nextCigaretteButtsMeasurements = normalizeCigaretteButtsMeasurementsFromUserInput(
-        body.cigaretteButtsMeasurements !== undefined
-          ? body.cigaretteButtsMeasurements === null
-            ? {}
-            : body.cigaretteButtsMeasurements
-          : {
-              cigaretteButtsCount:
-                body.cigaretteButtsCount !== undefined
-                  ? body.cigaretteButtsCount
-                  : body.cigaretteButts !== undefined
-                    ? body.cigaretteButts
-                    : currentMeasurements?.cigaretteButtsCount ??
-                      current.cigarette_butts,
-              cigaretteButtsMassKg:
-                body.cigaretteButtsMassKg !== undefined
-                  ? body.cigaretteButtsMassKg
-                  : body.cigaretteButtsKg !== undefined
-                    ? body.cigaretteButtsKg
-                    : currentMeasurements?.cigaretteButtsMassKg ??
-                      currentMetadata.cigaretteButtsKg,
-              cigaretteButtsVolumeLiters:
-                body.cigaretteButtsVolumeLiters !== undefined
-                  ? body.cigaretteButtsVolumeLiters
-                  : currentMeasurements?.cigaretteButtsVolumeLiters ?? null,
-              cigaretteButtsCondition:
-                body.cigaretteButtsCondition !== undefined
-                  ? body.cigaretteButtsCondition
-                  : currentMeasurements?.cigaretteButtsCondition ?? null,
-            },
-        body.cigaretteButtsMeasurements !== undefined
-          ? { preserveExplicitNulls: true }
-          : {
-              explicitNullFields: [
-                ...(body.cigaretteButtsCount === null || body.cigaretteButts === null
-                  ? ["cigaretteButtsCount" as const]
-                  : []),
-                ...(body.cigaretteButtsMassKg === null || body.cigaretteButtsKg === null
-                  ? ["cigaretteButtsMassKg" as const]
-                  : []),
-                ...(body.cigaretteButtsVolumeLiters === null
-                  ? ["cigaretteButtsVolumeLiters" as const]
-                  : []),
-              ],
-            },
-      );
-      updateData["cigarette_butts"] =
-        nextCigaretteButtsMeasurements.cigaretteButtsCount;
-    }
-    const hasVolunteerParticipationUpdate = Object.prototype.hasOwnProperty.call(
-      body,
-      "volunteerParticipation",
-    );
-    const nextVolunteerParticipation = hasVolunteerParticipationUpdate
-      ? body.volunteerParticipation === null || body.volunteerParticipation === undefined
-        ? null
-        : normalizeVolunteerParticipation(body.volunteerParticipation)
-      : currentMetadata.volunteerParticipation;
-    if (hasVolunteerParticipationUpdate || body.volunteersCount !== undefined) {
-      updateData["volunteers_count"] = resolveParticipantsCount({
-        volunteerParticipation: nextVolunteerParticipation,
-        legacyVolunteersCount:
-          body.volunteersCount ?? current.volunteers_count,
-      });
-    }
-    if (body.durationMinutes !== undefined) {
-      updateData["duration_minutes"] = body.durationMinutes;
-    }
-    if (body.eventStartTime !== undefined) {
-      updateData["event_start_time"] = body.eventStartTime;
-    }
-    if (body.eventEndTime !== undefined) {
-      updateData["event_end_time"] = body.eventEndTime;
-    }
-    if (body.organizerType !== undefined) {
-      updateData["organizer_type"] = body.organizerType;
-    }
-    if (shouldRefreshNotes) {
-      const persistedPayload = {
-        associationName:
-          body.associationName ?? currentMetadata.associationName ?? undefined,
-        groupJoinEnabled:
-          body.groupJoinEnabled ?? currentMetadata.groupJoinEnabled,
-        departureLocationLabel:
-          body.departureLocationLabel ??
-          currentMetadata.departureLocationLabel ??
-          undefined,
-        arrivalLocationLabel:
-          body.arrivalLocationLabel ??
-          currentMetadata.arrivalLocationLabel ??
-          undefined,
-        routeStyle: body.routeStyle ?? currentMetadata.routeStyle ?? undefined,
-        routeAdjustmentMessage:
-          body.routeAdjustmentMessage ??
-          currentMetadata.routeAdjustmentMessage ??
-          undefined,
-        notes: body.notes ?? currentMetadata.cleanNotes ?? undefined,
-        placeType: body.placeType ?? currentMetadata.placeType ?? undefined,
-        submissionMode:
-          body.submissionMode ?? currentMetadata.submissionMode ?? undefined,
-        wasteBreakdown:
-          body.wasteBreakdown ?? currentMetadata.wasteBreakdown ?? undefined,
-        wasteMeasurementMethod:
-          body.wasteMeasurementMethod ??
-          currentMetadata.wasteMeasurementMethod ??
-          undefined,
-        cigaretteButtsKg:
-          hasButtsMeasurementUpdate
-            ? nextCigaretteButtsMeasurements?.cigaretteButtsMassKg
-            : body.cigaretteButtsKg !== undefined
-              ? body.cigaretteButtsKg
-              : currentMetadata.cigaretteButtsKg,
-        cigaretteButtsMeasurements:
-          hasButtsMeasurementUpdate
-            ? nextCigaretteButtsMeasurements
-            : currentMetadata.cigaretteButtsMeasurements,
-        volunteerParticipation: nextVolunteerParticipation,
-        cigaretteButtsMassKg:
-          hasButtsMeasurementUpdate
-            ? nextCigaretteButtsMeasurements?.cigaretteButtsMassKg
-            : currentMetadata.cigaretteButtsMeasurements?.cigaretteButtsMassKg,
-        cigaretteButtsVolumeLiters:
-          hasButtsMeasurementUpdate
-            ? nextCigaretteButtsMeasurements?.cigaretteButtsVolumeLiters
-            : currentMetadata.cigaretteButtsMeasurements?.cigaretteButtsVolumeLiters,
-        cigaretteButtsCondition:
-          hasButtsMeasurementUpdate
-            ? nextCigaretteButtsMeasurements?.cigaretteButtsCondition
-            : currentMetadata.cigaretteButtsMeasurements?.cigaretteButtsCondition,
-        photos:
-          body.photos?.map((photo) => ({
-            id: photo.id,
-            name: photo.name,
-            mimeType: photo.mimeType,
-            size: photo.size,
-            width: photo.width ?? null,
-            height: photo.height ?? null,
-          })) ?? currentMetadata.photos ?? undefined,
-        visionEstimate:
-          body.visionEstimate ?? currentMetadata.visionEstimate ?? undefined,
-      } satisfies Parameters<typeof buildPersistedNotes>[0];
-      const persistedNotes = buildPersistedNotes(
-        persistedPayload,
-        {
-          resolvedCigaretteButtsMeasurements:
-            hasButtsMeasurementUpdate || currentMetadata.cigaretteButtsMeasurements
-              ? nextCigaretteButtsMeasurements
-              : undefined,
-        },
-      );
-      updateData["notes"] = persistedNotes;
-    }
-
     const hasActionUpdates = Object.keys(updateData).length > 0;
     adminErrorStage = "action_update";
     const updateResult = hasActionUpdates
@@ -756,57 +228,23 @@ export async function PATCH(
     }
     actionWriteSucceeded = hasActionUpdates && Boolean(updateResult.data);
 
-    adminErrorStage = "post_update";
-    if (updateData["status"] === "approved") {
-      await recordRepollutionPredictionEvaluationForAction(
-        supabase,
-        trimmedActionId,
-      );
-    }
-
-    if (body.participantAccounts !== undefined) {
-      adminErrorStage = "participant_sync";
-      const organizerIds = await loadActionOrganizerIdsForAction(
-        supabase,
-        trimmedActionId,
-        current.created_by_clerk_id,
-      );
-      const resolvedIdentity = identity ?? {
-        displayName: userId,
-        handle: userId,
-        username: userId,
-        email: null,
-      };
-
-      await syncActionManualParticipants({
-        supabase,
-        actionId: trimmedActionId,
-        creator: {
-          userId,
-          displayName:
-            resolvedIdentity.displayName?.trim() || userId,
-          handle: resolvedIdentity.handle?.trim() || null,
-          username: resolvedIdentity.username?.trim() || null,
-          email: resolvedIdentity.email?.trim() || null,
-        },
-        participantAccounts: body.participantAccounts ?? [],
-        organizerIds,
-      });
-    }
-
-    if (shouldAuditModeration && auditSnapshots) {
-      adminErrorStage = "post_update";
-      await appendAdminAuditOnce({
-        operationId: `action-edit-${trimmedActionId}-${Date.now()}`,
-        actorUserId: adminAuditActorUserId,
-        targetActionId: trimmedActionId,
-        operation: "edit_action",
-        outcome: "success",
-        targetUserId: adminAuditTargetUserId,
-        previousValue: auditSnapshots.previousValue,
-        newValue: auditSnapshots.newValue,
-      });
-    }
+    await runActionUpdatePostProcessing({
+      supabase,
+      actionId: trimmedActionId,
+      updateData,
+      body,
+      current,
+      userId,
+      identity,
+      shouldAuditModeration,
+      auditSnapshots,
+      adminAuditActorUserId,
+      adminAuditTargetUserId,
+      appendAdminAuditOnce,
+      setErrorStage: (stage) => {
+        adminErrorStage = stage;
+      },
+    });
 
     return NextResponse.json({
       status: "ok",
