@@ -79,6 +79,7 @@ export function buildOptimisticChatMessage({
     topic_id: topicId,
     message_kind: messageKind,
     related_event_id: relatedEvent?.id ?? null,
+    action_id: null,
     related_event: relatedEvent,
     poll_options: pollOptions.map((label, index) => ({
       id: `opt-${id}-${index + 1}`,

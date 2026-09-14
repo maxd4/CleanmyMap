@@ -17,6 +17,7 @@ import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { isSafeChatAttachmentUrl } from "@/lib/chat/chat-attachments";
 import { ChatAvatar } from "@/components/chat/chat-avatar";
+import { ChatActionReferenceCard } from "./chat-action-reference-card";
 
 import type { ChatMessage } from "../chat-types";
 import { getDiscussionTopic } from "../discussion-guidance";
@@ -143,6 +144,10 @@ export function ChatMessageItem({
           <p className={`whitespace-pre-wrap text-[13px] leading-relaxed mb-3 ${isLight ? "text-slate-700" : "text-slate-300"}`}>
             {message.content}
           </p>
+
+          {message.action_id ? (
+            <ChatActionReferenceCard actionId={message.action_id} tone={tone} />
+          ) : null}
 
           {/* Tags */}
           <div className="flex flex-wrap gap-2 mb-3">

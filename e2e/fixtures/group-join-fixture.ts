@@ -21,12 +21,13 @@ export async function assertGroupJoinFixtureIsPresent(): Promise<void> {
   const client = createClient(url, serviceRoleKey, { auth: { persistSession: false } });
   const result = await client
     .from("actions")
-    .select("id, notes, action_phase, moderation_visibility, status")
+    .select("id, notes, action_phase, moderation_visibility, status, published_at")
     .eq("id", GROUP_JOIN_FIXTURE_ID)
     .eq("notes", `${GROUP_JOIN_FIXTURE_MARKER}\n[cmm-meta]{"groupJoinEnabled":true}`)
     .eq("action_phase", "pre_action")
     .eq("moderation_visibility", "visible")
     .eq("status", "approved")
+    .not("published_at", "is", null)
     .maybeSingle();
   if (result.error) {
     throw new Error(`Unable to verify local group-join fixture: ${result.error.message}`);

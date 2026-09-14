@@ -23,6 +23,11 @@ import {
   toDiscussionRateLimitErrorPayload,
 } from "@/lib/community/discussion-rate-limit";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
+import { loadActionById } from "@/lib/actions/store";
+import {
+  isShareableFutureAction,
+  resolveShareTerritoryDestination,
+} from "@/lib/chat/action-sharing";
 import {
   messageSelect,
   sendMessageSchema,
@@ -35,6 +40,7 @@ import {
 } from "./route.shared";
 import {
   loadCurrentProfile,
+  hasExistingDmConversation,
   loadMessageById,
   loadRelatedCommunityEvent,
   resolveBugReportRecipientId,
@@ -88,9 +94,26 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  if (parsed.data.channelType !== "action" && parsed.data.actionId) {
+  const isExternalActionShare =
+    parsed.data.channelType !== "action" && Boolean(parsed.data.actionId);
+  if (isExternalActionShare && !["community", "territory", "dm"].includes(parsed.data.channelType)) {
     return NextResponse.json(
-      { error: "Paramètre action invalide", hint: "actionId est réservé au canal action." },
+      { error: "Partage indisponible", hint: "Une action peut être partagée uniquement dans une conversation publique, territoriale ou privée existante." },
+      { status: 403 },
+    );
+  }
+  if (isExternalActionShare && (
+    messageKind !== "message" ||
+    parsed.data.topicId ||
+    parsed.data.relatedEventId ||
+    parsed.data.pollOptions !== undefined ||
+    parsed.data.attachmentUrl ||
+    parsed.data.attachmentType ||
+    (parsed.data.recipientId && parsed.data.channelType !== "dm") ||
+    (parsed.data.channelType === "community" && (parsed.data.zoneName || parsed.data.arrondissementId))
+  )) {
+    return NextResponse.json(
+      { error: "Partage invalide", hint: "Le partage d'action est un message standard contenant uniquement la référence actionId." },
       { status: 400 },
     );
   }
@@ -144,6 +167,16 @@ export async function POST(request: Request) {
   try {
     const serviceSupabase = getSupabaseServerClient();
 
+    if (isExternalActionShare) {
+      const action = await loadActionById(serviceSupabase, parsed.data.actionId!);
+      if (!action || !isShareableFutureAction(action)) {
+        return NextResponse.json(
+          { error: "Action non partageable", hint: "Cette action n'est plus publiée, future ou accessible." },
+          { status: 403 },
+        );
+      }
+    }
+
     const quota = await reserveDiscussionMessageSlot(serviceSupabase, {
       userId,
       channel: parsed.data.channelType === "bug_report" ? "bug_report" : "discussion_event",
@@ -157,10 +190,19 @@ export async function POST(request: Request) {
     const parsedArr = parseArrondissement(parsed.data.arrondissementId?.toString() ?? null);
     const profileArrondissement = profile?.paris_arrondissement ?? parsedArr;
 
-    const zoneName = parsed.data.zoneName?.trim() || metadataZone.zoneName;
+    const shareTerritory = isExternalActionShare && parsed.data.channelType === "territory"
+      ? resolveShareTerritoryDestination(profile)
+      : null;
+    if (isExternalActionShare && parsed.data.channelType === "territory" && !shareTerritory) {
+      return NextResponse.json(
+        { error: "Territoire indisponible", hint: "Votre profil ne permet pas de déterminer une conversation territoriale existante." },
+        { status: 403 },
+      );
+    }
+    const zoneName = shareTerritory?.zoneName ?? parsed.data.zoneName?.trim() ?? metadataZone.zoneName;
     const inferredZoneArrondissement = zoneName ? extractArrondissementFromLabel(zoneName) : null;
     const arrondissementId =
-      parsed.data.arrondissementId ?? profileArrondissement ?? inferredZoneArrondissement;
+      shareTerritory?.arrondissementId ?? parsed.data.arrondissementId ?? profileArrondissement ?? inferredZoneArrondissement;
     const zoneContext = buildZoneContext(zoneName, arrondissementId);
     const arrondissementLabel =
       !zoneName && arrondissementId && arrondissementId >= 1 && arrondissementId <= 20
@@ -222,10 +264,19 @@ export async function POST(request: Request) {
             { status: 400 },
           );
         }
+        if (isExternalActionShare && !(await hasExistingDmConversation(supabase, recipientId))) {
+          return NextResponse.json(
+            { error: "Conversation introuvable", hint: "Le partage privé exige une conversation existante avec ce membre." },
+            { status: 403 },
+          );
+        }
         break;
       }
       case "territory": {
-        if (zoneName && findZoneWithNeighbors(zoneName)) {
+        if (shareTerritory) {
+          targetZoneName = shareTerritory.zoneName ?? null;
+          targetArrondissementId = shareTerritory.arrondissementId ?? null;
+        } else if (zoneName && findZoneWithNeighbors(zoneName)) {
           targetZoneName = zoneName;
           targetArrondissementId = arrondissementId;
         } else if (arrondissementId && arrondissementId >= 1 && arrondissementId <= 20) {
@@ -321,6 +372,7 @@ export async function POST(request: Request) {
           content: parsed.data.content,
           attachment_url: parsed.data.attachmentUrl,
           attachment_type: parsed.data.attachmentType,
+          action_id: parsed.data.actionId && isExternalActionShare ? parsed.data.actionId : null,
           attachment_expires_at: parsed.data.attachmentUrl
             ? new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString()
             : null,

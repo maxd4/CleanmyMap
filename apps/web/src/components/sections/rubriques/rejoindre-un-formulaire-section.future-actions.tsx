@@ -35,12 +35,14 @@ export function FutureActionsPanel({
   error,
   authenticated,
   fr,
+  onShareAction,
 }: {
   items: ActionListItem[];
   loading: boolean;
   error: string | null;
   authenticated: boolean;
   fr: boolean;
+  onShareAction?: (actionId: string) => void;
 }) {
   return (
     <section className="space-y-4 rounded-[1.5rem] border border-sky-100 bg-sky-50/45 p-4 md:p-5">
@@ -100,16 +102,19 @@ export function FutureActionsPanel({
                   </p>
                 ) : null}
                 {groupJoinEnabled ? (
-                  <CmmButton
-                    href={`/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(item.id)}`}
-                    tone="primary"
-                    variant="pill"
-                    size="sm"
-                  >
-                    {authenticated ? (fr ? "Rejoindre" : "Join") : (fr ? "Se connecter pour rejoindre" : "Sign in to join")}
-                  </CmmButton>
+                  <div className="flex flex-wrap gap-2">
+                    <CmmButton
+                      href={`/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(item.id)}`}
+                      tone="primary"
+                      variant="pill"
+                      size="sm"
+                    >
+                      {authenticated ? (fr ? "Rejoindre" : "Join") : (fr ? "Se connecter pour rejoindre" : "Sign in to join")}
+                    </CmmButton>
+                    {onShareAction ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>Partager dans la messagerie</CmmButton> : null}
+                  </div>
                 ) : (
-                  <span className="text-xs font-semibold text-slate-500">{fr ? "Participation fermée" : "Joining closed"}</span>
+                  <div className="flex flex-wrap items-center gap-2"><span className="text-xs font-semibold text-slate-500">{fr ? "Participation fermée" : "Joining closed"}</span>{onShareAction ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>Partager dans la messagerie</CmmButton> : null}</div>
                 )}
               </div>
             </article>

@@ -36,6 +36,12 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      name: "action sharing",
+      testMatch: /action-sharing\.spec\.ts/,
+      dependencies: ["global setup"],
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
       name: "signalement campaign 2",
       testMatch: /signalement-campaign-2\.spec\.ts/,
       dependencies: ["global setup"],

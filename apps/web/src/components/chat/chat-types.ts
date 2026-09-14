@@ -14,6 +14,7 @@ export type ChatMessage = {
   topic_id: ChatTopicId | null;
   message_kind: ChatMessageKind;
   related_event_id: string | null;
+  action_id: string | null;
   related_event: ChatRelatedEvent | null;
   poll_options: ChatPollOption[];
   totalVotes?: number;

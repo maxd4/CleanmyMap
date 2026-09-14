@@ -9,6 +9,7 @@ import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/org
 import { canPublishPreAction } from "@/lib/actions/publication";
 
 export const runtime = "nodejs";
+// Justification Vercel: la publication dépend de l’action et de l’utilisateur courant.
 export const dynamic = "force-dynamic";
 
 export async function POST(
