@@ -28,7 +28,7 @@ describe("navigation dropdown item icons", () => {
   });
 
   it("uses dedicated icons for form joining and funding", () => {
-    expect(getNavigationDropdownItemIcon("rejoindre-un-formulaire")).not.toBe(
+    expect(getNavigationDropdownItemIcon("rejoindre-une-action")).not.toBe(
       getNavigationDropdownItemIcon("new"),
     );
     expect(getNavigationDropdownItemIcon("funding")).not.toBe(

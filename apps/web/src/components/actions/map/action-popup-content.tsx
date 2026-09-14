@@ -191,7 +191,7 @@ function SingleActionPopupContent({
   const groupJoinEnabled = contract?.metadata.groupJoinEnabled === true;
   const joinHref =
     isJoinableAction && groupJoinEnabled
-      ? `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(item.id)}`
+      ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(item.id)}`
       : null;
   const joinStatusLabel =
     isJoinableAction && !groupJoinEnabled

@@ -100,7 +100,7 @@ describe("dropdown centering contract", () => {
     expect(content).toContain("getNavigationDropdownItemIconClassName");
     expect(content).toContain("getNavigationDropdownCardBorderTokens");
     expect(iconResolver).toContain('funding: HandCoins');
-    expect(iconResolver).toContain('"rejoindre-un-formulaire": UserPlus');
+    expect(iconResolver).toContain('"rejoindre-une-action": UserPlus');
     expect(iconResolver).toContain("Missing navigation dropdown item icon");
   });
 

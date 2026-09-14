@@ -59,6 +59,7 @@ describe("page-families resolver", () => {
     expect(
       resolveBasePageFamilyId("/sections/rejoindre-un-formulaire"),
     ).toBe("agir");
+    expect(resolveBasePageFamilyId("/sections/rejoindre-une-action")).toBe("agir");
 
     expect(resolveBasePageFamilyId("/sections/gamification")).toBe(
       "cartographie-impact",
@@ -117,7 +118,12 @@ describe("page-families resolver", () => {
       resolvePageFamily("/sections/rejoindre-un-formulaire"),
     ).toMatchObject({
       id: "agir",
-      exceptionId: "join-group-form",
+      exceptionId: "join-action",
+    });
+
+    expect(resolvePageFamily("/sections/rejoindre-une-action")).toMatchObject({
+      id: "agir",
+      exceptionId: "join-action",
     });
 
     expect(resolvePageFamily("/reports")).toMatchObject({

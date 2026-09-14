@@ -66,7 +66,7 @@ describe("HomeHero impact methodology link", () => {
     expect(html).toContain('href="/actions/map"');
     expect(html).not.toContain('href="/sections/messagerie"');
     expect(html).toContain('href="/actions/new"');
-    expect(html).toContain('href="/sections/rejoindre-un-formulaire"');
+    expect(html).toContain('href="/sections/rejoindre-une-action"');
     expect(html).toContain('href="/sign-in"');
     expect(html).toContain('data-cmm-button-tone="primary"');
     expect(html).toContain('data-cmm-button-tone="critical"');
@@ -76,7 +76,7 @@ describe("HomeHero impact methodology link", () => {
     expect(html.indexOf('href="/actions/map"')).toBeLessThan(
       html.indexOf('href="/sign-in"'),
     );
-    expect(html.indexOf('href="/sections/rejoindre-un-formulaire"')).toBeLessThan(
+    expect(html.indexOf('href="/sections/rejoindre-une-action"')).toBeLessThan(
       html.indexOf('href="/actions/new"'),
     );
   });

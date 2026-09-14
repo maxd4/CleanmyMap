@@ -177,7 +177,7 @@ describe("action popup presentation", () => {
         observedAt: "08/04/2026",
         sourceLabel: "Source: actions",
         updateHref: "/actions/new?lat=48.8566&lng=2.3522",
-        joinHref: "/sections/rejoindre-un-formulaire?actionId=action-1",
+        joinHref: "/sections/rejoindre-une-action?actionId=action-1",
         hasPollution: true,
         isAction: true,
         onViewGeometry: () => undefined,
@@ -185,7 +185,7 @@ describe("action popup presentation", () => {
     );
 
     expect(markup).toContain("Nouvelle action ici");
-    expect(markup).toContain("Rejoindre un formulaire");
+    expect(markup).toContain("Rejoindre une action");
     expect(markup).toContain("Voir tout le parcours");
     expect(markup).toContain("max-w-full px-3");
     expect(markup).not.toContain("h-11 w-full");

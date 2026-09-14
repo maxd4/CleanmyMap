@@ -1,13 +1,13 @@
-# Rejoindre un formulaire
+# Rejoindre une action
 
 ## Fiche canonique
 
-- **Route** : `/sections/rejoindre-un-formulaire`
+- **Route** : `/sections/rejoindre-une-action`
 - **Famille** : Agir
 - **Accès lecture** : `public-visible`
 - **Compte requis** : oui pour rejoindre, annuler ou traiter une demande
 - **Palette runtime** : agir / emerald
-- **Exception page-family** : `join-group-form`
+- **Exception page-family** : `join-action`
 
 ## Sources principales
 
@@ -22,7 +22,7 @@ apps/web/src/lib/actions/permissions.ts
 
 ## Objectif utilisateur
 
-Permettre à un bénévole de :
+La page canonique permet à un bénévole de :
 
 1. voir les actions de groupe ouvertes ;
 2. envoyer une demande de participation ;
@@ -41,7 +41,7 @@ Les profils admin-like peuvent traiter toute file selon les permissions centrale
 
 ## Contrat de visibilité
 
-Une action apparaît dans la liste publique uniquement si :
+Une action future apparaît dans l'onglet public uniquement si :
 
 ```txt
 action_phase = pre_action
@@ -56,6 +56,11 @@ La visibilité dans les formulaires de groupe reste distincte de :
 - visibilité sur la carte publique ;
 - validation d'une déclaration finale ;
 - comptabilisation dans les indicateurs d'impact.
+
+L'onglet `Actions futures` réutilise exclusivement `/api/actions/group-join`.
+L'onglet `Actions passées` lit les actions publiques approuvées et terminées
+depuis la surface d'actions ; il ne lit pas l'historique personnel
+`historyItems` et ne permet aucune participation rétroactive.
 
 ## Contrat de participation
 
@@ -169,8 +174,10 @@ Toute évolution de cette logique doit rester idempotente.
 ## UI cible
 
 - hero court ;
-- recherche et filtres ;
-- cartes d'actions ouvertes ;
+- onglets `Actions futures` et `Actions passées` ;
+- recherche et filtres sur les actions futures ;
+- cartes d'actions futures ouvertes ;
+- résultats publics finaux des actions passées ;
 - suivi personnel ;
 - distinction claire entre demande `pending` et participation `confirmed` ;
 - file de modération uniquement pour les reviewers autorisés ;

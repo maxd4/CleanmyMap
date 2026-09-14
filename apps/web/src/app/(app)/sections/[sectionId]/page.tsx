@@ -9,9 +9,15 @@ import {
 } from "@/lib/sections-registry";
 import { getSectionClerkAccessMode } from "@/lib/clerk-access";
 import { getServerLocale } from "@/lib/server-preferences";
+import {
+  buildLegacyJoinActionRedirect,
+  CANONICAL_JOIN_ACTION_SECTION_ID,
+  LEGACY_JOIN_FORM_ROUTE,
+} from "@/lib/sections/join-action-routes";
 
 type SectionPageProps = {
   params: Promise<{ sectionId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export function generateStaticParams() {
@@ -23,10 +29,13 @@ export async function generateMetadata({
 }: SectionPageProps): Promise<Metadata> {
   const { sectionId } = await params;
   const normalizedSectionId = sectionId.toLowerCase();
+  const metadataSectionId = normalizedSectionId === LEGACY_JOIN_FORM_ROUTE.split("/").at(-1)
+    ? CANONICAL_JOIN_ACTION_SECTION_ID
+    : normalizedSectionId;
   const section =
-    normalizedSectionId === "guide"
+    metadataSectionId === "guide"
       ? getSectionRubriqueById("weather")
-      : getSectionRubriqueById(normalizedSectionId);
+      : getSectionRubriqueById(metadataSectionId);
 
   if (!section) {
     return {
@@ -58,8 +67,13 @@ export async function generateMetadata({
   };
 }
 
-export default async function SectionPage({ params }: SectionPageProps) {
+export default async function SectionPage({ params, searchParams }: SectionPageProps) {
   const { sectionId } = await params;
+  const normalizedSectionId = sectionId.toLowerCase();
+
+  if (normalizedSectionId === LEGACY_JOIN_FORM_ROUTE.split("/").at(-1)) {
+    redirect(buildLegacyJoinActionRedirect(await searchParams));
+  }
 
   if (sectionId === "dm") {
     redirect("/sections/messagerie?tab=dm");

@@ -21,7 +21,7 @@ flowchart LR
   B2 --> ROUTE["/sections/route"]
   B2 --> SIGNAL["/signalement"]
   B2 --> METEO["/sections/weather"]
-  B2 --> FORM["/sections/rejoindre-un-formulaire"]
+  B2 --> FORM["/sections/rejoindre-une-action"]
 
   B3 --> MAP["/actions/map"]
   B3 --> METHODO["/methodologie"]

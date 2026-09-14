@@ -104,7 +104,7 @@ export function FutureActionsPanel({
                 {groupJoinEnabled ? (
                   <div className="flex flex-wrap gap-2">
                     <CmmButton
-                      href={`/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(item.id)}`}
+                      href={`/sections/rejoindre-une-action?actionId=${encodeURIComponent(item.id)}`}
                       tone="primary"
                       variant="pill"
                       size="sm"

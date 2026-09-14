@@ -114,11 +114,11 @@ export function ActionBeforeDeclarationForm({
                 </CmmButton>
                 {shareLink && isGroupFormPublished ? (
                   <CmmButton tone="secondary" variant="pill" size="md" href={shareLink}>
-                    Ouvrir le formulaire de groupe
+                    Ouvrir Rejoindre une action
                   </CmmButton>
                 ) : null}
                 {isPublished ? (
-                  <CmmButton tone="secondary" variant="pill" size="md" href="/sections/rejoindre-un-formulaire">
+                  <CmmButton tone="secondary" variant="pill" size="md" href="/sections/rejoindre-une-action">
                     Voir les actions futures
                   </CmmButton>
                 ) : null}

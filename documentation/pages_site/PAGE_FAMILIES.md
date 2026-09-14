@@ -58,7 +58,7 @@ Le resolver courant classe notamment les routes de sections suivantes.
 ```txt
 /sections/route
 /sections/weather
-/sections/rejoindre-un-formulaire
+/sections/rejoindre-une-action
 ```
 
 ### Cartographie & Impact
@@ -112,7 +112,7 @@ testées et documentées.
 | `explorer-sommaire` | `/explorer` | présentation jaune dédiée |
 | `methodologie-impact` | `/methodologie` | Cartographie & Impact, variante rouge |
 | `weather-operations` | `/sections/weather` | famille Agir |
-| `join-group-form` | `/sections/rejoindre-un-formulaire` | famille Agir |
+| `join-action` | `/sections/rejoindre-une-action` et alias `/sections/rejoindre-un-formulaire` | famille Agir |
 | `reports-impact` | rapports / gamification concernés | variante rouge Cartographie & Impact |
 | `partners-indigo` | `/partners/*` | variante partenaires du réseau |
 | `error-429` | `/error/429` | état système dédié |

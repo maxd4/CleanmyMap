@@ -65,7 +65,7 @@ export function useJoinFormSectionActions({
         const response = await fetch(listUrl, { signal });
 
         if (!response.ok) {
-          throw new Error("Impossible de charger les pré-formulaires.");
+          throw new Error("Impossible de charger les actions futures.");
         }
 
         const payload = (await response.json()) as JoinableActionsResponse;
@@ -127,7 +127,7 @@ export function useJoinFormSectionActions({
 
       if (!response.ok) {
         if (response.status === 401) {
-          setNotice(fr ? "Connectez-vous pour rejoindre un formulaire." : "Sign in to join a form.");
+          setNotice(fr ? "Connectez-vous pour rejoindre cette action." : "Sign in to join this action.");
           return;
         }
 
@@ -275,7 +275,7 @@ export function useJoinFormSectionActions({
               : "Your request has been cancelled."
             : wasConfirmed
               ? fr
-                ? "Vous avez quitté ce formulaire."
+              ? "Vous avez quitté cette action."
                 : "You left this form."
               : fr
                 ? "La participation a été retirée."

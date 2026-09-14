@@ -39,7 +39,7 @@ function createAction(overrides: Partial<ActionListItem> = {}): ActionListItem {
 describe("actions history helpers", () => {
   it("formats join links and record labels", () => {
     expect(buildJoinHref("action 1")).toBe(
-      "/sections/rejoindre-un-formulaire?actionId=action%201",
+      "/sections/rejoindre-une-action?actionId=action%201",
     );
     expect(formatRecordType(createAction({ record_type: "clean_place" }))).toBe("lieu propre");
     expect(formatRecordType(createAction({ record_type: "other" }))).toBe("spot");

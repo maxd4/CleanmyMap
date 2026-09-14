@@ -57,7 +57,7 @@ const WeatherSection = dynamic(() =>
   import("./weather-section").then((module) => module.WeatherSection),
 );
 const JoinFormSection = dynamic(() =>
-  import("./rejoindre-un-formulaire-section").then((module) => module.JoinFormSection),
+  import("./rejoindre-un-formulaire-section").then((module) => module.JoinActionSection),
 );
 const ConnectSection = dynamic(() =>
   import("./connect-section").then((module) => module.ConnectSection),
@@ -78,7 +78,7 @@ export const FINALIZED_SECTION_RENDERERS = {
   funding: () => <FundingSection />,
   "trash-spotter": () => <TrashSpotterSection />,
   route: () => <RouteSection />,
-  "rejoindre-un-formulaire": () => <JoinFormSection />,
+  "rejoindre-une-action": () => <JoinFormSection />,
   recycling: () => <RecyclingSection />,
   compost: () => <CompostSection />,
   climate: () => (

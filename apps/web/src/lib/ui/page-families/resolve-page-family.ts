@@ -28,6 +28,7 @@ const ACCUEIL_PILOTAGE_SECTION_ROUTES = [
 const AGIR_SECTION_ROUTES = [
   "/sections/route",
   "/sections/weather",
+  "/sections/rejoindre-une-action",
   "/sections/rejoindre-un-formulaire",
 ] as const;
 

@@ -458,7 +458,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
           isAutoApprovedSubmission={props.isAutoApprovedSubmission ?? false}
           groupJoinHref={
               createdId && canShowGroupInvite
-                ? `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(createdId)}`
+                ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(createdId)}`
                 : null
             }
             onReset={() => {

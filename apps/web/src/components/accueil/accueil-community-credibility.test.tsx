@@ -72,7 +72,7 @@ describe("HomeCommunityCredibility action hierarchy", () => {
     const reportIndex = markup.indexOf('href="/reports"');
     const declarationIndex = markup.indexOf('href="/actions/new"');
     const joinIndex = markup.indexOf(
-      'href="/sections/rejoindre-un-formulaire"',
+      'href="/sections/rejoindre-une-action"',
     );
 
     expect(reportIndex).toBeGreaterThan(-1);

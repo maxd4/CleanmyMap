@@ -119,7 +119,7 @@ export function GroupJoinPublishCard({
       {showHelp ? (
         <p className="mt-3 rounded-2xl border border-emerald-200/70 bg-white/90 px-3 py-2 text-xs leading-5 text-emerald-900/72">
           Cette option ne publie pas les champs de récolte finale. Elle rend seulement le pré-formulaire visible dans
-          la page Formulaire de groupe.
+          la page Rejoindre une action.
         </p>
       ) : null}
     </div>

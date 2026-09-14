@@ -85,6 +85,7 @@ describe("proxy protected routes", () => {
       "/signalement",
       "/partners/network",
       "/sections/annuaire",
+      "/sections/rejoindre-une-action",
       "/sections/rejoindre-un-formulaire",
       "/sections/community",
     ]);
@@ -100,6 +101,7 @@ describe("proxy protected routes", () => {
     expect(PROXY_MATCHER_PATTERNS).toContain("/signalement(.*)");
     expect(PROXY_MATCHER_PATTERNS).toContain("/partners/network(.*)");
     expect(PROXY_MATCHER_PATTERNS).toContain("/sections/annuaire(.*)");
+    expect(PROXY_MATCHER_PATTERNS).toContain("/sections/rejoindre-une-action(.*)");
     expect(PROXY_MATCHER_PATTERNS).toContain("/sections/rejoindre-un-formulaire(.*)");
     expect(PROTECTED_APP_PAGE_ROUTE_PREFIXES).not.toContain("/actions/new");
     expect(PROTECTED_APP_PAGE_ROUTE_PREFIXES).not.toContain("/signalement");

@@ -45,7 +45,7 @@ export function JoinFormConfirmationDialog({
         ? "Annuler cette demande ?"
         : "Cancel this request?"
       : fr
-        ? "Quitter ce formulaire ?"
+        ? "Quitter cette action ?"
         : "Leave this form?"
     : fr
       ? "Confirmer cette participation ?"
@@ -56,7 +56,7 @@ export function JoinFormConfirmationDialog({
         ? "Annuler la demande"
         : "Cancel request"
       : fr
-        ? "Quitter le formulaire"
+        ? "Quitter l'action"
         : "Leave the form"
     : fr
       ? "Envoyer la demande"
@@ -67,7 +67,7 @@ export function JoinFormConfirmationDialog({
         ? "Votre demande disparaîtra de la file publique et pourra être refaite plus tard."
         : "Your request will disappear from the public queue and can be submitted again later."
       : fr
-        ? "Votre participation sera retirée du formulaire, tout en restant tracée dans votre historique."
+        ? "Votre participation sera retirée de cette action, tout en restant tracée dans votre historique."
         : "Your participation will be removed from the form while remaining traceable in your history."
     : fr
       ? "Votre demande apparaît dans la file publique."
@@ -112,7 +112,7 @@ export function JoinFormConfirmationDialog({
                     ? "Cette demande sera retirée de la file publique."
                     : "This request will be removed from the public queue."
                   : fr
-                    ? "Cette participation sera retirée du formulaire."
+                    ? "Cette participation sera retirée de cette action."
                     : "This participation will be removed from the form."}
               </p>
               <p>
@@ -126,7 +126,7 @@ export function JoinFormConfirmationDialog({
               <p>{dialogDescription}</p>
               <p>
                 {fr
-                  ? "Le créateur du formulaire ou un admin peut l'accepter ou la refuser."
+                  ? "L'organisateur de l'action ou un admin peut l'accepter ou la refuser."
                   : "The form creator or an admin can accept or reject it."}
               </p>
             </>

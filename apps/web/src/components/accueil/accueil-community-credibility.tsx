@@ -457,7 +457,7 @@ export function HomeCommunityCredibility({
               <ArrowRight size={15} />
             </CmmButton>
             <CmmButton
-              href="/sections/rejoindre-un-formulaire"
+              href="/sections/rejoindre-une-action"
               tone="secondary"
               variant="pill"
               className="h-12 w-full min-w-0 gap-2 px-5 text-[13px] font-black"
