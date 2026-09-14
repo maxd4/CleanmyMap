@@ -5,6 +5,7 @@ import {
   getTimeContractValidationMessage,
   normalizeClockTime,
   formatBusinessDurationMinutes,
+  formatBusinessDurationRangeMinutes,
   roundBusinessDurationMinutes,
 } from "./time-contract";
 
@@ -84,5 +85,10 @@ describe("action temporal contract", () => {
       }),
     ).toEqual({ organizationMinutes: 22, status: "available" });
     expect(exactDurationMinutes).toBe(68);
+  });
+
+  it("displays operational estimates as quarter-hour intervals", () => {
+    expect(formatBusinessDurationRangeMinutes(52)).toBe("45 min – 1 h");
+    expect(formatBusinessDurationRangeMinutes(60)).toBe("1 h");
   });
 });

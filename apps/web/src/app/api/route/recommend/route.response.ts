@@ -29,6 +29,7 @@ import {
 } from "@/lib/route/route-calibration";
 import {
   buildRouteOperationalBudget,
+  ROUTE_ORGANIZATION_MARGIN_MINUTES,
   type RouteOperationalBudgetDependency,
 } from "@/lib/route/route-operational-budget";
 import { buildCleanupWorkload } from "@/lib/route/route-cleanup-workload";
@@ -206,14 +207,16 @@ export function buildRouteRecommendationResponse(input: {
           : [];
       }),
     });
+    const operationalBudget = buildRouteOperationalBudget({
+      travelMinutes: group.travelMinutes,
+      budgetMinutes: group.travelBudgetMinutes,
+      calibrationContext: groupContext,
+      durationDependency,
+    });
     return {
       ...group,
-      operationalBudget: buildRouteOperationalBudget({
-        travelMinutes: group.travelMinutes,
-        budgetMinutes: group.travelBudgetMinutes,
-        calibrationContext: groupContext,
-        durationDependency,
-      }),
+      withinBudget: operationalBudget.withinBudget ?? group.withinBudget,
+      operationalBudget,
     };
   });
   const groupBudgets = groupRoutes.map(({ operationalBudget: budget }) => budget);
@@ -221,11 +224,12 @@ export function buildRouteRecommendationResponse(input: {
     (budget) => budget.totalMinutes !== null,
   );
   const totalOperationalMinutes = operationalGroupsAvailable
-    ? groupBudgets.reduce((total, budget) => total + (budget.totalMinutes ?? 0), 0)
+    ? Math.max(...groupBudgets.map((budget) => budget.actionMinutes ?? 0)) +
+      ROUTE_ORGANIZATION_MARGIN_MINUTES
     : null;
   const balanceOperationalDuration = operationalGroupsAvailable
-    ? Math.max(...groupBudgets.map((budget) => budget.totalMinutes ?? 0)) -
-      Math.min(...groupBudgets.map((budget) => budget.totalMinutes ?? 0))
+    ? Math.max(...groupBudgets.map((budget) => budget.actionMinutes ?? 0)) -
+      Math.min(...groupBudgets.map((budget) => budget.actionMinutes ?? 0))
     : null;
   const baseMultiRoute: RouteMultiRouteMetrics = planning.multiRouteMetrics ?? {
     groupCount,
@@ -399,6 +403,10 @@ export function buildRouteRecommendationResponse(input: {
       loop,
       withinBudget: true,
       serviceMinutesEstimate: operationalBudget.serviceMinutes,
+      actionMinutesEstimate: operationalBudget.actionMinutes,
+      eventBudgetMinutes: operationalBudget.eventBudgetMinutes ?? travelBudgetMinutes,
+      actionBudgetMinutes: operationalBudget.actionBudgetMinutes ?? Math.max(0, travelBudgetMinutes - ROUTE_ORGANIZATION_MARGIN_MINUTES),
+      organizationMarginMinutes: operationalBudget.organizationMarginMinutes,
       totalMinutesEstimate: operationalBudget.totalMinutes,
       operationalBudget,
       diagnostics: {
@@ -475,8 +483,12 @@ export function buildRouteRecommendationResponse(input: {
     loop,
     withinBudget: groupRoutes.length > 1
       ? groupRoutes.every(({ withinBudget }) => withinBudget)
-      : travelMinutes <= travelBudgetMinutes,
+      : operationalBudget.withinBudget ?? travelMinutes <= travelBudgetMinutes,
     serviceMinutesEstimate: operationalBudget.serviceMinutes,
+    actionMinutesEstimate: operationalBudget.actionMinutes,
+    eventBudgetMinutes: operationalBudget.eventBudgetMinutes ?? travelBudgetMinutes,
+    actionBudgetMinutes: operationalBudget.actionBudgetMinutes ?? Math.max(0, travelBudgetMinutes - ROUTE_ORGANIZATION_MARGIN_MINUTES),
+    organizationMarginMinutes: operationalBudget.organizationMarginMinutes,
     totalMinutesEstimate: operationalBudget.totalMinutes,
     operationalBudget,
     diagnostics: {

@@ -131,3 +131,21 @@ export function formatBusinessDurationMinutes(
   const rounded = roundBusinessDurationMinutes(value);
   return rounded === null ? "Durée non renseignée" : `${rounded} min`;
 }
+
+/** Displays an estimate as a quarter-hour interval without false precision. */
+export function formatBusinessDurationRangeMinutes(
+  value: number | null | undefined,
+): string {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    return "Durée non renseignée";
+  }
+  const lower = Math.floor(value / 15) * 15;
+  const upper = Math.ceil(value / 15) * 15;
+  const format = (minutes: number) => {
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const remainder = minutes % 60;
+    return remainder === 0 ? `${hours} h` : `${hours} h ${remainder}`;
+  };
+  return lower === upper ? format(lower) : `${format(lower)} – ${format(upper)}`;
+}

@@ -5,6 +5,7 @@ import {
   type RouteCalibrationContext,
 } from "./route-calibration";
 import {
+  ROUTE_ORGANIZATION_MARGIN_MINUTES,
   ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION,
   buildRouteOperationalBudget,
 } from "./route-operational-budget";
@@ -32,6 +33,10 @@ describe("route operational budget contract", () => {
     expect(budget).toMatchObject({
       contractVersion: ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION,
       travelMinutes: 24,
+      actionMinutes: null,
+      eventBudgetMinutes: 60,
+      actionBudgetMinutes: 45,
+      organizationMarginMinutes: ROUTE_ORGANIZATION_MARGIN_MINUTES,
       serviceMinutes: null,
       uncertaintyReserveMinutes: null,
       totalMinutes: null,
@@ -65,9 +70,13 @@ describe("route operational budget contract", () => {
     expect(budget).toMatchObject({
       contractVersion: ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION,
       travelMinutes: 24,
+      actionMinutes: 18,
+      eventBudgetMinutes: 60,
+      actionBudgetMinutes: 45,
+      organizationMarginMinutes: ROUTE_ORGANIZATION_MARGIN_MINUTES,
       serviceMinutes: 18,
       uncertaintyReserveMinutes: 6,
-      totalMinutes: 48,
+      totalMinutes: 33,
       withinBudget: true,
       calibrationStatus: "calibrated",
       durationModelVersion: "fixture-calibrated-v1",
@@ -77,7 +86,7 @@ describe("route operational budget contract", () => {
     });
   });
 
-  it("does not manufacture a total when one required component is absent", () => {
+  it("keeps the fixed-margin total when model uncertainty is unavailable", () => {
     const budget = buildRouteOperationalBudget({
       travelMinutes: 24,
       budgetMinutes: 60,
@@ -101,7 +110,38 @@ describe("route operational budget contract", () => {
 
     expect(budget.serviceMinutes).toBe(18);
     expect(budget.uncertaintyReserveMinutes).toBeNull();
-    expect(budget.totalMinutes).toBeNull();
-    expect(budget.withinBudget).toBeNull();
+    expect(budget.totalMinutes).toBe(33);
+    expect(budget.withinBudget).toBe(true);
+    expect(budget.calibrationStatus).toBe("data_insufficient");
+  });
+
+  it("counts the fixed organization margin once and never adds model uncertainty", () => {
+    const budget = buildRouteOperationalBudget({
+      travelMinutes: 24,
+      budgetMinutes: 60,
+      calibrationContext: context(),
+      durationDependency: {
+        estimateDuration: () => ({
+          contractVersion: ROUTE_CLEANUP_DURATION_CONTRACT_VERSION,
+          minutes: 45,
+          uncertaintyMinutes: 30,
+          modelVersion: "fixture-action-duration-v1",
+          calibrationStatus: "calibrated",
+          reason: "fixture",
+          provenance: {
+            source: "route-calibration",
+            contextVersion: ROUTE_CALIBRATION_CONTEXT_VERSION,
+            artifactVersion: "fixture-artifact-v1",
+          },
+        }),
+      },
+    });
+
+    expect(budget.actionBudgetMinutes).toBe(45);
+    expect(budget.actionMinutes).toBe(45);
+    expect(budget.organizationMarginMinutes).toBe(15);
+    expect(budget.totalMinutes).toBe(60);
+    expect(budget.uncertaintyReserveMinutes).toBe(30);
+    expect(budget.withinBudget).toBe(true);
   });
 });

@@ -119,6 +119,6 @@ describe("RouteSection explainability wiring", () => {
     expect(markup).toContain("Groupe 2 — 4 bénévoles");
     expect(markup).toContain("Groupe 3 — 4 bénévoles");
     expect(markup).toContain('aria-label="Légende des boucles"');
-    expect(markup).toContain("Aucun total opérationnel fiable n’est encore disponible.");
+    expect(markup).toContain("La durée d’action complète n’est pas encore fiable");
   });
 });

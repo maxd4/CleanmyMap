@@ -18,9 +18,9 @@ export function RouteSummaryCards({ options, fr }: RouteSummaryCardsProps) {
       note: fr ? "Pondération opérationnelle" : "Operational weighting",
     },
     {
-      label: fr ? "Budget déplacement" : "Travel budget",
+      label: fr ? "Créneau total" : "Total event slot",
       value: `${options.travelBudgetMinutes} min`,
-      note: fr ? "Temps maximal" : "Maximum time",
+      note: fr ? "Action + 15 min d’organisation" : "Action + 15 min organization",
     },
     {
       label: fr ? "Sous-groupes" : "Sub-groups",
