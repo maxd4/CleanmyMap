@@ -9,6 +9,7 @@ import { verifyRateLimit, createServerRateLimitResponse } from "@/lib/rate-limit
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
+// Justification Vercel: la réclamation dépend de la session Clerk et de l'état de participation courant.
 export const dynamic = "force-dynamic";
 
 const actionIdSchema = z.string().trim().min(1);

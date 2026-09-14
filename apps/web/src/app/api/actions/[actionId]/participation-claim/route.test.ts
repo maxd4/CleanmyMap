@@ -88,7 +88,7 @@ describe("POST /api/actions/:actionId/participation-claim", () => {
   });
 
   it.each([
-    ["future", { actionPhase: "post_action_complete" as const, actionDate: "2026-09-15" }],
+    ["future", { actionPhase: "post_action_complete" as const, actionDate: "2099-01-01" }],
     ["pre-action", { actionPhase: "pre_action" as const, actionDate: "2026-09-13" }],
     ["hidden", { actionPhase: "post_action_complete" as const, actionDate: "2026-09-13", moderationVisibility: "hidden" as const }],
   ])("refuses an ineligible %s action without creating a participant", async (_label, action) => {

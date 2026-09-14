@@ -262,7 +262,7 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
     expect(response.status).toBe(403);
   }, 15000);
 
-  it("rejects updates on pending actions", async () => {
+  it("allows the organizer to update a pending pre-action", async () => {
     getSupabaseServerClientMock.mockReturnValueOnce(
       createGroupJoinSupabaseMock({
         action: createGroupJoinAction({
@@ -283,6 +283,13 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
       { params: Promise.resolve({ actionId: "action-2" }) },
     );
 
-    expect(response.status).toBe(422);
+    const body = (await response.json()) as {
+      status?: string;
+      groupJoinEnabled?: boolean;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.status).toBe("ok");
+    expect(body.groupJoinEnabled).toBe(false);
   }, 15000);
 });
