@@ -125,4 +125,35 @@ describe("route planner proof v1", () => {
       modelVersions: { ...original.modelVersions, planner: "future-active-planner" },
     })).toBe(false);
   });
+
+  it("rejects selected stop coordinates outside the shared geographic bounds", () => {
+    const original = snapshot();
+    const stop = {
+      id: "stop-1",
+      label: "Stop",
+      latitude: 48.85,
+      longitude: 2.35,
+      segmentKm: 0,
+      estimatedMinutes: 0,
+      priorityReason: "fixture",
+      score: 50,
+    };
+    const withStop = {
+      ...original,
+      selectedCandidateIds: ["stop-1"],
+      observedCandidateIds: ["stop-1"],
+      selectedStops: [stop],
+      groups: [{ ...original.groups[0]!, candidateIds: ["stop-1"], targetCount: 1 }],
+    };
+
+    expect(isRoutePlannerSnapshot(withStop)).toBe(true);
+    expect(isRoutePlannerSnapshot({
+      ...withStop,
+      selectedStops: [{ ...stop, latitude: 91 }],
+    })).toBe(false);
+    expect(isRoutePlannerSnapshot({
+      ...withStop,
+      selectedStops: [{ ...stop, longitude: -181 }],
+    })).toBe(false);
+  });
 });

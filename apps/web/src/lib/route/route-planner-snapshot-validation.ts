@@ -8,7 +8,8 @@ import type {
   RoutePlannerSnapshot,
   RoutePlannerSnapshotGroup,
 } from "./route-calibration";
-import { isRouteGeometry } from "./route-geometry-validation";
+import { isCoordinate, isRouteGeometry } from "./route-geometry-validation";
+import { isRouteOperationalBudget } from "./route-operational-budget-contract";
 import { isPlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 export function isRoutePlannerSnapshot(
@@ -184,8 +185,7 @@ function isRoutePlannerSnapshotGroup(
     finiteNonNegative(group.travelBudgetMinutes) &&
     typeof group.withinBudget === "boolean" &&
     isRouteGeometry(group.routeGeometry) &&
-    (group.operationalBudget === null ||
-      Boolean(group.operationalBudget && typeof group.operationalBudget === "object"))
+    (group.operationalBudget === null || isRouteOperationalBudget(group.operationalBudget))
   );
 }
 
@@ -247,10 +247,7 @@ function isRouteStop(value: unknown): value is RouteStop {
   return (
     isNonEmptyString(stop.id) &&
     typeof stop.label === "string" &&
-    typeof stop.latitude === "number" &&
-    Number.isFinite(stop.latitude) &&
-    typeof stop.longitude === "number" &&
-    Number.isFinite(stop.longitude) &&
+    isCoordinate([stop.latitude, stop.longitude]) &&
     finiteNonNegative(stop.segmentKm) &&
     finiteNonNegative(stop.estimatedMinutes) &&
     typeof stop.priorityReason === "string" &&
