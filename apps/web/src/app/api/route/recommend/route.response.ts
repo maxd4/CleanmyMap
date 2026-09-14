@@ -36,6 +36,7 @@ import { buildCleanupWorkload } from "@/lib/route/route-cleanup-workload";
 import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 import type { RouteEventPressureContext, RouteCandidateData } from "./route.candidates";
 import type { RoutePlanningResult } from "./route.planning";
+import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 function buildStops(
   plannedStops: RoutePlanningResult["plannedStops"],
@@ -149,6 +150,7 @@ export function buildRouteRecommendationResponse(input: {
   groupCount: number;
   pickupPreference: RoutePickupPreference;
   operationalBudget?: RouteOperationalBudgetDependency;
+  weatherContext?: PlannerWeatherContext;
 }): NextResponse {
   const {
     origin,
@@ -163,6 +165,7 @@ export function buildRouteRecommendationResponse(input: {
     volunteers,
     groupCount,
     pickupPreference,
+    weatherContext,
   } = input;
   const { plannedStops, routeGeometry, plannerResult } = planning;
   const generatedAt = new Date().toISOString();
@@ -294,6 +297,7 @@ export function buildRouteRecommendationResponse(input: {
     pickupPreference,
     multiRoute: multiRouteTrace,
     operationalBudget,
+    weatherContext,
   });
   const dataLayers = resolveRouteDataLayers({
     observed: { candidateCount: candidates.length, isTruncated, sourceHealth },
@@ -370,6 +374,7 @@ export function buildRouteRecommendationResponse(input: {
       sourceHealth,
       prediction: predictionSummary,
       durationModelVersion: operationalBudget.durationModelVersion,
+      weatherContext,
     }),
   });
   const budgetRemainingMinutes = Math.max(
@@ -421,6 +426,7 @@ export function buildRouteRecommendationResponse(input: {
       generatedAt,
       engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
       calibrationContext,
+      ...(weatherContext ? { weatherContext } : {}),
       stops: [],
       prediction: predictionSummary,
       trace,
@@ -503,6 +509,7 @@ export function buildRouteRecommendationResponse(input: {
     generatedAt,
     engineVersion: ROUTE_PLANNER_ENGINE_VERSION,
     calibrationContext,
+    ...(weatherContext ? { weatherContext } : {}),
     stops,
     prediction: predictionSummary,
     trace,

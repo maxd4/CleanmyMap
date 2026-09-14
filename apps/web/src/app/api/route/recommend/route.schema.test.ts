@@ -102,6 +102,19 @@ describe("route recommendation HTTP request schema", () => {
     }
   });
 
+  it("accepts an optional local weather window without making it a route constraint", () => {
+    const parsed = parseRouteRecommendationRequest({
+      scheduledStartAt: "2026-09-15T10:00",
+      scheduledEndAt: "2026-09-15T12:00",
+    });
+
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.scheduledStartAt).toBe("2026-09-15T10:00");
+      expect(parsed.data.scheduledEndAt).toBe("2026-09-15T12:00");
+    }
+  });
+
   it("rejects group counts larger than the volunteer count and unsafe bounds", () => {
     expect(parseRouteRecommendationRequest({ volunteers: 2, groupCount: 3 }).success).toBe(false);
     expect(parseRouteRecommendationRequest({ volunteers: 0, groupCount: 1 }).success).toBe(false);

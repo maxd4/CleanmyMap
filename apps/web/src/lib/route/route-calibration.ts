@@ -34,6 +34,7 @@ import type { RoutePickupPreference } from "./route-pickup-preference";
 import type { RouteOperationalBudget } from "./route-operational-budget";
 import type { ActualRoute } from "./route-actual";
 import { isRoutePlannerSnapshot as validateRoutePlannerSnapshot } from "./route-planner-snapshot-validation";
+import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 export const ROUTE_CLEANUP_DURATION_CONTRACT_VERSION =
   "route-cleanup-duration-v1" as const;
@@ -134,6 +135,7 @@ export type RoutePlannerSnapshot = {
     sourceHealth: UnifiedSourceHealth;
     prediction: RoutePredictionSummary | null;
   };
+  weatherContext?: PlannerWeatherContext;
 };
 
 export type RouteCalibrationContext = {
@@ -364,6 +366,7 @@ export function buildRoutePlannerSnapshot(input: {
   sourceHealth: UnifiedSourceHealth;
   prediction: RoutePredictionSummary | null;
   durationModelVersion?: string | null;
+  weatherContext?: PlannerWeatherContext;
 }): RoutePlannerSnapshot {
   const selectedCandidates = input.selectedCandidates.map((candidate) =>
     structuredClone(candidate),
@@ -416,6 +419,9 @@ export function buildRoutePlannerSnapshot(input: {
       sourceHealth: structuredClone(input.sourceHealth),
       prediction: input.prediction ? structuredClone(input.prediction) : null,
     },
+    ...(input.weatherContext
+      ? { weatherContext: structuredClone(input.weatherContext) }
+      : {}),
   };
 }
 

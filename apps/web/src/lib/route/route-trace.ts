@@ -33,6 +33,7 @@ import {
   type CleanupWorkload,
 } from "./route-cleanup-workload";
 import type { RouteOperationalBudget } from "./route-operational-budget";
+import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 export type RouteTraceExclusionReason =
   | "not_admissible"
@@ -222,6 +223,7 @@ export type RouteRecommendationTrace = {
   prediction?: RoutePredictionSummary | null;
   finalRoutingReconciliation: RouteFinalRoutingReconciliation;
   multiRoute: RouteMultiRouteTrace | null;
+  weatherContext?: PlannerWeatherContext;
 };
 
 export type BuildRouteRecommendationTraceInput = {
@@ -249,6 +251,7 @@ export type BuildRouteRecommendationTraceInput = {
   groupCount?: number;
   multiRoute?: RouteMultiRouteTrace | null;
   operationalBudget?: RouteOperationalBudget;
+  weatherContext?: PlannerWeatherContext;
 };
 
 const EMPTY_EVENT_SIGNAL_CONTEXT: RouteEventSignalContext = {
@@ -594,5 +597,6 @@ export function buildRouteRecommendationTrace(
     prediction: input.predictionSummary ?? null,
     finalRoutingReconciliation,
     multiRoute: input.multiRoute ?? null,
+    ...(input.weatherContext ? { weatherContext: structuredClone(input.weatherContext) } : {}),
   };
 }

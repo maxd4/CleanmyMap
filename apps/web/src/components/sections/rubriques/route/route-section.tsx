@@ -12,6 +12,7 @@ import { RouteOptionsForm } from "./components/route-constraints-form";
 import { RouteAssistant } from "./components/route-assistant";
 import { RouteList } from "./components/route-list";
 import { RouteExplanation } from "./components/route-explanation";
+import { RouteWeatherSummary } from "./components/route-weather-summary";
 import { RouteEventSelector } from "./components/route-event-selector";
 import { RoutePdfExport } from "./components/route-pdf-export";
 import {
@@ -330,6 +331,10 @@ export function RouteSection() {
               {getRouteOriginLabel(data.origin.source, fr)}
             </p>
           )}
+
+          {data?.weatherContext ? (
+            <RouteWeatherSummary context={data.weatherContext} fr={fr} />
+          ) : null}
 
           <AnimatePresence mode="wait">
             {hasRoute && data && (

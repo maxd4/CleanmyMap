@@ -17,12 +17,12 @@ import { extractTerritoryLocationPreferenceFromMetadata } from "@/lib/user-locat
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { formatDateShort } from "@/components/sections/rubriques/helpers";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
+import { fetchOpenMeteoForecast } from "@/lib/weather/open-meteo-client";
 import {
   readStoredWeatherLocation,
   storeWeatherLocation,
 } from "./weather-location-storage";
 import type {
-  OpenMeteoResponse,
   WeatherDataStatus,
   WeatherLocation,
   WeatherLocationSuggestion,
@@ -180,29 +180,42 @@ export function useWeatherData() {
   const { data, isLoading, error } = useSWR(
     ["section-weather-location", selectedLocation.latitude, selectedLocation.longitude],
     async () => {
-      const query = new URLSearchParams({
-        latitude: String(selectedLocation.latitude),
-        longitude: String(selectedLocation.longitude),
+      return fetchOpenMeteoForecast({
+        latitude: selectedLocation.latitude,
+        longitude: selectedLocation.longitude,
         timezone: "Europe/Paris",
-        forecast_days: "7",
-        current:
-          "temperature_2m,precipitation,precipitation_probability,wind_speed_10m,uv_index,relative_humidity_2m,weather_code",
-        hourly:
-          "temperature_2m,precipitation,precipitation_probability,wind_speed_10m,relative_humidity_2m,uv_index,weather_code",
-        daily:
-          "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,uv_index_max,weather_code",
+        forecastDays: 7,
+        current: [
+          "temperature_2m",
+          "apparent_temperature",
+          "precipitation",
+          "precipitation_probability",
+          "wind_speed_10m",
+          "wind_gusts_10m",
+          "uv_index",
+          "relative_humidity_2m",
+          "weather_code",
+        ],
+        hourly: [
+          "temperature_2m",
+          "apparent_temperature",
+          "precipitation",
+          "precipitation_probability",
+          "wind_speed_10m",
+          "wind_gusts_10m",
+          "relative_humidity_2m",
+          "uv_index",
+          "weather_code",
+        ],
+        daily: [
+          "temperature_2m_max",
+          "temperature_2m_min",
+          "precipitation_sum",
+          "wind_speed_10m_max",
+          "uv_index_max",
+          "weather_code",
+        ],
       });
-
-      const response = await fetch(`https://api.open-meteo.com/v1/forecast?${query.toString()}`, {
-        cache: "no-store",
-        signal: AbortSignal.timeout(8_000),
-      });
-
-      if (!response.ok) {
-        throw new Error("weather_unavailable");
-      }
-
-      return (await response.json()) as OpenMeteoResponse;
     },
     swrRecentViewOptions,
   );

@@ -1,33 +1,6 @@
-export interface OpenMeteoResponse {
-  current?: {
-    temperature_2m?: number;
-    precipitation?: number;
-    precipitation_probability?: number;
-    wind_speed_10m?: number;
-    uv_index?: number;
-    relative_humidity_2m?: number;
-    weather_code?: number;
-  };
-  hourly?: {
-    time?: string[];
-    temperature_2m?: number[];
-    precipitation?: number[];
-    precipitation_probability?: number[];
-    wind_speed_10m?: number[];
-    relative_humidity_2m?: number[];
-    uv_index?: number[];
-    weather_code?: number[];
-  };
-  daily?: {
-    time?: string[];
-    temperature_2m_max?: number[];
-    temperature_2m_min?: number[];
-    precipitation_sum?: number[];
-    wind_speed_10m_max?: number[];
-    uv_index_max?: number[];
-    weather_code?: number[];
-  };
-}
+import type { OpenMeteoForecastResponse } from "@/lib/weather/open-meteo-client";
+
+export type OpenMeteoResponse = OpenMeteoForecastResponse;
 
 export type WeatherPeriod = "now" | "j13" | "j7";
 

@@ -1,3 +1,5 @@
+import { fetchOpenMeteoForecast } from "@/lib/weather/open-meteo-client";
+
 export type WeatherData = {
   temperature: number;
   windSpeed: number;
@@ -17,15 +19,23 @@ export type WeatherData = {
  * 95, 96, 99: Thunderstorm
  */
 export async function fetchCurrentWeather(lat: number, lng: number): Promise<WeatherData> {
-  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current_weather=true`;
-  
-  const response = await fetch(url);
-  if (!response.ok) throw new Error("Météo indisponible");
-  
-  const data = await response.json();
-  const current = data.current_weather;
-  const code = current.weathercode;
-  const wind = current.windspeed;
+  const data = await fetchOpenMeteoForecast({
+    latitude: lat,
+    longitude: lng,
+    forecastDays: 1,
+    current: [
+      "temperature_2m",
+      "precipitation",
+      "wind_speed_10m",
+      "weather_code",
+    ],
+  });
+  const current = data.current;
+  if (!current || current.temperature_2m == null || current.wind_speed_10m == null || current.weather_code == null) {
+    throw new Error("Météo indisponible");
+  }
+  const code = current.weather_code;
+  const wind = current.wind_speed_10m;
 
   const isRaining = code >= 51;
   const isWindy = wind > 25; // Speed in km/h
@@ -45,7 +55,7 @@ export async function fetchCurrentWeather(lat: number, lng: number): Promise<Wea
   }
 
   return {
-    temperature: current.temperature,
+    temperature: current.temperature_2m,
     windSpeed: wind,
     weatherCode: code,
     isRaining,

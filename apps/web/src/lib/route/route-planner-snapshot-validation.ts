@@ -11,6 +11,7 @@ import type {
   RoutePlannerSnapshot,
   RoutePlannerSnapshotGroup,
 } from "./route-calibration";
+import { isPlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 export function isRoutePlannerSnapshot(
   value: unknown,
@@ -29,7 +30,8 @@ export function isRoutePlannerSnapshot(
     isRouteGeometry(snapshot.geometry) &&
     Array.isArray(snapshot.groups) &&
     snapshot.groups.every(isRoutePlannerSnapshotGroup) &&
-    isRoutePlannerSnapshotProvenance(snapshot.provenance)
+    isRoutePlannerSnapshotProvenance(snapshot.provenance) &&
+    (snapshot.weatherContext === undefined || isPlannerWeatherContext(snapshot.weatherContext))
   );
 }
 

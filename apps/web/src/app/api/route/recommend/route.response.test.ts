@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { RouteRecommendationResponse } from "@/lib/route/route-response-contract";
 import type { RouteGroupPartitionResult } from "@/lib/route/route-group-partition";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
+import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import { buildRouteRecommendationResponse } from "./route.response";
 
 const resolveRouteDataLayersMock = vi.hoisted(() => vi.fn());
@@ -275,6 +276,39 @@ function installDefaultMocks() {
 }
 
 describe("route recommendation response trace contract", () => {
+  it("carries the forecast snapshot through response, trace and planner snapshot", async () => {
+    installDefaultMocks();
+    const weatherContext: PlannerWeatherContext = {
+      version: "planner-weather-snapshot-v1",
+      provider: "open-meteo",
+      source: "forecast",
+      fetchedAt: "2026-09-14T08:00:00.000Z",
+      coveredWindow: {
+        startAt: "2026-09-15T10:00",
+        endAt: "2026-09-15T12:00",
+      },
+      status: "available",
+      weatherStatus: "available",
+      location: { latitude: 48.85, longitude: 2.35, timezone: "Europe/Paris" },
+      hourly: [],
+      summary: {
+        temperatureC: 20,
+        apparentTemperatureC: 20,
+        precipitationMm: 0,
+        precipitationProbabilityPct: 10,
+        windKmh: 12,
+        gustKmh: 20,
+        weatherCode: 1,
+      },
+    };
+    const response = buildRouteRecommendationResponse(responseInput({ weatherContext }));
+    const payload: RouteRecommendationResponse = await response.json();
+
+    expect(payload.weatherContext).toEqual(weatherContext);
+    expect(payload.trace.weatherContext).toEqual(weatherContext);
+    expect(payload.calibrationContext?.plannerSnapshot?.weatherContext).toEqual(weatherContext);
+  });
+
   it("returns a trace and aligned data layers for an empty response", async () => {
     installDefaultMocks();
     const response = buildRouteRecommendationResponse(responseInput());

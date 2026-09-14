@@ -31,6 +31,16 @@ export const routeRecommendationRequestSchema = z
       .default("balanced"),
     volunteers: z.number().int().min(1).max(MAX_ROUTE_VOLUNTEERS).default(1),
     groupCount: z.number().int().min(1).max(MAX_ROUTE_GROUP_COUNT).default(1),
+    scheduledStartAt: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "Use a local datetime without seconds.")
+      .or(z.literal(""))
+      .optional(),
+    scheduledEndAt: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "Use a local datetime without seconds.")
+      .or(z.literal(""))
+      .optional(),
   })
   .strip()
   .superRefine((value, context) => {
