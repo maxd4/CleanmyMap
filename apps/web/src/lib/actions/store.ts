@@ -49,7 +49,7 @@ import {
   resolveActionDepartmentForPersistence,
   resolveTrustedActionDepartmentForPersistence,
 } from "@/lib/geo/action-department-resolver";
-import { isPublishedFuturePreAction } from "./temporal";
+import { getActionParisDate, isPublishedFuturePreAction } from "./temporal";
 
 const ACTION_BASE_SELECT_FIELDS = [
   "id",
@@ -179,7 +179,7 @@ function buildActionListQuery(
   }
 
   if (params.includeFuturePublicActions && params.status === "approved") {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getActionParisDate();
     nextQuery = nextQuery.or(
       `and(status.eq.approved,action_phase.neq.pre_action),and(action_phase.eq.pre_action,published_at.not.is.null,status.in.(approved,pending),action_date.gte.${today})`,
     );

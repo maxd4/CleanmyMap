@@ -25,23 +25,43 @@ type ActionRow = {
   published_at?: string | null;
 };
 
+const TEST_NOW = new Date("2026-06-01T09:00:00.000Z");
+
 function createActionsChain(actions: ActionRow[]) {
   const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn(() => chain),
     in: vi.fn(() => chain),
+    not: vi.fn(() => chain),
+    gte: vi.fn(() => chain),
     order: vi.fn(() => chain),
     limit: vi.fn(async () => ({
       data: actions
         .filter((action) => action.moderation_visibility !== "hidden")
-        .map((action) => ({ ...action, published_at: action.published_at ?? "2026-01-01T00:00:00.000Z" })),
+        .map((action) => ({
+          ...action,
+          moderation_visibility: action.moderation_visibility ?? "visible",
+          published_at:
+            action.published_at === undefined
+              ? "2026-01-01T00:00:00.000Z"
+              : action.published_at,
+        })),
       error: null,
     })),
     maybeSingle: vi.fn(async () => ({
       data:
         (() => {
           const action = actions.find((candidate) => candidate.moderation_visibility !== "hidden");
-          return action ? { ...action, published_at: action.published_at ?? "2026-01-01T00:00:00.000Z" } : null;
+          return action
+            ? {
+                ...action,
+                moderation_visibility: action.moderation_visibility ?? "visible",
+                published_at:
+                  action.published_at === undefined
+                    ? "2026-01-01T00:00:00.000Z"
+                    : action.published_at,
+              }
+            : null;
         })() ??
         null,
       error: null,
@@ -53,7 +73,14 @@ function createActionsChain(actions: ActionRow[]) {
       Promise.resolve({
         data: actions
           .filter((action) => action.moderation_visibility !== "hidden")
-          .map((action) => ({ ...action, published_at: action.published_at ?? "2026-01-01T00:00:00.000Z" })),
+          .map((action) => ({
+            ...action,
+            moderation_visibility: action.moderation_visibility ?? "visible",
+            published_at:
+              action.published_at === undefined
+                ? "2026-01-01T00:00:00.000Z"
+                : action.published_at,
+          })),
         error: null,
       }).then(resolve, reject),
   };
@@ -125,27 +152,42 @@ describe("group participation fallback handling", () => {
     expect(
       isVisibleInGroupForms(
         {
+          action_date: "2026-06-10",
+          event_start_time: null,
           action_phase: "pre_action",
+          status: "pending",
+          moderation_visibility: "visible",
           published_at: "2026-01-01T00:00:00.000Z",
         },
         { groupJoinEnabled: true },
+        TEST_NOW,
       ),
     ).toBe(true);
     expect(
       isVisibleInGroupForms(
         {
+          action_date: "2026-06-10",
+          event_start_time: null,
           action_phase: "pre_action",
+          status: "pending",
+          moderation_visibility: "visible",
           published_at: "2026-01-01T00:00:00.000Z",
         },
         { groupJoinEnabled: false },
+        TEST_NOW,
       ),
     ).toBe(false);
     expect(
       isVisibleInGroupForms(
         {
+          action_date: "2026-06-10",
+          event_start_time: null,
           action_phase: "post_action_complete",
+          status: "approved",
+          moderation_visibility: "visible",
         },
         { groupJoinEnabled: true },
+        TEST_NOW,
       ),
     ).toBe(false);
   });
@@ -219,6 +261,7 @@ describe("group participation fallback handling", () => {
     const items = await loadJoinableActions(supabase, {
       limit: 8,
       userId: null,
+      now: TEST_NOW,
     });
 
     expect(items).toHaveLength(1);
@@ -261,6 +304,7 @@ describe("group participation fallback handling", () => {
     const items = await loadJoinableActions(supabase, {
       limit: 8,
       userId: null,
+      now: TEST_NOW,
     });
 
     expect(items.map((item) => item.id)).toEqual(["action-2"]);
@@ -299,9 +343,81 @@ describe("group participation fallback handling", () => {
     const items = await loadJoinableActions(supabase, {
       limit: 8,
       userId: null,
+      now: TEST_NOW,
     });
 
     expect(items.map((item) => item.id)).toEqual(["action-visible"]);
+  });
+
+  it("requires every public-future and joinability condition", async () => {
+    const supabase = createSupabaseMock({
+      actions: [
+        {
+          id: "future-approved",
+          created_at: "2026-06-01T10:00:00Z",
+          action_date: "2026-06-10",
+          location_label: "Parc Nord",
+          volunteers_count: 12,
+          duration_minutes: 45,
+          status: "approved",
+          action_phase: "pre_action",
+          notes: appendActionMetadataToNotes("Ouverte", { groupJoinEnabled: true }),
+        },
+        {
+          id: "past",
+          created_at: "2026-06-01T10:00:00Z",
+          action_date: "2026-05-31",
+          location_label: "Passée",
+          volunteers_count: 4,
+          duration_minutes: 30,
+          status: "approved",
+          action_phase: "pre_action",
+          notes: appendActionMetadataToNotes("Fermée", { groupJoinEnabled: true }),
+        },
+        {
+          id: "rejected",
+          created_at: "2026-06-01T10:00:00Z",
+          action_date: "2026-06-11",
+          location_label: "Rejetée",
+          volunteers_count: 4,
+          duration_minutes: 30,
+          status: "rejected",
+          action_phase: "pre_action",
+          notes: appendActionMetadataToNotes("Rejetée", { groupJoinEnabled: true }),
+        },
+        {
+          id: "unpublished",
+          created_at: "2026-06-01T10:00:00Z",
+          action_date: "2026-06-12",
+          location_label: "Privée",
+          volunteers_count: 4,
+          duration_minutes: 30,
+          status: "approved",
+          action_phase: "pre_action",
+          published_at: null,
+          notes: appendActionMetadataToNotes("Privée", { groupJoinEnabled: true }),
+        },
+        {
+          id: "closed-form",
+          created_at: "2026-06-01T10:00:00Z",
+          action_date: "2026-06-13",
+          location_label: "Fermée",
+          volunteers_count: 4,
+          duration_minutes: 30,
+          status: "approved",
+          action_phase: "pre_action",
+          notes: appendActionMetadataToNotes("Fermée", { groupJoinEnabled: false }),
+        },
+      ],
+    });
+
+    const items = await loadJoinableActions(supabase, {
+      limit: 8,
+      userId: null,
+      now: TEST_NOW,
+    });
+
+    expect(items.map((item) => item.id)).toEqual(["future-approved"]);
   });
 
   it("does not bypass publication rules when a hidden action is targeted directly", async () => {
@@ -336,6 +452,7 @@ describe("group participation fallback handling", () => {
       limit: 8,
       userId: null,
       actionId: "action-1",
+      now: TEST_NOW,
     });
 
     expect(items).toHaveLength(1);

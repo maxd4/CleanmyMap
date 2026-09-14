@@ -36,6 +36,7 @@ export type ActionPreviewRow = Pick<
   | "notes"
   | "action_phase"
   | "published_at"
+  | "event_start_time"
 >;
 
 export type ActionParticipantRecordRow = Pick<
@@ -74,8 +75,9 @@ export type ActionParticipantReviewRow = Pick<
 };
 
 const ACTION_PREVIEW_COLUMNS =
-  "id, created_at, action_date, location_label, volunteers_count, duration_minutes, status, moderation_visibility, notes, action_phase, published_at";
-const ACTION_PARTICIPATION_COLUMNS = "status, moderation_visibility, notes, published_at";
+  "id, created_at, action_date, event_start_time, location_label, volunteers_count, duration_minutes, status, moderation_visibility, notes, action_phase, published_at";
+const ACTION_PARTICIPATION_COLUMNS =
+  "status, moderation_visibility, notes, published_at, action_phase, action_date, event_start_time";
 
 export type JoinableActionMetadata = {
   groupJoinEnabled: boolean;
