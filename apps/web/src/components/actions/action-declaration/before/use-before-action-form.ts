@@ -99,7 +99,7 @@ export function useBeforeActionForm({
   }, []);
 
   const shareLink = createdId
-    ? `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(createdId)}`
+    ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(createdId)}`
     : null;
   const summaryNote = useMemo(() => buildPreActionSummaryNote(form), [form]);
 

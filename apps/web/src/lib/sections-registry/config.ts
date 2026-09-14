@@ -148,13 +148,13 @@ export const RUBRIQUE_REGISTRY = [
     implementation: "finalized",
   },
   {
-    id: "rejoindre-un-formulaire",
+    id: "rejoindre-une-action",
     categoryId: "terrain",
     spaceId: "execute",
     priority: 12,
     kind: "section",
-    route: "/sections/rejoindre-un-formulaire",
-    label: { fr: "Rejoindre un formulaire", en: "Join a form" },
+    route: "/sections/rejoindre-une-action",
+    label: { fr: "Rejoindre une action", en: "Join an action" },
     description: {
       fr: "Architecture de départ pour rejoindre une action de groupe",
       en: "Starting architecture for joining a group action",

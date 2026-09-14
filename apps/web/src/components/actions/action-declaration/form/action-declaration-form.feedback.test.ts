@@ -47,14 +47,14 @@ describe("ActionDeclarationFormFeedback", () => {
         hasAttemptedSubmit: false,
         validationIssues: [],
         retentionLoop: null,
-        groupJoinHref: "/sections/rejoindre-un-formulaire?actionId=action-123",
+        groupJoinHref: "/sections/rejoindre-une-action?actionId=action-123",
         showGroupInvite: true,
       }),
     );
 
     expect(markup).toContain("Créer un formulaire");
     expect(markup).toContain("Cette action pourra être rejointe après validation.");
-    expect(markup).toContain("/sections/rejoindre-un-formulaire?actionId=action-123");
+    expect(markup).toContain("/sections/rejoindre-une-action?actionId=action-123");
     expect(markup).toContain("Copier le lien");
     expect(markup).toContain("Aucun impact ou bonus n&#x27;est affiché sans preuve enregistrée.");
   });
@@ -68,7 +68,7 @@ describe("ActionDeclarationFormFeedback", () => {
         hasAttemptedSubmit: false,
         validationIssues: [],
         retentionLoop: null,
-        groupJoinHref: "/sections/rejoindre-un-formulaire?actionId=action-123",
+        groupJoinHref: "/sections/rejoindre-une-action?actionId=action-123",
         showGroupInvite: true,
         isAutoApprovedSubmission: true,
       }),

@@ -17,7 +17,7 @@
 - **Identité structurée** : `organizerType` est le type canonique de structure, distinct du nom de l'organisateur ou du référent. Les valeurs publiques sont `Action spontanée`, `Entreprise`, `Association`, `Association étudiante`, `Collectif` et `Autre`. `associationName` reste conservé temporairement pour compatibilité avec les rapports et exports existants.
 - **Catalogue de structures** : le champ `associationName` est filtré par `organizerType` depuis `apps/web/src/lib/actions/association-options.ts`. Une action spontanée fixe `associationName = "Action spontanée"` sans sélecteur; les entreprises proposent le catalogue connu et une saisie libre, tandis que les autres types ne proposent que leurs structures canoniques. Les valeurs legacy restent lisibles et les noms d'entreprise libres conservent le format `Entreprise - <nom>`.
 - **Participants** : `volunteersCount` décrit le nombre de participants à l'action et ne doit pas être déduit de `organizerType`, qui décrit uniquement le cadre de l'organisateur.
-- **Contrat de publication** : le pré-formulaire reste fermé par défaut ; seule une publication explicite via `groupJoinEnabled = true` permet son affichage dans la page Formulaire de groupe. Les champs de récolte finale restent exclus de ce parcours.
+- **Contrat de publication** : le pré-formulaire reste fermé par défaut ; seule une publication explicite via `groupJoinEnabled = true` permet son affichage dans la page Rejoindre une action. Les champs de récolte finale restent exclus de ce parcours.
 - **Palette attendue** : emerald
 - **Scope** : point d'entrée nettoyé, métier des formulaires conservé
 - **Statut de finition UI** : terminé pour le contrat du point d'entrée; la page reste protégée
@@ -79,7 +79,7 @@
 - La masse de déchets saisie reste la mesure déclarée. `estimateWasteKg()` fournit seulement un repère indicatif séparé, sans pénaliser une valeur qui s'en écarte.
 - La confirmation conserve les mesures déclarées séparément des proxys d'impact. Les proxys affichés réutilisent `computeActionImpactKpis()`; aucune quantité de plastique n'est déduite du poids total sans donnée dédiée.
 - Les statuts, anomalies et provenances du contrat de données restent définis par `apps/web/src/lib/actions/quality/data-quality.ts`; la revue locale ne les duplique pas.
-- Le parcours avant action crée un pré-formulaire léger, visible ensuite dans la page Formulaire de groupe uniquement s'il est explicitement publié.
+- Le parcours avant action crée un pré-formulaire léger, visible ensuite dans la page Rejoindre une action uniquement s'il est explicitement publié.
 - Les membres ajoutés avant publication sont conservés dans `participantAccounts` puis synchronisés en tant que participations `manual_add`.
 - Les champs de récolte, de validation finale et les calculs d'impact restent réservés au formulaire après action.
 - Le formulaire complet réutilise les données communes et n'expose plus le contrôle de publication du groupe.

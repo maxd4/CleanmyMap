@@ -240,7 +240,7 @@ export function ActionPopupContentBody({
               size="sm"
               className="min-h-9 max-w-full px-3 text-[10px] font-black uppercase tracking-[0.12em]"
             >
-              Rejoindre un formulaire
+              Rejoindre une action
             </CmmButton>
           ) : joinStatusLabel ? (
             <div className="w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-center dark:border-slate-700 dark:bg-slate-800/60">

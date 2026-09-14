@@ -39,10 +39,12 @@ export const PAGE_FAMILY_ROUTE_EXCEPTIONS: PageFamilyRouteException[] = [
     familyId: "agir",
   },
   {
-    id: "join-group-form",
+    id: "join-action",
     note:
-      "Formulaire de groupe rattaché au bloc Agir.",
+      "Surface de jonction des actions futures et de lecture des actions passées, rattachée au bloc Agir.",
     match: (pathname) =>
+      pathname === "/sections/rejoindre-une-action" ||
+      pathname.startsWith("/sections/rejoindre-une-action/") ||
       pathname === "/sections/rejoindre-un-formulaire" ||
       pathname.startsWith("/sections/rejoindre-un-formulaire/"),
     familyId: "agir",

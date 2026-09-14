@@ -42,6 +42,7 @@ export const CLERK_CONTEXT_ROUTE_PREFIXES = [
   "/signalement",
   "/partners/network",
   "/sections/annuaire",
+  "/sections/rejoindre-une-action",
   "/sections/rejoindre-un-formulaire",
   "/sections/community",
 ] as const;
@@ -270,6 +271,7 @@ export const config = {
     "/signalement(.*)",
     "/partners/network(.*)",
     "/sections/annuaire(.*)",
+    "/sections/rejoindre-une-action(.*)",
     "/sections/rejoindre-un-formulaire(.*)",
     "/sections/community(.*)",
     "/api/account(.*)",

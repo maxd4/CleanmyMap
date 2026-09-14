@@ -10,10 +10,11 @@ import { JoinFormSidebar } from "./rejoindre-un-formulaire-section.sidebar";
 import { HeroIllustration } from "./rejoindre-un-formulaire-section.shared";
 import { JoinFormConfirmationDialog } from "./rejoindre-un-formulaire-section-dialog";
 import { useJoinFormSectionController } from "./rejoindre-un-formulaire-section.controller";
-import { FutureActionsPanel } from "./rejoindre-un-formulaire-section.future-actions";
+import { PastActionsPanel } from "./rejoindre-une-action.past-actions";
+import { buildJoinActionTabHref } from "@/lib/sections/join-action-routes";
 import { ChatActionShareDialog } from "@/components/chat/chat-action-share-dialog";
 
-export function JoinFormSection() {
+export function JoinActionSection() {
   const controller = useJoinFormSectionController();
   const [shareActionId, setShareActionId] = useState<string | null>(null);
   const {
@@ -27,7 +28,7 @@ export function JoinFormSection() {
   } = controller;
 
   return (
-    <SectionShell id="rejoindre-un-formulaire" hideHeader gradient="from-emerald-500/18 via-emerald-500/6 to-transparent">
+    <SectionShell id="rejoindre-une-action" hideHeader gradient="from-emerald-500/18 via-emerald-500/6 to-transparent">
       <div className="space-y-6 pt-4 text-slate-900">
         <section className="overflow-hidden rounded-[2.1rem] border border-emerald-100 bg-[linear-gradient(180deg,#f8fbf5_0%,#edf7e6_100%)] shadow-[0_20px_56px_-42px_rgba(15,23,42,0.28)]">
           <div className="grid gap-4 px-5 py-3.5 md:px-6 md:py-4 lg:grid-cols-[minmax(0,1.12fr)_minmax(260px,0.88fr)] lg:items-center">
@@ -38,15 +39,15 @@ export function JoinFormSection() {
                   {fr ? "Agir" : "Act"}
                 </Link>
                 <ChevronRight size={14} className="text-slate-300" />
-                <span>{fr ? "Formulaire de groupe" : "Group form"}</span>
+                <span>{fr ? "Rejoindre une action" : "Join an action"}</span>
               </div>
 
               <PageHeader
-                title={fr ? "Rejoindre un formulaire de groupe" : "Join a group form"}
+                title={fr ? "Rejoindre une action" : "Join an action"}
                 subtitle={
                   fr
-                    ? "Participez à des pré-formulaires ouverts et consultez séparément les déclarations terminées."
-                    : "Join open pre-forms and keep completed declarations separate."
+                    ? "Rejoignez une action future ou consultez les résultats publics des actions terminées."
+                    : "Join a future action or review public results from completed actions."
                 }
               />
 
@@ -54,7 +55,7 @@ export function JoinFormSection() {
                 <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
                   <CheckCircle2 size={12} />
                 </span>
-                {fr ? "Pré-formulaires en attente de bénévoles" : "Pre-forms waiting for volunteers"}
+                {fr ? "Actions futures et passées" : "Future and past actions"}
               </div>
             </div>
 
@@ -64,18 +65,32 @@ export function JoinFormSection() {
           </div>
         </section>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
-          <JoinFormExplorer {...controller} />
+      <nav aria-label={fr ? "Onglets des actions" : "Action tabs"} className="flex flex-wrap gap-2 rounded-2xl border border-emerald-100 bg-white p-2 shadow-sm">
+        {(["future", "past"] as const).map((tab) => (
+          <Link
+            key={tab}
+            href={buildJoinActionTabHref(tab, controller.focusActionId)}
+            aria-current={controller.activeTab === tab ? "page" : undefined}
+            className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${controller.activeTab === tab ? "bg-emerald-700 text-white shadow-sm" : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-900"}`}
+          >
+            {tab === "future" ? (fr ? "Actions futures" : "Future actions") : (fr ? "Actions passées" : "Past actions")}
+          </Link>
+        ))}
+      </nav>
+
+      {controller.activeTab === "future" ? (
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]">
+          <JoinFormExplorer {...controller} onShareAction={setShareActionId} />
           <JoinFormSidebar {...controller} />
         </div>
-        <FutureActionsPanel
-          items={controller.futureItems}
-          loading={controller.futureLoading}
-          error={controller.futureError}
-          authenticated={controller.authenticated}
+      ) : (
+        <PastActionsPanel
+          items={controller.pastItems}
+          loading={controller.pastLoading}
+          error={controller.pastError}
           fr={controller.fr}
-          onShareAction={setShareActionId}
         />
+      )}
       </div>
 
       {shareActionId ? <ChatActionShareDialog actionId={shareActionId} onClose={() => setShareActionId(null)} /> : null}
@@ -96,3 +111,5 @@ export function JoinFormSection() {
     </SectionShell>
   );
 }
+
+export const JoinFormSection = JoinActionSection;

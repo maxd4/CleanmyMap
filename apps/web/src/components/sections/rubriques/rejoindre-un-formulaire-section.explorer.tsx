@@ -7,7 +7,6 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import type { useJoinFormSectionController } from "./rejoindre-un-formulaire-section.controller";
 import { ActionCard, FilterField } from "./rejoindre-un-formulaire-section.shared";
 import { JoinFormPublicQueue } from "./rejoindre-un-formulaire-section-public-queue";
-import { sortItemsByStatusRank } from "./rejoindre-un-formulaire-section.utils";
 import { formatCount } from "./rejoindre-un-formulaire-section.format";
 import type { LocationFilter, PeriodFilter, StatusFilter } from "./rejoindre-un-formulaire-section.controller";
 import type { JoinableActionSort } from "./rejoindre-un-formulaire-section.utils";
@@ -19,26 +18,29 @@ type ExplorerProps = Pick<ControllerState,
   | "periodFilter" | "setPeriodFilter" | "statusFilter" | "setStatusFilter"
   | "sort" | "setSort" | "preActionVisibleItems" | "resetFilters"
   | "loading" | "error" | "reloadActions" | "hasItems" | "hasVisibleItems"
-  | "completedVisibleItems" | "authenticated" | "joiningId" | "leavingId"
+  | "authenticated" | "joiningId" | "leavingId"
   | "requestJoin" | "requestLeave" | "noResultsMessage" | "notice"
   | "queueRequests" | "queueConfirmedParticipants" | "queueLoading" | "queueError"
   | "queueCanReview" | "reviewingQueueId" | "addingQueueParticipantId"
   | "queueSearchQuery" | "queueSearchResults" | "queueSearchLoading"
   | "queueSearchError" | "setQueueSearchQuery" | "reviewQueueRequest"
   | "addQueueParticipant"
->;
+> & {
+  onShareAction?: (actionId: string) => void;
+};
 
 export function JoinFormExplorer(props: ExplorerProps) {
   const {
     fr, search, setSearch, locationFilter, setLocationFilter, periodFilter,
     setPeriodFilter, statusFilter, setStatusFilter, sort, setSort,
     preActionVisibleItems, resetFilters, loading, error, reloadActions, hasItems,
-    hasVisibleItems, completedVisibleItems, authenticated, joiningId, leavingId,
+    hasVisibleItems, authenticated, joiningId, leavingId,
     requestJoin, requestLeave, noResultsMessage, notice, queueRequests,
     queueConfirmedParticipants, queueLoading, queueError, queueCanReview,
     reviewingQueueId, addingQueueParticipantId, queueSearchQuery,
     queueSearchResults, queueSearchLoading, queueSearchError, setQueueSearchQuery,
     reviewQueueRequest, addQueueParticipant,
+    onShareAction,
   } = props;
 
   return (
@@ -107,7 +109,7 @@ export function JoinFormExplorer(props: ExplorerProps) {
             onChange={(event) => setSort(event.target.value as JoinableActionSort)}
             className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
           >
-            <option value="soonest">{fr ? "Date (plus récente)" : "Date (soonest)"}</option>
+            <option value="soonest">{fr ? "Date (la plus proche)" : "Date (soonest)"}</option>
             <option value="latest">{fr ? "Date (plus lointaine)" : "Date (latest)"}</option>
             <option value="participants-desc">{fr ? "Plus de bénévoles" : "Most volunteers"}</option>
             <option value="participants-asc">{fr ? "Moins de bénévoles" : "Fewest volunteers"}</option>
@@ -122,16 +124,16 @@ export function JoinFormExplorer(props: ExplorerProps) {
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-[2rem] font-black tracking-tight text-emerald-950 md:text-[2.15rem]">
-            {fr ? "Pré-formulaires de groupe" : "Group pre-forms"}
+            {fr ? "Actions futures" : "Future actions"}
           </h2>
           <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800">
-            {`${formatCount(preActionVisibleItems.length)} pré-formulaires`}
+            {`${formatCount(preActionVisibleItems.length)} actions`}
           </span>
         </div>
         <p className="text-sm text-slate-500">
           {fr
-            ? "Les pré-formulaires restent séparés des déclarations terminées. Les bénévoles rejoignent ici les actions à venir."
-            : "Pre-forms stay separate from completed declarations. Volunteers join upcoming actions here."}
+            ? "Les actions futures sont publiées et ouvertes à la participation. Les résultats restent réservés à l'onglet des actions passées."
+            : "Published future actions are open for participation. Results stay in the past actions tab."}
         </p>
       </div>
       {(search || statusFilter !== "all" || locationFilter !== "all" || periodFilter !== "all" || sort !== "soonest") && (
@@ -152,7 +154,7 @@ export function JoinFormExplorer(props: ExplorerProps) {
           <div className="flex items-center gap-3 text-emerald-800">
             <Loader2 size={16} className="animate-spin" />
             <p className="text-sm font-semibold">
-              {fr ? "Chargement des pré-formulaires..." : "Loading pre-forms..."}
+              {fr ? "Chargement des actions futures..." : "Loading future actions..."}
             </p>
           </div>
         </div>
@@ -175,8 +177,8 @@ export function JoinFormExplorer(props: ExplorerProps) {
         <div className="rounded-[1.1rem] border border-dashed border-emerald-200 bg-white px-4 py-4 shadow-[0_16px_36px_-30px_rgba(15,23,42,0.18)]">
           <p className="text-sm font-bold text-slate-900">
             {fr
-              ? "Aucun pré-formulaire n'est disponible pour le moment."
-              : "No pre-form is available right now."}
+              ? "Aucune action future rejoignable n'est disponible pour le moment."
+              : "No joinable future action is available right now."}
           </p>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
             {fr
@@ -185,7 +187,7 @@ export function JoinFormExplorer(props: ExplorerProps) {
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <CmmButton href="/actions/new" tone="primary" variant="pill">
-              {fr ? "Créer un pré-formulaire" : "Create a pre-form"}
+              {fr ? "Créer une action" : "Create an action"}
             </CmmButton>
             <CmmButton href="/actions/new" tone="secondary" variant="pill">
               {fr ? "Déclarer avant l'action" : "Declare before action"}
@@ -200,7 +202,7 @@ export function JoinFormExplorer(props: ExplorerProps) {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="space-y-1">
                 <h3 className="text-sm font-black uppercase tracking-[0.18em] text-emerald-900">
-                  {fr ? "Pré-formulaires ouverts" : "Open pre-forms"}
+                  {fr ? "Actions futures ouvertes" : "Open future actions"}
                 </h3>
                 <p className="text-xs leading-relaxed text-slate-500">
                   {fr
@@ -215,7 +217,7 @@ export function JoinFormExplorer(props: ExplorerProps) {
 
             {preActionVisibleItems.length > 0 ? (
               <div className="space-y-4">
-                {sortItemsByStatusRank(preActionVisibleItems).map((item, index) => (
+                {preActionVisibleItems.map((item, index) => (
                   <ActionCard
                     key={item.id}
                     item={item}
@@ -226,53 +228,18 @@ export function JoinFormExplorer(props: ExplorerProps) {
                     leaving={leavingId === item.id}
                     onRequestJoin={requestJoin}
                     onRequestLeave={requestLeave}
+                    onShareAction={onShareAction}
                   />
                 ))}
               </div>
             ) : (
               <div className="rounded-[1.1rem] border border-dashed border-emerald-200 bg-white px-4 py-4 text-sm leading-relaxed text-slate-600 shadow-[0_16px_36px_-30px_rgba(15,23,42,0.18)]">
                 {fr
-                  ? "Aucun pré-formulaire n'est ouvert pour le moment."
-                  : "No pre-form is open right now."}
+                  ? "Aucune action future n'est ouverte pour le moment."
+                  : "No future action is open right now."}
               </div>
             )}
           </section>
-
-          {completedVisibleItems.length > 0 ? (
-            <section className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <h3 className="text-sm font-black uppercase tracking-[0.18em] text-slate-700">
-                    {fr ? "Déclarations complétées" : "Completed declarations"}
-                  </h3>
-                  <p className="text-xs leading-relaxed text-slate-500">
-                    {fr
-                      ? "Ces formulaires ont déjà été passés au flux complet."
-                      : "These forms have already moved to the complete flow."}
-                  </p>
-                </div>
-                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-700">
-                  {formatCount(completedVisibleItems.length)}
-                </span>
-              </div>
-
-              <div className="space-y-4">
-                {sortItemsByStatusRank(completedVisibleItems).map((item, index) => (
-                  <ActionCard
-                    key={item.id}
-                    item={item}
-                    index={index}
-                    fr={fr}
-                    authenticated={authenticated}
-                    joining={joiningId === item.id}
-                    leaving={leavingId === item.id}
-                    onRequestJoin={requestJoin}
-                    onRequestLeave={requestLeave}
-                  />
-                ))}
-              </div>
-            </section>
-          ) : null}
 
           {(search || statusFilter !== "all" || locationFilter !== "all" || periodFilter !== "all" || sort !== "soonest") && (
             <div className="rounded-[1.1rem] border border-slate-200 bg-white/90 px-4 py-3 text-center shadow-[0_16px_32px_-26px_rgba(15,23,42,0.22)]">

@@ -4,8 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { useJoinFormSectionActions } from "./rejoindre-un-formulaire-section.controller.actions";
-import { fetchActions } from "@/lib/actions/http";
-import type { ActionListItem } from "@/lib/actions/types";
 import { useJoinFormSectionQueue } from "./rejoindre-un-formulaire-section.controller.queue";
 import { getActionDisplayStatus } from "./rejoindre-un-formulaire-section.status";
 import {
@@ -16,6 +14,14 @@ import {
   type LocationFilter,
   type PeriodFilter,
 } from "./rejoindre-un-formulaire-section.utils";
+import { fetchActions } from "@/lib/actions/http";
+import type { ActionListItem } from "@/lib/actions/types";
+import {
+  isPastPublicAction,
+  resolveJoinActionTab,
+  sortPastActions,
+  type JoinActionTab,
+} from "./rejoindre-une-action.model";
 
 export type { LocationFilter, PeriodFilter } from "./rejoindre-un-formulaire-section.utils";
 export { getLocationFilterBucket, isWithinPeriod, sortItemsByStatusRank } from "./rejoindre-un-formulaire-section.utils";
@@ -30,17 +36,18 @@ export function useJoinFormSectionController() {
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
   const [sort, setSort] = useState<JoinableActionSort>("soonest");
   const [search, setSearch] = useState("");
-  const [futureItems, setFutureItems] = useState<ActionListItem[]>([]);
-  const [futureLoading, setFutureLoading] = useState(true);
-  const [futureError, setFutureError] = useState<string | null>(null);
+  const [pastItems, setPastItems] = useState<ActionListItem[]>([]);
+  const [pastLoading, setPastLoading] = useState(true);
+  const [pastError, setPastError] = useState<string | null>(null);
   const [queueReloadAction, setQueueReloadAction] = useState<{ actionId: string; version: number } | null>(null);
   const focusActionId = searchParams.get("actionId")?.trim() || null;
+  const activeTab: JoinActionTab = resolveJoinActionTab(searchParams.get("tab"));
 
   const listUrl = useMemo(() => {
     const params = new URLSearchParams({ limit: "24", historyLimit: "12" });
-    if (focusActionId) params.set("actionId", focusActionId);
+    if (activeTab === "future" && focusActionId) params.set("actionId", focusActionId);
     return `/api/actions/group-join?${params.toString()}`;
-  }, [focusActionId]);
+  }, [activeTab, focusActionId]);
 
   const actions = useJoinFormSectionActions({
     fr,
@@ -54,17 +61,17 @@ export function useJoinFormSectionController() {
 
   useEffect(() => {
     let active = true;
-    void fetchActions({ futureOnly: true, types: "action", limit: 24 })
+    void fetchActions({ status: "approved", types: "action", limit: 48 })
       .then((result) => {
         if (!active) return;
-        setFutureItems(result.items);
-        setFutureError(null);
+        setPastItems(sortPastActions(result.items.filter((item) => isPastPublicAction(item))));
+        setPastError(null);
       })
       .catch(() => {
-        if (active) setFutureError(fr ? "Les actions futures sont temporairement indisponibles." : "Future actions are temporarily unavailable.");
+        if (active) setPastError(fr ? "Les actions passées sont temporairement indisponibles." : "Past actions are temporarily unavailable.");
       })
       .finally(() => {
-        if (active) setFutureLoading(false);
+        if (active) setPastLoading(false);
       });
     return () => {
       active = false;
@@ -105,10 +112,6 @@ export function useJoinFormSectionController() {
     () => visibleItems.filter((item) => item.actionPhase === "pre_action"),
     [visibleItems],
   );
-  const completedVisibleItems = useMemo(
-    () => visibleItems.filter((item) => item.actionPhase !== "pre_action"),
-    [visibleItems],
-  );
   const activeParticipationItems = useMemo(
     () => actions.historyItems.filter((item) => item.joined),
     [actions.historyItems],
@@ -136,8 +139,10 @@ export function useJoinFormSectionController() {
   );
   const summaryIsCompact = openActionsCount === 0 && pendingRequestsCount === 0 && activeParticipationItems.length === 0;
   const queueActionId = useMemo(
-    () => focusActionId ?? visibleItems[0]?.id ?? orderedItems[0]?.id ?? null,
-    [focusActionId, orderedItems, visibleItems],
+    () => activeTab === "future"
+      ? focusActionId ?? visibleItems[0]?.id ?? orderedItems[0]?.id ?? null
+      : null,
+    [activeTab, focusActionId, orderedItems, visibleItems],
   );
 
   const queue = useJoinFormSectionQueue({
@@ -149,15 +154,17 @@ export function useJoinFormSectionController() {
   });
 
   const noResultsMessage = fr
-    ? "Aucun pré-formulaire ne correspond à vos filtres."
-    : "No pre-form matches your filters.";
+    ? "Aucune action future ne correspond à vos filtres."
+    : "No future action matches your filters.";
 
   return {
     fr,
+    focusActionId,
     items: actions.items,
-    futureItems,
-    futureLoading,
-    futureError,
+    activeTab,
+    pastItems,
+    pastLoading,
+    pastError,
     loading: actions.loading,
     error: actions.error,
     joiningId: actions.joiningId,
@@ -186,7 +193,6 @@ export function useJoinFormSectionController() {
     hasItems,
     hasVisibleItems,
     preActionVisibleItems,
-    completedVisibleItems,
     activeParticipationItems,
     sortedHistoryItems,
     openActionsCount,

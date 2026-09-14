@@ -88,7 +88,7 @@ export function JoinFormSidebar({
         <HeroStatCard
           icon={<Users2 size={20} />}
           value={formatCount(preActionVisibleItems.length)}
-          label={fr ? "Pré-formulaires" : "Pre-forms"}
+          label={fr ? "Actions futures" : "Future actions"}
           compact={summaryIsCompact}
         />
         <HeroStatCard

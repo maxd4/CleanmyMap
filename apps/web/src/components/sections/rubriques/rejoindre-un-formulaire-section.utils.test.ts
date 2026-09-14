@@ -111,4 +111,30 @@ describe("filterAndSortJoinableActions", () => {
 
     expect(filtered.map((item) => item.id)).toEqual(["action-3", "action-2", "action-1"]);
   });
+
+  it("keeps future actions in chronological order regardless of participation status", () => {
+    const items = [
+      makeAction({
+        id: "later",
+        action_date: "2026-09-20",
+        location_label: "Place B",
+        joined: true,
+      }),
+      makeAction({
+        id: "soon",
+        action_date: "2026-09-15",
+        location_label: "Place A",
+      }),
+    ];
+
+    const filtered = filterAndSortJoinableActions(items, {
+      search: "",
+      joinFilter: "all",
+      sort: "soonest",
+      focusActionId: null,
+      locale: "fr",
+    });
+
+    expect(filtered.map((item) => item.id)).toEqual(["soon", "later"]);
+  });
 });

@@ -24,7 +24,7 @@ export function formatRecordType(item: ActionListItem): string {
 }
 
 export function buildJoinHref(actionId: string): string {
-  return `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(actionId)}`;
+  return `/sections/rejoindre-une-action?actionId=${encodeURIComponent(actionId)}`;
 }
 
 export function isJoinableAction(item: ActionListItem): boolean {

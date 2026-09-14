@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 const BLOCK_PREVIEW_PRIORITY: Record<NavigationBlockId, Partial<Record<NavigationItem["id"], number>>> = {
   home:      { dashboard: 1, explorer: 2, pilotage: 3, admin: 4, sponsor: 5, funding: 6 },
-  act:       { new: 1, "rejoindre-un-formulaire": 2, route: 3, "trash-spotter": 4 },
+  act:       { new: 1, "rejoindre-une-action": 2, route: 3, "trash-spotter": 4 },
   visualize: { map: 1, methodologie: 2, reports: 3, gamification: 4 },
   impact:    {},
   network:   { network: 1, community: 2, feedback: 3, messagerie: 4, "open-data": 5, annuaire: 6 },

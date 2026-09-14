@@ -38,7 +38,7 @@ const heroActions = [
     showArrow: false,
   },
   {
-    href: "/sections/rejoindre-un-formulaire",
+    href: "/sections/rejoindre-une-action",
     label: "Rejoindre une action",
     icon: UserRound,
     tone: "secondary",

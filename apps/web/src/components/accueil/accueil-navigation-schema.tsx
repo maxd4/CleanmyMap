@@ -37,8 +37,8 @@ const navigationPaths: NavigationPath[] = [
     links: [
       { label: "Itinéraire", href: "/sections/route" },
       {
-        label: "Formulaire de groupe",
-        href: "/sections/rejoindre-un-formulaire",
+        label: "Rejoindre une action",
+        href: "/sections/rejoindre-une-action",
       },
       { label: "Partager l'action", href: "/sections/community" },
       { label: "Fédérer", href: "/sections/actors" },

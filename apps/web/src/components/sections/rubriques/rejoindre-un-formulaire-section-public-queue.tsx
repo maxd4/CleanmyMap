@@ -198,7 +198,7 @@ export function JoinFormPublicQueue({
           ) : (
             <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-3 py-3 text-sm leading-relaxed text-slate-600">
               {fr
-                ? "Aucune demande en attente sur ce formulaire."
+                ? "Aucune demande en attente sur cette action."
                 : "No requests are waiting on this form."}
             </div>
           )}

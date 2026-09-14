@@ -148,6 +148,7 @@ export function ActionCard({
   leaving,
   onRequestJoin,
   onRequestLeave,
+  onShareAction,
 }: {
   item: JoinableActionItem;
   index: number;
@@ -157,6 +158,7 @@ export function ActionCard({
   leaving: boolean;
   onRequestJoin: (actionId: string) => void;
   onRequestLeave: (actionId: string) => void;
+  onShareAction?: (actionId: string) => void;
 }) {
   const status = getActionDisplayStatus(item);
   const isPreAction = item.actionPhase === "pre_action";
@@ -165,8 +167,8 @@ export function ActionCard({
   const lifecycleLabel = getLifecycleLabel(item.actionPhase, fr);
   const footerLabel = isPreAction
     ? fr
-      ? "Pré-formulaire visible"
-      : "Pre-form visible"
+      ? "Action future visible"
+      : "Visible future action"
     : fr
       ? "Déclaration complète"
       : "Complete declaration";
@@ -222,8 +224,8 @@ export function ActionCard({
               {isPreAction
                 ? status === "closed"
                   ? fr
-                    ? "Pré-formulaire fermé"
-                    : "Pre-form closed"
+                    ? "Action future fermée"
+                    : "Future action closed"
                   : fr
                     ? "Ouvert aux bénévoles"
                     : "Open to volunteers"
@@ -259,7 +261,7 @@ export function ActionCard({
                 ) : item.joined ? (
                   <>
                     <X size={14} />
-                    {fr ? "Quitter le formulaire" : "Leave the form"}
+                    {fr ? "Quitter l'action" : "Leave the action"}
                   </>
                 ) : (
                   <>
@@ -297,6 +299,11 @@ export function ActionCard({
               </span>
             </CmmButton>
           )}
+          {onShareAction ? (
+            <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>
+              {fr ? "Partager dans la messagerie" : "Share in messaging"}
+            </CmmButton>
+          ) : null}
         </div>
       </div>
 
