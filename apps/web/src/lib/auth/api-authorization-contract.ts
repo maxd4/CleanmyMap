@@ -264,6 +264,15 @@ export const API_AUTHORIZATION_CONTRACT = {
       evidence: ["requireAuthenticatedAccess", "canManageAction", "canPublishPreAction"],
     },
   },
+  "actions/[actionId]/public": {
+    GET: {
+      expected: "Public-safe dynamic action reference projection; inaccessible actions return a neutral not-found response",
+      dimensions: ["public-safe"],
+      actual: "loadActionById + isPublicActionReferenceAvailable before buildPublicActionReference; no private preparation or measurements are returned",
+      evidence: ["loadActionById", "isPublicActionReferenceAvailable", "buildPublicActionReference"],
+      evidenceScope: "module",
+    },
+  },
   "admin/codex-usage": {
     GET: {
       expected: "Admin-like role",
@@ -515,6 +524,15 @@ export const API_AUTHORIZATION_CONTRACT = {
       actual:
         "getAuthenticatedRlsClient authenticates the current user and delegates the peer update to mark_my_dm_conversation_read through Clerk-RLS",
       evidence: ["auth()", "getCurrentUserIdentity", "mark_my_dm_conversation_read"],
+      evidenceScope: "module",
+    },
+  },
+  "chat/share-destinations": {
+    GET: {
+      expected: "Authenticated user lists only existing conversations where they can post and only for a currently shareable future action",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "auth + getCurrentUserIdentity + RLS-backed DM listing + canAccessChatChannel for territory; action eligibility is checked before destinations are returned",
+      evidence: ["auth()", "getCurrentUserIdentity", "getSupabaseClerkRlsClient", "canAccessChatChannel", "list_my_dm_conversations", "isShareableFutureAction"],
       evidenceScope: "module",
     },
   },

@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-09T16:34:28.173Z",
-  "apiRouteCount": 92,
+  "apiRouteCount": 95,
   "apiRoutes": [
     "apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts",
     "apps/web/src/app/api/account/active-profile/route.ts",
@@ -9,6 +9,8 @@
     "apps/web/src/app/api/account/promotion-requests/route.ts",
     "apps/web/src/app/api/actions/[actionId]/audit/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/public/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/publish/route.ts",
     "apps/web/src/app/api/actions/[actionId]/route.ts",
     "apps/web/src/app/api/actions/group-join/route.ts",
     "apps/web/src/app/api/actions/import/route.ts",
@@ -34,6 +36,7 @@
     "apps/web/src/app/api/chat/polls/[messageId]/vote/route.ts",
     "apps/web/src/app/api/chat/route.ts",
     "apps/web/src/app/api/chat/search/route.ts",
+    "apps/web/src/app/api/chat/share-destinations/route.ts",
     "apps/web/src/app/api/chat/users/route.ts",
     "apps/web/src/app/api/community/bug-reports/route.ts",
     "apps/web/src/app/api/community/events/ops/route.ts",

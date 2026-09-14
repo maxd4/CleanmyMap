@@ -66,6 +66,7 @@ type ChatMessageChange = {
   arrondissement_id?: number | null;
   topic_id?: string | null;
   conversation_id?: string | null;
+  action_id?: string | null;
 };
 
 type ChatRefreshContext = {

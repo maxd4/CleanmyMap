@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { CheckCircle2, ChevronRight, Leaf } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { PageHeader } from "@/components/ui/page-header";
@@ -10,9 +11,11 @@ import { HeroIllustration } from "./rejoindre-un-formulaire-section.shared";
 import { JoinFormConfirmationDialog } from "./rejoindre-un-formulaire-section-dialog";
 import { useJoinFormSectionController } from "./rejoindre-un-formulaire-section.controller";
 import { FutureActionsPanel } from "./rejoindre-un-formulaire-section.future-actions";
+import { ChatActionShareDialog } from "@/components/chat/chat-action-share-dialog";
 
 export function JoinFormSection() {
   const controller = useJoinFormSectionController();
+  const [shareActionId, setShareActionId] = useState<string | null>(null);
   const {
     fr,
     items,
@@ -71,8 +74,11 @@ export function JoinFormSection() {
           error={controller.futureError}
           authenticated={controller.authenticated}
           fr={controller.fr}
+          onShareAction={setShareActionId}
         />
       </div>
+
+      {shareActionId ? <ChatActionShareDialog actionId={shareActionId} onClose={() => setShareActionId(null)} /> : null}
 
       <JoinFormConfirmationDialog
         fr={fr}

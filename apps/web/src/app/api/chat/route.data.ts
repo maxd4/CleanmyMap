@@ -194,3 +194,17 @@ export async function resolveBugReportRecipientId(
 
   return null;
 }
+
+export async function hasExistingDmConversation(
+  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
+  recipientId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase.rpc("list_my_dm_conversations");
+  if (error) {
+    throw error;
+  }
+
+  return ((data ?? []) as Array<{ peer_id?: unknown }>).some(
+    (row) => row.peer_id === recipientId,
+  );
+}

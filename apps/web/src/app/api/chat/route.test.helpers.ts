@@ -22,6 +22,7 @@ export type ChatMessageRow = {
   message_kind?: "message" | "announcement" | "poll";
   related_event_id?: string | null;
   conversation_id?: string | null;
+  action_id?: string | null;
   related_event?: {
     id: string;
     title: string;
@@ -48,6 +49,7 @@ export function buildSupabaseMock(options: {
   } | null;
   pollMessage?: ChatMessageRow;
   actionConversation?: { id: string; action_id: string } | null;
+  dmRows?: Array<{ peer_id: string; peer_display_name: string | null; peer_handle: string | null }>;
 }) {
   const profileQuery = {
     select: vi.fn(() => profileQuery),
@@ -215,6 +217,9 @@ export function buildSupabaseMock(options: {
       throw new Error(`Unexpected table: ${table}`);
     }),
     rpc: vi.fn((functionName: string) => {
+      if (functionName === "list_my_dm_conversations") {
+        return Promise.resolve({ data: options.dmRows ?? [], error: null });
+      }
       if (functionName !== "create_chat_poll_with_options") {
         throw new Error(`Unexpected RPC: ${functionName}`);
       }
