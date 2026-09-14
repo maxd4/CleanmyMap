@@ -483,11 +483,21 @@ Cette règle ne permet jamais d'affaiblir AuthN, AuthZ, RLS, la validation des
 entrées, la protection des données personnelles, les secrets, l'audit des
 opérations sensibles ou les contrôles anti-abus réellement nécessaires.
 
-Ne jamais déduire un accès d'un nom de route ou d'un ancien document lorsque le
-runtime dit autre chose. Le coût ou la performance ne constitue pas une raison
-d'AuthZ. Une page publique et une mutation authentifiée sont parfaitement
-compatibles et ne doivent pas être fusionnées en une « route protégée » par
-simple proximité fonctionnelle.
+#### Invariants d'ouverture et de vérité runtime
+
+1. **Le runtime est la source de vérité de l'accès.** Ne jamais déduire une
+   permission, une restriction ou un niveau d'ouverture du seul nom d'une
+   route, d'une convention de nommage ou d'un ancien document lorsque le
+   comportement runtime et les contrôles effectifs disent autre chose.
+2. **Le coût ou la performance ne constituent pas, à eux seuls, une raison
+   d'AuthZ.** Ils peuvent justifier du rate limiting, du cache, de la
+   pagination, de la limitation de fréquence ou d'autres contrôles
+   proportionnés, mais pas transformer une surface de communication en
+   capacité réservée sans risque d'accès concret identifié.
+3. **Une lecture publique et une mutation authentifiée sont compatibles.**
+   Elles peuvent coexister autour d'une même ressource avec des contrôles
+   distincts. Elles ne doivent pas être fusionnées mécaniquement en une
+   « route protégée » lorsque seule la mutation exige AuthN/AuthZ.
 
 ## 13. Application mobile
 
