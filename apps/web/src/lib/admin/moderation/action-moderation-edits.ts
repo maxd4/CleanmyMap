@@ -15,6 +15,11 @@ import type { getSupabaseServerClient } from "@/lib/supabase/server";
 import { runSingleActionQuery } from "@/lib/actions/query";
 import { resolveTrustedActionDepartmentForPersistence } from "@/lib/geo/action-department-resolver";
 import { resolveModeratedCigaretteButtsMeasurements } from "./action-moderation-measurements";
+import {
+  ACTION_WASTE_MASS_RESOLUTION_KG,
+  isAlignedToWasteMassResolution,
+} from "@/lib/waste/measurement";
+import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 
 const coordinateSchema = z.tuple([
   z.number().min(-90).max(90),
@@ -40,10 +45,22 @@ const manualDrawingSchema = z
   });
 
 const adminWasteBreakdownSchema = z.object({
-  recyclablesKg: z.number().min(0).max(100000).nullable().optional(),
-  glassKg: z.number().min(0).max(100000).nullable().optional(),
-  householdWasteKg: z.number().min(0).max(100000).nullable().optional(),
-  otherWasteKg: z.number().min(0).max(100000).nullable().optional(),
+  recyclablesKg: z.number().min(0).max(100000).nullable().optional().refine(
+    (value) => value === null || value === undefined || isAlignedToWasteMassResolution(value, ACTION_WASTE_MASS_RESOLUTION_KG),
+    "La masse doit respecter une résolution de 0,1 kg.",
+  ),
+  glassKg: z.number().min(0).max(100000).nullable().optional().refine(
+    (value) => value === null || value === undefined || isAlignedToWasteMassResolution(value, ACTION_WASTE_MASS_RESOLUTION_KG),
+    "La masse doit respecter une résolution de 0,1 kg.",
+  ),
+  householdWasteKg: z.number().min(0).max(100000).nullable().optional().refine(
+    (value) => value === null || value === undefined || isAlignedToWasteMassResolution(value, ACTION_WASTE_MASS_RESOLUTION_KG),
+    "La masse doit respecter une résolution de 0,1 kg.",
+  ),
+  otherWasteKg: z.number().min(0).max(100000).nullable().optional().refine(
+    (value) => value === null || value === undefined || isAlignedToWasteMassResolution(value, ACTION_WASTE_MASS_RESOLUTION_KG),
+    "La masse doit respecter une résolution de 0,1 kg.",
+  ),
   unusualObjects: z.string().trim().max(2000).nullable().optional(),
   specialHandlingWaste: z.string().trim().max(2000).nullable().optional(),
 });
@@ -62,10 +79,13 @@ export const actionEditsSchema = z
     routeAdjustmentMessage: z.string().trim().max(500).nullable().optional(),
     latitude: z.number().min(-90).max(90).nullable().optional(),
     longitude: z.number().min(-180).max(180).nullable().optional(),
-    wasteKg: z.number().min(0).max(100000).nullable().optional(),
+    wasteKg: z.number().min(0).max(100000).nullable().optional().refine(
+      (value) => value === null || value === undefined || isAlignedToWasteMassResolution(value, ACTION_WASTE_MASS_RESOLUTION_KG),
+      "La masse doit respecter une résolution de 0,1 kg.",
+    ),
     cigaretteButtsMeasurements: z
       .object({
-        cigaretteButtsCount: z.number().int().min(0).max(5_000_000).nullable(),
+        cigaretteButtsCount: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable(),
         cigaretteButtsMassKg: z.number().min(0).max(100_000).nullable(),
         cigaretteButtsVolumeLiters: z.number().min(0).max(100_000).nullable(),
         cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable(),
@@ -80,7 +100,7 @@ export const actionEditsSchema = z
     cigaretteButtsVolumeLiters: z.number().min(0).max(100000).nullable().optional(),
     cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable().optional(),
     cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
-    cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
+    cigaretteButts: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
     volunteersCount: z.number().int().min(1).max(500).optional(),
     durationMinutes: z.number().int().min(0).max(24 * 60).optional(),
     notes: z.string().trim().max(1000).nullable().optional(),

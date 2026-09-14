@@ -90,6 +90,134 @@ describe("createActionSchema", () => {
     expect(parsed.cigaretteButtsCount).toBe(0);
   });
 
+  it("uses the canonical five-million bound for every ordinary count alias", () => {
+    for (const field of ["cigaretteButts", "cigaretteButtsCount"] as const) {
+      expect(
+        createActionSchema.safeParse({ ...basePayload, [field]: 5_000_000 }).success,
+      ).toBe(true);
+      expect(
+        createActionSchema.safeParse({ ...basePayload, [field]: 5_000_001 }).success,
+      ).toBe(false);
+    }
+
+    expect(
+      createActionSchema.safeParse({
+        ...basePayload,
+        cigaretteButtsMeasurements: { cigaretteButtsCount: 5_000_000 },
+      }).success,
+    ).toBe(true);
+    expect(
+      createActionSchema.safeParse({
+        ...basePayload,
+        cigaretteButtsMeasurements: { cigaretteButtsCount: 5_000_001 },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("accepts only volunteer source categories and recalculates derived values", () => {
+    const parsed = createActionSchema.parse({
+      ...basePayload,
+      volunteerParticipation: {
+        childrenCount: 2,
+        adultCount: 4,
+        retiredCount: 2,
+      },
+    });
+
+    expect(parsed.volunteerParticipation).toMatchObject({
+      childrenCount: 2,
+      adultCount: 4,
+      retiredCount: 2,
+      participantsCount: 8,
+      effectiveVolunteerUnits: 6,
+    });
+    expect(
+      createActionSchema.safeParse({
+        ...basePayload,
+        volunteerParticipation: {
+          childrenCount: 2,
+          adultCount: 4,
+          retiredCount: 2,
+          participantsCount: 999,
+        },
+      }).success,
+    ).toBe(false);
+    expect(
+      createActionSchema.safeParse({
+        ...basePayload,
+        preparationData: {
+          volunteerParticipation: {
+            childrenCount: 2,
+            adultCount: 4,
+            retiredCount: 2,
+            effectiveVolunteerUnits: 999,
+          },
+        },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("keeps incomplete volunteer categories unknown and enforces the total bound", () => {
+    const partial = createActionSchema.parse({
+      ...basePayload,
+      volunteerParticipation: { adultCount: 5 },
+    });
+    expect(partial.volunteerParticipation).toMatchObject({
+      childrenCount: null,
+      adultCount: 5,
+      retiredCount: null,
+      participantsCount: null,
+      effectiveVolunteerUnits: null,
+    });
+
+    expect(
+      createActionSchema.safeParse({
+        ...basePayload,
+        volunteerParticipation: {
+          childrenCount: 200,
+          adultCount: 200,
+          retiredCount: 100,
+        },
+      }).success,
+    ).toBe(true);
+    expect(
+      createActionSchema.safeParse({
+        ...basePayload,
+        volunteerParticipation: {
+          childrenCount: 200,
+          adultCount: 200,
+          retiredCount: 101,
+        },
+      }).success,
+    ).toBe(false);
+  });
+
+  it("rejects off-grid ordinary masses without rounding, including update input", () => {
+    for (const value of [0, 0.1, 9.9, 10.1]) {
+      expect(createActionSchema.safeParse({ ...basePayload, wasteKg: value }).success).toBe(true);
+      expect(updateActionSchema.safeParse({ wasteKg: value }).success).toBe(true);
+    }
+    for (const value of [10.05, 10.037]) {
+      expect(createActionSchema.safeParse({ ...basePayload, wasteKg: value }).success).toBe(false);
+      expect(updateActionSchema.safeParse({ wasteKg: value }).success).toBe(false);
+      expect(
+        createActionSchema.safeParse({
+          ...basePayload,
+          wasteBreakdown: {
+            recyclablesKg: value,
+            glassKg: 0,
+            householdWasteKg: 0,
+            otherWasteKg: 0,
+          },
+        }).success,
+      ).toBe(false);
+    }
+
+    expect(
+      createActionSchema.safeParse({ ...basePayload, cigaretteButtsMassKg: 1.23 }).success,
+    ).toBe(true);
+  });
+
   it("accepts canonical raw measurements and strips client provenance fields", () => {
     const parsed = createActionSchema.parse({
       ...basePayload,

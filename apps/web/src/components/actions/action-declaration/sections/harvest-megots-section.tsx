@@ -2,6 +2,7 @@
 
 import { Cigarette, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
+import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import { ProgressGauge } from "../ui/harvest-gauges";
 import { formatCount, formatKg, formatSignedPercent } from "../utils/harvest-utils";
 import { cn } from "@/lib/utils";
@@ -140,7 +141,7 @@ export function HarvestMegotsSection({
           inputMode="numeric"
           type="range"
           min="0"
-          max="10000"
+          max={MAX_CIGARETTE_BUTTS_COUNT}
           step="1"
           value={megotsCount}
           onChange={(e) => onMegotsCountChange(e.target.value)}
@@ -148,7 +149,7 @@ export function HarvestMegotsSection({
         />
         <div className="flex justify-between text-[10px] text-slate-400">
           <span>0</span>
-          <span>10 000</span>
+          <span>{MAX_CIGARETTE_BUTTS_COUNT.toLocaleString("fr-FR")}</span>
         </div>
         <p className="text-[10px] leading-snug text-slate-500">
           Le slider renseigne le nombre brut. Une masse dérivée reste distincte pour l’envoi.

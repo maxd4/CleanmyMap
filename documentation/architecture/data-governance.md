@@ -262,6 +262,14 @@ des générations présentes sur l'action sans collecter l'âge exact ni la date
 naissance. Une valeur absente reste `NULL` ; elle ne doit pas être remplacée par
 zéro pour rendre une catégorie artificiellement complète.
 
+À la frontière HTTP ordinaire de création et de mise à jour, ces trois champs
+sont les seules entrées acceptées dans `volunteerParticipation`. Les champs
+dérivés `participantsCount`, `effectiveVolunteerUnits` et
+`effectiveVolunteerUnitsFormulaVersion` sont rejetés lorsqu'ils sont fournis
+par le client. Le serveur recalcule toujours ces champs après validation des
+catégories sources, selon la normalisation canonique ; ils ne constituent donc
+pas une autorité d'écriture cliente.
+
 Lorsque les trois catégories sont renseignées, le nombre réel de personnes est
 recalculé par la règle canonique :
 
@@ -300,7 +308,9 @@ Pour une action historique qui ne possède que `volunteersCount`, ce nombre rest
 le total historique de participants ; `childrenCount`, `adultCount`,
 `retiredCount` et `effectiveVolunteerUnits` restent inconnus. Le système ne doit
 pas reconstruire la répartition générationnelle ni supposer que les participants
-étaient adultes.
+étaient adultes. Pour une saisie complète des trois catégories, le total est
+borné à `500` participants ; une saisie partielle reste autorisée et conserve
+les catégories inconnues.
 
 ## Contrat de mesure des déchets hors mégots
 
@@ -333,13 +343,22 @@ catégorie de masse conserve la distinction `null`/zéro/valeur positive.
 
 La somme des quatre catégories n'est comparée à `wasteKg` que lorsque les
 quatre catégories sont effectivement renseignées par des nombres valides.
-Les valeurs saisies dans les formulaires ont actuellement une résolution
-canonique de `0,1 kg`, exposée par
-`ACTION_WASTE_MASS_RESOLUTION_KG`. Chaque valeur `x` est donc interprétée,
-pour cette comparaison numérique uniquement, par l'intervalle
+À la frontière serveur des payloads ordinaires et des corrections de
+modération, `wasteKg`, `recyclablesKg`, `glassKg`, `householdWasteKg` et
+`otherWasteKg` doivent respecter la résolution canonique de `0,1 kg`, exposée
+par `ACTION_WASTE_MASS_RESOLUTION_KG`. Une valeur hors grille est rejetée ; le
+serveur ne l'arrondit pas silencieusement. Cette contrainte ne s'applique pas à
+la masse des mégots, qui reste une mesure distincte.
+
+Pour une comparaison numérique, chaque valeur `x` alignée sur la résolution
+est interprétée par l'intervalle
 `[max(0, x - r/2), x + r/2]`, avec `r` égal à la résolution déclarée. Les
 intervalles de `wasteKg` et de la somme des quatre catégories sont compatibles
 s'ils se recouvrent ; sinon un avertissement non bloquant est affiché.
+Les valeurs historiques hors grille restent lisibles et inchangées. La
+comparaison retourne `not_comparable` lorsque les valeurs ne sont pas alignées
+sur la résolution connue ou lorsque la résolution historique fiable n'est pas
+démontrable ; elle ne les arrondit ni ne les réécrit.
 
 Ce contrôle décrit uniquement la compatibilité numérique avec la précision de
 saisie. Il ne modélise ni l'incertitude d'une balance, ni l'erreur humaine,
@@ -381,6 +400,12 @@ comptage explicite devient `counted`, une masse ou un volume explicite devient
 `measured`, et une dérivation autorisée devient `weight_converted` avec la
 version de formule canonique. Une provenance envoyée par un client est ignorée
 par la validation d'entrée et ne peut pas devenir une vérité persistée.
+
+Le nombre brut de mégots reste borné par `MAX_CIGARETTE_BUTTS_COUNT`, fixé à
+`5 000 000`. Les représentations HTTP `cigaretteButtsMeasurements.cigaretteButtsCount`,
+`cigaretteButts` et `cigaretteButtsCount` utilisent cette même borne dans les
+schémas de création, de mise à jour et de modération ; aucun alias ne conserve
+une limite concurrente plus basse.
 
 La création et l'édition appliquent le même contrat. Un `null` explicitement
 envoyé efface la mesure correspondante ; il ne devient jamais zéro et son
