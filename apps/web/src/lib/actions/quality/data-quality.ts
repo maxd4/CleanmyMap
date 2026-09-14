@@ -12,6 +12,7 @@ import type {
   ActionGeolocationState,
   ActionDataQualitySummary,
 } from "./data-quality-types";
+import { ACTION_DATA_MEASURE_LIMITS } from "./data-quality-types";
 export type {
   ActionDataAnomaly,
   ActionDataAnomalyCode,
@@ -181,7 +182,7 @@ export function auditActionData(
     (isFiniteNumber(input.wasteKg) && (input.wasteKg < 0 || input.wasteKg > 100000)) ||
     (isFiniteNumber(input.cigaretteButts) && (input.cigaretteButts < 0 || input.cigaretteButts > 100000000)) ||
     (isFiniteNumber(input.volunteersCount) && (input.volunteersCount < 1 || input.volunteersCount > 10000)) ||
-    (isFiniteNumber(input.durationMinutes) && (input.durationMinutes < 0 || input.durationMinutes > 100000))
+    (isFiniteNumber(input.durationMinutes) && (input.durationMinutes < 0 || input.durationMinutes > ACTION_DATA_MEASURE_LIMITS.durationMinutesMax))
   ) {
     anomalies.push(
       buildAnomaly(
