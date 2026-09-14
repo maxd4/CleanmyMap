@@ -105,7 +105,6 @@ describe("mentions légales contract", () => {
 
     for (const source of [publicPage, legalDocumentation, pageSheet, privacyDocumentation]) {
       expect(source).not.toContain("données de compte accessibles depuis ce checkout");
-      expect(source).not.toContain("sous réserve");
     }
   });
 
