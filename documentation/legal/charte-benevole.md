@@ -79,8 +79,10 @@ Ne pas photographier ou publier une personne identifiable sans base appropriée.
 qui ne sont pas nécessaires à la description de l'action.
 
 Chaque contributeur vérifie les droits dont il dispose sur ses textes, photos
-et autres contenus. Les règles de publication et la licence technique limitée
-sont décrites dans les [CGU](conditions-generales-utilisation.md).
+et autres contenus. Les règles de publication et la licence limitée accordée
+à CleanMyMap pour le fonctionnement du service sont décrites dans les
+[CGU](conditions-generales-utilisation.md). Elles ne modifient pas la licence
+du code, des données tierces ou de la marque CleanMyMap.
 
 ## 6. Problème ou signalement
 

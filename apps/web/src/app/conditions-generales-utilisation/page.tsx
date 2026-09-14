@@ -123,9 +123,10 @@ const legalSections: LegalSection[] = [
           applicables, notamment sous une forme anonymisée ou agrégée.
         </p>
         <p>
-          Cette licence ne transfère pas la propriété à CleanMyMap. Le code
-          source est publiquement visible, mais aucune licence de réutilisation
-          définitive n&apos;est publiée à ce jour.
+          Cette licence limitée ne transfère pas la propriété des contributions
+          à CleanMyMap et ne transforme pas les contenus utilisateurs en code
+          AGPL. Le code du produit relève de la licence logicielle indiquée
+          dans la section « Données, licences et cookies ».
         </p>
       </div>
     ),
@@ -199,17 +200,41 @@ const legalSections: LegalSection[] = [
   },
   {
     number: 9,
-    title: "Données et cookies",
+    title: "Données, licences et cookies",
     content: (
-      <p className="text-sm leading-6 text-slate-600">
-        Consultez la{" "}
-        <Link href="/politique-confidentialite" className={legalLinkClass}>Politique de confidentialité</Link>
-        {" "}pour les traitements de données et la{" "}
-        <Link href="/politique-cookies" className={legalLinkClass}>Politique cookies</Link>
-        {" "}pour les préférences et le consentement analytics. Pour une
-        demande, utilisez le{" "}
-        <Link href="/contact" className={legalLinkClass}>contact</Link>.
-      </p>
+      <div className="space-y-4 text-sm leading-6 text-slate-600">
+        <p>
+          Consultez la{" "}
+          <Link href="/politique-confidentialite" className={legalLinkClass}>Politique de confidentialité</Link>
+          {" "}pour les traitements de données et la{" "}
+          <Link href="/politique-cookies" className={legalLinkClass}>Politique cookies</Link>
+          {" "}pour les préférences et le consentement analytics. Pour une
+          demande, utilisez le{" "}
+          <Link href="/contact" className={legalLinkClass}>contact</Link>.
+        </p>
+        <p>
+          Le code source propre à CleanMyMap destiné au produit est distribué
+          sous GNU Affero General Public License v3.0, SPDX{" "}
+          <code>AGPL-3.0-only</code>. Le texte complet est publié dans le{" "}
+          <a
+            href="https://github.com/maxd4/CleanMyMap/blob/main/LICENSE"
+            className={legalLinkClass}
+          >
+            fichier LICENSE
+          </a>
+          . Cette licence concerne le code du logiciel et ne s&apos;étend pas
+          automatiquement aux données tierces, aux données personnelles, aux
+          contenus utilisateurs, aux photos ou aux éléments de marque.
+        </p>
+        <p>
+          Les données CleanMyMap ne sont pas toutes des données ouvertes :
+          une licence ouverte est définie uniquement pour un jeu de données
+          explicitement publié à cette fin. Le nom CleanMyMap, le logo et
+          l&apos;identité visuelle restent réservés ; la licence du logiciel
+          n&apos;autorise pas à présenter un fork ou un service tiers comme la
+          version officielle de CleanMyMap.
+        </p>
+      </div>
     ),
   },
   {

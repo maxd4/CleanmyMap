@@ -20,6 +20,7 @@ const allowedRootFiles = new Set([
   "AUTHORS.md",
   "CHATGPT.md",
   "COMMANDES_UTILISATEUR.md",
+  "LICENSE",
   "package-lock.json",
   "package.json",
   "playwright.config.ts",

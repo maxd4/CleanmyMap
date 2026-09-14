@@ -19,6 +19,7 @@ const legalDocumentation = readFileSync(
 );
 const legalSection = readFileSync(new URL("./legal-section.tsx", import.meta.url), "utf8");
 const rootReadme = readFileSync(new URL("../../../../../../README.md", import.meta.url), "utf8");
+const rootLicense = readFileSync(new URL("../../../../../../LICENSE", import.meta.url), "utf8");
 const packageJson = JSON.parse(
   readFileSync(new URL("../../../../../../package.json", import.meta.url), "utf8"),
 ) as { license?: string };
@@ -76,15 +77,32 @@ describe("contrat documentaire LEGAL-04", () => {
     }
   });
 
-  it("maintient l'absence de licence de réutilisation définitive", () => {
-    expect(packageJson.license).toBe("UNLICENSED");
+  it("publie la licence du code et ses frontières", () => {
+    expect(packageJson.license).toBe("AGPL-3.0-only");
+    expect(rootLicense).toContain("GNU AFFERO GENERAL PUBLIC LICENSE");
+    expect(rootLicense).toContain("Version 3, 19 November 2007");
+    expect(rootLicense).toContain("Remote Network Interaction");
 
-    for (const source of [rootReadme, legalDocumentation]) {
-      expect(source).toMatch(/code source est publiquement consultable/iu);
-      expect(source).toMatch(/(?:aucun fichier|en l'absence de fichier) `LICENSE`/iu);
-      expect(source).toMatch(/aucune licence (?:open source|de réutilisation) définitive/iu);
-      expect(source).toMatch(/aucun droit général de\s+réutilisation/iu);
-      expect(source).not.toContain("Le projet reste distribué en open source");
+    for (const source of [rootReadme, cguPage, cguDocumentation, legalDocumentation]) {
+      expect(source).toContain("AGPL-3.0-only");
     }
+    expect(rootReadme).toMatch(/données\s+personnelles/iu);
+    expect(rootReadme).toMatch(/données\s+tierces/iu);
+    expect(rootReadme).toMatch(/logo/iu);
+    expect(cguPage).toMatch(/données\s+personnelles/iu);
+    expect(cguPage).toMatch(/données\s+tierces/iu);
+    expect(cguPage).toMatch(/logo/iu);
+    expect(cguDocumentation).toMatch(/données\s+personnelles/iu);
+    expect(cguDocumentation).toMatch(/données\s+tierces/iu);
+    expect(cguDocumentation).toMatch(/logo/iu);
+    expect(legalDocumentation).toMatch(/données\s+personnelles/iu);
+    expect(legalDocumentation).toMatch(/données\s+tierces/iu);
+    expect(legalDocumentation).toMatch(/logo/iu);
+    expect(legalDocumentation).toMatch(/CC BY-SA\s*4\.0/iu);
+    expect(legalDocumentation).toMatch(/Licence Ouverte Etalab 2\.0/iu);
+    expect(legalDocumentation).toMatch(/OpenStreetMap.*ODbL/iu);
+    expect(legalDocumentation).toMatch(/marque\s+enregistrée/iu);
+    expect(rootReadme).not.toContain("aucun droit général de réutilisation");
+    expect(cguPage).not.toContain("aucune licence de réutilisation");
   });
 });
