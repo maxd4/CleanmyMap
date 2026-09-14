@@ -408,6 +408,23 @@ La lecture propriétaire `GET /api/signalements/me` reste séparée : elle utili
 la session du compte courant et peut restituer ses propres observations `new`,
 sans les exposer à la carte publique.
 
+### Discussion d'action : publication, exclusion et participation
+
+La discussion d'une action réutilise le prédicat public canonique : une action
+non masquée, publiée et approuvée est accessible aux comptes authentifiés,
+sauf exclusion active. Une pré-action `pending` n'est accessible que lorsque
+`isPublishedFuturePreAction` côté TypeScript et
+`is_public_future_pre_action` côté SQL la rendent réellement publiée, visible
+et future. Les états `rejected`, `hidden` et non publié restent refusés.
+
+`action_participants` n'est jamais une autorité d'accès à la discussion :
+`pending`, `confirmed`, `cancelled` et `refused` n'ont aucun effet sans
+exclusion explicite. La table `action_conversation_exclusions` porte seulement
+l'état courant ; les exclusions et réintégrations sont aussi enregistrées via
+`appendActionModerationAudit` dans l'audit canonique, avec l'acteur, l'utilisateur
+cible, l'action, la conversation et le motif lorsqu'il est fourni. La
+correction append-only est `20260915000007_action_conversation_access_and_audit.sql`.
+
 ## Lecture propriétaire Trash Spotter
 
 La capacité `GET /api/signalements/me` est une surface propriétaire dédiée au

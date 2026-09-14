@@ -7,6 +7,7 @@ import {
   isPublishedVisibleAction,
 } from "@/lib/chat/action-conversations";
 import { loadActionById } from "@/lib/actions/store";
+import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
@@ -104,27 +105,52 @@ async function mutateExclusion(request: Request, exclude: boolean) {
     if (!conversationId) return NextResponse.json({ error: "Discussion introuvable." }, { status: 404 });
 
     if (exclude) {
+      const excludedAt = new Date().toISOString();
       const result = await context.supabase.from("action_conversation_exclusions").upsert({
         conversation_id: conversationId,
         user_id: parsed.data.userId,
         excluded_by_user_id: userId,
-        excluded_at: new Date().toISOString(),
+        excluded_at: excludedAt,
         reason: parsed.data.reason ?? null,
         active: true,
         reinstated_at: null,
         reinstated_by_user_id: null,
       }, { onConflict: "conversation_id,user_id" }).select().single();
       if (result.error) throw result.error;
+      await appendActionModerationAudit({
+        operationId: `action-conversation-exclude:${conversationId}:${parsed.data.userId}:${excludedAt}`,
+        actorUserId: userId,
+        targetActionId: parsed.data.actionId,
+        operation: "exclude_action_conversation_user",
+        outcome: "success",
+        reason: parsed.data.reason ?? null,
+        newValue: { active: true },
+        targetUserId: parsed.data.userId,
+        details: { conversationId },
+      });
       return NextResponse.json({ exclusion: result.data }, { status: 201 });
     }
 
+    const reinstatedAt = new Date().toISOString();
     const result = await context.supabase.from("action_conversation_exclusions").update({
       active: false,
-      reinstated_at: new Date().toISOString(),
+      reinstated_at: reinstatedAt,
       reinstated_by_user_id: userId,
     }).eq("conversation_id", conversationId).eq("user_id", parsed.data.userId).select().maybeSingle();
     if (result.error) throw result.error;
     if (!result.data) return NextResponse.json({ error: "Exclusion introuvable." }, { status: 404 });
+    await appendActionModerationAudit({
+      operationId: `action-conversation-reinstate:${conversationId}:${parsed.data.userId}:${reinstatedAt}`,
+      actorUserId: userId,
+      targetActionId: parsed.data.actionId,
+      operation: "reinstate_action_conversation_user",
+      outcome: "success",
+      reason: parsed.data.reason ?? null,
+      previousValue: { active: true },
+      newValue: { active: false, reinstatedAt },
+      targetUserId: parsed.data.userId,
+      details: { conversationId },
+    });
     return NextResponse.json({ exclusion: result.data });
   } catch (error) {
     return handleApiError(error, `${exclude ? "POST" : "PATCH"} /api/chat/action-exclusions`);
