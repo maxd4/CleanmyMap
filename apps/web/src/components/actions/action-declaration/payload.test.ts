@@ -111,8 +111,13 @@ describe("action declaration payload helpers", () => {
       childrenCount: 2,
       adultCount: 4,
       retiredCount: 2,
-      participantsCount: 8,
-      effectiveVolunteerUnits: 6,
+    });
+    expect(payload.volunteerParticipation).not.toHaveProperty("participantsCount");
+    expect(payload.volunteerParticipation).not.toHaveProperty("effectiveVolunteerUnits");
+    expect(payload.preparationData?.volunteerParticipation).toEqual({
+      childrenCount: 2,
+      adultCount: 4,
+      retiredCount: 2,
     });
   });
 

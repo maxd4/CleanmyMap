@@ -30,7 +30,8 @@ export type WasteBreakdownCoherence = {
 };
 
 export type WasteBreakdownComparisonOptions = {
-  resolutionKg?: number;
+  /** Null means the historical measurement resolution is not demonstrable. */
+  resolutionKg?: number | null;
 };
 
 const CANONICAL_BREAKDOWN_KEYS = [
@@ -43,6 +44,19 @@ const CANONICAL_BREAKDOWN_KEYS = [
 function isKnownKg(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
+
+/** Checks grid membership without silently rounding an incoming measurement. */
+export function isAlignedToWasteMassResolution(
+  value: number,
+  resolution: number,
+): boolean {
+  if (!isKnownKg(value) || !isValidResolution(resolution)) return false;
+  const quotient = value / resolution;
+  const nearestGridPoint = Math.round(quotient);
+  const tolerance = Number.EPSILON *
+    Math.max(1, Math.abs(quotient), Math.abs(value), Math.abs(resolution)) * 32;
+  return Math.abs(quotient - nearestGridPoint) <= tolerance;
+}
 /**
  * Compare only a complete, explicitly measured breakdown with the total.
  * Missing categories stay unknown and are never interpreted as zero.
@@ -52,8 +66,15 @@ export function compareWasteBreakdownToTotal(
   breakdown: CanonicalWasteBreakdown | null | undefined,
   options: WasteBreakdownComparisonOptions = {},
 ): WasteBreakdownCoherence {
-  const resolutionKg = options.resolutionKg ?? ACTION_WASTE_MASS_RESOLUTION_KG;
-  if (!isKnownKg(wasteKg) || !breakdown || !isValidResolution(resolutionKg)) {
+  const resolutionKg = options.resolutionKg === undefined
+    ? ACTION_WASTE_MASS_RESOLUTION_KG
+    : options.resolutionKg;
+  if (
+    !isKnownKg(wasteKg) ||
+    !breakdown ||
+    resolutionKg === null ||
+    !isValidResolution(resolutionKg)
+  ) {
     return {
       status: "not_comparable",
       totalBreakdownKg: null,
@@ -64,6 +85,18 @@ export function compareWasteBreakdownToTotal(
 
   const values = CANONICAL_BREAKDOWN_KEYS.map((key) => breakdown[key]);
   if (!values.every(isKnownKg)) {
+    return {
+      status: "not_comparable",
+      totalBreakdownKg: null,
+      differenceKg: null,
+      differencePercent: null,
+    };
+  }
+
+  if (
+    !isAlignedToWasteMassResolution(wasteKg, resolutionKg) ||
+    !values.every((value) => isAlignedToWasteMassResolution(value, resolutionKg))
+  ) {
     return {
       status: "not_comparable",
       totalBreakdownKg: null,

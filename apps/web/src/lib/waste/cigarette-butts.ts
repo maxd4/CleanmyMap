@@ -7,6 +7,8 @@ import {
   estimateButtsWeightKg,
 } from "@/lib/impact/impact-terrain-2026";
 
+export const MAX_CIGARETTE_BUTTS_COUNT = 5_000_000;
+
 export const CIGARETTE_BUTTS_PROVENANCES = [
   "counted",
   "measured",

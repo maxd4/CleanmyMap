@@ -24,7 +24,13 @@ import {
   getTimeContractValidationMessage,
   isValidClockTime,
 } from "@/lib/actions/time-contract";
-import { ACTION_WASTE_MEASUREMENT_METHODS } from "@/lib/waste/measurement";
+import {
+  isAlignedToWasteMassResolution,
+  ACTION_WASTE_MASS_RESOLUTION_KG,
+  ACTION_WASTE_MEASUREMENT_METHODS,
+} from "@/lib/waste/measurement";
+import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
+import { normalizeVolunteerParticipation } from "@/lib/actions/volunteer-participation";
 
 const coordinateSchema = z.tuple([
   z.number().min(-90).max(90),
@@ -68,11 +74,20 @@ const contractGeometrySchema = z
     }
   });
 
+const wasteMassSchema = z
+  .number()
+  .min(0)
+  .max(100000)
+  .refine(
+    (value) => isAlignedToWasteMassResolution(value, ACTION_WASTE_MASS_RESOLUTION_KG),
+    "La masse doit respecter une résolution de 0,1 kg.",
+  );
+
 const wasteBreakdownSchema = z.object({
-  recyclablesKg: z.number().min(0).max(100000).nullable().optional(),
-  glassKg: z.number().min(0).max(100000).nullable().optional(),
-  householdWasteKg: z.number().min(0).max(100000).nullable().optional(),
-  otherWasteKg: z.number().min(0).max(100000).nullable().optional(),
+  recyclablesKg: wasteMassSchema.nullable().optional(),
+  glassKg: wasteMassSchema.nullable().optional(),
+  householdWasteKg: wasteMassSchema.nullable().optional(),
+  otherWasteKg: wasteMassSchema.nullable().optional(),
   unusualObjects: z.string().max(2000).nullable().optional(),
   specialHandlingWaste: z.string().max(2000).nullable().optional(),
   // Bounded read compatibility for existing metadata markers.
@@ -94,7 +109,7 @@ const cigaretteButtsMeasurementsSchema = z
   .object({
     // Ordinary HTTP payloads carry raw measurements only. Provenance and
     // formula versions are assigned by the server and are not input fields.
-    cigaretteButtsCount: z.number().int().min(0).max(5_000_000).nullable().optional(),
+    cigaretteButtsCount: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
     cigaretteButtsMassKg: z.number().min(0).max(100_000).nullable().optional(),
     cigaretteButtsVolumeLiters: z.number().min(0).max(100_000).nullable().optional(),
     cigaretteButtsCondition: z
@@ -105,16 +120,37 @@ const cigaretteButtsMeasurementsSchema = z
   .nullable()
   .optional();
 
-const volunteerParticipationSchema = z
+const volunteerParticipationInputSchema = z
   .object({
-    childrenCount: z.number().int().min(0).max(500).nullable(),
-    adultCount: z.number().int().min(0).max(500).nullable(),
-    retiredCount: z.number().int().min(0).max(500).nullable(),
-    participantsCount: z.number().int().min(0).max(500).nullable(),
-    effectiveVolunteerUnits: z.number().min(0).max(500).nullable(),
-    effectiveVolunteerUnitsFormulaVersion: z.string().max(120).nullable(),
+    childrenCount: z.number().int().min(0).max(500).nullable().optional(),
+    adultCount: z.number().int().min(0).max(500).nullable().optional(),
+    retiredCount: z.number().int().min(0).max(500).nullable().optional(),
   })
+  .strict()
+  .superRefine((value, ctx) => {
+    if (
+      value.childrenCount !== null &&
+      value.childrenCount !== undefined &&
+      value.adultCount !== null &&
+      value.adultCount !== undefined &&
+      value.retiredCount !== null &&
+      value.retiredCount !== undefined &&
+      value.childrenCount + value.adultCount + value.retiredCount > 500
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Le total des catégories de bénévoles ne peut pas dépasser 500.",
+      });
+    }
+  });
+
+const volunteerParticipationSchema = volunteerParticipationInputSchema
   .nullable()
+  .transform((value) =>
+    value === null
+      ? value
+      : normalizeVolunteerParticipation(value),
+  )
   .optional();
 
 const photoAssetSchema = z.object({
@@ -295,14 +331,14 @@ const createActionLegacyBaseSchema = z.object({
     isRouteCalibrationContext,
     "Contexte historique de calibration invalide.",
   ).nullable().optional(),
-  wasteKg: z.number().min(0).max(100000).nullable().optional(),
+  wasteKg: wasteMassSchema.nullable().optional(),
   cigaretteButtsMeasurements: cigaretteButtsMeasurementsSchema,
   cigaretteButtsMassKg: z.number().min(0).max(100000).nullable().optional(),
   cigaretteButtsVolumeLiters: z.number().min(0).max(100000).nullable().optional(),
   cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable().optional(),
   cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
-  cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
-  cigaretteButtsCount: z.number().int().min(0).max(10000).nullable().optional(),
+  cigaretteButts: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
+  cigaretteButtsCount: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
   volunteerParticipation: volunteerParticipationSchema,
   volunteersCount: z.number().int().min(1).max(500).default(1),
   durationMinutes: z
@@ -356,13 +392,13 @@ const createActionContractSchema = z.object({
     participantAccounts: accountTokensSchema,
     groupJoinEnabled: z.boolean().optional(),
     placeType: z.string().max(80).optional(),
-      wasteKg: z.number().min(0).max(100000).nullable().optional(),
+      wasteKg: wasteMassSchema.nullable().optional(),
       cigaretteButtsMeasurements: cigaretteButtsMeasurementsSchema,
       cigaretteButtsMassKg: z.number().min(0).max(100000).nullable().optional(),
       cigaretteButtsVolumeLiters: z.number().min(0).max(100000).nullable().optional(),
       cigaretteButtsCondition: z.enum(["propre", "humide", "mouille"]).nullable().optional(),
       cigaretteButtsKg: z.number().min(0).max(100000).nullable().optional(),
-      cigaretteButts: z.number().int().min(0).max(5000000).nullable().optional(),
+      cigaretteButts: z.number().int().min(0).max(MAX_CIGARETTE_BUTTS_COUNT).nullable().optional(),
       volunteerParticipation: volunteerParticipationSchema,
     volunteersCount: z.number().int().min(1).max(500).optional(),
     durationMinutes: z

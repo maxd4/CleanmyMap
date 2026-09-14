@@ -27,7 +27,9 @@ export {
   ACTION_WASTE_MASS_RESOLUTION_KG,
   ACTION_WASTE_MEASUREMENT_METHODS,
   compareWasteBreakdownToTotal,
+  isAlignedToWasteMassResolution,
 } from "./measurement";
+export { MAX_CIGARETTE_BUTTS_COUNT } from "./cigarette-butts";
 export type {
   ActionWasteMeasurementMethod,
   CanonicalWasteBreakdown,

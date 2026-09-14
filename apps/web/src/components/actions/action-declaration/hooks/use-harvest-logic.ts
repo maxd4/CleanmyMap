@@ -1,5 +1,8 @@
 import type { ActionMegotsCondition } from "@/lib/actions/types";
-import { normalizeCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
+import {
+  MAX_CIGARETTE_BUTTS_COUNT,
+  normalizeCigaretteButtsMeasurements,
+} from "@/lib/waste/cigarette-butts";
 import { clamp } from "../utils/harvest-utils";
 import { useCallback, useMemo } from "react";
 
@@ -95,7 +98,7 @@ export function useHarvestLogic({
         : 0;
 
     const cigaretteButtsMeasurements = normalizeCigaretteButtsMeasurements({
-      cigaretteButtsCount: readOptionalNumber(form.cigaretteButtsCount, 0, 10000),
+      cigaretteButtsCount: readOptionalNumber(form.cigaretteButtsCount, 0, MAX_CIGARETTE_BUTTS_COUNT),
       cigaretteButtsMassKg: readOptionalNumber(form.wasteMegotsKg, 0, 100),
       cigaretteButtsCondition: form.wasteMegotsCondition,
       deriveMissingFromMassOrCount: true,

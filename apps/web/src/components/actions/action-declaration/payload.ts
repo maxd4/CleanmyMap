@@ -17,8 +17,9 @@ import type { DeclarationMode, FormState } from"./types";
 import { normalizeActionDrawing } from"../map/actions-map-geometry.utils";
 import { formatWasteGuidanceLines } from "@/lib/waste";
 import {
-  normalizeVolunteerParticipation,
+ normalizeVolunteerParticipation,
 } from "@/lib/actions/volunteer-participation";
+import type { VolunteerParticipationInput } from "@/lib/actions/volunteer-participation";
 
 export const PARK_PLACE_TYPE ="Bois/Parc/Jardin/Square/Sentier";
 export const OTHER_VOLUNTEER_ASSOCIATION_VALUE = "__autre_benevole__";
@@ -129,11 +130,12 @@ export function buildPreparationDataFromForm(
  form: FormState,
 ): ActionPreparationData {
  const wasteCategories = form.wasteCategories ?? [];
- const volunteerParticipation = normalizeVolunteerParticipation({
+ const volunteerParticipationInput: VolunteerParticipationInput = {
   childrenCount: toOptionalNumber(form.childrenCount) ?? null,
   adultCount: toOptionalNumber(form.adultCount) ?? null,
   retiredCount: toOptionalNumber(form.retiredCount) ?? null,
- });
+ };
+ const volunteerParticipation = normalizeVolunteerParticipation(volunteerParticipationInput);
  const guidance = formatWasteGuidanceLines(wasteCategories);
  const supplement = (manual: string, derived: string, title: string) => {
   const value = manual.trim();
@@ -164,7 +166,8 @@ export function buildPreparationDataFromForm(
   checklistBeforeDeparture: form.checklistBeforeDeparture.trim() || undefined,
   volunteersExpected:
    volunteerParticipation.participantsCount ?? toOptionalNumber(form.volunteersCount),
-  volunteerParticipation,
+  // The browser sends source categories only; the API schema recalculates derived fields.
+  volunteerParticipation: volunteerParticipationInput as ActionPreparationData["volunteerParticipation"],
   groupJoinEnabled: form.groupJoinEnabled,
   expectedWasteCategories: wasteCategories.length > 0 ? [...wasteCategories] : undefined,
   routeCalibrationContext: form.routeCalibrationContext ?? undefined,
@@ -381,11 +384,12 @@ export function buildCreateActionPayload(params: {
     cigaretteButtsVolumeLiters: enteredVolumeLiters,
     cigaretteButtsCondition,
   };
-  const volunteerParticipation = normalizeVolunteerParticipation({
+  const volunteerParticipationInput: VolunteerParticipationInput = {
     childrenCount: toOptionalNumber(form.childrenCount) ?? null,
     adultCount: toOptionalNumber(form.adultCount) ?? null,
     retiredCount: toOptionalNumber(form.retiredCount) ?? null,
-  });
+  };
+  const volunteerParticipation = normalizeVolunteerParticipation(volunteerParticipationInput);
 
  return {
     actorName: form.actorName.trim() || undefined,
@@ -418,7 +422,8 @@ export function buildCreateActionPayload(params: {
    cigaretteButtsKg: enteredMegotsKg,
    cigaretteButts: enteredButtsCount,
    cigaretteButtsCount: enteredButtsCount,
-  volunteerParticipation,
+  // The browser sends source categories only; the API schema recalculates derived fields.
+  volunteerParticipation: volunteerParticipationInput as CreateActionPayload["volunteerParticipation"],
   volunteersCount:
     volunteerParticipation.participantsCount ??
     Math.trunc(toRequiredNumber(form.volunteersCount, 0)),

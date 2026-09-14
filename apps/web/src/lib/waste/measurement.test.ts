@@ -3,6 +3,7 @@ import {
   ACTION_WASTE_MASS_RESOLUTION_KG,
   ACTION_WASTE_MEASUREMENT_METHODS,
   compareWasteBreakdownToTotal,
+  isAlignedToWasteMassResolution,
 } from "./measurement";
 
 describe("canonical waste measurement contract", () => {
@@ -33,6 +34,12 @@ describe("canonical waste measurement contract", () => {
         otherWasteKg: 0,
       }).status,
     ).toBe("not_comparable");
+  });
+
+  it("checks grid alignment without changing the incoming value", () => {
+    expect(isAlignedToWasteMassResolution(10.1, ACTION_WASTE_MASS_RESOLUTION_KG)).toBe(true);
+    expect(isAlignedToWasteMassResolution(10.05, ACTION_WASTE_MASS_RESOLUTION_KG)).toBe(false);
+    expect(isAlignedToWasteMassResolution(10.037, ACTION_WASTE_MASS_RESOLUTION_KG)).toBe(false);
   });
 
   it("does not compare a partial breakdown or turn unknown categories into zero", () => {
@@ -99,6 +106,33 @@ describe("canonical waste measurement contract", () => {
       }, { resolutionKg: 0.01 }).status,
     ).toBe("warning");
     expect(ACTION_WASTE_MASS_RESOLUTION_KG).toBe(0.1);
+  });
+
+  it("does not compare off-grid or historically unresolved measurements", () => {
+    const offGrid = compareWasteBreakdownToTotal(10.05, {
+      recyclablesKg: 10.05,
+      glassKg: 0,
+      householdWasteKg: 0,
+      otherWasteKg: 0,
+    });
+    expect(offGrid.status).toBe("not_comparable");
+
+    const unknownResolution = compareWasteBreakdownToTotal(10.05, {
+      recyclablesKg: 10.05,
+      glassKg: 0,
+      householdWasteKg: 0,
+      otherWasteKg: 0,
+    }, { resolutionKg: null });
+    expect(unknownResolution.status).toBe("not_comparable");
+
+    expect(
+      compareWasteBreakdownToTotal(10.05, {
+        recyclablesKg: 10.05,
+        glassKg: 0,
+        householdWasteKg: 0,
+        otherWasteKg: 0,
+      }, { resolutionKg: 0.01 }).status,
+    ).toBe("coherent");
   });
 
   it("keeps the relative difference informative without using it as the status rule", () => {
