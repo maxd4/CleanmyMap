@@ -4,7 +4,8 @@
 
 do $$
 declare
-  v_missing_or_duplicate integer;
+  v_present_identities integer;
+  v_invalid_cardinalities integer;
   v_unexpected_value integer;
 begin
   with expected(action_date, location_label, expected_waste_kg, cigarette_butts,
@@ -15,73 +16,80 @@ begin
       ('2026-03-21'::date, 'Porte des Lilas, 75020 Paris → Jardin Serge Gainsbourg, 9 Av. de la Prte des Lilas, 75019 Paris', 20::numeric, 6250::bigint, 20::bigint, 90::bigint),
       ('2026-04-11'::date, 'Ecole élémentaire Pierre Foncin (Ecole A), 8 Rue Pierre Foncin, 75020 Paris → Saveurs en Partage, 38 Bd Mortier, 75020 Paris', null::numeric, 1875::bigint, 10::bigint, 60::bigint),
       ('2026-04-22'::date, 'Rue Jacques Louvel-Tessier, 75010 Paris → Rue Marguerite Moret, 75011 Paris', 20::numeric, 1250::bigint, 10::bigint, 60::bigint)
+  ), identity_counts as (
+    select (
+      select count(*)
+      from public.actions a
+      where a.actor_name = 'Google Sheet'
+        and a.action_date = e.action_date
+        and a.location_label = e.location_label
+        and a.cigarette_butts = e.cigarette_butts
+        and a.volunteers_count = e.volunteers_count
+        and a.duration_minutes = e.duration_minutes
+        and a.status = 'approved'
+    ) as matching_count
+    from expected e
   )
-  select count(*)
-  into v_missing_or_duplicate
-  from expected e
-  where (
+  select
+    count(*) filter (where matching_count > 0),
+    count(*) filter (where matching_count not in (0, 1))
+  into v_present_identities, v_invalid_cardinalities
+  from identity_counts;
+
+  if v_invalid_cardinalities <> 0 or v_present_identities not in (0, 5) then
+    raise exception 'Historical waste repair aborted: historical identity set is partial or duplicated (present identities: %, invalid cardinalities: %)',
+      v_present_identities, v_invalid_cardinalities;
+  end if;
+
+  if v_present_identities = 5 then
+    with expected(action_date, location_label, expected_waste_kg, cigarette_butts,
+                  volunteers_count, duration_minutes) as (
+      values
+        ('2026-02-14'::date, 'Mairie du 20ᵉ arrondissement de Paris, 6 Pl. Gambetta, 75020 Paris → Pl. Martin Nadaud, 75020 Paris', null::numeric, 3750::bigint, 15::bigint, 90::bigint),
+        ('2026-03-06'::date, 'Studio Ferber, 6 Rue Pierre Mouillard, 75020 Paris → Pl. Saint-Fargeau, 75020 Paris', null::numeric, 750::bigint, 10::bigint, 90::bigint),
+        ('2026-03-21'::date, 'Porte des Lilas, 75020 Paris → Jardin Serge Gainsbourg, 9 Av. de la Prte des Lilas, 75019 Paris', 20::numeric, 6250::bigint, 20::bigint, 90::bigint),
+        ('2026-04-11'::date, 'Ecole élémentaire Pierre Foncin (Ecole A), 8 Rue Pierre Foncin, 75020 Paris → Saveurs en Partage, 38 Bd Mortier, 75020 Paris', null::numeric, 1875::bigint, 10::bigint, 60::bigint),
+        ('2026-04-22'::date, 'Rue Jacques Louvel-Tessier, 75010 Paris → Rue Marguerite Moret, 75011 Paris', 20::numeric, 1250::bigint, 10::bigint, 60::bigint)
+    )
     select count(*)
-    from public.actions a
+    into v_unexpected_value
+    from expected e
+    join public.actions a
+      on a.actor_name = 'Google Sheet'
+     and a.action_date = e.action_date
+     and a.location_label = e.location_label
+     and a.cigarette_butts = e.cigarette_butts
+     and a.volunteers_count = e.volunteers_count
+     and a.duration_minutes = e.duration_minutes
+     and a.status = 'approved'
+    where a.waste_kg is not null
+      and a.waste_kg <> 0
+      and a.waste_kg is distinct from e.expected_waste_kg;
+
+    if v_unexpected_value <> 0 then
+      raise exception 'Historical waste repair aborted: % rows have an unexpected pre-existing waste_kg', v_unexpected_value;
+    end if;
+
+    with expected(action_date, location_label, expected_waste_kg, cigarette_butts,
+                  volunteers_count, duration_minutes) as (
+      values
+        ('2026-02-14'::date, 'Mairie du 20ᵉ arrondissement de Paris, 6 Pl. Gambetta, 75020 Paris → Pl. Martin Nadaud, 75020 Paris', null::numeric, 3750::bigint, 15::bigint, 90::bigint),
+        ('2026-03-06'::date, 'Studio Ferber, 6 Rue Pierre Mouillard, 75020 Paris → Pl. Saint-Fargeau, 75020 Paris', null::numeric, 750::bigint, 10::bigint, 90::bigint),
+        ('2026-03-21'::date, 'Porte des Lilas, 75020 Paris → Jardin Serge Gainsbourg, 9 Av. de la Prte des Lilas, 75019 Paris', 20::numeric, 6250::bigint, 20::bigint, 90::bigint),
+        ('2026-04-11'::date, 'Ecole élémentaire Pierre Foncin (Ecole A), 8 Rue Pierre Foncin, 75020 Paris → Saveurs en Partage, 38 Bd Mortier, 75020 Paris', null::numeric, 1875::bigint, 10::bigint, 60::bigint),
+        ('2026-04-22'::date, 'Rue Jacques Louvel-Tessier, 75010 Paris → Rue Marguerite Moret, 75011 Paris', 20::numeric, 1250::bigint, 10::bigint, 60::bigint)
+    )
+    update public.actions a
+    set waste_kg = e.expected_waste_kg
+    from expected e
     where a.actor_name = 'Google Sheet'
       and a.action_date = e.action_date
       and a.location_label = e.location_label
       and a.cigarette_butts = e.cigarette_butts
       and a.volunteers_count = e.volunteers_count
       and a.duration_minutes = e.duration_minutes
-      and a.status = 'approved'
-  ) <> 1;
-
-  if v_missing_or_duplicate <> 0 then
-    raise exception 'Historical waste repair aborted: % action identities missing or duplicated', v_missing_or_duplicate;
+      and a.status = 'approved';
   end if;
-
-  with expected(action_date, location_label, expected_waste_kg, cigarette_butts,
-                volunteers_count, duration_minutes) as (
-    values
-      ('2026-02-14'::date, 'Mairie du 20ᵉ arrondissement de Paris, 6 Pl. Gambetta, 75020 Paris → Pl. Martin Nadaud, 75020 Paris', null::numeric, 3750::bigint, 15::bigint, 90::bigint),
-      ('2026-03-06'::date, 'Studio Ferber, 6 Rue Pierre Mouillard, 75020 Paris → Pl. Saint-Fargeau, 75020 Paris', null::numeric, 750::bigint, 10::bigint, 90::bigint),
-      ('2026-03-21'::date, 'Porte des Lilas, 75020 Paris → Jardin Serge Gainsbourg, 9 Av. de la Prte des Lilas, 75019 Paris', 20::numeric, 6250::bigint, 20::bigint, 90::bigint),
-      ('2026-04-11'::date, 'Ecole élémentaire Pierre Foncin (Ecole A), 8 Rue Pierre Foncin, 75020 Paris → Saveurs en Partage, 38 Bd Mortier, 75020 Paris', null::numeric, 1875::bigint, 10::bigint, 60::bigint),
-      ('2026-04-22'::date, 'Rue Jacques Louvel-Tessier, 75010 Paris → Rue Marguerite Moret, 75011 Paris', 20::numeric, 1250::bigint, 10::bigint, 60::bigint)
-  )
-  select count(*)
-  into v_unexpected_value
-  from expected e
-  join public.actions a
-    on a.actor_name = 'Google Sheet'
-   and a.action_date = e.action_date
-   and a.location_label = e.location_label
-   and a.cigarette_butts = e.cigarette_butts
-   and a.volunteers_count = e.volunteers_count
-   and a.duration_minutes = e.duration_minutes
-   and a.status = 'approved'
-  where a.waste_kg is not null
-    and a.waste_kg <> 0
-    and a.waste_kg is distinct from e.expected_waste_kg;
-
-  if v_unexpected_value <> 0 then
-    raise exception 'Historical waste repair aborted: % rows have an unexpected pre-existing waste_kg', v_unexpected_value;
-  end if;
-
-  with expected(action_date, location_label, expected_waste_kg, cigarette_butts,
-                volunteers_count, duration_minutes) as (
-    values
-      ('2026-02-14'::date, 'Mairie du 20ᵉ arrondissement de Paris, 6 Pl. Gambetta, 75020 Paris → Pl. Martin Nadaud, 75020 Paris', null::numeric, 3750::bigint, 15::bigint, 90::bigint),
-      ('2026-03-06'::date, 'Studio Ferber, 6 Rue Pierre Mouillard, 75020 Paris → Pl. Saint-Fargeau, 75020 Paris', null::numeric, 750::bigint, 10::bigint, 90::bigint),
-      ('2026-03-21'::date, 'Porte des Lilas, 75020 Paris → Jardin Serge Gainsbourg, 9 Av. de la Prte des Lilas, 75019 Paris', 20::numeric, 6250::bigint, 20::bigint, 90::bigint),
-      ('2026-04-11'::date, 'Ecole élémentaire Pierre Foncin (Ecole A), 8 Rue Pierre Foncin, 75020 Paris → Saveurs en Partage, 38 Bd Mortier, 75020 Paris', null::numeric, 1875::bigint, 10::bigint, 60::bigint),
-      ('2026-04-22'::date, 'Rue Jacques Louvel-Tessier, 75010 Paris → Rue Marguerite Moret, 75011 Paris', 20::numeric, 1250::bigint, 10::bigint, 60::bigint)
-  )
-  update public.actions a
-  set waste_kg = e.expected_waste_kg
-  from expected e
-  where a.actor_name = 'Google Sheet'
-    and a.action_date = e.action_date
-    and a.location_label = e.location_label
-    and a.cigarette_butts = e.cigarette_butts
-    and a.volunteers_count = e.volunteers_count
-    and a.duration_minutes = e.duration_minutes
-    and a.status = 'approved';
 end;
 $$;
 

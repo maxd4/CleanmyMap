@@ -8,8 +8,10 @@ Ces règles concernent la configuration et les migrations du workspace web.
 - `apps/web/supabase/migrations/` est l'unique arbre de migrations éditable et
   canonique ;
 - ne créer ni migration ni copie dans un second arbre ;
-- les migrations sont append-only, sauf correction explicitement justifiée
-  d'une migration non publiée ;
+- les migrations sont append-only. Une exception de replay strictement bornée
+  peut corriger localement une migration déjà appliquée uniquement si les
+  conditions et la justification de l'ADR-006 sont respectées ; cette
+  exception ne permet pas la réécriture générale des migrations publiées ;
 - garder la migration et le code consommateur cohérents : schéma, types,
   routes, RPC, UI et tests doivent évoluer ensemble lorsque nécessaire.
 

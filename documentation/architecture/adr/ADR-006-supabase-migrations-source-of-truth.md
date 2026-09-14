@@ -108,6 +108,45 @@ Après application complète :
 - CLI, tests et docs alignés ;
 - moins de risque d'agent sur le mauvais chemin.
 
+## Exception bornée de rejouabilité — `20260913000006`
+
+Le principe append-only reste la règle générale. Une exception locale est
+acceptée pour rendre rejouable une migration historique déjà appliquée lorsque
+son seul bloqueur est l'absence des données historiques qu'elle réparait.
+Cette exception ne crée aucune nouvelle application distante de la version et
+ne constitue pas une permission générale de réécrire les migrations publiées.
+
+La migration `20260913000006_restore_historical_waste_null_semantics.sql` est
+concernée par cette exception : le projet Supabase lié
+`trktzkgujgpgsgkoyndn` l'a déjà enregistrée comme appliquée, et les statements
+distants enregistrés correspondent à la version historique précédemment
+versionnée. La correction locale est limitée au bloc qui traite les cinq
+identités historiques et respecte les conditions suivantes :
+
+1. les cinq identités ont chacune zéro correspondance : le patch historique
+   `waste_kg` est ignoré, aucune donnée n'est créée ni modifiée, puis les
+   fonctions suivantes de la migration sont exécutées ;
+2. les cinq identités ont chacune une correspondance unique : les contrôles de
+   provenance et de valeur préexistante ainsi que la correction `waste_kg` sont
+   conservés ;
+3. toute autre cardinalité, notamment un historique partiel ou une identité
+   dupliquée, échoue explicitement et fail-closed avant le DML historique.
+
+Les valeurs et identités historiques ne sont pas modifiées par cette
+exception, aucune donnée fictive n'est créée et les migrations `000007`,
+`000008` et `000009` restent inchangées. Les empreintes Git de la migration
+`000006` sont conservées pour la traçabilité :
+
+```text
+000006_BEFORE_HASH: 64e1063950ea69fb6e70b70fc2f23edff0c5abf8
+000006_AFTER_HASH:  1983bedb04b443d7c348242a6c98b61e6aaf46b0
+```
+
+Cette exception est un changement de source versionnée uniquement. Elle
+n'autorise ni `supabase migration repair`, ni `db push`, ni écriture sur le
+projet distant ; toute publication ultérieure reste soumise à une revue et à
+une validation distinctes.
+
 ## Opérations temporaires de benchmark
 
 Une activation ou désactivation temporaire d'extension réalisée pour un
