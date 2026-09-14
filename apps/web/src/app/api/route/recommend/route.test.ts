@@ -160,6 +160,7 @@ function plannerAudit(stops: Array<ReturnType<typeof plannedStop>>) {
 
 describe("POST /api/route/recommend", () => {
   beforeEach(() => {
+    vi.unstubAllGlobals();
     vi.resetModules();
     vi.clearAllMocks();
 
@@ -444,6 +445,44 @@ describe("POST /api/route/recommend", () => {
       expect.any(Date),
       expect.any(Map),
     );
+  });
+
+  it("fetches one shared weather window for a multi-group calculation", async () => {
+    const weatherFetch = vi.fn(async () => new Response(JSON.stringify({
+      hourly: {
+        time: ["2026-09-15T10:00", "2026-09-15T11:00"],
+        temperature_2m: [20, 21],
+        apparent_temperature: [20, 21],
+        precipitation: [0, 0],
+        precipitation_probability: [10, 10],
+        wind_speed_10m: [12, 13],
+        wind_gusts_10m: [20, 22],
+        weather_code: [1, 1],
+      },
+    }), { status: 200 }));
+    vi.stubGlobal("fetch", weatherFetch);
+
+    const { POST } = await import("./route");
+    const response = await POST(request({
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+      volunteers: 4,
+      groupCount: 2,
+      scheduledStartAt: "2026-09-15T10:00",
+      scheduledEndAt: "2026-09-15T12:00",
+    }));
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(weatherFetch).toHaveBeenCalledTimes(1);
+    expect(payload.weatherContext).toMatchObject({
+      provider: "open-meteo",
+      status: "available",
+      coveredWindow: {
+        startAt: "2026-09-15T10:00",
+        endAt: "2026-09-15T12:00",
+      },
+    });
+    vi.unstubAllGlobals();
   });
 
   it("calcule un ensemble de boucles distinctes pour les groupes coordonnés", async () => {

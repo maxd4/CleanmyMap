@@ -247,6 +247,41 @@ export function RouteOptionsForm({
           </span>
         </label>
 
+        <fieldset className="rounded-2xl border border-emerald-200/12 bg-[rgba(11,34,25,0.52)] p-4 md:col-span-2">
+          <legend className="px-1 text-sm font-bold text-emerald-50/90">
+            {fr ? "Créneau météo prévu (facultatif)" : "Planned weather window (optional)"}
+          </legend>
+          <div className="mt-2 grid gap-3 md:grid-cols-2">
+            <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
+              {fr ? "Début" : "Start"}
+              <input
+                type="datetime-local"
+                value={options.scheduledStartAt ?? ""}
+                onChange={(event) =>
+                  setOptions((prev) => ({ ...prev, scheduledStartAt: event.target.value }))
+                }
+                className={buildInputClass()}
+              />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
+              {fr ? "Fin" : "End"}
+              <input
+                type="datetime-local"
+                value={options.scheduledEndAt ?? ""}
+                onChange={(event) =>
+                  setOptions((prev) => ({ ...prev, scheduledEndAt: event.target.value }))
+                }
+                className={buildInputClass()}
+              />
+            </label>
+          </div>
+          <p className="mt-3 text-xs font-medium leading-relaxed text-emerald-100/64">
+            {fr
+              ? "La prévision couvre ce créneau en heure de Paris et n’influence pas encore le tracé, la durée ni le budget."
+              : "The forecast covers this Paris-time window and does not yet influence route, duration, or budget."}
+          </p>
+        </fieldset>
+
         <label className="flex flex-col gap-2 text-sm font-semibold text-emerald-50/86">
           {fr ? "Arrêts maximum" : "Max stops"}
           <input

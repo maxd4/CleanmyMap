@@ -18,6 +18,7 @@ import { planRouteRecommendation } from "./route.planning";
 import { buildRouteRecommendationResponse } from "./route.response";
 import { loadRouteEventCenteredAnchor } from "@/lib/route/route-event-centered-loader";
 import { resolveEffectiveRiskFocus } from "@/lib/route/route-risk-focus";
+import { fetchPlannerWeatherContext } from "@/lib/weather/planner-weather";
 import {
   parseRouteRecommendationRequest,
   resolvePriorityVsTravel,
@@ -103,6 +104,12 @@ export async function POST(request: Request) {
     }
 
     const candidateData = await loadRouteCandidateData(supabase);
+    const weatherContext = await fetchPlannerWeatherContext({
+      latitude: origin.latitude,
+      longitude: origin.longitude,
+      scheduledStartAt: options.scheduledStartAt,
+      scheduledEndAt: options.scheduledEndAt,
+    });
     const planning = await planRouteRecommendation({
       origin,
       spatialCandidates: candidateData.spatialCandidates,
@@ -117,6 +124,7 @@ export async function POST(request: Request) {
       planningMode,
       eventCenteredAnchor,
       eventSignalContext: candidateData.routeEventSignalContext,
+      weatherContext,
     });
     const response = buildRouteRecommendationResponse({
       origin,
@@ -131,6 +139,7 @@ export async function POST(request: Request) {
       volunteers: options.volunteers,
       groupCount: options.groupCount,
       pickupPreference: options.pickupPreference,
+      weatherContext,
     });
 
     try {

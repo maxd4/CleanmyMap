@@ -5,8 +5,8 @@ import {
 } from "@/lib/route/route-response-contract";
 
 export const ROUTE_DRAFT_STORAGE_KEY = "cleanmymap.route-draft";
-export const ROUTE_DRAFT_SCHEMA_VERSION = 5;
-const LEGACY_ROUTE_DRAFT_SCHEMA_VERSIONS = [1, 2, 3, 4] as const;
+export const ROUTE_DRAFT_SCHEMA_VERSION = 6;
+const LEGACY_ROUTE_DRAFT_SCHEMA_VERSIONS = [1, 2, 3, 4, 5] as const;
 
 export const DEFAULT_ROUTE_OPTIONS: RouteOptions = {
   priorityVsTravel: 65,
@@ -41,6 +41,15 @@ export function normalizeRouteOptions(value: unknown): RouteOptions {
     ? candidate.pickupPreference
     : DEFAULT_ROUTE_OPTIONS.pickupPreference;
 
+  const scheduledStartAt = typeof candidate.scheduledStartAt === "string" &&
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(candidate.scheduledStartAt)
+    ? candidate.scheduledStartAt
+    : undefined;
+  const scheduledEndAt = typeof candidate.scheduledEndAt === "string" &&
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(candidate.scheduledEndAt)
+    ? candidate.scheduledEndAt
+    : undefined;
+
   return {
     priorityVsTravel: boundedInteger(
       candidate.priorityVsTravel ?? candidate.priorityVsDistance,
@@ -58,6 +67,8 @@ export function normalizeRouteOptions(value: unknown): RouteOptions {
     volunteers,
     groupCount: Math.min(groupCount, volunteers),
     pickupPreference,
+    ...(scheduledStartAt ? { scheduledStartAt } : {}),
+    ...(scheduledEndAt ? { scheduledEndAt } : {}),
   };
 }
 

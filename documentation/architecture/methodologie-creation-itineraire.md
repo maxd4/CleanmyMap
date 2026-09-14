@@ -487,6 +487,38 @@ pollution ; il ajoute un contexte d’ancrage traçable à la décision du plann
 
 ## 10. Fondations et intégrations en cours
 
+### Contexte météo horaire du créneau
+
+Le planner peut recevoir un contexte de prévision Open-Meteo pour un lieu et
+un créneau local en heure de Paris. Le client partagé
+`apps/web/src/lib/weather/open-meteo-client.ts` est la seule couche qui
+construit et exécute les appels Open-Meteo : il applique un timeout de 8
+secondes et un cache mémoire borné à 32 requêtes pendant 5 minutes. Une
+génération logique du planner effectue au plus une récupération météo ; elle
+ne déclenche jamais de lecture par arrêt ou par groupe. L’horizon utilisé par
+le contexte planner est de 16 jours ; au-delà, la météo est explicitement
+indisponible plutôt que remplacée par une valeur fictive.
+
+Le contrat `planner-weather-snapshot-v1` conserve le provider, la date de
+récupération, les coordonnées, la fenêtre couverte, les points horaires et
+une synthèse déterministe. Pour la synthèse : température et température
+ressentie sont des moyennes des valeurs connues, les précipitations sont
+additionnées, la probabilité de pluie et le vent/les rafales prennent le
+maximum, et le code météo est le mode (égalité départagée par le code le plus
+bas). Une valeur absente reste absente ; elle n’est jamais remplacée par zéro.
+
+Si le créneau est absent, invalide, hors de l’horizon de prévision ou si
+Open-Meteo est indisponible, `weatherStatus` vaut `unavailable`. Ce statut est
+fail-soft : la route est tout de même générée. La prévision est copiée dans
+la trace et le snapshot planner au moment de la génération. Elle décrit ce
+que CleanMyMap savait alors et ne constitue pas une observation météo de
+l’action réalisée.
+
+Le contexte météo n’est pas une entrée de `pollutionPriority`, du ranking,
+de `cleanupWorkload`, de la durée estimée, du budget, de la partition des
+groupes ou de la géométrie. La météo observée pendant l’action relève d’un
+futur lot de calibration distinct.
+
 Les fondations suivantes bornent la capacité actuelle sans devenir des
 affirmations métier supplémentaires :
 
@@ -508,7 +540,9 @@ Une difficulté d’accès mécanique ou une inférence géométrique ne peut do
 Les extensions suivantes restent explicitement futures dans le périmètre
 actuel :
 
-- la météo et les conditions dépendantes de la date ou de l’heure ;
+- l’utilisation de la météo pour modifier le ranking, la durée, le budget ou
+  la géométrie ; le contexte prévisionnel est disponible mais reste
+  informatif et traçable uniquement ;
 - la durée d’intervention et l’estimation du temps de nettoyage, qui ne sont
   pas encore calibrées par `route-cleanup-workload-v1` ;
 - une allocation détaillée des catégories de bénévoles par groupe, lorsque

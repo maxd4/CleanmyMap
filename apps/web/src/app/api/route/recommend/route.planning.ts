@@ -43,6 +43,7 @@ import {
   type RouteGroupPartitionResult,
 } from "@/lib/route/route-group-partition";
 import type { RouteRiskFocus } from "@/lib/route/route-predicted-targets";
+import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 export type RoutePlanningResult = {
   plannerResult: RoutePlannerResult;
@@ -58,6 +59,7 @@ export type RoutePlanningResult = {
   groupRoutes?: RouteGroupRoute[];
   multiRouteMetrics?: RouteMultiRouteMetrics;
   operationalBudget?: RouteOperationalBudgetDependency;
+  weatherContext?: PlannerWeatherContext;
 };
 
 function fallbackGeometryForPrefix(
@@ -88,6 +90,7 @@ export async function planRouteRecommendation(input: {
   eventCenteredAnchor: RouteEventCenteredAnchor | null;
   eventSignalContext: RouteEventSignalContext;
   operationalBudget?: RouteOperationalBudgetDependency;
+  weatherContext?: PlannerWeatherContext;
 }): Promise<RoutePlanningResult> {
   const effectiveRiskFocus = input.effectiveRiskFocus;
   const baselinePlannerResult = planRoute({
@@ -392,5 +395,6 @@ export async function planRouteRecommendation(input: {
     groupRoutes,
     multiRouteMetrics,
     operationalBudget: input.operationalBudget,
+    ...(input.weatherContext ? { weatherContext: structuredClone(input.weatherContext) } : {}),
   };
 }

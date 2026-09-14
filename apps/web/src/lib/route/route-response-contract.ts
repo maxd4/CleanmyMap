@@ -16,6 +16,7 @@ import type {
 import type { RoutePickupPreference } from "./route-pickup-preference";
 import type { RouteCalibrationContext } from "./route-calibration";
 import type { RouteOperationalBudget } from "./route-operational-budget";
+import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 export {
   ROUTE_PICKUP_PREFERENCES,
@@ -35,6 +36,8 @@ export type RouteRecommendationRequest = {
   pickupPreference?: RoutePickupPreference;
   volunteers?: number;
   groupCount?: number;
+  scheduledStartAt?: string;
+  scheduledEndAt?: string;
 };
 
 export type RouteOptions = {
@@ -44,6 +47,8 @@ export type RouteOptions = {
   volunteers: number;
   groupCount: number;
   pickupPreference: RoutePickupPreference;
+  scheduledStartAt?: string;
+  scheduledEndAt?: string;
 };
 
 export type RouteResponseOrigin = {
@@ -107,6 +112,8 @@ export type RouteRecommendationResponse = {
   engineVersion: string;
   /** Historical context to carry unchanged into an action preparation payload. */
   calibrationContext?: RouteCalibrationContext;
+  /** Forecast known at generation time; it does not affect route calculations. */
+  weatherContext?: PlannerWeatherContext;
   stops: RouteStop[];
   prediction: RoutePredictionSummary;
   trace: RouteRecommendationTrace;
