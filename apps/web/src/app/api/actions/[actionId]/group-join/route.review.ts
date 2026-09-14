@@ -10,7 +10,6 @@ import {
 } from "@/lib/actions/participation/group-participation";
 import { POST_ACTION_CLAIM_PARTICIPATION_SOURCE } from "@/lib/actions/participation/group-participation.helpers";
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
-import { ensureActionConversationMember } from "@/lib/chat/action-conversations";
 import type { UserIdentity } from "@/lib/authz";
 import {
   type GroupJoinAuditErrorStage,
@@ -211,14 +210,6 @@ export async function handleGroupJoinReview(
 
     const isPostActionClaim =
       result.participationSource === POST_ACTION_CLAIM_PARTICIPATION_SOURCE;
-
-    if (
-      !isPostActionClaim &&
-      ("participantUserId" in parsed.data || parsed.data.decision === "accept") &&
-      (result.participationStatus === "pending" || result.participationStatus === "confirmed")
-    ) {
-      await ensureActionConversationMember(supabase, trimmedActionId, result.participantUserId);
-    }
 
     if (
       "participantUserId" in parsed.data || parsed.data.decision === "accept"

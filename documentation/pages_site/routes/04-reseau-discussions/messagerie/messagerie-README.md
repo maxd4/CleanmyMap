@@ -14,6 +14,8 @@
 - `apps/web/supabase/migrations/20260826000000_chat_message_topics.sql`
 - `apps/web/supabase/migrations/20260826010000_chat_announcements.sql`
 - `apps/web/supabase/migrations/20260826020000_chat_polls.sql`
+- `apps/web/supabase/migrations/20260915000006_action_conversation_exclusions.sql`
+- `apps/web/src/app/api/chat/action-exclusions/route.ts`
 - **Type fonctionnel** : page de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Statut** : protégé
@@ -23,9 +25,9 @@
 - **Palette attendue** : pink
 - **Scope** : lots 1 à 5C et finition UI livrés — boîte privée, salons thématiques persistants, annonces/relais communautaires, sondages avec vote, historique paginé et recherche scoped
 - **Terminée** : création, lecture, vote, changement et retrait d'un vote oui ; résultats agrégés oui ; multi-choix, expiration et clôture restent hors périmètre.
-- **Données** : `app_messages` reste la source canonique des messages. `action_conversations` ne duplique pas une action : elle garantit l'unicité de la relation `action_id → conversation_id`, et `action_conversation_members` porte uniquement l'accès persistant à cette discussion.
+- **Données** : `app_messages` reste la source canonique des messages. `action_conversations` ne duplique pas une action : elle garantit l'unicité de la relation `action_id → conversation_id`. Toute personne authentifiée peut lire et écrire une discussion d'action publiée et visible, sauf exclusion active. `action_conversation_members` est seulement une audience technique de notifications ; il ne confère aucun droit d'accès.
 - **Actions** : la surface `Actions` liste uniquement les actions publiées autorisées, met en évidence les actions à venir et conserve les actions passées selon le cycle de vie existant. Un brouillon ou une action non publiée n'est jamais exposé dans la messagerie.
-- **Accès action** : l'organisateur, les participants ayant rejoint l'action et les rôles d'administration autorisés peuvent lire le fil selon les RLS. L'accès au chat est distinct de la participation : une annulation n'efface pas automatiquement l'accès déjà accordé, et un accès admin ne modifie jamais le nombre de participants.
+- **Accès action** : l'accès au chat est indépendant de la participation : l'état pending, confirmed, cancelled ou refused d'une participation ne modifie pas le droit de discuter. Une action publiée et visible est accessible aux comptes authentifiés non exclus, y compris après sa date ; un brouillon, une action non publiée, masquée ou rejetée reste inaccessible. Le créateur et les organisateurs autorisés ainsi que les rôles actifs `admin`/`max` peuvent exclure ou réintégrer un utilisateur sans supprimer de message ni modifier la participation.
 - **Continuité** : une pré-action publiée et l'action qui lui succède utilisent le même `action_id`, la même conversation et le même historique. Le header relit le titre, la date, le lieu, l'organisateur, les participants prévus, la durée et l'itinéraire depuis l'action source.
 - **Annonces** : `message_kind` distingue `message` et `announcement`. Une annonce est communautaire, utilise un topic canonique (`relais_associatif`, `appel_aux_benevoles` ou `demande_diffusion`) et peut référencer un `community_events.id` réellement existant via `related_event_id`. Les détails de l'événement affichés viennent de la base, jamais de l'URL.
 - **Sondages** : `message_kind = 'poll'` est réservé à `community`. La question reste dans `app_messages.content` et les 2 à 6 options ordonnées vivent dans `chat_poll_options`, créées atomiquement avec le message. Les votes vivent dans `chat_poll_votes`, avec une ligne par `(message_id, user_id)` ; les lectures retournent uniquement des compteurs agrégés et le choix de l'utilisateur courant, jamais une liste nominative.

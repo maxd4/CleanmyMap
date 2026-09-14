@@ -521,6 +521,29 @@ export const API_AUTHORIZATION_CONTRACT = {
       ],
     },
   },
+  "chat/action-exclusions": {
+    GET: {
+      expected: "Action creator/organizer or active admin/max reads moderation exclusions for a published visible action",
+      dimensions: ["authentication", "business permission", "ownership", "admin/creator role"],
+      actual: "auth + current identity + dedicated action discussion moderation capability; service-side action and exclusion reads",
+      evidence: ["auth()", "getCurrentUserIdentity", "canModerateActionConversation", "loadActionById"],
+      evidenceScope: "module",
+    },
+    POST: {
+      expected: "Authorized action discussion moderator creates or reactivates an exclusion without changing participation",
+      dimensions: ["authentication", "business permission", "ownership", "admin/creator role"],
+      actual: "auth + dedicated capability + service-side upsert scoped to the canonical action conversation",
+      evidence: ["auth()", "canModerateActionConversation", "action_conversation_exclusions", "action_conversations"],
+      evidenceScope: "module",
+    },
+    PATCH: {
+      expected: "Authorized action discussion moderator explicitly reinstates a previously excluded user",
+      dimensions: ["authentication", "business permission", "ownership", "admin/creator role"],
+      actual: "auth + dedicated capability + service-side update of active/reinstatement audit fields",
+      evidence: ["auth()", "canModerateActionConversation", "reinstated_at", "reinstated_by_user_id"],
+      evidenceScope: "module",
+    },
+  },
   "chat/inbox": {
     GET: {
       expected: "Authenticated user reads only their own DM inbox",

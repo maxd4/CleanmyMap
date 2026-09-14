@@ -61,6 +61,17 @@ export type ActionConversationMemberRow = {
   access_source: "owner" | "action_participant";
 };
 
+export type ActionConversationExclusionRow = {
+  conversation_id: string;
+  user_id: string;
+  excluded_by_user_id: string;
+  excluded_at: string;
+  reason: string | null;
+  active: boolean;
+  reinstated_at: string | null;
+  reinstated_by_user_id: string | null;
+};
+
 export type ActionRow = {
   id: string;
   created_at: string;

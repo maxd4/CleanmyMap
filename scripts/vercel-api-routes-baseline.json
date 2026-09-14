@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-09T16:34:28.173Z",
-  "apiRouteCount": 95,
+  "apiRouteCount": 96,
   "apiRoutes": [
     "apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts",
     "apps/web/src/app/api/account/active-profile/route.ts",
@@ -32,6 +32,7 @@
     "apps/web/src/app/api/admin/role-accounts/route.ts",
     "apps/web/src/app/api/admin/storage-usage/route.ts",
     "apps/web/src/app/api/analytics/funnel/route.ts",
+    "apps/web/src/app/api/chat/action-exclusions/route.ts",
     "apps/web/src/app/api/chat/inbox/route.ts",
     "apps/web/src/app/api/chat/polls/[messageId]/vote/route.ts",
     "apps/web/src/app/api/chat/route.ts",
