@@ -456,6 +456,58 @@ describe("action declaration payload helpers", () => {
     expect(payload.geometrySource).toBe("routed");
   });
 
+  it("uses the editable operational route as routed geometry without observations", () => {
+    const form = buildBaseForm();
+    form.operationalRoute = {
+      version: "operational-route-v1",
+      initializedAt: "2026-09-14T10:00:00.000Z",
+      updatedAt: "2026-09-14T10:00:00.000Z",
+      source: "planner",
+      state: "planner_copy",
+      plannerGroupCount: 2,
+      routes: [
+        {
+          routeId: "planner-group-1",
+          groupIndex: 1,
+          geometry: { coordinates: [[48.85, 2.34], [48.851, 2.341]] },
+          plannerTechnicalStops: [],
+        },
+        {
+          routeId: "planner-group-2",
+          groupIndex: 2,
+          geometry: { coordinates: [[48.85, 2.34], [48.852, 2.342]] },
+          plannerTechnicalStops: [],
+        },
+      ],
+      zones: {
+        departure: { label: null, coordinate: [48.85, 2.34] },
+        midpoint: { label: null, coordinate: [48.851, 2.341] },
+        arrival: { label: null, coordinate: [48.85, 2.34] },
+      },
+    } as unknown as NonNullable<typeof form.operationalRoute>;
+    form.wasteKg = "";
+    form.cigaretteButtsCount = "";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "quick",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+    });
+
+    expect(payload.actionPhase).toBe("pre_action");
+    expect(payload.geometrySource).toBe("routed");
+    expect(payload.manualDrawing).toEqual({
+      kind: "polyline",
+      coordinates: [[48.85, 2.34], [48.851, 2.341]],
+    });
+    expect(payload.wasteKg).toBeNull();
+    expect(payload.cigaretteButts).toBeNull();
+    expect(payload.preparationData?.operationalRoute?.routes).toHaveLength(2);
+  });
+
   it("preserves the resolved routed provenance of a snapped drawing", () => {
     const payload = buildCreateActionPayload({
       form: buildBaseForm(),

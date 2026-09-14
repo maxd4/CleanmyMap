@@ -29,6 +29,7 @@ type EntryScreen = "choice" | "loading" | "success" | "error";
 
 type ActionDeclarationEntryFlowProps = ComponentProps<typeof ActionDeclarationForm> & {
   initialActionId?: string | null;
+  initialEntryPath?: EntryPath;
   signInHref?: string;
   signUpHref?: string;
 };
@@ -170,12 +171,11 @@ function ErrorPanel({
 
 export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProps) {
   const router = useRouter();
+  const initialEntryPath = props.initialActionId ? "after" : props.initialEntryPath ?? null;
   const [screen, setScreen] = useState<EntryScreen>(
-    props.initialActionId ? "success" : "choice",
+    initialEntryPath ? "success" : "choice",
   );
-  const [selection, setSelection] = useState<EntryPath | null>(
-    props.initialActionId ? "after" : null,
-  );
+  const [selection, setSelection] = useState<EntryPath | null>(initialEntryPath);
   const [handoffActionId, setHandoffActionId] = useState<string | null>(
     props.initialActionId ?? null,
   );

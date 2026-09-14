@@ -1,11 +1,13 @@
-import { type FormEvent, useMemo, useRef, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createAction } from "@/lib/actions/http";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import {
   createInitialFormState,
   buildCreateActionPayload,
+  applyPreparationDataToForm,
 } from "../payload";
 import { saveDraft, loadDraftSnapshot } from "../draft-storage";
+import { consumePlannerActionHandoff } from "@/lib/route/route-action-handoff";
 import type { FormState } from "../form/model";
 import type { ActionPhotoAsset, ActionVisionEstimate } from "@/lib/actions/types";
 import {
@@ -49,12 +51,49 @@ export function useBeforeActionForm({
   const [form, setForm] = useState<FormState>(() =>
     buildPrefillForm(actorNameOptions, resolvedDefaultActorName, initialRecordType),
   );
+  const plannerHandoffHydratedRef = useRef(false);
   const [submissionState, setSubmissionState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [validationIssues, setValidationIssues] = useState<string[]>([]);
   const [showGroupJoinHelp, setShowGroupJoinHelp] = useState(false);
   const hasTrackedStartRef = useRef(false);
+
+  useEffect(() => {
+    if (plannerHandoffHydratedRef.current) return;
+    plannerHandoffHydratedRef.current = true;
+    const handoff = consumePlannerActionHandoff();
+    if (!handoff) return;
+
+    const handoffPreparationData = handoff.preparationData
+      ? {
+          ...handoff.preparationData,
+          operationalRoute: handoff.operationalRoute,
+          routeCalibrationContext: handoff.routeCalibrationContext ?? undefined,
+        }
+      : {
+          operationalRoute: handoff.operationalRoute,
+          routeCalibrationContext: handoff.routeCalibrationContext ?? undefined,
+        };
+    const prepared = sanitizePreActionForm(
+      applyPreparationDataToForm(form, handoffPreparationData),
+    );
+    if (
+      handoff.preparationData?.volunteersExpected !== undefined &&
+      !handoff.preparationData.volunteerParticipation
+    ) {
+      prepared.childrenCount = "";
+      prepared.adultCount = "";
+      prepared.retiredCount = "";
+    }
+
+    // Hydrate after the client boundary so sessionStorage never changes SSR markup.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional external handoff hydration
+    setForm(prepared);
+    saveDraft(prepared);
+  // The handoff is intentionally consumed once on mount; the current form is the merge base.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const shareLink = createdId
     ? `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(createdId)}`

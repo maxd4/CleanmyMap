@@ -77,4 +77,34 @@ describe("planner action handoff", () => {
       "operational-route-v1",
     );
   });
+
+  it("keeps the known pre-action prefill while rejecting malformed values", () => {
+    const storage = installStorage();
+    writePlannerActionHandoff({
+      operationalRoute,
+      routeCalibrationContext: null,
+      plannerProof: null,
+      preparationData: {
+        actionDate: "2026-09-20",
+        estimatedDurationMinutes: 45,
+        volunteersExpected: 4,
+      },
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    });
+
+    expect(consumePlannerActionHandoff()?.preparationData).toEqual({
+      actionDate: "2026-09-20",
+      estimatedDurationMinutes: 45,
+      volunteersExpected: 4,
+    });
+
+    storage.set(ROUTE_ACTION_HANDOFF_STORAGE_KEY, JSON.stringify({
+      operationalRoute,
+      routeCalibrationContext: null,
+      plannerProof: null,
+      preparationData: { volunteersExpected: "invented" },
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    }));
+    expect(consumePlannerActionHandoff()).toBeNull();
+  });
 });

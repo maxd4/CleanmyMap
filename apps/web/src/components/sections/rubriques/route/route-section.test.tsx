@@ -112,6 +112,7 @@ describe("RouteSection explainability wiring", () => {
     );
 
     expect(markup).toContain("Différencier les itinéraires par");
+    expect(markup).toContain("Créer une action avec cet itinéraire");
     expect(markup).toContain("Couleurs différentes");
     expect(markup).toContain("Formes différentes");
     expect(markup).toContain("Tous les groupes");

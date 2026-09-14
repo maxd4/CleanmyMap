@@ -21,6 +21,17 @@ import {
 } from "@/lib/actions/volunteer-participation";
 import type { VolunteerParticipationInput } from "@/lib/actions/volunteer-participation";
 
+function deriveDrawingFromOperationalRoute(
+ form: FormState,
+): ActionDrawing | null {
+ const coordinates = form.operationalRoute?.routes[0]?.geometry.coordinates;
+ if (!coordinates || coordinates.length < 2) return null;
+ return {
+  kind: "polyline",
+  coordinates: structuredClone(coordinates),
+ };
+}
+
 export const PARK_PLACE_TYPE ="Bois/Parc/Jardin/Square/Sentier";
 export const OTHER_VOLUNTEER_ASSOCIATION_VALUE = "__autre_benevole__";
 
@@ -352,14 +363,20 @@ export function buildCreateActionPayload(params: {
  let longitude = fallbackLongitude;
 
  const normalizedManualDrawing = normalizeActionDrawing(manualDrawing);
- const resolvedManualDrawingSource = normalizedManualDrawing
-  ? normalizedManualDrawing.kind === "polygon"
+ const normalizedOperationalDrawing = normalizedManualDrawing
+  ? null
+  : normalizeActionDrawing(deriveDrawingFromOperationalRoute(form));
+ const normalizedDrawing = normalizedManualDrawing ?? normalizedOperationalDrawing;
+ const resolvedManualDrawingSource = normalizedDrawing
+  ? normalizedDrawing.kind === "polygon"
    ? "manual"
-   : manualDrawingSource ?? "manual"
+   : normalizedManualDrawing
+     ? manualDrawingSource ?? "manual"
+     : "routed"
   : null;
 
- if (effectiveManualDrawingEnabled && drawingIsValid && normalizedManualDrawing) {
- const centroid = getDrawingCentroid(normalizedManualDrawing);
+ if (normalizedDrawing && (effectiveManualDrawingEnabled || normalizedOperationalDrawing)) {
+ const centroid = getDrawingCentroid(normalizedDrawing);
  latitude = centroid.latitude;
  longitude = centroid.longitude;
  }
@@ -435,11 +452,11 @@ export function buildCreateActionPayload(params: {
  linkedEventId,
  ),
  manualDrawing:
- effectiveManualDrawingEnabled && drawingIsValid && normalizedManualDrawing
- ? normalizedManualDrawing
+ (effectiveManualDrawingEnabled && drawingIsValid && normalizedManualDrawing) || normalizedOperationalDrawing
+ ? normalizedDrawing!
  : undefined,
  geometrySource:
- effectiveManualDrawingEnabled && drawingIsValid && normalizedManualDrawing
+ ((effectiveManualDrawingEnabled && drawingIsValid && normalizedManualDrawing) || normalizedOperationalDrawing)
   ? resolvedManualDrawingSource
   : undefined,
  placeType: form.placeType,

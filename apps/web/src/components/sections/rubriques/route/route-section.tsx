@@ -24,7 +24,10 @@ import { Navigation, Zap, Info, Route as RouteIcon, Sparkles } from "lucide-reac
 import { motion, AnimatePresence } from "framer-motion";
 import type { RouteGeometry } from "@/lib/route/route-contract";
 import type { RouteGroupRoute } from "@/lib/route/route-response-contract";
-import { createOperationalRouteFromRecommendation } from "@/lib/route/route-operational";
+import {
+  createOperationalRouteFromRecommendation,
+  createPlannerActionPreparationData,
+} from "@/lib/route/route-operational";
 import { writePlannerActionHandoff } from "@/lib/route/route-action-handoff";
 import { formatBusinessDurationRangeMinutes } from "@/lib/actions/time-contract";
 import {
@@ -104,9 +107,14 @@ export function RouteSection() {
       operationalRoute: createOperationalRouteFromRecommendation(data),
       routeCalibrationContext: data.calibrationContext ?? null,
       plannerProof: data.plannerProof ?? null,
+      preparationData: createPlannerActionPreparationData(data, options),
       expiresAt: data.plannerProof?.expiresAt ?? new Date(0).toISOString(),
     });
-    router.push("/actions/new?from=planner");
+    const params = new URLSearchParams({ from: "planner" });
+    if (planningMode.type === "event-centered") {
+      params.set("fromEventId", planningMode.eventId);
+    }
+    router.push(`/actions/new?${params.toString()}`);
   };
 
   const dataStatusMessage = data
@@ -406,7 +414,7 @@ export function RouteSection() {
                           onClick={createActionFromRecommendation}
                           className="mt-4 rounded-2xl bg-emerald-400 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-950 transition hover:bg-emerald-300"
                         >
-                          Créer une action avec ce parcours
+                          Créer une action avec cet itinéraire
                         </button>
                       </div>
                    </div>

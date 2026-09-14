@@ -164,6 +164,9 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
     adultCount: form.adultCount.trim() === "" ? null : Number(form.adultCount),
     retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount),
   });
+  const totalVolunteers =
+    volunteerParticipation.participantsCount ??
+    (form.volunteersCount.trim() || "—");
 
   return (
             <CmmCard tone="emerald" variant="glass" size="lg">
@@ -253,7 +256,7 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                         ))}
                       </div>
                       <p className="text-xs font-semibold text-emerald-900/65">
-                        Total calculé : {volunteerParticipation.participantsCount ?? "—"} participant(s) · unités opérationnelles : {volunteerParticipation.effectiveVolunteerUnits ?? "—"}
+                        Total attendu : {totalVolunteers} participant(s) · unités opérationnelles : {volunteerParticipation.effectiveVolunteerUnits ?? "à préciser"}
                       </p>
                     </div>
                   </div>
