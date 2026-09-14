@@ -17,6 +17,7 @@ import {
 } from "@/lib/chat/chat-attachments";
 import { createChatNotificationsForMessage } from "@/lib/chat/chat-notifications";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveActionDiscussionAccess } from "@/lib/chat/action-conversations";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 import {
   reserveDiscussionMessageSlot,
@@ -174,6 +175,16 @@ export async function POST(request: Request) {
           { error: "Action non partageable", hint: "Cette action n'est plus publiée, future ou accessible." },
           { status: 403 },
         );
+      }
+    }
+
+    if (parsed.data.channelType === "action" && parsed.data.actionId && typeof serviceSupabase.from === "function") {
+      const access = await resolveActionDiscussionAccess(serviceSupabase, parsed.data.actionId, userId);
+      if (access.state === "excluded") {
+        return NextResponse.json({ error: "Vous êtes exclu de cette discussion." }, { status: 403 });
+      }
+      if (access.state === "unavailable") {
+        return NextResponse.json({ error: "Discussion d'action introuvable." }, { status: 404 });
       }
     }
 

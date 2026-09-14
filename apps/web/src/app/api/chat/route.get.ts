@@ -13,6 +13,7 @@ import {
 import { mergeRowGroupsById } from "@/lib/chat/postgrest";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
+import { resolveActionDiscussionAccess } from "@/lib/chat/action-conversations";
 import {
   CHAT_PAGE_SIZE,
   buildChatHistoryCursor,
@@ -142,6 +143,18 @@ export async function GET(request: Request) {
   try {
     let actionConversationId: string | null = null;
     if (channelType === "action" && requestedActionId) {
+      const serviceSupabase = getSupabaseServerClient();
+      // The service preflight gives excluded users a stable explicit state;
+      // RLS remains the final authority for the actual message query.
+      if (typeof serviceSupabase.from === "function") {
+        const access = await resolveActionDiscussionAccess(serviceSupabase, requestedActionId, userId);
+        if (access.state === "excluded") {
+          return NextResponse.json({ error: "Vous êtes exclu de cette discussion." }, { status: 403 });
+        }
+        if (access.state === "unavailable") {
+          return NextResponse.json({ error: "Discussion d'action introuvable." }, { status: 404 });
+        }
+      }
       const { data: conversation, error: conversationError } = await supabase
         .from("action_conversations")
         .select("id")

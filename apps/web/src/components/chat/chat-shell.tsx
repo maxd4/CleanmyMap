@@ -15,6 +15,7 @@ import {
 import { TopicNetworkGraph } from "./topic-network-graph";
 import { ChatComposer } from "./chat-composer";
 import { ChatHeader } from "./chat-header";
+import { ChatActionModeration } from "./chat-action-moderation";
 import { ChatSidebar } from "./chat-sidebar";
 import { DmInbox } from "./dm-inbox";
 import { ChatContextSidebar } from "./chat-context-sidebar";
@@ -624,6 +625,10 @@ export function ChatShell({
             onSelectSearchResult={handleSelectSearchResult}
             onLoadMoreSearch={() => void chatSearch.loadMore()}
           />
+
+          {activeChannelType === "action" && selectedActionId && messagerieMode ? (
+            <ChatActionModeration actionId={selectedActionId} tone={isLight ? "light" : "dark"} />
+          ) : null}
 
           {isBugReportChannel ? (
             <div className={`flex-1 overflow-y-auto p-6 custom-scrollbar ${isLight ? "bg-white/40" : ""}`}>
