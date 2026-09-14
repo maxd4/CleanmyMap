@@ -172,6 +172,15 @@ Implication pour CleanMyMap:
 
 ## Regles concretement recommandees
 
+### Participation confirmee et attribution personnelle
+
+- Une participation ne contribue a la progression personnelle et aux recompenses qu'une fois son statut `confirmed` etabli. Les statuts `pending`, `cancelled` et les demandes refusees ne generent ni progression ni credit.
+- Un claim post-action accepte suit exactement la meme source canonique de gamification qu'une participation confirmee normale; sa provenance `post_action_claim` ne change pas la valeur de la recompense.
+- Apres confirmation, la quote-part personnelle est une derivation de lecture, non une mesure scientifique individuelle : pour une metrique additive finale disponible, `quotePart = resultat collectif final / nombre de participants confirmes`.
+- Le denominateur est exclusivement `COUNT(action_participants WHERE participation_status = 'confirmed')`. Il exclut les demandes en attente, annulees ou refusees ainsi que les effectifs terrain et les `effectiveVolunteerUnits`.
+- Les metriques additives finales partageables sont la masse de dechets et les megots finaux, lorsqu'elles sont connues. La duree, la distance/route, les categories de benevoles et les scores ou ratios non additifs ne sont jamais divises.
+- La quote-part reste une attribution de profil et ne retroalimente jamais le resultat collectif. Elle est recalculee dynamiquement si le nombre de participants confirmes evolue; elle n'est pas persistee sans besoin demontre.
+
 ### Contrainte produit temporaire (prioritaire)
 
 - pour l instant, **interdiction de proposer ou coder des objectifs globaux ou communautaires**;

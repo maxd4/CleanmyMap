@@ -221,8 +221,7 @@ export async function handleGroupJoinReview(
     }
 
     if (
-      !isPostActionClaim &&
-      ("participantUserId" in parsed.data || parsed.data.decision === "accept")
+      "participantUserId" in parsed.data || parsed.data.decision === "accept"
     ) {
       await refreshProgressionProfile(
         supabase,
