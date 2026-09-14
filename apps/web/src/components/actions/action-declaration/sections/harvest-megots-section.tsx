@@ -6,6 +6,7 @@ import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import { ProgressGauge } from "../ui/harvest-gauges";
 import { formatCount, formatKg, formatSignedPercent } from "../utils/harvest-utils";
 import { cn } from "@/lib/utils";
+import { CmmField, CmmInput } from "@/components/ui/cmm-field";
 
 type HarvestMegotsSectionProps = {
   wasteMegotsKg: string;
@@ -130,31 +131,32 @@ export function HarvestMegotsSection({
         </label>
       </div>
 
-      {/* Count slider */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-500">Nombre de mégots</span>
-          <span className="text-sm font-bold text-slate-900">{formatCount(megotsCount)}</span>
-        </div>
-        <input
+      {/* Exact count input */}
+      <CmmField
+        label={(
+          <span className="flex items-center justify-between gap-3">
+            <span>Nombre de mégots</span>
+            <span className="text-sm font-bold text-slate-900">{formatCount(megotsCount)}</span>
+          </span>
+        )}
+        hint={(
+          <>
+            Saisissez le nombre brut précisément. Limite maximale : {MAX_CIGARETTE_BUTTS_COUNT.toLocaleString("fr-FR")} mégots ; la masse dérivée reste distincte pour l’envoi.
+          </>
+        )}
+      >
+        <CmmInput
           id="harvest-megots-count"
           inputMode="numeric"
-          type="range"
-          min="0"
+          type="number"
+          min={0}
           max={MAX_CIGARETTE_BUTTS_COUNT}
-          step="1"
+          step={1}
           value={megotsCount}
           onChange={(e) => onMegotsCountChange(e.target.value)}
-          className="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-amber-100 accent-amber-500"
+          className="!h-12 !w-full !rounded-xl !border-slate-200 !bg-white !px-4 !text-base !font-bold !text-slate-900 focus:!border-amber-400 focus:!ring-2 focus:!ring-amber-500/15"
         />
-        <div className="flex justify-between text-[10px] text-slate-400">
-          <span>0</span>
-          <span>{MAX_CIGARETTE_BUTTS_COUNT.toLocaleString("fr-FR")}</span>
-        </div>
-        <p className="text-[10px] leading-snug text-slate-500">
-          Le slider renseigne le nombre brut. Une masse dérivée reste distincte pour l’envoi.
-        </p>
-      </div>
+      </CmmField>
 
       {/* Auto-conversion */}
       {megotsCount > 0 && (
