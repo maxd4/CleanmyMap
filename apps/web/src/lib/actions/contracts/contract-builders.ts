@@ -10,6 +10,7 @@ import {
 } from "../types";
 import type { ActionGeometrySource } from "../types";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
+import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract";
 import type { OrganizerType } from "../organizer-type";
 import type {
   RawCigaretteButtsMeasurementInput,
@@ -50,6 +51,7 @@ export type ActionContractCreatePayload = {
     groupJoinEnabled?: boolean;
     actionPhase?: ActionPhase;
     preparationData?: ActionPreparationData | null;
+    plannerSnapshotProof?: RoutePlannerProof | null;
     placeType?: string;
     wasteKg?: number | null;
     cigaretteButtsMeasurements?: RawCigaretteButtsMeasurementInput | null;
@@ -118,6 +120,7 @@ export function toContractCreatePayload(
         payload.preparationData,
         payload.routeCalibrationContext,
       ),
+      plannerSnapshotProof: payload.plannerSnapshotProof ?? null,
       placeType: payload.placeType,
       wasteKg: payload.wasteKg,
       cigaretteButtsMeasurements: payload.cigaretteButtsMeasurements,
@@ -193,6 +196,7 @@ function normalizeContractCreatePayload(
     groupJoinEnabled: payload.metadata.groupJoinEnabled,
     actionPhase: payload.metadata.actionPhase ?? undefined,
     preparationData: payload.metadata.preparationData ?? null,
+    plannerSnapshotProof: payload.metadata.plannerSnapshotProof ?? null,
     organizerAccounts: payload.metadata.organizerAccounts ?? undefined,
     participantAccounts: payload.metadata.participantAccounts ?? undefined,
     actionDate: payload.dates.observedAt,

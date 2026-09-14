@@ -4,6 +4,7 @@ import {
   type PlannerActionHandoff,
 } from "./route-actual";
 import { isRouteCalibrationContext } from "./route-calibration";
+import { isRoutePlannerProofShape } from "./route-planner-proof-contract";
 
 export const ROUTE_ACTION_HANDOFF_STORAGE_KEY =
   "cleanmymap.route-action-handoff.v1";
@@ -36,17 +37,27 @@ export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
     if (
       !isActualRoute(parsed.actualRoute) ||
       (parsed.routeCalibrationContext !== null &&
-        !isRouteCalibrationContext(parsed.routeCalibrationContext))
+        !isRouteCalibrationContext(parsed.routeCalibrationContext)) ||
+      !isIsoDateInFuture(parsed.expiresAt) ||
+      (parsed.routeCalibrationContext?.plannerSnapshot !== undefined &&
+        (!isRoutePlannerProofShape(parsed.plannerProof) ||
+          parsed.plannerProof.expiresAt !== parsed.expiresAt))
     ) {
       return null;
     }
     return {
       actualRoute: parsed.actualRoute,
       routeCalibrationContext: parsed.routeCalibrationContext ?? null,
+      plannerProof: parsed.plannerProof ?? null,
+      expiresAt: parsed.expiresAt,
     };
   } catch {
     return null;
   }
+}
+
+function isIsoDateInFuture(value: unknown): value is string {
+  return typeof value === "string" && !Number.isNaN(Date.parse(value)) && Date.parse(value) > Date.now();
 }
 
 export function cloneActualRoute(value: ActualRoute): ActualRoute {

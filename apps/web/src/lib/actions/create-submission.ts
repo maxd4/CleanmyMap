@@ -17,6 +17,10 @@ import {
 import type { ActionStatus } from "@/lib/actions/types";
 import { invalidatePublicSurfaceSnapshotsByRoute } from "@/lib/public-surface-snapshots";
 import { logFailure } from "@/lib/logging/failure-log";
+import {
+  PlannerSnapshotTrustError,
+  promoteVerifiedPlannerContext,
+} from "@/lib/route/route-planner-trust";
 
 export class ActionCreationValidationError extends Error {
   constructor(public readonly fieldErrors: Record<string, string[]>) {
@@ -64,7 +68,7 @@ function validationError(field: string, message: string): ActionCreationValidati
 export async function createActionSubmission(
   params: CreateActionSubmissionParams,
 ): Promise<CreateActionSubmissionResult> {
-  const { payload } = params;
+  let payload = params.payload;
 
   if (payload.recordType === "clean_place" || payload.recordType === "spot") {
     if (payload.locationLabel.trim().length < 2) {
@@ -110,6 +114,18 @@ export async function createActionSubmission(
       "organizerType",
       "Sélectionnez un type de structure.",
     );
+  }
+
+  try {
+    payload = promoteVerifiedPlannerContext(payload);
+  } catch (error) {
+    if (error instanceof PlannerSnapshotTrustError) {
+      const message = error.reason === "missing"
+        ? "Le snapshot planner doit être accompagné de sa preuve serveur."
+        : "Le snapshot planner ne peut pas être vérifié.";
+      throw validationError("plannerSnapshotProof", message);
+    }
+    throw error;
   }
 
   const isSpontaneousAction = payload.associationName === "Action spontanée";

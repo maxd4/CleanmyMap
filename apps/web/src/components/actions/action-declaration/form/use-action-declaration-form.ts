@@ -154,6 +154,7 @@ export function useActionDeclarationForm({
       ...current,
       actualRoute: handoff.actualRoute,
       routeCalibrationContext: handoff.routeCalibrationContext,
+      plannerProof: handoff.plannerProof,
       departureLocationLabel:
         handoff.actualRoute.zones.departure.label ?? current.departureLocationLabel,
       midRouteLocationLabel:

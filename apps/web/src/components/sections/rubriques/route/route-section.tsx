@@ -103,6 +103,8 @@ export function RouteSection() {
     writePlannerActionHandoff({
       actualRoute: createActualRouteFromRecommendation(data),
       routeCalibrationContext: data.calibrationContext ?? null,
+      plannerProof: data.plannerProof ?? null,
+      expiresAt: data.plannerProof?.expiresAt ?? new Date(0).toISOString(),
     });
     router.push("/actions/new?from=planner");
   };

@@ -4,6 +4,7 @@ import {
   buildCalibrationDataset,
   buildRouteCalibrationContext,
   buildRoutePlannerSnapshot,
+  buildVerifiedRouteCalibrationContext,
   estimateRouteCleanupDuration,
   isRouteCalibrationContext,
   preserveHistoricalRouteCalibrationContext,
@@ -264,7 +265,19 @@ describe("route calibration infrastructure", () => {
       travelMinutes: 20,
       returnDistanceKm: 0,
       returnMinutes: 0,
-      groups: [],
+      groups: [{
+        groupIndex: 1,
+        volunteerCount: 3,
+        candidateIds: [],
+        reservedCandidateIds: [],
+        targetCount: 0,
+        travelDistanceKm: 1.5,
+        travelMinutes: 20,
+        travelBudgetMinutes: 60,
+        withinBudget: true,
+        routeGeometry: routeGeometry(1.5),
+        operationalBudget: null,
+      }],
       dataStatus: "empty",
       dataLayers: { observed: "empty", prediction: "unavailable", recommendation: "empty" },
       sourceHealth: {
@@ -303,7 +316,11 @@ describe("route calibration infrastructure", () => {
       durationMinutes: 90,
       placeType: "parc",
       preparationData: {
-        routeCalibrationContext: context({ plannerSnapshot }),
+        routeCalibrationContext: context({
+          plannerSnapshot,
+          candidates: [],
+          volunteersExpected: 3,
+        }),
         actualRoute,
       },
     }]);
@@ -482,6 +499,103 @@ describe("route calibration infrastructure", () => {
     expect(estimate.calibrationStatus).toBe("data_insufficient");
     expect(estimate.provenance.artifactVersion).toBeNull();
     expect(repeatedEstimate).toEqual(estimate);
+  });
+
+  it("reads v1/v2/v3 and excludes legacy snapshots when proof is required", () => {
+    const plannerSnapshot = buildRoutePlannerSnapshot({
+      generatedAt: "2026-09-01T09:00:00.000Z",
+      engineVersion: "route-planner-v2",
+      selectedCandidates: [],
+      selectedStops: [],
+      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+      planningMode: { type: "free" },
+      travelBudgetMinutes: 60,
+      maxStops: 3,
+      priorityVsTravel: 65,
+      pickupPreference: "balanced",
+      effectiveRiskFocus: "all",
+      volunteers: 3,
+      groupCount: 1,
+      routeGeometry: routeGeometry(1.5),
+      travelDistanceKm: 1.5,
+      travelMinutes: 20,
+      returnDistanceKm: 0,
+      returnMinutes: 0,
+      groups: [{
+        groupIndex: 1,
+        volunteerCount: 3,
+        candidateIds: [],
+        reservedCandidateIds: [],
+        targetCount: 0,
+        travelDistanceKm: 1.5,
+        travelMinutes: 20,
+        travelBudgetMinutes: 60,
+        withinBudget: true,
+        routeGeometry: routeGeometry(1.5),
+        operationalBudget: null,
+      }],
+      dataStatus: "empty",
+      dataLayers: { observed: "empty", prediction: "unavailable", recommendation: "empty" },
+      sourceHealth: { partial: false, failedSources: [], availableSources: ["spots"], warnings: [] },
+      prediction: null,
+    });
+    const legacy = context({ candidates: [], volunteersExpected: 3, plannerSnapshot });
+    const verified = buildVerifiedRouteCalibrationContext({
+      generatedAt: plannerSnapshot.generatedAt,
+      routeEngineVersion: plannerSnapshot.engineVersion,
+      volunteersExpected: 3,
+      groupCount: 1,
+      candidates: [],
+      plannerSnapshot,
+      plannerSnapshotIntegrity: {
+        status: "server_verified",
+        proofVersion: "route-planner-proof-v1",
+        snapshotHash: "a".repeat(64),
+        verifiedAt: plannerSnapshot.generatedAt,
+      },
+    });
+    expect(isRouteCalibrationContext(legacy)).toBe(true);
+    expect(isRouteCalibrationContext({ ...legacy, version: "action-route-calibration-v1" })).toBe(true);
+    expect(isRouteCalibrationContext(verified)).toBe(true);
+
+    const entries = buildCalibrationDataset([
+      {
+        id: "legacy",
+        status: "approved",
+        actionDate: "2026-09-05",
+        locationLabel: "Paris",
+        wasteKg: 2,
+        cigaretteButts: 5,
+        volunteersCount: 3,
+        durationMinutes: 90,
+        preparationData: { routeCalibrationContext: legacy },
+      },
+      {
+        id: "verified",
+        status: "approved",
+        actionDate: "2026-09-05",
+        locationLabel: "Paris",
+        wasteKg: 2,
+        cigaretteButts: 5,
+        volunteersCount: 3,
+        durationMinutes: 90,
+        preparationData: { routeCalibrationContext: verified },
+      },
+    ], { requireVerifiedPlannerProvenance: true }).entries;
+    expect(entries.map((entry) => entry.status === "excluded" ? entry.reason : entry.status)).toEqual([
+      "unverified_historical_context",
+      "included",
+    ]);
+    expect(() => preserveHistoricalRouteCalibrationContext(
+      { routeCalibrationContext: verified },
+      { routeCalibrationContext: {
+        ...verified,
+        plannerSnapshotIntegrity: {
+          ...verified.plannerSnapshotIntegrity!,
+          snapshotHash: "b".repeat(64),
+        },
+      } },
+    )).toThrow("ne peut pas être réécrit");
   });
 });
 

@@ -168,8 +168,8 @@ export function buildPreparationDataFromForm(
   groupJoinEnabled: form.groupJoinEnabled,
   expectedWasteCategories: wasteCategories.length > 0 ? [...wasteCategories] : undefined,
   routeCalibrationContext: form.routeCalibrationContext ?? undefined,
-  actualRoute: form.actualRoute ?? undefined,
- };
+    actualRoute: form.actualRoute ?? undefined,
+  };
 }
 
 export function applyPreparationDataToForm(
@@ -180,7 +180,7 @@ export function applyPreparationDataToForm(
   return form;
  }
 
- return {
+  return {
   ...form,
   actionTitle: preparationData.actionTitle ?? form.actionTitle,
   shortDescription: preparationData.shortDescription ?? form.shortDescription,
@@ -394,6 +394,7 @@ export function buildCreateActionPayload(params: {
     groupJoinEnabled: form.groupJoinEnabled,
     actionPhase: declarationMode === "quick" ? "pre_action" : "post_action_complete",
     preparationData: buildPreparationDataFromForm(form),
+    plannerSnapshotProof: form.plannerProof ?? null,
     organizerAccounts: isSpontaneousAction
    ? undefined
    : (() => {

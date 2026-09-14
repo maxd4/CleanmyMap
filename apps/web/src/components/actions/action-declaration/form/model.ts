@@ -13,6 +13,7 @@ import type { WasteCategorySlug } from "@/lib/waste";
 import type { OrganizerType } from "@/lib/actions/organizer-type";
 import type { ActualRoute } from "@/lib/route/route-actual";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
+import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract";
 import { estimateButtsWeightKg } from "@/lib/impact/impact-terrain-2026";
 
 export type FormState = {
@@ -82,6 +83,7 @@ export type FormState = {
  visionDensity:"" |"sec" |"humide_dense" |"mouille";
  actualRoute?: ActualRoute | null;
  routeCalibrationContext?: RouteCalibrationContext | null;
+ plannerProof?: RoutePlannerProof | null;
 };
 
 export const initialState: FormState = {

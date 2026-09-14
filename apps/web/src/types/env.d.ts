@@ -28,6 +28,7 @@ declare namespace NodeJS {
     GITHUB_TOKEN?: string;
     GIT_COMMIT_SHA?: string;
     IMPORT_DRY_RUN_SECRET?: string;
+    ROUTE_PLANNER_PROOF_SECRET?: string;
     IMPACT_PROXY_CO2_KG_PER_WASTE_KG?: string;
     IMPACT_PROXY_SURFACE_M2_PER_VOLUNTEER_MINUTE?: string;
     IMPACT_PROXY_SURFACE_M2_PER_WASTE_KG?: string;
