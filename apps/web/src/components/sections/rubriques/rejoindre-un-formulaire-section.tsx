@@ -99,6 +99,8 @@ export function JoinActionSection() {
             error={controller.pastError}
             fr={controller.fr}
             focusedActionId={controller.focusActionId}
+            authenticated={controller.authenticated}
+            historyItems={controller.historyItems}
           />
         )}
       </div>

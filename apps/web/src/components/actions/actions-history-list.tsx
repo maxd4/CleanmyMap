@@ -410,7 +410,7 @@ export function ActionsHistoryList() {
       participantId: string;
       decision: "accept" | "reject";
       participationStatus: "pending" | "confirmed" | "cancelled";
-      participationSource: "group_form" | "admin" | "admin_override" | "import";
+      participationSource: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim";
       joinedAt: string;
       updatedAt: string | null;
      }

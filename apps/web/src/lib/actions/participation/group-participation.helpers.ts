@@ -7,6 +7,7 @@ export const PENDING_PARTICIPATION_STATUS = "pending" as const;
 export const ACTIVE_PARTICIPATION_STATUS = "confirmed" as const;
 export const GROUP_PARTICIPATION_SOURCE = "group_form" as const;
 export const ADMIN_PARTICIPATION_SOURCE = "admin_override" as const;
+export const POST_ACTION_CLAIM_PARTICIPATION_SOURCE = "post_action_claim" as const;
 
 export type ParticipationStatus = ActionParticipantRow["participation_status"];
 export type ParticipationSource = ActionParticipantRow["participation_source"];
@@ -303,7 +304,11 @@ export async function insertParticipantRecord(
     .single();
 
   if (result.error) {
-    throw new Error(result.error.message);
+    const error = new Error(result.error.message);
+    if ("code" in result.error && typeof result.error.code === "string") {
+      Object.assign(error, { code: result.error.code });
+    }
+    throw error;
   }
 
   return result.data as ActionParticipantStatusRow;

@@ -51,6 +51,9 @@ export type GroupJoinActionRow = {
   notes: string | null;
   action_phase?: "pre_action" | "post_action_draft" | "post_action_complete";
   published_at?: string | null;
+  moderation_visibility?: "visible" | "hidden" | null;
+  action_date?: string;
+  event_start_time?: string | null;
 };
 
 export type GroupJoinParticipantRow = {
@@ -61,7 +64,7 @@ export type GroupJoinParticipantRow = {
   user_id: string;
   joined_at?: string;
   participation_status?: "pending" | "confirmed" | "cancelled";
-  participation_source?: "group_form" | "admin" | "admin_override" | "import";
+  participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim";
 };
 
 export type GroupJoinProfileRow = {
@@ -95,13 +98,20 @@ export function createGroupJoinAction(params: {
   status?: GroupJoinActionRow["status"];
   notes?: string | null;
   groupJoinEnabled?: boolean;
+  actionPhase?: GroupJoinActionRow["action_phase"];
+  actionDate?: string;
+  eventStartTime?: string | null;
+  moderationVisibility?: GroupJoinActionRow["moderation_visibility"];
 }): GroupJoinActionRow {
   return {
     id: params.id ?? "action-1",
     created_by_clerk_id: params.createdByClerkId ?? "user-1",
     status: params.status ?? "approved",
-    action_phase: "pre_action",
+    action_phase: params.actionPhase ?? "pre_action",
     published_at: "2026-01-01T00:00:00.000Z",
+    moderation_visibility: params.moderationVisibility ?? "visible",
+    action_date: params.actionDate ?? "2026-09-13",
+    event_start_time: params.eventStartTime ?? null,
     notes:
       params.notes ??
       appendActionMetadataToNotes("Observation", {
@@ -118,7 +128,7 @@ export function createGroupJoinParticipant(params: {
   user_id: string;
   joined_at?: string;
   participation_status?: "pending" | "confirmed" | "cancelled";
-  participation_source?: "group_form" | "admin" | "admin_override" | "import";
+  participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim";
 }): GroupJoinParticipantRow {
   return {
     id: params.id ?? `participant-${params.user_id}`,
@@ -209,6 +219,11 @@ function createActionsChain(
       created_by_clerk_id: string | null;
       status: "pending" | "approved" | "rejected";
       notes: string | null;
+      action_phase?: GroupJoinActionRow["action_phase"];
+      published_at?: string | null;
+      moderation_visibility?: GroupJoinActionRow["moderation_visibility"];
+      action_date?: string;
+      event_start_time?: string | null;
     }>>;
     update: (payload: { notes: string | null }) => ActionChain;
     single: () => Promise<SingleResult<{
@@ -236,6 +251,11 @@ function createActionsChain(
               created_by_clerk_id: action.created_by_clerk_id,
               status: action.status,
               notes: state.notes,
+              action_phase: action.action_phase,
+              published_at: action.published_at,
+              moderation_visibility: action.moderation_visibility,
+              action_date: action.action_date,
+              event_start_time: action.event_start_time,
             },
             error: null,
           },
@@ -346,7 +366,7 @@ function createParticipantsChain(
       user_id: string;
       joined_at?: string;
       participation_status?: "pending" | "confirmed" | "cancelled";
-      participation_source?: "group_form" | "admin" | "admin_override" | "import";
+      participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim";
     }) => ParticipantChain;
     then: (
       resolve: (value: {
@@ -452,7 +472,7 @@ function createParticipantsChain(
         user_id: string;
         joined_at?: string;
         participation_status?: "pending" | "confirmed" | "cancelled";
-        participation_source?: "group_form" | "admin" | "admin_override" | "import";
+        participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim";
       }) => {
         const joinedAt = values.joined_at ?? "2026-06-04T12:00:00Z";
         state.inserting = {

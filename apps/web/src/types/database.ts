@@ -43,7 +43,8 @@ export type ActionParticipantRow = {
     | "manual_add"
     | "admin"
     | "admin_override"
-    | "import";
+    | "import"
+    | "post_action_claim";
 };
 
 export type ActionConversationRow = {
