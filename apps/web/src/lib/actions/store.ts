@@ -43,6 +43,7 @@ import type { ActionQuery } from "@/lib/actions/query";
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 import { toActionContract } from "@/lib/actions/unified-source/contracts";
 import { evaluateRepollutionPredictionBeforeObservation } from "@/lib/actions/pollution/repollution-prediction-evaluation";
+import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { persistRepollutionPredictionEvaluation } from "@/lib/actions/pollution/repollution-prediction-evaluation-store";
 import {
   resolveActionDepartmentForPersistence,
@@ -549,7 +550,7 @@ async function insertCreatedAction(
   const insertWithPhase = {
     ...baseInsert,
     action_phase: params.payload.actionPhase ?? "post_action_complete",
-    preparation_data: params.payload.preparationData ?? {},
+    preparation_data: normalizeActionPreparationData(params.payload.preparationData ?? {}),
   };
 
   let inserted = await supabase.from("actions").insert(insertWithPhase).select("id").single();
@@ -617,7 +618,7 @@ export function buildActionInsertPayload(params: {
     duration_minutes: params.payload.durationMinutes,
     event_start_time: params.payload.eventStartTime ?? null,
     event_end_time: params.payload.eventEndTime ?? null,
-    preparation_data: params.payload.preparationData ?? {},
+    preparation_data: normalizeActionPreparationData(params.payload.preparationData ?? {}),
     notes: buildPersistedNotes({
       ...params.payload,
       manualDrawing: params.finalDrawing ?? undefined,

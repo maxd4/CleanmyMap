@@ -10,8 +10,12 @@ import { ACTION_GEOMETRY_SOURCES } from "@/lib/actions/types";
 import { isWasteCategorySlug } from "@/lib/waste";
 import { isRouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
-import { isActualRoute } from "@/lib/route/route-actual";
-import type { ActualRoute } from "@/lib/route/route-actual";
+import {
+  isLegacyActualRoute,
+  isOperationalRoute,
+  normalizeOperationalRoute,
+} from "@/lib/route/route-operational";
+import type { OperationalRoute } from "@/lib/route/route-operational";
 import {
   isRoutePlannerProofShape,
   type RoutePlannerProof,
@@ -198,12 +202,21 @@ const preparationDataSchema = z
       isRouteCalibrationContext,
       "Contexte historique de calibration invalide.",
     ).optional(),
-    actualRoute: z.custom<ActualRoute>(
-      isActualRoute,
-      "Parcours réel invalide.",
+    operationalRoute: z.custom<OperationalRoute>(
+      isOperationalRoute,
+      "Parcours opérationnel invalide.",
     ).optional(),
+    actualRoute: z.custom(isLegacyActualRoute, "Ancien parcours invalide.").optional(),
   })
-  .strict();
+  .strict()
+  .transform(({ actualRoute, operationalRoute, ...rest }) => ({
+    ...rest,
+    ...(operationalRoute
+      ? { operationalRoute }
+      : actualRoute
+        ? { operationalRoute: normalizeOperationalRoute(actualRoute)! }
+        : {}),
+  }));
 
 const routePlannerProofSchema = z
   .custom<RoutePlannerProof>(

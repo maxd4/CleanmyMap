@@ -27,7 +27,10 @@ import type {
 import type { ActionVolunteerParticipation } from "./volunteer-participation";
 import type { OrganizerType } from "./organizer-type";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
-import type { ActualRoute } from "@/lib/route/route-actual";
+import type {
+  OperationalRoute,
+  LegacyOperationalRoute,
+} from "@/lib/route/route-operational";
 import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
@@ -81,8 +84,10 @@ export type ActionPreparationData = {
   midRouteLocationLabel?: string;
   /** Immutable route evidence captured before this action was created. */
   routeCalibrationContext?: RouteCalibrationContext;
-  /** Mutable route actually executed, kept separate from the planner snapshot. */
-  actualRoute?: ActualRoute;
+  /** Mutable operational copy planned from the planner, kept separate from the snapshot. */
+  operationalRoute?: OperationalRoute;
+  /** @deprecated Read compatibility only; normalize to operationalRoute. */
+  actualRoute?: LegacyOperationalRoute;
 };
 
 export type ActionPhotoAsset = {

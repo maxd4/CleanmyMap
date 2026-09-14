@@ -24,7 +24,7 @@ import { Navigation, Zap, Info, Route as RouteIcon, Sparkles } from "lucide-reac
 import { motion, AnimatePresence } from "framer-motion";
 import type { RouteGeometry } from "@/lib/route/route-contract";
 import type { RouteGroupRoute } from "@/lib/route/route-response-contract";
-import { createActualRouteFromRecommendation } from "@/lib/route/route-actual";
+import { createOperationalRouteFromRecommendation } from "@/lib/route/route-operational";
 import { writePlannerActionHandoff } from "@/lib/route/route-action-handoff";
 import { formatBusinessDurationRangeMinutes } from "@/lib/actions/time-contract";
 import {
@@ -101,7 +101,7 @@ export function RouteSection() {
   const createActionFromRecommendation = () => {
     if (!data) return;
     writePlannerActionHandoff({
-      actualRoute: createActualRouteFromRecommendation(data),
+      operationalRoute: createOperationalRouteFromRecommendation(data),
       routeCalibrationContext: data.calibrationContext ?? null,
       plannerProof: data.plannerProof ?? null,
       expiresAt: data.plannerProof?.expiresAt ?? new Date(0).toISOString(),

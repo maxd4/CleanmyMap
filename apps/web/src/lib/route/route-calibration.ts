@@ -32,7 +32,10 @@ import type { RoutePlannerOrigin } from "./route-planner";
 import type { RoutePredictionSummary } from "./route-predicted-targets";
 import type { RoutePickupPreference } from "./route-pickup-preference";
 import type { RouteOperationalBudget } from "./route-operational-budget";
-import type { ActualRoute } from "./route-actual";
+import {
+  normalizeActionPreparationData,
+  type OperationalRoute,
+} from "./route-operational";
 import { isRoutePlannerSnapshot as validateRoutePlannerSnapshot } from "./route-planner-snapshot-validation";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import {
@@ -238,7 +241,7 @@ export type RouteCalibrationQuality = {
 export type RouteCalibrationContractVersions = {
   routeCalibration: RouteCalibrationContext["version"];
   plannerSnapshot: RoutePlannerSnapshot["version"] | null;
-  actualRoute: ActualRoute["version"] | null;
+  operationalRoute: OperationalRoute["version"] | null;
   cleanupWorkload: CleanupWorkload["modelVersion"];
   effectiveVolunteerUnits: string | null;
   cigaretteButtsConversion: string | null;
@@ -255,11 +258,11 @@ export type RouteCalibrationSample = {
   actionDate: string;
   locationLabel: string;
   plannerSnapshot: RoutePlannerSnapshot | null;
-  actualRoute: ActualRoute | null;
+  operationalRoute: OperationalRoute | null;
   placeType: string | null;
   distance: {
     plannerRecommendedKm: number | null;
-    actualRouteKm: number | null;
+  operationalRouteKm: number | null;
   };
   duration: RouteCalibrationDuration;
   ordinaryWaste: RouteCalibrationOrdinaryWaste;
@@ -519,11 +522,14 @@ function buildCalibrationDatasetEntry(
   const plannerSnapshot = context.plannerSnapshot
     ? structuredClone(context.plannerSnapshot)
     : null;
-  const actualRoute = action.preparationData?.actualRoute
-    ? structuredClone(action.preparationData.actualRoute)
+  const preparationData = action.preparationData
+    ? normalizeActionPreparationData(action.preparationData)
+    : null;
+  const operationalRoute = preparationData?.operationalRoute
+    ? structuredClone(preparationData.operationalRoute)
     : null;
   const volunteerInput = action.volunteerParticipation ??
-    action.preparationData?.volunteerParticipation ??
+    preparationData?.volunteerParticipation ??
     null;
   const normalizedVolunteers = volunteerInput
     ? normalizeVolunteerParticipation(volunteerInput)
@@ -561,7 +567,7 @@ function buildCalibrationDatasetEntry(
     participantsCount,
     cigaretteButtsMeasurements,
     plannerSnapshot,
-    actualRoute,
+    operationalRoute,
   });
 
   return {
@@ -582,13 +588,13 @@ function buildCalibrationDatasetEntry(
       actionDate: action.actionDate,
       locationLabel: action.locationLabel,
       plannerSnapshot,
-      actualRoute,
-      placeType: action.placeType ?? action.preparationData?.placeType ?? null,
+      operationalRoute,
+      placeType: action.placeType ?? preparationData?.placeType ?? null,
       distance: {
         plannerRecommendedKm: finiteNonNegativeNullable(plannerSnapshot?.distance.totalKm)
           ? plannerSnapshot.distance.totalKm
           : null,
-        actualRouteKm: resolveActualRouteDistanceKm(actualRoute),
+        operationalRouteKm: resolveOperationalRouteDistanceKm(operationalRoute),
       },
       duration: {
         totalMinutes: durationMinutes,
@@ -618,7 +624,7 @@ function buildCalibrationDatasetEntry(
       contractVersions: {
         routeCalibration: context.version,
         plannerSnapshot: plannerSnapshot?.version ?? null,
-        actualRoute: actualRoute?.version ?? null,
+        operationalRoute: operationalRoute?.version ?? null,
         cleanupWorkload: context.cleanupWorkloadVersion,
         effectiveVolunteerUnits:
           volunteerData.effectiveVolunteerUnitsFormulaVersion,
@@ -1022,9 +1028,9 @@ function resolveCigaretteButtsProvenance(
   return "missing";
 }
 
-function resolveActualRouteDistanceKm(actualRoute: ActualRoute | null): number | null {
-  if (!actualRoute || actualRoute.routes.length === 0) return null;
-  const distances = actualRoute.routes.map((route) => route.geometry.distanceKm);
+function resolveOperationalRouteDistanceKm(operationalRoute: OperationalRoute | null): number | null {
+  if (!operationalRoute || operationalRoute.routes.length === 0) return null;
+  const distances = operationalRoute.routes.map((route) => route.geometry.distanceKm);
   return distances.every((distance) => finiteNonNegativeNullable(distance))
     ? distances.reduce((total, distance) => total + distance, 0)
     : null;
@@ -1035,7 +1041,7 @@ function resolveMissingDatasetFields(input: {
   participantsCount: number | null;
   cigaretteButtsMeasurements: ActionCigaretteButtsMeasurements | null;
   plannerSnapshot: RoutePlannerSnapshot | null;
-  actualRoute: ActualRoute | null;
+  operationalRoute: OperationalRoute | null;
 }): string[] {
   const missing: string[] = [];
   if (!finiteNonNegativeNullable(input.action.wasteKg)) missing.push("ordinaryWaste.wasteKg");
@@ -1046,7 +1052,7 @@ function resolveMissingDatasetFields(input: {
   if (!isPlausibleDuration(input.action.durationMinutes)) missing.push("durationMinutes");
   if (input.participantsCount === null) missing.push("participantsCount");
   if (!input.plannerSnapshot) missing.push("plannerSnapshot");
-  if (!input.actualRoute) missing.push("actualRoute");
+  if (!input.operationalRoute) missing.push("operationalRoute");
   if (!input.action.placeType && !input.action.preparationData?.placeType) {
     missing.push("placeType");
   }

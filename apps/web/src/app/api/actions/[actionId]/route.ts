@@ -29,6 +29,7 @@ import { updateActionSchema } from "@/lib/validation/action";
 import {
   preserveHistoricalRouteCalibrationContext,
 } from "@/lib/route/route-calibration";
+import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { resolveActionDepartmentForPersistence } from "@/lib/geo/action-department-resolver";
 import {
   getTimeContractValidationMessage,
@@ -129,7 +130,9 @@ function buildActionAuditSnapshots(
   currentMetadata: ActionMetadata,
   permissionIdentity: Parameters<typeof canAutoApproveOwnAction>[0],
 ): { previousValue: ActionAuditSnapshot; newValue: ActionAuditSnapshot } {
-  const currentPreparationData = current.preparation_data ?? {};
+  const currentPreparationData = normalizeActionPreparationData(
+    (current.preparation_data ?? {}) as NonNullable<ActionUpdateInput["preparationData"]>,
+  );
   const nextPreparationData =
     body.preparationData === undefined
       ? currentPreparationData
@@ -257,7 +260,9 @@ function buildActionEditorPayload(
     status: row.status,
     recordType: "action",
     actionPhase: row.action_phase,
-    preparationData: row.preparation_data,
+    preparationData: normalizeActionPreparationData(
+      (row.preparation_data ?? {}) as NonNullable<ActionUpdateInput["preparationData"]>,
+    ),
     createdByClerkId: row.created_by_clerk_id,
     actorName: row.actor_name,
     actionDate: row.action_date,
@@ -529,7 +534,9 @@ export async function PATCH(
       }
     }
     if (body.preparationData !== undefined) {
-      updateData["preparation_data"] = body.preparationData ?? {};
+      updateData["preparation_data"] = normalizeActionPreparationData(
+        body.preparationData ?? {},
+      );
     }
     if (body.actorName !== undefined) {
       updateData["actor_name"] = body.actorName.trim() || null;

@@ -224,29 +224,30 @@ peuvent pas être complétés rétroactivement. Une ancienne action sans ce
 contexte est exclue du dataset de calibration : son contexte n’est jamais
 reconstruit depuis l’état courant.
 
-### Parcours réel après création
+### Parcours opérationnel après création
 
-Le parcours proposé et le parcours réellement exécuté sont deux objets
-distincts. Lorsqu’une action est créée depuis le planner, le client initialise
-`preparationData.actualRoute` avec une copie opérationnelle de la ou des boucles
-recommandées. Cette copie peut ensuite être modifiée, remplacée ou supprimée
-boucle par boucle sans toucher à `routeCalibrationContext.plannerSnapshot`.
+Le snapshot planner et le parcours opérationnel sont deux objets distincts.
+Lorsqu’une action est créée depuis le planner, le client initialise
+`preparationData.operationalRoute` avec une copie opérationnelle v1 de la ou
+des boucles recommandées. Cette copie peut ensuite être ajustée (zones) ou
+supprimée boucle par boucle sans toucher à
+`routeCalibrationContext.plannerSnapshot`. Elle décrit le parcours prévu, pas
+un trajet GPS observé : le futur contrat `executedRoute` est hors de ce lot.
 
-`actualRoute` conserve les géométries des boucles réelles et les arrêts
-techniques utiles à la trace scientifique, mais ne demande ni ne stocke de durée
-par stop. Le rendu public de la carte ne dessine que les lignes des boucles et
-les trois zones éditables — départ, mi-parcours et arrivée — ; les arrêts
-techniques du planner ne sont pas affichés comme étapes publiques. Lorsque la
-source de groupes n’est pas meilleure, le nombre réel de groupes peut être
-déduit du nombre de boucles restantes. Aucune répartition des bénévoles par
-groupe n’est reconstruite à partir de ce seul nombre. Le planner ne reçoit pas
-la ventilation enfants/adultes/retraités de l’action ; cette allocation par
-groupe reste donc inconnue et n’est jamais inventée.
+`operationalRoute` conserve les géométries et les arrêts techniques du planner
+sous `plannerTechnicalStops`, sans durée par arrêt. Le rendu public de la carte
+ne dessine que les lignes des boucles et les trois zones éditables — départ,
+mi-parcours et arrivée — ; les arrêts techniques du planner ne sont pas
+affichés comme étapes publiques. Le nombre historique `plannerGroupCount` reste
+immuable, même après suppression de toutes les boucles ; le nombre courant de
+boucles n’est jamais présenté comme une répartition de bénévoles.
 
-La validation du contrat réel reste bornée par `actual-route-v1`. Le flux
-planner → création d’action utilise un handoff de session temporaire ; la
-persistance durable reste le champ JSONB existant `preparation_data`, sans
-nouvelle table ni nouvel endpoint.
+Les nouvelles écritures utilisent exclusivement `operational-route-v1` dans le
+champ JSONB existant `preparation_data`. Les anciennes valeurs
+`preparationData.actualRoute` (`actual-route-v1`) restent lisibles et sont
+normalisées à la lecture, avec priorité à `operationalRoute` si les deux clés
+coexistent ; aucune migration destructive ni nouvelle table ou nouvel endpoint
+n’est introduit.
 
 Le flux de données est donc :
 

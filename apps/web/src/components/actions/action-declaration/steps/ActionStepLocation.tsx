@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import type { FormState } from "../form/model";
 import type { ActionDrawing, ActionGeometrySource } from "@/lib/actions/types";
-import type { ActualRoute } from "@/lib/route/route-actual";
-import { ActualRouteEditor } from "../actual-route-editor";
+import type { OperationalRoute } from "@/lib/route/route-operational";
+import { OperationalRouteEditor } from "../operational-route-editor";
 import type { UpdateFormField } from "../types";
 import {
   getLocalGeoAddressSuggestions,
@@ -484,11 +484,10 @@ export function ActionStepLocation({
         </div>
       </div>
 
-      {form.actualRoute ? (
-        <ActualRouteEditor
-          actualRoute={form.actualRoute}
-          replacementDrawing={manualDrawing}
-          onChange={(actualRoute: ActualRoute) => updateField("actualRoute", actualRoute)}
+      {form.operationalRoute ? (
+        <OperationalRouteEditor
+          operationalRoute={form.operationalRoute}
+          onChange={(operationalRoute: OperationalRoute) => updateField("operationalRoute", operationalRoute)}
         />
       ) : null}
 
