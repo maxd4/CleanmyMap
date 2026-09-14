@@ -97,7 +97,7 @@ function main() {
 
   if (baselineFailures.length > 0) {
     console.warn(
-      `[top-heavy] baseline hard-threshold warning: ${baselineFailures.length} known file(s) still above fail threshold:`,
+      `[top-heavy] ${baselineFailures.length} ratified exception(s) remain above HARD threshold:`,
     );
     for (const violation of baselineFailures) {
       console.warn(
@@ -119,7 +119,7 @@ function main() {
 
   if (baselineWarnings.length > 0) {
     console.warn(
-      `[top-heavy] baseline soft-threshold warning: ${baselineWarnings.length} known file(s) still above audit threshold:`,
+      `[top-heavy] ${baselineWarnings.length} ratified exception(s) remain above REVIEW_THRESHOLD:`,
     );
     for (const violation of baselineWarnings) {
       console.warn(
