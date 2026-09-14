@@ -2,12 +2,16 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import {
+  HARD_THRESHOLD,
+  REVIEW_THRESHOLD,
+} from "../checks/top-heavy-policy.mjs";
 
 const ROOT = resolve(".");
-const WARN_LINES = 500;
-const FAIL_LINES = 700;
-const WARN_BYTES = 40 * 1024;
-const FAIL_BYTES = 60 * 1024;
+const WARN_LINES = REVIEW_THRESHOLD.lines;
+const FAIL_LINES = HARD_THRESHOLD.lines;
+const WARN_BYTES = REVIEW_THRESHOLD.bytes;
+const FAIL_BYTES = HARD_THRESHOLD.bytes;
 const SOURCE_PREFIX = "apps/web/src/";
 const CODE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".mjs"]);
 const BASELINE_ALLOWED = new Set([]);
@@ -81,7 +85,7 @@ function main() {
 
   if (unexpectedFailures.length > 0) {
     console.error(
-      `[top-heavy] ${unexpectedFailures.length} unexpected file(s) exceed hard thresholds (> ${FAIL_LINES} lines OR > ${(FAIL_BYTES / 1024).toFixed(0)}KB):`,
+      `[top-heavy] ${unexpectedFailures.length} unexpected file(s) exceed HARD thresholds (> ${FAIL_LINES} lines OR > ${(FAIL_BYTES / 1024).toFixed(0)} KiB):`,
     );
     for (const violation of unexpectedFailures) {
       console.error(
@@ -104,7 +108,7 @@ function main() {
 
   if (unexpectedWarnings.length > 0) {
     console.warn(
-      `[top-heavy] audit warning: ${unexpectedWarnings.length} file(s) exceed soft threshold (> ${WARN_LINES} lines OR > ${(WARN_BYTES / 1024).toFixed(0)}KB). Review cohesion/maintainability:`,
+      `[top-heavy] REVIEW_REQUIRED: ${unexpectedWarnings.length} file(s) exceed review threshold (> ${WARN_LINES} lines OR > ${(WARN_BYTES / 1024).toFixed(0)} KiB). No automatic split:`,
     );
     for (const violation of unexpectedWarnings) {
       console.warn(
@@ -125,7 +129,7 @@ function main() {
   }
 
   console.log(
-    `[top-heavy] OK: no file above hard threshold (${FAIL_LINES} lines / ${(FAIL_BYTES / 1024).toFixed(0)}KB) in ${SOURCE_PREFIX}`,
+    `[top-heavy] PASS: HARD threshold is >${FAIL_LINES} lines OR >${(FAIL_BYTES / 1024).toFixed(0)} KiB; REVIEW threshold is >${WARN_LINES} lines OR >${(WARN_BYTES / 1024).toFixed(0)} KiB in ${SOURCE_PREFIX}`,
   );
 }
 

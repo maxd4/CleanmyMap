@@ -21,10 +21,15 @@ npm run quality:top-heavy
 Critere de succes:
 - toutes les commandes retournent `OK` (ou succes explicite),
 - aucun echec bloquant avant de poursuivre.
-- `quality:top-heavy` applique une regle progressive:
-  - > `500` lignes (ou > `40KB`) = warning d'audit (cohesion/lisibilite),
-  - > `700` lignes (ou > `60KB`) = echec bloquant.
-  - toute nouvelle exception doit etre justifiee puis ajoutee au meme lot dans `scripts/checks/heavy-files-baseline.json`.
+- `quality:top-heavy` exécute exactement deux seuils :
+  - `REVIEW_THRESHOLD` : > `500` lignes ou > `40 KiB` = `REVIEW_REQUIRED`,
+    signal d'audit non bloquant ;
+  - `HARD_THRESHOLD` : > `1000` lignes ou > `50 KiB` = nouveau dépassement
+    bloquant en mode `--enforce`.
+  - la baseline canonique est `scripts/checks/heavy-files-baseline.json`;
+    elle ne reçoit une exception que si celle-ci est explicitement ratifiée,
+    justifiée, référencée (`reviewedRef`) et bornée par `maxLines`/`maxBytes`.
+    Une exception n'autorise aucune croissance silencieuse.
 
 ## Partie 2 - Qualite applicative
 Depuis la racine:

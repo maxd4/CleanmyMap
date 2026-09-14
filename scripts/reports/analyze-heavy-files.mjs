@@ -7,14 +7,9 @@
 import { readFileSync, readdirSync } from 'fs';
 import { join, relative, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { HARD_THRESHOLD, REVIEW_THRESHOLD, isAboveThreshold } from '../checks/top-heavy-policy.mjs';
 
 const TARGET_DIR = './apps/web/src';
-const THRESHOLDS = {
-  critical: 15000,  // > 15KB
-  high: 10000,      // > 10KB
-  medium: 7000,     // > 7KB
-};
-
 const EXTENSIONS = ['.tsx', '.ts', '.jsx', '.js'];
 
 export function analyzeFile(filePath) {
@@ -42,7 +37,7 @@ export function scanDirectory(dir, results = []) {
       scanDirectory(fullPath, results);
     } else if (entry.isFile() && EXTENSIONS.some(ext => entry.name.endsWith(ext))) {
       const analysis = analyzeFile(fullPath);
-      if (analysis.size > THRESHOLDS.medium) {
+      if (isAboveThreshold({ lines: analysis.lines, bytes: analysis.size }, REVIEW_THRESHOLD)) {
         results.push(analysis);
       }
     }
@@ -51,10 +46,8 @@ export function scanDirectory(dir, results = []) {
   return results;
 }
 
-export function getPriority(size) {
-  if (size > THRESHOLDS.critical) return '🔴 CRITIQUE';
-  if (size > THRESHOLDS.high) return '🟡 HAUTE';
-  return '🟢 MOYENNE';
+export function getPriority(size, lines = 0) {
+  return isAboveThreshold({ lines, bytes: size }, HARD_THRESHOLD) ? '🔴 HARD' : '🟡 REVIEW_REQUIRED';
 }
 
 export function formatBytes(bytes) {
@@ -72,7 +65,7 @@ export function main() {
   console.log('─'.repeat(100));
 
   results.forEach((file, index) => {
-    const priority = getPriority(file.size);
+    const priority = getPriority(file.size, file.lines);
     const relativePath = relative(process.cwd(), file.path);
 
     console.log(`${index + 1}. ${priority} ${relativePath}`);
@@ -82,9 +75,8 @@ export function main() {
 
   console.log('─'.repeat(100));
   console.log('\n💡 Recommandations:');
-  console.log('   - Fichiers CRITIQUES (>15KB): Modulariser immédiatement');
-  console.log('   - Fichiers HAUTE priorité (>10KB): Planifier modularisation');
-  console.log('   - Fichiers MOYENNE priorité (>7KB): Surveiller croissance');
+  console.log(`   - REVIEW_REQUIRED: >${REVIEW_THRESHOLD.lines} lignes ou >${REVIEW_THRESHOLD.bytes / 1024} KiB; auditer sans split automatique`);
+  console.log(`   - HARD: >${HARD_THRESHOLD.lines} lignes ou >${HARD_THRESHOLD.bytes / 1024} KiB; nouveau dépassement bloquant`);
   console.log('\n📖 Voir MODULARIZATION_PLAN.md pour le plan détaillé\n');
 }
 

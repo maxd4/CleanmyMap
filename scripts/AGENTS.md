@@ -104,11 +104,21 @@ guards CURRENT.
   frontières, ne jamais utiliser `git add -A` et tester au moins un fichier du
   candidat et un fichier étranger hors candidat lorsque pertinent.
 
-Le fichier `scripts/heavy-files-baseline.json` est un inventaire temporaire de
-dette historique, pas une autorisation permanente de dépasser les seuils. Ne
-pas y ajouter une entrée pour contourner un garde-fou. Lorsqu'un fichier sort
-de la dette mesurée, retirer son entrée ; lorsqu'il est significativement
-modifié, réévaluer sa cohésion et le ratchet en mode `--enforce`.
+La politique commune des fichiers volumineux est portée par
+`scripts/checks/check-top-heavy-files.mjs` : `REVIEW_THRESHOLD` est
+`>500` lignes ou `>40 KiB` et signale un audit sans bloquer ; `HARD_THRESHOLD`
+est `>1000` lignes ou `>50 KiB` et bloque tout nouveau dépassement en mode
+`--enforce`. Le checker lit la baseline canonique
+`scripts/checks/heavy-files-baseline.json`.
+
+La baseline versionnée est un inventaire d'exceptions explicitement ratifiées,
+pas une autorisation permanente de dépasser les seuils. Chaque entrée doit
+contenir `path`, `decision`, `reason`, `reviewedRef`, `maxLines` et `maxBytes`;
+seuls `COHESIVE_SINGLE_FILE` et `DEFERRED_SPLIT` sont autorisés. Les plafonds
+ratifiés sont un ratchet : une croissance au-delà de l'un d'eux, une baseline
+stale lorsque le fichier repasse sous HARD, ou une baseline malformée bloque
+`--enforce`. `DEFERRED_SPLIT` exige une raison et un déclencheur de reprise.
+Ne pas ajouter d'exception pour contourner un garde-fou.
 
 ## Nettoyage et mutations
 
