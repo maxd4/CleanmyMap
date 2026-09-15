@@ -31,11 +31,14 @@ Pour les tests E2E Playwright :
 npx playwright install chromium
 ```
 
-Sous Windows, démarrer Docker Desktop avec l'exécutable installé à cet emplacement :
+Les validations Supabase courantes utilisent `npx supabase` contre le projet
+distant explicitement lié. Les advisors se lancent avec
+`npm run backend:supabase:advisors` depuis `apps/web` ; cette commande est
+linked-only. Une opération qui exige un runtime conteneurisé local est
+`UNSUPPORTED_CONTAINER_RUNTIME` dans le workflow CURRENT.
 
-```text
-C:\Users\sophi\AppData\Local\Programs\DockerDesktop\Docker Desktop.exe
-```
+Ne pas lancer `supabase start`, `supabase status` ou `supabase db reset` dans ce
+workflow.
 
 ## Validation ciblée
 

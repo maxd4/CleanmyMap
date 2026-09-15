@@ -112,16 +112,16 @@ doit classifier le blocage parmi :
    ID, événement ou artefact associé ne subsiste.
 8. Révoquer ou terminer la session temporaire et, le cas échéant, l'Agent Task.
 
-Un replay local Docker/Supabase ne doit pas être installé uniquement pour
-reproduire une preuve déjà suffisamment couverte par des tests contractuels.
-Il reste justifié lorsque le comportement vérifié dépend réellement du
-runtime Supabase local, de son schéma, de RLS ou de ses extensions.
+Le runtime Docker/Supabase local ne fait pas partie du workflow CURRENT. Aucune
+validation ne doit installer, démarrer, sonder ou arrêter Docker, WSL ou un
+autre runtime de conteneurs. Une preuve qui dépend réellement d'un tel runtime
+est classée `UNSUPPORTED_CONTAINER_RUNTIME` et reste non prouvée ; elle ne doit
+pas déclencher l'installation d'un runtime en guise de fallback.
 
-### OpenAI / Studio local
-
-- `OPENAI_API_KEY` peut être requis par `apps/web/supabase/config.toml` pour Supabase Studio local.
-- Cette clé reste un secret serveur/local et ne doit jamais passer dans `NEXT_PUBLIC_*` ni dans le sync Vercel.
-- Si le repo ne consomme pas OpenAI côté applicatif, ne pas ajouter de logique frontend ou de fallback public pour cette clé.
+Les validations Supabase courantes utilisent `npx supabase` contre le projet
+distant explicitement lié. `apps/web/supabase/config.toml` et l'arbre des
+migrations restent les sources canoniques de configuration et d'historique,
+sans constituer un support du runtime local.
 
 ## Vercel
 
