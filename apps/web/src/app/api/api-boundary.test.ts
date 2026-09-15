@@ -3,38 +3,10 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  PROTECTED_ROUTE_PATTERNS,
-  isProtectedRoutePath,
-} from "@/lib/auth/protected-routes";
-import {
   API_AUTHORIZATION_CONTRACT,
   type ApiAuthorizationContractEntry,
   type ApiHttpMethod,
 } from "@/lib/auth/api-authorization-contract";
-
-const sensitiveApiFamilies = [
-  "/api/admin",
-  "/api/actions",
-  "/api/account",
-  "/api/community",
-  "/api/chat",
-  "/api/analytics",
-  "/api/pilotage",
-  "/api/partners",
-  "/api/recycling",
-  "/api/reports",
-  "/api/route",
-  "/api/send",
-  "/api/services",
-  "/api/spots",
-  "/api/users",
-  "/api/email/test",
-] as const;
-
-const intentionallyPublicApiPaths = [
-  "/api/health",
-  "/api/uptime",
-] as const;
 
 const auditedApiFamilies = new Set([
   "admin",
@@ -128,36 +100,7 @@ function contractEntries() {
 }
 
 describe("API security boundaries", () => {
-  it.each(sensitiveApiFamilies)(
-    "keeps %s behind the protected route contract",
-    (path) => {
-      expect(isProtectedRoutePath(path)).toBe(true);
-      expect(isProtectedRoutePath(`${path}/nested`)).toBe(true);
-    },
-  );
-
-  it.each(intentionallyPublicApiPaths)(
-    "keeps %s outside the global protected route contract",
-    (path) => {
-      expect(isProtectedRoutePath(path)).toBe(false);
-    },
-  );
-
-  it("does not contain duplicate protected route patterns", () => {
-    expect(new Set(PROTECTED_ROUTE_PATTERNS).size).toBe(
-      PROTECTED_ROUTE_PATTERNS.length,
-    );
-  });
-
-  it("keeps the explicit email test route protected", () => {
-    expect(PROTECTED_ROUTE_PATTERNS).toContain("/api/email/test(.*)");
-  });
-
-  it("keeps the legacy send route protected even when local test-token compatibility exists", () => {
-    expect(PROTECTED_ROUTE_PATTERNS).toContain("/api/send(.*)");
-  });
-
-  it("audits every route.ts method in the protected API families", () => {
+  it("audits every route.ts method covered by the API authorization contract", () => {
     const inventory = readRouteInventory();
     const discovered = inventory.flatMap(({ route, methods }) =>
       Array.from(methods.keys()).map((method) => `${route} ${method}`),

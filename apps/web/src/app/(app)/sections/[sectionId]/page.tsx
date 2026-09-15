@@ -7,7 +7,6 @@ import {
   getSectionRubriqueById,
   getSectionRouteParams,
 } from "@/lib/sections-registry";
-import { getSectionClerkAccessMode } from "@/lib/clerk-access";
 import { getServerLocale } from "@/lib/server-preferences";
 import {
   buildLegacyJoinActionRedirect,
@@ -48,7 +47,7 @@ export async function generateMetadata({
   }
 
   const locale = await getServerLocale();
-  const accessMode = getSectionClerkAccessMode(section.id);
+  const accessMode = section.anonymousPresentation;
   const localizedLabel = locale === "fr" ? section.label.fr : section.label.en;
   const localizedDescription =
     locale === "fr" ? section.description.fr : section.description.en;
@@ -89,7 +88,7 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
     notFound();
   }
 
-  const accessMode = getSectionClerkAccessMode(section.id);
+  const accessMode = section.anonymousPresentation;
   const { userId } = await getSafeAuthSession();
 
   if (!userId && accessMode === "blur") {

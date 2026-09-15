@@ -3,6 +3,7 @@ export { RUBRIQUE_CATEGORIES, RUBRIQUE_REGISTRY } from "./config";
 export type {
   LocalizedText,
   RubriqueAvailability,
+  RubriqueAnonymousPresentation,
   RubriqueCategory,
   RubriqueDefinition,
   RubriqueImplementation,

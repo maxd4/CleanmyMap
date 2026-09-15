@@ -20,8 +20,8 @@ documentation/                  architecture, produit, sécurité et opérations
 
 ```txt
 apps/web/src/proxy.ts
-apps/web/src/lib/auth/protected-routes.ts
 apps/web/src/lib/authz.ts
+apps/web/src/lib/auth/api-authorization-contract.ts
 apps/web/src/lib/actions/data-contract.ts
 apps/web/src/lib/actions/unified-source.ts
 apps/web/src/lib/actions/types.ts

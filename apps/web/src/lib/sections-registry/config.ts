@@ -126,6 +126,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "decide",
     priority: 40,
     kind: "section",
+    anonymousPresentation: "disabled",
     route: "/sections/elus",
     label: { fr: "Gouvernance", en: "Governance" },
     description: {
@@ -153,6 +154,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "execute",
     priority: 12,
     kind: "section",
+    anonymousPresentation: "visible",
     route: "/sections/rejoindre-une-action",
     label: { fr: "Rejoindre une action", en: "Join an action" },
     description: {
@@ -192,6 +194,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "execute",
     priority: 30,
     kind: "section",
+    anonymousPresentation: "visible",
     route: "/sections/route",
     label: { fr: "Où agir ?", en: "Where to act?" },
     description: { fr: "Optimisez votre parcours selon l'impact", en: "Optimize your route based on impact" },
@@ -204,6 +207,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "prepare",
     priority: 30,
     kind: "section",
+    anonymousPresentation: "visible",
     route: "/sections/recycling",
     label: { fr: "Guide du tri", en: "Recycling guide" },
     description: { fr: "Valorisation et seconde vie des déchets", en: "Waste reuse and valorization" },
@@ -216,6 +220,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "prepare",
     priority: 31,
     kind: "section",
+    anonymousPresentation: "visible",
     route: "/sections/compost",
     label: { fr: "Compostage", en: "Composting" },
     description: {
@@ -231,6 +236,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "decide",
     priority: 50,
     kind: "section",
+    anonymousPresentation: "visible",
     route: "/sections/climate",
     label: { fr: "Comprendre l'enjeu", en: "Climate context" },
     description: {
@@ -246,6 +252,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "execute",
     priority: 25,
     kind: "section",
+    anonymousPresentation: "visible",
     route: "/sections/weather",
     label: { fr: "Organiser une action", en: "Organize an action" },
     description: {
@@ -261,6 +268,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "execute",
     priority: 40,
     kind: "section",
+    anonymousPresentation: "visible",
     route: "/sections/community",
     label: { fr: "Communauté", en: "Community" },
     description: {
@@ -276,6 +284,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "decide",
     priority: 41,
     kind: "section",
+    anonymousPresentation: "visible",
     route: "/sections/feedback",
     label: { fr: "Idées et problèmes", en: "Ideas & issues" },
     description: {
@@ -291,6 +300,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "decide",
     priority: 60,
     kind: "section",
+    anonymousPresentation: "disabled",
     route: "/sections/gamification",
     label: { fr: "Progression et badges", en: "Your progress" },
     description: { fr: "Suivez votre évolution et vos succès", en: "Track your evolution and badges" },
@@ -303,6 +313,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "prepare",
     priority: 40,
     kind: "section",
+    anonymousPresentation: "visible",
     route: "/sections/actors",
     label: { fr: "Réseau engagé", en: "Partner network" },
     description: { fr: "Découvrez les structures mobilisées localement", en: "Discover locally engaged organizations" },
@@ -330,6 +341,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "prepare",
     priority: 45,
     kind: "section",
+    anonymousPresentation: "visible",
     route: "/sections/annuaire",
     label: { fr: "Annuaire des acteurs", en: "Directory" },
     description: {
@@ -345,6 +357,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "execute",
     priority: 41,
     kind: "section",
+    anonymousPresentation: "visible",
     route: "/sections/dm",
     label: { fr: "Messages privés", en: "Messages" },
     description: {
@@ -360,6 +373,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "execute",
     priority: 42,
     kind: "section",
+    anonymousPresentation: "blur",
     route: "/sections/messagerie",
     label: { fr: "Groupes de discussion", en: "Discussion groups" },
     description: {
@@ -375,6 +389,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "decide",
     priority: 47,
     kind: "section",
+    anonymousPresentation: "visible",
     route: "/sections/open-data",
     label: { fr: "Données publiques", en: "Open Data" },
     description: {
@@ -390,6 +405,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "decide",
     priority: 48,
     kind: "section",
+    anonymousPresentation: "visible",
     route: "/sections/funding",
     label: { fr: "Soutenir le Projet", en: "Support Us" },
     description: {
@@ -405,6 +421,7 @@ export const RUBRIQUE_REGISTRY = [
     spaceId: "supervise",
     priority: 50,
     kind: "section",
+    anonymousPresentation: "blur",
     route: "/sections/trash-spotter",
     label: { fr: "Signaler un déchet", en: "Trash Spotter" },
     description: { fr: "Localisez un nouveau hotspot de pollution", en: "Locate a new pollution hotspot" },

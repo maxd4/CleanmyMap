@@ -271,10 +271,13 @@ function validateMethodology(view, findings) {
 }
 
 function validateMissions(view, findings) {
-  const runtimePath = "apps/web/src/lib/auth/protected-routes.ts";
+  const runtimePath = "apps/web/src/proxy.ts";
   const runtime = readText(view, runtimePath);
-  if (runtime === null || !/["']\/missions(?:\(\.\*\))?["']/.test(runtime)) {
-    findings.push(finding(runtimePath, "runtime protected routes must include /missions"));
+  const protectedPagePrefixes = runtime?.match(
+    /export const PROTECTED_APP_PAGE_ROUTE_PREFIXES\s*=\s*\[([\s\S]*?)\]\s*as const/,
+  )?.[1];
+  if (!protectedPagePrefixes || !/["']\/missions["']/.test(protectedPagePrefixes)) {
+    findings.push(finding(runtimePath, "proxy protected app page routes must include /missions"));
   }
 
   const indexPath = "documentation/pages_site/INDEX.md";

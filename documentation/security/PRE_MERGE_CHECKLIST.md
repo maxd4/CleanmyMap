@@ -6,7 +6,7 @@ sécurité. Les contrôles généraux de développement sont définis dans
 
 ## Routes et indexation
 
-- [ ] Les routes sensibles ont une garde serveur dans `apps/web/src/lib/auth/protected-routes.ts` ou leur contrat équivalent.
+- [ ] Les pages sensibles sont protégées par `apps/web/src/proxy.ts` et les API par leur contrat AuthZ méthode par méthode.
 - [ ] Le handler vérifie ses capacités et son scope ; l'interface et le proxy ne sont pas considérés comme une autorisation.
 - [ ] Les pages privées sont hors indexation et sitemap public.
 

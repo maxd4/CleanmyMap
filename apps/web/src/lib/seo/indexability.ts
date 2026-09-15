@@ -1,4 +1,3 @@
-import { getSectionClerkAccessMode } from "@/lib/clerk-access";
 import { RUBRIQUE_REGISTRY } from "@/lib/sections-registry";
 import {
   ADMIN_ROUTE,
@@ -70,7 +69,7 @@ export function getPublicSectionSitemapPaths(): string[] {
       rubrique.kind === "section" &&
       rubrique.availability === "available" &&
       rubrique.implementation === "finalized" &&
-      getSectionClerkAccessMode(rubrique.id) === "visible",
+      rubrique.anonymousPresentation === "visible",
   )
     .map((rubrique) => rubrique.route)
     .sort((a, b) => a.localeCompare(b, "fr"));
@@ -80,7 +79,7 @@ export function getPrivateSectionRoutes(): string[] {
   return RUBRIQUE_REGISTRY.filter(
     (rubrique) =>
       rubrique.kind === "section" &&
-      (getSectionClerkAccessMode(rubrique.id) !== "visible" ||
+      (rubrique.anonymousPresentation !== "visible" ||
         rubrique.availability !== "available" ||
         rubrique.implementation !== "finalized"),
   )

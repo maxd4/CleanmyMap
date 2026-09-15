@@ -44,7 +44,7 @@ flowchart TD
   B -- Non --> D{Sujet API/data ?}
   D -- Oui --> E[app/api/* + lib/actions|community|gamification]
   D -- Non --> F{Sujet securite/acces ?}
-  F -- Oui --> G[authz.ts + protected-routes.ts + proxy.ts]
+  F -- Oui --> G[authz.ts + proxy.ts + api-authorization-contract.ts]
   F -- Non --> H[pilotage/reports + docs backlog]
 ```
 Fallback statique:
