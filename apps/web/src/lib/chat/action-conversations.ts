@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { UserIdentity } from "@/lib/authz";
 import { loadActionById } from "@/lib/actions/store";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
-import { isPublicActionReferenceAvailable } from "./action-sharing";
+import { isPublishedFuturePreAction } from "@/lib/actions/temporal";
 import type { ActionRow } from "@/types/database";
 
 export type ActionConversationRow = {
@@ -35,22 +35,34 @@ export type ActionDiscussionAccess =
   | { state: "excluded"; conversationId: string }
   | { state: "allowed"; conversationId: string };
 
-/**
- * Discussion availability is distinct from share-reference eligibility. The
- * caller must still be authenticated and not explicitly excluded; sharing,
- * participation, and notification membership are not discussion authorities.
- * The shared public-state predicate below is an implementation detail, not
- * the authority that makes an action shareable or a discussion readable.
- */
-export function isPublishedVisibleAction(action: {
+export type ActionDiscussionCandidate = {
   action_date: ActionRow["action_date"];
   event_start_time?: ActionRow["event_start_time"];
-  action_phase: ActionRow["action_phase"];
+  action_phase: ActionRow["action_phase"] | null;
   status: ActionRow["status"];
   moderation_visibility?: ActionRow["moderation_visibility"];
   published_at?: ActionRow["published_at"];
-} | null): boolean {
-  return Boolean(action && isPublicActionReferenceAvailable(action));
+};
+
+/** Discussion lifecycle eligibility; this is not public-share eligibility. */
+export function isActionDiscussionAvailable(
+  action: ActionDiscussionCandidate | null,
+  now = new Date(),
+): boolean {
+  const futurePreActionCandidate =
+    action && action.action_phase !== null
+      ? { ...action, action_phase: action.action_phase }
+      : null;
+
+  return Boolean(
+    action &&
+      action.published_at !== null &&
+      action.published_at !== undefined &&
+      action.moderation_visibility !== "hidden" &&
+      ((futurePreActionCandidate !== null && isPublishedFuturePreAction(futurePreActionCandidate, now)) ||
+        (action.status === "approved" &&
+          (action.action_phase ?? "post_action_complete") !== "pre_action")),
+  );
 }
 
 /** Resolves the independent discussion contract without changing participation state. */
@@ -60,7 +72,7 @@ export async function resolveActionDiscussionAccess(
   userId: string,
 ): Promise<ActionDiscussionAccess> {
   const action = await loadActionById(supabase, actionId);
-  if (!isPublishedVisibleAction(action)) {
+  if (!isActionDiscussionAvailable(action)) {
     return { state: "unavailable", conversationId: null };
   }
 
@@ -106,12 +118,13 @@ export async function canModerateActionConversation(
   identity: Pick<UserIdentity, "userId" | "activeRole">,
   actionId: string,
 ): Promise<boolean> {
+  const action = await loadActionById(supabase, actionId);
+  if (!action || !isActionDiscussionAvailable(action)) return false;
+
   if (identity.activeRole === "admin" || identity.activeRole === "max") {
-    return Boolean(await loadActionById(supabase, actionId));
+    return true;
   }
 
-  const action = await loadActionById(supabase, actionId);
-  if (!action || !isPublishedVisibleAction(action)) return false;
   const organizerIds = await loadActionOrganizerIdsForAction(
     supabase,
     actionId,

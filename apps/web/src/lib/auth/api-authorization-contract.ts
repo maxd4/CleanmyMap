@@ -529,7 +529,7 @@ export const API_AUTHORIZATION_CONTRACT = {
       expected: "Action creator/organizer or active admin/max reads moderation exclusions for a published visible action",
       dimensions: ["authentication", "business permission", "ownership", "admin/creator role"],
       actual: "auth + current identity + dedicated action discussion moderation capability; service-side action and exclusion reads",
-      evidence: ["auth()", "getCurrentUserIdentity", "canModerateActionConversation", "loadActionById", "isPublishedVisibleAction"],
+      evidence: ["auth()", "getCurrentUserIdentity", "canModerateActionConversation", "loadActionById", "isActionDiscussionAvailable"],
       evidenceScope: "module",
     },
     POST: {
