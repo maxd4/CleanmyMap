@@ -61,6 +61,7 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 - Source stats et quotes-parts: uniquement les participants finaux confirmés; le dénominateur exclut les inscriptions, les demandes `pending` et les lignes `cancelled`.
 - Source fermeture: metadata de `actions.notes` via `groupJoinEnabled`.
 - Source dérogation: les opérations admin sont journalisées séparément et ne modifient pas le parcours normal.
+- Audience des notifications de discussion: avant l'action, créateur, organisateurs et inscriptions futures `pending` ou `confirmed`; après `post_action_complete`, créateur, organisateurs et seules les participations finales `confirmed`. Cette audience ne gouverne pas l'accès à la discussion : une inscription future n'est pas une participation réelle, et un ancien inscrit sans participation finale confirmée n'est plus notifié automatiquement après l'action.
 
 ## Validation
 
