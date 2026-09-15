@@ -1,8 +1,18 @@
 # Plan de transformation visuelle
 
+## Statut documentaire
+
+```txt
+PLAN — backlog visuel non exécuté
+```
+
+Le contenu de ce fichier décrit des travaux futurs. Il ne constitue pas une
+description du comportement `CURRENT` des pages et ne doit pas être exécuté
+globalement sans un lot explicitement autorisé.
+
 ## Statut
 
-Backlog visuel exécutable pour GPT-5.4 mini.
+Backlog visuel exécutable pour GPT-5.4 mini, par lots séparés.
 
 Ce plan ne doit pas être exécuté comme une refonte globale. Il complète `documentation/pages_site/plan-correction-ui-contenu.md` et ne le remplace pas.
 

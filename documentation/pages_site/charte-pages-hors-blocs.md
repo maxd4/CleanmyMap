@@ -1,9 +1,24 @@
-# Charte UI pour les pages hors blocs
+# Charte UI pour les pages hors blocs — AUDIT
+
+> **Statut documentaire : `AUDIT` — non normatif.**
+>
+> Cette charte conserve un audit daté, des inventaires historiques et des
+> propositions de classification. Elle ne constitue pas un contrat `CURRENT`
+> pour les familles ou les palettes et ne doit pas être maintenue comme une
+> seconde source de vérité. Les contrats courants sont portés par
+> [`PAGE_FAMILIES.md`](./PAGE_FAMILIES.md), [`INDEX.md`](./INDEX.md) et le
+> design system spécialisé ; les décisions encore ouvertes restent dans
+> [`PAGE_FAMILIES_PLAN.md`](./PAGE_FAMILIES_PLAN.md).
 
 Ce document propose une charte documentaire pour les pages qui ne rentrent pas dans les 5 blocs principaux deja documentes et pour les familles autonomes de la taxonomie 11 types.
 
-Il ne modifie ni l UI, ni les tokens, ni les composants. Il sert de base d audit et de decision avant toute correction page par page.
-L'index maître `INDEX.md`, le plan `PAGE_FAMILIES_PLAN.md` et les fiches `README.md` canonique reprennent maintenant ces categories d audit pour servir de source de verite exploitable par les agents.
+Il ne modifie ni l UI, ni les tokens, ni les composants. Il sert de trace
+d'audit et de contexte pour les décisions déjà prises ou encore ouvertes ; il
+ne prescrit pas de correction `CURRENT`.
+L'index maître `INDEX.md`, `PAGE_FAMILIES.md`, le design system et les fiches
+`README.md` canoniques portent les contrats courants exploitables par les
+agents. Cette charte ne fait que conserver le contexte d'audit et les
+propositions qui ne doivent pas être interprétées comme `CURRENT`.
 
 ## Sources de reference deja en place
 
