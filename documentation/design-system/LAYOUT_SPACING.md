@@ -46,7 +46,9 @@ import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 
 `CmmPageLayout` est l'unique shell de contenu pour les pages classiques. Il
 centralise la largeur maximale, les gutters responsive, le padding vertical et
-le rythme entre le `PageHeader` et le premier contenu.
+le rythme entre le `PageHeader` et le premier contenu. Sa largeur maximale
+canonique est `112rem` (`1792px`) : elle permet aux pages classiques d'exploiter
+les grands écrans tout en conservant les gutters du shell.
 
 `CmmSectionGroup` est l'unique primitive du rythme entre sections. Les deux
 primitives n'acceptent pas de variante de largeur, de padding ou d'espacement :
@@ -69,8 +71,12 @@ Les tokens vivent dans `apps/web/src/styles/tokens.css`, importé par
 | espacement entre sections | `--cmm-section-gap` |
 | espacement interne d'un groupe | `--cmm-content-group-gap` |
 
-Les tokens de page réutilisent les fondations de grille existantes
-(`--cmm-grid-*`) et l'échelle d'espacement (`--space-*`). Les modes
+`--cmm-page-max-width` et `--cmm-grid-max-width` sont découplés. Le premier
+contrôle le shell des pages classiques (`112rem`), tandis que le second reste
+la limite historique des grilles internes (`90rem`). Les tokens de page
+réutilisent les gutters et l'échelle d'espacement existants
+(`--cmm-grid-margin-*`, `--space-*`), sans hériter de la largeur maximale de la
+grille. Les modes
 `exhaustif`, `minimaliste` et `sobre`, ainsi que les familles de couleur, ne
 redéfinissent aucun de ces tokens : ils ne changent donc pas la géométrie
 fondamentale.
@@ -107,6 +113,12 @@ Une grille stricte n'est pas une obligation. Pour une carte interactive, un
 formulaire complexe, un onboarding ou une séquence transactionnelle, la
 lisibilité du flux et les contraintes d'interaction priment sur l'alignement
 géométrique.
+
+Le shell peut donc être large sans élargir artificiellement les textes longs.
+Les contenus éditoriaux utilisent `cmm-prose`, `cmm-prose-wide`,
+`cmm-prose-narrow` ou une autre contrainte sémantique existante lorsque leur
+mesure de lecture le nécessite. Les grilles de cartes, tableaux, KPI et
+dashboards peuvent en revanche exploiter la largeur disponible.
 
 ## Alignement et rythme
 

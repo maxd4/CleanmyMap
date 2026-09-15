@@ -4,9 +4,21 @@ import path from "node:path";
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 const webSourceRoot = path.join(repositoryRoot, "apps/web/src");
 const primitivePath = path.join(webSourceRoot, "components/ui/cmm-section.tsx");
+const tokensPath = path.join(webSourceRoot, "styles/tokens.css");
 
 const structuralUtilities = /(?:^|\s)(?:max-w-|mx-auto|p[xy]?-|space-y-|gap-)/;
 const violations = [];
+const tokensSource = fs.readFileSync(tokensPath, "utf8");
+
+if (!/--cmm-grid-max-width:\s*90rem\s*;/.test(tokensSource)) {
+  violations.push("styles/tokens.css: canonical internal grid max width must remain 90rem");
+}
+if (!/--cmm-page-max-width:\s*112rem\s*;/.test(tokensSource)) {
+  violations.push("styles/tokens.css: canonical page max width must be 112rem");
+}
+if (/--cmm-page-max-width:\s*var\(--cmm-grid-max-width\)\s*;/.test(tokensSource)) {
+  violations.push("styles/tokens.css: page and internal grid max widths must remain decoupled");
+}
 
 function collectSourceFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
