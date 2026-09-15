@@ -7,7 +7,7 @@
 - `apps/web/src/app/(app)/signalement/page.tsx`
 - **Type fonctionnel** : page d'action
 - **Famille / bloc fonctionnel** : Agir (bloc)
-- **Accès runtime** : `clerk-context` ; la page affiche sa surface et ses explications sans hard gate. Un compte est requis pour créer un signalement et consulter la boucle propriétaire.
+- **Accès runtime** : `clerk-context` ; l'entrée, le choix du type d'observation et la préparation du formulaire sont accessibles au visiteur sans compte. La page affiche sa surface sans hard gate ; un compte est demandé pour transmettre l'observation, gérer ses preuves et consulter la boucle propriétaire.
 - **Objectif utilisateur principal** : Permettre l'action terrain, la déclaration et le suivi propriétaire des observations récentes.
 - **Action principale attendue** : Lancer une action, signaler ou compléter un formulaire.
 - **Boucle propriétaire** : La section `#mes-observations`, sous le formulaire, lit exclusivement les lignes `trash_spotter_spots` créées par le compte Clerk courant via `GET /api/signalements/me`. Elle affiche uniquement les types `spot` et `clean_place`, avec les statuts `new`, `validated` et `cleaned`, dans l'ordre du plus récent au plus ancien.
@@ -38,6 +38,16 @@
 - navigation de section
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : faible
+
+
+## Accès progressif
+
+Le visiteur peut ouvrir le formulaire, préparer une observation et utiliser les
+contrôles locaux nécessaires à sa saisie. La transmission, les opérations sur
+les preuves photo et `GET /api/signalements/me` restent des capacités
+authentifiées ; cette dernière ne lit que les observations du compte courant.
+La surface publique ne rend donc pas les observations d'autres utilisateurs
+accessibles et ne confère aucune permission supplémentaire.
 
 
 ## États à documenter

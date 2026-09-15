@@ -9,7 +9,7 @@
   - `apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx`
 - **Type fonctionnel** : section de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
-- **Accès runtime** : `public-visible` ; la consultation de l'annuaire ne requiert pas de compte. Le CTA partenaire ouvre un parcours séparé, avec ses propres contrôles.
+- **Accès runtime** : `public-visible` ; la consultation de l'annuaire, sa recherche et son exploration ne requièrent pas de compte. Le CTA de référencement ouvre un parcours séparé, avec ses propres contrôles.
 - **Objectif utilisateur principal** : Découvrir les acteurs engagés puis permettre à une structure de demander son référencement dans l’annuaire.
 - **Action principale attendue** : Référencer ma structure.
 - **Cible canonique de l’action principale** : `/partners/onboarding`
@@ -18,6 +18,18 @@
 - **Terminée** : non
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : à évaluer
+
+## Accès et limites
+
+La page expose publiquement les ressources éditoriales et les fiches de
+partenaires publiées selon leur contrat de publication. Une lecture publique
+ne donne ni accès à des données privées ni pouvoir d'organisation sur les
+fiches. Le CTA `Référencer ma structure` mène à `/partners/onboarding`, qui
+reste un parcours séparé avec son propre contrôle d'accès.
+
+Les éléments non établis par le runtime — notamment le scope d'organisation,
+les variantes UI et les décisions de présentation non documentées ailleurs —
+restent **à arbitrer** et ne sont pas des capacités actuelles de l'annuaire.
 
 ## États à documenter
 
