@@ -1,4 +1,16 @@
-import { ArrowLeftRight, MapPin, Megaphone, PackageSearch, Users, Workflow, type LucideIcon } from "lucide-react";
+import {
+  ArrowLeftRight,
+  ClipboardCheck,
+  Handshake,
+  ListOrdered,
+  MapPin,
+  Megaphone,
+  PackageSearch,
+  Scale,
+  Users,
+  Workflow,
+  type LucideIcon,
+} from "lucide-react";
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicId } from "@/lib/chat/topics";
 
@@ -24,8 +36,11 @@ export type DiscussionGuidance = {
 export type ChatTopicDefinition = {
   id: ChatTopicId;
   label: string;
+  labelEn?: string;
   description: string;
+  descriptionEn?: string;
   starterPrompt: string;
+  starterPromptEn?: string;
   icon: LucideIcon;
   accentClassName: string;
 };
@@ -351,7 +366,52 @@ const CHAT_TOPIC_DEFINITIONS: Record<ChatChannelType, ChatTopicDefinition[]> = {
     },
   ],
   dm: [],
-  admin_elu: [],
+  admin_elu: [
+    {
+      id: "arbitrages",
+      label: "Arbitrages",
+      labelEn: "Trade-offs",
+      description: "Comparer des options et expliciter un arbitrage.",
+      descriptionEn: "Compare options and make a trade-off explicit.",
+      starterPrompt: "Arbitrage : voici les options et le choix à instruire.",
+      starterPromptEn: "Trade-off: here are the options and the choice to assess.",
+      icon: Scale,
+      accentClassName: "text-violet-500",
+    },
+    {
+      id: "priorites",
+      label: "Priorités",
+      labelEn: "Priorities",
+      description: "Ordonner les sujets selon leur urgence et leur impact.",
+      descriptionEn: "Order topics by urgency and impact.",
+      starterPrompt: "Priorités : voici les sujets à ordonner et les critères proposés.",
+      starterPromptEn: "Priorities: here are the topics to order and the proposed criteria.",
+      icon: ListOrdered,
+      accentClassName: "text-indigo-500",
+    },
+    {
+      id: "suivi_decisions",
+      label: "Suivi des décisions",
+      labelEn: "Decision follow-up",
+      description: "Suivre l'exécution d'une décision et les prochaines étapes.",
+      descriptionEn: "Follow the execution of a decision and its next steps.",
+      starterPrompt: "Suivi des décisions : voici l'avancement et le prochain point à traiter.",
+      starterPromptEn: "Decision follow-up: here is the progress and the next point to address.",
+      icon: ClipboardCheck,
+      accentClassName: "text-sky-500",
+    },
+    {
+      id: "coordination_institutionnelle",
+      label: "Coordination institutionnelle",
+      labelEn: "Institutional coordination",
+      description: "Coordonner élus, administration et partenaires autour d'un sujet.",
+      descriptionEn: "Coordinate elected officials, administration and partners around a topic.",
+      starterPrompt: "Coordination institutionnelle : voici les acteurs, le contexte et le relais attendu.",
+      starterPromptEn: "Institutional coordination: here are the stakeholders, context and expected relay.",
+      icon: Handshake,
+      accentClassName: "text-emerald-500",
+    },
+  ],
   territory: [
     {
       id: "mon_territoire",
@@ -398,6 +458,21 @@ export function getDiscussionGuidance(
 ): DiscussionGuidance {
   const localeData = GUIDANCE[channelType][options.locale];
   const topic = getDiscussionTopic(channelType, topicId);
+  const topicLabel = topic
+    ? options.locale === "en"
+      ? topic.labelEn ?? topic.label
+      : topic.label
+    : null;
+  const topicDescription = topic
+    ? options.locale === "en"
+      ? topic.descriptionEn ?? topic.description
+      : topic.description
+    : null;
+  const topicStarterPrompt = topic
+    ? options.locale === "en"
+      ? topic.starterPromptEn ?? topic.starterPrompt
+      : topic.starterPrompt
+    : null;
   let emptyTitle = localeData.emptyTitle;
   let emptyDescription = localeData.emptyDescription;
 
@@ -425,19 +500,19 @@ export function getDiscussionGuidance(
 
   return {
     cardTitle: localeData.cardTitle,
-    cardSummary: topic?.description ?? localeData.cardSummary,
+    cardSummary: topicDescription ?? localeData.cardSummary,
     visibilityLabel: localeData.visibilityLabel(options),
     audienceLabel: localeData.audienceLabel(options),
-    purposeTags: topic ? [topic.label, ...localeData.purposeTags.filter((tag) => tag !== topic.label)] : localeData.purposeTags,
+    purposeTags: topicLabel ? [topicLabel, ...localeData.purposeTags.filter((tag) => tag !== topicLabel)] : localeData.purposeTags,
     messagePattern: localeData.messagePattern,
     emptyTitle,
     emptyDescription,
     starterTitle: localeData.starterTitle,
     starterPrompts: topic
-      ? [topic.starterPrompt, ...localeData.starterPrompts.filter((prompt) => prompt !== topic.starterPrompt)]
+      ? [topicStarterPrompt ?? topic.starterPrompt, ...localeData.starterPrompts.filter((prompt) => prompt !== topicStarterPrompt)]
       : localeData.starterPrompts,
     composerHint: localeData.composerHint,
-    channelGoal: topic?.label ?? localeData.channelGoal,
+    channelGoal: topicLabel ?? localeData.channelGoal,
   };
 }
 

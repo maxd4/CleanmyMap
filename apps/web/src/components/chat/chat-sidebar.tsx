@@ -55,6 +55,8 @@ export const ChatSidebar = memo(function ChatSidebar({
   currentChannelType,
   onSelectChannel,
   onSelectTopic,
+  topicSectionTitle,
+  topicSectionDescription,
   topics,
   tone = "dark",
   presentation = "default",
@@ -71,52 +73,70 @@ export const ChatSidebar = memo(function ChatSidebar({
   const isMessagerie = presentation === "messagerie";
   const communityChannel = channels.find((channel) => channel.channelType === "community");
   const territoryChannel = channels.find((channel) => channel.channelType === "territory");
+  const adminEluChannel = channels.find((channel) => channel.channelType === "admin_elu");
 
-  const renderTopics = () =>
-    topics.map((topic) => {
-      const TopicIcon = topic.icon;
-      const topicIsActive = topic.active;
-      return (
-        <button
-          key={topic.id}
-          type="button"
-          onClick={() => {
-            onSelectChannel(currentChannelType);
-            onSelectTopic(topic.id);
-          }}
-          aria-pressed={topicIsActive}
-          className={`group flex w-full items-center gap-3 rounded-[1.25rem] border p-2 pl-3 text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 ${
-            topicIsActive
-              ? isLight
-                ? "border-transparent bg-indigo-50/50 text-indigo-700"
-                : "border-transparent bg-indigo-900/20 text-indigo-300"
-              : isLight
-                ? "border-transparent bg-transparent text-slate-600 hover:bg-white"
-                : "border-transparent bg-transparent text-slate-400 hover:bg-slate-800/50"
-          }`}
-        >
-          <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${topicIsActive ? "bg-indigo-100 text-indigo-600" : "bg-transparent text-slate-400 group-hover:bg-slate-100 dark:group-hover:bg-slate-800"}`}>
-            <TopicIcon size={16} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <span className={`block text-xs font-bold leading-tight ${topicIsActive ? "text-indigo-900 dark:text-indigo-100" : ""}`}>
-              {topic.label}
-            </span>
-            <span className={`block text-[10px] leading-tight ${topicIsActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}`}>
-              {topic.description}
-            </span>
-          </div>
-          {topic.unreadCount && topic.unreadCount > 0 ? (
-            <span
-              className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-black text-white"
-              aria-label={`${topic.unreadCount} notification${topic.unreadCount > 1 ? "s" : ""} non lue${topic.unreadCount > 1 ? "s" : ""}`}
-            >
-              {topic.unreadCount > 99 ? "99+" : topic.unreadCount}
-            </span>
+  const renderTopics = () => (
+    <>
+      {currentChannelType === "admin_elu" && (topicSectionTitle || topicSectionDescription) ? (
+        <div className="px-2 pb-1 pt-2">
+          {topicSectionTitle ? (
+            <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+              {topicSectionTitle}
+            </p>
           ) : null}
-        </button>
-      );
-    });
+          {topicSectionDescription ? (
+            <p className={`mt-1 text-[10px] leading-relaxed ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+              {topicSectionDescription}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      {topics.map((topic) => {
+        const TopicIcon = topic.icon;
+        const topicIsActive = topic.active;
+        return (
+          <button
+            key={topic.id}
+            type="button"
+            onClick={() => {
+              onSelectChannel(currentChannelType);
+              onSelectTopic(topic.id);
+            }}
+            aria-pressed={topicIsActive}
+            className={`group flex w-full items-center gap-3 rounded-[1.25rem] border p-2 pl-3 text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 ${
+              topicIsActive
+                ? isLight
+                  ? "border-transparent bg-indigo-50/50 text-indigo-700"
+                  : "border-transparent bg-indigo-900/20 text-indigo-300"
+                : isLight
+                  ? "border-transparent bg-transparent text-slate-600 hover:bg-white"
+                  : "border-transparent bg-transparent text-slate-400 hover:bg-slate-800/50"
+            }`}
+          >
+            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${topicIsActive ? "bg-indigo-100 text-indigo-600" : "bg-transparent text-slate-400 group-hover:bg-slate-100 dark:group-hover:bg-slate-800"}`}>
+              <TopicIcon size={16} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className={`block text-xs font-bold leading-tight ${topicIsActive ? "text-indigo-900 dark:text-indigo-100" : ""}`}>
+                {topic.label}
+              </span>
+              <span className={`block text-[10px] leading-tight ${topicIsActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}`}>
+                {topic.description}
+              </span>
+            </div>
+            {topic.unreadCount && topic.unreadCount > 0 ? (
+              <span
+                className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-black text-white"
+                aria-label={`${topic.unreadCount} notification${topic.unreadCount > 1 ? "s" : ""} non lue${topic.unreadCount > 1 ? "s" : ""}`}
+              >
+                {topic.unreadCount > 99 ? "99+" : topic.unreadCount}
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
+    </>
+  );
 
   const renderButton = (
     channel: ChatSidebarChannel | undefined,
@@ -171,6 +191,12 @@ export const ChatSidebar = memo(function ChatSidebar({
             />
           ) : null}
           {currentChannelType === "territory" ? renderTopics() : null}
+
+          {renderButton(adminEluChannel, {
+            label: "Admin & élus",
+            description: "Pilotage, arbitrages et coordination",
+          })}
+          {currentChannelType === "admin_elu" ? renderTopics() : null}
         </div>
       </section>
 

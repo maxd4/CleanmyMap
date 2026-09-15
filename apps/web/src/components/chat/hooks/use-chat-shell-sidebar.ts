@@ -77,6 +77,8 @@ export function useChatShellSidebar({
               ? chatNotificationUnreadCounts.community || undefined
               : messagerieMode && channelType === "territory"
                 ? chatNotificationUnreadCounts.territory || undefined
+                : messagerieMode && channelType === "admin_elu"
+                  ? chatNotificationUnreadCounts.admin_elu || undefined
                 : undefined,
           accentClass: visual.accentClass,
           chipClass: visual.chipClass,
@@ -94,6 +96,7 @@ export function useChatShellSidebar({
       messagerieMode,
       chatNotificationUnreadCounts.community,
       chatNotificationUnreadCounts.territory,
+      chatNotificationUnreadCounts.admin_elu,
     ],
   );
 
@@ -135,15 +138,26 @@ export function useChatShellSidebar({
     () =>
       channelTopics.map((topic) => ({
         ...topic,
+        label: locale === "en" ? topic.labelEn ?? topic.label : topic.label,
+        description:
+          locale === "en"
+            ? topic.descriptionEn ?? topic.description
+            : topic.description,
+        starterPrompt:
+          locale === "en"
+            ? topic.starterPromptEn ?? topic.starterPrompt
+            : topic.starterPrompt,
         active: topic.id === activeTopicId,
         unreadCount:
           activeChannelType === "community"
             ? chatNotificationUnreadCounts.communityByTopic[topic.id]
             : activeChannelType === "territory"
               ? chatNotificationUnreadCounts.territoryByTopic[topic.id]
-              : undefined,
+              : activeChannelType === "admin_elu"
+                ? chatNotificationUnreadCounts.adminEluByTopic[topic.id]
+                : undefined,
       })),
-    [activeChannelType, activeTopicId, channelTopics, chatNotificationUnreadCounts],
+    [activeChannelType, activeTopicId, channelTopics, chatNotificationUnreadCounts, locale],
   );
 
   const sidebarTopicSectionTitle = useMemo(() => {
@@ -152,6 +166,9 @@ export function useChatShellSidebar({
     }
     if (activeChannelType === "territory") {
       return locale === "fr" ? "Salons de zone" : "Area rooms";
+    }
+    if (activeChannelType === "admin_elu") {
+      return locale === "fr" ? "Sujets Admin & élus" : "Admin & elected topics";
     }
     return null;
   }, [activeChannelType, locale]);
@@ -166,6 +183,11 @@ export function useChatShellSidebar({
       return locale === "fr"
         ? "Points locaux et coordination de voisinage."
         : "Local points and nearby coordination.";
+    }
+    if (activeChannelType === "admin_elu") {
+      return locale === "fr"
+        ? "Arbitrages, priorités, suivi et coordination institutionnelle."
+        : "Trade-offs, priorities, follow-up and institutional coordination.";
     }
     return null;
   }, [activeChannelType, locale]);

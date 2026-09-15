@@ -98,7 +98,9 @@ export function useChatShellNotificationEffects({
   useEffect(() => {
     if (
       !messagerieMode ||
-      (activeChannelType !== "community" && activeChannelType !== "territory") ||
+      (activeChannelType !== "community" &&
+        activeChannelType !== "territory" &&
+        activeChannelType !== "admin_elu") ||
       feedState === "loading" ||
       feedState === "degraded"
     ) {
