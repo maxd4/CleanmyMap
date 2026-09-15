@@ -65,6 +65,7 @@ lui seul la conformité sémantique du contenu des fiches.
 | `/pilotage` | [Pilotage](./routes/01-accueil-pilotage/pilotage/pilotage-README.md) | `auth-disabled-gate` ; `clerk-context` ; accès métier `coordinateur`/`admin`/`max` | pilotage | `apps/web/src/app/(app)/pilotage/page.tsx` |
 | `/profil` | [Profil](./routes/01-accueil-pilotage/profil/profil-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/page.tsx` |
 | `/profil/[profile]` | [Profil détaillé](./routes/01-accueil-pilotage/profil-profile/profil-profile-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/[profile]/page.tsx` |
+| `/profil/impact` | [Profil impact](./routes/01-accueil-pilotage/profil-impact/profil-impact-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/impact/page.tsx` |
 | `/sponsor-portal` | [Portail décideur](./routes/01-accueil-pilotage/sponsor-portal/sponsor-portal-README.md) | `protected` | pilotage | `apps/web/src/app/(app)/sponsor-portal/page.tsx` |
 | `/sections/elus` | [Gouvernance](./routes/01-accueil-pilotage/gouvernance/gouvernance-README.md) | `auth-disabled-gate` | accueil-pilotage | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 
@@ -98,7 +99,6 @@ pas son contrôle d'accès, qui est `protected`.
 | `/actions/map` | [Carte des actions](./routes/03-cartographie-impact/actions-map/actions-map-README.md) | `public-visible` | sky | `apps/web/src/app/(app)/actions/map/page.tsx` |
 | `/methodologie` | [Méthodologie](./routes/03-cartographie-impact/methodologie/methodologie-README.md) | `public-visible` | red, exception `methodologie-impact` | `apps/web/src/app/(app)/methodologie/page.tsx` |
 | `/sections/gamification` | [Progression & badges](./routes/03-cartographie-impact/gamification/gamification-README.md) | `auth-disabled-gate` | red, exception `reports-impact` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/profil/impact` | [Profil impact](./routes/01-accueil-pilotage/profil-impact/profil-impact-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/impact/page.tsx` |
 | `/reports` | [Rapports d'impact](./routes/03-cartographie-impact/reports/reports-README.md) | synthèse publique ; génération/historique compte connecté ; export détaillé tout compte connecté, quota 1/jour | red | `apps/web/src/app/(app)/reports/page.tsx` |
 
 ### Alias Cartographie & Impact

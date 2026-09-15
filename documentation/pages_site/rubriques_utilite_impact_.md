@@ -1,5 +1,15 @@
-Les rubriques de CleanMyMap.fr
-Utilite & impact - mise a jour 2026 (structure 5 blocs)
+# Les rubriques de CleanMyMap.fr — HISTORY
+
+> **Statut documentaire : `HISTORY`**
+>
+> Ce fichier conserve une photographie historique de l'organisation produit et
+> de ses arbitrages. Il n'est plus une source `CURRENT` et ne doit pas être
+> mis à jour pour suivre le runtime. Pour l'état courant, utiliser
+> [`INDEX.md`](./INDEX.md), [`PAGE_FAMILIES.md`](./PAGE_FAMILIES.md), les fiches
+> [`routes/`](./routes/) et, lorsque la responsabilité est celle de la matrice
+> produit, [`documentation/product/matrice-rubriques.md`](../product/matrice-rubriques.md).
+
+Utilite & impact - photographie historique (structure 5 blocs)
 
 ---
 

@@ -11,17 +11,24 @@ Les rôles principaux sont :
 | `README.md` | `CURRENT` — conventions locales |
 | `INDEX.md` | `CURRENT` — inventaire maître |
 | `PAGE_FAMILIES.md` | `CURRENT` — contrat des familles de pages |
-| `charte-pages-hors-blocs.md` | `CURRENT` — règles des pages hors blocs |
+| `charte-pages-hors-blocs.md` | `AUDIT` — charte historique et propositions, sans autorité CURRENT |
 | `PAGE_FAMILIES_PLAN.md` | `PLAN` — décisions encore ouvertes |
 | `plan-correction-ui-contenu.md` | `PLAN` — travail UI/contenu résiduel |
+| `visual_transformation_plan.md` | `PLAN` — backlog de transformations visuelles non exécuté |
 | `AUDIT_BLOCS_RUBRIQUES.md` | `AUDIT` |
 | `AUDIT_PAGES_SITE_CODE.md` | `AUDIT` |
-| `generate-canonical-pages.mjs` | outil d'audit non destructif |
+| `rubriques_utilite_impact_.md` | `HISTORY` — photographie historique de l'organisation produit |
+| `rubriques_cleanmymap.xlsx` | `HISTORY` — classeur historique, non source CURRENT |
+| `generate-canonical-pages.mjs` | `TOOLING` — registre et audit non destructifs |
+| `screen/` | `TOOLING` — scripts de capture ; les sorties sont des `SNAPSHOT` |
 | `routes/` | `CURRENT` — documentation fonctionnelle canonique page par page |
 
-Les audits et plans peuvent rester à la racine tant que leur statut est
-explicite. Il n'est pas nécessaire de créer une hiérarchie supplémentaire
-uniquement pour les ranger.
+Les audits, historiques, plans et outils peuvent rester à la racine tant que
+leur statut est explicite. Le classeur Excel historique n'est pas une source
+fonctionnelle et ne doit pas être modifié dans le cadre de cette clarification.
+Les sorties de `screen/` relèvent du pipeline d'artefacts et ne constituent pas
+une source fonctionnelle `CURRENT`. Il n'est pas nécessaire de créer une
+hiérarchie supplémentaire uniquement pour les ranger.
 
 ## Documentation canonique — `routes/`
 

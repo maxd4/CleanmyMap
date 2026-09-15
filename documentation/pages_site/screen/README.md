@@ -1,5 +1,10 @@
 # Captures screen
 
+> **Statut du dossier : `TOOLING`.** Les scripts de ce dossier orchestrent la
+> capture ; ils ne constituent pas une source fonctionnelle `CURRENT`. Les
+> sorties produites sont des `SNAPSHOT` conservés dans le périmètre d'artefacts
+> prévu par le pipeline.
+
 Ce dossier contient les captures desktop PNG générées automatiquement pour les routes du site.
 
 ## Commande unique

@@ -87,4 +87,8 @@ flowchart LR
 
 ## Règle de maintenance
 
-Quand un bloc change, mettre à jour cette matrice en même temps que `rubriques_utilite_impact_.md` et le registre de navigation. La matrice n'est pas un commentaire : c'est un contrat de navigation.
+Quand un bloc change, mettre à jour cette matrice et le registre de navigation,
+puis les fiches `CURRENT` des routes concernées. Le fichier historique
+`pages_site/rubriques_utilite_impact_.md` n'est pas une source à maintenir pour
+le présent. La matrice n'est pas un commentaire : c'est un contrat de
+navigation.

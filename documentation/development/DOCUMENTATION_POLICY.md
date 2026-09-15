@@ -130,6 +130,15 @@ Une correction fonctionnelle doit toucher uniquement les fiches nécessaires.
 La maintenance fonctionnelle n'autorise aucune restructuration, suppression,
 renommage, nettoyage global ou mutation automatique d'assets.
 
+La maintenance sémantique nécessaire d'une fiche `CURRENT` concernée par un
+changement fonctionnel fait partie du lot fonctionnel normal. Si ce lot
+autorise déjà la modification fonctionnelle concernée, aucune autorisation
+séparée supplémentaire n'est requise ; la modification reste limitée aux
+fiches nécessaires. Le renommage, le déplacement, la suppression, la fusion,
+la restructuration, le nettoyage massif et toute modification ou régénération
+d'assets restent des opérations structurelles protégées et nécessitent une
+autorisation explicite.
+
 Une restructuration documentaire globale peut modifier les fichiers à la racine
 de `pages_site/`, mais ne doit pas restructurer automatiquement `routes/`.
 

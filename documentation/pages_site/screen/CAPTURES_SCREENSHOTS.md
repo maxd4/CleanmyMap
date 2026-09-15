@@ -1,5 +1,11 @@
 # Captures d'écran automatisées
 
+> **Statut du dossier `screen/` : `TOOLING`.** Ce document décrit l'outillage
+> de capture et son pipeline. Les images produites sont des `SNAPSHOT` ; elles
+> ne sont jamais une source fonctionnelle `CURRENT` et vivent dans le périmètre
+> d'artefacts prévu par le pipeline. Aucun script ni aucune capture n'est
+> modifié par cette clarification.
+
 Les captures et screenshots sont des `SNAPSHOT` : ils décrivent une
 photographie datée d'un rendu et ne sont jamais une source supérieure au
 runtime ou à une fiche fonctionnelle `CURRENT`.
