@@ -1,6 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { createInitialFormState } from "../payload";
-import { buildPublicationSummary, sanitizePreActionForm } from "./model";
+import {
+  buildPublicationSummary,
+  isResumablePreAction,
+  sanitizePreActionForm,
+} from "./model";
+
+describe("pre-action resume contract", () => {
+  it.each([
+    ["pending", true],
+    ["approved", true],
+    ["rejected", false],
+    ["cancelled", false],
+  ] as const)("%s pre-action is %s resumable", (status, expected) => {
+    expect(
+      isResumablePreAction({ actionPhase: "pre_action", status }),
+    ).toBe(expected);
+  });
+
+  it("requires the pre-action phase even for pending and approved actions", () => {
+    expect(
+      isResumablePreAction({ actionPhase: "post_action_draft", status: "pending" }),
+    ).toBe(false);
+    expect(
+      isResumablePreAction({ actionPhase: "post_action_complete", status: "approved" }),
+    ).toBe(false);
+  });
+});
 
 describe("sanitizePreActionForm", () => {
   it("removes final harvest fields while keeping expected waste categories", () => {

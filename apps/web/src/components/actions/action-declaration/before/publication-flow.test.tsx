@@ -114,4 +114,26 @@ describe("ActionBeforeDeclarationForm publication flow", () => {
     expect(html).toContain("Confirmer et publier");
     expect(html).toContain("Annuler");
   });
+
+  it.each([
+    ["rejected", "Pré-action rejetée"],
+    ["cancelled", "Action annulée"],
+  ] as const)("renders %s as a terminal non-publishable state", (status, title) => {
+    useBeforeActionFormMock.mockReturnValue(
+      buildHookState({
+        terminalActionStatus: status,
+        publishedAt: null,
+        publishedAction: { ...buildHookState().publishedAction, status },
+      }),
+    );
+
+    const html = renderToStaticMarkup(
+      React.createElement(ActionBeforeDeclarationForm, props),
+    );
+
+    expect(html).toContain(title);
+    expect(html).toContain("État terminal");
+    expect(html).not.toContain("Action prête et publiée");
+    expect(html).not.toContain("Publier cette action");
+  });
 });

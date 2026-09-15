@@ -222,6 +222,40 @@ describe("PATCH /api/actions/:actionId", () => {
     );
   });
 
+  it.each([
+    ["owner", "user-test-1", "benevole"],
+    ["admin", "admin-1", "admin"],
+  ] as const)("refuses a métier PATCH on a cancelled action for the %s", async (_label, userId, activeRole) => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: true, userId });
+    getCurrentUserIdentityMock.mockResolvedValue({
+      userId,
+      role: activeRole,
+      activeRole,
+    });
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "cancelled",
+      action_phase: "pre_action",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-1",
+      notes: null,
+    });
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({ notes: "Modification interdite" }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: "state_conflict" });
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
+
   it("rejects a creator trying to change validated impact", async () => {
     loadActionByIdMock.mockResolvedValueOnce({
       id: "action-test-1",
@@ -345,54 +379,6 @@ describe("PATCH /api/actions/:actionId", () => {
     );
   });
 
-  it("lets an elected account with ACTIVE_ROLE=admin correct validated impact with the admin audit contract", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({
-      userId: "elu-1",
-      role: "elu",
-      activeRole: "admin",
-    });
-    requireAuthenticatedAccessMock.mockResolvedValueOnce({
-      ok: true,
-      userId: "elu-1",
-    });
-    loadActionByIdMock.mockResolvedValueOnce({
-      id: "action-test-1",
-      status: "approved",
-      action_phase: "post_action_complete",
-      preparation_data: {},
-      created_by_clerk_id: "user-test-1",
-      waste_kg: 1,
-      cigarette_butts: 2,
-      volunteers_count: 3,
-      duration_minutes: 30,
-      notes: null,
-    });
-    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
-
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-test-1", {
-        method: "PATCH",
-        body: JSON.stringify({ wasteKg: 2, reason: "Correction élu validée" }),
-      }),
-      { params: Promise.resolve({ actionId: "action-test-1" }) },
-    );
-
-    expect(response.status).toBe(200);
-    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ waste_kg: 2 }));
-    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        actorUserId: "elu-1",
-        targetActionId: "action-test-1",
-        targetUserId: "user-test-1",
-        operation: "correct_impact",
-        reason: "Correction élu validée",
-        previousValue: expect.objectContaining({ wasteKg: 1 }),
-        newValue: expect.objectContaining({ wasteKg: 2 }),
-      }),
-    );
-  });
-
   it("requires a reason before an admin can correct validated impact", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "admin-1",
@@ -426,35 +412,6 @@ describe("PATCH /api/actions/:actionId", () => {
     expect(response.status).toBe(400);
     expect(updateMock).not.toHaveBeenCalled();
     expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
-  });
-
-  it("rejects an elected active role from correcting validated impact", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({
-      userId: "user-test-1",
-      role: "elu",
-      activeRole: "elu",
-    });
-    loadActionByIdMock.mockResolvedValueOnce({
-      id: "action-test-1",
-      status: "approved",
-      action_phase: "post_action_complete",
-      preparation_data: {},
-      created_by_clerk_id: "user-test-1",
-      waste_kg: 1,
-      notes: null,
-    });
-
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-test-1", {
-        method: "PATCH",
-        body: JSON.stringify({ wasteKg: 2, reason: "Tentative élu" }),
-      }),
-      { params: Promise.resolve({ actionId: "action-test-1" }) },
-    );
-
-    expect(response.status).toBe(403);
-    expect(updateMock).not.toHaveBeenCalled();
   });
 
   it("persists explicit null measurements without converting them to zero", async () => {

@@ -8,6 +8,7 @@ export type AdminErrorCode =
   | "invalid_payload"
   | "not_found"
   | "confirmation_required"
+  | "state_conflict"
   | "reason_required"
   | "dry_run_required"
   | "dry_run_expired"

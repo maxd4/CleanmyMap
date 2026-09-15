@@ -17,9 +17,11 @@ import type { FormState } from "../form/model";
 import type { ActionPhotoAsset, ActionVisionEstimate } from "@/lib/actions/types";
 import {
   buildPreActionSummaryNote,
+  isResumablePreAction,
   sanitizePreActionForm,
   type ActionBeforeDeclarationFormProps,
   type BeforeActionFieldUpdater,
+  type TerminalPreActionStatus,
 } from "./model";
 import { ENTREPRISE_ASSOCIATION_OPTION } from "@/lib/actions/association-options";
 import { getTimeContractValidationMessage } from "@/lib/actions/time-contract";
@@ -61,6 +63,8 @@ export function useBeforeActionForm({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [publishedAction, setPublishedAction] = useState<ActionEditorRecord | null>(null);
+  const [terminalActionStatus, setTerminalActionStatus] =
+    useState<TerminalPreActionStatus | null>(null);
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [publicationState, setPublicationState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [publicationError, setPublicationError] = useState<string | null>(null);
@@ -81,6 +85,18 @@ export function useBeforeActionForm({
         if (!active) return;
         if (action.actionPhase !== "pre_action") {
           throw new Error("Cette action n'est plus une pré-action publiable.");
+        }
+        if (!isResumablePreAction(action)) {
+          if (action.status !== "rejected" && action.status !== "cancelled") {
+            throw new Error("Cette pré-action ne peut pas être reprise dans ce parcours.");
+          }
+          setCreatedId(action.id);
+          setPublishedAction(action);
+          setPublishedAt(null);
+          setTerminalActionStatus(action.status);
+          setSubmissionState("success");
+          setIsHydratingAction(false);
+          return;
         }
         const hydrated = sanitizePreActionForm(
           applyPreparationDataToForm(
@@ -109,6 +125,7 @@ export function useBeforeActionForm({
         setCreatedId(action.id);
         setPublishedAction(action);
         setPublishedAt(action.publishedAt ?? null);
+        setTerminalActionStatus(null);
         setSubmissionState("success");
         setIsHydratingAction(false);
       })
@@ -327,6 +344,7 @@ export function useBeforeActionForm({
     errorMessage,
     createdId,
     publishedAction,
+    terminalActionStatus,
     publishedAt,
     publicationState,
     publicationError,

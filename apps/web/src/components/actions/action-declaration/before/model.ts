@@ -1,6 +1,6 @@
 import type { FormState } from "../form/model";
 import type { ActionEditorRecord } from "@/lib/actions/http";
-import type { ActionPreparationData } from "@/lib/actions/types";
+import type { ActionPreparationData, ActionStatus } from "@/lib/actions/types";
 import { normalizeParticipantAccounts } from "../payload";
 import {
   ENTREPRISE_ASSOCIATION_OPTION,
@@ -38,6 +38,17 @@ export type PublicationSummaryItem = {
 };
 
 type PublicationSummarySource = FormState | ActionEditorRecord;
+
+export type ResumablePreAction = Pick<ActionEditorRecord, "actionPhase" | "status">;
+
+export function isResumablePreAction(action: ResumablePreAction): boolean {
+  return (
+    action.actionPhase === "pre_action" &&
+    (action.status === "pending" || action.status === "approved")
+  );
+}
+
+export type TerminalPreActionStatus = Extract<ActionStatus, "rejected" | "cancelled">;
 
 function preparationDataFrom(source: PublicationSummarySource): ActionPreparationData {
   if ("preparationData" in source) {

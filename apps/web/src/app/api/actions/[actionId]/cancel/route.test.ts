@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ActionCancellationError } from "@/lib/actions/cancellation";
 
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const getSupabaseAdminClientMock = vi.hoisted(() => vi.fn());
@@ -57,8 +58,29 @@ describe("POST /api/actions/:actionId/cancel", () => {
     const response = await POST(request({ confirmPhrase: "oui", reason: "weather" }), {
       params: Promise.resolve({ actionId: "action-1" }),
     });
+    const body = await response.json();
     expect(response.status).toBe(409);
+    expect(body.code).toBe("confirmation_required");
     expect(cancelFutureActionMock).not.toHaveBeenCalled();
+  });
+
+  it("distinguishes a CAS state conflict from missing confirmation", async () => {
+    cancelFutureActionMock.mockRejectedValueOnce(
+      new ActionCancellationError(
+        "conflict",
+        "L'action a changé avant la confirmation de son annulation.",
+      ),
+    );
+    const { POST } = await import("./route");
+    const response = await POST(
+      request({ confirmPhrase: "CONFIRMER ANNULATION", reason: "weather" }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.code).toBe("state_conflict");
+    expect(body.code).not.toBe("confirmation_required");
   });
 
   it("cancels through the dedicated operation and audits the tombstone", async () => {

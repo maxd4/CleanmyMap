@@ -71,6 +71,20 @@ pas une permission de mutation et ne modifie pas les règles métier existantes.
 - **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
 - **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
 
+### Reprise d'une action existante
+
+Le lien `/actions/new?from=before&actionId=...` ne reprend une action comme
+pré-action éditable que si `actionPhase = pre_action` et que son statut est
+`pending` ou `approved`. Une pré-action `pending` non publiée peut donc rester
+en préparation puis être publiée explicitement ; une pré-action approuvée peut
+être reprise selon le même contrat.
+
+Les statuts `rejected` et `cancelled` sont terminaux pour ce parcours : ils
+sont affichés comme tels, ne sont pas éditables comme pré-actions, ne peuvent
+pas être publiés et ne doivent jamais afficher « Action prête et publiée ».
+Une action `cancelled` reste en outre un tombstone historique immuable ; son
+identité et ses références existantes sont conservées.
+
 
 
 ## Références legacy

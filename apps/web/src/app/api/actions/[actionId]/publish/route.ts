@@ -55,6 +55,13 @@ export async function POST(
       );
     }
 
+    if (current.status === "rejected" || current.status === "cancelled") {
+      return NextResponse.json(
+        { error: "Cette action est dans un état terminal et ne peut plus être publiée." },
+        { status: 422 },
+      );
+    }
+
     if (current.published_at) {
       return NextResponse.json({
         status: "published",

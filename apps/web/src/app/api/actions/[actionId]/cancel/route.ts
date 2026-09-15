@@ -122,7 +122,9 @@ export async function POST(
         : status === 500
           ? "server_error"
           : status === 409
-            ? "confirmation_required"
+            ? cancellationError?.code === "conflict"
+              ? "state_conflict"
+              : "confirmation_required"
             : "invalid_payload";
 
     await appendActionModerationAudit({
