@@ -23,7 +23,7 @@ const BLOCK_PREVIEW_PRIORITY: Record<NavigationBlockId, Partial<Record<Navigatio
   act:       { "rejoindre-une-action": 1, new: 2, signalement: 3 },
   visualize: { map: 1, methodologie: 2, reports: 3, gamification: 4 },
   impact:    {},
-  network:   { network: 1, community: 2, feedback: 3, messagerie: 4, "open-data": 5, annuaire: 6 },
+  network:   { "open-data": 1, network: 2, community: 3, feedback: 4, messagerie: 5, annuaire: 6 },
   connect:   { messagerie: 1, dm: 2 },
   learn:     {
     "learn-comprendre": 1,
