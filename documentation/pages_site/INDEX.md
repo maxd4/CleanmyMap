@@ -89,8 +89,8 @@ constitue pas une décision officielle.
 | `/actions/new` | [Créer une action](./routes/02-agir/actions-new/actions-new-README.md) | `clerk-context` ; entrée/préparation accessibles sans compte ; identité requise pour créer, compléter ou envoyer | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
 | `/sections/rejoindre-une-action` | [Rejoindre une action](./routes/02-agir/rejoindre-une-action/rejoindre-une-action-README.md) | `public-visible` ; compte requis pour rejoindre | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/missions/[id]` | [Missions](./routes/02-agir/missions/missions-README.md) | `protected` | agir | `apps/web/src/app/(app)/missions/[id]/page.tsx` |
-| `/sections/route` | [Où agir](./routes/02-agir/ou-agir/ou-agir-README.md) | `public-visible` | agir | `apps/web/src/app/(app)/sections/route/page.tsx` |
-| `/sections/weather` | [Organiser une action](./routes/02-agir/weather/weather-README.md) | `public-visible` | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/route` | [Où agir — compatibilité](./routes/02-agir/ou-agir/ou-agir-README.md) | `public-visible` ; compatibilité vers `/actions/new?panel=itineraire` | agir | `apps/web/src/app/(app)/sections/route/page.tsx` |
+| `/sections/weather` | [Météo — compatibilité](./routes/02-agir/weather/weather-README.md) | `public-visible` ; compatibilité vers `/actions/new?panel=meteo` | agir | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/signalement` | [Signalement déchets](./routes/02-agir/signalement/signalement-README.md) | `clerk-context` ; formulaire accessible sans compte ; identité requise pour transmettre, gérer les preuves et consulter ses observations | agir | `apps/web/src/app/(app)/signalement/page.tsx` |
 
 `/missions/[id]` reste une route dynamique : `[id]` est un segment paramétré
@@ -99,15 +99,15 @@ pas son contrôle d'accès, qui est `protected`. Cette route sert au workflow et
 aux deep-links ; elle ne devient pas une rubrique primaire.
 
 Les routes `/actions/history`, `/sections/route` et `/sections/weather` restent
-documentées et accessibles pour compatibilité. Elles sont hors navigation
-primaire du bloc Agir jusqu'au lot de routage dédié.
+documentées et accessibles pour compatibilité. Les deux dernières redirigent
+vers le shell `/actions/new`; elles sont hors navigation primaire du bloc Agir.
 
 ### Alias et redirections Agir
 
 | Route | Cible | Statut |
 |---|---|---|
 | `/declaration` | `/actions/new` | `redirect` |
-| `/sections/guide` | `/sections/weather` | `redirect` gérée dans la route dynamique |
+| `/sections/guide` | `/actions/new?panel=meteo` | `redirect` avec paramètres conservés |
 
 ## Cartographie & Impact
 

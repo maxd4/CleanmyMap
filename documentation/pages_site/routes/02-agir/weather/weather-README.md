@@ -1,18 +1,19 @@
 # Organiser une action
 
-## Fiche canonique
+## Fiche de compatibilité
 
-- **Route** : `/sections/weather`
+- **Route historique** : `/sections/weather`
+- **Cible actuelle** : `/actions/new?panel=meteo`
 - **Dossier canonique** : `weather`
 - **Famille** : Agir
-- **Accès runtime** : `public-visible`
+- **Accès runtime** : `public-visible` ; redirection vers le panneau météo public de `/actions/new`
 - **Palette runtime** : agir / emerald
 - **Exception page-family** : `weather-operations`
 
 ## Sources principales
 
 ```txt
-apps/web/src/app/(app)/sections/[sectionId]/page.tsx
+apps/web/src/app/(app)/sections/[sectionId]/page.tsx (redirection)
 apps/web/src/components/sections/rubriques/weather-section.tsx
 apps/web/src/components/sections/rubriques/weather-location-picker.tsx
 apps/web/src/components/sections/rubriques/use-weather-data.ts
@@ -34,8 +35,8 @@ La page sert à :
 
 ## Contrat runtime
 
-- `SectionRenderer` rend `WeatherSection` pour cette rubrique.
-- `/sections/guide` redirige vers `/sections/weather`.
+- `ActionCreationShell` rend `WeatherSection` dans le panneau `meteo`.
+- `/sections/weather` et `/sections/guide` redirigent vers `/actions/new?panel=meteo`.
 - La page est visible sans compte.
 - L'état `access refused` n'est pas un état normal de cette surface.
 - Les données météo proviennent d'Open-Meteo et d'une résolution locale puis distante des lieux.
@@ -64,9 +65,8 @@ ready
 ## Statut documentaire
 
 ```txt
-Page canonique en place.
-Documentation réalignée sur le runtime météo actuel.
-La famille reste Agir tant que le runtime n'est pas arbitrée autrement.
+Le moteur météo reste en place et est réutilisé dans le shell canonique.
+Les anciennes URLs sont conservées comme redirections de compatibilité.
 ```
 
 ## Références

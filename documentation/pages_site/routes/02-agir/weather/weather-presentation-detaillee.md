@@ -1,8 +1,9 @@
 # Organiser une action - Présentation détaillée
 
-## Fiche canonique
+## Fiche de compatibilité
 
-- **Route** : `/sections/weather`
+- **Route historique** : `/sections/weather`
+- **Cible** : `/actions/new?panel=meteo`
 - **Dossier canonique** : `weather`
 - **Rôle** : préparation terrain météo
 - **Périmètre** : météo réelle, créneau conseillé, kit, sécurité
@@ -11,7 +12,9 @@
 
 ## Vue d'ensemble
 
-La page aide à choisir le bon créneau d'action et à préparer le terrain.
+Le panneau météo de `/actions/new` aide à choisir le bon créneau d'action et à
+préparer le terrain. `/sections/weather` et `/sections/guide` redirigent vers
+ce panneau.
 
 Elle combine :
 

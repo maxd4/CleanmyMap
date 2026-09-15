@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { ActionDeclarationEntryFlow } from "@/components/actions/action-declaration-entry-flow";
+import { ActionCreationShell } from "@/components/actions/action-creation-shell";
+import { normalizeActionCreationPanel } from "@/lib/actions/action-creation-routes";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { getLocalDevAuthState } from "@/lib/auth/local-dev-auth-state.server";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 
@@ -48,8 +50,10 @@ export default async function NewActionPage({
   const fromEventId = resolveSingleSearchParam(params?.["fromEventId"]);
   const from = resolveSingleSearchParam(params?.["from"]);
   const actionId = resolveSingleSearchParam(params?.["actionId"]);
-  const returnUrl = buildActionReturnUrl({ fromEventId, actionId, from });
+  const panel = normalizeActionCreationPanel(params?.["panel"]);
+  const returnUrl = buildActionReturnUrl({ fromEventId, actionId, from, panel });
   const { userId } = await getSafeAuthSession();
+  const localDevAuth = await getLocalDevAuthState();
 
   const isAuthenticated = Boolean(userId);
   const identity = userId ? await getCurrentUserIdentity() : null;
@@ -71,13 +75,15 @@ export default async function NewActionPage({
   if (pageTemplateV2Enabled) {
     return (
       <div className="space-y-8">
-        <ActionDeclarationEntryFlow
+        <ActionCreationShell
           actorNameOptions={actorNameOptions}
           defaultActorName={defaultActorName}
           userMetadata={userMetadata}
           linkedEventId={fromEventId}
           initialEntryPath={from === "planner" || from === "before" ? "before" : undefined}
           initialActionId={actionId ?? null}
+          initialPanel={panel}
+          localDevAuth={localDevAuth}
           isAuthenticated={isAuthenticated}
           signInHref={buildAuthRedirectHref("/sign-in", returnUrl)}
           signUpHref={buildAuthRedirectHref("/sign-up", returnUrl)}
@@ -88,13 +94,15 @@ export default async function NewActionPage({
 
   return (
     <div data-rubrique-report-root className="space-y-4">
-      <ActionDeclarationEntryFlow
+      <ActionCreationShell
         actorNameOptions={actorNameOptions}
         defaultActorName={defaultActorName}
         userMetadata={userMetadata}
         linkedEventId={fromEventId}
         initialEntryPath={from === "planner" || from === "before" ? "before" : undefined}
         initialActionId={actionId ?? null}
+        initialPanel={panel}
+        localDevAuth={localDevAuth}
         isAuthenticated={isAuthenticated}
         signInHref={buildAuthRedirectHref("/sign-in", returnUrl)}
         signUpHref={buildAuthRedirectHref("/sign-up", returnUrl)}
@@ -107,12 +115,15 @@ function buildActionReturnUrl({
   fromEventId,
   actionId,
   from,
+  panel,
 }: {
   fromEventId?: string;
   actionId?: string;
   from?: string;
+  panel: ReturnType<typeof normalizeActionCreationPanel>;
 }): string {
   const returnParams = new URLSearchParams();
+  if (panel !== "pre-formulaire") returnParams.set("panel", panel);
   if (fromEventId) returnParams.set("fromEventId", fromEventId);
   if (actionId) returnParams.set("actionId", actionId);
   if (from) returnParams.set("from", from);

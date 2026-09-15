@@ -15,7 +15,7 @@ Le bloc Agir contient exactement trois entrées utilisateur, quel que soit le
 mode d'affichage :
 
 1. `/sections/rejoindre-une-action` — **Rejoindre une action**
-2. `/actions/new` — **Créer une action**
+2. `/actions/new` — **Créer une action** (shell unique : pré-formulaire, itinéraire, météo & conditions terrain, formalités juridiques)
 3. `/signalement` — **Signaler un déchet**
 
 Une action ou un sondage aide à préparer un arbitrage ; son résultat ne vaut pas

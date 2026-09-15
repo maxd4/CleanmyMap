@@ -9,7 +9,7 @@
 - **Famille / bloc fonctionnel** : Agir (bloc)
 - **Accès runtime** : `clerk-context` ; l'entrée et la préparation des parcours sont accessibles au visiteur sans compte. La route fournit le contexte Clerk sans hard gate de page ; le compte est demandé lorsque l'identité est nécessaire pour créer, compléter ou envoyer une action.
 - **Objectif utilisateur principal** : Préparer une action avant terrain ou compléter ses résultats après réalisation.
-- **Action principale attendue** : Choisir directement entre la préparation avant action, avec inscriptions éventuelles, et la déclaration après action, avec les résultats terrain.
+- **Action principale attendue** : Utiliser le shell unique de création avec quatre panneaux indépendants : pré-formulaire, itinéraire, météo & conditions terrain et formalités juridiques.
 - **Règle de séparation** : le parcours avant action prépare seulement l'organisation; les champs de récolte, d'impact et de validation scientifique restent réservés au formulaire complet après action.
 - **Règle de modération** : toute action créée suit le parcours normal de validation, quel que soit le rôle actif de son auteur. Une pré-action future peut être publiée explicitement et visible sur la carte ; cette visibilité ne vaut ni approbation métier ni éligibilité Impact.
 - **Préparation avant action** : titre de l'action, description courte, commune ou zone, point de rendez-vous précis avec localisation si disponible, zone cible prévue, date prévue, heure de rendez-vous, heure de départ prévue, durée estimée, type d'action prévue, type de zone, nombre de bénévoles attendus, difficulté estimée, accessibilité, message pour les participants, consignes de sécurité, matériel conseillé, commentaire logistique, checklist avant départ, organisateur ou référent, membres ajoutés manuellement via `participantAccounts`, ouverture à la participation, lien d'accès à `Rejoindre une action` et statut de la préparation. Les noms techniques `groupJoinEnabled` et `groupJoinHref` restent ceux du contrat interne.
@@ -17,6 +17,11 @@
 - **Catalogue de structures** : le champ `associationName` est filtré par `organizerType` depuis `apps/web/src/lib/actions/association-options.ts`. Une action spontanée fixe `associationName = "Action spontanée"` sans sélecteur; les entreprises proposent le catalogue connu et une saisie libre, tandis que les autres types ne proposent que leurs structures canoniques. Les valeurs legacy restent lisibles et les noms d'entreprise libres conservent le format `Entreprise - <nom>`.
 - **Participants** : `volunteersCount` décrit le nombre de participants à l'action et ne doit pas être déduit de `organizerType`, qui décrit uniquement le cadre de l'organisateur.
 - **Contrat de publication** : la préparation avant action reste fermée par défaut ; seule une publication explicite via `groupJoinEnabled = true` permet son affichage dans la page Rejoindre une action. Les champs de récolte finale restent exclus de ce parcours.
+- **Panneaux indépendants** : le pré-formulaire peut créer une pré-action sans itinéraire, météo ou formalités. Aucun panneau ne constitue une étape obligatoire d'un wizard.
+- **Itinéraire** : le moteur existant reste la source canonique `POST /api/route/recommend`. Son handoff enrichit le même draft et son `operationalRoute` ; il ne crée jamais une seconde action.
+- **Météo** : les composants et services météo existants sont réutilisés. Le lieu et la date du pré-formulaire peuvent servir de contexte lorsqu'ils existent, sans être requis pour consulter le panneau.
+- **Formalités juridiques** : le panneau reste borné tant qu'une source officielle fiable n'est pas documentée. Il ne fabrique aucune obligation légale, assurance, autorisation municipale ou règle de responsabilité.
+- **Deep-links de compatibilité** : `/sections/route` redirige vers `/actions/new?panel=itineraire`, `/sections/weather` et `/sections/guide` vers `/actions/new?panel=meteo`, en conservant les paramètres utiles.
 - **Palette attendue** : emerald
 - **Scope** : point d'entrée nettoyé, métier des formulaires conservé
 - **Statut de finition UI** : terminé pour le contrat du point d'entrée ; l'authentification reste contrôlée au moment des capacités de création, de complétion et d'envoi.
@@ -64,7 +69,8 @@ pas une permission de mutation et ne modifie pas les règles métier existantes.
 - **loading** : fond `slate`, skeletons sobres, loader discret uniquement pendant l'hydratation d'un `actionId` ou le handoff après une vraie écriture.
 - **empty state** : fond `slate` doux, ton encourageant, CTA utile unique.
 - **access refused** : `slate` avec léger `red` / `orange`, ton neutre et professionnel, pas de dramatisation.
-- **choice initial** : deux cartes de parcours, lecture rapide, retour au choix possible; la sélection affiche directement le parcours choisi.
+- **shell** : les quatre panneaux restent indépendants et peuvent être ouverts ou refermés sans imposer d'ordre.
+- **choice initial** : le moteur d'entrée conserve le retour au choix et les deux parcours lorsque ce sous-flux est utilisé; l'accès direct à `/actions/new` ouvre le pré-formulaire autonome.
 - **success** : affichage direct de la préparation avant action ou de la déclaration des résultats terrain après action, puis passage possible vers les résultats terrain après la préparation.
 - **error** : panneau compact avec retour au choix.
 - **Architecture commune** : `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`.
@@ -94,7 +100,7 @@ identité et ses références existantes sont conservées.
 ## Notes d'audit
 
 - Cette fiche est la source de vérité canonique pour la page.
-- Le point d'entrée commence par le choix entre déclaration après action et préparation avant action.
+- Le point d'entrée est le shell unique `Créer une action`, dont les quatre panneaux sélectionnent uniquement une section ouverte.
 - Choisir un parcours ne crée encore aucune action.
 - `/actions/new` conserve `recordType = action` comme invariant interne sans afficher de choix à option unique.
 - Le parcours sélectionné s'affiche directement; un état de chargement est réservé à l'hydratation d'un enregistrement ou au handoff après une vraie écriture.
@@ -111,6 +117,7 @@ identité et ses références existantes sont conservées.
 - Le parcours avant action conserve l'état `pending` jusqu'à la complétion du formulaire complet. La carte peut projeter cette pré-action future comme publique, sans l'inclure dans les KPI ; les demandes de participation restent une file séparée `pending` jusqu'à confirmation ou refus.
 - Le parcours avant action propose ensuite un passage fluide vers le formulaire complet sans perte de données.
 - Le passage vers le formulaire complet doit réutiliser les données déjà saisies et n'exige pas de recommencer la préparation.
+- `/actions/new?actionId=...` reprend le formulaire complet de la même action ; la navigation du shell ne crée ni action ni moteur météo parallèle.
 - La préparation avant action n'est jamais traitée comme une collecte validée tant que la déclaration finale n'a pas complété les champs de récolte.
 - L'absence de valeur pour `groupJoinEnabled` est interprétée comme une fermeture de la visibilité publique.
 - Toute soumission d'action reste `pending` jusqu'au parcours explicite de validation, quel que soit le rôle actif de son auteur.

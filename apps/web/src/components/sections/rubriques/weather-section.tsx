@@ -16,13 +16,17 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-export function WeatherSection() {
+export function WeatherSection({
+  draftContext,
+}: {
+  draftContext?: { locationLabel?: string; actionDate?: string };
+}) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
   const pathname = usePathname();
   const pageFamily = resolvePageFamily(pathname);
 
-  const weather = useWeatherData();
+  const weather = useWeatherData(draftContext);
   const kit = useKitData(fr);
 
   const recommendedWindow = weather.windows.recommended[0] ?? null;

@@ -28,6 +28,7 @@ export type ActionBeforeDeclarationFormProps = {
   initialRecordType?: "action";
   onReturnToChoice: () => void;
   onPassToComplete: (actionId: string) => void | Promise<void>;
+  onFormChange?: (form: FormState) => void;
   signInHref?: string;
   signUpHref?: string;
 };

@@ -2,9 +2,10 @@
 
 ## Rôle et déclenchement
 
-`/sections/route` est la surface publique qui transforme une demande explicite
-en proposition d'itinéraire. L'utilisateur choisit ses contraintes puis active
-le calcul ; aucune recommandation automatique n'est lancée au chargement.
+Le panneau `Itinéraire` de `/actions/new` est la surface publique qui transforme
+une demande explicite en proposition d'itinéraire. L'utilisateur choisit ses
+contraintes puis active le calcul ; aucune recommandation automatique n'est
+lancée au chargement. L'ancienne URL `/sections/route` redirige vers ce panneau.
 
 Deux contextes fonctionnels sont documentés :
 
@@ -76,9 +77,10 @@ erreur d'origine si aucun fallback n'est disponible.
 
 ## Sources et documentation canonique
 
-- page : `apps/web/src/app/(app)/sections/route/page.tsx` ;
+- redirect : `apps/web/src/app/(app)/sections/route/page.tsx` ;
+- shell : `apps/web/src/components/actions/action-creation-shell.tsx` ;
 - surface : `apps/web/src/components/sections/rubriques/route/` ;
 - API : `apps/web/src/app/api/route/recommend/` ;
 - domaine : `apps/web/src/lib/route/` ;
 - [Méthodologie de création d'itinéraire](../../../../architecture/methodologie-creation-itineraire.md) ;
-- [Créer un itinéraire](/sections/route).
+- [Créer une action — panneau itinéraire](/actions/new?panel=itineraire).

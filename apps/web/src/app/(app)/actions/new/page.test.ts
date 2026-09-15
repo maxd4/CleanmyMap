@@ -5,12 +5,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   getSafeAuthSession: vi.fn(),
+  getLocalDevAuthState: vi.fn(() => ({ active: false, role: null })),
   getCurrentUserIdentity: vi.fn(),
   isFeatureEnabled: vi.fn(() => true),
 }));
 
 vi.mock("@/lib/auth/safe-session", () => ({
   getSafeAuthSession: mocks.getSafeAuthSession,
+}));
+
+vi.mock("@/lib/auth/local-dev-auth-state.server", () => ({
+  getLocalDevAuthState: mocks.getLocalDevAuthState,
 }));
 
 vi.mock("@/lib/authz", () => ({
@@ -21,14 +26,15 @@ vi.mock("@/lib/feature-flags", () => ({
   isFeatureEnabled: mocks.isFeatureEnabled,
 }));
 
-vi.mock("@/components/actions/action-declaration-entry-flow", () => ({
-  ActionDeclarationEntryFlow: (props: Record<string, unknown>) =>
+vi.mock("@/components/actions/action-creation-shell", () => ({
+  ActionCreationShell: (props: Record<string, unknown>) =>
     React.createElement("div", {
-      "data-testid": "entry-flow",
+      "data-testid": "action-creation-shell",
       "data-authenticated": String(props.isAuthenticated),
       "data-action-id": String(props.initialActionId ?? ""),
       "data-event-id": String(props.linkedEventId ?? ""),
       "data-entry-path": String(props.initialEntryPath ?? ""),
+      "data-initial-panel": String(props.initialPanel ?? ""),
       "data-sign-in-href": String(props.signInHref ?? ""),
       "data-sign-up-href": String(props.signUpHref ?? ""),
     }),
@@ -74,6 +80,7 @@ describe("action creation entry point", () => {
     expect(html).toContain('data-authenticated="false"');
     expect(html).toContain('data-action-id="action-7"');
     expect(html).toContain('data-event-id="event-42"');
+    expect(html).toContain('data-initial-panel="pre-formulaire"');
     expect(html).toContain(
       'data-sign-in-href="/sign-in?redirect_url=%2Factions%2Fnew%3FfromEventId%3Devent-42%26actionId%3Daction-7"',
     );
@@ -107,6 +114,7 @@ describe("action creation entry point", () => {
     expect(html).toContain('data-authenticated="true"');
     expect(html).toContain('data-action-id="action-7"');
     expect(html).toContain('data-event-id="event-42"');
+    expect(html).toContain('data-initial-panel="pre-formulaire"');
     expect(html).not.toContain("public-preview");
     expect(html).not.toContain("Aperçu public");
   });
@@ -119,6 +127,7 @@ describe("action creation entry point", () => {
     );
 
     expect(html).toContain('data-entry-path="before"');
+    expect(html).toContain('data-initial-panel="pre-formulaire"');
     expect(html).toContain(
       'data-sign-in-href="/sign-in?redirect_url=%2Factions%2Fnew%3FfromEventId%3Devent-42%26from%3Dplanner"',
     );
@@ -132,6 +141,7 @@ describe("action creation entry point", () => {
     );
 
     expect(html).toContain('data-entry-path="before"');
+    expect(html).toContain('data-initial-panel="pre-formulaire"');
     expect(html).toContain('data-action-id="action-42"');
   });
 

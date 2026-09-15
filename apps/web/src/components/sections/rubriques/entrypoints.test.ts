@@ -61,12 +61,15 @@ describe("rubrique entrypoints", () => {
     expect(recyclingSection).toContain('from "./recycling-question-assistant/index"');
   });
 
-  it("keeps the route page and terrain exports behind the canonical facade", () => {
+  it("keeps the route engine behind the canonical facade and redirects its old page", () => {
     const routePage = readFileSync(routePagePath, "utf8");
     const terrainSections = readFileSync(terrainSectionsPath, "utf8");
     const routeEntrypoint = readFileSync(routeEntrypointPath, "utf8");
 
-    expect(routePage).toContain('from "@/components/sections/rubriques/route"');
+    expect(routePage).toContain('from "next/navigation"');
+    expect(routePage).toContain("buildActionCreationPanelHref");
+    expect(routePage).toContain('"itineraire"');
+    expect(routePage).not.toContain('from "@/components/sections/rubriques/route"');
     expect(terrainSections).toContain('export { RouteSection } from "./route";');
     expect(routeEntrypoint).toContain('export { RouteSection } from "./route-section";');
     expect(routeEntrypoint).toContain('export { RouteSection as default } from "./route-section";');

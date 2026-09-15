@@ -76,15 +76,17 @@ flowchart LR
 
 Le bloc Agir expose exactement trois entrées utilisateur :
 `/sections/rejoindre-une-action`, `/actions/new` et `/signalement`. Les routes
-`/missions/[id]`, `/actions/history`, `/sections/route` et
-`/sections/weather` restent accessibles pour leurs moteurs et liens existants,
-mais ne sont pas des rubriques primaires du bloc.
+`/missions/[id]` et `/actions/history` restent accessibles pour leurs
+workflows et liens existants, mais ne sont pas des rubriques primaires du
+bloc. Les moteurs itinéraire et météo restent accessibles via les panneaux de
+`/actions/new` ; leurs anciennes URLs sont des redirections de compatibilité.
 
 - `/explorer` et `/reports` sont les routes canoniques des pages Sommaire et Rapports.
 - `/sections/feedback`, `/sections/community`, `/sections/messagerie`, `/sections/open-data` et `/sections/actors` sont les routes canoniques des sections publiques correspondantes.
 - `/community`, `/messagerie`, `/open-data`, `/partners/network` et `/partners/network/pepite` restent des alias legacy ou des redirections techniques.
 - `/declaration` redirige vers `/actions/new` et reste un alias legacy.
-- `/sections/guide` redirige vers `/sections/weather`.
+- `/sections/route` redirige vers `/actions/new?panel=itineraire`.
+- `/sections/weather` et `/sections/guide` redirigent vers `/actions/new?panel=meteo`.
 - `/learn/hub` et `/learn/ressources` sont des surfaces intégrées, plus des pages autonomes.
 - `/observatoire` et `/sections/sandbox` ne sont plus des routes UI canoniques du repo actuel.
 

@@ -69,6 +69,7 @@ export function ActionBeforeDeclarationForm({
   initialRecordType = "action",
   onReturnToChoice,
   onPassToComplete,
+  onFormChange,
   signInHref,
   signUpHref,
 }: ActionBeforeDeclarationFormProps) {
@@ -104,6 +105,7 @@ export function ActionBeforeDeclarationForm({
     initialRecordType,
     onReturnToChoice,
     onPassToComplete,
+    onFormChange,
   });
   const actClasses = getBlockClasses("act");
 

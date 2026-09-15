@@ -67,10 +67,11 @@ Le resolver courant classe notamment les routes de sections suivantes.
 /signalement
 ```
 
-Les routes `/missions/[id]`, `/actions/history`, `/sections/route` et
-`/sections/weather` restent des routes de workflow ou de compatibilité hors
-navigation primaire. `/missions/[id]` est réservé au workflow et aux
-deep-links ; il n'est jamais une rubrique primaire.
+Les routes `/missions/[id]` et `/actions/history` restent des routes de
+workflow ou de compatibilité hors navigation primaire. `/sections/route`,
+`/sections/weather` et `/sections/guide` sont des compatibilités qui redirigent
+vers les panneaux du shell `/actions/new`. `/missions/[id]` est réservé au
+workflow et aux deep-links ; il n'est jamais une rubrique primaire.
 
 ### Cartographie & Impact
 
@@ -122,7 +123,7 @@ testées et documentées.
 |---|---|---|
 | `explorer-sommaire` | `/explorer` | présentation jaune dédiée |
 | `methodologie-impact` | `/methodologie` | Cartographie & Impact, variante rouge |
-| `weather-operations` | `/sections/weather` | famille Agir |
+| `weather-operations` | `/sections/weather` et `/actions/new?panel=meteo` | famille Agir |
 | `join-action` | `/sections/rejoindre-une-action` et alias `/sections/rejoindre-un-formulaire` | famille Agir |
 | `reports-impact` | rapports / gamification concernés | variante rouge Cartographie & Impact |
 | `partners-indigo` | `/partners/*` | variante partenaires du réseau |
