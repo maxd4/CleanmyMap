@@ -1,16 +1,18 @@
 "use client";
 
 import {
+  BarChart3,
   BookOpen,
   House,
   Map,
+  MessageCircle,
   Users,
   Zap,
   type LucideIcon,
 } from "lucide-react";
 import type { NavigationSpace } from "@/lib/navigation";
 import { getLocalizedText } from "@/lib/navigation";
-import type { DisplayMode, Locale } from "@/lib/ui/preferences";
+import type { Locale } from "@/lib/ui/preferences";
 import { CmmDropdown } from "@/components/ui/cmm-dropdown";
 import { CmmIcon } from "@/components/ui/cmm-icon";
 import { DEFAULT_DROPDOWN_VERTICAL_GAP_PX } from "@/components/ui/use-dropdown-placement";
@@ -24,7 +26,6 @@ const NAVIGATION_DROPDOWN_HOVER_CLOSE_DELAY_MS = 160;
 
 type AppNavigationBlockDropdownProps = {
   activeSpaceId: NavigationSpace["id"] | null;
-  displayMode: DisplayMode;
   locale: Locale;
   onTrackNavigation: (href: string, label: string, spaceId: string | null) => void;
   onOpenChange: (spaceId: NavigationSpace["id"], open: boolean) => void;
@@ -40,11 +41,13 @@ function getNavigationBlockIcon(spaceId: NavigationSpace["id"]): LucideIcon {
     case "act":
       return Zap;
     case "visualize":
-    case "impact":
       return Map;
+    case "impact":
+      return BarChart3;
     case "network":
-    case "connect":
       return Users;
+    case "connect":
+      return MessageCircle;
     case "learn":
       return BookOpen;
     default:
@@ -54,7 +57,6 @@ function getNavigationBlockIcon(spaceId: NavigationSpace["id"]): LucideIcon {
 
 export function AppNavigationBlockDropdown({
   activeSpaceId,
-  displayMode,
   locale,
   onTrackNavigation,
   onOpenChange,
@@ -93,13 +95,7 @@ export function AppNavigationBlockDropdown({
             getNavigationBlockTriggerStateClassName({ isActiveSpace, isOpen: open }),
           )}
         >
-          {displayMode === "exhaustif" ? (
-            <span className="select-none" aria-hidden="true">
-              {space.icon}
-            </span>
-          ) : (
-            <CmmIcon icon={getNavigationBlockIcon(space.id)} size="lg" />
-          )}
+          <CmmIcon icon={getNavigationBlockIcon(space.id)} size="lg" />
           <span className="sr-only">{getLocalizedText(space.label, locale, space.id)}</span>
         </button>
       )}
