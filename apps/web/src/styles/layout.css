@@ -169,7 +169,7 @@
   }
 
   .cmm-home-section-title {
-    font-size: clamp(2.5rem, 4vw, 4.5rem);
+    font-size: var(--cmm-page-header-title-size);
     line-height: 0.96;
     font-weight: 900;
     letter-spacing: -0.05em;

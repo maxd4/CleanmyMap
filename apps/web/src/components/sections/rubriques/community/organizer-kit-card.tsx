@@ -208,7 +208,7 @@ export function OrganizerKitCard() {
         {CHECKLIST_ITEMS.map((block) => (
           <section
             key={block.stage}
-            className="rounded-3xl border border-slate-200 bg-slate-50/60 p-4"
+            className="min-w-0 rounded-3xl border border-slate-200 bg-slate-50/60 p-4"
           >
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">
               {block.stage}
@@ -226,8 +226,8 @@ export function OrganizerKitCard() {
         ))}
       </div>
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-[1.3fr_1fr]">
-        <section className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
+      <div className="mt-6 grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <section className="min-w-0 rounded-3xl border border-slate-200 bg-slate-50/70 p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
               <FileText size={20} />
@@ -282,7 +282,7 @@ export function OrganizerKitCard() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-5">
+        <section className="min-w-0 rounded-3xl border border-slate-200 bg-white p-5">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
               <ShieldAlert size={20} />
@@ -341,7 +341,7 @@ export function OrganizerKitCard() {
           const Icon = section.icon;
 
           return (
-            <section key={section.title} className={`rounded-3xl border p-5 ${section.accentClass}`}>
+            <section key={section.title} className={`min-w-0 rounded-3xl border p-5 ${section.accentClass}`}>
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/80">
                   <Icon size={18} />
@@ -367,15 +367,15 @@ export function OrganizerKitCard() {
           return (
             <article
               key={template.id}
-              className={`rounded-3xl border p-5 ${template.accentClass}`}
+              className={`min-w-0 rounded-3xl border p-5 ${template.accentClass}`}
             >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
+              <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/80">
                     <Icon size={18} />
                   </div>
                   <div>
-                    <h4 className="text-base font-black tracking-tight">{template.title}</h4>
+                    <h4 className="break-words text-base font-black tracking-tight">{template.title}</h4>
                     <p className="text-xs leading-relaxed opacity-80">{template.description}</p>
                   </div>
                 </div>
