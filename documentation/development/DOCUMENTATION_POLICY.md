@@ -94,12 +94,39 @@ Règles :
 
 `README.md` porte les conventions locales et `INDEX.md` l'inventaire maître.
 
-`documentation/pages_site/routes/` est un espace de travail personnel protégé.
-Sa lecture est autorisée pour comprendre les pages et leurs références, mais
-aucune mutation n'y est effectuée sans demande explicite de l'utilisateur.
+`documentation/pages_site/routes/` est la documentation fonctionnelle canonique
+page par page. Lorsqu'un lot modifie durablement une page, sa fiche `CURRENT`
+doit être mise à jour dans le même lot. Cette maintenance sémantique est
+limitée aux fiches concernées et couvre le parcours, l'accès visible, les rôles
+et scopes visibles, les CTA, le contenu et les données affichées, les états et
+erreurs, les fonctionnalités, les relations entre pages et les limites
+fonctionnelles.
+
+La hiérarchie de vérité est :
+
+```text
+runtime réel
+→ source canonique spécialisée du domaine
+→ fiche fonctionnelle de page
+→ capture ou snapshot
+```
+
+Les fiches décrivent les conséquences fonctionnelles des contrats transversaux
+et référencent leur source responsable ; elles ne dupliquent pas le SQL/RLS,
+l'architecture transverse ou la politique AuthZ globale.
+
+La structure et les assets restent protégés. Sans instruction explicite pour
+ce périmètre, aucune fiche de `routes/` ne peut être renommée, déplacée,
+supprimée, fusionnée, réorganisée, normalisée massivement, nettoyée
+cosmétiquement ou réécrite globalement ; les captures et assets ne peuvent pas
+être modifiés, remplacés ou régénérés.
+
+Une correction fonctionnelle doit toucher uniquement les fiches nécessaires.
+La maintenance fonctionnelle n'autorise aucune restructuration, suppression,
+renommage, nettoyage global ou mutation automatique d'assets.
 
 Une restructuration documentaire globale peut modifier les fichiers à la racine
-de `pages_site/`, mais ne doit pas normaliser automatiquement `routes/`.
+de `pages_site/`, mais ne doit pas restructurer automatiquement `routes/`.
 
 ## README et index
 

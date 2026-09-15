@@ -75,18 +75,35 @@ comme l'état courant.
 
 ## `pages_site/`
 
-`pages_site/` décrit les pages du point de vue utilisateur : rôle, contenu,
-parcours, états et UX/UI.
+`pages_site/` est la documentation fonctionnelle canonique des pages : rôle,
+contenu, parcours, états et UX/UI. Lorsqu'un lot modifie durablement une page,
+sa fiche `CURRENT` sous `pages_site/routes/` doit être mise à jour dans le même
+lot, uniquement pour les fiches concernées.
 
 `pages_site/README.md` porte les conventions locales et `pages_site/INDEX.md`
 reste l'inventaire maître.
 
-Le sous-arbre `pages_site/routes/` est un espace de travail personnel protégé :
-il peut être lu pour comprendre le contexte, mais il n'est modifié que sur
-demande explicite de l'utilisateur.
+La hiérarchie de vérité des fiches est :
 
-La maintenance structurelle de `pages_site/` concerne donc par défaut sa racine,
-pas `routes/`.
+```text
+runtime réel
+→ source canonique spécialisée du domaine
+→ fiche fonctionnelle de page
+→ capture ou snapshot
+```
+
+Une fiche décrit les conséquences fonctionnelles des contrats responsables et
+les référence sans dupliquer SQL/RLS, architecture transverse ou politique
+AuthZ globale.
+
+La structure et les assets de `pages_site/routes/` restent protégés. Sans
+instruction explicite, aucune restructuration, suppression, renommage,
+déplacement, fusion, normalisation massive, nettoyage global, réécriture
+générale ou mutation d'asset n'est autorisée. Une correction fonctionnelle doit
+toucher uniquement les fiches nécessaires.
+
+La maintenance sémantique n'autorise aucune restructuration, suppression,
+renommage, nettoyage global ou mutation automatique d'assets.
 
 ## Documentation courante et historique
 
