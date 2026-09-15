@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   findRlsContractFindings,
@@ -6,6 +8,20 @@ import {
 } from "../../../scripts/supabase-security-advisors.mjs";
 
 describe("Supabase security advisor guard", () => {
+  it("uses only the explicitly linked project in the CURRENT workflow", () => {
+    const script = readFileSync(
+      resolve(process.cwd(), "scripts/supabase-security-advisors.mjs"),
+      "utf8",
+    );
+
+    expect(script).toContain('["db", "advisors", "--linked"');
+    expect(script).not.toContain("runLocalAdvisors");
+    expect(script).not.toContain('["status"');
+    expect(script).not.toContain('["start"');
+    expect(script).not.toContain('["db", "reset"');
+    expect(script).not.toContain("Docker Desktop");
+  });
+
   it("allows only the two documented server-only INFO findings", () => {
     expect(SECURITY_ADVISOR_COMMAND_OPTIONS).toEqual([
       "--type",

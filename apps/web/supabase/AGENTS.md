@@ -53,24 +53,20 @@ Ajouter les tests de contrat SQL/RPC directement concernés. Toute application
 distante d'une migration reste une opération explicitement autorisée et
 distincte de la validation locale.
 
-## Disponibilité du runtime local
+## Runtime local non supporté
 
-- Docker et Supabase local sont strictement on-demand : ne jamais lancer
-  automatiquement Docker Desktop, WSL, un daemon Docker ou un runtime de
-  conteneurs pour satisfaire une validation.
-- Avant toute commande Supabase qui nécessite Docker, effectuer uniquement un
-  probe borné de disponibilité du daemon, limité à quelques secondes. Si le
-  probe échoue ou dépasse ce délai, enregistrer `LOCAL_SUPABASE_UNAVAILABLE` et
-  ne lancer ni `supabase start`, ni `supabase status`, ni `supabase db reset`, ni
-  une boucle de tentatives sur le CLI.
-- Lorsque le probe réussit et que la tâche exige explicitement le runtime local,
-  exécuter la commande locale nécessaire depuis `apps/web/supabase`, sans
-  démarrage implicite ni processus persistant non requis.
-- Poursuivre toutes les validations indépendantes de Docker. Toute preuve qui
-  nécessite PostgreSQL ou Supabase local doit rester marquée explicitement
-  `NON_PROUVÉE` lorsque le runtime est indisponible ; cette absence ne doit pas
-  bloquer artificiellement les autres validations.
-- Les accès MCP ou `--linked` ne doivent jamais servir à appliquer une
-  migration en production pour compenser l'absence de Docker. Toute
-  alternative distante de test ou de preview doit être explicitement autorisée
-  avant son utilisation.
+- Docker, WSL, Supabase local et les autres runtimes de conteneurs ne font pas
+  partie de l'outillage supporté du workflow CURRENT.
+- Ne jamais installer, démarrer, sonder ou arrêter Docker, WSL, un daemon ou un
+  runtime de conteneurs pour satisfaire une validation.
+- `supabase start`, `supabase status` et `supabase db reset` sont exclus du
+  workflow CURRENT. Ne pas les invoquer dans les guards ou validations.
+- Toute opération qui exige réellement un runtime conteneurisé est classée
+  `UNSUPPORTED_CONTAINER_RUNTIME` et reste non supportée ; ne pas demander
+  l'installation d'un runtime en guise de fallback.
+- Les opérations Supabase courantes utilisent `npx supabase` contre le projet
+  distant explicitement lié. Les commandes distantes en lecture, dont les
+  advisors avec `--linked`, restent autorisées ; toute mutation distante reste
+  explicite et séparée.
+- `apps/web/supabase/config.toml` et l'arbre des migrations restent canoniques.
+  Leur conservation ne constitue pas un support du runtime Supabase local.

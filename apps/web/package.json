@@ -25,7 +25,6 @@
     "analyze:bundle": "node scripts/analyze-bundle.mjs",
     "backend:doctor": "node scripts/backend-doctor.mjs",
     "backend:supabase:advisors": "node scripts/supabase-security-advisors.mjs",
-    "backend:supabase:advisors:local": "node scripts/supabase-security-advisors.mjs --local",
     "backend:supabase:advisors:linked": "node scripts/supabase-security-advisors.mjs --linked",
     "backend:supabase:quota-audit": "node scripts/supabase-quota-audit.mjs",
     "backend:supabase:quota-audit:db": "node scripts/supabase-quota-audit.mjs --with-db",

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -140,12 +139,12 @@ function assertRlsContractClear(output) {
 
 function parseArgs(argv) {
   const out = {
-    mode: "auto",
+    mode: "linked",
   };
 
   for (const arg of argv) {
     if (arg === "--local") {
-      out.mode = "local";
+      out.mode = "unsupported-local";
       continue;
     }
     if (arg === "--linked") {
@@ -189,7 +188,7 @@ function formatLinked403Help(result) {
     "Supabase linked security advisors require a personal access token with project access and the `advisors_read` permission.",
     "Generate a fresh token from Supabase Dashboard -> Account -> Tokens, then run `supabase login --token <token>` or export `SUPABASE_ACCESS_TOKEN` before retrying.",
     "If the project was linked from another Supabase account, re-link it with the account that has Owner/Admin access to the target project ref.",
-    "If you want a local-only path, install Docker Desktop so `backend:supabase:advisors:local` can run the CLI against the local stack.",
+    "A local containerized runtime is not supported by the CURRENT workflow; use the explicitly linked project instead.",
   ].join(" ");
 
   if (!details) {
@@ -197,31 +196,6 @@ function formatLinked403Help(result) {
   }
 
   return `${details}\n\n${accessTokenHelp}`;
-}
-
-function hasLinkedProject(cwd) {
-  return existsSync(resolve(cwd, "supabase", ".temp", "linked-project.json"));
-}
-
-function runLocalAdvisors(cwd) {
-  const status = runSupabase(["status", "--workdir", ".", "-o", "json"], cwd);
-  if (status.status !== 0) {
-    const start = runSupabase(["start", "--workdir", ".", "--yes"], cwd);
-    if (start.status !== 0) {
-      throw new Error(formatError("Supabase local start failed", start));
-    }
-  }
-
-  const advisors = runSupabase(
-    ["db", "advisors", "--local", ...SECURITY_ADVISOR_COMMAND_OPTIONS],
-    cwd,
-  );
-  if (advisors.status !== 0) {
-    throw new Error(formatError("Supabase local security advisors failed", advisors));
-  }
-
-  assertRlsContractClear(advisors.stdout || "");
-  process.stdout.write(advisors.stdout || "");
 }
 
 function runLinkedAdvisors(cwd) {
@@ -251,27 +225,13 @@ function main() {
   const args = parseArgs(process.argv.slice(2));
 
   try {
-    if (args.mode === "linked") {
-      runLinkedAdvisors(cwd);
-      process.exit(0);
+    if (args.mode === "unsupported-local") {
+      throw new Error(
+        "Supabase local security advisors are unsupported in the CURRENT workflow; use the explicitly linked project.",
+      );
     }
 
-    if (args.mode === "local") {
-      runLocalAdvisors(cwd);
-      process.exit(0);
-    }
-
-    try {
-      runLocalAdvisors(cwd);
-      process.exit(0);
-    } catch (error) {
-      if (!hasLinkedProject(cwd)) {
-        throw error;
-      }
-
-      console.warn("[supabase] Local stack unavailable, falling back to linked project advisors.");
-      runLinkedAdvisors(cwd);
-    }
+    runLinkedAdvisors(cwd);
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
