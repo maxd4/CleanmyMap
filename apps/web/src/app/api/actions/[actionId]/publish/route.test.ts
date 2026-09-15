@@ -84,4 +84,22 @@ describe("POST /api/actions/:actionId/publish", () => {
     expect(response.status).toBe(200);
     expect(body.alreadyPublished).toBe(true);
   });
+
+  it.each(["rejected", "cancelled"] as const)(
+    "refuses to publish a %s terminal pre-action",
+    async (status) => {
+      loadActionByIdMock.mockResolvedValueOnce({
+        id: "action-1",
+        created_by_clerk_id: "owner-1",
+        action_phase: "pre_action",
+        status,
+        published_at: status === "cancelled" ? "2026-09-14T10:00:00.000Z" : null,
+      });
+      const { POST } = await import("./route");
+      const response = await POST(new Request("http://localhost"), {
+        params: Promise.resolve({ actionId: "action-1" }),
+      });
+      expect(response.status).toBe(422);
+    },
+  );
 });

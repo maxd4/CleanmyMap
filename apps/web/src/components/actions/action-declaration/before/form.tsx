@@ -79,6 +79,7 @@ export function ActionBeforeDeclarationForm({
     errorMessage,
     createdId,
     publishedAction,
+    terminalActionStatus,
     publishedAt,
     publicationState,
     publicationError,
@@ -123,6 +124,40 @@ export function ActionBeforeDeclarationForm({
             Reprise de l&apos;action en cours…
           </p>
         </CmmCard>
+      </div>
+    );
+  }
+
+  if (terminalActionStatus) {
+    const isCancelled = terminalActionStatus === "cancelled";
+    return (
+      <div className="space-y-6 px-4 py-6 md:px-6 lg:px-8">
+        <BeforeActionStepper activeStep={5} />
+        <div className="mx-auto w-full max-w-3xl">
+          <CmmCard tone="amber" variant="glass" size="lg">
+            <div className="space-y-4">
+              <CmmPill tone="amber" size="sm">
+                État terminal
+              </CmmPill>
+              <h1 className="text-3xl font-black tracking-tight text-emerald-950">
+                {isCancelled ? "Action annulée" : "Pré-action rejetée"}
+              </h1>
+              <p className="text-sm leading-6 text-emerald-900/70">
+                {isCancelled
+                  ? "Cette action est conservée dans l'historique et ne peut plus être reprise ni publiée."
+                  : "Cette pré-action a été rejetée et ne peut plus être reprise ni publiée."
+                }
+              </p>
+              {createdId ? (
+                <p className="text-xs font-mono text-emerald-900/60">Référence: {createdId}</p>
+              ) : null}
+              <CmmButton tone="tertiary" variant="pill" size="md" onClick={onReturnToChoice}>
+                <ArrowLeft size={14} />
+                Retour au choix
+              </CmmButton>
+            </div>
+          </CmmCard>
+        </div>
       </div>
     );
   }

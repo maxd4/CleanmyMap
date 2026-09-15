@@ -188,6 +188,17 @@ export async function PATCH(
       );
     }
 
+    if (current.status === "cancelled") {
+      return NextResponse.json(
+        {
+          error:
+            "Cette action annulée est un tombstone historique et ne peut plus être modifiée.",
+          code: "state_conflict",
+        },
+        { status: 409 },
+      );
+    }
+
     const parsedBody: ActionUpdateInput = parsed.data;
     const validatedImpactCorrection =
       current.status === "approved" && hasActionImpactUpdate(parsedBody);
