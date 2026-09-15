@@ -11,7 +11,7 @@ import { claimReferralInviteForUser } from "@/lib/gamification/referrals";
 export const metadata: Metadata = {
   title: "Bienvenue sur CleanMyMap - Configuration initiale",
   description:
-    "Complétez votre profil CleanMyMap en une seule étape: rôle, localisation et mode d'affichage.",
+    "Configurez votre profil CleanMyMap : identité, profil, zones principales et mode d’affichage.",
   keywords: ["onboarding", "configuration", "profil", "écologie", "CleanMyMap"],
   robots: {
     index: false,
