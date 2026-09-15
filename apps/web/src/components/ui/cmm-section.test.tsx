@@ -30,6 +30,7 @@ describe("canonical page layout primitives", () => {
   it("keeps page geometry in shared tokens for every display mode", () => {
     const globalsCss = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
     const tokensCss = readFileSync(new URL("../../styles/tokens.css", import.meta.url), "utf8");
+    const layoutCss = readFileSync(new URL("../../styles/layout.css", import.meta.url), "utf8");
     const baseCss = readFileSync(new URL("../../styles/base.css", import.meta.url), "utf8");
     const displayModesCss = readFileSync(
       new URL("../../styles/display-modes.css", import.meta.url),
@@ -48,6 +49,8 @@ describe("canonical page layout primitives", () => {
       "--cmm-page-header-content-gap",
       "--cmm-section-gap",
       "--cmm-content-group-gap",
+      "--cmm-ribbon-max-width",
+      "--cmm-ribbon-text-size",
     ]) {
       expect(tokensCss).toContain(token);
     }
@@ -61,6 +64,13 @@ describe("canonical page layout primitives", () => {
     expect(tokensCss).not.toMatch(
       /--cmm-page-max-width:\s*var\(--cmm-grid-max-width\)\s*;/,
     );
+    expect(tokensCss).toMatch(
+      /--cmm-ribbon-max-width:\s*var\(--cmm-page-max-width\)\s*;/,
+    );
+    expect(layoutCss).toContain(".cmm-ribbon-frame");
+    expect(layoutCss).toContain("var(--cmm-ribbon-max-width)");
+    expect(layoutCss).toContain(".cmm-ribbon-text");
+    expect(layoutCss).toContain("var(--cmm-ribbon-text-size)");
     expect(baseCss).toMatch(/html\s*\{[\s\S]*zoom:\s*80%\s*;/);
     expect(baseCss).toMatch(
       /@supports not \(zoom:\s*1\)[\s\S]*font-size:\s*80%\s*;/,
