@@ -214,7 +214,7 @@ Ne pas créer leurs dossiers canoniques dans une famille arbitraire avant décis
 ```txt
 apps/web/src/app/**/page.tsx
 apps/web/src/lib/sections-registry/config.ts
-apps/web/src/lib/clerk-access.ts
+apps/web/src/proxy.ts
 apps/web/src/lib/seo/indexability.ts
 apps/web/src/lib/ui/page-families/resolve-page-family.ts
 apps/web/src/lib/ui/page-families/exceptions.ts

@@ -17,28 +17,54 @@ Les rôles principaux sont :
 | `AUDIT_BLOCS_RUBRIQUES.md` | `AUDIT` |
 | `AUDIT_PAGES_SITE_CODE.md` | `AUDIT` |
 | `generate-canonical-pages.mjs` | outil de contrôle / génération documentaire |
-| `routes/` | espace de travail route-first protégé |
+| `routes/` | `CURRENT` — documentation fonctionnelle canonique page par page |
 
 Les audits et plans peuvent rester à la racine tant que leur statut est
 explicite. Il n'est pas nécessaire de créer une hiérarchie supplémentaire
 uniquement pour les ranger.
 
-## Zone protégée — `routes/`
+## Documentation canonique — `routes/`
 
-`documentation/pages_site/routes/` est un **espace de travail personnel**.
+`documentation/pages_site/routes/` est la documentation fonctionnelle canonique
+des pages, page par page. Chaque fiche `CURRENT` doit rester alignée sur le
+comportement durable réellement livré.
 
-Par défaut :
+Lorsqu'un lot modifie durablement une page, mettre à jour dans le même lot la
+fiche concernée, et uniquement les fiches nécessaires. Cette maintenance
+sémantique couvre notamment :
 
-- il peut être lu pour comprendre une page, une route ou une référence ;
-- il ne doit pas être restructuré ;
-- aucun fichier n'y est déplacé, supprimé, renommé ou réécrit ;
-- aucun asset n'y est normalisé ou nettoyé.
+- objectif et parcours ;
+- accès et AuthN/AuthZ visibles ;
+- rôles et scopes visibles ;
+- CTA ;
+- contenu et données affichées ;
+- états et erreurs ;
+- fonctionnalités, relations entre pages et limites fonctionnelles.
 
-Toute mutation sous `routes/` exige une demande explicite de l'utilisateur pour
-ce périmètre.
+La hiérarchie de vérité est :
 
-Les travaux de gouvernance documentaire sur `pages_site/` concernent donc la
-racine du dossier sauf instruction contraire.
+```text
+runtime réel
+→ source canonique spécialisée du domaine
+→ fiche fonctionnelle de page
+→ capture ou snapshot
+```
+
+Une fiche décrit les conséquences fonctionnelles des contrats responsables et
+référence leurs sources ; elle ne duplique pas le SQL/RLS, l'architecture
+transverse ou la politique AuthZ globale.
+
+La structure et les assets restent protégés. Sans instruction explicite pour
+ce périmètre, il est interdit de renommer, déplacer, supprimer, fusionner,
+réorganiser, normaliser massivement, nettoyer globalement ou réécrire les
+fiches. Les captures et autres assets ne doivent pas être modifiés, remplacés
+ou régénérés.
+
+La maintenance fonctionnelle n'autorise aucune restructuration, suppression,
+renommage, nettoyage global ou mutation automatique d'assets.
+
+Les travaux de gouvernance documentaire peuvent donc maintenir les fiches
+nécessaires sans ouvrir une restructuration de l'arborescence.
 
 ## Périmètre fonctionnel
 
@@ -87,7 +113,7 @@ Les alias et redirections peuvent être inventoriés sans créer artificiellemen
 une nouvelle source fonctionnelle.
 
 Cette règle décrit le modèle documentaire ; elle n'autorise pas une mutation
-automatique du sous-arbre `routes/`.
+automatique de structure ou d'assets du sous-arbre `routes/`.
 
 ## Noyau documentaire historique des routes
 
@@ -145,8 +171,8 @@ Les règles actuelles privilégient :
 - desktop par défaut ;
 - mobile uniquement lorsque demandé.
 
-Les captures déjà présentes sous `routes/` appartiennent à la zone protégée :
-aucun nettoyage ou déplacement automatique.
+Les captures déjà présentes sous `routes/` restent protégées : aucun nettoyage,
+remplacement, régénération ou déplacement automatique.
 
 ## Vérification UI
 
@@ -169,7 +195,7 @@ La maintenance structurelle autorisée par défaut peut :
 - clarifier le statut d'un audit ou d'un plan ;
 - maintenir l'outil de contrôle documentaire.
 
-Elle ne doit pas dériver en nettoyage de `routes/`.
+Elle ne doit pas dériver en restructuration ou nettoyage global de `routes/`.
 
 ## Références
 

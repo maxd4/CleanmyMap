@@ -115,24 +115,43 @@ documents canoniques.
 - `INDEX.md` reste l'inventaire maître ;
 - les fichiers à la racine de `pages_site/` peuvent être maintenus dans le
   cadre de la gouvernance documentaire ;
-- `documentation/pages_site/routes/` est un **espace de travail personnel
-  protégé**.
+- `documentation/pages_site/routes/` est la documentation fonctionnelle
+  canonique, page par page.
 
-Par défaut, dans `pages_site/routes/` :
+La maintenance sémantique de cette zone est requise : lorsqu'un lot modifie
+durablement le comportement d'une page, sa fiche `CURRENT` concernée doit être
+mise à jour dans le même lot. La mise à jour est limitée aux fiches nécessaires
+et couvre notamment le parcours, l'accès visible, les rôles et scopes visibles,
+les CTA, le contenu affiché, les états et erreurs, les fonctionnalités, les
+relations entre pages et les limites fonctionnelles.
 
-- lecture autorisée pour comprendre le contexte et les références ;
-- aucune suppression ;
-- aucun déplacement ;
-- aucun renommage ;
-- aucune réécriture ;
-- aucune normalisation de structure ;
-- aucune modification d'asset.
+La hiérarchie de vérité est :
 
-Toute mutation sous `documentation/pages_site/routes/` exige une demande
-explicite de l'utilisateur pour ce périmètre.
+```text
+runtime réel
+→ source canonique spécialisée du domaine
+→ fiche fonctionnelle de page
+→ capture ou snapshot
+```
 
-La restructuration globale de `documentation/` doit donc s'adapter autour de
-`routes/`, jamais utiliser ce sous-arbre comme cible de nettoyage automatique.
+Une fiche décrit les conséquences fonctionnelles des contrats responsables et
+les référence ; elle ne duplique pas le SQL/RLS, l'architecture transverse ou
+la politique AuthZ globale.
+
+La structure et les assets restent protégés. Sans instruction explicite pour
+ce périmètre, il est interdit dans `pages_site/routes/` de :
+
+- renommer, déplacer ou supprimer ;
+- réorganiser l'arborescence, normaliser massivement ou fusionner des fiches ;
+- lancer un nettoyage cosmétique global ou une réécriture générale ;
+- modifier, remplacer ou régénérer des captures et autres assets.
+
+Une correction fonctionnelle doit toucher uniquement les fiches concernées.
+La maintenance sémantique n'autorise aucune restructuration, suppression,
+renommage, nettoyage global ou mutation automatique d'assets.
+
+La restructuration globale de `documentation/` doit respecter cette frontière
+et ne pas utiliser ce sous-arbre comme cible de nettoyage automatique.
 
 ## Déplacement et suppression
 
