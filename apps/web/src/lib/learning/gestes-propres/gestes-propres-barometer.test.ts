@@ -57,8 +57,8 @@ describe("GESTES_PROPRES_BAROMETER_2025", () => {
     ]);
     expect(GESTES_PROPRES_BAROMETER_MYTHS.map((item) => item.ctaHref)).toEqual([
       "/sections/compost",
-      "/sections/trash-spotter",
-      "/sections/trash-spotter",
+      "/signalement",
+      "/signalement",
       "/sections/recycling",
     ]);
     expect(GESTES_PROPRES_BAROMETER_MYTHS.every((item) => item.sourcePage === 7)).toBe(true);

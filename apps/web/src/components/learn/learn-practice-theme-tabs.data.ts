@@ -108,7 +108,7 @@ export const THEME_PANELS: Record<Exclude<LearnPracticeThemeId, "numerique">, Th
     ],
     shortcuts: [
       {
-        href: "/sections/trash-spotter",
+        href: "/signalement",
         title: { fr: "Signaler un déchet", en: "Report waste" },
         detail: {
           fr: "Utiliser le signalement quand le cas reste flou.",
@@ -236,7 +236,7 @@ export const THEME_PANELS: Record<Exclude<LearnPracticeThemeId, "numerique">, Th
     ],
     guides: [
       {
-        href: "/sections/trash-spotter",
+        href: "/signalement",
         title: { fr: "Signaler un dépôt", en: "Report litter" },
         detail: {
           fr: "Utiliser le signalement quand un déchet reste bloqué.",

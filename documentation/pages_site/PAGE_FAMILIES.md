@@ -92,6 +92,11 @@ workflow et aux deep-links ; il n'est jamais une rubrique primaire.
 /sections/trash-spotter
 ```
 
+`/sections/trash-spotter` reste dans `Réseau & Discussions` comme surface
+secondaire de consultation et de monitoring. La création d'une observation
+Trash Spotter passe exclusivement par `/signalement`, l'entrée canonique du
+bloc Agir.
+
 D'autres routes sont résolues directement par leur préfixe ou leur domaine :
 authentification, pages légales, administration, impressions, actions,
 dashboard/pilotage, rapports, apprentissage et partenaires.

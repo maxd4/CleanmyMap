@@ -135,7 +135,7 @@ vers le shell `/actions/new`; elles sont hors navigation primaire du bloc Agir.
 | `/sections/messagerie` | [Messagerie](./routes/04-reseau-discussions/messagerie/messagerie-README.md) | `auth-blur-gate` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/open-data` | [Données publiques](./routes/04-reseau-discussions/open-data/open-data-README.md) | `public-visible` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/funding` | [Soutenir le projet](./routes/04-reseau-discussions/funding/funding-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/sections/trash-spotter` | [Signaler un déchet](./routes/04-reseau-discussions/trash-spotter/trash-spotter-README.md) | `auth-blur-gate` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/trash-spotter` | [Suivi Trash Spotter](./routes/04-reseau-discussions/trash-spotter/trash-spotter-README.md) | `auth-blur-gate` ; consultation/monitoring secondaire, sans formulaire de création | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/partners/dashboard` | [Annuaire partenaires](./routes/04-reseau-discussions/partners-dashboard/partners-dashboard-README.md) | `protected` | partenaires / réseau | `apps/web/src/app/(app)/partners/dashboard/page.tsx` |
 | `/partners/onboarding` | [Onboarding partenaire](./routes/04-reseau-discussions/partners-onboarding/partners-onboarding-README.md) | `protected` | partenaires / réseau | `apps/web/src/app/(app)/partners/onboarding/page.tsx` |
 

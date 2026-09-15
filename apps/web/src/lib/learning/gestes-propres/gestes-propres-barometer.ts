@@ -428,7 +428,7 @@ export const GESTES_PROPRES_BAROMETER_MYTHS: GestesPropresBarometerMyth[] = [
       fr: "Voir le signalement",
       en: "Open reporting",
     },
-    ctaHref: "/sections/trash-spotter",
+    ctaHref: "/signalement",
     sourcePage: 7,
   },
   {
@@ -450,7 +450,7 @@ export const GESTES_PROPRES_BAROMETER_MYTHS: GestesPropresBarometerMyth[] = [
       fr: "Voir le signalement",
       en: "Open reporting",
     },
-    ctaHref: "/sections/trash-spotter",
+    ctaHref: "/signalement",
     sourcePage: 7,
   },
   {

@@ -441,8 +441,11 @@ export const RUBRIQUE_REGISTRY = [
     kind: "section",
     anonymousPresentation: "blur",
     route: "/sections/trash-spotter",
-    label: { fr: "Signaler un déchet", en: "Trash Spotter" },
-    description: { fr: "Localisez un nouveau hotspot de pollution", en: "Locate a new pollution hotspot" },
+    label: { fr: "Suivi Trash Spotter", en: "Trash Spotter monitoring" },
+    description: {
+      fr: "Consulter la carte et les signalements Trash Spotter approuvés",
+      en: "Review the map and approved Trash Spotter reports",
+    },
     availability: "available",
     implementation: "finalized",
   },

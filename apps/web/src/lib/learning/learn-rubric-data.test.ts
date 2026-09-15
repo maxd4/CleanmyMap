@@ -14,7 +14,7 @@ const EXPECTED_PRACTICE_ROUTES = [
   "/sections/compost",
   "/actions/new",
   "/actions/map",
-  "/sections/trash-spotter",
+  "/signalement",
 ];
 
 describe("learn rubric inventory", () => {

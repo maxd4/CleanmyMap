@@ -11,8 +11,8 @@ import {
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { PageHeader } from "@/components/ui/page-header";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
-import { TrashSpotterObservationForm } from "@/components/actions/quick-signalement-form";
 import { useTrashSpotter } from "./use-trash-spotter";
 import { SpotterRecentList } from "./trash-spotter-components";
 
@@ -73,11 +73,11 @@ export function TrashSpotterSection() {
           <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(300px,0.92fr)] lg:items-center">
             <motion.div variants={itemVariants} className="space-y-5">
               <PageHeader
-                title={fr ? "Observation de terrain" : "Trash Spotter"}
+                title={fr ? "Suivi Trash Spotter" : "Trash Spotter monitoring"}
                 subtitle={
                   fr
-                    ? "Observation rapide de l’état d’un lieu et cartographie collaborative."
-                    : "Fast reporting and collaborative mapping of areas to treat."
+                    ? "Consultez les signalements approuvés et la carte des points actuellement actionnables."
+                    : "Review approved reports and the map of currently actionable points."
                 }
               />
             </motion.div>
@@ -131,18 +131,8 @@ export function TrashSpotterSection() {
         </motion.div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]">
-          <motion.div
-            variants={itemVariants}
-            initial="hidden"
-            animate="visible"
-            id="trash-spotter-form"
-            className="scroll-mt-24"
-          >
-            {isLoading ? (
-              <div className="rounded-[2rem] border border-emerald-100 bg-white/90 p-6 shadow-[0_18px_48px_-34px_rgba(34,197,94,0.22)]">
-                <div className="h-[36rem] rounded-[1.75rem] bg-slate-100" />
-              </div>
-            ) : error ? (
+          <motion.div variants={itemVariants} initial="hidden" animate="visible" className="scroll-mt-24">
+            {error ? (
               <div className="rounded-[2rem] border border-rose-200 bg-rose-50 p-6 text-rose-900 shadow-[0_18px_48px_-34px_rgba(244,63,94,0.18)]">
                 <div className="flex items-center gap-3">
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-rose-200 bg-white text-rose-500">
@@ -163,7 +153,40 @@ export function TrashSpotterSection() {
                 </div>
               </div>
             ) : (
-              <TrashSpotterObservationForm />
+              <div className="rounded-[2rem] border border-emerald-100 bg-white/90 p-6 shadow-[0_18px_48px_-34px_rgba(34,197,94,0.22)] sm:p-8">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
+                    <MapPin size={18} />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-emerald-700">
+                      {fr ? "Lecture de suivi" : "Monitoring view"}
+                    </p>
+                    <h3 className="text-2xl font-black tracking-[-0.04em] text-slate-950">
+                      {fr ? "Une carte pour observer, un formulaire pour signaler" : "A map to monitor, a form to report"}
+                    </h3>
+                    <p className="text-sm font-medium leading-relaxed text-slate-600">
+                      {fr
+                        ? "Cette surface est dédiée à la consultation des points Trash Spotter. Pour créer une observation et la retrouver dans Mes observations, utilisez l’entrée canonique de signalement."
+                        : "This surface is dedicated to reviewing Trash Spotter points. To create a report and find it in My observations, use the canonical reporting entry."}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <CmmButton href="/signalement" tone="secondary" variant="pill">
+                    {fr ? "Signaler un déchet" : "Report waste"}
+                  </CmmButton>
+                  <span className="text-xs font-semibold text-slate-500">
+                    {isLoading
+                      ? fr
+                        ? "Chargement des données de suivi…"
+                        : "Loading monitoring data…"
+                      : fr
+                        ? `${quality.approved} point${quality.approved > 1 ? "s" : ""} approuvé${quality.approved > 1 ? "s" : ""}`
+                        : `${quality.approved} approved point${quality.approved === 1 ? "" : "s"}`}
+                  </span>
+                </div>
+              </div>
             )}
           </motion.div>
 

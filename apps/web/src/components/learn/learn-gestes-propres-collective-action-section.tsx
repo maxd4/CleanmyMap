@@ -25,7 +25,7 @@ const ACTION_ITEMS: ActionItem[] = [
       fr: "Un rappel simple au bon endroit réduit l’hésitation et aide à faire le bon choix.",
       en: "A simple reminder in the right place reduces hesitation and helps people choose well.",
     },
-    href: "/sections/trash-spotter",
+    href: "/signalement",
     cta: { fr: "Signaler", en: "Report" },
   },
   {

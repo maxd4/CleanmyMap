@@ -64,7 +64,7 @@ const TRI_CONTEXTS: ContextItem[] = [
       fr: "Quand l’objet est trop dégradé, passer par le signalement local.",
       en: "When the item is too degraded, use local reporting.",
     },
-    href: "/sections/trash-spotter",
+    href: "/signalement",
     hrefLabel: { fr: "Voir le signalement", en: "Open reporting" },
     icon: Droplets,
   },

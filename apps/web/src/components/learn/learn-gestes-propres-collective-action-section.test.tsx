@@ -12,7 +12,7 @@ describe("LearnGestesPropresCollectiveActionSection", () => {
     expect(markup).toContain("Rendre le geste visible");
     expect(markup).toContain("Montrer la bonne filière");
     expect(markup).toContain("Agir avant le déchet");
-    expect(markup).toContain("/sections/trash-spotter");
+    expect(markup).toContain("/signalement");
     expect(markup).toContain("/actions/map");
     expect(markup).toContain("/actions/new");
     expect(markup).toContain("Aucune promesse d’impact n’est avancée");

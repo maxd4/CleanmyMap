@@ -20,7 +20,7 @@ describe("LearnGestesPropresCampaignSection", () => {
     expect(markup).toContain("Canette");
     expect(markup).toContain("Bouteille");
     expect(markup).toContain("Armoire / encombrant");
-    expect(markup).toContain("/sections/trash-spotter");
+    expect(markup).toContain("/signalement");
     expect(markup).toContain("/sections/recycling");
     expect(markup).toContain("/actions/map");
   });
