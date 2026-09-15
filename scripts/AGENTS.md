@@ -94,8 +94,8 @@ guards CURRENT.
   arrêter avec le diagnostic exact ; ne jamais contourner le garde ni pousser
   un candidat non validé. Les validations larges relèvent de la CI ou d'une
   préparation explicite de release ;
-- `npm run checks:changed` reste un contrôle `WORKTREE` de développement et ne
-  constitue pas une preuve de publication. Un échec prouvé étranger peut être
+- `npm run checks:changed` reste l'alias `WORKTREE` du mode `RAPIDE` de
+  développement et ne constitue pas une preuve de publication. Un échec prouvé étranger peut être
   classé `SKIPPED_PARALLEL_CHANTIER` si `STAGED` et `PUSH_CANDIDATE` restent
   verts ; une violation du candidat demeure bloquante ;
 - `STAGED` et `PUSH_CANDIDATE` sont distincts : le premier décrit le candidat
@@ -103,6 +103,29 @@ guards CURRENT.
 - toute modification d'un hook ou d'un script de scope doit préserver ces
   frontières, ne jamais utiliser `git add -A` et tester au moins un fichier du
   candidat et un fichier étranger hors candidat lorsque pertinent.
+
+## Deux modes canoniques de validation
+
+Le workflow CURRENT destiné à Codex possède exactement deux modes :
+
+- `npm run checks:fast` — mode `RAPIDE`, budget dur de 180 secondes ;
+- `npm run checks:full` — mode `COMPLET`, budget dur de 600 secondes.
+
+Le planificateur sélectionne les contrôles selon le blast radius du candidat.
+Le rapport doit indiquer `VALIDATION_MODE`, `CANDIDATE_SCOPE`,
+`ELAPSED_SECONDS`, `TIME_BUDGET_SECONDS`, les contrôles `PASSED`, `FAILED` et
+`NOT_RUN`, ainsi que `VERDICT`. Un dépassement est explicitement
+`TIME_BUDGET_EXCEEDED` ; un contrôle non lancé faute de budget est
+`NOT_RUN_TIME_BUDGET`, jamais un succès.
+
+Les commandes spécialisées (`typecheck`, lint, Vitest, build, sécurité,
+gouvernance documentaire, migrations, `test:scripts`, etc.) sont des briques
+sélectionnées par ces modes, pas des modes supplémentaires. Un même contrôle
+ne doit pas être relancé sans raison ; lorsqu'une suite plus large le couvre,
+le rapport porte `ALREADY_PROVEN`. `WORKTREE`, `STAGED`, `PUSH_CANDIDATE` et
+`DYNAMIC_CANDIDATE` restent des scopes de contenu et d'exécution, pas des
+modes de validation. Les anciens alias (`checks:changed`, `checks`,
+`checks:global`) restent des compatibilités bornées vers les deux modes.
 
 La politique commune des fichiers volumineux est portée par
 `scripts/checks/check-top-heavy-files.mjs` : `REVIEW_THRESHOLD` est

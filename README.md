@@ -154,8 +154,8 @@ npm run test:security
 npm run test:regression-gates
 npm run build
 
-npm run checks:changed
-npm run checks
+npm run checks:fast
+npm run checks:full
 npm run checks:maintenance
 npm run test:e2e:list
 npm run test:e2e
@@ -172,17 +172,20 @@ npm run report:vercel-surface
 
 ## Validation
 
-Pour une boucle rapide :
+Pour le mode canonique `RAPIDE` (budget 180 secondes) :
 
 ```bash
-npm run checks:changed
+npm run checks:fast
 ```
 
-Pour une livraison importante :
+Pour le mode canonique `COMPLET` (budget 600 secondes) :
 
 ```bash
-npm run checks
+npm run checks:full
 ```
+
+`checks:changed` et `checks` restent des alias de compatibilité. Les commandes
+spécialisées sont des briques de validation, pas des modes supplémentaires.
 
 La lane maintenance reste disponible à part :
 

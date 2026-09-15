@@ -6,12 +6,9 @@ Guide canonique de validation du dépôt CleanMyMap.
 
 Une commande ne doit jamais être présentée comme « globale » si elle ne couvre qu'une partie du dépôt.
 
-Le projet distingue :
-
-- validation ciblée ;
-- validation complète ;
-- tests spécialisés ;
-- E2E explicites.
+Le workflow Codex distingue exactement deux modes de validation : `RAPIDE` et
+`COMPLET`. Les tests spécialisés restent des briques appelables séparément,
+pas des modes supplémentaires.
 
 ## Installation
 
@@ -44,29 +41,60 @@ Ne pas lancer `supabase start`, `supabase status` ou `supabase db reset` dans le
 workflow local canonique ; ces commandes restent réservées à cette CI de replay
 explicitement dédiée.
 
-## Validation ciblée
+## Deux modes canoniques
 
-Commande recommandée pendant une correction :
+Boucle normale, avec sélection selon le blast radius du `WORKTREE` :
+
+```bash
+npm run checks:fast
+```
+
+Le mode `RAPIDE` est borné à 180 secondes. Il exécute le diff check, l'audit
+des secrets et les contrôles pertinents pour les fichiers concernés : tests
+ciblés, typecheck, lint, sécurité/AuthZ, qualité, gouvernance documentaire,
+pages_site, scripts ou migrations. Les suites lourdes non nécessaires sont
+`NOT_RUN` avec leur raison ; elles ne sont pas relancées par redondance.
+
+Clôture complète d'un changement transversal ou sensible :
+
+```bash
+npm run checks:full
+```
+
+Le mode `COMPLET` est borné à 600 secondes et sélectionne toutes les preuves
+pertinentes : gouvernance, sécurité, typecheck, lint, Vitest Web complet,
+quality, migrations, tests de scripts/Python et build de production selon le
+blast radius. Une preuve déjà couverte est indiquée `ALREADY_PROVEN` au lieu
+d'être relancée.
+
+Chaque exécution produit un rapport avec `VALIDATION_MODE`, `CANDIDATE_SCOPE`,
+`ELAPSED_SECONDS`, `TIME_BUDGET_SECONDS`, `CHECKS_PASSED`, `CHECKS_FAILED`,
+`CHECKS_NOT_RUN` et `VERDICT`. `TIME_BUDGET_EXCEEDED` et
+`NOT_RUN_TIME_BUDGET` sont des résultats explicites, jamais des succès.
+
+Les alias historiques suivants restent disponibles pour compatibilité :
 
 ```bash
 npm run checks:changed
-```
-
-Elle inspecte les changements locaux et exécute les contrôles pertinents pour le scope détecté.
-
-## Validation complète
-
-```bash
 npm run checks
 ```
 
-Équivalent explicite :
+Ils convergent respectivement vers `RAPIDE` et `COMPLET`. Les commandes
+spécialisées restent utiles pour une preuve isolée :
 
 ```bash
-powershell -ExecutionPolicy Bypass -File scripts/ci/run_checks2.ps1 -Scope full
+npm run typecheck
+npm run lint
+npm run test:scripts
+npm run test
+npm run build
 ```
 
-La lane maintenance reste disponible à part :
+Les scopes Git `WORKTREE`, `STAGED`, `PUSH_CANDIDATE` et
+`DYNAMIC_CANDIDATE` décrivent le candidat contrôlé ; ils ne constituent pas de
+nouveaux modes.
+
+La lane maintenance reste disponible à part, comme compatibilité spécialisée :
 
 ```bash
 npm run checks:maintenance
@@ -77,25 +105,6 @@ Ou directement :
 ```bash
 powershell -ExecutionPolicy Bypass -File scripts/ci/run_checks.ps1 -Scope full
 ```
-
-La validation complète couvre notamment :
-
-- audit de secrets ;
-- hygiène de la racine ;
-- gouvernance documentaire ;
-- dérive de versions documentées ;
-- synchronisation des skills miroir ;
-- contrôles documentaires ;
-- typecheck web ;
-- lint web ;
-- Vitest ;
-- tests de sécurité ;
-- tests de régression ;
-- audit Vercel CI ;
-- build de production ;
-- typecheck de l'application mobile ;
-- tests Node déterministes des scripts de maintenance ;
-- maintenance Python lorsque l'environnement la permet.
 
 Les E2E ne sont pas lancés automatiquement par défaut.
 

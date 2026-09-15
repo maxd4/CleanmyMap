@@ -517,9 +517,17 @@ Ne jamais annoncer une commande non exécutée comme réussie. Choisir les check
 proportionnels au risque :
 
 ```bash
-npm run checks:changed
-npm run checks
+npm run checks:fast
+npm run checks:full
 ```
+
+Le workflow Codex possède exactement deux modes canoniques :
+`npm run checks:fast` (`RAPIDE`, budget dur 180 secondes) et
+`npm run checks:full` (`COMPLET`, budget dur 600 secondes). Les commandes
+spécialisées sont des briques sélectionnées selon le blast radius ;
+`WORKTREE`, `STAGED`, `PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE` sont des scopes,
+pas des modes. Les contrôles déjà couverts ne sont pas relancés sans raison et
+les contrôles non exécutés sont signalés explicitement.
 
 La validation complète doit couvrir les garde-fous de gouvernance, tests,
 typecheck, lint et build web. Les tests E2E restent explicites. Pour un audit
