@@ -410,6 +410,49 @@ describe("POST /api/actions", () => {
     );
   }, 15000);
 
+  it("keeps an elected account in the normal pending flow while active as elected", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "elu-1",
+      displayName: "Élu test",
+      firstName: "Élu",
+      username: "elu@example.org",
+      currentLevel: 1,
+      actorNameOptions: ["Élu test"],
+      role: "elu",
+      activeRole: "elu",
+      badges: [],
+    });
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: true, userId: "elu-1" });
+
+    const { POST } = await import("./route");
+    const payload = toContractCreatePayload({
+      actorName: "Élu test",
+      associationName: "Action spontanée",
+      organizerType: "spontaneous",
+      actionDate: "2026-04-22",
+      locationLabel: "Lieu élu",
+      wasteKg: 2.5,
+      cigaretteButts: 0,
+      volunteersCount: 2,
+      durationMinutes: 30,
+      notes: "Création normale avec le rôle actif élu.",
+      submissionMode: "complete",
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(createActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ status: "pending" }),
+    );
+  }, 15000);
+
   it("accepts quick pre-action submissions without waste and keeps them pending", async () => {
     const { POST } = await import("./route");
 
