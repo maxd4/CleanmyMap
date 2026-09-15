@@ -1,6 +1,6 @@
 # Group Action
 
-Cette page documente le flux `Rejoindre un formulaire` pour CleanMyMap.
+Cette page documente le flux `Rejoindre une action` pour CleanMyMap.
 
 ## But
 
@@ -11,7 +11,7 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 1. Un organisateur crée un formulaire de groupe depuis la déclaration d'action.
 2. Le pré-formulaire conserve les données communes et les membres ajoutés manuellement dans `participantAccounts`, mais pas les champs de récolte finale.
 3. L'action passe par la validation admin.
-4. Une fois validée, elle apparait dans `Rejoindre un formulaire`.
+4. Une fois validée, elle apparait dans `Rejoindre une action`.
 5. Le bénévole rejoint ce formulaire existant.
 6. Les membres ajoutés manuellement à l'action sont enregistrés dans `action_registrations` avec la source `manual_add`, sans passer par la file publique.
 7. La demande future est enregistrée dans `action_registrations` avec `registration_status`, `registration_source` et `registered_at`. Un statut `confirmed` signifie uniquement que l'inscription a été acceptée ; il ne confirme pas une présence sur le terrain.
@@ -20,13 +20,15 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 
 ## Placement dans le bloc Agir
 
-- La rubrique `Rejoindre un formulaire` est la deuxieme rubrique du bloc `Agir`.
-- Elle se situe juste sous la rubrique du formulaire benevole.
-- Les points d'entree doivent rester visibles depuis l'accueil, le sommaire et les surfaces terrain associees.
+- La rubrique publique est `Rejoindre une action`, deuxième entrée du bloc `Agir`.
+- Elle se situe après `Créer une action` et avant `Signaler un déchet`.
+- Le bloc Agir expose exactement ces trois entrées ; l'historique, les moteurs
+  itinéraire/météo et les missions restent des routes de workflow ou de
+  compatibilité hors navigation primaire.
 
 ## Points d'entree UI
 
-- Bloc `Agir`
+- Bloc `Agir` — entrée `Rejoindre une action`
 - Cartes d'accueil
 - Historique des actions
 - Bulles de carte

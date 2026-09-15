@@ -1,4 +1,4 @@
-# Organiser une action - Liste des propositions à traiter
+# Météo — compatibilité — Liste des propositions à traiter
 
 Aucune proposition active à ce jour.
 

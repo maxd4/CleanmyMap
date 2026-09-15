@@ -83,15 +83,19 @@ cet ordre :
 Un sondage ou une action de terrain sert d'aide à l'arbitrage ; son résultat ne
 constitue pas une décision officielle.
 
+Le tableau ci-dessous inventorie aussi les routes de workflow et de compatibilité
+pour conserver les liens existants. Seules les trois routes marquées comme
+entrées visibles appartiennent à la navigation primaire Agir.
+
 | Route | Fiche | Accès | Palette runtime | Source |
 |---|---|---|---|---|
-| `/actions/history` | [Historique des actions](./routes/02-agir/actions-history/actions-history-README.md) | `protected` | agir | `apps/web/src/app/(app)/actions/history/page.tsx` |
-| `/actions/new` | [Créer une action](./routes/02-agir/actions-new/actions-new-README.md) | `clerk-context` ; entrée/préparation accessibles sans compte ; identité requise pour créer, compléter ou envoyer | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
-| `/sections/rejoindre-une-action` | [Rejoindre une action](./routes/02-agir/rejoindre-une-action/rejoindre-une-action-README.md) | `public-visible` ; compte requis pour rejoindre | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/missions/[id]` | [Missions](./routes/02-agir/missions/missions-README.md) | `protected` | agir | `apps/web/src/app/(app)/missions/[id]/page.tsx` |
-| `/sections/route` | [Où agir — compatibilité](./routes/02-agir/ou-agir/ou-agir-README.md) | `public-visible` ; compatibilité vers `/actions/new?panel=itineraire` | agir | `apps/web/src/app/(app)/sections/route/page.tsx` |
-| `/sections/weather` | [Météo — compatibilité](./routes/02-agir/weather/weather-README.md) | `public-visible` ; compatibilité vers `/actions/new?panel=meteo` | agir | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/signalement` | [Signalement déchets](./routes/02-agir/signalement/signalement-README.md) | `clerk-context` ; formulaire accessible sans compte ; identité requise pour transmettre, gérer les preuves et consulter ses observations | agir | `apps/web/src/app/(app)/signalement/page.tsx` |
+| `/actions/history` | [Historique des actions](./routes/02-agir/actions-history/actions-history-README.md) | `protected` ; workflow hors navigation primaire | agir | `apps/web/src/app/(app)/actions/history/page.tsx` |
+| `/actions/new` | [Créer une action](./routes/02-agir/actions-new/actions-new-README.md) | `clerk-context` ; **entrée visible** ; préparation accessible sans compte ; identité requise pour créer, compléter ou envoyer | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
+| `/sections/rejoindre-une-action` | [Rejoindre une action](./routes/02-agir/rejoindre-une-action/rejoindre-une-action-README.md) | `public-visible` ; **entrée visible** ; compte requis pour rejoindre | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/missions/[id]` | [Missions](./routes/02-agir/missions/missions-README.md) | `protected` ; workflow/deep-link hors navigation primaire | agir | `apps/web/src/app/(app)/missions/[id]/page.tsx` |
+| `/sections/route` | [Où agir — compatibilité](./routes/02-agir/ou-agir/ou-agir-README.md) | `public-visible` ; redirect vers `/actions/new?panel=itineraire`, hors navigation primaire | agir | `apps/web/src/app/(app)/sections/route/page.tsx` |
+| `/sections/weather` | [Météo — compatibilité](./routes/02-agir/weather/weather-README.md) | `public-visible` ; redirect vers `/actions/new?panel=meteo`, hors navigation primaire | agir | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/signalement` | [Signalement déchets](./routes/02-agir/signalement/signalement-README.md) | `clerk-context` ; **entrée visible** ; formulaire accessible sans compte ; identité requise pour transmettre, gérer les preuves et consulter ses observations | agir | `apps/web/src/app/(app)/signalement/page.tsx` |
 
 `/missions/[id]` reste une route dynamique : `[id]` est un segment paramétré
 de l'App Router. Cette propriété décrit la forme de la route et ne remplace

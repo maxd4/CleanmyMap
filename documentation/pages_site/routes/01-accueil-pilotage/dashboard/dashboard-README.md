@@ -11,7 +11,7 @@
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; la page reste accessible après le contrôle d'authentification.
 - **Objectif utilisateur principal** : Lire sa situation immédiate, ses alertes et sa prochaine action depuis un cockpit court.
-- **Action principale attendue** : Déclarer une action ou ouvrir un raccourci utile du quotidien.
+- **Action principale attendue** : Créer une action ou ouvrir un raccourci utile du quotidien.
 - **Palette attendue** : amber / orange
 - **Scope** : cockpit privé avec résumé décisionnel, notifications paginées, action prioritaire et accès rapides.
 - **Terminée** : non

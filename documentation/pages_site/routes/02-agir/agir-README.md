@@ -21,7 +21,13 @@ mode d'affichage :
 Une action ou un sondage aide à préparer un arbitrage ; son résultat ne vaut pas
 décision officielle. `/missions/[id]` reste une route de workflow et de
 deep-link, jamais une rubrique primaire. Les anciennes routes de préparation,
-d'orientation et d'historique restent accessibles hors de cette navigation.
+d'orientation et d'historique restent accessibles hors de cette navigation :
+`/sections/route`, `/sections/weather` et `/sections/guide` redirigent vers les
+panneaux du shell `/actions/new`, tandis que `/actions/history` reste une route
+directe de workflow. `/sections/trash-spotter` n'appartient pas au bloc Agir :
+c'est une surface secondaire de consultation et de monitoring dans Réseau &
+Discussions ; la création d'une observation passe exclusivement par
+`/signalement`.
 
 ## Inventaire des pages
 

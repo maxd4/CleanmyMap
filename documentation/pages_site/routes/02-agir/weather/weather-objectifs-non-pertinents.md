@@ -1,4 +1,4 @@
-# Organiser une action - Objectifs non pertinents
+# Météo — compatibilité — Objectifs non pertinents
 
 Ce document sert de mémoire locale de rejet pour la page.
 
