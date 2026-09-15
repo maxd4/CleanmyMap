@@ -25,6 +25,8 @@ describe("HomeFooter", () => {
     expect(getFooterClass(html)).toContain("cmm-ribbon-frame");
     expect(getFooterClass(html)).toContain("w-full");
     expect(getFooterClass(html)).toContain("min-w-0");
+    expect(html).toContain("flex-nowrap");
+    expect(html).toContain("basis-0 flex-1");
     expect(html).not.toContain("compact");
   });
 
