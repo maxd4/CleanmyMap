@@ -4,6 +4,8 @@ import {
   clearAccountSetupDeferralMetadata,
   createAccountSetupDeferralMetadata,
   persistAccountSetupChanges,
+  type AccountSetupPersistenceStep,
+  type AccountSetupUserUpdate,
 } from "./account-setup-save";
 
 describe("account setup persistence", () => {
@@ -99,6 +101,67 @@ describe("account setup persistence", () => {
     expect(updateUser).toHaveBeenNthCalledWith(2, {
       unsafeMetadata: { display_name_mode: "full_name" },
     });
+  });
+
+  it.each([
+    "identity",
+    "activeProfile",
+    "metadata",
+    "displayMode",
+  ] as const)("resumes after a partial %s success without replaying completed steps", async (failedStep) => {
+    const completedSteps = new Set<AccountSetupPersistenceStep>();
+    let failureRaised = false;
+    const failOnce = (step: AccountSetupPersistenceStep) => {
+      if (failedStep === step && !failureRaised) {
+        failureRaised = true;
+        throw new Error(`${step} failed`);
+      }
+    };
+    const updateUser = vi.fn(async (update: AccountSetupUserUpdate) => {
+      if ("unsafeMetadata" in update) {
+        failOnce("metadata");
+      }
+    });
+    const updateUserWithReverification = vi.fn(async () => {
+      failOnce("identity");
+    });
+    const updateActiveProfile = vi.fn(async () => {
+      failOnce("activeProfile");
+    });
+    const saveDisplayMode = vi.fn(() => {
+      failOnce("displayMode");
+    });
+    const runPersistence = () => persistAccountSetupChanges({
+      currentUsername: failedStep === "identity" ? "old-pseudo" : "same-pseudo",
+      pseudo: failedStep === "identity" ? "new-pseudo" : "same-pseudo",
+      firstName: "Marie",
+      lastName: "Curie",
+      displayNameMode: "full_name",
+      metadata: { profileSetupCompleted: true },
+      initialProfile: "benevole",
+      selectedProfile: failedStep === "activeProfile" ? "scientifique" : "benevole",
+      updateUser,
+      updateUserWithReverification,
+      updateActiveProfile,
+      saveDisplayMode,
+      completedSteps,
+    });
+
+    await expect(runPersistence()).rejects.toThrow(`${failedStep} failed`);
+    await expect(runPersistence()).resolves.toBeUndefined();
+
+    expect(completedSteps).toEqual(new Set([
+      "identity",
+      "activeProfile",
+      "metadata",
+      "displayMode",
+    ]));
+    expect(updateUserWithReverification).toHaveBeenCalledTimes(failedStep === "identity" ? 2 : 0);
+    expect(updateActiveProfile).toHaveBeenCalledTimes(failedStep === "activeProfile" ? 2 : 0);
+    expect(updateUser.mock.calls.filter(([update]) => "unsafeMetadata" in update)).toHaveLength(
+      failedStep === "metadata" ? 2 : 1,
+    );
+    expect(saveDisplayMode).toHaveBeenCalledTimes(failedStep === "displayMode" ? 2 : 1);
   });
 
   it("leaves the pseudonymous user's existing names untouched", () => {

@@ -7,6 +7,12 @@ export type AccountSetupUserUpdate = {
   unsafeMetadata?: Record<string, unknown>;
 };
 
+export type AccountSetupPersistenceStep =
+  | "identity"
+  | "activeProfile"
+  | "metadata"
+  | "displayMode";
+
 export const ACCOUNT_SETUP_DEFERRED_METADATA_KEYS = [
   "profileSetupDeferred",
   "profileSetupDeferredVersion",
@@ -97,6 +103,7 @@ export async function persistAccountSetupChanges({
   updateUserWithReverification,
   updateActiveProfile,
   saveDisplayMode,
+  completedSteps = new Set<AccountSetupPersistenceStep>(),
 }: {
   currentUsername: string | null | undefined;
   pseudo: string;
@@ -111,7 +118,14 @@ export async function persistAccountSetupChanges({
     update: AccountSetupUserUpdate,
   ) => Promise<unknown>;
   updateActiveProfile: (profile: AppProfile) => Promise<void>;
-  saveDisplayMode: () => void;
+  saveDisplayMode: () => void | Promise<void>;
+  /**
+   * Progress owned by the caller and reused for a retry after a partial
+   * success. Clerk, active-profile persistence, metadata and browser
+   * preferences are separate external systems: there is no cross-system
+   * transaction, so these writes intentionally remain sequential.
+   */
+  completedSteps?: Set<AccountSetupPersistenceStep>;
 }): Promise<void> {
   const { update: identityUpdate, usernameChanged } =
     buildAccountSetupIdentityUpdate({
@@ -122,18 +136,31 @@ export async function persistAccountSetupChanges({
       displayNameMode,
     });
 
-  if (Object.keys(identityUpdate).length > 0) {
-    if (usernameChanged) {
-      await updateUserWithReverification(identityUpdate);
-    } else {
-      await updateUser(identityUpdate);
+  if (!completedSteps.has("identity")) {
+    if (Object.keys(identityUpdate).length > 0) {
+      if (usernameChanged) {
+        await updateUserWithReverification(identityUpdate);
+      } else {
+        await updateUser(identityUpdate);
+      }
     }
+    completedSteps.add("identity");
   }
 
-  if (selectedProfile !== initialProfile) {
-    await updateActiveProfile(selectedProfile);
+  if (!completedSteps.has("activeProfile")) {
+    if (selectedProfile !== initialProfile) {
+      await updateActiveProfile(selectedProfile);
+    }
+    completedSteps.add("activeProfile");
   }
 
-  await updateUser({ unsafeMetadata: metadata });
-  saveDisplayMode();
+  if (!completedSteps.has("metadata")) {
+    await updateUser({ unsafeMetadata: metadata });
+    completedSteps.add("metadata");
+  }
+
+  if (!completedSteps.has("displayMode")) {
+    await saveDisplayMode();
+    completedSteps.add("displayMode");
+  }
 }
