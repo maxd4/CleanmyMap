@@ -20,7 +20,7 @@ import {
 } from "@/lib/actions/geometry/derived-geometry";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/geometry/route-geometry";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
-import { normalizeAdministrativeRequirements } from "./administrative-requirements";
+import { sanitizeAdministrativeRequirementsForCreation } from "./administrative-requirements";
 import {
   resolveActionDepartmentForPersistence,
   resolveTrustedActionDepartmentForPersistence,
@@ -95,8 +95,9 @@ export function buildActionInsertPayload(params: {
   finalDrawing: ActionDrawing | null;
   status: Exclude<ActionStatus, "cancelled"> | undefined;
 }) {
-  const preparationData = normalizeActionPreparationData(
-    params.payload.preparationData ?? {},
+  const preparationData = sanitizeAdministrativeRequirementsForCreation(
+    params.payload.actionPhase,
+    normalizeActionPreparationData(params.payload.preparationData ?? {}),
   );
   return {
     created_by_clerk_id: params.userId,
@@ -122,15 +123,7 @@ export function buildActionInsertPayload(params: {
     event_start_time: params.payload.eventStartTime ?? null,
     event_end_time: params.payload.eventEndTime ?? null,
     published_at: null,
-    preparation_data:
-      params.payload.actionPhase === "pre_action"
-        ? {
-            ...preparationData,
-            administrativeRequirements: normalizeAdministrativeRequirements(
-              preparationData.administrativeRequirements,
-            ),
-          }
-        : preparationData,
+    preparation_data: preparationData,
     notes: buildPersistedNotes({
       ...params.payload,
       manualDrawing: params.finalDrawing ?? undefined,

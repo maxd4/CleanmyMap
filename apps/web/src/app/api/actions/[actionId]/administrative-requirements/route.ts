@@ -8,10 +8,6 @@ import {
   canValidateActionAdministrativeRequirements,
 } from "@/lib/actions/permissions";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
-import {
-  normalizeAdministrativeRequirements,
-} from "@/lib/actions/administrative-requirements";
-import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
 
 export const runtime = "nodejs";
 // Justification Vercel: la validation dépend de l'identité, de la relation organisateur et de l'état frais de l'action.
@@ -19,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 function responseFor(
   actionId: string,
-  validatedAt: string,
+  validatedAt: string | null,
 ) {
   return NextResponse.json({
     status: "ok",
@@ -47,7 +43,7 @@ export async function POST(
   }
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const current = await loadActionById(supabase, trimmedActionId);
     if (!current) {
       return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
@@ -80,71 +76,37 @@ export async function POST(
       );
     }
 
-    const existing = normalizeAdministrativeRequirements(
-      current.preparation_data?.administrativeRequirements,
-    );
-    if (existing.status === "validated") {
-      return responseFor(trimmedActionId, existing.validatedAt ?? current.updated_at ?? new Date().toISOString());
-    }
-
-    const validatedAt = new Date().toISOString();
-    const nextPreparationData = {
-      ...(current.preparation_data ?? {}),
-      administrativeRequirements: {
-        status: "validated" as const,
-        validatedAt,
-        validatedByUserId: access.userId,
-      },
-    };
-    const statusPath = "preparation_data->administrativeRequirements->>status";
-    let updateQuery = supabase
-      .from("actions")
-      .update({ preparation_data: nextPreparationData })
-      .eq("id", trimmedActionId)
-      .eq("action_phase", "pre_action");
-    updateQuery = current.preparation_data?.administrativeRequirements
-      ? updateQuery.eq(statusPath, "pending")
-      : updateQuery.is(statusPath, null);
-    const updated = await updateQuery.select("id").maybeSingle();
-    if (updated.error) {
-      throw new Error(updated.error.message);
-    }
-
-    if (!updated.data) {
-      const afterRace = await loadActionById(supabase, trimmedActionId);
-      const afterRaceRequirements = normalizeAdministrativeRequirements(
-        afterRace?.preparation_data?.administrativeRequirements,
-      );
-      if (afterRaceRequirements.status === "validated") {
-        return responseFor(
-          trimmedActionId,
-          afterRaceRequirements.validatedAt ?? validatedAt,
-        );
-      }
-      return NextResponse.json(
-        { error: "La validation des démarches n'a pas pu être appliquée.", code: "state_conflict" },
-        { status: 409 },
-      );
-    }
-
-    await appendActionModerationAudit({
-      operationId: `action-administrative-requirements-${trimmedActionId}`,
-      actorUserId: access.userId,
-      targetActionId: trimmedActionId,
-      operation: "validate_administrative_requirements",
-      outcome: "success",
-      previousValue: { status: "pending" },
-      newValue: { status: "validated" },
-      details: {
-        actionId: trimmedActionId,
-        validatedAt,
-        validatedByUserId: access.userId,
-        previousStatus: "pending",
-        newStatus: "validated",
-      },
+    const result = await supabase.rpc("validate_action_administrative_requirements", {
+      p_action_id: trimmedActionId,
+      p_validated_by_user_id: access.userId,
     });
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
 
-    return responseFor(trimmedActionId, validatedAt);
+    const data = result.data as {
+      actionId?: unknown;
+      administrativeRequirements?: {
+        status?: unknown;
+        validatedAt?: unknown;
+      };
+    } | null;
+    const requirements = data?.administrativeRequirements;
+    if (
+      !data ||
+      !requirements ||
+      data.actionId !== trimmedActionId ||
+      requirements?.status !== "validated" ||
+      (requirements.validatedAt !== null &&
+        typeof requirements.validatedAt !== "string")
+    ) {
+      throw new Error("La validation des démarches a retourné un état invalide.");
+    }
+
+    return responseFor(
+      trimmedActionId,
+      requirements.validatedAt as string | null,
+    );
   } catch (error) {
     return handleApiError(error, "POST /api/actions/:actionId/administrative-requirements");
   }

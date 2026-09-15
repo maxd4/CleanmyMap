@@ -158,8 +158,17 @@ describe("volunteer participation persistence", () => {
 });
 
 describe("administrative requirements persistence", () => {
-  it("initializes every pre-action with pending requirements", () => {
-    const payload = buildPayload({ actionPhase: "pre_action" });
+  it("forces pending requirements for a pre-action despite a validated client payload", () => {
+    const payload = buildPayload({
+      actionPhase: "pre_action",
+      preparationData: {
+        administrativeRequirements: {
+          status: "validated",
+          validatedAt: "2026-09-15T10:00:00.000Z",
+          validatedByUserId: "attacker",
+        },
+      },
+    });
     const row = buildActionInsertPayload({
       payload,
       userId: "user-test",
@@ -173,6 +182,30 @@ describe("administrative requirements persistence", () => {
       validatedAt: null,
       validatedByUserId: null,
     });
+  });
+
+  it("removes the protected state from non-pre-action creations", () => {
+    const payload = buildPayload({
+      actionPhase: "post_action_complete",
+      preparationData: {
+        actionTitle: "Résultat terrain",
+        administrativeRequirements: {
+          status: "validated",
+          validatedAt: "2026-09-15T10:00:00.000Z",
+          validatedByUserId: "attacker",
+        },
+      },
+    });
+    const row = buildActionInsertPayload({
+      payload,
+      userId: "user-test",
+      status: "pending",
+      persistedGeometry: buildCreateActionGeometry(payload, null),
+      finalDrawing: null,
+    });
+
+    expect(row.preparation_data).toEqual({ actionTitle: "Résultat terrain" });
+    expect(row.preparation_data.administrativeRequirements).toBeUndefined();
   });
 });
 

@@ -29,6 +29,7 @@ export type ActionBeforeDeclarationFormProps = {
   onReturnToChoice: () => void;
   onPassToComplete: (actionId: string) => void | Promise<void>;
   onFormChange?: (form: FormState) => void;
+  onActionPersisted?: (actionId: string) => void;
   signInHref?: string;
   signUpHref?: string;
 };

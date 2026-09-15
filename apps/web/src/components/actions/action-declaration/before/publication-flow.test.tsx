@@ -95,6 +95,22 @@ describe("ActionBeforeDeclarationForm publication flow", () => {
     expect(html).not.toContain("Publier cette action");
   });
 
+  it("forwards the persisted-action callback to the form hook", () => {
+    useBeforeActionFormMock.mockReturnValue(buildHookState());
+    const onActionPersisted = vi.fn();
+
+    renderToStaticMarkup(
+      React.createElement(ActionBeforeDeclarationForm, {
+        ...props,
+        onActionPersisted,
+      }),
+    );
+
+    expect(useBeforeActionFormMock).toHaveBeenCalledWith(
+      expect.objectContaining({ onActionPersisted }),
+    );
+  });
+
   it("renders publication confirmation without publishing before explicit confirmation", () => {
     useBeforeActionFormMock.mockReturnValue(
       buildHookState({
