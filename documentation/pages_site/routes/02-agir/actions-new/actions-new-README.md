@@ -7,8 +7,7 @@
 - `apps/web/src/app/(app)/actions/new/page.tsx`
 - **Type fonctionnel** : page d'action
 - **Famille / bloc fonctionnel** : Agir (bloc)
-- **Statut** : protégé
-- **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
+- **Accès runtime** : `clerk-context` ; la route fournit le contexte Clerk sans hard gate de page. Le compte est requis pour créer, compléter ou envoyer une action.
 - **Objectif utilisateur principal** : Préparer une action à venir ou déclarer les résultats terrain d'une action réalisée.
 - **Action principale attendue** : Choisir directement entre la préparation avant action, avec inscriptions éventuelles, et la déclaration après action, avec les résultats terrain.
 - **Règle de séparation** : le parcours avant action prépare seulement l'organisation; les champs de récolte, d'impact et de validation scientifique restent réservés au formulaire complet après action.
@@ -20,7 +19,7 @@
 - **Contrat de publication** : le pré-formulaire reste fermé par défaut ; seule une publication explicite via `groupJoinEnabled = true` permet son affichage dans la page Rejoindre une action. Les champs de récolte finale restent exclus de ce parcours.
 - **Palette attendue** : emerald
 - **Scope** : point d'entrée nettoyé, métier des formulaires conservé
-- **Statut de finition UI** : terminé pour le contrat du point d'entrée; la page reste protégée
+- **Statut de finition UI** : terminé pour le contrat du point d'entrée ; l'authentification reste contrôlée au moment des capacités de création, de complétion et d'envoi.
 - **Couleurs actuellement détectées** : emerald — canvas #e8f8ef, halo rgba(34, 197, 94, 0.22)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : moyen : le vert doit rester distinct des panneaux de support et des surfaces techniques.

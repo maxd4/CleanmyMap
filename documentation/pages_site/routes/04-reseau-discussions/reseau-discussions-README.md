@@ -12,10 +12,10 @@ Communautés, partenaires, données publiques, annuaire et discussions.
 
 | Route | Fiche | Accès runtime | Famille visuelle | Source principale |
 |---|---|---|---|---|
-| `/sections/community` | [Communauté](./community/community-README.md) | `auth-disabled-gate` | réseau-discussions / pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/community` | [Communauté](./community/community-README.md) | `public-visible` | réseau-discussions / pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/feedback` | [Idées et problèmes](./feedback/feedback-README.md) | `public-visible` | réseau-discussions / pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/actors` | [Réseau engagé](./actors/actors-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/sections/annuaire` | [Annuaire des acteurs](./annuaire/annuaire-README.md) | `auth-disabled-gate` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/annuaire` | [Annuaire des acteurs](./annuaire/annuaire-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/messagerie` | [Messagerie](./messagerie/messagerie-README.md) | `auth-blur-gate` | réseau-discussions / pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/open-data` | [Données publiques](./open-data/open-data-README.md) | `public-visible` | réseau-discussions / pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/funding` | [Soutenir le projet](./funding/funding-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
@@ -36,7 +36,7 @@ Communautés, partenaires, données publiques, annuaire et discussions.
 
 ## Règles
 
-- les statuts d'accès viennent de `apps/web/src/lib/clerk-access.ts` ;
+- les statuts de présentation anonyme viennent de `apps/web/src/lib/sections-registry/config.ts` et sont appliqués par `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` ;
 - `disabled` et `blur` ne doivent pas être résumés par le vague mot `protégé` ;
 - les alias ne reçoivent pas une seconde fiche canonique du contenu ;
 - aucun dossier photo par route enfant.

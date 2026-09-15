@@ -6,10 +6,10 @@
 - **Fichier(s) source(s)** :
   - `apps/web/src/lib/sections-registry/config.ts`
   - `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
+  - `apps/web/src/components/sections/rubriques/annuaire/annuaire-section.tsx`
 - **Type fonctionnel** : section de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
-- **Statut** : à documenter
-- **Contexte nécessaire** : à compléter
+- **Accès runtime** : `public-visible` ; la consultation de l'annuaire ne requiert pas de compte. Le CTA partenaire ouvre un parcours séparé, avec ses propres contrôles.
 - **Objectif utilisateur principal** : Découvrir les acteurs engagés puis permettre à une structure de demander son référencement dans l’annuaire.
 - **Action principale attendue** : Référencer ma structure.
 - **Cible canonique de l’action principale** : `/partners/onboarding`

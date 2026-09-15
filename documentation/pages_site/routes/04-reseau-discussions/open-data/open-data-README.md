@@ -6,17 +6,17 @@
 - **Fichier(s) source(s)** :
   - `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
   - `apps/web/src/app/(app)/open-data/page.tsx` (alias technique)
+  - `apps/web/src/components/sections/rubriques/open-data-section.tsx`
 - **Type fonctionnel** : page de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
-- **Statut** : protégé
-- **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Faire circuler l'information publique et faciliter la réutilisation des données.
-- **Action principale attendue** : Consulter, exporter ou réutiliser des jeux de données et des API.
+- **Accès runtime** : `public-visible` ; la page de présentation est lisible sans compte. Les éventuels accès d'API, exports ou données sensibles ne sont pas déduits de cette visibilité et relèvent de leurs contrats propres.
+- **Objectif utilisateur principal** : Consulter une présentation publique des formats d'échange, des usages de données et des possibilités de réutilisation.
+- **Action principale attendue** : Explorer les rubriques de présentation. Cette section n'est pas, à elle seule, une preuve qu'un téléchargement ou un export est déclenché depuis la page.
 - **Palette attendue** : pink
 - **Scope** : à corriger
 - **Terminée** : non
-- **Couleurs actuellement détectées** : slate — canvas #eef0f3, halo rgba(148, 163, 184, 0.18)
-- **Incohérences de couleurs** : Écart détecté: attendu pink, code actuel slate / neutral.
+- **Couleurs actuellement détectées** : violet / blanc — cartes et accents violet, fonds blancs et lavande.
+- **Incohérences de couleurs** : Écart détecté : la famille documentaire attendue est `pink`, tandis que le composant utilise actuellement une identité violet / blanc.
 - **Risque de conflit avec les couleurs existantes** : moyen : indigo et pink doivent rester distincts du légal et des zones techniques.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :

@@ -7,8 +7,7 @@
 - `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
 - **Type fonctionnel** : surface secondaire — gouvernance
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
-- **Statut** : protégé
-- **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
+- **Accès runtime** : `auth-disabled-gate` ; le contenu est verrouillé avant connexion et l'accès aux données de pilotage reste soumis aux habilitations du contrat concerné.
 - **Objectif utilisateur principal** : Donner un accès direct à la lecture territoriale, aux arbitrages et aux repères de gouvernance.
 - **Action principale attendue** : Consulter les priorités et arbitrages de gouvernance.
 - **Palette attendue** : amber / brun

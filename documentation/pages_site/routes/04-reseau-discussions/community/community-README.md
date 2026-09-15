@@ -4,9 +4,11 @@
 
 - **Route** : `/sections/community`
 - **Famille** : Réseau & Discussions
-- **Accès runtime** : `auth-disabled-gate`
+- **Accès runtime** : `public-visible`
+- **Présentation anonyme** : `visible` dans le registre des sections ; aucune participation métier, mutation, donnée privée ou capacité de modération n'est accordée par cette visibilité.
 - **Palette runtime** : pink
 - **Source principale** : `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
+- **Composant rendu** : `apps/web/src/components/sections/rubriques/community/community-section.tsx`
 
 ## Objectif utilisateur
 
@@ -14,25 +16,11 @@ Faire circuler l'information, faciliter les échanges entre acteurs et accéder 
 
 ## Accès
 
-`apps/web/src/lib/clerk-access.ts` définit :
-
-```txt
-community = disabled
-```
-
-Pour un visiteur non connecté, la route passe donc par `ClerkRequiredGate` en mode `disabled`.
-
-Ne pas résumer cet état par :
-
-```txt
-page publique
-```
-
-ou par le terme trop vague :
-
-```txt
-protégé
-```
+Le registre `apps/web/src/lib/sections-registry/config.ts` déclare la
+présentation anonyme `visible` et la page dynamique rend directement la
+section dans ce cas. Les fonctions d'échange, de création ou de coordination
+qui nécessitent un compte sont contrôlées séparément par leurs contrats
+respectifs ; la visibilité de la page ne les ouvre pas automatiquement.
 
 ## Famille visuelle
 
@@ -78,7 +66,7 @@ Cibles :
 ## États
 
 ```txt
-anonymous disabled gate
+anonymous visible
 authenticated
 loading
 empty

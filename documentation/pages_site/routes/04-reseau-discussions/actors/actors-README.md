@@ -9,8 +9,7 @@
   - `apps/web/src/components/sections/rubriques/actors-section.tsx`
 - **Type fonctionnel** : observation d’activité déclarée
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
-- **Statut** : à documenter
-- **Contexte nécessaire** : à compléter
+- **Accès runtime** : `public-visible` ; aucune session n'est requise pour consulter la synthèse des actions publiées.
 - **Objectif utilisateur principal** : Observer l’activité déclarée dans les actions et distinguer cette observation de l’annuaire des structures référencées.
 - **Action principale attendue** : Consulter les acteurs observés dans les actions enregistrées.
 - **Palette attendue** : à compléter

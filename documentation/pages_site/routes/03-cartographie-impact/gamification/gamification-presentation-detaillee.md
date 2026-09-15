@@ -7,15 +7,14 @@
 - `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
 - **Type fonctionnel** : page de bloc
 - **Famille / bloc fonctionnel** : Cartographie & Impact (bloc)
-- **Statut** : protégé
-- **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Lire, comparer et partager les données de carte et d impact.
-- **Action principale attendue** : Explorer la carte ou lire les résultats.
+- **Accès runtime** : `auth-disabled-gate` ; la section reste verrouillée avant connexion, conformément au registre des sections.
+- **Objectif utilisateur principal** : Lire sa progression, ses badges, les formes de reconnaissance et les repères de méthode associés.
+- **Action principale attendue** : Explorer sa progression, ses collections et les informations de fonctionnement de la gamification.
 - **Palette attendue** : red
 - **Scope** : à corriger
 - **Terminée** : non
-- **Couleurs actuellement détectées** : slate — canvas #eef0f3, halo rgba(148, 163, 184, 0.18)
-- **Incohérences de couleurs** : Écart détecté: attendu red, code actuel slate / neutral.
+- **Couleurs actuellement détectées** : blanc / rose / rouge — interface claire avec accents d'impact rouges et roses.
+- **Incohérences de couleurs** : Aucune incohérence majeure avec l'identité rouge attendue n'est établie par le composant actuel.
 - **Risque de conflit avec les couleurs existantes** : moyen : attention au chevauchement entre sky cartographique et rouge impact / alerte.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :
@@ -29,11 +28,10 @@
 - cartes trop proches visuellement
 - **Bulles / cartes / contextes trop nombreux** : Les widgets de lecture d impact se superposent facilement avec la carte ou les stats.
 - **Composants UI concernés** :
-- Carte
-- cards d impact
-- filtres
-- legend
-- tableaux / rapports
+- progression et collections
+- badges et reconnaissance
+- préférences de présentation
+- méthode et états opérationnels
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : critique
 

@@ -2,7 +2,7 @@
 
 ## Rôle et déclenchement
 
-`/sections/route` est la surface protégée qui transforme une demande explicite
+`/sections/route` est la surface publique qui transforme une demande explicite
 en proposition d'itinéraire. L'utilisateur choisit ses contraintes puis active
 le calcul ; aucune recommandation automatique n'est lancée au chargement.
 
