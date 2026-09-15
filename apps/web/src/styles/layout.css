@@ -3,8 +3,9 @@
 }
 
 .cmm-ribbon-frame {
-  width: min(100%, var(--cmm-ribbon-max-width));
-  margin-inline: auto;
+  /* The ribbon frame is the viewport surface, not the page content shell. */
+  width: 100%;
+  margin-inline: 0;
 }
 
 .cmm-ribbon-text {

@@ -5,6 +5,13 @@ const repositoryRoot = path.resolve(import.meta.dirname, "../..");
 const webSourceRoot = path.join(repositoryRoot, "apps/web/src");
 const primitivePath = path.join(webSourceRoot, "components/ui/cmm-section.tsx");
 const tokensPath = path.join(webSourceRoot, "styles/tokens.css");
+const layoutPath = path.join(webSourceRoot, "styles/layout.css");
+const globalRibbonPaths = [
+  path.join(webSourceRoot, "components/navigation/app-navigation-ribbon-shell.tsx"),
+  path.join(webSourceRoot, "components/accueil/accueil-footer.tsx"),
+  path.join(webSourceRoot, "components/layout/root-layout-chrome.tsx"),
+  path.join(webSourceRoot, "components/layout/deferred-global-chrome.tsx"),
+];
 
 const structuralUtilities = /(?:^|\s)(?:max-w-|mx-auto|p[xy]?-|space-y-|gap-)/;
 const hardcodedStructuralWidth = /(?:^|\s)max-w-(?:6xl|7xl)(?:\s|$)|(?:^|\s)max-w-\[[1-9]\d{3,}px\](?:\s|$)|(?:^|\s)container(?:\s|$)/;
@@ -19,6 +26,7 @@ const structuralWidthAllowlist = new Map([
 ]);
 const violations = [];
 const tokensSource = fs.readFileSync(tokensPath, "utf8");
+const layoutSource = fs.readFileSync(layoutPath, "utf8");
 
 if (!/--cmm-grid-max-width:\s*90rem\s*;/.test(tokensSource)) {
   violations.push("styles/tokens.css: canonical internal grid max width must remain 90rem");
@@ -28,6 +36,23 @@ if (!/--cmm-page-max-width:\s*112rem\s*;/.test(tokensSource)) {
 }
 if (/--cmm-page-max-width:\s*var\(--cmm-grid-max-width\)\s*;/.test(tokensSource)) {
   violations.push("styles/tokens.css: page and internal grid max widths must remain decoupled");
+}
+if (/--cmm-ribbon-max-width\s*:/.test(tokensSource)) {
+  violations.push("styles/tokens.css: global ribbon surfaces must not define a page-width token");
+}
+
+const ribbonFrameBlock = layoutSource.match(/\.cmm-ribbon-frame\s*\{[^}]*\}/)?.[0] ?? "";
+if (!/width:\s*100%\s*;/.test(ribbonFrameBlock) || !/margin-inline:\s*0\s*;/.test(ribbonFrameBlock)) {
+  violations.push("styles/layout.css: global ribbon frame must be a full-width viewport surface");
+}
+if (/(?:cmm-grid-max-width|cmm-page-max-width|--cmm-ribbon-max-width)/.test(ribbonFrameBlock)) {
+  violations.push("styles/layout.css: global ribbon frame must not inherit a page or grid max width");
+}
+for (const ribbonPath of globalRibbonPaths) {
+  const source = fs.readFileSync(ribbonPath, "utf8");
+  if (/(?:--cmm-grid-max-width|var\(--cmm-grid-max-width\)|--cmm-page-max-width|var\(--cmm-page-max-width\))/.test(source)) {
+    violations.push(`${relativePath(ribbonPath)}: global ribbons must not reference the page or internal grid width contract`);
+  }
 }
 
 function collectSourceFiles(directory) {

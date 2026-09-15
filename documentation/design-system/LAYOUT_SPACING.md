@@ -30,11 +30,14 @@ Toute modification d'une surface pleine hauteur doit être vérifiée à 100 % d
 zoom sur desktop et mobile afin de confirmer que les deux rubans restent
 visibles, non recouverts et sans débordement horizontal.
 
-Le ruban supérieur et le ruban inférieur partagent la même largeur de chrome
-via `.cmm-ribbon-frame` et `--cmm-ribbon-max-width`. Le footer utilise toujours
-sa composition exhaustive ; aucune variante compacte de ruban n'est rendue par
-route. Les textes visibles des deux rubans utilisent `--cmm-ribbon-text-size`
-(`12px`) et le logo de marque reste rendu par `BrandLogo`.
+Les rubans supérieur et inférieur ont une surface de viewport pleine largeur via
+`.cmm-ribbon-frame` (`width: 100%`). Cette surface est distincte du shell de
+contenu : elle ne réutilise ni `--cmm-page-max-width`, ni
+`--cmm-grid-max-width`. Les composants de ruban gardent leurs gutters internes
+responsifs ; le footer utilise toujours sa composition exhaustive, sans variante
+compacte rendue par route. Les textes visibles des deux rubans utilisent
+`--cmm-ribbon-text-size` (`12px`) et le logo de marque reste rendu par
+`BrandLogo`.
 
 ## Primitives runtime
 
@@ -99,6 +102,16 @@ grille. Les modes
 `exhaustif`, `minimaliste` et `sobre`, ainsi que les familles de couleur, ne
 redéfinissent aucun de ces tokens : ils ne changent donc pas la géométrie
 fondamentale.
+
+Les trois niveaux de largeur sont explicites :
+
+- `viewport ribbon surface` : surface globale pleine largeur, sans plafond de
+  page ou de grille ;
+- `page content shell` : `CmmPageLayout` ou `.cmm-page-width`, plafonné à
+  `--cmm-page-max-width` (`112rem`) avec les gutters canoniques ;
+- `reading measure` : `cmm-prose`, `cmm-prose-wide`, `cmm-prose-narrow` ou une
+  primitive sémantique équivalente pour conserver une mesure de lecture
+  raisonnable.
 
 Les espacements internes à une carte, un formulaire, une table ou un flux
 métier restent locaux lorsqu'ils décrivent la composition de ce composant et
