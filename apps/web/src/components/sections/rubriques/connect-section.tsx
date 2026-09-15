@@ -31,6 +31,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
     announcementEventLoading,
     announcementEventError,
     initialRecipient,
+    initialFeedbackId,
     initialArrondissement,
     initialZoneName,
     initialMessageId,
@@ -108,6 +109,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
                 initialChannelType="dm"
                 initialRecipient={initialRecipient}
                 initialMessageId={initialMessageId}
+                initialFeedbackId={initialFeedbackId}
                 tone="light"
                 fullHeight
                 messagerieMode

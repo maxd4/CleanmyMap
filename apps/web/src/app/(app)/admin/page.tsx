@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { AdminCreatorConsole } from "@/components/admin/admin-creator-console";
+import { AdminFeedbackAuditTabs } from "@/components/admin/admin-feedback-audit-tabs";
 import { AdminAccessState } from "@/components/ui/admin-access-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
@@ -191,6 +192,22 @@ export default async function AdminPage({
               initialStatus={moderationPreset === "signalements" ? "pending" : undefined}
             />
           </section>
+
+          {adminSources.creatorInbox.status === "available" &&
+          adminSources.audit.status === "available" ? (
+            <AdminFeedbackAuditTabs
+              feedbackItems={adminSources.creatorInbox.data}
+              auditEntries={adminSources.audit.data}
+            />
+          ) : (
+            <AdminInfoBanner
+              eyebrow="Retours et journal"
+              title="Surface administrative indisponible"
+              description="Les retours utilisateurs ou le journal administrateurs ne sont pas disponibles pour le moment."
+              icon="AlertTriangle"
+              tone="light"
+            />
+          )}
 
           <section>
             <AdminSectionHeader

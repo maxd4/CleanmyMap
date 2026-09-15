@@ -50,6 +50,7 @@ export type SendChatMessageParams = {
     attachmentUrl?: string;
     attachmentType?: string;
     actionId?: string;
+    feedbackId?: string;
   };
 };
 
@@ -524,6 +525,7 @@ export function useChatData({
         });
       }
 
+      let sentMessage: ChatMessage = optimisticMessage;
       await mutateMessages(
         async (currentData) => {
           const response = await fetch("/api/chat", {
@@ -543,6 +545,7 @@ export function useChatData({
             | { message?: ChatMessage }
             | null;
           const serverMessage = payload?.message ?? optimisticMessage;
+          sentMessage = serverMessage;
           const baseMessages = currentData?.messages ?? [];
 
           return {
@@ -564,6 +567,7 @@ export function useChatData({
           revalidate: false,
         },
       );
+      return sentMessage;
     },
     [messagesKey, mutateMessages],
   );

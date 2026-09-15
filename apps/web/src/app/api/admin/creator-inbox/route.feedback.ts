@@ -134,6 +134,27 @@ export async function handleCreatorInboxFeedback(params: {
   const targetUserId = canonicalTargetUserId(current.submittedByUserId);
   const previousValue = buildSnapshot("feedback", current);
 
+  if (action === "responded") {
+    await appendDecisionAudit({
+      operationId,
+      actorUserId,
+      outcome: "error",
+      targetId: itemId,
+      details: buildAuditDetails({
+        reason,
+        targetUserId,
+        previousValue,
+        newValue: previousValue,
+        stage: "update",
+        partialMutation: false,
+      }),
+    });
+    return NextResponse.json(
+      { error: "Un feedback ne peut être marqué répondu qu'après l'envoi d'un DM." },
+      { status: 409 },
+    );
+  }
+
   if (action === "mark_treated") {
     let updated;
     try {
@@ -187,7 +208,7 @@ export async function handleCreatorInboxFeedback(params: {
   try {
     creatorStateUpdated = await updateCommunityBugReportCreatorState({
       reportId: itemId,
-      creatorState: action === "responded" ? "responded" : "archived",
+      creatorState: "archived",
     });
     if (!creatorStateUpdated) {
       throw new Error("feedback creator state update did not persist");
@@ -204,7 +225,7 @@ export async function handleCreatorInboxFeedback(params: {
         previousValue,
         newValue: buildSnapshot("feedback", {
           status: current.status,
-          creatorState: action === "responded" ? "responded" : "archived",
+          creatorState: "archived",
         }),
         stage: "update",
         partialMutation: false,

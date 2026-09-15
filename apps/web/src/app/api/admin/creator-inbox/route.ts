@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { getCurrentUserIdentity, requireCreatorAccess } from "@/lib/authz";
+import { getCurrentUserIdentity, requireAdminAccess } from "@/lib/authz";
 import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { loadCreatorInboxItems } from "@/lib/community/creator-inbox-loader";
 import {
@@ -14,7 +14,7 @@ import { handleCreatorInboxPromotion } from "./route.promotion";
 export const runtime = "nodejs";
 
 export async function GET() {
-  const access = await requireCreatorAccess();
+  const access = await requireAdminAccess();
   if (!access.ok) {
     return NextResponse.json({ error: "Forbidden" }, { status: access.status });
   }
@@ -31,7 +31,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const access = await requireCreatorAccess();
+  const access = await requireAdminAccess();
   if (!access.ok) {
     return NextResponse.json({ error: "Forbidden" }, { status: access.status });
   }

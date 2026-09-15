@@ -108,6 +108,7 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
   const requestedEventId = searchParams.get("eventId");
   const requestedActionId = searchParams.get("actionId")?.trim() || null;
   const requestedContactRequestId = searchParams.get("contactRequestId")?.trim() || null;
+  const requestedFeedbackId = searchParams.get("feedbackId")?.trim() || null;
 
   const requestedAnnouncementTemplate = buildInitialAnnouncementTemplate(requestedTemplate);
 
@@ -207,7 +208,7 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
 
   const initialMessageId = requestedMessageId?.trim() || null;
   const discussionShellKey = `discussions:${initialChannelType}:${requestedActionId ?? "none"}:${initialTopicId ?? "global"}:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}:${initialAnnouncementTemplate ?? "none"}:${requestedEventId ?? "none"}:${initialMessageId ?? "none"}`;
-  const dmShellKey = `dm:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}:${initialMessageId ?? "none"}`;
+  const dmShellKey = `dm:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}:${initialMessageId ?? "none"}:${requestedFeedbackId ?? "none"}`;
 
   return {
     activeTab,
@@ -215,6 +216,7 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
     initialChannelType,
     initialActionId: requestedActionId,
     initialRecipient,
+    initialFeedbackId: requestedFeedbackId,
     initialTopicId,
     initialComposerMode: initialAnnouncementTemplate ? ("announcement" as const) : ("message" as const),
     initialAnnouncementTemplate,

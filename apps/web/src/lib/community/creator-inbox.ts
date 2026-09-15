@@ -49,6 +49,7 @@ export type CreatorInboxItem = {
   canDelete: boolean;
   canReview: boolean;
   hasReplyTarget: boolean;
+  privateReplyTargetUserId?: string | null;
 };
 
 const STATUS_LABELS: Record<CreatorInboxStatus, { fr: string; en: string }> = {
@@ -201,6 +202,10 @@ export function buildFeedbackInboxItem(record: BugReportRecord): CreatorInboxIte
     canDelete: true,
     canReview: false,
     hasReplyTarget: Boolean(record.submittedByEmail),
+    privateReplyTargetUserId:
+      record.submittedByUserId.trim() && record.submittedByUserId.trim() !== "unknown"
+        ? record.submittedByUserId.trim()
+        : null,
   };
 }
 
@@ -236,6 +241,7 @@ export function buildPromotionInboxItem(record: PromotionRequestRecord): Creator
     canDelete: false,
     canReview: true,
     hasReplyTarget: Boolean(record.submittedByEmail),
+    privateReplyTargetUserId: null,
   };
 }
 
@@ -279,6 +285,7 @@ export function buildPartnerInboxItem(record: PartnerOnboardingRequestRecord): C
     canDelete: false,
     canReview: true,
     hasReplyTarget: Boolean(resolvedEmail),
+    privateReplyTargetUserId: null,
   };
 }
 
@@ -316,6 +323,7 @@ export function buildEventInboxItem(
     canDelete: false,
     canReview: false,
     hasReplyTarget: false,
+    privateReplyTargetUserId: null,
   };
 }
 
@@ -373,5 +381,6 @@ export function buildLegalContentReportInboxItem(
     canDelete: false,
     canReview: true,
     hasReplyTarget: Boolean(record.notifierEmail),
+    privateReplyTargetUserId: null,
   };
 }

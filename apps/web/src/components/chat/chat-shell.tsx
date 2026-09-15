@@ -58,6 +58,7 @@ export type ChatShellProps = {
   initialArrondissement?: number | null;
   initialZoneName?: string | null;
   initialRecipient?: ChatUser | null;
+  initialFeedbackId?: string | null;
   initialMessageId?: string | null;
   initialActionId?: string | null;
   initialTopicId?: ChatTopicId | null;
@@ -78,6 +79,7 @@ export function ChatShell({
   initialArrondissement,
   initialZoneName,
   initialRecipient,
+  initialFeedbackId = null,
   initialMessageId = null,
   initialActionId = null,
   initialTopicId,
@@ -258,10 +260,11 @@ export function ChatShell({
 
   const sendChatMessageWithInboxRefresh = useCallback(
     async (params: SendChatMessageParams) => {
-      await sendChatMessage(params);
+      const sentMessage = await sendChatMessage(params);
       if (params.body.channelType === "dm") {
         await refreshInbox();
       }
+      return sentMessage;
     },
     [refreshInbox, sendChatMessage],
   );
@@ -331,6 +334,7 @@ export function ChatShell({
     setIsUploading,
     supabase,
     sendChatMessage: sendChatMessageWithInboxRefresh,
+    feedbackId: initialFeedbackId,
     setMessage,
     setFile,
     setShowMentions,

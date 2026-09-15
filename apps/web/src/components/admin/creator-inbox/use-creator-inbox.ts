@@ -58,6 +58,8 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
   const [query, setQuery] = useState("");
   const [sourceFilter, setSourceFilter] = useState<"all" | CreatorInboxSource>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | CreatorInboxStatus>("all");
+  const [priorityFilter, setPriorityFilter] = useState<"all" | "high" | "normal">("all");
+  const [sortMode, setSortMode] = useState<"priority" | "date">("priority");
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -88,6 +90,9 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
       if (statusFilter !== "all" && item.status !== statusFilter) {
         return false;
       }
+      if (priorityFilter !== "all" && item.priority !== priorityFilter) {
+        return false;
+      }
       if (!normalizedQuery) {
         return true;
       }
@@ -107,8 +112,13 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
         .join(" ")
         .toLowerCase();
       return haystack.includes(normalizedQuery);
-    });
-  }, [items, query, sourceFilter, statusFilter]);
+    }).sort((left, right) =>
+      sortMode === "priority"
+        ? Number(right.priority === "high") - Number(left.priority === "high") ||
+          Date.parse(right.createdAt) - Date.parse(left.createdAt)
+        : Date.parse(right.createdAt) - Date.parse(left.createdAt),
+    );
+  }, [items, priorityFilter, query, sortMode, sourceFilter, statusFilter]);
 
   function resolveMessage(error: unknown, fallback: string): string {
     if (error instanceof Error && error.message.trim().length > 0) {
@@ -336,6 +346,10 @@ export function useCreatorInbox({ initialItems }: UseCreatorInboxParams) {
     setSourceFilter,
     statusFilter,
     setStatusFilter,
+    priorityFilter,
+    setPriorityFilter,
+    sortMode,
+    setSortMode,
     refreshing,
     refreshInbox,
     partnerConfirm,

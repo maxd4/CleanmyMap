@@ -20,6 +20,17 @@ export const STATUS_FILTERS: Array<{ value: "all" | CreatorInboxStatus; label: s
   { value: "archived", label: "Archivé" },
 ];
 
+export const PRIORITY_FILTERS = [
+  { value: "all", label: "Toutes les priorités" },
+  { value: "high", label: "Priorité haute" },
+  { value: "normal", label: "Priorité normale" },
+] as const;
+
+export const SORT_OPTIONS = [
+  { value: "priority", label: "Priorité" },
+  { value: "date", label: "Date récente" },
+] as const;
+
 export function refreshList(
   items: CreatorInboxItem[],
   updated: CreatorInboxItem | null,
