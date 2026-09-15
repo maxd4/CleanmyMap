@@ -9,10 +9,10 @@
 - **Famille / bloc fonctionnel** : Apprendre (bloc)
 - **Statut** : public
 - **Contexte nécessaire** : Aucun
-- **Objectif utilisateur principal** : Transmettre les connaissances utiles et guider la montée en compétence.
-- **Action principale attendue** : Lire un contenu ou ouvrir une ressource.
+- **Objectif utilisateur principal** : Comprendre les notions environnementales et la méthodologie avant de passer à l'entraînement.
+- **Action principale attendue** : Lire les cartes de vulgarisation, consulter la méthodologie et ouvrir le quiz.
 - **Palette attendue** : yellow
-- **Scope** : à corriger
+- **Scope** : page de vulgarisation avec introduction visuelle, cartes pédagogiques, ressources différées, lien vers `/learn/sentrainer` et méthodologie.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : yellow — canvas #fef9c3, halo rgba(234, 179, 8, 0.30)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

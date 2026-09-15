@@ -10,10 +10,10 @@
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; l'accès reste soumis à l'AuthN/AuthZ propre au portail.
-- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
-- **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
+- **Objectif utilisateur principal** : Lire la valeur territoriale consolidée de la mobilisation citoyenne, les priorités de zones et les repères méthodologiques.
+- **Action principale attendue** : Consulter les KPI ROI, ouvrir les rapports et lire la méthodologie associée.
 - **Palette attendue** : amber / brun
-- **Scope** : à corriger
+- **Scope** : portail protégé de lecture sponsor sur 730 jours, avec KPI d'impact, zones prioritaires, rapports, méthodologie et complétion de compte non bloquante.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : pilotage — canvas #f1d5b0, halo rgba(180, 83, 9, 0.24)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

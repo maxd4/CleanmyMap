@@ -13,7 +13,7 @@
 - **Objectif utilisateur principal** : Lire sa situation immédiate, ses alertes et sa prochaine action depuis un cockpit court.
 - **Action principale attendue** : Déclarer une action ou ouvrir un raccourci utile du quotidien.
 - **Palette attendue** : amber / orange
-- **Scope** : à corriger
+- **Scope** : cockpit privé avec résumé décisionnel, notifications paginées, action prioritaire et accès rapides.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : amber — canvas #fff2df, halo rgba(249, 115, 22, 0.26)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

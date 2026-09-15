@@ -80,6 +80,7 @@ const DYNAMIC_ALIASES_HANDLED_INSIDE_ROUTE = new Set([
   "/sections/guide",
 ]);
 const ALLOWED_FAMILY_DIRECTORIES = new Set(["screenshots"]);
+const EXACT_CURRENT_SCOPE_PLACEHOLDER = /^\s*-\s+\*\*Scope\*\*\s*:\s*à corriger\s*$/im;
 
 function normalizeRoute(value) {
   const trimmed = String(value ?? "").trim();
@@ -400,6 +401,10 @@ function documentedModesFor(value, fallback = []) {
   return extractDocumentedAccessModes(value?.pageType ?? fallback);
 }
 
+export function hasExactCurrentScopePlaceholder(content) {
+  return EXACT_CURRENT_SCOPE_PLACEHOLDER.test(String(content ?? ""));
+}
+
 function accessMismatch({ route, source, expected, modes }) {
   const conflicts = modes.filter((mode) => mode !== expected);
   if (modes.includes(expected) && conflicts.length === 0) {
@@ -492,6 +497,7 @@ function routeDocPackageKey(readmePath) {
 async function loadCanonicalRouteDocs(indexEntries) {
   const routeDocs = [];
   const incompleteNuclei = [];
+  const canonicalReadmesWithScopePlaceholder = [];
   const indexReadmeTargetsMissing = [];
   const indexReadmeTargetsOutsideRoutes = [];
 
@@ -522,6 +528,14 @@ async function loadCanonicalRouteDocs(indexEntries) {
     }
 
     const readmeContent = await fs.readFile(readmePath, "utf8");
+
+    if (!entry.isAliasOrRedirect && !entry.isGenericDynamicPattern && hasExactCurrentScopePlaceholder(readmeContent)) {
+      canonicalReadmesWithScopePlaceholder.push({
+        route: entry.route,
+        readme: relativeReadme,
+        line: entry.line,
+      });
+    }
 
     routeDocs.push({
       route: entry.route,
@@ -577,6 +591,7 @@ async function loadCanonicalRouteDocs(indexEntries) {
   return {
     routeDocs,
     incompleteNuclei,
+    canonicalReadmesWithScopePlaceholder,
     indexReadmeTargetsMissing,
     indexReadmeTargetsOutsideRoutes,
   };
@@ -1041,6 +1056,7 @@ export async function runPagesSiteRouteDriftAudit() {
     indexRoutesMissingFromRuntime,
     indexRoutesMissingCanonicalDoc,
     incompleteNuclei: docs.incompleteNuclei,
+    canonicalReadmesWithScopePlaceholder: docs.canonicalReadmesWithScopePlaceholder,
     indexReadmeTargetsMissing: docs.indexReadmeTargetsMissing,
     indexReadmeTargetsOutsideRoutes: docs.indexReadmeTargetsOutsideRoutes,
     pageFamilyContractErrors: pageFamilyContract.errors,
@@ -1077,6 +1093,7 @@ export function hasPagesSiteRouteDrift(report) {
     report.unexpectedFamilyDirectories,
     report.documentedAccessContradictions,
     report.runtimeAccessErrors,
+    report.canonicalReadmesWithScopePlaceholder,
   ].some((items) => items.length > 0);
 }
 
@@ -1167,6 +1184,10 @@ ${toMarkdownJsonList(report.documentedAccessContradictions)}
 ### Contrat runtime indéterminé ou incomplet
 
 ${toMarkdownList(report.runtimeAccessErrors)}
+
+## Placeholders de métadonnées CURRENT
+
+${toMarkdownJsonList(report.canonicalReadmesWithScopePlaceholder)}
 
 ## Packages autonomes interdits
 

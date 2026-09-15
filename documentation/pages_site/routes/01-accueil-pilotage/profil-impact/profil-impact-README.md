@@ -6,17 +6,17 @@
 - **Fichier(s) source(s)** :
 - `apps/web/src/app/(app)/profil/impact/page.tsx`
 - **Type fonctionnel** : page de bloc
-- **Famille / bloc fonctionnel** : Cartographie & Impact (bloc)
+- **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc), exception visuelle Impact
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Consulter sa progression personnelle, ses badges, son rang et sa carte d'impact partageable.
-- **Action principale attendue** : Exporter ou partager l'image de sa carte personnelle.
+- **Objectif utilisateur principal** : Consulter sa progression personnelle, ses badges, son rang et sa carte d'impact personnelle.
+- **Action principale attendue** : Télécharger ou partager le PNG de sa carte personnelle, sans exposer l'URL protégée.
 - **Règle de partage** : Le partage porte uniquement sur le fichier image PNG généré depuis la carte personnelle. Il ne crée pas de profil public, ne partage pas l'URL protégée `/profil/impact` et ne produit aucune donnée serveur ou token public.
-- **Palette attendue** : amber / orange
-- **Scope** : à corriger
-- **Terminée** : non
-- **Couleurs actuellement détectées** : amber — canvas #fff2df, halo rgba(249, 115, 22, 0.26)
-- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
+- **Palette attendue** : red / rouge impact
+- **Scope** : carte d'impact personnelle, progression et badges issus des actions validées, export PNG et partage fichier uniquement.
+- **Terminée** : oui pour le périmètre actuellement livré
+- **Couleurs actuellement détectées** : red — états de chargement, carte et actions d'impact utilisent l'accent impact.
+- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle runtime actuelle.
 - **Risque de conflit avec les couleurs existantes** : moyen : attention au chevauchement entre sky cartographique et rouge impact / alerte.
 - **Niveau de surcharge textuelle** : fort
 - **Textes à conserver** :

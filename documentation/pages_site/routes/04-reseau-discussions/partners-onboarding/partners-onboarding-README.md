@@ -10,10 +10,10 @@
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
 - **Complétion du compte** : La complétion personnelle n'est pas un prérequis global ; le formulaire partenaire demande ses propres champs obligatoires au moment de l'envoi.
-- **Objectif utilisateur principal** : Faire circuler l'information et faciliter les échanges entre acteurs.
-- **Action principale attendue** : Lire, contacter ou rejoindre une discussion / un réseau.
+- **Objectif utilisateur principal** : Créer ou compléter une fiche partenaire puis la soumettre à validation.
+- **Action principale attendue** : Renseigner les champs requis du formulaire partenaire et envoyer la demande.
 - **Palette attendue** : indigo
-- **Scope** : à corriger
+- **Scope** : formulaire partenaire authentifié, champs obligatoires propres au parcours, contrôle serveur à l'envoi et soumission à validation ; la complétion générale du compte n'est pas un prérequis.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : indigo — canvas #e8e9fc, halo rgba(99, 102, 241, 0.22)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

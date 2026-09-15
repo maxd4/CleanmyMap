@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   extractIndexEntries,
   extractRuntimeSurfaceAccess,
+  hasExactCurrentScopePlaceholder,
   validateDocumentedAccessCoherence,
   validateRoutePackageLayout,
 } from "./check-pages-site-route-drift.mjs";
@@ -31,6 +32,21 @@ test("INDEX conserve les doublons de route pour que le strict puisse les refuser
 `);
 
   assert.equal(entries.filter((item) => item.route === "/same").length, 2);
+});
+
+test("le contrôle cible uniquement le placeholder Scope exact des fiches CURRENT", () => {
+  assert.equal(
+    hasExactCurrentScopePlaceholder("- **Scope** : à corriger"),
+    true,
+  );
+  assert.equal(
+    hasExactCurrentScopePlaceholder("- **Scope** : scope documenté\n- À corriger dans le plan"),
+    false,
+  );
+  assert.equal(
+    hasExactCurrentScopePlaceholder("- **Objectif** : à corriger"),
+    false,
+  );
 });
 
 test("les packages canoniques sont uniques, liés et dans la famille runtime", () => {

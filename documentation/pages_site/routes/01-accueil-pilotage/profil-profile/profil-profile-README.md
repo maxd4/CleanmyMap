@@ -8,11 +8,11 @@
 - **Type fonctionnel** : dynamique — profil
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Statut** : dynamique
-- **Contexte nécessaire** : Paramètre de route requis (profil, id, section, mission...)
-- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
-- **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
+- **Contexte nécessaire** : Paramètre `profile` valide et compte connecté ; un profil différent du rôle actif est redirigé, sauf sélection autorisée par l'accès administrateur.
+- **Objectif utilisateur principal** : Gérer les réglages, actions prioritaires, progression, badges et parrainage du profil actif.
+- **Action principale attendue** : Consulter sa progression ou configurer son compte depuis la surface de profil.
 - **Palette attendue** : amber / orange
-- **Scope** : à corriger
+- **Scope** : surface de profil dynamique avec réglages, actions par rôle, progression/badges, parrainage et sélection des profils explicitement autorisés.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : amber — canvas #fff2df, halo rgba(249, 115, 22, 0.26)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

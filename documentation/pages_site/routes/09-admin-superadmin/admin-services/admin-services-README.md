@@ -8,11 +8,11 @@
 - **Type fonctionnel** : administration
 - **Famille / bloc fonctionnel** : Admin & Super-admin (hors bloc)
 - **Statut** : technique
-- **Contexte nécessaire** : Compte connecté, parfois rôle technique ou de supervision
-- **Objectif utilisateur principal** : Piloter les réglages avancés, la modération et la supervision.
-- **Action principale attendue** : Consulter un panneau d'administration ou agir sur une ressource.
+- **Contexte nécessaire** : Compte connecté avec accès administrateur effectif ; les autres comptes voient un état d'accès refusé.
+- **Objectif utilisateur principal** : Superviser les intégrations, quotas, stockage et rapports internes de gouvernance.
+- **Action principale attendue** : Lire l'état des services, les métriques de stockage et le dernier rapport mensuel disponible.
 - **Palette attendue** : amber / brun sombre
-- **Scope** : à corriger
+- **Scope** : cockpit de santé des services avec intégrations Codex, impact, plans gratuits, stockage Supabase et archive de gouvernance mensuelle.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : admin — canvas #15111d, halo rgba(245, 158, 11, 0.20)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

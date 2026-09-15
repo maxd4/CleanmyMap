@@ -12,19 +12,19 @@
 - **Accès runtime** : `public-visible` ; aucune session n'est requise pour consulter la synthèse des actions publiées.
 - **Objectif utilisateur principal** : Observer l’activité déclarée dans les actions et distinguer cette observation de l’annuaire des structures référencées.
 - **Action principale attendue** : Consulter les acteurs observés dans les actions enregistrées.
-- **Palette attendue** : à compléter
-- **Scope** : à cadrer
+- **Palette attendue** : indigo / sky sur fond réseau sombre
+- **Scope** : agrégation publique des actions approuvées sur douze mois, hotspots par zone et cartes d'acteurs observés avec qualité moyenne des déclarations.
 - **Terminée** : non
 - **Captures attendues** : desktop, mobile
-- **Priorité de correction** : à évaluer
+- **Priorité de correction** : faible — le rendu et le contrat public sont déjà finalisés.
 
 ## États à documenter
 
-- **loading** : à compléter.
-- **empty state** : à compléter.
-- **access refused** : à compléter.
-- **Architecture commune** : à compléter.
-- **Variantes** : à compléter.
+- **loading** : skeletons séparés pour les hotspots cartographiques et les cartes d'acteurs.
+- **empty state** : absence d'action sur la période ou absence d'acteur nommé dans les actions récentes.
+- **access refused** : non applicable à la consultation publique ; aucune capacité métier n'est ouverte par cette visibilité.
+- **Architecture commune** : `SectionShell`, `RubriqueCard`, `CmmSkeleton`, `ActionsMapFeed` et les agrégats `buildActorActivityCards`.
+- **Variantes** : chargement, données agrégées, liste vide ; la section reste publique.
 - **Règle** : un `actor_name` issu d’une action est une attribution observée ; il ne constitue ni une fiche Annuaire validée, ni une preuve de partenariat, ni un statut organisationnel.
 
 ## Contrat de données
@@ -41,7 +41,7 @@
 ## Notes d'audit
 
 - Cette fiche est la source de vérité canonique pour la page.
-- Compléter après alignement visuel et métier.
+- Le rendu runtime est finalisé ; la qualité visuelle détaillée reste hors de cette fiche faute de snapshot de référence.
 
 ## Fichiers associés
 

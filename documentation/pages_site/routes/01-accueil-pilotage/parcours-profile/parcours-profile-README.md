@@ -8,14 +8,14 @@
 - **Type fonctionnel** : dynamique — parcours
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Statut** : dynamique
-- **Contexte nécessaire** : Paramètre de route requis (profil, id, section, mission...)
-- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
-- **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
+- **Contexte nécessaire** : Paramètre `profile` valide ; compte connecté pour la redirection vers le profil demandé, sauf aperçu verrouillé anonyme.
+- **Objectif utilisateur principal** : Valider le profil demandé et orienter l'utilisateur vers sa surface de profil canonique.
+- **Action principale attendue** : Ouvrir le parcours demandé lorsque le profil est autorisé, ou revenir au profil actif.
 - **Palette attendue** : amber / orange
-- **Scope** : à corriger
+- **Scope** : contrôle du paramètre, aperçu anonyme, restriction des profils non actifs et redirection vers `/profil/[profile]`.
 - **Terminée** : non
-- **Couleurs actuellement détectées** : emerald — canvas #e8f8ef, halo rgba(34, 197, 94, 0.22)
-- **Incohérences de couleurs** : Écart détecté: attendu amber / orange, code actuel emerald.
+- **Couleurs actuellement détectées** : amber / orange — états de parcours et aperçu verrouillé.
+- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle runtime actuelle.
 - **Risque de conflit avec les couleurs existantes** : moyen : la frontière rouge doit rester nette pour éviter la confusion avec les blocs d'impact et d'alerte.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :

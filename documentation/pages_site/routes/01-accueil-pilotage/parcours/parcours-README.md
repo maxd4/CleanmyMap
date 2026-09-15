@@ -9,13 +9,13 @@
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
-- **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
+- **Objectif utilisateur principal** : Orienter le compte connecté vers le parcours correspondant à son rôle actif, tout en présentant un aperçu verrouillé aux visiteurs.
+- **Action principale attendue** : Se connecter puis ouvrir le parcours associé au profil actif.
 - **Palette attendue** : amber / orange
-- **Scope** : à corriger
+- **Scope** : entrée de parcours avec aperçu anonyme flouté et redirection authentifiée vers `/parcours/[profile]` selon le rôle actif.
 - **Terminée** : non
-- **Couleurs actuellement détectées** : emerald — canvas #e8f8ef, halo rgba(34, 197, 94, 0.22)
-- **Incohérences de couleurs** : Écart détecté: attendu amber / orange, code actuel emerald.
+- **Couleurs actuellement détectées** : amber / orange — aperçu et états de parcours alignés sur l'accent `home`.
+- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle runtime actuelle.
 - **Risque de conflit avec les couleurs existantes** : moyen : la frontière rouge doit rester nette pour éviter la confusion avec les blocs d'impact et d'alerte.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :

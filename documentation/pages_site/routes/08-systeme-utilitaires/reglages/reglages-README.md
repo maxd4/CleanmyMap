@@ -9,13 +9,13 @@
 - **Famille / bloc fonctionnel** : Système & Utilitaires (hors bloc)
 - **Statut** : standalone
 - **Contexte nécessaire** : Compte connecté ; redirection vers `/sign-in` si la session est absente.
-- **Objectif utilisateur principal** : Exposer les préférences et réglages du compte.
-- **Action principale attendue** : Configurer les préférences personnelles et l'expérience utilisateur.
-- **Palette attendue** : slate / gris doux
-- **Scope** : à corriger
-- **Terminée** : non
-- **Couleurs actuellement détectées** : system — canvas #eef6fb, halo rgba(14, 165, 233, 0.18)
-- **Incohérences de couleurs** : Écart détecté: attendu slate / gris doux, code actuel sky / slate.
+- **Objectif utilisateur principal** : Gérer les préférences personnelles d'affichage, de notifications, de localisation et de compte.
+- **Action principale attendue** : Modifier une préférence puis revenir à l'espace personnel si nécessaire.
+- **Palette attendue** : sky / slate
+- **Scope** : réglages authentifiés avec sections profil/compte, affichage, notifications, localisation et actions rapides ; absence de session redirigée vers `/sign-in`.
+- **Terminée** : oui pour le périmètre actuellement livré
+- **Couleurs actuellement détectées** : sky / slate — fond clair sky et cartes de réglages neutres.
+- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec le rendu runtime actuel.
 - **Risque de conflit avec les couleurs existantes** : moyen : garder une mood layer autonome et éviter tout retour aux couleurs de bloc principales.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :

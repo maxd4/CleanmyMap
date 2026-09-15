@@ -13,11 +13,11 @@
 - **Objectif utilisateur principal** : Découvrir les acteurs engagés puis permettre à une structure de demander son référencement dans l’annuaire.
 - **Action principale attendue** : Référencer ma structure.
 - **Cible canonique de l’action principale** : `/partners/onboarding`
-- **Palette attendue** : à compléter
-- **Scope** : à cadrer
+- **Palette attendue** : violet / blanc, identité visuelle actuelle de l'annuaire
+- **Scope** : consultation publique avec recherche, filtres thématiques et géographiques, exploration carte/réseau, fiches détaillées paginées et CTA vers le référencement partenaire.
 - **Terminée** : non
 - **Captures attendues** : desktop, mobile
-- **Priorité de correction** : à évaluer
+- **Priorité de correction** : moyenne — maintenir la distinction provenance éditoriale/partenaire.
 
 ## Accès et limites
 
@@ -33,12 +33,12 @@ restent **à arbitrer** et ne sont pas des capacités actuelles de l'annuaire.
 
 ## États à documenter
 
-- **loading** : à compléter.
-- **empty state** : à compléter.
-- **access refused** : à compléter.
-- **Architecture commune** : à compléter.
-- **Variantes** : à compléter.
-- **Règle** : à compléter.
+- **loading** : le canvas cartographique est chargé dynamiquement ; l'interface conserve son shell pendant le chargement.
+- **empty state** : aucune fiche ne correspond aux termes ou filtres sélectionnés.
+- **access refused** : non applicable à la consultation publique ; le référencement partenaire conserve son parcours séparé.
+- **Architecture commune** : `SectionShell`, `AnnuaireExplorationView`, `useAnnuaireLogic`, liste de fiches, canvas carte/réseau et drawer de détail.
+- **Variantes** : vue carte, vue réseau, filtres ouverts, pagination et fiche sélectionnée.
+- **Règle** : la provenance `editorial_seed` ou `published_partner` reste visible et ne vaut jamais validation, partenariat ou activité mesurée par défaut.
 
 ## Références legacy
 
@@ -47,7 +47,7 @@ restent **à arbitrer** et ne sont pas des capacités actuelles de l'annuaire.
 ## Notes d'audit
 
 - Cette fiche est la source de vérité canonique pour la page.
-- Compléter après alignement visuel et métier.
+- Le rendu runtime est finalisé ; aucune décision d'organisation non prouvée n'est ajoutée à cette fiche.
 
 ## Provenance et niveau de confiance
 

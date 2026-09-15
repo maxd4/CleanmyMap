@@ -9,13 +9,13 @@
 - **Famille / bloc fonctionnel** : Système & Utilitaires (hors bloc)
 - **Statut** : standalone
 - **Contexte nécessaire** : Accès direct depuis le shell ou un outil interne
-- **Objectif utilisateur principal** : Exposer des outils de support, de contrôle ou de prévisualisation.
-- **Action principale attendue** : Configurer, comparer ou vérifier un état technique.
-- **Palette attendue** : indigo / cyan doux
-- **Scope** : à corriger
-- **Terminée** : non
-- **Couleurs actuellement détectées** : system — canvas #eef6fb, halo rgba(14, 165, 233, 0.18)
-- **Incohérences de couleurs** : Écart détecté: attendu indigo / cyan doux, code actuel sky / slate.
+- **Objectif utilisateur principal** : Comparer visuellement et fonctionnellement le formulaire complet et le formulaire simplifié.
+- **Action principale attendue** : Examiner les deux versions puis ouvrir le formulaire à tester.
+- **Palette attendue** : sky / slate
+- **Scope** : comparaison interne des deux présentations du formulaire, mesures de gain affichées et liens de test vers `/actions/new`.
+- **Terminée** : oui pour le périmètre actuellement livré
+- **Couleurs actuellement détectées** : sky / slate — fond radial cyan clair, en-tête sky et cartes neutres.
+- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec le rendu runtime actuel.
 - **Risque de conflit avec les couleurs existantes** : moyen : garder une mood layer autonome et éviter tout retour aux couleurs de bloc principales.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :

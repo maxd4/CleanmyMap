@@ -13,7 +13,7 @@
 - **Objectif utilisateur principal** : Donner aux profils habilités un accès rapide aux vues de synthèse, au pilotage et aux lectures décideurs/gouvernance via trois onglets.
 - **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
 - **Palette attendue** : amber / brun
-- **Scope** : à corriger
+- **Scope** : overview réservé aux rôles `coordinateur`, `admin` et `max`, structuré en onglets décideurs, pilotage et gouvernance, avec chargement serveur contrôlé.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : pilotage — canvas #f1d5b0, halo rgba(180, 83, 9, 0.24)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

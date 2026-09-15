@@ -9,10 +9,10 @@
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
-- **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
+- **Objectif utilisateur principal** : Ouvrir l'espace personnel avec le résumé du compte, les notifications, l'action prioritaire et les raccourcis adaptés au rôle actif.
+- **Action principale attendue** : Consulter son espace puis ouvrir le formulaire d'action ou un raccourci métier.
 - **Palette attendue** : amber / orange
-- **Scope** : à corriger
+- **Scope** : alias fonctionnel du dashboard personnel, avec rappel de complétion non bloquant, résumé, notifications, parrainage et actions rapides.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : amber — canvas #fff2df, halo rgba(249, 115, 22, 0.26)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
