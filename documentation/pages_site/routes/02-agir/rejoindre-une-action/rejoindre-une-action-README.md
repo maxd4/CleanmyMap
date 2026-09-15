@@ -54,32 +54,40 @@ Permettre au créateur, organisateur ou coorganisateur autorisé de :
 4. ajouter manuellement un participant.
 
 Les profils dont le rôle actif dispose de la capability d'override d'action
-(`admin`, `elu` ou `max`) peuvent traiter toute file selon les permissions
-centrales. Cette capability est limitée aux opérations Actions et ne confère
-pas à `elu` un privilège administratif global.
+(`ACTIVE_ROLE ∈ {admin, max}`) peuvent traiter toute file selon les permissions
+centrales. `ACTIVE_ROLE=elu` ne dispose d'aucun override global d'action. Un
+compte dont `GRANTED_ROLE=elu` peut sélectionner explicitement
+`ACTIVE_ROLE=admin`, mais cette bascule n'est ni implicite ni une permission
+propre à `elu`.
 
 ## Contrat de visibilité
 
-Une action future apparaît dans l'onglet public uniquement si :
+Une action future apparaît dans l'onglet public uniquement si le prédicat
+`isJoinableFuturePreAction(...)` est vrai, c'est-à-dire si :
 
 ```txt
 action_phase = pre_action
 status ∈ {approved, pending}
+moderation_visibility = visible
+published_at != null
+date/heure de début future selon Europe/Paris
 groupJoinEnabled = true
 ```
 
 Le statut `pending` n'exclut donc pas automatiquement une pré-action de cette page.
 
-La visibilité dans les formulaires de groupe reste distincte de :
+La visibilité de l'ouverture à la participation reste distincte de :
 
 - visibilité sur la carte publique ;
 - validation d'une déclaration finale ;
 - comptabilisation dans les indicateurs d'impact.
 
 L'onglet `Actions futures` réutilise exclusivement `/api/actions/group-join`.
-L'onglet `Actions passées` lit les actions publiques approuvées et terminées
-depuis la surface d'actions ; il ne lit pas l'historique personnel
-`historyItems` et ne permet aucune participation rétroactive.
+L'onglet `Actions passées` lit les références publiques d'actions terminées,
+approuvées, publiées et visibles depuis la surface d'actions ; il ne lit pas
+l'historique personnel `historyItems` et ne permet aucune participation
+rétroactive. L'historique personnel et le partage d'une référence d'action
+restent des capacités distinctes de ce parcours.
 
 ## Contrat de participation
 
@@ -118,7 +126,7 @@ Sont autorisés selon le code actuel :
 créateur
 organisateur
 coorganisateur autorisé
-capability d'override d'action (`admin`, `elu`, `max`)
+capability d'override d'action (`ACTIVE_ROLE ∈ {admin, max}`)
 ```
 
 Un utilisateur extérieur ne peut pas rechercher des comptes ni traiter la file.
@@ -142,7 +150,7 @@ pendingRequests
 confirmedParticipants
 ```
 
-Ne plus appeler cette file « file publique ».
+Cette file de modération n'est pas publique ; elle est réservée aux reviewers autorisés.
 
 ## Ajout manuel
 

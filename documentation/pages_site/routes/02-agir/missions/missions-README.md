@@ -8,7 +8,7 @@
 - **Type fonctionnel** : dynamique — mission
 - **Famille / bloc fonctionnel** : Agir (bloc)
 - **Statut** : dynamique
-- **Contexte nécessaire** : Paramètre de route requis (profil, id, section, mission...)
+- **Contexte nécessaire** : Compte Clerk authentifié et identifiant de mission existante dans la route dynamique.
 - **Objectif utilisateur principal** : Consulter les données réellement enregistrées pour une mission terrain existante.
 - **Action principale attendue** : Lire le statut, les horaires de début et de fin, la durée, la distance et le tracé GPS lorsqu'il est disponible.
 - **Comportement réel du lot 1** : Une mission inexistante n'affiche aucun contenu de démonstration et une erreur de lecture n'est pas remplacée par des données fictives. Une mission sans points GPS affiche `Aucun tracé enregistré`.
@@ -18,8 +18,8 @@
 - **Ordre de lecture sécurisé** : Le rôle et la mission ciblée sont vérifiés avant tout chargement de `gps_points`. Le `service_role`, lorsqu'il est utilisé côté serveur, est un moyen technique et ne suffit jamais à autoriser l'accès.
 - **Confidentialité** : La lecture mission/GPS n'utilise pas de cache partagé par identifiant de mission. Aucun partage public n'est prévu sans future vue sanitizée et contrat explicite ; l'ADR-004 documente le contrat historique et gelé de l'identité mobile.
 - **Palette attendue** : emerald
-- **Scope** : à corriger
-- **Terminée** : non
+- **Scope** : lecture protégée d'une mission possédée par l'utilisateur ou accessible à `ACTIVE_ROLE ∈ {admin, max}`, avec statut, horaires, distance, durée et tracé GPS enregistré lorsqu'il existe.
+- **Terminée** : oui pour le périmètre actuellement livré ; aucune métrique environnementale ni fallback de démonstration n'est exposé.
 - **Couleurs actuellement détectées** : emerald — canvas #e8f8ef, halo rgba(34, 197, 94, 0.22)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : moyen : le vert doit rester distinct des panneaux de support et des surfaces techniques.
