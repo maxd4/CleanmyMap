@@ -64,10 +64,10 @@ export function HomeFooter() {
             </Link>
           </div>
 
-          <div className="flex min-w-0 max-w-full flex-wrap justify-center gap-2.5 lg:justify-center">
+          <div className="flex min-w-0 max-w-full flex-nowrap justify-center gap-2.5 lg:justify-center">
             <a
               href={`mailto:${contactEmail}`}
-              className="group flex min-h-10 min-w-0 max-w-full items-center gap-2.5 rounded-xl border border-slate-700/80 bg-slate-950/55 px-3.5 py-2 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+              className="group flex min-h-10 min-w-0 basis-0 flex-1 items-center gap-2.5 rounded-xl border border-slate-700/80 bg-slate-950/55 px-3.5 py-2 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80 sm:h-8 sm:w-8">
                 <Mail className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
@@ -80,7 +80,7 @@ export function HomeFooter() {
               href="https://instagram.com/cleanmymap.fr"
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex min-h-10 min-w-0 max-w-full items-center gap-2.5 rounded-xl border border-slate-700/80 bg-slate-950/55 px-3.5 py-2 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+              className="group flex min-h-10 min-w-0 basis-0 flex-1 items-center gap-2.5 rounded-xl border border-slate-700/80 bg-slate-950/55 px-3.5 py-2 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80 sm:h-8 sm:w-8">
                 <InstagramMark size={16} className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
