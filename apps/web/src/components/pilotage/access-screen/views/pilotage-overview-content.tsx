@@ -95,7 +95,7 @@ export function PilotageOverviewContent({
                 </span>
               </div>
               <h2 className="text-2xl font-black tracking-tight text-white md:text-3xl">
-                {locale === "fr" ? "Déclarer une action" : "Declare an action"}
+                {locale === "fr" ? "Créer une action" : "Create an action"}
               </h2>
               <p className="max-w-2xl text-sm leading-relaxed text-white md:text-base">
                 {locale === "fr"

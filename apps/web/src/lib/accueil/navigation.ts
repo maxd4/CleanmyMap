@@ -13,11 +13,9 @@ export const BLOCK_PREVIEW_PRIORITY: Record<
     elus: 6,
   },
   act: {
-    new: 1,
-    route: 2,
-    weather: 3,
-    guide: 4,
-    "trash-spotter": 5,
+    "rejoindre-une-action": 1,
+    new: 2,
+    signalement: 3,
   },
   visualize: {
     map: 1,

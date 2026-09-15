@@ -105,8 +105,8 @@ export function SiteNavigationJsonLd() {
       },
       {
         "@type": "SiteNavigationElement",
-        name: "Déclarer une action",
-        description: "Formulaire de déclaration d'action de nettoyage.",
+        name: "Créer une action",
+        description: "Préparer une action avant terrain ou compléter ses résultats après réalisation.",
         url: `${appUrl}/actions/new`,
       },
     ],
@@ -135,7 +135,7 @@ export function BreadcrumbJsonLd() {
       {
         "@type": "ListItem",
         position: 3,
-        name: "Déclarer une action",
+        name: "Créer une action",
         item: `${appUrl}/actions/new`,
       },
     ],

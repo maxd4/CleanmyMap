@@ -13,6 +13,24 @@ function collectRouteIds(spaces: NavigationSpace[]): string[] {
 }
 
 describe("navigation registry consistency", () => {
+  it("keeps the Agir registry contract aligned with its visible entries", () => {
+    const byRoute = new Map<string, (typeof RUBRIQUE_REGISTRY)[number]>(
+      RUBRIQUE_REGISTRY.map((rubrique) => [rubrique.route, rubrique]),
+    );
+
+    expect(
+      [
+        "/sections/rejoindre-une-action",
+        "/actions/new",
+        "/signalement",
+      ].map((route) => byRoute.get(route)?.id),
+    ).toEqual(["rejoindre-une-action", "new", "signalement"]);
+    expect(byRoute.get("/actions/new")?.label.fr).toBe("Créer une action");
+    expect(byRoute.get("/actions/new")?.description.fr).toBe(
+      "Préparer une action avant terrain ou compléter ses résultats après réalisation.",
+    );
+  });
+
   it("maps only existing rubriques with matching hrefs", () => {
     const byId = new Map<string, (typeof RUBRIQUE_REGISTRY)[number]>(
       RUBRIQUE_REGISTRY.map((rubrique) => [rubrique.id, rubrique]),

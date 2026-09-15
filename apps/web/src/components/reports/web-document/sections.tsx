@@ -594,7 +594,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
                 href="/actions/new"
                 className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 cmm-text-small font-semibold text-emerald-800 transition hover:bg-emerald-100"
               >
-                Déclarer une action
+                Créer une action
               </Link>
               <Link
                 href="/actions/map"

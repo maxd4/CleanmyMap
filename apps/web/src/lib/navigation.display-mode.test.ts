@@ -7,6 +7,28 @@ import {
   getProfileNavigationEntries,
 } from "./navigation";
 
+const PROFILES = [
+  "benevole",
+  "coordinateur",
+  "scientifique",
+  "entreprise",
+  "elu",
+  "admin",
+  "max",
+] as const;
+const DISPLAY_MODES = ["exhaustif", "sobre", "minimaliste"] as const;
+const EXPECTED_ACT_HREFS = [
+  "/sections/rejoindre-une-action",
+  "/actions/new",
+  "/signalement",
+] as const;
+const FORBIDDEN_ACT_ROUTE_IDS = [
+  "route",
+  "weather",
+  "trash-spotter",
+  "history",
+] as const;
+
 function collectRouteIds(
   profile: "benevole" | "coordinateur" | "scientifique" | "entreprise" | "elu" | "admin" | "max",
   mode: "exhaustif" | "sobre" | "minimaliste",
@@ -17,6 +39,47 @@ function collectRouteIds(
 }
 
 describe("navigation display modes", () => {
+  it("exposes exactly the canonical three Agir entries in every profile and mode", () => {
+    for (const profile of PROFILES) {
+      for (const displayMode of DISPLAY_MODES) {
+        const actSpace = getNavigationSpacesForProfile(profile, displayMode).find(
+          (space) => space.id === "act",
+        );
+
+        expect(actSpace?.items.map((item) => item.href)).toEqual(EXPECTED_ACT_HREFS);
+        expect(actSpace?.items.map((item) => item.routeId)).not.toEqual(
+          expect.arrayContaining([...FORBIDDEN_ACT_ROUTE_IDS]),
+        );
+      }
+    }
+  });
+
+  it("keeps the non-Agir navigation blocks unchanged", () => {
+    const spaces = getNavigationSpacesForProfile("benevole", "exhaustif");
+
+    expect(spaces.find((space) => space.id === "home")?.items.map((item) => item.routeId)).toEqual([
+      "dashboard",
+      "explorer",
+    ]);
+    expect(spaces.find((space) => space.id === "visualize")?.items.map((item) => item.routeId)).toEqual([
+      "map",
+      "methodologie",
+      "reports",
+      "gamification",
+    ]);
+    expect(spaces.find((space) => space.id === "network")?.items.map((item) => item.routeId)).toEqual([
+      "community",
+      "feedback",
+      "messagerie",
+      "open-data",
+    ]);
+    expect(spaces.find((space) => space.id === "learn")?.items.map((item) => item.routeId)).toEqual([
+      "learn-comprendre",
+      "learn-sentrainer",
+      "learn-bonnes-pratiques",
+    ]);
+  });
+
   it("keeps exhaustive mode as the richest mode", () => {
     const exhaustive = collectRouteIds("benevole", "exhaustif");
     const minimaliste = collectRouteIds("benevole", "minimaliste");
