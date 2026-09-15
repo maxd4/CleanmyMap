@@ -468,13 +468,85 @@ reports.view_territory
 reports.export_territory
 ```
 
-Une future capacité :
+#### Chantier futur — Modération territoriale des actions par les élus
+
+Une future capacité, explicitement `PLAN / TARGET` et **NON IMPLÉMENTÉE** :
 
 ```txt
 actions.moderate_territory
 ```
 
-n'est acceptable que lorsque le territoire de l'utilisateur et celui de la ressource sont représentés par un contrat canonique testé.
+Cette capacité ne constitue actuellement aucune permission runtime. Elle ne
+pourra être introduite que sous le contrat fail-closed suivant :
+
+```txt
+ACTIVE_ROLE=elu
++ capability=actions.moderate_territory
++ territory_assignment canonique et non ambigu de l'élu
++ territoire canonique et non ambigu de l'action
++ correspondance vérifiée côté serveur
++ opération explicitement autorisée par le contrat
+→ permission
+```
+
+Un élu affecté au territoire A doit être refusé sur une action appartenant
+uniquement au territoire B. Le rôle actif et la capacité seuls ne remplacent
+jamais la relation territoriale vérifiée.
+
+L'absence de scope est toujours un refus :
+
+```txt
+territoire élu absent ou ambigu
+OU territoire action absent ou ambigu
+OU relation impossible à vérifier
+→ refus
+```
+
+Aucun fallback vers la modération globale n'est acceptable.
+
+#### Prérequis bloquants avant implémentation
+
+Le chantier ne pourra commencer que lorsque les éléments suivants existeront
+de manière canonique et testée :
+
+1. l'attribution territoriale persistée de l'élu ;
+2. le territoire canonique des actions ;
+3. une résolution serveur fiable de l'appartenance d'une action à un
+   territoire ;
+4. la distinction éventuelle entre commune, arrondissement, département ou
+   autre périmètre réellement retenu ;
+5. la définition précise des opérations accessibles à un élu ;
+6. l'audit des opérations territoriales sensibles ;
+7. les tests `territoire A / territoire B / territoire absent / territoire
+   ambigu`.
+
+#### Décisions séparées restant à arbitrer
+
+La capacité territoriale ne décide pas automatiquement que l'élu pourra :
+
+- approuver ou rejeter une action ;
+- masquer ou restaurer une action ;
+- intervenir sur les participants ;
+- corriger un impact validé ;
+- modifier un organisateur ;
+- lire l'audit administratif complet.
+
+Chacune de ces opérations devra faire l'objet d'une décision de périmètre,
+de garde-fous et d'audit lors du futur chantier. `actions.moderate_territory`
+ne doit jamais devenir un nouvel `admin override` générique.
+
+La bascule de rôle reste distincte du futur scope territorial :
+
+```txt
+GRANTED_ROLE=elu + ACTIVE_ROLE=elu
+→ future capacité territoriale seulement, lorsqu'elle sera implémentée
+
+GRANTED_ROLE=elu + ACTIVE_ROLE=admin
+→ capacités admin globales normales de la session
+```
+
+La sélection de `ACTIVE_ROLE=admin` ne définit pas le contrat territorial et
+ne doit pas servir à le contourner.
 
 Le rôle `elu` ne doit pas, par défaut, donner :
 
