@@ -44,6 +44,9 @@ type ParticipantRow = {
   joined_at?: string;
   participation_status?: "pending" | "confirmed" | "cancelled";
   participation_source?: "group_form" | "admin" | "admin_override" | "import";
+  registered_at?: string;
+  registration_status?: "pending" | "confirmed" | "cancelled";
+  registration_source?: "group_form" | "admin" | "admin_override" | "import";
 };
 
 type ManyResult<T> = { data: T[]; error: null };
@@ -202,7 +205,10 @@ function createActionsChain(actions: ActionRow[]): ActionsChain {
   return chain;
 }
 
-function createParticipantsChain(participants: ParticipantRow[]): ParticipantsChain {
+function createParticipantsChain(
+  participants: ParticipantRow[],
+  table: "participants" | "registrations" = "participants",
+): ParticipantsChain {
   const state: {
     filters: Record<string, string>;
     inFilters: Record<string, string[]>;
@@ -217,13 +223,19 @@ function createParticipantsChain(participants: ParticipantRow[]): ParticipantsCh
     limitValue: null,
   };
 
-  const getParticipationStatus = (row: ParticipantRow) => row.participation_status ?? "confirmed";
+  const getParticipationStatus = (row: ParticipantRow) =>
+    table === "registrations"
+      ? row.registration_status ?? row.participation_status ?? "confirmed"
+      : row.participation_status ?? "confirmed";
   const getJoinedAt = (row: ParticipantRow) => row.joined_at ?? row.created_at;
   const normalizeRow = (row: ParticipantRow): ParticipantRow => ({
     ...row,
     joined_at: row.joined_at ?? row.created_at,
     participation_status: row.participation_status ?? "confirmed",
     participation_source: row.participation_source ?? "group_form",
+    registered_at: row.registered_at ?? row.joined_at ?? row.created_at,
+    registration_status: row.registration_status ?? row.participation_status ?? "confirmed",
+    registration_source: row.registration_source ?? row.participation_source ?? "group_form",
   });
 
   const buildFiltered = () =>
@@ -235,10 +247,9 @@ function createParticipantsChain(participants: ParticipantRow[]): ParticipantsCh
       if (state.filters["user_id"] && normalized["user_id"] !== state.filters["user_id"]) {
         return false;
       }
-      if (
-        state.filters["participation_status"] &&
-        getParticipationStatus(normalized) !== state.filters["participation_status"]
-      ) {
+      if (state.filters[table === "registrations" ? "registration_status" : "participation_status"] &&
+        getParticipationStatus(normalized) !==
+          state.filters[table === "registrations" ? "registration_status" : "participation_status"]) {
         return false;
       }
       const allowedActionIds = state.inFilters["action_id"];
@@ -301,6 +312,21 @@ function createParticipantsChain(participants: ParticipantRow[]): ParticipantsCh
                 ? state.pendingUpdate["joined_at"]
                 : getJoinedAt(original),
           });
+          if ("registration_status" in state.pendingUpdate) {
+            original.participation_status = state.pendingUpdate["registration_status"] as ParticipantRow["participation_status"];
+          }
+          if ("registration_source" in state.pendingUpdate) {
+            original.participation_source = state.pendingUpdate["registration_source"] as ParticipantRow["participation_source"];
+          }
+          if ("registered_at" in state.pendingUpdate) {
+            original.joined_at = state.pendingUpdate["registered_at"] as string;
+          }
+          if ("participation_status" in state.pendingUpdate) {
+            original.registration_status = state.pendingUpdate["participation_status"] as ParticipantRow["registration_status"];
+          }
+          if ("participation_source" in state.pendingUpdate) {
+            original.registration_source = state.pendingUpdate["participation_source"] as ParticipantRow["registration_source"];
+          }
         }
         state.pendingUpdate = undefined;
         return {
@@ -326,14 +352,22 @@ function createParticipantsChain(participants: ParticipantRow[]): ParticipantsCh
         joined_at?: string;
         participation_status?: "pending" | "confirmed" | "cancelled";
         participation_source?: "group_form" | "admin" | "admin_override" | "import";
+        registered_at?: string;
+        registration_status?: "pending" | "confirmed" | "cancelled";
+        registration_source?: "group_form" | "admin" | "admin_override" | "import";
       }) => {
-        const joinedAt = values.joined_at ?? "2026-06-04T12:00:00Z";
+        const joinedAt = values.joined_at ?? values.registered_at ?? "2026-06-04T12:00:00Z";
+        const status = values.participation_status ?? values.registration_status ?? "confirmed";
+        const source = values.participation_source ?? values.registration_source ?? "group_form";
         state.inserting = {
           id: `participant-${participants.length + 1}`,
           created_at: joinedAt,
           joined_at: joinedAt,
-          participation_status: values.participation_status ?? "confirmed",
-          participation_source: values.participation_source ?? "group_form",
+          participation_status: status,
+          participation_source: source,
+          registered_at: joinedAt,
+          registration_status: status,
+          registration_source: source,
           action_id: values["action_id"],
           user_id: values["user_id"],
         };
@@ -375,7 +409,10 @@ function createSupabaseMock(params: {
         return createActionsChain(params.actions);
       }
       if (table === "action_participants") {
-        return createParticipantsChain(params.participants);
+        return createParticipantsChain(params.participants, "participants");
+      }
+      if (table === "action_registrations") {
+        return createParticipantsChain(params.participants, "registrations");
       }
       if (table === "progression_events") {
         return {

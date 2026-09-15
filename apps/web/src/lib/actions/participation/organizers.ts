@@ -4,9 +4,11 @@ import { runSingleActionQuery } from "@/lib/actions/query";
 import { env } from "@/lib/env";
 import {
   ACTIVE_PARTICIPATION_STATUS,
-  loadActionParticipantIdsForAction,
-  loadManualParticipantIdsForAction,
 } from "./group-participation.helpers";
+import {
+  loadActionRegistrationIdsForAction,
+  loadManualRegistrationIdsForAction,
+} from "./registration-records";
 
 type ProfileLookupRow = {
   id: string;
@@ -381,11 +383,11 @@ export async function syncActionManualParticipants(params: {
   participants: ResolvedActionParticipant[];
   unresolvedTokens: string[];
 }> {
-  const currentParticipantIds = await loadActionParticipantIdsForAction(
+  const currentRegistrationIds = await loadActionRegistrationIdsForAction(
     params.supabase,
     params.actionId,
   );
-  const currentManualParticipantIds = await loadManualParticipantIdsForAction(
+  const currentManualRegistrationIds = await loadManualRegistrationIdsForAction(
     params.supabase,
     params.actionId,
   );
@@ -395,22 +397,22 @@ export async function syncActionManualParticipants(params: {
     creator: params.creator,
     participantAccounts: params.participantAccounts,
     organizerIds: params.organizerIds,
-    existingParticipantIds: currentParticipantIds,
+    existingParticipantIds: currentRegistrationIds,
   });
 
   const targetParticipantIds = new Set(
     resolution.participants.map((participant) => participant.userId),
   );
-  const idsToRemove = currentManualParticipantIds.filter(
+  const idsToRemove = currentManualRegistrationIds.filter(
     (participantId) => !targetParticipantIds.has(participantId),
   );
 
   if (idsToRemove.length > 0) {
     const deleteResult = await params.supabase
-      .from("action_participants")
+      .from("action_registrations")
       .delete()
       .eq("action_id", params.actionId)
-      .eq("participation_source", "manual_add")
+      .eq("registration_source", "manual_add")
       .in("user_id", idsToRemove);
 
     if (deleteResult.error) {
@@ -419,20 +421,20 @@ export async function syncActionManualParticipants(params: {
   }
 
   const idsToInsert = resolution.participants.filter(
-    (participant) => !currentParticipantIds.includes(participant.userId),
+    (participant) => !currentRegistrationIds.includes(participant.userId),
   );
 
   if (idsToInsert.length > 0) {
     const joinedAt = new Date().toISOString();
     const insertResult = await params.supabase
-      .from("action_participants")
+      .from("action_registrations")
       .insert(
         idsToInsert.map((participant) => ({
           action_id: params.actionId,
           user_id: participant.userId,
-          joined_at: joinedAt,
-          participation_status: ACTIVE_PARTICIPATION_STATUS,
-          participation_source: "manual_add" as const,
+          registered_at: joinedAt,
+          registration_status: ACTIVE_PARTICIPATION_STATUS,
+          registration_source: "manual_add" as const,
         })),
       );
 

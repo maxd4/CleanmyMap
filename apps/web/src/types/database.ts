@@ -44,7 +44,25 @@ export type ActionParticipantRow = {
     | "admin"
     | "admin_override"
     | "import"
+    | "action_creator"
+    | "action_organizer"
     | "post_action_claim";
+};
+
+export type ActionRegistrationRow = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  action_id: string;
+  user_id: string;
+  registered_at: string;
+  registration_status: "pending" | "confirmed" | "cancelled";
+  registration_source:
+    | "group_form"
+    | "manual_add"
+    | "admin"
+    | "admin_override"
+    | "import";
 };
 
 export type ActionConversationRow = {

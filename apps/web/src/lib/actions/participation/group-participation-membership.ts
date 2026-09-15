@@ -7,18 +7,20 @@ import {
   ACTION_PARTICIPATION_COLUMNS,
   ACTIVE_PARTICIPATION_STATUS,
   ADMIN_PARTICIPATION_SOURCE,
-  countParticipantsForAction,
   GROUP_PARTICIPATION_SOURCE,
-  insertParticipantRecord,
   PENDING_PARTICIPATION_STATUS,
-  readParticipantRecord,
-  resolveJoinedAt,
-  resolveParticipationUpdatedAt,
-  updateParticipantRecord,
-  type ActionParticipantStatusRow,
   type ParticipationSource,
   type ParticipationStatus,
 } from "./group-participation.helpers";
+import {
+  countActiveRegistrationsForAction,
+  insertActionRegistrationRecord,
+  readActionRegistrationRecord,
+  resolveRegisteredAt,
+  resolveRegistrationUpdatedAt,
+  updateActionRegistrationRecord,
+  type ActionRegistrationStatusRow,
+} from "./registration-records";
 
 export async function cancelActionParticipation(
   supabase: SupabaseClient,
@@ -34,7 +36,7 @@ export async function cancelActionParticipation(
   participationUpdatedAt: string | null;
   participantsCount: number;
 }> {
-  const existing = await readParticipantRecord(supabase, params);
+  const existing = await readActionRegistrationRecord(supabase, params);
 
   if (!existing) {
     const notFoundError = new Error("Participation request not found.");
@@ -42,37 +44,37 @@ export async function cancelActionParticipation(
     throw notFoundError;
   }
 
-  const currentParticipantsCount = await countParticipantsForAction(supabase, params.actionId);
+  const currentParticipantsCount = await countActiveRegistrationsForAction(supabase, params.actionId);
 
-  if (existing.participation_status === "cancelled") {
+  if (existing.registration_status === "cancelled") {
     return {
       alreadyCancelled: true,
-      joinedAt: resolveJoinedAt(existing),
-      participationStatus: existing.participation_status,
-      participationSource: existing.participation_source,
-      participationUpdatedAt: resolveParticipationUpdatedAt(existing),
+      joinedAt: resolveRegisteredAt(existing),
+      participationStatus: existing.registration_status,
+      participationSource: existing.registration_source,
+      participationUpdatedAt: resolveRegistrationUpdatedAt(existing),
       participantsCount: currentParticipantsCount,
     };
   }
 
-  const updatedRecord = await updateParticipantRecord(supabase, {
+  const updatedRecord = await updateActionRegistrationRecord(supabase, {
     actionId: params.actionId,
     userId: params.userId,
-    joinedAt: resolveJoinedAt(existing),
-    participationStatus: "cancelled",
-    participationSource: existing.participation_source,
+    registeredAt: resolveRegisteredAt(existing),
+    registrationStatus: "cancelled",
+    registrationSource: existing.registration_source,
   });
 
   return {
     alreadyCancelled: false,
-    joinedAt: resolveJoinedAt(updatedRecord),
-    participationStatus: updatedRecord.participation_status,
-    participationSource: updatedRecord.participation_source,
-    participationUpdatedAt: resolveParticipationUpdatedAt(updatedRecord),
+    joinedAt: resolveRegisteredAt(updatedRecord),
+    participationStatus: updatedRecord.registration_status,
+    participationSource: updatedRecord.registration_source,
+    participationUpdatedAt: resolveRegistrationUpdatedAt(updatedRecord),
     participantsCount: Math.max(
       0,
       currentParticipantsCount -
-        (existing.participation_status === ACTIVE_PARTICIPATION_STATUS ? 1 : 0),
+    (existing.registration_status === ACTIVE_PARTICIPATION_STATUS ? 1 : 0),
     ),
   };
 }
@@ -123,115 +125,115 @@ export async function joinActionParticipation(
   const desiredSource = params.isAdminLike
     ? ADMIN_PARTICIPATION_SOURCE
     : GROUP_PARTICIPATION_SOURCE;
-  const existingResult = await readParticipantRecord(supabase, params);
+  const existingResult = await readActionRegistrationRecord(supabase, params);
   if (existingResult) {
     if (
-      existingResult.participation_status === ACTIVE_PARTICIPATION_STATUS &&
+      existingResult.registration_status === ACTIVE_PARTICIPATION_STATUS &&
       desiredStatus === PENDING_PARTICIPATION_STATUS
     ) {
-      const participantsCount = await countParticipantsForAction(supabase, params.actionId);
+      const participantsCount = await countActiveRegistrationsForAction(supabase, params.actionId);
       return {
         alreadyJoined: true,
-        joinedAt: resolveJoinedAt(existingResult),
-        participationStatus: existingResult.participation_status,
-        participationSource: existingResult.participation_source,
-        participationUpdatedAt: resolveParticipationUpdatedAt(existingResult),
+        joinedAt: resolveRegisteredAt(existingResult),
+        participationStatus: existingResult.registration_status,
+        participationSource: existingResult.registration_source,
+        participationUpdatedAt: resolveRegistrationUpdatedAt(existingResult),
         participantsCount,
       };
     }
 
-    if (existingResult.participation_status === desiredStatus) {
-      const participantsCount = await countParticipantsForAction(supabase, params.actionId);
+    if (existingResult.registration_status === desiredStatus) {
+      const participantsCount = await countActiveRegistrationsForAction(supabase, params.actionId);
       return {
         alreadyJoined: desiredStatus === ACTIVE_PARTICIPATION_STATUS,
-        joinedAt: resolveJoinedAt(existingResult),
-        participationStatus: existingResult.participation_status,
-        participationSource: existingResult.participation_source,
-        participationUpdatedAt: resolveParticipationUpdatedAt(existingResult),
+        joinedAt: resolveRegisteredAt(existingResult),
+        participationStatus: existingResult.registration_status,
+        participationSource: existingResult.registration_source,
+        participationUpdatedAt: resolveRegistrationUpdatedAt(existingResult),
         participantsCount,
       };
     }
 
     const joinedAt = new Date().toISOString();
-    const updatedRecord = await updateParticipantRecord(supabase, {
+    const updatedRecord = await updateActionRegistrationRecord(supabase, {
       actionId: params.actionId,
       userId: params.userId,
-      joinedAt,
-      participationStatus: desiredStatus,
-      participationSource: desiredSource,
+      registeredAt: joinedAt,
+      registrationStatus: desiredStatus,
+      registrationSource: desiredSource,
     });
-    const participantsCount = await countParticipantsForAction(supabase, params.actionId);
+    const participantsCount = await countActiveRegistrationsForAction(supabase, params.actionId);
 
     return {
-      alreadyJoined: desiredStatus === ACTIVE_PARTICIPATION_STATUS && existingResult.participation_status === ACTIVE_PARTICIPATION_STATUS,
-      joinedAt: resolveJoinedAt(updatedRecord),
-      participationStatus: updatedRecord.participation_status,
-      participationSource: updatedRecord.participation_source,
-      participationUpdatedAt: resolveParticipationUpdatedAt(updatedRecord),
+      alreadyJoined: desiredStatus === ACTIVE_PARTICIPATION_STATUS && existingResult.registration_status === ACTIVE_PARTICIPATION_STATUS,
+      joinedAt: resolveRegisteredAt(updatedRecord),
+      participationStatus: updatedRecord.registration_status,
+      participationSource: updatedRecord.registration_source,
+      participationUpdatedAt: resolveRegistrationUpdatedAt(updatedRecord),
       participantsCount,
     };
   }
 
   const joinedAt = new Date().toISOString();
-  let insertedRecord: ActionParticipantStatusRow;
+  let insertedRecord: ActionRegistrationStatusRow;
   try {
-    insertedRecord = await insertParticipantRecord(supabase, {
+    insertedRecord = await insertActionRegistrationRecord(supabase, {
       actionId: params.actionId,
       userId: params.userId,
-      joinedAt,
-      participationStatus: desiredStatus,
-      participationSource: desiredSource,
+      registeredAt: joinedAt,
+      registrationStatus: desiredStatus,
+      registrationSource: desiredSource,
     });
   } catch (error) {
     if (error instanceof Error && "code" in error && (error as { code?: string }).code === "23505") {
-      const duplicateRecord = await readParticipantRecord(supabase, params);
+      const duplicateRecord = await readActionRegistrationRecord(supabase, params);
       if (!duplicateRecord) {
         throw error;
       }
 
-      if (duplicateRecord.participation_status === desiredStatus) {
-        const participantsCount = await countParticipantsForAction(supabase, params.actionId);
+      if (duplicateRecord.registration_status === desiredStatus) {
+        const participantsCount = await countActiveRegistrationsForAction(supabase, params.actionId);
         return {
           alreadyJoined: desiredStatus === ACTIVE_PARTICIPATION_STATUS,
-          joinedAt: resolveJoinedAt(duplicateRecord),
-          participationStatus: duplicateRecord.participation_status,
-          participationSource: duplicateRecord.participation_source,
-          participationUpdatedAt: resolveParticipationUpdatedAt(duplicateRecord),
+          joinedAt: resolveRegisteredAt(duplicateRecord),
+          participationStatus: duplicateRecord.registration_status,
+          participationSource: duplicateRecord.registration_source,
+          participationUpdatedAt: resolveRegistrationUpdatedAt(duplicateRecord),
           participantsCount,
         };
       }
 
-      const reactivatedRecord = await updateParticipantRecord(supabase, {
+      const reactivatedRecord = await updateActionRegistrationRecord(supabase, {
         actionId: params.actionId,
         userId: params.userId,
-        joinedAt,
-        participationStatus: desiredStatus,
-        participationSource: desiredSource,
+        registeredAt: joinedAt,
+        registrationStatus: desiredStatus,
+        registrationSource: desiredSource,
       });
-      const participantsCount = await countParticipantsForAction(supabase, params.actionId);
+      const participantsCount = await countActiveRegistrationsForAction(supabase, params.actionId);
 
       return {
         alreadyJoined:
           desiredStatus === ACTIVE_PARTICIPATION_STATUS &&
-          duplicateRecord.participation_status === ACTIVE_PARTICIPATION_STATUS,
-        joinedAt: resolveJoinedAt(reactivatedRecord),
-        participationStatus: reactivatedRecord.participation_status,
-        participationSource: reactivatedRecord.participation_source,
-        participationUpdatedAt: resolveParticipationUpdatedAt(reactivatedRecord),
+          duplicateRecord.registration_status === ACTIVE_PARTICIPATION_STATUS,
+        joinedAt: resolveRegisteredAt(reactivatedRecord),
+        participationStatus: reactivatedRecord.registration_status,
+        participationSource: reactivatedRecord.registration_source,
+        participationUpdatedAt: resolveRegistrationUpdatedAt(reactivatedRecord),
         participantsCount,
       };
     }
 
     throw error;
   }
-  const participantsCount = await countParticipantsForAction(supabase, params.actionId);
+  const participantsCount = await countActiveRegistrationsForAction(supabase, params.actionId);
 
   return {
     alreadyJoined: false,
-    joinedAt: resolveJoinedAt(insertedRecord),
-    participationStatus: insertedRecord.participation_status,
-    participationSource: insertedRecord.participation_source,
-    participationUpdatedAt: resolveParticipationUpdatedAt(insertedRecord),
+    joinedAt: resolveRegisteredAt(insertedRecord),
+    participationStatus: insertedRecord.registration_status,
+    participationSource: insertedRecord.registration_source,
+    participationUpdatedAt: resolveRegistrationUpdatedAt(insertedRecord),
     participantsCount,
   };
 }

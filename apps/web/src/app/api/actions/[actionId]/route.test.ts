@@ -4,7 +4,7 @@ const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const recordRepollutionPredictionEvaluationForActionMock = vi.hoisted(() => vi.fn());
-const loadManualParticipantIdsForActionMock = vi.hoisted(() => vi.fn());
+const loadManualRegistrationIdsForActionMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const syncActionManualParticipantsMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
@@ -40,8 +40,8 @@ vi.mock("@/lib/actions/store-post-processing", () => ({
     recordRepollutionPredictionEvaluationForActionMock,
 }));
 
-vi.mock("@/lib/actions/participation/group-participation.helpers", () => ({
-  loadManualParticipantIdsForAction: loadManualParticipantIdsForActionMock,
+vi.mock("@/lib/actions/participation/registration-records", () => ({
+  loadManualRegistrationIdsForAction: loadManualRegistrationIdsForActionMock,
 }));
 
 vi.mock("@/lib/actions/participation/organizers", () => ({
@@ -147,7 +147,7 @@ describe("PATCH /api/actions/:actionId", () => {
       created_by_clerk_id: "user-test-1",
       notes: null,
     });
-    loadManualParticipantIdsForActionMock.mockResolvedValue(["user-manual-1"]);
+    loadManualRegistrationIdsForActionMock.mockResolvedValue(["user-manual-1"]);
     loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
     syncActionManualParticipantsMock.mockResolvedValue({
       participants: [],
@@ -176,7 +176,7 @@ describe("PATCH /api/actions/:actionId", () => {
 
     expect(response.status).toBe(200);
     expect(body.action?.participantAccounts).toEqual(["user-manual-1"]);
-    expect(loadManualParticipantIdsForActionMock).toHaveBeenCalledWith(
+    expect(loadManualRegistrationIdsForActionMock).toHaveBeenCalledWith(
       expect.anything(),
       "action-test-1",
     );

@@ -138,6 +138,10 @@ function createSupabaseMock(params: {
         return actionChain;
       }
 
+      if (table === "action_registrations") {
+        return params.historyErrorMessage ? historyChain : failingParticipantsChain;
+      }
+
       if (table === "action_participants") {
         return params.historyErrorMessage ? historyChain : failingParticipantsChain;
       }

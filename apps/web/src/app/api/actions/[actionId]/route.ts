@@ -17,7 +17,7 @@ import {
   isModerationReasonRequired,
   normalizeModerationReason,
 } from "@/lib/actions/moderation-audit";
-import { loadManualParticipantIdsForAction } from "@/lib/actions/participation/group-participation.helpers";
+import { loadManualRegistrationIdsForAction } from "@/lib/actions/participation/registration-records";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { updateActionSchema } from "@/lib/validation/action";
 import { buildActionEditorPayload } from "@/lib/actions/action-editor-payload";
@@ -90,7 +90,7 @@ export async function GET(
       );
     }
 
-    const participantAccounts = await loadManualParticipantIdsForAction(
+    const participantAccounts = await loadManualRegistrationIdsForAction(
       supabase,
       trimmedActionId,
     ).catch(() => []);

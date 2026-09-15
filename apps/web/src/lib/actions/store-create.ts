@@ -9,9 +9,9 @@ import type {
   ResolvedActionParticipant,
 } from "@/lib/actions/participation/organizers";
 import {
-  buildInitialActionParticipantRows,
+  buildInitialActionRegistrationRows,
   insertActionOrganizers,
-  insertActionParticipants,
+  insertActionRegistrations,
 } from "./store-participants";
 import {
   buildPersistedGeometry,
@@ -229,10 +229,10 @@ export async function createAction(
   });
 
   await insertActionOrganizers(supabase, actionId, params.organizers);
-  await insertActionParticipants(
+  await insertActionRegistrations(
     supabase,
     actionId,
-    buildInitialActionParticipantRows({
+    buildInitialActionRegistrationRows({
       actionId,
       creatorUserId: params.userId,
       organizers: params.organizers,

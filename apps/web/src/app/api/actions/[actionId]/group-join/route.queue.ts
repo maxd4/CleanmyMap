@@ -98,6 +98,7 @@ export async function handleGroupJoinQueue(
           actionId: trimmedActionId,
           limit: 50,
           statuses: ["pending"],
+          actionPhase: actionResult.action_phase,
         })
       : [];
     const confirmedParticipants = access.ok
@@ -105,6 +106,7 @@ export async function handleGroupJoinQueue(
           actionId: trimmedActionId,
           limit: 50,
           statuses: ["confirmed"],
+          actionPhase: actionResult.action_phase,
         })
       : [];
 
