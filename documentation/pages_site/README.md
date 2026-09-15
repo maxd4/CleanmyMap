@@ -16,7 +16,7 @@ Les rôles principaux sont :
 | `plan-correction-ui-contenu.md` | `PLAN` — travail UI/contenu résiduel |
 | `AUDIT_BLOCS_RUBRIQUES.md` | `AUDIT` |
 | `AUDIT_PAGES_SITE_CODE.md` | `AUDIT` |
-| `generate-canonical-pages.mjs` | outil de contrôle / génération documentaire |
+| `generate-canonical-pages.mjs` | outil d'audit non destructif |
 | `routes/` | `CURRENT` — documentation fonctionnelle canonique page par page |
 
 Les audits et plans peuvent rester à la racine tant que leur statut est
@@ -115,9 +115,25 @@ une nouvelle source fonctionnelle.
 Cette règle décrit le modèle documentaire ; elle n'autorise pas une mutation
 automatique de structure ou d'assets du sous-arbre `routes/`.
 
-## Noyau documentaire historique des routes
+## Statuts des artefacts route-first
 
-Le modèle utilisé dans l'espace route-first repose principalement sur :
+Le statut d'un artefact est déterminé par son rôle et son nom canonique :
+
+| Artefact | Statut | Règle |
+|---|---|---|
+| `*-README.md` | `CURRENT` | source fonctionnelle canonique de la page |
+| `*-presentation-detaillee.md` | `CURRENT` pour l'implémenté | toute partie prospective doit être explicitement marquée `PLAN` |
+| `*-liste-propositions-a-traiter.md` | `PLAN` | propositions retenues mais non exécutées |
+| `*-objectifs-non-pertinents.md` | `HISTORY` | décisions et objectifs écartés |
+| captures et screenshots | `SNAPSHOT` | photographie figée, jamais source de vérité |
+
+Une présentation détaillée peut donc contenir des parties `CURRENT` et `PLAN`,
+mais une fonctionnalité non implémentée ne doit jamais être présentée comme
+`CURRENT` simplement parce qu'elle figure dans ce fichier. Un `SNAPSHOT` ne
+prouve pas la conformité fonctionnelle et reste inférieur au runtime et aux
+fiches `CURRENT`.
+
+Le noyau documentaire d'une page repose principalement sur :
 
 ```text
 nom-de-page-README.md
@@ -163,7 +179,21 @@ présents sous `routes/`.
 
 ## Captures
 
-Les règles actuelles privilégient :
+Les captures et screenshots ont le statut `SNAPSHOT`. Elles ne constituent
+jamais une source supérieure au runtime ou à une fiche `CURRENT`.
+
+Pour toute future capture, documenter lorsque l'information est disponible :
+
+- route ou page ;
+- viewport `desktop` ou `mobile` ;
+- date ;
+- SHA ou version de l'application, si disponible.
+
+Une évolution fonctionnelle ne déclenche pas automatiquement une nouvelle
+capture. Les captures existantes sont conservées ; ce lot n'en déplace,
+renomme, remplace ou régénère aucune.
+
+Les règles opérationnelles actuelles privilégient :
 
 - WebP ;
 - centralisation par bloc ou famille lorsque le travail concerné le prévoit ;
@@ -173,6 +203,24 @@ Les règles actuelles privilégient :
 
 Les captures déjà présentes sous `routes/` restent protégées : aucun nettoyage,
 remplacement, régénération ou déplacement automatique.
+
+## Générateur et contrôle de drift
+
+`generate-canonical-pages.mjs` est non destructif. Il ne doit jamais écraser
+automatiquement les fiches enrichies, les parties `PLAN` ou les snapshots ; ses
+flags d'écriture sont refusés. Il sert à produire un rapport d'audit, pas à
+réécrire `INDEX.md`, les fiches ou les captures.
+
+`check-pages-site-route-drift.mjs` est un contrôle structurel. Son résultat
+signifie :
+
+```text
+PASS = cohérence route ↔ INDEX ↔ fiche
+```
+
+Il ne signifie pas que le contenu d'une fiche est sémantiquement conforme au
+runtime. Le drift sémantique doit être corrigé lors du changement fonctionnel
+concerné ou d'un audit dédié.
 
 ## Vérification UI
 

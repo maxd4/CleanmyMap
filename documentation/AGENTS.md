@@ -138,6 +138,10 @@ Une fiche décrit les conséquences fonctionnelles des contrats responsables et
 les référence ; elle ne duplique pas le SQL/RLS, l'architecture transverse ou
 la politique AuthZ globale.
 
+Les statuts détaillés des artefacts route-first sont définis dans
+`documentation/pages_site/README.md`. Les captures restent des snapshots et ne
+peuvent jamais supplanter le runtime ou une fiche `CURRENT`.
+
 La structure et les assets restent protégés. Sans instruction explicite pour
 ce périmètre, il est interdit dans `pages_site/routes/` de :
 

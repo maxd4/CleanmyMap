@@ -115,6 +115,11 @@ Les fiches décrivent les conséquences fonctionnelles des contrats transversaux
 et référencent leur source responsable ; elles ne dupliquent pas le SQL/RLS,
 l'architecture transverse ou la politique AuthZ globale.
 
+Le mapping normatif des statuts des fiches route-first est tenu dans
+`documentation/pages_site/README.md`. Une capture ou un screenshot est un
+`SNAPSHOT` : il ne constitue jamais une source supérieure au runtime ou à une
+fiche `CURRENT`.
+
 La structure et les assets restent protégés. Sans instruction explicite pour
 ce périmètre, aucune fiche de `routes/` ne peut être renommée, déplacée,
 supprimée, fusionnée, réorganisée, normalisée massivement, nettoyée
