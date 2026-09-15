@@ -61,6 +61,21 @@ describe("desktop ribbon control geometry", () => {
     expect(ribbonAccountSource).toContain("xl:h-8 xl:w-8");
   });
 
+  it("makes the right control zone shrinkable while compacting labels below xl", () => {
+    const shellSource = readSource("app-navigation-ribbon-shell.tsx");
+    const menusSource = readSource("app-navigation-ribbon-menus.tsx");
+    const accountSource = readSource("app-navigation-ribbon-account.tsx");
+    const identitySource = readSource("../account/account-identity-chip.tsx");
+
+    expect(shellSource).toContain(
+      'className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2 lg:gap-2.5 xl:col-start-3 xl:ml-0 xl:justify-end"',
+    );
+    expect(menusSource).toContain("xl:w-auto xl:px-3 xl:h-10");
+    expect(menusSource).not.toContain("lg:w-auto lg:px-3");
+    expect(accountSource).toContain("hidden min-w-0 flex-1 leading-tight xl:block");
+    expect(identitySource).toContain("xl:w-auto xl:min-w-0 xl:px-3 xl:h-10");
+  });
+
   it("keeps the shared icon scale contract explicit", () => {
     const source = fs.readFileSync(
       path.resolve(navigationDirectory, "../ui/cmm-icon.tsx"),

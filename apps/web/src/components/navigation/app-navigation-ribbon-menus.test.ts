@@ -41,20 +41,20 @@ describe("top ribbon dropdown sizing contract", () => {
     expect(source).not.toContain("group-hover:translate-x-0.5");
   });
 
-  it("keeps ribbon triggers icon-only below the desktop control breakpoint", () => {
+  it("keeps ribbon triggers icon-only below the shared desktop breakpoint", () => {
     const menusSource = readSource("app-navigation-ribbon-menus.tsx");
     const treeSource = readSource("app-navigation-tree-menu.tsx");
     const accountSource = readSource("app-navigation-ribbon-account.tsx");
     const identitySource = readSource("../account/account-identity-chip.tsx");
 
-    expect(menusSource).toContain("hidden text-sm font-semibold lg:inline");
-    expect(menusSource).not.toContain("hidden text-sm font-semibold sm:inline");
+    expect(menusSource).toContain("hidden font-semibold xl:inline");
+    expect(menusSource).not.toContain("hidden font-semibold lg:inline");
     expect(treeSource).toContain("hidden cmm-text-caption font-bold uppercase tracking-[0.16em] lg:inline");
     expect(treeSource).not.toContain("tracking-[0.16em] sm:inline");
-    expect(accountSource).toContain("<LogIn className=\"h-4 w-4 lg:hidden\"");
-    expect(accountSource).toContain("<UserPlus className=\"h-4 w-4 lg:hidden\"");
+    expect(accountSource).toContain("<LogIn className=\"h-4 w-4 xl:hidden\"");
+    expect(accountSource).toContain("<UserPlus className=\"h-4 w-4 xl:hidden\"");
     expect(accountSource).not.toContain("active:scale-");
     expect(identitySource).toContain("h-11 min-h-11 w-11 min-w-11");
-    expect(identitySource).toContain("hidden truncate text-sm font-bold lg:inline");
+    expect(identitySource).toContain("hidden truncate font-bold xl:inline");
   });
 });
