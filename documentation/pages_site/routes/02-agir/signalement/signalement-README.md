@@ -9,14 +9,14 @@
 - **Famille / bloc fonctionnel** : Agir (bloc)
 - **Accès runtime** : `clerk-context` ; l'entrée, le choix du type d'observation et la préparation du formulaire sont accessibles au visiteur sans compte. La page affiche sa surface sans hard gate ; un compte est demandé pour transmettre l'observation, gérer ses preuves et consulter la boucle propriétaire.
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; les contrôles d'identité propres à la transmission, aux preuves et aux observations restent appliqués au moment de l'opération.
-- **Objectif utilisateur principal** : Permettre l'action terrain, la déclaration et le suivi propriétaire des observations récentes.
-- **Action principale attendue** : Lancer une action, signaler ou compléter un formulaire.
+- **Objectif utilisateur principal** : Préparer et transmettre une observation de terrain, puis suivre les observations récentes créées par le compte.
+- **Action principale attendue** : Choisir `spot` ou `clean_place`, renseigner les catégories et la position, joindre éventuellement des photos, transmettre l'observation puis consulter son statut et ses preuves.
 - **Boucle propriétaire** : La section `#mes-observations`, sous le formulaire, lit exclusivement les lignes `trash_spotter_spots` créées par le compte Clerk courant via `GET /api/signalements/me`. Elle affiche uniquement les types `spot` et `clean_place`, avec les statuts `new`, `validated` et `cleaned`, dans l'ordre du plus récent au plus ancien.
 - **Preuves photo** : Aucun média n'est chargé avec la liste. Chaque observation conserve le contrôle explicite `Voir les preuves photo` de `SignalementMediaProofs`; l'auteur peut consulter ses preuves même lorsque le signalement est `new`.
 - **Après création** : La création réussie rafraîchit cette liste sans recharger la page ni la carte globale et expose un CTA vers `#mes-observations`. Le retry photo et le partial success restent inchangés.
 - **Palette attendue** : emerald
-- **Scope** : à corriger
-- **Terminée** : non
+- **Scope** : formulaire Trash Spotter et boucle propriétaire des observations `spot`/`clean_place`, avec transmission authentifiée, statuts `new`/`validated`/`cleaned`, preuves photo à la demande et rafraîchissement après création.
+- **Terminée** : oui pour le périmètre actuellement livré ; les labels d'habillage non étayés par un contrat métier restent une dérive de contenu runtime à traiter séparément.
 - **Couleurs actuellement détectées** : emerald — canvas #e8f8ef, halo rgba(34, 197, 94, 0.22)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : moyen : le vert doit rester distinct des panneaux de support et des surfaces techniques.
