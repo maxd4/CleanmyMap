@@ -51,6 +51,8 @@ modifier `role`. En particulier :
 
 - `role=max` reste `max` lorsqu'une persona `benevole` est choisie ;
 - `role=admin` reste `admin` lorsqu'une persona `scientifique` est choisie ;
+- `role=elu` peut choisir `activeProfile=admin` comme exception produit ;
+- `role=admin` ne peut pas choisir `activeProfile=elu` ;
 - `admin → activeProfile=max` est refusé ;
 - `/api/account/profile-role` est une route retirée (`410`) et ne doit plus être
   utilisée par l'interface.

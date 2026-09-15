@@ -110,6 +110,22 @@ incompatible utilise `activeRole = role`, puis `activeProfile = activeRole`.
 Ce fallback protège à la fois les anciens comptes et les métadonnées
 partiellement migrées.
 
+La matrice de sélection est asymétrique et ne constitue pas une hiérarchie de
+droits :
+
+| GRANTED_ROLE | ACTIVE_ROLE sélectionnables |
+|---|---|
+| rôle ouvert | rôles ouverts |
+| `elu` | rôles ouverts + `elu` + `admin` |
+| `admin` | rôles ouverts + `admin` |
+| `max` | rôles ouverts + `elu` + `admin` + `max` |
+
+L'exception produit autorise donc `elu → admin`, mais interdit `admin → elu`.
+`elu` et `admin` restent des rôles distincts : tant que
+`ACTIVE_ROLE=elu`, le compte ne reçoit aucune capacité admin globale. Une
+bascule explicite vers `ACTIVE_ROLE=admin` active les capacités admin normales
+sans modifier `GRANTED_ROLE`.
+
 La mutation UX canonique est `POST /api/account/active-profile`. Elle doit
 valider la session, résoudre le `role` côté serveur, vérifier la cible avec
 `getSwitchableProfiles(role)`, écrire uniquement `activeRole` dans Clerk et
@@ -125,6 +141,8 @@ authentifiées reçoivent `410` et doivent migrer vers la route dédiée.
 Invariants de non-régression :
 
 - aucun `benevole → admin` ou `admin → max` automatique ;
+- `elu → admin` est autorisé comme exception de sélection active ; `admin → elu`
+  est refusé ;
 - aucun refresh ou onboarding ne rétrograde silencieusement `admin` ou `max` ;
 - `role=max` est conservé lorsque `activeRole=benevole` ;
 - `role=admin` est conservé lorsque `activeRole=scientifique` ;

@@ -137,8 +137,8 @@ ouvrent respectivement les ensembles suivants :
 | GRANTED_ROLE | ACTIVE_ROLE autorisés |
 |---|---|
 | standard / rôle ouvert | les quatre rôles ouverts |
-| `elu` | rôles ouverts + `elu` |
-| `admin` | rôles ouverts + `elu` + `admin` |
+| `elu` | rôles ouverts + `elu` + `admin` |
+| `admin` | rôles ouverts + `admin` |
 | `max` | rôles ouverts + `elu` + `admin` + `max` |
 
 Les capacités privilégiées sont calculées sur `ACTIVE_ROLE`. Ainsi un compte
@@ -146,6 +146,14 @@ Les capacités privilégiées sont calculées sur `ACTIVE_ROLE`. Ainsi un compte
 session, mais conserve `GRANTED_ROLE=admin` et peut réactiver `admin`. Le champ
 UX historique `activeProfile` est un alias de lecture/migration et ne donne
 aucun droit.
+
+Cette matrice est volontairement asymétrique : `GRANTED_ROLE=elu` peut
+sélectionner `ACTIVE_ROLE=admin`, tandis que `GRANTED_ROLE=admin` ne peut pas
+sélectionner `ACTIVE_ROLE=elu`. Il ne s'agit pas d'une relation d'héritage
+entre les rôles. Un compte `elu` en `ACTIVE_ROLE=elu` conserve uniquement ses
+capacités élu et n'obtient pas les capacités admin globales ; après une
+bascule explicite en `ACTIVE_ROLE=admin`, il reçoit les capacités admin
+normales sans modifier `GRANTED_ROLE`.
 
 Les rôles métier sont définis dans :
 

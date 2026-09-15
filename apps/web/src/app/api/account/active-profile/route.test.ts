@@ -102,7 +102,9 @@ describe("POST /api/account/active-profile", () => {
 
   it.each([
     ["elu", "scientifique"],
-    ["admin", "elu"],
+    ["elu", "elu"],
+    ["elu", "admin"],
+    ["admin", "admin"],
     ["max", "admin"],
   ] as const)("allows granted %s to activate %s without changing GRANTED_ROLE", async (role, activeRole) => {
     identityMock.mockResolvedValue({ role, activeRole: role });
@@ -114,6 +116,15 @@ describe("POST /api/account/active-profile", () => {
     const [, patch] = updateUser.mock.calls[0];
     expect(patch.publicMetadata).toMatchObject({ role, profile: role, activeRole });
     expect(patch).not.toHaveProperty("privateMetadata");
+  });
+
+  it("rejects admin -> ACTIVE_ROLE=elu", async () => {
+    identityMock.mockResolvedValue({ role: "admin", activeRole: "admin" });
+    const { updateUser } = setupClerk({ role: "admin" });
+    const response = await post({ activeRole: "elu" });
+    expect(response.status).toBe(403);
+    expect(updateUser).not.toHaveBeenCalled();
+    expect(syncMock).not.toHaveBeenCalled();
   });
 
   it("rejects admin -> ACTIVE_ROLE=max", async () => {

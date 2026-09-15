@@ -187,9 +187,9 @@ export function getSwitchableProfiles(grantedRole: Role): AppProfile[] {
     case "max":
       return [...PROFILE_ORDER];
     case "admin":
-      return [...OPEN_PROFILE_ORDER, "elu", "admin"];
+      return [...OPEN_PROFILE_ORDER, "admin"];
     case "elu":
-      return [...OPEN_PROFILE_ORDER, "elu"];
+      return [...OPEN_PROFILE_ORDER, "elu", "admin"];
     default:
       return [...OPEN_PROFILE_ORDER];
   }
