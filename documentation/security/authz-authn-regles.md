@@ -124,7 +124,9 @@ L'exception produit autorise donc `elu → admin`, mais interdit `admin → elu`
 `elu` et `admin` restent des rôles distincts : tant que
 `ACTIVE_ROLE=elu`, le compte ne reçoit aucune capacité admin globale. Une
 bascule explicite vers `ACTIVE_ROLE=admin` active les capacités admin normales
-sans modifier `GRANTED_ROLE`.
+sans modifier `GRANTED_ROLE`. Cette bascule est volontaire et explicite de la
+part de l'utilisateur ; elle ne constitue ni un héritage implicite ni une
+faille de privilège.
 
 La mutation UX canonique est `POST /api/account/active-profile`. Elle doit
 valider la session, résoudre le `role` côté serveur, vérifier la cible avec
@@ -434,14 +436,53 @@ La lecture propriétaire `GET /api/signalements/me` reste séparée : elle utili
 la session du compte courant et peut restituer ses propres observations `new`,
 sans les exposer à la carte publique.
 
-### Discussion d'action : publication, exclusion et participation
+### Partage d'action et discussion : capacités distinctes
 
-La discussion d'une action réutilise le prédicat public canonique : une action
-non masquée, publiée et approuvée est accessible aux comptes authentifiés,
-sauf exclusion active. Une pré-action `pending` n'est accessible que lorsque
-`isPublishedFuturePreAction` côté TypeScript et
-`is_public_future_pre_action` côté SQL la rendent réellement publiée, visible
-et future. Les états `rejected`, `hidden` et non publié restent refusés.
+Les deux décisions d'accès sont indépendantes :
+
+```txt
+ACTION_SHARE_ELIGIBILITY
+!=
+ACTION_DISCUSSION_AVAILABILITY
+```
+
+#### Partage d'action
+
+Une référence d'action est partageable uniquement selon le contrat porté par
+`isPublicActionReferenceAvailable` et son équivalent SQL
+`is_public_action_reference_available` :
+
+```txt
+pré-action future, publiée et visible
+→ invitation
+
+action post_action_complete, approuvée, publiée et visible
+→ result
+```
+
+Cette éligibilité ne donne aucun droit de lire ou d'écrire la discussion. Elle
+détermine uniquement si une référence publique peut être sélectionnée,
+transmise ou matérialisée dans un partage.
+
+#### Disponibilité de la discussion
+
+La discussion possède son propre contrat. Le comportement antérieur à la
+migration `20260915000009_action_share_requests.sql` reste la référence à
+préserver :
+
+- une pré-action publique future conforme à
+  `isPublishedFuturePreAction` côté TypeScript et
+  `is_public_future_pre_action` côté SQL ;
+- une action non-`pre_action`, approuvée, publiée et visible ;
+- la compatibilité historique `action_phase IS NULL`, considérée comme
+  non-`pre_action` ;
+- un utilisateur authentifié ;
+- l'absence d'exclusion explicite active.
+
+La migration de partage ne doit donc pas être interprétée comme faisant de
+l'éligibilité au partage une autorité d'accès à la discussion. Ce lot ne
+modifie ni le SQL ni le runtime : cette clarification documentaire ne crée ni
+ne retire une permission.
 
 `action_participants` n'est jamais une autorité d'accès à la discussion :
 `pending`, `confirmed`, `cancelled` et `refused` n'ont aucun effet sans
