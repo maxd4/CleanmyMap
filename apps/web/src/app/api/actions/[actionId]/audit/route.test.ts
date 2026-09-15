@@ -139,6 +139,39 @@ describe("GET /api/actions/:actionId/audit", () => {
     });
   });
 
+  it("returns the complete moderation audit journal for an active admin", async () => {
+    runSingleActionQueryMock.mockResolvedValue({
+      created_by_clerk_id: "user-2",
+    });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      role: "admin",
+      activeRole: "admin",
+    });
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/audit"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(loadActionOrganizerIdsForActionMock).not.toHaveBeenCalled();
+    expect(listAdminOperationAuditMock).toHaveBeenCalledWith(12, "action-1");
+    const body = (await response.json()) as { items?: unknown[] };
+    expect(body.items).toEqual([
+      {
+        operationId: "op-1",
+        at: "2026-06-21T10:00:00.000Z",
+        actorUserId: "admin-1",
+        actorLabel: "Maxence Deroome (@maxence_deroome)",
+        operationType: "moderation",
+        outcome: "success",
+        targetId: "action-1",
+        details: { operation: "edit_action", editedFields: ["locationLabel"] },
+      },
+    ]);
+  });
+
   it("rejects anonymous users before reading the audit journal", async () => {
     requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: false });
 

@@ -297,6 +297,54 @@ describe("PATCH /api/actions/:actionId", () => {
     );
   });
 
+  it("lets max correct validated impact with a reason and a complete audit trace", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "max-1",
+      role: "max",
+      activeRole: "max",
+    });
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: true,
+      userId: "max-1",
+    });
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "approved",
+      action_phase: "post_action_complete",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-1",
+      waste_kg: 1,
+      cigarette_butts: 2,
+      volunteers_count: 3,
+      duration_minutes: 30,
+      notes: null,
+    });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({ wasteKg: 2, reason: "Correction globale validée" }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(expect.objectContaining({ waste_kg: 2 }));
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: "max-1",
+        targetActionId: "action-test-1",
+        targetUserId: "user-test-1",
+        operation: "correct_impact",
+        reason: "Correction globale validée",
+        previousValue: expect.objectContaining({ wasteKg: 1 }),
+        newValue: expect.objectContaining({ wasteKg: 2 }),
+      }),
+    );
+  });
+
   it("requires a reason before an admin can correct validated impact", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "admin-1",
