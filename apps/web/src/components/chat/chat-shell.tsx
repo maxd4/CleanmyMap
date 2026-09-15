@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
 import { FeedbackSection } from "@/components/sections/rubriques/feedback-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -74,6 +74,20 @@ export type ChatShellProps = {
   messagerieMode?: boolean;
 };
 
+function consumeFeedbackIdFromUrl(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  url.searchParams.delete("feedbackId");
+  window.history.replaceState(
+    window.history.state,
+    "",
+    `${url.pathname}${url.search}${url.hash}`,
+  );
+}
+
 export function ChatShell({
   initialChannelType = "community",
   initialArrondissement,
@@ -97,12 +111,13 @@ export function ChatShell({
   const isLight = tone === "light";
   const { locale } = useSitePreferences();
   const pathname = usePathname();
+  const [activeFeedbackId, setActiveFeedbackId] = useState(initialFeedbackId);
 
   const {
     activeChannelType,
     selectedActionId,
     setSelectedActionId,
-    setActiveChannelType,
+    setActiveChannelType: setActiveChannelTypeState,
     viewMode,
     setViewMode,
     message,
@@ -125,7 +140,7 @@ export function ChatShell({
     recipientQuery,
     setRecipientQuery,
     selectedRecipient,
-    setSelectedRecipient,
+    setSelectedRecipient: setSelectedRecipientState,
     isRecipientPickerOpen,
     setIsRecipientPickerOpen,
     selectedZone,
@@ -147,6 +162,32 @@ export function ChatShell({
     initialMessage,
     initialActionId,
   });
+
+  const setActiveChannelType = useCallback(
+    (nextValue: Parameters<typeof setActiveChannelTypeState>[0]) => {
+      setActiveChannelTypeState((currentValue) => {
+        const resolvedValue =
+          typeof nextValue === "function" ? nextValue(currentValue) : nextValue;
+        if (resolvedValue !== "dm") {
+          setActiveFeedbackId(null);
+        }
+        return resolvedValue;
+      });
+    },
+    [setActiveChannelTypeState],
+  );
+
+  const setSelectedRecipient = useCallback(
+    (nextValue: Parameters<typeof setSelectedRecipientState>[0]) => {
+      const resolvedValue =
+        typeof nextValue === "function" ? nextValue(selectedRecipient) : nextValue;
+      if (resolvedValue?.id !== initialRecipient?.id) {
+        setActiveFeedbackId(null);
+      }
+      setSelectedRecipientState(nextValue);
+    },
+    [initialRecipient?.id, selectedRecipient, setSelectedRecipientState],
+  );
   const {
     currentRoleLabel,
     effectiveZone,
@@ -261,12 +302,20 @@ export function ChatShell({
   const sendChatMessageWithInboxRefresh = useCallback(
     async (params: SendChatMessageParams) => {
       const sentMessage = await sendChatMessage(params);
+      if (params.body.feedbackId === activeFeedbackId) {
+        setActiveFeedbackId(null);
+        consumeFeedbackIdFromUrl();
+      }
       if (params.body.channelType === "dm") {
-        await refreshInbox();
+        try {
+          await refreshInbox();
+        } catch {
+          // The message was already accepted by the API; inbox refresh is best-effort.
+        }
       }
       return sentMessage;
     },
-    [refreshInbox, sendChatMessage],
+    [activeFeedbackId, refreshInbox, sendChatMessage],
   );
 
   const {
@@ -334,7 +383,11 @@ export function ChatShell({
     setIsUploading,
     supabase,
     sendChatMessage: sendChatMessageWithInboxRefresh,
-    feedbackId: initialFeedbackId,
+    feedbackId:
+      activeChannelType === "dm" &&
+      selectedRecipient?.id === initialRecipient?.id
+        ? activeFeedbackId
+        : null,
     setMessage,
     setFile,
     setShowMentions,

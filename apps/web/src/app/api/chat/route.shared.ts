@@ -37,6 +37,7 @@ export const sendMessageSchema = z.object({
   topicId: z.string().optional(),
   actionId: z.string().uuid().optional(),
   feedbackId: z.string().trim().min(1).max(200).optional(),
+  operationId: z.string().trim().min(1).max(200).optional(),
   recipientId: z.string().optional(),
   arrondissementId: z.number().int().min(1).max(20).optional(),
   zoneName: z.string().optional(),

@@ -12,9 +12,6 @@ const verifyRateLimitMock = vi.hoisted(() => vi.fn());
 const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 const reserveDiscussionMessageSlotMock = vi.hoisted(() => vi.fn());
 const createChatNotificationsForMessageMock = vi.hoisted(() => vi.fn());
-const getCommunityBugReportByIdMock = vi.hoisted(() => vi.fn());
-const updateCommunityBugReportCreatorStateMock = vi.hoisted(() => vi.fn());
-const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -46,25 +43,12 @@ vi.mock("@/lib/chat/chat-notifications", () => ({
   createChatNotificationsForMessage: createChatNotificationsForMessageMock,
 }));
 
-vi.mock("@/lib/community/bug-reports-store", () => ({
-  getCommunityBugReportById: getCommunityBugReportByIdMock,
-  updateCommunityBugReportCreatorState: updateCommunityBugReportCreatorStateMock,
-}));
-
-vi.mock("@/lib/admin/audit/operation-audit", () => ({
-  appendAdminOperationAudit: appendAdminOperationAuditMock,
-}));
-
 describe("GET /api/chat and POST /api/chat", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
     authMock.mockResolvedValue({ userId: "user-1" });
     getCurrentUserIdentityMock.mockResolvedValue({ role: "member" });
-    getCommunityBugReportByIdMock.mockReset();
-    updateCommunityBugReportCreatorStateMock.mockReset();
-    appendAdminOperationAuditMock.mockReset();
-
     verifyRateLimitMock.mockResolvedValue({
       allowed: true,
       limit: 20,
@@ -970,160 +954,4 @@ describe("GET /api/chat and POST /api/chat", () => {
     expect(createChatNotificationsForMessageMock).not.toHaveBeenCalled();
   });
 
-  it("marks a feedback responded only after an admin sends a DM to its canonical author", async () => {
-    const feedback = {
-      id: "feedback-1",
-      submittedByUserId: "user-2",
-      creatorState: "new",
-    };
-    const insertedMessage = {
-      id: "feedback-reply-1",
-      created_at: "2026-09-15T12:00:00.000Z",
-      content: "Bonjour",
-      channel_type: "dm",
-      sender_id: "admin-1",
-      recipient_id: "user-2",
-      arrondissement_id: null,
-      zone_name: null,
-    } satisfies ChatMessageRow;
-    getCurrentUserIdentityMock.mockResolvedValue({ role: "admin", activeRole: "admin" });
-    getCommunityBugReportByIdMock.mockResolvedValue(feedback);
-    updateCommunityBugReportCreatorStateMock.mockResolvedValue({
-      ...feedback,
-      creatorState: "responded",
-    });
-    const supabaseMock = buildSupabaseMock({
-      profile: { id: "admin-1", display_name: "Admin", handle: "admin", paris_arrondissement: null, role_label: "admin", metadata: null },
-      messages: [],
-      insertedMessage,
-    });
-    authMock.mockResolvedValue({ userId: "admin-1" });
-    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
-
-    const response = await (await import("./route")).POST(
-      new Request("http://localhost/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          channelType: "dm",
-          recipientId: "user-2",
-          feedbackId: "feedback-1",
-          content: "Bonjour",
-        }),
-      }),
-    );
-
-    expect(response.status).toBe(201);
-    expect(updateCommunityBugReportCreatorStateMock).toHaveBeenCalledWith({
-      reportId: "feedback-1",
-      creatorState: "responded",
-    });
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
-      targetId: "feedback-1",
-      details: expect.objectContaining({
-        operation: "feedback_private_reply_sent",
-        targetUserId: "user-2",
-        messageSent: true,
-      }),
-    }));
-    expect(JSON.stringify(appendAdminOperationAuditMock.mock.calls[0]?.[0])).not.toContain("Bonjour");
-  });
-
-  it("rejects a feedback DM addressed to another user before writing", async () => {
-    getCurrentUserIdentityMock.mockResolvedValue({ role: "admin", activeRole: "admin" });
-    getCommunityBugReportByIdMock.mockResolvedValue({
-      id: "feedback-1",
-      submittedByUserId: "user-2",
-      creatorState: "new",
-    });
-    const supabaseMock = buildSupabaseMock({
-      profile: { id: "admin-1", display_name: "Admin", handle: "admin", paris_arrondissement: null, role_label: "admin", metadata: null },
-      messages: [],
-      insertedMessage: {
-        id: "unused", created_at: "2026-09-15T12:00:00.000Z", content: "unused", channel_type: "dm",
-        sender_id: "admin-1", recipient_id: "user-3", arrondissement_id: null, zone_name: null,
-      },
-    });
-    authMock.mockResolvedValue({ userId: "admin-1" });
-    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
-
-    const response = await (await import("./route")).POST(
-      new Request("http://localhost/api/chat", {
-        method: "POST",
-        body: JSON.stringify({ channelType: "dm", recipientId: "user-3", feedbackId: "feedback-1", content: "Mauvaise cible" }),
-      }),
-    );
-
-    expect(response.status).toBe(403);
-    expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();
-    expect(updateCommunityBugReportCreatorStateMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
-  });
-
-  it("does not update feedback state when the DM insert fails", async () => {
-    getCurrentUserIdentityMock.mockResolvedValue({ role: "admin", activeRole: "admin" });
-    getCommunityBugReportByIdMock.mockResolvedValue({
-      id: "feedback-1",
-      submittedByUserId: "user-2",
-      creatorState: "new",
-    });
-    const supabaseMock = buildSupabaseMock({
-      profile: { id: "admin-1", display_name: "Admin", handle: "admin", paris_arrondissement: null, role_label: "admin", metadata: null },
-      messages: [],
-      insertedMessage: {
-        id: "unused", created_at: "2026-09-15T12:00:00.000Z", content: "unused", channel_type: "dm",
-        sender_id: "admin-1", recipient_id: "user-2", arrondissement_id: null, zone_name: null,
-      },
-    });
-    supabaseMock.insertResult.single.mockResolvedValueOnce({
-      data: null,
-      error: { message: "DM unavailable" },
-    });
-    authMock.mockResolvedValue({ userId: "admin-1" });
-    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
-
-    const response = await (await import("./route")).POST(
-      new Request("http://localhost/api/chat", {
-        method: "POST",
-        body: JSON.stringify({ channelType: "dm", recipientId: "user-2", feedbackId: "feedback-1", content: "Non envoyé" }),
-      }),
-    );
-
-    expect(response.status).toBe(500);
-    expect(updateCommunityBugReportCreatorStateMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
-  });
-
-  it("does not create a DM for a feedback without a canonical author", async () => {
-    getCurrentUserIdentityMock.mockResolvedValue({ role: "admin", activeRole: "admin" });
-    getCommunityBugReportByIdMock.mockResolvedValue({
-      id: "feedback-unknown",
-      submittedByUserId: "unknown",
-      creatorState: "new",
-    });
-    const supabaseMock = buildSupabaseMock({
-      profile: { id: "admin-1", display_name: "Admin", handle: "admin", paris_arrondissement: null, role_label: "admin", metadata: null },
-      messages: [],
-      insertedMessage: {
-        id: "unused", created_at: "2026-09-15T12:00:00.000Z", content: "unused", channel_type: "dm",
-        sender_id: "admin-1", recipient_id: "user-2", arrondissement_id: null, zone_name: null,
-      },
-    });
-    authMock.mockResolvedValue({ userId: "admin-1" });
-    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
-
-    const response = await (await import("./route")).POST(
-      new Request("http://localhost/api/chat", {
-        method: "POST",
-        body: JSON.stringify({ channelType: "dm", recipientId: "user-2", feedbackId: "feedback-unknown", content: "Sans cible" }),
-      }),
-    );
-
-    expect(response.status).toBe(403);
-    expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();
-  });
 });

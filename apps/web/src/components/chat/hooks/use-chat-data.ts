@@ -51,6 +51,7 @@ export type SendChatMessageParams = {
     attachmentType?: string;
     actionId?: string;
     feedbackId?: string;
+    operationId?: string;
   };
 };
 

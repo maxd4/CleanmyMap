@@ -72,4 +72,33 @@ describe("useChatSubmit retry wiring", () => {
     expect(source).toContain("onRetry: retrySubmitChatMessage");
     expect(source).not.toContain("onRetry: () => void submitChatMessage()");
   });
+
+  it("keeps one feedback operation id across retries and consumes it after success", () => {
+    const source = readFileSync(
+      fileURLToPath(new URL("./use-chat-submit.ts", import.meta.url)),
+      "utf8",
+    );
+
+    expect(source).toContain("feedbackOperationIdRef");
+    expect(source).toContain("feedbackOperationIdRef.current ??=");
+    expect(source).toContain("operationId: feedbackOperationId");
+    expect(source).toContain("feedbackOperationIdRef.current = null");
+  });
+
+  it("consumes feedback context after success and drops it when the recipient changes", () => {
+    const source = readFileSync(
+      fileURLToPath(new URL("../chat-shell.tsx", import.meta.url)),
+      "utf8",
+    );
+
+    expect(source).toContain("const [activeFeedbackId, setActiveFeedbackId]");
+    expect(source).toContain(
+      "params.body.feedbackId === activeFeedbackId",
+    );
+    expect(source).toContain("setActiveFeedbackId(null)");
+    expect(source).toContain("url.searchParams.delete(\"feedbackId\")");
+    expect(source).toMatch(
+      /selectedRecipient\?\.id\s*===\s*initialRecipient\?\.id/,
+    );
+  });
 });
