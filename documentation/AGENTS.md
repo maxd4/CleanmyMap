@@ -154,6 +154,14 @@ Une correction fonctionnelle doit toucher uniquement les fiches concernées.
 La maintenance sémantique n'autorise aucune restructuration, suppression,
 renommage, nettoyage global ou mutation automatique d'assets.
 
+Si un changement rend fausse une fiche `CURRENT` protégée sous
+`documentation/pages_site/routes/` et que le lot n'autorise pas sa
+modification, signaler explicitement `DOCUMENTATION_DRIFT` avec le chemin de
+la fiche et la contradiction observée. Ne jamais modifier le produit
+uniquement pour faire correspondre le runtime à une fiche devenue obsolète et
+ne jamais modifier silencieusement une fiche protégée sans autorisation
+explicite.
+
 La restructuration globale de `documentation/` doit respecter cette frontière
 et ne pas utiliser ce sous-arbre comme cible de nettoyage automatique.
 
