@@ -232,7 +232,7 @@ export function ActionCard({
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
               {formatCount(item.participantsCount)}/{formatCount(item.volunteers_count)}{" "}
-              {fr ? "bénévoles" : "volunteers"}
+              {fr ? "inscriptions confirmées" : "confirmed registrations"}
             </span>
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
               {requestCountLabel}
@@ -278,7 +278,7 @@ export function ActionCard({
                 ) : item.joined ? (
                   <>
                     <X size={14} />
-                    {fr ? "Quitter l'action" : "Leave the action"}
+                    {fr ? "Annuler mon inscription" : "Cancel my registration"}
                   </>
                 ) : (
                   <>
@@ -303,7 +303,7 @@ export function ActionCard({
                 ) : (
                   <>
                     <ClipboardList size={14} />
-                    {fr ? "Demander à participer" : "Request to join"}
+                    {fr ? "Demander à s'inscrire" : "Request registration"}
                   </>
                 )}
               </CmmButton>
@@ -328,7 +328,7 @@ export function ActionCard({
         <span>{footerLabel}</span>
         <span className="inline-flex items-center gap-1.5">
           <ShieldCheck size={12} className="text-emerald-700" />
-          {fr ? "Participation sécurisée" : "Protected participation"}
+          {fr ? "Inscription sécurisée" : "Protected registration"}
         </span>
       </div>
     </article>
@@ -366,6 +366,11 @@ export function QueueRow({
         <p className="text-xs text-slate-500">
           {request.handle ? `@${request.handle}` : fr ? "Compte public absent" : "No public handle"}
         </p>
+        {request.wasRegisteredBeforeAction ? (
+          <p className="mt-1 text-xs font-medium text-sky-700">
+            {fr ? "Cette personne était inscrite avant l’action." : "This person was registered before the action."}
+          </p>
+        ) : null}
       </div>
       <div className="flex items-center gap-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-xs font-black text-emerald-700">

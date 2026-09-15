@@ -101,6 +101,8 @@ export type ActionParticipationReviewItem = {
   updatedAt: string | null;
   participationStatus: ParticipationStatus;
   participationSource: ParticipationSource;
+  /** Context-only signal; it never accepts a claim or proves field presence. */
+  wasRegisteredBeforeAction: boolean;
 };
 
 export type ActionParticipationSearchItem = {

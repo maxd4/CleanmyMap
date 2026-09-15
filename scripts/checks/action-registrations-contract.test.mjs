@@ -64,3 +64,18 @@ test("future participation consumers use registrations while post-action claims 
     /action_participants|insertParticipantRecord/,
   );
 });
+
+test("gamification is sourced only from confirmed final participants", () => {
+  const gamificationMigration = read(
+    "apps/web/supabase/migrations/20260915000005_gamification_confirmed_participation_count.sql",
+  );
+
+  assert.match(
+    gamificationMigration,
+    /from public\.action_participants ap[\s\S]+participation_status = 'confirmed'/,
+  );
+  assert.doesNotMatch(gamificationMigration, /action_registrations/);
+
+  const badgeListing = read("apps/web/src/lib/gamification/badges/listing.ts");
+  assert.doesNotMatch(badgeListing, /action_registrations/);
+});

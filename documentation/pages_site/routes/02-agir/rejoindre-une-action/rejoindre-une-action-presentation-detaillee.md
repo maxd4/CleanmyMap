@@ -16,8 +16,8 @@
   - seules les actions satisfaisant `isJoinableFuturePreAction(...)` remontent dans la liste : phase `pre_action`, statut `pending` ou `approved`, `moderation_visibility = visible`, `published_at != null`, début futur selon Europe/Paris et `groupJoinEnabled === true` ;
   - une action masquée par modération reste absente de la liste et du lien direct public ;
   - la file de modération des demandes s'ouvre à partir de `actionId` ou de la première action visible ;
-  - le CTA principal oriente vers une demande de participation, pas vers une création de rubrique distincte ;
-  - le CTA secondaire sur une participation existante permet l'annulation ou la sortie sans effacer l'historique ;
+  - le CTA principal oriente vers une demande d'inscription future, pas vers une création de rubrique distincte ;
+  - le CTA secondaire sur une inscription existante permet l'annulation sans effacer l'historique ;
   - le vocabulaire UI actif est `Rejoindre une action`, avec `Actions futures` et `Actions passées`.
 
 ## Structure visuelle cible
@@ -38,4 +38,5 @@
 - Les cartes doivent rester aérées et garder un rythme de lecture simple.
 - Les états vides doivent proposer un CTA utile, pas une simple notice.
 - La file de modération doit rester visible comme un bloc métier à part entière, et non comme un simple détail de la liste.
-- Le retrait d'une participation doit conserver la trace dans `action_participants` et rester visible dans l'historique de l'utilisateur.
+- Le retrait d'une inscription future doit conserver la trace dans `action_registrations` et rester visible dans l'historique de l'utilisateur.
+- Une participation finale ne peut être créée que par un flux post-action dédié dans `action_participants`; elle reste distincte de l'inscription future.

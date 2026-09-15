@@ -13,10 +13,10 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 3. L'action passe par la validation admin.
 4. Une fois validée, elle apparait dans `Rejoindre un formulaire`.
 5. Le bénévole rejoint ce formulaire existant.
-6. Les membres ajoutés manuellement à l'action sont enregistrés séparément dans `action_participants` avec la source `manual_add`, sans passer par la file publique.
-7. La participation est ensuite enregistrée dans `action_participants` avec un statut, une origine et une date de jonction, puis remonte dans les badges et les stats collectives.
-8. Si le bénévole s'est trompé, il peut annuler une demande en attente ou quitter un formulaire accepté, tout en conservant la trace historique.
-9. Depuis `Actions passées`, un bénévole peut demander son rattachement à une action publique terminée. Cette demande réutilise la même ligne `action_participants`, avec la source `post_action_claim`, puis passe par la review de l'organisateur ou d'un administrateur autorisé.
+6. Les membres ajoutés manuellement à l'action sont enregistrés dans `action_registrations` avec la source `manual_add`, sans passer par la file publique.
+7. La demande future est enregistrée dans `action_registrations` avec `registration_status`, `registration_source` et `registered_at`. Un statut `confirmed` signifie uniquement que l'inscription a été acceptée ; il ne confirme pas une présence sur le terrain.
+8. Si le bénévole s'est trompé, il peut annuler une inscription en attente ou confirmée, tout en conservant la trace historique de l'inscription.
+9. Depuis `Actions passées`, un bénévole peut demander son rattachement à une action publique terminée. Le claim crée une ligne distincte dans `action_participants` avec `participation_source = post_action_claim` et `participation_status = pending`, puis passe par la review de l'organisateur ou d'un administrateur autorisé. Une inscription future existante reste intacte.
 
 ## Placement dans le bloc Agir
 
@@ -37,32 +37,39 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 - Le flux doit eviter la double saisie.
 - Le formulaire rejoint doit deja exister et etre valide par un admin.
 - Le formulaire complet reste le seul parcours qui expose la récolte finale, la validation scientifique et les scores.
-- Le flux normal de jonction ne change pas selon le rôle: un admin qui clique sur le bouton habituel passe aussi en `pending` avec la source `group_form`.
+- Le flux normal d'inscription ne change pas selon le rôle: un admin qui clique sur le bouton habituel passe aussi en `pending` dans `action_registrations` avec la source `group_form`.
 - Toute intervention admin hors flux normal doit passer par une commande explicite et être journalisée.
-- Les participations doivent rester traçables, y compris si leur statut change.
+- Les inscriptions et les participations finales doivent rester traçables, y compris si leur statut change.
 - La jonction ne cree pas de nouveau formulaire.
-- Une seule participation active est conservee par benevole et par action.
+- Une seule inscription active est conservee par benevole et par action dans `action_registrations`; une inscription et une participation finale peuvent coexister pour le même utilisateur et la même action.
 - L'organisateur peut fermer ou rouvrir les inscriptions apres publication.
-- La participation reste tracée, mais la page benevole permet d'annuler une demande en attente ou de quitter un formulaire accepté.
-- Un claim post-action suit `pending → confirmed | cancelled` ; avec l'unicité `(action_id, user_id)`, un état `cancelled` reste terminal dans ce lot et n'est jamais reconverti silencieusement en `pending`.
-- Un claim ne reconstitue pas les effectifs terrain et ne modifie ni `volunteersCount`, ni `volunteerParticipation`, ni `effectiveVolunteerUnits`, ni les résultats collectifs. Les statistiques personnelles et la gamification sont hors périmètre de ce lot.
+- L'inscription reste tracée dans `action_registrations`, mais la page bénévole permet d'annuler une demande en attente ou une inscription confirmée.
+- Une inscription future suit `registration_status = pending | confirmed | cancelled`; `confirmed` signifie inscription acceptée, jamais présence terrain confirmée.
+- Un claim post-action suit `participation_status = pending → confirmed | cancelled` dans `action_participants`; avec l'unicité `(action_id, user_id)`, un état `cancelled` reste terminal dans ce lot et n'est jamais reconverti silencieusement en `pending`.
+- Le contexte `wasRegisteredBeforeAction` peut être montré au validateur lorsqu'un claim correspond à une inscription antérieure. Il reste informatif: il n'accepte jamais le claim automatiquement et ne constitue pas une preuve de présence.
+- Un claim ne reconstitue pas les effectifs terrain et ne modifie ni `volunteersCount`, ni `volunteerParticipation`, ni `effectiveVolunteerUnits`, ni les résultats collectifs tant qu'il n'est pas confirmé.
+- Seules les lignes `action_participants` dont `participation_status = confirmed` contribuent aux statistiques personnelles, aux badges, à la progression, à la gamification et aux quotes-parts. Les inscriptions `action_registrations`, même confirmées, ainsi que les participations finales `pending` ou `cancelled`, sont exclues.
 
 ## Données
 
 - Source d'affichage: table `actions` filtree sur `status = approved`.
-- Source de participation: table `action_participants` avec `participation_status`, `participation_source` et `joined_at`.
-- Origine de participation: `group_form` pour les demandes publiques futures, `manual_add` pour les membres ajoutés directement, `admin` pour la modération, `import` pour les reprises et `post_action_claim` pour une demande de rattachement après une action terminée.
-- Source badge: `action_participants` alimente la famille `Participant`.
-- Source stats: `action_participants` reste la source des participations confirmées existantes ; le claim post-action n'ajoute aucune dérivation statistique dans ce lot.
+- Source d'inscription future: table `action_registrations` avec `registration_status`, `registration_source`, `registered_at` et `updated_at`.
+- Source de participation finale: table `action_participants` avec `participation_status`, `participation_source`, `joined_at` et `updated_at`.
+- Origine d'inscription: `group_form` pour les demandes publiques futures et `manual_add` pour les membres ajoutés directement.
+- Origine de participation finale: `admin`, `admin_override`, `import` ou `post_action_claim` selon l'opération qui l'a créée.
+- Source badge, progression et gamification: uniquement `action_participants` avec `participation_status = confirmed`. Un claim confirmé suit cette même source; une inscription future ne la remplace jamais.
+- Source stats et quotes-parts: uniquement les participants finaux confirmés; le dénominateur exclut les inscriptions, les demandes `pending` et les lignes `cancelled`.
 - Source fermeture: metadata de `actions.notes` via `groupJoinEnabled`.
 - Source dérogation: les opérations admin sont journalisées séparément et ne modifient pas le parcours normal.
 
 ## Validation
 
 - Verifier que le bouton de join est visible sur les surfaces ciblees.
-- Verifier que la participation remonte dans les statistiques.
+- Verifier qu'une inscription future, même confirmée, ne remonte pas dans les statistiques ni la gamification.
 - Verifier qu'une demande en attente peut etre annulée par son auteur.
 - Verifier qu'une participation acceptée peut etre quittée par son auteur.
 - Verifier qu'aucune action non validée n'affiche de CTA de jonction.
 - Verifier qu'un lien profond `actionId` affiche bien l'action cible, meme hors du lot par défaut.
 - Verifier qu'une action terminée publique peut recevoir un claim idempotent et qu'un claim refusé reste terminal.
+- Verifier qu'un utilisateur inscrit avant l'action peut conserver son inscription et créer un claim final distinct.
+- Verifier qu'un claim `pending` reste absent des statistiques et qu'un claim `confirmed` y contribue uniquement après décision.

@@ -167,6 +167,70 @@ describe("GET /api/actions/:actionId/group-join", () => {
     expect(body.confirmedParticipants?.[0]?.id).toBe("participant-2");
   }, 15000);
 
+  it("exposes prior registration only as context for a post-action claim", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-1",
+      role: "admin",
+      activeRole: "admin",
+    });
+    const participants = [
+      createGroupJoinParticipant({
+        id: "claim-1",
+        action_id: "action-1",
+        user_id: "user-2",
+        created_at: "2026-09-12T10:00:00Z",
+        participation_status: "pending",
+        participation_source: "post_action_claim",
+      }),
+    ];
+    const registrations = [
+      createGroupJoinParticipant({
+        action_id: "action-1",
+        user_id: "user-2",
+        created_at: "2026-09-12T09:00:00Z",
+        registered_at: "2026-09-12T09:00:00Z",
+        registration_status: "confirmed",
+        registration_source: "group_form",
+      }),
+    ];
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "owner-1",
+          status: "approved",
+          actionPhase: "post_action_complete",
+          groupJoinEnabled: true,
+        }),
+        participants,
+        registrations,
+        profiles: [
+          createGroupJoinProfile({
+            id: "user-2",
+            display_name: "Alice",
+            handle: "alice",
+          }),
+        ],
+      }),
+    );
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/group-join"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+    const body = (await response.json()) as {
+      pendingRequests?: Array<{ id?: string; wasRegisteredBeforeAction?: boolean }>;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.pendingRequests).toEqual([
+      expect.objectContaining({
+        id: "claim-1",
+        wasRegisteredBeforeAction: true,
+      }),
+    ]);
+  }, 15000);
+
   it("hides moderation rows for anonymous visitors", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce(null);
     loadActionOrganizerIdsForActionMock.mockResolvedValue([]);

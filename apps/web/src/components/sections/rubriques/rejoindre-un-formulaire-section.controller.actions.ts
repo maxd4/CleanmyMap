@@ -184,15 +184,15 @@ export function useJoinFormSectionActions({
       setNotice(
         isPending
           ? fr
-            ? "Votre demande est visible dans la file publique. Le créateur ou un admin doit l'accepter."
-            : "Your request is visible in the public queue. The creator or an admin must approve it."
+            ? "Votre demande d'inscription est visible dans la file publique. Le créateur ou un admin doit l'accepter."
+            : "Your registration request is visible in the public queue. The creator or an admin must approve it."
           : joined.alreadyJoined
             ? fr
-              ? "Participation déjà enregistrée. L'historique reste synchronisé et la progression peut être recalculée."
-              : "Participation already recorded. Your history stays synced and progression can be recalculated."
+              ? "Inscription déjà enregistrée. Elle reste distincte de la participation finale."
+              : "Registration already recorded. It remains separate from final participation."
             : fr
-              ? "Participation enregistrée. Elle alimente l'historique, les badges et le compteur collectif."
-              : "Participation saved. It updates history, badges, and the collective counter.",
+              ? "Inscription enregistrée. Elle reste prévisionnelle et n'alimente ni les statistiques ni les badges de présence."
+              : "Registration saved. It remains provisional and does not update participation statistics or badges.",
       );
       onQueueMutation?.(actionId);
     } finally {

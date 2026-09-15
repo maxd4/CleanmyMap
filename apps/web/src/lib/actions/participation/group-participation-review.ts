@@ -11,6 +11,7 @@ import {
   insertParticipantRecord,
   loadParticipantProfilesForUserIds,
   PENDING_PARTICIPATION_STATUS,
+  POST_ACTION_CLAIM_PARTICIPATION_SOURCE,
   readParticipantRecord,
   readParticipantRecordById,
   resolveJoinedAt,
@@ -107,6 +108,28 @@ export async function loadActionParticipationReviews(
     return [];
   }
 
+  const claimUserIds = rows
+    .filter((row) => row.source === POST_ACTION_CLAIM_PARTICIPATION_SOURCE)
+    .map((row) => row.user_id);
+  const registeredBeforeAction = new Set<string>();
+  if (claimUserIds.length > 0) {
+    const registrationsResult = await supabase
+      .from("action_registrations")
+      .select("user_id")
+      .eq("action_id", params.actionId)
+      .in("user_id", claimUserIds);
+
+    if (registrationsResult.error) {
+      throw new Error(registrationsResult.error.message);
+    }
+
+    for (const row of (registrationsResult.data ?? []) as Array<{ user_id?: string }>) {
+      if (typeof row.user_id === "string" && row.user_id.trim().length > 0) {
+        registeredBeforeAction.add(row.user_id);
+      }
+    }
+  }
+
   const profileMap = await loadParticipantProfilesForUserIds(
     supabase,
     rows.map((row) => row.user_id),
@@ -126,6 +149,9 @@ export async function loadActionParticipationReviews(
       updatedAt: row.updated_at ?? row.joined_at,
       participationStatus: row.status,
       participationSource: row.source,
+      wasRegisteredBeforeAction:
+        row.source === POST_ACTION_CLAIM_PARTICIPATION_SOURCE &&
+        registeredBeforeAction.has(row.user_id),
     };
   });
 }
