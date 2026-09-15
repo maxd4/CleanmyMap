@@ -4,7 +4,7 @@ import { z } from "zod";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import {
   canModerateActionConversation,
-  isPublishedVisibleAction,
+  isActionDiscussionAvailable,
 } from "@/lib/chat/action-conversations";
 import { loadActionById } from "@/lib/actions/store";
 import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
@@ -33,7 +33,7 @@ async function getModerationContext(actionId: string) {
 
   const supabase = getSupabaseServerClient();
   const action = await loadActionById(supabase, actionId);
-  if (!action || !isPublishedVisibleAction(action)) {
+  if (!action || !isActionDiscussionAvailable(action)) {
     return { identity, action: null, supabase };
   }
 

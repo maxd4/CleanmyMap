@@ -480,9 +480,9 @@ préserver :
 - l'absence d'exclusion explicite active.
 
 La migration de partage ne doit donc pas être interprétée comme faisant de
-l'éligibilité au partage une autorité d'accès à la discussion. Ce lot ne
-modifie ni le SQL ni le runtime : cette clarification documentaire ne crée ni
-ne retire une permission.
+l'éligibilité au partage une autorité d'accès à la discussion. La migration
+append-only dédiée à la discussion restaure ce contrat dans un prédicat SQL
+distinct, sans modifier le flux de partage ni son first-contact.
 
 `action_participants` n'est jamais une autorité d'accès à la discussion :
 `pending`, `confirmed`, `cancelled` et `refused` n'ont aucun effet sans
@@ -490,7 +490,8 @@ exclusion explicite. La table `action_conversation_exclusions` porte seulement
 l'état courant ; les exclusions et réintégrations sont aussi enregistrées via
 `appendActionModerationAudit` dans l'audit canonique, avec l'acteur, l'utilisateur
 cible, l'action, la conversation et le motif lorsqu'il est fourni. La
-correction append-only est `20260915000007_action_conversation_access_and_audit.sql`.
+correction append-only courante est
+`20260915000011_action_discussion_access_contract.sql`.
 
 ## Lecture propriétaire Trash Spotter
 

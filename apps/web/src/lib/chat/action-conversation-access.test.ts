@@ -4,9 +4,10 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   canModerateActionConversationForIdentity,
-  isPublishedVisibleAction,
+  isActionDiscussionAvailable,
   resolveActionDiscussionAccess,
 } from "./action-conversations";
+import { isPublicActionReferenceAvailable } from "./action-sharing";
 
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 
@@ -73,10 +74,31 @@ describe("action discussion access contract", () => {
     ["unpublished", { ...publicFutureAction, published_at: null }, false],
     ["hidden", { ...publicFutureAction, moderation_visibility: "hidden" as const }, false],
   ])("classifies %s", (_label, action, expected) => {
-    expect(isPublishedVisibleAction(action)).toBe(expected);
+    expect(isActionDiscussionAvailable(action)).toBe(expected);
   });
 
-  it("uses the existing public predicate and keeps the applied migration untouched", () => {
+  it.each([
+    ["future published pre-action", publicFutureAction, true, true],
+    [
+      "approved published post-action",
+      { ...publicFutureAction, action_phase: "post_action_complete" as const, status: "approved" as const },
+      true,
+      true,
+    ],
+    [
+      "approved published legacy action with null phase",
+      { ...publicFutureAction, action_phase: null, status: "approved" as const },
+      false,
+      true,
+    ],
+    ["hidden", { ...publicFutureAction, moderation_visibility: "hidden" as const }, false, false],
+    ["unpublished", { ...publicFutureAction, published_at: null }, false, false],
+  ])("keeps sharing and discussion eligibility independent for %s", (_label, action, shareExpected, discussionExpected) => {
+    expect(isPublicActionReferenceAvailable(action as Parameters<typeof isPublicActionReferenceAvailable>[0])).toBe(shareExpected);
+    expect(isActionDiscussionAvailable(action)).toBe(discussionExpected);
+  });
+
+  it("keeps the historical conversation migrations and their exclusions contract intact", () => {
     expect(appliedMigration).toContain("create table if not exists public.action_conversation_exclusions");
     expect(appliedMigration).toContain("reinstated_at timestamptz");
     expect(appliedMigration).toContain("and a.status = 'approved'");
@@ -112,6 +134,14 @@ describe("action discussion access contract", () => {
     });
     expect(await resolveActionDiscussionAccess(buildSupabaseMock(false) as never, "action-1", "user-1")).toEqual({
       state: "allowed",
+      conversationId: "conversation-1",
+    });
+  });
+
+  it("refuses an explicitly excluded authenticated user even when discussion is available", async () => {
+    loadActionByIdMock.mockResolvedValue(publicFutureAction);
+    expect(await resolveActionDiscussionAccess(buildSupabaseMock(true) as never, "action-1", "authenticated-user")).toEqual({
+      state: "excluded",
       conversationId: "conversation-1",
     });
   });
