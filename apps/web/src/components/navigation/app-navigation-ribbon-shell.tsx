@@ -165,7 +165,6 @@ function AppNavigationRibbonFrame({
                 <AppNavigationBlockDropdown
                   key={space.id}
                   activeSpaceId={activeSpaceId}
-                  displayMode={displayMode}
                   locale={locale}
                   onTrackNavigation={onTrackNavigation}
                   onOpenChange={(spaceId, open) => {

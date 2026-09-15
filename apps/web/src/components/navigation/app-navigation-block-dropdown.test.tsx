@@ -32,18 +32,19 @@ describe("app navigation block dropdown contract", () => {
     expect(source).not.toContain("AnimatePresence");
   });
 
-  it("keeps exhaustive block icons distinct from reduced-mode Lucide icons", () => {
+  it("uses Lucide block icons consistently in every display mode", () => {
     expect(source).toContain("CmmIcon");
     expect(source).toContain("data-navigation-block-trigger");
-    expect(source).toContain('displayMode === "exhaustif"');
-    expect(source).toContain("{space.icon}");
     expect(source).toContain("getNavigationBlockIcon(space.id)");
+    expect(source).not.toContain("displayMode");
+    expect(source).not.toContain("{space.icon}");
     expect(source).toContain("return House");
     expect(source).toContain("return Zap");
     expect(source).toContain("return Map");
+    expect(source).toContain("return BarChart3");
     expect(source).toContain("return Users");
+    expect(source).toContain("return MessageCircle");
     expect(source).toContain("return BookOpen");
-    expect(source).not.toMatch(/[🏠⚡🗺️🤝📚]/u);
   });
 
   it("keeps block hover accents local and reserves the trigger border", () => {
