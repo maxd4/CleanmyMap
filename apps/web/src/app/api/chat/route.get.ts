@@ -1,7 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { getCurrentUserIdentity } from "@/lib/authz";
-import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import {
   canAccessChatChannel,
@@ -25,6 +24,7 @@ import {
 } from "@/lib/chat/chat-pagination";
 import {
   buildZoneContext,
+  hasValidTerritoryContext,
   messageSelect,
   parseArrondissement,
   sortChatMessages,
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
   const recipientId = searchParams.get("recipientId");
   const requestedTopicId = searchParams.get("topicId");
   const requestedArrondissement = parseArrondissement(searchParams.get("arrondissementId"));
-  const requestedZoneName = searchParams.get("zoneName");
+  const requestedZoneName = searchParams.get("zoneName")?.trim() || null;
   const requestedMessageId = searchParams.get("messageId")?.trim() || null;
   const requestedActionId = searchParams.get("actionId")?.trim() || null;
   const beforeCreatedAt = searchParams.get("beforeCreatedAt");
@@ -116,11 +116,21 @@ export async function GET(request: Request) {
   const profileMetadataZone = extractZoneContextFromMetadata(profile?.metadata ?? null);
   const profileArrondissement = profile?.paris_arrondissement ?? null;
 
-  const zoneName = requestedZoneName || profileMetadataZone.zoneName;
-  const arrondissementId = requestedArrondissement ?? profileArrondissement;
-  const zoneContext = buildZoneContext(zoneName, arrondissementId);
+  const hasExplicitTerritoryContext =
+    requestedZoneName !== null || requestedArrondissement !== null;
+  const profileZoneContext = buildZoneContext(
+    profileMetadataZone.zoneName,
+    profileArrondissement ?? profileMetadataZone.arrondissementId,
+  );
+  const requestedZoneContext = hasExplicitTerritoryContext
+    ? buildZoneContext(requestedZoneName, requestedArrondissement)
+    : null;
+  const zoneContext = requestedZoneContext ?? profileZoneContext;
+  const zoneName = zoneContext.zoneName;
+  const arrondissementId = zoneContext.arrondissementId;
+  const hasValidZone = hasValidTerritoryContext(zoneContext);
 
-  const hasGreaterParisZone = (zoneName && findZoneWithNeighbors(zoneName)) !== null;
+  const hasGreaterParisZone = zoneName !== null;
   const hasArrondissement = arrondissementId !== null && arrondissementId >= 1 && arrondissementId <= 20;
 
   if (
@@ -209,11 +219,13 @@ export async function GET(request: Request) {
         createMessageQuery().eq("channel_type", "admin_elu"),
       );
     } else if (channelType === "territory") {
-      if (!zoneName && !arrondissementId) {
+      if (!hasValidZone) {
         return NextResponse.json(
           {
-            error: "Zone manquante",
-            hint: "Ajoutez une zone (arrondissement ou commune) à votre profil pour ouvrir ce canal.",
+            error: hasExplicitTerritoryContext ? "Zone invalide" : "Zone manquante",
+            hint: hasExplicitTerritoryContext
+              ? "Votre zone n'est pas reconnue. Choisissez un arrondissement parisien ou une commune de la région."
+              : "Choisissez un arrondissement parisien ou une commune de la région pour ouvrir ce canal.",
           },
           { status: 400 },
         );
@@ -358,8 +370,8 @@ export async function GET(request: Request) {
         code: dbError.code,
         details: dbError.details,
         hint:
-          channelType === "territory" && !zoneName && !profileArrondissement
-            ? "Votre profil n'a pas encore de zone exploitable."
+          channelType === "territory" && !hasValidZone
+            ? "Choisissez un arrondissement parisien ou une commune de la région."
             : "Vérifiez que la table 'app_messages' existe et que les profils sont synchronisés.",
       },
       { status: 500 },

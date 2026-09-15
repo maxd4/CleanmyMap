@@ -6,6 +6,7 @@ import {
   getTerritoryFilter,
   extractZoneContextFromMetadata,
   getZoneLabel,
+  getSupportedChatTerritoryOptions,
 } from "./channels";
 
 describe("chat channels", () => {
@@ -69,7 +70,7 @@ describe("chat channels", () => {
     ).toBe(true);
   });
 
-  it("keeps territory hidden until a zone exists", () => {
+  it("keeps the territory channel available while a member chooses a context", () => {
     expect(
       canAccessChatChannel("territory", {
         roleLabel: "benevole",
@@ -77,7 +78,7 @@ describe("chat channels", () => {
         hasGreaterParisZone: false,
         zoneContext: null,
       }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       getVisibleChatChannelTypes({
         roleLabel: "benevole",
@@ -85,7 +86,25 @@ describe("chat channels", () => {
         hasGreaterParisZone: false,
         zoneContext: null,
       }),
-    ).toEqual(["community", "dm", "bug_report"]);
+    ).toEqual(["community", "dm", "territory", "bug_report"]);
+  });
+
+  it("does not make territory access depend on the persisted profile zone", () => {
+    expect(canAccessChatChannel("territory", {
+      roleLabel: "benevole",
+      hasArrondissement: false,
+      hasGreaterParisZone: false,
+      zoneContext: null,
+    })).toBe(true);
+  });
+
+  it("offers every supported arrondissement and suburb for a one-off choice", () => {
+    const options = getSupportedChatTerritoryOptions();
+    expect(options.find((option) => option.arrondissementId === 1)).toMatchObject({
+      value: "1er arrondissement",
+      label: "Paris 1er",
+    });
+    expect(options.map((option) => option.value)).toContain("Montreuil");
   });
 
   it("allows territory with arrondissement", () => {

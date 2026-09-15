@@ -583,8 +583,8 @@ export const API_AUTHORIZATION_CONTRACT = {
     GET: {
       expected: "Authenticated user lists existing conversations where they can post for a currently shareable public action",
       dimensions: ["authentication", "business permission", "ownership"],
-      actual: "auth + getCurrentUserIdentity + RLS-backed DM listing + canAccessChatChannel for territory; action eligibility is checked before destinations are returned",
-      evidence: ["auth()", "getCurrentUserIdentity", "getSupabaseClerkRlsClient", "canAccessChatChannel", "list_my_dm_conversations", "getPublicActionShareKind"],
+      actual: "auth + getCurrentUserIdentity + RLS-backed DM listing; action eligibility is checked before destinations are returned and a territorial destination is derived from the action or profile preference",
+      evidence: ["auth()", "getCurrentUserIdentity", "getSupabaseClerkRlsClient", "list_my_dm_conversations", "getPublicActionShareKind", "buildShareDestinationList"],
       evidenceScope: "module",
     },
   },
@@ -629,7 +629,7 @@ export const API_AUTHORIZATION_CONTRACT = {
   "chat/search": {
     GET: {
       expected:
-        "Authenticated chat search with channel-specific role, ownership and profile-derived territory boundaries",
+        "Authenticated chat search with channel-specific role and ownership; an explicit valid territory overrides the profile default",
       dimensions: [
         "authentication",
         "admin/creator role",
@@ -637,7 +637,7 @@ export const API_AUTHORIZATION_CONTRACT = {
         "ownership",
       ],
       actual:
-        "auth() + current identity role gate; Clerk-RLS app_messages queries scope community/topics, DM participants, admin_elu roles, profile territory/neighbors and current-user bug reports",
+        "auth() + current identity role gate; app_messages queries scope community/topics, DM participants, admin_elu roles, the explicit requested territory (or profile default) and current-user bug reports",
       evidence: [
         "auth()",
         "getCurrentUserIdentity",

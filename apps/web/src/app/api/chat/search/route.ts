@@ -7,10 +7,8 @@ import {
   getTerritoryFilter,
   isChatChannelType,
   type ChatChannelType,
-  type ZoneContext,
 } from "@/lib/chat/channels";
 import { getCurrentUserIdentity } from "@/lib/authz";
-import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 import { handleApiError } from "@/lib/http/api-errors";
@@ -30,6 +28,11 @@ import {
 } from "@/lib/chat/chat-search";
 import { isChatMessageKind, type ChatMessageKind } from "@/lib/chat/announcements";
 import { parseChatTopicIdForChannel } from "@/lib/chat/topics";
+import {
+  buildZoneContext,
+  hasValidTerritoryContext,
+  parseArrondissement,
+} from "../route.shared";
 
 type CurrentProfileRow = {
   paris_arrondissement: number | null;
@@ -61,16 +64,6 @@ type SearchQueryResult = PromiseLike<{
 
 const searchSelect =
   "id, created_at, content, channel_type, topic_id, message_kind, sender:profiles!sender_id(display_name, handle, avatar_url)";
-
-function buildZoneContext(
-  zoneName: string | null,
-  arrondissementId: number | null,
-): ZoneContext {
-  return {
-    zoneName: zoneName && findZoneWithNeighbors(zoneName) ? zoneName : null,
-    arrondissementId,
-  };
-}
 
 async function loadCurrentProfile(
   supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
@@ -125,6 +118,8 @@ export async function GET(request: Request) {
   const queryError = getChatSearchQueryError(query);
   const requestedTopicId = searchParams.get("topicId");
   const recipientId = searchParams.get("recipientId")?.trim() || null;
+  const requestedZoneName = searchParams.get("zoneName")?.trim() || null;
+  const requestedArrondissement = parseArrondissement(searchParams.get("arrondissementId"));
   const beforeCursor = parseChatHistoryCursor(
     searchParams.get("beforeCreatedAt"),
     searchParams.get("beforeId"),
@@ -176,12 +171,20 @@ export async function GET(request: Request) {
   try {
     const profile = await loadCurrentProfile(supabase, userId);
     const profileZone = extractZoneContextFromMetadata(profile?.metadata ?? null);
-    // The query parameters are navigation hints only. Never let them replace
-    // the profile territory used by the authorization and RLS boundary.
-    const zoneName = profileZone.zoneName;
-    const arrondissementId = profile?.paris_arrondissement ?? profileZone.arrondissementId;
-    const zoneContext = buildZoneContext(zoneName, arrondissementId);
-    const hasGreaterParisZone = Boolean(zoneName && findZoneWithNeighbors(zoneName));
+    const hasExplicitTerritoryContext =
+      requestedZoneName !== null || requestedArrondissement !== null;
+    const profileZoneContext = buildZoneContext(
+      profileZone.zoneName,
+      profile?.paris_arrondissement ?? profileZone.arrondissementId,
+    );
+    const requestedZoneContext = hasExplicitTerritoryContext
+      ? buildZoneContext(requestedZoneName, requestedArrondissement)
+      : null;
+    const zoneContext = requestedZoneContext ?? profileZoneContext;
+    const zoneName = zoneContext.zoneName;
+    const arrondissementId = zoneContext.arrondissementId;
+    const hasValidZone = hasValidTerritoryContext(zoneContext);
+    const hasGreaterParisZone = zoneName !== null;
     const hasArrondissement =
       arrondissementId !== null && arrondissementId >= 1 && arrondissementId <= 20;
 
@@ -205,9 +208,14 @@ export async function GET(request: Request) {
         { status: 400 },
       );
     }
-    if (channelType === "territory" && !zoneName && !arrondissementId) {
+    if (channelType === "territory" && !hasValidZone) {
       return NextResponse.json(
-        { error: "Zone manquante", hint: "Votre profil ne permet pas encore cette recherche territoriale." },
+        {
+          error: hasExplicitTerritoryContext ? "Zone invalide" : "Zone manquante",
+          hint: hasExplicitTerritoryContext
+            ? "Votre zone n'est pas reconnue. Choisissez un arrondissement parisien ou une commune de la région."
+            : "Choisissez un arrondissement parisien ou une commune de la région pour rechercher dans ce fil.",
+        },
         { status: 400 },
       );
     }

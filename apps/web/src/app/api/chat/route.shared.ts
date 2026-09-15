@@ -1,9 +1,7 @@
 import { z } from "zod";
 import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
-import {
-  type ChatChannelType,
-  type ZoneContext,
-} from "@/lib/chat/channels";
+import { type ChatChannelType, type ZoneContext, getTerritoryFilter } from "@/lib/chat/channels";
+import { extractParisArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
 import {
   isChatTopicId,
   isChatTopicAllowedForChannel,
@@ -199,8 +197,20 @@ export function buildZoneContext(
   zoneName: string | null,
   arrondissementId: number | null,
 ): ZoneContext {
+  const normalizedZoneName = zoneName?.trim() || null;
+  const matchedZone = normalizedZoneName
+    ? findZoneWithNeighbors(normalizedZoneName)
+    : null;
+  const parisArrondissement = normalizedZoneName
+    ? extractParisArrondissementFromLabel(normalizedZoneName)
+    : null;
   return {
-    zoneName: zoneName && findZoneWithNeighbors(zoneName) ? zoneName : null,
-    arrondissementId,
+    zoneName: matchedZone?.name ?? (parisArrondissement ? normalizedZoneName : null),
+    arrondissementId: arrondissementId ?? parisArrondissement,
   };
+}
+
+export function hasValidTerritoryContext(zoneContext: ZoneContext | null): boolean {
+  const filter = getTerritoryFilter(zoneContext);
+  return Boolean(filter.arrondissementIds?.length || filter.zoneNames?.length);
 }

@@ -1,4 +1,4 @@
-import { extractArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
+import { extractParisArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
 import { extractEventRefFromNotes } from "@/lib/actions/event-link";
 import { toActionContract } from "@/lib/actions/unified-source/contracts";
 import { isPublishedFuturePreAction } from "@/lib/actions/temporal";
@@ -174,11 +174,17 @@ export function buildPublicActionReference(
 
 export function resolveShareTerritoryDestination(
   profile: Pick<ShareProfile, "paris_arrondissement" | "metadata"> | null,
+  action?: Pick<ActionRow, "location_label"> | null,
 ): Pick<ShareDestination, "zoneName" | "arrondissementId"> | null {
+  const actionTerritory = resolveActionTerritoryDestination(action);
+  if (actionTerritory) {
+    return actionTerritory;
+  }
+
   const metadataZone: ZoneContext = extractZoneContextFromMetadata(profile?.metadata ?? null);
   const zoneName = metadataZone.zoneName;
   const inferredArrondissement = zoneName
-    ? extractArrondissementFromLabel(zoneName)
+    ? extractParisArrondissementFromLabel(zoneName)
     : null;
   const arrondissementId =
     profile?.paris_arrondissement ?? metadataZone.arrondissementId ?? inferredArrondissement;
@@ -194,8 +200,29 @@ export function resolveShareTerritoryDestination(
   return null;
 }
 
+export function resolveActionTerritoryDestination(
+  action: Pick<ActionRow, "location_label"> | null | undefined,
+): Pick<ShareDestination, "zoneName" | "arrondissementId"> | null {
+  const locationLabel = action?.location_label?.trim();
+  if (!locationLabel) {
+    return null;
+  }
+
+  const arrondissementId = extractParisArrondissementFromLabel(locationLabel);
+  if (arrondissementId) {
+    return {
+      zoneName: `${arrondissementId === 1 ? "1er" : `${arrondissementId}e`} arrondissement`,
+      arrondissementId,
+    };
+  }
+
+  const zone = findZoneWithNeighbors(locationLabel);
+  return zone ? { zoneName: zone.name, arrondissementId: null } : null;
+}
+
 export function buildShareDestinationList(params: {
   profile: ShareProfile | null;
+  action?: Pick<ActionRow, "location_label"> | null;
   dmRows: Array<{
     peer_id: string;
     peer_display_name: string | null;
@@ -211,7 +238,7 @@ export function buildShareDestinationList(params: {
       description: "Conversation existante de la communauté",
     },
   ];
-  const territory = resolveShareTerritoryDestination(params.profile);
+  const territory = resolveShareTerritoryDestination(params.profile, params.action);
   if (territory && params.includeTerritory !== false) {
     destinations.push({
       id: "territory",

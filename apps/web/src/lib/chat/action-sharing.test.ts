@@ -5,6 +5,8 @@ import {
   getPublicActionShareKind,
   isPublicActionReferenceAvailable,
   isShareableFutureAction,
+  resolveActionTerritoryDestination,
+  resolveShareTerritoryDestination,
 } from "./action-sharing";
 import type { ActionRow } from "@/types/database";
 
@@ -83,6 +85,29 @@ describe("action sharing contract", () => {
     });
     expect(reference).not.toHaveProperty("preparationData");
     expect(reference).not.toHaveProperty("waste_kg");
+  });
+
+  it("resolves an action territory only from a canonical Paris label", () => {
+    expect(resolveActionTerritoryDestination({ location_label: "Place de la République, 75003 Paris" })).toEqual({
+      zoneName: "3e arrondissement",
+      arrondissementId: 3,
+    });
+    expect(resolveActionTerritoryDestination({ location_label: "Berges de Seine" })).toBeNull();
+  });
+
+  it("prefers a reliable action territory and otherwise falls back to the profile", () => {
+    expect(
+      resolveShareTerritoryDestination(
+        { paris_arrondissement: 11, metadata: null },
+        { location_label: "Place de la République, 75003 Paris" },
+      ),
+    ).toEqual({ zoneName: "3e arrondissement", arrondissementId: 3 });
+    expect(
+      resolveShareTerritoryDestination(
+        { paris_arrondissement: 11, metadata: null },
+        { location_label: "Berges de Seine" },
+      ),
+    ).toEqual({ zoneName: "11e arrondissement", arrondissementId: 11 });
   });
 
   it("lists only the community, profile territory, and existing private destinations", () => {

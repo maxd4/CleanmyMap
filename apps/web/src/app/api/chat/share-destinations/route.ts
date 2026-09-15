@@ -9,11 +9,8 @@ import { loadActionById } from "@/lib/actions/store";
 import {
   buildShareDestinationList,
   getPublicActionShareKind,
-  resolveShareTerritoryDestination,
 } from "@/lib/chat/action-sharing";
 import { loadCurrentProfile } from "../route.data";
-import { canAccessChatChannel } from "@/lib/chat/channels";
-import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
 
 export const runtime = "nodejs";
 // Justification Vercel: les destinations dépendent de l’utilisateur courant et de ses memberships.
@@ -71,27 +68,14 @@ export async function GET(request: Request) {
       return handleApiError(dmResult.error, "GET /api/chat/share-destinations");
     }
 
-    const territory = resolveShareTerritoryDestination(profile);
-    const includeTerritory = Boolean(
-      territory &&
-        canAccessChatChannel("territory", {
-          roleLabel: identity.activeRole,
-          hasArrondissement: territory.arrondissementId !== null,
-          hasGreaterParisZone: Boolean(
-            territory.zoneName && findZoneWithNeighbors(territory.zoneName),
-          ),
-          zoneContext: {
-            zoneName: territory.zoneName ?? null,
-            arrondissementId: territory.arrondissementId ?? null,
-          },
-        }),
-    );
+    const includeTerritory = Boolean(action);
 
     return NextResponse.json(
       {
         shareKind,
         destinations: buildShareDestinationList({
           profile,
+          action,
           dmRows: (dmResult.data ?? []) as DmDestinationRow[],
           includeTerritory,
         }),
