@@ -511,6 +511,15 @@ export async function loadActionOrganizerIdsForAction(
   return creatorId ? [creatorId] : [];
 }
 
+/** Returns only the canonical relation; never falls back to the action creator. */
+export async function loadCanonicalActionOrganizerIdsForAction(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<string[]> {
+  const rows = await loadActionOrganizerRowsForAction(supabase, actionId);
+  return [...new Set(rows.map((row) => row.organizer_clerk_id.trim()).filter(Boolean))];
+}
+
 export function resolveDefaultActionOrganizerIds(params: {
   creatorUserId: string;
   creatorIsGlobalAdmin: boolean;

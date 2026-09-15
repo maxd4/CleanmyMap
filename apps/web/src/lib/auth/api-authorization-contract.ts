@@ -281,6 +281,19 @@ export const API_AUTHORIZATION_CONTRACT = {
       ],
     },
   },
+  "actions/[actionId]/administrative-requirements": {
+    POST: {
+      expected: "Authenticated admin/max/elu or canonical action organizer/coorganizer validates a pre-action administrative state",
+      dimensions: ["authentication", "business permission", "audit"],
+      actual: "requireAuthenticatedAccess + canValidateActionAdministrativeRequirements against action_organizers + appendActionModerationAudit; repeated validation is idempotent",
+      evidence: [
+        "requireAuthenticatedAccess",
+        "canValidateActionAdministrativeRequirements",
+        "loadCanonicalActionOrganizerIdsForAction",
+        "appendActionModerationAudit",
+      ],
+    },
+  },
   "actions/[actionId]/publish": {
     POST: {
       expected: "Authenticated owner/organizer or explicit admin/max pre-action publication",

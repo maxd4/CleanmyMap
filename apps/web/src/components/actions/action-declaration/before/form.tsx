@@ -19,6 +19,7 @@ import { buildPublicationSummary, labelForPreparationState } from "./model";
 import { OperationalRouteEditor } from "../operational-route-editor";
 import { ChatActionShareDialog } from "@/components/chat/chat-action-share-dialog";
 import { buildJoinActionHref } from "@/lib/sections/join-action-routes";
+import { AdministrativeRequirementsStatus } from "../../administrative-requirements-status";
 
 const BEFORE_ACTION_STEPS = [
   "Identité",
@@ -217,6 +218,11 @@ export function ActionBeforeDeclarationForm({
                     </CmmButton>
                   </>
                 ) : null}
+                <AdministrativeRequirementsStatus
+                  actionId={createdId}
+                  initialAction={publishedAction}
+                  surface="summary"
+                />
                 <CmmButton tone="tertiary" variant="pill" size="md" onClick={onContinueComplete}>
                   Passer au formulaire complet
                   <ArrowRight size={14} />

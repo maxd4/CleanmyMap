@@ -32,6 +32,7 @@ import type {
   LegacyOperationalRoute,
 } from "@/lib/route/route-operational";
 import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract";
+import type { AdministrativeRequirements } from "./administrative-requirements";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
@@ -75,6 +76,8 @@ export type ActionPreparationData = {
   participantMessage?: string;
   creatorRole?: "organisateur" | "benevole" | "association" | "etudiant" | "autre";
   preparationState?: "brouillon" | "pret_a_partager" | "action_en_cours" | "a_completer_apres_action";
+  /** Dedicated administrative validation state; distinct from preparationState. */
+  administrativeRequirements?: AdministrativeRequirements;
   logisticsNotes?: string;
   checklistBeforeDeparture?: string;
   volunteersExpected?: number;

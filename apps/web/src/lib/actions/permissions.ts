@@ -69,6 +69,24 @@ export function canManageAction(
   return organizerIds.map((value) => value.trim()).includes(userId);
 }
 
+/**
+ * Dedicated administrative-requirements capability.
+ * The action creator is not a substitute for an organizer relation here.
+ */
+export function canValidateActionAdministrativeRequirements(
+  identity: Pick<ActionPermissionIdentity, "userId" | "activeRole"> | null | undefined,
+  _action: ActionPermissionTarget,
+  organizerIds: string[],
+): boolean {
+  const activeRole = identity?.activeRole;
+  if (activeRole === "admin" || activeRole === "max" || activeRole === "elu") {
+    return true;
+  }
+
+  const userId = identity?.userId?.trim();
+  return Boolean(userId && organizerIds.some((organizerId) => organizerId.trim() === userId));
+}
+
 export function canReviewActionParticipants(
   identity: ActionPermissionIdentity | null | undefined,
   action: ActionPermissionTarget,

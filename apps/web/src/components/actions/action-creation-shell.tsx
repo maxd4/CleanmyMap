@@ -160,7 +160,9 @@ export function ActionCreationShell({
       label: "Formalités juridiques",
       description: "Repérer ce qui reste à documenter depuis une source officielle.",
       icon: FileWarning,
-      content: <ActionCreationLegalPanel />,
+          content: (
+            <ActionCreationLegalPanel actionId={flowProps.initialActionId ?? null} />
+          ),
     },
   ];
 

@@ -600,6 +600,7 @@ canManageActionsGlobally
 canOverrideActionParticipants
 canEditValidatedImpact
 canViewActionModerationAudit
+canValidateActionAdministrativeRequirements
 ```
 
 Les capacités globales ci-dessus consomment uniquement `ACTIVE_ROLE` et sont
@@ -644,6 +645,24 @@ Une projection serveur sanitizée est préférable au chargement d'un objet comp
 La création ou la déclaration d'une action suit toujours le parcours métier
 normal de validation, quel que soit le rôle actif de son auteur. Aucun rôle ne
 confère d'auto-validation implicite.
+
+La validation des démarches administratives d'une pré-action est une capacité
+distincte de `canManageAction` :
+
+```txt
+ACTIVE_ROLE=admin|max|elu
+OU organisateur/coorganisateur de l'action dans action_organizers
+→ autorisé
+autres → 403
+```
+
+Le créateur n'obtient pas cette capacité du seul fait de la création. La
+mutation est contrôlée côté serveur, conserve `administrativeRequirements`
+séparé de `preparationState`, et réutilise l'audit Actions avec les valeurs
+avant/après. Une pré-action créée ne signifie donc pas que les démarches sont
+validées ; elles doivent l'être avant le démarrage réel de l'action. Cette
+validation ne doit pas empêcher la saisie rétrospective des résultats déjà
+réalisés.
 
 Une validation ou modération ultérieure par `admin`/`max` est une opération
 distincte, contrôlée côté serveur, motivée lorsque le contrat l'exige et

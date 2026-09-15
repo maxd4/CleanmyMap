@@ -348,6 +348,7 @@ export type ActionEditorRecord = {
     coordinates: [number, number][];
   } | null;
   recordType?: string | null;
+  canValidateAdministrativeRequirements?: boolean;
 };
 
 export type ActionEditorResponse = {
@@ -432,6 +433,48 @@ export async function updateAction(
     });
   }
   return body as { actionId: string; actionPhase: ActionPhase | null };
+}
+
+export type ValidateAdministrativeRequirementsResponse = {
+  status: "ok";
+  actionId: string;
+  administrativeRequirements: {
+    status: "validated";
+    validatedAt: string;
+  };
+};
+
+export async function validateActionAdministrativeRequirements(
+  actionId: string,
+): Promise<ValidateAdministrativeRequirementsResponse> {
+  const response = await fetch(
+    `/api/actions/${encodeURIComponent(actionId)}/administrative-requirements`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  );
+  const body = await parseJsonSafely(response);
+  if (!response.ok) {
+    throw createActionError(
+      response,
+      body,
+      parseErrorMessage(body, "Impossible de valider les démarches administratives."),
+    );
+  }
+  if (
+    !body ||
+    typeof body !== "object" ||
+    typeof (body as { actionId?: unknown }).actionId !== "string" ||
+    typeof (body as { administrativeRequirements?: unknown }).administrativeRequirements !== "object"
+  ) {
+    throw new AppError({
+      kind: "server",
+      message: "La réponse du service est incomplète pour les démarches administratives.",
+    });
+  }
+  return body as ValidateAdministrativeRequirementsResponse;
 }
 
 export async function publishAction(actionId: string): Promise<{

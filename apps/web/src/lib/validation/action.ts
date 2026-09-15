@@ -227,6 +227,14 @@ const preparationDataSchema = z
     participantMessage: z.string().max(2000).optional(),
     creatorRole: z.enum(["organisateur", "benevole", "association", "etudiant", "autre"]).optional(),
     preparationState: z.enum(["brouillon", "pret_a_partager", "action_en_cours", "a_completer_apres_action"]).optional(),
+    administrativeRequirements: z
+      .object({
+        status: z.enum(["pending", "validated"]),
+        validatedAt: z.string().datetime().nullable().optional(),
+        validatedByUserId: z.string().min(1).max(120).nullable().optional(),
+      })
+      .strict()
+      .optional(),
     logisticsNotes: z.string().max(2000).optional(),
     checklistBeforeDeparture: z.string().max(2000).optional(),
     volunteersExpected: z.number().int().min(0).max(500).optional(),

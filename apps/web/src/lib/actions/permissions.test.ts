@@ -6,9 +6,44 @@ import {
   canEditValidatedImpact,
   canReviewActionParticipants,
   canViewActionModerationAudit,
+  canValidateActionAdministrativeRequirements,
 } from "./permissions";
 
 describe("action permissions", () => {
+  it.each(["admin", "max", "elu"] as const)(
+    "allows the privileged active role %s to validate administrative requirements",
+    (activeRole) => {
+      expect(
+        canValidateActionAdministrativeRequirements(
+          { userId: "privileged-1", activeRole },
+          { createdByClerkId: "creator-1" },
+          [],
+        ),
+      ).toBe(true);
+    },
+  );
+
+  it.each(["benevole", "coordinateur", "scientifique", "entreprise"] as const)(
+    "requires the canonical organizer relation for %s",
+    (activeRole) => {
+      const action = { createdByClerkId: "creator-1" };
+      expect(
+        canValidateActionAdministrativeRequirements(
+          { userId: "creator-1", activeRole },
+          action,
+          [],
+        ),
+      ).toBe(false);
+      expect(
+        canValidateActionAdministrativeRequirements(
+          { userId: "organizer-1", activeRole },
+          action,
+          ["organizer-1", "coorganizer-1"],
+        ),
+      ).toBe(true);
+    },
+  );
+
   it.each([
     ["benevole", false],
     ["coordinateur", false],

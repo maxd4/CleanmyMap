@@ -7,6 +7,7 @@
     "apps/web/src/app/api/account/activity-status/route.ts",
     "apps/web/src/app/api/account/profile-role/route.ts",
     "apps/web/src/app/api/account/promotion-requests/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.ts",
     "apps/web/src/app/api/actions/[actionId]/audit/route.ts",
     "apps/web/src/app/api/actions/[actionId]/cancel/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
