@@ -103,6 +103,9 @@ export function ActionCreationShell({
     locationLabel?: string;
     actionDate?: string;
   }>({});
+  const [currentActionId, setCurrentActionId] = useState<string | null>(
+    flowProps.initialActionId ?? null,
+  );
   const [openPanels, setOpenPanels] = useState<Record<ActionCreationPanelId, boolean>>(() => ({
     "pre-formulaire": initialPanel === "pre-formulaire",
     itineraire: initialPanel === "itineraire",
@@ -122,6 +125,9 @@ export function ActionCreationShell({
       actionDate: form.actionDate.trim(),
     });
   }, []);
+  const handleBeforeActionPersisted = useCallback((actionId: string) => {
+    setCurrentActionId(actionId);
+  }, []);
 
   const panels: ActionCreationPanel[] = [
     {
@@ -134,6 +140,7 @@ export function ActionCreationShell({
           {...flowProps}
           initialEntryPath={initialEntryPath}
           onBeforeFormChange={handleBeforeFormChange}
+          onBeforeActionPersisted={handleBeforeActionPersisted}
         />
       ),
     },
@@ -161,7 +168,7 @@ export function ActionCreationShell({
       description: "Repérer ce qui reste à documenter depuis une source officielle.",
       icon: FileWarning,
           content: (
-            <ActionCreationLegalPanel actionId={flowProps.initialActionId ?? null} />
+            <ActionCreationLegalPanel actionId={currentActionId} />
           ),
     },
   ];

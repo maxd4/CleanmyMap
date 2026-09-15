@@ -285,12 +285,12 @@ export const API_AUTHORIZATION_CONTRACT = {
     POST: {
       expected: "Authenticated admin/max/elu or canonical action organizer/coorganizer validates a pre-action administrative state",
       dimensions: ["authentication", "business permission", "audit"],
-      actual: "requireAuthenticatedAccess + canValidateActionAdministrativeRequirements against action_organizers + appendActionModerationAudit; repeated validation is idempotent",
+      actual: "requireAuthenticatedAccess + canValidateActionAdministrativeRequirements against action_organizers + service-role atomic validation RPC; repeated validation is idempotent",
       evidence: [
         "requireAuthenticatedAccess",
         "canValidateActionAdministrativeRequirements",
         "loadCanonicalActionOrganizerIdsForAction",
-        "appendActionModerationAudit",
+        "validate_action_administrative_requirements",
       ],
     },
   },

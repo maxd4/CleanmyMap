@@ -253,14 +253,17 @@ const preparationDataSchema = z
     actualRoute: z.custom(isLegacyActualRoute, "Ancien parcours invalide.").optional(),
   })
   .strict()
-  .transform(({ actualRoute, operationalRoute, ...rest }) => ({
-    ...rest,
-    ...(operationalRoute
-      ? { operationalRoute }
-      : actualRoute
-        ? { operationalRoute: normalizeOperationalRoute(actualRoute)! }
-        : {}),
-  }));
+  .transform(({ actualRoute, operationalRoute, ...rest }) => {
+    delete rest.administrativeRequirements;
+    return {
+      ...rest,
+      ...(operationalRoute
+        ? { operationalRoute }
+        : actualRoute
+          ? { operationalRoute: normalizeOperationalRoute(actualRoute)! }
+          : {}),
+    };
+  });
 
 const routePlannerProofSchema = z
   .custom<RoutePlannerProof>(

@@ -1,3 +1,5 @@
+import type { ActionPhase, ActionPreparationData } from "./types";
+
 export const ADMINISTRATIVE_REQUIREMENT_STATUSES = ["pending", "validated"] as const;
 export type AdministrativeRequirementsStatus =
   (typeof ADMINISTRATIVE_REQUIREMENT_STATUSES)[number];
@@ -7,6 +9,57 @@ export type AdministrativeRequirements = {
   validatedAt?: string | null;
   validatedByUserId?: string | null;
 };
+
+export const PENDING_ADMINISTRATIVE_REQUIREMENTS: AdministrativeRequirements = {
+  status: "pending",
+  validatedAt: null,
+  validatedByUserId: null,
+};
+
+/**
+ * The generic create payload may carry this key for backwards compatibility,
+ * but it never gets to choose the server-managed state.
+ */
+export function sanitizeAdministrativeRequirementsForCreation(
+  actionPhase: ActionPhase | undefined,
+  preparationData: ActionPreparationData,
+): ActionPreparationData {
+  const clientPreparationData = { ...preparationData };
+  delete clientPreparationData.administrativeRequirements;
+
+  return actionPhase === "pre_action"
+    ? {
+        ...clientPreparationData,
+        administrativeRequirements: { ...PENDING_ADMINISTRATIVE_REQUIREMENTS },
+      }
+    : clientPreparationData;
+}
+
+/**
+ * Preserve the canonical server value whenever a generic PATCH writes the
+ * preparation JSON. A PATCH can add ordinary preparation fields, but cannot
+ * create, reset, validate, or forge this protected sub-state.
+ */
+export function preserveCanonicalAdministrativeRequirements(
+  currentPreparationData: ActionPreparationData | null | undefined,
+  incomingPreparationData: ActionPreparationData | null | undefined,
+): ActionPreparationData {
+  const current = currentPreparationData ?? {};
+  const incoming = incomingPreparationData ?? {};
+  const clientPreparationData = { ...incoming };
+  delete clientPreparationData.administrativeRequirements;
+  const hasCanonicalValue = Object.prototype.hasOwnProperty.call(
+    current,
+    "administrativeRequirements",
+  );
+
+  return hasCanonicalValue
+    ? {
+        ...clientPreparationData,
+        administrativeRequirements: current.administrativeRequirements,
+      }
+    : clientPreparationData;
+}
 
 export function normalizeAdministrativeRequirements(
   value: unknown,

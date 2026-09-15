@@ -4,8 +4,8 @@ const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const loadCanonicalActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
-const appendActionModerationAuditMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
+const validateAdministrativeRequirementsRpcMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
@@ -14,9 +14,6 @@ vi.mock("@/lib/authz", () => ({
 vi.mock("@/lib/actions/store", () => ({ loadActionById: loadActionByIdMock }));
 vi.mock("@/lib/actions/participation/organizers", () => ({
   loadCanonicalActionOrganizerIdsForAction: loadCanonicalActionOrganizerIdsForActionMock,
-}));
-vi.mock("@/lib/actions/moderation-audit", () => ({
-  appendActionModerationAudit: appendActionModerationAuditMock,
 }));
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
@@ -33,41 +30,30 @@ function buildAction(preparationData: Record<string, unknown> = {}) {
 }
 
 describe("POST /api/actions/:actionId/administrative-requirements", () => {
-  let updateResult: { data: { id: string } | null; error: null };
-  let updateQuery: Record<string, ReturnType<typeof vi.fn>>;
-  let fromMock: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
     requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "organizer-1" });
     getCurrentUserIdentityMock.mockResolvedValue({ role: "benevole", activeRole: "benevole" });
     loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValue(["organizer-1", "coorganizer-1"]);
-    appendActionModerationAuditMock.mockResolvedValue(undefined);
-
-    updateResult = { data: { id: "action-42" }, error: null };
-    updateQuery = {};
-    for (const method of ["eq", "is"]) {
-      updateQuery[method] = vi.fn().mockReturnValue(updateQuery);
-    }
-    updateQuery.select = vi.fn().mockReturnValue(updateQuery);
-    updateQuery.maybeSingle = vi.fn().mockResolvedValue(updateResult);
-    fromMock = vi.fn().mockReturnValue({
-      update: vi.fn().mockReturnValue(updateQuery),
-    });
-    getSupabaseServerClientMock.mockReturnValue({ from: fromMock });
-  });
-
-  it("allows an organizer, persists validated, and audits the transition once", async () => {
-    loadActionByIdMock
-      .mockResolvedValueOnce(buildAction())
-      .mockResolvedValueOnce(buildAction({
+    validateAdministrativeRequirementsRpcMock.mockResolvedValue({
+      data: {
+        alreadyValidated: false,
+        actionId: "action-42",
         administrativeRequirements: {
           status: "validated",
           validatedAt: "2026-09-15T10:00:00.000Z",
-          validatedByUserId: "organizer-1",
         },
-      }));
+      },
+      error: null,
+    });
+    getSupabaseServerClientMock.mockReturnValue({
+      rpc: validateAdministrativeRequirementsRpcMock,
+    });
+  });
+
+  it("allows an organizer and delegates the protected transition to the server RPC", async () => {
+    loadActionByIdMock.mockResolvedValue(buildAction());
 
     const { POST } = await import("./route");
     const context = { params: Promise.resolve({ actionId: "action-42" }) };
@@ -80,24 +66,30 @@ describe("POST /api/actions/:actionId/administrative-requirements", () => {
       actionId: "action-42",
       administrativeRequirements: { status: "validated" },
     });
-    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
-    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        operation: "validate_administrative_requirements",
-        previousValue: { status: "pending" },
-        newValue: { status: "validated" },
-        details: expect.objectContaining({
-          actionId: "action-42",
-          previousStatus: "pending",
-          newStatus: "validated",
-          validatedByUserId: "organizer-1",
-        }),
-      }),
+    expect(validateAdministrativeRequirementsRpcMock).toHaveBeenCalledWith(
+      "validate_action_administrative_requirements",
+      {
+        p_action_id: "action-42",
+        p_validated_by_user_id: "organizer-1",
+      },
     );
 
     const second = await POST(new Request("http://localhost"), context);
     expect(second.status).toBe(200);
-    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+    expect(validateAdministrativeRequirementsRpcMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("allows a canonical co-organizer without treating creator status as permission", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValue({ ok: true, userId: "coorganizer-1" });
+    loadActionByIdMock.mockResolvedValue(buildAction());
+
+    const { POST } = await import("./route");
+    const response = await POST(new Request("http://localhost"), {
+      params: Promise.resolve({ actionId: "action-42" }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(getSupabaseServerClientMock).toHaveBeenCalledWith(true);
   });
 
   it("returns 403 for a creator who is not in action_organizers", async () => {
@@ -111,8 +103,7 @@ describe("POST /api/actions/:actionId/administrative-requirements", () => {
     });
 
     expect(response.status).toBe(403);
-    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
-    expect(fromMock).not.toHaveBeenCalled();
+    expect(validateAdministrativeRequirementsRpcMock).not.toHaveBeenCalled();
   });
 
   it("allows admin, max and elu based on active role", async () => {
@@ -124,6 +115,6 @@ describe("POST /api/actions/:actionId/administrative-requirements", () => {
         params: Promise.resolve({ actionId: "action-42" }),
       });
     }
-    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(3);
+    expect(validateAdministrativeRequirementsRpcMock).toHaveBeenCalledTimes(3);
   });
 });

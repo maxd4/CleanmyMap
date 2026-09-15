@@ -34,6 +34,7 @@ type ActionDeclarationEntryFlowProps = ComponentProps<typeof ActionDeclarationFo
   signInHref?: string;
   signUpHref?: string;
   onBeforeFormChange?: (form: FormState) => void;
+  onBeforeActionPersisted?: (actionId: string) => void;
 };
 
 function EntryFeature({ children }: { children: string }) {
@@ -303,6 +304,7 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
         onReturnToChoice={backToChoice}
         onPassToComplete={(actionId) => transitionToComplete(actionId)}
         onFormChange={props.onBeforeFormChange}
+        onActionPersisted={props.onBeforeActionPersisted}
         signInHref={props.signInHref}
         signUpHref={props.signUpHref}
       />

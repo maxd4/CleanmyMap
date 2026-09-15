@@ -52,6 +52,7 @@ export function useBeforeActionForm({
   initialRecordType = "action",
   onPassToComplete,
   onFormChange,
+  onActionPersisted,
 }: ActionBeforeDeclarationFormProps) {
   const resolvedDefaultActorName = actorNameOptions.includes(defaultActorName)
     ? defaultActorName
@@ -279,6 +280,7 @@ export function useBeforeActionForm({
     try {
       const result = await createAction(payload);
       setCreatedId(result.id);
+      onActionPersisted?.(result.id);
       setSubmissionState("success");
       saveDraft(normalizedForm);
       await trackFunnel("submit_success", "quick", {
