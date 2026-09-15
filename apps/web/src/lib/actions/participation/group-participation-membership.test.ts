@@ -4,7 +4,7 @@ import { appendActionMetadataToNotes } from "../metadata";
 import { joinActionParticipation } from "./group-participation-membership";
 
 type ActionFixture = {
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "cancelled";
   moderation_visibility: "visible" | "hidden" | null;
   action_phase: "pre_action" | "post_action_complete";
   action_date: string;
@@ -37,6 +37,7 @@ describe("joinActionParticipation eligibility boundary", () => {
   it.each([
     ["past", { action_date: "2026-09-13" }],
     ["rejected", { status: "rejected" as const }],
+    ["cancelled", { status: "cancelled" as const }],
     ["hidden", { moderation_visibility: "hidden" as const }],
     ["unpublished", { published_at: null }],
     ["not a pre-action", { action_phase: "post_action_complete" as const }],

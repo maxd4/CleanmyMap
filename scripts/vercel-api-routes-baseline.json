@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-14T23:30:46.968Z",
-  "apiRouteCount": 99,
+  "apiRouteCount": 100,
   "apiRoutes": [
     "apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts",
     "apps/web/src/app/api/account/active-profile/route.ts",
@@ -8,6 +8,7 @@
     "apps/web/src/app/api/account/profile-role/route.ts",
     "apps/web/src/app/api/account/promotion-requests/route.ts",
     "apps/web/src/app/api/actions/[actionId]/audit/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/cancel/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
     "apps/web/src/app/api/actions/[actionId]/participation-claim/route.ts",
     "apps/web/src/app/api/actions/[actionId]/public/route.ts",

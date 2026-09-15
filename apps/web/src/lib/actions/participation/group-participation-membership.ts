@@ -89,7 +89,7 @@ export async function joinActionParticipation(
   participantsCount: number;
 }> {
   const actionResult = await runSingleActionQuery<{
-    status: "pending" | "approved" | "rejected";
+    status: "pending" | "approved" | "rejected" | "cancelled";
     moderation_visibility?: "visible" | "hidden" | null;
     action_phase: ActionPhase;
     action_date: string;
@@ -99,6 +99,12 @@ export async function joinActionParticipation(
   }>(supabase, (query) => query.select(ACTION_PARTICIPATION_COLUMNS).eq("id", params.actionId).maybeSingle());
 
   if (!actionResult) {
+    const notFoundError = new Error("Action not found.");
+    notFoundError.name = "NotFoundError";
+    throw notFoundError;
+  }
+
+  if (actionResult.status === "cancelled") {
     const notFoundError = new Error("Action not found.");
     notFoundError.name = "NotFoundError";
     throw notFoundError;

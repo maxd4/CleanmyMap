@@ -4,6 +4,9 @@ import type { JoinableActionItem } from "@/lib/actions/participation/group-parti
 export type ActionCardStatus = "open" | "pending" | "closed" | "confirmed" | "cancelled" | "completed";
 
 export function getActionDisplayStatus(item: JoinableActionItem): "open" | "pending" | "closed" | "confirmed" {
+  if (item.status === "cancelled") {
+    return "closed";
+  }
   if (item.joined) {
     return "confirmed";
   }
@@ -16,7 +19,7 @@ export function getActionDisplayStatus(item: JoinableActionItem): "open" | "pend
   return "open";
 }
 export function getCardDisplayStatus(item: JoinableActionItem): ActionCardStatus {
-  if (item.participationStatus === "cancelled") {
+  if (item.status === "cancelled" || item.participationStatus === "cancelled") {
     return "cancelled";
   }
 

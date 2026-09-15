@@ -212,6 +212,11 @@ export function ActionCard({
           </div>
 
           <div className="space-y-1 text-sm text-slate-600">
+            {item.status === "cancelled" ? (
+              <p className="font-semibold text-slate-700">
+                {fr ? "Cette action a été annulée." : "This action was cancelled."}
+              </p>
+            ) : null}
             <p className="flex items-center gap-2">
               <CalendarDays size={14} className="text-slate-400" />
               {fr ? formatDate(item.action_date, "fr") : formatDate(item.action_date, "en")}

@@ -89,6 +89,13 @@ l'historique personnel `historyItems` et ne permet aucune participation
 rétroactive. L'historique personnel et le partage d'une référence d'action
 restent des capacités distinctes de ce parcours.
 
+Une action future annulée n'est plus renvoyée dans la liste normale et ne peut
+plus être rejointe. Lorsqu'un utilisateur y avait déjà une participation, son
+historique peut afficher `Cette action a été annulée.` ; la relation de
+participation et les références de discussion ne sont pas supprimées. La
+discussion historique est consultable selon son contrat propre, mais aucun
+nouveau message ne peut être publié après l'annulation.
+
 ## Contrat de participation
 
 Le flux normal :

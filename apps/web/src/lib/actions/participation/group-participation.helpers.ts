@@ -38,6 +38,10 @@ export type ActionPreviewRow = Pick<
   | "action_phase"
   | "published_at"
   | "event_start_time"
+  | "cancelled_at"
+  | "cancelled_by_clerk_id"
+  | "cancellation_reason"
+  | "cancelled_from_status"
 >;
 
 export type ActionParticipantRecordRow = Pick<
@@ -76,9 +80,9 @@ export type ActionParticipantReviewRow = Pick<
 };
 
 const ACTION_PREVIEW_COLUMNS =
-  "id, created_at, action_date, event_start_time, location_label, volunteers_count, duration_minutes, status, moderation_visibility, notes, action_phase, published_at";
+  "id, created_at, action_date, event_start_time, location_label, volunteers_count, duration_minutes, status, moderation_visibility, notes, action_phase, published_at, cancelled_at, cancelled_by_clerk_id, cancellation_reason, cancelled_from_status";
 const ACTION_PARTICIPATION_COLUMNS =
-  "status, moderation_visibility, notes, published_at, action_phase, action_date, event_start_time";
+  "status, moderation_visibility, notes, published_at, action_phase, action_date, event_start_time, cancelled_at";
 
 export type JoinableActionMetadata = {
   groupJoinEnabled: boolean;
@@ -130,7 +134,7 @@ export function buildJoinableItem(
   location_label: string;
   volunteers_count: number;
   duration_minutes: number;
-  status: "pending" | "approved" | "rejected";
+  status: ActionRow["status"];
   actionPhase: ActionPhase;
   participantsCount: number;
   joined: boolean;

@@ -92,7 +92,7 @@ export function buildActionInsertPayload(params: {
   payload: CreateActionPayload;
   persistedGeometry: ReturnType<typeof buildCreateActionGeometry>;
   finalDrawing: ActionDrawing | null;
-  status: ActionStatus | undefined;
+  status: Exclude<ActionStatus, "cancelled"> | undefined;
 }) {
   return {
     created_by_clerk_id: params.userId,
@@ -134,7 +134,7 @@ async function insertCreatedAction(
     payload: CreateActionPayload;
     persistedGeometry: ReturnType<typeof buildCreateActionGeometry>;
     finalDrawing: ActionDrawing | null;
-    status: ActionStatus | undefined;
+    status: Exclude<ActionStatus, "cancelled"> | undefined;
   },
 ): Promise<string> {
   const baseInsert = buildActionInsertPayload(params);
@@ -190,7 +190,7 @@ export async function createAction(
     payload: CreateActionPayload;
     organizers: ResolvedActionOrganizer[];
     manualParticipants?: ResolvedActionParticipant[];
-    status?: ActionStatus;
+    status?: Exclude<ActionStatus, "cancelled">;
     departmentAttribution?: {
       trust: "trusted";
       source: "admin_import";
