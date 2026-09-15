@@ -75,6 +75,7 @@ export function isShareableFutureAction(
   return getPublicActionShareKind(action, now) === "invitation";
 }
 
+/** Public reference eligibility only; this never authorizes action discussion access. */
 export function getPublicActionShareKind(
   action: Pick<
     ActionRow,

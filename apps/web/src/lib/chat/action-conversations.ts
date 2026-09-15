@@ -35,6 +35,13 @@ export type ActionDiscussionAccess =
   | { state: "excluded"; conversationId: string }
   | { state: "allowed"; conversationId: string };
 
+/**
+ * Discussion availability is distinct from share-reference eligibility. The
+ * caller must still be authenticated and not explicitly excluded; sharing,
+ * participation, and notification membership are not discussion authorities.
+ * The shared public-state predicate below is an implementation detail, not
+ * the authority that makes an action shareable or a discussion readable.
+ */
 export function isPublishedVisibleAction(action: {
   action_date: ActionRow["action_date"];
   event_start_time?: ActionRow["event_start_time"];
@@ -46,6 +53,7 @@ export function isPublishedVisibleAction(action: {
   return Boolean(action && isPublicActionReferenceAvailable(action));
 }
 
+/** Resolves the independent discussion contract without changing participation state. */
 export async function resolveActionDiscussionAccess(
   supabase: SupabaseClient,
   actionId: string,
