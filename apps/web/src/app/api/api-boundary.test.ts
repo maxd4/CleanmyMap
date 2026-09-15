@@ -8,7 +8,9 @@ import {
   type ApiHttpMethod,
 } from "@/lib/auth/api-authorization-contract";
 
-const auditedApiFamilies = new Set([
+// This is an inventory scope, not an access decision. Every discovered method
+// in these API domains must have an entry in API_AUTHORIZATION_CONTRACT.
+const contractedApiFamilies = new Set([
   "admin",
   "actions",
   "account",
@@ -79,7 +81,7 @@ function readRouteInventory() {
     .map((path) => {
       const route = relative(apiRoot, dirname(path)).replaceAll("\\", "/");
       const family = route.split("/")[0] ?? "";
-      if (!auditedApiFamilies.has(family)) return null;
+      if (!contractedApiFamilies.has(family)) return null;
 
       const source = readFileSync(path, "utf8");
       const resolved = resolveRouteMethods(path, source);
@@ -100,7 +102,7 @@ function contractEntries() {
 }
 
 describe("API security boundaries", () => {
-  it("audits every route.ts method covered by the API authorization contract", () => {
+  it("audits every contracted route.ts method against the method-level contract", () => {
     const inventory = readRouteInventory();
     const discovered = inventory.flatMap(({ route, methods }) =>
       Array.from(methods.keys()).map((method) => `${route} ${method}`),
@@ -109,6 +111,23 @@ describe("API security boundaries", () => {
 
     expect(new Set(declared)).toEqual(new Set(discovered));
     expect(declared).toHaveLength(discovered.length);
+  });
+
+  it("keeps public-safe and authenticated/AuthZ decisions explicit per method", () => {
+    const entries = contractEntries();
+    const byKey = new Map(entries.map((entry) => [entry.key, entry.entry]));
+
+    expect(entries.length).toBeGreaterThan(0);
+    for (const { key, entry } of entries) {
+      expect(entry.expected, `${key} needs an expected decision`).toBeTruthy();
+      expect(entry.actual, `${key} needs runtime evidence description`).toBeTruthy();
+      expect(entry.dimensions, `${key} needs authorization dimensions`).not.toHaveLength(0);
+    }
+
+    expect(byKey.get("actions/map GET")?.dimensions).toContain("public-safe");
+    expect(byKey.get("actions/group-join GET")?.dimensions).toContain("public-safe");
+    expect(byKey.get("actions/[actionId] PATCH")?.dimensions).toContain("authentication");
+    expect(byKey.get("actions/[actionId] PATCH")?.dimensions).toContain("business permission");
   });
 
   it("requires handler evidence for every non-public contract entry", () => {

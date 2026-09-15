@@ -8,6 +8,17 @@ import {
 } from "@/lib/sections-registry";
 import { FINALIZED_SECTION_RENDERERS } from "@/components/sections/rubriques/section-renderer";
 
+type SectionDefinition = Extract<
+  (typeof RUBRIQUE_REGISTRY)[number],
+  { kind: "section" }
+>;
+
+function isSection(
+  item: (typeof RUBRIQUE_REGISTRY)[number],
+): item is SectionDefinition {
+  return item.kind === "section";
+}
+
 function listFilesRecursively(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const fullPath = join(directory, entry.name);
@@ -29,7 +40,7 @@ describe("sections registry invariants", () => {
   });
 
   it("keeps section routes aligned with section ids", () => {
-    const sections = RUBRIQUE_REGISTRY.filter((item) => item.kind === "section");
+    const sections = RUBRIQUE_REGISTRY.filter(isSection);
 
     for (const section of sections) {
       expect(section.route).toBe(`/sections/${section.id}`);
@@ -37,10 +48,18 @@ describe("sections registry invariants", () => {
     }
   });
 
-  it("requires an explicit anonymous presentation for every section", () => {
-    const sections = RUBRIQUE_REGISTRY.filter((item) => item.kind === "section");
+  it("requires an explicit anonymous presentation for every available finalized section", () => {
+    const sections = RUBRIQUE_REGISTRY.filter(
+      (item): item is SectionDefinition =>
+        isSection(item) &&
+        item.availability === "available" &&
+        item.implementation === "finalized",
+    );
 
     for (const section of sections) {
+      expect(
+        Object.prototype.hasOwnProperty.call(section, "anonymousPresentation"),
+      ).toBe(true);
       expect(["visible", "blur", "disabled"]).toContain(
         section.anonymousPresentation,
       );

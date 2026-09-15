@@ -105,7 +105,7 @@ function nextWithSeoHeaders(req: NextRequest): NextResponse {
   return response;
 }
 
-function isProtectedAppPage(pathname: string): boolean {
+export function isProtectedAppPage(pathname: string): boolean {
   return PROTECTED_APP_PAGE_ROUTE_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
