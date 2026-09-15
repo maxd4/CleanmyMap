@@ -2,6 +2,16 @@
   padding-inline: clamp(0.375rem, 0.6vw, 0.75rem);
 }
 
+.cmm-ribbon-frame {
+  width: min(100%, var(--cmm-ribbon-max-width));
+  margin-inline: auto;
+}
+
+.cmm-ribbon-text {
+  font-size: var(--cmm-ribbon-text-size);
+  line-height: var(--leading-tight);
+}
+
 @media (min-width: 640px) {
   .cmm-site-frame {
     padding-inline: clamp(0.5rem, 0.8vw, 1rem);

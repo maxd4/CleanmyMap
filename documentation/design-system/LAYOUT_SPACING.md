@@ -30,6 +30,12 @@ Toute modification d'une surface pleine hauteur doit être vérifiée à 100 % d
 zoom sur desktop et mobile afin de confirmer que les deux rubans restent
 visibles, non recouverts et sans débordement horizontal.
 
+Le ruban supérieur et le ruban inférieur partagent la même largeur de chrome
+via `.cmm-ribbon-frame` et `--cmm-ribbon-max-width`. Le footer utilise toujours
+sa composition exhaustive ; aucune variante compacte de ruban n'est rendue par
+route. Les textes visibles des deux rubans utilisent `--cmm-ribbon-text-size`
+(`12px`) et le logo de marque reste rendu par `BrandLogo`.
+
 ## Primitives runtime
 
 ```tsx

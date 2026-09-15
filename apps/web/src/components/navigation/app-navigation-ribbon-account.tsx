@@ -77,10 +77,10 @@ export function AccountUserBubble({
         />
       </div>
       <div className="hidden min-w-0 flex-1 leading-tight lg:block">
-        <p className="truncate text-sm font-bold text-white">
+        <p className="cmm-ribbon-text truncate font-bold text-white">
           {username} · Niv. {identity.currentLevel}
         </p>
-        <p className="truncate text-xs font-medium text-slate-300">{fullName}</p>
+        <p className="cmm-ribbon-text truncate font-medium text-slate-300">{fullName}</p>
       </div>
       {activityStatusError ? (
         <span
@@ -128,7 +128,7 @@ export function RibbonAccountActions({
                   prefetch={false}
                   aria-label={locale === "fr" ? "Se connecter à CleanMyMap" : "Sign in to CleanMyMap"}
                   onClick={() => onTrackNavigation("/sign-in", locale === "fr" ? "Se connecter" : "Sign in", null)}
-                  className="inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full px-0 cmm-text-caption font-bold text-white transition hover:text-white lg:h-auto lg:w-auto lg:px-3 xl:h-10 xl:min-h-0"
+                  className="cmm-ribbon-text inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full px-0 font-bold text-white transition hover:text-white lg:h-auto lg:w-auto lg:px-3 xl:h-10 xl:min-h-0"
                 >
                   <LogIn className="h-4 w-4 lg:hidden" aria-hidden="true" />
                   <span className="hidden lg:inline">
@@ -140,7 +140,7 @@ export function RibbonAccountActions({
                   prefetch={false}
                   aria-label={locale === "fr" ? "Créer un compte CleanMyMap" : "Sign up for CleanMyMap"}
                   onClick={() => onTrackNavigation("/sign-up", locale === "fr" ? "S'inscrire" : "Sign up", null)}
-                  className="inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#27C3D9] to-[#18B68F] px-0 cmm-text-caption font-bold text-[#16313b] shadow-lg shadow-cyan-900/15 transition hover:from-[#2F80C3] hover:to-[#27C3D9] lg:h-auto lg:w-auto lg:px-4 xl:h-10 xl:min-h-0"
+                  className="cmm-ribbon-text inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#27C3D9] to-[#18B68F] px-0 font-bold text-[#16313b] shadow-lg shadow-cyan-900/15 transition hover:from-[#2F80C3] hover:to-[#27C3D9] lg:h-auto lg:w-auto lg:px-4 xl:h-10 xl:min-h-0"
                 >
                   <UserPlus className="h-4 w-4 lg:hidden" aria-hidden="true" />
                   <span className="hidden lg:inline">
