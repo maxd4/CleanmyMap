@@ -164,7 +164,9 @@ export function buildChatNotificationHref(payload: unknown): string | null {
   }
 
   if (
-    (normalized.channelType === "community" || normalized.channelType === "territory") &&
+    (normalized.channelType === "community" ||
+      normalized.channelType === "territory" ||
+      normalized.channelType === "admin_elu") &&
     normalized.topicId
   ) {
     params.set("topicId", normalized.topicId);

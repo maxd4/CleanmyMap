@@ -36,7 +36,7 @@ export async function loadVisiblePollIds(
     .select("id")
     .in("id", candidateIds)
     .eq("message_kind", "poll")
-    .eq("channel_type", "community");
+    .in("channel_type", ["community", "admin_elu"]);
 
   if (error) {
     throw error;

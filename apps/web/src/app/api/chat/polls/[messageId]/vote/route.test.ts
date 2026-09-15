@@ -23,7 +23,10 @@ const OPTION_YES = "33333333-3333-4333-8333-333333333333";
 const OPTION_NO = "44444444-4444-4444-8444-444444444444";
 const OTHER_OPTION = "55555555-5555-4555-8555-555555555555";
 
-function buildSupabaseMock({ visible = true }: { visible?: boolean } = {}) {
+function buildSupabaseMock({
+  visible = true,
+  channelType = "community",
+}: { visible?: boolean; channelType?: "community" | "admin_elu" } = {}) {
   const votes = new Map<string, string>();
   const options = [
     { id: OPTION_YES, position: 1, label: "Oui", message_id: MESSAGE_ID },
@@ -35,7 +38,7 @@ function buildSupabaseMock({ visible = true }: { visible?: boolean } = {}) {
     eq: vi.fn(() => appMessageQuery),
     maybeSingle: vi.fn().mockResolvedValue({
       data: visible
-        ? { id: MESSAGE_ID, message_kind: "poll", channel_type: "community" }
+        ? { id: MESSAGE_ID, message_kind: "poll", channel_type: channelType }
         : null,
       error: null,
     }),
@@ -189,6 +192,24 @@ describe("/api/chat/polls/[messageId]/vote", () => {
       { params: Promise.resolve({ messageId: MESSAGE_ID }) },
     );
     expect((await removedAgain.json()).totalVotes).toBe(0);
+  });
+
+  it("uses the same vote engine for a visible admin_elu poll", async () => {
+    const mock = buildSupabaseMock({ channelType: "admin_elu" });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(mock.supabase);
+    getSupabaseServerClientMock.mockReturnValue(mock.serviceSupabase);
+    const { PUT } = await import("./route");
+
+    const response = await PUT(
+      new Request("http://localhost/api/chat/polls/111/vote", {
+        method: "PUT",
+        body: JSON.stringify({ optionId: OPTION_YES }),
+      }),
+      { params: Promise.resolve({ messageId: MESSAGE_ID }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).selectedOptionId).toBe(OPTION_YES);
   });
 
   it("rejects an option belonging to another poll before writing", async () => {
