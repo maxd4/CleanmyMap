@@ -7,6 +7,7 @@ import {
   getBudgetDecision,
   VALIDATION_MODE_BUDGETS,
 } from "./validation-modes.mjs";
+import { resolveAssociatedWebTestFiles, resolveMigrationContracts } from "./validation-resolution.mjs";
 
 function ids(plan) {
   return plan.checks.map((check) => check.id);
@@ -27,13 +28,42 @@ test("RAPIDE docs-only avoids Vitest and build", () => {
 test("RAPIDE TypeScript uses targeted evidence without a full suite", () => {
   const plan = createModeValidationPlan({
     mode: "FAST",
-    changedFiles: ["apps/web/src/app/example/page.tsx", "apps/web/src/app/example/page.test.tsx"],
+    changedFiles: ["apps/web/src/lib/chat/polls.ts"],
   });
   assert.ok(ids(plan).includes("typecheck"));
   assert.ok(ids(plan).includes("lint-targeted"));
   assert.ok(ids(plan).includes("vitest-targeted"));
   assert.ok(!ids(plan).includes("vitest-full"));
   assert.ok(!ids(plan).includes("build"));
+});
+
+test("RAPIDE resolves an unchanged co-located sibling test", () => {
+  const plan = createModeValidationPlan({
+    mode: "FAST",
+    changedFiles: ["apps/web/src/lib/chat/polls.ts"],
+  });
+  const targeted = plan.checks.find((check) => check.id === "vitest-targeted");
+  assert.ok(targeted);
+  assert.deepEqual(targeted.testFiles, ["src/lib/chat/polls.test.ts"]);
+});
+
+test("a source without a sibling test does not invent one", () => {
+  assert.deepEqual(
+    resolveAssociatedWebTestFiles(["apps/web/src/lib/does-not-exist.ts"], {
+      existingFiles: ["apps/web/src/lib/does-not-exist.ts"],
+    }),
+    [],
+  );
+});
+
+test("co-located test resolution deduplicates multiple sources", () => {
+  assert.deepEqual(
+    resolveAssociatedWebTestFiles(
+      ["apps/web/src/lib/chat/polls.ts", "apps/web/src/lib/chat/polls.tsx"],
+      { existingFiles: ["apps/web/src/lib/chat/polls.test.ts"] },
+    ),
+    ["src/lib/chat/polls.test.ts"],
+  );
 });
 
 test("RAPIDE security and Supabase changes select their contracts", () => {
@@ -46,11 +76,58 @@ test("RAPIDE security and Supabase changes select their contracts", () => {
   });
   assert.ok(ids(plan).includes("test:security"));
   assert.ok(ids(plan).includes("supabase-migration-tree"));
-  assert.ok(ids(plan).includes("vitest-targeted"));
   assert.equal(new Set(ids(plan)).size, ids(plan).length);
 });
 
-test("COMPLET runs shared web evidence once and marks security groups already proven", () => {
+test("migration families select their specialized contract", () => {
+  const contracts = resolveMigrationContracts([
+    "apps/web/supabase/migrations/20260915000021_action_registrations_browser_deny_policy.sql",
+  ]);
+  assert.deepEqual(contracts, [{
+    family: "action_registrations",
+    scriptTests: ["scripts/checks/action-registrations-contract.test.mjs"],
+    vitestTests: [],
+  }]);
+  const plan = createModeValidationPlan({
+    mode: "FAST",
+    changedFiles: ["apps/web/supabase/migrations/20260915000021_action_registrations_browser_deny_policy.sql"],
+  });
+  assert.ok(ids(plan).includes("action-registrations-contract"));
+  assert.equal(ids(plan).includes("scripts-tests"), false);
+  assert.deepEqual(
+    plan.checks.find((check) => check.id === "action-registrations-contract").command,
+    { executable: "node", args: ["--test", "scripts/checks/action-registrations-contract.test.mjs"] },
+  );
+});
+
+test("COMPLET Supabase-only stays in the DB/security domain", () => {
+  const plan = createModeValidationPlan({
+    mode: "FULL",
+    changedFiles: [
+      "apps/web/supabase/migrations/20260915000021_action_registrations_browser_deny_policy.sql",
+    ],
+  });
+  assert.ok(ids(plan).includes("supabase-migration-tree"));
+  assert.ok(ids(plan).includes("action-registrations-contract"));
+  assert.ok(ids(plan).includes("test:security"));
+  assert.ok(!ids(plan).some((id) => ["vitest-full", "typecheck", "lint", "build", "mobile-typecheck"].includes(id)));
+});
+
+test("COMPLET Web plus Supabase includes affected consumers without mobile fan-out", () => {
+  const plan = createModeValidationPlan({
+    mode: "FULL",
+    changedFiles: [
+      "apps/web/src/app/api/example/route.ts",
+      "apps/web/supabase/migrations/20260915000099_example.sql",
+    ],
+  });
+  assert.ok(ids(plan).includes("vitest-full"));
+  assert.ok(ids(plan).includes("supabase-migration-tree"));
+  assert.ok(!ids(plan).includes("mobile-typecheck"));
+  assert.ok(!ids(plan).includes("test:security"));
+});
+
+test("COMPLET stays blast-radius aware and strengthens the affected Web domain", () => {
   const plan = createModeValidationPlan({
     mode: "FULL",
     changedFiles: ["apps/web/src/app/example/page.tsx"],
@@ -58,17 +135,35 @@ test("COMPLET runs shared web evidence once and marks security groups already pr
   assert.ok(ids(plan).includes("vitest-full"));
   assert.ok(ids(plan).includes("lint"));
   assert.ok(ids(plan).includes("build"));
-  assert.ok(ids(plan).includes("mobile-typecheck"));
   assert.ok(ids(plan).includes("root-file-hygiene"));
   assert.ok(ids(plan).includes("vercel-ci-audit"));
+  assert.ok(!ids(plan).includes("mobile-typecheck"));
   assert.ok(!ids(plan).includes("test:security"));
   assert.ok(!ids(plan).includes("test:regression-gates"));
   assert.deepEqual(plan.deduplicated.map((entry) => entry.status), [
     "ALREADY_PROVEN",
     "ALREADY_PROVEN",
-    "ALREADY_PROVEN",
   ]);
   assert.ok(plan.plannedSeconds <= VALIDATION_MODE_BUDGETS.FULL);
+});
+
+test("COMPLET docs-only does not fan out to Web, mobile, or build", () => {
+  const plan = createModeValidationPlan({
+    mode: "FULL",
+    changedFiles: ["documentation/development/TESTING.md"],
+  });
+  assert.ok(ids(plan).includes("documentation-governance"));
+  assert.ok(ids(plan).includes("root-file-hygiene"));
+  assert.ok(!ids(plan).some((id) => ["vitest-full", "typecheck", "build", "mobile-typecheck"].includes(id)));
+});
+
+test("COMPLET mobile-only does not add Web checks", () => {
+  const plan = createModeValidationPlan({
+    mode: "FULL",
+    changedFiles: ["apps/mobile/src/App.tsx"],
+  });
+  assert.ok(ids(plan).includes("mobile-typecheck"));
+  assert.ok(!ids(plan).some((id) => ["vitest-full", "typecheck", "lint", "build"].includes(id)));
 });
 
 test("both plans have unique checks and stay within their hard budgets", () => {
@@ -107,11 +202,19 @@ test("budget decision is deterministic and reports time-budget skips", () => {
   );
 });
 
-test("foreign failures are classified as pre-existing parallel failures", () => {
+test("foreign failures require a verified pre-existing proof", () => {
   assert.equal(
     classifyValidationFailure({
       candidateChangedFiles: ["apps/web/src/example.ts"],
       failureFiles: ["apps/mobile/src/parallel.ts"],
+    }),
+    "FAIL",
+  );
+  assert.equal(
+    classifyValidationFailure({
+      candidateChangedFiles: ["apps/web/src/example.ts"],
+      failureFiles: ["apps/mobile/src/parallel.ts"],
+      preexistingProof: { verified: true, kind: "baseline", source: "baseline" },
     }),
     "PREEXISTING_PARALLEL_FAILURE",
   );

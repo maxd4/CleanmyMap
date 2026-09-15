@@ -191,18 +191,22 @@ export function createValidationPlan({ scope = "changed", changedFiles = [] } = 
     throw new Error(`Unsupported validation scope: ${scope}`);
   }
 
-  const normalizedFiles = changedFiles.map(normalizePath);
+  const normalizedFiles = [...new Set(changedFiles.map(normalizePath))];
   const full = scope === "full";
-  const webRelevant = full || normalizedFiles.some(isWebRelevantFile);
-  const buildRelevant = full || normalizedFiles.some(isBuildRelevantFile);
-  const scriptsRelevant = full || normalizedFiles.some(isScriptRelevantFile);
-  const pythonRelevant = full || normalizedFiles.some(isPythonRelevantFile);
-  const fullVitest = full || normalizedFiles.includes("apps/web/vitest.config.ts");
+  const webRelevant = normalizedFiles.some(isWebRelevantFile);
+  const webRuntimeRelevant = normalizedFiles.some(
+    (file) => isWebRelevantFile(file) && !normalizePath(file).startsWith("apps/web/supabase/"),
+  );
+  const buildRelevant = normalizedFiles.some(isBuildRelevantFile);
+  const scriptsRelevant = normalizedFiles.some(isScriptRelevantFile);
+  const pythonRelevant = normalizedFiles.some(isPythonRelevantFile);
+  const fullVitest = (full && webRuntimeRelevant) || normalizedFiles.includes("apps/web/vitest.config.ts");
   const changedWebTestFiles = getChangedWebTestFiles(normalizedFiles);
 
   return {
     scope,
     webRelevant,
+    webRuntimeRelevant,
     buildRelevant,
     scriptsRelevant,
     pythonRelevant,
