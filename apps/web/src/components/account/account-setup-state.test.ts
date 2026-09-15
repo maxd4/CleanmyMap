@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   getAccountSetupProfileOptions,
+  getAccountSetupDeferralLabel,
   resolveAccountSetupDisplayMode,
   resolveAccountSetupDisplayNameMode,
   resolveAccountSetupProfileSelection,
   shouldHydrateAccountSetupDisplayNameMode,
   shouldHydrateAccountSetupLocations,
+  shouldConfirmAccountSetupDeferral,
 } from "./account-setup-state";
 
 describe("account setup initial state", () => {
@@ -28,5 +30,12 @@ describe("account setup initial state", () => {
   it("follows the provider until the user explicitly chooses a display mode", () => {
     expect(resolveAccountSetupDisplayMode("sobre", null)).toBe("sobre");
     expect(resolveAccountSetupDisplayMode("sobre", "minimaliste")).toBe("minimaliste");
+  });
+
+  it("makes an unsaved deferral explicit and confirmable", () => {
+    expect(getAccountSetupDeferralLabel(false)).toBe("Configurer plus tard");
+    expect(getAccountSetupDeferralLabel(true)).toBe("Plus tard, sans enregistrer");
+    expect(shouldConfirmAccountSetupDeferral(false)).toBe(false);
+    expect(shouldConfirmAccountSetupDeferral(true)).toBe(true);
   });
 });

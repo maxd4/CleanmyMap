@@ -53,3 +53,11 @@ export function resolveAccountSetupDisplayMode(
 ): DisplayMode {
   return manualSelection ?? providerDisplayMode;
 }
+
+export function getAccountSetupDeferralLabel(isDirty: boolean): string {
+  return isDirty ? "Plus tard, sans enregistrer" : "Configurer plus tard";
+}
+
+export function shouldConfirmAccountSetupDeferral(isDirty: boolean): boolean {
+  return isDirty;
+}
