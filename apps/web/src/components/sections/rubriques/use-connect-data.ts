@@ -88,6 +88,10 @@ export function resolveInitialConnectTab({
     : "discussions";
 }
 
+export function resolveInitialArrondissement(value: number): number | null {
+  return Number.isInteger(value) && value >= 1 && value <= 20 ? value : null;
+}
+
 export function useConnectData(defaultTab: ConnectTab = "discussions") {
   const searchParams = useSearchParams();
 
@@ -197,9 +201,7 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
     [initialTab],
   );
 
-  const initialArrondissement = Number.isInteger(requestedArrondissement)
-    ? requestedArrondissement
-    : 11;
+  const initialArrondissement = resolveInitialArrondissement(requestedArrondissement);
     
   const initialZoneName = requestedZoneName?.trim().length ? requestedZoneName.trim() : null;
 

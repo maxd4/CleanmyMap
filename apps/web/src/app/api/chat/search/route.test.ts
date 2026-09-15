@@ -273,7 +273,7 @@ describe("GET /api/chat/search", () => {
     expect(supabaseMock.calls.ilike).not.toHaveBeenCalled();
   });
 
-  it("uses only the profile territory when client coordinates request another arrondissement", async () => {
+  it("uses the explicitly requested territory instead of the profile default", async () => {
     const supabaseMock = buildSupabaseMock({
       arrondissement: 11,
       rows: [
@@ -300,20 +300,42 @@ describe("GET /api/chat/search", () => {
 
     expect(response.status).toBe(200);
     expect(body.results.map((result: { messageId: string }) => result.messageId)).toEqual([
-      "11111111-1111-4111-8111-000000000001",
+      "11111111-1111-4111-8111-000000000002",
     ]);
-    expect(supabaseMock.calls.eq).not.toHaveBeenCalledWith(
+    expect(supabaseMock.calls.eq).toHaveBeenCalledWith(
       "zone_name",
       "Paris 1er arrondissement",
     );
     expect(supabaseMock.calls.in).toHaveBeenCalledWith(
       "arrondissement_id",
-      expect.arrayContaining([11, 3, 4, 10, 12, 19, 20]),
+      expect.arrayContaining([1, 2, 3, 4, 5, 6, 7, 8, 9]),
     );
-    expect(supabaseMock.calls.in).not.toHaveBeenCalledWith(
-      "arrondissement_id",
-      expect.arrayContaining([1]),
+  });
+
+  it("allows a connected member without a profile territory to search a chosen zone", async () => {
+    const supabaseMock = buildSupabaseMock({
+      rows: [buildRow(1, { channel_type: "territory", arrondissement_id: 15, content: "Besoin local" })],
+    });
+    rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+
+    const response = await GET(
+      new Request("http://localhost/api/chat/search?channelType=territory&arrondissementId=15&q=local"),
     );
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).results).toHaveLength(1);
+  });
+
+  it("rejects an explicitly invalid territory", async () => {
+    const supabaseMock = buildSupabaseMock({ rows: [] });
+    rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+
+    const response = await GET(
+      new Request("http://localhost/api/chat/search?channelType=territory&zoneName=Atlantis&q=local"),
+    );
+
+    expect(response.status).toBe(400);
+    expect(supabaseMock.calls.ilike).not.toHaveBeenCalled();
   });
 
   it("paginates search results with the same stable keyset and keeps territory scope", async () => {

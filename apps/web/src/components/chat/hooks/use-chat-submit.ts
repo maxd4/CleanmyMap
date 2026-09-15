@@ -155,7 +155,7 @@ export function useChatSubmit({
 
     if (activeChannelType === "territory" && !effectiveZone && territoryFocus === null) {
       setSendError(
-        "Ajoutez une zone (arrondissement ou commune) à votre profil avant d'écrire dans ce canal.",
+        "Choisissez une zone (arrondissement ou commune) avant d'écrire dans ce canal.",
       );
       return;
     }

@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { readAppErrorResponse } from "@/lib/errors/app-errors";
 import type { ShareDestination } from "@/lib/chat/action-sharing";
 import type { PublicActionShareKind } from "@/lib/chat/action-sharing";
+import { getSupportedChatTerritoryOptions } from "@/lib/chat/channels";
 import type { ChatUser } from "./chat-types";
 import { ChatAvatar } from "./chat-avatar";
 import { ChatActionReferenceCard } from "./ui/chat-action-reference-card";
@@ -21,6 +22,7 @@ export function ChatActionShareDialog({
   const [step, setStep] = useState<ShareStep>("choose");
   const [destinations, setDestinations] = useState<ShareDestination[]>([]);
   const [selectedDestinationId, setSelectedDestinationId] = useState<string | null>(null);
+  const [selectedTerritoryZone, setSelectedTerritoryZone] = useState("");
   const [message, setMessage] = useState("Je vous partage cette action future publiée.");
   const [shareKind, setShareKind] = useState<PublicActionShareKind>("invitation");
   const [recipientQuery, setRecipientQuery] = useState("");
@@ -48,6 +50,9 @@ export function ChatActionShareDialog({
         const next = body.destinations ?? [];
         setDestinations(next);
         setSelectedDestinationId(next[0]?.id ?? null);
+        setSelectedTerritoryZone(
+          next.find((item) => item.channelType === "territory")?.zoneName ?? "",
+        );
         const nextShareKind = body.shareKind ?? "invitation";
         setShareKind(nextShareKind);
         setMessage(nextShareKind === "result"
@@ -94,19 +99,28 @@ export function ChatActionShareDialog({
   }, [recipientQuery]);
 
   const visibleDestinations = useMemo(() => {
-    if (!firstContactRecipient) return destinations;
-    const existing = destinations.find((item) => item.id === `dm:${firstContactRecipient.id}`);
-    if (existing) return destinations;
-    return [
-      ...destinations,
-      {
+    const nextDestinations = [...destinations];
+    if (
+      firstContactRecipient &&
+      !destinations.some((item) => item.id === `dm:${firstContactRecipient.id}`)
+    ) {
+      nextDestinations.push({
         id: `dm:${firstContactRecipient.id}`,
         channelType: "dm" as const,
         recipientId: firstContactRecipient.id,
         label: firstContactRecipient.display_name,
         description: "Demande de premier contact",
-      },
-    ];
+      });
+    }
+    if (!nextDestinations.some((item) => item.channelType === "territory")) {
+      nextDestinations.push({
+        id: "territory:manual",
+        channelType: "territory",
+        label: "Choisir un territoire",
+        description: "Accès ponctuel à une zone valide, sans modifier le profil",
+      });
+    }
+    return nextDestinations;
   }, [destinations, firstContactRecipient]);
   const isRecipientSearchActive = recipientQuery.trim().length >= 2;
 
@@ -126,6 +140,10 @@ export function ChatActionShareDialog({
           content: message.trim() || "Je vous partage cette action future publiée.",
           messageKind: "message",
           recipientId: selectedDestination.recipientId,
+          zoneName:
+            selectedDestination.channelType === "territory"
+              ? selectedTerritoryZone || undefined
+              : undefined,
         }),
       });
       if (!response.ok) {
@@ -168,12 +186,33 @@ export function ChatActionShareDialog({
                     name="share-destination"
                     value={destination.id}
                     checked={selectedDestinationId === destination.id}
-                    onChange={() => setSelectedDestinationId(destination.id)}
+                    onChange={() => {
+                      setSelectedDestinationId(destination.id);
+                      if (destination.channelType === "territory") {
+                        setSelectedTerritoryZone(destination.zoneName ?? "");
+                      }
+                    }}
                   />
                   <span className="min-w-0"><span className="block text-sm font-bold text-slate-800">{destination.label}</span><span className="block text-xs text-slate-500">{destination.description}</span></span>
                 </label>
               ))}
             </div>
+            {selectedDestination?.channelType === "territory" ? (
+              <label className="block space-y-1.5 rounded-xl border border-sky-100 bg-sky-50 p-3">
+                <span className="block text-xs font-bold text-slate-700">Territoire consulté</span>
+                <select
+                  value={selectedTerritoryZone}
+                  onChange={(event) => setSelectedTerritoryZone(event.target.value)}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
+                >
+                  <option value="">Choisir une zone</option>
+                  {getSupportedChatTerritoryOptions().map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+                <span className="block text-[10px] text-slate-500">Ce choix ponctuel ne modifie pas votre profil.</span>
+              </label>
+            ) : null}
             <div className="space-y-2 rounded-xl border border-dashed border-slate-200 p-3">
               <p className="text-xs font-bold text-slate-700">Nouveau contact</p>
               <p className="text-xs text-slate-500">Recherchez explicitement un membre. Une demande sera envoyée sans révéler d’information privée avant son acceptation.</p>
@@ -214,7 +253,7 @@ export function ChatActionShareDialog({
               ) : null}
             </div>
             <div className="flex justify-end">
-              <button type="button" disabled={!selectedDestination} onClick={() => setStep("preview")} className="rounded-full bg-sky-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50">Prévisualiser</button>
+              <button type="button" disabled={!selectedDestination || (selectedDestination.channelType === "territory" && !selectedTerritoryZone)} onClick={() => setStep("preview")} className="rounded-full bg-sky-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50">Prévisualiser</button>
             </div>
           </div>
         ) : null}

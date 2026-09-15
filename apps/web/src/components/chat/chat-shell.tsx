@@ -55,7 +55,7 @@ import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 
 export type ChatShellProps = {
   initialChannelType?: ChatChannelType;
-  initialArrondissement?: number;
+  initialArrondissement?: number | null;
   initialZoneName?: string | null;
   initialRecipient?: ChatUser | null;
   initialMessageId?: string | null;
@@ -127,6 +127,7 @@ export function ChatShell({
     isRecipientPickerOpen,
     setIsRecipientPickerOpen,
     selectedZone,
+    setSelectedZone,
     isBugReportChannel,
     activeTopicId,
     setActiveTopicId,
@@ -147,6 +148,7 @@ export function ChatShell({
   const {
     currentRoleLabel,
     effectiveZone,
+    profileDefaultZone,
     hasArrondissement,
     hasGreaterParisZone,
     isLoaded,
@@ -613,6 +615,9 @@ export function ChatShell({
             actionLoading={actionDiscussions.isLoading}
             actionError={actionDiscussions.error}
             onSelectAction={handleSelectAction}
+            currentZone={effectiveZone}
+            profileDefaultZone={profileDefaultZone}
+            onSelectZone={setSelectedZone}
           />
         )}
         <div className={`min-h-0 min-w-0 flex-1 flex-col relative ${isDmSurface && !showDmThreadOnMobile ? "hidden md:flex" : "flex"} ${isLight ? "bg-white/60" : "bg-white/5 dark:bg-slate-950/20"}`}>

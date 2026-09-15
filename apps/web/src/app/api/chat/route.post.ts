@@ -1,8 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { getCurrentUserIdentity } from "@/lib/authz";
-import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
-import { extractArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import {
@@ -27,15 +25,15 @@ import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit
 import { loadActionById } from "@/lib/actions/store";
 import {
   isPublicActionReferenceAvailable,
-  resolveShareTerritoryDestination,
+  resolveActionTerritoryDestination,
 } from "@/lib/chat/action-sharing";
 import { createActionShareRequest } from "@/lib/chat/action-share-requests";
 import {
   messageSelect,
   sendMessageSchema,
   buildZoneContext,
+  hasValidTerritoryContext,
   normalizeChatMessageRow,
-  parseArrondissement,
   validateMessageKind,
   validateTopicForChannel,
   type ChatMessageRow,
@@ -169,6 +167,7 @@ export async function POST(request: Request) {
   try {
     const serviceSupabase = getSupabaseServerClient();
 
+    let sharedAction: Awaited<ReturnType<typeof loadActionById>> = null;
     if (isExternalActionShare) {
       const action = await loadActionById(serviceSupabase, parsed.data.actionId!);
       if (!action || !isPublicActionReferenceAvailable(action)) {
@@ -177,6 +176,7 @@ export async function POST(request: Request) {
           { status: 403 },
         );
       }
+      sharedAction = action;
     }
 
     if (parsed.data.channelType === "action" && parsed.data.actionId && typeof serviceSupabase.from === "function") {
@@ -199,30 +199,37 @@ export async function POST(request: Request) {
 
     const profile = await loadCurrentProfile(supabase, userId);
     const metadataZone = extractZoneContextFromMetadata(profile?.metadata ?? null);
-    const parsedArr = parseArrondissement(parsed.data.arrondissementId?.toString() ?? null);
-    const profileArrondissement = profile?.paris_arrondissement ?? parsedArr;
-
-    const shareTerritory = isExternalActionShare && parsed.data.channelType === "territory"
-      ? resolveShareTerritoryDestination(profile)
+    const requestedZoneName = parsed.data.zoneName?.trim() || null;
+    const requestedArrondissement = parsed.data.arrondissementId ?? null;
+    const hasExplicitTerritoryContext =
+      requestedZoneName !== null || requestedArrondissement !== null;
+    const profileZoneContext = buildZoneContext(
+      metadataZone.zoneName,
+      profile?.paris_arrondissement ?? metadataZone.arrondissementId,
+    );
+    const actionTerritory = sharedAction
+      ? resolveActionTerritoryDestination(sharedAction)
       : null;
-    if (isExternalActionShare && parsed.data.channelType === "territory" && !shareTerritory) {
-      return NextResponse.json(
-        { error: "Territoire indisponible", hint: "Votre profil ne permet pas de déterminer une conversation territoriale existante." },
-        { status: 403 },
-      );
-    }
-    const zoneName = shareTerritory?.zoneName ?? parsed.data.zoneName?.trim() ?? metadataZone.zoneName;
-    const inferredZoneArrondissement = zoneName ? extractArrondissementFromLabel(zoneName) : null;
-    const arrondissementId =
-      shareTerritory?.arrondissementId ?? parsed.data.arrondissementId ?? profileArrondissement ?? inferredZoneArrondissement;
-    const zoneContext = buildZoneContext(zoneName, arrondissementId);
+    const actionZoneContext = actionTerritory
+      ? {
+          zoneName: actionTerritory.zoneName ?? null,
+          arrondissementId: actionTerritory.arrondissementId ?? null,
+        }
+      : null;
+    const requestedZoneContext = hasExplicitTerritoryContext
+      ? buildZoneContext(requestedZoneName, requestedArrondissement)
+      : null;
+    const zoneContext =
+      requestedZoneContext ?? actionZoneContext ?? profileZoneContext;
+    const zoneName = zoneContext?.zoneName ?? null;
+    const arrondissementId = zoneContext?.arrondissementId ?? null;
+    const hasValidZone = hasValidTerritoryContext(zoneContext);
     const arrondissementLabel =
       !zoneName && arrondissementId && arrondissementId >= 1 && arrondissementId <= 20
         ? `${arrondissementId}e arrondissement`
         : null;
 
-    const hasGreaterParisZone =
-      (zoneName && findZoneWithNeighbors(zoneName)) !== null || arrondissementLabel !== null;
+    const hasGreaterParisZone = zoneName !== null || arrondissementLabel !== null;
     const hasArrondissement = arrondissementId !== null && arrondissementId >= 1 && arrondissementId <= 20;
 
     if (
@@ -315,10 +322,18 @@ export async function POST(request: Request) {
         break;
       }
       case "territory": {
-        if (shareTerritory) {
-          targetZoneName = shareTerritory.zoneName ?? null;
-          targetArrondissementId = shareTerritory.arrondissementId ?? null;
-        } else if (zoneName && findZoneWithNeighbors(zoneName)) {
+        if (!hasValidZone) {
+          return NextResponse.json(
+            {
+              error: hasExplicitTerritoryContext ? "Zone invalide" : "Zone requise",
+              hint: hasExplicitTerritoryContext
+                ? "Votre zone n'est pas reconnue. Choisissez un arrondissement parisien ou une commune de la région."
+                : "Choisissez un arrondissement parisien ou une commune de la région pour écrire dans ce fil.",
+            },
+            { status: 400 },
+          );
+        }
+        if (zoneName) {
           targetZoneName = zoneName;
           targetArrondissementId = arrondissementId;
         } else if (arrondissementId && arrondissementId >= 1 && arrondissementId <= 20) {
@@ -328,7 +343,7 @@ export async function POST(request: Request) {
           return NextResponse.json(
             {
               error: "Zone requise",
-              hint: "Renseignez une zone (arrondissement ou commune) dans votre profil ou dans le message.",
+              hint: "Choisissez une zone (arrondissement ou commune) dans la messagerie ou dans le message.",
             },
             { status: 400 },
           );

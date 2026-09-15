@@ -8,6 +8,7 @@ import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicDefinition, ChatTopicId } from "./discussion-guidance";
 import { ChannelButton } from "./ui/channel-button";
 import { ChatActionSurface } from "./chat-action-surface";
+import { ChatTerritorySelector } from "./chat-territory-selector";
 import type { ActionListItem } from "@/lib/actions/types";
 
 export type ChatSidebarChannel = {
@@ -44,6 +45,9 @@ type ChatSidebarProps = {
   actionLoading?: boolean;
   actionError?: string | null;
   onSelectAction?: (actionId: string) => void;
+  currentZone?: string;
+  profileDefaultZone?: string;
+  onSelectZone?: (zoneName: string) => void;
 };
 
 export const ChatSidebar = memo(function ChatSidebar({
@@ -59,6 +63,9 @@ export const ChatSidebar = memo(function ChatSidebar({
   actionLoading = false,
   actionError = null,
   onSelectAction,
+  currentZone = "",
+  profileDefaultZone = "",
+  onSelectZone,
 }: ChatSidebarProps) {
   const isLight = tone === "light";
   const isMessagerie = presentation === "messagerie";
@@ -153,8 +160,16 @@ export const ChatSidebar = memo(function ChatSidebar({
           {/* Render territory as a public channel as well */}
           {renderButton(territoryChannel, {
             label: currentChannelType === "territory" ? "Territoire global" : "Coordination de secteur",
-            description: currentChannelType === "territory" ? "Tous les sujets de votre zone" : "Organisation locale",
+            description: currentChannelType === "territory" ? "Tous les sujets de la zone choisie" : "Organisation locale",
           })}
+          {currentChannelType === "territory" && onSelectZone ? (
+            <ChatTerritorySelector
+              currentZone={currentZone}
+              profileDefaultZone={profileDefaultZone}
+              onChange={onSelectZone}
+              tone={tone}
+            />
+          ) : null}
           {currentChannelType === "territory" ? renderTopics() : null}
         </div>
       </section>

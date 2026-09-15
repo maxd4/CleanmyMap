@@ -3,6 +3,7 @@ import {
   buildInitialAnnouncementTemplate,
   buildInitialDmRecipient,
   buildInitialTopicId,
+  resolveInitialArrondissement,
   resolveInitialConnectTab,
 } from "./use-connect-data";
 import { getAnnouncementTopicId } from "@/lib/chat/announcements";
@@ -84,5 +85,13 @@ describe("connect tab routing", () => {
         hasAnnouncementTemplate: true,
       }),
     ).toBe("discussions");
+  });
+});
+
+describe("territory deep-link defaults", () => {
+  it("does not invent an arrondissement when the URL has none", () => {
+    expect(resolveInitialArrondissement(Number.NaN)).toBeNull();
+    expect(resolveInitialArrondissement(11)).toBe(11);
+    expect(resolveInitialArrondissement(21)).toBeNull();
   });
 });

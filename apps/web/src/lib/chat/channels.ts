@@ -1,5 +1,6 @@
 import {
   findDistrictByName,
+  getAllSuburbs,
   getNeighbors,
   getSuburbsForDistrict,
   isGreaterParisZone,
@@ -36,6 +37,12 @@ export type ChatChannelDefinition = {
   requiresZone?: boolean;
 };
 
+export type ChatTerritoryOption = {
+  value: string;
+  label: string;
+  arrondissementId?: number;
+};
+
 const CHAT_CHANNEL_DEFINITIONS: Record<ChatChannelType, ChatChannelDefinition> = {
   community: {
     type: "community",
@@ -55,7 +62,7 @@ const CHAT_CHANNEL_DEFINITIONS: Record<ChatChannelType, ChatChannelDefinition> =
   territory: {
     type: "territory",
     label: "Territoire & limitrophes",
-    description: "Échanges liés à votre zone (arrondissement ou commune) et ses voisines.",
+    description: "Échanges liés à la zone choisie (arrondissement ou commune) et ses voisines.",
     requiresZone: true,
   },
   bug_report: {
@@ -102,7 +109,9 @@ export function canAccessChatChannel(
     case "admin_elu":
       return roleLabel === "admin" || roleLabel === "max" || roleLabel === "elu";
     case "territory":
-      return context.hasGreaterParisZone || context.hasArrondissement;
+      // A connected member may choose a valid territory at the moment of use.
+      // The API validates and scopes that context before reading or writing.
+      return true;
     default:
       return false;
   }
@@ -193,6 +202,30 @@ export function getTerritoryFilter(
   return { arrondissementIds: null, zoneNames: null };
 }
 
+export function hasTerritoryFilter(
+  zoneContext: ZoneContext | null,
+): boolean {
+  const filter = getTerritoryFilter(zoneContext);
+  return Boolean(filter.arrondissementIds?.length || filter.zoneNames?.length);
+}
+
+export function getSupportedChatTerritoryOptions(): ChatTerritoryOption[] {
+  const arrondissementOptions = Array.from({ length: 20 }, (_, index) => {
+    const arrondissementId = index + 1;
+    const ordinal = arrondissementId === 1 ? "1er" : `${arrondissementId}e`;
+    return {
+      value: `${ordinal} arrondissement`,
+      label: `Paris ${ordinal}`,
+      arrondissementId,
+    };
+  });
+  const suburbOptions = getAllSuburbs().map((zoneName) => ({
+    value: zoneName,
+    label: zoneName,
+  }));
+  return [...arrondissementOptions, ...suburbOptions];
+}
+
 export function buildChannelAccessHint(channelType: ChatChannelType): string {
   switch (channelType) {
     case "community":
@@ -202,7 +235,7 @@ export function buildChannelAccessHint(channelType: ChatChannelType): string {
     case "admin_elu":
       return "Canal réservé aux élus et à l'administration.";
     case "territory":
-      return "Votre profil doit avoir une zone (arrondissement ou commune) pour ouvrir ce canal.";
+      return "Choisissez un arrondissement parisien ou une commune de la région pour ouvrir ce fil territorial.";
     case "bug_report":
       return "Le canal de feedback est indisponible tant qu'aucun compte administrateur n'est configuré.";
     case "action":

@@ -16,7 +16,7 @@ import type { ChatUser } from "../chat-types";
 
 type UseChatStateParams = {
   initialChannelType: ChatChannelType;
-  initialArrondissement?: number;
+  initialArrondissement?: number | null;
   initialZoneName?: string | null;
   initialRecipient?: ChatUser | null;
   initialTopicId?: ChatTopicId | null;
@@ -56,6 +56,7 @@ export type UseChatStateModel = {
   isRecipientPickerOpen: boolean;
   setIsRecipientPickerOpen: Dispatch<SetStateAction<boolean>>;
   selectedZone: string;
+  setSelectedZone: Dispatch<SetStateAction<string>>;
   isBugReportChannel: boolean;
   activeTopicId: ChatTopicId | null;
   setActiveTopicId: Dispatch<SetStateAction<ChatTopicId | null>>;
@@ -103,12 +104,13 @@ export function useChatState({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const submitLockRef = useRef(false);
 
-  const selectedZone =
+  const [selectedZone, setSelectedZone] = useState(
     initialZoneName?.trim().length
       ? initialZoneName.trim()
       : initialArrondissement
-        ? `${initialArrondissement}e arrondissement`
-        : "";
+        ? `${initialArrondissement === 1 ? "1er" : `${initialArrondissement}e`} arrondissement`
+        : "",
+  );
   const isBugReportChannel = activeChannelType === "bug_report";
 
   const setActiveChannelType: Dispatch<SetStateAction<ChatChannelType>> = useCallback(
@@ -197,6 +199,7 @@ export function useChatState({
     isRecipientPickerOpen,
     setIsRecipientPickerOpen,
     selectedZone,
+    setSelectedZone,
     isBugReportChannel,
     activeTopicId,
     setActiveTopicId,

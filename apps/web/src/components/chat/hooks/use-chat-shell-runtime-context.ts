@@ -23,7 +23,7 @@ import {
 
 type UseChatShellRuntimeContextParams = {
   selectedZone: string;
-  initialArrondissement?: number;
+  initialArrondissement?: number | null;
 };
 
 export function useChatShellRuntimeContext({
@@ -62,16 +62,25 @@ export function useChatShellRuntimeContext({
     () => extractZoneContextFromMetadata(publicMetadata),
     [publicMetadata],
   );
+  const profileDefaultZone = useMemo(
+    () =>
+      clerkZoneContext.zoneName ||
+      (clerkZoneContext.arrondissementId
+        ? `${clerkZoneContext.arrondissementId === 1 ? "1er" : `${clerkZoneContext.arrondissementId}e`} arrondissement`
+        : clerkArrondissement
+          ? `${clerkArrondissement === 1 ? "1er" : `${clerkArrondissement}e`} arrondissement`
+          : ""),
+    [clerkArrondissement, clerkZoneContext.arrondissementId, clerkZoneContext.zoneName],
+  );
   const effectiveZone = useMemo(
     () =>
       selectedZone ||
-      clerkZoneContext.zoneName ||
-      (clerkArrondissement ? `${clerkArrondissement}e arrondissement` : ""),
-    [selectedZone, clerkZoneContext.zoneName, clerkArrondissement],
+      profileDefaultZone,
+    [profileDefaultZone, selectedZone],
   );
   const territoryFocus = useMemo(
-    () => initialArrondissement ?? clerkArrondissement,
-    [initialArrondissement, clerkArrondissement],
+    () => selectedZone ? null : initialArrondissement ?? clerkZoneContext.arrondissementId ?? clerkArrondissement,
+    [clerkArrondissement, clerkZoneContext.arrondissementId, initialArrondissement, selectedZone],
   );
   const hasArrondissement = useMemo(
     () => territoryFocus !== null || clerkArrondissement !== null,
@@ -92,6 +101,8 @@ export function useChatShellRuntimeContext({
     currentAccountIdentity,
     currentRoleLabel,
     effectiveZone,
+    isProfileDefaultZone: !selectedZone && Boolean(profileDefaultZone),
+    profileDefaultZone,
     hasArrondissement,
     hasGreaterParisZone,
     isLoaded,
