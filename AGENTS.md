@@ -475,16 +475,19 @@ signalement, le blocage/exclusion, le rate limiting, l'anti-spam, les limites
 de pièces jointes, la journalisation adaptée et les outils d'organisateur ou
 de modérateur.
 
-Ne jamais déduire une permission d'un nom de route ou d'un ancien document si
-le runtime dit autre chose. Le coût ou la performance ne constitue pas une
-raison d'AuthZ. Une page publique et une mutation authentifiée peuvent
-coexister sans devenir une seule « route protégée ». L'ouverture d'une surface
-communautaire ne doit ni élever un rôle, ni accorder une mutation, une
-participation métier, un accès privé, un contournement d'ownership, une
-modération ou un scope administratif. Les exigences AuthN, AuthZ, RLS,
-validation, protection des données, secrets, audit et anti-abus nécessaires
-restent inchangées. Le détail de cette doctrine est canonique dans
-`CHATGPT.md`, section « Proportionnalité, confiance et ouverture associative ».
+Le runtime observé est la source de vérité du comportement réellement
+implémenté ; la documentation et le contrat AuthZ canonique décrivent le
+comportement attendu. Un écart entre les deux est une anomalie à analyser et à
+corriger. Ne jamais déduire une permission du seul nom d'une route ou d'un
+ancien document. Le coût ou la performance ne constitue pas une raison
+d'AuthZ. Une page publique et une mutation authentifiée peuvent coexister sans
+devenir une seule « route protégée ». L'ouverture d'une surface communautaire
+ne doit ni élever un rôle, ni accorder une mutation, une participation métier,
+un accès privé, un contournement d'ownership, une modération ou un scope
+administratif. Les exigences AuthN, AuthZ, RLS, validation, protection des
+données, secrets, audit et anti-abus nécessaires restent inchangées. Le détail
+de cette doctrine est canonique dans `CHATGPT.md`, section
+« Proportionnalité, confiance et ouverture associative ».
 
 Les règles propres à Next/web, API, Supabase, scripts, mobile, CI/GitHub,
 Python et documentation sont portées par les fichiers scoped correspondants.
