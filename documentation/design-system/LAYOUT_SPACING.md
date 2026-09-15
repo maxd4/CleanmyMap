@@ -141,6 +141,44 @@ proportionnellement la typographie.
 Cette densité ne doit jamais être reproduite avec `zoom`, `transform: scale`,
 un wrapper global réduit ou une détection du zoom navigateur.
 
+### Règle de choix du niveau de largeur
+
+Avant d'ajouter une classe `max-w-*`, identifier le niveau auquel elle
+appartient :
+
+| Besoin | Niveau attendu | Règle |
+| --- | --- | --- |
+| page, dashboard, panneau principal | `page content shell` | utiliser `CmmPageLayout` ou `.cmm-page-width` |
+| grille de cartes, KPI, tableau | composition interne | utiliser une grille fluide avec `minmax(0, 1fr)` et `min-w-0` sur les items |
+| paragraphe, aide, contenu légal | `reading measure` | conserver `cmm-prose*` ou une mesure sémantique équivalente |
+| formulaire court, modal, widget, impression | `functional component width` | conserver la limite si elle est justifiée par l'interaction ou le support |
+
+Un composant racine ne doit pas recréer un shell avec `mx-auto` et un plafond
+structurel indépendant (`max-w-6xl`, `max-w-7xl`, `container`, `w-[...]`).
+Une contrainte locale est acceptable uniquement si elle relève de la lecture
+ou d'une fonction précise ; elle doit alors rester imbriquée dans le shell
+canonique et non le remplacer.
+
+Les grilles internes doivent également neutraliser la largeur minimale
+intrinsèque des enfants. `minmax(0, ...)` borne les tracks et `min-w-0` permet
+au contenu long de se replier ou de défiler dans sa propre surface, sans
+augmenter la largeur du document.
+
+### Zoom navigateur et densité
+
+Le navigateur est libre d'appliquer un zoom de page à `100 %`, `110 %`,
+`125 %` ou `150 %`. Le code ne doit ni le détecter ni le compenser : les
+unités CSS, les media queries et les `clamp()` répondent à la largeur CSS
+réellement disponible. À fort zoom, le reflow naturel et la lisibilité priment
+sur le maintien d'une grille desktop.
+
+Pour préserver la densité appréciée sur grand écran :
+
+- réduire d'abord les grands espacements via les tokens desktop partagés ;
+- plafonner les titres avec `clamp()` plutôt que réduire le body ;
+- conserver les hauteurs tactiles des boutons et champs ;
+- ne jamais appliquer une réduction uniforme de `20 %` aux textes ou contrôles.
+
 ## Grilles internes de composition
 
 Une grille interne peut structurer une surface dense lorsqu'elle améliore
@@ -205,9 +243,6 @@ composition dédiée :
 Ces exceptions concernent uniquement le shell et le rythme du contenu. Elles ne
 suppriment jamais l'obligation de conserver le chrome global du site.
 
-Ces exceptions concernent uniquement le shell et le rythme du contenu. Elles ne
-suppriment jamais l'obligation de conserver le chrome global du site.
-
 Toute nouvelle exception doit être ajoutée à
 `documentation/design-system/UI_EXCEPTION_PAGES.md` avec sa raison avant de
 contourner le shell canonique.
@@ -217,7 +252,6 @@ contourner le shell canonique.
 Pour une modification de layout :
 
 - vérifier que la page utilise le shell canonique lorsqu'elle y est éligible ;
-- confirmer que le ruban supérieur et le ruban inférieur globaux restent présents et non recouverts ;
 - confirmer que le ruban supérieur et le ruban inférieur globaux restent
   présents et non recouverts ;
 - contrôler desktop, tablette et mobile selon les breakpoints existants ;
@@ -225,6 +259,20 @@ Pour une modification de layout :
 - vérifier l'alignement des blocs denses sans introduire de nouvelle échelle
   locale ;
 - confirmer qu'une exception structurelle reste documentée.
+
+La matrice minimale de vérification est `1366×768`, `1536×864`, `1920×1080`,
+`2560×1440`, tablette et mobile. Pour chaque vue, contrôler :
+
+1. la largeur de `.cmm-ribbon-frame` et de `.cmm-ribbon-surface` ;
+2. la largeur et le centrage de `CmmPageLayout` ou `.cmm-page-width` ;
+3. l'absence de `scrollWidth > clientWidth` ;
+4. la présence du chrome global ;
+5. la mesure raisonnable des textes longs.
+
+Une vérification de zoom navigateur doit confirmer que le body reste lisible,
+que les contrôles se réorganisent sans chevauchement et qu'aucun code du site
+ne lit ou ne recalcule une valeur de zoom. Une simple inspection à `100 %` ne
+prouve pas le comportement aux autres niveaux de zoom.
 
 ## Garde-fou
 
