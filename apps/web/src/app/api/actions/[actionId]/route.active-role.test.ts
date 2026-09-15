@@ -4,6 +4,7 @@ const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
+const loadCanonicalActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const extractActionMetadataFromNotesMock = vi.hoisted(() => vi.fn());
 const appendActionModerationAuditMock = vi.hoisted(() => vi.fn());
@@ -27,6 +28,7 @@ vi.mock("@/lib/actions/participation/registration-records", () => ({
 }));
 vi.mock("@/lib/actions/participation/organizers", () => ({
   loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
+  loadCanonicalActionOrganizerIdsForAction: loadCanonicalActionOrganizerIdsForActionMock,
   syncActionManualParticipants: vi.fn(),
 }));
 vi.mock("@/lib/actions/store-notes", () => ({
@@ -107,6 +109,7 @@ describe("PATCH /api/actions/:actionId ACTIVE_ROLE boundaries", () => {
     });
     loadActionByIdMock.mockResolvedValue(buildApprovedAction());
     loadActionOrganizerIdsForActionMock.mockResolvedValue([]);
+    loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValue([]);
     extractActionMetadataFromNotesMock.mockReturnValue({
       cleanNotes: null,
       associationName: null,

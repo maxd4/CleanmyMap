@@ -20,6 +20,7 @@ import {
 } from "@/lib/actions/geometry/derived-geometry";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/geometry/route-geometry";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
+import { normalizeAdministrativeRequirements } from "./administrative-requirements";
 import {
   resolveActionDepartmentForPersistence,
   resolveTrustedActionDepartmentForPersistence,
@@ -94,6 +95,9 @@ export function buildActionInsertPayload(params: {
   finalDrawing: ActionDrawing | null;
   status: Exclude<ActionStatus, "cancelled"> | undefined;
 }) {
+  const preparationData = normalizeActionPreparationData(
+    params.payload.preparationData ?? {},
+  );
   return {
     created_by_clerk_id: params.userId,
     actor_name: params.payload.actorName ?? null,
@@ -118,7 +122,15 @@ export function buildActionInsertPayload(params: {
     event_start_time: params.payload.eventStartTime ?? null,
     event_end_time: params.payload.eventEndTime ?? null,
     published_at: null,
-    preparation_data: normalizeActionPreparationData(params.payload.preparationData ?? {}),
+    preparation_data:
+      params.payload.actionPhase === "pre_action"
+        ? {
+            ...preparationData,
+            administrativeRequirements: normalizeAdministrativeRequirements(
+              preparationData.administrativeRequirements,
+            ),
+          }
+        : preparationData,
     notes: buildPersistedNotes({
       ...params.payload,
       manualDrawing: params.finalDrawing ?? undefined,
@@ -142,7 +154,7 @@ async function insertCreatedAction(
   const insertWithPhase = {
     ...baseInsert,
     action_phase: params.payload.actionPhase ?? "post_action_complete",
-    preparation_data: normalizeActionPreparationData(params.payload.preparationData ?? {}),
+    preparation_data: buildActionInsertPayload(params).preparation_data,
   };
 
   let inserted = await supabase.from("actions").insert(insertWithPhase).select("id").single();

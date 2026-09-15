@@ -157,6 +157,25 @@ describe("volunteer participation persistence", () => {
   });
 });
 
+describe("administrative requirements persistence", () => {
+  it("initializes every pre-action with pending requirements", () => {
+    const payload = buildPayload({ actionPhase: "pre_action" });
+    const row = buildActionInsertPayload({
+      payload,
+      userId: "user-test",
+      status: "pending",
+      persistedGeometry: buildCreateActionGeometry(payload, null),
+      finalDrawing: null,
+    });
+
+    expect(row.preparation_data.administrativeRequirements).toEqual({
+      status: "pending",
+      validatedAt: null,
+      validatedByUserId: null,
+    });
+  });
+});
+
 describe("buildCreateActionGeometry", () => {
   it("persists a routed final drawing as estimated geometry", () => {
     const drawing = {

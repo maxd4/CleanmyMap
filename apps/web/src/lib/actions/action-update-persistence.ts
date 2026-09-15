@@ -16,6 +16,7 @@ import { extractActionMetadataFromNotes } from "./metadata";
 import type { ActionRow } from "@/types/database";
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
 import { resolveNextActionStatus } from "./action-update-status";
+import { normalizeAdministrativeRequirements } from "./administrative-requirements";
 
 export class ActionUpdateValidationError extends Error {
   constructor(
@@ -56,6 +57,16 @@ export async function prepareActionUpdate(params: {
         throw new ActionUpdateValidationError("preparationData", error.message);
       }
       throw error;
+    }
+    const nextActionPhase = parsedBody.actionPhase ?? current.action_phase;
+    if (nextActionPhase === "pre_action") {
+      preservedPreparationData = {
+        ...preservedPreparationData,
+        // Only the dedicated server capability may transition this state.
+        administrativeRequirements: normalizeAdministrativeRequirements(
+          current.preparation_data?.administrativeRequirements,
+        ),
+      };
     }
     body = { ...parsedBody, preparationData: preservedPreparationData };
   }

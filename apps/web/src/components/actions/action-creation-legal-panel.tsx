@@ -1,8 +1,9 @@
 import { FileWarning } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmPill } from "@/components/ui/cmm-pill";
+import { AdministrativeRequirementsStatus } from "./administrative-requirements-status";
 
-export function ActionCreationLegalPanel() {
+export function ActionCreationLegalPanel({ actionId }: { actionId?: string | null }) {
   return (
     <CmmCard tone="amber" variant="glass" size="lg">
       <div className="space-y-4">
@@ -25,6 +26,7 @@ export function ActionCreationLegalPanel() {
           Aucun avis sur une obligation légale, une assurance, une autorisation
           municipale ou une responsabilité n&apos;est déduit par cette page.
         </p>
+        <AdministrativeRequirementsStatus actionId={actionId} surface="formalities" />
       </div>
     </CmmCard>
   );

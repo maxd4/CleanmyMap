@@ -3,6 +3,7 @@ import { extractActionMetadataFromNotes } from "./metadata";
 import { parseDrawingFromNotes } from "./geometry/drawing";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { normalizeClockTime } from "./time-contract";
+import { normalizeAdministrativeRequirements } from "./administrative-requirements";
 
 export function buildActionEditorPayload(row: ActionRow | null) {
   if (!row) {
@@ -11,6 +12,7 @@ export function buildActionEditorPayload(row: ActionRow | null) {
 
   const parsedDrawing = parseDrawingFromNotes(row.notes);
   const metadata = extractActionMetadataFromNotes(parsedDrawing.cleanNotes);
+  const preparationData = normalizeActionPreparationData(row.preparation_data ?? {});
   return {
     id: row.id,
     createdAt: row.created_at,
@@ -18,7 +20,15 @@ export function buildActionEditorPayload(row: ActionRow | null) {
     publishedAt: row.published_at ?? null,
     recordType: "action",
     actionPhase: row.action_phase,
-    preparationData: normalizeActionPreparationData(row.preparation_data ?? {}),
+    preparationData:
+      row.action_phase === "pre_action"
+        ? {
+            ...preparationData,
+            administrativeRequirements: normalizeAdministrativeRequirements(
+              preparationData.administrativeRequirements,
+            ),
+          }
+        : preparationData,
     createdByClerkId: row.created_by_clerk_id,
     actorName: row.actor_name,
     actionDate: row.action_date,

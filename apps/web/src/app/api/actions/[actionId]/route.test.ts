@@ -6,6 +6,7 @@ const loadActionByIdMock = vi.hoisted(() => vi.fn());
 const recordRepollutionPredictionEvaluationForActionMock = vi.hoisted(() => vi.fn());
 const loadManualRegistrationIdsForActionMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
+const loadCanonicalActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const syncActionManualParticipantsMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const extractActionMetadataFromNotesMock = vi.hoisted(() => vi.fn());
@@ -46,6 +47,7 @@ vi.mock("@/lib/actions/participation/registration-records", () => ({
 
 vi.mock("@/lib/actions/participation/organizers", () => ({
   loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
+  loadCanonicalActionOrganizerIdsForAction: loadCanonicalActionOrganizerIdsForActionMock,
   syncActionManualParticipants: syncActionManualParticipantsMock,
 }));
 
@@ -149,6 +151,7 @@ describe("PATCH /api/actions/:actionId", () => {
     });
     loadManualRegistrationIdsForActionMock.mockResolvedValue(["user-manual-1"]);
     loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
+    loadCanonicalActionOrganizerIdsForActionMock.mockResolvedValue(["user-test-1"]);
     syncActionManualParticipantsMock.mockResolvedValue({
       participants: [],
       unresolvedTokens: [],

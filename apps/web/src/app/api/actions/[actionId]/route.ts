@@ -11,6 +11,7 @@ import {
   canManageAction,
   canManageActionsGlobally,
   canEditValidatedImpact,
+  canValidateActionAdministrativeRequirements,
 } from "@/lib/actions/permissions";
 import {
   appendActionModerationAudit,
@@ -18,7 +19,10 @@ import {
   normalizeModerationReason,
 } from "@/lib/actions/moderation-audit";
 import { loadManualRegistrationIdsForAction } from "@/lib/actions/participation/registration-records";
-import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import {
+  loadActionOrganizerIdsForAction,
+  loadCanonicalActionOrganizerIdsForAction,
+} from "@/lib/actions/participation/organizers";
 import { updateActionSchema } from "@/lib/validation/action";
 import { buildActionEditorPayload } from "@/lib/actions/action-editor-payload";
 import {
@@ -97,6 +101,12 @@ export async function GET(
     const action = {
       ...buildActionEditorPayload(row),
       participantAccounts,
+      canValidateAdministrativeRequirements:
+        canValidateActionAdministrativeRequirements(
+          permissionIdentity,
+          { createdByClerkId: row.created_by_clerk_id, actionPhase: row.action_phase },
+          await loadCanonicalActionOrganizerIdsForAction(supabase, trimmedActionId),
+        ),
     };
     return NextResponse.json({ status: "ok", action });
   } catch (error) {
