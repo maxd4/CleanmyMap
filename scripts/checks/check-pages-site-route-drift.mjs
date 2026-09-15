@@ -44,6 +44,36 @@ const SECTION_REGISTRY_PATH = path.join(
   "sections-registry",
   "config.ts",
 );
+const PROXY_PATH = path.join(REPO_ROOT, "apps", "web", "src", "proxy.ts");
+const ROUTE_CONSTANTS_PATH = path.join(
+  REPO_ROOT,
+  "apps",
+  "web",
+  "src",
+  "lib",
+  "accueil-pilotage-routes.ts",
+);
+
+const REQUIRED_SURFACE_ACCESS_ROUTES = new Set([
+  "/actions/map",
+  "/actions/new",
+  "/signalement",
+  "/dashboard",
+]);
+
+const DOCUMENTED_ACCESS_MODES = [
+  "public-visible",
+  "auth-blur-gate",
+  "auth-disabled-gate",
+  "clerk-context",
+  "protected",
+];
+
+const SECTION_PRESENTATION_TO_ACCESS = new Map([
+  ["visible", "public-visible"],
+  ["blur", "auth-blur-gate"],
+  ["disabled", "auth-disabled-gate"],
+]);
 
 const DYNAMIC_ALIASES_HANDLED_INSIDE_ROUTE = new Set([
   "/sections/dm",
@@ -170,6 +200,7 @@ export function extractIndexEntries(content) {
     entries.push({
       route,
       pageType: columns[2],
+      documentedAccessModes: extractDocumentedAccessModes(columns[2]),
       familyLabel: columns[3] ?? "",
       readmePath: readmeMatch ? readmeMatch[1] : null,
       isAliasOrRedirect,
@@ -180,6 +211,20 @@ export function extractIndexEntries(content) {
   }
 
   return entries;
+}
+
+function extractDocumentedAccessModes(value) {
+  const text = String(value ?? "").toLowerCase();
+  const modes = DOCUMENTED_ACCESS_MODES.filter((mode) => text.includes(mode));
+
+  if (/(^|\W)public(\W|$)/u.test(text) && !modes.includes("public-visible")) {
+    modes.push("public-visible");
+  }
+  if (/(^|\W)(?:protégé|protégée|protected)(\W|$)/u.test(text)) {
+    modes.push("protected");
+  }
+
+  return [...new Set(modes)];
 }
 
 function groupIndexEntriesByRoute(entries) {
@@ -206,6 +251,223 @@ function extractSectionRegistryRoutes(content) {
   }
 
   return routes;
+}
+
+function extractSectionAnonymousPresentations(content) {
+  const presentations = new Map();
+  const pattern =
+    /anonymousPresentation:\s*["'](visible|blur|disabled)["'][\s\S]{0,240}?route:\s*["'](\/sections\/[^"']+)["']/g;
+
+  for (const match of content.matchAll(pattern)) {
+    const route = normalizeRoute(match[2]);
+    const access = SECTION_PRESENTATION_TO_ACCESS.get(match[1]);
+    if (route && access) {
+      presentations.set(route, access);
+    }
+  }
+
+  return presentations;
+}
+
+function extractArrayBody(content, name, property = false) {
+  const declaration = property
+    ? new RegExp(`${name}\\s*:\\s*\\[([\\s\\S]*?)\\]`)
+    : new RegExp(`(?:export\\s+)?const\\s+${name}\\s*=\\s*\\[([\\s\\S]*?)\\]`);
+  return content.match(declaration)?.[1] ?? null;
+}
+
+function extractStringConstants(content) {
+  const constants = new Map();
+  const pattern = /(?:export\s+)?const\s+([A-Z][A-Z0-9_]*)\s*=\s*["']([^"']+)["']/g;
+
+  for (const match of content.matchAll(pattern)) {
+    constants.set(match[1], normalizeRoute(match[2]));
+  }
+
+  return constants;
+}
+
+function extractArrayValues(body, constants = new Map()) {
+  if (!body) {
+    return [];
+  }
+
+  return body
+    .replace(/\/\/.*$/gm, "")
+    .split(",")
+    .map((item) => item.trim())
+    .map((item) => {
+      const literal = item.match(/^["']([^"']+)["']$/)?.[1];
+      if (literal) {
+        return literal;
+      }
+
+      const identifier = item.match(/^([A-Z][A-Z0-9_]*)$/)?.[1];
+      return identifier ? constants.get(identifier) ?? "" : "";
+    })
+    .filter(Boolean)
+    .map(normalizeRoute);
+}
+
+function matchesRoutePrefix(route, prefixes) {
+  return prefixes.some(
+    (prefix) => route === prefix || route.startsWith(`${prefix}/`),
+  );
+}
+
+export function extractRuntimeSurfaceAccess({
+  proxyContent,
+  routeConstantsContent = "",
+  sectionRegistryContent,
+  routes,
+}) {
+  const constants = new Map([
+    ...extractStringConstants(routeConstantsContent),
+    ...extractStringConstants(proxyContent),
+  ]);
+  const protectedPrefixes = extractArrayValues(
+    extractArrayBody(proxyContent, "PROTECTED_APP_PAGE_ROUTE_PREFIXES"),
+    constants,
+  );
+  const contextPrefixes = extractArrayValues(
+    extractArrayBody(proxyContent, "CLERK_CONTEXT_ROUTE_PREFIXES"),
+    constants,
+  );
+  const matcherPrefixes = extractArrayValues(
+    extractArrayBody(proxyContent, "matcher", true),
+    constants,
+  ).map((value) => value.replace(/\(\.\*\)$/, ""));
+  const sectionRoutes = extractSectionRegistryRoutes(sectionRegistryContent);
+  const sectionPresentations = extractSectionAnonymousPresentations(
+    sectionRegistryContent,
+  );
+  const unclassifiedSectionRoutes = [...sectionRoutes]
+    .filter((route) => !sectionPresentations.has(route))
+    .sort((a, b) => a.localeCompare(b, "fr"));
+  const accessByRoute = new Map();
+  const unresolvedRoutes = [];
+
+  for (const candidate of routes) {
+    const route = normalizeRoute(candidate);
+    if (!route) {
+      continue;
+    }
+
+    if (sectionRoutes.has(route)) {
+      const access = sectionPresentations.get(route);
+      if (access) {
+        accessByRoute.set(route, access);
+      }
+      continue;
+    }
+
+    if (matchesRoutePrefix(route, protectedPrefixes)) {
+      accessByRoute.set(route, "protected");
+      continue;
+    }
+
+    if (matchesRoutePrefix(route, contextPrefixes)) {
+      accessByRoute.set(route, "clerk-context");
+      continue;
+    }
+
+    if (matchesRoutePrefix(route, matcherPrefixes)) {
+      unresolvedRoutes.push({
+        route,
+        reason: "route couverte par le matcher sans classification de surface",
+      });
+      continue;
+    }
+
+    // Absence from the proxy matcher is evidence that the proxy does not
+    // impose a page gate, not a blanket authorization decision. This is used
+    // for the public page surfaces covered by this check (not for APIs).
+    accessByRoute.set(route, "public-visible");
+  }
+
+  return {
+    accessByRoute,
+    unclassifiedSectionRoutes,
+    unresolvedRoutes,
+  };
+}
+
+function documentedModesFor(value, fallback = []) {
+  if (Array.isArray(value?.documentedAccessModes)) {
+    return value.documentedAccessModes;
+  }
+
+  return extractDocumentedAccessModes(value?.pageType ?? fallback);
+}
+
+function accessMismatch({ route, source, expected, modes }) {
+  const conflicts = modes.filter((mode) => mode !== expected);
+  if (modes.includes(expected) && conflicts.length === 0) {
+    return null;
+  }
+
+  return {
+    route,
+    source,
+    expected,
+    documented: modes,
+  };
+}
+
+export function validateDocumentedAccessCoherence({
+  indexEntries,
+  routeDocs,
+  runtimeAccessByRoute,
+  unclassifiedSectionRoutes = [],
+  unresolvedRoutes = [],
+}) {
+  const documentedAccessContradictions = [];
+  const canonicalEntries = indexEntries.filter(isCanonicalIndexEntry);
+
+  for (const [route, expected] of runtimeAccessByRoute) {
+    for (const entry of canonicalEntries.filter((item) => item.route === route)) {
+      const mismatch = accessMismatch({
+        route,
+        source: "INDEX.md",
+        expected,
+        modes: documentedModesFor(entry),
+      });
+      if (mismatch) {
+        documentedAccessContradictions.push({ ...mismatch, line: entry.line });
+      }
+    }
+
+    for (const doc of routeDocs.filter(
+      (item) => item.route === route && !item.isAlias && !item.isGenericDynamicPattern,
+    )) {
+      if (!Array.isArray(doc.documentedAccessModes) || doc.documentedAccessModes.length === 0) {
+        // A fiche may omit an access assertion. This check detects an
+        // explicit contradiction; it does not invent a public fallback.
+        continue;
+      }
+
+      const mismatch = accessMismatch({
+        route,
+        source: doc.readme,
+        expected,
+        modes: doc.documentedAccessModes,
+      });
+      if (mismatch) {
+        documentedAccessContradictions.push(mismatch);
+      }
+    }
+  }
+
+  const runtimeAccessErrors = [
+    ...unclassifiedSectionRoutes.map(
+      (route) => `${route} : anonymousPresentation absent du registre runtime`,
+    ),
+    ...unresolvedRoutes.map(
+      ({ route, reason }) => `${route} : ${reason}`,
+    ),
+  ];
+
+  return { documentedAccessContradictions, runtimeAccessErrors };
 }
 
 async function fileExists(filePath) {
@@ -259,12 +521,19 @@ async function loadCanonicalRouteDocs(indexEntries) {
       continue;
     }
 
+    const readmeContent = await fs.readFile(readmePath, "utf8");
+
     routeDocs.push({
       route: entry.route,
       readme: relativeReadme,
       packageKey: routeDocPackageKey(readmePath),
       isAlias: entry.isAliasOrRedirect,
       isGenericDynamicPattern: entry.isGenericDynamicPattern,
+      documentedAccessModes: extractDocumentedAccessModes(
+        [...readmeContent.matchAll(/^\s*-\s+\*\*(Accès runtime|Statut)\*\*\s*:\s*(.*)$/gim)]
+          .map((match) => match[2])
+          .join(" "),
+      ),
       line: entry.line,
     });
 
@@ -645,10 +914,19 @@ function toMarkdownJsonList(items, emptyLabel = "Aucun.") {
 }
 
 export async function runPagesSiteRouteDriftAudit() {
-  const [pageFiles, indexContent, sectionRegistryContent, pageFamilyContract] =
+  const [
+    pageFiles,
+    indexContent,
+    proxyContent,
+    routeConstantsContent,
+    sectionRegistryContent,
+    pageFamilyContract,
+  ] =
     await Promise.all([
       walkFiles(APP_ROOT, (_absolute, name) => name === "page.tsx"),
       fs.readFile(INDEX_PATH, "utf8"),
+      fs.readFile(PROXY_PATH, "utf8"),
+      fs.readFile(ROUTE_CONSTANTS_PATH, "utf8"),
       fs.readFile(SECTION_REGISTRY_PATH, "utf8"),
       loadPageFamilyContract(),
     ]);
@@ -728,6 +1006,27 @@ export async function runPagesSiteRouteDriftAudit() {
     manifestDocKeys: pageFamilyContract.manifestDocKeys,
   });
 
+  const canonicalIndexRoutes = new Set(
+    indexEntries.filter(isCanonicalIndexEntry).map((entry) => entry.route),
+  );
+  const accessRoutes = [
+    ...REQUIRED_SURFACE_ACCESS_ROUTES,
+    ...[...sectionRoutes].filter((route) => canonicalIndexRoutes.has(route)),
+  ];
+  const runtimeSurfaceAccess = extractRuntimeSurfaceAccess({
+    proxyContent,
+    routeConstantsContent,
+    sectionRegistryContent,
+    routes: accessRoutes,
+  });
+  const accessCoherence = validateDocumentedAccessCoherence({
+    indexEntries,
+    routeDocs: docs.routeDocs,
+    runtimeAccessByRoute: runtimeSurfaceAccess.accessByRoute,
+    unclassifiedSectionRoutes: runtimeSurfaceAccess.unclassifiedSectionRoutes,
+    unresolvedRoutes: runtimeSurfaceAccess.unresolvedRoutes,
+  });
+
   return {
     generatedAt: new Date().toISOString(),
     counts: {
@@ -747,6 +1046,7 @@ export async function runPagesSiteRouteDriftAudit() {
     pageFamilyContractErrors: pageFamilyContract.errors,
     runtimeFamilyErrors,
     unexpectedFamilyDirectories,
+    ...accessCoherence,
     ...packageLayout,
   };
 }
@@ -775,6 +1075,8 @@ export function hasPagesSiteRouteDrift(report) {
     report.invalidCanonicalReadmeLocations,
     report.unknownPackageFamilies,
     report.unexpectedFamilyDirectories,
+    report.documentedAccessContradictions,
+    report.runtimeAccessErrors,
   ].some((items) => items.length > 0);
 }
 
@@ -855,6 +1157,16 @@ ${toMarkdownList(report.pageFamilyContractErrors)}
 ### Resolver runtime
 
 ${toMarkdownList(report.runtimeFamilyErrors)}
+
+## Accès documentaire vs runtime
+
+### Contradictions documentées
+
+${toMarkdownJsonList(report.documentedAccessContradictions)}
+
+### Contrat runtime indéterminé ou incomplet
+
+${toMarkdownList(report.runtimeAccessErrors)}
 
 ## Packages autonomes interdits
 

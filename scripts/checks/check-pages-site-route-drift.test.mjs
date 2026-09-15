@@ -3,6 +3,8 @@ import test from "node:test";
 
 import {
   extractIndexEntries,
+  extractRuntimeSurfaceAccess,
+  validateDocumentedAccessCoherence,
   validateRoutePackageLayout,
 } from "./check-pages-site-route-drift.mjs";
 
@@ -160,4 +162,85 @@ test("un package mal placé est comparé à resolvePageFamily via le contrat fou
       actualFamily: "03-cartographie-impact",
     },
   ]);
+});
+
+function accessDoc(route, documentedAccessModes) {
+  return {
+    route,
+    readme: `documentation/pages_site/routes/family/${route.slice(1).replaceAll("/", "-")}/${route.slice(1).replaceAll("/", "-")}-README.md`,
+    isAlias: false,
+    isGenericDynamicPattern: false,
+    documentedAccessModes,
+  };
+}
+
+test("une fiche et l'INDEX cohérents avec le runtime passent", () => {
+  const indexEntries = [
+    entry("/actions/map", "./routes/03-cartographie-impact/actions-map/actions-map-README.md"),
+  ];
+  const result = validateDocumentedAccessCoherence({
+    indexEntries,
+    routeDocs: [accessDoc("/actions/map", ["public-visible"])],
+    runtimeAccessByRoute: new Map([["/actions/map", "public-visible"]]),
+  });
+
+  assert.deepEqual(result.documentedAccessContradictions, []);
+  assert.deepEqual(result.runtimeAccessErrors, []);
+});
+
+test("une page publique documentée comme protégée est une dérive", () => {
+  const indexEntries = [
+    entry("/actions/map", "./routes/03-cartographie-impact/actions-map/actions-map-README.md", {
+      pageType: "protected",
+    }),
+  ];
+  const result = validateDocumentedAccessCoherence({
+    indexEntries,
+    routeDocs: [accessDoc("/actions/map", ["protected"])],
+    runtimeAccessByRoute: new Map([["/actions/map", "public-visible"]]),
+  });
+
+  assert.equal(result.documentedAccessContradictions.length, 2);
+});
+
+test("une page protégée documentée comme publique est une dérive", () => {
+  const indexEntries = [
+    entry("/dashboard", "./routes/01-accueil-pilotage/dashboard/dashboard-README.md"),
+  ];
+  const result = validateDocumentedAccessCoherence({
+    indexEntries,
+    routeDocs: [accessDoc("/dashboard", ["public-visible"])],
+    runtimeAccessByRoute: new Map([["/dashboard", "protected"]]),
+  });
+
+  assert.equal(result.documentedAccessContradictions.length, 2);
+});
+
+test("les sections utilisent leur présentation anonyme explicite sans fallback public", () => {
+  const runtime = extractRuntimeSurfaceAccess({
+    proxyContent: `
+      export const PROTECTED_APP_PAGE_ROUTE_PREFIXES = ["/dashboard"] as const;
+      export const CLERK_CONTEXT_ROUTE_PREFIXES = [] as const;
+      export const config = { matcher: ["/dashboard(.*)"] };
+    `,
+    sectionRegistryContent: `
+      { kind: "section", anonymousPresentation: "visible", route: "/sections/community" },
+      { kind: "section", anonymousPresentation: "blur", route: "/sections/messagerie" },
+      { kind: "section", anonymousPresentation: "disabled", route: "/sections/gamification" },
+      { kind: "section", route: "/sections/missing" },
+    `,
+    routes: [
+      "/sections/community",
+      "/sections/messagerie",
+      "/sections/gamification",
+      "/sections/missing",
+      "/dashboard",
+    ],
+  });
+
+  assert.equal(runtime.accessByRoute.get("/sections/community"), "public-visible");
+  assert.equal(runtime.accessByRoute.get("/sections/messagerie"), "auth-blur-gate");
+  assert.equal(runtime.accessByRoute.get("/sections/gamification"), "auth-disabled-gate");
+  assert.deepEqual(runtime.unclassifiedSectionRoutes, ["/sections/missing"]);
+  assert.equal(runtime.accessByRoute.has("/sections/missing"), false);
 });
