@@ -1,6 +1,6 @@
 "use client";
 
-import { SOURCE_FILTERS, STATUS_FILTERS } from "./inbox-constants";
+import { PRIORITY_FILTERS, SORT_OPTIONS, SOURCE_FILTERS, STATUS_FILTERS } from "./inbox-constants";
 import type { CreatorInboxCopy } from "./creator-inbox-copy";
 import type { CreatorInboxSource, CreatorInboxStatus } from "@/lib/community/creator-inbox";
 
@@ -12,6 +12,10 @@ type InboxFilterBarProps = {
   onSourceFilterChange: (value: "all" | CreatorInboxSource) => void;
   statusFilter: "all" | CreatorInboxStatus;
   onStatusFilterChange: (value: "all" | CreatorInboxStatus) => void;
+  priorityFilter: "all" | "high" | "normal";
+  onPriorityFilterChange: (value: "all" | "high" | "normal") => void;
+  sortMode: "priority" | "date";
+  onSortModeChange: (value: "priority" | "date") => void;
   partnerConfirm: string;
   onPartnerConfirmChange: (value: string) => void;
   refreshing: boolean;
@@ -27,6 +31,10 @@ export function InboxFilterBar({
   onSourceFilterChange,
   statusFilter,
   onStatusFilterChange,
+  priorityFilter,
+  onPriorityFilterChange,
+  sortMode,
+  onSortModeChange,
   partnerConfirm,
   onPartnerConfirmChange,
   refreshing,
@@ -35,7 +43,7 @@ export function InboxFilterBar({
 }: InboxFilterBarProps) {
   return (
     <>
-      <div className="mt-4 grid gap-3 md:grid-cols-4">
+      <div className="mt-4 grid gap-3 md:grid-cols-6">
         <label className="space-y-1 md:col-span-2">
           <span className="cmm-text-caption font-semibold cmm-text-secondary">
             {copy.filters.searchLabel}
@@ -60,6 +68,34 @@ export function InboxFilterBar({
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-1">
+          <span className="cmm-text-caption font-semibold cmm-text-secondary">
+            {copy.filters.priorityLabel}
+          </span>
+          <select
+            value={priorityFilter}
+            onChange={(event) => onPriorityFilterChange(event.target.value as typeof priorityFilter)}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
+          >
+            {PRIORITY_FILTERS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-1">
+          <span className="cmm-text-caption font-semibold cmm-text-secondary">
+            {copy.filters.sortLabel}
+          </span>
+          <select
+            value={sortMode}
+            onChange={(event) => onSortModeChange(event.target.value as typeof sortMode)}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
+          >
+            {SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
         </label>

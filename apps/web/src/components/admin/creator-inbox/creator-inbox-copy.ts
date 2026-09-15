@@ -20,6 +20,8 @@ type CreatorInboxCopy = {
     searchPlaceholder: string;
     sourceLabel: string;
     statusLabel: string;
+    priorityLabel: string;
+    sortLabel: string;
     partnerPhraseLabel: string;
     partnerPhrasePlaceholder: string;
     loadingLabel: string;
@@ -37,6 +39,7 @@ type CreatorInboxCopy = {
     copied: string;
     copySummary: string;
     replyByEmail: string;
+    replyPrivately: string;
     approve: string;
     approving: string;
     reject: string;
@@ -79,6 +82,8 @@ const COPY: Record<CreatorInboxLocale, CreatorInboxCopy> = {
       searchPlaceholder: "Auteur, email, titre, statut, source...",
       sourceLabel: "Source",
       statusLabel: "Statut",
+      priorityLabel: "Priorité",
+      sortLabel: "Trier par",
       partnerPhraseLabel: "Phrase partenaire",
       partnerPhrasePlaceholder: PARTNER_CONFIRM_PHRASE,
       loadingLabel: "Chargement",
@@ -96,6 +101,7 @@ const COPY: Record<CreatorInboxLocale, CreatorInboxCopy> = {
       copied: "Copié",
       copySummary: "Copier le résumé",
       replyByEmail: "Répondre par mail",
+      replyPrivately: "Répondre en privé",
       approve: "Accepter",
       approving: "Validation...",
       reject: "Refuser",
@@ -137,6 +143,8 @@ const COPY: Record<CreatorInboxLocale, CreatorInboxCopy> = {
       searchPlaceholder: "Author, email, title, status, source...",
       sourceLabel: "Source",
       statusLabel: "Status",
+      priorityLabel: "Priority",
+      sortLabel: "Sort by",
       partnerPhraseLabel: "Partner phrase",
       partnerPhrasePlaceholder: PARTNER_CONFIRM_PHRASE,
       loadingLabel: "Loading",
@@ -154,6 +162,7 @@ const COPY: Record<CreatorInboxLocale, CreatorInboxCopy> = {
       copied: "Copied",
       copySummary: "Copy summary",
       replyByEmail: "Reply by email",
+      replyPrivately: "Reply privately",
       approve: "Approve",
       approving: "Approving...",
       reject: "Reject",

@@ -23,13 +23,71 @@ const feedbackItem = {
   canDelete: true,
   canReview: false,
   hasReplyTarget: false,
+  privateReplyTargetUserId: "user-1",
 };
 
 describe("InboxItemCard state actions", () => {
-  it("renders a bounded reason field and disables state actions for a short reason", () => {
+  it("offers a private DM link to the canonical feedback author", () => {
     const markup = renderToStaticMarkup(
       <InboxItemCard
         item={feedbackItem}
+        locale="fr"
+        copy={getCreatorInboxCopy("fr")}
+        copiedKey={null}
+        promotionReason=""
+        onPromotionReasonChange={vi.fn()}
+        partnerReason=""
+        onPartnerReasonChange={vi.fn()}
+        actionReason="motif valide"
+        onActionReasonChange={vi.fn()}
+        actionBusy={() => false}
+        onCopySummary={vi.fn()}
+        onAcceptPromotion={vi.fn()}
+        onRejectPromotion={vi.fn()}
+        onAcceptPartner={vi.fn()}
+        onRejectPartner={vi.fn()}
+        onApplyInboxAction={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain("Répondre en privé");
+    expect(markup).toContain("recipientId=user-1");
+    expect(markup).toContain("feedbackId=feedback-1");
+    expect(markup).not.toContain("Marquer répondu");
+  });
+
+  it("disables private reply when the canonical author is unavailable", () => {
+    const markup = renderToStaticMarkup(
+      <InboxItemCard
+        item={{ ...feedbackItem, privateReplyTargetUserId: null }}
+        locale="fr"
+        copy={getCreatorInboxCopy("fr")}
+        copiedKey={null}
+        promotionReason=""
+        onPromotionReasonChange={vi.fn()}
+        partnerReason=""
+        onPartnerReasonChange={vi.fn()}
+        actionReason="motif valide"
+        onActionReasonChange={vi.fn()}
+        actionBusy={() => false}
+        onCopySummary={vi.fn()}
+        onAcceptPromotion={vi.fn()}
+        onRejectPromotion={vi.fn()}
+        onAcceptPartner={vi.fn()}
+        onRejectPartner={vi.fn()}
+        onApplyInboxAction={vi.fn()}
+      />,
+    );
+
+    expect(markup).toContain("Répondre en privé");
+    expect(markup).toContain('disabled=""');
+    expect(markup).not.toContain("recipientId=");
+  });
+
+  it("renders a bounded reason field and disables state actions for a short reason", () => {
+    const markup = renderToStaticMarkup(
+      <InboxItemCard
+        item={{ ...feedbackItem, privateReplyTargetUserId: null }}
         locale="fr"
         copy={getCreatorInboxCopy("fr")}
         copiedKey={null}

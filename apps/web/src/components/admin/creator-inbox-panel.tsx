@@ -37,6 +37,10 @@ export function CreatorInboxPanel({ initialItems }: CreatorInboxPanelProps) {
           onSourceFilterChange={inbox.setSourceFilter}
           statusFilter={inbox.statusFilter}
           onStatusFilterChange={inbox.setStatusFilter}
+          priorityFilter={inbox.priorityFilter}
+          onPriorityFilterChange={inbox.setPriorityFilter}
+          sortMode={inbox.sortMode}
+          onSortModeChange={inbox.setSortMode}
           partnerConfirm={inbox.partnerConfirm}
           onPartnerConfirmChange={inbox.setPartnerConfirm}
           refreshing={inbox.refreshing}

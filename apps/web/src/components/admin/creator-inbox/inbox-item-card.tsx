@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { formatCreatorInboxSourceLabel, formatCreatorInboxStatusLabel, type CreatorInboxItem } from "@/lib/community/creator-inbox";
 import type { CreatorInboxCopy, CreatorInboxLocale } from "./creator-inbox-copy";
 import type { CreatorInboxSource } from "@/lib/community/creator-inbox";
@@ -225,6 +226,25 @@ export function InboxItemCard({
             {copy.states.replyByEmail}
           </a>
         ) : null}
+        {item.source === "feedback" ? (
+          item.privateReplyTargetUserId ? (
+            <Link
+              href={`/sections/messagerie?tab=dm&recipientId=${encodeURIComponent(item.privateReplyTargetUserId)}&recipientLabel=${encodeURIComponent(item.authorName)}&feedbackId=${encodeURIComponent(item.sourceRecordId)}`}
+              className="rounded-lg bg-indigo-600 px-3 py-2 cmm-text-caption font-semibold text-white hover:bg-indigo-700"
+            >
+              {copy.states.replyPrivately}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              disabled
+              title="Aucun utilisateur canonique disponible pour ce feedback."
+              className="rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 cmm-text-caption font-semibold cmm-text-muted disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {copy.states.replyPrivately}
+            </button>
+          )
+        ) : null}
         <button
           type="button"
           onClick={() => onCopySummary(item)}
@@ -383,26 +403,28 @@ export function InboxItemCard({
                 ? copy.states.processing
                 : copy.states.markTreated}
             </button>
-            <button
-              type="button"
-              disabled={
-                actionBusy(item.source, item.sourceRecordId, "responded") ||
-                actionReason.trim().length < 5
-              }
-              onClick={() =>
-                onApplyInboxAction({
-                  source: item.source,
-                  itemId: item.sourceRecordId,
-                  action: "responded",
-                  reason: actionReason,
-                })
-              }
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {actionBusy(item.source, item.sourceRecordId, "responded")
-                ? copy.states.processing
-                : copy.states.markResponded}
-            </button>
+            {item.source !== "feedback" ? (
+              <button
+                type="button"
+                disabled={
+                  actionBusy(item.source, item.sourceRecordId, "responded") ||
+                  actionReason.trim().length < 5
+                }
+                onClick={() =>
+                  onApplyInboxAction({
+                    source: item.source,
+                    itemId: item.sourceRecordId,
+                    action: "responded",
+                    reason: actionReason,
+                  })
+                }
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {actionBusy(item.source, item.sourceRecordId, "responded")
+                  ? copy.states.processing
+                  : copy.states.markResponded}
+              </button>
+            ) : null}
             <button
               type="button"
               disabled={

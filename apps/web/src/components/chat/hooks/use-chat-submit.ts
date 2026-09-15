@@ -39,7 +39,8 @@ type UseChatSubmitParams = {
   setSendError: React.Dispatch<React.SetStateAction<string | null>>;
   setIsUploading: React.Dispatch<React.SetStateAction<boolean>>;
   supabase: SupabaseClient | null | undefined;
-  sendChatMessage: (params: SendChatMessageParams) => Promise<void>;
+  sendChatMessage: (params: SendChatMessageParams) => Promise<ChatMessage>;
+  feedbackId?: string | null;
   setMessage: React.Dispatch<React.SetStateAction<string>>;
   setFile: React.Dispatch<React.SetStateAction<File | null>>;
   setShowMentions: React.Dispatch<React.SetStateAction<boolean>>;
@@ -116,6 +117,7 @@ export function useChatSubmit({
   setIsUploading,
   supabase,
   sendChatMessage,
+  feedbackId,
   setMessage,
   setFile,
   setShowMentions,
@@ -288,6 +290,7 @@ export function useChatSubmit({
               : undefined,
           attachmentUrl,
           attachmentType,
+          feedbackId: activeChannelType === "dm" ? feedbackId ?? undefined : undefined,
         },
       });
 
@@ -325,6 +328,7 @@ export function useChatSubmit({
     }
   }, [
     activeChannelType,
+    feedbackId,
     activeActionId,
     activeTopicId,
     messageKind,

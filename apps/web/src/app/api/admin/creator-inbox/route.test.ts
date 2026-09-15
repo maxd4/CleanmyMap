@@ -18,6 +18,7 @@ const buildPartnerInboxItemMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireCreatorAccess: requireCreatorAccessMock,
+  requireAdminAccess: requireCreatorAccessMock,
   getCurrentUserIdentity: getCurrentUserIdentityMock,
 }));
 
@@ -627,7 +628,12 @@ describe("PATCH /api/admin/creator-inbox", () => {
 
     const { PATCH } = await import("./route");
     const response = await PATCH(
-      makeRequest({ source, itemId, action: "responded", reason: "Mise à jour en erreur" }),
+      makeRequest({
+        source,
+        itemId,
+        action: source === "feedback" ? "archive" : "responded",
+        reason: "Mise à jour en erreur",
+      }),
     );
 
     expect(response.status).toBe(500);
@@ -642,5 +648,40 @@ describe("PATCH /api/admin/creator-inbox", () => {
       },
     });
     expect(JSON.stringify(auditCalls()[0])).not.toContain(updateError);
+  });
+
+  it("does not let a direct responded action mark feedback answered", async () => {
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({
+        source: "feedback",
+        itemId: "feedback-1",
+        action: "responded",
+        reason: "Réponse prétendue",
+      }),
+    );
+
+    expect(response.status).toBe(409);
+    expect(updateCommunityBugReportCreatorStateMock).not.toHaveBeenCalled();
+    expect(auditCalls()[0].details).toMatchObject({
+      previousValue: { creatorState: "new" },
+      newValue: { creatorState: "new" },
+    });
+  });
+
+  it("refuses creator inbox access when the caller is not an administrator", async () => {
+    requireCreatorAccessMock.mockResolvedValueOnce({ ok: false, status: 403 });
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      makeRequest({
+        source: "feedback",
+        itemId: "feedback-1",
+        action: "mark_treated",
+        reason: "Traitement refusé",
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(getCommunityBugReportByIdMock).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
@@ -14,6 +15,7 @@ import {
   isSupportedChatAttachmentMimeType,
 } from "@/lib/chat/chat-attachments";
 import { createChatNotificationsForMessage } from "@/lib/chat/chat-notifications";
+import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { resolveActionDiscussionAccess } from "@/lib/chat/action-conversations";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
@@ -23,6 +25,10 @@ import {
 } from "@/lib/community/discussion-rate-limit";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import { loadActionById } from "@/lib/actions/store";
+import {
+  getCommunityBugReportById,
+  updateCommunityBugReportCreatorState,
+} from "@/lib/community/bug-reports-store";
 import {
   isPublicActionReferenceAvailable,
   resolveActionTerritoryDestination,
@@ -166,6 +172,53 @@ export async function POST(request: Request) {
 
   try {
     const serviceSupabase = getSupabaseServerClient();
+
+    let feedbackReplyContext: {
+      feedbackId: string;
+      targetUserId: string;
+      previousCreatorState: string;
+    } | null = null;
+    if (parsed.data.feedbackId) {
+      if (
+        parsed.data.channelType !== "dm" ||
+        parsed.data.messageKind !== "message" ||
+        parsed.data.actionId ||
+        parsed.data.relatedEventId ||
+        parsed.data.topicId ||
+        parsed.data.attachmentUrl ||
+        parsed.data.attachmentType
+      ) {
+        return NextResponse.json(
+          { error: "Contexte feedback invalide" },
+          { status: 400 },
+        );
+      }
+      if (identity.activeRole !== "admin" && identity.activeRole !== "max") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+
+      const feedback = await getCommunityBugReportById(parsed.data.feedbackId);
+      const targetUserId = feedback?.submittedByUserId?.trim();
+      const recipientId = parsed.data.recipientId?.trim();
+      if (
+        !feedback ||
+        !targetUserId ||
+        targetUserId === "unknown" ||
+        !recipientId ||
+        recipientId !== targetUserId
+      ) {
+        return NextResponse.json(
+          { error: "Destinataire feedback invalide" },
+          { status: 403 },
+        );
+      }
+
+      feedbackReplyContext = {
+        feedbackId: parsed.data.feedbackId,
+        targetUserId,
+        previousCreatorState: feedback.creatorState,
+      };
+    }
 
     let sharedAction: Awaited<ReturnType<typeof loadActionById>> = null;
     if (isExternalActionShare) {
@@ -452,6 +505,38 @@ export async function POST(request: Request) {
       await createChatNotificationsForMessage(serviceSupabase, message.id);
     } catch (notificationError) {
       console.warn("[POST /api/chat] Notification fan-out failed:", notificationError);
+    }
+
+    if (feedbackReplyContext) {
+      const updatedFeedback = await updateCommunityBugReportCreatorState({
+        reportId: feedbackReplyContext.feedbackId,
+        creatorState: "responded",
+      });
+      if (!updatedFeedback) {
+        throw new Error("Le statut du feedback n'a pas été mis à jour après l'envoi.");
+      }
+
+      await appendAdminOperationAudit({
+        operationId: randomUUID(),
+        at: new Date().toISOString(),
+        actorUserId: userId,
+        operationType: "admin_operation",
+        outcome: "success",
+        targetId: feedbackReplyContext.feedbackId,
+        details: {
+          operation: "feedback_private_reply_sent",
+          targetUserId: feedbackReplyContext.targetUserId,
+          messageSent: true,
+          previousValue: {
+            source: "feedback",
+            creatorState: feedbackReplyContext.previousCreatorState,
+          },
+          newValue: {
+            source: "feedback",
+            creatorState: updatedFeedback.creatorState,
+          },
+        },
+      });
     }
 
     return NextResponse.json({ status: "sent", message }, { status: 201 });

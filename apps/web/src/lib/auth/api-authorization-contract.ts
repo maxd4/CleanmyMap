@@ -314,16 +314,16 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "admin/creator-inbox": {
     GET: {
-      expected: "Creator access",
+      expected: "Admin-like access",
       dimensions: ["admin/creator role"],
-      actual: "requireCreatorAccess",
-      evidence: ["requireCreatorAccess"],
+      actual: "requireAdminAccess",
+      evidence: ["requireAdminAccess"],
     },
     PATCH: {
-      expected: "Creator access with admin-operation audit",
+      expected: "Admin-like access with admin-operation audit",
       dimensions: ["admin/creator role", "audit"],
-      actual: "requireCreatorAccess + appendDecisionAudit (encapsulates appendAdminOperationAudit)",
-      evidence: ["requireCreatorAccess", "appendDecisionAudit"],
+      actual: "requireAdminAccess + appendDecisionAudit (encapsulates appendAdminOperationAudit)",
+      evidence: ["requireAdminAccess", "appendDecisionAudit"],
     },
   },
   "admin/legal-content-reports/decision": {
