@@ -98,7 +98,7 @@ test("pre-push leaves the complete release validation available separately", asy
   const packageJson = JSON.parse(await readRepoFile("package.json"));
   const guard = await readRepoFile("scripts/ci/pre_push_guard.ps1");
 
-  assert.match(packageJson.scripts["checks:full"], /run_checks2\.ps1 -Scope full/);
+  assert.match(packageJson.scripts["checks:full"], /run_validation_mode\.mjs --mode FULL/);
   assert.match(guard, /Full PUSH_CANDIDATE checks \(-Full\)/);
   assert.match(guard, /-Full/);
   assert.match(guard, /No changed files detected in manual fallback; validating the HEAD candidate tree only/);
