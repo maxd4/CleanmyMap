@@ -1,8 +1,10 @@
 "use client";
 
 import { AlertTriangle, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmDialog } from "@/components/ui/cmm-dialog";
 import { CmmPill } from "@/components/ui/cmm-pill";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
@@ -13,8 +15,49 @@ import {
 } from "./sections";
 import { useBeforeActionForm } from "./use-before-action-form";
 import type { ActionBeforeDeclarationFormProps } from "./model";
-import { labelForPreparationState } from "./model";
+import { buildPublicationSummary, labelForPreparationState } from "./model";
 import { OperationalRouteEditor } from "../operational-route-editor";
+import { ChatActionShareDialog } from "@/components/chat/chat-action-share-dialog";
+import { buildJoinActionHref } from "@/lib/sections/join-action-routes";
+
+const BEFORE_ACTION_STEPS = [
+  "Identité",
+  "Action",
+  "Préparation",
+  "Récapitulatif",
+  "Publication",
+] as const;
+
+function BeforeActionStepper({ activeStep }: { activeStep: number }) {
+  return (
+    <ol
+      aria-label="Progression Organiser une action"
+      data-testid="before-action-stepper"
+      className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-2 px-4 md:grid-cols-5 md:px-6 lg:px-8"
+    >
+      {BEFORE_ACTION_STEPS.map((label, index) => {
+        const step = index + 1;
+        const isActive = step === activeStep;
+        const isComplete = step < activeStep;
+        return (
+          <li
+            key={label}
+            aria-current={isActive ? "step" : undefined}
+            className={cn(
+              "rounded-2xl border px-3 py-2 text-xs font-bold transition",
+              isActive || isComplete
+                ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+                : "border-emerald-100 bg-white/70 text-emerald-900/55",
+            )}
+          >
+            <span className="mr-1 text-[10px] uppercase tracking-[0.12em]">{step}</span>
+            {label}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 export function ActionBeforeDeclarationForm({
   actorNameOptions,
@@ -22,28 +65,33 @@ export function ActionBeforeDeclarationForm({
   isAuthenticated,
   userMetadata,
   linkedEventId,
+  initialActionId,
   initialRecordType = "action",
   onReturnToChoice,
   onPassToComplete,
   signInHref,
   signUpHref,
 }: ActionBeforeDeclarationFormProps) {
+  const [shareActionId, setShareActionId] = useState<string | null>(null);
   const {
     form,
     submissionState,
     errorMessage,
     createdId,
+    publishedAction,
     publishedAt,
     publicationState,
     publicationError,
+    publicationConfirmationOpen,
+    isHydratingAction,
     validationIssues,
     showGroupJoinHelp,
     setShowGroupJoinHelp,
-    shareLink,
-    summaryNote,
     updateField,
     handleSubmit,
-    handlePublish,
+    requestPublish,
+    cancelPublication,
+    confirmPublish,
     onContinueComplete,
   } = useBeforeActionForm({
     actorNameOptions,
@@ -51,17 +99,40 @@ export function ActionBeforeDeclarationForm({
     isAuthenticated,
     userMetadata,
     linkedEventId,
+    initialActionId,
     initialRecordType,
     onReturnToChoice,
     onPassToComplete,
   });
   const actClasses = getBlockClasses("act");
 
+  useEffect(() => {
+    if (!publishedAt || !createdId || initialActionId) return;
+    window.history.replaceState(
+      null,
+      "",
+      `/actions/new?from=before&actionId=${encodeURIComponent(createdId)}`,
+    );
+  }, [createdId, initialActionId, publishedAt]);
+
+  if (isHydratingAction) {
+    return (
+      <div className="px-4 py-10 md:px-6 lg:px-8">
+        <CmmCard tone="emerald" variant="glass" size="lg" className="mx-auto w-full max-w-2xl">
+          <p className="text-sm font-semibold text-emerald-950" role="status">
+            Reprise de l&apos;action en cours…
+          </p>
+        </CmmCard>
+      </div>
+    );
+  }
+
   if (submissionState === "success") {
     const isPublished = Boolean(publishedAt);
-    const isGroupFormPublished = isPublished && form.groupJoinEnabled;
+    const publicationSummary = buildPublicationSummary(publishedAction ?? form);
     return (
       <div className="space-y-6 px-4 py-6 md:px-6 lg:px-8">
+        <BeforeActionStepper activeStep={isPublished || publicationConfirmationOpen ? 5 : 4} />
         <div className="mx-auto w-full max-w-7xl">
           <CmmCard tone="emerald" variant="glass" size="lg">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -71,27 +142,17 @@ export function ActionBeforeDeclarationForm({
                     {isPublished ? "Publié" : "Privé"}
                   </CmmPill>
                   <span className="text-sm font-semibold text-emerald-950">
-                    {isPublished ? "Action future publiée" : "Pré-action enregistrée en privé"}
+                    {isPublished ? "Action prête et publiée" : "Pré-action prête à publier"}
                   </span>
                 </div>
                 <h2 className="text-3xl font-black tracking-tight text-emerald-950">
-                  Le formulaire avant action est prêt
+                  {isPublished ? "Action prête et publiée" : "Vérifier avant publication"}
                 </h2>
                 <p className="max-w-2xl text-sm leading-6 text-emerald-900/68">
                   {isPublished
-                    ? "Cette action future est publique. Les bénévoles peuvent la consulter et la rejoindre si le groupe est ouvert."
-                    : "La pré-action reste privée tant que vous n'avez pas explicitement choisi de la publier."}
+                    ? "Cette action future est publique. Les bénévoles peuvent la consulter et la rejoindre depuis le parcours canonique."
+                    : "La pré-action reste privée tant que vous n'avez pas confirmé sa publication."}
                 </p>
-                {summaryNote ? (
-                  <div className="rounded-[1.4rem] border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm text-emerald-950">
-                    {summaryNote}
-                  </div>
-                ) : null}
-                {shareLink && isGroupFormPublished ? (
-                  <p className="text-xs text-emerald-900/60">
-                    Lien de partage du formulaire de groupe: <span className="font-mono">{shareLink}</span>
-                  </p>
-                ) : null}
                 {createdId ? (
                   <p className="text-xs font-mono text-emerald-900/60">Référence: {createdId}</p>
                 ) : null}
@@ -101,22 +162,30 @@ export function ActionBeforeDeclarationForm({
               </div>
               <div className="flex flex-col gap-2">
                 {!isPublished ? (
-                  <CmmButton tone="primary" variant="pill" size="md" onClick={() => void handlePublish()} disabled={publicationState === "pending"}>
+                  <CmmButton tone="primary" variant="pill" size="md" onClick={requestPublish} disabled={publicationState === "pending"}>
                     {publicationState === "pending" ? <Loader2 size={14} className="animate-spin" /> : null}
-                    {publicationState === "pending" ? "Publication..." : "Publier cette action"}
-                  </CmmButton>
-                ) : null}
-                <CmmButton tone="primary" variant="pill" size="md" onClick={onContinueComplete}>
-                  Passer au formulaire complet
-                  <ArrowRight size={14} />
-                </CmmButton>
-                {shareLink && isGroupFormPublished ? (
-                  <CmmButton tone="secondary" variant="pill" size="md" href={shareLink}>
-                    Ouvrir Rejoindre une action
+                    {publicationState === "pending" ? "Publication…" : "Publier cette action"}
                   </CmmButton>
                 ) : null}
                 {isPublished ? (
-                  <CmmButton tone="secondary" variant="pill" size="md" href="/sections/rejoindre-une-action">
+                  <>
+                    <CmmButton tone="primary" variant="pill" size="md" href={`/actions/map?actionId=${encodeURIComponent(createdId ?? "")}`}>
+                      Voir l&apos;action
+                    </CmmButton>
+                    <CmmButton tone="secondary" variant="pill" size="md" onClick={() => setShareActionId(createdId)}>
+                      Partager dans la messagerie
+                    </CmmButton>
+                    <CmmButton tone="secondary" variant="pill" size="md" href={buildJoinActionHref(createdId)}>
+                      Rejoindre une action
+                    </CmmButton>
+                  </>
+                ) : null}
+                <CmmButton tone="tertiary" variant="pill" size="md" onClick={onContinueComplete}>
+                  Passer au formulaire complet
+                  <ArrowRight size={14} />
+                </CmmButton>
+                {isPublished ? (
+                  <CmmButton tone="tertiary" variant="pill" size="md" href="/sections/rejoindre-une-action">
                     Voir les actions futures
                   </CmmButton>
                 ) : null}
@@ -126,8 +195,52 @@ export function ActionBeforeDeclarationForm({
                 </CmmButton>
               </div>
             </div>
+            <div className="mt-6 border-t border-emerald-200/70 pt-5" data-testid="action-publication-summary">
+              <h3 className="text-lg font-black text-emerald-950">
+                {isPublished ? "Synthèse de l'action publiée" : "Récapitulatif avant publication"}
+              </h3>
+              <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                {publicationSummary.map((item) => (
+                  <div key={item.label} className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3">
+                    <dt className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">{item.label}</dt>
+                    <dd className="mt-1 whitespace-pre-line text-sm leading-6 text-emerald-950">{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </CmmCard>
         </div>
+        {publicationConfirmationOpen ? (
+          <CmmDialog
+            open
+            ariaLabelledBy="publish-action-title"
+            ariaDescribedBy="publish-action-description"
+            onClose={cancelPublication}
+            size="lg"
+            panelClassName="border border-emerald-200/80 bg-white p-5 shadow-2xl"
+          >
+            <div className="space-y-5">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Étape 5</p>
+                  <h2 id="publish-action-title" className="mt-1 text-2xl font-black text-emerald-950">Confirmer la publication</h2>
+                  <p id="publish-action-description" className="mt-2 text-sm leading-6 text-emerald-900/70">La publication rend cette même action visible dans les parcours publics. Elle ne crée aucune action, participation ou conversation.</p>
+                </div>
+                <dl className="grid gap-3 sm:grid-cols-2">
+                  {publicationSummary.map((item) => (
+                    <div key={item.label} className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3">
+                      <dt className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">{item.label}</dt>
+                      <dd className="mt-1 whitespace-pre-line text-sm leading-6 text-emerald-950">{item.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <CmmButton tone="tertiary" variant="pill" size="md" onClick={cancelPublication}>Annuler</CmmButton>
+                  <CmmButton tone="primary" variant="pill" size="md" onClick={() => void confirmPublish()}>Confirmer et publier</CmmButton>
+                </div>
+            </div>
+          </CmmDialog>
+        ) : null}
+        {shareActionId ? <ChatActionShareDialog actionId={shareActionId} onClose={() => setShareActionId(null)} /> : null}
       </div>
     );
   }
@@ -140,6 +253,7 @@ export function ActionBeforeDeclarationForm({
       </div>
 
       <div className="relative mx-auto w-full max-w-7xl space-y-6">
+        <BeforeActionStepper activeStep={1} />
         <CmmCard tone="emerald" variant="glass" size="lg">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl space-y-3">

@@ -171,7 +171,7 @@ function ErrorPanel({
 
 export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProps) {
   const router = useRouter();
-  const initialEntryPath = props.initialActionId ? "after" : props.initialEntryPath ?? null;
+  const initialEntryPath = props.initialEntryPath ?? (props.initialActionId ? "after" : null);
   const [screen, setScreen] = useState<EntryScreen>(
     initialEntryPath ? "success" : "choice",
   );
@@ -296,6 +296,7 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
         isAuthenticated={props.isAuthenticated}
         userMetadata={props.userMetadata}
         linkedEventId={props.linkedEventId}
+        initialActionId={props.initialActionId ?? null}
         initialRecordType={props.initialRecordType}
         onReturnToChoice={backToChoice}
         onPassToComplete={(actionId) => transitionToComplete(actionId)}

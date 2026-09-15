@@ -1,5 +1,10 @@
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { createAction, publishAction } from "@/lib/actions/http";
+import {
+  createAction,
+  fetchActionById,
+  publishAction,
+  type ActionEditorRecord,
+} from "@/lib/actions/http";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import {
   createInitialFormState,
@@ -41,6 +46,7 @@ export function useBeforeActionForm({
   isAuthenticated,
   userMetadata,
   linkedEventId,
+  initialActionId,
   initialRecordType = "action",
   onPassToComplete,
 }: ActionBeforeDeclarationFormProps) {
@@ -54,15 +60,76 @@ export function useBeforeActionForm({
   const [submissionState, setSubmissionState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
+  const [publishedAction, setPublishedAction] = useState<ActionEditorRecord | null>(null);
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [publicationState, setPublicationState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [publicationError, setPublicationError] = useState<string | null>(null);
+  const [publicationConfirmationOpen, setPublicationConfirmationOpen] = useState(false);
+  const [isHydratingAction, setIsHydratingAction] = useState(Boolean(initialActionId));
   const [validationIssues, setValidationIssues] = useState<string[]>([]);
   const [showGroupJoinHelp, setShowGroupJoinHelp] = useState(false);
   const hasTrackedStartRef = useRef(false);
 
   useEffect(() => {
-    if (plannerHandoffHydratedRef.current) return;
+    if (!initialActionId) {
+      return;
+    }
+
+    let active = true;
+    fetchActionById(initialActionId)
+      .then((action) => {
+        if (!active) return;
+        if (action.actionPhase !== "pre_action") {
+          throw new Error("Cette action n'est plus une pré-action publiable.");
+        }
+        const hydrated = sanitizePreActionForm(
+          applyPreparationDataToForm(
+            createInitialFormState(resolvedDefaultActorName, initialRecordType),
+            action.preparationData,
+          ),
+        );
+        setForm({
+          ...hydrated,
+          actorName: action.actorName ?? hydrated.actorName,
+          associationName: action.associationName ?? hydrated.associationName,
+          organizerType: action.organizerType ?? hydrated.organizerType,
+          actionDate: action.actionDate,
+          locationLabel: action.locationLabel,
+          departureLocationLabel:
+            action.departureLocationLabel ?? hydrated.departureLocationLabel,
+          arrivalLocationLabel:
+            action.arrivalLocationLabel ?? hydrated.arrivalLocationLabel,
+          eventStartTime: action.eventStartTime ?? hydrated.eventStartTime,
+          eventEndTime: action.eventEndTime ?? hydrated.eventEndTime,
+          volunteersCount: String(action.volunteersCount),
+          durationMinutes: String(action.durationMinutes),
+          groupJoinEnabled: action.groupJoinEnabled,
+          participantAccounts: action.participantAccounts,
+        });
+        setCreatedId(action.id);
+        setPublishedAction(action);
+        setPublishedAt(action.publishedAt ?? null);
+        setSubmissionState("success");
+        setIsHydratingAction(false);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setErrorMessage(
+          error instanceof Error && error.message
+            ? error.message
+            : "Impossible de reprendre cette pré-action pour le moment.",
+        );
+        setSubmissionState("error");
+        setIsHydratingAction(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [initialActionId, initialRecordType, resolvedDefaultActorName]);
+
+  useEffect(() => {
+    if (initialActionId || plannerHandoffHydratedRef.current) return;
     plannerHandoffHydratedRef.current = true;
     const handoff = consumePlannerActionHandoff();
     if (!handoff) return;
@@ -95,7 +162,7 @@ export function useBeforeActionForm({
     saveDraft(prepared);
   // The handoff is intentionally consumed once on mount; the current form is the merge base.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialActionId]);
 
   const shareLink = createdId
     ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(createdId)}`
@@ -133,7 +200,7 @@ export function useBeforeActionForm({
 
   async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
-    if (submissionState === "pending") {
+    if (initialActionId || submissionState === "pending") {
       return;
     }
 
@@ -207,13 +274,34 @@ export function useBeforeActionForm({
     }
   }
 
-  async function handlePublish() {
-    if (!createdId || publicationState === "pending") return;
+  function requestPublish() {
+    if (!createdId || publishedAt || publicationState === "pending") return;
+    setPublicationConfirmationOpen(true);
+  }
+
+  function cancelPublication() {
+    setPublicationConfirmationOpen(false);
+  }
+
+  async function confirmPublish() {
+    if (!createdId || publishedAt || publicationState === "pending") return;
+    setPublicationConfirmationOpen(false);
     setPublicationState("pending");
     setPublicationError(null);
     try {
       const result = await publishAction(createdId);
-      setPublishedAt(result.publishedAt);
+      if (result.id !== createdId) {
+        throw new Error("La publication a retourné une action différente.");
+      }
+      const canonicalAction = await fetchActionById(result.id);
+      setPublishedAction(canonicalAction);
+      setForm((current) =>
+        sanitizePreActionForm(
+          applyPreparationDataToForm(current, canonicalAction.preparationData),
+        ),
+      );
+      setCreatedId(canonicalAction.id);
+      setPublishedAt(canonicalAction.publishedAt ?? result.publishedAt);
       setPublicationState("success");
     } catch (error: unknown) {
       setPublicationState("error");
@@ -238,9 +326,12 @@ export function useBeforeActionForm({
     submissionState,
     errorMessage,
     createdId,
+    publishedAction,
     publishedAt,
     publicationState,
     publicationError,
+    publicationConfirmationOpen,
+    isHydratingAction,
     validationIssues,
     showGroupJoinHelp,
     setShowGroupJoinHelp,
@@ -248,7 +339,9 @@ export function useBeforeActionForm({
     summaryNote,
     updateField,
     handleSubmit,
-    handlePublish,
+    requestPublish,
+    cancelPublication,
+    confirmPublish,
     onContinueComplete,
   };
 }

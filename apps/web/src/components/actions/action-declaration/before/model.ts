@@ -1,4 +1,6 @@
 import type { FormState } from "../form/model";
+import type { ActionEditorRecord } from "@/lib/actions/http";
+import type { ActionPreparationData } from "@/lib/actions/types";
 import { normalizeParticipantAccounts } from "../payload";
 import {
   ENTREPRISE_ASSOCIATION_OPTION,
@@ -22,12 +24,154 @@ export type ActionBeforeDeclarationFormProps = {
     email?: string;
   };
   linkedEventId?: string;
+  initialActionId?: string | null;
   initialRecordType?: "action";
   onReturnToChoice: () => void;
   onPassToComplete: (actionId: string) => void | Promise<void>;
   signInHref?: string;
   signUpHref?: string;
 };
+
+export type PublicationSummaryItem = {
+  label: string;
+  value: string;
+};
+
+type PublicationSummarySource = FormState | ActionEditorRecord;
+
+function preparationDataFrom(source: PublicationSummarySource): ActionPreparationData {
+  if ("preparationData" in source) {
+    return source.preparationData ?? {};
+  }
+
+  return {
+    actionTitle: source.actionTitle,
+    shortDescription: source.shortDescription,
+    communeZoneLabel: source.communeZoneLabel,
+    pointDeRendezVous: source.departureLocationLabel,
+    zoneCiblePrevue: source.arrivalLocationLabel,
+    actionDate: source.actionDate,
+    meetingTime: source.meetingTime,
+    departureTime: source.departureTime,
+    plannedObjective: source.plannedObjective,
+    placeType: source.placeType,
+    estimatedDifficulty: source.estimatedDifficulty,
+    accessibility: source.accessibility,
+    safetyInstructions: source.safetyInstructions,
+    recommendedMaterials: source.recommendedMaterials,
+    participantMessage: source.participantMessage,
+    preparationState: source.preparationState,
+    logisticsNotes: source.logisticsNotes,
+    checklistBeforeDeparture: source.checklistBeforeDeparture,
+    volunteersExpected: Number(source.volunteersCount) || undefined,
+    groupJoinEnabled: source.groupJoinEnabled,
+    expectedWasteCategories: source.wasteCategories,
+    operationalRoute: source.operationalRoute ?? undefined,
+    routeCalibrationContext: source.routeCalibrationContext ?? undefined,
+  };
+}
+
+function textValue(value: unknown, fallback: string): string {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function formatWeather(source: PublicationSummarySource): string {
+  const preparation = preparationDataFrom(source);
+  const weather = preparation.routeCalibrationContext?.plannerSnapshot?.weatherContext;
+  if (!weather || weather.status !== "available") {
+    return "Non disponible dans les données canoniques de cette action";
+  }
+
+  const temperature = weather.summary?.temperatureC;
+  return typeof temperature === "number" && Number.isFinite(temperature)
+    ? `Prévision disponible · ${temperature} °C`
+    : "Prévision disponible";
+}
+
+function formatItinerary(source: PublicationSummarySource): string {
+  const preparation = preparationDataFrom(source);
+  const routeCount = preparation.operationalRoute?.routes.length ?? 0;
+  const departure = textValue(
+    "departureLocationLabel" in source
+      ? source.departureLocationLabel
+      : preparation.pointDeRendezVous,
+    "Point de départ non renseigné",
+  );
+  const arrival = textValue(
+    "arrivalLocationLabel" in source
+      ? source.arrivalLocationLabel
+      : preparation.zoneCiblePrevue,
+    "Zone cible non renseignée",
+  );
+  const route = `${departure} → ${arrival}`;
+  return routeCount > 0 ? `${route} · ${routeCount} groupe(s)` : route;
+}
+
+export function buildPublicationSummary(
+  source: PublicationSummarySource,
+): PublicationSummaryItem[] {
+  const preparation = preparationDataFrom(source);
+  const actionDate = "actionDate" in source ? source.actionDate : preparation.actionDate;
+  const startTime =
+    "eventStartTime" in source
+      ? source.eventStartTime ?? preparation.meetingTime ?? preparation.departureTime
+      : preparation.meetingTime ?? preparation.departureTime;
+  const endTime = "eventEndTime" in source ? source.eventEndTime : undefined;
+  const location = textValue(
+    "departureLocationLabel" in source
+      ? source.departureLocationLabel
+      : preparation.pointDeRendezVous ?? preparation.communeZoneLabel,
+    "Lieu non renseigné",
+  );
+  const preparationState = textValue(
+    preparation.preparationState,
+    "Préparation non renseignée",
+  );
+  const volunteers =
+    "volunteersCount" in source
+      ? String(source.volunteersCount)
+      : typeof preparation.volunteersExpected === "number"
+        ? String(preparation.volunteersExpected)
+        : "Non renseigné";
+  const safetyInstructions = textValue(
+    preparation.safetyInstructions,
+    "Aucune consigne principale renseignée",
+  );
+  const preparationDetails = [
+    labelForPreparationState(preparationState as FormState["preparationState"]),
+    preparation.recommendedMaterials
+      ? `Matériel : ${preparation.recommendedMaterials.trim()}`
+      : null,
+    preparation.checklistBeforeDeparture
+      ? `Checklist : ${preparation.checklistBeforeDeparture.trim()}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const logisticsNotes = textValue(
+    preparation.logisticsNotes,
+    "Non renseignée — à vérifier selon le lieu et l'itinéraire",
+  );
+
+  return [
+    { label: "Itinéraire", value: formatItinerary(source) },
+    {
+      label: "Date / heure",
+      value: [actionDate, startTime, endTime ? `à ${endTime}` : null]
+        .filter(Boolean)
+        .join(" · ") || "Date et horaire non renseignés",
+    },
+    { label: "Lieu", value: location },
+    {
+      label: "Préparation",
+      value: preparationDetails,
+    },
+    { label: "Météo", value: formatWeather(source) },
+    { label: "Formalité Paris", value: logisticsNotes },
+    { label: "Bénévoles recherchés", value: volunteers },
+    { label: "Consignes principales", value: safetyInstructions },
+  ];
+}
 
 export type BeforeActionFieldUpdater = <K extends keyof FormState>(
   key: K,
