@@ -25,6 +25,18 @@ export default defineConfig({
       teardown: "global teardown",
     },
     {
+      name: "local public",
+      testMatch:
+        /(?:smoke-public|public-first-campaign|public-interactions-campaign-3a|public-locale-explorer-campaign-3a1|public-campaign-3b|security-boundaries)\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "local authenticated",
+      testMatch: /route-campaign-3c\.spec\.ts/,
+      dependencies: ["global setup"],
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
       name: "chromium",
       testMatch: /public-first-campaign\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },

@@ -155,7 +155,7 @@ attendu justifie réellement l'évolution de la preuve.
 
 ## E2E
 
-Lister les tests :
+Lister les E2E locaux sans persistence Supabase :
 
 ```bash
 npm run test:e2e:list
@@ -166,6 +166,30 @@ Exécuter :
 ```bash
 npm run test:e2e
 ```
+
+Ces commandes sélectionnent uniquement les projets Playwright locaux qui ne
+requièrent pas de base Supabase mutable. Les E2E persistants — partage
+d'action, parcours authentifié de recrutement et signalement/Storage — ne sont
+pas une obligation pour chaque petit commit et sont exécutés par la lane
+GitHub Actions dédiée. Les anciens lanceurs locaux des campagnes persistantes
+restent des gardes explicites et échouent sans appeler Docker ni le cycle de
+vie Supabase :
+
+```bash
+npx playwright test --list --project="action sharing" --project="authenticated campaign" --project="signalement campaign 2"
+```
+
+La lane `.github/workflows/e2e-supabase.yml` utilise un runner Linux GitHub
+hébergé et éphémère. Elle démarre Supabase, applique les migrations
+`apps/web/supabase/migrations/`, charge `apps/web/supabase/seed.sql`, lance
+Next.js contre cette instance locale du runner, puis arrête la stack. Elle
+utilise exclusivement des identifiants Clerk Development ; l'absence de ces
+identifiants fait échouer la lane avant tout E2E. Aucun projet Supabase distant,
+URL de production ou clé de production ne doit être injecté dans cette lane.
+
+Les commandes `supabase start`, `supabase status`, `supabase db reset` et
+`supabase stop` sont donc réservées à cette CI éphémère explicitement dédiée au
+replay ; elles ne font pas partie du workflow local.
 
 Ou via le script PowerShell :
 
