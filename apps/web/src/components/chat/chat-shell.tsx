@@ -22,6 +22,7 @@ import { ChatContextSidebar } from "./chat-context-sidebar";
 import { useChatData } from "./hooks/use-chat-data";
 import { useChatActionDiscussions } from "./hooks/use-chat-action-discussions";
 import { useDmInbox } from "./hooks/use-dm-inbox";
+import { useActionShareContactRequests } from "./hooks/use-action-share-contact-requests";
 import { useChatNotificationUnreads } from "./hooks/use-chat-notification-unreads";
 import { useChatState } from "./hooks/use-chat-state";
 import { useChatSubmit } from "./hooks/use-chat-submit";
@@ -34,7 +35,7 @@ import { useChatShellRuntimeContext } from "./hooks/use-chat-shell-runtime-conte
 import { useChatShellComposer } from "./hooks/use-chat-shell-composer";
 import { useChatShellPollVoting } from "./hooks/use-chat-shell-poll-voting";
 import { useChatShellDmNavigation } from "./hooks/use-chat-shell-dm-navigation";
-import type { ChatUser } from "./chat-types";
+import type { ActionShareContactRequest, ChatUser } from "./chat-types";
 import type { ChatTopicId } from "@/lib/chat/topics";
 import {
   type ChatRelatedEvent,
@@ -233,6 +234,15 @@ export function ChatShell({
     enabled: messagerieMode && activeChannelType === "dm",
     currentUserId: userId,
     supabase,
+  });
+  const {
+    requests: actionShareContactRequests,
+    error: actionShareContactRequestsError,
+    isLoading: actionShareContactRequestsLoading,
+    respond: respondToActionShareContactRequest,
+  } = useActionShareContactRequests({
+    enabled: messagerieMode && activeChannelType === "dm" && isLoaded && isSignedIn,
+    currentUserId: userId,
   });
 
   const {
@@ -450,6 +460,20 @@ export function ChatShell({
     setIsRecipientPickerOpen,
   });
 
+  const handleRespondToActionShareContactRequest = useCallback(
+    async (
+      request: ActionShareContactRequest,
+      decision: "accept" | "reject" | "ignore",
+    ) => {
+      await respondToActionShareContactRequest(request.id, decision);
+      if (decision === "accept") {
+        await refreshInbox();
+        handleSelectRecipient(request.sender);
+      }
+    },
+    [handleSelectRecipient, refreshInbox, respondToActionShareContactRequest],
+  );
+
   const activeChannelVisual = useMemo(
     () => CHANNEL_VISUALS[activeChannelType],
     [activeChannelType],
@@ -566,6 +590,10 @@ export function ChatShell({
             onStartConversation={handleStartDmConversation}
             onRetry={refreshInbox}
             notificationUnreadCount={chatNotificationUnreadCounts.dm}
+            contactRequests={actionShareContactRequests}
+            contactRequestsLoading={actionShareContactRequestsLoading}
+            contactRequestsError={actionShareContactRequestsError}
+            onRespondToContactRequest={handleRespondToActionShareContactRequest}
             tone={isLight ? "light" : "dark"}
             className={!showDmThreadOnMobile ? "flex" : "hidden md:flex"}
           />

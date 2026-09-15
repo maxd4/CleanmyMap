@@ -3,9 +3,11 @@
 import { AlertCircle, MessageCirclePlus, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
-import { memo } from "react";
+import { memo, useState } from "react";
 import type { DmConversation } from "./chat-types";
+import type { ActionShareContactRequest } from "./chat-types";
 import { ChatAvatar } from "./chat-avatar";
+import { ChatActionReferenceCard } from "./ui/chat-action-reference-card";
 
 type DmInboxProps = {
   conversations: DmConversation[];
@@ -18,6 +20,13 @@ type DmInboxProps = {
   notificationUnreadCount?: number;
   tone?: "light" | "dark";
   className?: string;
+  contactRequests?: readonly ActionShareContactRequest[];
+  contactRequestsLoading?: boolean;
+  contactRequestsError?: unknown;
+  onRespondToContactRequest?: (
+    request: ActionShareContactRequest,
+    decision: "accept" | "reject" | "ignore",
+  ) => Promise<void>;
 };
 
 function formatConversationDate(value: string): string {
@@ -39,8 +48,26 @@ export const DmInbox = memo(function DmInbox({
   notificationUnreadCount = 0,
   tone = "light",
   className = "",
+  contactRequests = [],
+  contactRequestsLoading = false,
+  contactRequestsError,
+  onRespondToContactRequest,
 }: DmInboxProps) {
   const isLight = tone === "light";
+  const [respondingRequestId, setRespondingRequestId] = useState<string | null>(null);
+
+  async function respondToRequest(
+    request: ActionShareContactRequest,
+    decision: "accept" | "reject" | "ignore",
+  ) {
+    if (!onRespondToContactRequest || respondingRequestId) return;
+    setRespondingRequestId(request.id);
+    try {
+      await onRespondToContactRequest(request, decision);
+    } finally {
+      setRespondingRequestId(null);
+    }
+  }
 
   return (
     <aside
@@ -78,6 +105,41 @@ export const DmInbox = memo(function DmInbox({
       </div>
 
       <div className="mt-4 min-h-0 flex-1 overflow-y-auto custom-scrollbar">
+        {contactRequestsLoading ? (
+          <p className="mb-4 rounded-xl border border-dashed border-indigo-200 p-3 text-xs text-slate-500" role="status">
+            Recherche de demandes de partage…
+          </p>
+        ) : null}
+        {contactRequestsError ? (
+          <p className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
+            Les demandes de partage sont momentanément indisponibles.
+          </p>
+        ) : null}
+        {contactRequests.length > 0 ? (
+          <section className="mb-4 space-y-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-3" aria-label="Demandes de partage d’action">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">Nouvelles demandes</p>
+              <p className="mt-1 text-xs text-slate-600">Acceptez pour ouvrir la conversation et recevoir le partage.</p>
+            </div>
+            {contactRequests.map((request) => (
+              <article key={request.id} className="rounded-xl border border-indigo-100 bg-white p-3">
+                <div className="flex items-center gap-2">
+                  <ChatAvatar src={request.sender.avatar_url} name={request.sender.display_name} size="sm" tone="light" />
+                  <p className="text-sm font-bold text-slate-900">{request.sender.display_name} souhaite vous partager une action</p>
+                </div>
+                <p className="mt-2 text-xs text-slate-600">{request.message}</p>
+                <div className="mt-2">
+                  <ChatActionReferenceCard actionId={request.action.id} tone="light" />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "accept")} className="rounded-full bg-indigo-600 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-white disabled:opacity-50">Accepter</button>
+                  <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "reject")} className="rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-slate-600 disabled:opacity-50">Refuser</button>
+                  <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "ignore")} className="rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-slate-600 disabled:opacity-50">Ignorer</button>
+                </div>
+              </article>
+            ))}
+          </section>
+        ) : null}
         {isLoading ? (
           <div className="space-y-2" aria-label="Chargement des conversations" role="status">
             {[0, 1, 2].map((item) => (

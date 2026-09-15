@@ -41,6 +41,7 @@ export function PastActionsPanel({
   focusedActionId,
   authenticated = false,
   historyItems = [],
+  onShareAction,
 }: {
   items: ActionListItem[];
   loading: boolean;
@@ -49,6 +50,7 @@ export function PastActionsPanel({
   focusedActionId?: string | null;
   authenticated?: boolean;
   historyItems?: readonly JoinableActionHistoryItem[];
+  onShareAction?: (actionId: string) => void;
 }) {
   const [claimOverrides, setClaimOverrides] = useState<Record<string, ClaimState>>({});
   const [claimingActionId, setClaimingActionId] = useState<string | null>(null);
@@ -161,6 +163,11 @@ export function PastActionsPanel({
                   <p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "finales" : "final"}</p>
                 </div>
                 <p className="text-xs text-slate-500">{fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}</p>
+                {onShareAction ? (
+                  <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>
+                    {fr ? "Partager le résultat" : "Share the result"}
+                  </CmmButton>
+                ) : null}
                 {personalAttribution ? (
                   <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-950">
                     <p className="font-bold">{fr ? "Votre part des résultats" : "Your share of the results"}</p>

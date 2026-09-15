@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildPublicActionReference,
   buildShareDestinationList,
+  getPublicActionShareKind,
   isPublicActionReferenceAvailable,
   isShareableFutureAction,
 } from "./action-sharing";
@@ -55,10 +56,24 @@ describe("action sharing contract", () => {
     expect(isShareableFutureAction({ ...baseAction, action_phase: "post_action_draft" }, now)).toBe(false);
   });
 
+  it("shares a published approved completed action as a result", () => {
+    const completed = {
+      ...baseAction,
+      action_phase: "post_action_complete" as const,
+      status: "approved" as const,
+      action_date: "2020-01-01",
+    };
+    expect(getPublicActionShareKind(completed, new Date("2026-09-15T09:00:00.000Z"))).toBe("result");
+    expect(isPublicActionReferenceAvailable(completed)).toBe(true);
+    expect(isPublicActionReferenceAvailable({ ...completed, status: "pending" })).toBe(false);
+    expect(isPublicActionReferenceAvailable({ ...completed, action_phase: "post_action_draft" })).toBe(false);
+  });
+
   it("keeps the dynamic card projection free of the action model copy", () => {
     const reference = buildPublicActionReference(baseAction);
     expect(reference).toMatchObject({
       id: baseAction.id,
+      shareKind: "invitation",
       title: "Nettoyage des berges",
       participantsExpected: 12,
       durationMinutes: 75,

@@ -33,6 +33,7 @@ export type ShareProfile = {
 
 export type PublicActionReference = {
   id: string;
+  shareKind: PublicActionShareKind;
   title: string;
   actionDate: string;
   eventStartTime: string | null;
@@ -55,6 +56,8 @@ export type PublicActionReference = {
   } | null;
 };
 
+export type PublicActionShareKind = "invitation" | "result";
+
 export type PublicActionEvent = NonNullable<PublicActionReference["event"]>;
 
 export function isShareableFutureAction(
@@ -69,7 +72,32 @@ export function isShareableFutureAction(
   >,
   now = new Date(),
 ): boolean {
-  return isPublishedFuturePreAction(action, now);
+  return getPublicActionShareKind(action, now) === "invitation";
+}
+
+export function getPublicActionShareKind(
+  action: Pick<
+    ActionRow,
+    | "action_date"
+    | "event_start_time"
+    | "action_phase"
+    | "status"
+    | "moderation_visibility"
+    | "published_at"
+  >,
+  now = new Date(),
+): PublicActionShareKind | null {
+  if (!action.published_at || action.moderation_visibility === "hidden") {
+    return null;
+  }
+
+  if (isPublishedFuturePreAction(action, now)) {
+    return "invitation";
+  }
+
+  return action.action_phase === "post_action_complete" && action.status === "approved"
+    ? "result"
+    : null;
 }
 
 export function isPublicActionReferenceAvailable(
@@ -84,15 +112,7 @@ export function isPublicActionReferenceAvailable(
   >,
   now = new Date(),
 ): boolean {
-  if (!action.published_at || action.moderation_visibility === "hidden") {
-    return false;
-  }
-
-  if (action.action_phase === "pre_action") {
-    return isShareableFutureAction(action, now);
-  }
-
-  return action.status === "approved";
+  return getPublicActionShareKind(action, now) !== null;
 }
 
 function finiteCount(value: unknown): number {
@@ -127,6 +147,9 @@ export function buildPublicActionReference(
 
   return {
     id: row.id,
+    shareKind:
+      getPublicActionShareKind(row) ??
+      (row.action_phase === "pre_action" ? "invitation" : "result"),
     title: preparation?.actionTitle?.trim() || row.location_label,
     actionDate: row.action_date,
     eventStartTime: row.event_start_time ?? null,
