@@ -3,7 +3,7 @@ import { extractActionMetadataFromNotes } from "./metadata";
 import { parseDrawingFromNotes } from "./geometry/drawing";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { normalizeClockTime } from "./time-contract";
-import { normalizeAdministrativeRequirements } from "./administrative-requirements";
+import { projectAdministrativeRequirementsForRead } from "./administrative-requirements";
 
 export function buildActionEditorPayload(row: ActionRow | null) {
   if (!row) {
@@ -24,7 +24,7 @@ export function buildActionEditorPayload(row: ActionRow | null) {
       row.action_phase === "pre_action"
         ? {
             ...preparationData,
-            administrativeRequirements: normalizeAdministrativeRequirements(
+            administrativeRequirements: projectAdministrativeRequirementsForRead(
               preparationData.administrativeRequirements,
             ),
           }

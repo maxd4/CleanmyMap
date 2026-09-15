@@ -10,6 +10,11 @@ export type AdministrativeRequirements = {
   validatedByUserId?: string | null;
 };
 
+export type AdministrativeRequirementsRead = {
+  status: AdministrativeRequirementsStatus;
+  validatedAt: string | null;
+};
+
 export const PENDING_ADMINISTRATIVE_REQUIREMENTS: AdministrativeRequirements = {
   status: "pending",
   validatedAt: null,
@@ -87,5 +92,16 @@ export function normalizeAdministrativeRequirements(
       typeof candidate.validatedByUserId === "string" && candidate.validatedByUserId.trim()
         ? candidate.validatedByUserId
         : null,
+  };
+}
+
+/** Public/editor projection: the validator identity remains server-only. */
+export function projectAdministrativeRequirementsForRead(
+  value: unknown,
+): AdministrativeRequirementsRead {
+  const normalized = normalizeAdministrativeRequirements(value);
+  return {
+    status: normalized.status,
+    validatedAt: normalized.validatedAt ?? null,
   };
 }

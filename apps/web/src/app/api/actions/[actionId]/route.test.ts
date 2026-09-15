@@ -205,6 +205,23 @@ describe("PATCH /api/actions/:actionId", () => {
     );
   });
 
+  it("rejects starting a pending pre-action through the generic PATCH", async () => {
+    const { PATCH } = await import("./route");
+
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({
+          preparationData: { preparationState: "action_en_cours" },
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
   it("keeps an ordinary final declaration pending moderation", async () => {
     const { PATCH } = await import("./route");
 

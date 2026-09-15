@@ -23,6 +23,7 @@ import type { OrganizerType } from "../organizer-type";
 import type { ActionCigaretteButtsMeasurements } from "@/lib/waste/cigarette-butts";
 import type { ActionVolunteerParticipation } from "../volunteer-participation";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
+import { projectAdministrativeRequirementsForRead } from "@/lib/actions/administrative-requirements";
 
 export type ActionEntityType = ActionRecordType;
 
@@ -234,7 +235,17 @@ function buildActionIdentityMetadata(
     groupJoinEnabled: params.groupJoinEnabled ?? false,
     actionPhase: params.actionPhase ?? "post_action_complete",
     preparationData: params.preparationData
-      ? normalizeActionPreparationData(params.preparationData)
+      ? (() => {
+          const preparationData = normalizeActionPreparationData(params.preparationData);
+          return preparationData.administrativeRequirements
+            ? {
+                ...preparationData,
+                administrativeRequirements: projectAdministrativeRequirementsForRead(
+                  preparationData.administrativeRequirements,
+                ),
+              }
+            : preparationData;
+        })()
       : null,
   };
 }

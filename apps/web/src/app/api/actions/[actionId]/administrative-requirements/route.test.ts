@@ -29,7 +29,7 @@ function buildAction(preparationData: Record<string, unknown> = {}) {
   };
 }
 
-describe("POST /api/actions/:actionId/administrative-requirements", () => {
+describe("/api/actions/:actionId/administrative-requirements", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
@@ -116,5 +116,75 @@ describe("POST /api/actions/:actionId/administrative-requirements", () => {
       });
     }
     expect(validateAdministrativeRequirementsRpcMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("returns only the dedicated public status projection", async () => {
+    getCurrentUserIdentityMock.mockResolvedValue(null);
+    const action = buildAction({
+      administrativeRequirements: {
+        status: "validated",
+        validatedAt: "2026-09-15T10:00:00.000Z",
+        validatedByUserId: "secret-validator-id",
+      },
+    });
+    Object.assign(action, {
+      action_date: "2999-01-01",
+      published_at: "2026-09-15T09:00:00.000Z",
+      moderation_visibility: "visible",
+      status: "pending",
+      event_start_time: null,
+    });
+    loadActionByIdMock.mockResolvedValue(action);
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost"), {
+      params: Promise.resolve({ actionId: "action-42" }),
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({
+      status: "validated",
+      validatedAt: "2026-09-15T10:00:00.000Z",
+      canValidate: false,
+    });
+    expect(body).not.toHaveProperty("validatedByUserId");
+  });
+
+  it("allows an active elu to read the minimal projection outside the public list", async () => {
+    getCurrentUserIdentityMock.mockResolvedValue({
+      userId: "elu-1",
+      role: "elu",
+      activeRole: "elu",
+    });
+    loadActionByIdMock.mockResolvedValue(buildAction());
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost"), {
+      params: Promise.resolve({ actionId: "action-42" }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      status: "pending",
+      validatedAt: null,
+      canValidate: true,
+    });
+  });
+
+  it("refuses an unpublished pre-action to an unrelated account", async () => {
+    getCurrentUserIdentityMock.mockResolvedValue({
+      userId: "reader-1",
+      role: "benevole",
+      activeRole: "benevole",
+    });
+    loadActionByIdMock.mockResolvedValue(buildAction());
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost"), {
+      params: Promise.resolve({ actionId: "action-42" }),
+    });
+
+    expect(response.status).toBe(403);
   });
 });

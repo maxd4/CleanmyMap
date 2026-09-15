@@ -282,6 +282,17 @@ export const API_AUTHORIZATION_CONTRACT = {
     },
   },
   "actions/[actionId]/administrative-requirements": {
+    GET: {
+      expected: "Public future pre-actions expose only administrative status; admin/max/elu and canonical organizers also receive canValidate",
+      dimensions: ["public-safe", "business permission", "ownership"],
+      actual: "service-side action visibility check + isPublishedFuturePreAction + canValidateActionAdministrativeRequirements; only status, validatedAt and canValidate are returned",
+      evidence: [
+        "loadActionById",
+        "isPublishedFuturePreAction",
+        "canValidateActionAdministrativeRequirements",
+        "loadCanonicalActionOrganizerIdsForAction",
+      ],
+    },
     POST: {
       expected: "Authenticated admin/max/elu or canonical action organizer/coorganizer validates a pre-action administrative state",
       dimensions: ["authentication", "business permission", "audit"],

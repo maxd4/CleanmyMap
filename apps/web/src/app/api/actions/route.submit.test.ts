@@ -321,6 +321,45 @@ describe("POST /api/actions", () => {
     expect(invalidateSnapshotsMock).toHaveBeenCalledWith(["api/actions", "api/actions/map"]);
   }, 15000);
 
+  it("does not persist a forged validated administrative state on HTTP creation", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify({
+          associationName: "Action spontanée",
+          organizerType: "spontaneous",
+          actionDate: "2999-01-01",
+          eventStartTime: "09:00",
+          eventEndTime: "10:00",
+          locationLabel: "Parc futur",
+          actionPhase: "pre_action",
+          preparationData: {
+            actionTitle: "Pré-action forgée",
+            administrativeRequirements: {
+              status: "validated",
+              validatedAt: "2026-09-15T10:00:00.000Z",
+              validatedByUserId: "attacker",
+            },
+          },
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(createActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          actionPhase: "pre_action",
+          preparationData: expect.not.objectContaining({
+            administrativeRequirements: expect.anything(),
+          }),
+        }),
+      }),
+    );
+  }, 15000);
+
   it("accepts a localhost max bypass through the central auth helper", async () => {
     requireAuthenticatedAccessMock.mockResolvedValueOnce({
       ok: true,

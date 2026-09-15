@@ -42,7 +42,7 @@ describe("AdministrativeRequirementsStatus", () => {
     const html = renderToStaticMarkup(
       React.createElement(AdministrativeRequirementsStatus, {
         actionId: "action-42",
-        initialAction: { ...baseAction, canValidateAdministrativeRequirements: false },
+        initialAction: baseAction,
         surface: "summary",
       }),
     );
@@ -56,8 +56,9 @@ describe("AdministrativeRequirementsStatus", () => {
     const html = renderToStaticMarkup(
       React.createElement(AdministrativeRequirementsStatus, {
         actionId: "action-42",
-        initialAction: { ...baseAction, canValidateAdministrativeRequirements: true },
+        initialAction: baseAction,
         surface: "summary",
+        initialCanValidate: true,
       }),
     );
 
@@ -71,7 +72,6 @@ describe("AdministrativeRequirementsStatus", () => {
         actionId: "action-42",
         initialAction: {
           ...baseAction,
-          canValidateAdministrativeRequirements: false,
           preparationData: {
             administrativeRequirements: {
               status: "validated",

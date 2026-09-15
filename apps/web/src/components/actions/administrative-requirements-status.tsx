@@ -4,7 +4,7 @@ import { Check, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import {
-  fetchActionById,
+  fetchActionAdministrativeRequirements,
   validateActionAdministrativeRequirements,
   type ActionEditorRecord,
 } from "@/lib/actions/http";
@@ -14,30 +14,43 @@ type AdministrativeRequirementsStatusProps = {
   actionId: string | null | undefined;
   initialAction?: ActionEditorRecord | null;
   surface: "summary" | "formalities";
+  initialCanValidate?: boolean;
 };
 
 export function AdministrativeRequirementsStatus({
   actionId,
   initialAction = null,
   surface,
+  initialCanValidate = false,
 }: AdministrativeRequirementsStatusProps) {
-  const [action, setAction] = useState<ActionEditorRecord | null>(initialAction);
+  const [requirements, setRequirements] = useState(() =>
+    initialAction
+      ? {
+          ...normalizeAdministrativeRequirements(
+            initialAction.preparationData?.administrativeRequirements,
+          ),
+          canValidate: initialCanValidate,
+        }
+      : null,
+  );
   const [isLoading, setIsLoading] = useState(!initialAction && Boolean(actionId));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!actionId || initialAction) {
+    if (!actionId) {
       return;
     }
 
     let active = true;
-    fetchActionById(actionId)
-      .then((nextAction) => {
-        if (active) setAction(nextAction);
+    fetchActionAdministrativeRequirements(actionId)
+      .then((nextRequirements) => {
+        if (active) setRequirements(nextRequirements);
       })
       .catch(() => {
-        if (active) setError("Impossible de charger l'état des démarches administratives.");
+        if (active && !initialAction) {
+          setError("Impossible de charger l'état des démarches administratives.");
+        }
       })
       .finally(() => {
         if (active) setIsLoading(false);
@@ -56,9 +69,10 @@ export function AdministrativeRequirementsStatus({
     return <p className="text-xs text-rose-700">{error}</p>;
   }
 
-  const requirements = normalizeAdministrativeRequirements(
-    action?.preparationData?.administrativeRequirements,
-  );
+  if (!requirements) {
+    return null;
+  }
+
   if (requirements.status === "validated") {
     return (
       <p
@@ -76,14 +90,14 @@ export function AdministrativeRequirementsStatus({
     );
   }
 
-  const canValidate = Boolean(action?.canValidateAdministrativeRequirements);
+  const canValidate = requirements.canValidate;
   return (
     <div className="space-y-2" data-testid="administrative-requirements-pending">
       <p className="text-sm font-semibold text-amber-900">Démarches administratives non validées</p>
       {canValidate && surface === "summary" ? (
         <CmmButton
           href={`/actions/new?actionId=${encodeURIComponent(actionId)}&panel=formalites`}
-          tone="important"
+          tone="critical"
           variant="pill"
           size="sm"
         >
@@ -92,7 +106,7 @@ export function AdministrativeRequirementsStatus({
       ) : null}
       {canValidate && surface === "formalities" ? (
         <CmmButton
-          tone="important"
+          tone="critical"
           variant="pill"
           size="md"
           disabled={isSubmitting}
@@ -101,20 +115,11 @@ export function AdministrativeRequirementsStatus({
             setError(null);
             void validateActionAdministrativeRequirements(actionId)
               .then((result) => {
-                setAction((current) =>
-                  current
-                    ? {
-                        ...current,
-                        preparationData: {
-                          ...(current.preparationData ?? {}),
-                          administrativeRequirements: {
-                            status: "validated",
-                            validatedAt: result.administrativeRequirements.validatedAt,
-                          },
-                        },
-                      }
-                    : current,
-                );
+                setRequirements({
+                  status: "validated",
+                  validatedAt: result.administrativeRequirements.validatedAt,
+                  canValidate: true,
+                });
               })
               .catch((validationError: unknown) => {
                 setError(

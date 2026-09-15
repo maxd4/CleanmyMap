@@ -16,7 +16,10 @@ import { extractActionMetadataFromNotes } from "./metadata";
 import type { ActionRow } from "@/types/database";
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
 import { resolveNextActionStatus } from "./action-update-status";
-import { preserveCanonicalAdministrativeRequirements } from "./administrative-requirements";
+import {
+  normalizeAdministrativeRequirements,
+  preserveCanonicalAdministrativeRequirements,
+} from "./administrative-requirements";
 
 export class ActionUpdateValidationError extends Error {
   constructor(
@@ -62,6 +65,23 @@ export async function prepareActionUpdate(params: {
       throw error;
     }
     body = { ...parsedBody, preparationData: preservedPreparationData };
+  }
+
+  const nextActionPhase = body.actionPhase ?? current.action_phase;
+  const nextPreparationState =
+    body.preparationData?.preparationState ??
+    current.preparation_data?.preparationState;
+  if (
+    nextActionPhase === "pre_action" &&
+    nextPreparationState === "action_en_cours" &&
+    normalizeAdministrativeRequirements(
+      current.preparation_data?.administrativeRequirements,
+    ).status === "pending"
+  ) {
+    throw new ActionUpdateValidationError(
+      "preparationData",
+      "Les démarches administratives doivent être validées avant le démarrage de l'action.",
+    );
   }
 
   const currentMetadata = extractActionMetadataFromNotes(current.notes);
