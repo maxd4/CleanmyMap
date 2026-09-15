@@ -5,20 +5,15 @@ import {
   isBuildRelevantFile,
   isWebRelevantFile,
 } from "../checks/validation-policy.mjs";
+import {
+  resolveAssociatedWebTestFiles,
+  resolveMigrationContracts,
+} from "./validation-resolution.mjs";
 
 export const VALIDATION_MODE_BUDGETS = Object.freeze({
   FAST: 180,
   FULL: 600,
 });
-
-const MIGRATION_CONTRACT_TESTS = Object.freeze([
-  "src/lib/chat/action-conversations-migration.test.ts",
-  "src/lib/chat/action-message-reference-migration.test.ts",
-  "src/lib/chat/dm-inbox-migration.test.ts",
-  "src/lib/chat/feedback-private-reply-migration.test.ts",
-  "src/lib/supabase/territory-context-migration.test.ts",
-  "src/lib/supabase/supabase-security-advisors.test.ts",
-]);
 
 const SECURITY_GROUP_FILES = new Set(getVitestFiles({ groups: ["security"] }));
 const REGRESSION_GROUP_FILES = new Set(getVitestFiles({ groups: ["regression"] }));
@@ -42,13 +37,6 @@ function isTypeScriptFile(file) {
 
 function isWebSourceFile(file) {
   return normalizePath(file).startsWith("apps/web/src/");
-}
-
-function getChangedWebTestFiles(changedFiles) {
-  return changedFiles
-    .map(normalizePath)
-    .filter((file) => /^apps\/web\/src\/.*\.test\.(ts|tsx)$/.test(file))
-    .map((file) => file.slice("apps/web/".length));
 }
 
 function isScriptRelevantFile(file) {
@@ -96,6 +84,11 @@ function isLockfileRelevantFile(file) {
   return normalized === "package-lock.json" || normalized.endsWith("/package-lock.json");
 }
 
+function isWebRuntimeRelevantFile(file) {
+  const normalized = normalizePath(file);
+  return isWebRelevantFile(normalized) && !normalized.startsWith("apps/web/supabase/");
+}
+
 function npmCommand(script, args = []) {
   return {
     executable: "npm",
@@ -137,22 +130,24 @@ export function createModeValidationPlan({
 
   const files = [...new Set(changedFiles.map(normalizePath))];
   const full = normalizedMode === "FULL";
-  const docsRelevant = full || files.some(isDocumentationFile);
-  const pagesSiteRelevant = full || files.some(isPagesSiteFile);
-  const webRelevant = full || files.some(isWebRelevantFile);
-  const webSourceRelevant = full || files.some(isWebSourceFile);
-  const buildRelevant = full || files.some(isBuildRelevantFile);
-  const scriptsRelevant = full || files.some(isScriptRelevantFile);
-  const pythonRelevant = full || files.some(isPythonRelevantFile);
-  const supabaseRelevant = full || files.some(isSupabaseRelevantFile);
-  const migrationRelevant = full || files.some(isMigrationRelevantFile);
-  const securityRelevant = full || files.some(isSecurityRelevantFile);
-  const regressionRelevant = full || files.some(isRegressionRelevantFile);
-  const githubRelevant = full || files.some((file) => normalizePath(file).startsWith(".github/"));
-  const mobileRelevant = full || files.some((file) => normalizePath(file).startsWith("apps/mobile/"));
-  const lockfileRelevant = full || files.some(isLockfileRelevantFile);
+  const docsRelevant = files.some(isDocumentationFile);
+  const pagesSiteRelevant = files.some(isPagesSiteFile);
+  const webRelevant = files.some(isWebRelevantFile);
+  const webRuntimeRelevant = files.some(isWebRuntimeRelevantFile);
+  const webSourceRelevant = files.some(isWebSourceFile);
+  const buildRelevant = files.some(isBuildRelevantFile);
+  const scriptsRelevant = files.some(isScriptRelevantFile);
+  const pythonRelevant = files.some(isPythonRelevantFile);
+  const supabaseRelevant = files.some(isSupabaseRelevantFile);
+  const migrationRelevant = files.some(isMigrationRelevantFile);
+  const securityRelevant = files.some(isSecurityRelevantFile);
+  const regressionRelevant = files.some(isRegressionRelevantFile);
+  const githubRelevant = files.some((file) => normalizePath(file).startsWith(".github/"));
+  const mobileRelevant = files.some((file) => normalizePath(file).startsWith("apps/mobile/"));
+  const lockfileRelevant = files.some(isLockfileRelevantFile);
   const checks = [];
   const deduplicated = [];
+  const migrationContracts = resolveMigrationContracts(files);
 
   addCheck(checks, {
     id: "diff-check",
@@ -222,7 +217,7 @@ export function createModeValidationPlan({
       command: npmCommand("check:lockfile-policy"),
     });
   }
-  if (full) {
+  if (full && files.length > 0) {
     addCheck(checks, {
       id: "root-file-hygiene",
       label: "Hygiène des fichiers racine",
@@ -274,17 +269,33 @@ export function createModeValidationPlan({
       command: npmCommand("audit:supabase-migration-trees"),
     });
   }
-  if (migrationRelevant && !full) {
-    addTargetedVitest(checks, MIGRATION_CONTRACT_TESTS, 25);
-  } else if (migrationRelevant) {
-    deduplicated.push({
-      id: "migration-contracts",
-      status: "ALREADY_PROVEN",
-      reason: "couvert par vitest-full et audit de l'arbre",
-    });
+  if (migrationRelevant) {
+    const migrationVitestTests = migrationContracts.flatMap((entry) => entry.vitestTests);
+    for (const contract of migrationContracts.flatMap((entry) => entry.scriptTests)) {
+      const contractName = contract.split("/").at(-1).replace(/\.test\.mjs$/, "");
+      addCheck(checks, {
+        id: `${contractName}`,
+        label: `Contrat migration ${contractName}`,
+        estimatedSeconds: 10,
+        critical: true,
+        command: { executable: "node", args: ["--test", contract] },
+        contractTest: contract,
+      });
+    }
+    if (full && webRuntimeRelevant) {
+      for (const testFile of migrationVitestTests) {
+        deduplicated.push({
+          id: `migration-contract:${testFile}`,
+          status: "ALREADY_PROVEN",
+          reason: "couvert par vitest-full",
+        });
+      }
+    } else {
+      addTargetedVitest(checks, migrationVitestTests, 25);
+    }
   }
 
-  if (webRelevant) {
+  if (webRuntimeRelevant) {
     if (full) {
       addCheck(checks, {
         id: "vercel-ci-audit",
@@ -367,7 +378,7 @@ export function createModeValidationPlan({
         { id: "test:regression-gates", status: "ALREADY_PROVEN", reason: "couvert par vitest-full" },
       );
     } else {
-      const changedTests = getChangedWebTestFiles(files);
+      const changedTests = resolveAssociatedWebTestFiles(files);
       const targetedFiles = changedTests.filter(
         (file) => !SECURITY_GROUP_FILES.has(file) && !REGRESSION_GROUP_FILES.has(file),
       );
@@ -375,7 +386,7 @@ export function createModeValidationPlan({
     }
   }
 
-  if (!full && securityRelevant) {
+  if (securityRelevant && (!webRuntimeRelevant || normalizedMode === "FAST")) {
     addCheck(checks, {
       id: "test:security",
       label: "Tests de sécurité",
@@ -384,7 +395,7 @@ export function createModeValidationPlan({
       command: npmCommand("test:security"),
     });
   }
-  if (!full && regressionRelevant) {
+  if (regressionRelevant && (!webRuntimeRelevant || normalizedMode === "FAST")) {
     addCheck(checks, {
       id: "test:regression-gates",
       label: "Tests de régression",
@@ -400,6 +411,23 @@ export function createModeValidationPlan({
     mode: normalizedMode,
     candidateScope: normalizedScope,
     changedFiles: files,
+    domains: Object.freeze({
+      docsRelevant,
+      pagesSiteRelevant,
+      webRelevant,
+      webRuntimeRelevant,
+      webSourceRelevant,
+      buildRelevant,
+      scriptsRelevant,
+      pythonRelevant,
+      supabaseRelevant,
+      migrationRelevant,
+      securityRelevant,
+      regressionRelevant,
+      githubRelevant,
+      mobileRelevant,
+      lockfileRelevant,
+    }),
     budgetSeconds,
     plannedSeconds,
     checks: Object.freeze(checks),
@@ -419,8 +447,16 @@ export function getBudgetDecision({
   return Object.freeze({ decision: "execute", status: "READY", remainingSeconds });
 }
 
-export function classifyValidationFailure({ candidateChangedFiles = [], failureFiles = [] } = {}) {
+export function classifyValidationFailure({
+  candidateChangedFiles = [],
+  failureFiles = [],
+  preexistingProof,
+} = {}) {
   const candidate = new Set(candidateChangedFiles.map(normalizePath));
   const foreignOnly = failureFiles.length > 0 && failureFiles.every((file) => !candidate.has(normalizePath(file)));
-  return foreignOnly ? "PREEXISTING_PARALLEL_FAILURE" : "FAIL";
+  const proofPresent = preexistingProof?.verified === true
+    && ["baseline", "reproduction", "canonical"].includes(preexistingProof.kind)
+    && typeof preexistingProof.source === "string"
+    && preexistingProof.candidateLinked !== true;
+  return foreignOnly && proofPresent ? "PREEXISTING_PARALLEL_FAILURE" : "FAIL";
 }

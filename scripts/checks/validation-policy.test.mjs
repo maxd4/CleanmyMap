@@ -18,8 +18,11 @@ test("targeted Vitest validation deduplicates overlapping group files", () => {
   assert.equal(files.filter((file) => file === "src/proxy.protected-routes.test.ts").length, 1);
 });
 
-test("full validation covers security and regression groups without relaunching them", () => {
-  const plan = createValidationPlan({ scope: "full" });
+test("full validation covers the affected Web suite without relaunching groups", () => {
+  const plan = createValidationPlan({
+    scope: "full",
+    changedFiles: ["apps/web/src/app/(app)/dashboard/page.tsx"],
+  });
   const runChecks = readFileSync("scripts/ci/run_checks2.ps1", "utf8");
 
   assert.equal(plan.testMode, "full");
