@@ -27,6 +27,7 @@ export function AccountCompletionGate({
         initialProfile={state.currentProfile}
         clerkReachable={state.clerkReachable}
         isLocalHost={state.isLocalHost}
+        initialDisplayNameMode={state.initialDisplayNameMode}
         initialResidence={state.initialResidence}
         initialWork={state.initialWork}
         initialArrondissement={state.initialArrondissement}

@@ -1,6 +1,6 @@
 "use client";
 
-import type { AppProfile } from "@/lib/profiles";
+import type { AppProfile, DisplayNameMode } from "@/lib/profiles";
 import type { Role } from "@/lib/domain-language";
 import type { TerritoryLocationSelection } from "@/lib/user-location-preference";
 import { AccountSetupForm } from "@/components/account/account-setup-form";
@@ -14,6 +14,7 @@ export type AccountCompletionPageProps = {
   initialProfile: AppProfile;
   clerkReachable: boolean;
   isLocalHost: boolean;
+  initialDisplayNameMode?: DisplayNameMode | null;
   initialResidence?: TerritoryLocationSelection | null;
   initialWork?: TerritoryLocationSelection | null;
   initialArrondissement?: number | null;
@@ -28,6 +29,7 @@ export function AccountCompletionPage({
   initialProfile,
   clerkReachable,
   isLocalHost,
+  initialDisplayNameMode,
   initialResidence,
   initialWork,
   initialArrondissement,
@@ -44,6 +46,7 @@ export function AccountCompletionPage({
           initialProfile={initialProfile}
           clerkReachable={clerkReachable}
           isLocalHost={isLocalHost}
+          initialDisplayNameMode={initialDisplayNameMode}
           initialResidence={initialResidence}
           initialWork={initialWork}
           initialArrondissement={initialArrondissement}

@@ -76,6 +76,7 @@ export default async function OnboardingPage({
       initialProfile={profile}
       clerkReachable={clerkReachable}
       isLocalHost={isLocalHost}
+      initialDisplayNameMode={identity.displayNameMode}
       initialResidence={locationPreferences.residence}
       initialWork={locationPreferences.work}
     />
