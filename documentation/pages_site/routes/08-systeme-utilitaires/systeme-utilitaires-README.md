@@ -2,15 +2,11 @@
 
 Réglages, comparateurs, preview et routes techniques. Les pages standalone gardent une mood layer autonome par usage. La page `/reglages` reste une vraie page protégée, avec redirection vers `/sign-in` si le compte n'est pas connecté.
 
-## Routes canoniques
+## Inventaire des pages
 
-| Route | Fiche | Type de page | Statut | Scope | Capture disponible | Priorité | Fichier source principal |
-|---|---|---|---|---|:---:|---|---|
-| `/declaration-simple` | [Déclaration simple](./declaration-simple/declaration-simple-README.md) | outil | standalone | à corriger | non | critique | apps/web/src/app/declaration-simple/page.tsx |
-| `/error/429` | [Erreur 429](./error-429/error-429-README.md) | erreur | erreur | terminé | non | faible | apps/web/src/app/error/429/page.tsx |
-| `/form-comparison` | [Comparaison de formulaires](./form-comparison/form-comparison-README.md) | outil | standalone | à corriger | non | critique | apps/web/src/app/form-comparison/page.tsx |
-| `/preview/actions/new` | [Preview déclaration](./preview-actions-new/preview-actions-new-README.md) | outil | standalone | à corriger | non | critique | apps/web/src/app/preview/actions/new/page.tsx |
-| `/reglages` | [Réglages](./reglages/reglages-README.md) | outil | protégé | compte connecté ; sinon redirection | non | critique | apps/web/src/app/reglages/page.tsx |
+L’inventaire exhaustif des routes canoniques, alias et fiches est tenu dans
+[`INDEX.md`](../../INDEX.md). Le contrat de famille runtime est décrit dans
+[`PAGE_FAMILIES.md`](../../PAGE_FAMILIES.md).
 
 
 

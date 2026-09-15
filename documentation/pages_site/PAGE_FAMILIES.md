@@ -22,6 +22,12 @@ Le runtime reste autoritaire pour la résolution effective d'une route.
 
 La documentation ne doit pas maintenir une seconde logique de résolution.
 
+`resolvePageFamily(...)` fournit la famille runtime/visuelle effective. Le
+parent documentaire d’une fiche reste le `docKey` de son entrée `INDEX.md`.
+Une exception runtime nommée peut donc conserver la fiche dans sa famille
+documentaire propriétaire sans assimiler automatiquement son rendu visuel à
+son dossier ; le contrôle de dérive vérifie les deux contrats séparément.
+
 ## Taxonomie
 
 Le manifeste courant expose les familles documentaires suivantes :

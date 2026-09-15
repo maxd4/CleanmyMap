@@ -9,24 +9,11 @@ Parcours de déclaration, préparation terrain, orientation, signalement et coor
 - **Snapshots** : colocalisés dans le dossier `screenshots/desktop/` ou
   `screenshots/mobile/` de chaque page canonique.
 
-## Routes canoniques
+## Inventaire des pages
 
-| Route | Fiche | Accès runtime | Palette / famille | Source principale |
-|---|---|---|---|---|
-| `/actions/history` | [Historique des actions](./actions-history/actions-history-README.md) | `protected` | agir | `apps/web/src/app/(app)/actions/history/page.tsx` |
-| `/actions/new` | [Déclarer une action](./actions-new/actions-new-README.md) | `clerk-context` ; compte requis pour créer/envoyer | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
-| `/sections/rejoindre-une-action` | [Rejoindre une action](./rejoindre-une-action/rejoindre-une-action-README.md) | `public-visible` ; compte requis pour rejoindre | agir, exception `join-action` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/missions/[id]` | [Missions](./missions/missions-README.md) | dynamique | agir | `apps/web/src/app/(app)/missions/[id]/page.tsx` |
-| `/sections/route` | [Où agir](./ou-agir/ou-agir-README.md) | `public-visible` | agir | `apps/web/src/app/(app)/sections/route/page.tsx` |
-| `/sections/weather` | [Organiser une action](./weather/weather-README.md) | `public-visible` | agir, exception `weather-operations` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/signalement` | [Signalement déchets](./signalement/signalement-README.md) | `clerk-context` ; compte requis pour signaler et consulter ses observations | agir | `apps/web/src/app/(app)/signalement/page.tsx` |
-
-## Alias et redirections
-
-| Route | Cible | Statut |
-|---|---|---|
-| `/sections/guide` | `/sections/weather` | redirection dans la route dynamique |
-| `/sections/rejoindre-un-formulaire` | `/sections/rejoindre-une-action` | redirection de compatibilité |
+L’inventaire exhaustif des routes canoniques, alias et fiches est tenu dans
+[`INDEX.md`](../../INDEX.md). Le contrat de famille runtime est décrit dans
+[`PAGE_FAMILIES.md`](../../PAGE_FAMILIES.md).
 
 ## Frontière avec les rubriques non classées
 

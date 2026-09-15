@@ -2,14 +2,11 @@
 
 Contenus pédagogiques, quiz, bonnes pratiques et mode École.
 
-## Routes canoniques
+## Inventaire des pages
 
-| Route | Fiche | Type | Accès | Source principale |
-|---|---|---|---|---|
-| `/learn/bonnes-pratiques` | [Bonnes pratiques](./learn-bonnes-pratiques/learn-bonnes-pratiques-README.md) | éducative | `public-visible` | `apps/web/src/app/learn/bonnes-pratiques/page.tsx` |
-| `/learn/comprendre` | [Ordres de grandeur](./learn-comprendre/learn-comprendre-README.md) | éducative | `public-visible` | `apps/web/src/app/learn/comprendre/page.tsx` |
-| `/learn/sentrainer` | [S'entraîner](./learn-sentrainer/learn-sentrainer-README.md) | quiz | `public-visible` | `apps/web/src/app/learn/sentrainer/page.tsx` |
-| `/learn/ecole` | [Mode École](./learn-ecole/learn-ecole-README.md) | atelier éducatif | `public-visible` | `apps/web/src/app/learn/ecole/page.tsx` |
+L’inventaire exhaustif des routes canoniques, alias et fiches est tenu dans
+[`INDEX.md`](../../INDEX.md). Le contrat de famille runtime est décrit dans
+[`PAGE_FAMILIES.md`](../../PAGE_FAMILIES.md).
 
 ## Surfaces intégrées
 
