@@ -181,7 +181,7 @@ function AppNavigationRibbonFrame({
             </nav>
           </div>
 
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-2.5 xl:col-start-3 xl:ml-0 xl:justify-end">
+          <div className="ml-auto flex min-w-0 items-center gap-1.5 sm:gap-2 lg:gap-2.5 xl:col-start-3 xl:ml-0 xl:justify-end">
             <div className="lg:hidden">
               <AppNavigationTreeMenu
                 key={`mobile-tree-${pathname}`}
