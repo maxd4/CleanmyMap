@@ -6,7 +6,6 @@ describe("resolveNextActionStatus", () => {
     expect(
       resolveNextActionStatus({
         currentStatus: "approved",
-        permissionIdentity: null,
       }),
     ).toBe("approved");
 
@@ -14,7 +13,6 @@ describe("resolveNextActionStatus", () => {
       resolveNextActionStatus({
         currentStatus: "approved",
         actionPhase: "post_action_draft",
-        permissionIdentity: null,
       }),
     ).toBe("approved");
   });
@@ -24,37 +22,15 @@ describe("resolveNextActionStatus", () => {
       resolveNextActionStatus({
         currentStatus: "approved",
         actionPhase: "pre_action",
-        permissionIdentity: null,
       }),
     ).toBe("pending");
   });
 
-  it("auto-approves a completed action for an eligible creator", () => {
+  it("keeps a completed action pending for every creator", () => {
     expect(
       resolveNextActionStatus({
         currentStatus: "pending",
         actionPhase: "post_action_complete",
-        permissionIdentity: {
-          userId: "user-1",
-          role: "admin",
-          activeRole: "admin",
-        },
-        createdByClerkId: "user-1",
-      }),
-    ).toBe("approved");
-  });
-
-  it("keeps a completed action pending when auto-approval is unavailable", () => {
-    expect(
-      resolveNextActionStatus({
-        currentStatus: "approved",
-        actionPhase: "post_action_complete",
-        permissionIdentity: {
-          userId: "user-1",
-          role: "benevole",
-          activeRole: "benevole",
-        },
-        createdByClerkId: "user-1",
       }),
     ).toBe("pending");
   });

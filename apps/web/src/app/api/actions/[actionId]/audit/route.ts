@@ -3,7 +3,7 @@ import { getCurrentUserIdentity, requireAuthenticatedAccess } from "@/lib/authz"
 import { listAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { runSingleActionQuery } from "@/lib/actions/query";
-import { canViewModerationAudit } from "@/lib/actions/permissions";
+import { canViewActionModerationAudit } from "@/lib/actions/permissions";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 
@@ -34,9 +34,9 @@ async function canViewActionAudit(params: {
   userId: string;
   creatorUserId: string | null;
   supabase: ReturnType<typeof getSupabaseServerClient>;
+  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>;
 }): Promise<boolean> {
-  const identity = await getCurrentUserIdentity();
-  if (canViewModerationAudit(identity)) {
+  if (canViewActionModerationAudit(params.identity)) {
     return true;
   }
 
@@ -50,6 +50,21 @@ async function canViewActionAudit(params: {
     null,
   );
   return organizerIds.includes(params.userId);
+}
+
+function projectUserActionHistory(
+  entry: Awaited<ReturnType<typeof listAdminOperationAudit>>[number],
+) {
+  const operation =
+    typeof entry.details.operation === "string"
+      ? entry.details.operation
+      : entry.operationType;
+
+  return {
+    at: entry.at,
+    operation,
+    outcome: entry.outcome,
+  };
 }
 
 export async function GET(
@@ -85,11 +100,13 @@ export async function GET(
       return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
     }
 
+    const identity = await getCurrentUserIdentity();
     const allowed = await canViewActionAudit({
       actionId: trimmedActionId,
       userId: access.userId,
       creatorUserId: actionResult.created_by_clerk_id,
       supabase,
+      identity,
     });
 
     if (!allowed) {
@@ -100,7 +117,15 @@ export async function GET(
     }
 
     const items = await listAdminOperationAudit(limit, trimmedActionId);
-    return NextResponse.json({ status: "ok", count: items.length, items });
+    const isFullModerationAudit = canViewActionModerationAudit(identity);
+    const visibleItems = isFullModerationAudit
+      ? items
+      : items.map(projectUserActionHistory);
+    return NextResponse.json({
+      status: "ok",
+      count: visibleItems.length,
+      items: visibleItems,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     console.error("[Action Audit] Listing failed", {

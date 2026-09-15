@@ -8,7 +8,7 @@ import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import {
   canReviewActionParticipants,
-  canUseAdminOverride,
+  canOverrideActionParticipants,
 } from "@/lib/actions/permissions";
 import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
@@ -37,7 +37,7 @@ async function resolveAdminAuditIdentity(
 ): Promise<{ actorUserId: string } | null> {
   try {
     const identity = await getCurrentUserIdentity();
-    if (!identity || !canUseAdminOverride(identity)) {
+    if (!identity || !canOverrideActionParticipants(identity)) {
       return null;
     }
     const actorUserId = identity.userId ?? fallbackUserId ?? null;
@@ -61,7 +61,7 @@ async function resolveGroupJoinUserId(operation: string): Promise<string | null>
 
 const resolveReviewerAccess: ReviewerAccessResolver = async (params) => {
   const identity = await getCurrentUserIdentity();
-  if (canUseAdminOverride(identity)) {
+  if (canOverrideActionParticipants(identity)) {
     return {
       ok: true,
       identity,
@@ -106,7 +106,7 @@ export async function PATCH(
   return handleGroupJoinToggle(request, ctx, {
     userId: access.userId,
     resolveReviewerAccess,
-    canUseAdminOverride,
+    canOverrideActionParticipants,
     appendActionModerationAudit: appendModerationAudit,
     resolveAdminAuditIdentity,
   });
@@ -137,7 +137,7 @@ export async function POST(
   return handleGroupJoinReview(request, ctx, {
     userId: access.userId,
     resolveReviewerAccess,
-    canUseAdminOverride,
+    canOverrideActionParticipants,
     appendActionModerationAudit: appendModerationAudit,
     resolveAdminAuditIdentity,
   });

@@ -3,9 +3,8 @@ import { ACTION_STATUSES, type ActionStatus } from "@/lib/actions/types";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createActionSchema } from "@/lib/validation/action";
 import {
-  canAutoApproveOwnAction,
-  canModerateAnyAction,
-  canUseAdminOverride,
+  canManageActionsGlobally,
+  canModerateActionsGlobally,
 } from "@/lib/actions/permissions";
 import {
   getCurrentUserIdentity,
@@ -260,7 +259,7 @@ async function requireGlobalActionsModerationAccess(): Promise<
   }
 
   const activeRole = await getCurrentUserActiveRole();
-  if (activeRole === "anonymous" || !canModerateAnyAction({ activeRole })) {
+  if (activeRole === "anonymous" || !canModerateActionsGlobally({ activeRole })) {
     return { ok: false, status: 403, error: "Forbidden" };
   }
 
@@ -394,10 +393,7 @@ export async function POST(request: Request) {
   try {
     const supabase = getSupabaseServerClient();
     const identity = await getCurrentUserIdentity();
-    const isCreatorAdminLike = canUseAdminOverride(identity);
-    const canAutoApproveOwnSubmission = canAutoApproveOwnAction(identity, {
-      createdByClerkId: userId,
-    });
+    const isCreatorGlobalAdmin = canManageActionsGlobally(identity);
     const resolvedIdentity = identity ?? {
       displayName: userId,
       handle: userId,
@@ -437,8 +433,7 @@ export async function POST(request: Request) {
           username: resolvedIdentity.username,
           email: resolvedIdentity.email,
         },
-        isCreatorAdminLike,
-        canAutoApproveOwnSubmission,
+        isCreatorGlobalAdmin,
         consentGranted: hasAnalyticsConsentCookie(request.headers.get("cookie")),
       });
 

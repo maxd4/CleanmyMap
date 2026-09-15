@@ -14,11 +14,6 @@ const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const createActionMock = vi.hoisted(() => vi.fn());
 const invalidateSnapshotsMock = vi.hoisted(() => vi.fn());
 const createSignalementMock = vi.hoisted(() => vi.fn());
-const resolveActionCreationStatusMock = vi.hoisted(() =>
-  vi.fn((isAutoApprovedSubmission: boolean) =>
-    isAutoApprovedSubmission ? "approved" : "pending",
-  ),
-);
 const resolveActionOrganizersMock = vi.hoisted(() => vi.fn());
 const resolveActionParticipantsMock = vi.hoisted(() => vi.fn());
 const resolveDefaultActionOrganizerIdsMock = vi.hoisted(() => vi.fn());
@@ -62,7 +57,6 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("@/lib/actions/store", () => ({
   createAction: createActionMock,
-  resolveActionCreationStatus: resolveActionCreationStatusMock,
 }));
 
 vi.mock("@/lib/public-surface-snapshots", () => ({
@@ -244,7 +238,7 @@ describe("POST /api/actions", () => {
     expect(trackServerEventMock).not.toHaveBeenCalled();
   }, 15000);
 
-  it("auto-approves an admin-like complete action created by its author", async () => {
+  it("keeps an admin complete action in the normal moderation flow", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "user-test-1",
       displayName: "Test User",
@@ -283,7 +277,7 @@ describe("POST /api/actions", () => {
     expect(createActionMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        status: "approved",
+        status: "pending",
       }),
     );
   }, 15000);
@@ -370,7 +364,49 @@ describe("POST /api/actions", () => {
     expect(response.status).toBe(201);
     expect(createActionMock).toHaveBeenCalledWith(
       expect.anything(),
-      expect.objectContaining({ status: "approved" }),
+      expect.objectContaining({ status: "pending" }),
+    );
+  }, 15000);
+
+  it("does not auto-approve an elected account after switching to active admin", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-test-1",
+      displayName: "Élu test",
+      firstName: "Élu",
+      username: "elu@example.org",
+      currentLevel: 1,
+      actorNameOptions: ["Élu test"],
+      role: "elu",
+      activeRole: "admin",
+      badges: [],
+    });
+
+    const { POST } = await import("./route");
+    const payload = toContractCreatePayload({
+      actorName: "Élu test",
+      associationName: "Action spontanée",
+      organizerType: "spontaneous",
+      actionDate: "2026-04-22",
+      locationLabel: "Lieu élu",
+      wasteKg: 2.5,
+      cigaretteButts: 0,
+      volunteersCount: 2,
+      durationMinutes: 30,
+      notes: "Création normale malgré le rôle actif admin.",
+      submissionMode: "complete",
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(createActionMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ status: "pending" }),
     );
   }, 15000);
 
@@ -435,7 +471,7 @@ describe("POST /api/actions", () => {
     );
   }, 15000);
 
-  it("auto-approves an admin-like pre-action created by its author", async () => {
+  it("keeps an admin pre-action in the normal moderation flow", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "user-test-1",
       displayName: "Test User",
@@ -501,7 +537,7 @@ describe("POST /api/actions", () => {
     expect(createActionMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        status: "approved",
+        status: "pending",
       }),
     );
   }, 15000);
@@ -583,7 +619,7 @@ describe("POST /api/actions", () => {
     expect(body.id).toBe("action-test-1");
     expect(resolveDefaultActionOrganizerIdsMock).toHaveBeenCalledWith({
       creatorUserId: "user-test-1",
-      creatorIsAdminLike: false,
+      creatorIsGlobalAdmin: false,
     });
     expect(resolveActionOrganizersMock).toHaveBeenCalledWith(
       expect.objectContaining({

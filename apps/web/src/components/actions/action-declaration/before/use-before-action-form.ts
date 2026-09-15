@@ -39,7 +39,6 @@ export function useBeforeActionForm({
   actorNameOptions,
   defaultActorName,
   isAuthenticated,
-  isAutoApprovedSubmission = false,
   userMetadata,
   linkedEventId,
   initialRecordType = "action",
@@ -197,7 +196,6 @@ export function useBeforeActionForm({
         source: "action_before_declaration_form",
         createdId: result.id,
         isAuthenticated,
-        isAdminLikeSubmission: isAutoApprovedSubmission,
       });
     } catch (error: unknown) {
       setSubmissionState("error");

@@ -6,7 +6,6 @@ import {
   buildActionInsertPayload,
   buildPersistedNotes,
   fetchActions,
-  resolveActionCreationStatus,
   resolvePersistedCigaretteButts,
 } from "./store";
 import { extractActionMetadataFromNotes } from "./metadata";
@@ -155,16 +154,6 @@ describe("volunteer participation persistence", () => {
       finalDrawing: null,
     });
     expect(row.volunteers_count).toBe(8);
-  });
-});
-
-describe("resolveActionCreationStatus", () => {
-  it("approves admin-like submissions immediately", () => {
-    expect(resolveActionCreationStatus(true)).toBe("approved");
-  });
-
-  it("keeps regular submissions pending", () => {
-    expect(resolveActionCreationStatus(false)).toBe("pending");
   });
 });
 

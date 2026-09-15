@@ -19,7 +19,6 @@ describe("ActionBeforeDeclarationForm", () => {
         linkedEventId: undefined,
         initialRecordType: "action",
         isAuthenticated: true,
-        isAutoApprovedSubmission: false,
         onReturnToChoice: () => undefined,
         onPassToComplete: () => undefined,
       } as ComponentProps<typeof ActionBeforeDeclarationForm>),

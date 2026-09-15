@@ -224,27 +224,28 @@ max          → platform administration
 
 Le contrat détaillé, les scopes et les données accessibles sont définis dans `authorization-capabilities.md`.
 
-### Divergence actuelle importante
+### Frontière globale et territoriale
 
-Le code générique considère principalement `admin` et `max` comme rôles admin-like, tandis que le domaine Actions inclut encore actuellement `elu` dans certaines capacités de modération globale.
+Les capacités globales du domaine Actions sont explicitement réservées aux
+rôles actifs `admin` et `max`. Le rôle actif `elu` n'obtient aucun override
+global de modération, de statut, de participants, d'audit ou d'impact.
 
-Cette divergence est un état à faire converger, pas une règle à propager.
-
-Ne pas conclure :
-
-```txt
-elu peut modérer globalement les actions
-→ donc elu doit devenir admin-like partout
-```
-
-La direction cible est :
+La règle runtime est donc :
 
 ```txt
-elu → scope territorial explicite
-admin/max → modération globale selon capacité
+elu → scope territorial explicite, sans override global
+admin/max → capacités globales explicitement autorisées
 ```
 
-Tant qu'une relation territoriale canonique n'existe pas pour une opération, appliquer le fail-closed plutôt qu'un fallback global.
+La modération territoriale des élus n'est pas implémentée tant que
+l'attribution territoriale de l'élu, le territoire canonique de l'action, la
+relation vérifiable côté serveur et les tests de séparation territoire A/B ne
+sont pas tous disponibles. En attendant, ce chemin est fail-closed plutôt que
+remplacé par un fallback global.
+
+Un compte `GRANTED_ROLE=elu` qui sélectionne explicitement
+`ACTIVE_ROLE=admin` utilise les capacités `admin` pendant cette session. En
+`ACTIVE_ROLE=elu`, il perd immédiatement ces capacités globales.
 
 ## Permissions sur les actions
 
@@ -377,10 +378,10 @@ lecture peut utiliser `loadOrRefreshPublicSurfaceSnapshot`.
 
 Toute vue qui peut inclure un état non public — `status=pending`,
 `status=rejected` ou la vue globale explicite `status=all` — exige l'AuthN puis
-l'AuthZ de modération prévue par le code courant. Au moment de la rédaction,
-le domaine Actions accepte encore `admin`, `elu` ou `max` sur certaines de ces
-surfaces. Cette permission actuelle doit rester testée jusqu'à sa migration et
-ne doit pas être généralisée à d'autres domaines.
+l'AuthZ de modération prévue par le code courant. Ces surfaces globales sont
+réservées aux capacités explicites des rôles actifs `admin` et `max` ; `elu`
+reste fail-closed tant qu'un scope territorial canonique n'est pas
+implémenté.
 
 La cible architecturale reste :
 
@@ -503,12 +504,17 @@ Exemples existants :
 ```txt
 canManageAction
 canReviewActionParticipants
-canModerateAnyAction
-canUseAdminOverride
+canModerateActionsGlobally
+canManageActionsGlobally
+canOverrideActionParticipants
 canEditValidatedImpact
-canChangeActionStatus
-canViewModerationAudit
+canViewActionModerationAudit
 ```
+
+Les capacités globales ci-dessus consomment uniquement `ACTIVE_ROLE` et sont
+limitées à `admin`/`max`. Les droits du créateur, de l'organisateur et du
+coorganisateur restent des droits relationnels distincts ; ils ne constituent
+pas un passe-droit global.
 
 Exemples de cibles plus précises lorsqu'un scope est nécessaire :
 
@@ -542,18 +548,15 @@ Un élu doit recevoir les informations nécessaires au pilotage territorial, pas
 
 Une projection serveur sanitizée est préférable au chargement d'un objet complet suivi d'un masquage client.
 
-## Auto-validation
+## Validation des actions
 
-Une action créée par un profil de modération pour son propre compte peut suivre une règle d'auto-validation si le contrat métier l'autorise.
+La création ou la déclaration d'une action suit toujours le parcours métier
+normal de validation, quel que soit le rôle actif de son auteur. Aucun rôle ne
+confère d'auto-validation implicite.
 
-Cette règle doit être :
-
-- explicite ;
-- côté serveur ;
-- testée ;
-- traçable.
-
-Ne pas auto-valider une action créée au nom d'un tiers sans règle métier explicite.
+Une validation ou modération ultérieure par `admin`/`max` est une opération
+distincte, contrôlée côté serveur, motivée lorsque le contrat l'exige et
+auditée. Elle ne doit pas être déduite de la création de l'action.
 
 ## Supabase et RLS
 

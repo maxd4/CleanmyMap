@@ -16,7 +16,6 @@ import { extractActionMetadataFromNotes } from "./metadata";
 import type { ActionRow } from "@/types/database";
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
 import { resolveNextActionStatus } from "./action-update-status";
-import type { ActionPermissionIdentity } from "./permissions";
 
 export class ActionUpdateValidationError extends Error {
   constructor(
@@ -37,9 +36,8 @@ export type PreparedActionUpdate = {
 export async function prepareActionUpdate(params: {
   current: ActionRow;
   parsedBody: ActionUpdateInput;
-  permissionIdentity: ActionPermissionIdentity | null | undefined;
 }): Promise<PreparedActionUpdate> {
-  const { current, parsedBody, permissionIdentity } = params;
+  const { current, parsedBody } = params;
   const updateData: Record<string, unknown> = {};
   let body = parsedBody;
 
@@ -86,8 +84,6 @@ export async function prepareActionUpdate(params: {
     const nextStatus = resolveNextActionStatus({
       currentStatus: current.status,
       actionPhase: body.actionPhase,
-      permissionIdentity,
-      createdByClerkId: current.created_by_clerk_id,
     });
     if (body.actionPhase !== "post_action_draft") {
       updateData["status"] = nextStatus;

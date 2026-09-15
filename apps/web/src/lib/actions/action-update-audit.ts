@@ -1,7 +1,6 @@
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { normalizeClockTime } from "./time-contract";
 import { resolveNextActionStatus } from "./action-update-status";
-import type { ActionPermissionIdentity } from "./permissions";
 import type { extractActionMetadataFromNotes } from "./metadata";
 import type { ActionRow } from "@/types/database";
 import type { updateActionSchema } from "@/lib/validation/action";
@@ -21,6 +20,7 @@ export type ActionAuditSnapshot = {
   volunteersCount: number | null;
   durationMinutes: number | null;
   wasteMeasurementMethod: string | null;
+  wasteBreakdown: unknown;
   eventStartTime: string | null;
   eventEndTime: string | null;
   actorNameChanged: boolean;
@@ -88,7 +88,6 @@ export function buildActionAuditSnapshots(
   current: ActionSnapshotSource,
   body: ActionUpdateInput,
   currentMetadata: ActionMetadata,
-  permissionIdentity: ActionPermissionIdentity | null | undefined,
 ): ActionAuditSnapshots {
   const currentPreparationData = normalizeActionPreparationData(
     current.preparation_data ?? {},
@@ -101,8 +100,6 @@ export function buildActionAuditSnapshots(
   const nextStatus = resolveNextActionStatus({
     currentStatus: current.status,
     actionPhase: body.actionPhase,
-    permissionIdentity,
-    createdByClerkId: current.created_by_clerk_id,
   });
 
   const nextActorName =
@@ -161,6 +158,7 @@ export function buildActionAuditSnapshots(
       volunteersCount: current.volunteers_count ?? null,
       durationMinutes: current.duration_minutes ?? null,
       wasteMeasurementMethod: currentMetadata.wasteMeasurementMethod,
+      wasteBreakdown: currentMetadata.wasteBreakdown,
       eventStartTime: normalizeClockTime(current.event_start_time),
       eventEndTime: normalizeClockTime(current.event_end_time),
       ...flags,
@@ -188,6 +186,10 @@ export function buildActionAuditSnapshots(
         body.wasteMeasurementMethod !== undefined
           ? body.wasteMeasurementMethod
           : currentMetadata.wasteMeasurementMethod,
+      wasteBreakdown:
+        body.wasteBreakdown !== undefined
+          ? body.wasteBreakdown
+          : currentMetadata.wasteBreakdown,
       eventStartTime:
         body.eventStartTime !== undefined
           ? body.eventStartTime

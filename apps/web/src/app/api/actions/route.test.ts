@@ -10,11 +10,9 @@ const resolveReportQueryMock = vi.hoisted(() => vi.fn());
 const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserActiveRoleMock = vi.hoisted(() => vi.fn());
-const canModerateAnyActionMock = vi.hoisted(() => vi.fn());
+const canModerateActionsGloballyMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
-  canAutoApproveOwnAction: vi.fn(),
-  canUseAdminOverride: vi.fn(),
   getCurrentUserIdentity: vi.fn(),
   getCurrentUserActiveRole: getCurrentUserActiveRoleMock,
   pickTraceableActorName: vi.fn(),
@@ -22,9 +20,8 @@ vi.mock("@/lib/authz", () => ({
 }));
 
 vi.mock("@/lib/actions/permissions", () => ({
-  canAutoApproveOwnAction: vi.fn(),
-  canUseAdminOverride: vi.fn(),
-  canModerateAnyAction: canModerateAnyActionMock,
+  canManageActionsGlobally: canModerateActionsGloballyMock,
+  canModerateActionsGlobally: canModerateActionsGloballyMock,
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -196,7 +193,7 @@ describe("GET /api/actions", () => {
       error: "Unauthorized",
     });
     getCurrentUserActiveRoleMock.mockResolvedValue("benevole");
-    canModerateAnyActionMock.mockReturnValue(false);
+    canModerateActionsGloballyMock.mockReturnValue(false);
   });
 
   it("limits the unified action prefetch to a 2x expansion", async () => {
@@ -332,7 +329,7 @@ describe("GET /api/actions", () => {
       userId: "user-1",
     });
     getCurrentUserActiveRoleMock.mockResolvedValue("benevole");
-    canModerateAnyActionMock.mockReturnValue(false);
+    canModerateActionsGloballyMock.mockReturnValue(false);
     const { GET } = await import("./route");
 
     const response = await GET(
@@ -344,7 +341,7 @@ describe("GET /api/actions", () => {
     expect(loadOrRefreshPublicSurfaceSnapshotMock).not.toHaveBeenCalled();
   });
 
-  it.each(["admin", "elu", "max"] as const)(
+  it.each(["admin", "max"] as const)(
     "allows %s to read pending actions and signalements without a public snapshot",
     async (role) => {
       requireAuthenticatedAccessMock.mockResolvedValue({
@@ -352,7 +349,7 @@ describe("GET /api/actions", () => {
         userId: `${role}-1`,
       });
       getCurrentUserActiveRoleMock.mockResolvedValue(role);
-      canModerateAnyActionMock.mockReturnValue(true);
+      canModerateActionsGloballyMock.mockReturnValue(true);
       const { GET } = await import("./route");
 
       const response = await GET(
@@ -377,7 +374,7 @@ describe("GET /api/actions", () => {
       userId: "admin-1",
     });
       getCurrentUserActiveRoleMock.mockResolvedValue("admin");
-    canModerateAnyActionMock.mockReturnValue(true);
+    canModerateActionsGloballyMock.mockReturnValue(true);
     const { GET } = await import("./route");
 
     const response = await GET(

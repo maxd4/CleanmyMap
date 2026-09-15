@@ -14,6 +14,8 @@ export type ApiAuthorizationDimension =
   | "business permission"
   | "ownership"
   | "admin override"
+  | "participant override"
+  | "validated impact correction"
   | "audit";
 
 export type ApiAuthorizationContractEntry = {
@@ -163,70 +165,69 @@ export const API_AUTHORIZATION_CONTRACT = {
     GET: {
       expected: "Public approved view; non-public statuses require central moderation permission",
       dimensions: ["public-safe", "authentication", "business permission"],
-      actual: "Public snapshot for safe status; requireGlobalActionsModerationAccess for pending/rejected/all",
+      actual: "Public snapshot for safe status; requireGlobalActionsModerationAccess for pending/rejected/all, backed by canModerateActionsGlobally",
       evidence: [
         "requireGlobalActionsModerationAccess",
         "requireAuthenticatedAccess",
-        "canModerateAnyAction",
+        "canModerateActionsGlobally",
       ],
       evidenceScope: "module",
     },
     POST: {
-      expected: "Authenticated creation owned by current user; admin-like auto-approval remains explicit",
-      dimensions: ["authentication", "ownership", "admin override"],
-      actual: "requireAuthenticatedAccess + canAutoApproveOwnAction/canUseAdminOverride",
+      expected: "Authenticated creation owned by current user; every role follows the normal moderation flow",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + creator ownership + explicit organizer fallback only",
       evidence: [
         "requireAuthenticatedAccess",
-        "canAutoApproveOwnAction",
-        "canUseAdminOverride",
+        "canManageActionsGlobally",
       ],
     },
   },
   "actions/[actionId]/audit": {
     GET: {
-      expected: "Authenticated creator/organizer/admin-like action-audit read",
+      expected: "Authenticated creator/organizer or admin/max action-audit read",
       dimensions: ["authentication", "business permission", "ownership", "audit"],
-      actual: "requireAuthenticatedAccess + canViewActionAudit, with canViewModerationAudit or creator/organizer ownership",
+      actual: "requireAuthenticatedAccess + minimized owner/organizer history or full canViewActionModerationAudit journal",
       evidence: [
         "requireAuthenticatedAccess",
         "canViewActionAudit",
-        "canViewModerationAudit",
+        "canViewActionModerationAudit",
       ],
       evidenceScope: "module",
     },
   },
   "actions/[actionId]/group-join": {
     PATCH: {
-      expected: "Authenticated creator/organizer/admin-like participant-review permission; admin override is audited",
-      dimensions: ["authentication", "business permission", "ownership", "admin override", "audit"],
-      actual: "requireAuthenticatedAccess + canReviewActionParticipants/canUseAdminOverride + appendActionModerationAudit",
+      expected: "Authenticated creator/organizer or admin/max participant-review permission; admin participant override is audited",
+      dimensions: ["authentication", "business permission", "ownership", "participant override", "audit"],
+      actual: "requireAuthenticatedAccess + canReviewActionParticipants/canOverrideActionParticipants + appendActionModerationAudit",
       evidence: [
         "requireAuthenticatedAccess",
         "canReviewActionParticipants",
-        "canUseAdminOverride",
+        "canOverrideActionParticipants",
         "appendActionModerationAudit",
       ],
       evidenceScope: "module",
     },
     GET: {
       expected: "Public action shell; participant queue/search is conditional on reviewer permission",
-      dimensions: ["public-safe", "authentication", "business permission", "ownership", "admin override"],
+      dimensions: ["public-safe", "authentication", "business permission", "ownership"],
       actual: "Optional current-user context; queue/search is returned only after resolveReviewerAccess",
       evidence: [
         "resolveReviewerAccess",
         "canReviewActionParticipants",
-        "canUseAdminOverride",
+        "canOverrideActionParticipants",
       ],
       evidenceScope: "module",
     },
     POST: {
-      expected: "Authenticated creator/organizer/admin-like participant-review permission; admin override is audited",
-      dimensions: ["authentication", "business permission", "ownership", "admin override", "audit"],
-      actual: "requireAuthenticatedAccess + canReviewActionParticipants/canUseAdminOverride + appendActionModerationAudit",
+      expected: "Authenticated creator/organizer or admin/max participant-review permission; admin participant override is audited",
+      dimensions: ["authentication", "business permission", "ownership", "participant override", "audit"],
+      actual: "requireAuthenticatedAccess + canReviewActionParticipants/canOverrideActionParticipants + appendActionModerationAudit",
       evidence: [
         "requireAuthenticatedAccess",
         "canReviewActionParticipants",
-        "canUseAdminOverride",
+        "canOverrideActionParticipants",
         "appendActionModerationAudit",
       ],
       evidenceScope: "module",
@@ -252,26 +253,27 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "actions/[actionId]": {
     GET: {
-      expected: "Authenticated creator/organizer/admin-like action-management read",
+      expected: "Authenticated creator/organizer or admin/max action-management read",
       dimensions: ["authentication", "business permission", "ownership"],
       actual: "requireAuthenticatedAccess + canManageAction",
       evidence: ["requireAuthenticatedAccess", "canManageAction"],
     },
     PATCH: {
-      expected: "Authenticated creator/organizer/admin-like action-management write; admin override is audited",
-      dimensions: ["authentication", "business permission", "ownership", "admin override", "audit"],
-      actual: "requireAuthenticatedAccess + canManageAction/canUseAdminOverride + appendActionModerationAudit",
+      expected: "Authenticated creator/organizer normal edit; admin/max validated-impact correction is explicit, reasoned and audited",
+      dimensions: ["authentication", "business permission", "ownership", "validated impact correction", "audit"],
+      actual: "requireAuthenticatedAccess + canManageAction; approved impact changes require canEditValidatedImpact, a reason and appendActionModerationAudit",
       evidence: [
         "requireAuthenticatedAccess",
         "canManageAction",
-        "canUseAdminOverride",
+        "canManageActionsGlobally",
+        "canEditValidatedImpact",
         "appendActionModerationAudit",
       ],
     },
   },
   "actions/[actionId]/publish": {
     POST: {
-      expected: "Authenticated owner/organizer/admin-like explicit pre-action publication",
+      expected: "Authenticated owner/organizer or explicit admin/max pre-action publication",
       dimensions: ["authentication", "business permission", "ownership"],
       actual: "requireAuthenticatedAccess + canManageAction, with canPublishPreAction keeping moderation and publication separate",
       evidence: ["requireAuthenticatedAccess", "canManageAction", "canPublishPreAction"],

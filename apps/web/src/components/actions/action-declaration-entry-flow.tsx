@@ -294,7 +294,6 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
         actorNameOptions={props.actorNameOptions}
         defaultActorName={props.defaultActorName}
         isAuthenticated={props.isAuthenticated}
-        isAutoApprovedSubmission={props.isAutoApprovedSubmission}
         userMetadata={props.userMetadata}
         linkedEventId={props.linkedEventId}
         initialRecordType={props.initialRecordType}

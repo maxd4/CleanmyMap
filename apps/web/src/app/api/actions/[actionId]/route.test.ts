@@ -12,7 +12,11 @@ const extractActionMetadataFromNotesMock = vi.hoisted(() => vi.fn());
 const appendActionModerationAuditMock = vi.hoisted(() => vi.fn());
 const unauthorizedJsonResponseMock = vi.hoisted(() => vi.fn());
 const handleApiErrorMock = vi.hoisted(() => vi.fn());
-const canAutoApproveOwnActionMock = vi.hoisted(() => vi.fn());
+const validationErrorResponseMock = vi.hoisted(() =>
+  vi.fn((errors: Record<string, string[]>) =>
+    Response.json({ error: errors }, { status: 400 }),
+  ),
+);
 const resolveActionDepartmentForPersistenceMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
@@ -51,16 +55,23 @@ vi.mock("@/lib/actions/metadata", () => ({
 
 vi.mock("@/lib/actions/moderation-audit", () => ({
   appendActionModerationAudit: appendActionModerationAuditMock,
+  isModerationReasonRequired: (operation: string) => operation === "correct_impact",
+  normalizeModerationReason: (
+    value: unknown,
+    options?: { required?: boolean },
+  ) => {
+    const normalized = typeof value === "string" ? value.trim() : "";
+    return normalized && (!options?.required || normalized.length >= 5)
+      ? normalized
+      : null;
+  },
 }));
 
 vi.mock("@/lib/actions/permissions", async () => {
   const actual = await vi.importActual<typeof import("@/lib/actions/permissions")>(
     "@/lib/actions/permissions",
   );
-  return {
-    ...actual,
-    canAutoApproveOwnAction: canAutoApproveOwnActionMock,
-  };
+  return actual;
 });
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -69,7 +80,7 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("@/lib/http/api-errors", () => ({
   handleApiError: handleApiErrorMock,
-  validationErrorResponse: vi.fn(),
+  validationErrorResponse: validationErrorResponseMock,
 }));
 
 vi.mock("@/lib/http/auth-responses", () => ({
@@ -143,15 +154,6 @@ describe("PATCH /api/actions/:actionId", () => {
       unresolvedTokens: [],
     });
     appendActionModerationAuditMock.mockResolvedValue(undefined);
-    canAutoApproveOwnActionMock.mockImplementation(
-      (identity: { userId?: string; role?: string } | null, action: { createdByClerkId?: string | null }) =>
-        Boolean(
-          identity?.userId &&
-            action.createdByClerkId &&
-            identity.userId === action.createdByClerkId &&
-            ["admin", "elu", "max"].includes(identity.role ?? ""),
-        ),
-    );
     recordRepollutionPredictionEvaluationForActionMock.mockResolvedValue(undefined);
     resolveActionDepartmentForPersistenceMock.mockResolvedValue({
       departmentCode: null,
@@ -218,6 +220,145 @@ describe("PATCH /api/actions/:actionId", () => {
         status: "pending",
       }),
     );
+  });
+
+  it("rejects a creator trying to change validated impact", async () => {
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "approved",
+      action_phase: "post_action_complete",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-1",
+      waste_kg: 1,
+      notes: null,
+    });
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({ wasteKg: 2 }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(403);
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("lets admin correct validated impact with a reason and an audit snapshot", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "admin-1",
+      role: "admin",
+      activeRole: "admin",
+    });
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: true,
+      userId: "admin-1",
+    });
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "approved",
+      action_phase: "post_action_complete",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-1",
+      waste_kg: 1,
+      cigarette_butts: 2,
+      volunteers_count: 3,
+      duration_minutes: 30,
+      notes: null,
+    });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({ wasteKg: 2, reason: "Correction terrain" }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateMock).toHaveBeenCalledWith(
+      expect.objectContaining({ waste_kg: 2 }),
+    );
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: "admin-1",
+        targetActionId: "action-test-1",
+        targetUserId: "user-test-1",
+        operation: "correct_impact",
+        reason: "Correction terrain",
+        previousValue: expect.objectContaining({ wasteKg: 1 }),
+        newValue: expect.objectContaining({ wasteKg: 2 }),
+      }),
+    );
+  });
+
+  it("requires a reason before an admin can correct validated impact", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "admin-1",
+      role: "admin",
+      activeRole: "admin",
+    });
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: true,
+      userId: "admin-1",
+    });
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "approved",
+      action_phase: "post_action_complete",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-1",
+      waste_kg: 1,
+      notes: null,
+    });
+    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({ wasteKg: 2 }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(updateMock).not.toHaveBeenCalled();
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an elected active role from correcting validated impact", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-test-1",
+      role: "elu",
+      activeRole: "elu",
+    });
+    loadActionByIdMock.mockResolvedValueOnce({
+      id: "action-test-1",
+      status: "approved",
+      action_phase: "post_action_complete",
+      preparation_data: {},
+      created_by_clerk_id: "user-test-1",
+      waste_kg: 1,
+      notes: null,
+    });
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-test-1", {
+        method: "PATCH",
+        body: JSON.stringify({ wasteKg: 2, reason: "Tentative élu" }),
+      }),
+      { params: Promise.resolve({ actionId: "action-test-1" }) },
+    );
+
+    expect(response.status).toBe(403);
+    expect(updateMock).not.toHaveBeenCalled();
   });
 
   it("persists explicit null measurements without converting them to zero", async () => {
@@ -354,7 +495,7 @@ describe("PATCH /api/actions/:actionId", () => {
     });
   });
 
-  it("auto-approves an admin-like user's own final declaration", async () => {
+  it("keeps an admin user's own final declaration in normal moderation", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "user-test-1",
       role: "admin",
@@ -375,16 +516,13 @@ describe("PATCH /api/actions/:actionId", () => {
     expect(updateMock).toHaveBeenCalledWith(
       expect.objectContaining({
         action_phase: "post_action_complete",
-        status: "approved",
+        status: "pending",
       }),
     );
-    expect(recordRepollutionPredictionEvaluationForActionMock).toHaveBeenCalledWith(
-      expect.anything(),
-      "action-test-1",
-    );
+    expect(recordRepollutionPredictionEvaluationForActionMock).not.toHaveBeenCalled();
   });
 
-  it("does not auto-approve when an admin-like user finalizes another user's action", async () => {
+  it("keeps an admin user's finalization of another action pending", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "user-test-1",
       role: "admin",
@@ -592,6 +730,7 @@ describe("PATCH /api/actions/:actionId", () => {
       "volunteersCount",
       "durationMinutes",
       "wasteMeasurementMethod",
+      "wasteBreakdown",
       "eventStartTime",
       "eventEndTime",
       "actorNameChanged",
@@ -619,6 +758,7 @@ describe("PATCH /api/actions/:actionId", () => {
       cigaretteButtsKg: null,
       cigaretteButts: 2,
       wasteMeasurementMethod: null,
+      wasteBreakdown: { megotsKg: 1, triQuality: "faible" },
       volunteersCount: 3,
       durationMinutes: 30,
       eventStartTime: null,
@@ -640,6 +780,7 @@ describe("PATCH /api/actions/:actionId", () => {
       cigaretteButtsKg: null,
       cigaretteButts: 4,
       wasteMeasurementMethod: null,
+      wasteBreakdown: { megotsKg: 2, triQuality: "elevee" },
       volunteersCount: 5,
       durationMinutes: 45,
       eventStartTime: null,
@@ -766,50 +907,4 @@ describe("PATCH /api/actions/:actionId", () => {
     );
   });
 
-  it("audits post-update failures after the action update with partialMutation true", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "admin", activeRole: "admin" });
-    loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
-    loadActionByIdMock.mockResolvedValueOnce({
-      id: "action-test-1",
-      status: "pending",
-      action_phase: "pre_action",
-      preparation_data: {},
-      created_by_clerk_id: "user-test-2",
-      actor_name: "Nom interne",
-      location_label: "Lieu interne",
-      latitude: null,
-      longitude: null,
-      waste_kg: 1,
-      cigarette_butts: 0,
-      volunteers_count: 1,
-      duration_minutes: 30,
-      notes: null,
-    });
-    canAutoApproveOwnActionMock.mockReturnValue(true);
-    recordRepollutionPredictionEvaluationForActionMock.mockRejectedValueOnce(
-      new Error("raw post-update detail"),
-    );
-
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-test-1", {
-        method: "PATCH",
-        body: JSON.stringify({ actionPhase: "post_action_complete" }),
-      }),
-      { params: Promise.resolve({ actionId: "action-test-1" }) },
-    );
-
-    expect(response.status).toBe(500);
-    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
-    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        outcome: "error",
-        targetUserId: "user-test-2",
-        details: { stage: "post_update", partialMutation: true },
-      }),
-    );
-    expect(JSON.stringify(appendActionModerationAuditMock.mock.calls[0]?.[0])).not.toContain(
-      "raw post-update detail",
-    );
-  });
 });

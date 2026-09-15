@@ -8,13 +8,12 @@ import {
   resolveActionParticipants,
   resolveDefaultActionOrganizerIds,
 } from "@/lib/actions/participation/organizers";
-import { createAction, resolveActionCreationStatus } from "@/lib/actions/store";
+import { createAction } from "@/lib/actions/store";
 import {
   createSignalement,
   SignalementCreationValidationError,
   type CreatedSignalement,
 } from "@/lib/actions/signalement/create-signalement";
-import type { ActionStatus } from "@/lib/actions/types";
 import { invalidatePublicSurfaceSnapshotsByRoute } from "@/lib/public-surface-snapshots";
 import { logFailure } from "@/lib/logging/failure-log";
 import {
@@ -42,8 +41,7 @@ export type CreateActionSubmissionParams = {
   userId: string;
   payload: CreateActionPayload;
   creator: CreatorIdentity;
-  isCreatorAdminLike: boolean;
-  canAutoApproveOwnSubmission: boolean;
+  isCreatorGlobalAdmin: boolean;
   consentGranted: boolean;
 };
 
@@ -136,7 +134,7 @@ export async function createActionSubmission(
       : !isSpontaneousAction
         ? resolveDefaultActionOrganizerIds({
             creatorUserId: params.userId,
-            creatorIsAdminLike: params.isCreatorAdminLike,
+            creatorIsGlobalAdmin: params.isCreatorGlobalAdmin,
           })
         : [];
 
@@ -172,12 +170,7 @@ export async function createActionSubmission(
     });
   }
 
-  const status: ActionStatus =
-    payload.actionPhase === "post_action_draft"
-      ? "pending"
-      : params.canAutoApproveOwnSubmission
-        ? "approved"
-        : resolveActionCreationStatus(params.canAutoApproveOwnSubmission);
+  const status = "pending" as const;
 
   const created = await createAction(params.supabase, {
     userId: params.userId,

@@ -57,7 +57,6 @@ describe("action update audit snapshots", () => {
       current,
       body,
       currentMetadata,
-      { userId: "admin-1", role: "admin", activeRole: "admin" },
     );
 
     expect(snapshots.previousValue).toMatchObject({

@@ -51,7 +51,7 @@ describe("GET /api/actions/:actionId/audit", () => {
         operationType: "moderation",
         outcome: "success",
         targetId: "action-1",
-        details: { editedFields: ["locationLabel"] },
+        details: { operation: "edit_action", editedFields: ["locationLabel"] },
       },
     ]);
   });
@@ -75,6 +75,9 @@ describe("GET /api/actions/:actionId/audit", () => {
     expect(response.status).toBe(200);
     expect(body.status).toBe("ok");
     expect(body.count).toBe(1);
+    expect(body.items).toEqual([
+      { at: "2026-06-21T10:00:00.000Z", operation: "edit_action", outcome: "success" },
+    ]);
     expect(listAdminOperationAuditMock).toHaveBeenCalledWith(8, "action-1");
   });
 
@@ -107,6 +110,10 @@ describe("GET /api/actions/:actionId/audit", () => {
 
     expect(response.status).toBe(200);
     expect(listAdminOperationAuditMock).toHaveBeenCalledWith(12, "action-1");
+    const body = (await response.json()) as { items?: unknown[] };
+    expect(body.items).toEqual([
+      { at: "2026-06-21T10:00:00.000Z", operation: "edit_action", outcome: "success" },
+    ]);
   });
 
   it("returns the audit journal for moderation roles", async () => {
@@ -124,6 +131,12 @@ describe("GET /api/actions/:actionId/audit", () => {
     expect(response.status).toBe(200);
     expect(loadActionOrganizerIdsForActionMock).not.toHaveBeenCalled();
     expect(listAdminOperationAuditMock).toHaveBeenCalledWith(12, "action-1");
+    const body = (await response.json()) as { items?: unknown[] };
+    expect(body.items?.[0]).toMatchObject({
+      actorUserId: "admin-1",
+      actorLabel: "Maxence Deroome (@maxence_deroome)",
+      details: { editedFields: ["locationLabel"] },
+    });
   });
 
   it("rejects anonymous users before reading the audit journal", async () => {

@@ -848,7 +848,7 @@ describe("POST /api/actions/group-join", () => {
     expect(participants[0]?.participation_source).toBe("group_form");
   });
 
-  it.each(["admin", "elu", "max"] as const)(
+  it.each(["admin", "max"] as const)(
     "keeps normal joins pending for %s users",
     async (role) => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({

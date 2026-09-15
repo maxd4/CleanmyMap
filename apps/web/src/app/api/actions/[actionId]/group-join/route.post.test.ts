@@ -19,8 +19,8 @@ const {
 describe("POST /api/actions/:actionId/group-join admin moderation", () => {
   beforeEach(() => {
     seedGroupJoinTestDefaults();
-    authMock.mockResolvedValue({ userId: "elu-1" });
-    getCurrentUserIdentityMock.mockResolvedValue({ role: "elu", activeRole: "elu" });
+    authMock.mockResolvedValue({ userId: "admin-1" });
+    getCurrentUserIdentityMock.mockResolvedValue({ role: "admin", activeRole: "admin" });
     refreshProgressionProfileMock.mockResolvedValue(undefined);
     appendActionModerationAuditMock.mockResolvedValue(undefined);
   });
@@ -78,7 +78,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
     expect(participants[0]?.participation_status).toBe("confirmed");
     expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        actorUserId: "elu-1",
+        actorUserId: "admin-1",
         targetActionId: "action-1",
         operation: "admin_add_participant",
         outcome: "success",
@@ -149,7 +149,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
     expect(participants[0]?.participation_status).toBe("cancelled");
     expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        actorUserId: "elu-1",
+        actorUserId: "admin-1",
         targetActionId: "action-1",
         operation: "admin_remove_participant",
         outcome: "success",

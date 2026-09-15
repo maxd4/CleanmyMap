@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => ({
   getSafeAuthSession: vi.fn(),
   getCurrentUserIdentity: vi.fn(),
   isFeatureEnabled: vi.fn(() => true),
-  isAdminLikeProfile: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/safe-session", () => ({
@@ -22,16 +21,11 @@ vi.mock("@/lib/feature-flags", () => ({
   isFeatureEnabled: mocks.isFeatureEnabled,
 }));
 
-vi.mock("@/lib/profiles", () => ({
-  isAdminLikeProfile: mocks.isAdminLikeProfile,
-}));
-
 vi.mock("@/components/actions/action-declaration-entry-flow", () => ({
   ActionDeclarationEntryFlow: (props: Record<string, unknown>) =>
     React.createElement("div", {
       "data-testid": "entry-flow",
       "data-authenticated": String(props.isAuthenticated),
-      "data-auto-approved": String(props.isAutoApprovedSubmission),
       "data-action-id": String(props.initialActionId ?? ""),
       "data-event-id": String(props.linkedEventId ?? ""),
       "data-entry-path": String(props.initialEntryPath ?? ""),
@@ -53,7 +47,6 @@ describe("action creation entry point", () => {
       state: "anonymous",
     });
     mocks.getCurrentUserIdentity.mockResolvedValue(null);
-    mocks.isAdminLikeProfile.mockReturnValue(false);
   });
 
   it("does not expose the former clean-place mode", () => {
@@ -101,7 +94,6 @@ describe("action creation entry point", () => {
       displayName: "Admin test",
       username: "admin-test",
     });
-    mocks.isAdminLikeProfile.mockReturnValue(true);
 
     const html = renderToStaticMarkup(
       await NewActionPage({
@@ -113,7 +105,6 @@ describe("action creation entry point", () => {
     );
 
     expect(html).toContain('data-authenticated="true"');
-    expect(html).toContain('data-auto-approved="true"');
     expect(html).toContain('data-action-id="action-7"');
     expect(html).toContain('data-event-id="event-42"');
     expect(html).not.toContain("public-preview");

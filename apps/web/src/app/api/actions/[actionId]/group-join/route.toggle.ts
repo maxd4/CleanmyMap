@@ -28,7 +28,7 @@ export async function handleGroupJoinToggle(
   params: {
     userId: string;
     resolveReviewerAccess: ReviewerAccessResolver;
-    canUseAdminOverride: (
+    canOverrideActionParticipants: (
       identity: UserIdentity | null | undefined,
     ) => boolean;
     appendActionModerationAudit: ModerationAuditAppender;
@@ -40,7 +40,7 @@ export async function handleGroupJoinToggle(
   const {
     userId,
     resolveReviewerAccess,
-    canUseAdminOverride,
+    canOverrideActionParticipants,
     appendActionModerationAudit,
     resolveAdminAuditIdentity,
   } = params;
@@ -135,7 +135,7 @@ export async function handleGroupJoinToggle(
 
     const shouldAuditToggle =
       Boolean(access.identity) &&
-      canUseAdminOverride(access.identity) &&
+      canOverrideActionParticipants(access.identity) &&
       actorUserId !== actionResult.created_by_clerk_id;
     const previousValue = {
       groupJoinEnabled: extractActionMetadataFromNotes(actionResult.notes)

@@ -26,7 +26,7 @@ export async function handleGroupJoinReview(
   params: {
     userId: string;
     resolveReviewerAccess: ReviewerAccessResolver;
-    canUseAdminOverride: (
+    canOverrideActionParticipants: (
       identity: UserIdentity | null | undefined,
     ) => boolean;
     appendActionModerationAudit: ModerationAuditAppender;
@@ -38,7 +38,7 @@ export async function handleGroupJoinReview(
   const {
     userId,
     resolveReviewerAccess,
-    canUseAdminOverride,
+    canOverrideActionParticipants,
     appendActionModerationAudit,
     resolveAdminAuditIdentity,
   } = params;
@@ -153,7 +153,7 @@ export async function handleGroupJoinReview(
     }
 
     const adminOverrideOperation =
-      canUseAdminOverride(access.identity) ? adminOperation : null;
+      canOverrideActionParticipants(access.identity) ? adminOperation : null;
     const reasonRequired =
       adminOverrideOperation === "admin_add_participant" ||
       adminOverrideOperation === "admin_review_reject";
@@ -220,7 +220,7 @@ export async function handleGroupJoinReview(
       ).catch(() => null);
     }
 
-    if (isPostActionClaim || canUseAdminOverride(access.identity)) {
+    if (isPostActionClaim || canOverrideActionParticipants(access.identity)) {
       await appendAdminParticipationAuditOnce({
         operationId: `action-group-join-${trimmedActionId}-${Date.now()}`,
         actorUserId: access.identity?.userId ?? userId,

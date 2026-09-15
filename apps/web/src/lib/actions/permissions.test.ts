@@ -1,54 +1,43 @@
 import { describe, expect, it } from "vitest";
 import {
-  canAutoApproveOwnAction,
-  canModerateAnyAction,
+  canManageActionsGlobally,
+  canModerateActionsGlobally,
+  canOverrideActionParticipants,
+  canEditValidatedImpact,
   canReviewActionParticipants,
-  canUseAdminOverride,
-  isActionModerationRole,
+  canViewActionModerationAudit,
 } from "./permissions";
 
 describe("action permissions", () => {
-  it("recognizes moderation roles", () => {
-    expect(isActionModerationRole("admin")).toBe(true);
-    expect(isActionModerationRole("elu")).toBe(true);
-    expect(isActionModerationRole("max")).toBe(true);
-    expect(isActionModerationRole("benevole")).toBe(false);
-    expect(isActionModerationRole("coordinateur")).toBe(false);
-    expect(isActionModerationRole("scientifique")).toBe(false);
-    expect(isActionModerationRole("entreprise")).toBe(false);
+  it.each([
+    ["benevole", false],
+    ["coordinateur", false],
+    ["scientifique", false],
+    ["entreprise", false],
+    ["elu", false],
+    ["admin", true],
+    ["max", true],
+  ] as const)("limits global action capabilities to admin/max: %s", (activeRole, expected) => {
+    const identity = {
+      userId: "actor-user",
+      role: activeRole,
+      activeRole,
+    };
+
+    expect(canModerateActionsGlobally(identity)).toBe(expected);
+    expect(canManageActionsGlobally(identity)).toBe(expected);
+    expect(canOverrideActionParticipants(identity)).toBe(expected);
+    expect(canViewActionModerationAudit(identity)).toBe(expected);
+    expect(
+      canEditValidatedImpact(identity),
+    ).toBe(expected);
   });
 
-  it("allows admin-like users to auto-approve their own actions", () => {
-    expect(
-      canAutoApproveOwnAction(
-        {
-          userId: "user-1",
-          role: "admin",
-          activeRole: "admin",
-        },
-        {
-          createdByClerkId: "user-1",
-        },
-      ),
-    ).toBe(true);
-
-    expect(
-      canAutoApproveOwnAction(
-        {
-          userId: "user-1",
-          role: "admin",
-          activeRole: "admin",
-        },
-        {
-          createdByClerkId: "user-2",
-        },
-      ),
-    ).toBe(false);
-  });
-
-  it("lets admin-like users review action participants", () => {
-    expect(canUseAdminOverride({ activeRole: "elu" })).toBe(true);
-    expect(canModerateAnyAction({ activeRole: "max" })).toBe(true);
+  it("lets only admin/max override participant review", () => {
+    expect(canOverrideActionParticipants({ activeRole: "admin" })).toBe(true);
+    expect(canOverrideActionParticipants({ activeRole: "max" })).toBe(true);
+    expect(canOverrideActionParticipants({ activeRole: "elu" })).toBe(false);
+    expect(canModerateActionsGlobally({ activeRole: "elu" })).toBe(false);
   });
 
   it("lets creators, organizers and coorganizers review their action participants", () => {
@@ -111,7 +100,46 @@ describe("action permissions", () => {
     ).toBe(false);
   });
 
-  it("rejects non moderation roles for global moderation", () => {
-    expect(canModerateAnyAction({ activeRole: "benevole" })).toBe(false);
+  it("keeps action management relational for an elected outsider", () => {
+    const action = { createdByClerkId: "creator-1" };
+
+    expect(
+      canReviewActionParticipants(
+        { userId: "outside-1", role: "elu", activeRole: "elu" },
+        action,
+        ["organizer-1"],
+      ),
+    ).toBe(false);
+    expect(
+      canReviewActionParticipants(
+        { userId: "admin-1", role: "admin", activeRole: "admin" },
+        action,
+        [],
+      ),
+    ).toBe(true);
+  });
+
+  it("uses active admin capabilities only after an elected user explicitly switches", () => {
+    const identity = {
+      userId: "elu-1",
+      role: "elu" as const,
+      activeRole: "admin" as const,
+    };
+
+    expect(canManageActionsGlobally(identity)).toBe(true);
+    expect(canModerateActionsGlobally(identity)).toBe(true);
+    expect(canOverrideActionParticipants(identity)).toBe(true);
+    expect(canEditValidatedImpact(identity)).toBe(true);
+
+    expect(
+      canManageActionsGlobally({ ...identity, activeRole: "elu" }),
+    ).toBe(false);
+    expect(
+      canModerateActionsGlobally({ ...identity, activeRole: "elu" }),
+    ).toBe(false);
+    expect(
+      canOverrideActionParticipants({ ...identity, activeRole: "elu" }),
+    ).toBe(false);
+    expect(canEditValidatedImpact({ ...identity, activeRole: "elu" })).toBe(false);
   });
 });

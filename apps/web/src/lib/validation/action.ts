@@ -444,6 +444,7 @@ export const updateActionSchema = createActionLegacyBaseSchema
   .extend({
   actionPhase: actionPhaseSchema.optional(),
   preparationData: preparationDataSchema.nullable().optional(),
+  reason: z.string().trim().max(500).optional(),
   })
   .superRefine(addTemporalContractIssue);
 

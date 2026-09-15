@@ -29,7 +29,6 @@ type ActionDeclarationFormFeedbackProps = {
   recordedAction?: ActionEditorRecord | null;
   groupJoinHref?: string | null;
   showGroupInvite?: boolean;
-  isAutoApprovedSubmission?: boolean;
   onReset?: () => void;
 };
 
@@ -43,7 +42,6 @@ export function ActionDeclarationFormFeedback({
   recordedAction = null,
   groupJoinHref,
   showGroupInvite,
-  isAutoApprovedSubmission = false,
   onReset,
 }: ActionDeclarationFormFeedbackProps) {
   const shareUrl = useMemo(() => {
@@ -86,15 +84,11 @@ export function ActionDeclarationFormFeedback({
       return;
     }
 
-    const text = isAutoApprovedSubmission
-      ? `Partager le formulaire public: ${resolvedGroupJoinHref}`
-      : `Créer un formulaire après validation: ${resolvedGroupJoinHref}`;
+    const text = `Partager le formulaire après validation: ${resolvedGroupJoinHref}`;
     try {
       if (navigator.share) {
         await navigator.share({
-          title: isAutoApprovedSubmission
-            ? "Formulaire public CleanMyMap"
-            : "Créer un formulaire CleanMyMap",
+          title: "Créer un formulaire CleanMyMap",
           text,
           url: resolvedGroupJoinHref,
         });
@@ -150,9 +144,7 @@ export function ActionDeclarationFormFeedback({
             <div>
               <p className="text-sm font-semibold text-emerald-950">Action enregistrée</p>
               <p className="text-xs text-emerald-900/70 mt-0.5">
-                {isAutoApprovedSubmission
-                  ? "Publiée immédiatement. Elle est déjà visible dans les formulaires de groupe, mais les nouvelles participations restent soumises à validation."
-                  : "En attente de validation par un administrateur."}
+                En attente de validation par un administrateur.
               </p>
               {createdId && (
                 <p className="text-[10px] text-emerald-800/80 font-mono mt-1">Réf : {createdId}</p>
@@ -251,21 +243,17 @@ export function ActionDeclarationFormFeedback({
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
-                    {isAutoApprovedSubmission ? "Formulaire publié" : "Créer un formulaire"}
+                    Créer un formulaire
                   </p>
                   <p className="text-sm font-semibold text-sky-950">
-                    {isAutoApprovedSubmission
-                      ? "Cette action est déjà visible dans les formulaires de groupe."
-                      : "Cette action pourra être rejointe après validation."}
+                    Cette action pourra être rejointe après validation.
                   </p>
                   <p className="text-xs leading-relaxed text-sky-900/70">
-                    {isAutoApprovedSubmission
-                    ? "L'organisateur / référant principal et les coorganisateurs peuvent partager ce lien dès maintenant. Les bénévoles passeront ensuite par la file d'attente avant validation."
-                      : "L'organisateur / référant principal et les coorganisateurs peuvent partager ce lien. Il devient actif après validation."}
+                    L&apos;organisateur / référant principal et les coorganisateurs peuvent partager ce lien. Il devient actif après validation.
                   </p>
                 </div>
                 <div className="rounded-full border border-sky-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-800">
-                  {isAutoApprovedSubmission ? "Visible maintenant" : "Prêt à partager"}
+                  Prêt à partager
                 </div>
               </div>
 
@@ -294,7 +282,7 @@ export function ActionDeclarationFormFeedback({
             <div className="rounded-2xl border border-emerald-200/70 bg-[#F6FBF7] p-4 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
-                  {isAutoApprovedSubmission ? "Cycle public" : "Après publication"}
+                  Après publication
                 </p>
                 <span className="rounded-full border border-emerald-200 bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-800">
                   Cycle groupe
