@@ -11,6 +11,12 @@ import {
   EXPLORER_ROUTE,
   PROFIL_ROUTE,
 } from "@/lib/accueil-pilotage-routes";
+import { RUBRIQUE_REGISTRY } from "@/lib/sections-registry";
+
+type SectionDefinition = Extract<
+  (typeof RUBRIQUE_REGISTRY)[number],
+  { kind: "section" }
+>;
 
 describe("indexability helpers", () => {
   it("keeps private and unfinished routes out of the public sitemap list", () => {
@@ -69,5 +75,31 @@ describe("indexability helpers", () => {
     for (const route of privateRoutes) {
       expect(publicVisibleRoutes).not.toContain(route);
     }
+
+    const finalizedSections = RUBRIQUE_REGISTRY.filter(
+      (item): item is SectionDefinition =>
+        item.kind === "section" &&
+        item.availability === "available" &&
+        item.implementation === "finalized",
+    );
+    const expectedPublicRoutes = finalizedSections
+      .filter((item) => item.anonymousPresentation === "visible")
+      .map((item) => item.route)
+      .sort((a, b) => a.localeCompare(b, "fr"));
+    const expectedPrivateRoutes = RUBRIQUE_REGISTRY.filter(
+      (item): item is SectionDefinition =>
+        item.kind === "section" &&
+        (item.anonymousPresentation !== "visible" ||
+          item.availability !== "available" ||
+          item.implementation !== "finalized"),
+    )
+      .map((item) => item.route)
+      .sort((a, b) => a.localeCompare(b, "fr"));
+
+    expect(publicVisibleRoutes).toEqual(expectedPublicRoutes);
+    expect(privateRoutes).toEqual(expectedPrivateRoutes);
+    expect(publicVisibleRoutes).toContain("/sections/community");
+    expect(publicVisibleRoutes).toContain("/sections/annuaire");
+    expect(privateRoutes).toContain("/sections/gamification");
   });
 });

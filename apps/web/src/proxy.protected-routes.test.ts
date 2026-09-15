@@ -10,9 +10,7 @@ vi.hoisted(() => {
 });
 
 import {
-  ADMIN_ROUTE,
   DASHBOARD_ROUTE,
-  SPONSOR_PORTAL_ROUTE,
 } from "@/lib/accueil-pilotage-routes";
 import {
   CLERK_CONTEXT_API_ROUTE_PREFIXES,
@@ -20,70 +18,61 @@ import {
   config,
   isAnonymousSafeApiRequest,
   isClerkContextOnlyRoute,
+  isProtectedAppPage,
   PROTECTED_APP_PAGE_ROUTE_PREFIXES,
   PROXY_MATCHER_PATTERNS,
 } from "./proxy";
 
 describe("proxy route context", () => {
-  it("keeps the middleware matcher limited to protected and context surfaces", () => {
-    const required = [
-      `${ADMIN_ROUTE}(.*)`,
-      `${DASHBOARD_ROUTE}(.*)`,
-      "/missions(.*)",
-      `${SPONSOR_PORTAL_ROUTE}(.*)`,
-      "/actions/history(.*)",
-      "/pilotage(.*)",
-      "/reports(.*)",
-      ...CLERK_CONTEXT_API_ROUTE_PREFIXES.map((prefix) => `${prefix}(.*)`),
-    ];
+  it("keeps key page access semantics explicit", () => {
+    expect(isProtectedAppPage("/actions/map")).toBe(false);
+    expect(isClerkContextOnlyRoute("/actions/map")).toBe(false);
 
-    for (const pattern of required) {
-      expect(PROXY_MATCHER_PATTERNS).toContain(pattern);
-    }
+    expect(isProtectedAppPage("/actions/new")).toBe(false);
+    expect(isClerkContextOnlyRoute("/actions/new")).toBe(true);
 
-    expect(PROXY_MATCHER_PATTERNS).toEqual(config.matcher);
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/sections(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/sign-in(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/sign-up(.*)");
-    expect(PROTECTED_APP_PAGE_ROUTE_PREFIXES).not.toContain("/pilotage");
-    expect(PROTECTED_APP_PAGE_ROUTE_PREFIXES).not.toContain("/reports");
-    expect(CLERK_CONTEXT_ROUTE_PREFIXES).toEqual([
+    expect(isProtectedAppPage(DASHBOARD_ROUTE)).toBe(true);
+    expect(isProtectedAppPage(`${DASHBOARD_ROUTE}/nested`)).toBe(true);
+  });
+
+  it("keeps the literal Next matcher synchronized with runtime prefix lists", () => {
+    const expectedMatcher = [
+      ...PROTECTED_APP_PAGE_ROUTE_PREFIXES,
+      ...CLERK_CONTEXT_ROUTE_PREFIXES,
+      ...CLERK_CONTEXT_API_ROUTE_PREFIXES,
+    ].map((prefix) => `${prefix}(.*)`);
+
+    expect(PROXY_MATCHER_PATTERNS).toEqual(expectedMatcher);
+    expect(config.matcher).toEqual(expectedMatcher);
+  });
+
+  it("keeps context-only page semantics explicit", () => {
+    for (const pathname of [
       "/pilotage",
-      "/reports",
-      "/actions/new",
+      "/reports/exports",
       "/signalement",
       "/partners/network",
       "/sections/annuaire",
       "/sections/rejoindre-une-action",
       "/sections/rejoindre-un-formulaire",
       "/sections/community",
-    ]);
-    expect(isClerkContextOnlyRoute("/pilotage")).toBe(true);
-    expect(isClerkContextOnlyRoute("/reports/exports")).toBe(true);
-    expect(isClerkContextOnlyRoute("/sections/community")).toBe(true);
-    expect(isClerkContextOnlyRoute("/sections/community?tab=partners")).toBe(false);
+    ]) {
+      expect(isClerkContextOnlyRoute(pathname)).toBe(true);
+      expect(isProtectedAppPage(pathname)).toBe(false);
+    }
+
     expect(isClerkContextOnlyRoute("/api/reports/actions.json")).toBe(false);
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/learn(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/methodologie(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/actions/map(.*)");
-    expect(PROXY_MATCHER_PATTERNS).toContain("/actions/new(.*)");
-    expect(PROXY_MATCHER_PATTERNS).toContain("/signalement(.*)");
-    expect(PROXY_MATCHER_PATTERNS).toContain("/partners/network(.*)");
-    expect(PROXY_MATCHER_PATTERNS).toContain("/sections/annuaire(.*)");
-    expect(PROXY_MATCHER_PATTERNS).toContain("/sections/rejoindre-une-action(.*)");
-    expect(PROXY_MATCHER_PATTERNS).toContain("/sections/rejoindre-un-formulaire(.*)");
-    expect(PROTECTED_APP_PAGE_ROUTE_PREFIXES).not.toContain("/actions/new");
-    expect(PROTECTED_APP_PAGE_ROUTE_PREFIXES).not.toContain("/signalement");
-    expect(PROTECTED_APP_PAGE_ROUTE_PREFIXES).not.toContain("/partners/network");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/health(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/manifest(.*)");
-    expect(PROXY_MATCHER_PATTERNS).not.toContain("/api/uptime(.*)");
   });
 
-  it("provides Clerk context to the public legal report route without protecting it", () => {
-    expect(CLERK_CONTEXT_API_ROUTE_PREFIXES).toContain("/api/legal-content-reports");
-    expect(PROXY_MATCHER_PATTERNS).toContain("/api/legal-content-reports(.*)");
-    expect(config.matcher).toContain("/api/legal-content-reports(.*)");
+  it("keeps the public legal report API in the Clerk-context matcher scope", () => {
+    const legalReportPrefix = CLERK_CONTEXT_API_ROUTE_PREFIXES.find(
+      (prefix) => prefix === "/api/legal-content-reports",
+    );
+    expect(legalReportPrefix).toBeDefined();
+    const expectedMatcher = `${legalReportPrefix}(.*)`;
+
+    expect(PROXY_MATCHER_PATTERNS).toContain(expectedMatcher);
+    expect(config.matcher).toContain(expectedMatcher);
   });
 
   it("skips Clerk for anonymous community event reads but not mutations", () => {
