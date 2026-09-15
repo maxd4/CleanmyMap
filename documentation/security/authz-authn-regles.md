@@ -237,11 +237,18 @@ elu → scope territorial explicite, sans override global
 admin/max → capacités globales explicitement autorisées
 ```
 
-La modération territoriale des élus n'est pas implémentée tant que
+La capacité cible `actions.moderate_territory`, c'est-à-dire la modération
+territoriale des élus, est **NON IMPLÉMENTÉE** tant que
 l'attribution territoriale de l'élu, le territoire canonique de l'action, la
 relation vérifiable côté serveur et les tests de séparation territoire A/B ne
 sont pas tous disponibles. En attendant, ce chemin est fail-closed plutôt que
 remplacé par un fallback global.
+
+Les prérequis complets et les opérations encore ouvertes sont définis dans la
+section Élu de
+[`authorization-capabilities.md`](./authorization-capabilities.md). Ce
+document `CURRENT` ne confère donc aucune permission runtime à
+`actions.moderate_territory`.
 
 Un compte `GRANTED_ROLE=elu` qui sélectionne explicitement
 `ACTIVE_ROLE=admin` utilise les capacités `admin` pendant cette session. En
@@ -278,7 +285,8 @@ Cette gestion reste limitée à l'action dont il est organisateur/coorganisateur
 
 Une dérogation globale doit être une capacité explicite de modération, normalement réservée au rôle qui possède cette capacité dans le domaine concerné.
 
-Une future dérogation territoriale pour `elu` doit être distincte :
+Une future capacité territoriale pour `elu`, nommée
+`actions.moderate_territory`, doit être distincte :
 
 ```txt
 canModerateTerritoryAction(identity, action, territoryAssignment)
