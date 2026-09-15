@@ -8,6 +8,7 @@ describe("authz helpers", () => {
     ["benevole", "max", "benevole"],
     ["max", "benevole", "benevole"],
     ["admin", "scientifique", "scientifique"],
+    ["admin", "elu", "admin"],
     ["admin", "max", "admin"],
     ["admin", undefined, "admin"],
     ["max", "invalid-profile", "max"],

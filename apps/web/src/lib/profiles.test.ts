@@ -131,6 +131,13 @@ describe("active profile separation", () => {
       "coordinateur",
       "scientifique",
       "entreprise",
+      "admin",
+    ]);
+    expect(getSwitchableProfiles("elu")).toEqual([
+      "benevole",
+      "coordinateur",
+      "scientifique",
+      "entreprise",
       "elu",
       "admin",
     ]);
@@ -144,7 +151,8 @@ describe("active profile separation", () => {
       "entreprise",
     ]);
     expect(getSwitchableProfiles("elu")).toContain("elu");
-    expect(getSwitchableProfiles("elu")).not.toContain("admin");
+    expect(getSwitchableProfiles("elu")).toContain("admin");
+    expect(getSwitchableProfiles("admin")).not.toContain("elu");
     expect(getSwitchableProfiles("benevole")).not.toContain("max");
   });
 
@@ -152,8 +160,8 @@ describe("active profile separation", () => {
     ["benevole", "elu"],
     ["benevole", "admin"],
     ["benevole", "max"],
-    ["elu", "admin"],
     ["elu", "max"],
+    ["admin", "elu"],
     ["admin", "max"],
   ] as const)("rejects %s -> %s privilege escalation", (grantedRole, targetRole) => {
     expect(
@@ -163,7 +171,9 @@ describe("active profile separation", () => {
 
   it.each([
     ["elu", "scientifique"],
+    ["elu", "admin"],
     ["admin", "benevole"],
+    ["admin", "admin"],
     ["max", "admin"],
   ] as const)("allows %s to activate %s and later reactivate the obtained role", (grantedRole, targetRole) => {
     expect(
@@ -197,5 +207,17 @@ describe("active profile separation", () => {
     expect(electedAsScientist.canModerate).toBe(false);
     expect(getEffectiveAccessForSessionRole("admin").canAccessAdminPage).toBe(true);
     expect(getEffectiveAccessForSessionRole("elu").canModerate).toBe(true);
+  });
+
+  it("does not grant generic admin capabilities to ACTIVE_ROLE=elu", () => {
+    const electedAccess = getEffectiveAccessForSessionRole("elu");
+    const adminAccess = getEffectiveAccessForSessionRole("admin");
+
+    expect(electedAccess.canAccessAdminPage).toBe(false);
+    expect(electedAccess.canImportActions).toBe(false);
+    expect(electedAccess.canExportActionsCsvJson).toBe(false);
+    expect(adminAccess.canAccessAdminPage).toBe(true);
+    expect(adminAccess.canImportActions).toBe(true);
+    expect(adminAccess.canExportActionsCsvJson).toBe(true);
   });
 });
