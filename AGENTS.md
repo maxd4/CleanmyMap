@@ -502,11 +502,14 @@ pytest, build, Turbopack et E2E. Ne pas laisser tourner de serveur, watcher,
 worker ou processus local après la validation. Ne pas explorer par défaut
 `node_modules/`, `.next/`, `.vercel/`, `.playwright-mcp/`,
 `.codex-remote-attachments/`, `artifacts/` ou `backups/`.
-Docker, WSL et les runtimes de conteneurs ne font pas partie de l'outillage
-supporté du workflow CURRENT. Ne jamais les installer, démarrer, sonder ou
-arrêter pour une validation. Une opération qui en dépend est
-`UNSUPPORTED_CONTAINER_RUNTIME` ; poursuivre uniquement les validations
-indépendantes lorsque c'est possible.
+Docker, WSL et les runtimes de conteneurs ne font plus partie de
+l'environnement de développement et de validation locale supporté sur le
+poste utilisateur. Ne jamais demander à Codex de les installer, démarrer,
+sonder ou arrêter localement. Cela n'interdit pas un runtime de conteneurs
+fourni par un runner CI hébergé et éphémère, explicitement dédié à la
+validation ou au replay concerné. Une opération locale qui en dépend est
+classée `UNSUPPORTED_CONTAINER_RUNTIME` ; poursuivre uniquement les
+validations indépendantes lorsque c'est possible.
 
 ## Validation
 
