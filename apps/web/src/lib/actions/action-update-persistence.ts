@@ -12,10 +12,11 @@ import {
   normalizeVolunteerParticipation,
   resolveParticipantsCount,
 } from "./volunteer-participation";
-import { canAutoApproveOwnAction } from "./permissions";
 import { extractActionMetadataFromNotes } from "./metadata";
 import type { ActionRow } from "@/types/database";
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
+import { resolveNextActionStatus } from "./action-update-status";
+import type { ActionPermissionIdentity } from "./permissions";
 
 export class ActionUpdateValidationError extends Error {
   constructor(
@@ -36,7 +37,7 @@ export type PreparedActionUpdate = {
 export async function prepareActionUpdate(params: {
   current: ActionRow;
   parsedBody: ActionUpdateInput;
-  permissionIdentity: Parameters<typeof canAutoApproveOwnAction>[0];
+  permissionIdentity: ActionPermissionIdentity | null | undefined;
 }): Promise<PreparedActionUpdate> {
   const { current, parsedBody, permissionIdentity } = params;
   const updateData: Record<string, unknown> = {};
@@ -82,14 +83,14 @@ export async function prepareActionUpdate(params: {
 
   if (body.actionPhase) {
     updateData["action_phase"] = body.actionPhase;
-    if (body.actionPhase === "pre_action") {
-      updateData["status"] = "pending";
-    } else if (body.actionPhase === "post_action_complete") {
-      updateData["status"] = canAutoApproveOwnAction(permissionIdentity, {
-        createdByClerkId: current.created_by_clerk_id,
-      })
-        ? "approved"
-        : "pending";
+    const nextStatus = resolveNextActionStatus({
+      currentStatus: current.status,
+      actionPhase: body.actionPhase,
+      permissionIdentity,
+      createdByClerkId: current.created_by_clerk_id,
+    });
+    if (body.actionPhase !== "post_action_draft") {
+      updateData["status"] = nextStatus;
     }
   }
   if (body.preparationData !== undefined) {
