@@ -112,11 +112,18 @@ doit classifier le blocage parmi :
    ID, événement ou artefact associé ne subsiste.
 8. Révoquer ou terminer la session temporaire et, le cas échéant, l'Agent Task.
 
-Le runtime Docker/Supabase local ne fait pas partie du workflow CURRENT. Aucune
-validation ne doit installer, démarrer, sonder ou arrêter Docker, WSL ou un
-autre runtime de conteneurs. Une preuve qui dépend réellement d'un tel runtime
-est classée `UNSUPPORTED_CONTAINER_RUNTIME` et reste non prouvée ; elle ne doit
+Docker, WSL et les runtimes de conteneurs ne font plus partie de
+l'environnement de développement et de validation locale supporté sur le
+poste utilisateur. Ne jamais demander à Codex de les installer, démarrer,
+sonder ou arrêter localement. Un runtime de conteneurs fourni par un runner CI
+hébergé et éphémère reste possible uniquement pour une CI explicitement
+dédiée au replay Supabase. Une preuve locale qui dépend d'un tel runtime est
+classée `UNSUPPORTED_CONTAINER_RUNTIME` et reste non prouvée ; elle ne doit
 pas déclencher l'installation d'un runtime en guise de fallback.
+
+Dans le workflow local canonique, ne pas exécuter `supabase start`, `supabase
+status` ou `supabase db reset` ; ces commandes sont réservées à cette CI de
+replay explicitement dédiée.
 
 Les validations Supabase courantes utilisent `npx supabase` contre le projet
 distant explicitement lié. `apps/web/supabase/config.toml` et l'arbre des

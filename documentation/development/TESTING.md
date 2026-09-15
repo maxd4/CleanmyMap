@@ -35,10 +35,14 @@ Les validations Supabase courantes utilisent `npx supabase` contre le projet
 distant explicitement lié. Les advisors se lancent avec
 `npm run backend:supabase:advisors` depuis `apps/web` ; cette commande est
 linked-only. Une opération qui exige un runtime conteneurisé local est
-`UNSUPPORTED_CONTAINER_RUNTIME` dans le workflow CURRENT.
+`UNSUPPORTED_CONTAINER_RUNTIME` sur le poste utilisateur.
 
-Ne pas lancer `supabase start`, `supabase status` ou `supabase db reset` dans ce
-workflow.
+Un runner CI hébergé et éphémère peut toutefois utiliser ce runtime uniquement
+dans une CI explicitement dédiée au replay Supabase.
+
+Ne pas lancer `supabase start`, `supabase status` ou `supabase db reset` dans le
+workflow local canonique ; ces commandes restent réservées à cette CI de replay
+explicitement dédiée.
 
 ## Validation ciblée
 

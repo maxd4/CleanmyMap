@@ -55,15 +55,20 @@ distincte de la validation locale.
 
 ## Runtime local non supporté
 
-- Docker, WSL, Supabase local et les autres runtimes de conteneurs ne font pas
-  partie de l'outillage supporté du workflow CURRENT.
-- Ne jamais installer, démarrer, sonder ou arrêter Docker, WSL, un daemon ou un
-  runtime de conteneurs pour satisfaire une validation.
+- Docker, WSL, Supabase local et les autres runtimes de conteneurs ne font plus
+  partie de l'environnement de développement et de validation locale supporté
+  sur le poste utilisateur.
+- Ne jamais demander à Codex d'installer, démarrer, sonder ou arrêter Docker,
+  WSL, un daemon ou un runtime de conteneurs localement.
+- Cette règle n'interdit pas un runtime de conteneurs fourni par un runner CI
+  hébergé et éphémère, exclusivement dans une CI explicitement dédiée au replay
+  Supabase.
 - `supabase start`, `supabase status` et `supabase db reset` sont exclus du
-  workflow CURRENT. Ne pas les invoquer dans les guards ou validations.
-- Toute opération qui exige réellement un runtime conteneurisé est classée
-  `UNSUPPORTED_CONTAINER_RUNTIME` et reste non supportée ; ne pas demander
-  l'installation d'un runtime en guise de fallback.
+  workflow local CURRENT. Ils peuvent uniquement être utilisés dans une CI
+  hébergée et éphémère explicitement dédiée au replay Supabase.
+- Toute opération locale qui exige réellement un runtime conteneurisé est
+  classée `UNSUPPORTED_CONTAINER_RUNTIME` ; ne pas demander l'installation
+  d'un runtime en guise de fallback.
 - Les opérations Supabase courantes utilisent `npx supabase` contre le projet
   distant explicitement lié. Les commandes distantes en lecture, dont les
   advisors avec `--linked`, restent autorisées ; toute mutation distante reste
