@@ -35,6 +35,7 @@ export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
 
   try {
     const parsed = JSON.parse(raw) as Partial<PlannerActionHandoff> & {
+      actionId?: unknown;
       actualRoute?: unknown;
       operationalRoute?: unknown;
       preparationData?: unknown;
@@ -42,8 +43,10 @@ export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
     const operationalRoute = normalizeOperationalRoute(
       parsed.operationalRoute ?? parsed.actualRoute,
     );
+    const actionId = parsed.actionId;
     if (
       !operationalRoute ||
+      (actionId !== undefined && (typeof actionId !== "string" || actionId.trim().length === 0)) ||
       (parsed.routeCalibrationContext !== undefined &&
         parsed.routeCalibrationContext !== null &&
         !isRouteCalibrationContext(parsed.routeCalibrationContext)) ||
@@ -58,6 +61,7 @@ export function consumePlannerActionHandoff(): PlannerActionHandoff | null {
       return null;
     }
     return {
+      ...(typeof actionId === "string" ? { actionId } : {}),
       operationalRoute,
       routeCalibrationContext: parsed.routeCalibrationContext ?? null,
       plannerProof: parsed.plannerProof ?? null,

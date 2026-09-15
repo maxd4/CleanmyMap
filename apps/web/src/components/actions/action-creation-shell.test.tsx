@@ -78,7 +78,9 @@ describe("ActionCreationShell", () => {
     expect(markup).toContain("Formalités juridiques");
     expect(markup).toContain('data-open-panel="itineraire"');
     expect(markup).toContain('data-testid="route-engine"');
-    expect(markup).toContain('data-testid="weather-engine"');
+    expect(markup).not.toContain('data-testid="weather-engine"');
+    expect(markup).not.toContain('data-testid="pre-formulaire-engine"');
+    expect(markup).not.toContain('data-testid="formalities-action-id"');
   });
 
   it("keeps the pre-form engine autonomous when no panel is supplied", () => {
@@ -94,6 +96,8 @@ describe("ActionCreationShell", () => {
 
     expect(markup).toContain('data-open-panel="pre-formulaire"');
     expect(markup).toContain('data-testid="pre-formulaire-engine"');
+    expect(markup).not.toContain('data-testid="route-engine"');
+    expect(markup).not.toContain('data-testid="weather-engine"');
     expect(markup).toContain('hidden=""');
   });
 });

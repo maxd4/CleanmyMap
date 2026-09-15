@@ -50,6 +50,41 @@ type ReverseLocationResponse = {
 
 type WeatherIssue = "weather_unavailable" | "weather_empty" | null;
 
+export function canApplyDraftWeatherLocation(
+  draftLocationLabel: string,
+  hasManualLocation: boolean,
+): boolean {
+  return draftLocationLabel.trim().length > 0 && !hasManualLocation;
+}
+
+export function canApplyAutomaticWeatherLocation({
+  draftLocationLabel,
+  hasManualLocation,
+  hasResolvedInitialLocation,
+}: {
+  draftLocationLabel: string;
+  hasManualLocation: boolean;
+  hasResolvedInitialLocation: boolean;
+}): boolean {
+  return (
+    draftLocationLabel.trim().length === 0 &&
+    !hasManualLocation &&
+    !hasResolvedInitialLocation
+  );
+}
+
+export function shouldApplyDraftForecastDate({
+  draftActionDate,
+  hasManualForecastDay,
+  forecastDaysLength,
+}: {
+  draftActionDate: string;
+  hasManualForecastDay: boolean;
+  forecastDaysLength: number;
+}): boolean {
+  return draftActionDate.trim().length > 0 && !hasManualForecastDay && forecastDaysLength > 0;
+}
+
 function buildFallbackWeatherLocation(label: string, subtitle: string | null): WeatherLocation {
   return {
     label: label.trim() || DEFAULT_LOCATION.label,
@@ -134,6 +169,7 @@ export function useWeatherData(
   const [locationQuery, setLocationQuery] = useState(DEFAULT_LOCATION.label);
   const [selectedForecastDayIndex, setSelectedForecastDayIndex] = useState(0);
   const hasManualLocationRef = useRef(false);
+  const hasManualForecastDayRef = useRef(false);
   const hasResolvedInitialLocationRef = useRef(false);
   const draftLocationRef = useRef<string | null>(null);
   const draftLocationLabel = draftContext?.locationLabel?.trim() ?? "";
@@ -251,8 +287,16 @@ export function useWeatherData(
     });
   };
 
+  const selectForecastDay = (index: number) => {
+    hasManualForecastDayRef.current = true;
+    setSelectedForecastDayIndex(index);
+  };
+
   useEffect(() => {
-    if (!draftLocationLabel || hasManualLocationRef.current || draftLocationRef.current === draftLocationLabel) {
+    if (
+      !canApplyDraftWeatherLocation(draftLocationLabel, hasManualLocationRef.current) ||
+      draftLocationRef.current === draftLocationLabel
+    ) {
       return;
     }
 
@@ -265,6 +309,7 @@ export function useWeatherData(
       setSelectedLocation(location);
       setLocationQuery(location.label);
       setSelectedForecastDayIndex(0);
+      hasResolvedInitialLocationRef.current = true;
     });
 
     return () => {
@@ -273,7 +318,13 @@ export function useWeatherData(
   }, [draftLocationLabel]);
 
   useEffect(() => {
-    if (hasResolvedInitialLocationRef.current) {
+    if (
+      !canApplyAutomaticWeatherLocation({
+        draftLocationLabel,
+        hasManualLocation: hasManualLocationRef.current,
+        hasResolvedInitialLocation: hasResolvedInitialLocationRef.current,
+      })
+    ) {
       return;
     }
 
@@ -291,7 +342,6 @@ export function useWeatherData(
         }
 
         hasResolvedInitialLocationRef.current = true;
-        hasManualLocationRef.current = true;
         setSelectedLocation(location);
         setLocationQuery(location.label);
         setSelectedForecastDayIndex(0);
@@ -305,10 +355,17 @@ export function useWeatherData(
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [draftLocationLabel]);
 
   useEffect(() => {
-    if (!isLoaded || hasResolvedInitialLocationRef.current || hasManualLocationRef.current) {
+    if (
+      !isLoaded ||
+      !canApplyAutomaticWeatherLocation({
+        draftLocationLabel,
+        hasManualLocation: hasManualLocationRef.current,
+        hasResolvedInitialLocation: hasResolvedInitialLocationRef.current,
+      })
+    ) {
       return;
     }
 
@@ -328,7 +385,6 @@ export function useWeatherData(
       }
 
       hasResolvedInitialLocationRef.current = true;
-      hasManualLocationRef.current = true;
       setSelectedLocation(location);
       setLocationQuery(location.label);
       setSelectedForecastDayIndex(0);
@@ -338,10 +394,17 @@ export function useWeatherData(
     return () => {
       isCancelled = true;
     };
-  }, [isLoaded, user?.publicMetadata, user?.unsafeMetadata]);
+  }, [draftLocationLabel, isLoaded, user?.publicMetadata, user?.unsafeMetadata]);
 
   useEffect(() => {
-    if (!isLoaded || hasResolvedInitialLocationRef.current || hasManualLocationRef.current) {
+    if (
+      !isLoaded ||
+      !canApplyAutomaticWeatherLocation({
+        draftLocationLabel,
+        hasManualLocation: hasManualLocationRef.current,
+        hasResolvedInitialLocation: hasResolvedInitialLocationRef.current,
+      })
+    ) {
       return;
     }
 
@@ -394,7 +457,7 @@ export function useWeatherData(
     return () => {
       isCancelled = true;
     };
-  }, [isLoaded]);
+  }, [draftLocationLabel, isLoaded]);
 
   const hourlyPoints: WeatherPoint[] = useMemo(
     () =>
@@ -450,7 +513,13 @@ export function useWeatherData(
   );
 
   useEffect(() => {
-    if (!draftActionDate || forecastDays.length === 0) {
+    if (
+      !shouldApplyDraftForecastDate({
+        draftActionDate,
+        hasManualForecastDay: hasManualForecastDayRef.current,
+        forecastDaysLength: forecastDays.length,
+      })
+    ) {
       return;
     }
     const matchingIndex = forecastDays.findIndex((day) => day.date === draftActionDate);
@@ -485,7 +554,7 @@ export function useWeatherData(
     selectLocation,
     forecastDays,
     selectedForecastDayIndex,
-    setSelectedForecastDayIndex,
+    setSelectedForecastDayIndex: selectForecastDay,
     data,
     isLoading,
     error,

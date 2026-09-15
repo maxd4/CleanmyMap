@@ -3,6 +3,7 @@ import {
   createAction,
   fetchActionById,
   publishAction,
+  updateAction,
   type ActionEditorRecord,
 } from "@/lib/actions/http";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
@@ -14,7 +15,11 @@ import {
 import { saveDraft, loadDraftSnapshot } from "../draft-storage";
 import { consumePlannerActionHandoff } from "@/lib/route/route-action-handoff";
 import type { FormState } from "../form/model";
-import type { ActionPhotoAsset, ActionVisionEstimate } from "@/lib/actions/types";
+import type {
+  ActionPhotoAsset,
+  ActionVisionEstimate,
+  CreateActionPayload,
+} from "@/lib/actions/types";
 import {
   buildPreActionSummaryNote,
   isResumablePreAction,
@@ -40,6 +45,50 @@ function buildPrefillForm(
 
   const snapshot = loadDraftSnapshot(fallback, initialRecordType);
   return sanitizePreActionForm(snapshot?.form ?? fallback);
+}
+
+function mergePlannerHandoffIntoForm(
+  form: FormState,
+  handoff: ReturnType<typeof consumePlannerActionHandoff>,
+): FormState {
+  if (!handoff) return form;
+  const preparationData = handoff.preparationData
+    ? {
+        ...handoff.preparationData,
+        operationalRoute: handoff.operationalRoute,
+        routeCalibrationContext: handoff.routeCalibrationContext ?? undefined,
+      }
+    : {
+        operationalRoute: handoff.operationalRoute,
+        routeCalibrationContext: handoff.routeCalibrationContext ?? undefined,
+      };
+  const prepared = sanitizePreActionForm(applyPreparationDataToForm(form, preparationData));
+  if (
+    handoff.preparationData?.volunteersExpected !== undefined &&
+    !handoff.preparationData.volunteerParticipation
+  ) {
+    prepared.childrenCount = "";
+    prepared.adultCount = "";
+    prepared.retiredCount = "";
+  }
+  return prepared;
+}
+
+export async function persistBeforeAction(
+  actionId: string | null | undefined,
+  payload: CreateActionPayload,
+  dependencies: {
+    create: typeof createAction;
+    update: typeof updateAction;
+  } = { create: createAction, update: updateAction },
+): Promise<{ actionId: string; created: boolean }> {
+  const result = actionId
+    ? await dependencies.update(actionId, payload)
+    : await dependencies.create(payload);
+  return {
+    actionId: "id" in result ? result.id : result.actionId,
+    created: !actionId,
+  };
 }
 
 export function useBeforeActionForm({
@@ -124,13 +173,17 @@ export function useBeforeActionForm({
           groupJoinEnabled: action.groupJoinEnabled,
           participantAccounts: action.participantAccounts,
         };
-        setForm(nextForm);
-        onFormChange?.(nextForm);
+        const handoff = consumePlannerActionHandoff();
+        const matchingHandoff =
+          handoff?.actionId === action.id ? handoff : null;
+        const hydratedForm = mergePlannerHandoffIntoForm(nextForm, matchingHandoff);
+        setForm(hydratedForm);
+        onFormChange?.(hydratedForm);
         setCreatedId(action.id);
         setPublishedAction(action);
         setPublishedAt(action.publishedAt ?? null);
         setTerminalActionStatus(null);
-        setSubmissionState("success");
+        setSubmissionState(matchingHandoff ? "idle" : "success");
         setIsHydratingAction(false);
       })
       .catch((error: unknown) => {
@@ -154,28 +207,7 @@ export function useBeforeActionForm({
     plannerHandoffHydratedRef.current = true;
     const handoff = consumePlannerActionHandoff();
     if (!handoff) return;
-
-    const handoffPreparationData = handoff.preparationData
-      ? {
-          ...handoff.preparationData,
-          operationalRoute: handoff.operationalRoute,
-          routeCalibrationContext: handoff.routeCalibrationContext ?? undefined,
-        }
-      : {
-          operationalRoute: handoff.operationalRoute,
-          routeCalibrationContext: handoff.routeCalibrationContext ?? undefined,
-        };
-    const prepared = sanitizePreActionForm(
-      applyPreparationDataToForm(form, handoffPreparationData),
-    );
-    if (
-      handoff.preparationData?.volunteersExpected !== undefined &&
-      !handoff.preparationData.volunteerParticipation
-    ) {
-      prepared.childrenCount = "";
-      prepared.adultCount = "";
-      prepared.retiredCount = "";
-    }
+    const prepared = mergePlannerHandoffIntoForm(form, handoff);
 
     // Hydrate after the client boundary so sessionStorage never changes SSR markup.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional external handoff hydration
@@ -223,7 +255,7 @@ export function useBeforeActionForm({
 
   async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
-    if (initialActionId || submissionState === "pending") {
+    if (submissionState === "pending") {
       return;
     }
 
@@ -278,14 +310,20 @@ export function useBeforeActionForm({
     setValidationIssues([]);
 
     try {
-      const result = await createAction(payload);
-      setCreatedId(result.id);
-      onActionPersisted?.(result.id);
+      const result = await persistBeforeAction(initialActionId, payload);
+      const persistedId = result.actionId;
+      setCreatedId(persistedId);
+      onActionPersisted?.(persistedId);
+      if (initialActionId) {
+        const canonicalAction = await fetchActionById(persistedId);
+        setPublishedAction(canonicalAction);
+        setPublishedAt(canonicalAction.publishedAt ?? null);
+      }
       setSubmissionState("success");
       saveDraft(normalizedForm);
       await trackFunnel("submit_success", "quick", {
         source: "action_before_declaration_form",
-        createdId: result.id,
+        createdId: result.actionId,
         isAuthenticated,
       });
     } catch (error: unknown) {

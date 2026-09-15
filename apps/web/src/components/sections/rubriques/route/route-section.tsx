@@ -55,7 +55,21 @@ const RouteMap = dynamic(
   { ssr: false },
 );
 
-export function RouteSection() {
+export function buildPlannerActionHref(
+  actionId: string | null | undefined,
+  planningMode: { type: "free" } | { type: "event-centered"; eventId: string },
+): string {
+  const params = new URLSearchParams({ from: "planner" });
+  if (actionId) {
+    params.set("actionId", actionId);
+  }
+  if (planningMode.type === "event-centered") {
+    params.set("fromEventId", planningMode.eventId);
+  }
+  return `/actions/new?${params.toString()}`;
+}
+
+export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
   const router = useRouter();
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
   const [selectedGroupIndex, setSelectedGroupIndex] = useState<number | null>(null);
@@ -104,17 +118,14 @@ export function RouteSection() {
   const createActionFromRecommendation = () => {
     if (!data) return;
     writePlannerActionHandoff({
+      ...(actionId ? { actionId } : {}),
       operationalRoute: createOperationalRouteFromRecommendation(data),
       routeCalibrationContext: data.calibrationContext ?? null,
       plannerProof: data.plannerProof ?? null,
       preparationData: createPlannerActionPreparationData(data, options),
       expiresAt: data.plannerProof?.expiresAt ?? new Date(0).toISOString(),
     });
-    const params = new URLSearchParams({ from: "planner" });
-    if (planningMode.type === "event-centered") {
-      params.set("fromEventId", planningMode.eventId);
-    }
-    router.push(`/actions/new?${params.toString()}`);
+    router.push(buildPlannerActionHref(actionId, planningMode));
   };
 
   const dataStatusMessage = data
