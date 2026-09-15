@@ -1,0 +1,117 @@
+name: e2e-supabase-ephemeral
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "e2e/action-sharing.spec.ts"
+      - "e2e/authenticated-campaign.spec.ts"
+      - "e2e/signalement-campaign-2.spec.ts"
+      - "e2e/fixtures/**"
+      - "e2e/global.setup.ts"
+      - "e2e/global.teardown.ts"
+      - "e2e/run-github-actions-persistent.mjs"
+      - "apps/web/supabase/config.toml"
+      - "apps/web/supabase/migrations/**"
+      - "apps/web/supabase/seed.sql"
+      - "playwright.config.ts"
+      - "package.json"
+      - "package-lock.json"
+
+env:
+  NODE_VERSION_FILE: apps/web/.nvmrc
+
+jobs:
+  persistent-e2e:
+    name: Persistent E2E on ephemeral Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: ${{ env.NODE_VERSION_FILE }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Verify Node runtime contract
+        run: node scripts/checks/check-node-version-contract.mjs
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Require Clerk Development credentials
+        env:
+          CMM_E2E_CLERK_DEV_BACKEND_TOKEN: ${{ secrets.CMM_E2E_CLERK_DEV_BACKEND_TOKEN }}
+          CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY: ${{ secrets.CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY }}
+        run: node e2e/run-github-actions-persistent.mjs require-clerk
+
+      - name: Audit canonical Supabase migration tree
+        run: npm run audit:supabase-migration-trees
+
+      - name: Verify canonical ephemeral Supabase inputs
+        run: |
+          test -d apps/web/supabase/migrations
+          test -f apps/web/supabase/seed.sql
+
+      - name: Start ephemeral Supabase
+        run: |
+          mkdir -p artifacts/ci
+          npx supabase start --workdir apps/web/supabase --yes > artifacts/ci/supabase-start.log 2>&1
+
+      - name: Apply canonical migrations and seed
+        run: |
+          npx supabase db reset --workdir apps/web/supabase --yes > artifacts/ci/supabase-reset.log 2>&1
+
+      - name: Verify persistent Playwright projects are listable
+        run: |
+          npx playwright test --list \
+            --project="action sharing" \
+            --project="authenticated campaign" \
+            --project="signalement campaign 2"
+
+      - name: Run persistent E2E
+        env:
+          CMM_E2E_CLERK_DEV_BACKEND_TOKEN: ${{ secrets.CMM_E2E_CLERK_DEV_BACKEND_TOKEN }}
+          CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY: ${{ secrets.CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY }}
+        run: npm run test:e2e:persistent:ci
+
+      - name: Upload persistent E2E report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: playwright-persistent-e2e-report
+          path: artifacts/playwright
+          if-no-files-found: ignore
+
+      - name: Stop ephemeral Supabase
+        if: always()
+        run: |
+          npx supabase stop --workdir apps/web/supabase --no-backup > artifacts/ci/supabase-stop.log 2>&1
+
+      - name: Remove ephemeral credentials and logs
+        if: always()
+        run: |
+          rm -f apps/web/.env.local
+          rm -f artifacts/ci/supabase-start.log artifacts/ci/supabase-reset.log artifacts/ci/supabase-stop.log

@@ -130,6 +130,17 @@ distant explicitement lié. `apps/web/supabase/config.toml` et l'arbre des
 migrations restent les sources canoniques de configuration et d'historique,
 sans constituer un support du runtime local.
 
+Les E2E nécessitant une base mutable, RLS, Storage ou des fixtures persistantes
+relèvent exclusivement de `.github/workflows/e2e-supabase.yml`. Cette lane
+utilise un runner GitHub hébergé et éphémère, les migrations et le seed
+canoniques, une instance Supabase locale au runner et des identifiants Clerk
+Development. Elle ne doit recevoir aucune URL, clé ou référence de projet
+Supabase de production ; elle échoue proprement si ses identifiants Clerk
+Development manquent. Les E2E sans persistence restent exécutables localement.
+Les sorties de commandes susceptibles de contenir des credentials locaux ne
+doivent pas être journalisées ; les fichiers d'environnement et l'état Clerk
+temporaire sont nettoyés après le run.
+
 ## Vercel
 
 ### Règles d'environnement
