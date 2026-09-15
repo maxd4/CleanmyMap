@@ -70,7 +70,7 @@ export function HomeHero({
                 Des territoires plus propres, ensemble
               </p>
 
-              <h1 className="mt-5 max-w-none text-[clamp(3.5rem,5.2vw,5.4rem)] font-black leading-[0.88] tracking-[-0.085em] text-white drop-shadow-[0_12px_26px_rgba(0,37,27,0.18)] lg:whitespace-nowrap">
+              <h1 className="cmm-home-hero-title mt-5 max-w-none font-black leading-[0.88] tracking-[-0.085em] text-white drop-shadow-[0_12px_26px_rgba(0,37,27,0.18)] lg:whitespace-nowrap">
                 Clean My Map
               </h1>
               <p className="mt-5 max-w-[37rem] text-[clamp(1.05rem,1.55vw,1.38rem)] leading-[1.42] text-white/90">
@@ -104,7 +104,7 @@ export function HomeHero({
 
         <section className="relative mt-4 overflow-visible sm:mt-6 lg:mt-7">
           <div className="relative z-10 flex flex-wrap items-center justify-start gap-3 px-1 sm:gap-4 sm:px-2">
-            <p className="flex items-center gap-4 text-[clamp(1.9rem,3.8vw,3.35rem)] font-black leading-none tracking-[-0.055em] text-white">
+            <p className="cmm-home-impact-title flex items-center gap-4 font-black leading-none tracking-[-0.055em] text-white">
               <span className="h-3 w-3 shrink-0 rounded-full bg-[#26e6a4] shadow-[0_0_15px_rgba(38,230,164,0.7)] sm:h-4 sm:w-4" />
               Impact terrain 2026
             </p>

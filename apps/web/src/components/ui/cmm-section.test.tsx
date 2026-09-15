@@ -50,6 +50,11 @@ describe("canonical page layout primitives", () => {
       "--cmm-section-gap",
       "--cmm-content-group-gap",
       "--cmm-ribbon-text-size",
+      "--cmm-page-header-title-size",
+      "--cmm-home-hero-title-size",
+      "--cmm-home-impact-title-size",
+      "--cmm-rubrique-card-padding",
+      "--cmm-rubrique-card-icon-padding",
     ]) {
       expect(tokensCss).toContain(token);
     }
@@ -76,9 +81,10 @@ describe("canonical page layout primitives", () => {
     expect(layoutCss).toContain("var(--cmm-page-max-width)");
     expect(layoutCss).toContain(".cmm-ribbon-text");
     expect(layoutCss).toContain("var(--cmm-ribbon-text-size)");
-    expect(baseCss).toMatch(/html\s*\{[\s\S]*zoom:\s*80%\s*;/);
-    expect(baseCss).toMatch(
-      /@supports not \(zoom:\s*1\)[\s\S]*font-size:\s*80%\s*;/,
-    );
+    expect(baseCss).not.toMatch(/html\s*\{[\s\S]*zoom\s*:/);
+    expect(baseCss).not.toMatch(/font-size\s*:\s*80%/);
+
+    const homepageSource = readFileSync(new URL("../../app/page.tsx", import.meta.url), "utf8");
+    expect(homepageSource).not.toContain("[zoom:");
   });
 });

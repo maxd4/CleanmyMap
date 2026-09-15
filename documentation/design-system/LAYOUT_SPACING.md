@@ -67,10 +67,10 @@ centrage que le shell canonique. Les gutters et espacements propres à la
 composition restent sur le parent visuel ; les mesures de lecture et les
 formulaires courts conservent leurs contraintes sémantiques.
 
-Le site applique une échelle d'affichage CSS globale de `80%` sur l'élément
-racine (`html`). Cette échelle est commune à toutes les routes et ne doit pas
-être détectée ou recalculée en JavaScript ; le layout répond uniquement à la
-largeur CSS disponible.
+Le site n'applique aucun zoom CSS global et aucun fallback `font-size: 80%` sur
+`html`. Le layout répond directement à la largeur CSS disponible ; le zoom du
+navigateur reste entièrement géré par le navigateur et n'est ni détecté ni
+recalculé en JavaScript.
 
 `CmmSectionGroup` est l'unique primitive du rythme entre sections. Les deux
 primitives n'acceptent pas de variante de largeur, de padding ou d'espacement :
@@ -92,6 +92,11 @@ Les tokens vivent dans `apps/web/src/styles/tokens.css`, importé par
 | `PageHeader` → premier contenu | `--cmm-page-header-content-gap` |
 | espacement entre sections | `--cmm-section-gap` |
 | espacement interne d'un groupe | `--cmm-content-group-gap` |
+| titre de page desktop | `--cmm-page-header-title-size` |
+| titre hero desktop | `--cmm-home-hero-title-size` |
+| titre impact desktop | `--cmm-home-impact-title-size` |
+| padding carte rubrique desktop | `--cmm-rubrique-card-padding` |
+| padding icône carte rubrique desktop | `--cmm-rubrique-card-icon-padding` |
 
 `--cmm-page-max-width` et `--cmm-grid-max-width` sont découplés. Le premier
 contrôle le shell des pages classiques (`112rem`), tandis que le second reste
@@ -117,6 +122,24 @@ Les espacements internes à une carte, un formulaire, une table ou un flux
 métier restent locaux lorsqu'ils décrivent la composition de ce composant et
 non le shell de la page. `cmm-content-group` peut être utilisé pour un groupe
 interne standard sans recréer une échelle locale.
+
+## Densité UI
+
+La densité visuelle est indépendante de la largeur structurelle. Le corps de
+texte reste à `16px`, le petit texte à `14px` minimum et les captions à `12px`.
+Les boutons et champs conservent leurs hauteurs tactiles canoniques.
+
+À partir de `1024px`, les tokens partagés réduisent uniquement les grands
+rythmes et surfaces (`--cmm-page-padding-block`,
+`--cmm-page-header-content-gap`, `--cmm-section-gap`,
+`--cmm-content-group-gap`, `--cmm-rubrique-card-padding` et
+`--cmm-rubrique-card-icon-padding`). Le titre de page utilise
+`--cmm-page-header-title-size` avec un plafond à `3.6rem`, afin que les très
+grands écrans ajoutent des colonnes et de l'espace horizontal sans agrandir
+proportionnellement la typographie.
+
+Cette densité ne doit jamais être reproduite avec `zoom`, `transform: scale`,
+un wrapper global réduit ou une détection du zoom navigateur.
 
 ## Grilles internes de composition
 

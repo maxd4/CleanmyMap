@@ -6,6 +6,8 @@ const webSourceRoot = path.join(repositoryRoot, "apps/web/src");
 const primitivePath = path.join(webSourceRoot, "components/ui/cmm-section.tsx");
 const tokensPath = path.join(webSourceRoot, "styles/tokens.css");
 const layoutPath = path.join(webSourceRoot, "styles/layout.css");
+const basePath = path.join(webSourceRoot, "styles/base.css");
+const homepagePath = path.join(webSourceRoot, "app/page.tsx");
 const globalRibbonPaths = [
   path.join(webSourceRoot, "components/navigation/app-navigation-ribbon-shell.tsx"),
   path.join(webSourceRoot, "components/accueil/accueil-footer.tsx"),
@@ -27,6 +29,15 @@ const structuralWidthAllowlist = new Map([
 const violations = [];
 const tokensSource = fs.readFileSync(tokensPath, "utf8");
 const layoutSource = fs.readFileSync(layoutPath, "utf8");
+const baseSource = fs.readFileSync(basePath, "utf8");
+const homepageSource = fs.readFileSync(homepagePath, "utf8");
+
+if (/html\s*\{[\s\S]*zoom\s*:|font-size\s*:\s*80%/.test(baseSource)) {
+  violations.push("styles/base.css: global CSS zoom and the 80% font-size fallback are forbidden");
+}
+if (/\[zoom\s*:/.test(homepageSource)) {
+  violations.push("app/page.tsx: page-level CSS zoom is forbidden; use density tokens instead");
+}
 
 if (!/--cmm-grid-max-width:\s*90rem\s*;/.test(tokensSource)) {
   violations.push("styles/tokens.css: canonical internal grid max width must remain 90rem");

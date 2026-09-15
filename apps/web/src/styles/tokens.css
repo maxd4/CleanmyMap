@@ -135,6 +135,9 @@
      ============================================================ */
   --cmm-page-max-width: 112rem;      /* 1792px - shell des pages classiques */
   --cmm-ribbon-text-size: var(--text-caption);      /* 12px - texte des rubans */
+  --cmm-page-header-title-size: clamp(2.5rem, 4vw, 3.6rem);
+  --cmm-home-hero-title-size: clamp(3.5rem, 5.2vw, 4.25rem);
+  --cmm-home-impact-title-size: clamp(1.9rem, 3.8vw, 2.7rem);
   --cmm-page-gutter-mobile: var(--cmm-grid-margin-mobile);
   --cmm-page-gutter-tablet: var(--cmm-grid-margin-tablet);
   --cmm-page-gutter-desktop: var(--cmm-grid-margin-desktop);
@@ -142,6 +145,8 @@
   --cmm-page-header-content-gap: var(--space-4);
   --cmm-section-gap: var(--space-4);
   --cmm-content-group-gap: var(--space-2);
+  --cmm-rubrique-card-padding: var(--space-4);
+  --cmm-rubrique-card-icon-padding: var(--space-2);
 
   /* ============================================================
      RADIUS TOKENS
@@ -278,6 +283,22 @@
   /* Actions */
   --text-link: #0369a1;
   --text-link-hover: #0284c7;
+}
+
+/*
+ * Densité desktop : les largeurs restent natives, tandis que les grands
+ * rythmes et surfaces restent proches de la densité historique sans réduire
+ * le corps de texte, les captions ou les zones tactiles.
+ */
+@media (min-width: 1024px) {
+  :root {
+    --cmm-page-padding-block: 1.5rem;
+    --cmm-page-header-content-gap: 1.5rem;
+    --cmm-section-gap: 1.5rem;
+    --cmm-content-group-gap: 0.75rem;
+    --cmm-rubrique-card-padding: 1.5rem;
+    --cmm-rubrique-card-icon-padding: 0.75rem;
+  }
 }
 
 html[data-theme="dark"] {

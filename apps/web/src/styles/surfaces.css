@@ -343,7 +343,7 @@
     color: var(--cmm-rubrique-text);
     box-shadow: var(--cmm-rubrique-shadow);
     backdrop-filter: var(--cmm-surface-blur);
-    padding: var(--space-4);
+    padding: var(--cmm-rubrique-card-padding);
     transition: var(--cmm-card-transition);
   }
 
@@ -401,7 +401,7 @@
     top: 0;
     right: 0;
     pointer-events: none;
-    padding: var(--space-4);
+    padding: var(--cmm-rubrique-card-padding);
     color: rgb(var(--cmm-rubrique-accent-rgb));
     opacity: 0.05;
   }
@@ -413,7 +413,7 @@
     border: 1px solid rgb(var(--cmm-rubrique-accent-rgb) / 0.3);
     border-radius: var(--radius-md);
     background: rgb(var(--cmm-rubrique-accent-rgb) / 0.18);
-    padding: var(--space-2);
+    padding: var(--cmm-rubrique-card-icon-padding);
     color: rgb(var(--cmm-rubrique-accent-rgb) / 0.9);
     box-shadow: var(--cmm-surface-shadow);
     transition: var(--cmm-card-transition);

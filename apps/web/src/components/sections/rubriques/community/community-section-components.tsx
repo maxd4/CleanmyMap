@@ -134,7 +134,7 @@ export const CommunityAgirView = memo(function CommunityAgirView({
 >) {
   return (
     <div className="grid gap-12 lg:grid-cols-12 items-start">
-      <div className="lg:col-span-8 space-y-12">
+      <div className="min-w-0 lg:col-span-8 space-y-12">
         <section className="space-y-6">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-2xl bg-pink-500/10 border border-pink-500/20">
@@ -156,7 +156,7 @@ export const CommunityAgirView = memo(function CommunityAgirView({
         </section>
       </div>
 
-      <aside className="lg:col-span-4 space-y-8">
+      <aside className="min-w-0 lg:col-span-4 space-y-8">
         <CommunityHighlightsCard
           loading={actionsLoading}
           error={highlightsLoadError}
@@ -230,7 +230,7 @@ export const CommunityMissionsView = memo(function CommunityMissionsView({
 >) {
   return (
     <div className="grid gap-12 lg:grid-cols-12 items-start">
-      <div className="lg:col-span-8 space-y-12">
+      <div className="min-w-0 lg:col-span-8 space-y-12">
         <section className="space-y-6">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-2xl bg-pink-500/10 border border-pink-500/20">
@@ -265,7 +265,7 @@ export const CommunityMissionsView = memo(function CommunityMissionsView({
         </div>
       </div>
 
-      <aside className="lg:col-span-4 space-y-8">
+      <aside className="min-w-0 lg:col-span-4 space-y-8">
         <CommunityCreateEventCard
           createForm={createForm}
           updateCreateForm={updateCreateForm}
@@ -288,7 +288,7 @@ export const CommunityMissionsView = memo(function CommunityMissionsView({
 export const CommunitySolutionsView = memo(function CommunitySolutionsView({ fr }: { fr: boolean }) {
   return (
     <div className="grid gap-12 lg:grid-cols-12 items-start">
-      <div className="lg:col-span-8 space-y-12">
+      <div className="min-w-0 lg:col-span-8 space-y-12">
         <section className="space-y-8">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-2xl bg-pink-500/10 border border-pink-500/20">
@@ -312,7 +312,7 @@ export const CommunitySolutionsView = memo(function CommunitySolutionsView({ fr 
         </section>
       </div>
 
-      <aside className="lg:col-span-4 space-y-8">
+      <aside className="min-w-0 lg:col-span-4 space-y-8">
         <RubriqueCard 
           themeColor="rose"
           watermarkIcon={Sparkles}
