@@ -505,6 +505,35 @@ cible, l'action, la conversation et le motif lorsqu'il est fourni. La
 correction append-only courante est
 `20260915000011_action_discussion_access_contract.sql`.
 
+### Audience des notifications de discussion
+
+L'accès à la discussion et l'audience de notification sont deux contrats
+distincts :
+
+```txt
+DISCUSSION_ACCESS != NOTIFICATION_AUDIENCE
+```
+
+L'accès reste déterminé uniquement par la discussion publiée et visible, une
+session authentifiée et l'absence d'exclusion active. Il ne dépend ni de
+`action_registrations`, ni de `action_participants`, ni de
+`action_conversation_members` ; un non-participant authentifié peut donc
+continuer à lire et écrire lorsque le contrat d'accès l'autorise.
+
+Le fan-out des messages d'action suit le cycle de vie :
+
+- avant l'action : créateur, comptes organisateurs et inscriptions futures
+  `pending` ou `confirmed` encore actives ;
+- après `post_action_complete` : créateur, comptes organisateurs et seules les
+  participations finales `action_participants` `confirmed`.
+
+Une inscription future, même `confirmed`, ne devient jamais une participation
+finale. Un ancien inscrit sans participation finale confirmée conserve l'accès
+à la discussion selon le contrat ci-dessus, mais ne reçoit plus automatiquement
+les notifications post-action. Les exclusions Chat restent appliquées au
+fan-out. `action_conversation_members` est seulement une projection technique
+recalculable ; une ligne périmée ne suffit pas à recevoir une notification.
+
 ## Lecture propriétaire Trash Spotter
 
 La capacité `GET /api/signalements/me` est une surface propriétaire dédiée au

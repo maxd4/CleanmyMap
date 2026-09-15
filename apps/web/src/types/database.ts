@@ -76,7 +76,12 @@ export type ActionConversationMemberRow = {
   conversation_id: string;
   user_id: string;
   granted_at: string;
-  access_source: "owner" | "action_participant";
+  access_source:
+    | "owner"
+    | "action_participant"
+    | "organizer"
+    | "future_registration"
+    | "final_participant";
 };
 
 export type ActionConversationExclusionRow = {
