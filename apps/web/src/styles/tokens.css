@@ -134,7 +134,6 @@
      PAGE LAYOUT & SPACING - contrat canonique des pages classiques
      ============================================================ */
   --cmm-page-max-width: 112rem;      /* 1792px - shell des pages classiques */
-  --cmm-ribbon-max-width: var(--cmm-page-max-width); /* chrome global partage la largeur du shell */
   --cmm-ribbon-text-size: var(--text-caption);      /* 12px - texte des rubans */
   --cmm-page-gutter-mobile: var(--cmm-grid-margin-mobile);
   --cmm-page-gutter-tablet: var(--cmm-grid-margin-tablet);

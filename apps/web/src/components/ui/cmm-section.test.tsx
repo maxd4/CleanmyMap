@@ -49,7 +49,6 @@ describe("canonical page layout primitives", () => {
       "--cmm-page-header-content-gap",
       "--cmm-section-gap",
       "--cmm-content-group-gap",
-      "--cmm-ribbon-max-width",
       "--cmm-ribbon-text-size",
     ]) {
       expect(tokensCss).toContain(token);
@@ -64,11 +63,15 @@ describe("canonical page layout primitives", () => {
     expect(tokensCss).not.toMatch(
       /--cmm-page-max-width:\s*var\(--cmm-grid-max-width\)\s*;/,
     );
-    expect(tokensCss).toMatch(
-      /--cmm-ribbon-max-width:\s*var\(--cmm-page-max-width\)\s*;/,
-    );
+    expect(tokensCss).not.toContain("--cmm-ribbon-max-width");
     expect(layoutCss).toContain(".cmm-ribbon-frame");
-    expect(layoutCss).toContain("var(--cmm-ribbon-max-width)");
+    expect(layoutCss).toMatch(
+      /\.cmm-ribbon-frame\s*\{[\s\S]*?width:\s*100%\s*;[\s\S]*?margin-inline:\s*0\s*;/,
+    );
+    const ribbonFrameBlock = layoutCss.match(/\.cmm-ribbon-frame\s*\{[^}]*\}/)?.[0] ?? "";
+    expect(ribbonFrameBlock).not.toMatch(
+      /(?:cmm-grid-max-width|cmm-page-max-width|--cmm-ribbon-max-width)/,
+    );
     expect(layoutCss).toContain(".cmm-page-width");
     expect(layoutCss).toContain("var(--cmm-page-max-width)");
     expect(layoutCss).toContain(".cmm-ribbon-text");
