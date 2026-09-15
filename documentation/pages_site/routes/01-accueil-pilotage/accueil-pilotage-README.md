@@ -2,19 +2,11 @@
 
 Entrées opérationnelles de profil, sommaire, parcours, pilotage et gouvernance.
 
-## Routes canoniques
+## Inventaire des pages
 
-| Route | Fiche | Accès runtime | Palette / famille | Source principale |
-|---|---|---|---|---|
-| `/dashboard` | [Dashboard](./dashboard/dashboard-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/dashboard/page.tsx` |
-| `/explorer` | [Sommaire](./explorer/explorer-README.md) | `public-visible` | exception jaune `explorer-sommaire` | `apps/web/src/app/(app)/explorer/page.tsx` |
-| `/parcours` | [Parcours](./parcours/parcours-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/parcours/page.tsx` |
-| `/parcours/[profile]` | [Parcours par profil](./parcours-profile/parcours-profile-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/parcours/[profile]/page.tsx` |
-| `/pilotage` | [Pilotage](./pilotage/pilotage-README.md) | `auth-disabled-gate` ; `clerk-context` ; accès métier `coordinateur`/`admin`/`max` | pilotage | `apps/web/src/app/(app)/pilotage/page.tsx` |
-| `/profil` | [Profil](./profil/profil-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/page.tsx` |
-| `/profil/[profile]` | [Profil détaillé](./profil-profile/profil-profile-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/[profile]/page.tsx` |
-| `/sponsor-portal` | [Portail décideur](./sponsor-portal/sponsor-portal-README.md) | `protected` | pilotage | `apps/web/src/app/(app)/sponsor-portal/page.tsx` |
-| `/sections/elus` | [Gouvernance](./gouvernance/gouvernance-README.md) | `auth-disabled-gate` | accueil-pilotage | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+L’inventaire route-first et les liens vers les fiches canoniques sont tenus dans
+[`INDEX.md`](../../INDEX.md). La résolution runtime des familles est définie
+par [`PAGE_FAMILIES.md`](../../PAGE_FAMILIES.md) et ses sources spécialisées.
 
 ## Snapshots
 

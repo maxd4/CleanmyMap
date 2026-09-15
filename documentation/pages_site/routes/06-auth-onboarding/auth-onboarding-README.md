@@ -8,13 +8,11 @@ Connexion, inscription et configuration initiale.
 - [Auth & Onboarding - Liste des propositions à traiter](./auth-onboarding-liste-propositions-a-traiter.md)
 - [Auth & Onboarding - Objectifs non pertinents](./auth-onboarding-objectifs-non-pertinents.md)
 
-## Routes canoniques
+## Inventaire des pages
 
-| Route | Fiche | Type de page | Statut | Scope | Capture disponible | Priorité | Fichier source principal |
-|---|---|---|---|---|:---:|---|---|
-| `/onboarding` | [Onboarding](./onboarding/onboarding-README.md) | onboarding | auth | à corriger | non | moyenne | apps/web/src/app/onboarding/page.tsx |
-| `/sign-in` | [Connexion](./sign-in/sign-in-README.md) | authentification | auth | à corriger | non | moyenne | apps/web/src/app/sign-in/[[...sign-in]]/page.tsx |
-| `/sign-up` | [Inscription](./sign-up/sign-up-README.md) | authentification | auth | à corriger | non | moyenne | apps/web/src/app/sign-up/[[...sign-up]]/page.tsx |
+L’inventaire exhaustif des routes canoniques, alias et fiches est tenu dans
+[`INDEX.md`](../../INDEX.md). Le contrat de famille runtime est décrit dans
+[`PAGE_FAMILIES.md`](../../PAGE_FAMILIES.md).
 
 ## Notes
 
