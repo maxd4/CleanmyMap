@@ -8,6 +8,10 @@ const migrationPath = path.join(
   root,
   "apps/web/supabase/migrations/20260915000014_action_registrations_and_final_participants.sql",
 );
+const hardeningMigrationPath = path.join(
+  root,
+  "apps/web/supabase/migrations/20260915000018_harden_action_registrations_privileges.sql",
+);
 const read = (relativePath) => readFileSync(path.join(root, relativePath), "utf8");
 
 test("action registrations migration separates planned and final presence", () => {
@@ -42,6 +46,22 @@ test("post-action initialization is account-backed, idempotent, and lifecycle-tr
   assert.match(sql, /after insert or update of action_phase on public\.actions/);
   assert.match(sql, /after insert or update of organizer_clerk_id on public\.action_organizers/);
   assert.doesNotMatch(sql, /associationName|organizerType|organizationName/);
+});
+
+test("action registrations stay server-only without a deprecated role policy", () => {
+  const sql = readFileSync(hardeningMigrationPath, "utf8");
+
+  assert.match(sql, /alter table public\.action_registrations enable row level security/i);
+  assert.match(sql, /revoke all on table public\.action_registrations from public;/i);
+  assert.match(sql, /revoke all on table public\.action_registrations from anon, authenticated;/i);
+  assert.match(
+    sql,
+    /grant select, insert, update, delete on table public\.action_registrations\s+to service_role;/i,
+  );
+  assert.match(sql, /drop policy if exists action_registrations_service_only/i);
+  assert.doesNotMatch(sql, /create policy action_registrations_service_only/i);
+  assert.doesNotMatch(sql, /auth\.role\(\)/i);
+  assert.doesNotMatch(sql, /grant [^;]+\b(?:anon|authenticated)\b/i);
 });
 
 test("future participation consumers use registrations while post-action claims retain participants", () => {
