@@ -7,7 +7,7 @@
 - `apps/web/src/app/(app)/actions/new/page.tsx`
 - **Type fonctionnel** : page d'action
 - **Famille / bloc fonctionnel** : Agir (bloc)
-- **Accès runtime** : `clerk-context` ; la route fournit le contexte Clerk sans hard gate de page. Le compte est requis pour créer, compléter ou envoyer une action.
+- **Accès runtime** : `clerk-context` ; l'entrée et la préparation des parcours sont accessibles au visiteur sans compte. La route fournit le contexte Clerk sans hard gate de page ; le compte est demandé lorsque l'identité est nécessaire pour créer, compléter ou envoyer une action.
 - **Objectif utilisateur principal** : Préparer une action à venir ou déclarer les résultats terrain d'une action réalisée.
 - **Action principale attendue** : Choisir directement entre la préparation avant action, avec inscriptions éventuelles, et la déclaration après action, avec les résultats terrain.
 - **Règle de séparation** : le parcours avant action prépare seulement l'organisation; les champs de récolte, d'impact et de validation scientifique restent réservés au formulaire complet après action.
@@ -48,6 +48,15 @@
   comme trace de l'ancien alias `/declaration`, qui redirige vers cette page ;
   il ne constitue pas une seconde page canonique.
 - **Priorité de correction** : faible
+
+
+## Accès progressif
+
+Le choix du parcours et la saisie préalable peuvent être consultés ou
+préparés sans compte. Lorsqu'une création, une complétion ou un envoi doit
+être persisté avec une identité, l'interface propose la connexion ou la
+création de compte avec reprise du parcours. L'accès à l'entrée ne constitue
+pas une permission de mutation et ne modifie pas les règles métier existantes.
 
 
 ## États à documenter

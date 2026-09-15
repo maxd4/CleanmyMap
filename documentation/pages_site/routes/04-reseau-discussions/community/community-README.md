@@ -16,11 +16,14 @@ Faire circuler l'information, faciliter les échanges entre acteurs et accéder 
 
 ## Accès
 
-Le registre `apps/web/src/lib/sections-registry/config.ts` déclare la
-présentation anonyme `visible` et la page dynamique rend directement la
-section dans ce cas. Les fonctions d'échange, de création ou de coordination
-qui nécessitent un compte sont contrôlées séparément par leurs contrats
-respectifs ; la visibilité de la page ne les ouvre pas automatiquement.
+La consultation de la page, de ses informations publiques et de l'onglet
+`Partenaires` est accessible sans compte : le registre
+`apps/web/src/lib/sections-registry/config.ts` déclare la présentation
+anonyme `visible` et la page dynamique rend directement la section dans ce
+cas. Les actions d'échange, de création ou de coordination qui nécessitent
+une identité sont contrôlées séparément par leurs contrats respectifs ; la
+visibilité publique ne les ouvre pas automatiquement et ne vaut pas
+participation métier, mutation, accès privé ou modération.
 
 ## Famille visuelle
 
