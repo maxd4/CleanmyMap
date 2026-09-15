@@ -152,7 +152,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
                 size={16}
               />
             </span>
-            <span className="hidden truncate text-sm font-bold lg:inline">
+            <span className="cmm-ribbon-text hidden truncate font-bold lg:inline">
               {getProfileLabel(identity.activeRole, locale)}
             </span>
             <ChevronDown
@@ -299,7 +299,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
             <button
               {...triggerProps}
               aria-label={locale === "fr" ? "Menu des badges" : "Badges menu"}
-              className="cmm-dropdown-trigger flex min-h-11 items-center gap-2 rounded-full border border-cyan-100/12 bg-white/8 px-3 cmm-text-caption font-bold text-white transition hover:border-cyan-200/32 hover:bg-white/14 hover:text-white"
+              className="cmm-ribbon-text cmm-dropdown-trigger flex min-h-11 items-center gap-2 rounded-full border border-cyan-100/12 bg-white/8 px-3 font-bold text-white transition hover:border-cyan-200/32 hover:bg-white/14 hover:text-white"
             >
             <BadgePictogram name="award" size={14} className="cmm-text-secondary" />
             <span className="hidden sm:inline">

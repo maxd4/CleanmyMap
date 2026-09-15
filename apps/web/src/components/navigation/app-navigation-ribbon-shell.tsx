@@ -118,7 +118,7 @@ function AppNavigationRibbonFrame({
         ref={ribbonRef}
         aria-label={locale === "fr" ? "Barre de navigation principale" : "Main navigation bar"}
         className={cn(
-          "w-full border-b border-white/8 bg-transparent backdrop-blur-2xl transition-[box-shadow,border-color,background-color] duration-300 supports-[backdrop-filter]:backdrop-blur-2xl",
+          "cmm-ribbon-frame cmm-ribbon-text border-b border-white/8 bg-transparent backdrop-blur-2xl transition-[box-shadow,border-color,background-color] duration-300 supports-[backdrop-filter]:backdrop-blur-2xl",
           isScrolled
             ? "shadow-[0_14px_40px_-18px_rgba(2,6,23,0.72)]"
             : "shadow-[0_8px_24px_-12px_rgba(2,6,23,0.56)]",
@@ -140,11 +140,11 @@ function AppNavigationRibbonFrame({
             >
               <BrandLogo
                 alt=""
-                className="h-8 w-8 shrink-0 object-contain"
+                className="h-9 w-9 shrink-0 object-contain"
                 priority
-                sizes="2rem"
+                sizes="2.25rem"
               />
-              <span className="hidden xl:inline cmm-text-caption font-black uppercase tracking-[0.18em]">
+              <span className="cmm-ribbon-text hidden xl:inline font-black uppercase tracking-[0.18em]">
                 Accueil
               </span>
             </Link>

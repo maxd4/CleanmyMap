@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { Mail } from "lucide-react";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 import { requestCookieConsentPreferences } from "@/lib/storage/ui-state-storage";
-import { shouldUseFullFooter } from "@/lib/ui/footer-variant";
 
 function InstagramMark({
   className,
@@ -35,95 +33,29 @@ function InstagramMark({
   );
 }
 
-export type HomeFooterProps = {
-  variant?: "full" | "compact";
-  initialVariant?: "full" | "compact";
-};
-
 const FOOTER_RIBBON_CLASS =
-  "cmm-ribbon-surface relative block w-full max-w-full min-w-0 overflow-hidden";
+  "cmm-ribbon-frame cmm-ribbon-surface relative block w-full min-w-0 overflow-hidden";
 
 const FOOTER_CONTENT_CLASS =
-  "relative z-10 mx-auto box-border w-full max-w-full min-w-0";
+  "relative z-10 box-border w-full min-w-0";
 
-export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
-  const pathname = usePathname() ?? "/";
-  const resolvedVariant = variant ?? (shouldUseFullFooter(pathname) ? "full" : initialVariant ?? "compact");
-
-  const isCompact = resolvedVariant === "compact";
+export function HomeFooter() {
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
-
-  if (isCompact) {
-    return (
-      <footer className={FOOTER_RIBBON_CLASS}>
-
-        <div className={`${FOOTER_CONTENT_CLASS} flex flex-col items-center justify-between gap-3 px-1 py-4 text-center sm:px-2 md:flex-row md:gap-5 md:py-5 md:text-left lg:px-4`}>
-          <div className="flex min-w-0 max-w-full items-center gap-3">
-            <BrandLogo
-              variant="darkSurface"
-              alt="CleanMyMap"
-              className="h-6 w-auto max-w-[7rem] shrink object-contain object-left sm:h-7 sm:max-w-[9rem]"
-              sizes="9rem"
-            />
-            <div className="flex min-w-0 flex-1 flex-col items-center gap-1 md:items-start">
-              <p className="break-words text-[9px] font-bold uppercase tracking-[0.14em] text-white sm:text-[10px] sm:tracking-[0.18em]">
-                Cultivons l&apos;entraide
-              </p>
-              <p className="break-words text-[9px] font-semibold uppercase tracking-[0.12em] text-white sm:text-[10px] sm:tracking-[0.16em]">
-                © 2026 CleanMyMap
-              </p>
-            </div>
-          </div>
-
-          <nav
-            aria-label="Liens légaux"
-            className="flex min-w-0 max-w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[9px] font-semibold uppercase tracking-[0.1em] text-white sm:text-[10px] sm:tracking-[0.15em] md:justify-end"
-          >
-            <Link href="/mentions-legales" className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50">
-              Mentions légales
-            </Link>
-            <Link
-              href="/conditions-generales-utilisation"
-              className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
-            >
-              CGU
-            </Link>
-            <Link
-              href="/politique-confidentialite"
-              className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
-            >
-              Confidentialité
-            </Link>
-            <Link href="/politique-cookies" className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50">
-              Politique cookies
-            </Link>
-            <button
-              type="button"
-              onClick={requestCookieConsentPreferences}
-              className="text-[10px] font-semibold uppercase tracking-[0.15em] text-white transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
-            >
-              Gérer mes cookies
-            </button>
-          </nav>
-        </div>
-      </footer>
-    );
-  }
 
   return (
     <footer className={FOOTER_RIBBON_CLASS}>
-      <div className={`${FOOTER_CONTENT_CLASS} px-1 py-6 sm:px-2 sm:py-7 lg:px-4 lg:py-8`}>
+      <div className={`${FOOTER_CONTENT_CLASS} cmm-ribbon-text px-3 py-6 sm:px-5 sm:py-7 lg:px-7 lg:py-8`}>
         <div className="flex min-w-0 max-w-full flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,auto)] lg:items-center lg:gap-6">
           <div className="flex min-w-0 items-center gap-3 text-center sm:gap-2.5 sm:text-left">
             <BrandLogo
               variant="darkSurface"
               alt="CleanMyMap"
-              className="h-7 w-auto max-w-[9rem] shrink-0 object-contain object-left"
-              sizes="9rem"
+              className="h-10 w-auto max-w-[12rem] shrink-0 object-contain object-left"
+              sizes="12rem"
             />
             <Link
               href="/contact"
-              className="group inline-flex min-w-0 shrink items-center gap-2 text-[9px] font-bold uppercase tracking-[0.16em] text-white transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50 sm:text-[10px] sm:tracking-[0.22em]"
+              className="cmm-ribbon-text group inline-flex min-w-0 shrink items-center gap-2 font-bold uppercase tracking-[0.16em] text-white transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               <span className="h-px w-4 bg-slate-400/50" />
               <span className="break-words text-white transition group-hover:text-white group-hover:underline">
@@ -140,7 +72,7 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80 sm:h-8 sm:w-8">
                 <Mail className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
               </div>
-              <span className="min-w-0 break-words text-xs font-bold text-white transition-colors group-hover:text-white sm:text-sm">
+              <span className="cmm-ribbon-text min-w-0 break-words font-bold text-white transition-colors group-hover:text-white">
                 {contactEmail}
               </span>
             </a>
@@ -153,7 +85,7 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80 sm:h-8 sm:w-8">
                 <InstagramMark size={16} className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
               </div>
-              <span className="min-w-0 break-words text-xs font-bold text-white transition-colors group-hover:text-white sm:text-sm">
+              <span className="cmm-ribbon-text min-w-0 break-words font-bold text-white transition-colors group-hover:text-white">
                 @cleanmymap.fr
               </span>
             </a>
@@ -161,7 +93,7 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
 
           <nav
             aria-label="Liens légaux"
-            className="flex min-w-0 max-w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-slate-700/60 pt-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-white sm:pt-0 sm:text-[10px] sm:tracking-[0.15em] lg:justify-end lg:border-t-0"
+            className="cmm-ribbon-text flex min-w-0 max-w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-slate-700/60 pt-1 font-semibold uppercase tracking-[0.1em] text-white sm:pt-0 lg:justify-end lg:border-t-0"
           >
             <Link href="/mentions-legales" className="break-words transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50">
               Mentions légales
@@ -187,11 +119,11 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
             <button
               type="button"
               onClick={requestCookieConsentPreferences}
-              className="break-words text-[9px] font-semibold uppercase tracking-[0.1em] text-white transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50 sm:text-[10px] sm:tracking-[0.15em]"
+              className="cmm-ribbon-text break-words font-semibold uppercase tracking-[0.1em] text-white transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               Gérer mes cookies
             </button>
-                          <div className="mt-2 text-center text-xs text-white">
+                          <div className="cmm-ribbon-text mt-2 text-center text-white">
                   <p className="font-bold">Cultivons l&apos;entraide</p>
                   <p>© 2026 CleanMyMap</p>
                 </div>
