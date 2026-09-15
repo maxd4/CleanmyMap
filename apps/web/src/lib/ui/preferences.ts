@@ -19,16 +19,16 @@ export const DISPLAY_MODE_DESCRIPTIONS: Record<
   { fr: string; en: string }
 > = {
   exhaustif: {
-    fr: "Expérience CleanMyMap complète.",
-    en: "Complete CleanMyMap experience.",
+    fr: "Présentation enrichie, avec les mêmes fonctionnalités et données.",
+    en: "An enhanced presentation with the same features and data.",
   },
   minimaliste: {
-    fr: "Allez droit au but sans contenu superflu",
-    en: "Go straight to the point without unnecessary content.",
+    fr: "Présentation épurée, avec les mêmes fonctionnalités et données.",
+    en: "A streamlined presentation with the same features and data.",
   },
   sobre: {
-    fr: "Adaptez le rendu visuel pour réduire la fatigue visuelle et cognitive sans modification du contenu.",
-    en: "Adapt the visual presentation to reduce visual and cognitive fatigue without changing the content.",
+    fr: "Présentation calme et lisible, avec les mêmes fonctionnalités et données.",
+    en: "A calm, readable presentation with the same features and data.",
   },
 };
 

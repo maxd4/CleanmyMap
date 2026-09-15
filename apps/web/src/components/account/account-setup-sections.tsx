@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { GreaterParisSelect, type TerritoryLocationSelection } from "@/lib/geo/greater-paris-select";
-import { getProfileLabel, type AppProfile } from "@/lib/profiles";
+import { getProfileLabel, getProfileSubtitle, type AppProfile } from "@/lib/profiles";
 import type { Locale } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
 
@@ -88,6 +88,9 @@ export function AccountSetupProfileGrid({
               <span className="text-sm font-bold leading-tight sm:text-base">
                 {getProfileLabel(profile, locale)}
               </span>
+              <span className="text-xs leading-4 opacity-80">
+                {getProfileSubtitle(profile, locale)}
+              </span>
             </button>
           );
         })}
@@ -118,8 +121,8 @@ const LOCATION_CHOICES: Array<{
   label: string;
   icon: LucideIcon;
 }> = [
-  { value: "residence", label: "Renseigner mon domicile", icon: House },
-  { value: "work", label: "Renseigner mon lieu de travail", icon: Briefcase },
+  { value: "residence", label: "Ville de résidence", icon: House },
+  { value: "work", label: "Ville de travail", icon: Briefcase },
 ];
 
 export function AccountSetupLocationFields({
@@ -198,7 +201,7 @@ export function AccountSetupLocationFields({
               setWork(null);
             }}
             className="sr-only"
-            aria-label="Aucune de ces informations"
+            aria-label="Ne pas renseigner de lieu"
           />
           {noneSelected ? (
             <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500 text-white">
@@ -206,15 +209,15 @@ export function AccountSetupLocationFields({
             </span>
           ) : null}
           <span className="text-3xl leading-none" aria-hidden="true">∅</span>
-          <span className="text-sm font-bold leading-5">Aucune de ces informations</span>
+          <span className="text-sm font-bold leading-5">Ne pas renseigner de lieu</span>
         </label>
       </div>
 
       {residenceActive ? (
         <div className="space-y-2">
-          <h3 className="text-lg font-bold text-white">Domicile</h3>
+          <h3 className="text-lg font-bold text-white">Ville de résidence</h3>
           <label className="block space-y-2">
-            <span className="text-sm font-semibold text-white">Ville / arrondissement</span>
+            <span className="text-sm font-semibold text-white">Ville ou arrondissement</span>
             <GreaterParisSelect
               value={residence}
               onChange={setResidence}
@@ -227,9 +230,9 @@ export function AccountSetupLocationFields({
       ) : null}
       {workActive ? (
         <div className={cn("space-y-2", residenceActive && "border-t border-white/10 pt-4")}>
-          <h3 className="text-lg font-bold text-white">Lieu de travail</h3>
+          <h3 className="text-lg font-bold text-white">Ville de travail</h3>
           <label className="block space-y-2">
-            <span className="text-sm font-semibold text-white">Ville / arrondissement</span>
+            <span className="text-sm font-semibold text-white">Ville ou arrondissement</span>
             <GreaterParisSelect
               value={work}
               onChange={setWork}

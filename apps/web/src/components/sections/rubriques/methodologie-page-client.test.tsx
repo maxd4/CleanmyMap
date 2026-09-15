@@ -156,9 +156,9 @@ describe("ActionMapMethodologySection", () => {
     expect(markup).toContain('id="methodologie-itineraire"');
     expect(markup).toContain('id="modes-affichage"');
     expect(markup).toContain("Modes d’affichage");
-    expect(markup).toContain("Expérience CleanMyMap complète.");
-    expect(markup).toContain("Allez droit au but sans contenu superflu");
-    expect(markup).toContain("Adaptez le rendu visuel pour réduire la fatigue visuelle et cognitive sans modification du contenu.");
+    expect(markup).toContain("Présentation enrichie, avec les mêmes fonctionnalités et données.");
+    expect(markup).toContain("Présentation épurée, avec les mêmes fonctionnalités et données.");
+    expect(markup).toContain("Présentation calme et lisible, avec les mêmes fonctionnalités et données.");
     expect(markup).toContain("Le mode change la présentation, jamais les fonctionnalités, permissions ou données.");
     expect(markup).toContain("Plans et quotas");
     expect(markup).toContain("Empreinte technique des services suivis");
