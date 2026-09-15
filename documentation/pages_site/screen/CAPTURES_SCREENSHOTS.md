@@ -1,5 +1,14 @@
 # Captures d'écran automatisées
 
+Les captures et screenshots sont des `SNAPSHOT` : ils décrivent une
+photographie datée d'un rendu et ne sont jamais une source supérieure au
+runtime ou à une fiche fonctionnelle `CURRENT`.
+
+Pour toute future capture, documenter lorsque disponible la route ou page, le
+viewport `desktop` ou `mobile`, la date et éventuellement le SHA ou la version
+de l'application. Une évolution fonctionnelle ne déclenche pas
+automatiquement une nouvelle capture.
+
 ## Organisation des captures
 
 Le registre canonique des routes vit dans `documentation/pages_site/generate-canonical-pages.mjs` et l'inventaire exhaustif reste centralisé dans `documentation/pages_site/INDEX.md`. Le nouveau pipeline d'écran alimente `artifacts/screenshots/pages-site/` en PNG desktop full page. Les captures route-first historiques dans `photo/` et le miroir legacy `documentation/liberte-UX-UI/` restent disponibles sans être réécrits.

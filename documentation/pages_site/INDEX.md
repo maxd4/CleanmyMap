@@ -24,6 +24,10 @@ npm run check:pages-site-drift
 - la famille visuelle doit correspondre à `resolvePageFamily` ;
 - une page ne peut pas être déclarée terminée si son contrat fonctionnel documenté est faux.
 
+`INDEX.md` est l'inventaire maître : le contrôle de dérive vérifie la cohérence
+structurelle entre les routes runtime, l'index et les fiches. Il ne valide pas à
+lui seul la conformité sémantique du contenu des fiches.
+
 ## Taxonomie d'accès
 
 | Valeur | Sens |

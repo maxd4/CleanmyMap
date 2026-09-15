@@ -184,6 +184,16 @@ Contrôle strict :
 npm run check:pages-site-drift
 ```
 
+Le contrôle de drift est structurel :
+
+```text
+PASS = cohérence route ↔ INDEX ↔ fiche
+```
+
+Il ne constitue pas une preuve que le contenu d'une fiche est
+sémantiquement conforme au runtime. Cette conformité relève de la mise à jour
+de la fiche lors d'un changement fonctionnel ou d'un audit dédié.
+
 ## Maintenance
 
 Après une modification de route, de famille ou d'exception :
