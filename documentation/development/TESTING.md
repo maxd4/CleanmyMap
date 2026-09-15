@@ -315,3 +315,32 @@ Une validation est réussie seulement si :
 - aucune erreur critique n'est masquée ;
 - les contrôles non exécutés sont explicitement signalés ;
 - le niveau de validation correspond au niveau de risque du changement.
+
+## Protocole manuel des formulaires Actions
+
+Avant de tester les deux formulaires sur le terrain :
+
+1. Verrouiller le scénario de test : une action terrain réelle ou quasi réelle,
+   un flux d'action à créer ou modifier, un flux `Rejoindre une action` à
+   ouvrir, rejoindre ou modérer, et un objectif de validation par flux.
+2. Préparer les comptes : un admin, un créateur d'action, deux à trois
+   bénévoles et un compte déjà rejoint pour tester les états déjà inscrits.
+   Vérifier que les pseudos et profils sont propres, car ils apparaissent dans
+   les journaux et files d'attente.
+3. Vérifier les chemins critiques : création et édition admin d'une action,
+   journal des modifications, publication/validation, ouverture/fermeture du
+   flux de groupe, file d'attente, acceptation/refus, accès admin direct et
+   reprise mobile.
+4. Faire un test à blanc avec des données factices. Noter ce qui casse, ce qui
+   est trop long et ce qui n'est pas compréhensible ; corriger les textes
+   ambigus avant d'impliquer les bénévoles.
+5. Préparer un protocole terrain avec cinq tâches courtes, un critère de
+   réussite par tâche et un canal de retour rapide. Définir qui valide quoi et
+   à quel moment.
+6. Sécuriser le suivi : journal des erreurs et retours, possibilité de revenir
+   en arrière après une modération ou une modification, et vérification du
+   pseudo de l'admin dans les journaux.
+
+À confirmer manuellement : affichage du journal sur la fiche action,
+lisibilité mobile, états vide/chargement/erreur et droits d'accès du créateur,
+de l'admin et du bénévole.

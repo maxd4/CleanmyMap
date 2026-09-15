@@ -13,14 +13,8 @@ Contacts et pages institutionnelles / juridiques, sobres et cohérentes entre el
 | `/politique-cookies` | [Politique cookies](./politique-cookies/politique-cookies-README.md) | légale | légal | LEGAL-01 clos | non | moyenne | apps/web/src/app/politique-cookies/page.tsx |
 | `/signaler-contenu-illicite` | [Notification de contenu illicite](./signaler-contenu-illicite/signaler-contenu-illicite-README.md) | légale | légal | DSA-01/02 — notification électronique et décision tracée | non | moyenne | apps/web/src/app/signaler-contenu-illicite/page.tsx |
 
-## Redirections et alias
-
-| Route | Fiche | Type de page | Statut | Détail |
-|---|---|---|---|---|
-| `/conditions-utilisation` | [Conditions d'utilisation - Alias technique](./conditions-utilisation/conditions-utilisation-README.md) | redirection | hors scope | Alias technique vers `/conditions-generales-utilisation` |
-| `/en` | [English entry - Alias technique](./en/en-README.md) | redirection | hors scope | Alias technique vers `/explorer` |
-
 ## Notes
 
 - Les fiches de cette famille suivent le format d'audit standard du dossier `pages_site`.
-- Les captures officielles, quand elles existent, vivent dans `photo/` de chaque route canonique et sont en `WebP`.
+- Les snapshots sont colocalisés dans le dossier de chaque page canonique,
+  sous `screenshots/desktop/` ou `screenshots/mobile/`.

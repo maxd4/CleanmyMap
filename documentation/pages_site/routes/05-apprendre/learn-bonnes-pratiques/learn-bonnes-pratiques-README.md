@@ -40,6 +40,11 @@
 - **Facteurs d’impact** : `3,74 gCO₂e` par spam non lu, `0,24 gCO₂e` pour `1 Go` stocké pendant un an et `170 gCO₂e/km` pour une voiture thermique moyenne essence sont repris des pages Impact CO₂ citant la Base Empreinte ADEME. Les équivalences sont dérivées par calcul : `1 000 futurs spams évités ≈ 22 km` et `100 Go stockés pendant un an ≈ 0,14 km`.
 - **Limite d’interprétation** : supprimer un mail déjà reçu n’annule pas les émissions de sa transmission ; le levier prioritaire est d’éviter les futurs envois. L’équivalence de 22 km ne doit jamais être présentée comme une économie obtenue en supprimant 1 000 spams déjà reçus.
 - **Navigation** : les routes existantes sont conservées, sans changement de destination.
+- **Surfaces intégrées** : le parcours commun `LearnBlockJourneySection` et
+  les ressources différées de `learn-ressources-client.tsx` sont des blocs
+  consommés par les pages Apprendre ; le parcours commun est rendu sur
+  `bonnes-pratiques`, `comprendre` et `sentrainer`, tandis que les ressources
+  sont intégrées aux panneaux de lecture. Ils ne créent pas de route autonome.
 - **Priorité de correction** : moyenne
 
 ## Références legacy

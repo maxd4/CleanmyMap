@@ -6,7 +6,8 @@ Parcours de déclaration, préparation terrain, orientation, signalement et coor
 
 - **Nom canonique** : Agir
 - **Dossier canonique** : `02-agir`
-- **Dossier photo centralisé** : `photo/`
+- **Snapshots** : colocalisés dans le dossier `screenshots/desktop/` ou
+  `screenshots/mobile/` de chaque page canonique.
 
 ## Routes canoniques
 
@@ -14,7 +15,7 @@ Parcours de déclaration, préparation terrain, orientation, signalement et coor
 |---|---|---|---|---|
 | `/actions/history` | [Historique des actions](./actions-history/actions-history-README.md) | `protected` | agir | `apps/web/src/app/(app)/actions/history/page.tsx` |
 | `/actions/new` | [Déclarer une action](./actions-new/actions-new-README.md) | `clerk-context` ; compte requis pour créer/envoyer | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
-| `/sections/rejoindre-une-action` | [Rejoindre une action](./formulaire-de-groupe/formulaire-de-groupe-README.md) | `public-visible` ; compte requis pour rejoindre | agir, exception `join-action` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/rejoindre-une-action` | [Rejoindre une action](./rejoindre-une-action/rejoindre-une-action-README.md) | `public-visible` ; compte requis pour rejoindre | agir, exception `join-action` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/missions/[id]` | [Missions](./missions/missions-README.md) | dynamique | agir | `apps/web/src/app/(app)/missions/[id]/page.tsx` |
 | `/sections/route` | [Où agir](./ou-agir/ou-agir-README.md) | `public-visible` | agir | `apps/web/src/app/(app)/sections/route/page.tsx` |
 | `/sections/weather` | [Organiser une action](./weather/weather-README.md) | `public-visible` | agir, exception `weather-operations` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
@@ -24,7 +25,6 @@ Parcours de déclaration, préparation terrain, orientation, signalement et coor
 
 | Route | Cible | Statut |
 |---|---|---|
-| `/declaration` | `/actions/new` | alias technique |
 | `/sections/guide` | `/sections/weather` | redirection dans la route dynamique |
 | `/sections/rejoindre-un-formulaire` | `/sections/rejoindre-une-action` | redirection de compatibilité |
 
@@ -39,11 +39,10 @@ Les sections suivantes existent dans le runtime mais ne sont pas rattachées ici
 
 Leur présence dans la catégorie runtime `terrain` ne suffit pas à trancher leur famille documentaire définitive, car les contenus de tri et compost existent aussi dans le bloc Apprendre.
 
-## Captures
+## Snapshots
 
-Un seul dossier photo centralisé pour le bloc.
-
-Aucun dossier photo par page enfant.
+Les snapshots sont colocalisés dans le dossier de la page concernée, sous
+`screenshots/desktop/` ou `screenshots/mobile/`.
 
 ## Maintenance
 

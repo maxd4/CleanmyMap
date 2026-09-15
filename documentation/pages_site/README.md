@@ -190,19 +190,21 @@ Pour toute future capture, documenter lorsque l'information est disponible :
 - SHA ou version de l'application, si disponible.
 
 Une évolution fonctionnelle ne déclenche pas automatiquement une nouvelle
-capture. Les captures existantes sont conservées ; ce lot n'en déplace,
-renomme, remplace ou régénère aucune.
+capture. Les snapshots existants sont conservés sans recompression ni
+renommage cosmétique ; lorsqu'ils sont rattachés à une page, ils vivent dans
+son dossier `screenshots/desktop/` ou `screenshots/mobile/`.
 
 Les règles opérationnelles actuelles privilégient :
 
 - WebP ;
-- centralisation par bloc ou famille lorsque le travail concerné le prévoit ;
+- colocation avec la page canonique concernée ;
 - nom explicite incluant page ou route ;
 - desktop par défaut ;
 - mobile uniquement lorsque demandé.
 
-Les captures déjà présentes sous `routes/` restent protégées : aucun nettoyage,
-remplacement, régénération ou déplacement automatique.
+Les snapshots restent protégés : aucun nettoyage, remplacement, régénération ou
+déplacement automatique n'est autorisé hors d'une migration explicitement
+demandée.
 
 ## Générateur et contrôle de drift
 

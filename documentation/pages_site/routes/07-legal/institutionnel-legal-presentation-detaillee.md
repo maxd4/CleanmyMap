@@ -6,7 +6,7 @@
 - **Dossier canonique** : `07-legal`
 - **Rôle** : regrouper les pages juridiques, institutionnelles et de conformité.
 - **Sous-rubriques** : CGU, conditions d'utilisation, contact, English entry, mentions légales, politique de confidentialité, politique cookies.
-- **Dossier photo centralisé** : `photo/`
+- **Snapshots** : colocalisés dans le dossier de chaque page canonique.
 
 ## Points d'orientation restants
 

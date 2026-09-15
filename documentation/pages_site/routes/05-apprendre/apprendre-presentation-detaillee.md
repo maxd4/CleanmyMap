@@ -9,9 +9,10 @@
 
 - Bonnes pratiques
 - Ordres de grandeur
-- Point de départ
-- Ressources
 - S'entraîner
+
+Les repères du point de départ et les ressources sont des surfaces intégrées
+dans les pages canoniques ; ils ne constituent pas des pages autonomes.
 
 ## Points à compléter
 

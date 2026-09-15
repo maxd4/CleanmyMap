@@ -6,7 +6,7 @@
 - **Dossier canonique** : `06-auth-onboarding`
 - **Rôle** : gérer l'entrée dans le compte et l'initialisation du profil.
 - **Sous-rubriques** : onboarding, connexion, inscription, redirection localisation.
-- **Dossier photo centralisé** : `photo/`
+- **Snapshots** : colocalisés dans le dossier de chaque page canonique.
 
 ## Points à compléter
 

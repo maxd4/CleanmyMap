@@ -29,8 +29,7 @@ Un utilisateur non connecté ou d'un autre rôle reçoit `notFound()`.
 
 `/admin/godmode` reste réservé au profil `max`.
 
-## Captures
+## Snapshots
 
-Un seul dossier photo centralisé au niveau de la famille.
-
-Ne pas créer de dossier photo par route enfant.
+Les snapshots sont colocalisés dans le dossier de chaque page canonique, sous
+`screenshots/desktop/` ou `screenshots/mobile/`.

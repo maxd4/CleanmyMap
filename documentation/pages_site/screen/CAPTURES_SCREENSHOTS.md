@@ -11,17 +11,34 @@ automatiquement une nouvelle capture.
 
 ## Organisation des captures
 
-Le registre canonique des routes vit dans `documentation/pages_site/generate-canonical-pages.mjs` et l'inventaire exhaustif reste centralisé dans `documentation/pages_site/INDEX.md`. Le nouveau pipeline d'écran alimente `artifacts/screenshots/pages-site/` en PNG desktop full page. Les captures route-first historiques dans `photo/` et le miroir legacy `documentation/liberte-UX-UI/` restent disponibles sans être réécrits.
+Le registre canonique des routes et l'inventaire exhaustif sont maintenus dans
+`documentation/pages_site/INDEX.md`. Les snapshots route-first conservés avec
+une page vivent sous
+`documentation/pages_site/routes/<family>/<page>/screenshots/desktop/` ou
+`screenshots/mobile/`. Le pipeline d'écran produit séparément ses sorties dans
+`artifacts/screenshots/pages-site/` ; ces sorties ne remplacent pas les
+snapshots documentaires colocalisés. Le miroir legacy
+`documentation/liberte-UX-UI/` reste inchangé.
+
+Les snapshots d'un composant partagé qui n'est pas une page, comme les menus
+de navigation par bloc, vivent dans la documentation UI spécialisée, par
+exemple `documentation/design-system/navigation-dropdowns-snapshots/`.
 
 ### Règle impérative
 
-- Les captures écran canoniques du nouveau pipeline doivent être enregistrées dans `artifacts/screenshots/pages-site/<family>/<slug>/desktop.png`.
-- Le format de sortie est PNG uniquement.
-- Les captures route-first historiques en `photo/` restent documentées pour compatibilité tant que le pipeline n'est pas totalement migré.
+- Les sorties générées du nouveau pipeline doivent être enregistrées dans
+  `artifacts/screenshots/pages-site/<family>/<slug>/desktop.png`.
+- Le format de sortie du pipeline est PNG uniquement.
+- Les snapshots documentaires manuels restent dans le dossier `screenshots/`
+  de leur page canonique, avec leur format et leur nom existants.
+- Les anciens dossiers `photo/` ont été migrés vers les pages propriétaires ;
+  aucune nouvelle capture ne doit y être déposée.
 - Les captures legacy générées sont enregistrées dans `artifacts/screenshots/legacy/...`; les fichiers historiques de `documentation/liberte-UX-UI/...` restent inchangés.
-- Ne pas déposer de captures écran en dehors de `artifacts/screenshots/`.
+- Ne pas déposer de sortie générée en dehors de `artifacts/screenshots/` et ne
+  pas déposer de snapshot de page hors de son dossier canonique.
 - Les fichiers de contexte, alias temporaires ou exports intermédiaires doivent rester séparés des captures officielles.
-- Les fiches route continuent de documenter la capture attendue, même lorsque le dossier `screen/` ou `photo/` est encore vide.
+- Les fiches route continuent de documenter la capture attendue, même lorsque
+  le dossier `screenshots/` de la page est encore vide.
 
 ### Consigne temporaire
 
@@ -41,9 +58,11 @@ documentation/pages_site/
 │   └── ...
 └── routes/
     ├── 00-homepage/
-    │   └── root/
-    │       ├── README.md
-    │       └── photo/
+    │   └── homepage/
+    │       ├── homepage-README.md
+    │       └── screenshots/
+    │           ├── desktop/
+    │           └── mobile/
     └── ...
 
 artifacts/screenshots/
@@ -78,7 +97,8 @@ BASE_URL=https://mon-site.vercel.app npm run screenshots:screen
 Pour les pages complètes, le script effectue un scroll automatique pour charger les sections lazy-loaded avant la capture.
 
 ### Captures PNG automatiques
-Les pages principales génèrent automatiquement des captures PNG dans leur dossier `screen/` :
+Les pages principales génèrent automatiquement des captures PNG dans
+`artifacts/screenshots/pages-site/` :
 - **Redimensionnement et compression** : Sharp ré-encode le PNG en sortie finale
 - **Optimisation** : le rendu est généré en full page desktop pour réduire les captures manuelles
 

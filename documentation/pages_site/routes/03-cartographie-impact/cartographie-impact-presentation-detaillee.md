@@ -6,7 +6,7 @@
 - **Dossier canonique** : `03-cartographie-impact`
 - **Rôle** : lire, comparer et partager les données de carte et d'impact.
 - **Sous-rubriques** : carte des actions, méthodologie, profil impact, rapports, progression.
-- **Dossier photo centralisé** : `photo/`
+- **Snapshots** : colocalisés dans le dossier de chaque page canonique.
 
 ## Points à compléter
 

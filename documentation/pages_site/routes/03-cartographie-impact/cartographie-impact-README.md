@@ -6,7 +6,7 @@ Vue cartographique, méthodologie, progression et rapports d'impact.
 
 - **Nom canonique** : Cartographie & Impact
 - **Dossier canonique** : `03-cartographie-impact`
-- **Dossier photo centralisé** : `photo/`
+- **Snapshots** : colocalisés dans le dossier de chaque page canonique.
 
 ## Routes canoniques
 
@@ -43,6 +43,7 @@ Ne pas lui attribuer une famille documentaire définitive sans décision produit
 - rapports et gamification : variante red ;
 - toute exception doit rester nommée et testée.
 
-## Captures
+## Snapshots
 
-Un seul dossier photo centralisé pour le bloc.
+Les snapshots vivent dans `screenshots/desktop/` ou `screenshots/mobile/` de la
+page canonique concernée.
