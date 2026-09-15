@@ -49,6 +49,14 @@ export function isActionDiscussionAvailable(
   action: ActionDiscussionCandidate | null,
   now = new Date(),
 ): boolean {
+  if (
+    action?.status === "cancelled" &&
+    action.published_at !== null &&
+    action.published_at !== undefined
+  ) {
+    return action.moderation_visibility !== "hidden";
+  }
+
   const futurePreActionCandidate =
     action && action.action_phase !== null
       ? { ...action, action_phase: action.action_phase }

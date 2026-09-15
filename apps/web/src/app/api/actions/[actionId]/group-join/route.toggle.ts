@@ -83,7 +83,7 @@ export async function handleGroupJoinToggle(
     const actionResult = await runSingleActionQuery<{
       id: string;
       created_by_clerk_id: string | null;
-      status: "pending" | "approved" | "rejected";
+      status: "pending" | "approved" | "rejected" | "cancelled";
       action_phase: "pre_action" | "post_action_draft" | "post_action_complete";
       notes: string | null;
     }>(supabase, (query) =>
@@ -110,7 +110,10 @@ export async function handleGroupJoinToggle(
 
     toggleActionKnown = true;
 
-    if (actionResult.status !== "approved" && actionResult.action_phase !== "pre_action") {
+    if (
+      actionResult.status === "cancelled" ||
+      (actionResult.status !== "approved" && actionResult.action_phase !== "pre_action")
+    ) {
       return validationErrorResponse({
         actionId: [
           "Le formulaire ne peut être modifié qu'en pré-action ou après validation.",

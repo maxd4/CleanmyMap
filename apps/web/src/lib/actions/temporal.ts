@@ -69,6 +69,25 @@ export function isPublishedFuturePreAction(
   );
 }
 
+export function isFutureActionCancellationEligible(
+  action: Pick<
+    ActionRow,
+    | "action_date"
+    | "event_start_time"
+    | "action_phase"
+    | "status"
+    | "published_at"
+  >,
+  now = new Date(),
+): boolean {
+  return (
+    action.action_phase === "pre_action" &&
+    (action.status === "pending" || action.status === "approved") &&
+    Boolean(action.published_at) &&
+    isActionStartInFuture(action, now)
+  );
+}
+
 /** A public future pre-action is joinable only when its group form is open. */
 export function isJoinableFuturePreAction(
   action: ActionPublicFutureCandidate,

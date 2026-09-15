@@ -197,6 +197,15 @@ export const API_AUTHORIZATION_CONTRACT = {
       evidenceScope: "module",
     },
   },
+  "actions/[actionId]/cancel": {
+    POST: {
+      expected: "ACTIVE_ROLE=admin|max may cancel only a published future pre-action after explicit confirmation",
+      dimensions: ["authentication", "admin/creator role", "business permission", "audit"],
+      actual: "requireAdminAccess + future pre-action cancellation guard + appendActionModerationAudit",
+      evidence: ["requireAdminAccess", "cancelFutureAction", "appendActionModerationAudit"],
+      evidenceScope: "module",
+    },
+  },
   "actions/[actionId]/group-join": {
     PATCH: {
       expected: "Authenticated creator/organizer or admin/max participant-review permission; admin participant override is audited",

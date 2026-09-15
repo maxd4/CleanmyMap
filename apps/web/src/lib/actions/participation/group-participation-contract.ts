@@ -75,7 +75,9 @@ export type JoinableActionItem = {
   location_label: string;
   volunteers_count: number;
   duration_minutes: number;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  cancelled_at?: string | null;
+  cancellation_reason?: string | null;
   actionPhase: ActionPhase;
   participantsCount: number;
   joined: boolean;

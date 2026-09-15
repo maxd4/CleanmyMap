@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ACTION_STATUSES, type ActionStatus } from "@/lib/actions/types";
+import type { ActionStatus } from "@/lib/actions/types";
 import { createAction } from "@/lib/actions/store";
 import type { ResolvedActionOrganizer } from "@/lib/actions/participation/organizers";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
@@ -49,7 +49,7 @@ const importActionSchema = z.object({
   volunteersCount: z.number().int(),
   durationMinutes: z.number().int(),
   notes: z.string().trim().max(2000).optional(),
-  status: z.enum(ACTION_STATUSES).optional(),
+  status: z.enum(["pending", "approved", "rejected"]).optional(),
 });
 
 const importPayloadSchema = z.object({
@@ -62,7 +62,7 @@ type ImportItem = z.infer<typeof importActionSchema>;
 
 type PreparedImport = {
   payload: ReturnType<typeof normalizeExternalActionImport>["payload"];
-  status: ActionStatus;
+  status: Exclude<ActionStatus, "cancelled">;
   dataQuality: ActionDataQualitySummary;
 };
 

@@ -238,11 +238,14 @@ function resolveActionsReadPolicy(rawStatus: string | null): ActionsReadPolicy {
   const requestedStatus = parseStatusParam(rawStatus);
   const isExplicitGlobalView = rawStatus?.trim() === "all";
   const includesNonPublicState =
-    isExplicitGlobalView || requestedStatus === "pending" || requestedStatus === "rejected";
+    isExplicitGlobalView ||
+    requestedStatus === "pending" ||
+    requestedStatus === "rejected" ||
+    requestedStatus === "cancelled";
 
   return {
     // An omitted, empty or invalid status is public-safe and must not mean
-    // "all". The explicit all/pending/rejected paths are reserved for
+    // "all". The explicit all/pending/rejected/cancelled paths are reserved for
     // moderation and retain their source status semantics.
     status: includesNonPublicState ? requestedStatus : "approved",
     usePublicSurfaceSnapshot: !includesNonPublicState,

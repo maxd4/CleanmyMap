@@ -95,7 +95,18 @@ export type ActionRow = {
   event_start_time?: string | null;
   event_end_time?: string | null;
   notes: string | null;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  cancelled_at?: string | null;
+  cancelled_by_clerk_id?: string | null;
+  cancellation_reason?:
+    | "weather"
+    | "organizer_unavailable"
+    | "authorization_logistics"
+    | "insufficient_participants"
+    | "moved"
+    | "other"
+    | null;
+  cancelled_from_status?: "pending" | "approved" | null;
   published_at?: string | null;
   moderation_visibility?: "visible" | "hidden";
   hidden_at?: string | null;

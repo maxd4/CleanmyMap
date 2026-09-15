@@ -71,6 +71,7 @@ describe("action discussion access contract", () => {
     ["published approved completed action", { ...publicFutureAction, action_phase: "post_action_complete" as const, status: "approved" as const }, true],
     ["published pending completed action", { ...publicFutureAction, action_phase: "post_action_complete" as const }, false],
     ["rejected", { ...publicFutureAction, status: "rejected" as const }, false],
+    ["cancelled published action", { ...publicFutureAction, status: "cancelled" as const }, true],
     ["unpublished", { ...publicFutureAction, published_at: null }, false],
     ["hidden", { ...publicFutureAction, moderation_visibility: "hidden" as const }, false],
   ])("classifies %s", (_label, action, expected) => {

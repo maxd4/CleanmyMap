@@ -365,12 +365,22 @@ Ne pas ajouter `change_organizer` ou `reopen_action` tant qu'une commande produi
 Le masquage de modération est distinct du statut métier de l'action.
 
 ```txt
-status = pending | approved | rejected
+status = pending | approved | rejected | cancelled
 moderation_visibility = visible | hidden
 published_at = NULL | timestamp de publication explicite
 ```
 
 Une action `hidden` est exclue des surfaces publiques, dont la carte, les listes publiques et la page Formulaire de groupe. Elle reste traitable par les chemins de modération autorisés.
+
+`cancelled` est un état métier terminal distinct de `rejected`. Seuls les
+administrateurs autorisés (`ACTIVE_ROLE=admin|max`) peuvent annuler une
+pré-action déjà publiée dont le début local est futur, après confirmation
+explicite. L'annulation conserve l'identité de l'action et ses dépendances,
+ainsi que `cancelled_at`, `cancelled_by_clerk_id`, le motif et le statut
+précédent ; elle retire l'action des listes futures, du joinage et du partage.
+Une discussion existante peut être relue en historique mais n'accepte plus de
+nouveau message. Aucune action annulée n'est comptée comme réalisée ou
+gamifiée, et aucune suppression physique n'est proposée par ce contrat.
 
 `published_at` ne remplace ni `status` ni `moderation_visibility`. Une
 pré-action créée ou seulement `pret_a_partager` conserve `published_at = NULL`
@@ -387,7 +397,7 @@ approuvées et les signalements Trash Spotter `validated` ou `cleaned`. Cette
 lecture peut utiliser `loadOrRefreshPublicSurfaceSnapshot`.
 
 Toute vue qui peut inclure un état non public — `status=pending`,
-`status=rejected` ou la vue globale explicite `status=all` — exige l'AuthN puis
+`status=rejected`, `status=cancelled` ou la vue globale explicite `status=all` — exige l'AuthN puis
 l'AuthZ de modération prévue par le code courant. Ces surfaces globales sont
 réservées aux capacités explicites des rôles actifs `admin` et `max` ; `elu`
 reste fail-closed tant qu'un scope territorial canonique n'est pas

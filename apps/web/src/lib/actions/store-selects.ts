@@ -24,6 +24,10 @@ export const ACTION_BASE_SELECT_FIELDS = [
   "notes",
   "status",
   "published_at",
+  "cancelled_at",
+  "cancelled_by_clerk_id",
+  "cancellation_reason",
+  "cancelled_from_status",
 ] as const;
 
 export const ACTION_MODERATION_SELECT_FIELDS = [
@@ -45,7 +49,14 @@ export const ACTION_SELECT_FIELDS_WITH_PHASE = [
 ].join(", ");
 
 export const ACTION_SELECT_FIELDS_LEGACY = ACTION_BASE_SELECT_FIELDS
-  .filter((field) => field !== "published_at")
+  .filter(
+    (field) =>
+      field !== "published_at" &&
+      field !== "cancelled_at" &&
+      field !== "cancelled_by_clerk_id" &&
+      field !== "cancellation_reason" &&
+      field !== "cancelled_from_status",
+  )
   .join(", ");
 
 export const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT = ACTION_BASE_SELECT_FIELDS
@@ -55,7 +66,11 @@ export const ACTION_SELECT_FIELDS_LEGACY_WITHOUT_DEPARTMENT = ACTION_BASE_SELECT
       field !== "department_name" &&
       field !== "event_start_time" &&
       field !== "event_end_time" &&
-      field !== "published_at",
+      field !== "published_at" &&
+      field !== "cancelled_at" &&
+      field !== "cancelled_by_clerk_id" &&
+      field !== "cancellation_reason" &&
+      field !== "cancelled_from_status",
   )
   .join(", ");
 
@@ -82,6 +97,10 @@ export function isMissingActionColumnError(error: unknown): boolean {
       normalized.includes("department_name") ||
       normalized.includes("event_start_time") ||
       normalized.includes("event_end_time") ||
-      normalized.includes("published_at"))
+      normalized.includes("published_at") ||
+      normalized.includes("cancelled_at") ||
+      normalized.includes("cancelled_by_clerk_id") ||
+      normalized.includes("cancellation_reason") ||
+      normalized.includes("cancelled_from_status"))
   );
 }

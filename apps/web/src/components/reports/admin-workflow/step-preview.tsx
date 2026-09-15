@@ -3,6 +3,8 @@
 import type { ActionQualityGrade } from"@/lib/actions/quality/quality";
 import type { AdminWorkflowController } from"./types";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { ActionCancellationControl } from "./action-cancellation-control";
+import { useState } from "react";
 
 type StepPreviewProps = {
   workflow: AdminWorkflowController;
@@ -33,6 +35,7 @@ function qualityTone(grade: ActionQualityGrade): string {
 export function StepPreview({ workflow }: StepPreviewProps) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
+  const [cancelledIds, setCancelledIds] = useState<Set<string>>(() => new Set());
 
   return (
     <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
@@ -69,7 +72,7 @@ export function StepPreview({ workflow }: StepPreviewProps) {
     </tr>
     </thead>
  <tbody>
- {workflow.previewRows.map((row) => (
+ {workflow.previewRows.filter((row) => !cancelledIds.has(row.item.id)).map((row) => (
  <tr
  key={row.item.id}
  className="border-t border-slate-100 cmm-text-secondary"
@@ -96,6 +99,13 @@ export function StepPreview({ workflow }: StepPreviewProps) {
  >
  Moderer
  </button>
+ <ActionCancellationControl
+   item={row.item}
+   onCancelled={() => {
+     setCancelledIds((previous) => new Set(previous).add(row.item.id));
+     workflow.reloadPreview();
+   }}
+ />
  </td>
  </tr>
  ))}

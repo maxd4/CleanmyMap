@@ -125,5 +125,6 @@ describe("action sharing contract", () => {
   it("makes an unavailable published reference neutral", () => {
     expect(isPublicActionReferenceAvailable({ ...baseAction, moderation_visibility: "hidden" })).toBe(false);
     expect(isPublicActionReferenceAvailable({ ...baseAction, published_at: null })).toBe(false);
+    expect(isPublicActionReferenceAvailable({ ...baseAction, status: "cancelled" })).toBe(false);
   });
 });

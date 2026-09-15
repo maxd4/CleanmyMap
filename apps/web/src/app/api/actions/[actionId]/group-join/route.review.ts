@@ -107,7 +107,7 @@ export async function handleGroupJoinReview(
     const actionResult = await runSingleActionQuery<{
       id: string;
       created_by_clerk_id: string | null;
-      status: "pending" | "approved" | "rejected";
+      status: "pending" | "approved" | "rejected" | "cancelled";
       action_phase: "pre_action" | "post_action_draft" | "post_action_complete";
       notes: string | null;
     }>(supabase, (query) =>
@@ -117,7 +117,11 @@ export async function handleGroupJoinReview(
         .maybeSingle(),
     );
 
-    if (!actionResult || (actionResult.status !== "approved" && actionResult.action_phase !== "pre_action")) {
+    if (
+      !actionResult ||
+      actionResult.status === "cancelled" ||
+      (actionResult.status !== "approved" && actionResult.action_phase !== "pre_action")
+    ) {
       const adminIdentity = await resolveAdminAuditIdentity(userId);
       if (adminIdentity) {
         await appendAdminParticipationError({

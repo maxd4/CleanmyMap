@@ -269,7 +269,7 @@ export async function addActionParticipationByAdmin(
     partialMutation: false,
     operation: () =>
       runSingleActionQuery<{
-        status: "pending" | "approved" | "rejected";
+        status: "pending" | "approved" | "rejected" | "cancelled";
         moderation_visibility?: "visible" | "hidden" | null;
         action_phase: ActionPhase;
         notes: string | null;
@@ -291,6 +291,14 @@ export async function addActionParticipationByAdmin(
     const notFoundError = new Error("Action not found.");
     notFoundError.name = "NotFoundError";
     throw notFoundError;
+  }
+
+  if (actionResult.status === "cancelled") {
+    const validationError = new Error(
+      "Une action annulée ne peut plus recevoir de participant.",
+    );
+    validationError.name = "ValidationError";
+    throw validationError;
   }
 
   if (

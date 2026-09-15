@@ -187,6 +187,13 @@ export async function POST(request: Request) {
       if (access.state === "unavailable") {
         return NextResponse.json({ error: "Discussion d'action introuvable." }, { status: 404 });
       }
+      const action = await loadActionById(serviceSupabase, parsed.data.actionId);
+      if (action?.status === "cancelled") {
+        return NextResponse.json(
+          { error: "Cette action a été annulée.", hint: "La discussion est conservée en lecture seule." },
+          { status: 403 },
+        );
+      }
     }
 
     const quota = await reserveDiscussionMessageSlot(serviceSupabase, {

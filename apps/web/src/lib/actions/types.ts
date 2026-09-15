@@ -1,4 +1,4 @@
-export const ACTION_STATUSES = ["pending", "approved", "rejected"] as const;
+export const ACTION_STATUSES = ["pending", "approved", "rejected", "cancelled"] as const;
 
 export type ActionStatus = (typeof ACTION_STATUSES)[number];
 
