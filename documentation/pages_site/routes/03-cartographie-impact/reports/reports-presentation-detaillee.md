@@ -7,10 +7,11 @@
 - **Rôle** : comparer une fenêtre d'actions validées, lire les indicateurs
   calculés et accéder à la méthode KPI selon les droits du profil.
 - **Périmètre** : synthèse du `ReportModel`, tendances mensuelles, méthode,
-  événements, génération et exports autorisés. La météo et la logistique sont
+  événements, génération et exports détaillés. La météo et la logistique sont
   hors du contrat Reports.
-- **États à documenter** : visiteur anonyme avec aperçu flouté, compte connecté,
-  profil incomplet, génération accessible au compte connecté, indisponibilité explicite
+- **États à documenter** : visiteur anonyme avec synthèse publique légère, compte connecté,
+  profil incomplet, génération accessible au compte connecté, quota quotidien déjà consommé,
+  indisponibilité explicite
   d'Analyse ou de l'historique, et données optionnelles indisponibles.
 - **Composants concernés** : `ReportsAnalysisDashboard`, `AnalyticsCockpit`,
   `KpiMethodBlock`, `ReportsPageTabs` et les flux de génération/export
@@ -50,8 +51,8 @@
   les 12 plus récentes de ce compte.
   Il expose le titre, la période, le périmètre, le niveau de détail et la date
   réelle. L'état vide affiche « Aucun rapport généré ». Le snapshot JSON final
-  et les modules sont stockés sans binaire PDF ; une erreur de persistance est
-  non bloquante après un export réussi. Les actions « Voir » et « Réexporter »
+  et les modules sont stockés sans binaire PDF ; le quota est réservé côté
+  serveur avant l'ouverture du rendu. Les actions « Voir » et « Réexporter »
   chargent le snapshot par ID à la demande. Elles rendent/réexportent ce
   payload immuable sans données actuelles, en conservant son `generatedAt` et
   son filename ; le réexport ne crée pas de nouvelle génération et aucune
@@ -63,3 +64,10 @@
   `GET /api/reports/generations/[id]` les charge uniquement pour l'action
   historique demandée par l'utilisateur et vérifie l'ownership par
   `created_by_clerk_id`.
+
+  Les exports détaillés sont accessibles à tout compte connecté, sans rôle
+  administratif supplémentaire. Ils portent sur des données non sensibles,
+  sont limités à un export par jour civil Europe/Paris et n'ont pas de limite
+  volontaire de période, de nombre de lignes ou de longueur. Le quota est une
+  protection serveur atomique ; il ne repose jamais sur `localStorage` ou sur
+  l'état visuel du bouton.

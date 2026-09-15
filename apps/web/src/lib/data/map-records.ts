@@ -164,7 +164,7 @@ function filterByFloorDate(
 export async function loadLocalActionContracts(params: {
   status: ActionStatus | null;
   floorDate: string | null;
-  limit: number;
+  limit: number | null;
   requireCoordinates: boolean;
 }): Promise<ActionDataContract[]> {
   if (!allowLocalActionStoreInCurrentRuntime()) {
@@ -176,12 +176,13 @@ export async function loadLocalActionContracts(params: {
     .map((record) => toLocalContract(record, params.requireCoordinates))
     .filter((item): item is ActionDataContract => Boolean(item));
 
-  return filterByFloorDate(
+  const sorted = filterByFloorDate(
     filterByStatus(dedupeContractsByKey(fromStores), params.status),
     params.floorDate,
   )
-    .sort((a, b) => b.dates.observedAt.localeCompare(a.dates.observedAt))
-    .slice(0, params.limit);
+    .sort((a, b) => b.dates.observedAt.localeCompare(a.dates.observedAt));
+
+  return params.limit === null ? sorted : sorted.slice(0, params.limit);
 }
 
 export async function loadLocalMapItems(params: {

@@ -10,9 +10,6 @@ export const REPORT_DATA_BUDGET = {
     periodDays: 90,
     contractLimit: 2200,
   },
-  generation: {
-    approvedContractLimit: 1000,
-  },
   communityEvents: {
     limit: 120,
   },

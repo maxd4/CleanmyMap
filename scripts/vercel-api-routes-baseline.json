@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-14T23:30:46.968Z",
-  "apiRouteCount": 97,
+  "apiRouteCount": 98,
   "apiRoutes": [
     "apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts",
     "apps/web/src/app/api/account/active-profile/route.ts",
@@ -81,6 +81,7 @@
     "apps/web/src/app/api/reports/actions.csv/route.ts",
     "apps/web/src/app/api/reports/actions.json/route.ts",
     "apps/web/src/app/api/reports/elus-dossier/route.ts",
+    "apps/web/src/app/api/reports/exports.csv/route.ts",
     "apps/web/src/app/api/reports/generations/[id]/route.ts",
     "apps/web/src/app/api/reports/generations/route.ts",
     "apps/web/src/app/api/reports/governance-monthly/route.ts",

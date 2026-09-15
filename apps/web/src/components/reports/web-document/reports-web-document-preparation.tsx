@@ -5,12 +5,10 @@ import {
   MapPin,
   ShieldCheck,
   SlidersHorizontal,
-  TriangleAlert,
 } from "lucide-react";
 import {
   DETAIL_LEVEL_OPTIONS,
   GenerationStageCard,
-  REPORT_HISTORY_SERVER_LIMIT,
   REPORT_MODULE_DEFINITIONS,
   type DetailLevelId,
   type ModuleState,
@@ -25,7 +23,7 @@ type ScopeChoice = {
 export type ReportsWebDocumentPreparationProps = {
   period: SelectedPeriodId;
   onPeriodChange: (period: SelectedPeriodId) => void;
-  historyCompletenessWarning: boolean;
+  historyCompletenessWarning?: boolean;
   selectedScopeValue: string;
   scopeOptions: {
     accounts: ScopeChoice[];
@@ -42,7 +40,6 @@ export type ReportsWebDocumentPreparationProps = {
 export function ReportsWebDocumentPreparation({
   period,
   onPeriodChange,
-  historyCompletenessWarning,
   selectedScopeValue,
   scopeOptions,
   onScopeChange,
@@ -77,16 +74,6 @@ export function ReportsWebDocumentPreparation({
             </select>
           </div>
 
-          {historyCompletenessWarning ? (
-            <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
-              <TriangleAlert size={14} className="mt-0.5 shrink-0 text-amber-600" />
-              <p>
-                Historique disponible — plafonné à {REPORT_HISTORY_SERVER_LIMIT} actions
-                approuvées. Pour une complétude strictement exhaustive, il faut lever ce plafond
-                côté serveur.
-              </p>
-            </div>
-          ) : null}
         </div>
 
         <div className="space-y-3">

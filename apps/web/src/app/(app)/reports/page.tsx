@@ -14,14 +14,13 @@ import {
   getProfileLabel,
   getProfilePrimaryAction,
   getProfileSecondaryAction,
-  isAdminLikeProfile,
   toProfile,
 } from "@/lib/profiles";
 import {
   buildReportsSummaryKpis,
   loadReportsGenerationData,
   loadReportsAnalysisData,
-  toReportsExportRow,
+  loadReportsPublicSummary,
   type ReportsSummaryKpi,
 } from "@/lib/reports/page-data";
 import type { Locale } from "@/lib/ui/preferences";
@@ -29,6 +28,10 @@ import type { ProfileAction } from "@/lib/profiles";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import type { ReportModel } from "@/lib/reports/report-model/types";
 import { listReportGenerationHistory } from "@/lib/reports/report-generation-history-store";
+import {
+  getReportExportAvailability,
+} from "@/lib/reports/report-export-quota";
+import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
 
 type ReportsPageTabId = "generation" | "analysis";
 
@@ -45,13 +48,12 @@ type ReportsAnalysisContentParams = {
   overview: Pick<PilotageOverview, "methods" | "periodDays"> | null;
   report: ReportModel;
   monthlyData: Awaited<ReturnType<typeof loadReportsAnalysisData>>["monthlyData"];
-  canAccessExports: boolean;
-  exportRows: Record<string, unknown>[] | null;
+  dailyExportAvailability: ReportExportAvailability;
 };
 
 function resolveReportsTab(
   requestedTab: string | undefined,
-  canAccessDetailedReports: boolean,
+  isAuthenticated: boolean,
 ): ReportsPageTabId {
   if (requestedTab === "generation") {
     return "generation";
@@ -61,7 +63,7 @@ function resolveReportsTab(
     return "analysis";
   }
 
-  return canAccessDetailedReports ? "generation" : "analysis";
+  return isAuthenticated ? "generation" : "analysis";
 }
 
 function buildReportsAnalysisContent({
@@ -73,8 +75,7 @@ function buildReportsAnalysisContent({
   overview,
   report,
   monthlyData,
-  canAccessExports,
-  exportRows,
+  dailyExportAvailability,
 }: ReportsAnalysisContentParams) {
   return (
     <div className="space-y-6">
@@ -102,24 +103,13 @@ function buildReportsAnalysisContent({
             eyebrowClassName="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted"
             subtitleClassName="cmm-text-small cmm-text-secondary mt-1"
           />
-          {canAccessExports ? (
-            <CTAGroup>
-              <RubriqueExcelExportButton
-                rubriqueTitle="Rapport d'impact"
-                data={exportRows ?? undefined}
-              />
-            </CTAGroup>
-          ) : (
-            <div className="rounded-2xl border border-slate-200 bg-white/80 p-4">
-              <p className="text-sm font-black uppercase tracking-[0.14em] text-slate-700">
-                Export réservé
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Les exports détaillés sont réservés aux profils administratifs pour éviter les
-                téléchargements répétés et les réponses trop lourdes.
-              </p>
-            </div>
-          )}
+          <CTAGroup>
+            <RubriqueExcelExportButton
+              rubriqueTitle="Rapport d'impact"
+              serverEndpoint="/api/reports/exports.csv"
+              initialDailyExportAvailability={dailyExportAvailability}
+            />
+          </CTAGroup>
         </section>
     </div>
   );
@@ -151,10 +141,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
     : await getCurrentUserIdentity({ userId }).catch(() => null);
   const authorizationRole = role === "anonymous" ? "benevole" : role;
   const profile = accountCompletion?.currentProfile ?? identity?.activeProfile ?? toProfile(authorizationRole);
-  const canAccessDetailedReports = isAdminLikeProfile(authorizationRole);
   const activeTab = resolveReportsTab(
     resolvedSearchParams.tab,
-    canAccessDetailedReports,
+    Boolean(userId),
   );
   const primaryAction = getProfilePrimaryAction(profile);
   const secondaryAction = getProfileSecondaryAction(profile);
@@ -165,34 +154,84 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       : "Visitor";
 
   if (!userId) {
-    return (
-      <ClerkRequiredGate
-        isAuthenticated={false}
-        authUnavailable={!clerkReachable}
-        mode="blur"
-        lockedPreview={
-          <section className="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-700">
-              Niveau connecté requis
-            </p>
-            <p className="mt-3 text-sm leading-6 text-red-900">
-              Les rapports détaillés sont réservés aux comptes connectés pour éviter de charger
-              des données lourdes côté visiteur.
-            </p>
-          </section>
-        }
+    if (activeTab === "generation") {
+      return (
+        <ReportsPageV2Layout
+          activeTab={activeTab}
+          generationContent={
+            <ClerkRequiredGate
+              isAuthenticated={false}
+              authUnavailable={!clerkReachable}
+              mode="blur"
+              lockedPreview={
+                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-700">
+                    Compte requis pour générer
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">
+                    La synthèse est publique. Connectez-vous uniquement pour préparer un export
+                    détaillé ou consulter votre historique.
+                  </p>
+                </section>
+              }
+            >
+              <div />
+            </ClerkRequiredGate>
+          }
+        />
+      );
+    }
+
+    const publicSummary = await loadReportsPublicSummary().catch(() => null);
+    const publicSummaryContent = publicSummary ? (
+      <section
+        className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        data-testid="reports-public-summary"
       >
-        <div />
-      </ClerkRequiredGate>
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-red-600">
+            Synthèse publique
+          </p>
+          <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+            L&apos;impact visible des actions CleanMyMap
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            Consultez les indicateurs publics. Un compte est demandé uniquement pour générer un
+            export détaillé ou retrouver votre historique.
+          </p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ["Actions visibles", publicSummary.visibleActions],
+            ["Lieux couverts", publicSummary.distinctLocations],
+            ["Déchets récoltés", `${publicSummary.wasteKg} kg`],
+            ["Bénévoles mobilisés", publicSummary.volunteers],
+          ].map(([label, value]) => (
+            <div key={String(label)} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+              <p className="text-xs font-semibold text-slate-500">{label}</p>
+              <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    ) : (
+      <section role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-900">
+        La synthèse publique est temporairement indisponible.
+      </section>
     );
+
+    return <ReportsPageV2Layout activeTab="analysis" analysisContent={publicSummaryContent} />;
   }
 
   if (activeTab === "generation") {
-    const [generationData, historyResult] = await Promise.all([
+    const [generationData, historyResult, dailyExportAvailability] = await Promise.all([
       loadReportsGenerationData().catch(() => null),
       listReportGenerationHistory(userId)
         .then((rows) => ({ rows, availability: "available" as const }))
         .catch(() => ({ rows: [], availability: "unavailable" as const })),
+      getReportExportAvailability(userId).catch(
+        () => "unavailable" as ReportExportAvailability,
+      ),
     ]);
 
     const generationContent = generationData ? (
@@ -204,6 +243,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         communityEventsAvailability={generationData.communityEventsAvailability}
         initialRecentRows={historyResult.rows}
         initialHistoryAvailability={historyResult.availability}
+        dailyExportAvailability={dailyExportAvailability}
       />
     ) : (
       <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)]">
@@ -232,6 +272,9 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const analysisResult = await loadReportsAnalysisData()
     .then((data) => ({ data, availability: "available" as const }))
     .catch(() => ({ data: null, availability: "unavailable" as const }));
+  const dailyExportAvailability = await getReportExportAvailability(userId).catch(
+    () => "unavailable" as ReportExportAvailability,
+  );
   const analysisContent = analysisResult.availability === "unavailable" ? (
     <section
       role="alert"
@@ -260,8 +303,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         overview,
         report,
         monthlyData,
-        canAccessExports: canAccessDetailedReports,
-        exportRows: overview.contracts.map(toReportsExportRow),
+        dailyExportAvailability,
       });
     })()
   );

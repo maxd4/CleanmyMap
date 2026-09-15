@@ -13,7 +13,7 @@ import {
 import { normalizeStoredAction } from "./store-normalization";
 
 type ActionListParams = {
-  limit: number;
+  limit: number | null;
   status: ActionStatus | null;
   includeFuturePublicActions?: boolean;
   futureOnly?: boolean;
@@ -29,8 +29,10 @@ function buildActionListQuery(
 ) {
   let nextQuery = query
     .select(selectFields)
-    .order("action_date", { ascending: false })
-    .limit(params.limit);
+    .order("action_date", { ascending: false });
+  if (params.limit !== null) {
+    nextQuery = nextQuery.limit(params.limit);
+  }
 
   if (selectFields.includes("moderation_visibility")) {
     nextQuery = nextQuery.eq("moderation_visibility", "visible");

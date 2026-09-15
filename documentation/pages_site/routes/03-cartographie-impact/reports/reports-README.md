@@ -5,24 +5,20 @@
 - **Route** : `/reports`
 - **Famille** : Cartographie & Impact
 - **Palette runtime** : red
-- **Accès visiteur** : `auth-blur-gate`
-- **Accès page complète** : compte connecté
-- **Génération et historique** : compte connecté, sur son propre historique
-- **Exports détaillés de l'analyse** : profils admin-like
+- **Accès visiteur** : synthèse publique légère en lecture
+- **Accès génération/historique** : compte connecté, sur son propre historique
+- **Export détaillé** : tout compte connecté, une fois par jour civil
 - **Source principale** : `apps/web/src/app/(app)/reports/page.tsx`
 
 ## Contrat d'accès
 
-La route n'est pas simplement « publique ».
+La synthèse de la route est publique en lecture et n'expose que des indicateurs
+agrégés déjà publics. Elle ne charge ni historique personnel ni génération
+détaillée pour un visiteur.
 
 Le composant serveur charge la session.
 
-Sans `userId` :
-
-```txt
-ClerkRequiredGate
-mode = blur
-```
+Sans `userId` : synthèse publique légère uniquement.
 
 Avec compte connecté :
 
@@ -30,18 +26,12 @@ Avec compte connecté :
 accès à la page de rapports
 ```
 
-Pour la génération de document et son historique :
+Pour la génération de document, l'export détaillé et son historique :
 
 ```txt
 requireAuthenticatedAccess()
 historique filtré par created_by_clerk_id = userId courant
-```
-
-Les exports détaillés de l'onglet Analyse restent réservés aux profils
-admin-like :
-
-```txt
-isAdminLikeProfile(profile) = true
+quota d'export contrôlé côté serveur : 1 export détaillé par jour civil Europe/Paris
 ```
 
 ## Données
@@ -50,7 +40,7 @@ La page charge en parallèle :
 
 ```txt
 pilotage overview sur 90 j
-jusqu'à 2 200 actions approuvées
+jusqu'à 2 200 actions approuvées pour le tableau de bord d'analyse
 événements communautaires
 ```
 
@@ -66,7 +56,12 @@ jusqu'à 2 200 actions approuvées
 - données d'actions ;
 - événements communautaires ;
 - génération de document ;
-- exports pour profils autorisés.
+- export détaillé CSV serveur pour tout compte connecté ;
+- génération de document PDF détaillée pour tout compte connecté.
+
+Les données exportées sont non sensibles selon le contrat de cette page. Le
+quota est la seule limitation produit : aucune limite de période, de nombre de
+lignes ou de longueur n'est ajoutée volontairement à l'export détaillé.
 
 La météo et la logistique ne font pas partie du contrat `/reports` et ne
 conditionnent pas la génération d'un rapport d'impact. Elles restent des
@@ -330,11 +325,11 @@ le `generatedAt` et le filename historiques, et ne crée aucune nouvelle ligne
 dans `report_generations`. Un snapshot absent, invalide ou incompatible produit
 une erreur explicite ; il n'est jamais remplacé par un recalcul courant.
 
-Après un export PDF réussi, le payload JSON final, les modules et les
-métadonnées de configuration sont persistés ; le binaire PDF ne l'est pas.
-L'échec de cette persistance conserve le succès du PDF et affiche un
-avertissement non bloquant. Aucune politique de rétention n'est promise par
-cette page.
+Avant l'ouverture du PDF, le serveur réserve atomiquement le quota puis
+persiste le payload JSON final, les modules et les métadonnées de configuration
+; le binaire PDF ne l'est pas. Une erreur serveur n'ouvre pas de PDF et ne
+doit pas consommer durablement le créneau réservé. Aucune politique de
+rétention n'est promise par cette page.
 La génération et la lecture de cet historique exigent une session via
 `requireAuthenticatedAccess`. Les handlers utilisent le client serveur et
 filtrent chaque lecture par l'identifiant Clerk du compte courant ; la table
@@ -342,22 +337,24 @@ Supabase n'accorde toujours aucun accès direct à `anon` ou `authenticated`.
 
 ## Performance
 
-Cette page peut être lourde.
+Cette page peut être lourde pour un compte connecté ; sa synthèse anonyme reste
+une projection légère.
 
 Règles :
 
-- ne pas ouvrir les exports détaillés aux visiteurs anonymes ;
 - conserver les chargements parallèles ;
 - différer les documents lourds ;
-- préserver les limites de volume explicites ;
+- appliquer le quota côté serveur, jamais dans `localStorage` ou un bouton
+  désactivé ;
 - éviter un second fetch des mêmes contrats dans un composant enfant.
 
 ## États
 
 ```txt
-visiteur anonyme → gate flouté
-compte connecté standard → rapports, génération et historique de son compte
-profil admin-like → mêmes capacités, plus exports détaillés de l'analyse
+visiteur anonyme → synthèse publique légère
+compte connecté standard → rapports, export détaillé et historique de son compte
+admin ou bénévole → même règle d'export détaillé
+quota déjà utilisé → génération désactivée jusqu'au jour civil suivant
 Analyse indisponible → erreur explicite, sans faux modèle zéro
 historique indisponible → erreur explicite, sans faux état vide
 ```

@@ -8,6 +8,7 @@ import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { REPORT_DATA_BUDGET } from "@/lib/reports/budget";
 import { computeReportModel } from "@/lib/reports/report-model";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
+import { loadLandingSummary } from "@/lib/accueil/data";
 
 export type ReportsSummaryKpi = {
   label: string;
@@ -17,6 +18,25 @@ export type ReportsSummaryKpi = {
   deltaPercent: string;
   interpretation: "positive" | "negative" | "neutral";
 };
+
+export type ReportsPublicSummary = {
+  visibleActions: number;
+  distinctLocations: number;
+  wasteKg: number;
+  cigaretteButts: number;
+  volunteers: number;
+};
+
+export async function loadReportsPublicSummary(): Promise<ReportsPublicSummary> {
+  const summary = await loadLandingSummary();
+  return {
+    visibleActions: summary.activity.visibleActions,
+    distinctLocations: summary.activity.distinctLocations,
+    wasteKg: summary.counters.wasteKg,
+    cigaretteButts: summary.counters.butts,
+    volunteers: summary.counters.volunteers,
+  };
+}
 
 export async function loadReportsAnalysisData(now = new Date()) {
   const [overview, communityEventsResult] = await Promise.all([
@@ -60,7 +80,7 @@ export async function loadReportsGenerationData() {
     import("@/lib/actions/unified-source/unified-source-cache").then(
       ({ fetchCachedUnifiedActionContracts }) =>
         fetchCachedUnifiedActionContracts({
-          limit: REPORT_DATA_BUDGET.generation.approvedContractLimit,
+          limit: null,
           status: "approved",
           floorDate: null,
           requireCoordinates: false,

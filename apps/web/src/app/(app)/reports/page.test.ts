@@ -15,6 +15,8 @@ const mocks = vi.hoisted(() => ({
   computeReportModel: vi.fn(),
   aggregateMonthlyAnalytics: vi.fn(),
   listReportGenerationHistory: vi.fn(),
+  loadLandingSummary: vi.fn(),
+  getReportExportAvailability: vi.fn(),
 }));
 
 const profileAction = {
@@ -190,6 +192,14 @@ vi.mock("@/lib/reports/report-generation-history-store", () => ({
   listReportGenerationHistory: mocks.listReportGenerationHistory,
 }));
 
+vi.mock("@/lib/accueil/data", () => ({
+  loadLandingSummary: mocks.loadLandingSummary,
+}));
+
+vi.mock("@/lib/reports/report-export-quota", () => ({
+  getReportExportAvailability: mocks.getReportExportAvailability,
+}));
+
 import ReportsPage from "./page";
 
 describe("/reports page contract", () => {
@@ -215,22 +225,27 @@ describe("/reports page contract", () => {
     });
     mocks.aggregateMonthlyAnalytics.mockReturnValue([]);
     mocks.listReportGenerationHistory.mockResolvedValue([]);
+    mocks.loadLandingSummary.mockResolvedValue({
+      counters: { wasteKg: 12, butts: 4, volunteers: 3 },
+      activity: { visibleActions: 1, distinctLocations: 1, items: [] },
+    });
+    mocks.getReportExportAvailability.mockResolvedValue("available");
   });
 
-  it("covers the non-connected state without loading reports", async () => {
+  it("renders a public summary without loading authenticated reports", async () => {
     mocks.getSafeAuthSession.mockResolvedValue({ userId: null, clerkReachable: true });
 
     const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({}) }));
 
-    expect(markup).toContain('data-testid="signin-gate"');
-    expect(markup).not.toContain('data-testid="reports-layout"');
+    expect(markup).toContain('data-testid="reports-layout"');
+    expect(markup).toContain('data-testid="reports-public-summary"');
     expect(mocks.loadPilotageOverview).not.toHaveBeenCalled();
   });
 
   it("keeps Clerk unavailability distinct from an anonymous visitor", async () => {
     mocks.getSafeAuthSession.mockResolvedValue({ userId: null, clerkReachable: false });
 
-    const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({}) }));
+    const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({ tab: "generation" }) }));
 
     expect(markup).toContain('data-testid="clerk-unavailable-gate"');
     expect(markup).not.toContain('data-testid="signin-gate"');

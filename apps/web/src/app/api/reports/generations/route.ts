@@ -8,6 +8,10 @@ import { buildPdfReportFilename } from "@/lib/pdf-export/simple-pdf";
 import {
   persistReportGeneration,
 } from "@/lib/reports/report-generation-history-store";
+import {
+  releaseReportExportSlot,
+  reserveReportExportSlot,
+} from "@/lib/reports/report-export-quota";
 import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
 import { reportGenerationPayloadSchema } from "@/lib/reports/report-generation-payload";
 
@@ -31,8 +35,6 @@ const createPayloadSchema = z.object({
   detailLevel: detailLevelSchema,
   modules: modulesSchema,
 });
-
-const MAX_SNAPSHOT_BYTES = 2_000_000;
 
 export async function POST(request: Request) {
   const access = await requireAuthenticatedAccess();
@@ -81,25 +83,6 @@ export async function POST(request: Request) {
     );
   }
 
-  if (JSON.stringify(parsed.data.payload).length > MAX_SNAPSHOT_BYTES) {
-    await appendAdminOperationAudit({
-      operationId,
-      at: new Date().toISOString(),
-      actorUserId: access.userId,
-      operationType: "admin_operation",
-      outcome: "error",
-      details: {
-        operation: "persist_report_generation",
-        stage: "validation",
-        code: "snapshot_too_large",
-      },
-    });
-    return NextResponse.json(
-      { error: "Report snapshot is too large" },
-      { status: 413 },
-    );
-  }
-
   const input: ReportGenerationHistoryInput = {
     payload: parsed.data.payload,
     scopeKind: parsed.data.scopeKind,
@@ -108,6 +91,45 @@ export async function POST(request: Request) {
     detailLevel: parsed.data.detailLevel,
     modules: parsed.data.modules,
   };
+  let reservation;
+  try {
+    reservation = await reserveReportExportSlot(access.userId);
+  } catch {
+    await appendAdminOperationAudit({
+      operationId,
+      at: new Date().toISOString(),
+      actorUserId: access.userId,
+      operationType: "admin_operation",
+      outcome: "error",
+      details: {
+        operation: "persist_report_generation",
+        stage: "quota",
+        code: "quota_unavailable",
+      },
+    });
+    return NextResponse.json({ error: "Quota d'export temporairement indisponible." }, { status: 503 });
+  }
+  if (!reservation.allowed) {
+    await appendAdminOperationAudit({
+      operationId,
+      at: new Date().toISOString(),
+      actorUserId: access.userId,
+      operationType: "admin_operation",
+      outcome: "error",
+      details: {
+        operation: "persist_report_generation",
+        stage: "quota",
+        code: "daily_quota_exceeded",
+      },
+    });
+    return NextResponse.json(
+      {
+        error: "Un export détaillé a déjà été utilisé aujourd'hui.",
+        quotaDay: reservation.quotaDay,
+      },
+      { status: 429 },
+    );
+  }
   let item: Awaited<ReturnType<typeof persistReportGeneration>>;
   try {
     item = await persistReportGeneration({
@@ -115,6 +137,10 @@ export async function POST(request: Request) {
       input,
     });
   } catch {
+    await releaseReportExportSlot({
+      userId: access.userId,
+      quotaDay: reservation.quotaDay,
+    }).catch(() => undefined);
     await appendAdminOperationAudit({
       operationId,
       at: new Date().toISOString(),

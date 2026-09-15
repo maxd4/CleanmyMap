@@ -9,6 +9,7 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { SystemStateLayout, SystemStateTitle } from "@/components/ui/system-state";
 import type { ReportGenerationHistoryRow } from "@/lib/reports/report-generation-history-contract";
+import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
 import { GenerationStageCard } from "./reports-web-document.shared";
 
 export type ReportsWebDocumentExportStatus = {
@@ -28,6 +29,7 @@ export type ReportsWebDocumentDeliveryProps = {
   isDisabled: boolean;
   exportStatus: ReportsWebDocumentExportStatus;
   historyWarning: string | null;
+  dailyExportAvailability: ReportExportAvailability;
   onGenerate: () => void;
 };
 
@@ -52,6 +54,7 @@ export function ReportsWebDocumentDelivery({
   isDisabled,
   exportStatus,
   historyWarning,
+  dailyExportAvailability,
   onGenerate,
 }: ReportsWebDocumentDeliveryProps) {
   const ExportStatusIcon = exportStatus.icon;
@@ -108,6 +111,15 @@ export function ReportsWebDocumentDelivery({
         <p className="flex items-start gap-2 rounded-xl border border-slate-100 bg-white px-3 py-2 text-xs leading-5 text-slate-500">
           <ShieldCheck size={16} className="mt-0.5 shrink-0 text-red-600" />
           Le rapport est généré à partir des données et de la méthodologie CleanMyMap.
+        </p>
+
+        <p className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-xs leading-5 text-slate-600" role="status">
+          <strong>1 export détaillé par jour (Europe/Paris).</strong>{" "}
+          {dailyExportAvailability === "available"
+            ? "Votre export est disponible aujourd'hui."
+            : dailyExportAvailability === "used"
+              ? "Export déjà utilisé aujourd'hui ; le prochain sera disponible le jour civil suivant."
+              : "Disponibilité temporairement indisponible ; réessayez plus tard."}
         </p>
 
         {message ? (

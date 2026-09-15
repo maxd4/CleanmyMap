@@ -883,6 +883,10 @@ Lorsqu'un changement touche Vercel, Supabase, Clerk, Resend, Upstash, Sentry, Po
 - lire l'intégration actuelle ;
 - vérifier le plan / quota actuel si la décision en dépend ;
 - éviter les doubles requêtes, fallbacks coûteux ou boucles silencieuses ;
+- préférer, avant de fermer une fonction, une projection légère, le cache, le
+  chargement à la demande, la pagination ou un quota/rate limiting réel ;
+- ne jamais transformer le seul coût ou la seule performance en permission
+  réservée sans ressource sensible ou pouvoir concret à protéger ;
 - distinguer observabilité et état canonique ;
 - éviter de rendre un service optionnel bloquant pour tout le runtime sauf nécessité explicite ;
 - vérifier les effets en production lorsque la question porte réellement sur la production.
