@@ -93,6 +93,111 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
     );
   }, 15000);
 
+  it("rejects an elected account while ACTIVE_ROLE=elu from a global participant override", async () => {
+    authMock.mockResolvedValueOnce({ userId: "elu-1" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "elu-1",
+      role: "elu",
+      activeRole: "elu",
+    });
+    const participants: Array<{
+      id: string;
+      created_at: string;
+      action_id: string;
+      user_id: string;
+      participation_status?: "pending" | "confirmed" | "cancelled";
+      participation_source?: "group_form" | "admin" | "admin_override" | "import";
+    }> = [];
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+        participants,
+      }),
+    );
+    groupJoinMocks.loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({
+          participantUserId: "user-2",
+          reason: "Ajout élu non autorisé.",
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(403);
+    expect(participants).toHaveLength(0);
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("allows an elected account with ACTIVE_ROLE=admin to use the audited participant override", async () => {
+    authMock.mockResolvedValueOnce({ userId: "elu-1" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "elu-1",
+      role: "elu",
+      activeRole: "admin",
+    });
+    const participants: Array<{
+      id: string;
+      created_at: string;
+      action_id: string;
+      user_id: string;
+      participation_status?: "pending" | "confirmed" | "cancelled";
+      participation_source?: "group_form" | "admin" | "admin_override" | "import";
+    }> = [];
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+        participants,
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({
+          participantUserId: "user-2",
+          reason: "Ajout administratif justifié.",
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      participationStatus: "confirmed",
+      participationSource: "admin_override",
+    });
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorUserId: "elu-1",
+        targetActionId: "action-1",
+        targetUserId: "user-2",
+        operation: "admin_add_participant",
+        outcome: "success",
+        reason: "Ajout administratif justifié.",
+        previousValue: null,
+        newValue: expect.objectContaining({
+          participationStatus: "confirmed",
+          participationSource: "admin_override",
+        }),
+      }),
+    );
+  }, 15000);
+
   it("excludes an accepted participant through moderation", async () => {
     const participants = [
       createGroupJoinParticipant({

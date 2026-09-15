@@ -52,7 +52,8 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "account/active-profile": {
     POST: {
-      expected: "Authenticated current account; ACTIVE_ROLE is limited by GRANTED_ROLE and never changes authorization level",
+      expected:
+        "Authenticated current account; ACTIVE_ROLE is constrained by the GRANTED_ROLE selection matrix and drives effective capabilities; GRANTED_ROLE=elu may explicitly select ACTIVE_ROLE=admin, gaining normal admin capabilities without changing GRANTED_ROLE",
       dimensions: ["authentication", "ownership"],
       actual:
         "requireAuthenticatedAccess + getCurrentUserIdentity + getSwitchableProfiles; Clerk update writes only publicMetadata.activeRole",
@@ -113,7 +114,7 @@ export const API_AUTHORIZATION_CONTRACT = {
   },
   "actions/import": {
     POST: {
-      expected: "Admin-like role plus mandatory import audit",
+      expected: "ACTIVE_ROLE=admin|max plus mandatory import audit",
       dimensions: ["admin/creator role", "audit"],
       actual: "requireAdminAccess + import success/failure audit",
       evidence: ["requireAdminAccess", "auditImportFailure"],
