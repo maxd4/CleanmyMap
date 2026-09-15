@@ -76,7 +76,7 @@ export default async function NewActionPage({
           defaultActorName={defaultActorName}
           userMetadata={userMetadata}
           linkedEventId={fromEventId}
-          initialEntryPath={from === "planner" ? "before" : undefined}
+          initialEntryPath={from === "planner" || from === "before" ? "before" : undefined}
           initialActionId={actionId ?? null}
           isAuthenticated={isAuthenticated}
           signInHref={buildAuthRedirectHref("/sign-in", returnUrl)}
@@ -93,7 +93,7 @@ export default async function NewActionPage({
         defaultActorName={defaultActorName}
         userMetadata={userMetadata}
         linkedEventId={fromEventId}
-        initialEntryPath={from === "planner" ? "before" : undefined}
+        initialEntryPath={from === "planner" || from === "before" ? "before" : undefined}
         initialActionId={actionId ?? null}
         isAuthenticated={isAuthenticated}
         signInHref={buildAuthRedirectHref("/sign-in", returnUrl)}

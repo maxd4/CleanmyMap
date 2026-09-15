@@ -124,6 +124,17 @@ describe("action creation entry point", () => {
     );
   });
 
+  it("keeps a published pre-action on the before-action path when it is resumed", async () => {
+    const html = renderToStaticMarkup(
+      await NewActionPage({
+        searchParams: Promise.resolve({ from: "before", actionId: "action-42" }),
+      }),
+    );
+
+    expect(html).toContain('data-entry-path="before"');
+    expect(html).toContain('data-action-id="action-42"');
+  });
+
   it("does not block the authenticated complete form by viewport", () => {
     const formSource = readFileSync(
       new URL(

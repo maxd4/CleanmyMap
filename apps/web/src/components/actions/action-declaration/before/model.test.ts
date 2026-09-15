@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialFormState } from "../payload";
-import { sanitizePreActionForm } from "./model";
+import { buildPublicationSummary, sanitizePreActionForm } from "./model";
 
 describe("sanitizePreActionForm", () => {
   it("removes final harvest fields while keeping expected waste categories", () => {
@@ -73,5 +73,58 @@ describe("sanitizePreActionForm", () => {
     expect(sanitized.durationMinutes).toBe("75");
     expect(sanitized.eventStartTime).toBe("09:00");
     expect(sanitized.eventEndTime).toBe("10:45");
+  });
+});
+
+describe("buildPublicationSummary", () => {
+  it("maps the canonical published action to the final recap", () => {
+    const summary = buildPublicationSummary({
+      id: "action-42",
+      actionDate: "2026-09-20",
+      eventStartTime: "09:00",
+      eventEndTime: "11:00",
+      locationLabel: "Paris 15e",
+      departureLocationLabel: "Place de la mairie",
+      arrivalLocationLabel: "Quai de Seine",
+      volunteersCount: 8,
+      preparationData: {
+        preparationState: "pret_a_partager",
+        safetyInstructions: "Rester en groupe.",
+        logisticsNotes: "Vérifier l'autorisation du lieu.",
+        operationalRoute: {
+          routes: [{}, {}],
+        },
+        routeCalibrationContext: {
+          plannerSnapshot: {
+            weatherContext: {
+              status: "available",
+              summary: { temperatureC: 18 },
+            },
+          },
+        },
+      },
+    } as never);
+
+    expect(summary).toEqual(expect.arrayContaining([
+      { label: "Itinéraire", value: "Place de la mairie → Quai de Seine · 2 groupe(s)" },
+      { label: "Date / heure", value: "2026-09-20 · 09:00 · à 11:00" },
+      { label: "Météo", value: "Prévision disponible · 18 °C" },
+      { label: "Formalité Paris", value: "Vérifier l'autorisation du lieu." },
+      { label: "Bénévoles recherchés", value: "8" },
+      { label: "Consignes principales", value: "Rester en groupe." },
+    ]));
+  });
+
+  it("states when weather and Paris formalities are not part of the canonical data", () => {
+    const form = createInitialFormState("Maxence", "action");
+    const summary = buildPublicationSummary({
+      ...form,
+      actionTitle: "Nettoyage test",
+      departureLocationLabel: "Paris 5e",
+      actionDate: "2026-09-20",
+    });
+
+    expect(summary.find((item) => item.label === "Météo")?.value).toContain("Non disponible");
+    expect(summary.find((item) => item.label === "Formalité Paris")?.value).toContain("à vérifier");
   });
 });

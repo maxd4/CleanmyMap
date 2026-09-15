@@ -25,6 +25,8 @@ describe("ActionBeforeDeclarationForm", () => {
     );
 
     expect(html).toContain("Déclarer avant l&#x27;action");
+    expect(html).toContain('data-testid="before-action-stepper"');
+    expect(html).toContain("Publication");
     expect(html).toContain("Préparer le formulaire de groupe");
     expect(html).toContain("Enregistrer le pré-formulaire");
     expect(html).toContain("publication sera déclenchée explicitement");
@@ -51,5 +53,6 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).not.toContain("Déchets collectés");
     expect(html).not.toContain("Photos de preuve");
     expect(html).not.toContain("Score d'impact");
+    expect(html).not.toContain("Confirmer et publier");
   });
 });
