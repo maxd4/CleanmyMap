@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 
@@ -11,6 +11,10 @@ const migrationPath = path.join(
 const hardeningMigrationPath = path.join(
   root,
   "apps/web/supabase/migrations/20260915000018_harden_action_registrations_privileges.sql",
+);
+const browserDenyMigrationPath = path.join(
+  root,
+  "apps/web/supabase/migrations/20260915000021_action_registrations_browser_deny_policy.sql",
 );
 const read = (relativePath) => readFileSync(path.join(root, relativePath), "utf8");
 
@@ -62,6 +66,41 @@ test("action registrations stay server-only without a deprecated role policy", (
   assert.doesNotMatch(sql, /create policy action_registrations_service_only/i);
   assert.doesNotMatch(sql, /auth\.role\(\)/i);
   assert.doesNotMatch(sql, /grant [^;]+\b(?:anon|authenticated)\b/i);
+});
+
+test("action registrations expose an explicit browser deny policy append-only", () => {
+  const browserDenySql = readFileSync(browserDenyMigrationPath, "utf8");
+  const hardeningSql = readFileSync(hardeningMigrationPath, "utf8");
+  const originalSql = readFileSync(migrationPath, "utf8");
+  const migrationName = path.basename(browserDenyMigrationPath);
+  const migrationSequence = Number(migrationName.match(/^(\d+)/)?.[1]);
+  const migrationNames = readdirSync(path.dirname(browserDenyMigrationPath));
+
+  assert.equal(migrationSequence > 20260915000020, true);
+  assert.equal(migrationNames.includes(migrationName), true);
+  assert.notEqual(browserDenyMigrationPath, hardeningMigrationPath);
+
+  assert.match(
+    browserDenySql,
+    /alter table public\.action_registrations enable row level security/i,
+  );
+  assert.match(
+    browserDenySql,
+    /create policy action_registrations_browser_deny[\s\S]+on public\.action_registrations[\s\S]+for all[\s\S]+to anon, authenticated[\s\S]+using \(false\)[\s\S]+with check \(false\)/i,
+  );
+  assert.doesNotMatch(browserDenySql, /grant [^;]+\b(?:anon|authenticated)\b/i);
+  assert.doesNotMatch(browserDenySql, /revoke\s+/i);
+
+  assert.match(
+    hardeningSql,
+    /revoke all on table public\.action_registrations from anon, authenticated;/i,
+  );
+  assert.match(
+    hardeningSql,
+    /grant select, insert, update, delete on table public\.action_registrations\s+to service_role;/i,
+  );
+  assert.doesNotMatch(originalSql, /action_registrations_browser_deny/i);
+  assert.doesNotMatch(hardeningSql, /action_registrations_browser_deny/i);
 });
 
 test("future participation consumers use registrations while post-action claims retain participants", () => {
