@@ -511,6 +511,26 @@ validation ou au replay concerné. Une opération locale qui en dépend est
 classée `UNSUPPORTED_CONTAINER_RUNTIME` ; poursuivre uniquement les
 validations indépendantes lorsque c'est possible.
 
+### Sobriété de contexte et de validation
+
+Autour du noyau obligatoire — relire `main`, les `AGENTS.md` scoped, le code
+concerné et les tests — appliquer les règles suivantes :
+
+- ne pas recopier les blocs déjà présents dans `AGENTS.md` ou la documentation
+  canonique ;
+- conserver des prompts courts, bornés et centrés sur le lot ;
+- ne pas demander une réanalyse globale lorsque l'architecture est déjà
+  établie ;
+- inspecter uniquement les callers et consommateurs pertinents pour un lot
+  local ;
+- arrêter le chantier dès que sa `STOP CONDITION` est satisfaite ;
+- ne pas répéter une validation identique sur le même SHA sans changement de
+  contexte ou justification liée au candidat ;
+- réserver les gros audits globaux aux changements réellement transversaux.
+
+Cette sobriété ne réduit jamais le noyau de vérification : `main` + règles
+scoped + code concerné + tests restent obligatoires avant modification.
+
 ## Validation
 
 Ne jamais annoncer une commande non exécutée comme réussie. Choisir les checks

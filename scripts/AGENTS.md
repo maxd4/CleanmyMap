@@ -13,6 +13,14 @@ médias et rapports présents sous `scripts/`.
   donnée, un artefact ou un environnement ;
 - privilégier une validation ciblée avant une suite lourde.
 
+Pour un lot local de scripts, appliquer la sobriété définie par la
+gouvernance racine : prompts courts et bornés, lecture limitée aux callers,
+consommateurs et tests pertinents, et arrêt dès que la `STOP CONDITION` est
+atteinte. Ne pas recopier les contrats déjà canoniques ni relancer une suite
+identique déjà réussie sur le même SHA sans justification liée au candidat ;
+réserver les audits globaux aux changements transversaux. La relecture de
+`main`, des règles scoped, du code et des tests concernés reste obligatoire.
+
 ## Modèle canonique de développement
 
 `MAIN-ONLY / SINGLE-WRITER` est le workflow CURRENT pour les scripts et leurs
