@@ -68,10 +68,10 @@ describe("navigation display modes", () => {
       "gamification",
     ]);
     expect(spaces.find((space) => space.id === "network")?.items.map((item) => item.routeId)).toEqual([
+      "open-data",
       "community",
       "feedback",
       "messagerie",
-      "open-data",
     ]);
     expect(spaces.find((space) => space.id === "learn")?.items.map((item) => item.routeId)).toEqual([
       "learn-comprendre",
@@ -178,10 +178,10 @@ describe("navigation display modes", () => {
     ).find((space) => space.id === "network");
 
     expect(networkSpace?.items.map((item) => item.routeId)).toEqual([
+      "open-data",
       "community",
       "feedback",
       "messagerie",
-      "open-data",
     ]);
   });
 
@@ -238,10 +238,10 @@ describe("navigation display modes", () => {
     ).find((space) => space.id === "network");
 
     expect(networkSpace?.items.map((item) => item.routeId)).toEqual([
+      "open-data",
       "community",
       "feedback",
       "messagerie",
-      "open-data",
     ]);
   });
 

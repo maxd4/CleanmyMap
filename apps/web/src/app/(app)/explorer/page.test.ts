@@ -35,4 +35,10 @@ describe("explorer summary presentation contract", () => {
     expect(source).toContain("focus-visible:outline-2");
     expect(source).not.toContain("xl:flex-nowrap");
   });
+
+  it("puts public data first in the network and discussions block", () => {
+    expect(source).toContain(
+      'network:   { "open-data": 1, network: 2, community: 3, feedback: 4, messagerie: 5, annuaire: 6 }',
+    );
+  });
 });
