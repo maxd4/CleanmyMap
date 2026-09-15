@@ -7,6 +7,10 @@ export const CHAT_TOPIC_IDS = [
   "demande_diffusion",
   "besoin_ressources",
   "coordination_secteur",
+  "arbitrages",
+  "priorites",
+  "suivi_decisions",
+  "coordination_institutionnelle",
   "mon_territoire",
   "territoires_voisins",
 ] as const;
@@ -23,6 +27,12 @@ export const CHAT_TOPIC_IDS_BY_CHANNEL = {
     "coordination_secteur",
   ],
   territory: ["mon_territoire", "territoires_voisins"],
+  admin_elu: [
+    "arbitrages",
+    "priorites",
+    "suivi_decisions",
+    "coordination_institutionnelle",
+  ],
 } as const satisfies Partial<Record<ChatChannelType, readonly ChatTopicId[]>>;
 
 export function isChatTopicId(value: string): value is ChatTopicId {

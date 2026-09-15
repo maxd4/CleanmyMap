@@ -215,9 +215,13 @@ export async function GET(request: Request) {
           .in("recipient_id", [userId, recipientId]),
       );
     } else if (channelType === "admin_elu") {
-      scopeQueryFactories.push(() =>
-        createMessageQuery().eq("channel_type", "admin_elu"),
-      );
+      scopeQueryFactories.push(() => {
+        let query = createMessageQuery().eq("channel_type", "admin_elu");
+        if (topicId) {
+          query = query.eq("topic_id", topicId);
+        }
+        return query;
+      });
     } else if (channelType === "territory") {
       if (!hasValidZone) {
         return NextResponse.json(

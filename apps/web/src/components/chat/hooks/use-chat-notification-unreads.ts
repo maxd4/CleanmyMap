@@ -13,7 +13,7 @@ import { isChatRealtimeEnabled } from "@/lib/chat/chat-config";
 
 export type ChatNotificationReadScope =
   | {
-      channelType: "community" | "territory";
+      channelType: "community" | "territory" | "admin_elu";
       topicId: ChatTopicId | null;
     }
   | {

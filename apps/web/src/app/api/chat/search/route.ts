@@ -245,7 +245,11 @@ export async function GET(request: Request) {
           .in("recipient_id", [userId, recipientId]),
       );
     } else if (channelType === "admin_elu") {
-      scopeQueryFactories.push(() => createSearchQuery().eq("channel_type", "admin_elu"));
+      scopeQueryFactories.push(() => {
+        let scopedQuery = createSearchQuery().eq("channel_type", "admin_elu");
+        if (topicId) scopedQuery = scopedQuery.eq("topic_id", topicId);
+        return scopedQuery;
+      });
     } else if (channelType === "territory") {
       const territory = getTerritoryFilter(zoneContext);
       if (zoneName) {

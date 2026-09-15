@@ -12,6 +12,8 @@ export type ChatNotificationUnreadCounts = {
   communityByTopic: Partial<Record<ChatTopicId, number>>;
   territory: number;
   territoryByTopic: Partial<Record<ChatTopicId, number>>;
+  admin_elu: number;
+  adminEluByTopic: Partial<Record<ChatTopicId, number>>;
   dm: number;
   actions: number;
 };
@@ -22,6 +24,8 @@ export function createEmptyChatNotificationUnreadCounts(): ChatNotificationUnrea
     communityByTopic: {},
     territory: 0,
     territoryByTopic: {},
+    admin_elu: 0,
+    adminEluByTopic: {},
     dm: 0,
     actions: 0,
   };
@@ -57,7 +61,11 @@ export function normalizeChatNotificationUnreadCounts(
       continue;
     }
 
-    if (channelType !== "community" && channelType !== "territory") {
+    if (
+      channelType !== "community" &&
+      channelType !== "territory" &&
+      channelType !== "admin_elu"
+    ) {
       continue;
     }
 
@@ -71,7 +79,9 @@ export function normalizeChatNotificationUnreadCounts(
       const byTopic =
         channelType === "community"
           ? counts.communityByTopic
-          : counts.territoryByTopic;
+          : channelType === "territory"
+            ? counts.territoryByTopic
+            : counts.adminEluByTopic;
       byTopic[topicId] = (byTopic[topicId] ?? 0) + unreadCount;
     }
   }

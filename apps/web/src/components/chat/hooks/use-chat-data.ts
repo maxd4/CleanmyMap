@@ -410,6 +410,10 @@ export function useChatData({
               if (!activeTopicId || newMsg.topic_id === activeTopicId) {
                 scheduleMessagesRefresh();
               }
+            } else if (activeChannelType === "admin_elu") {
+              if (!activeTopicId || newMsg.topic_id === activeTopicId) {
+                scheduleMessagesRefresh();
+              }
             } else if (activeChannelType === "territory") {
               // Match by zone or arrondissement
               if (

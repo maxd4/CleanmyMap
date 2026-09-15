@@ -100,6 +100,18 @@ describe("chat topic feed keys", () => {
     );
   });
 
+  it("adds an admin_elu topic without changing the existing channel", () => {
+    expect(
+      buildMessagesKey({
+        activeChannelType: "admin_elu",
+        activeTopicId: "suivi_decisions",
+        selectedRecipientId: null,
+        effectiveZone: "",
+        territoryFocus: null,
+      }),
+    ).toBe("/api/chat?channelType=admin_elu&topicId=suivi_decisions");
+  });
+
   it("carries a notification message target without changing the active scope", () => {
     expect(
       buildMessagesKey({
