@@ -7,9 +7,10 @@
 - `apps/web/src/app/(app)/pilotage/page.tsx`
 - **Type fonctionnel** : page de bloc
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
-- **Statut** : protégé
-- **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux lectures décideurs/gouvernance via trois onglets.
+- **Accès proxy** : `clerk-context` ; le proxy prépare le contexte Clerk sans appeler `auth.protect()` pour cette route.
+- **Présentation anonyme** : `auth-disabled-gate` ; un visiteur voit l'écran de verrouillage et aucun overview métier n'est chargé.
+- **Accès métier** : compte connecté avec `activeRole` `coordinateur`, `admin` ou `max`, via `getCurrentUserEffectiveAccess().canAccessPilotage`. Le profil `admin` est redirigé vers `/admin`.
+- **Objectif utilisateur principal** : Donner aux profils habilités un accès rapide aux vues de synthèse, au pilotage et aux lectures décideurs/gouvernance via trois onglets.
 - **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
 - **Palette attendue** : amber / brun
 - **Scope** : à corriger

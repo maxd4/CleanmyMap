@@ -8,7 +8,7 @@
 - **Type fonctionnel** : administration
 - **Famille / bloc fonctionnel** : Admin & Super-admin (hors bloc)
 - **Statut** : technique
-- **Contexte nécessaire** : Compte connecté, rôle admin ou supervision
+- **Contexte nécessaire** : Compte connecté ; profils `admin` ou `max` via `requireAdminAccess`.
 - **Objectif utilisateur principal** : Consulter l'historique technique des variations d'XP.
 - **Action principale attendue** : Filtrer, vérifier et auditer les écritures `xp_audit`.
 - **Palette attendue** : amber / brun sombre

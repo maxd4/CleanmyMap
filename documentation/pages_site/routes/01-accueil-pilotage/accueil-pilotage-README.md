@@ -10,7 +10,7 @@ Entrées opérationnelles de profil, sommaire, parcours, pilotage et gouvernance
 | `/explorer` | [Sommaire](./explorer/explorer-README.md) | `public-visible` | exception jaune `explorer-sommaire` | `apps/web/src/app/(app)/explorer/page.tsx` |
 | `/parcours` | [Parcours](./parcours/parcours-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/parcours/page.tsx` |
 | `/parcours/[profile]` | [Parcours par profil](./parcours-profile/parcours-profile-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/parcours/[profile]/page.tsx` |
-| `/pilotage` | [Pilotage](./pilotage/pilotage-README.md) | `protected` | pilotage | `apps/web/src/app/(app)/pilotage/page.tsx` |
+| `/pilotage` | [Pilotage](./pilotage/pilotage-README.md) | `auth-disabled-gate` ; `clerk-context` ; accès métier `coordinateur`/`admin`/`max` | pilotage | `apps/web/src/app/(app)/pilotage/page.tsx` |
 | `/profil` | [Profil](./profil/profil-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/page.tsx` |
 | `/profil/[profile]` | [Profil détaillé](./profil-profile/profil-profile-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/[profile]/page.tsx` |
 | `/sponsor-portal` | [Portail décideur](./sponsor-portal/sponsor-portal-README.md) | `protected` | pilotage | `apps/web/src/app/(app)/sponsor-portal/page.tsx` |

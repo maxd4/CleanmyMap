@@ -4,7 +4,7 @@
 
 - **Route** : `/admin/quiz-bank`
 - **Famille** : Admin & Super-admin
-- **Accès runtime** : `admin-only`
+- **Accès runtime** : `admin-like` (`admin` ou `max` via `canAccessAdminPage`)
 - **Source principale** : `apps/web/src/app/(app)/admin/quiz-bank/page.tsx`
 - **Type** : vue interne d'audit et de relecture de la banque de questions
 
@@ -14,7 +14,7 @@ La page exige :
 
 ```txt
 userId présent
-role = admin
+`getCurrentUserEffectiveAccess().canAccessAdminPage = true`
 ```
 
 Sinon :
@@ -23,7 +23,8 @@ Sinon :
 notFound()
 ```
 
-Le rôle `max` ne doit pas être supposé autorisé automatiquement sans modification explicite du code.
+Le runtime actuel autorise donc les profils `admin` et `max`. Aucun autre rôle,
+notamment `elu`, ne reçoit cette capacité par analogie.
 
 ## Sources principales
 

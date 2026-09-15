@@ -5,12 +5,13 @@
 - **Route** : `/admin/forms`
 - **Fichier(s) source(s)** :
 - `apps/web/src/app/(app)/admin/forms/page.tsx`
+- `apps/web/src/components/admin/enhanced-admin.tsx`
 - **Type fonctionnel** : administration
 - **Famille / bloc fonctionnel** : Admin & Super-admin (hors bloc)
 - **Statut** : technique
-- **Contexte nécessaire** : Compte connecté, parfois rôle technique ou de supervision
-- **Objectif utilisateur principal** : Piloter les réglages avancés, la modération et la supervision.
-- **Action principale attendue** : Consulter un panneau d'administration ou agir sur une ressource.
+- **Contexte nécessaire** : Compte connecté via le proxy ; cette page ne vérifie pas elle-même un rôle métier supplémentaire.
+- **Objectif utilisateur principal** : Consulter et ajuster les réglages locaux de simplification de formulaire, les feature flags et les analytics de formulaire du navigateur.
+- **Action principale attendue** : Modifier la répartition du trafic, activer/désactiver un flag local ou vider les analytics locales.
 - **Palette attendue** : amber / brun sombre
 - **Scope** : à corriger
 - **Terminée** : non
