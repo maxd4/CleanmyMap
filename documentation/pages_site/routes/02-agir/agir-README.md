@@ -13,12 +13,12 @@ Parcours de déclaration, préparation terrain, orientation, signalement et coor
 | Route | Fiche | Accès runtime | Palette / famille | Source principale |
 |---|---|---|---|---|
 | `/actions/history` | [Historique des actions](./actions-history/actions-history-README.md) | `protected` | agir | `apps/web/src/app/(app)/actions/history/page.tsx` |
-| `/actions/new` | [Déclarer une action](./actions-new/actions-new-README.md) | `protected` | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
+| `/actions/new` | [Déclarer une action](./actions-new/actions-new-README.md) | `clerk-context` ; compte requis pour créer/envoyer | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
 | `/sections/rejoindre-une-action` | [Rejoindre une action](./formulaire-de-groupe/formulaire-de-groupe-README.md) | `public-visible` ; compte requis pour rejoindre | agir, exception `join-action` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/missions/[id]` | [Missions](./missions/missions-README.md) | dynamique | agir | `apps/web/src/app/(app)/missions/[id]/page.tsx` |
 | `/sections/route` | [Où agir](./ou-agir/ou-agir-README.md) | `public-visible` | agir | `apps/web/src/app/(app)/sections/route/page.tsx` |
 | `/sections/weather` | [Organiser une action](./weather/weather-README.md) | `public-visible` | agir, exception `weather-operations` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/signalement` | [Signalement déchets](./signalement/signalement-README.md) | `protected` | agir | `apps/web/src/app/(app)/signalement/page.tsx` |
+| `/signalement` | [Signalement déchets](./signalement/signalement-README.md) | `clerk-context` ; compte requis pour signaler et consulter ses observations | agir | `apps/web/src/app/(app)/signalement/page.tsx` |
 
 ## Alias et redirections
 

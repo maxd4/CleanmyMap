@@ -19,8 +19,7 @@
 - `apps/web/src/app/api/chat/action-exclusions/route.ts`
 - **Type fonctionnel** : page de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
-- **Statut** : protégé
-- **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
+- **Accès runtime** : `auth-blur-gate` ; la surface est floutée avant connexion et l'accès conversationnel reste contrôlé par le contrat Chat.
 - **Objectif utilisateur principal** : Retrouver rapidement un échange privé et poursuivre le fil actif.
 - **Action principale attendue** : Sélectionner une conversation, lire les messages réellement visibles et répondre.
 - **Palette attendue** : pink

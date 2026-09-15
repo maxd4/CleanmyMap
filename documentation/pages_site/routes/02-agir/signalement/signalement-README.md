@@ -7,8 +7,7 @@
 - `apps/web/src/app/(app)/signalement/page.tsx`
 - **Type fonctionnel** : page d'action
 - **Famille / bloc fonctionnel** : Agir (bloc)
-- **Statut** : protégé
-- **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
+- **Accès runtime** : `clerk-context` ; la page affiche sa surface et ses explications sans hard gate. Un compte est requis pour créer un signalement et consulter la boucle propriétaire.
 - **Objectif utilisateur principal** : Permettre l'action terrain, la déclaration et le suivi propriétaire des observations récentes.
 - **Action principale attendue** : Lancer une action, signaler ou compléter un formulaire.
 - **Boucle propriétaire** : La section `#mes-observations`, sous le formulaire, lit exclusivement les lignes `trash_spotter_spots` créées par le compte Clerk courant via `GET /api/signalements/me`. Elle affiche uniquement les types `spot` et `clean_place`, avec les statuts `new`, `validated` et `cleaned`, dans l'ordre du plus récent au plus ancien.

@@ -6,10 +6,10 @@
 - **Fichier(s) source(s)** :
   - `apps/web/src/lib/sections-registry/config.ts`
   - `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
+  - `apps/web/src/components/sections/rubriques/funding-section.tsx`
 - **Type fonctionnel** : section de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
-- **Statut** : à documenter
-- **Contexte nécessaire** : à compléter
+- **Accès runtime** : `public-visible` ; la présentation du modèle économique est consultable sans compte. Les éventuels parcours partenaire ou de financement restent séparés et conservent leurs propres contrôles.
 - **Objectif utilisateur principal** : à compléter
 - **Action principale attendue** : à compléter
 - **Palette attendue** : à compléter

@@ -4,7 +4,7 @@
 
 - **Route** : `/sections/route`
 - **Fichier source** : `apps/web/src/app/(app)/sections/route/page.tsx`
-- **Type fonctionnel** : page protégée du bloc Agir
+- **Type fonctionnel** : section publique du bloc Agir
 - **Objectif** : proposer un itinéraire de nettoyage priorisé et contraint à
   partir des données disponibles.
 - **Action principale** : cliquer explicitement sur `Calculer la recommandation`.

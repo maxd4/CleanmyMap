@@ -35,6 +35,7 @@ lui seul la conformité sémantique du contenu des fiches.
 | `public-visible` | page ou section lisible sans compte |
 | `auth-blur-gate` | aperçu ou gate flouté avant connexion |
 | `auth-disabled-gate` | contenu verrouillé tant que le compte n'est pas connecté |
+| `clerk-context` | contexte Clerk disponible sans hard gate de page ; les capacités sensibles gardent leur propre contrôle |
 | `protected` | authentification imposée par le proxy ou la page |
 | `admin-only` | rôle `admin` requis |
 | `max-only` | profil `max` requis |
@@ -70,12 +71,12 @@ lui seul la conformité sémantique du contenu des fiches.
 | Route | Fiche | Accès | Palette runtime | Source |
 |---|---|---|---|---|
 | `/actions/history` | [Historique des actions](./routes/02-agir/actions-history/actions-history-README.md) | `protected` | agir | `apps/web/src/app/(app)/actions/history/page.tsx` |
-| `/actions/new` | [Déclarer une action](./routes/02-agir/actions-new/actions-new-README.md) | `protected` | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
+| `/actions/new` | [Déclarer une action](./routes/02-agir/actions-new/actions-new-README.md) | `clerk-context` ; compte requis pour créer/envoyer | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
 | `/sections/rejoindre-une-action` | [Rejoindre une action](./routes/02-agir/formulaire-de-groupe/formulaire-de-groupe-README.md) | `public-visible` ; compte requis pour rejoindre | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/missions/[id]` | [Missions](./routes/02-agir/missions/missions-README.md) | `protected` | agir | `apps/web/src/app/(app)/missions/[id]/page.tsx` |
 | `/sections/route` | [Où agir](./routes/02-agir/ou-agir/ou-agir-README.md) | `public-visible` | agir | `apps/web/src/app/(app)/sections/route/page.tsx` |
 | `/sections/weather` | [Organiser une action](./routes/02-agir/weather/weather-README.md) | `public-visible` | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/signalement` | [Signalement déchets](./routes/02-agir/signalement/signalement-README.md) | `protected` | agir | `apps/web/src/app/(app)/signalement/page.tsx` |
+| `/signalement` | [Signalement déchets](./routes/02-agir/signalement/signalement-README.md) | `clerk-context` ; compte requis pour signaler et consulter ses observations | agir | `apps/web/src/app/(app)/signalement/page.tsx` |
 
 `/missions/[id]` reste une route dynamique : `[id]` est un segment paramétré
 de l'App Router. Cette propriété décrit la forme de la route et ne remplace
@@ -108,10 +109,10 @@ pas son contrôle d'accès, qui est `protected`.
 
 | Route | Fiche | Accès | Palette runtime | Source |
 |---|---|---|---|---|
-| `/sections/community` | [Communauté](./routes/04-reseau-discussions/community/community-README.md) | `auth-disabled-gate` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/community` | [Communauté](./routes/04-reseau-discussions/community/community-README.md) | `public-visible` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/feedback` | [Idées et problèmes](./routes/04-reseau-discussions/feedback/feedback-README.md) | `public-visible` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/actors` | [Réseau engagé](./routes/04-reseau-discussions/actors/actors-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
-| `/sections/annuaire` | [Annuaire des acteurs](./routes/04-reseau-discussions/annuaire/annuaire-README.md) | `auth-disabled-gate` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/annuaire` | [Annuaire des acteurs](./routes/04-reseau-discussions/annuaire/annuaire-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/messagerie` | [Messagerie](./routes/04-reseau-discussions/messagerie/messagerie-README.md) | `auth-blur-gate` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/open-data` | [Données publiques](./routes/04-reseau-discussions/open-data/open-data-README.md) | `public-visible` | pink | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/sections/funding` | [Soutenir le projet](./routes/04-reseau-discussions/funding/funding-README.md) | `public-visible` | réseau-discussions | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
