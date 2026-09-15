@@ -1,6 +1,7 @@
-import { canAutoApproveOwnAction } from "./permissions";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { normalizeClockTime } from "./time-contract";
+import { resolveNextActionStatus } from "./action-update-status";
+import type { ActionPermissionIdentity } from "./permissions";
 import type { extractActionMetadataFromNotes } from "./metadata";
 import type { ActionRow } from "@/types/database";
 import type { updateActionSchema } from "@/lib/validation/action";
@@ -87,7 +88,7 @@ export function buildActionAuditSnapshots(
   current: ActionSnapshotSource,
   body: ActionUpdateInput,
   currentMetadata: ActionMetadata,
-  permissionIdentity: Parameters<typeof canAutoApproveOwnAction>[0],
+  permissionIdentity: ActionPermissionIdentity | null | undefined,
 ): ActionAuditSnapshots {
   const currentPreparationData = normalizeActionPreparationData(
     current.preparation_data ?? {},
@@ -97,16 +98,12 @@ export function buildActionAuditSnapshots(
       ? currentPreparationData
       : body.preparationData ?? {};
   const nextActionPhase = body.actionPhase ?? current.action_phase;
-  let nextStatus = current.status;
-  if (body.actionPhase === "pre_action") {
-    nextStatus = "pending";
-  } else if (body.actionPhase === "post_action_complete") {
-    nextStatus = canAutoApproveOwnAction(permissionIdentity, {
-      createdByClerkId: current.created_by_clerk_id,
-    })
-      ? "approved"
-      : "pending";
-  }
+  const nextStatus = resolveNextActionStatus({
+    currentStatus: current.status,
+    actionPhase: body.actionPhase,
+    permissionIdentity,
+    createdByClerkId: current.created_by_clerk_id,
+  });
 
   const nextActorName =
     body.actorName === undefined
