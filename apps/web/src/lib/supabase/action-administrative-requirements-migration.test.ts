@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const migrationPath = new URL(
-  "../../../supabase/migrations/20260915000022_action_administrative_requirements_atomic_validation.sql",
+  "../../../supabase/migrations/20260915000023_action_administrative_requirements_invoker.sql",
   import.meta.url,
 );
 const migration = readFileSync(migrationPath, "utf8").toLowerCase();
@@ -14,8 +14,8 @@ describe("administrative requirements atomic validation migration", () => {
     );
     expect(migration).toContain("p_action_id uuid");
     expect(migration).toContain("p_validated_by_user_id text");
-    expect(migration).toContain("security definer");
-    expect(migration).toContain("set search_path = public, pg_catalog");
+    expect(migration).toContain("security invoker");
+    expect(migration).toContain("set search_path = pg_catalog, public");
     expect(migration).toContain(
       "revoke all on function public.validate_action_administrative_requirements(uuid, text)",
     );
@@ -28,9 +28,6 @@ describe("administrative requirements atomic validation migration", () => {
   });
 
   it("serializes pending-to-validated CAS and audit in one transaction", () => {
-    expect(migration).toContain(
-      "pg_advisory_xact_lock(hashtextextended(p_action_id::text, 0))",
-    );
     expect(migration).toContain("from public.actions");
     expect(migration).toContain("for update");
     expect(migration).toContain("if v_status = 'validated' then");
@@ -41,6 +38,7 @@ describe("administrative requirements atomic validation migration", () => {
     expect(migration).toContain("'newvalue', v_next_requirements");
     expect(migration).toContain("'validatedbyuserid', btrim(p_validated_by_user_id)");
     expect(migration).not.toContain("on conflict");
+    expect(migration).not.toContain("drop function");
   });
 
   it("does not grant browser execution", () => {

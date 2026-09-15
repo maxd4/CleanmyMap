@@ -114,4 +114,25 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
       },
     });
   });
+
+  it("does not retain an in-progress pre-action while requirements are pending", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+
+    await expect(
+      prepareActionUpdate({
+        current: buildCurrent({
+          preparationState: "action_en_cours",
+          administrativeRequirements: {
+            status: "pending",
+            validatedAt: null,
+            validatedByUserId: null,
+          },
+        }),
+        parsedBody: ({ notes: "Mise à jour sans démarrage" } as unknown as ActionUpdateInput),
+      }),
+    ).rejects.toThrow("Les démarches administratives doivent être validées");
+  });
 });

@@ -8,10 +8,61 @@ import {
   canValidateActionAdministrativeRequirements,
 } from "@/lib/actions/permissions";
 import { loadCanonicalActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
+import { isPublishedFuturePreAction } from "@/lib/actions/temporal";
+import { normalizeAdministrativeRequirements } from "@/lib/actions/administrative-requirements";
 
 export const runtime = "nodejs";
 // Justification Vercel: la validation dépend de l'identité, de la relation organisateur et de l'état frais de l'action.
 export const dynamic = "force-dynamic";
+
+export async function GET(
+  _request: Request,
+  ctx: { params: Promise<{ actionId: string }> },
+) {
+  const { actionId } = await ctx.params;
+  const trimmedActionId = actionId.trim();
+  if (!trimmedActionId) {
+    return validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
+  }
+
+  try {
+    const supabase = getSupabaseServerClient(true);
+    const current = await loadActionById(supabase, trimmedActionId);
+    if (!current || current.action_phase !== "pre_action") {
+      return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
+    }
+
+    const identity = await getCurrentUserIdentity();
+    const organizerIds = await loadCanonicalActionOrganizerIdsForAction(
+      supabase,
+      trimmedActionId,
+    );
+    const canValidate = canValidateActionAdministrativeRequirements(
+      identity
+        ? { userId: identity.userId, activeRole: identity.activeRole }
+        : null,
+      { createdByClerkId: current.created_by_clerk_id, actionPhase: current.action_phase },
+      organizerIds,
+    );
+    if (!canValidate && !isPublishedFuturePreAction(current)) {
+      return NextResponse.json(
+        { error: "Vous n'êtes pas autorisé à lire l'état de cette pré-action." },
+        { status: 403 },
+      );
+    }
+
+    const requirements = normalizeAdministrativeRequirements(
+      current.preparation_data?.administrativeRequirements,
+    );
+    return NextResponse.json({
+      status: requirements.status,
+      validatedAt: requirements.validatedAt ?? null,
+      canValidate,
+    });
+  } catch (error) {
+    return handleApiError(error, "GET /api/actions/:actionId/administrative-requirements");
+  }
+}
 
 function responseFor(
   actionId: string,

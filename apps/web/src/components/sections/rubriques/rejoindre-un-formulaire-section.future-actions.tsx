@@ -2,6 +2,7 @@
 
 import { CalendarDays, MapPin, Route, Users2 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { AdministrativeRequirementsStatus } from "@/components/actions/administrative-requirements-status";
 import { extractEventRefFromNotes } from "@/lib/actions/event-link";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 import type { ActionListItem } from "@/lib/actions/types";
@@ -93,9 +94,10 @@ export function FutureActionsPanel({
                   <p className="flex items-center gap-2"><Route size={14} className="text-slate-400" />{item.geometry_kind ? (fr ? "Itinéraire prévu disponible" : "Planned route available") : (fr ? "Lieu uniquement" : "Location only")}</p>
                   <p className="text-sm font-semibold text-slate-700">{formatBusinessDurationMinutes(item.duration_minutes)} {fr ? "estimés" : "estimated"}</p>
                 </div>
-                <p className="text-xs text-slate-500">
-                  {fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}
-                </p>
+                 <p className="text-xs text-slate-500">
+                   {fr ? "Organisateur : " : "Organizer: "}{item.association_name || item.actor_name || "—"}
+                 </p>
+                 <AdministrativeRequirementsStatus actionId={item.id} surface="summary" />
                 {eventRef ? (
                   <p className="text-xs font-semibold text-slate-500">
                     {fr ? "Événement associé : " : "Linked event: "}{eventRef}

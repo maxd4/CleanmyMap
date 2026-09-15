@@ -14,6 +14,10 @@ import type { ActionVolunteerParticipation } from "@/lib/actions/volunteer-parti
 import type { OrganizerType } from "@/lib/actions/organizer-type";
 import { AppError, type AppErrorKind, defaultMessageForKind } from "@/lib/errors/app-errors";
 import { toContractCreatePayload } from "./contracts/contract-builders";
+import type {
+  AdministrativeRequirementsRead,
+  AdministrativeRequirementsStatus,
+} from "./administrative-requirements";
 
 export { buildMapActionsQueryString, fetchMapActions } from "./map/map-http";
 
@@ -348,13 +352,50 @@ export type ActionEditorRecord = {
     coordinates: [number, number][];
   } | null;
   recordType?: string | null;
-  canValidateAdministrativeRequirements?: boolean;
 };
 
 export type ActionEditorResponse = {
   status: "ok";
   action: ActionEditorRecord;
 };
+
+export type ActionAdministrativeRequirementsResponse = AdministrativeRequirementsRead & {
+  canValidate: boolean;
+};
+
+export async function fetchActionAdministrativeRequirements(
+  actionId: string,
+): Promise<ActionAdministrativeRequirementsResponse> {
+  const response = await fetch(
+    `/api/actions/${encodeURIComponent(actionId)}/administrative-requirements`,
+    { method: "GET", cache: "no-store" },
+  );
+  const body = await parseJsonSafely(response);
+  if (!response.ok) {
+    throw createActionError(
+      response,
+      body,
+      parseErrorMessage(body, "Impossible de charger l'état des démarches administratives."),
+    );
+  }
+  const candidate = body as {
+    status?: unknown;
+    validatedAt?: unknown;
+    canValidate?: unknown;
+  } | null;
+  if (
+    !candidate ||
+    !["pending", "validated"].includes(candidate.status as AdministrativeRequirementsStatus) ||
+    (candidate.validatedAt !== null && typeof candidate.validatedAt !== "string") ||
+    typeof candidate.canValidate !== "boolean"
+  ) {
+    throw new AppError({
+      kind: "server",
+      message: "La réponse du service est incomplète pour les démarches administratives.",
+    });
+  }
+  return candidate as ActionAdministrativeRequirementsResponse;
+}
 
 export async function fetchActionPrefill(): Promise<ActionPrefillResponse> {
   const response = await fetch("/api/actions/prefill", {
