@@ -71,10 +71,22 @@ lui seul la conformité sémantique du contenu des fiches.
 
 ## Agir
 
+### Entrées visibles du bloc
+
+Le bloc Agir expose exactement les trois entrées utilisateur suivantes, dans
+cet ordre :
+
+1. [Rejoindre une action](/sections/rejoindre-une-action)
+2. [Créer une action](/actions/new)
+3. [Signaler un déchet](/signalement)
+
+Un sondage ou une action de terrain sert d'aide à l'arbitrage ; son résultat ne
+constitue pas une décision officielle.
+
 | Route | Fiche | Accès | Palette runtime | Source |
 |---|---|---|---|---|
 | `/actions/history` | [Historique des actions](./routes/02-agir/actions-history/actions-history-README.md) | `protected` | agir | `apps/web/src/app/(app)/actions/history/page.tsx` |
-| `/actions/new` | [Déclarer une action](./routes/02-agir/actions-new/actions-new-README.md) | `clerk-context` ; entrée/préparation accessibles sans compte ; identité requise pour créer, compléter ou envoyer | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
+| `/actions/new` | [Créer une action](./routes/02-agir/actions-new/actions-new-README.md) | `clerk-context` ; entrée/préparation accessibles sans compte ; identité requise pour créer, compléter ou envoyer | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
 | `/sections/rejoindre-une-action` | [Rejoindre une action](./routes/02-agir/rejoindre-une-action/rejoindre-une-action-README.md) | `public-visible` ; compte requis pour rejoindre | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/missions/[id]` | [Missions](./routes/02-agir/missions/missions-README.md) | `protected` | agir | `apps/web/src/app/(app)/missions/[id]/page.tsx` |
 | `/sections/route` | [Où agir](./routes/02-agir/ou-agir/ou-agir-README.md) | `public-visible` | agir | `apps/web/src/app/(app)/sections/route/page.tsx` |
@@ -83,7 +95,12 @@ lui seul la conformité sémantique du contenu des fiches.
 
 `/missions/[id]` reste une route dynamique : `[id]` est un segment paramétré
 de l'App Router. Cette propriété décrit la forme de la route et ne remplace
-pas son contrôle d'accès, qui est `protected`.
+pas son contrôle d'accès, qui est `protected`. Cette route sert au workflow et
+aux deep-links ; elle ne devient pas une rubrique primaire.
+
+Les routes `/actions/history`, `/sections/route` et `/sections/weather` restent
+documentées et accessibles pour compatibilité. Elles sont hors navigation
+primaire du bloc Agir jusqu'au lot de routage dédié.
 
 ### Alias et redirections Agir
 

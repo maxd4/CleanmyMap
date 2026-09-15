@@ -5,9 +5,9 @@ import { getCurrentUserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 
 export const metadata: Metadata = {
-  title: "Déclarer une action - CleanMyMap",
+  title: "Créer une action - CleanMyMap",
   description:
-    "Déclarez une action de nettoyage urbain, renseignez les résultats terrain et consultez les estimations d’impact sur le CO₂ évité et l’eau préservée.",
+    "Préparer une action avant terrain ou compléter ses résultats après réalisation. Consultez ensuite les estimations d’impact sur le CO₂ évité et l’eau préservée.",
   keywords: [
     "déclarer action",
     "déclaration nettoyage",

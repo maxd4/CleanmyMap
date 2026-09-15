@@ -1,4 +1,4 @@
-# Déclarer une action
+# Créer une action
 
 ## Fiche canonique
 
@@ -8,7 +8,7 @@
 - **Type fonctionnel** : page d'action
 - **Famille / bloc fonctionnel** : Agir (bloc)
 - **Accès runtime** : `clerk-context` ; l'entrée et la préparation des parcours sont accessibles au visiteur sans compte. La route fournit le contexte Clerk sans hard gate de page ; le compte est demandé lorsque l'identité est nécessaire pour créer, compléter ou envoyer une action.
-- **Objectif utilisateur principal** : Préparer une action à venir ou déclarer les résultats terrain d'une action réalisée.
+- **Objectif utilisateur principal** : Préparer une action avant terrain ou compléter ses résultats après réalisation.
 - **Action principale attendue** : Choisir directement entre la préparation avant action, avec inscriptions éventuelles, et la déclaration après action, avec les résultats terrain.
 - **Règle de séparation** : le parcours avant action prépare seulement l'organisation; les champs de récolte, d'impact et de validation scientifique restent réservés au formulaire complet après action.
 - **Règle de modération** : toute action créée suit le parcours normal de validation, quel que soit le rôle actif de son auteur. Une pré-action future peut être publiée explicitement et visible sur la carte ; cette visibilité ne vaut ni approbation métier ni éligibilité Impact.

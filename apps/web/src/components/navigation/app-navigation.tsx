@@ -61,7 +61,9 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
  const compactMode = displayMode !=="exhaustif";
  const renderedSpaces =
  displayMode ==="minimaliste"
- ? spaces.map((space) => ({ ...space, items: space.items.slice(0, 2) }))
+ ? spaces.map((space) =>
+ space.id === "act" ? space : { ...space, items: space.items.slice(0, 2) },
+ )
  : spaces;
  const getRenderedSpaceItems = (space: (typeof renderedSpaces)[number]) =>
  space.items;

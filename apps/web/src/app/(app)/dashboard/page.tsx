@@ -286,8 +286,8 @@ export default async function DashboardPage() {
                 </p>
                 <h2 className="text-2xl font-black tracking-tight text-white">
                   {locale === "fr"
-                    ? "Déclarer une action"
-                    : "Declare an action"}
+                    ? "Créer une action"
+                    : "Create an action"}
                 </h2>
                 <p className="text-base font-medium text-white max-w-md leading-relaxed">
                   {locale === "fr"

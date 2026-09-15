@@ -5,8 +5,8 @@ export function HowToDeclareActionJsonLd() {
   const data = {
     "@context": "https://schema.org",
     "@type": "HowTo",
-    name: "Déclarer une action de nettoyage sur CleanMyMap",
-    description: "Guide étape par étape pour déclarer votre action de dépollution et calculer votre impact environnemental.",
+    name: "Créer une action de nettoyage sur CleanMyMap",
+    description: "Guide étape par étape pour préparer votre action de dépollution, compléter ses résultats et calculer votre impact environnemental.",
     step: [
       {
         "@type": "HowToStep",
@@ -16,7 +16,7 @@ export function HowToDeclareActionJsonLd() {
       {
         "@type": "HowToStep",
         name: "2. Accéder au formulaire de déclaration",
-        text: "Cliquez sur 'Déclarer une action' dans le menu principal ou accédez directement à /actions/new.",
+        text: "Cliquez sur 'Créer une action' dans le menu principal ou accédez directement à /actions/new.",
       },
       {
         "@type": "HowToStep",

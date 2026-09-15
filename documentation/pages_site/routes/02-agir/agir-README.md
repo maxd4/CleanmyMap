@@ -1,6 +1,6 @@
 # Agir
 
-Parcours de déclaration, préparation terrain, orientation, signalement et coordination.
+Parcours pour rejoindre une action, créer une action et signaler un déchet.
 
 ## Fiche de bloc
 
@@ -8,6 +8,20 @@ Parcours de déclaration, préparation terrain, orientation, signalement et coor
 - **Dossier canonique** : `02-agir`
 - **Snapshots** : colocalisés dans le dossier `screenshots/desktop/` ou
   `screenshots/mobile/` de chaque page canonique.
+
+## Entrées visibles
+
+Le bloc Agir contient exactement trois entrées utilisateur, quel que soit le
+mode d'affichage :
+
+1. `/sections/rejoindre-une-action` — **Rejoindre une action**
+2. `/actions/new` — **Créer une action**
+3. `/signalement` — **Signaler un déchet**
+
+Une action ou un sondage aide à préparer un arbitrage ; son résultat ne vaut pas
+décision officielle. `/missions/[id]` reste une route de workflow et de
+deep-link, jamais une rubrique primaire. Les anciennes routes de préparation,
+d'orientation et d'historique restent accessibles hors de cette navigation.
 
 ## Inventaire des pages
 

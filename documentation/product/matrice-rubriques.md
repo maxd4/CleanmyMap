@@ -16,12 +16,9 @@ flowchart LR
   B1 --> PIL["/pilotage"]
   B1 --> SPONSOR["/sponsor-portal"]
 
-  B2 --> NEW["/actions/new"]
-  B2 --> HISTORY["/actions/history"]
-  B2 --> ROUTE["/sections/route"]
-  B2 --> SIGNAL["/signalement"]
-  B2 --> METEO["/sections/weather"]
   B2 --> FORM["/sections/rejoindre-une-action"]
+  B2 --> NEW["/actions/new"]
+  B2 --> SIGNAL["/signalement"]
 
   B3 --> MAP["/actions/map"]
   B3 --> METHODO["/methodologie"]
@@ -57,7 +54,7 @@ flowchart LR
 | Bloc | Teinte | Rôle principal | Sortie attendue |
 |---|---|---|---|
 | Accueil & Pilotage | `amber` / `brun` | Entrée personnelle + gouvernance | reprendre, piloter, administrer |
-| Agir | `emerald` | Passage à l'action terrain | déclaration, itinéraire, signalement |
+| Agir | `emerald` | Passage à l'action terrain | rejoindre une action, créer une action, signaler un déchet |
 | Cartographie & Impact | `sky` / `red` | Lecture territoriale + preuve | carte, rapports, méthodologie, badges |
 | Réseau & Discussions | `indigo` | Mise en relation | partenaires, messagerie, open data, communauté |
 | Apprendre | `yellow` | Montée en compétence | point de départ, quiz, guides, école |
@@ -76,6 +73,12 @@ flowchart LR
 - `documentation/pages_site/INDEX.md`
 
 ## Routes canoniques et alias
+
+Le bloc Agir expose exactement trois entrées utilisateur :
+`/sections/rejoindre-une-action`, `/actions/new` et `/signalement`. Les routes
+`/missions/[id]`, `/actions/history`, `/sections/route` et
+`/sections/weather` restent accessibles pour leurs moteurs et liens existants,
+mais ne sont pas des rubriques primaires du bloc.
 
 - `/explorer` et `/reports` sont les routes canoniques des pages Sommaire et Rapports.
 - `/sections/feedback`, `/sections/community`, `/sections/messagerie`, `/sections/open-data` et `/sections/actors` sont les routes canoniques des sections publiques correspondantes.

@@ -1,10 +1,10 @@
-# Déclarer une action - Présentation détaillée
+# Créer une action - Présentation détaillée
 
 ## Fiche canonique
 
 - **Route** : `/actions/new`
 - **Dossier canonique** : `actions-new`
-- **Rôle** : point d'entrée du bloc Agir pour déclarer une action après terrain ou préparer une action avant terrain
+- **Rôle** : entrée du bloc Agir pour préparer une action avant terrain ou compléter ses résultats après réalisation
 - **Périmètre** : écran d'entrée à deux parcours, formulaire bénévole existant, retour au choix, états de transition et préparation avant action
 - **États à documenter** : choix initial, chargement, succès, erreur, retour au choix, parcours après action, préparation avant action
 - **Composants concernés** : cartes de parcours, état de transition, formulaire bénévole actuel, préparation avant action

@@ -1,6 +1,6 @@
-# Déclarer une action - Objectifs non pertinents
+# Créer une action - Objectifs non pertinents
 
-But: mémoriser les idées écartées pour `Déclarer une action` afin d'éviter de les reproposer.
+But: mémoriser les idées écartées pour `Créer une action` afin d'éviter de les reproposer.
 
 ## Liste des objectifs écartés
 
@@ -10,4 +10,3 @@ But: mémoriser les idées écartées pour `Déclarer une action` afin d'éviter
 
 - Les propositions listées ici restent écartées par défaut.
 - Si une idée redevient pertinente, elle doit sortir de ce fichier avant toute réintroduction.
-

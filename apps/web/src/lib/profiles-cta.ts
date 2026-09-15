@@ -20,10 +20,10 @@ export const PROFILE_CTA_CONFIG: Record<Parcours, ProfileCtaConfig> = {
   benevole: {
     primaryCTA: {
       href: "/actions/new",
-      label: { fr: "Déclarer une action", en: "Declare an action" },
+      label: { fr: "Créer une action", en: "Create an action" },
       description: {
-        fr: "Saisie terrain rapide en moins d'une minute",
-        en: "Fast field capture in under one minute",
+        fr: "Préparer une action avant terrain ou compléter ses résultats après réalisation.",
+        en: "Prepare an action before fieldwork or complete its results after completion.",
       },
     },
     secondaryCTA: {

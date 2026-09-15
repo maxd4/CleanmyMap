@@ -39,6 +39,7 @@ const NAVIGATION_DROPDOWN_ITEM_ICONS: Record<string, LucideIcon> = {
   funding: HandCoins,
   new: FilePenLine,
   "rejoindre-une-action": UserPlus,
+  signalement: Trash2,
   route: Route,
   weather: CloudRainWind,
   guide: BookOpen,
