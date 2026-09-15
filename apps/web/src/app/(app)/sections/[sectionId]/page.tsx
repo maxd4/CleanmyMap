@@ -13,6 +13,7 @@ import {
   CANONICAL_JOIN_ACTION_SECTION_ID,
   LEGACY_JOIN_FORM_ROUTE,
 } from "@/lib/sections/join-action-routes";
+import { buildActionCreationPanelHref } from "@/lib/actions/action-creation-routes";
 
 type SectionPageProps = {
   params: Promise<{ sectionId: string }>;
@@ -78,8 +79,13 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
     redirect("/sections/messagerie?tab=dm");
   }
 
-  if (sectionId === "guide") {
-    redirect("/sections/weather");
+  if (normalizedSectionId === "guide" || normalizedSectionId === "weather") {
+    redirect(
+      buildActionCreationPanelHref(
+        "meteo",
+        await searchParams,
+      ),
+    );
   }
 
   const section = getSectionRubriqueById(sectionId);

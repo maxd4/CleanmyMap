@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { useUser } from "@clerk/nextjs";
 import {
@@ -126,13 +126,18 @@ function isDaytimeHour(time: string): boolean {
   return hour >= 8 && hour < 22;
 }
 
-export function useWeatherData() {
+export function useWeatherData(
+  draftContext?: { locationLabel?: string; actionDate?: string },
+) {
   const { isLoaded, user } = useUser();
   const [selectedLocation, setSelectedLocation] = useState<WeatherLocation>(DEFAULT_LOCATION);
   const [locationQuery, setLocationQuery] = useState(DEFAULT_LOCATION.label);
   const [selectedForecastDayIndex, setSelectedForecastDayIndex] = useState(0);
   const hasManualLocationRef = useRef(false);
   const hasResolvedInitialLocationRef = useRef(false);
+  const draftLocationRef = useRef<string | null>(null);
+  const draftLocationLabel = draftContext?.locationLabel?.trim() ?? "";
+  const draftActionDate = draftContext?.actionDate?.trim() ?? "";
 
   const deferredLocationQuery = useDeferredValue(locationQuery.trim());
 
@@ -245,6 +250,27 @@ export function useWeatherData() {
       subtitle: location.subtitle,
     });
   };
+
+  useEffect(() => {
+    if (!draftLocationLabel || hasManualLocationRef.current || draftLocationRef.current === draftLocationLabel) {
+      return;
+    }
+
+    draftLocationRef.current = draftLocationLabel;
+    let isCancelled = false;
+    void resolveWeatherLocationFromLabel(draftLocationLabel, "Lieu du pré-formulaire").then((location) => {
+      if (isCancelled || hasManualLocationRef.current) {
+        return;
+      }
+      setSelectedLocation(location);
+      setLocationQuery(location.label);
+      setSelectedForecastDayIndex(0);
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [draftLocationLabel]);
 
   useEffect(() => {
     if (hasResolvedInitialLocationRef.current) {
@@ -370,52 +396,69 @@ export function useWeatherData() {
     };
   }, [isLoaded]);
 
-  const hourlyPoints: WeatherPoint[] =
-    weatherStatus === "ready" && data?.hourly?.time?.length
-      ? data.hourly.time
-          .map((time, index) => ({
-            time,
-            temperature: Number(
-              data.hourly?.temperature_2m?.[index] ?? data.current?.temperature_2m ?? 0,
-            ),
-            rain: Number(data.hourly?.precipitation?.[index] ?? data.current?.precipitation ?? 0),
-            precipitationProbability: Number(
-              data.hourly?.precipitation_probability?.[index] ??
-                data.current?.precipitation_probability ??
-                0,
-            ),
-            wind: Number(
-              data.hourly?.wind_speed_10m?.[index] ?? data.current?.wind_speed_10m ?? 0,
-            ),
-            humidity: Number(
-              data.hourly?.relative_humidity_2m?.[index] ?? data.current?.relative_humidity_2m ?? 0,
-            ),
-            uv: Number(data.hourly?.uv_index?.[index] ?? data.current?.uv_index ?? 0),
-            weatherCode: Number(
-              data.hourly?.weather_code?.[index] ?? data.current?.weather_code ?? 0,
-            ),
-          }))
-          .filter((point) => isDaytimeHour(point.time))
-      : [];
+  const hourlyPoints: WeatherPoint[] = useMemo(
+    () =>
+      weatherStatus === "ready" && data?.hourly?.time?.length
+        ? data.hourly.time
+            .map((time, index) => ({
+              time,
+              temperature: Number(
+                data.hourly?.temperature_2m?.[index] ?? data.current?.temperature_2m ?? 0,
+              ),
+              rain: Number(data.hourly?.precipitation?.[index] ?? data.current?.precipitation ?? 0),
+              precipitationProbability: Number(
+                data.hourly?.precipitation_probability?.[index] ??
+                  data.current?.precipitation_probability ??
+                  0,
+              ),
+              wind: Number(
+                data.hourly?.wind_speed_10m?.[index] ?? data.current?.wind_speed_10m ?? 0,
+              ),
+              humidity: Number(
+                data.hourly?.relative_humidity_2m?.[index] ?? data.current?.relative_humidity_2m ?? 0,
+              ),
+              uv: Number(data.hourly?.uv_index?.[index] ?? data.current?.uv_index ?? 0),
+              weatherCode: Number(
+                data.hourly?.weather_code?.[index] ?? data.current?.weather_code ?? 0,
+              ),
+            }))
+            .filter((point) => isDaytimeHour(point.time))
+        : [],
+    [data, weatherStatus],
+  );
 
-  const forecastDays =
-    weatherStatus === "ready" && data?.daily?.time?.length
-      ? data.daily.time.map((day, index) => {
-          const hours = hourlyPoints.filter((point) => point.time.slice(0, 10) === day);
-          return {
-            date: day,
-            label: index === 0 ? "Aujourd’hui" : formatDayLabel(day),
-            subtitle: formatDateShort(day),
-            min: Number(data.daily?.temperature_2m_min?.[index] ?? 0),
-            max: Number(data.daily?.temperature_2m_max?.[index] ?? 0),
-            rain: Number(data.daily?.precipitation_sum?.[index] ?? 0),
-            wind: Number(data.daily?.wind_speed_10m_max?.[index] ?? 0),
-            uv: Number(data.daily?.uv_index_max?.[index] ?? 0),
-            weatherCode: Number(data.daily?.weather_code?.[index] ?? hours[0]?.weatherCode ?? 0),
-            hours,
-          };
-        })
-      : [];
+  const forecastDays = useMemo(
+    () =>
+      weatherStatus === "ready" && data?.daily?.time?.length
+        ? data.daily.time.map((day, index) => {
+            const hours = hourlyPoints.filter((point) => point.time.slice(0, 10) === day);
+            return {
+              date: day,
+              label: index === 0 ? "Aujourd’hui" : formatDayLabel(day),
+              subtitle: formatDateShort(day),
+              min: Number(data.daily?.temperature_2m_min?.[index] ?? 0),
+              max: Number(data.daily?.temperature_2m_max?.[index] ?? 0),
+              rain: Number(data.daily?.precipitation_sum?.[index] ?? 0),
+              wind: Number(data.daily?.wind_speed_10m_max?.[index] ?? 0),
+              uv: Number(data.daily?.uv_index_max?.[index] ?? 0),
+              weatherCode: Number(data.daily?.weather_code?.[index] ?? hours[0]?.weatherCode ?? 0),
+              hours,
+            };
+          })
+        : [],
+    [data, hourlyPoints, weatherStatus],
+  );
+
+  useEffect(() => {
+    if (!draftActionDate || forecastDays.length === 0) {
+      return;
+    }
+    const matchingIndex = forecastDays.findIndex((day) => day.date === draftActionDate);
+    if (matchingIndex >= 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronize optional pre-form date context
+      setSelectedForecastDayIndex(matchingIndex);
+    }
+  }, [draftActionDate, forecastDays]);
 
   const currentRisk =
     weatherStatus === "ready" && hourlyPoints[0]

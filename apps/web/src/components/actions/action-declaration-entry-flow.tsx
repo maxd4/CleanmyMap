@@ -23,6 +23,7 @@ import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmPill } from "@/components/ui/cmm-pill";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
+import type { FormState } from "./action-declaration/form/model";
 
 type EntryPath = "before" | "after";
 type EntryScreen = "choice" | "loading" | "success" | "error";
@@ -32,6 +33,7 @@ type ActionDeclarationEntryFlowProps = ComponentProps<typeof ActionDeclarationFo
   initialEntryPath?: EntryPath;
   signInHref?: string;
   signUpHref?: string;
+  onBeforeFormChange?: (form: FormState) => void;
 };
 
 function EntryFeature({ children }: { children: string }) {
@@ -300,6 +302,7 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
         initialRecordType={props.initialRecordType}
         onReturnToChoice={backToChoice}
         onPassToComplete={(actionId) => transitionToComplete(actionId)}
+        onFormChange={props.onBeforeFormChange}
         signInHref={props.signInHref}
         signUpHref={props.signUpHref}
       />

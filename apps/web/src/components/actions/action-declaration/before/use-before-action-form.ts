@@ -51,6 +51,7 @@ export function useBeforeActionForm({
   initialActionId,
   initialRecordType = "action",
   onPassToComplete,
+  onFormChange,
 }: ActionBeforeDeclarationFormProps) {
   const resolvedDefaultActorName = actorNameOptions.includes(defaultActorName)
     ? defaultActorName
@@ -104,7 +105,7 @@ export function useBeforeActionForm({
             action.preparationData,
           ),
         );
-        setForm({
+        const nextForm = {
           ...hydrated,
           actorName: action.actorName ?? hydrated.actorName,
           associationName: action.associationName ?? hydrated.associationName,
@@ -121,7 +122,9 @@ export function useBeforeActionForm({
           durationMinutes: String(action.durationMinutes),
           groupJoinEnabled: action.groupJoinEnabled,
           participantAccounts: action.participantAccounts,
-        });
+        };
+        setForm(nextForm);
+        onFormChange?.(nextForm);
         setCreatedId(action.id);
         setPublishedAction(action);
         setPublishedAt(action.publishedAt ?? null);
@@ -143,7 +146,7 @@ export function useBeforeActionForm({
     return () => {
       active = false;
     };
-  }, [initialActionId, initialRecordType, resolvedDefaultActorName]);
+  }, [initialActionId, initialRecordType, onFormChange, resolvedDefaultActorName]);
 
   useEffect(() => {
     if (initialActionId || plannerHandoffHydratedRef.current) return;
@@ -176,10 +179,11 @@ export function useBeforeActionForm({
     // Hydrate after the client boundary so sessionStorage never changes SSR markup.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional external handoff hydration
     setForm(prepared);
+    onFormChange?.(prepared);
     saveDraft(prepared);
   // The handoff is intentionally consumed once on mount; the current form is the merge base.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialActionId]);
+  }, [initialActionId, onFormChange]);
 
   const shareLink = createdId
     ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(createdId)}`
@@ -207,6 +211,7 @@ export function useBeforeActionForm({
     }
 
     setForm(nextForm);
+    onFormChange?.(nextForm);
     saveDraft(nextForm);
     if (submissionState === "error") {
       setSubmissionState("idle");

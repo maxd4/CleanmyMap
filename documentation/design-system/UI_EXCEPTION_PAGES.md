@@ -111,7 +111,7 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | `/parcours` | Canonique | Agir | non | Palette `emerald` |
 | `/parcours/[profile]` | Dynamique | Agir | non | Palette `emerald` |
 | `/signalement` | Canonique | Agir | non | Palette `emerald` |
-| `/sections/route` | Canonique (section) | Agir | non | Itinéraire prioritaire, palette `emerald` |
+| `/sections/route` | Compatibilité vers `/actions/new?panel=itineraire` | Agir | non | Redirection vers le panneau itinéraire, palette `emerald` |
 
 ### Cartographie & Impact
 
@@ -161,8 +161,8 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | `/sections/climate` | Canonique (section) | Analyse & contexte | non | Analyse & contexte |
 | `/sections/recycling` | Canonique (section) | Terrain | non | Guide du tri |
 | `/sections/compost` | Canonique (section) | Terrain | non | Compostage |
-| `/sections/weather` | Canonique (section) | Terrain | non | Météo terrain |
-| `/sections/guide` | Canonique (section) | Terrain | non | Mode d'emploi |
+| `/sections/weather` | Compatibilité vers `/actions/new?panel=meteo` | Agir | non | Redirection vers le panneau météo terrain |
+| `/sections/guide` | Compatibilité vers `/actions/new?panel=meteo` | Agir | non | Redirection vers le panneau météo terrain |
 | `/sections/trash-spotter` | Canonique (section) | Terrain | non | Signalement de déchets |
 | `/form-comparison` | Canonique | Système & Utilitaires | non | Comparaison interne, mood layer analytique autonome |
 | `/declaration-simple` | Canonique | Système & Utilitaires | non | Déclaration rapide simplifiée, mood layer vert clair |
@@ -222,7 +222,7 @@ servir de modèle pour une nouvelle page éditoriale.
 | `/partners/dashboard` | en-tête principal harmonisé sur le composant canonique | page réseau/pilotage, contenu métier conservé |
 | `/partners/network` | redirection vers la page Communauté | onglet Partenaires intégré à `/sections/community` |
 | `/partners/onboarding` | en-tête principal harmonisé sur le composant canonique | parcours partenaire, gate de connexion conservé |
-| `/sections/route` | en-tête principal harmonisé sur le composant canonique | itinéraire Agir, CTA conservés |
+| `/sections/route` | redirection vers le panneau itinéraire de `/actions/new` | moteur et CTA conservés dans `RouteSection` |
 | `/prints/report` | en-tête principal harmonisé sur le composant canonique | en-tête de document conservé, layout imprimable inchangé |
 | `/missions/[id]` | en-tête principal harmonisé sur le composant canonique | détail mission, carte et statistiques conservées |
 | `/learn/ressources` | en-tête principal harmonisé via le shell d'apprentissage | shell d'apprentissage inchangé |

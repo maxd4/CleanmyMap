@@ -1,16 +1,21 @@
 # Où agir
 
-## Fiche canonique
+## Fiche de compatibilité
 
-- **Route** : `/sections/route`
-- **Fichier source** : `apps/web/src/app/(app)/sections/route/page.tsx`
-- **Type fonctionnel** : section publique du bloc Agir
+- **Route historique** : `/sections/route`
+- **Cible actuelle** : `/actions/new?panel=itineraire`
+- **Fichier du redirect** : `apps/web/src/app/(app)/sections/route/page.tsx`
+- **Moteur réutilisé** : `apps/web/src/components/sections/rubriques/route/route-section.tsx`
+- **Type fonctionnel** : panneau itinéraire de la page canonique `Créer une action`
+- **Accès runtime** : `public-visible` ; l'URL historique redirige vers le panneau sans hard gate supplémentaire
 - **Objectif** : proposer un itinéraire de nettoyage priorisé et contraint à
   partir des données disponibles.
 - **Action principale** : cliquer explicitement sur `Calculer la recommandation`.
 
-La page propose une décision du planner. Elle ne mesure pas directement la
+Le panneau propose une décision du planner. Il ne mesure pas directement la
 pollution et ne lance aucune recommandation automatiquement au chargement.
+La redirection conserve les paramètres de requête utiles et n'accorde aucune
+permission.
 
 ## Fonctionnement au niveau utilisateur
 
@@ -56,6 +61,6 @@ moteur.
 
 - [Présentation détaillée](./ou-agir-presentation-detaillee.md)
 - [Méthodologie de création d'itinéraire](../../../../architecture/methodologie-creation-itineraire.md)
-- [Créer un itinéraire](/sections/route)
+- [Créer une action — panneau itinéraire](/actions/new?panel=itineraire)
 - [Propositions à traiter](./ou-agir-liste-propositions-a-traiter.md)
 - [Objectifs non pertinents](./ou-agir-objectifs-non-pertinents.md)
