@@ -83,6 +83,7 @@ describe("admin_elu topics in the Chat API", () => {
         insertedMessage: message({ sender_id: "user-1" }),
       });
       rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+      serverClientMock.mockReturnValue(supabaseMock.serviceSupabase);
 
       const { GET } = await import("./route");
       const response = await GET(
@@ -93,6 +94,52 @@ describe("admin_elu topics in the Chat API", () => {
       expect(supabaseMock.messagesQuery.eq).toHaveBeenCalledWith(
         "channel_type",
         "admin_elu",
+      );
+    },
+  );
+
+  it.each(["admin", "max", "elu"] as const)(
+    "%s can create an admin_elu poll with the shared poll engine",
+    async (role) => {
+      identityMock.mockResolvedValueOnce({ activeRole: role });
+      const poll = message({
+        id: `poll-${role}`,
+        sender_id: "user-1",
+        topic_id: "arbitrages",
+        message_kind: "poll",
+        poll_options: [
+          { id: `option-${role}-1`, position: 1, label: "Priorité A" },
+          { id: `option-${role}-2`, position: 2, label: "Priorité B" },
+        ],
+      });
+      const supabaseMock = buildSupabaseMock({
+        profile: { ...profile, role_label: role },
+        messages: [poll],
+        insertedMessage: poll,
+        pollMessage: poll,
+      });
+      rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+      serverClientMock.mockReturnValue(supabaseMock.serviceSupabase);
+
+      const { POST } = await import("./route");
+      const response = await POST(
+        new Request("http://localhost/api/chat", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            channelType: "admin_elu",
+            topicId: "arbitrages",
+            messageKind: "poll",
+            pollOptions: ["Priorité A", "Priorité B"],
+            content: "Quelle priorité retenir ?",
+          }),
+        }),
+      );
+
+      expect(response.status).toBe(201);
+      expect(supabaseMock.supabase.rpc).toHaveBeenCalledWith(
+        "create_chat_poll_with_options",
+        expect.objectContaining({ p_channel_type: "admin_elu" }),
       );
     },
   );
@@ -113,6 +160,25 @@ describe("admin_elu topics in the Chat API", () => {
 
     expect(response.status).toBe(403);
     expect(supabaseMock.messagesQuery.eq).not.toHaveBeenCalled();
+  });
+
+  it("denies admin_elu poll creation to other roles before opening the RLS client", async () => {
+    identityMock.mockResolvedValueOnce({ activeRole: "benevole" });
+    const response = await (await import("./route")).POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          channelType: "admin_elu",
+          messageKind: "poll",
+          pollOptions: ["Oui", "Non"],
+          content: "Sondage refusé",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect(rlsClientMock).toHaveBeenCalledTimes(1);
   });
 
   it("keeps legacy messages in the aggregate and filters a selected topic", async () => {

@@ -33,6 +33,25 @@ describe("chat notification targets", () => {
     );
   });
 
+  it("deep-links admin_elu polls with channel, optional topic and message", () => {
+    expect(
+      buildChatNotificationHref({
+        channelType: "admin_elu",
+        topicId: "arbitrages",
+        messageId: "message-1",
+        messageKind: "poll",
+      }),
+    ).toBe("/sections/messagerie?channel=admin_elu&messageId=message-1&topicId=arbitrages");
+
+    expect(
+      buildChatNotificationHref({
+        channelType: "admin_elu",
+        messageId: "message-without-topic",
+        messageKind: "poll",
+      }),
+    ).toBe("/sections/messagerie?channel=admin_elu&messageId=message-without-topic");
+  });
+
   it("keeps legacy payloads on the aggregate view and preserves DM links", () => {
     expect(
       buildChatNotificationHref({ channelType: "community", messageId: "legacy" }),

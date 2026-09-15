@@ -23,13 +23,14 @@ import {
 } from "@/lib/chat/polls";
 
 const MAX_ATTACHMENT_SIZE_BYTES = 8 * 1024 * 1024;
+type ChatComposerMode = "message" | "announcement" | "poll";
 
 type ChatComposerProps = {
   activeChannelType: ChatChannelType;
   composerPlaceholder: string;
   tone?: "light" | "dark";
-  composerMode?: "message" | "announcement" | "poll";
-  onComposerModeChange?: (mode: "message" | "announcement" | "poll") => void;
+  composerMode?: ChatComposerMode;
+  onComposerModeChange?: (mode: ChatComposerMode) => void;
   announcementTemplate?: CommunityAnnouncementTemplateKey | null;
   onAnnouncementTemplateChange?: (template: CommunityAnnouncementTemplateKey) => void;
   relatedEvent?: ChatRelatedEvent | null;
@@ -39,6 +40,7 @@ type ChatComposerProps = {
   pollOptions?: string[];
   onPollOptionsChange?: (options: string[]) => void;
   showModeTabs?: boolean;
+  composerModes?: readonly ChatComposerMode[];
   userId?: string;
   message: string;
   onMessageChange: (e: ChangeEvent<HTMLTextAreaElement>) => void;
@@ -100,6 +102,7 @@ export const ChatComposer = memo(function ChatComposer({
   pollOptions = ["", ""],
   onPollOptionsChange,
   showModeTabs = false,
+  composerModes = ["message", "announcement", "poll"],
 }: ChatComposerProps) {
   const isLight = tone === "light";
   const placeholder =
@@ -319,13 +322,13 @@ export const ChatComposer = memo(function ChatComposer({
               { id: "message", label: "Message" },
               { id: "announcement", label: "Annonce / Relai" },
               { id: "poll", label: "Sondage" },
-          ].map((tab) => {
+            ].filter((tab) => composerModes.includes(tab.id as ChatComposerMode)).map((tab) => {
             const isActive = composerMode === tab.id;
             return (
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => onComposerModeChange?.(tab.id as "message" | "announcement" | "poll")}
+                onClick={() => onComposerModeChange?.(tab.id as ChatComposerMode)}
                 className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition ${isActive ? (isLight ? "bg-rose-500 text-white" : "bg-pink-500 text-white") : (isLight ? "text-slate-500 hover:bg-rose-50" : "text-slate-400 hover:bg-white/5")}`}
               >
                 {tab.label}
@@ -335,7 +338,7 @@ export const ChatComposer = memo(function ChatComposer({
         </div>
       ) : null}
 
-      {showModeTabs && composerMode === "poll" ? (
+      {showModeTabs && composerModes.includes("poll") && composerMode === "poll" ? (
         <div className={`mb-4 rounded-2xl border p-3 ${isLight ? "border-rose-100 bg-white/80" : "border-white/10 bg-white/5"}`}>
           <div className="mb-3 flex items-center gap-2">
             <BarChart3 size={15} className={isLight ? "text-rose-500" : "text-rose-300"} />
@@ -344,7 +347,7 @@ export const ChatComposer = memo(function ChatComposer({
                 Question du sondage
               </p>
               <p className="text-[10px] text-slate-500">
-                Les votes seront ajoutés dans un lot ultérieur.
+                Les votes sont enregistrés et affichés sous forme agrégée.
               </p>
             </div>
           </div>
@@ -393,7 +396,7 @@ export const ChatComposer = memo(function ChatComposer({
         </div>
       ) : null}
 
-      {showModeTabs && composerMode === "announcement" ? (
+      {showModeTabs && composerModes.includes("announcement") && composerMode === "announcement" ? (
         <div className={`mb-4 rounded-2xl border p-3 ${isLight ? "border-rose-100 bg-white/80" : "border-white/10 bg-white/5"}`}>
           <div className="mb-3 flex items-center gap-2">
             <Megaphone size={15} className={isLight ? "text-rose-500" : "text-rose-300"} />

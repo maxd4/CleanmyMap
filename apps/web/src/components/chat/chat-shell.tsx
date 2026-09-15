@@ -771,7 +771,14 @@ export function ChatShell({
                 announcementEventError={announcementEventError}
                 pollOptions={pollOptions}
                 onPollOptionsChange={setPollOptions}
-                showModeTabs={activeChannelType === "community"}
+                showModeTabs={activeChannelType === "community" || activeChannelType === "admin_elu"}
+                composerModes={
+                  activeChannelType === "community"
+                    ? ["message", "announcement", "poll"]
+                    : activeChannelType === "admin_elu"
+                      ? ["message", "poll"]
+                      : ["message"]
+                }
                 userId={userId}
                 message={message}
                 onMessageChange={handleTextChange}

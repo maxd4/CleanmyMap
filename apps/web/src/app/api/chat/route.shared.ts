@@ -121,8 +121,8 @@ export function validateMessageKind(
     return {};
   }
 
-  if (channelType !== "community") {
-    return { error: "Les sondages sont disponibles uniquement dans la communauté." };
+  if (channelType !== "community" && channelType !== "admin_elu") {
+    return { error: "Les sondages sont disponibles dans la communauté et le canal Admin & élus." };
   }
 
   if (relatedEventId || attachmentUrl) {

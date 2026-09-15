@@ -448,6 +448,7 @@ export async function POST(request: Request) {
       const { data: pollMessageId, error: pollError } = await supabase.rpc(
         "create_chat_poll_with_options",
         {
+          p_channel_type: parsed.data.channelType,
           p_content: parsed.data.content,
           p_topic_id: topicValidation.topicId,
           p_option_labels: normalizeChatPollOptionLabels(parsed.data.pollOptions ?? []),
