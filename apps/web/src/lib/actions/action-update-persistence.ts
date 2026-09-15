@@ -1,4 +1,4 @@
-import { buildPersistedNotes } from "./store";
+import { buildPersistedNotes } from "./store-notes";
 import { preserveHistoricalRouteCalibrationContext } from "@/lib/route/route-calibration";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { resolveActionDepartmentForPersistence } from "@/lib/geo/action-department-resolver";

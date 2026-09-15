@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { recordRepollutionPredictionEvaluationForAction } from "./store";
+import { recordRepollutionPredictionEvaluationForAction } from "./store-post-processing";
 import {
   loadActionOrganizerIdsForAction,
   syncActionManualParticipants,

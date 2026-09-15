@@ -27,6 +27,15 @@ vi.mock("@/lib/actions/store", () => ({
     recordRepollutionPredictionEvaluationForActionMock,
 }));
 
+vi.mock("@/lib/actions/store-notes", () => ({
+  buildPersistedNotes: vi.fn(),
+}));
+
+vi.mock("@/lib/actions/store-post-processing", () => ({
+  recordRepollutionPredictionEvaluationForAction:
+    recordRepollutionPredictionEvaluationForActionMock,
+}));
+
 vi.mock("@/lib/actions/participation/group-participation.helpers", () => ({
   loadManualParticipantIdsForAction: loadManualParticipantIdsForActionMock,
 }));
