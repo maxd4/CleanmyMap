@@ -52,6 +52,38 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 
 ## Données
 
+### Frontière persistée entre inscription et participation
+
+La source canonique dépend de la phase du cycle de vie :
+
+```txt
+PRE-ACTION / POST_ACTION_DRAFT
+→ public.action_registrations
+→ inscription planifiée
+→ registration_status
+→ registration_source
+
+POST_ACTION_COMPLETE
+→ public.action_participants
+→ participation finale
+→ participation_status
+→ participation_source
+```
+
+Les libellés API et UI historiques du parcours « rejoindre » (`participationStatus`
+et `participationSource`) restent compatibles, mais ils sont alimentés par
+`action_registrations.registration_status` et
+`action_registrations.registration_source` pour une action future. Ils ne font
+pas de `action_participants` la source des demandes futures ni des ajouts
+manuels de pré-action. Une inscription future confirmée et une participation
+finale peuvent donc coexister pour un même compte et une même action.
+
+Lors du passage à `post_action_complete`, le runtime initialise actuellement les
+comptes CleanMyMap du créateur et des organisateurs comme participations finales
+`confirmed` dans `action_participants`, avec les sources dédiées correspondantes.
+Ce comportement est documenté comme état courant et reste une décision produit
+distincte à arbitrer ultérieurement si nécessaire.
+
 - Source d'affichage: table `actions` filtree sur `status = approved`.
 - Source d'inscription future: table `action_registrations` avec `registration_status`, `registration_source`, `registered_at` et `updated_at`.
 - Source de participation finale: table `action_participants` avec `participation_status`, `participation_source`, `joined_at` et `updated_at`.

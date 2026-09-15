@@ -117,6 +117,27 @@ participationStatus = pending
 participationSource = group_form
 ```
 
+Pour une action `pre_action` ou `post_action_draft`, ces champs API/UI restent
+les libellés compatibles du parcours, mais leur source persistée canonique est :
+
+```txt
+public.action_registrations.registration_status
+public.action_registrations.registration_source
+```
+
+Ils décrivent une inscription planifiée, et non une présence terrain finale.
+`public.action_participants` est réservé à la participation finale après
+`post_action_complete`, avec `participation_status` et `participation_source`.
+Une inscription future, même `confirmed`, ne devient pas automatiquement une
+participation finale et n'alimente pas à elle seule les statistiques ou la
+gamification.
+
+Lorsqu'une action atteint `post_action_complete`, les comptes CleanMyMap du
+créateur et des organisateurs sont actuellement initialisés comme participations
+finales `confirmed` dans `public.action_participants`. C'est le comportement
+runtime courant ; il ne transforme pas les inscriptions futures des autres
+comptes en participations finales.
+
 ## Contrat de traitement de file
 
 La route :

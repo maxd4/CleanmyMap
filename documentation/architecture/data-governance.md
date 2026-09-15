@@ -106,6 +106,34 @@ Toute évolution de statut doit traverser :
 - tests ;
 - documentation.
 
+### Inscription future et participation finale
+
+La séparation persistée est durable et dépend de la phase de l'action :
+
+```txt
+PRE-ACTION / POST_ACTION_DRAFT
+→ public.action_registrations
+→ inscription planifiée
+→ registration_status / registration_source
+
+POST_ACTION_COMPLETE
+→ public.action_participants
+→ participation finale
+→ participation_status / participation_source
+```
+
+`action_registrations` est la source canonique des demandes futures, y compris
+les ajouts manuels de pré-action. `action_participants` porte les participations
+finales et les claims post-action ; une inscription future confirmée ne prouve
+jamais une présence terrain. Les statistiques, badges, progression,
+gamification et quotes-parts utilisent uniquement les lignes
+`action_participants` dont `participation_status = confirmed`.
+
+Le runtime courant initialise, lors du passage à `post_action_complete`, les
+comptes CleanMyMap correspondant au créateur et aux organisateurs comme
+participations finales `confirmed`. Cette initialisation est distincte d'une
+conversion automatique des inscriptions futures des autres utilisateurs.
+
 ### Signalements et modération
 
 `public.trash_spotter_spots` est la source canonique runtime pour les nouveaux
