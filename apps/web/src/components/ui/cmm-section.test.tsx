@@ -61,7 +61,9 @@ describe("canonical page layout primitives", () => {
     expect(tokensCss).not.toMatch(
       /--cmm-page-max-width:\s*var\(--cmm-grid-max-width\)\s*;/,
     );
-    expect(baseCss).not.toContain("zoom: 80%");
-    expect(baseCss).not.toContain("font-size: 80%");
+    expect(baseCss).toMatch(/html\s*\{[\s\S]*zoom:\s*80%\s*;/);
+    expect(baseCss).toMatch(
+      /@supports not \(zoom:\s*1\)[\s\S]*font-size:\s*80%\s*;/,
+    );
   });
 });

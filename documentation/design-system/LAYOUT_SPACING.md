@@ -50,6 +50,11 @@ le rythme entre le `PageHeader` et le premier contenu. Sa largeur maximale
 canonique est `112rem` (`1792px`) : elle permet aux pages classiques d'exploiter
 les grands écrans tout en conservant les gutters du shell.
 
+Le site applique une échelle d'affichage CSS globale de `80%` sur l'élément
+racine (`html`). Cette échelle est commune à toutes les routes et ne doit pas
+être détectée ou recalculée en JavaScript ; le layout répond uniquement à la
+largeur CSS disponible.
+
 `CmmSectionGroup` est l'unique primitive du rythme entre sections. Les deux
 primitives n'acceptent pas de variante de largeur, de padding ou d'espacement :
 ces valeurs sont des tokens CSS communs à toutes les pages.
