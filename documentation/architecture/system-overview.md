@@ -88,8 +88,8 @@ Voir `ADR-004` et `ADR-006`.
 ## Zones critiques à lire en premier
 
 1. `apps/web/src/lib/authz.ts`
-2. `apps/web/src/lib/auth/protected-routes.ts`
-3. `apps/web/src/proxy.ts`
+2. `apps/web/src/proxy.ts`
+3. `apps/web/src/lib/auth/api-authorization-contract.ts`
 4. `apps/web/src/lib/actions/data-contract.ts`
 5. `apps/web/src/lib/actions/unified-source.ts`
 6. `apps/web/src/lib/actions/types.ts`

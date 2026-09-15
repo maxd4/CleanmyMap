@@ -16,8 +16,9 @@ export type RubriqueAvailability = "available" | "hidden";
 export type RubriqueKind = DomainRubriqueKind;
 export type RubriqueImplementation = "finalized" | "pending";
 export type RubriqueSpaceId = Espace;
+export type RubriqueAnonymousPresentation = "visible" | "blur" | "disabled";
 
-export type RubriqueDefinition = {
+type RubriqueDefinitionBase = {
   id: string;
   categoryId: RubriqueCategory["id"];
   spaceId: RubriqueSpaceId;
@@ -30,3 +31,10 @@ export type RubriqueDefinition = {
   implementation: RubriqueImplementation;
   pendingNote?: LocalizedText;
 };
+
+export type RubriqueDefinition =
+  | (RubriqueDefinitionBase & {
+      kind: "section";
+      anonymousPresentation: RubriqueAnonymousPresentation;
+    })
+  | (RubriqueDefinitionBase & { kind: "app-route" });

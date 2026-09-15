@@ -37,6 +37,24 @@ describe("sections registry invariants", () => {
     }
   });
 
+  it("requires an explicit anonymous presentation for every section", () => {
+    const sections = RUBRIQUE_REGISTRY.filter((item) => item.kind === "section");
+
+    for (const section of sections) {
+      expect(["visible", "blur", "disabled"]).toContain(
+        section.anonymousPresentation,
+      );
+    }
+
+    const byId = new Map(sections.map((section) => [section.id, section]));
+    expect(byId.get("community")?.anonymousPresentation).toBe("visible");
+    expect(byId.get("annuaire")?.anonymousPresentation).toBe("visible");
+    expect(byId.get("gamification")?.anonymousPresentation).toBe("disabled");
+    expect(byId.get("elus")?.anonymousPresentation).toBe("disabled");
+    expect(byId.get("messagerie")?.anonymousPresentation).toBe("blur");
+    expect(byId.get("trash-spotter")?.anonymousPresentation).toBe("blur");
+  });
+
   it("keeps standalone app routes out of the section namespace", () => {
     const standaloneRoutes = RUBRIQUE_REGISTRY.filter(
       (item) => item.kind === "app-route",

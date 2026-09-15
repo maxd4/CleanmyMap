@@ -31,7 +31,8 @@ type ApiAuthorizationContract = Record<
 >;
 
 /**
- * Handler-level authorization contract for the protected API families.
+ * Handler-level authorization contract for the API routes that require an
+ * explicit method-level decision.
  *
  * The inventory test derives the route/method keys from route.ts files and
  * requires every non-public entry to expose the guard evidence listed here.

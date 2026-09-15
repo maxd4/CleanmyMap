@@ -177,7 +177,6 @@ Une relation organisationnelle ou territoriale absente ou ambiguë ne doit jamai
 Fichiers pivots :
 
 ```txt
-apps/web/src/lib/auth/protected-routes.ts
 apps/web/src/proxy.ts
 apps/web/src/lib/authz.ts
 apps/web/src/lib/auth/
@@ -600,7 +599,6 @@ doit protéger au minimum :
 Tests complémentaires :
 
 ```txt
-apps/web/src/lib/auth/protected-routes.test.ts
 apps/web/src/proxy.protected-routes.test.ts
 apps/web/src/lib/seo/indexability.test.ts
 ```

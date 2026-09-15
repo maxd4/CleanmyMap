@@ -40,7 +40,7 @@ type AppNavigationRibbonShellProps = AppNavigationRibbonProps & {
   showAccountActions: boolean;
 };
 
-function AppNavigationRibbonShell({
+function AppNavigationRibbonFrame({
   currentProfile,
   profileLabel,
   identity,
@@ -222,7 +222,7 @@ function AppNavigationRibbonShell({
   );
 }
 
-export function AppNavigationRibbonPublic({
+export function AppNavigationRibbonShell({
   currentProfile,
   profileLabel,
   identity,
@@ -232,29 +232,7 @@ export function AppNavigationRibbonPublic({
   const userResource = user ?? null;
 
   return (
-    <AppNavigationRibbonShell
-      currentProfile={currentProfile}
-      profileLabel={profileLabel}
-      identity={identity}
-      pathname={pathname}
-      user={userResource}
-      authStateReady={isLoaded}
-      showAccountActions
-    />
-  );
-}
-
-export function AppNavigationRibbonProtected({
-  currentProfile,
-  profileLabel,
-  identity,
-  pathname,
-}: AppNavigationRibbonProps & { pathname: string }) {
-  const { isLoaded, user } = useUser();
-  const userResource = user ?? null;
-
-  return (
-    <AppNavigationRibbonShell
+    <AppNavigationRibbonFrame
       currentProfile={currentProfile}
       profileLabel={profileLabel}
       identity={identity}

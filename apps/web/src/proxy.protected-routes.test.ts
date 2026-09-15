@@ -10,10 +10,6 @@ vi.hoisted(() => {
 });
 
 import {
-  isProtectedRoutePath,
-  PROTECTED_ROUTE_PATTERNS,
-} from "@/lib/auth/protected-routes";
-import {
   ADMIN_ROUTE,
   DASHBOARD_ROUTE,
   SPONSOR_PORTAL_ROUTE,
@@ -28,34 +24,7 @@ import {
   PROXY_MATCHER_PATTERNS,
 } from "./proxy";
 
-describe("proxy protected routes", () => {
-  it("keeps critical business routes protected", () => {
-    const required = [
-      `${ADMIN_ROUTE}(.*)`,
-      `${DASHBOARD_ROUTE}(.*)`,
-      "/missions(.*)",
-      "/prints(.*)",
-      `${SPONSOR_PORTAL_ROUTE}(.*)`,
-      "/api/community(.*)",
-      "/api/analytics(.*)",
-      "/api/account(.*)",
-      "/api/pilotage(.*)",
-      "/api/recycling(.*)",
-      "/api/route(.*)",
-      "/api/send(.*)",
-      "/api/services(.*)",
-      "/api/signalements(.*)",
-      "/api/spots(.*)",
-      "/api/admin(.*)",
-      "/api/actions(.*)",
-      "/api/reports(.*)",
-    ];
-
-    for (const pattern of required) {
-      expect(PROTECTED_ROUTE_PATTERNS).toContain(pattern);
-    }
-  });
-
+describe("proxy route context", () => {
   it("keeps the middleware matcher limited to protected and context surfaces", () => {
     const required = [
       `${ADMIN_ROUTE}(.*)`,
@@ -115,8 +84,6 @@ describe("proxy protected routes", () => {
     expect(CLERK_CONTEXT_API_ROUTE_PREFIXES).toContain("/api/legal-content-reports");
     expect(PROXY_MATCHER_PATTERNS).toContain("/api/legal-content-reports(.*)");
     expect(config.matcher).toContain("/api/legal-content-reports(.*)");
-    expect(PROTECTED_ROUTE_PATTERNS).not.toContain("/api/legal-content-reports(.*)");
-    expect(isProtectedRoutePath("/api/legal-content-reports")).toBe(false);
   });
 
   it("skips Clerk for anonymous community event reads but not mutations", () => {

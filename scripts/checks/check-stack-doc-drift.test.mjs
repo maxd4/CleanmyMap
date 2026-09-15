@@ -57,7 +57,7 @@ export const METHODOLOGIE_FAMILY = {
 };
 export const OTHER_FAMILY = {};
 `);
-  writeFile(root, "apps/web/src/lib/auth/protected-routes.ts", 'export const PROTECTED_ROUTE_PATTERNS = ["/missions(.*)"];\n');
+  writeFile(root, "apps/web/src/proxy.ts", 'export const PROTECTED_APP_PAGE_ROUTE_PREFIXES = ["/missions"] as const;\n');
   writeFile(root, "scripts/checks/check-agent-skill-mirrors.mjs", "export {};\n");
   fs.mkdirSync(path.join(root, "apps", "web", "supabase", "migrations"), { recursive: true });
 

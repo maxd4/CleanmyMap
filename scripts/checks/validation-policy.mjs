@@ -19,7 +19,6 @@ export const VITEST_GROUPS = Object.freeze({
     "src/lib/security/validation.test.ts",
     "src/lib/security/indexation-invariants.test.ts",
     "src/lib/seo/indexability.test.ts",
-    "src/lib/auth/protected-routes.test.ts",
     "src/lib/community/discussion-rate-limit.test.ts",
     "src/proxy.protected-routes.test.ts",
     "src/proxy.app-shell.test.ts",
