@@ -57,8 +57,10 @@ yellow / amber
 - respecter la promesse « sans compte élève » tant qu'elle est affichée ;
 - garder les quatre routes publiques alignées entre code, documentation et sitemap.
 
-## Captures
+## Snapshots
 
-Un seul dossier photo centralisé pour le bloc.
-
-Mobile uniquement sur instruction explicite.
+Les snapshots sont colocalisés dans le dossier de chaque page canonique, sous
+`screenshots/desktop/` ou `screenshots/mobile/`. Les captures historiques des
+surfaces intégrées `learn-hub` et `learn-ressources` sont conservées dans la
+page `learn-bonnes-pratiques`, qui les consomme réellement ; elles ne
+constituent pas des pages autonomes.

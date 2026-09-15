@@ -97,4 +97,4 @@ Les prévisions et les recommandations sont disponibles.
 - La page reste publique.
 - La route `guide` n'est qu'un alias de confort vers cette page.
 - La documentation doit rester centrée sur la météo d'action, pas sur une météo d'illustration.
-- Aucun dossier photo n'est requis ici tant qu'aucune capture officielle n'est produite.
+- Aucun snapshot n'est requis ici tant qu'aucune capture officielle n'est produite.

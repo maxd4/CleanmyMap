@@ -6,7 +6,7 @@ Communautés, partenaires, données publiques, annuaire et discussions.
 
 - **Nom canonique** : Réseau & Discussions
 - **Dossier canonique** : `04-reseau-discussions`
-- **Dossier photo centralisé** : `photo/`
+- **Snapshots** : colocalisés dans le dossier de chaque page canonique.
 
 ## Routes canoniques
 
@@ -30,8 +30,6 @@ Communautés, partenaires, données publiques, annuaire et discussions.
 | `/community` | `/sections/community` |
 | `/messagerie` | `/sections/messagerie` |
 | `/open-data` | `/sections/open-data` |
-| `/partners/network` | `/sections/community?tab=partners` |
-| `/partners/network/pepite` | `/sections/community?tab=partners` |
 | `/sections/dm` | `/sections/messagerie?tab=dm` |
 
 ## Règles
@@ -39,4 +37,5 @@ Communautés, partenaires, données publiques, annuaire et discussions.
 - les statuts de présentation anonyme viennent de `apps/web/src/lib/sections-registry/config.ts` et sont appliqués par `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` ;
 - `disabled` et `blur` ne doivent pas être résumés par le vague mot `protégé` ;
 - les alias ne reçoivent pas une seconde fiche canonique du contenu ;
-- aucun dossier photo par route enfant.
+- les snapshots sont placés sous `screenshots/desktop/` ou `screenshots/mobile/`
+  dans la page canonique concernée.

@@ -19,7 +19,8 @@ npm run check:pages-site-drift
 - une route canonique = une fiche canonique ;
 - une redirection ou un alias reste inventorié sans devenir une page autonome artificielle ;
 - une route dynamique est documentée par son pattern ;
-- les captures vivent dans un dossier photo centralisé au niveau du bloc ou de la famille ;
+- les snapshots vivent dans le dossier `screenshots/desktop/` ou
+  `screenshots/mobile/` de la page canonique concernée ;
 - l'accès documenté doit correspondre au runtime réel ;
 - la famille visuelle doit correspondre à `resolvePageFamily` ;
 - une page ne peut pas être déclarée terminée si son contrat fonctionnel documenté est faux.
@@ -50,7 +51,7 @@ lui seul la conformité sémantique du contenu des fiches.
 
 | Route | Fiche | Accès | Famille | Source |
 |---|---|---|---|---|
-| `/` | [Homepage](./routes/00-homepage/homepage-README.md) | `public-visible` | Homepage | `apps/web/src/app/page.tsx` |
+| `/` | [Homepage](./routes/00-homepage/homepage/homepage-README.md) | `public-visible` | Homepage | `apps/web/src/app/page.tsx` |
 
 ## Accueil & Pilotage
 
@@ -73,7 +74,7 @@ lui seul la conformité sémantique du contenu des fiches.
 |---|---|---|---|---|
 | `/actions/history` | [Historique des actions](./routes/02-agir/actions-history/actions-history-README.md) | `protected` | agir | `apps/web/src/app/(app)/actions/history/page.tsx` |
 | `/actions/new` | [Déclarer une action](./routes/02-agir/actions-new/actions-new-README.md) | `clerk-context` ; compte requis pour créer/envoyer | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
-| `/sections/rejoindre-une-action` | [Rejoindre une action](./routes/02-agir/formulaire-de-groupe/formulaire-de-groupe-README.md) | `public-visible` ; compte requis pour rejoindre | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/rejoindre-une-action` | [Rejoindre une action](./routes/02-agir/rejoindre-une-action/rejoindre-une-action-README.md) | `public-visible` ; compte requis pour rejoindre | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/missions/[id]` | [Missions](./routes/02-agir/missions/missions-README.md) | `protected` | agir | `apps/web/src/app/(app)/missions/[id]/page.tsx` |
 | `/sections/route` | [Où agir](./routes/02-agir/ou-agir/ou-agir-README.md) | `public-visible` | agir | `apps/web/src/app/(app)/sections/route/page.tsx` |
 | `/sections/weather` | [Organiser une action](./routes/02-agir/weather/weather-README.md) | `public-visible` | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
@@ -184,7 +185,12 @@ Note : aucune page canonique `/learn` n'est documentée dans l'état actuel. Le 
 | `/form-comparison` | [Comparaison de formulaires](./routes/08-systeme-utilitaires/form-comparison/form-comparison-README.md) | `protected` | `apps/web/src/app/form-comparison/page.tsx` |
 | `/preview/actions/new` | [Preview déclaration](./routes/08-systeme-utilitaires/preview-actions-new/preview-actions-new-README.md) | `standalone` | `apps/web/src/app/preview/actions/new/page.tsx` |
 | `/reglages` | [Réglages](./routes/08-systeme-utilitaires/reglages/reglages-README.md) | `protected` | `apps/web/src/app/reglages/page.tsx` |
-| `/sections/[sectionId]` | [Section dynamique](./routes/08-systeme-utilitaires/sections-sectionid/sections-sectionid-README.md) | `dynamic` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+| `/sections/[sectionId]` | pattern dynamique partagé — pas une page autonome | `dynamic` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
+
+Le pattern `/sections/[sectionId]` est un mécanisme de rendu partagé. Les
+sections concrètes sont inventoriées par leurs routes runtime ci-dessus et dans
+le registre des sections ; le pattern ne possède donc pas de fiche de page
+propre.
 
 ## Admin & Super-admin
 

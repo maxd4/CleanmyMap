@@ -16,11 +16,10 @@ Entrées opérationnelles de profil, sommaire, parcours, pilotage et gouvernance
 | `/sponsor-portal` | [Portail décideur](./sponsor-portal/sponsor-portal-README.md) | `protected` | pilotage | `apps/web/src/app/(app)/sponsor-portal/page.tsx` |
 | `/sections/elus` | [Gouvernance](./gouvernance/gouvernance-README.md) | `auth-disabled-gate` | accueil-pilotage | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 
-## Captures
+## Snapshots
 
-Les captures officielles vivent dans un seul dossier photo centralisé au niveau du bloc.
-
-Ne pas recréer un dossier `photo/` dans chaque route enfant.
+Les snapshots sont colocalisés dans le dossier `screenshots/desktop/` ou
+`screenshots/mobile/` de chaque page canonique.
 
 ## Notes
 
