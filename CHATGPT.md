@@ -485,10 +485,12 @@ opérations sensibles ou les contrôles anti-abus réellement nécessaires.
 
 #### Invariants d'ouverture et de vérité runtime
 
-1. **Le runtime est la source de vérité de l'accès.** Ne jamais déduire une
-   permission, une restriction ou un niveau d'ouverture du seul nom d'une
-   route, d'une convention de nommage ou d'un ancien document lorsque le
-   comportement runtime et les contrôles effectifs disent autre chose.
+1. **Le runtime observé est la source de vérité du comportement réellement
+   implémenté.** La documentation et le contrat AuthZ canonique décrivent le
+   comportement attendu. Un écart entre les deux est une anomalie à analyser
+   et à corriger. Ne jamais déduire une permission, une restriction ou un
+   niveau d'ouverture du seul nom d'une route, d'une convention de nommage ou
+   d'un ancien document.
 2. **Le coût ou la performance ne constituent pas, à eux seuls, une raison
    d'AuthZ.** Ils peuvent justifier du rate limiting, du cache, de la
    pagination, de la limitation de fréquence ou d'autres contrôles
