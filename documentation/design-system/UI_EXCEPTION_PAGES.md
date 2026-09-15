@@ -27,20 +27,23 @@ Lecture de la colonne `Exception UI ?` :
 | `/reports` | Page d'impact rouge conservée comme exception visuelle du bloc Cartographie & Impact | Rouge d'impact |
 | `/gamification` | Variante d'impact rouge, même logique visuelle que les pages d'impact | Rouge d'impact |
 
-## Routes `account-complete gated`
+## Routes avec rappel de complétion non bloquant
 
-Ces routes utilisent le gate de complétion de compte en plus de leur UI canonique. Elles ne sont pas des exceptions de palette, mais des routes où l'accès au contenu dépend d'un compte entièrement renseigné.
+Ces routes utilisent le rappel de complétion de compte en plus de leur UI
+canonique. Elles ne sont pas des exceptions de palette et leur contenu ne
+dépend pas d'un compte entièrement renseigné. L'AuthN/AuthZ de la page et les
+validations propres à chaque opération restent séparées.
 
 | Route | Statut | Note |
 |---|---|---|
-| `/dashboard` | `account-complete gated` | Mon espace, contenu personnel et réglages liés au compte |
-| `/sponsor-portal` | `account-complete gated` | Portail décideur et exports liés au profil |
-| `/signalement` | `account-complete gated` | Déclaration terrain certifiée |
-| `/actions/history` | `account-complete gated` | Historique terrain et fiabilisation du compte |
-| `/partners/dashboard` | `account-complete gated` | Pilotage réseau et gestion des fiches |
-| `/partners/onboarding` | `account-complete gated` | Parcours partenaire et saisie des informations requises |
-| `/reports` | `account-complete gated` | Rapports d'impact avec contexte utilisateur complet |
-| `/admin` | `account-complete gated` | Back-office central avec accès réservé |
+| `/dashboard` | `completion reminder` | Mon espace, contenu personnel et réglages liés au compte |
+| `/sponsor-portal` | `completion reminder` | Portail décideur, après AuthN/AuthZ propre à la surface |
+| `/signalement` | `completion reminder` | Entrée terrain ; identité demandée au moment de transmettre ou consulter ses données |
+| `/actions/history` | `completion reminder` | Historique terrain authentifié |
+| `/partners/dashboard` | `completion reminder` | Pilotage réseau et gestion des fiches, selon les permissions métier |
+| `/partners/onboarding` | `completion reminder` | Parcours partenaire ; son formulaire porte ses champs obligatoires |
+| `/reports` | `completion reminder` | Rapports d'impact ; identité demandée pour les fonctions personnelles et l'export |
+| `/admin` | `completion reminder` | Back-office central après contrôle du rôle administratif |
 
 ## Familles UI autonomes
 

@@ -99,7 +99,7 @@ pas son contrôle d'accès, qui est `protected`.
 | `/methodologie` | [Méthodologie](./routes/03-cartographie-impact/methodologie/methodologie-README.md) | `public-visible` | red, exception `methodologie-impact` | `apps/web/src/app/(app)/methodologie/page.tsx` |
 | `/sections/gamification` | [Progression & badges](./routes/03-cartographie-impact/gamification/gamification-README.md) | `auth-disabled-gate` | red, exception `reports-impact` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/profil/impact` | [Profil impact](./routes/01-accueil-pilotage/profil-impact/profil-impact-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/impact/page.tsx` |
-| `/reports` | [Rapports d'impact](./routes/03-cartographie-impact/reports/reports-README.md) | `auth-blur-gate` ; génération compte connecté ; exports détaillés admin-like | red | `apps/web/src/app/(app)/reports/page.tsx` |
+| `/reports` | [Rapports d'impact](./routes/03-cartographie-impact/reports/reports-README.md) | synthèse publique ; génération/historique compte connecté ; export détaillé tout compte connecté, quota 1/jour | red | `apps/web/src/app/(app)/reports/page.tsx` |
 
 ### Alias Cartographie & Impact
 

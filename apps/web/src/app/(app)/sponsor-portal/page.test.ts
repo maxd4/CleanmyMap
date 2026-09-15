@@ -66,16 +66,7 @@ vi.mock("@/components/ui/clerk-required-gate", () => ({
 }));
 
 vi.mock("@/components/account/account-completion-gate", () => ({
-  AccountCompletionGate: ({
-    state,
-    children,
-  }: {
-    state: typeof completeAccountState | null;
-    children: React.ReactNode;
-  }) =>
-    state?.requirement.requiresSetup
-      ? React.createElement("div", { "data-testid": "profile-completion-required" }, "Profil incomplet")
-      : children,
+  AccountCompletionGate: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 vi.mock("@/components/ui/cmm-button", () => ({
@@ -136,7 +127,7 @@ describe("/sponsor-portal access boundary", () => {
     expect(events).toEqual([]);
   });
 
-  it("stops at the profile gate before loading privileged data", async () => {
+  it("does not let incomplete profile data block the authenticated portal", async () => {
     mocks.loadAccountCompletionGateState.mockResolvedValueOnce({
       ...completeAccountState,
       requirement: { requiresSetup: true, reason: "missing_profile" },
@@ -144,9 +135,13 @@ describe("/sponsor-portal access boundary", () => {
 
     const markup = renderToStaticMarkup(await SponsorPortalPage());
 
-    expect(markup).toContain('data-testid="profile-completion-required"');
-    expect(mocks.loadPilotageOverview).not.toHaveBeenCalled();
-    expect(events).toEqual(["auth"]);
+    expect(markup).toContain('data-testid="metrics"');
+    expect(mocks.loadPilotageOverview).toHaveBeenCalledWith({ periodDays: 730, limit: 5000 });
+    expect(mocks.loadAccountCompletionGateState).toHaveBeenCalledWith({
+      userId: "user-1",
+      clerkReachable: true,
+    });
+    expect(events).toEqual(["auth", "overview"]);
   });
 
   it("loads the sponsor overview only after authentication and profile validation", async () => {

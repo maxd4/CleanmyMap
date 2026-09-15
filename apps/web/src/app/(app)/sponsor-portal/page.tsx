@@ -55,16 +55,6 @@ export default async function SponsorPortalPage() {
     clerkReachable,
   }).catch(() => null);
 
-  if (accountCompletion?.requirement.requiresSetup) {
-    return (
-      <ClerkRequiredGate isAuthenticated={true} mode="disabled">
-        <AccountCompletionGate state={accountCompletion}>
-          <div />
-        </AccountCompletionGate>
-      </ClerkRequiredGate>
-    );
-  }
-
   const overview = await loadSponsorOverview().catch((error) => {
     console.error("[SponsorPortalPage] Failed to load sponsor overview", error);
     return null;

@@ -92,14 +92,7 @@ vi.mock("@/components/ui/cmm-button", () => ({
 }));
 
 vi.mock("@/components/account/account-completion-gate", () => ({
-  AccountCompletionGate: ({ state, children }: { state: typeof completeAccountState; children: React.ReactNode }) =>
-    state?.requirement?.requiresSetup
-      ? React.createElement(
-          "div",
-          { "data-testid": "profile-completion-required" },
-          "Profil incomplet",
-        )
-      : children,
+  AccountCompletionGate: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 vi.mock("@/components/ui/page-header", () => ({
@@ -189,7 +182,7 @@ describe("/dashboard page contract", () => {
     expect(mocks.loadAccountCompletionGateState).not.toHaveBeenCalled();
   });
 
-  it("covers the incomplete profile state before exposing the dashboard", async () => {
+  it("keeps the dashboard available for an incomplete profile", async () => {
     mocks.getSafeAuthSession.mockResolvedValue({ userId: "user-1", clerkReachable: true });
     mocks.loadAccountCompletionGateState.mockResolvedValue({
       ...completeAccountState,
@@ -198,8 +191,8 @@ describe("/dashboard page contract", () => {
 
     const markup = renderToStaticMarkup(await DashboardPage());
 
-    expect(markup).toContain('data-testid="profile-completion-required"');
-    expect(markup).toContain("Profil incomplet");
+    expect(markup).toContain('data-testid="dashboard-entrance"');
+    expect(markup).not.toContain('data-testid="profile-completion-required"');
   });
 
   it("keeps declaration, history and reports navigation visible", async () => {

@@ -12,6 +12,7 @@
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
+- **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; les droits de gouvernance des fiches restent contrôlés séparément.
 - **Objectif utilisateur principal** : Piloter la revue des demandes et des fiches partenaires à partir de données réellement persistées.
 - **Action principale attendue** : Examiner les états de publication/modération et la couverture déclarée des fiches persistées.
 - **Palette attendue** : indigo
