@@ -341,6 +341,45 @@ describe("GET /api/actions", () => {
     expect(loadOrRefreshPublicSurfaceSnapshotMock).not.toHaveBeenCalled();
   });
 
+  it("refuses an elected account while ACTIVE_ROLE=elu from reading non-public actions", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValue({
+      ok: true,
+      userId: "elu-1",
+    });
+    getCurrentUserActiveRoleMock.mockResolvedValue("elu");
+    canModerateActionsGloballyMock.mockReturnValue(false);
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions?status=pending"),
+    );
+
+    expect(response.status).toBe(403);
+    expect(fetchUnifiedActionContractsMock).not.toHaveBeenCalled();
+    expect(loadOrRefreshPublicSurfaceSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("allows an elected account after an explicit switch to ACTIVE_ROLE=admin", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValue({
+      ok: true,
+      userId: "elu-1",
+    });
+    getCurrentUserActiveRoleMock.mockResolvedValue("admin");
+    canModerateActionsGloballyMock.mockReturnValue(true);
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions?status=pending"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchUnifiedActionContractsMock).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ status: "pending" }),
+    );
+    expect(loadOrRefreshPublicSurfaceSnapshotMock).not.toHaveBeenCalled();
+  });
+
   it.each(["admin", "max"] as const)(
     "allows %s to read pending actions and signalements without a public snapshot",
     async (role) => {

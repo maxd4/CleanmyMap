@@ -172,6 +172,102 @@ describe("GET /api/actions/:actionId/audit", () => {
     ]);
   });
 
+  it("rejects an elected account while ACTIVE_ROLE=elu from the global audit", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: true,
+      userId: "elu-1",
+    });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "elu-1",
+      role: "elu",
+      activeRole: "elu",
+    });
+    runSingleActionQueryMock.mockResolvedValue({
+      created_by_clerk_id: "user-2",
+    });
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/audit"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(403);
+    expect(listAdminOperationAuditMock).not.toHaveBeenCalled();
+  });
+
+  it("allows an elected account with ACTIVE_ROLE=admin to read the global audit", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValueOnce({
+      ok: true,
+      userId: "elu-1",
+    });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "elu-1",
+      role: "elu",
+      activeRole: "admin",
+    });
+    runSingleActionQueryMock.mockResolvedValue({
+      created_by_clerk_id: "user-2",
+    });
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/audit"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+    const body = (await response.json()) as { items?: unknown[] };
+
+    expect(response.status).toBe(200);
+    expect(body.items).toEqual([
+      {
+        operationId: "op-1",
+        at: "2026-06-21T10:00:00.000Z",
+        actorUserId: "admin-1",
+        actorLabel: "Maxence Deroome (@maxence_deroome)",
+        operationType: "moderation",
+        outcome: "success",
+        targetId: "action-1",
+        details: { operation: "edit_action", editedFields: ["locationLabel"] },
+      },
+    ]);
+    expect(listAdminOperationAuditMock).toHaveBeenCalledWith(12, "action-1");
+  });
+
+  it("removes global audit access when an elected account returns to ACTIVE_ROLE=elu", async () => {
+    requireAuthenticatedAccessMock.mockResolvedValue({
+      ok: true,
+      userId: "elu-1",
+    });
+    getCurrentUserIdentityMock
+      .mockResolvedValueOnce({
+        userId: "elu-1",
+        role: "elu",
+        activeRole: "admin",
+      })
+      .mockResolvedValueOnce({
+        userId: "elu-1",
+        role: "elu",
+        activeRole: "elu",
+      });
+    runSingleActionQueryMock.mockResolvedValue({
+      created_by_clerk_id: "user-2",
+    });
+
+    const { GET } = await import("./route");
+    const firstResponse = await GET(
+      new Request("http://localhost/api/actions/action-1/audit"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+    const secondResponse = await GET(
+      new Request("http://localhost/api/actions/action-1/audit"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(403);
+    expect(listAdminOperationAuditMock).toHaveBeenCalledTimes(1);
+  });
+
   it("rejects anonymous users before reading the audit journal", async () => {
     requireAuthenticatedAccessMock.mockResolvedValueOnce({ ok: false });
 
