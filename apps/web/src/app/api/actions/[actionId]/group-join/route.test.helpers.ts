@@ -174,6 +174,7 @@ export function createGroupJoinProfile(params: {
 export function createGroupJoinSupabaseMock(params: {
   action: GroupJoinActionRow;
   participants?: GroupJoinParticipantRow[];
+  registrations?: GroupJoinParticipantRow[];
   profiles?: GroupJoinProfileRow[];
   errors?: GroupJoinSupabaseErrors;
 }) {
@@ -187,7 +188,11 @@ export function createGroupJoinSupabaseMock(params: {
         return createParticipantsChain(params.participants ?? [], params.errors, "participants");
       }
       if (table === "action_registrations") {
-        return createParticipantsChain(params.participants ?? [], params.errors, "registrations");
+        return createParticipantsChain(
+          params.registrations ?? params.participants ?? [],
+          params.errors,
+          "registrations",
+        );
       }
       if (table === "profiles") {
         return createProfilesChain(params.profiles ?? []);
@@ -340,6 +345,12 @@ function createParticipantsChain(
   const buildFiltered = () =>
     participants.filter((row) => {
       const normalized = normalizeRow(row);
+      if (
+        table === "registrations" &&
+        normalized.participation_source === "post_action_claim"
+      ) {
+        return false;
+      }
       if (state.filters["action_id"] && normalized["action_id"] !== state.filters["action_id"]) {
         return false;
       }

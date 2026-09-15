@@ -167,7 +167,9 @@ But:
 
 Règles:
 
-- source de données: `action_participants`;
+- source de données: `action_participants` où `participation_status = confirmed`;
+- `action_registrations` est exclusivement la source des inscriptions futures et ne contribue jamais aux badges, à la progression, aux statistiques personnelles ou à la gamification;
+- une demande de claim post-action `pending` ou `cancelled` est exclue; un claim `confirmed` contribue comme toute autre participation finale confirmée;
 - base `Observateur` à `0`;
 - paliers actuels: `0, 1, 3, 5, 10, 15, 20, 25, 30`;
 - XP de palier: `+1` à partir du premier palier utile, jamais sur le niveau `0`.

@@ -25,9 +25,9 @@ apps/web/src/lib/actions/permissions.ts
 La page canonique permet à un bénévole de :
 
 1. voir les actions de groupe ouvertes ;
-2. envoyer une demande de participation ;
+2. envoyer une demande d'inscription future ;
 3. suivre son état ;
-4. annuler une demande ou quitter une participation ;
+4. annuler une demande ou une inscription future ;
 5. ouvrir directement une action ciblée avec `actionId`.
 
 Le paramètre `actionId` est résolu uniquement contre les deux sources déjà

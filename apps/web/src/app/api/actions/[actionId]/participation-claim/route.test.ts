@@ -22,6 +22,16 @@ describe("POST /api/actions/:actionId/participation-claim", () => {
 
   it("creates one pending post-action claim and replays it idempotently", async () => {
     const participants: Parameters<typeof createGroupJoinSupabaseMock>[0]["participants"] = [];
+    const registrations = [
+      createGroupJoinParticipant({
+        action_id: "action-1",
+        user_id: "user-2",
+        created_at: "2026-09-12T09:00:00.000Z",
+        registered_at: "2026-09-12T09:00:00.000Z",
+        registration_status: "confirmed",
+        registration_source: "group_form",
+      }),
+    ];
     getSupabaseServerClientMock.mockReturnValue(
       createGroupJoinSupabaseMock({
         action: createGroupJoinAction({
@@ -29,6 +39,7 @@ describe("POST /api/actions/:actionId/participation-claim", () => {
           actionDate: "2026-09-13",
         }),
         participants,
+        registrations,
       }),
     );
 
@@ -50,6 +61,12 @@ describe("POST /api/actions/:actionId/participation-claim", () => {
       alreadyRequested: false,
     });
     expect(participants).toHaveLength(1);
+    expect(registrations).toHaveLength(1);
+    expect(registrations[0]).toMatchObject({
+      user_id: "user-2",
+      registration_status: "confirmed",
+      registration_source: "group_form",
+    });
     expect(participants[0]).toMatchObject({
       action_id: "action-1",
       user_id: "user-2",
@@ -72,6 +89,7 @@ describe("POST /api/actions/:actionId/participation-claim", () => {
       alreadyRequested: true,
     });
     expect(participants).toHaveLength(1);
+    expect(registrations).toHaveLength(1);
     expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({
         operation: "post_action_claim",

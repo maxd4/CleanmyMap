@@ -45,19 +45,19 @@ export function JoinFormConfirmationDialog({
         ? "Annuler cette demande ?"
         : "Cancel this request?"
       : fr
-        ? "Quitter cette action ?"
-        : "Leave this form?"
+        ? "Annuler cette inscription ?"
+        : "Cancel this registration?"
     : fr
-      ? "Confirmer cette participation ?"
-      : "Confirm this participation?";
+      ? "Confirmer cette inscription ?"
+      : "Confirm this registration?";
   const confirmLabel = isLeaveFlow
     ? pendingAction.awaitingApproval
       ? fr
         ? "Annuler la demande"
         : "Cancel request"
       : fr
-        ? "Quitter l'action"
-        : "Leave the form"
+        ? "Annuler l'inscription"
+        : "Cancel registration"
     : fr
       ? "Envoyer la demande"
       : "Send request";
@@ -67,8 +67,8 @@ export function JoinFormConfirmationDialog({
         ? "Votre demande disparaîtra de la file publique et pourra être refaite plus tard."
         : "Your request will disappear from the public queue and can be submitted again later."
       : fr
-        ? "Votre participation sera retirée de cette action, tout en restant tracée dans votre historique."
-        : "Your participation will be removed from the form while remaining traceable in your history."
+        ? "Votre inscription sera annulée, tout en restant tracée dans votre historique."
+        : "Your registration will be cancelled while remaining traceable in your history."
     : fr
       ? "Votre demande apparaît dans la file publique."
       : "Your request appears in the public queue.";
@@ -112,8 +112,8 @@ export function JoinFormConfirmationDialog({
                     ? "Cette demande sera retirée de la file publique."
                     : "This request will be removed from the public queue."
                   : fr
-                    ? "Cette participation sera retirée de cette action."
-                    : "This participation will be removed from the form."}
+                    ? "Cette inscription sera annulée pour cette action."
+                    : "This registration will be cancelled for this action."}
               </p>
               <p>
                 {fr
@@ -126,8 +126,8 @@ export function JoinFormConfirmationDialog({
               <p>{dialogDescription}</p>
               <p>
                 {fr
-                  ? "L'organisateur de l'action ou un admin peut l'accepter ou la refuser."
-                  : "The form creator or an admin can accept or reject it."}
+                  ? "L'organisateur de l'action ou un admin peut l'accepter ou la refuser. Une inscription acceptée ne confirme pas une présence sur le terrain."
+                  : "The form creator or an admin can accept or reject it. An accepted registration does not confirm field presence."}
               </p>
             </>
           )}
@@ -138,7 +138,7 @@ export function JoinFormConfirmationDialog({
             <p className="mt-1 font-semibold">{pendingAction.location_label}</p>
             <p className="text-sm text-slate-600">
               {formatDate(pendingAction.action_date, fr ? "fr" : "en")} · {formatCount(pendingAction.participantsCount)}{" "}
-              {fr ? "participant(s)" : "participant(s)"}
+              {fr ? "inscription(s)" : "registration(s)"}
             </p>
           </div>
         </div>

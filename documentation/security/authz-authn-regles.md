@@ -439,8 +439,10 @@ La vue publique `GET /api/actions?view=future` réutilise la même projection
 Actions et ne renvoie que les pré-actions publiées dont le début est futur.
 Les champs `volunteers_count`, `duration_minutes`, l'itinéraire et les objectifs
 restent prévisionnels ; les mesures post-action restent nulles jusqu'à une
-observation réelle. Le join continue de passer par `action_participants` et est
-refusé si `groupJoinEnabled` est faux.
+observation réelle. Le join futur passe par `action_registrations` et est
+refusé si `groupJoinEnabled` est faux. Une inscription `confirmed` signifie
+uniquement qu'elle a été acceptée; elle ne constitue pas une présence terrain
+et ne contribue pas à la gamification.
 
 La lecture propriétaire `GET /api/signalements/me` reste séparée : elle utilise
 la session du compte courant et peut restituer ses propres observations `new`,
