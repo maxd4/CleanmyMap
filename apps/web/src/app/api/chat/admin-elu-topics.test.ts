@@ -139,7 +139,12 @@ describe("admin_elu topics in the Chat API", () => {
       expect(response.status).toBe(201);
       expect(supabaseMock.supabase.rpc).toHaveBeenCalledWith(
         "create_chat_poll_with_options",
-        expect.objectContaining({ p_channel_type: "admin_elu" }),
+        {
+          p_channel_type: "admin_elu",
+          p_content: "Quelle priorité retenir ?",
+          p_topic_id: "arbitrages",
+          p_option_labels: ["Priorité A", "Priorité B"],
+        },
       );
     },
   );

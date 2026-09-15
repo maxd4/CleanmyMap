@@ -863,67 +863,6 @@ describe("GET /api/chat and POST /api/chat", () => {
     });
   });
 
-  it("creates an admin_elu poll through the same atomic poll RPC", async () => {
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ activeRole: "admin" });
-    const pollMessage: ChatMessageRow = {
-      id: "admin-poll-1",
-      created_at: "2026-05-01T13:00:00.000Z",
-      content: "Quelle priorité retenir ?",
-      channel_type: "admin_elu",
-      sender_id: "user-1",
-      recipient_id: null,
-      arrondissement_id: null,
-      zone_name: null,
-      topic_id: "arbitrages",
-      message_kind: "poll",
-      related_event_id: null,
-      poll_options: [
-        { id: "admin-option-1", position: 1, label: "Budget" },
-        { id: "admin-option-2", position: 2, label: "Calendrier" },
-      ],
-    };
-    const supabaseMock = buildSupabaseMock({
-      profile: {
-        id: "user-1",
-        display_name: "Alex",
-        handle: "alex",
-        paris_arrondissement: null,
-        role_label: "admin",
-        metadata: null,
-      },
-      messages: [pollMessage],
-      insertedMessage: pollMessage,
-      pollMessage,
-    });
-    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
-
-    const response = await (await import("./route")).POST(
-      new Request("http://localhost/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          channelType: "admin_elu",
-          topicId: "arbitrages",
-          messageKind: "poll",
-          pollOptions: ["Budget", "Calendrier"],
-          content: "Quelle priorité retenir ?",
-        }),
-      }),
-    );
-
-    expect(response.status).toBe(201);
-    expect(supabaseMock.supabase.rpc).toHaveBeenCalledWith(
-      "create_chat_poll_with_options",
-      {
-        p_channel_type: "admin_elu",
-        p_content: "Quelle priorité retenir ?",
-        p_topic_id: "arbitrages",
-        p_option_labels: ["Budget", "Calendrier"],
-      },
-    );
-  });
-
   it.each(["dm", "territory", "bug_report", "action"] as const)(
     "rejects polls on %s",
     async (channelType) => {
