@@ -59,7 +59,7 @@ describe("ActionDeclarationFormFeedback", () => {
     expect(markup).toContain("Aucun impact ou bonus n&#x27;est affiché sans preuve enregistrée.");
   });
 
-  it("renders the immediate publication copy for auto-approved submissions", () => {
+  it("keeps the group invite in the normal validation flow", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ActionDeclarationFormFeedback, {
         submissionState: "success",
@@ -70,17 +70,12 @@ describe("ActionDeclarationFormFeedback", () => {
         retentionLoop: null,
         groupJoinHref: "/sections/rejoindre-une-action?actionId=action-123",
         showGroupInvite: true,
-        isAutoApprovedSubmission: true,
       }),
     );
 
-    expect(markup).toContain(
-      "Publiée immédiatement. Elle est déjà visible dans les formulaires de groupe, mais les nouvelles participations restent soumises à validation.",
-    );
-    expect(markup).toContain("Formulaire publié");
-    expect(markup).toContain("Visible maintenant");
-    expect(markup).toContain("Cycle public");
-    expect(markup).toContain("file d&#x27;attente");
+    expect(markup).toContain("En attente de validation par un administrateur.");
+    expect(markup).toContain("Prêt à partager");
+    expect(markup).toContain("Après publication");
   });
 
   it("renders recorded metrics, transparent impact methodology and safe CTAs", () => {

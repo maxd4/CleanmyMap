@@ -3,7 +3,6 @@ import { ActionDeclarationEntryFlow } from "@/components/actions/action-declarat
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
-import { isAdminLikeProfile } from "@/lib/profiles";
 
 export const metadata: Metadata = {
   title: "Déclarer une action - CleanMyMap",
@@ -56,7 +55,6 @@ export default async function NewActionPage({
   const identity = userId ? await getCurrentUserIdentity() : null;
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const fallbackActorName = userId ?? "Visiteur";
-  const isAutoApprovedSubmission = Boolean(identity && isAdminLikeProfile(identity.role));
   const actorNameOptions =
     identity?.actorNameOptions && identity.actorNameOptions.length > 0
       ? identity.actorNameOptions
@@ -81,7 +79,6 @@ export default async function NewActionPage({
           initialEntryPath={from === "planner" ? "before" : undefined}
           initialActionId={actionId ?? null}
           isAuthenticated={isAuthenticated}
-          isAutoApprovedSubmission={isAutoApprovedSubmission}
           signInHref={buildAuthRedirectHref("/sign-in", returnUrl)}
           signUpHref={buildAuthRedirectHref("/sign-up", returnUrl)}
         />
@@ -99,7 +96,6 @@ export default async function NewActionPage({
         initialEntryPath={from === "planner" ? "before" : undefined}
         initialActionId={actionId ?? null}
         isAuthenticated={isAuthenticated}
-        isAutoApprovedSubmission={isAutoApprovedSubmission}
         signInHref={buildAuthRedirectHref("/sign-in", returnUrl)}
         signUpHref={buildAuthRedirectHref("/sign-up", returnUrl)}
       />

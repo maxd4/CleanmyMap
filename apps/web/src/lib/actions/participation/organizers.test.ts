@@ -124,7 +124,7 @@ describe("resolveDefaultActionOrganizerIds", () => {
     expect(
       resolveDefaultActionOrganizerIds({
         creatorUserId: "user-admin-1",
-        creatorIsAdminLike: true,
+        creatorIsGlobalAdmin: true,
       }),
     ).toEqual(["user-admin-1"]);
   });
@@ -133,7 +133,7 @@ describe("resolveDefaultActionOrganizerIds", () => {
     expect(
       resolveDefaultActionOrganizerIds({
         creatorUserId: "user-creator",
-        creatorIsAdminLike: false,
+        creatorIsGlobalAdmin: false,
       }),
     ).toEqual(["user-admin-1"]);
   });

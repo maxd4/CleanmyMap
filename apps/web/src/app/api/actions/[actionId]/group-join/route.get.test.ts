@@ -29,6 +29,7 @@ describe("GET /api/actions/:actionId/group-join", () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "user-1",
       role: "admin",
+      activeRole: "admin",
     });
     const participants = [
       createGroupJoinParticipant({
@@ -222,7 +223,7 @@ describe("GET /api/actions/:actionId/group-join", () => {
   it("searches candidate accounts for admin moderators", async () => {
     getCurrentUserIdentityMock.mockResolvedValueOnce({
       userId: "user-1",
-      role: "elu",
+      role: "admin",
     });
     getSupabaseServerClientMock.mockReturnValue(
       createGroupJoinSupabaseMock({

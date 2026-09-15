@@ -15,7 +15,6 @@ export type ActionBeforeDeclarationFormProps = {
   actorNameOptions: string[];
   defaultActorName: string;
   isAuthenticated: boolean;
-  isAutoApprovedSubmission?: boolean;
   userMetadata: {
     userId: string;
     username?: string;

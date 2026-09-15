@@ -33,7 +33,6 @@ type ActionDeclarationFormProps = {
   actorNameOptions: string[];
   defaultActorName: string;
   isAuthenticated: boolean;
-  isAutoApprovedSubmission?: boolean;
   userMetadata: {
     userId: string;
     username?: string;
@@ -455,7 +454,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
           retentionLoop={retentionLoop}
           recordedAction={recordedAction}
             showGroupInvite={canShowGroupInvite}
-          isAutoApprovedSubmission={props.isAutoApprovedSubmission ?? false}
           groupJoinHref={
               createdId && canShowGroupInvite
                 ? `/sections/rejoindre-une-action?actionId=${encodeURIComponent(createdId)}`

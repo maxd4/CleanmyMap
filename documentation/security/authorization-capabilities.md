@@ -773,18 +773,21 @@ Exemples constatés sur `main` lors de la création de ce contrat :
 
 - `apps/web/src/lib/domain-language.ts` réserve les droits admin génériques à `admin` et `max` ;
 - `apps/web/src/lib/profiles.ts` considère également `admin` et `max` comme profils admin-like génériques ;
-- `apps/web/src/lib/actions/permissions.ts` inclut actuellement `elu` dans `ACTION_MODERATION_ROLES`, ce qui lui confère des dérogations globales sur les actions.
+- `apps/web/src/lib/actions/permissions.ts` réserve désormais les capacités globales Actions à `admin` et `max`; `elu` n'y dispose pas d'un passe-droit global.
 
-Cette divergence ne doit pas être résolue en élargissant tous les autres domaines à `elu`.
+Cette frontière ne doit pas être résolue en élargissant les autres domaines à
+`elu`, ni en inventant une modération territoriale avant que son scope soit
+vérifiable.
 
-La direction cible est :
+L'état runtime est :
 
 ```txt
-admin/max → modération globale selon capacité
-elu       → pilotage territorial, puis modération territoriale seulement si scope canonique
+admin/max → modération globale selon capacité explicitement consommée
+elu       → scope territorial seulement lorsque la capacité territoriale est implémentée
 ```
 
-Jusqu'à convergence du code et des tests, toute modification touchant ces helpers doit relire le comportement réel avant de changer une permission.
+Toute modification touchant ces helpers doit préserver cette séparation et
+relire le comportement réel avant de changer une permission.
 
 ## 16. Checklist de conception
 

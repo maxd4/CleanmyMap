@@ -33,6 +33,8 @@ export async function runActionUpdatePostProcessing(params: {
   auditSnapshots: ActionAuditSnapshots | null;
   adminAuditActorUserId: string;
   adminAuditTargetUserId: string | null;
+  moderationOperation: string;
+  moderationReason: string | null;
   appendAdminAuditOnce: AuditAppender;
   setErrorStage: (stage: AdminOverrideErrorStage) => void;
 }): Promise<void> {
@@ -48,6 +50,8 @@ export async function runActionUpdatePostProcessing(params: {
     auditSnapshots,
     adminAuditActorUserId,
     adminAuditTargetUserId,
+    moderationOperation,
+    moderationReason,
     appendAdminAuditOnce,
     setErrorStage,
   } = params;
@@ -92,8 +96,9 @@ export async function runActionUpdatePostProcessing(params: {
       operationId: `action-edit-${actionId}-${Date.now()}`,
       actorUserId: adminAuditActorUserId,
       targetActionId: actionId,
-      operation: "edit_action",
+      operation: moderationOperation,
       outcome: "success",
+      reason: moderationReason,
       targetUserId: adminAuditTargetUserId,
       previousValue: auditSnapshots.previousValue,
       newValue: auditSnapshots.newValue,

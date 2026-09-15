@@ -511,9 +511,9 @@ export async function loadActionOrganizerIdsForAction(
 
 export function resolveDefaultActionOrganizerIds(params: {
   creatorUserId: string;
-  creatorIsAdminLike: boolean;
+  creatorIsGlobalAdmin: boolean;
 }): string[] {
-  if (params.creatorIsAdminLike) {
+  if (params.creatorIsGlobalAdmin) {
     return [params.creatorUserId];
   }
 

@@ -12,7 +12,6 @@ export {
 } from "./store-notes";
 
 export {
-  resolveActionCreationStatus,
   buildCreateActionGeometry,
   buildActionInsertPayload,
   createAction,

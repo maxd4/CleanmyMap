@@ -36,7 +36,6 @@ describe("ActionDeclarationEntryFlow", () => {
         linkedEventId: undefined,
         initialRecordType: "action",
         isAuthenticated: false,
-        isAutoApprovedSubmission: false,
       } as ComponentProps<typeof ActionDeclarationEntryFlow>),
     );
 
@@ -72,7 +71,6 @@ describe("ActionDeclarationEntryFlow", () => {
         userMetadata: { userId: "preview-local", displayName: "Aperçu local" },
         initialEntryPath: "before",
         isAuthenticated: false,
-        isAutoApprovedSubmission: false,
       } as ComponentProps<typeof ActionDeclarationEntryFlow>),
     );
 

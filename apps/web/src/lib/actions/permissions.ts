@@ -1,10 +1,9 @@
 import type { ActionPhase, ActionStatus } from "@/lib/actions/types";
-import { getEffectiveAccessForSessionRole } from "@/lib/domain-language";
 import type { AppProfile } from "@/lib/profiles";
 
-export const ACTION_MODERATION_ROLES = ["admin", "elu", "max"] as const;
+export const ACTION_GLOBAL_ADMIN_ROLES = ["admin", "max"] as const;
 
-export type ActionModerationRole = (typeof ACTION_MODERATION_ROLES)[number];
+export type ActionGlobalAdminRole = (typeof ACTION_GLOBAL_ADMIN_ROLES)[number];
 
 export type ActionPermissionIdentity = {
   userId: string;
@@ -25,37 +24,28 @@ function normalizeUserId(value: string | null | undefined): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
-export function isActionModerationRole(
+function hasGlobalActionCapability(
   role: AppProfile | null | undefined,
-): role is ActionModerationRole {
-  return role != null && getEffectiveAccessForSessionRole(role).canModerate;
+): role is ActionGlobalAdminRole {
+  return role != null && ACTION_GLOBAL_ADMIN_ROLES.includes(role as ActionGlobalAdminRole);
 }
 
-export function canUseAdminOverride(
+export function canModerateActionsGlobally(
   identity: Pick<ActionPermissionIdentity, "activeRole"> | null | undefined,
 ): boolean {
-  return Boolean(identity && isActionModerationRole(identity.activeRole));
+  return Boolean(identity && hasGlobalActionCapability(identity.activeRole));
 }
 
-export function canModerateAnyAction(
+export function canManageActionsGlobally(
   identity: Pick<ActionPermissionIdentity, "activeRole"> | null | undefined,
 ): boolean {
-  return canUseAdminOverride(identity);
+  return Boolean(identity && hasGlobalActionCapability(identity.activeRole));
 }
 
-export function canAutoApproveOwnAction(
-  identity: ActionPermissionIdentity | null | undefined,
-  action: ActionPermissionTarget,
+export function canOverrideActionParticipants(
+  identity: Pick<ActionPermissionIdentity, "activeRole"> | null | undefined,
 ): boolean {
-  const userId = normalizeUserId(identity?.userId);
-  const creatorId = normalizeUserId(action.createdByClerkId);
-
-  return Boolean(
-    userId &&
-      creatorId &&
-      userId === creatorId &&
-      canUseAdminOverride(identity),
-  );
+  return Boolean(identity && hasGlobalActionCapability(identity.activeRole));
 }
 
 export function canManageAction(
@@ -63,7 +53,7 @@ export function canManageAction(
   action: ActionPermissionTarget,
   organizerIds: string[],
 ): boolean {
-  if (canUseAdminOverride(identity)) {
+  if (hasGlobalActionCapability(identity?.activeRole)) {
     return true;
   }
 
@@ -88,23 +78,13 @@ export function canReviewActionParticipants(
 }
 
 export function canEditValidatedImpact(
-  identity: ActionPermissionIdentity | null | undefined,
-  action: ActionPermissionTarget,
-): boolean {
-  return (
-    canUseAdminOverride(identity) ||
-    normalizeUserId(identity?.userId) === normalizeUserId(action.createdByClerkId)
-  );
-}
-
-export function canChangeActionStatus(
   identity: Pick<ActionPermissionIdentity, "activeRole"> | null | undefined,
 ): boolean {
-  return canModerateAnyAction(identity);
+  return Boolean(identity && hasGlobalActionCapability(identity.activeRole));
 }
 
-export function canViewModerationAudit(
+export function canViewActionModerationAudit(
   identity: Pick<ActionPermissionIdentity, "activeRole"> | null | undefined,
 ): boolean {
-  return canModerateAnyAction(identity);
+  return Boolean(identity && hasGlobalActionCapability(identity.activeRole));
 }

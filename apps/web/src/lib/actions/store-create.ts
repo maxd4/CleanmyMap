@@ -35,12 +35,6 @@ import {
   recordRepollutionPredictionEvaluationForAction,
 } from "./store-post-processing";
 
-export function resolveActionCreationStatus(
-  isAutoApprovedSubmission: boolean,
-): ActionStatus {
-  return isAutoApprovedSubmission ? "approved" : "pending";
-}
-
 async function resolveCreateActionDrawing(
   payload: CreateActionPayload,
 ): Promise<ActionDrawing | null> {

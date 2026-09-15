@@ -45,7 +45,7 @@ function buildActionListQuery(
     );
   } else if (params.status === "approved" && selectFields.includes("action_phase")) {
     // Public approved reads must never expose an unclassified/private
-    // pre-action, including one auto-approved for an admin creator.
+    // pre-action, regardless of the creator's role.
     nextQuery = nextQuery.eq("status", "approved").or("action_phase.neq.pre_action");
   } else if (params.status) {
     nextQuery = nextQuery.eq("status", params.status);

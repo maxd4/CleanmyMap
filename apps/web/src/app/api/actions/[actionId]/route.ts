@@ -9,9 +9,14 @@ import {
 } from "@/lib/authz";
 import {
   canManageAction,
-  canUseAdminOverride,
+  canManageActionsGlobally,
+  canEditValidatedImpact,
 } from "@/lib/actions/permissions";
-import { appendActionModerationAudit } from "@/lib/actions/moderation-audit";
+import {
+  appendActionModerationAudit,
+  isModerationReasonRequired,
+  normalizeModerationReason,
+} from "@/lib/actions/moderation-audit";
 import { loadManualParticipantIdsForAction } from "@/lib/actions/participation/group-participation.helpers";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { updateActionSchema } from "@/lib/validation/action";
@@ -20,6 +25,7 @@ import {
   buildActionAuditSnapshots,
   type ActionUpdateInput,
 } from "@/lib/actions/action-update-audit";
+import { hasActionImpactUpdate } from "@/lib/actions/action-update-impact";
 import {
   ActionUpdateValidationError,
   prepareActionUpdate,
@@ -137,6 +143,8 @@ export async function PATCH(
   let auditSnapshots: ReturnType<typeof buildActionAuditSnapshots> | null = null;
   let actionWriteSucceeded = false;
   let adminAuditRecorded = false;
+  let moderationOperation = "edit_action";
+  let moderationReason: string | null = null;
   let adminErrorStage: AdminOverrideErrorStage = "action_update";
   const appendAdminAuditOnce = async (
     params: Parameters<typeof appendActionModerationAudit>[0],
@@ -181,10 +189,42 @@ export async function PATCH(
     }
 
     const parsedBody: ActionUpdateInput = parsed.data;
+    const validatedImpactCorrection =
+      current.status === "approved" && hasActionImpactUpdate(parsedBody);
+    if (validatedImpactCorrection && !canEditValidatedImpact(identity)) {
+      return NextResponse.json(
+        {
+          error:
+            "La correction d'un impact validé est réservée aux administrateurs autorisés.",
+        },
+        { status: 403 },
+      );
+    }
+    moderationReason = validatedImpactCorrection
+      ? normalizeModerationReason(parsedBody.reason, {
+          required: isModerationReasonRequired("correct_impact"),
+        })
+      : null;
+    if (validatedImpactCorrection && !moderationReason) {
+      return validationErrorResponse({
+        reason: [
+          "Un motif d'au moins 5 caractères est requis pour corriger un impact validé.",
+        ],
+      });
+    }
+    moderationOperation = validatedImpactCorrection
+      ? "correct_impact"
+      : "edit_action";
+    adminAuditActorUserId = identity?.userId ?? userId;
+    adminAuditTargetUserId = current.created_by_clerk_id.trim() || null;
+    shouldAuditModeration =
+      validatedImpactCorrection ||
+      (Boolean(identity) &&
+        userId !== current.created_by_clerk_id &&
+        canManageActionsGlobally(identity));
     const preparedUpdate = await prepareActionUpdate({
       current,
       parsedBody,
-      permissionIdentity,
     }).catch((error: unknown) => {
       if (error instanceof ActionUpdateValidationError) {
         return validationErrorResponse({
@@ -198,18 +238,11 @@ export async function PATCH(
     }
 
     const { body, currentMetadata, updateData } = preparedUpdate;
-    adminAuditActorUserId = identity?.userId ?? userId;
-    adminAuditTargetUserId = current.created_by_clerk_id.trim() || null;
-    shouldAuditModeration =
-      Boolean(identity) &&
-      userId !== current.created_by_clerk_id &&
-      canUseAdminOverride(identity);
     auditSnapshots = shouldAuditModeration
       ? buildActionAuditSnapshots(
           current,
           body,
           currentMetadata,
-          permissionIdentity,
         )
       : null;
     const hasActionUpdates = Object.keys(updateData).length > 0;
@@ -240,6 +273,8 @@ export async function PATCH(
       auditSnapshots,
       adminAuditActorUserId,
       adminAuditTargetUserId,
+      moderationOperation,
+      moderationReason,
       appendAdminAuditOnce,
       setErrorStage: (stage) => {
         adminErrorStage = stage;
@@ -260,8 +295,9 @@ export async function PATCH(
         operationId: `action-edit-${trimmedActionId}-${Date.now()}`,
         actorUserId: adminAuditActorUserId,
         targetActionId: trimmedActionId,
-        operation: "edit_action",
+        operation: moderationOperation,
         outcome: "error",
+        reason: moderationReason,
         targetUserId: adminAuditTargetUserId,
         previousValue: auditSnapshots.previousValue,
         newValue: auditSnapshots.newValue,
