@@ -12,6 +12,9 @@
   deep-links ; `/actions/history` pour l'historique ; `/sections/route`,
   `/sections/weather` et `/sections/guide` redirigent vers les panneaux du
   shell `/actions/new`.
+- **Frontière signalement** : `/sections/trash-spotter` est hors du bloc Agir,
+  dans Réseau & Discussions, pour la consultation et le monitoring secondaire.
+  La saisie et la boucle propriétaire passent exclusivement par `/signalement`.
 - **Shell de création** : `/actions/new` expose indépendamment le pré-formulaire,
   l'itinéraire, la météo & les conditions terrain et les formalités juridiques.
 - **Règle de sens** : une action ou un sondage fournit une aide à l'arbitrage ;

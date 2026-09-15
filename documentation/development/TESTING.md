@@ -61,11 +61,14 @@ Clôture complète d'un changement transversal ou sensible :
 npm run checks:full
 ```
 
-Le mode `COMPLET` est borné à 600 secondes et sélectionne toutes les preuves
-pertinentes : gouvernance, sécurité, typecheck, lint, Vitest Web complet,
-quality, migrations, tests de scripts/Python et build de production selon le
-blast radius. Une preuve déjà couverte est indiquée `ALREADY_PROVEN` au lieu
-d'être relancée.
+Le mode `COMPLET` est borné à 600 secondes et réutilise la même détection des
+domaines concernés que `RAPIDE` : il ne rend pas automatiquement tous les
+domaines pertinents. Il renforce les preuves à l'intérieur du scope détecté
+(gouvernance, sécurité, typecheck, lint, Vitest Web, quality, migrations, tests
+de scripts/Python ou build de production lorsque le domaine le justifie). Une
+preuve déjà couverte par `RAPIDE` sur le même candidat et la même configuration
+est indiquée `ALREADY_PROVEN` au lieu d'être relancée ; toute modification du
+candidat l'invalide.
 
 Chaque exécution produit un rapport avec `VALIDATION_MODE`, `CANDIDATE_SCOPE`,
 `ELAPSED_SECONDS`, `TIME_BUDGET_SECONDS`, `CHECKS_PASSED`, `CHECKS_FAILED`,

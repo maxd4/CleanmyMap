@@ -4,8 +4,9 @@
 
 - **Route** : `/signalement`
 - **Dossier canonique** : `signalement`
-- **Rôle** : permettre à un compte authentifié de créer une observation Trash Spotter et de suivre ses propres observations sans exposer celles d'un autre compte.
+- **Rôle** : permettre à un visiteur de préparer une observation puis à un compte authentifié de la transmettre et de suivre ses propres observations sans exposer celles d'un autre compte.
 - **Périmètre** : le formulaire existant de `/signalement`, la section `#mes-observations` et la capacité propriétaire `GET /api/signalements/me`.
+- **Entrée Agir** : `/signalement` est l'unique entrée visible « Signaler un déchet » ; `/sections/trash-spotter` reste une surface secondaire de consultation/monitoring dans Réseau & Discussions.
 - **États à documenter** : liste en chargement, liste vide avec retour au formulaire, erreur retryable, liste récente avec statuts `new`, `validated`, `cleaned`, succès de création et partial success média.
 - **Composants concernés** : `TrashSpotterOwnerLoop`, `TrashSpotterObservationForm`, `MyObservationsSection`, `SignalementMediaProofs`.
 - **Contrat propriétaire** : `requireAuthenticatedAccess` détermine le `userId` côté serveur. La requête filtre exclusivement `created_by_clerk_id = userId`, borne la limite à 50 (20 par défaut), ne restitue pas les notes et désactive tout cache partagé.

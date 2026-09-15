@@ -80,6 +80,9 @@ Le bloc Agir expose exactement trois entrées utilisateur :
 workflows et liens existants, mais ne sont pas des rubriques primaires du
 bloc. Les moteurs itinéraire et météo restent accessibles via les panneaux de
 `/actions/new` ; leurs anciennes URLs sont des redirections de compatibilité.
+Trash Spotter n'est pas une entrée Agir : `/sections/trash-spotter` reste une
+surface secondaire de consultation et de monitoring dans Réseau & Discussions,
+et `/signalement` porte l'unique création d'observation.
 
 - `/explorer` et `/reports` sont les routes canoniques des pages Sommaire et Rapports.
 - `/sections/feedback`, `/sections/community`, `/sections/messagerie`, `/sections/open-data` et `/sections/actors` sont les routes canoniques des sections publiques correspondantes.

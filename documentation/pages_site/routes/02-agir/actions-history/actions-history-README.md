@@ -7,6 +7,7 @@
 - `apps/web/src/app/(app)/actions/history/page.tsx`
 - **Type fonctionnel** : page d'action
 - **Famille / bloc fonctionnel** : Agir (bloc)
+- **Navigation** : route directe de compatibilité/workflow hors navigation primaire du bloc Agir
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte Clerk connecté ; le rappel de complétion du compte reste non bloquant. Les fonctions de supervision et d'audit appliquent leurs autorisations propres.
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; l'historique reste soumis à l'authentification et à ses contrôles propres.

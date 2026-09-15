@@ -7,6 +7,7 @@
 - `apps/web/src/app/(app)/missions/[id]/page.tsx`
 - **Type fonctionnel** : dynamique — mission
 - **Famille / bloc fonctionnel** : Agir (bloc)
+- **Navigation** : route de workflow et de deep-link hors navigation primaire du bloc Agir
 - **Statut** : dynamique
 - **Contexte nécessaire** : Compte Clerk authentifié et identifiant de mission existante dans la route dynamique.
 - **Objectif utilisateur principal** : Consulter les données réellement enregistrées pour une mission terrain existante.
