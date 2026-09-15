@@ -101,6 +101,7 @@ export function JoinActionSection() {
             focusedActionId={controller.focusActionId}
             authenticated={controller.authenticated}
             historyItems={controller.historyItems}
+            onShareAction={setShareActionId}
           />
         )}
       </div>

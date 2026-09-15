@@ -8,7 +8,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadActionById } from "@/lib/actions/store";
 import {
   buildShareDestinationList,
-  isShareableFutureAction,
+  getPublicActionShareKind,
   resolveShareTerritoryDestination,
 } from "@/lib/chat/action-sharing";
 import { loadCurrentProfile } from "../route.data";
@@ -55,7 +55,8 @@ export async function GET(request: Request) {
 
   try {
     const action = await loadActionById(getSupabaseServerClient(), actionId);
-    if (!action || !isShareableFutureAction(action)) {
+    const shareKind = action ? getPublicActionShareKind(action) : null;
+    if (!action || !shareKind) {
       return NextResponse.json(
         { error: "Action non partageable" },
         { status: 403, headers: PRIVATE_NO_STORE_HEADERS },
@@ -88,6 +89,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(
       {
+        shareKind,
         destinations: buildShareDestinationList({
           profile,
           dmRows: (dmResult.data ?? []) as DmDestinationRow[],

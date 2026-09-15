@@ -26,9 +26,10 @@ import {
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 import { loadActionById } from "@/lib/actions/store";
 import {
-  isShareableFutureAction,
+  isPublicActionReferenceAvailable,
   resolveShareTerritoryDestination,
 } from "@/lib/chat/action-sharing";
+import { createActionShareRequest } from "@/lib/chat/action-share-requests";
 import {
   messageSelect,
   sendMessageSchema,
@@ -170,9 +171,9 @@ export async function POST(request: Request) {
 
     if (isExternalActionShare) {
       const action = await loadActionById(serviceSupabase, parsed.data.actionId!);
-      if (!action || !isShareableFutureAction(action)) {
+      if (!action || !isPublicActionReferenceAvailable(action)) {
         return NextResponse.json(
-          { error: "Action non partageable", hint: "Cette action n'est plus publiée, future ou accessible." },
+          { error: "Action non partageable", hint: "Cette action n'est plus publiée ou accessible." },
           { status: 403 },
         );
       }
@@ -275,10 +276,40 @@ export async function POST(request: Request) {
             { status: 400 },
           );
         }
-        if (isExternalActionShare && !(await hasExistingDmConversation(supabase, recipientId))) {
+        if (recipientId === userId) {
           return NextResponse.json(
-            { error: "Conversation introuvable", hint: "Le partage privé exige une conversation existante avec ce membre." },
-            { status: 403 },
+            { error: "Destinataire invalide", hint: "Vous ne pouvez pas vous partager une action." },
+            { status: 400 },
+          );
+        }
+        if (isExternalActionShare && !(await hasExistingDmConversation(supabase, recipientId))) {
+          const requestResult = await createActionShareRequest(serviceSupabase, {
+            senderId: userId,
+            recipientId,
+            actionId: parsed.data.actionId!,
+            content: parsed.data.content,
+          });
+
+          if (requestResult.result === "cooldown") {
+            return NextResponse.json(
+              {
+                error: "Demande temporairement indisponible",
+                hint: "Une demande récente existe déjà pour ce membre. Réessayez plus tard.",
+                retryAfterSeconds: requestResult.retryAfterSeconds ?? 24 * 60 * 60,
+              },
+              { status: 429 },
+            );
+          }
+          if (requestResult.result === "already_shared") {
+            return NextResponse.json(
+              { error: "Partage déjà disponible", hint: "Cette action est déjà disponible dans cette conversation." },
+              { status: 409 },
+            );
+          }
+
+          return NextResponse.json(
+            { status: "request_pending", requestId: requestResult.requestId },
+            { status: 202 },
           );
         }
         break;

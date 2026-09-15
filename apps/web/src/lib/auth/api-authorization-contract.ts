@@ -563,12 +563,28 @@ export const API_AUTHORIZATION_CONTRACT = {
       evidenceScope: "module",
     },
   },
+  "chat/contact-requests": {
+    GET: {
+      expected: "Authenticated user reads only pending action-share requests addressed to their identity and only the public action projection",
+      dimensions: ["authentication", "ownership", "public-safe"],
+      actual: "auth + getCurrentUserIdentity + recipient-scoped service RPC; each action is rechecked against the public sharing contract before a bounded projection is returned",
+      evidence: ["auth()", "getCurrentUserIdentity", "list_action_share_requests_for_recipient", "getPublicActionShareKind", "buildPublicActionReference"],
+      evidenceScope: "module",
+    },
+    PATCH: {
+      expected: "Authenticated recipient accepts, rejects or ignores only their own action-share request",
+      dimensions: ["authentication", "ownership", "public-safe"],
+      actual: "auth + getCurrentUserIdentity + recipient_id passed to the service RPC; the decision is constrained to accept/reject/ignore and acceptance rechecks public action availability",
+      evidence: ["auth()", "getCurrentUserIdentity", "respondToActionShareRequest", "recipientId", "decisionSchema"],
+      evidenceScope: "module",
+    },
+  },
   "chat/share-destinations": {
     GET: {
-      expected: "Authenticated user lists only existing conversations where they can post and only for a currently shareable future action",
+      expected: "Authenticated user lists existing conversations where they can post for a currently shareable public action",
       dimensions: ["authentication", "business permission", "ownership"],
       actual: "auth + getCurrentUserIdentity + RLS-backed DM listing + canAccessChatChannel for territory; action eligibility is checked before destinations are returned",
-      evidence: ["auth()", "getCurrentUserIdentity", "getSupabaseClerkRlsClient", "canAccessChatChannel", "list_my_dm_conversations", "isShareableFutureAction"],
+      evidence: ["auth()", "getCurrentUserIdentity", "getSupabaseClerkRlsClient", "canAccessChatChannel", "list_my_dm_conversations", "getPublicActionShareKind"],
       evidenceScope: "module",
     },
   },

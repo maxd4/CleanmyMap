@@ -75,7 +75,7 @@ describe("POST /api/chat action shares", () => {
     expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();
   });
 
-  it("refuses a DM target that is not an existing conversation", async () => {
+  it("creates a first-contact request when the DM does not exist", async () => {
     const actionId = "33333333-3333-4333-8333-333333333333";
     loadActionMock.mockResolvedValue(futureAction(actionId));
     const supabaseMock = buildSupabaseMock({
@@ -85,10 +85,38 @@ describe("POST /api/chat action shares", () => {
       dmRows: [],
     });
     rlsMock.mockResolvedValue(supabaseMock.supabase);
-    serverMock.mockReturnValue(supabaseMock.serviceSupabase);
+    const requestRpc = vi.fn().mockResolvedValue({
+      data: [{ request_id: "request-1", result: "created", retry_after_seconds: null }],
+      error: null,
+    });
+    serverMock.mockReturnValue({ ...supabaseMock.serviceSupabase, rpc: requestRpc });
     const { POST } = await import("./route");
     const response = await POST(new Request("http://localhost/api/chat", { method: "POST", body: JSON.stringify({ channelType: "dm", recipientId: "user-2", actionId, content: "Partage forcé" }) }));
-    expect(response.status).toBe(403);
+    expect(response.status).toBe(202);
+    expect(await response.json()).toMatchObject({ status: "request_pending", requestId: "request-1" });
+    expect(requestRpc).toHaveBeenCalledWith("create_action_share_request", {
+      p_sender_id: "user-1",
+      p_recipient_id: "user-2",
+      p_action_id: actionId,
+      p_content: "Partage forcé",
+    });
     expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();
+  });
+
+  it("shares an approved completed action in an existing DM", async () => {
+    const actionId = "44444444-4444-4444-8444-444444444444";
+    loadActionMock.mockResolvedValue({ ...futureAction(actionId), action_phase: "post_action_complete", action_date: "2020-01-01" });
+    const supabaseMock = buildSupabaseMock({
+      profile: { id: "user-1", display_name: "Alex", handle: "alex", paris_arrondissement: null, role_label: "member", metadata: null },
+      messages: [],
+      insertedMessage: { id: "shared-past", created_at: "2098-12-01T10:00:00.000Z", content: "Résultat", channel_type: "dm", sender_id: "user-1", recipient_id: "user-2", arrondissement_id: null, zone_name: null, action_id: actionId },
+      dmRows: [{ peer_id: "user-2", peer_display_name: "Sam", peer_handle: "sam" }],
+    });
+    rlsMock.mockResolvedValue(supabaseMock.supabase);
+    serverMock.mockReturnValue(supabaseMock.serviceSupabase);
+    const { POST } = await import("./route");
+    const response = await POST(new Request("http://localhost/api/chat", { method: "POST", body: JSON.stringify({ channelType: "dm", recipientId: "user-2", actionId, content: "Résultat" }) }));
+    expect(response.status).toBe(201);
+    expect(supabaseMock.appMessagesTable.insert).toHaveBeenCalledWith(expect.objectContaining({ action_id: actionId, recipient_id: "user-2" }));
   });
 });

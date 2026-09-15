@@ -3,6 +3,7 @@ import type { ChatTopicId } from "@/lib/chat/topics";
 import type { ChatMessageKind, ChatRelatedEvent } from "@/lib/chat/announcements";
 import type { ChatPollOption } from "@/lib/chat/polls";
 import type { ChatHistoryCursor } from "@/lib/chat/chat-pagination";
+import type { PublicActionReference } from "@/lib/chat/action-sharing";
 export type { ChatHistoryCursor } from "@/lib/chat/chat-pagination";
 export type { ChatSearchResponse, ChatSearchResult } from "@/lib/chat/chat-search";
 
@@ -63,4 +64,16 @@ export type DmConversation = {
 
 export type DmInboxResponse = {
   conversations: DmConversation[];
+};
+
+export type ActionShareContactRequest = {
+  id: string;
+  createdAt: string;
+  message: string;
+  sender: ChatUser;
+  action: PublicActionReference;
+};
+
+export type ActionShareContactRequestsResponse = {
+  requests: ActionShareContactRequest[];
 };

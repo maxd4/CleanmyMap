@@ -103,18 +103,21 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
   const requestedTemplate = searchParams.get("template");
   const requestedEventId = searchParams.get("eventId");
   const requestedActionId = searchParams.get("actionId")?.trim() || null;
+  const requestedContactRequestId = searchParams.get("contactRequestId")?.trim() || null;
 
   const requestedAnnouncementTemplate = buildInitialAnnouncementTemplate(requestedTemplate);
 
   const initialChannelType: ChatChannelType = requestedAnnouncementTemplate
     ? "community"
-    : requestedActionId
-      ? "action"
-    : isChatChannelType(requestedChannel)
-    ? requestedChannel
-    : defaultTab === "dm" || requestedTab === "dm"
+    : requestedContactRequestId
       ? "dm"
-      : "community";
+      : requestedActionId
+        ? "action"
+        : isChatChannelType(requestedChannel)
+          ? requestedChannel
+          : defaultTab === "dm" || requestedTab === "dm"
+            ? "dm"
+            : "community";
 
   const initialRecipient: ChatUser | null = useMemo(
     () =>
