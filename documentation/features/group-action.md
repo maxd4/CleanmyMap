@@ -20,8 +20,8 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 
 ## Placement dans le bloc Agir
 
-- La rubrique publique est `Rejoindre une action`, deuxième entrée du bloc `Agir`.
-- Elle se situe après `Créer une action` et avant `Signaler un déchet`.
+- La rubrique publique est `Rejoindre une action`, première entrée du bloc `Agir`.
+- Elle se situe avant `Créer une action` et `Signaler un déchet`.
 - Le bloc Agir expose exactement ces trois entrées ; l'historique, les moteurs
   itinéraire/météo et les missions restent des routes de workflow ou de
   compatibilité hors navigation primaire.
