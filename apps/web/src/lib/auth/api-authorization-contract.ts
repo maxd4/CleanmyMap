@@ -721,6 +721,14 @@ export const API_AUTHORIZATION_CONTRACT = {
       evidence: ["requireAuthenticatedAccess", "persistReportGeneration"],
     },
   },
+  "reports/exports.csv": {
+    GET: {
+      expected: "Any authenticated user may generate the non-sensitive detailed Reports export once per Europe/Paris civil day",
+      dimensions: ["authentication"],
+      actual: "requireAuthenticatedAccess before atomic daily quota reservation and public approved contract export",
+      evidence: ["requireAuthenticatedAccess", "reserveReportExportSlot", "fetchCachedUnifiedActionContracts"],
+    },
+  },
   "reports/generations/[id]": {
     GET: {
       expected: "Authenticated user may load an authorized Reports generation snapshot",

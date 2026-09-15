@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const persistReportGenerationMock = vi.hoisted(() => vi.fn());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
+const reserveReportExportSlotMock = vi.hoisted(() => vi.fn());
+const releaseReportExportSlotMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAuthenticatedAccess: requireAuthenticatedAccessMock,
@@ -14,6 +16,11 @@ vi.mock("@/lib/reports/report-generation-history-store", () => ({
 
 vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: appendAdminOperationAuditMock,
+}));
+
+vi.mock("@/lib/reports/report-export-quota", () => ({
+  reserveReportExportSlot: reserveReportExportSlotMock,
+  releaseReportExportSlot: releaseReportExportSlotMock,
 }));
 
 import { POST } from "./route";
@@ -51,6 +58,8 @@ describe("POST /api/reports/generations", () => {
       generatedAt: "27/08/2026 12:30",
     });
     appendAdminOperationAuditMock.mockResolvedValue(undefined);
+    reserveReportExportSlotMock.mockResolvedValue({ allowed: true, quotaDay: "2026-08-27" });
+    releaseReportExportSlotMock.mockResolvedValue(undefined);
   });
 
   it("denies anonymous callers before persistence", async () => {
@@ -86,6 +95,7 @@ describe("POST /api/reports/generations", () => {
       createdByClerkId: "user-1",
       input: validPayload,
     });
+    expect(reserveReportExportSlotMock).toHaveBeenCalledWith("user-1");
     await expect(response.json()).resolves.toMatchObject({
       item: { id: "generation-1" },
       filename: "rapport_reporting_six_months.pdf",
@@ -156,7 +166,7 @@ describe("POST /api/reports/generations", () => {
     });
   });
 
-  it("audits oversized snapshots without mutating", async () => {
+  it("does not impose a browser snapshot size policy", async () => {
     const response = await POST(
       new Request("http://localhost/api/reports/generations", {
         method: "POST",
@@ -173,17 +183,8 @@ describe("POST /api/reports/generations", () => {
       }),
     );
 
-    expect(response.status).toBe(413);
-    expect(persistReportGenerationMock).not.toHaveBeenCalled();
-    expect(appendAdminOperationAuditMock).toHaveBeenCalledTimes(1);
-    expect(appendAdminOperationAuditMock.mock.calls[0]?.[0]).toMatchObject({
-      outcome: "error",
-      details: {
-        operation: "persist_report_generation",
-        stage: "validation",
-        code: "snapshot_too_large",
-      },
-    });
+    expect(response.status).toBe(200);
+    expect(persistReportGenerationMock).toHaveBeenCalledTimes(1);
   });
 
   it("audits persistence failures without exposing the report", async () => {
@@ -211,5 +212,27 @@ describe("POST /api/reports/generations", () => {
     });
     expect(JSON.stringify(audit)).not.toContain("raw-persistence-error");
     expect(JSON.stringify(audit)).not.toContain("Rapport d'impact");
+    expect(releaseReportExportSlotMock).toHaveBeenCalledWith({
+      userId: "user-1",
+      quotaDay: "2026-08-27",
+    });
+  });
+
+  it("rejects a second export for the same civil day before persistence", async () => {
+    reserveReportExportSlotMock.mockResolvedValueOnce({
+      allowed: false,
+      quotaDay: "2026-08-27",
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({ quotaDay: "2026-08-27" });
   });
 });

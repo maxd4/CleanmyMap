@@ -35,6 +35,11 @@ vi.mock("@/components/ui/pdf-export/use-pdf-export", () => ({
   usePdfExport: mocks.usePdfExport,
 }));
 
+vi.mock("@/lib/pdf-export/browser-report", () => ({
+  renderReportWindow: vi.fn(),
+  openOrDownloadReport: vi.fn(),
+}));
+
 vi.mock("@/components/reports/web-document/report-cover", () => ({
   ReportCover: () => null,
 }));
@@ -174,14 +179,14 @@ describe("ReportsWebDocumentPreparation", () => {
     ]);
   });
 
-  it("keeps the historical warning and preparation wording stable", () => {
+  it("does not advertise a retired history cap", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ReportsWebDocumentPreparation, preparationProps),
     );
 
     expect(markup).toContain("Préparer le rapport");
-    expect(markup).toContain("Historique disponible — plafonné à");
-    expect(markup).toContain("1000 actions approuvées");
+    expect(markup).not.toContain("plafonné à");
+    expect(markup).not.toContain("1000 actions approuvées");
     expect(markup).toContain("Périmètre géographique");
     expect(markup).toContain("Modules optionnels");
     expect(markup).toContain("Le rapport est généré à partir des données");
@@ -258,7 +263,7 @@ describe("ReportsWebDocumentPreparation", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
     await expect(
-      exportOptions.onExportSuccess({
+      exportOptions.onGenerate({
         title: "Rapport d'impact - Global - Par défaut",
         rubrique: "reporting",
         periode: "six_months",
@@ -302,14 +307,14 @@ describe("ReportsWebDocumentPreparation", () => {
     );
 
     await expect(
-      exportOptions.onExportSuccess({
+      exportOptions.onGenerate({
         title: "Rapport",
         rubrique: "reporting",
         periode: "six_months",
         organizationType: "Global",
         data: { generatedAt: "2026-08-27T10:30:00.000Z" },
       }),
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow("unavailable");
     vi.unstubAllGlobals();
   });
 });

@@ -16,8 +16,6 @@ export const DETAIL_LEVEL_OPTIONS = [
   { id: "exhaustif", label: "Exhaustif", pages: "20 à 28 pages" },
 ] as const;
 
-export const REPORT_HISTORY_SERVER_LIMIT = 1000;
-
 export type DetailLevelId = (typeof DETAIL_LEVEL_OPTIONS)[number]["id"];
 export type PeriodId = "six_months" | "current_year" | "full_history";
 export type SelectedPeriodId = PeriodId | "";
@@ -260,11 +258,8 @@ export function periodLabel(period: PeriodId): string {
   }
 }
 
-export function reportPeriodLabel(period: PeriodId, isTruncated = false): string {
-  if (period === "full_history" && isTruncated) {
-    return `Historique disponible — plafonné à ${REPORT_HISTORY_SERVER_LIMIT.toLocaleString("fr-FR")} actions approuvées`;
-  }
-
+export function reportPeriodLabel(period: PeriodId, _isTruncated = false): string {
+  void _isTruncated;
   return periodLabel(period);
 }
 

@@ -175,9 +175,7 @@ describe("reports web document shared helpers", () => {
     expect(periodLabel("six_months")).toBe("Six mois");
     expect(periodLabel("current_year")).toBe("Année en cours");
     expect(periodLabel("full_history")).toBe("Historique complet");
-    expect(reportPeriodLabel("full_history", true)).toBe(
-      "Historique disponible — plafonné à 1 000 actions approuvées",
-    );
+    expect(reportPeriodLabel("full_history", true)).toBe("Historique complet");
   });
 
   it("builds PDF payloads with the selected period and detail level", () => {
@@ -235,11 +233,9 @@ describe("reports web document shared helpers", () => {
     expect(pdf.title).toBe("Rapport d'impact - Paris - Exhaustif");
     expect(pdf.rows).toEqual([{ Date: "2026-06-01", Masse_Kg: 4.5 }]);
     expect(pdf.chapters[0]?.lines).toContain(
-      "Période: Historique disponible — plafonné à 1 000 actions approuvées · Exhaustif (20 à 28 pages).",
+      "Période: Historique complet · Exhaustif (20 à 28 pages).",
     );
-    expect(pdf.chapters[1]?.lines).toContain(
-      "Période analysée: Historique disponible — plafonné à 1 000 actions approuvées.",
-    );
+    expect(pdf.chapters[1]?.lines).toContain("Période analysée: Historique complet.");
     expect(JSON.stringify(pdf)).not.toMatch(/weather|météo/i);
     expect(pdf.chapters[0]?.lines).toContain(
       "Données potentiellement partielles : la limite de chargement a été atteinte.",

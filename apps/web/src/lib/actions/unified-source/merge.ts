@@ -114,7 +114,7 @@ export function buildUnifiedActionContracts(
   remoteSpots: TrashSpotterSpotRow[],
   localContracts: ActionDataContract[],
   types: ActionEntityType[] | null,
-  limit: number,
+  limit: number | null,
 ): { items: ActionDataContract[]; isTruncated: boolean } {
   const candidates: UnifiedContractCandidate[] = [
     ...remoteRows.map((row) => ({
@@ -138,16 +138,15 @@ export function buildUnifiedActionContracts(
     .filter((contract) => !isTestLikeContract(contract))
     .map(withDataQuality);
 
-  const isTruncated = rawContracts.length > limit;
-  const items = rawContracts
-    .sort((left, right) => {
+  const sortedContracts = rawContracts.sort((left, right) => {
       const observedAtOrder = right.dates.observedAt.localeCompare(left.dates.observedAt);
       if (observedAtOrder !== 0) {
         return observedAtOrder;
       }
       return canonicalContractKey(left).localeCompare(canonicalContractKey(right));
-    })
-    .slice(0, limit);
+    });
+  const isTruncated = limit !== null && sortedContracts.length > limit;
+  const items = limit === null ? sortedContracts : sortedContracts.slice(0, limit);
 
   return { items, isTruncated };
 }

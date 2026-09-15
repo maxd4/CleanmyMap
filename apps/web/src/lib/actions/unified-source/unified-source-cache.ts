@@ -8,7 +8,7 @@ import {
 } from "../unified-source";
 
 export type CachedUnifiedActionContractsParams = {
-  limit: number;
+  limit: number | null;
   status: ActionStatus | null;
   floorDate: string | null;
   requireCoordinates: boolean;

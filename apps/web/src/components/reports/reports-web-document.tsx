@@ -17,7 +17,6 @@ import { useReportsWebDocumentModel } from "@/components/reports/web-document/us
 import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
 import {
   DEFAULT_REPORT_MODULES,
-  REPORT_HISTORY_SERVER_LIMIT,
   buildCoverageRangeLabel,
   buildDetailCoverageLabel,
   buildModuleSelectionLabel,
@@ -36,7 +35,7 @@ import {
   renderReportWindow,
   openOrDownloadReport,
 } from "@/lib/pdf-export/browser-report";
-import type { PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
+import { buildPdfReportFilename, type PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
 import type { CommunityEventItem } from "@/lib/community/http";
@@ -54,6 +53,7 @@ import type { ReportGenerationHistoryActionState } from "./web-document/reports-
 import { loadHistoricalReportSnapshot } from "@/lib/reports/historical-report-client";
 import { replayHistoricalReport } from "@/lib/reports/historical-report-replay";
 import { filterReportGenerationContracts } from "@/lib/reports/generation-period";
+import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
 
 export type ReportsWebDocumentProps = {
   contracts: ActionDataContract[];
@@ -63,6 +63,7 @@ export type ReportsWebDocumentProps = {
   communityEventsAvailability?: CommunityEventsAvailability;
   initialRecentRows?: ReportGenerationHistoryRow[];
   initialHistoryAvailability?: "available" | "unavailable";
+  dailyExportAvailability?: ReportExportAvailability;
 };
 
 export function ReportsWebDocument({
@@ -73,6 +74,7 @@ export function ReportsWebDocument({
   communityEventsAvailability,
   initialRecentRows = [],
   initialHistoryAvailability = "available",
+  dailyExportAvailability: initialDailyExportAvailability = "unavailable",
 }: ReportsWebDocumentProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const [showPreview, setShowPreview] = useState(false);
@@ -82,12 +84,13 @@ export function ReportsWebDocument({
     Record<string, ReportGenerationHistoryActionState>
   >({});
   const [historyWarning, setHistoryWarning] = useState<string | null>(null);
+  const [dailyExportAvailability, setDailyExportAvailability] =
+    useState<ReportExportAvailability>(initialDailyExportAvailability);
   const [period, setPeriod] = useState<SelectedPeriodId>("");
   const [detailLevel, setDetailLevel] = useState<DetailLevelId>("default");
   const [modules, setModules] = useState<ModuleState>(DEFAULT_REPORT_MODULES);
   const effectivePeriod = period || "six_months";
   const reportNow = useMemo(() => new Date(), []);
-  const historyCompletenessWarning = effectivePeriod === "full_history" && isTruncated;
   const filteredContracts = useMemo(
     () => filterReportGenerationContracts(contracts, effectivePeriod, reportNow),
     [contracts, effectivePeriod, reportNow],
@@ -135,9 +138,8 @@ export function ReportsWebDocument({
     [activeScopeLabel, defaultTitle, detailLevel, effectivePeriod, model, modules, surfaceProxy],
   );
 
-  async function persistSuccessfulExport(payload: PdfReportPayload): Promise<void> {
-    try {
-      const response = await fetch("/api/reports/generations", {
+  async function generateReportOnServer(payload: PdfReportPayload): Promise<void> {
+    const response = await fetch("/api/reports/generations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -149,18 +151,26 @@ export function ReportsWebDocument({
           modules,
         }),
       });
-      const body = (await response.json().catch(() => null)) as { item?: unknown } | null;
-      const historyRow = body?.item;
-      if (!response.ok || !historyRow || !isReportGenerationHistoryRow(historyRow)) {
-        throw new Error("Report generation history persistence failed.");
+    const body = (await response.json().catch(() => null)) as { item?: unknown; error?: unknown } | null;
+    if (!response.ok) {
+      if (response.status === 429) {
+        setDailyExportAvailability("used");
+        setHistoryWarning(
+          typeof body?.error === "string"
+            ? body.error
+            : "Un export détaillé a déjà été utilisé aujourd'hui ; le prochain sera disponible le jour civil suivant.",
+        );
       }
-      setRecentRows((current) => [historyRow, ...current].slice(0, REPORT_GENERATION_HISTORY_LIMIT));
-      setHistoryAvailability("available");
-    } catch {
-      setHistoryWarning(
-        "Le PDF a bien été généré, mais cette génération n'a pas pu être ajoutée à l'historique.",
-      );
+      throw new Error(typeof body?.error === "string" ? body.error : "Export indisponible.");
     }
+    const historyRow = body?.item;
+    if (!historyRow || !isReportGenerationHistoryRow(historyRow)) {
+      throw new Error("Report generation history persistence failed.");
+    }
+    setRecentRows((current) => [historyRow, ...current].slice(0, REPORT_GENERATION_HISTORY_LIMIT));
+    setHistoryAvailability("available");
+    setDailyExportAvailability("used");
+    openOrDownloadReport(payload, buildPdfReportFilename(payload));
   }
 
   async function handleHistoricalAction(
@@ -235,8 +245,11 @@ export function ReportsWebDocument({
     organizationType: activeScopeLabel,
     defaultTitle,
     data: pdfData,
-    onExportSuccess: persistSuccessfulExport,
-    disabled: model.isLoading || model.hasError,
+    onGenerate: generateReportOnServer,
+    disabled:
+      model.isLoading ||
+      model.hasError ||
+      dailyExportAvailability !== "available",
   });
 
   function toggleModule(key: keyof ModuleState): void {
@@ -337,7 +350,7 @@ export function ReportsWebDocument({
         <ReportsWebDocumentPreparation
           period={period}
           onPeriodChange={setPeriod}
-          historyCompletenessWarning={historyCompletenessWarning}
+          historyCompletenessWarning={false}
           selectedScopeValue={selectedScopeValue}
           scopeOptions={model.scopeOptions}
           onScopeChange={(value) => {
@@ -359,19 +372,15 @@ export function ReportsWebDocument({
             previewRef={previewRef}
             onTogglePreview={handlePreview}
             periodDisplayLabel={
-              reportPeriodLabel(effectivePeriod, isTruncated)
+              reportPeriodLabel(effectivePeriod, false)
             }
             detailDisplayLabel={detailLevelLabel(detailLevel)}
             modules={modules}
             historyCoverageLabel={
-              historyCompletenessWarning
-                ? `Historique borné à ${REPORT_HISTORY_SERVER_LIMIT}`
-                : `Historique: ${filteredContracts.length} actions`
+              `Historique: ${filteredContracts.length} actions`
             }
             historyGuaranteeLabel={
-              historyCompletenessWarning
-                ? `Historique: plafonné à ${REPORT_HISTORY_SERVER_LIMIT} actions approuvées.`
-                : "Historique: couverture conforme à la fenêtre sélectionnée."
+              "Historique: couverture conforme à la fenêtre sélectionnée."
             }
             coverageRangeLabel={coverageRangeLabel}
             detailCoverageLabel={detailCoverageLabel}
@@ -385,6 +394,7 @@ export function ReportsWebDocument({
             isDisabled={isDisabled}
             exportStatus={exportStatus}
             historyWarning={historyWarning}
+            dailyExportAvailability={dailyExportAvailability}
             onGenerate={handleGenerate}
           />
         </div>

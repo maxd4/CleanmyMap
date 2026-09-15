@@ -24,7 +24,8 @@ import type {
 import type { ActionRow } from "@/types/database";
 
 export type UnifiedActionContractsParams = {
-  limit: number;
+  /** null means the caller explicitly requests the complete source result. */
+  limit: number | null;
   status: ActionStatus | null;
   includeFuturePublicActions?: boolean;
   futureOnly?: boolean;

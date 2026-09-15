@@ -24,8 +24,10 @@ async function loadCanonicalSpots(
     .select(
       "id, created_at, created_by_clerk_id, label, spot_type, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, status, notes",
     )
-    .order("created_at", { ascending: false })
-    .limit(params.limit + 1);
+    .order("created_at", { ascending: false });
+  if (params.limit !== null) {
+    query = query.limit(params.limit + 1);
+  }
 
   if (params.floorDate) {
     query = query.gte("created_at", `${params.floorDate}T00:00:00.000Z`);
@@ -55,6 +57,7 @@ export async function loadUnifiedActionSourceData(
   supabase: SupabaseClient,
   params: UnifiedActionContractsParams,
 ): Promise<UnifiedActionSourceLoadResult> {
+  const sourceLimit = params.limit === null ? null : params.limit + 1;
   const wantsActions =
     !params.types || params.types.length === 0 || params.types.includes("action");
   const wantsSpots =
@@ -66,7 +69,7 @@ export async function loadUnifiedActionSourceData(
   const [remoteRowsResult, remoteSpotsResult] = await Promise.allSettled([
     wantsActions
       ? fetchActions(supabase, {
-          limit: params.limit + 1,
+          limit: sourceLimit,
           status: params.status,
           includeFuturePublicActions: params.includeFuturePublicActions,
           futureOnly: params.futureOnly,
@@ -87,7 +90,7 @@ export async function loadUnifiedActionSourceData(
         loadLocalActionContracts({
           status: params.status,
           floorDate: params.floorDate,
-          limit: params.limit + 1,
+          limit: sourceLimit,
           requireCoordinates: params.requireCoordinates,
         }),
       ]))[0]

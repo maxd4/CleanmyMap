@@ -169,7 +169,7 @@ describe("/reports server data budget", () => {
     expect(result.communityEventsAvailability).toBe("available");
     expect(mocks.fetchCachedUnifiedActionContracts).toHaveBeenCalledTimes(1);
     expect(mocks.fetchCachedUnifiedActionContracts).toHaveBeenCalledWith({
-      limit: 1000,
+      limit: null,
       status: "approved",
       floorDate: null,
       requireCoordinates: false,
