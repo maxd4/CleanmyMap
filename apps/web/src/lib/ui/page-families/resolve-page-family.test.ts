@@ -73,10 +73,13 @@ describe("page-families resolver", () => {
       "/sections/messagerie",
       "/sections/open-data",
       "/sections/funding",
-      "/sections/trash-spotter",
     ]) {
       expect(resolveBasePageFamilyId(route)).toBe("reseau-discussions");
     }
+
+    expect(resolveBasePageFamilyId("/sections/trash-spotter")).toBe(
+      "reseau-discussions",
+    );
   });
 
   it("keeps unresolved runtime sections explicit until product classification", () => {

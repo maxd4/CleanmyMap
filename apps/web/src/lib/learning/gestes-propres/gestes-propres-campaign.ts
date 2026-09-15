@@ -81,7 +81,7 @@ export const GESTES_PROPRES_CAMPAIGN: GestesPropresCampaign = {
         fr: "Voir le signalement",
         en: "Open reporting",
       },
-      solutionHref: "/sections/trash-spotter",
+      solutionHref: "/signalement",
     },
     {
       id: "canette",

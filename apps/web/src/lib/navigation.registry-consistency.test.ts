@@ -29,6 +29,12 @@ describe("navigation registry consistency", () => {
     expect(byRoute.get("/actions/new")?.description.fr).toBe(
       "Préparer une action avant terrain ou compléter ses résultats après réalisation.",
     );
+    expect(byRoute.get("/sections/trash-spotter")?.label.fr).toBe(
+      "Suivi Trash Spotter",
+    );
+    expect(byRoute.get("/sections/trash-spotter")?.description.fr).toContain(
+      "Consulter la carte",
+    );
   });
 
   it("maps only existing rubriques with matching hrefs", () => {
