@@ -4,7 +4,7 @@ import { MapLoadingState } from "@/components/actions/map-feed/_layouts/map-load
 export default function Loading() {
   return (
     <main className="min-h-screen pb-24 text-slate-950">
-      <div className="mx-auto max-w-[1680px] space-y-10 px-6 py-8">
+      <div className="cmm-page-width space-y-10 px-6 py-8">
         <header className="relative space-y-8 pt-10 lg:pt-12">
           <div className="absolute -left-24 -top-24 h-[600px] w-[600px] rounded-full bg-sky-500/10 blur-[120px]" />
 
@@ -25,7 +25,7 @@ export default function Loading() {
           <MapLoadingState fullViewport />
         </section>
 
-        <div className="mx-auto max-w-[1680px] space-y-10 px-6">
+        <div className="cmm-page-width space-y-10 px-6">
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.62fr)_minmax(340px,0.88fr)]">
             <div className="space-y-6">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

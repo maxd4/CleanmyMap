@@ -108,7 +108,7 @@ function TransitionPanel({
   onCancel: () => void;
 }) {
   return (
-    <div className="mx-auto flex min-h-[40vh] w-full max-w-7xl items-center justify-center px-4 py-8 md:px-6 lg:px-8">
+    <div className="cmm-page-width flex min-h-[40vh] items-center justify-center px-4 py-8 md:px-6 lg:px-8">
       <CmmCard tone="emerald" variant="glass" size="lg" className="w-full max-w-2xl">
         <div className="space-y-5 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl border border-emerald-200/80 bg-[#ECF8EF] text-emerald-700 shadow-sm">
@@ -145,7 +145,7 @@ function ErrorPanel({
   onRetry: () => void;
 }) {
   return (
-    <div className="mx-auto flex min-h-[40vh] w-full max-w-7xl items-center justify-center px-4 py-8 md:px-6 lg:px-8">
+    <div className="cmm-page-width flex min-h-[40vh] items-center justify-center px-4 py-8 md:px-6 lg:px-8">
       <CmmCard tone="rose" variant="glass" size="lg" className="w-full max-w-2xl">
         <div className="space-y-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-rose-200/80 bg-rose-50 text-rose-600 shadow-sm">
@@ -231,7 +231,7 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
         <div className="absolute right-0 top-8 h-80 w-80 rounded-full bg-emerald-100/55 blur-[120px]" />
       </div>
 
-      <div className="relative mx-auto w-full max-w-7xl space-y-6">
+      <div className="cmm-page-width relative space-y-6">
         <CmmCard tone="emerald" variant="glass" size="lg">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl space-y-3">
@@ -314,7 +314,7 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
   if (screen === "success" && selection === "after") {
     return (
       <div className="space-y-4 px-4 py-6 md:px-6 lg:px-8">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 rounded-[2rem] border border-emerald-200/80 bg-white/90 px-5 py-4 shadow-[0_16px_34px_-26px_rgba(34,197,94,0.22)] backdrop-blur-xl">
+        <div className="cmm-page-width flex items-center justify-between gap-4 rounded-[2rem] border border-emerald-200/80 bg-white/90 px-5 py-4 shadow-[0_16px_34px_-26px_rgba(34,197,94,0.22)] backdrop-blur-xl">
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <CmmPill tone="emerald" size="sm">

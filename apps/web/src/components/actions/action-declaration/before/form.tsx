@@ -34,7 +34,7 @@ function BeforeActionStepper({ activeStep }: { activeStep: number }) {
     <ol
       aria-label="Progression Organiser une action"
       data-testid="before-action-stepper"
-      className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-2 px-4 md:grid-cols-5 md:px-6 lg:px-8"
+      className="cmm-page-width grid grid-cols-2 gap-2 px-4 md:grid-cols-5 md:px-6 lg:px-8"
     >
       {BEFORE_ACTION_STEPS.map((label, index) => {
         const step = index + 1;
@@ -173,7 +173,7 @@ export function ActionBeforeDeclarationForm({
     return (
       <div className="space-y-6 px-4 py-6 md:px-6 lg:px-8">
         <BeforeActionStepper activeStep={isPublished || publicationConfirmationOpen ? 5 : 4} />
-        <div className="mx-auto w-full max-w-7xl">
+        <div className="cmm-page-width">
           <CmmCard tone="emerald" variant="glass" size="lg">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-3">
@@ -297,7 +297,7 @@ export function ActionBeforeDeclarationForm({
         <div className="absolute right-0 top-8 h-80 w-80 rounded-full bg-emerald-100/55 blur-[120px]" />
       </div>
 
-      <div className="relative mx-auto w-full max-w-7xl space-y-6">
+      <div className="cmm-page-width relative space-y-6">
         <BeforeActionStepper activeStep={1} />
         <CmmCard tone="emerald" variant="glass" size="lg">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">

@@ -334,7 +334,7 @@ export function HomeCommunityCredibility({
       data-homepage-section="community-credibility"
       className="relative isolate overflow-hidden py-8 sm:py-10 lg:py-12"
     >
-      <div className="relative mx-auto grid w-full max-w-[1860px] items-stretch gap-4 px-3 sm:px-6 lg:grid-cols-2 lg:gap-6 lg:px-6">
+      <div className="cmm-page-width relative grid items-stretch gap-4 px-3 sm:px-6 lg:grid-cols-2 lg:gap-6 lg:px-6">
         <div className="relative isolate flex min-w-0 flex-col overflow-hidden rounded-[2.25rem] border border-white/85 bg-white/58 p-5 shadow-[0_28px_70px_-50px_rgba(7,95,71,0.42)] backdrop-blur-xl sm:p-7 lg:min-h-[760px] lg:p-7 xl:p-8">
           <SectionLandscape variant="community" />
           <div data-gsap-reveal className="flex items-start gap-4">

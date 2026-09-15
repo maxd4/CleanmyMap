@@ -19,6 +19,13 @@
 }
 
 @layer utilities {
+  /* Shared structural width for page-root components that are not the
+     CmmPageLayout component itself (maps, action flows, and landing sections). */
+  .cmm-page-width {
+    width: min(100%, var(--cmm-page-max-width));
+    margin-inline: auto;
+  }
+
   .cmm-page-layout {
     display: flex;
     width: min(100%, var(--cmm-page-max-width));

@@ -179,7 +179,7 @@ export default async function ExplorerPage() {
     <div
       className="relative min-h-screen overflow-hidden font-sans text-white"
     >
-      <div className="relative z-10 mx-auto w-full max-w-[1360px] px-6 pb-16 pt-10 sm:px-10 sm:pb-24 sm:pt-12 lg:px-12">
+      <div className="cmm-page-width relative z-10 px-6 pb-16 pt-10 sm:px-10 sm:pb-24 sm:pt-12 lg:px-12">
 
         {/* ── Header ── */}
         <div className="mb-14 space-y-4">

@@ -63,7 +63,7 @@ export function GamificationSection() {
     >
       <div className="relative overflow-hidden bg-[linear-gradient(180deg,#ffffff_0%,#fff8f6_48%,#ffffff_100%)] text-[#241311]">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[38rem] bg-[radial-gradient(circle_at_74%_12%,rgba(255,118,108,0.16)_0%,rgba(255,118,108,0.08)_18%,transparent_40%),radial-gradient(circle_at_82%_20%,rgba(197,31,31,0.10)_0%,transparent_24%),radial-gradient(circle_at_0%_0%,rgba(255,255,255,0.95)_0%,transparent_55%)]" />
-        <div className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8 lg:pb-16">
+        <div className="cmm-page-width px-4 pb-12 sm:px-6 lg:px-8 lg:pb-16">
           <HeroBlock fr={fr} />
 
           <div className="space-y-6">

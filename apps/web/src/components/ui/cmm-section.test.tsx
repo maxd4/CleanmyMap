@@ -69,6 +69,8 @@ describe("canonical page layout primitives", () => {
     );
     expect(layoutCss).toContain(".cmm-ribbon-frame");
     expect(layoutCss).toContain("var(--cmm-ribbon-max-width)");
+    expect(layoutCss).toContain(".cmm-page-width");
+    expect(layoutCss).toContain("var(--cmm-page-max-width)");
     expect(layoutCss).toContain(".cmm-ribbon-text");
     expect(layoutCss).toContain("var(--cmm-ribbon-text-size)");
     expect(baseCss).toMatch(/html\s*\{[\s\S]*zoom:\s*80%\s*;/);

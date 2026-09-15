@@ -173,7 +173,7 @@ function NavigationScene({ tone }: { tone: (typeof toneClasses)[NavigationPath["
 
 function NavigationAudiences() {
   return (
-    <div className="relative mx-auto mt-7 hidden h-[4.75rem] max-w-[1600px] lg:block">
+    <div className="cmm-page-width relative mt-7 hidden h-[4.75rem] lg:block">
       <div className="grid h-full grid-cols-[1fr_1.1fr_1fr] gap-5">
         {navigationPaths.map((path) => {
           const tone = toneClasses[path.tone];
@@ -277,8 +277,8 @@ export function HomeNavigationSchema() {
       className="relative isolate mx-auto min-h-[90rem] w-[calc(100%_-_4px)] max-w-none overflow-hidden py-10 sm:py-12 lg:min-h-[76rem] lg:pb-[3.5rem] lg:pt-[5rem]"
     >
       <NavigationLandscape />
-      <div className="relative z-10 mx-auto w-full max-w-[1750px] px-4 sm:px-8 lg:px-0">
-        <header className="mx-auto max-w-[1450px] text-center">
+      <div className="cmm-page-width relative z-10 px-4 sm:px-8 lg:px-0">
+        <header className="mx-auto text-center">
           <h2
             id="home-navigation-title"
             className="whitespace-nowrap bg-gradient-to-r from-emerald-500 via-sky-500 to-violet-600 bg-clip-text text-[clamp(2rem,4.4vw,5rem)] font-black leading-none tracking-[-0.03em] text-transparent"

@@ -147,7 +147,7 @@ function HeroArtwork() {
 
 export function HeroBlock({ fr }: { fr: boolean }) {
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-8 pt-8 sm:px-6 lg:px-8 lg:pb-12 lg:pt-10">
+    <section className="cmm-page-width px-4 pb-8 pt-8 sm:px-6 lg:px-8 lg:pb-12 lg:pt-10">
       <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
         <div className="space-y-6">
           <PageHeader

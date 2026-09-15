@@ -7,6 +7,16 @@ const primitivePath = path.join(webSourceRoot, "components/ui/cmm-section.tsx");
 const tokensPath = path.join(webSourceRoot, "styles/tokens.css");
 
 const structuralUtilities = /(?:^|\s)(?:max-w-|mx-auto|p[xy]?-|space-y-|gap-)/;
+const hardcodedStructuralWidth = /(?:^|\s)max-w-(?:6xl|7xl)(?:\s|$)|(?:^|\s)max-w-\[[1-9]\d{3,}px\](?:\s|$)|(?:^|\s)container(?:\s|$)/;
+const structuralWidthAllowlist = new Map([
+  ["apps/web/src/app/loading.tsx", "system state loading surface"],
+  ["apps/web/src/components/auth/auth-page-shell.tsx", "authentication composition and form shell"],
+  ["apps/web/src/components/learn/quiz/quiz-access-picker.tsx", "interactive quiz selection surface"],
+  ["apps/web/src/components/learn/quiz/quiz-reasoning-picker.tsx", "interactive quiz selection surface"],
+  ["apps/web/src/components/learn/quiz/school/quiz-school-picker.tsx", "interactive school workshop surface"],
+  ["apps/web/src/components/pilotage/access-screen/views/pilotage-locked-page.tsx", "access-state composition before the console"],
+  ["apps/web/src/app/(app)/prints/report/page.tsx", "print/export paper composition"],
+]);
 const violations = [];
 const tokensSource = fs.readFileSync(tokensPath, "utf8");
 
@@ -61,6 +71,10 @@ function classNameValues(tag) {
   return [...tag.matchAll(/className\s*=\s*["']([^"']*)["']/g)].map((match) => match[1]);
 }
 
+function isAllowlistedStructuralWidth(relative) {
+  return structuralWidthAllowlist.has(relative);
+}
+
 const primitiveSource = fs.readFileSync(primitivePath, "utf8");
 if (!primitiveSource.includes('"cmm-page-layout"')) {
   violations.push(`${relativePath(primitivePath)}: CmmPageLayout must use the canonical cmm-page-layout class`);
@@ -75,6 +89,15 @@ if (/maxWidth\??\s*:|padding\??\s*:|spacing\??\s*:/.test(primitiveSource)) {
 for (const sourcePath of collectSourceFiles(webSourceRoot)) {
   const relative = relativePath(sourcePath);
   const source = fs.readFileSync(sourcePath, "utf8");
+
+  for (const match of source.matchAll(/className\s*=\s*["']([^"']*)["']/g)) {
+    const className = match[1] ?? "";
+    if (hardcodedStructuralWidth.test(className) && !isAllowlistedStructuralWidth(relative)) {
+      const line = source.slice(0, match.index ?? 0).split(/\r?\n/).length;
+      violations.push(`${relative}:${line}: structural page widths must use cmm-page-width or an explicit allowlist entry`);
+      break;
+    }
+  }
 
   for (const primitiveName of ["CmmPageLayout", "CmmSectionGroup"]) {
     for (const match of source.matchAll(new RegExp(`<${primitiveName}\\b`, "g"))) {

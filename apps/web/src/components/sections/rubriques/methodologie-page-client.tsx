@@ -241,7 +241,7 @@ export function MethodologiePageClient({
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[44rem] bg-[radial-gradient(circle_at_top,rgba(251,113,133,0.26)_0%,rgba(251,113,133,0.12)_24%,rgba(255,255,255,0.88)_52%,rgba(15,23,42,0.98)_100%)]"
       />
 
-      <div className="mx-auto flex w-full max-w-[1600px] flex-col space-y-16 px-4 sm:px-6 lg:px-8">
+      <div className="cmm-page-width flex flex-col space-y-16 px-4 sm:px-6 lg:px-8">
         <PageHeader
           align="center"
           tone="red"

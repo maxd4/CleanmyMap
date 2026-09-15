@@ -170,7 +170,7 @@ function ActionsMapPageContent({
 
   return (
     <main className="min-h-screen text-slate-950 pb-24">
-      <div className="mx-auto max-w-[1680px] px-6 py-8 space-y-10">
+      <div className="cmm-page-width px-6 py-8 space-y-10">
         {/* Premium Header - Lecture Spatiale */}
         <header className="relative space-y-8 overflow-hidden pt-10 lg:pt-12">
           <div className="absolute -top-24 -left-24 w-[600px] h-[600px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none" />
@@ -219,7 +219,7 @@ function ActionsMapPageContent({
           />
         </section>
 
-        <div className="mx-auto max-w-[1680px] px-6 space-y-10">
+        <div className="cmm-page-width px-6 space-y-10">
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.62fr)_minmax(340px,0.88fr)]">
             <div className="min-w-0 space-y-6">
               <MapKpiRibbon metrics={impactMetrics} />
