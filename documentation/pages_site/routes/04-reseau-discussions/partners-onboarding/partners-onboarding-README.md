@@ -9,6 +9,7 @@
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
+- **Complétion du compte** : La complétion personnelle n'est pas un prérequis global ; le formulaire partenaire demande ses propres champs obligatoires au moment de l'envoi.
 - **Objectif utilisateur principal** : Faire circuler l'information et faciliter les échanges entre acteurs.
 - **Action principale attendue** : Lire, contacter ou rejoindre une discussion / un réseau.
 - **Palette attendue** : indigo

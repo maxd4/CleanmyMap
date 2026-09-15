@@ -122,10 +122,7 @@ vi.mock("@/components/ui/clerk-required-gate", () => ({
 }));
 
 vi.mock("@/components/account/account-completion-gate", () => ({
-  AccountCompletionGate: ({ state, children }: { state: typeof completeAccountState; children: React.ReactNode }) =>
-    state?.requirement?.requiresSetup
-      ? React.createElement("div", { "data-testid": "profile-completion-required" }, "Profil incomplet")
-      : children,
+  AccountCompletionGate: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 vi.mock("@/lib/actions/data-contract", () => ({
@@ -252,7 +249,7 @@ describe("/reports page contract", () => {
     expect(markup).toContain("Authentification temporairement indisponible");
   });
 
-  it("covers incomplete profile before exposing reports content", async () => {
+  it("keeps reports available for an incomplete profile", async () => {
     mocks.loadAccountCompletionGateState.mockResolvedValue({
       ...completeAccountState,
       requirement: { requiresSetup: true, reason: "missing_profile" },
@@ -260,8 +257,8 @@ describe("/reports page contract", () => {
 
     const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({}) }));
 
-    expect(markup).toContain('data-testid="profile-completion-required"');
-    expect(markup).toContain("Profil incomplet");
+    expect(markup).toContain('data-testid="reports-layout"');
+    expect(markup).not.toContain('data-testid="profile-completion-required"');
   });
 
   it("loads the 90-day analysis window and renders primary KPIs", async () => {

@@ -9,6 +9,7 @@
 - **Famille / bloc fonctionnel** : Agir (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
+- **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; l'historique reste soumis à l'authentification et à ses contrôles propres.
 - **Objectif utilisateur principal** : Permettre l'action terrain, la déclaration et la préparation rapide.
 - **Action principale attendue** : Lancer une action, signaler ou compléter un formulaire.
 - **Palette attendue** : emerald

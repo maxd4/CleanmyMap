@@ -9,6 +9,7 @@
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
+- **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; l'accès reste soumis à l'AuthN/AuthZ propre au portail.
 - **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
 - **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
 - **Palette attendue** : amber / brun
@@ -51,7 +52,8 @@
 
 - La page est dynamique et protégée : elle ne doit pas être pré-rendue avec des données sponsor ou de pilotage privilégiées.
 - `getSafeAuthSession()` est résolu avant toute lecture de pilotage ; un utilisateur non authentifié reçoit immédiatement l'état de connexion requis.
-- La validation du profil via `AccountCompletionGate` intervient avant le chargement de l'overview sponsor.
+- `AccountCompletionGate` affiche au besoin un rappel non bloquant ; il ne remplace pas la page et n'est pas une preuve d'AuthZ.
+- L'overview sponsor est chargé après le contrôle de session et des permissions propres à la surface.
 - Les données sponsor ne sont chargées qu'après validation de l'accès serveur ; leur indisponibilité produit un état partiel contrôlé.
 
 

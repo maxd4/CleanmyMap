@@ -8,6 +8,7 @@
 - **Accès visiteur** : synthèse publique légère en lecture
 - **Accès génération/historique** : compte connecté, sur son propre historique
 - **Export détaillé** : tout compte connecté, une fois par jour civil
+- **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; il ne remplace pas la page et ne modifie pas l'AuthN/AuthZ des opérations.
 - **Source principale** : `apps/web/src/app/(app)/reports/page.tsx`
 
 ## Contrat d'accès

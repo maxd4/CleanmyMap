@@ -8,6 +8,7 @@
 - **Type fonctionnel** : page d'action
 - **Famille / bloc fonctionnel** : Agir (bloc)
 - **Accès runtime** : `clerk-context` ; l'entrée, le choix du type d'observation et la préparation du formulaire sont accessibles au visiteur sans compte. La page affiche sa surface sans hard gate ; un compte est demandé pour transmettre l'observation, gérer ses preuves et consulter la boucle propriétaire.
+- **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; les contrôles d'identité propres à la transmission, aux preuves et aux observations restent appliqués au moment de l'opération.
 - **Objectif utilisateur principal** : Permettre l'action terrain, la déclaration et le suivi propriétaire des observations récentes.
 - **Action principale attendue** : Lancer une action, signaler ou compléter un formulaire.
 - **Boucle propriétaire** : La section `#mes-observations`, sous le formulaire, lit exclusivement les lignes `trash_spotter_spots` créées par le compte Clerk courant via `GET /api/signalements/me`. Elle affiche uniquement les types `spot` et `clean_place`, avec les statuts `new`, `validated` et `cleaned`, dans l'ordre du plus récent au plus ancien.

@@ -9,6 +9,7 @@
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
+- **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; la page reste accessible après le contrôle d'authentification.
 - **Objectif utilisateur principal** : Lire sa situation immédiate, ses alertes et sa prochaine action depuis un cockpit court.
 - **Action principale attendue** : Déclarer une action ou ouvrir un raccourci utile du quotidien.
 - **Palette attendue** : amber / orange
