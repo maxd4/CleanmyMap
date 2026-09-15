@@ -10,11 +10,11 @@
 - **Accès runtime** : `auth-disabled-gate` ; le contenu est verrouillé avant connexion et l'accès aux données de pilotage reste soumis aux habilitations du contrat concerné.
 - **Objectif utilisateur principal** : Donner un accès direct à la lecture territoriale, aux arbitrages et aux repères de gouvernance.
 - **Action principale attendue** : Consulter les priorités et arbitrages de gouvernance.
-- **Palette attendue** : amber / brun
-- **Scope** : à corriger
+- **Palette attendue** : bleu / slate, variante gouvernance
+- **Scope** : lecture protégée du pilotage institutionnel, avec synthèse, priorités territoriales, référentiel et navigation vers les surfaces décideurs.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : amber / brun — à vérifier lors d'une capture de référence
-- **Incohérences de couleurs** : À compléter.
+- **Incohérences de couleurs** : aucune incohérence bloquante ; le rendu utilise le socle sombre gouvernance avec accents bleu/sable du pilotage.
 - **Risque de conflit avec les couleurs existantes** : faible : surface secondaire reliée au même socle décisionnel que `/pilotage`.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :
@@ -25,7 +25,7 @@
 - doublons de KPI
 - rappels trop longs
 - explications répétées
-- **Bulles / cartes / contextes trop nombreux** : À compléter.
+- **Bulles / cartes / contextes trop nombreux** : synthèse, KPI, priorités de zones, référentiel méthodologique et cluster de navigation ; ne pas dupliquer les mêmes indicateurs dans chaque onglet.
 - **Composants UI concernés** :
 - titre
 - cartes de synthèse

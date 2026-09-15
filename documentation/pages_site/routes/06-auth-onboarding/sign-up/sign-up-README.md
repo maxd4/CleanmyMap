@@ -10,11 +10,11 @@
 - **Famille / bloc fonctionnel** : Auth & Onboarding (hors bloc)
 - **Statut** : auth
 - **Contexte nécessaire** : Page d'entrée d'authentification ou de configuration initiale
-- **Objectif utilisateur principal** : Créer ou reprendre l'accès au compte puis initialiser le profil.
-- **Action principale attendue** : Se connecter, s'inscrire ou continuer l'onboarding.
+- **Objectif utilisateur principal** : Créer un compte CleanMyMap puis accéder à sa configuration initiale.
+- **Action principale attendue** : S'inscrire via Clerk ou basculer vers `/sign-in` pour reprendre un compte existant.
 - **Palette attendue** : lavande claire / vert menthe clair
-- **Scope** : shell partagé réalisé, validation visuelle à confirmer
-- **Terminée** : non
+- **Scope** : shell Auth & Onboarding partagé, surface Clerk d'inscription, retour vers l'accueil et bascule vers la connexion.
+- **Terminée** : oui pour le parcours actuellement livré
 - **Couleurs actuellement détectées** : auth — canvas lavande claire / vert menthe clair, panneaux bleu nuit slate / indigo, surface Clerk blanche
 - **Incohérences de couleurs** : aucune incohérence structurelle identifiée dans le shell ; la surface Clerk est claire et le contraste est porté par les styles Clerk locaux.
 - **Risque de conflit avec les couleurs existantes** : moyen : éviter une dérive vers une esthétique admin ou cartographique.

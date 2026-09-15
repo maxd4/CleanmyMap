@@ -12,11 +12,11 @@
 - **Accès runtime** : `public-visible` ; la page de présentation est lisible sans compte. Les éventuels accès d'API, exports ou données sensibles ne sont pas déduits de cette visibilité et relèvent de leurs contrats propres.
 - **Objectif utilisateur principal** : Consulter une présentation publique des formats d'échange, des usages de données et des possibilités de réutilisation.
 - **Action principale attendue** : Explorer les rubriques de présentation. Cette section n'est pas, à elle seule, une preuve qu'un téléchargement ou un export est déclenché depuis la page.
-- **Palette attendue** : pink
-- **Scope** : à corriger
+- **Palette attendue** : violet / blanc
+- **Scope** : présentation publique des formats JSON/CSV, indicateurs et usages de données, documentation API/OpenAPI, modèle économique et CTA partenaire ; aucun export n'est déclenché directement par cette section.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : violet / blanc — cartes et accents violet, fonds blancs et lavande.
-- **Incohérences de couleurs** : Écart détecté : la famille documentaire attendue est `pink`, tandis que le composant utilise actuellement une identité violet / blanc.
+- **Incohérences de couleurs** : Aucune incohérence avec le rendu runtime violet/blanc ; cette identité est une exception visuelle de la section réseau.
 - **Risque de conflit avec les couleurs existantes** : moyen : indigo et pink doivent rester distincts du légal et des zones techniques.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :

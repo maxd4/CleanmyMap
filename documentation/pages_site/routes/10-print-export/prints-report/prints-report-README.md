@@ -8,14 +8,14 @@
 - **Type fonctionnel** : rapport / export
 - **Famille / bloc fonctionnel** : Print & Export (hors bloc)
 - **Statut** : standalone
-- **Contexte nécessaire** : Accès direct depuis le shell ou un outil interne
+- **Contexte nécessaire** : Compte connecté ; un visiteur voit un aperçu verrouillé et doit se connecter pour la synthèse complète.
 - **Objectif utilisateur principal** : Préparer un export propre et imprimable.
-- **Action principale attendue** : Générer ou relire un rapport.
-- **Palette attendue** : ardoise / bleu nuit / vert discret
-- **Scope** : à corriger
-- **Terminée** : non
-- **Couleurs actuellement détectées** : print — canvas #faf7f0, halo rgba(148, 163, 184, 0.14)
-- **Incohérences de couleurs** : Écart détecté: attendu ardoise / bleu nuit / vert discret, code actuel slate / papier.
+- **Action principale attendue** : Relire la synthèse puis l'imprimer ou l'exporter depuis le rendu documentaire.
+- **Palette attendue** : papier / slate / accents documentaires discrets
+- **Scope** : rapport d'impact imprimable authentifié, alimenté par l'overview et les actions approuvées, avec aperçu verrouillé pour les visiteurs.
+- **Terminée** : oui pour le périmètre actuellement livré
+- **Couleurs actuellement détectées** : papier / slate — canvas clair et états documentaires neutres.
+- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec le rendu runtime actuel.
 - **Risque de conflit avec les couleurs existantes** : faible : garder une identité documentaire autonome, sobre et détachée des blocs principaux.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :

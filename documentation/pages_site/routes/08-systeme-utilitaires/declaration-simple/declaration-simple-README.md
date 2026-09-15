@@ -8,14 +8,14 @@
 - **Type fonctionnel** : outil
 - **Famille / bloc fonctionnel** : Système & Utilitaires (hors bloc)
 - **Statut** : standalone
-- **Contexte nécessaire** : Accès direct depuis le shell ou un outil interne
-- **Objectif utilisateur principal** : Exposer des outils de support, de contrôle ou de prévisualisation.
-- **Action principale attendue** : Configurer, comparer ou vérifier un état technique.
-- **Palette attendue** : vert clair / neutres
-- **Scope** : à corriger
-- **Terminée** : non
-- **Couleurs actuellement détectées** : system — canvas #eef6fb, halo rgba(14, 165, 233, 0.18)
-- **Incohérences de couleurs** : Écart détecté: attendu vert clair / neutres, code actuel sky / slate.
+- **Contexte nécessaire** : Accès direct à une surface de support publique, sans session métier requise.
+- **Objectif utilisateur principal** : Vérifier la présentation et le parcours d'un formulaire de déclaration simplifié sans le confondre avec le formulaire complet.
+- **Action principale attendue** : Examiner la version simplifiée puis ouvrir la comparaison ou la prévisualisation du formulaire public.
+- **Palette attendue** : emerald / pierre / slate
+- **Scope** : page autonome de contrôle du parcours simplifié, avec liens vers `/form-comparison`, `/actions/new` et `/preview/actions/new`.
+- **Terminée** : oui pour le périmètre actuellement livré
+- **Couleurs actuellement détectées** : emerald / pierre — fond clair, en-tête emerald et cartes neutres.
+- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec le rendu runtime actuel.
 - **Risque de conflit avec les couleurs existantes** : moyen : garder une mood layer autonome et éviter tout retour aux couleurs de bloc principales.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :

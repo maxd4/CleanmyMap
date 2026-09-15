@@ -6,7 +6,7 @@ Famille autonome de la homepage canonique.
 
 | Route | Fiche | Type de page | Statut | Scope | Capture disponible | Priorité | Fichier source principal |
 |---|---|---|---|---|:---:|---|---|
-| `/` | [Homepage canonique](./homepage-README.md) | homepage | public | à corriger | non | faible | apps/web/src/app/page.tsx |
+| `/` | [Homepage canonique](./homepage-README.md) | homepage | public | landing publique, synthèse d'impact et navigation des rubriques | non | faible | apps/web/src/app/page.tsx |
 
 ## Fichiers associés
 

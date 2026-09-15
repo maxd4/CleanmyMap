@@ -9,10 +9,10 @@
 - **Famille / bloc fonctionnel** : Apprendre (bloc)
 - **Statut** : public
 - **Contexte nécessaire** : Aucun
-- **Objectif utilisateur principal** : Transmettre les connaissances utiles et guider la montée en compétence.
-- **Action principale attendue** : Lire un contenu ou ouvrir une ressource.
+- **Objectif utilisateur principal** : Ancrer les notions par des sessions courtes, des questions mélangées et un retour immédiat.
+- **Action principale attendue** : Lancer le quiz, répondre aux questions et consulter les explications.
 - **Palette attendue** : yellow
-- **Scope** : à corriger
+- **Scope** : page d'entraînement avec intro visuelle, rappel du parcours, quiz environnemental différé et entrée école via les paramètres dédiés.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : yellow — canvas #fef9c3, halo rgba(234, 179, 8, 0.30)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

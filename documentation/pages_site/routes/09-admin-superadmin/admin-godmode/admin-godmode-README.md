@@ -12,7 +12,7 @@
 - **Objectif utilisateur principal** : Accéder à la sous-partie cachée de l'administration pour les arbitrages sensibles.
 - **Action principale attendue** : Consulter la console avancée ou agir sur une ressource critique.
 - **Palette attendue** : amber / brun sombre
-- **Scope** : à corriger
+- **Scope** : console créateur avancée rendue uniquement lorsque `ACTIVE_ROLE=max`; les autres profils ne reçoivent pas cette surface.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : admin — canvas #15111d, halo rgba(245, 158, 11, 0.20)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

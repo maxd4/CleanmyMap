@@ -9,10 +9,10 @@
 - **Famille / bloc fonctionnel** : Institutionnel & Légal (hors bloc)
 - **Statut** : légal
 - **Contexte nécessaire** : Aucun, page institutionnelle
-- **Objectif utilisateur principal** : Informer sur les règles, les droits et la conformité, sans esthétique marketing.
-- **Action principale attendue** : Lire un document ou contacter l'équipe.
+- **Objectif utilisateur principal** : Permettre une demande générale, juridique, RGPD ou de support depuis une page publique sobre.
+- **Action principale attendue** : Utiliser l'adresse officielle ou remplir le formulaire public de contact.
 - **Palette attendue** : slate / gris clair
-- **Scope** : à corriger
+- **Scope** : adresse officielle, lien mailto et formulaire public pour les demandes RGPD, support et questions générales, avec choix du mode d'envoi.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : legal — canvas #f8fafc, halo rgba(148, 163, 184, 0.18)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

@@ -8,14 +8,14 @@
 - **Type fonctionnel** : onboarding
 - **Famille / bloc fonctionnel** : Auth & Onboarding (hors bloc)
 - **Statut** : auth
-- **Contexte nécessaire** : Page d'entrée d'authentification ou de configuration initiale
-- **Objectif utilisateur principal** : Créer ou reprendre l'accès au compte puis initialiser le profil.
-- **Action principale attendue** : Configurer le compte ou choisir explicitement de le configurer plus tard.
-- **Palette attendue** : lavande claire / vert menthe clair
-- **Scope** : à corriger
-- **Terminée** : non
-- **Couleurs actuellement détectées** : auth — canvas #eef2ff, halo rgba(99, 102, 241, 0.24)
-- **Incohérences de couleurs** : Écart détecté: attendu lavande claire / vert menthe clair, code actuel indigo / violet.
+- **Contexte nécessaire** : Compte authentifié ; redirection vers `/sign-in` si la session ou l'identité n'est pas disponible.
+- **Objectif utilisateur principal** : Compléter la configuration initiale du compte avec le rôle, le profil actif, la localisation et les préférences d'affichage.
+- **Action principale attendue** : Enregistrer la configuration puis reprendre la route demandée, ou revenir au profil par défaut si la destination est invalide.
+- **Palette attendue** : surface claire lavande/menthe, panneaux slate/indigo
+- **Scope** : parcours authentifié de complétion initiale, prise en compte d'un code de parrainage et redirection sûre vers la destination après enregistrement.
+- **Terminée** : oui pour le parcours actuellement livré
+- **Couleurs actuellement détectées** : surface lavande/menthe avec panneaux slate/indigo et accents émeraude du shell partagé.
+- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec le rendu runtime actuel.
 - **Risque de conflit avec les couleurs existantes** : moyen : éviter une dérive vers une esthétique admin ou cartographique.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :

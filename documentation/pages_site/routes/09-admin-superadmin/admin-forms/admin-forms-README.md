@@ -13,7 +13,7 @@
 - **Objectif utilisateur principal** : Consulter et ajuster les réglages locaux de simplification de formulaire, les feature flags et les analytics de formulaire du navigateur.
 - **Action principale attendue** : Modifier la répartition du trafic, activer/désactiver un flag local ou vider les analytics locales.
 - **Palette attendue** : amber / brun sombre
-- **Scope** : à corriger
+- **Scope** : panneau interne de comparaison/A-B testing des formulaires, feature flags locaux, analytics de formulaire et action de test du formulaire simple.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : admin — canvas #15111d, halo rgba(245, 158, 11, 0.20)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

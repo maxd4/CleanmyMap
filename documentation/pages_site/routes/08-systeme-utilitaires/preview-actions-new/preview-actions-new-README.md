@@ -8,14 +8,14 @@
 - **Type fonctionnel** : outil
 - **Famille / bloc fonctionnel** : Système & Utilitaires (hors bloc)
 - **Statut** : standalone
-- **Contexte nécessaire** : Accès direct depuis le shell ou un outil interne
-- **Objectif utilisateur principal** : Exposer des outils de support, de contrôle ou de prévisualisation.
-- **Action principale attendue** : Configurer, comparer ou vérifier un état technique.
-- **Palette attendue** : vert / teal
-- **Scope** : à corriger
-- **Terminée** : non
-- **Couleurs actuellement détectées** : system — canvas #eef6fb, halo rgba(14, 165, 233, 0.18)
-- **Incohérences de couleurs** : Écart détecté: attendu vert / teal, code actuel sky / slate.
+- **Contexte nécessaire** : Accès direct à une route de revue publique ; la page est explicitement sans protection Clerk et non indexable.
+- **Objectif utilisateur principal** : Prévisualiser le formulaire public de déclaration dans un contexte local isolé.
+- **Action principale attendue** : Parcourir le formulaire de prévisualisation sans présenter cette surface comme une création persistée.
+- **Palette attendue** : emerald / slate
+- **Scope** : route de revue du formulaire avec utilisateur de prévisualisation local, sans flux de création métier ni persistance réelle.
+- **Terminée** : oui pour le périmètre actuellement livré
+- **Couleurs actuellement détectées** : emerald / slate — en-tête et contrôles de la prévisualisation.
+- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec le rendu runtime actuel.
 - **Risque de conflit avec les couleurs existantes** : moyen : garder une mood layer autonome et éviter tout retour aux couleurs de bloc principales.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :

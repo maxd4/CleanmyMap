@@ -12,7 +12,7 @@
 - **Objectif utilisateur principal** : Consulter l'historique technique des variations d'XP.
 - **Action principale attendue** : Filtrer, vérifier et auditer les écritures `xp_audit`.
 - **Palette attendue** : amber / brun sombre
-- **Scope** : à corriger
+- **Scope** : lecture filtrée du journal `xp_audit` et des totaux journaliers `xp_audit_daily`, avec identifiants d'acteurs, sources et variations d'XP.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : admin — canvas #15111d, halo rgba(245, 158, 11, 0.20)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
