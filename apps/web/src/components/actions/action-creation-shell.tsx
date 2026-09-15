@@ -112,8 +112,17 @@ export function ActionCreationShell({
     meteo: initialPanel === "meteo",
     formalites: initialPanel === "formalites",
   }));
+  const [mountedPanels, setMountedPanels] = useState<ReadonlySet<ActionCreationPanelId>>(
+    () => new Set([initialPanel]),
+  );
 
   const togglePanel = (panel: ActionCreationPanelId) => {
+    if (!openPanels[panel]) {
+      setMountedPanels((current) => {
+        if (current.has(panel)) return current;
+        return new Set([...current, panel]);
+      });
+    }
     setOpenPanels((current) => ({ ...current, [panel]: !current[panel] }));
   };
   const initialEntryPath =
@@ -135,41 +144,41 @@ export function ActionCreationShell({
       label: "Pré-formulaire",
       description: "Créer une pré-action autonome et la publier explicitement si nécessaire.",
       icon: ClipboardList,
-      content: (
+      content: mountedPanels.has("pre-formulaire") ? (
         <ActionDeclarationEntryFlow
           {...flowProps}
           initialEntryPath={initialEntryPath}
           onBeforeFormChange={handleBeforeFormChange}
           onBeforeActionPersisted={handleBeforeActionPersisted}
         />
-      ),
+      ) : null,
     },
     {
       id: "itineraire",
       label: "Itinéraire",
       description: "Calculer une recommandation puis enrichir le même draft d’action.",
       icon: Navigation,
-      content: (
+      content: mountedPanels.has("itineraire") ? (
         <EffectiveAuthStateProvider localDevAuth={localDevAuth}>
-          <RouteSection />
+          <RouteSection actionId={currentActionId} />
         </EffectiveAuthStateProvider>
-      ),
+      ) : null,
     },
     {
       id: "meteo",
       label: "Météo & conditions terrain",
       description: "Consulter la météo et préparer le terrain, avec ou sans pré-formulaire.",
       icon: CloudSun,
-      content: <WeatherSection draftContext={draftContext} />,
+      content: mountedPanels.has("meteo") ? <WeatherSection draftContext={draftContext} /> : null,
     },
     {
       id: "formalites",
       label: "Formalités juridiques",
       description: "Repérer ce qui reste à documenter depuis une source officielle.",
       icon: FileWarning,
-          content: (
-            <ActionCreationLegalPanel actionId={currentActionId} />
-          ),
+      content: mountedPanels.has("formalites") ? (
+        <ActionCreationLegalPanel actionId={currentActionId} />
+      ) : null,
     },
   ];
 

@@ -59,7 +59,7 @@ vi.mock("./hooks/use-route-data", () => ({
 }));
 
 import { EffectiveAuthStateProvider } from "@/lib/auth/use-effective-auth-state";
-import { RouteSection } from "./route-section";
+import { buildPlannerActionHref, RouteSection } from "./route-section";
 
 describe("RouteSection explainability wiring", () => {
   beforeEach(() => {
@@ -83,6 +83,15 @@ describe("RouteSection explainability wiring", () => {
     expect(markup).toContain("data-route-event-selector");
     expect(markup).toContain("data-route-explanation");
     expect(markup).toContain("Calculer la recommandation");
+  });
+
+  it("keeps an existing action id in the planner handoff navigation", () => {
+    expect(buildPlannerActionHref("action-42", { type: "free" })).toBe(
+      "/actions/new?from=planner&actionId=action-42",
+    );
+    expect(buildPlannerActionHref(undefined, { type: "free" })).toBe(
+      "/actions/new?from=planner",
+    );
   });
 
   it("exposes the multi-loop legend and the all-or-one group selection", () => {

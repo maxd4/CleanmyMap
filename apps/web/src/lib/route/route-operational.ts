@@ -52,6 +52,8 @@ export type OperationalRoute = {
 };
 
 export type PlannerActionHandoff = {
+  /** Existing pre-action to enrich; absent means create a new one. */
+  actionId?: string;
   operationalRoute: OperationalRoute;
   routeCalibrationContext: RouteCalibrationContext | null;
   plannerProof: RoutePlannerProof | null;

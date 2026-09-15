@@ -38,13 +38,17 @@ describe("planner action handoff", () => {
   it("is one-shot and does not retain an expired handoff", () => {
     const storage = installStorage();
     writePlannerActionHandoff({
+      actionId: "action-42",
       operationalRoute,
       routeCalibrationContext: null,
       plannerProof: null,
       expiresAt: new Date(Date.now() + 60_000).toISOString(),
     });
 
-    expect(consumePlannerActionHandoff()?.operationalRoute).toEqual(operationalRoute);
+    expect(consumePlannerActionHandoff()).toEqual(expect.objectContaining({
+      actionId: "action-42",
+      operationalRoute,
+    }));
     expect(consumePlannerActionHandoff()).toBeNull();
 
     storage.set(ROUTE_ACTION_HANDOFF_STORAGE_KEY, JSON.stringify({
