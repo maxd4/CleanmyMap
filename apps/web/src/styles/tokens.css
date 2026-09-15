@@ -127,13 +127,13 @@
   --cmm-grid-gutter-mobile: 1rem;    /* 16px */
   --cmm-grid-gutter-tablet: 1.5rem;  /* 24px */
   --cmm-grid-gutter-desktop: 1.5rem; /* 24px */
-  --cmm-grid-max-width: 90rem;       /* 1440px */
+  --cmm-grid-max-width: 90rem;       /* 1440px - grilles internes historiques */
   --cmm-grid-step: 0.5rem;           /* 8px */
 
   /* ============================================================
      PAGE LAYOUT & SPACING - contrat canonique des pages classiques
      ============================================================ */
-  --cmm-page-max-width: var(--cmm-grid-max-width);
+  --cmm-page-max-width: 112rem;      /* 1792px - shell des pages classiques */
   --cmm-page-gutter-mobile: var(--cmm-grid-margin-mobile);
   --cmm-page-gutter-tablet: var(--cmm-grid-margin-tablet);
   --cmm-page-gutter-desktop: var(--cmm-grid-margin-desktop);

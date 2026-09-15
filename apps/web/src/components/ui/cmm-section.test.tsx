@@ -30,6 +30,7 @@ describe("canonical page layout primitives", () => {
   it("keeps page geometry in shared tokens for every display mode", () => {
     const globalsCss = readFileSync(new URL("../../app/globals.css", import.meta.url), "utf8");
     const tokensCss = readFileSync(new URL("../../styles/tokens.css", import.meta.url), "utf8");
+    const baseCss = readFileSync(new URL("../../styles/base.css", import.meta.url), "utf8");
     const displayModesCss = readFileSync(
       new URL("../../styles/display-modes.css", import.meta.url),
       "utf8",
@@ -54,5 +55,13 @@ describe("canonical page layout primitives", () => {
     const displayModeBlocks =
       displayModesCss.match(/\[data-display-mode=[^\]]+\][^{]*\{[^}]*\}/g) ?? [];
     expect(displayModeBlocks.join("\n")).not.toContain("--cmm-page-");
+
+    expect(tokensCss).toMatch(/--cmm-grid-max-width:\s*90rem\s*;/);
+    expect(tokensCss).toMatch(/--cmm-page-max-width:\s*112rem\s*;/);
+    expect(tokensCss).not.toMatch(
+      /--cmm-page-max-width:\s*var\(--cmm-grid-max-width\)\s*;/,
+    );
+    expect(baseCss).not.toContain("zoom: 80%");
+    expect(baseCss).not.toContain("font-size: 80%");
   });
 });

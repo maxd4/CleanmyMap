@@ -43,21 +43,6 @@ html[data-cmm-capture-mode="true"] [data-cmm-capture-stabilize] * {
   transition: none !important;
 }
 
-
-@media (min-width: 1024px) {
-  html {
-    zoom: 80%;
-  }
-}
-
-@supports not (zoom: 1) {
-  @media (min-width: 1024px) {
-    html {
-      font-size: 80%;
-    }
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
