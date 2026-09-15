@@ -14,20 +14,49 @@ import {
   readParticipantRecord,
   readParticipantRecordById,
   resolveJoinedAt,
-  resolveParticipationUpdatedAt,
   updateParticipantRecord,
-  type ActionParticipantReviewRow,
   type ParticipantSearchRow,
   type ParticipationSource,
   type ParticipationStatus,
 } from "./group-participation.helpers";
 import {
-  buildParticipationAuditValue,
+  countActiveRegistrationsForAction,
+  insertActionRegistrationRecord,
+  readActionRegistrationRecord,
+  readActionRegistrationRecordById,
+  resolveRegisteredAt,
+  updateActionRegistrationRecord,
+} from "./registration-records";
+import {
   runActionParticipationStep,
   type ActionParticipationReviewItem,
   type ParticipationAuditValue,
   type ActionParticipationSearchItem,
 } from "./group-participation-contract";
+
+type ParticipationRecord = {
+  id: string;
+  action_id: string;
+  created_at: string;
+  updated_at?: string;
+  user_id: string;
+  status: ParticipationStatus;
+  source: ParticipationSource;
+  joined_at: string;
+};
+
+function usesRegistrationStore(actionPhase?: ActionPhase): boolean {
+  return actionPhase === "pre_action" || actionPhase === "post_action_draft";
+}
+
+function toParticipationAuditValue(record: ParticipationRecord): ParticipationAuditValue {
+  return {
+    participationStatus: record.status,
+    participationSource: record.source,
+    joinedAt: record.joined_at,
+    updatedAt: record.updated_at ?? record.joined_at,
+  };
+}
 
 export async function loadActionParticipationReviews(
   supabase: SupabaseClient,
@@ -35,17 +64,21 @@ export async function loadActionParticipationReviews(
     actionId: string;
     limit?: number;
     statuses?: ParticipationStatus[];
+    actionPhase?: ActionPhase;
   },
 ): Promise<ActionParticipationReviewItem[]> {
   const reviewLimit = Math.max(1, Math.min(params.limit ?? 24, 100));
   const statuses = params.statuses ?? [PENDING_PARTICIPATION_STATUS];
+  const useRegistrations = usesRegistrationStore(params.actionPhase);
   const result = await supabase
-    .from("action_participants")
+    .from(useRegistrations ? "action_registrations" : "action_participants")
     .select(
-      "id, action_id, created_at, joined_at, updated_at, user_id, participation_status, participation_source",
+      useRegistrations
+        ? "id, action_id, created_at, registered_at, updated_at, user_id, registration_status, registration_source"
+        : "id, action_id, created_at, joined_at, updated_at, user_id, participation_status, participation_source",
     )
     .eq("action_id", params.actionId)
-    .in("participation_status", statuses)
+    .in(useRegistrations ? "registration_status" : "participation_status", statuses)
     .order("created_at", { ascending: true })
     .limit(reviewLimit);
 
@@ -53,7 +86,23 @@ export async function loadActionParticipationReviews(
     throw new Error(result.error.message);
   }
 
-  const rows = (result.data ?? []) as ActionParticipantReviewRow[];
+  const rows = (result.data ?? []).map((row) => {
+    const value = row as Record<string, unknown>;
+    return {
+      id: String(value["id"]),
+      action_id: String(value["action_id"]),
+      created_at: String(value["created_at"]),
+      updated_at: typeof value["updated_at"] === "string" ? value["updated_at"] : undefined,
+      user_id: String(value["user_id"]),
+      status: (useRegistrations ? value["registration_status"] : value["participation_status"]) as ParticipationStatus,
+      source: (useRegistrations ? value["registration_source"] : value["participation_source"]) as ParticipationSource,
+      joined_at: String(
+        useRegistrations
+          ? value["registered_at"] ?? value["created_at"]
+          : value["joined_at"] ?? value["created_at"],
+      ),
+    } satisfies ParticipationRecord;
+  });
   if (rows.length === 0) {
     return [];
   }
@@ -73,10 +122,10 @@ export async function loadActionParticipationReviews(
         profile?.handle?.trim() ||
         row.user_id,
       handle: profile?.handle?.trim() || null,
-      joinedAt: resolveJoinedAt(row),
-      updatedAt: resolveParticipationUpdatedAt(row),
-      participationStatus: row.participation_status,
-      participationSource: row.participation_source,
+      joinedAt: row.joined_at,
+      updatedAt: row.updated_at ?? row.joined_at,
+      participationStatus: row.status,
+      participationSource: row.source,
     };
   });
 }
@@ -149,6 +198,7 @@ export async function reviewActionParticipation(
     actionId: string;
     participantId: string;
     decision: "accept" | "reject";
+    actionPhase?: ActionPhase;
   },
 ): Promise<{
   alreadyReviewed: boolean;
@@ -161,14 +211,46 @@ export async function reviewActionParticipation(
   previousValue: ParticipationAuditValue;
   newValue: ParticipationAuditValue;
 }> {
-  const existing = await runActionParticipationStep({
+  const useRegistrations = usesRegistrationStore(params.actionPhase);
+  const existing = await runActionParticipationStep<ParticipationRecord | null>({
     stage: "lookup",
     partialMutation: false,
     operation: () =>
-      readParticipantRecordById(supabase, {
-        actionId: params.actionId,
-        participantId: params.participantId,
-      }),
+      useRegistrations
+        ? readActionRegistrationRecordById(supabase, {
+            actionId: params.actionId,
+            registrationId: params.participantId,
+          }).then((row) =>
+            row
+              ? {
+                  id: row.id,
+                  action_id: row.action_id,
+                  created_at: row.created_at,
+                  updated_at: row.updated_at,
+                  user_id: row.user_id,
+                  status: row.registration_status,
+                  source: row.registration_source,
+                  joined_at: resolveRegisteredAt(row),
+                }
+              : null,
+          )
+        : readParticipantRecordById(supabase, {
+            actionId: params.actionId,
+            participantId: params.participantId,
+          }).then((row) =>
+            row
+              ? {
+                  id: row.id,
+                  action_id: row.action_id,
+                  created_at: row.created_at,
+                  updated_at: row.updated_at,
+                  user_id: row.user_id,
+                  status: row.participation_status,
+                  source: row.participation_source,
+                  joined_at: resolveJoinedAt(row),
+                }
+              : null,
+          ),
   });
 
   if (!existing) {
@@ -177,7 +259,7 @@ export async function reviewActionParticipation(
     throw notFoundError;
   }
 
-  if (existing.participation_status === "cancelled") {
+  if (existing.status === "cancelled") {
     const validationError = new Error(
       "Cette participation a déjà été traitée.",
     );
@@ -185,28 +267,30 @@ export async function reviewActionParticipation(
     throw validationError;
   }
 
-  const joinedAt = existing.joined_at ?? existing.created_at;
+  const joinedAt = existing.joined_at;
   if (
     params.decision === "accept" &&
-    existing.participation_status === ACTIVE_PARTICIPATION_STATUS
+    existing.status === ACTIVE_PARTICIPATION_STATUS
   ) {
     const participantsCount = await runActionParticipationStep({
       stage: "post_update",
       partialMutation: false,
       targetUserId: existing.user_id,
       operation: () =>
-        countParticipantsForAction(supabase, params.actionId),
+        useRegistrations
+          ? countActiveRegistrationsForAction(supabase, params.actionId)
+          : countParticipantsForAction(supabase, params.actionId),
     });
     return {
       alreadyReviewed: true,
       participantUserId: existing.user_id,
-      participationStatus: existing.participation_status,
-      participationSource: existing.participation_source,
-      joinedAt: resolveJoinedAt(existing),
-      updatedAt: resolveParticipationUpdatedAt(existing),
+      participationStatus: existing.status,
+      participationSource: existing.source,
+      joinedAt: existing.joined_at,
+      updatedAt: existing.updated_at ?? existing.joined_at,
       participantsCount,
-      previousValue: buildParticipationAuditValue(existing),
-      newValue: buildParticipationAuditValue(existing),
+      previousValue: toParticipationAuditValue(existing),
+      newValue: toParticipationAuditValue(existing),
     };
   }
 
@@ -214,36 +298,65 @@ export async function reviewActionParticipation(
     params.decision === "accept"
       ? ACTIVE_PARTICIPATION_STATUS
       : "cancelled";
-  const updatedRecord = await runActionParticipationStep({
+  const updatedRecord = await runActionParticipationStep<ParticipationRecord>({
     stage: "participation_update",
     partialMutation: false,
     targetUserId: existing.user_id,
     operation: () =>
-      updateParticipantRecord(supabase, {
-        actionId: params.actionId,
-        userId: existing.user_id,
-        joinedAt,
-        participationStatus: nextStatus,
-        participationSource: existing.participation_source,
-      }),
+      useRegistrations
+        ? updateActionRegistrationRecord(supabase, {
+            actionId: params.actionId,
+            userId: existing.user_id,
+            registeredAt: joinedAt,
+            registrationStatus: nextStatus,
+            registrationSource: existing.source as Parameters<typeof updateActionRegistrationRecord>[1]["registrationSource"],
+          }).then((row) => ({
+            id: params.participantId,
+            action_id: row.action_id,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            user_id: existing.user_id,
+            status: row.registration_status,
+            source: row.registration_source,
+            joined_at: resolveRegisteredAt(row),
+          }))
+        : updateParticipantRecord(supabase, {
+            actionId: params.actionId,
+            userId: existing.user_id,
+            joinedAt,
+            participationStatus: nextStatus,
+            participationSource: existing.source,
+          }).then((row) => ({
+            id: params.participantId,
+            action_id: row.action_id,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            user_id: existing.user_id,
+            status: row.participation_status,
+            source: row.participation_source,
+            joined_at: resolveJoinedAt(row),
+          })),
   });
   const participantsCount = await runActionParticipationStep({
     stage: "post_update",
     partialMutation: true,
     targetUserId: existing.user_id,
-    operation: () => countParticipantsForAction(supabase, params.actionId),
+    operation: () =>
+      useRegistrations
+        ? countActiveRegistrationsForAction(supabase, params.actionId)
+        : countParticipantsForAction(supabase, params.actionId),
   });
 
   return {
     alreadyReviewed: false,
     participantUserId: existing.user_id,
-    participationStatus: updatedRecord.participation_status,
-    participationSource: updatedRecord.participation_source,
-    joinedAt: resolveJoinedAt(updatedRecord),
-    updatedAt: resolveParticipationUpdatedAt(updatedRecord),
+    participationStatus: updatedRecord.status,
+    participationSource: updatedRecord.source,
+    joinedAt: updatedRecord.joined_at,
+    updatedAt: updatedRecord.updated_at ?? updatedRecord.joined_at,
     participantsCount,
-    previousValue: buildParticipationAuditValue(existing),
-    newValue: buildParticipationAuditValue(updatedRecord),
+    previousValue: toParticipationAuditValue(existing),
+    newValue: toParticipationAuditValue(updatedRecord),
   };
 }
 
@@ -252,6 +365,7 @@ export async function addActionParticipationByAdmin(
   params: {
     actionId: string;
     targetUserId: string;
+    actionPhase?: ActionPhase;
   },
 ): Promise<{
   alreadyJoined: boolean;
@@ -321,15 +435,50 @@ export async function addActionParticipationByAdmin(
     throw validationError;
   }
 
-  const existing = await runActionParticipationStep({
+  const useRegistrations = usesRegistrationStore(
+    params.actionPhase ?? actionResult.action_phase,
+  );
+
+  const existing = await runActionParticipationStep<ParticipationRecord | null>({
     stage: "lookup",
     partialMutation: false,
     targetUserId: params.targetUserId,
     operation: () =>
-      readParticipantRecord(supabase, {
-        actionId: params.actionId,
-        userId: params.targetUserId,
-      }),
+      useRegistrations
+        ? readActionRegistrationRecord(supabase, {
+            actionId: params.actionId,
+            userId: params.targetUserId,
+          }).then((row) =>
+            row
+              ? {
+                  id: "",
+                  action_id: row.action_id,
+                  created_at: row.created_at,
+                  updated_at: row.updated_at,
+                  user_id: params.targetUserId,
+                  status: row.registration_status,
+                  source: row.registration_source,
+                  joined_at: resolveRegisteredAt(row),
+                }
+              : null,
+          )
+        : readParticipantRecord(supabase, {
+            actionId: params.actionId,
+            userId: params.targetUserId,
+          }).then((row) =>
+            row
+              ? {
+                  id: "",
+                  action_id: row.action_id,
+                  created_at: row.created_at,
+                  updated_at: row.updated_at,
+                  user_id: params.targetUserId,
+                  status: row.participation_status,
+                  source: row.participation_source,
+                  joined_at: resolveJoinedAt(row),
+                }
+              : null,
+          ),
   });
 
   const joinedAt =
@@ -339,8 +488,7 @@ export async function addActionParticipationByAdmin(
 
   if (existing) {
     const alreadyJoined =
-      existing.participation_status === targetStatus &&
-      existing.participation_source === targetSource;
+      existing.status === targetStatus && existing.source === targetSource;
     const updatedRecord = alreadyJoined
       ? existing
       : await runActionParticipationStep({
@@ -348,64 +496,118 @@ export async function addActionParticipationByAdmin(
           partialMutation: false,
           targetUserId: params.targetUserId,
           operation: () =>
-            updateParticipantRecord(supabase, {
-              actionId: params.actionId,
-              userId: params.targetUserId,
-              joinedAt,
-              participationStatus: targetStatus,
-              participationSource: targetSource,
-            }),
+            useRegistrations
+              ? updateActionRegistrationRecord(supabase, {
+                  actionId: params.actionId,
+                  userId: params.targetUserId,
+                  registeredAt: joinedAt,
+                  registrationStatus: targetStatus,
+                  registrationSource: targetSource,
+                }).then((row) => ({
+                  ...existing,
+                  created_at: row.created_at,
+                  updated_at: row.updated_at,
+                  status: row.registration_status,
+                  source: row.registration_source,
+                  joined_at: resolveRegisteredAt(row),
+                }))
+              : updateParticipantRecord(supabase, {
+                  actionId: params.actionId,
+                  userId: params.targetUserId,
+                  joinedAt,
+                  participationStatus: targetStatus,
+                  participationSource: targetSource,
+                }).then((row) => ({
+                  ...existing,
+                  created_at: row.created_at,
+                  updated_at: row.updated_at,
+                  status: row.participation_status,
+                  source: row.participation_source,
+                  joined_at: resolveJoinedAt(row),
+                })),
         });
 
     const participantsCount = await runActionParticipationStep({
       stage: "post_update",
       partialMutation: !alreadyJoined,
       targetUserId: params.targetUserId,
-      operation: () => countParticipantsForAction(supabase, params.actionId),
+      operation: () =>
+        useRegistrations
+          ? countActiveRegistrationsForAction(supabase, params.actionId)
+          : countParticipantsForAction(supabase, params.actionId),
     });
 
     return {
       alreadyJoined,
       participantUserId: params.targetUserId,
-      participationStatus: updatedRecord.participation_status,
-      participationSource: updatedRecord.participation_source,
-      joinedAt: resolveJoinedAt(updatedRecord),
-      updatedAt: resolveParticipationUpdatedAt(updatedRecord),
+      participationStatus: updatedRecord.status,
+      participationSource: updatedRecord.source,
+      joinedAt: updatedRecord.joined_at,
+      updatedAt: updatedRecord.updated_at ?? updatedRecord.joined_at,
       participantsCount,
-      previousValue: buildParticipationAuditValue(existing),
-      newValue: buildParticipationAuditValue(updatedRecord),
+      previousValue: toParticipationAuditValue(existing),
+      newValue: toParticipationAuditValue(updatedRecord),
     };
   }
 
-  const insertedRecord = await runActionParticipationStep({
+  const insertedRecord = await runActionParticipationStep<ParticipationRecord>({
     stage: "participation_update",
     partialMutation: false,
     targetUserId: params.targetUserId,
     operation: () =>
-      insertParticipantRecord(supabase, {
-        actionId: params.actionId,
-        userId: params.targetUserId,
-        joinedAt,
-        participationStatus: targetStatus,
-        participationSource: targetSource,
-      }),
+      useRegistrations
+        ? insertActionRegistrationRecord(supabase, {
+            actionId: params.actionId,
+            userId: params.targetUserId,
+            registeredAt: joinedAt,
+            registrationStatus: targetStatus,
+            registrationSource: targetSource,
+          }).then((row) => ({
+            id: "",
+            action_id: row.action_id,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            user_id: params.targetUserId,
+            status: row.registration_status,
+            source: row.registration_source,
+            joined_at: resolveRegisteredAt(row),
+          }))
+        : insertParticipantRecord(supabase, {
+            actionId: params.actionId,
+            userId: params.targetUserId,
+            joinedAt,
+            participationStatus: targetStatus,
+            participationSource: targetSource,
+          }).then((row) => ({
+            id: "",
+            action_id: row.action_id,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            user_id: params.targetUserId,
+            status: row.participation_status,
+            source: row.participation_source,
+            joined_at: resolveJoinedAt(row),
+          })),
   });
   const participantsCount = await runActionParticipationStep({
     stage: "post_update",
     partialMutation: true,
     targetUserId: params.targetUserId,
-    operation: () => countParticipantsForAction(supabase, params.actionId),
+    operation: () =>
+      useRegistrations
+        ? countActiveRegistrationsForAction(supabase, params.actionId)
+        : countParticipantsForAction(supabase, params.actionId),
   });
 
   return {
     alreadyJoined: false,
     participantUserId: params.targetUserId,
-    participationStatus: insertedRecord.participation_status,
-    participationSource: insertedRecord.participation_source,
-    joinedAt: resolveJoinedAt(insertedRecord),
-    updatedAt: resolveParticipationUpdatedAt(insertedRecord),
+    participationStatus: insertedRecord.status,
+    participationSource: insertedRecord.source,
+    joinedAt: insertedRecord.joined_at,
+    updatedAt: insertedRecord.updated_at ?? insertedRecord.joined_at,
     participantsCount,
     previousValue: null,
-    newValue: buildParticipationAuditValue(insertedRecord),
+    newValue: toParticipationAuditValue(insertedRecord),
   };
 }

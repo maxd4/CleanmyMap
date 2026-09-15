@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import {
-  buildInitialActionParticipantRows,
+  buildInitialActionRegistrationRows,
   buildCreateActionGeometry,
   buildActionInsertPayload,
   buildPersistedNotes,
@@ -125,7 +125,7 @@ describe("resolvePersistedCigaretteButts", () => {
 });
 
 describe("volunteer participation persistence", () => {
-  it("persists categories in metadata and participants in the legacy row field", () => {
+  it("persists categories in metadata and the canonical volunteer count", () => {
     const payload = buildPayload({
       volunteersCount: 999,
       volunteerParticipation: {
@@ -363,9 +363,9 @@ describe("fetchActions", () => {
   });
 });
 
-describe("buildInitialActionParticipantRows", () => {
+describe("buildInitialActionRegistrationRows", () => {
   it("confirms organizers and queues the declarant when they differ", () => {
-    const rows = buildInitialActionParticipantRows({
+    const rows = buildInitialActionRegistrationRows({
       actionId: "action-1",
       creatorUserId: "user-declarant",
       organizers: [
@@ -383,20 +383,26 @@ describe("buildInitialActionParticipantRows", () => {
       expect.objectContaining({
         action_id: "action-1",
         user_id: "user-organizer",
-        participation_status: "confirmed",
-        participation_source: "group_form",
+        registration_status: "confirmed",
+        registration_source: "group_form",
       }),
       expect.objectContaining({
         action_id: "action-1",
         user_id: "user-declarant",
-        participation_status: "pending",
-        participation_source: "group_form",
+        registration_status: "pending",
+        registration_source: "group_form",
       }),
     ]);
+    expect(rows.every((row) =>
+      "registration_status" in row &&
+      "registration_source" in row &&
+      !("participation_status" in row) &&
+      !("participation_source" in row),
+    )).toBe(true);
   });
 
   it("keeps the declarant confirmed when they are also the organizer", () => {
-    const rows = buildInitialActionParticipantRows({
+    const rows = buildInitialActionRegistrationRows({
       actionId: "action-2",
       creatorUserId: "user-organizer",
       organizers: [
@@ -414,12 +420,12 @@ describe("buildInitialActionParticipantRows", () => {
     expect(rows[0]).toMatchObject({
       action_id: "action-2",
       user_id: "user-organizer",
-      participation_status: "confirmed",
+      registration_status: "confirmed",
     });
   });
 
   it("adds manual participants as confirmed entries without duplicating known accounts", () => {
-    const rows = buildInitialActionParticipantRows({
+    const rows = buildInitialActionRegistrationRows({
       actionId: "action-3",
       creatorUserId: "user-creator",
       organizers: [
@@ -469,26 +475,26 @@ describe("buildInitialActionParticipantRows", () => {
       expect.objectContaining({
         action_id: "action-3",
         user_id: "user-organizer",
-        participation_status: "confirmed",
-        participation_source: "group_form",
+        registration_status: "confirmed",
+        registration_source: "group_form",
       }),
       expect.objectContaining({
         action_id: "action-3",
         user_id: "user-creator",
-        participation_status: "pending",
-        participation_source: "group_form",
+        registration_status: "pending",
+        registration_source: "group_form",
       }),
       expect.objectContaining({
         action_id: "action-3",
         user_id: "user-manual-1",
-        participation_status: "confirmed",
-        participation_source: "manual_add",
+        registration_status: "confirmed",
+        registration_source: "manual_add",
       }),
       expect.objectContaining({
         action_id: "action-3",
         user_id: "user-manual-2",
-        participation_status: "confirmed",
-        participation_source: "manual_add",
+        registration_status: "confirmed",
+        registration_source: "manual_add",
       }),
     ]);
   });

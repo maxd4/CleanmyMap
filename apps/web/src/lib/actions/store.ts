@@ -1,4 +1,4 @@
-export { buildInitialActionParticipantRows } from "./store-participants";
+export { buildInitialActionRegistrationRows } from "./store-participants";
 
 export {
   fetchActions,

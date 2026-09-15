@@ -37,7 +37,7 @@ function createSupabaseMock() {
   return {
     from: vi.fn((table: string) => {
       if (table === "actions") return actionCountChain;
-      if (table === "action_participants") return groupJoinChain;
+      if (table === "action_registrations") return groupJoinChain;
       throw new Error(`Unexpected table: ${table}`);
     }),
   };

@@ -104,9 +104,9 @@ async function loadPendingActions(): Promise<{
 async function loadPendingGroupJoinRequests(): Promise<{ count: number }> {
   const supabase = getSupabaseServerClient();
   const result = await supabase
-    .from("action_participants")
+    .from("action_registrations")
     .select("id", { count: "exact", head: true })
-    .eq("participation_status", "pending");
+    .eq("registration_status", "pending");
 
   if (result.error) {
     throw new Error(result.error.message);

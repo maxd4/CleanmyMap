@@ -1,11 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ActionParticipantRow } from "@/types/database";
+import type { ActionParticipantRow, ActionRegistrationRow } from "@/types/database";
 
 export type ActionParticipantSummary = {
   actionId: string;
   activeCount: number;
   totalCount: number;
-  myParticipationStatus: ActionParticipantRow["participation_status"] | null;
+  myParticipationStatus: ActionRegistrationRow["registration_status"] | null;
   myParticipationSource: ActionParticipantRow["participation_source"] | null;
   myJoinedAt: string | null;
   myUpdatedAt: string | null;
@@ -15,7 +15,7 @@ type ActionParticipantSummaryRow = {
   action_id: string;
   active_count: number | string | null;
   total_count: number | string | null;
-  my_participation_status: ActionParticipantRow["participation_status"] | null;
+  my_participation_status: ActionRegistrationRow["registration_status"] | null;
   my_participation_source: ActionParticipantRow["participation_source"] | null;
   my_joined_at: string | null;
   my_updated_at: string | null;
@@ -40,18 +40,21 @@ function normalizeSummaryRows(
   }));
 }
 
-async function countActionParticipantRows(
+async function countActionRegistrationRows(
   supabase: SupabaseClient,
   actionId: string,
-  participationStatus?: ActionParticipantRow["participation_status"],
+  registrationStatus?: ActionRegistrationRow["registration_status"],
+  source: "registrations" | "participants" = "registrations",
 ): Promise<number> {
+  const table = source === "registrations" ? "action_registrations" : "action_participants";
+  const statusField = source === "registrations" ? "registration_status" : "participation_status";
   let query = supabase
-    .from("action_participants")
+    .from(table)
     .select("action_id", { count: "exact", head: true })
     .eq("action_id", actionId);
 
-  if (participationStatus) {
-    query = query.eq("participation_status", participationStatus);
+  if (registrationStatus) {
+    query = query.eq(statusField, registrationStatus);
   }
 
   const result = await query;
@@ -67,6 +70,7 @@ async function loadActionParticipantDetailsForUser(
   params: {
     actionId: string;
     userId: string | null;
+    source: "registrations" | "participants";
   },
 ): Promise<Pick<
   ActionParticipantSummary,
@@ -81,9 +85,14 @@ async function loadActionParticipantDetailsForUser(
     };
   }
 
+  const useRegistrations = params.source === "registrations";
   const result = await supabase
-    .from("action_participants")
-    .select("participation_status, participation_source, joined_at, updated_at")
+    .from(useRegistrations ? "action_registrations" : "action_participants")
+    .select(
+      useRegistrations
+        ? "registration_status, registration_source, registered_at, updated_at"
+        : "participation_status, participation_source, joined_at, updated_at",
+    )
     .eq("action_id", params.actionId)
     .eq("user_id", params.userId)
     .maybeSingle();
@@ -92,20 +101,17 @@ async function loadActionParticipantDetailsForUser(
     throw new Error(result.error.message);
   }
 
-  const row = result.data as
-    | {
-        participation_status: ActionParticipantRow["participation_status"] | null;
-        participation_source: ActionParticipantRow["participation_source"] | null;
-        joined_at: string | null;
-        updated_at: string | null;
-      }
-    | null;
+  const value = result.data as Record<string, unknown> | null;
 
   return {
-    myParticipationStatus: row?.participation_status ?? null,
-    myParticipationSource: row?.participation_source ?? null,
-    myJoinedAt: row?.joined_at ?? null,
-    myUpdatedAt: row?.updated_at ?? null,
+    myParticipationStatus: (useRegistrations
+      ? value?.["registration_status"]
+      : value?.["participation_status"]) as ActionRegistrationRow["registration_status"] | null,
+    myParticipationSource: (useRegistrations
+      ? value?.["registration_source"]
+      : value?.["participation_source"]) as ActionParticipantRow["participation_source"] | null,
+    myJoinedAt: (useRegistrations ? value?.["registered_at"] : value?.["joined_at"]) as string | null,
+    myUpdatedAt: (value?.["updated_at"] ?? null) as string | null,
   };
 }
 
@@ -114,11 +120,12 @@ async function loadActionParticipantSummaryFallback(
   params: {
     actionId: string;
     userId: string | null;
+    source: "registrations" | "participants";
   },
 ): Promise<ActionParticipantSummary> {
   const [activeCount, totalCount, details] = await Promise.all([
-    countActionParticipantRows(supabase, params.actionId, "confirmed"),
-    countActionParticipantRows(supabase, params.actionId),
+    countActionRegistrationRows(supabase, params.actionId, "confirmed", params.source),
+    countActionRegistrationRows(supabase, params.actionId, undefined, params.source),
     loadActionParticipantDetailsForUser(supabase, params),
   ]);
 
@@ -163,11 +170,30 @@ async function loadActionParticipantSummariesFallback(
     new Set(params.actionIds.map((value) => value.trim()).filter((value) => value.length > 0)),
   );
 
+  const actionResult = await supabase
+    .from("actions")
+    .select("id, action_phase")
+    .in("id", uniqueActionIds);
+  if (actionResult.error) {
+    throw new Error(actionResult.error.message);
+  }
+  const actionPhaseById = new Map(
+    ((actionResult.data ?? []) as Array<{ id: string; action_phase?: string | null }>).map((row) => [
+      row.id,
+      row.action_phase,
+    ]),
+  );
+
   const summaries = await Promise.all(
     uniqueActionIds.map((actionId) =>
       loadActionParticipantSummaryFallback(supabase, {
         actionId,
         userId: params.userId,
+        source:
+          actionPhaseById.get(actionId) === "pre_action" ||
+          actionPhaseById.get(actionId) === "post_action_draft"
+            ? "registrations"
+            : "participants",
       }),
     ),
   );

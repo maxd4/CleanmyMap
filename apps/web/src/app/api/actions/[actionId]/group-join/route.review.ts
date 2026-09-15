@@ -205,11 +205,13 @@ export async function handleGroupJoinReview(
         ? await addActionParticipationByAdmin(supabase, {
             actionId: trimmedActionId,
             targetUserId: parsed.data.participantUserId,
+            actionPhase: actionResult.action_phase,
           })
         : await reviewActionParticipation(supabase, {
             actionId: trimmedActionId,
             participantId: parsed.data.participantId,
             decision: parsed.data.decision,
+            actionPhase: actionResult.action_phase,
           });
 
     const isPostActionClaim =

@@ -3,18 +3,17 @@ import type {
   ResolvedActionOrganizer,
   ResolvedActionParticipant,
 } from "@/lib/actions/participation/organizers";
+import type {
+  ActionRegistrationSource,
+  ActionRegistrationStatus,
+} from "@/lib/actions/participation/registration-records";
 
-type ActionParticipantInsertRow = {
+type ActionRegistrationInsertRow = {
   action_id: string;
   user_id: string;
-  joined_at: string;
-  participation_status: "pending" | "confirmed";
-  participation_source:
-    | "group_form"
-    | "manual_add"
-    | "admin"
-    | "admin_override"
-    | "import";
+  registered_at: string;
+  registration_status: ActionRegistrationStatus;
+  registration_source: ActionRegistrationSource;
 };
 
 export async function insertActionOrganizers(
@@ -44,16 +43,16 @@ export async function insertActionOrganizers(
   }
 }
 
-export function buildInitialActionParticipantRows(params: {
+export function buildInitialActionRegistrationRows(params: {
   actionId: string;
   creatorUserId: string;
   organizers: ResolvedActionOrganizer[];
   manualParticipants?: ResolvedActionParticipant[];
-  participationSource?: ActionParticipantInsertRow["participation_source"];
-}): ActionParticipantInsertRow[] {
-  const joinedAt = new Date().toISOString();
-  const source = params.participationSource ?? "group_form";
-  const rows: ActionParticipantInsertRow[] = [];
+  registrationSource?: ActionRegistrationSource;
+}): ActionRegistrationInsertRow[] {
+  const registeredAt = new Date().toISOString();
+  const source = params.registrationSource ?? "group_form";
+  const rows: ActionRegistrationInsertRow[] = [];
   const seenUserIds = new Set<string>();
 
   for (const organizer of params.organizers) {
@@ -64,9 +63,9 @@ export function buildInitialActionParticipantRows(params: {
     rows.push({
       action_id: params.actionId,
       user_id: organizer.userId,
-      joined_at: joinedAt,
-      participation_status: "confirmed",
-      participation_source: source,
+      registered_at: registeredAt,
+      registration_status: "confirmed",
+      registration_source: source,
     });
   }
 
@@ -75,9 +74,9 @@ export function buildInitialActionParticipantRows(params: {
     rows.push({
       action_id: params.actionId,
       user_id: params.creatorUserId,
-      joined_at: joinedAt,
-      participation_status: "pending",
-      participation_source: source,
+      registered_at: registeredAt,
+      registration_status: "pending",
+      registration_source: source,
     });
   }
 
@@ -89,31 +88,31 @@ export function buildInitialActionParticipantRows(params: {
     rows.push({
       action_id: params.actionId,
       user_id: participant.userId,
-      joined_at: joinedAt,
-      participation_status: "confirmed",
-      participation_source: "manual_add",
+      registered_at: registeredAt,
+      registration_status: "confirmed",
+      registration_source: "manual_add",
     });
   }
 
   return rows;
 }
 
-export async function insertActionParticipants(
+export async function insertActionRegistrations(
   supabase: SupabaseClient,
   actionId: string,
-  rows: ActionParticipantInsertRow[],
+  rows: ActionRegistrationInsertRow[],
 ): Promise<void> {
   if (rows.length === 0) {
     return;
   }
 
-  const participantsInserted = await supabase
-    .from("action_participants")
+  const registrationsInserted = await supabase
+    .from("action_registrations")
     .insert(rows);
 
-  if (participantsInserted.error) {
+  if (registrationsInserted.error) {
     await supabase.from("action_organizers").delete().eq("action_id", actionId);
     await supabase.from("actions").delete().eq("id", actionId);
-    throw participantsInserted.error;
+    throw registrationsInserted.error;
   }
 }

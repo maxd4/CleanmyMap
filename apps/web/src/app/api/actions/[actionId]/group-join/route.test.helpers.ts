@@ -65,6 +65,9 @@ export type GroupJoinParticipantRow = {
   joined_at?: string;
   participation_status?: "pending" | "confirmed" | "cancelled";
   participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim";
+  registered_at?: string;
+  registration_status?: "pending" | "confirmed" | "cancelled";
+  registration_source?: "group_form" | "admin" | "admin_override" | "import";
 };
 
 export type GroupJoinProfileRow = {
@@ -81,6 +84,14 @@ export type GroupJoinSupabaseErrors = {
   participantInsert?: string;
   participantCount?: string;
 };
+
+type GroupJoinRegistrationSource = "group_form" | "admin" | "admin_override" | "import";
+
+function toRegistrationSource(
+  source: GroupJoinParticipantRow["participation_source"] | GroupJoinRegistrationSource | undefined,
+): GroupJoinRegistrationSource {
+  return source === "post_action_claim" || !source ? "group_form" : source;
+}
 
 export const groupJoinMocks = {
   authMock,
@@ -129,6 +140,9 @@ export function createGroupJoinParticipant(params: {
   joined_at?: string;
   participation_status?: "pending" | "confirmed" | "cancelled";
   participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim";
+  registered_at?: string;
+  registration_status?: "pending" | "confirmed" | "cancelled";
+  registration_source?: "group_form" | "admin" | "admin_override" | "import";
 }): GroupJoinParticipantRow {
   return {
     id: params.id ?? `participant-${params.user_id}`,
@@ -139,6 +153,9 @@ export function createGroupJoinParticipant(params: {
     joined_at: params.joined_at,
     participation_status: params.participation_status,
     participation_source: params.participation_source,
+    registered_at: params.registered_at ?? params.joined_at ?? params.created_at,
+    registration_status: params.registration_status ?? params.participation_status,
+    registration_source: toRegistrationSource(params.registration_source ?? params.participation_source),
   };
 }
 
@@ -167,7 +184,10 @@ export function createGroupJoinSupabaseMock(params: {
         return createActionsChain(params.action, params.errors);
       }
       if (table === "action_participants") {
-        return createParticipantsChain(params.participants ?? [], params.errors);
+        return createParticipantsChain(params.participants ?? [], params.errors, "participants");
+      }
+      if (table === "action_registrations") {
+        return createParticipantsChain(params.participants ?? [], params.errors, "registrations");
       }
       if (table === "profiles") {
         return createProfilesChain(params.profiles ?? []);
@@ -289,6 +309,7 @@ function createActionsChain(
 function createParticipantsChain(
   participants: GroupJoinParticipantRow[],
   errors?: GroupJoinSupabaseErrors,
+  table: "participants" | "registrations" = "participants",
 ) {
   const state: {
     filters: Record<string, string>;
@@ -310,7 +331,11 @@ function createParticipantsChain(
     joined_at: row.joined_at ?? row.created_at,
     participation_status: row.participation_status ?? "pending",
     participation_source: row.participation_source ?? "group_form",
+    registered_at: row.registered_at ?? row.joined_at ?? row.created_at,
+    registration_status: row.registration_status ?? row.participation_status ?? "pending",
+    registration_source: toRegistrationSource(row.registration_source ?? row.participation_source),
   });
+  const statusField = table === "registrations" ? "registration_status" : "participation_status";
 
   const buildFiltered = () =>
     participants.filter((row) => {
@@ -321,14 +346,11 @@ function createParticipantsChain(
       if (state.filters["user_id"] && normalized["user_id"] !== state.filters["user_id"]) {
         return false;
       }
-      if (
-        state.filters["participation_status"] &&
-        normalized["participation_status"] !== state.filters["participation_status"]
-      ) {
+      if (state.filters[statusField] && normalized[statusField] !== state.filters[statusField]) {
         return false;
       }
-      const allowedStatuses = state.inFilters["participation_status"];
-      if (allowedStatuses && !allowedStatuses.includes(normalized["participation_status"])) {
+      const allowedStatuses = state.inFilters[statusField];
+      if (allowedStatuses && !allowedStatuses.includes(normalized[statusField])) {
         return false;
       }
       const allowedActionIds = state.inFilters["action_id"];
@@ -367,6 +389,9 @@ function createParticipantsChain(
       joined_at?: string;
       participation_status?: "pending" | "confirmed" | "cancelled";
       participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim";
+      registered_at?: string;
+      registration_status?: "pending" | "confirmed" | "cancelled";
+      registration_source?: "group_form" | "admin" | "admin_override" | "import";
     }) => ParticipantChain;
     then: (
       resolve: (value: {
@@ -439,6 +464,21 @@ function createParticipantsChain(
                 ? state.pendingUpdate["joined_at"]
                 : original["joined_at"] ?? original["created_at"],
           });
+          if ("registration_status" in state.pendingUpdate) {
+            original.participation_status = state.pendingUpdate["registration_status"] as GroupJoinParticipantRow["participation_status"];
+          }
+          if ("registration_source" in state.pendingUpdate) {
+            original.participation_source = state.pendingUpdate["registration_source"] as GroupJoinParticipantRow["participation_source"];
+          }
+          if ("registered_at" in state.pendingUpdate) {
+            original.joined_at = state.pendingUpdate["registered_at"] as string;
+          }
+          if ("participation_status" in state.pendingUpdate) {
+            original.registration_status = state.pendingUpdate["participation_status"] as GroupJoinParticipantRow["registration_status"];
+          }
+          if ("participation_source" in state.pendingUpdate) {
+            original.registration_source = state.pendingUpdate["participation_source"] as GroupJoinParticipantRow["registration_source"];
+          }
         }
         state.pendingUpdate = undefined;
         return {
@@ -471,16 +511,24 @@ function createParticipantsChain(
         action_id: string;
         user_id: string;
         joined_at?: string;
-        participation_status?: "pending" | "confirmed" | "cancelled";
-        participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim";
+      participation_status?: "pending" | "confirmed" | "cancelled";
+      participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim";
+      registered_at?: string;
+      registration_status?: "pending" | "confirmed" | "cancelled";
+      registration_source?: "group_form" | "admin" | "admin_override" | "import";
       }) => {
-        const joinedAt = values.joined_at ?? "2026-06-04T12:00:00Z";
+        const joinedAt = values.joined_at ?? values.registered_at ?? "2026-06-04T12:00:00Z";
+        const status = values.participation_status ?? values.registration_status ?? "confirmed";
+        const source = values.participation_source ?? values.registration_source ?? "group_form";
         state.inserting = {
           id: `participant-${participants.length + 1}`,
           created_at: joinedAt,
           joined_at: joinedAt,
-          participation_status: values.participation_status ?? "confirmed",
-          participation_source: values.participation_source ?? "group_form",
+          participation_status: status,
+          participation_source: source,
+          registered_at: joinedAt,
+          registration_status: status,
+          registration_source: toRegistrationSource(source),
           action_id: values.action_id,
           user_id: values.user_id,
         };

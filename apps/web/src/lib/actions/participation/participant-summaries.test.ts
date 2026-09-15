@@ -7,30 +7,30 @@ function createFallbackParticipantSupabaseMock() {
     {
       action_id: "action-1",
       user_id: "user-1",
-      participation_status: "confirmed",
-      participation_source: "group_form",
-      joined_at: "2026-06-01T12:00:00Z",
+      registration_status: "confirmed",
+      registration_source: "group_form",
+      registered_at: "2026-06-01T12:00:00Z",
       updated_at: "2026-06-02T12:00:00Z",
     },
     {
       action_id: "action-1",
       user_id: "user-2",
-      participation_status: "pending",
-      participation_source: "admin",
-      joined_at: "2026-06-03T12:00:00Z",
+      registration_status: "pending",
+      registration_source: "admin",
+      registered_at: "2026-06-03T12:00:00Z",
       updated_at: "2026-06-04T12:00:00Z",
     },
   ];
 
   const createParticipantChain = () => {
     const state = {
-      participationStatus: null as "confirmed" | "pending" | null,
+        registrationStatus: null as "confirmed" | "pending" | null,
     };
     const participantChain = {
       select: vi.fn(() => participantChain),
       eq: vi.fn((field: string, value: string) => {
-        if (field === "participation_status") {
-          state.participationStatus = value as "confirmed" | "pending";
+        if (field === "registration_status") {
+          state.registrationStatus = value as "confirmed" | "pending";
         }
         return participantChain;
       }),
@@ -48,7 +48,7 @@ function createFallbackParticipantSupabaseMock() {
       ) =>
         Promise.resolve({
           data: rows,
-          count: state.participationStatus ? 1 : 2,
+          count: state.registrationStatus ? 1 : 2,
           error: null,
         }).then(resolve, reject),
     };
@@ -60,9 +60,21 @@ function createFallbackParticipantSupabaseMock() {
     data: null,
     error: { message: "rpc unavailable" },
   }));
-  const from = vi.fn(() => ({
-    select: vi.fn(() => createParticipantChain()),
-  }));
+  const from = vi.fn((table: string) => {
+    if (table === "actions") {
+      const actionChain = {
+        select: vi.fn(() => actionChain),
+        in: vi.fn(async () => ({
+          data: [{ id: "action-1", action_phase: "pre_action" }],
+          error: null,
+        })),
+      };
+      return actionChain;
+    }
+    return {
+      select: vi.fn(() => createParticipantChain()),
+    };
+  });
 
   return {
     rpc,
