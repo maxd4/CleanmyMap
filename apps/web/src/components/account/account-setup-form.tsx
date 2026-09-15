@@ -18,12 +18,7 @@ import {
   createLocationPreferencesMetadata,
   extractLocationPreferencesFromMetadata,
 } from "@/lib/user-location-preference";
-import {
-  getSwitchableProfiles,
-  normalizeDisplayNameMode,
-  type AppProfile,
-  type DisplayNameMode,
-} from "@/lib/profiles";
+import type { AppProfile, DisplayNameMode } from "@/lib/profiles";
 import type { Role } from "@/lib/domain-language";
 import { AccountSetupLocationFields, AccountSetupProfileGrid } from "@/components/account/account-setup-sections";
 import { ErrorMessage } from "@/components/ui/error-message";
@@ -50,6 +45,14 @@ import {
   persistAccountSetupChanges,
   type AccountSetupUserUpdate,
 } from "@/components/account/account-setup-save";
+import {
+  getAccountSetupProfileOptions,
+  resolveAccountSetupDisplayMode,
+  resolveAccountSetupDisplayNameMode,
+  resolveAccountSetupProfileSelection,
+  shouldHydrateAccountSetupDisplayNameMode,
+  shouldHydrateAccountSetupLocations,
+} from "@/components/account/account-setup-state";
 
 type AccountSetupFormProps = {
   nextPath?: string;
@@ -57,6 +60,7 @@ type AccountSetupFormProps = {
   initialProfile: AppProfile;
   clerkReachable: boolean;
   isLocalHost: boolean;
+  initialDisplayNameMode?: DisplayNameMode | null;
   initialResidence?: TerritoryLocationSelection | null;
   initialWork?: TerritoryLocationSelection | null;
   /** Legacy props remain accepted while older server callers converge. */
@@ -106,7 +110,7 @@ const DISPLAY_MODE_LABELS: Record<DisplayMode, string> = {
 
 function readDisplayNameMode(metadata: Record<string, unknown> | null | undefined): DisplayNameMode {
   const value = metadata?.["display_name_mode"] ?? metadata?.["displayNameMode"];
-  return normalizeDisplayNameMode(typeof value === "string" ? value : undefined);
+  return resolveAccountSetupDisplayNameMode(typeof value === "string" ? value : undefined);
 }
 
 export function AccountSetupForm({
@@ -116,6 +120,7 @@ export function AccountSetupForm({
   clerkReachable,
   initialResidence,
   initialWork,
+  initialDisplayNameMode,
   initialArrondissement = null,
   initialLocationType = null,
   submitMode = "navigate",
@@ -141,25 +146,26 @@ export function AccountSetupForm({
     (initialLocationType === "work" ? legacySelection : null);
 
   const profileOptions = useMemo(
-    () =>
-      getSwitchableProfiles(initialRole).filter(
-        (profile) => profile !== "max" &&
-          (profile !== "admin" || initialRole === "admin" || initialRole === "max"),
-      ),
+    () => getAccountSetupProfileOptions(initialRole),
     [initialRole],
   );
-  const [selectedProfile, setSelectedProfile] = useState<AppProfile>(initialProfile);
+  const [selectedProfileCandidate, setSelectedProfileCandidate] = useState<AppProfile>(() =>
+    resolveAccountSetupProfileSelection(initialProfile, profileOptions),
+  );
   const [pseudoOverride, setPseudoOverride] = useState<string | null>(null);
   const [firstNameOverride, setFirstNameOverride] = useState<string | null>(null);
   const [lastNameOverride, setLastNameOverride] = useState<string | null>(null);
-  const [displayNameMode, setDisplayNameMode] = useState<DisplayNameMode>("full_name");
-  const [selectedDisplayMode, setSelectedDisplayMode] = useState<DisplayMode>(displayMode);
+  const [displayNameMode, setDisplayNameMode] = useState<DisplayNameMode>(() =>
+    resolveAccountSetupDisplayNameMode(initialDisplayNameMode),
+  );
+  const [manualDisplayMode, setManualDisplayMode] = useState<DisplayMode | null>(null);
   const [residence, setResidence] = useState<TerritoryLocationSelection | null>(resolvedInitialResidence);
   const [work, setWork] = useState<TerritoryLocationSelection | null>(resolvedInitialWork);
   const [residenceEnabled, setResidenceEnabled] = useState(Boolean(resolvedInitialResidence));
   const [workEnabled, setWorkEnabled] = useState(Boolean(resolvedInitialWork));
   const [noneSelected, setNoneSelected] = useState(!resolvedInitialResidence && !resolvedInitialWork);
-  const hasHydratedUserState = useRef(Boolean(resolvedInitialResidence || resolvedInitialWork));
+  const hasHydratedLocations = useRef(Boolean(resolvedInitialResidence || resolvedInitialWork));
+  const hasHydratedDisplayNameMode = useRef(initialDisplayNameMode != null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
 
@@ -170,6 +176,10 @@ export function AccountSetupForm({
   const trimmedFirstName = firstName.trim();
   const trimmedLastName = lastName.trim();
   const isPseudonymous = displayNameMode === "pseudo";
+  const selectedProfile = profileOptions.includes(selectedProfileCandidate)
+    ? selectedProfileCandidate
+    : resolveAccountSetupProfileSelection(selectedProfileCandidate, profileOptions);
+  const selectedDisplayMode = resolveAccountSetupDisplayMode(displayMode, manualDisplayMode);
 
   function navigateAfterSetup() {
     if (submitMode === "refresh") {
@@ -182,21 +192,44 @@ export function AccountSetupForm({
   }
 
   useEffect(() => {
-    if (!isLoaded || !user || hasHydratedUserState.current) {
+    if (
+      !isLoaded ||
+      !user ||
+      !shouldHydrateAccountSetupLocations(
+        Boolean(resolvedInitialResidence),
+        Boolean(resolvedInitialWork),
+        hasHydratedLocations.current,
+      )
+    ) {
       return;
     }
     const metadata = user.unsafeMetadata as Record<string, unknown> | undefined;
     const preferences = extractLocationPreferencesFromMetadata(metadata);
-    setDisplayNameMode(readDisplayNameMode(metadata));
     setResidence(preferences.residence);
     setWork(preferences.work);
     setResidenceEnabled(Boolean(preferences.residence));
     setWorkEnabled(Boolean(preferences.work));
     setNoneSelected(!preferences.residence && !preferences.work);
-    hasHydratedUserState.current = true;
-  }, [isLoaded, user]);
+    hasHydratedLocations.current = true;
+  }, [isLoaded, resolvedInitialResidence, resolvedInitialWork, user]);
 
-  const profileIsValid = profileOptions.includes(selectedProfile) || selectedProfile === initialProfile;
+  useEffect(() => {
+    if (
+      !isLoaded ||
+      !user ||
+      !shouldHydrateAccountSetupDisplayNameMode(
+        initialDisplayNameMode,
+        hasHydratedDisplayNameMode.current,
+      )
+    ) {
+      return;
+    }
+    const metadata = user.unsafeMetadata as Record<string, unknown> | undefined;
+    setDisplayNameMode(readDisplayNameMode(metadata));
+    hasHydratedDisplayNameMode.current = true;
+  }, [initialDisplayNameMode, isLoaded, user]);
+
+  const profileIsValid = profileOptions.includes(selectedProfile);
   const pseudoError = !trimmedPseudo ? "Renseignez votre pseudo." : null;
   const firstNameError = !isPseudonymous && !trimmedFirstName ? "Renseignez votre prénom." : null;
   const lastNameError = !isPseudonymous && !trimmedLastName ? "Renseignez votre nom." : null;
@@ -366,7 +399,7 @@ export function AccountSetupForm({
 
           <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Quel profil vous correspond le mieux ?" className="border-emerald-100/45 !bg-emerald-950/60 !text-white p-6 shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-7">
             <div className="mb-5 flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-400 text-lg font-black text-white shadow-[0_0_18px_-6px_rgba(139,92,246,0.9)]">2</span><div><h2 id="account-profile-title" className="text-2xl font-bold">Quel profil vous correspond le mieux&nbsp;?</h2><p className="mt-1 text-sm text-emerald-50/80">Ce choix modifie votre parcours, jamais vos permissions.</p></div></div>
-            <AccountSetupProfileGrid options={profileOptions} selectedProfile={selectedProfile} locale={locale} onChange={setSelectedProfile} error={profileError} />
+            <AccountSetupProfileGrid options={profileOptions} selectedProfile={selectedProfile} locale={locale} onChange={setSelectedProfileCandidate} error={profileError} />
           </CmmCard>
         </div>
 
@@ -380,10 +413,10 @@ export function AccountSetupForm({
             <div className="mb-5 flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-400 text-lg font-black text-white shadow-[0_0_18px_-6px_rgba(139,92,246,0.9)]">4</span><div className="flex items-center gap-2"><div><h2 id="account-display-mode-title" className="text-2xl font-bold">Mode d’affichage initial</h2><p className="mt-1 text-sm text-emerald-50/80">Le mode change la présentation, jamais les fonctionnalités, permissions ou données.</p></div><a href="/methodologie#modes-affichage" aria-label="Comprendre les modes d’affichage" className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-violet-200/80 text-sm font-black text-violet-100 transition hover:bg-violet-300/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"><Info className="h-4 w-4" aria-hidden="true" /></a></div></div>
             <div role="radiogroup" aria-labelledby="account-display-mode-title" className="grid gap-3 sm:grid-cols-3">
               {DISPLAY_MODES.map((mode) => {
-                const selected = selectedDisplayMode === mode;
-                const label = DISPLAY_MODE_LABELS[mode];
-                const description = DISPLAY_MODE_DESCRIPTIONS[mode][locale];
-                return <button key={mode} type="button" role="radio" aria-checked={selected} onClick={() => setSelectedDisplayMode(mode)} className={`relative flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${selected ? "border-violet-300 bg-white text-violet-700 shadow-[0_10px_28px_-18px_rgba(124,58,237,0.9)]" : "border-emerald-100/40 bg-emerald-950/45 text-white hover:border-violet-200/70 hover:bg-emerald-950/60"}`}>
+                  const selected = selectedDisplayMode === mode;
+                  const label = DISPLAY_MODE_LABELS[mode];
+                  const description = DISPLAY_MODE_DESCRIPTIONS[mode][locale];
+                  return <button key={mode} type="button" role="radio" aria-checked={selected} onClick={() => setManualDisplayMode(mode)} className={`relative flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${selected ? "border-violet-300 bg-white text-violet-700 shadow-[0_10px_28px_-18px_rgba(124,58,237,0.9)]" : "border-emerald-100/40 bg-emerald-950/45 text-white hover:border-violet-200/70 hover:bg-emerald-950/60"}`}>
                   {selected ? <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500 text-white"><Check className="h-4 w-4" aria-hidden="true" /></span> : null}
                   <Eye className="h-7 w-7" aria-hidden="true" />
                   <span className="text-sm font-bold">{label}</span>

@@ -5,7 +5,7 @@ import { getCurrentUserLocationPreferences } from "@/lib/auth/user-location";
 import type { UserLocationPreferences } from "@/lib/user-location-preference";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { isLocalhostHost } from "@/lib/auth/dev-auth";
-import type { AppProfile, AppRoleLabel } from "@/lib/profiles";
+import type { AppProfile, AppRoleLabel, DisplayNameMode } from "@/lib/profiles";
 import { toProfile } from "@/lib/profiles";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 
@@ -15,6 +15,7 @@ export type AccountCompletionGateState = {
   currentProfile: AppProfile;
   clerkReachable: boolean;
   isLocalHost: boolean;
+  initialDisplayNameMode?: DisplayNameMode;
   initialArrondissement: number | null;
   initialLocationType: "residence" | "work" | null;
   initialResidence?: UserLocationPreferences["residence"];
@@ -58,6 +59,7 @@ export async function loadAccountCompletionGateState(
        currentProfile,
       clerkReachable: resolvedSession.clerkReachable,
       isLocalHost,
+      initialDisplayNameMode: identity?.displayNameMode,
       initialArrondissement: null,
       initialLocationType: null,
       initialResidence: null,
@@ -77,6 +79,7 @@ export async function loadAccountCompletionGateState(
     currentProfile,
     clerkReachable: resolvedSession.clerkReachable,
     isLocalHost,
+    initialDisplayNameMode: identity?.displayNameMode,
     initialArrondissement: existingPreference?.arrondissement ?? null,
     initialLocationType: locationPreferences.residence
       ? "residence"
