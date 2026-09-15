@@ -7,9 +7,9 @@
 - **Objectif utilisateur principal** : comprendre le niveau obtenu, le rôle utilisé et l’état de sa demande d’évolution.
 - **Surface canonique** : le formulaire `PromotionRequestForm` et le suivi des demandes sont centralisés ici.
 - **Accès** : utilisateur authentifié ; la lecture API est limitée aux demandes du userId Clerk courant.
-- **Rôles ouverts** : Bénévole, Association, Scientifique, Entreprise.
-- **Rôles obtenus** : Élu·e et Administrateur, après acceptation IMU.
-- **Hors parcours** : IMU.
+- **Rôles ouverts** : Bénévole, `coordinateur`, Scientifique, Entreprise.
+- **Rôles obtenus** : Élu·e et Administrateur, après acceptation par le propriétaire `max`/IMU.
+- **Hors parcours** : le profil `max`/IMU n'est ni un rôle ouvert ni une cible de demande depuis cette page.
 
 La route est la destination unique des liens « Évolution du compte » depuis
 le menu de compte, le sélecteur de rôle, le Dashboard, les profils et les

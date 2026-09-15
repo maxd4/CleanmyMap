@@ -38,6 +38,7 @@ lui seul la conformité sémantique du contenu des fiches.
 | `clerk-context` | contexte Clerk disponible sans hard gate de page ; les capacités sensibles gardent leur propre contrôle |
 | `protected` | authentification imposée par le proxy ou la page |
 | `admin-only` | rôle `admin` requis |
+| `admin-like` | capability d'administration effective des profils `admin` ou `max` ; ne vaut pas pour `elu` par analogie |
 | `max-only` | profil `max` requis |
 | `auth-entry` | page de connexion, inscription ou onboarding |
 | `legal-public` | page légale publique |
@@ -60,7 +61,7 @@ lui seul la conformité sémantique du contenu des fiches.
 | `/explorer` | [Sommaire](./routes/01-accueil-pilotage/explorer/explorer-README.md) | `public-visible` | yellow, exception nommée | `apps/web/src/app/(app)/explorer/page.tsx` |
 | `/parcours` | [Parcours](./routes/01-accueil-pilotage/parcours/parcours-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/parcours/page.tsx` |
 | `/parcours/[profile]` | [Parcours par profil](./routes/01-accueil-pilotage/parcours-profile/parcours-profile-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/parcours/[profile]/page.tsx` |
-| `/pilotage` | [Pilotage](./routes/01-accueil-pilotage/pilotage/pilotage-README.md) | `protected` | pilotage | `apps/web/src/app/(app)/pilotage/page.tsx` |
+| `/pilotage` | [Pilotage](./routes/01-accueil-pilotage/pilotage/pilotage-README.md) | `auth-disabled-gate` ; `clerk-context` ; accès métier `coordinateur`/`admin`/`max` | pilotage | `apps/web/src/app/(app)/pilotage/page.tsx` |
 | `/profil` | [Profil](./routes/01-accueil-pilotage/profil/profil-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/page.tsx` |
 | `/profil/[profile]` | [Profil détaillé](./routes/01-accueil-pilotage/profil-profile/profil-profile-README.md) | `protected` | accueil-pilotage | `apps/web/src/app/(app)/profil/[profile]/page.tsx` |
 | `/sponsor-portal` | [Portail décideur](./routes/01-accueil-pilotage/sponsor-portal/sponsor-portal-README.md) | `protected` | pilotage | `apps/web/src/app/(app)/sponsor-portal/page.tsx` |
@@ -190,10 +191,10 @@ Note : aucune page canonique `/learn` n'est documentée dans l'état actuel. Le 
 | Route | Fiche | Accès | Source |
 |---|---|---|---|
 | `/admin` | [Administration](./routes/09-admin-superadmin/admin/admin-README.md) | `protected` + permissions internes | `apps/web/src/app/(app)/admin/page.tsx` |
-| `/admin/forms` | [Administration des formulaires](./routes/09-admin-superadmin/admin-forms/admin-forms-README.md) | `protected` + permissions internes | `apps/web/src/app/(app)/admin/forms/page.tsx` |
+| `/admin/forms` | [Administration des formulaires](./routes/09-admin-superadmin/admin-forms/admin-forms-README.md) | `protected` | `apps/web/src/app/(app)/admin/forms/page.tsx` |
 | `/admin/gamification/xp-audit` | [XP Audit](./routes/09-admin-superadmin/admin-gamification-xp-audit/admin-gamification-xp-audit-README.md) | `protected` + permissions internes | `apps/web/src/app/admin/gamification/xp-audit/page.tsx` |
 | `/admin/godmode` | [Administration avancée](./routes/09-admin-superadmin/admin-godmode/admin-godmode-README.md) | `max-only` | `apps/web/src/app/(app)/admin/godmode/page.tsx` |
-| `/admin/quiz-bank` | [Banque de quiz](./routes/09-admin-superadmin/admin-quiz-bank/admin-quiz-bank-README.md) | `admin-only` | `apps/web/src/app/(app)/admin/quiz-bank/page.tsx` |
+| `/admin/quiz-bank` | [Banque de quiz](./routes/09-admin-superadmin/admin-quiz-bank/admin-quiz-bank-README.md) | `admin-like` | `apps/web/src/app/(app)/admin/quiz-bank/page.tsx` |
 | `/admin/services` | [Administration des services](./routes/09-admin-superadmin/admin-services/admin-services-README.md) | `protected` + permissions internes | `apps/web/src/app/(app)/admin/services/page.tsx` |
 
 ## Print & Export

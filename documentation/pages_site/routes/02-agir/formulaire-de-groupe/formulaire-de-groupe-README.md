@@ -53,7 +53,10 @@ Permettre au créateur, organisateur ou coorganisateur autorisé de :
 3. rechercher un compte ;
 4. ajouter manuellement un participant.
 
-Les profils admin-like peuvent traiter toute file selon les permissions centrales.
+Les profils dont le rôle actif dispose de la capability d'override d'action
+(`admin`, `elu` ou `max`) peuvent traiter toute file selon les permissions
+centrales. Cette capability est limitée aux opérations Actions et ne confère
+pas à `elu` un privilège administratif global.
 
 ## Contrat de visibilité
 
@@ -115,7 +118,7 @@ Sont autorisés selon le code actuel :
 créateur
 organisateur
 coorganisateur autorisé
-admin-like
+capability d'override d'action (`admin`, `elu`, `max`)
 ```
 
 Un utilisateur extérieur ne peut pas rechercher des comptes ni traiter la file.
@@ -161,7 +164,8 @@ Ne pas considérer le nom du helper comme une règle d'autorisation.
 
 ## Audit admin
 
-Les opérations admin-like de traitement de participation sont journalisées via :
+Les opérations de traitement de participation réalisées avec la capability
+d'override d'action sont journalisées via :
 
 ```txt
 appendActionModerationAudit(...)
