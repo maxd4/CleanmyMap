@@ -192,7 +192,7 @@ export function ActionCreationShell({
         <div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-emerald-200/45 blur-[110px]" />
         <div className="absolute right-0 top-8 h-80 w-80 rounded-full bg-emerald-100/50 blur-[120px]" />
       </div>
-      <div className="relative mx-auto w-full max-w-7xl space-y-4">
+      <div className="cmm-page-width relative space-y-4">
         <CmmCard tone="emerald" variant="glass" size="lg">
           <div className="space-y-3">
             <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Agir</p>

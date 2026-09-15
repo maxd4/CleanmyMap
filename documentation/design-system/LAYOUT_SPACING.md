@@ -56,6 +56,14 @@ le rythme entre le `PageHeader` et le premier contenu. Sa largeur maximale
 canonique est `112rem` (`1792px`) : elle permet aux pages classiques d'exploiter
 les grands écrans tout en conservant les gutters du shell.
 
+Les composants racines qui portent une composition dédiée sans pouvoir rendre
+`CmmPageLayout` (par exemple l'explorateur, la carte, l'onboarding et les flux
+d'action) utilisent la classe partagée `.cmm-page-width`. Elle ne porte aucune
+largeur locale : elle applique le même `--cmm-page-max-width` et le même
+centrage que le shell canonique. Les gutters et espacements propres à la
+composition restent sur le parent visuel ; les mesures de lecture et les
+formulaires courts conservent leurs contraintes sémantiques.
+
 Le site applique une échelle d'affichage CSS globale de `80%` sur l'élément
 racine (`html`). Cette échelle est commune à toutes les routes et ne doit pas
 être détectée ou recalculée en JavaScript ; le layout répond uniquement à la

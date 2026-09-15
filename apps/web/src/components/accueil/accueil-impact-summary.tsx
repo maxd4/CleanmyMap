@@ -147,7 +147,7 @@ export function HomeImpactSummary({
   const windowLabel = periodDays >= 365 ? "12 mois" : `${periodDays} jours`;
   if (!summary) {
     return (
-      <section ref={rootRef} className="relative z-20 mx-auto -mt-12 max-w-7xl px-4 sm:-mt-16 sm:px-8 lg:-mt-20 lg:px-12">
+      <section ref={rootRef} className="cmm-page-width relative z-20 -mt-12 px-4 sm:-mt-16 sm:px-8 lg:-mt-20 lg:px-12">
         <div className="relative overflow-hidden rounded-[2.5rem] border border-emerald-100/18 bg-[linear-gradient(180deg,rgba(20,100,70,0.94)_0%,rgba(14,85,55,0.94)_100%)] backdrop-blur-3xl shadow-[0_32px_80px_-36px_rgba(16,185,129,0.34)]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_42%_at_12%_0%,rgba(16,185,129,0.12),transparent),radial-gradient(ellipse_50%_36%_at_88%_12%,rgba(132,204,22,0.08),transparent)]" />
           <div className="pointer-events-none absolute right-0 bottom-0 h-[220px] w-[420px] opacity-[0.03]">
@@ -177,7 +177,7 @@ export function HomeImpactSummary({
   const alertTone = severityTone(summary.alert.severity);
 
   return (
-    <section ref={rootRef} className="relative z-20 mx-auto -mt-12 max-w-7xl px-4 sm:-mt-16 sm:px-8 lg:-mt-20 lg:px-12">
+    <section ref={rootRef} className="cmm-page-width relative z-20 -mt-12 px-4 sm:-mt-16 sm:px-8 lg:-mt-20 lg:px-12">
       <div className="relative overflow-hidden rounded-[2.5rem] border border-emerald-100/18 bg-[linear-gradient(180deg,rgba(20,100,70,0.94)_0%,rgba(14,85,55,0.94)_100%)] backdrop-blur-3xl shadow-[0_32px_80px_-36px_rgba(16,185,129,0.34)]">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_42%_at_12%_0%,rgba(16,185,129,0.12),transparent),radial-gradient(ellipse_50%_36%_at_88%_12%,rgba(132,204,22,0.08),transparent)]" />
         <div className="pointer-events-none absolute right-0 bottom-0 h-[220px] w-[420px] opacity-[0.03]">

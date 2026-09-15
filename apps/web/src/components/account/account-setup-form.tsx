@@ -334,7 +334,7 @@ export function AccountSetupForm({
   }
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="mx-auto flex min-h-full w-full max-w-7xl flex-col pb-2 text-white">
+    <form onSubmit={(event) => void handleSubmit(event)} className="flex min-h-full flex-col pb-2 text-white">
       <header className="mb-7 flex items-start gap-4 sm:mb-9">
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-violet-300/50 bg-violet-300/20 text-violet-50 shadow-[0_0_24px_-8px_rgba(139,92,246,0.9)]">
           <UserRound className="h-6 w-6" aria-hidden="true" />

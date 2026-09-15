@@ -149,7 +149,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
   if (isHydratingAction) {
     return (
       <div className="relative overflow-hidden px-4 py-6 md:px-6 lg:px-8">
-        <div className="relative mx-auto flex w-full max-w-7xl items-center justify-center">
+        <div className="cmm-page-width relative flex items-center justify-center">
           <CmmCard tone="emerald" variant="glass" size="lg" className="w-full max-w-2xl">
             <div className="space-y-4 text-center">
               <Loader2 size={22} className="mx-auto animate-spin text-emerald-600" />
@@ -169,7 +169,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
   if (hydrationError) {
     return (
       <div className="relative overflow-hidden px-4 py-6 md:px-6 lg:px-8">
-        <div className="relative mx-auto flex w-full max-w-7xl items-center justify-center">
+        <div className="cmm-page-width relative flex items-center justify-center">
           <CmmCard tone="rose" variant="glass" size="lg" className="w-full max-w-2xl">
             <div className="space-y-4">
               <p className="text-xs font-black uppercase tracking-[0.18em] text-rose-700">
@@ -294,7 +294,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
           <div className="absolute bottom-0 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-teal-100/45 blur-[120px]" />
         </div>
 
-        <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6">
+        <div className="cmm-page-width relative flex flex-col gap-6">
           {showDraftBanner && !isCompletionBlocked ? (
             <div className="flex flex-col gap-3 rounded-[2rem] border border-amber-200/80 bg-[#F3FBF6] px-4 py-3 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.22)] sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-2">

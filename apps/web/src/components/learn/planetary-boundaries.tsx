@@ -173,7 +173,7 @@ export function PlanetaryBoundariesInteractive() {
   }));
 
   return (
-    <div className="space-y-12 max-w-7xl mx-auto px-4">
+    <div className="cmm-page-width space-y-12 px-4">
       <div className="text-center space-y-4">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-50 dark:bg-violet-950/30 border border-violet-100 dark:border-violet-900 shadow-sm mb-2">
           <Sparkles size={14} className="text-violet-500" />
