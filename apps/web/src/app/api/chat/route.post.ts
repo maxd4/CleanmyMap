@@ -1,5 +1,4 @@
 import { auth } from "@clerk/nextjs/server";
-import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
@@ -15,7 +14,6 @@ import {
   isSupportedChatAttachmentMimeType,
 } from "@/lib/chat/chat-attachments";
 import { createChatNotificationsForMessage } from "@/lib/chat/chat-notifications";
-import { appendAdminOperationAudit } from "@/lib/admin/audit/operation-audit";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { resolveActionDiscussionAccess } from "@/lib/chat/action-conversations";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
@@ -27,7 +25,6 @@ import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit
 import { loadActionById } from "@/lib/actions/store";
 import {
   getCommunityBugReportById,
-  updateCommunityBugReportCreatorState,
 } from "@/lib/community/bug-reports-store";
 import {
   isPublicActionReferenceAvailable,
@@ -176,7 +173,6 @@ export async function POST(request: Request) {
     let feedbackReplyContext: {
       feedbackId: string;
       targetUserId: string;
-      previousCreatorState: string;
     } | null = null;
     if (parsed.data.feedbackId) {
       if (
@@ -186,7 +182,8 @@ export async function POST(request: Request) {
         parsed.data.relatedEventId ||
         parsed.data.topicId ||
         parsed.data.attachmentUrl ||
-        parsed.data.attachmentType
+        parsed.data.attachmentType ||
+        !parsed.data.operationId
       ) {
         return NextResponse.json(
           { error: "Contexte feedback invalide" },
@@ -216,7 +213,6 @@ export async function POST(request: Request) {
       feedbackReplyContext = {
         feedbackId: parsed.data.feedbackId,
         targetUserId,
-        previousCreatorState: feedback.creatorState,
       };
     }
 
@@ -473,6 +469,37 @@ export async function POST(request: Request) {
           "POST /api/chat (poll readback)",
         );
       }
+    } else if (feedbackReplyContext) {
+      const { data: feedbackReplyResult, error: feedbackReplyError } =
+        await serviceSupabase.rpc("send_feedback_private_reply", {
+          p_operation_id: parsed.data.operationId!,
+          p_actor_user_id: userId,
+          p_feedback_id: feedbackReplyContext.feedbackId,
+          p_recipient_id: feedbackReplyContext.targetUserId,
+          p_content: parsed.data.content,
+        });
+
+      if (feedbackReplyError) {
+        return handleApiError(
+          feedbackReplyError,
+          "POST /api/chat (feedback private reply)",
+        );
+      }
+
+      const feedbackReplyMessage =
+        feedbackReplyResult &&
+        typeof feedbackReplyResult === "object" &&
+        "message" in feedbackReplyResult
+          ? (feedbackReplyResult as { message?: unknown }).message
+          : null;
+      if (!feedbackReplyMessage || typeof feedbackReplyMessage !== "object") {
+        return handleApiError(
+          new Error("La réponse feedback n'a pas renvoyé son message."),
+          "POST /api/chat (feedback private reply result)",
+        );
+      }
+
+      message = normalizeChatMessageRow(feedbackReplyMessage as ChatMessageRow);
     } else {
       const { data: insertedMessage, error } = await supabase
         .from("app_messages")
@@ -505,38 +532,6 @@ export async function POST(request: Request) {
       await createChatNotificationsForMessage(serviceSupabase, message.id);
     } catch (notificationError) {
       console.warn("[POST /api/chat] Notification fan-out failed:", notificationError);
-    }
-
-    if (feedbackReplyContext) {
-      const updatedFeedback = await updateCommunityBugReportCreatorState({
-        reportId: feedbackReplyContext.feedbackId,
-        creatorState: "responded",
-      });
-      if (!updatedFeedback) {
-        throw new Error("Le statut du feedback n'a pas été mis à jour après l'envoi.");
-      }
-
-      await appendAdminOperationAudit({
-        operationId: randomUUID(),
-        at: new Date().toISOString(),
-        actorUserId: userId,
-        operationType: "admin_operation",
-        outcome: "success",
-        targetId: feedbackReplyContext.feedbackId,
-        details: {
-          operation: "feedback_private_reply_sent",
-          targetUserId: feedbackReplyContext.targetUserId,
-          messageSent: true,
-          previousValue: {
-            source: "feedback",
-            creatorState: feedbackReplyContext.previousCreatorState,
-          },
-          newValue: {
-            source: "feedback",
-            creatorState: updatedFeedback.creatorState,
-          },
-        },
-      });
     }
 
     return NextResponse.json({ status: "sent", message }, { status: 201 });

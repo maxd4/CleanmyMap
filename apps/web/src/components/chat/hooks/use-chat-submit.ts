@@ -47,6 +47,14 @@ type UseChatSubmitParams = {
   setPollOptions: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
+function createFeedbackOperationId(): string {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `feedback-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function buildOptimisticChatMessage({
   id,
   senderId,
@@ -124,6 +132,7 @@ export function useChatSubmit({
   setPollOptions,
 }: UseChatSubmitParams) {
   const submitChatMessageRef = useRef<(() => Promise<void>) | null>(null);
+  const feedbackOperationIdRef = useRef<string | null>(null);
   const retrySubmitChatMessage = useCallback(() => {
     void submitChatMessageRef.current?.();
   }, []);
@@ -268,6 +277,12 @@ export function useChatSubmit({
         },
       });
 
+      const feedbackOperationId =
+        activeChannelType === "dm" && feedbackId
+          ? (feedbackOperationIdRef.current ??=
+              createFeedbackOperationId())
+          : undefined;
+
       await sendChatMessage({
         optimisticMessage: optimisticMsg,
         body: {
@@ -291,8 +306,13 @@ export function useChatSubmit({
           attachmentUrl,
           attachmentType,
           feedbackId: activeChannelType === "dm" ? feedbackId ?? undefined : undefined,
+          operationId: feedbackOperationId,
         },
       });
+
+      if (feedbackId) {
+        feedbackOperationIdRef.current = null;
+      }
 
       setMessage("");
       setFile(null);
@@ -357,6 +377,12 @@ export function useChatSubmit({
     userId,
     retrySubmitChatMessage,
   ]);
+
+  useEffect(() => {
+    if (!feedbackId) {
+      feedbackOperationIdRef.current = null;
+    }
+  }, [feedbackId]);
 
   useEffect(() => {
     submitChatMessageRef.current = submitChatMessage;
