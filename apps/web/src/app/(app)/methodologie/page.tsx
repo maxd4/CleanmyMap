@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getCurrentUserActiveRole } from "@/lib/authz";
 import { loadEnvironmentalImpactDashboardSnapshotOnly } from "@/lib/environmental-impact-estimator/dashboard-capture";
 import { buildElectricityEstimate } from "@/lib/environmental-impact-estimator/services/electricity";
 import { buildWaterEstimate } from "@/lib/environmental-impact-estimator/services/water";
@@ -11,6 +12,7 @@ import type {
 import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import type { PublicLandingActionAggregation } from "@/lib/accueil/action-participant-aggregation";
 import { loadLatestPublicImpactSnapshot } from "@/lib/impact/public-impact-snapshot";
+import { toProfile } from "@/lib/profiles";
 
 export const metadata: Metadata = {
   title: "Méthodologie - Comment nous calculons l'impact | CleanMyMap",
@@ -36,6 +38,9 @@ export const metadata: Metadata = {
 export const revalidate = 86400;
 
 export default async function MethodologiePage() {
+  const currentProfile = toProfile(
+    await getCurrentUserActiveRole().catch(() => "anonymous" as const),
+  );
   let freePlanServices: EnvironmentalImpactInfrastructureServiceEstimate[] = [];
   let impactSnapshots: EnvironmentalImpactSnapshotRecord[] = [];
   let githubStats: GitHubRepositoryStats | null = null;
@@ -94,6 +99,7 @@ export default async function MethodologiePage() {
 
   return (
     <MethodologiePageClient
+      currentProfile={currentProfile}
       freePlanServices={freePlanServices}
       impactTotals={impactTotals}
       impactSnapshots={impactSnapshots}
