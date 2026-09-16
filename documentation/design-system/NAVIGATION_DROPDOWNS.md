@@ -29,9 +29,9 @@ vérité supérieure au runtime ou aux contrats UI.
   flèche dont la couleur au survol suit le bloc.
 - Chaque carte empile le titre et sa description dans la colonne centrale : la
   description utilise au minimum le token `cmm-text-caption` (environ 12 px),
-  reste alignée à gauche, sans italique ni clamp de lignes, et la carte grandit
-  selon son contenu. La composition canonique est donc : icône, puis titre et
-  description, puis chevron.
+  est affichée en italique, reste alignée à gauche, sans clamp de lignes, et la
+  carte grandit selon son contenu. La composition canonique est donc : icône,
+  puis titre et description, puis chevron.
 - La primitive locale `NavigationItemText` porte cette hiérarchie commune pour
   les dropdowns, la recherche globale, le ruban compact et le menu responsive :
   label en `cmm-text-small` (14 px minimum), description optionnelle en

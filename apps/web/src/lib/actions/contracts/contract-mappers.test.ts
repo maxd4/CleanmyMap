@@ -201,6 +201,13 @@ describe("canonical department attribution", () => {
       kind: "polyline",
       coordinates: gpxCoordinates,
     });
+    expect(buildActionEditorPayload(gpxRow as never)).toMatchObject({
+      geometrySource: "gpx_import",
+      manualDrawing: {
+        kind: "polyline",
+        coordinates: gpxCoordinates,
+      },
+    });
     expect(manualContract.metadata.preparationData).toMatchObject({
       routeTargetDistanceKm: 2.25,
       routeTargetDistanceSource: "manual",

@@ -214,13 +214,12 @@ export function serializeActionGeometryToGpx(
 
   const documentName = input.name?.trim() || "Export CleanMyMap";
   const documentDescription = input.description?.trim() ?? "";
-  const allWaypoints = [
-    ...(input.waypoints ?? []),
-    ...input.tracks.flatMap((track) => track.waypoints ?? []),
-  ];
-  const globalWaypoints = normalizeWaypoints(allWaypoints)
-    .map(serializeWaypoint)
-    .join("\n");
+  const waypoints = [
+    ...normalizeWaypoints(input.waypoints).map(serializeWaypoint),
+    ...input.tracks.flatMap((track) =>
+      normalizeWaypoints(track.waypoints).map(serializeWaypoint),
+    ),
+  ].join("\n");
   const tracks = input.tracks.map(serializeTrack).join("\n");
 
   return [
@@ -232,7 +231,7 @@ export function serializeActionGeometryToGpx(
       ? `    <desc>${escapeXml(documentDescription, "description du document")}</desc>`
       : "",
     "  </metadata>",
-    globalWaypoints,
+    waypoints,
     tracks,
     "</gpx>",
     "",

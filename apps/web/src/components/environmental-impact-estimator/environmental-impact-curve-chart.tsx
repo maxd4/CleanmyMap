@@ -277,7 +277,7 @@ export function EnvironmentalImpactCurveChart({
           <h3 className="mt-1 text-xl font-black tracking-tight text-white">
             Pollution du site et pollution attribuée à l&apos;utilisateur
           </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-red-100/45">
+          <p className="cmm-text-body cmm-text-inverse mt-2 max-w-3xl">
             Le tracé expose deux courbes hebdomadaires cumulées depuis la mise en ligne:
             le total du site et le total attribué à l&apos;utilisateur. Clique sur un point
             pour comparer les deux séries et ouvrir le détail des familles de signaux.
@@ -553,7 +553,7 @@ export function EnvironmentalImpactCurveChart({
             <h4 className="mt-1 text-lg font-black tracking-tight text-white">
               {selectedScopePoint?.weekLabel ?? selectedXAxisPoint?.weekLabel ?? "Aucun point"}
             </h4>
-            <p className="mt-1 text-xs leading-relaxed text-red-100/45">
+          <p className="cmm-text-small cmm-text-inverse mt-1">
               Cliquez sur une semaine pour comparer la courbe du site et celle de l&apos;utilisateur.
               Le bloc suivant détaille la portée actuellement sélectionnée.
             </p>
@@ -622,7 +622,7 @@ export function EnvironmentalImpactCurveChart({
                     }}
                   />
                 </div>
-                <p className="mt-2 text-[10px] leading-relaxed text-red-100/45">
+                <p className="cmm-text-caption cmm-text-inverse mt-2">
                   {formatKg(driver.kg)} sur la semaine sélectionnée.
                 </p>
               </div>
@@ -666,7 +666,7 @@ export function EnvironmentalImpactCurveChart({
           {infrastructure.graph.considerations.map((item) => (
             <div
               key={item}
-              className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2 text-xs leading-relaxed text-red-100/55"
+              className="cmm-text-small cmm-text-inverse rounded-2xl border border-white/10 bg-black/10 px-3 py-2"
             >
               {item}
             </div>

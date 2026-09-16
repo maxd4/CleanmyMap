@@ -71,7 +71,7 @@ export function FreePlanServicesMethodologyVisualQuotas({
             <h3 className="max-w-4xl text-3xl font-black tracking-tight text-slate-950 md:text-5xl">
               {title}
             </h3>
-            <p className="max-w-3xl text-base leading-relaxed text-slate-600 md:text-lg">
+            <p className="cmm-text-body max-w-3xl">
               {subtitle}
             </p>
           </div>
@@ -216,7 +216,7 @@ export function FreePlanServicesMethodologyVisualQuotas({
                 <p className="text-lg font-black text-slate-950">
                   {formatFallbackStatusLabel("quota")}
                 </p>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                <p className="cmm-text-small cmm-text-secondary mt-2">
                   {isFrench
                     ? "Aucune donnée de quota n'est branchée pour ce service dans le repo."
                     : "No quota data is connected for this service in the repo."}
@@ -270,7 +270,7 @@ export function FreePlanServicesMethodologyVisualQuotas({
                 {isFrench ? "Méthodologie de lecture des quotas" : "Quota reading methodology"}
               </h4>
             </div>
-            <p className="text-xs leading-relaxed text-slate-600">
+              <p className="cmm-text-caption cmm-text-muted">
               {isFrench
                 ? "Le document s'ouvre dans le lecteur de documentation du site."
                 : "The document opens in the site documentation viewer."}
@@ -285,7 +285,7 @@ export function FreePlanServicesMethodologyVisualQuotas({
               <p className="text-sm font-black text-slate-950">
                 {isFrench ? "Consulter la fiche quota" : "Open the quota guide"}
               </p>
-              <p className="mt-2 text-xs leading-relaxed text-slate-600">
+              <p className="cmm-text-caption cmm-text-muted mt-2">
                 {isFrench
                   ? "Lecture des plans, des limites réelles et de la règle NA quand la donnée manque."
                   : "Reading of plans, real limits, and the NA rule when data is missing."}
@@ -297,7 +297,7 @@ export function FreePlanServicesMethodologyVisualQuotas({
           </div>
         </section>
 
-        <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-600">
+        <div className="cmm-text-body rounded-[1.75rem] border border-slate-200 bg-slate-50 p-4">
           {isFrench ? (
             <>
               Les services de développement IA restent hors quotas web et doivent apparaître en ACV avec le badge

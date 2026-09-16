@@ -519,10 +519,10 @@ export function ActionStepIdentity({ form, updateField, updateFields, userMetada
                         <Icon size={16} />
                       </div>
                       <div>
-                        <p className={cn("text-[11px] font-semibold leading-tight", isSelected ? "text-emerald-950" : "text-emerald-900/70")}>
+                        <p className={cn("cmm-text-small font-semibold leading-tight", isSelected ? "text-emerald-950" : "text-emerald-900/70")}>
                           {option.label}
                         </p>
-                        <p className="mt-0.5 hidden text-[10px] leading-tight text-emerald-900/45 sm:block">{option.sub}</p>
+                        <p className="mt-0.5 hidden cmm-text-small leading-tight text-emerald-900/45 sm:block">{option.sub}</p>
                       </div>
                       {isSelected && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-emerald-500" />}
                     </button>

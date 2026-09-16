@@ -5,6 +5,8 @@ import { buildQuizErrorGrid, getQuizErrorFollowUp, getQuizErrorReviewTarget } fr
 describe("quiz error grid follow-up", () => {
   it("routes security and tri errors toward the existing field rubrics", () => {
     expect(getQuizErrorReviewTarget("erreur de sécurité").href).toBe("/sections/weather");
+    expect(getQuizErrorReviewTarget("erreur de sécurité").label).toBe("Météo & conditions terrain");
+    expect(getQuizErrorReviewTarget("mauvais réflexe terrain").label).toBe("Météo & conditions terrain");
     expect(getQuizErrorReviewTarget("mauvaise compréhension d'une filière de tri").href).toBe("/sections/recycling");
     expect(getQuizErrorReviewTarget("mauvaise estimation").href).toBe("/methodologie");
   });
@@ -22,6 +24,7 @@ describe("quiz error grid follow-up", () => {
     expect(getQuizErrorFollowUp("mauvaise compréhension d'une filière de tri").href).toBe("/sections/recycling");
     expect(getQuizErrorFollowUp("mauvaise compréhension d'une filière de tri").modeId).toBe("tri-securite");
     expect(getQuizErrorFollowUp("erreur de sécurité").href).toBe("/sections/weather");
+    expect(getQuizErrorFollowUp("erreur de sécurité").label).toBe("Météo & conditions terrain");
   });
 
   it("builds a review target from the detected error when no explicit target is provided", () => {
@@ -34,5 +37,6 @@ describe("quiz error grid follow-up", () => {
 
     expect(grid.errorType).toBe("erreur de sécurité");
     expect(grid.reviewTarget.href).toBe("/sections/weather");
+    expect(grid.reviewTarget.label).toBe("Météo & conditions terrain");
   });
 });

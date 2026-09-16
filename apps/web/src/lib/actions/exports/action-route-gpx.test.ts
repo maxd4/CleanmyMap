@@ -93,6 +93,18 @@ describe("action-route-gpx export adapter", () => {
     expect(xml).not.toContain("Stop CleanMyMap");
   });
 
+  it("exports an exploitable persisted route geometry when no operational route exists", () => {
+    const xml = buildActionRouteGpxDocument({
+      drawing: { coordinates: [[48.82, 2.32], [48.83, 2.33]] },
+      drawingSource: "estimated_route",
+      routeTopology: "point_to_point",
+    });
+
+    expect(xml).toContain("Tracé estimé CleanMyMap");
+    expect(xml).toContain('lat="48.82" lon="2.32"');
+    expect(xml).toContain('lat="48.83" lon="2.33"');
+  });
+
   it("keeps multiple final operational routes as separate GPX tracks", () => {
     const second = structuredClone(operationalRoute.routes[0]!);
     second.routeId = "planner-group-2";

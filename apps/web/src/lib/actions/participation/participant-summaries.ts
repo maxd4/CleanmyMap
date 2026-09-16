@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { ActionPhase } from "@/lib/actions/types";
 import type { ActionParticipantRow, ActionRegistrationRow } from "@/types/database";
+import { usesRegistrationStore } from "./action-phase";
 
 export type ActionParticipantSummary = {
   actionId: string;
@@ -178,7 +180,7 @@ async function loadActionParticipantSummariesFallback(
     throw new Error(actionResult.error.message);
   }
   const actionPhaseById = new Map(
-    ((actionResult.data ?? []) as Array<{ id: string; action_phase?: string | null }>).map((row) => [
+    ((actionResult.data ?? []) as Array<{ id: string; action_phase?: ActionPhase | null }>).map((row) => [
       row.id,
       row.action_phase,
     ]),
@@ -190,8 +192,7 @@ async function loadActionParticipantSummariesFallback(
         actionId,
         userId: params.userId,
         source:
-          actionPhaseById.get(actionId) === "pre_action" ||
-          actionPhaseById.get(actionId) === "post_action_draft"
+          usesRegistrationStore(actionPhaseById.get(actionId) ?? undefined)
             ? "registrations"
             : "participants",
       }),

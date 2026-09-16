@@ -57,6 +57,7 @@ function collectStaticProcessEnvKeys(): Set<string> {
 
 const EXECUTION_ENV_KEYS = new Set([
   "CI",
+  "CODESPACES",
   "CLEANMYMAP_SHEET_URL",
   "DATABASE_URL",
   "GIT_COMMIT_SHA",

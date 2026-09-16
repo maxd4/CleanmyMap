@@ -298,15 +298,6 @@ export function HomeNavigationSchema() {
           ))}
         </div>
 
-        <div className="relative mt-8 text-center sm:mt-10 lg:mt-[3rem]">
-          <p className="font-[cursive] text-[clamp(1.55rem,2.6vw,2.8rem)] italic leading-none tracking-[-0.04em] text-[var(--action-critical-bg)]">
-            Cultivons l&apos;entraide
-          </p>
-          <span
-            aria-hidden="true"
-            className="mx-auto mt-2 block h-1 w-24 -rotate-3 rounded-full bg-[var(--action-critical-bg)]"
-          />
-        </div>
       </div>
     </section>
   );

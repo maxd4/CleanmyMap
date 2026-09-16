@@ -43,6 +43,30 @@ describe("dev auth bypass helpers", () => {
     expect(isDevAuthBypassEnabled("localhost:3000")).toBe(false);
   });
 
+  it("rejects the synthetic bypass inside GitHub Codespaces", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("CODESPACES", "true");
+    vi.stubEnv("CMM_DEV_AUTH_BYPASS", "1");
+
+    expect(isDevAuthBypassEnabled("localhost:3000")).toBe(false);
+    expect(
+      shouldUseDevAuthBypass({ hostname: "localhost:3000", clerkUserId: null }),
+    ).toBe(false);
+  });
+
+  it("keeps a real Clerk session as the normal Codespaces path", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("CODESPACES", "true");
+    vi.stubEnv("CMM_DEV_AUTH_BYPASS", "1");
+
+    expect(
+      shouldUseDevAuthBypass({
+        hostname: "localhost:3000",
+        clerkUserId: "user_clerk_codespaces",
+      }),
+    ).toBe(false);
+  });
+
   it("does not use the automatic localhost bypass when Clerk has a session", () => {
     vi.stubEnv("NODE_ENV", "development");
 

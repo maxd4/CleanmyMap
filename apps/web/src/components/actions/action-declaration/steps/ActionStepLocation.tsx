@@ -48,7 +48,9 @@ interface ActionStepLocationProps {
     drawing: ActionDrawing | null,
     geometrySource?: ActionGeometrySource | null,
   ) => void;
+  manualDrawingSource: ActionGeometrySource | null;
   routePreviewDrawing: ActionDrawing | null;
+  routePreviewSource: ActionGeometrySource | null;
   gpxImport: ActionGpxImportMetadata | null;
   gpxError: string | null;
   onImportGpx: (file: File | null) => Promise<void>;
@@ -272,7 +274,7 @@ function AddressAutocompleteInput({
       <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-900/55">
         {label}
         {optional && (
-          <span className="rounded-full bg-[#ECF8EF] px-1.5 py-0.5 text-[10px] text-emerald-900/45">
+              <span className="rounded-full bg-[#ECF8EF] px-1.5 py-0.5 cmm-text-caption text-emerald-900/45">
             optionnel
           </span>
         )}
@@ -327,7 +329,7 @@ function AddressAutocompleteInput({
 
         {hasVisibleSuggestions && (
           <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-[1.35rem] border border-emerald-200/80 bg-white shadow-[0_22px_44px_-24px_rgba(16,24,40,0.35)]">
-            <div className="border-b border-emerald-100 bg-[#F7FCF9] px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-900/45">
+            <div className="border-b border-emerald-100 bg-[#F7FCF9] px-4 py-2 cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-900/45">
               {helperText}
             </div>
             <div
@@ -405,7 +407,9 @@ export function ActionStepLocation({
   recordType,
   manualDrawing,
   setManualDrawing,
+  manualDrawingSource,
   routePreviewDrawing,
+  routePreviewSource,
   gpxImport,
   gpxError,
   onImportGpx,
@@ -425,10 +429,10 @@ export function ActionStepLocation({
     gpxDrawing: gpxImport ? manualDrawing : null,
     gpxImport,
     manualDrawing,
-    manualDrawingSource: gpxImport ? "gpx_import" : "manual",
+    manualDrawingSource,
     operationalRoute: form.operationalRoute,
     reconstructedDrawing: routePreviewDrawing,
-    reconstructedSource: "routed",
+    reconstructedSource: routePreviewSource,
   });
   const displayedDrawing = activeGeometry?.drawing ?? previewSummary.normalized;
   const activeSummary = activeGeometry?.drawing
@@ -575,7 +579,7 @@ export function ActionStepLocation({
                   {form.routeTopology === "point_to_point" ? "Départ → arrivée" : "Boucle · retour au départ"}
                 </p>
               </div>
-              <span className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700">
+              <span className="rounded-full bg-white/80 px-3 py-1 cmm-text-caption font-black uppercase tracking-[0.16em] text-emerald-700">
                 Actif
               </span>
             </div>
@@ -688,7 +692,7 @@ export function ActionStepLocation({
           <SectionTitle color="bg-slate-700">
             {isCleanPlaceMode ? "Point géographique" : "Aperçu de localisation"}
           </SectionTitle>
-          <p className="text-[10px] text-emerald-900/45">
+          <p className="cmm-text-small text-emerald-900/45">
             {isCleanPlaceMode
               ? "Situez le lieu sur la carte"
               : "Situez le lieu sur la carte ou renseignez une adresse"}
@@ -705,7 +709,7 @@ export function ActionStepLocation({
               <ActionDrawingMap
                 drawing={displayedDrawing}
                 onDrawingChange={setManualDrawing}
-                readOnly={Boolean(gpxImport)}
+                readOnly={Boolean(gpxImport) || (activeGeometry?.source != null && activeGeometry.source !== "manual")}
               />
 
               {/* Overlay si aucun repère */}
@@ -730,7 +734,7 @@ export function ActionStepLocation({
             <div className="flex h-full items-center justify-center bg-[#F3FBF6]">
               <div className="space-y-3 text-center">
                 <div className="mx-auto h-10 w-10 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-900/45">
+                <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-emerald-900/45">
                   Chargement de la carte...
                 </p>
               </div>
@@ -742,7 +746,7 @@ export function ActionStepLocation({
         <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200/60 bg-[#ECF8EF] px-4 py-3">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={cn(
-              "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold",
+              "inline-flex items-center rounded-full border px-2.5 py-1 cmm-text-caption font-semibold",
               statusStyles[statusTone]
             )}>
               {isGpx ? "Tracé GPX importé" : isManual ? "Repère manuel" : hasDrawing ? "Aperçu automatique" : "Aucun repère"}

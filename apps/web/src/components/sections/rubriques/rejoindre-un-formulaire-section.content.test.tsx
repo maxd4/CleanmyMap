@@ -71,6 +71,34 @@ describe("Rejoindre une action content contract", () => {
     expect(markup).not.toContain("Participation à confirmer");
   });
 
+  it("keeps registration vocabulary during the post-action draft phase", () => {
+    const markup = renderCard(
+      buildItem({
+        actionPhase: "post_action_draft",
+        joined: true,
+        participationStatus: "confirmed",
+      }),
+    );
+
+    expect(markup).toContain("Inscription confirmée");
+    expect(markup).toContain("Inscriptions confirmées");
+    expect(markup).not.toContain("Participation confirmée");
+  });
+
+  it("uses participation vocabulary for a completed action", () => {
+    const markup = renderCard(
+      buildItem({
+        actionPhase: "post_action_complete",
+        joined: true,
+        participationStatus: "confirmed",
+      }),
+    );
+
+    expect(markup).toContain("Participation confirmée");
+    expect(markup).toContain("Participations confirmées");
+    expect(markup).not.toContain("Inscription confirmée");
+  });
+
   it("keeps the canonical documentation aligned with the phase boundary", () => {
     expect(joinDocumentation).toContain("public.action_registrations");
     expect(joinDocumentation).toContain("public.action_participants");

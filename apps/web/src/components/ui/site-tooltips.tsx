@@ -403,7 +403,7 @@ export function SiteTooltips() {
       role="tooltip"
       aria-hidden={false}
       className={cn(
-        "pointer-events-none fixed z-[9999] max-w-[300px] select-none rounded-2xl border border-[rgba(161,227,235,0.18)] px-3 py-2 text-[11px] font-medium leading-snug text-white shadow-[0_24px_60px_-28px_rgba(39,195,217,0.34),0_16px_34px_-28px_rgba(91,95,207,0.24)] backdrop-blur-xl",
+        "pointer-events-none fixed z-[9999] max-w-[300px] select-none rounded-2xl border border-[rgba(161,227,235,0.18)] px-3 py-2 cmm-text-small font-medium leading-snug text-white shadow-[0_24px_60px_-28px_rgba(39,195,217,0.34),0_16px_34px_-28px_rgba(91,95,207,0.24)] backdrop-blur-xl",
         "bg-[linear-gradient(135deg,rgba(65,124,132,0.98),rgba(44,95,119,0.96),rgba(91,95,207,0.88))]",
         !position && "invisible opacity-0",
       )}

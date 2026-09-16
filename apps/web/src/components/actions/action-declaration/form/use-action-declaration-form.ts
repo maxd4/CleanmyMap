@@ -40,7 +40,10 @@ import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
 import { getTimeContractValidationMessage } from "@/lib/actions/time-contract";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
-import { resolveFinalActionGeometry } from "@/lib/actions/geometry/final-geometry";
+import {
+  hydrateActionEditorGeometry,
+  resolveFinalActionGeometry,
+} from "@/lib/actions/geometry/final-geometry";
 import { consumePlannerActionHandoff } from "@/lib/route/route-action-handoff";
 import type {
   FormState,
@@ -62,6 +65,21 @@ type UseActionDeclarationFormProps = {
   linkedEventId?: string;
   initialRecordType?: "action";
 };
+
+const ROUTE_GEOMETRY_PARAMETER_FIELDS = new Set<keyof FormState>([
+  "locationLabel",
+  "departureLocationLabel",
+  "midRouteLocationLabel",
+  "arrivalLocationLabel",
+  "routeTopology",
+  "routeStyle",
+  "latitude",
+  "longitude",
+  "durationMinutes",
+  "routeTargetDistanceKm",
+  "midRouteCoordinates",
+  "arrivalCoordinates",
+]);
 
 export function useActionDeclarationForm({
   actorNameOptions,
@@ -100,6 +118,8 @@ export function useActionDeclarationForm({
   const [manualDrawingEnabled] = useState<boolean>(true);
   const [manualDrawing, setManualDrawingState] = useState<ActionDrawing | null>(null);
   const [manualDrawingSource, setManualDrawingSource] = useState<ActionGeometrySource | null>(null);
+  const [persistedDrawing, setPersistedDrawing] = useState<ActionDrawing | null>(null);
+  const [persistedDrawingSource, setPersistedDrawingSource] = useState<ActionGeometrySource | null>(null);
   const [gpxError, setGpxError] = useState<string | null>(null);
   const [photoAssets, setPhotoAssets] = useState<ActionPhotoAsset[]>([]);
   const [visionEstimate, setVisionEstimate] = useState<ActionVisionEstimate | null>(null);
@@ -305,11 +325,17 @@ export function useActionDeclarationForm({
         }
 
         setLoadedActionPhase(action.actionPhase);
+        const hydratedGeometry = hydrateActionEditorGeometry({
+          drawing: action.manualDrawing,
+          geometrySource: action.geometrySource,
+          gpxImport: nextForm.gpxImport,
+          operationalRoute: nextForm.operationalRoute,
+        });
         setForm(nextForm);
-        if (nextForm.gpxImport && action.manualDrawing) {
-          setManualDrawingState(action.manualDrawing);
-          setManualDrawingSource("gpx_import");
-        }
+        setManualDrawingState(hydratedGeometry.manualDrawing);
+        setManualDrawingSource(hydratedGeometry.manualDrawingSource);
+        setPersistedDrawing(hydratedGeometry.reconstructedDrawing);
+        setPersistedDrawingSource(hydratedGeometry.reconstructedSource);
         setIsHydratingAction(false);
       })
       .catch((error: unknown) => {
@@ -342,6 +368,8 @@ export function useActionDeclarationForm({
     manualDrawing,
     manualDrawingSource,
     operationalRoute: form.operationalRoute,
+    reconstructedDrawing: persistedDrawing,
+    reconstructedSource: persistedDrawingSource,
   });
   // Network reconstruction is server-only; the browser never routes or calls
   // a public routing provider for an action draft.
@@ -361,13 +389,15 @@ export function useActionDeclarationForm({
         drawingIsValid,
         manualDrawing,
         manualDrawingSource,
+        routePreviewDrawing: effectiveRoutePreviewDrawing,
+        routePreviewSource: activeFinalGeometry?.source,
         isEntrepriseMode,
         linkedEventId,
         photos: photoAssets,
         visionEstimate,
         userMetadata,
       }),
-    [declarationMode, drawingIsValid, manualDrawingEnabled, form, isEntrepriseMode, linkedEventId, manualDrawing, manualDrawingSource, photoAssets, visionEstimate, userMetadata]
+    [activeFinalGeometry?.source, declarationMode, drawingIsValid, effectiveRoutePreviewDrawing, manualDrawingEnabled, form, isEntrepriseMode, linkedEventId, manualDrawing, manualDrawingSource, photoAssets, visionEstimate, userMetadata]
   );
 
   const dataQuality = useMemo(
@@ -459,6 +489,15 @@ export function useActionDeclarationForm({
       return;
     }
     const nextForm: FormState = { ...form, ...updates };
+    if (
+      persistedDrawing &&
+      Object.keys(updates).some((key) =>
+        ROUTE_GEOMETRY_PARAMETER_FIELDS.has(key as keyof FormState),
+      )
+    ) {
+      setPersistedDrawing(null);
+      setPersistedDrawingSource(null);
+    }
     if (updates.routeTargetDistanceKm !== undefined) {
       nextForm.routeTargetDistanceKmManuallySet = true;
     } else if (
@@ -656,6 +695,7 @@ export function useActionDeclarationForm({
         manualDrawing,
         manualDrawingSource,
         routePreviewDrawing: effectiveRoutePreviewDrawing,
+        routePreviewSource: activeFinalGeometry?.source,
         isEntrepriseMode,
         linkedEventId,
         photos: photoAssets,
@@ -699,6 +739,7 @@ export function useActionDeclarationForm({
     setForm,
     resolvedDefaultActorName,
     manualDrawing,
+    manualDrawingSource,
     gpxImport: form.gpxImport,
     gpxError,
     setManualDrawing,
@@ -725,6 +766,7 @@ export function useActionDeclarationForm({
     payload,
     dataQuality,
     effectiveRoutePreviewDrawing,
+    effectiveRoutePreviewSource: activeFinalGeometry?.source ?? null,
 
     // Smart Assist state
     smartAssist,

@@ -51,7 +51,7 @@ export function VolumeSliderWidget({
         className="sr-only"
       />
 
-      <div className="flex justify-between text-[10px] text-slate-400">
+      <div className="flex justify-between cmm-text-caption text-slate-400">
         <span>0 {unit}</span>
         <span>{max} {unit}</span>
       </div>

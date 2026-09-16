@@ -90,7 +90,7 @@ export function EnvironmentalImpactEstimatorPanelDetails({
                 {formatSecondOrderQuantity(factor.quantity, factor.unitLabel)}
               </p>
               {factor.key === "electricity" ? (
-                <p className="mt-2 text-[10px] leading-relaxed text-red-100/55">
+                  <p className="mt-2 cmm-text-small leading-relaxed text-red-100/55">
                   {model.infrastructure.secondOrder.electricity.calculation ===
                   "measured_kwh_to_co2e"
                     ? "Calcul : kWh réel × facteur électrique."
@@ -103,7 +103,7 @@ export function EnvironmentalImpactEstimatorPanelDetails({
               <p className="mt-2 text-sm font-black text-white">
                 {formatProxyMass(factor.estimatedKgCo2eProxy)}
               </p>
-              <p className="mt-2 text-[10px] leading-relaxed text-red-100/40">
+              <p className="mt-2 cmm-text-small leading-relaxed text-red-100/40">
                 {factor.rationale}
               </p>
             </article>
@@ -171,7 +171,7 @@ export function EnvironmentalImpactEstimatorPanelDetails({
                 <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
                   <p className="text-sm font-black text-white">Eau indirecte liée à l’électricité</p>
                   <p className="mt-3 text-lg font-black text-white">{formatLiters(water.indirectElectricityWaterLiters)}</p>
-                  <p className="mt-2 text-[10px] leading-relaxed text-red-100/40">Proxy configuré : {water.factorLitersPerKwh} L/kWh — {water.factorSourceLabel}.</p>
+                  <p className="mt-2 cmm-text-small leading-relaxed text-red-100/40">Proxy configuré : {water.factorLitersPerKwh} L/kWh — {water.factorSourceLabel}.</p>
                 </article>
                 {water.evaporatedWaterLiters !== null ? (
                   <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -247,7 +247,7 @@ export function EnvironmentalImpactEstimatorPanelDetails({
               <p className="mt-2 text-sm font-black text-white">
                 {formatProxyMass(axis.estimatedKgCo2eProxy)}
               </p>
-              <p className="mt-2 text-[10px] leading-relaxed text-red-100/40">
+              <p className="mt-2 cmm-text-small leading-relaxed text-red-100/40">
                 {axis.rationale}
               </p>
             </article>
@@ -277,7 +277,7 @@ export function EnvironmentalImpactEstimatorPanelDetails({
               <p className="mt-2 text-sm font-black text-white">
                 {formatProxyMass(component.estimatedKgCo2eProxy)}
               </p>
-              <p className="mt-2 text-[10px] leading-relaxed text-red-100/40">
+              <p className="mt-2 cmm-text-small leading-relaxed text-red-100/40">
                 {component.rationale}
               </p>
             </article>

@@ -32,7 +32,7 @@ export function QuestionCard({ question }: { question: QuizBankAdminQuestion }) 
             <h3 className="text-lg font-black leading-snug text-stone-950">
               {question.question}
             </h3>
-            <p className="max-w-4xl text-sm leading-6 text-stone-600">
+            <p className="cmm-text-body max-w-4xl">
               {getShortText(question.explanation, 220)}
             </p>
             <div className="flex flex-wrap gap-2">
@@ -88,7 +88,7 @@ export function QuestionCard({ question }: { question: QuizBankAdminQuestion }) 
               <dd className="mt-1 text-sm font-semibold text-stone-900">{question.skillLabel}</dd>
             </div>
           </dl>
-          <p className="mt-4 text-sm leading-6 text-stone-600">{question.explanation}</p>
+          <p className="cmm-text-body mt-4">{question.explanation}</p>
         </section>
 
         <section className="space-y-4 rounded-[1.25rem] border border-stone-200 bg-white p-4">
@@ -107,7 +107,7 @@ export function QuestionCard({ question }: { question: QuizBankAdminQuestion }) 
                 <SourceBadge tone="emerald">Source complète</SourceBadge>
               )}
             </div>
-            <div className="mt-4 space-y-2 text-sm text-stone-600">
+            <div className="cmm-text-small cmm-text-secondary mt-4 space-y-2">
               <p>
                 <span className="font-semibold text-stone-900">Source :</span>{" "}
                 {question.sourceLabel ?? "Aucune source"}
@@ -135,7 +135,7 @@ export function QuestionCard({ question }: { question: QuizBankAdminQuestion }) 
             <p className="text-[11px] font-black uppercase tracking-[0.22em] text-stone-500">
               Corrections suggérées
             </p>
-            <ul className="mt-3 space-y-2 text-sm leading-6 text-stone-700">
+            <ul className="cmm-text-small cmm-text-secondary mt-3 space-y-2">
               {question.suggestions.length > 0 ? (
                 question.suggestions.slice(0, 4).map((suggestion) => (
                   <li key={suggestion} className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2">

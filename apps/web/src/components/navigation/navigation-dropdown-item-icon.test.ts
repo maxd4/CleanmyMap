@@ -39,6 +39,10 @@ describe("navigation dropdown item icons", () => {
     );
   });
 
+  it("provides a directory icon for the public annuaire route", () => {
+    expect(getNavigationDropdownItemIcon("annuaire")).toBeDefined();
+  });
+
   it("preserves the canonical item accent contracts", () => {
     expect(getNavigationDropdownItemAccent("home", "dashboard")).toBe("amber");
     expect(getNavigationDropdownItemAccent("act", "new")).toBe("emerald");

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { resolveFinalActionGeometry } from "./final-geometry";
+import {
+  hydrateActionEditorGeometry,
+  resolveFinalActionGeometry,
+} from "./final-geometry";
 import type { OperationalRoute } from "@/lib/route/route-operational";
 
 const gpxDrawing = {
@@ -89,5 +92,58 @@ describe("resolveFinalActionGeometry", () => {
     });
 
     expect(result?.source).toBe("routed");
+  });
+
+  it("keeps persisted routed geometry out of the manual candidate", () => {
+    const result = resolveFinalActionGeometry({
+      manualDrawing,
+      manualDrawingSource: "routed",
+    });
+
+    expect(result?.source).toBe("routed");
+    expect(result?.drawing).toEqual(manualDrawing);
+  });
+
+  it("prioritizes operational geometry over an older persisted route", () => {
+    const result = resolveFinalActionGeometry({
+      manualDrawing,
+      manualDrawingSource: "routed",
+      operationalRoute,
+    });
+
+    expect(result?.source).toBe("routed");
+    expect(result?.operationalRoute).toEqual(operationalRoute);
+    expect(result?.drawing).not.toEqual(manualDrawing);
+  });
+
+  it("hydrates manual, persisted and GPX records into distinct candidates", () => {
+    const manual = hydrateActionEditorGeometry({
+      drawing: manualDrawing,
+      geometrySource: "manual",
+    });
+    expect(manual.manualDrawing).toEqual(manualDrawing);
+    expect(manual.reconstructedDrawing).toBeNull();
+
+    const persisted = hydrateActionEditorGeometry({
+      drawing: manualDrawing,
+      geometrySource: "reference",
+    });
+    expect(persisted.manualDrawing).toBeNull();
+    expect(persisted.reconstructedDrawing).toEqual(manualDrawing);
+    expect(persisted.finalGeometry?.source).toBe("reference");
+
+    const gpx = hydrateActionEditorGeometry({
+      drawing: gpxDrawing,
+      geometrySource: "gpx_import",
+      gpxImport: {
+        source: "gpx_import",
+        observedDistanceKm: 1,
+        pointCount: 2,
+        inferredTopology: "point_to_point",
+      },
+      operationalRoute,
+    });
+    expect(gpx.finalGeometry?.source).toBe("gpx_import");
+    expect(gpx.manualDrawingSource).toBe("gpx_import");
   });
 });

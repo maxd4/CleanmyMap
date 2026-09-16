@@ -132,7 +132,7 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
               <h4 className="text-3xl font-black leading-none tracking-tighter text-white">
                 {alert.title}
               </h4>
-              <p className="max-w-3xl text-sm font-bold leading-relaxed text-slate-400 opacity-80">
+              <p className="cmm-text-body cmm-text-inverse max-w-3xl font-bold">
                 {alert.detail}
               </p>
             </div>
@@ -224,7 +224,7 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
           <h4 className="mt-3 text-2xl font-black tracking-tighter text-white">
             Aucun KPI à afficher
           </h4>
-          <p className="mt-3 text-sm font-medium leading-relaxed text-slate-400">
+          <p className="cmm-text-body cmm-text-inverse mt-3 font-medium">
             Les données de pilotage n&apos;ont pas encore été chargées pour cette vue.
           </p>
         </div>
@@ -237,7 +237,7 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
               Action recommandée
             </p>
             {actionReason ? (
-              <p className="max-w-3xl text-sm font-medium leading-relaxed text-slate-300">
+              <p className="cmm-text-body cmm-text-inverse max-w-3xl font-medium">
                 {actionReason}
               </p>
             ) : null}

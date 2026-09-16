@@ -23,7 +23,7 @@ export function RouteOptionsForm({
     <section className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(13,46,34,0.88)] p-5 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-100/68">
+          <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-100/68">
             {fr ? "Paramètres du circuit" : "Route settings"}
           </p>
           <h3 className="mt-2 text-xl font-bold tracking-[-0.02em] text-white">

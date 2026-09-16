@@ -63,7 +63,7 @@ export function ActionDeclarationFormConfirmation({
               {isCleanPlaceMode ? "Confirmation de votre lieu propre" : "Confirmation de votre action"}
             </h2>
           </div>
-          <p id="action-declaration-confirmation-description" className="text-sm text-emerald-900/65 pl-6">
+          <p id="action-declaration-confirmation-description" className="cmm-text-body pl-6">
             {isCleanPlaceMode
               ? "Cette fenêtre apparaît avant l'envoi. Modifier revient au formulaire, confirmer transmet le signalement."
               : "Cette fenêtre apparaît avant l'envoi. Modifier revient au formulaire, confirmer transmet la déclaration."}
@@ -96,14 +96,14 @@ export function ActionDeclarationFormConfirmation({
             <p className="text-base font-bold text-emerald-950">
               {form.associationName}
             </p>
-            <p className="text-sm font-semibold text-emerald-900/75 mt-2">
+            <p className="cmm-text-small cmm-text-secondary mt-2 font-semibold">
               Type de structure : {getOrganizerTypeLabel(payload.organizerType)}
             </p>
             {form.enterpriseName && (
-              <p className="text-sm text-emerald-900/65 mt-1">{form.enterpriseName}</p>
+              <p className="cmm-text-small cmm-text-secondary mt-1">{form.enterpriseName}</p>
             )}
             {payload.recordType === "action" && (
-              <p className="text-sm text-emerald-900/65 mt-2">
+              <p className="cmm-text-small cmm-text-secondary mt-2">
                 {payload.associationName === "Action spontanée"
                   ? "Le compte connecté sera compté automatiquement comme participant référant."
                   : payload.organizerAccounts && payload.organizerAccounts.length > 0
@@ -145,13 +145,13 @@ export function ActionDeclarationFormConfirmation({
             <p className="text-sm font-semibold text-emerald-950">
               Temps d’action : {formatBusinessDurationMinutes(payload.durationMinutes)}
             </p>
-            <p className="mt-1 text-sm text-emerald-900/70">
+            <p className="cmm-text-small cmm-text-secondary mt-1">
               Créneau total : {event.status === "available"
                 ? `${payload.eventStartTime} — ${payload.eventEndTime} (${formatBusinessDurationMinutes(event.eventDurationMinutes)})`
                 : "non renseigné"}
             </p>
             {organization.status === "available" ? (
-              <p className="mt-1 text-sm text-emerald-900/70">
+              <p className="cmm-text-small cmm-text-secondary mt-1">
                 Organisation dérivée : {formatBusinessDurationMinutes(organization.organizationMinutes)}
               </p>
             ) : null}
@@ -166,7 +166,7 @@ export function ActionDeclarationFormConfirmation({
               {payload.locationLabel}
             </p>
             {form.departureLocationLabel && (
-              <p className="text-sm text-emerald-900/70 mt-2">
+              <p className="cmm-text-small cmm-text-secondary mt-2">
                 Départ : {form.departureLocationLabel}
                 {form.arrivalLocationLabel && ` → Arrivée : ${form.arrivalLocationLabel}`}
               </p>
@@ -183,12 +183,12 @@ export function ActionDeclarationFormConfirmation({
                 <p className="text-base font-bold text-emerald-950">
                   {payload.manualDrawing.kind === "polygon" ? "Polygone" : "Tracé"}
                 </p>
-                <p className="text-sm text-emerald-900/65">
+                <p className="cmm-text-small cmm-text-secondary">
                   {formatGeometryPointCount(drawingSummary.pointCount)} · {drawingSummary.message}
                 </p>
               </div>
             ) : (
-              <p className="text-sm text-emerald-900/65">
+              <p className="cmm-text-small cmm-text-secondary">
                 Aucun tracé manuel validé. La carte utilisera le point disponible ou l&apos;aperçu géographique.
               </p>
             )}
@@ -203,13 +203,13 @@ export function ActionDeclarationFormConfirmation({
               {isCleanPlaceMode ? "Signalé" : `${payload.wasteKg} kg`}
             </p>
             {isCleanPlaceMode ? (
-              <p className="text-sm text-emerald-900/70 mt-2 font-semibold">
+              <p className="cmm-text-small cmm-text-secondary mt-2 font-semibold">
                 {payload.locationLabel}
               </p>
             ) : (
               payload.cigaretteButtsCount &&
               payload.cigaretteButtsCount > 0 && (
-                <p className="text-sm text-emerald-900/70 mt-2 font-semibold">
+                <p className="cmm-text-small cmm-text-secondary mt-2 font-semibold">
                   dont {payload.cigaretteButtsCount} mégots
                 </p>
               )
@@ -226,7 +226,7 @@ export function ActionDeclarationFormConfirmation({
                 {payload.volunteersCount}
               </p>
               {payload.volunteerParticipation ? (
-                <p className="mt-2 text-sm text-emerald-900/70">
+                <p className="cmm-text-small cmm-text-secondary mt-2">
                   Enfants {payload.volunteerParticipation.childrenCount ?? "—"} · Adultes {payload.volunteerParticipation.adultCount ?? "—"} · Retraités {payload.volunteerParticipation.retiredCount ?? "—"}
                   <br />
                   Unités opérationnelles : {payload.volunteerParticipation.effectiveVolunteerUnits ?? "—"}
@@ -250,7 +250,7 @@ export function ActionDeclarationFormConfirmation({
               <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
                 Remarques
               </p>
-              <p className="text-sm text-emerald-900/75 whitespace-pre-wrap leading-relaxed">
+              <p className="cmm-text-body whitespace-pre-wrap">
                 {form.notes}
               </p>
             </div>
@@ -264,7 +264,7 @@ export function ActionDeclarationFormConfirmation({
                   Proxys d&apos;impact
                 </p>
               </div>
-              <p className="mb-4 text-sm leading-relaxed text-emerald-900/70">
+              <p className="cmm-text-body mb-4">
                 Ces valeurs sont des estimations calculées à partir des données disponibles. Elles ne remplacent pas les mesures déclarées ci-dessus.
               </p>
               <div className="grid gap-4 md:grid-cols-2">
@@ -288,7 +288,7 @@ export function ActionDeclarationFormConfirmation({
 
           {/* Message de validation */}
           <div className="rounded-[1.5rem] border border-emerald-200/70 bg-gradient-to-br from-[#EFFAF3] to-[#EAF7EF] p-5 shadow-sm">
-            <p className="text-sm text-emerald-900/80 leading-relaxed">
+            <p className="cmm-text-body">
               {isCleanPlaceMode
                 ? "Votre lieu propre sera visible sur la carte une fois le formulaire validé par les administrateurs. Merci pour votre signalement."
                 : "Votre action sera visible sur la carte une fois le formulaire validé et complété par les administrateurs. Merci pour votre contribution !"}

@@ -81,7 +81,7 @@ export function LegalSection() {
                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Dernière mise à jour : 27 août 2026</p>
               </div>
            </div>
-           <p className="relative z-10 text-[11px] font-bold text-slate-400 leading-relaxed max-w-md md:text-right">
+           <p className="relative z-10 cmm-text-body cmm-text-inverse font-bold leading-relaxed max-w-md md:text-right">
               CleanMyMap s&apos;engage à protéger vos données personnelles conformément au Règlement Général sur la Protection des Données (RGPD).
            </p>
         </RubriqueCard>
@@ -124,7 +124,7 @@ export function LegalSection() {
                 </div>
 
                 <div className="relative z-10">
-                  <div className="mt-8 flex items-center justify-between w-full p-4 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] group-hover:bg-white/10 group-hover:text-white transition-all">
+                  <div className="mt-8 flex items-center justify-between w-full p-4 rounded-xl bg-white/5 border border-white/5 cmm-text-caption font-black text-slate-400 uppercase tracking-[0.2em] group-hover:bg-white/10 group-hover:text-white transition-all">
                      {card.cta || "Consulter"}
                      <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                   </div>
@@ -154,7 +154,7 @@ export function LegalSection() {
                   </div>
                   <div className="space-y-1">
                      <h4 className="text-sm font-black text-white uppercase tracking-widest">Demande RGPD</h4>
-                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Exercer vos droits (accès, suppression...)</p>
+                     <p className="cmm-text-caption font-bold text-slate-500 uppercase tracking-widest">Exercer vos droits (accès, suppression...)</p>
                   </div>
                </div>
                <ExternalLink size={18} className="text-slate-600 group-hover:text-white group-hover:scale-110 transition-all relative z-10" />
@@ -173,7 +173,7 @@ export function LegalSection() {
                   </div>
                   <div className="space-y-1">
                      <h4 className="text-sm font-black text-white uppercase tracking-widest">Signaler un contenu illicite</h4>
-                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Notification électronique circonstanciée</p>
+                     <p className="cmm-text-caption font-bold text-slate-500 uppercase tracking-widest">Notification électronique circonstanciée</p>
                   </div>
                </div>
                <ExternalLink size={18} className="text-slate-600 group-hover:text-white group-hover:scale-110 transition-all relative z-10" />

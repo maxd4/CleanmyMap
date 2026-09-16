@@ -24,7 +24,7 @@ export function QuizSchoolSessionGuide({ locale }: { locale: SupportedLocale }) 
           <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900 md:text-3xl">
             {isFrench ? "Les aides à garder visibles" : "Keep the aids visible"}
           </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-700">
+          <p className="cmm-text-body mt-2 max-w-3xl">
             {isFrench
               ? "Les fiches restent juste après le lancement pour préparer la classe sans chercher longtemps."
               : "The sheets sit just after the launch block so you can prepare the class without searching."}
@@ -54,7 +54,7 @@ export function QuizSchoolSessionGuide({ locale }: { locale: SupportedLocale }) 
             {QUIZ_SCHOOL_TEACHER_GUIDE.map((item) => (
               <li
                 key={item}
-                className="flex items-start gap-3 rounded-2xl border border-amber-100 bg-amber-50/70 p-4 text-sm leading-relaxed text-slate-700"
+                className="cmm-text-body flex items-start gap-3 rounded-2xl border border-amber-100 bg-amber-50/70 p-4"
               >
                 <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
                 <span>{item}</span>
@@ -87,7 +87,7 @@ export function QuizSchoolSessionGuide({ locale }: { locale: SupportedLocale }) 
                 </span>
                 <div>
                   <p className="text-sm font-bold text-slate-900">{item}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                  <p className="cmm-text-body mt-1">
                     {index === 0
                       ? "Ce que j'ai compris et ce que je retiens."
                       : index === 1
@@ -112,7 +112,7 @@ export function QuizSchoolSessionGuide({ locale }: { locale: SupportedLocale }) 
             <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
               {isFrench ? "Deux formats, un lancement collectif" : "Two formats, one collective launch"}
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            <p className="cmm-text-body mt-2">
               {isFrench
                 ? "Le quiz-30 reste direct ; l'atelier-60 ajoute une séquence pédagogique entre le pré-quiz et le post-quiz."
                 : "The quiz-30 stays direct; atelier-60 adds a teaching sequence between the pre-quiz and post-quiz."}
@@ -140,7 +140,7 @@ export function QuizSchoolSessionGuide({ locale }: { locale: SupportedLocale }) 
               </div>
               <h4 className="mt-4 text-lg font-black tracking-tight text-slate-900">{step.title}</h4>
               <p className="mt-2 text-sm font-bold text-slate-700">{step.lead}</p>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.detail}</p>
+              <p className="cmm-text-body mt-2">{step.detail}</p>
             </article>
           ))}
         </div>

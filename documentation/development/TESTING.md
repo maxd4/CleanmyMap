@@ -199,6 +199,14 @@ utilise exclusivement des identifiants Clerk Development ; l'absence de ces
 identifiants fait échouer la lane avant tout E2E. Aucun projet Supabase distant,
 URL de production ou clé de production ne doit être injecté dans cette lane.
 
+Cette lane utilise donc Clerk Development réel et une instance Supabase
+éphémère. Les sorties Playwright authentifiées restent locales au runner pour le
+diagnostic et ne sont jamais téléversées. L'artefact public est construit dans
+`artifacts/ci-public-evidence/`, limité par allowlist, puis contrôlé par
+`scripts/checks/check-public-e2e-artifact.mjs`; il ne contient qu'un résumé
+synthétique ou une capture explicitement autorisée, jamais de `storageState`,
+cookie, trace, HAR, vidéo, header ou token.
+
 Les commandes `supabase start`, `supabase status`, `supabase db reset` et
 `supabase stop` sont donc réservées à cette CI éphémère explicitement dédiée au
 replay ; elles ne font pas partie du workflow local.
@@ -354,6 +362,13 @@ Avant toute validation navigateur, classifier la surface :
   bypass ;
 - `E2E_MUTABLE_SUPABASE` : uniquement la lane CI éphémère dédiée, jamais
   Docker/Supabase local.
+
+GitHub Codespaces est un environnement interactif Development : il utilise une
+vraie AuthN Clerk avec les credentials Development fournis hors dépôt et ne
+peut jamais activer `CMM_DEV_AUTH_BYPASS`, même si `CODESPACES=true` et si un
+lanceur a laissé cette variable. Si les credentials Clerk requis manquent, le
+démarrage doit échouer avec une erreur de configuration explicite. Le bypass
+synthétique reste réservé au launcher Codex localhost explicite.
 
 Le launcher manuel/Codex utilise `3000` de préférence et peut basculer sur un
 port libre ; reprendre l'URL annoncée. Le harness Clerk doit libérer l'ancien

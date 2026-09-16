@@ -12,7 +12,8 @@ describe("HomeNavigationSchema", () => {
     expect(html).toContain("L&#x27;union fait la force");
     expect(html).toContain("whitespace-nowrap");
     expect(html).toContain("text-black");
-    expect(html).toContain("text-[var(--action-critical-bg)]");
+    expect(html).not.toContain("Cultivons l&#x27;entraide");
+    expect(html).not.toContain("font-[cursive]");
     expect(html).not.toMatch(/>\s*[1-4]\s*<\/span>/);
 
     for (const href of [

@@ -83,7 +83,7 @@ export function WasteCategorySelector({
       <div className="space-y-4" aria-label={fr ? "Familles de déchets" : "Waste families"}>
         {groups.map(({ family, categories }) => (
           <fieldset key={family} className="space-y-2">
-            <legend className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-800/75">
+            <legend className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-800/75">
               {WASTE_FAMILY_LABELS[family]}
             </legend>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -111,7 +111,7 @@ export function WasteCategorySelector({
                         {category.labels.fr}
                         {isAlert ? <ShieldAlert size={14} className="shrink-0 text-amber-700" aria-label={fr ? "Vigilance" : "Caution"} /> : null}
                       </span>
-                      <span className="mt-0.5 block text-[11px] font-medium text-current/60">{category.examples[0]?.fr}</span>
+                      <span className="mt-0.5 block cmm-text-small font-medium text-current/60">{category.examples[0]?.fr}</span>
                     </span>
                   </button>
                 );
@@ -150,7 +150,7 @@ export function WasteFieldSummary({
     <div className={cn("space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4", className)}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-black text-emerald-950">{fr ? "Synthèse terrain" : "Field summary"}</p>
-        {guidance.hasReportOnlyCategory ? <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-rose-800">{fr ? "Signalement requis" : "Report required"}</span> : null}
+        {guidance.hasReportOnlyCategory ? <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 cmm-text-caption font-black uppercase tracking-[0.12em] text-rose-800">{fr ? "Signalement requis" : "Report required"}</span> : null}
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         <GuidanceList title="À prévoir" items={guidance.toPrepare} tone="emerald" />
@@ -174,7 +174,7 @@ function GuidanceList({ title, items, tone, emptyLabel = "" }: { title: string; 
   const toneClass = tone === "rose" ? "text-rose-900" : tone === "amber" ? "text-amber-950" : "text-emerald-950";
   return (
     <div className={cn("rounded-xl border bg-white/70 p-3", tone === "rose" ? "border-rose-200" : tone === "amber" ? "border-amber-200" : "border-emerald-100")}>
-      <p className={cn("text-[10px] font-black uppercase tracking-[0.14em]", toneClass)}>{title}</p>
+      <p className={cn("cmm-text-caption font-black uppercase tracking-[0.14em]", toneClass)}>{title}</p>
       <ul className={cn("mt-2 space-y-1 text-xs font-medium leading-5", toneClass)}>
         {(items.length > 0 ? items : [emptyLabel]).map((item) => <li key={item}>• {item}</li>)}
       </ul>

@@ -72,7 +72,7 @@ export function ClimateKpiCard({ label, value, unit, delta, icon, confidence, cl
             {confidence && (
               <div className={cn("flex items-center gap-2 rounded-full px-4 py-1.5 border border-white/5", confidenceBg)}>
                 <div className={cn("h-1.5 w-1.5 rounded-full animate-pulse", confidenceColor.replace("text", "bg"))} />
-                <span className={cn("text-[10px] font-black uppercase tracking-[0.2em]", confidenceColor)}>
+<span className={cn("cmm-text-caption font-black uppercase tracking-[0.2em]", confidenceColor)}>
                   {confidence}
                 </span>
               </div>
@@ -80,7 +80,7 @@ export function ClimateKpiCard({ label, value, unit, delta, icon, confidence, cl
           </div>
 
           <div className="space-y-1">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 group-hover:text-slate-400 transition-colors">
+<h4 className="cmm-text-caption font-black uppercase tracking-[0.3em] text-slate-500 group-hover:text-slate-400 transition-colors">
               {label}
             </h4>
             <div className="flex items-baseline gap-2">
@@ -103,7 +103,7 @@ export function ClimateKpiCard({ label, value, unit, delta, icon, confidence, cl
               <span className={cn("text-xs font-black", delta.isPositive ? "text-emerald-400" : "text-blue-400")}>
                 {delta.text}
               </span>
-              <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">vs période préc.</span>
+<span className="cmm-text-caption text-slate-500 font-black uppercase tracking-widest">vs période préc.</span>
             </div>
           </div>
         )}
@@ -152,7 +152,7 @@ export function ClimateAlertBanner({ indicator, fr }: { indicator: ClimateIndica
 
       <div className="relative z-10 space-y-3 text-center md:text-left flex-1">
         <div className="flex items-center justify-center md:justify-start gap-3">
-          <span className="px-3 py-1 rounded-full bg-rose-500/20 text-[10px] font-black uppercase tracking-[0.3em] text-rose-500 border border-rose-500/20">
+<span className="px-3 py-1 rounded-full bg-rose-500/20 cmm-text-caption font-black uppercase tracking-[0.3em] text-rose-500 border border-rose-500/20">
             Alerte Impact
           </span>
         </div>
@@ -203,11 +203,11 @@ export function ClimateDecisionList({ decisions, fr }: { decisions: ClimateDecis
                   {decision.decision}
                 </p>
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+<span className="cmm-text-caption font-black uppercase tracking-widest text-slate-500">
                     {fr ? "Décision" : "Decision"}
                   </span>
                   <div className="w-1 h-1 rounded-full bg-white/10" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+<span className="cmm-text-caption font-black uppercase tracking-widest text-slate-500">
                     Confiance {decision.confidence}%
                   </span>
                 </div>
@@ -256,7 +256,7 @@ export function ClimateMethodology({ methods, limits, version, fr }: { methods: 
           >
             <div className="p-8 space-y-10">
               <div className="space-y-6">
-                <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Calculs & Ratios" : "Calculations & Ratios"}</h5>
+<h5 className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Calculs & Ratios" : "Calculations & Ratios"}</h5>
                 <div className="grid gap-4">
                   {methods.map((m, i) => (
                     <div key={i} className="flex gap-4 group">
@@ -264,7 +264,7 @@ export function ClimateMethodology({ methods, limits, version, fr }: { methods: 
                       <div className="space-y-1">
                         <p className="text-sm font-bold text-slate-300">{m.metric}</p>
                         <p className="text-xs text-slate-500 leading-relaxed">{m.formula}</p>
-                        <p className="text-[10px] text-slate-600 leading-relaxed">{m.source}</p>
+<p className="cmm-text-caption text-slate-600 leading-relaxed">{m.source}</p>
                       </div>
                     </div>
                   ))}
@@ -272,7 +272,7 @@ export function ClimateMethodology({ methods, limits, version, fr }: { methods: 
               </div>
 
               <div className="space-y-6">
-                <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Limites d'interprétation" : "Interpretation Limits"}</h5>
+<h5 className="cmm-text-caption font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Limites d'interprétation" : "Interpretation Limits"}</h5>
                 <div className="grid gap-4">
                   {limits.map((l, i) => (
                     <div key={i} className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">

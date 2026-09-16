@@ -245,7 +245,7 @@ export function FreePlanServicesMethodologyVisualImpact({
               <h3 className="max-w-4xl text-3xl font-black tracking-tight text-slate-950 md:text-5xl">
                 {isFrench ? "Impact carbone des services suivis" : "Carbon impact of tracked services"}
               </h3>
-              <p className="max-w-3xl text-base leading-relaxed text-slate-600 md:text-lg">
+              <p className="cmm-text-body max-w-3xl">
                 {isFrench
                   ? "Lecture linéaire de l'ACV numérique. L'onglet carbone répond à une question précise: quel poste contribue le plus à l'empreinte estimée ?"
                   : "Linear reading of the digital LCA. The carbon tab answers one question: which post contributes the most to the estimated footprint?"}
@@ -281,7 +281,7 @@ export function FreePlanServicesMethodologyVisualImpact({
                       ? formatFallbackStatusLabel("kpi")
                       : formatImpactKg(resolvedImpactTotals.monthlyKgCo2eProxy)}
                   </p>
-                  <p className="mt-2 text-lg font-medium text-slate-600">
+                  <p className="cmm-text-body mt-2 font-medium">
                     {isFrench
                       ? totalAnnualImpact === null
                         ? formatFallbackStatusLabel("kpi")
@@ -290,7 +290,7 @@ export function FreePlanServicesMethodologyVisualImpact({
                         ? formatFallbackStatusLabel("kpi")
                         : `(${formatImpactKg(totalAnnualImpact)} projected)`}
                   </p>
-                  <p className="mt-3 text-sm text-slate-500">
+                  <p className="cmm-text-small cmm-text-secondary mt-3">
                     {isFrench
                       ? "Projection de l'impact sur l'année entière"
                       : "Projection of the impact over the full year"}
@@ -313,14 +313,14 @@ export function FreePlanServicesMethodologyVisualImpact({
                       ? formatFallbackStatusLabel("kpi")
                       : formatImpactKg(totalLifetimeImpact)}
                   </p>
-                  <p className="mt-2 text-lg font-medium text-slate-600">
+                  <p className="cmm-text-body mt-2 font-medium">
                     {developmentSharePercent === null
                       ? formatFallbackStatusLabel("history")
                       : isFrench
                         ? `(${formatPercent(developmentSharePercent)} lié au dev IA)`
                         : `(${formatPercent(developmentSharePercent)} linked to AI development)`}
                   </p>
-                  <p className="mt-3 text-sm text-slate-500">
+                  <p className="cmm-text-small cmm-text-secondary mt-3">
                     {isFrench
                       ? "Lecture cumulée depuis le lancement du site"
                       : "Cumulative reading since site launch"}

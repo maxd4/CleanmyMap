@@ -2,6 +2,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { extname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(".");
 const DEFAULT_ALLOWLIST = "scripts/checks/secret-audit.allowlist.json";
@@ -453,7 +454,7 @@ function scanFile(relativePath) {
   return scanContent(relativePath, readFileSync(absolutePath, "utf8"));
 }
 
-function scanContent(relativePath, content) {
+export function scanContent(relativePath, content) {
   const lines = content.split(/\r?\n/);
   return lines.flatMap((line, index) => scanLine(relativePath, line, index + 1));
 }
@@ -561,10 +562,12 @@ function main() {
   }
 }
 
-try {
-  main();
-} catch (error) {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error(`[secret-audit] ${message}`);
-  process.exit(2);
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  try {
+    main();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[secret-audit] ${message}`);
+    process.exit(2);
+  }
 }

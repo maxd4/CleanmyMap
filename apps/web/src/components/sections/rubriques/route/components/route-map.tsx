@@ -156,7 +156,7 @@ export function RouteMap({
 
   return (
     <section className="relative overflow-hidden rounded-[2rem] border border-emerald-300/18 bg-[rgba(10,31,50,0.98)] shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
-      <div className="absolute left-4 top-4 z-[1000] rounded-full border border-white/15 bg-slate-950/80 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white backdrop-blur-xl">
+      <div className="absolute left-4 top-4 z-[1000] rounded-full border border-white/15 bg-slate-950/80 px-3 py-2 cmm-text-caption font-black uppercase tracking-[0.18em] text-white backdrop-blur-xl">
         {groupRoutes.length > 1
           ? `${fr ? "Boucles coordonnées" : "Coordinated loops"} · ${visibleGroupRoutes.every(({ routeGeometry: geometry }) => geometry.mode === "network") ? (fr ? "réseau" : "network") : visibleGroupRoutes.some(({ routeGeometry: geometry }) => geometry.mode === "network") ? (fr ? "réseau + estimation" : "network + estimated") : (fr ? "estimées" : "estimated")}`
           : routeGeometry.mode === "network"

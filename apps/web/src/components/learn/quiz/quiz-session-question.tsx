@@ -90,7 +90,7 @@ export function QuizSessionQuestion({
           ) : null}
         </div>
 
-        <div className="flex items-center gap-2 text-[10px] font-black text-slate-400">
+        <div className="flex items-center gap-2 cmm-text-caption font-black text-slate-400">
           <span className="font-black text-slate-900">{questionIndex + 1}</span>
           <span className="opacity-30">/</span>
           <span>{totalQuestions}</span>
@@ -167,7 +167,7 @@ export function QuizSessionQuestion({
 
       {shouldHideChoices ? (
         <div className="mb-6 rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-sm md:p-6">
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700 md:text-xs">
+          <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700 md:text-xs">
             {getQuizUiCopy(locale, "session.hiddenChoicesLabel")}
           </p>
           <p className="mt-2 text-lg font-semibold leading-relaxed text-amber-950">
@@ -222,7 +222,7 @@ export function QuizSessionQuestion({
               {question.type === "multiple-select" ? (
                 <span
                   className={cn(
-                    "flex h-5 w-5 shrink-0 items-center justify-center rounded border text-[10px] font-black transition",
+                    "flex h-5 w-5 shrink-0 items-center justify-center rounded border cmm-text-caption font-black transition",
                     selectedOptions.includes(option)
                       ? "border-emerald-500 bg-emerald-500 text-white"
                       : "border-slate-300 bg-white text-transparent",

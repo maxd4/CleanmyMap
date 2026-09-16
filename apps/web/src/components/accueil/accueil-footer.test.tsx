@@ -17,7 +17,7 @@ describe("HomeFooter", () => {
     expect(html).toContain("cmm-ribbon-text");
   });
 
-  it("uses the centralized ribbon frame and no compact variant", () => {
+  it("uses the centralized ribbon frame and equal contact button contract", () => {
     const html = renderToStaticMarkup(<HomeFooter />);
     const getFooterClass = (html: string) =>
       html.match(/<footer class="([^"]+)"/)?.[1];
@@ -25,8 +25,15 @@ describe("HomeFooter", () => {
     expect(getFooterClass(html)).toContain("cmm-ribbon-frame");
     expect(getFooterClass(html)).toContain("w-full");
     expect(getFooterClass(html)).toContain("min-w-0");
-    expect(html).toContain("flex-nowrap");
-    expect(html).toContain("basis-0 flex-1");
+    expect(html).toContain("cmm-footer-contact-actions");
+    expect(html).toContain(
+      "lg:grid-cols-[minmax(0,1fr)_max-content]",
+    );
+    expect(html).toContain(
+      "xl:grid-cols-[minmax(0,7fr)_minmax(29rem,max-content)_minmax(0,15fr)]",
+    );
+    expect(html).toContain("cmm-footer-legal-links");
+    expect(html.match(/cmm-footer-contact-link/g)).toHaveLength(2);
     expect(html).not.toContain("compact");
   });
 

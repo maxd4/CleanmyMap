@@ -125,7 +125,7 @@ function MethodologyCard({
         <div className="text-red-100/80 leading-relaxed">{formula}</div>
       </div>
 
-      <p className="relative z-10 leading-relaxed text-red-100/40 font-medium">
+      <p className="cmm-text-body cmm-text-inverse relative z-10 font-medium">
         {description}
       </p>
 
@@ -282,7 +282,7 @@ export function MethodologiePageClient({
             </div>
           </div>
 
-          <p className="max-w-4xl text-sm font-medium leading-relaxed text-red-100/75 sm:text-base">
+          <p className="cmm-text-body cmm-text-inverse max-w-4xl font-medium">
             {isFrench
               ? "Les trois modes changent la présentation, pas le produit."
               : "The three modes change presentation, not the product."}
@@ -299,7 +299,7 @@ export function MethodologiePageClient({
                 className="rounded-2xl border border-white/12 bg-white/[0.04] p-5"
               >
                 <h3 className="text-base font-bold text-white">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-300">
+                <p className="cmm-text-small cmm-text-inverse mt-2">
                   {DISPLAY_MODE_DESCRIPTIONS[mode][locale]}
                 </p>
               </article>
@@ -330,7 +330,7 @@ export function MethodologiePageClient({
                 <Brain className="text-red-400" />
                 <span>Méthode de calcul</span>
               </h2>
-              <p className="max-w-md text-lg font-medium leading-relaxed text-red-100/40">
+              <p className="cmm-text-body cmm-text-inverse max-w-md font-medium">
                 Les KPI terrain utilisent le calcul runtime versionné. Les valeurs déclarées et estimées sont distinguées avant l’application des proxys à la masse ou aux mégots retenus. Périmètre : {methodology.scope}
               </p>
               <div className="flex gap-4">
@@ -386,7 +386,7 @@ export function MethodologiePageClient({
                 <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">
                   {step.title}
                 </h3>
-                <p className="text-sm font-medium leading-relaxed text-red-100/30">
+                <p className="cmm-text-small cmm-text-inverse font-medium">
                   {step.desc}
                 </p>
               </div>
@@ -402,7 +402,7 @@ export function MethodologiePageClient({
             <h2 className="text-4xl font-black tracking-tight text-white">
               {isFrench ? "Plans et quotas" : "Plans and quotas"}
             </h2>
-            <p className="mx-auto max-w-3xl text-lg font-medium leading-relaxed text-red-100/50">
+            <p className="cmm-text-body cmm-text-inverse mx-auto max-w-3xl font-medium">
               {isFrench
                 ? "La partie quota s’appuie sur la fiche d’architecture du site et reste centrée sur le risque de dépassement des limites de plan."
                 : "The quota section relies on the site architecture sheet and stays focused on the risk of exceeding plan limits."}
@@ -512,7 +512,7 @@ export function MethodologiePageClient({
               {isFrench ? "Limites de la déclaration terrain" : "Limits of field declarations"}
             </h3>
           </div>
-          <div className="grid gap-6 md:grid-cols-2 text-red-100/50 leading-relaxed font-medium text-sm">
+          <div className="cmm-text-body cmm-text-inverse grid gap-6 font-medium md:grid-cols-2">
             <p>
               {isFrench
                 ? "Les déclarations terrain ne requièrent pas la pesée ni la caractérisation exhaustive de chaque déchet. Les valeurs disponibles dépendent donc des informations saisies dans le contrat de déclaration."
@@ -534,7 +534,7 @@ export function MethodologiePageClient({
             <h2 className="text-4xl font-black tracking-tight text-white">
               {isFrench ? "Empreinte technique des services suivis" : "Technical footprint of tracked services"}
             </h2>
-            <p className="mx-auto max-w-3xl text-lg font-medium leading-relaxed text-red-100/50">
+            <p className="cmm-text-body cmm-text-inverse mx-auto max-w-3xl font-medium">
               {isFrench
                 ? "Ce bloc mesure l'empreinte technique et infrastructurelle des services suivis. Il est séparé des KPI d'impact terrain calculés à partir des actions approuvées."
                 : "This block measures the technical and infrastructure footprint of tracked services. It is separate from terrain impact KPIs calculated from approved actions."}
@@ -557,18 +557,18 @@ export function MethodologiePageClient({
                 <h3 className="mt-3 text-2xl font-black tracking-tight text-white">
                   CO₂e électrique : statut du calcul
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed text-red-100/65">
+                <p className="cmm-text-body cmm-text-inverse mt-3">
                   Facteur configuré : {electricity.factorKgCo2ePerKwh} kgCO₂e/kWh
                   ({electricity.source === "input" ? "signal électrique branché" : "référence " + electricity.note}).
                 </p>
-                <p className="mt-3 text-sm leading-relaxed text-red-100/55">
+                <p className="cmm-text-body cmm-text-inverse mt-3">
                   {electricity.calculation === "measured_kwh_to_co2e"
                     ? "La valeur affichée provient d'un calcul kWh × facteur électrique; elle n'est pas ajoutée une seconde fois au proxy total."
                     : electricity.calculation === "proxy_equivalent"
                       ? "La valeur affichée est un équivalent électrique estimé à partir d’un proxy CO₂e. Elle ne représente pas une consommation mesurée."
                       : "À compléter : aucun kWh réel ni proxy électrique exploitable n'est disponible."}
                 </p>
-                <p className="mt-3 text-xs leading-relaxed text-red-100/45">
+                <p className="cmm-text-small cmm-text-inverse mt-3">
                   Le facteur sera remplacé lorsqu’une localisation électrique réelle du fournisseur sera connue.
                 </p>
               </section>
@@ -579,13 +579,13 @@ export function MethodologiePageClient({
                 <h3 className="mt-3 text-2xl font-black tracking-tight text-white">
                   Eau estimée : composantes et limites
                 </h3>
-                <p className="mt-3 text-sm leading-relaxed text-red-100/65">
+                <p className="cmm-text-body cmm-text-inverse mt-3">
                   Eau directe consommée sur site : {water.directWaterConsumptionLiters === null ? "à compléter" : "signal fourni"}. Eau indirecte liée à l’électricité : {water.indirectElectricityWaterLiters === null ? "à compléter" : "kWh × facteur configuré"}. Le facteur actuel est {water.factorLitersPerKwh} L/kWh ({water.factorSourceLabel}) et reste un proxy remplaçable lorsqu’une localisation électrique réelle est connue.
                 </p>
-                <p className="mt-3 text-sm leading-relaxed text-red-100/55">
+                <p className="cmm-text-body cmm-text-inverse mt-3">
                   L’eau reste dans le cycle hydrologique global, mais l’eau évaporée est consommée localement car elle n’est plus immédiatement disponible dans le même bassin. Retrait et consommation ne sont pas interchangeables : l’eau retournée dépend du lieu, du moment, de la température et de la qualité. La pression dépend aussi du stress hydrique et des conflits locaux, pas seulement des litres.
                 </p>
-                <p className="mt-3 text-xs leading-relaxed text-red-100/45">
+                <p className="cmm-text-small cmm-text-inverse mt-3">
                   {water.provenance.join(" ")}
                 </p>
               </section>
@@ -603,7 +603,7 @@ export function MethodologiePageClient({
                   <h3 className="text-3xl font-black tracking-tight text-white">
                     {isFrench ? "Historique mensuel d'impact" : "Monthly impact history"}
                   </h3>
-                  <p className="mx-auto max-w-3xl text-base font-medium leading-relaxed text-red-100/50">
+                  <p className="cmm-text-body cmm-text-inverse mx-auto max-w-3xl font-medium">
                     {isFrench
                       ? "La courbe du bas suit l’historique persistant enregistré dans Supabase, tandis que la ligne pointillée estime l’impact du développement par IA depuis le lancement du projet. Aucun chiffre n’est inventé: les données absentes restent en NA."
                       : "The bottom curve follows the persistent history stored in Supabase, while the dashed line estimates the impact of AI development since project launch. No number is invented: missing data stays NA."}

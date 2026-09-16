@@ -342,6 +342,70 @@ html[data-theme="dark"] {
   --text-link-hover: #7dd3fc;
 }
 
+/*
+ * Densité globale du site : 90 % sur les dimensions visuelles non critiques.
+ * Le corps, les captions et les hauteurs tactiles restent sur leurs minima
+ * sémantiques ; ce n'est ni un zoom CSS ni une transformation du document.
+ */
+html[data-cmm-density="compact"] {
+  --cmm-density-factor: 0.9;
+
+  --text-h4: 1.2rem;
+  --text-h3: 1.599rem;
+  --text-h2: 2.132rem;
+  --text-h1: 2.841rem;
+  --text-display: 3.788rem;
+
+  --space-1: 0.45rem;
+  --space-2: 0.9rem;
+  --space-3: 1.35rem;
+  --space-4: 1.8rem;
+  --space-5: 2.25rem;
+  --space-6: 2.7rem;
+  --space-8: 3.6rem;
+  --space-12: 5.4rem;
+
+  --cmm-grid-margin-mobile: 0.9rem;
+  --cmm-grid-margin-tablet: 1.35rem;
+  --cmm-grid-margin-desktop: 1.8rem;
+  --cmm-grid-gutter-mobile: 0.9rem;
+  --cmm-grid-gutter-tablet: 1.35rem;
+  --cmm-grid-gutter-desktop: 1.35rem;
+  --cmm-grid-step: 0.45rem;
+
+  --radius-sm: 0.45rem;
+  --radius-md: 0.9rem;
+  --radius-lg: 1.35rem;
+
+  --cmm-page-header-title-size: clamp(2.25rem, 3.6vw, 3.24rem);
+  --cmm-home-hero-title-size: clamp(3.15rem, 4.68vw, 3.825rem);
+  --cmm-home-impact-title-size: clamp(1.71rem, 3.42vw, 2.43rem);
+  --cmm-page-padding-block: 1.8rem;
+  --cmm-page-header-content-gap: 1.8rem;
+  --cmm-section-gap: 1.8rem;
+  --cmm-content-group-gap: 0.9rem;
+  --cmm-rubrique-card-padding: 1.8rem;
+  --cmm-rubrique-card-icon-padding: 0.9rem;
+
+  --cmm-system-state-content-gap: 1.125rem;
+  --cmm-system-state-padding-block: 1.8rem;
+  --cmm-system-state-padding-inline: 1.125rem;
+  --cmm-feedback-padding-block: 0.675rem;
+  --cmm-feedback-padding-inline: 0.9rem;
+  --cmm-feedback-gap: 0.45rem;
+}
+
+@media (min-width: 1024px) {
+  html[data-cmm-density="compact"] {
+    --cmm-page-padding-block: 1.35rem;
+    --cmm-page-header-content-gap: 1.35rem;
+    --cmm-section-gap: 1.35rem;
+    --cmm-content-group-gap: 0.675rem;
+    --cmm-rubrique-card-padding: 1.35rem;
+    --cmm-rubrique-card-icon-padding: 0.675rem;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

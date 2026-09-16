@@ -246,7 +246,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-600">
                   <Icon size={18} />
                 </div>
-                <p className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <p className="mt-4 cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
                   {localize(fr ? "fr" : "en", metric.label)}
                 </p>
                 <p className="mt-2 text-[clamp(1.9rem,2.5vw,2.5rem)] font-black leading-none tracking-[-0.04em] text-slate-950">
@@ -280,7 +280,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
 
             <div className="grid gap-3 xl:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))_auto]">
               <label className="space-y-2 xl:col-span-5">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <span className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
                   {fr ? "Rechercher" : "Search"}
                 </span>
                 <div className="relative">
@@ -298,7 +298,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
               </label>
 
               <label className="space-y-2">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <span className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
                   {fr ? "Type" : "Type"}
                 </span>
                 <select
@@ -315,7 +315,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
               </label>
 
               <label className="space-y-2">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <span className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
                   {fr ? "Domaine d'action" : "Field of action"}
                 </span>
                 <select
@@ -331,7 +331,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
               </label>
 
               <label className="space-y-2">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                <span className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
                   {fr ? "Niveau territorial" : "Territorial level"}
                 </span>
                 <select
@@ -348,7 +348,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
               </label>
 
               <div className="space-y-2">
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-transparent">
+                <span className="cmm-text-caption font-black uppercase tracking-[0.2em] text-transparent">
                   {fr ? "Action" : "Action"}
                 </span>
                 <CmmButton
@@ -356,7 +356,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
                   tone="primary"
                   variant="pill"
                   onClick={handleSearch}
-                  className="inline-flex h-12 w-full items-center justify-center gap-3 rounded-2xl bg-indigo-600 px-5 text-[0.72rem] font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_42px_-22px_rgba(79,70,229,0.55)]"
+                className="inline-flex h-12 w-full items-center justify-center gap-3 rounded-2xl bg-indigo-600 px-5 cmm-text-small font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_42px_-22px_rgba(79,70,229,0.55)]"
                 >
                   {fr ? "Rechercher" : "Search"}
                   <ArrowRight size={16} />
@@ -370,7 +370,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
                   ? `${formatCount(filteredEntries.length)} partenaires affichés`
                   : `${formatCount(filteredEntries.length)} partners displayed`}
               </p>
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-violet-500">
+              <div className="flex items-center gap-2 cmm-text-caption font-black uppercase tracking-[0.18em] text-violet-500">
                 <CheckCircle2 size={14} />
                 {fr ? "Mise à jour" : "Updated"}
               </div>
@@ -403,7 +403,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
                           <div className="flex flex-wrap items-center gap-2">
                             <span
                               className={cn(
-                                "inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em]",
+                                "inline-flex rounded-full border px-2.5 py-1 cmm-text-caption font-black uppercase tracking-[0.16em]",
                                 kindTone,
                               )}
                             >
@@ -411,7 +411,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
                             </span>
                             <span
                               className={cn(
-                                "inline-flex rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em]",
+                                "inline-flex rounded-full border px-2.5 py-1 cmm-text-caption font-black uppercase tracking-[0.16em]",
                                 trustTone,
                               )}
                             >
@@ -447,7 +447,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
                           href="/sections/annuaire"
                           tone="secondary"
                           variant="pill"
-                          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 text-[0.7rem] font-black uppercase tracking-[0.18em] text-violet-700 shadow-none"
+                          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 cmm-text-small font-black uppercase tracking-[0.18em] text-violet-700 shadow-none"
                         >
                           {fr ? "Voir le profil" : "View profile"}
                           <ArrowRight size={16} />
@@ -478,7 +478,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
                       setDomainFilter("all");
                       setZoneFilter("all");
                     }}
-                    className="h-11 rounded-2xl border border-violet-200 bg-white px-5 text-[0.72rem] font-black uppercase tracking-[0.16em] text-violet-700"
+                    className="h-11 rounded-2xl border border-violet-200 bg-white px-5 cmm-text-small font-black uppercase tracking-[0.16em] text-violet-700"
                   >
                     {fr ? "Réinitialiser" : "Reset filters"}
                   </CmmButton>
@@ -491,7 +491,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
                 href="/sections/annuaire"
                 tone="secondary"
                 variant="pill"
-                className="h-12 rounded-full border border-violet-200 bg-white px-8 text-[0.72rem] font-black uppercase tracking-[0.16em] text-violet-700"
+                className="h-12 rounded-full border border-violet-200 bg-white px-8 cmm-text-small font-black uppercase tracking-[0.16em] text-violet-700"
               >
                 {fr ? "Voir tous les partenaires" : "See all partners"}
                 <ArrowRight size={16} />
@@ -547,7 +547,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
               href="/partners/onboarding"
               tone="primary"
               variant="pill"
-              className="mt-6 inline-flex h-12 w-full items-center justify-center gap-3 rounded-2xl bg-indigo-600 px-5 text-[0.72rem] font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_42px_-22px_rgba(79,70,229,0.55)]"
+              className="mt-6 inline-flex h-12 w-full items-center justify-center gap-3 rounded-2xl bg-indigo-600 px-5 cmm-text-small font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_42px_-22px_rgba(79,70,229,0.55)]"
             >
               {fr ? "Devenir partenaire" : "Become a partner"}
               <ArrowRight size={16} />
@@ -561,7 +561,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
               </p>
               <Link
                 href={SPONSOR_PORTAL_ROUTE}
-                className="inline-flex items-center gap-2 text-[0.72rem] font-black uppercase tracking-[0.16em] text-violet-700 hover:text-violet-800"
+                className="inline-flex items-center gap-2 cmm-text-small font-black uppercase tracking-[0.16em] text-violet-700 hover:text-violet-800"
               >
                 {fr ? "Découvrir le programme" : "Discover the program"}
                 <ArrowRight size={14} />
@@ -616,7 +616,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
               <div className="flex items-center justify-between gap-3">
                 <span
                   className={cn(
-                    "inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em]",
+                    "inline-flex rounded-full border px-3 py-1 cmm-text-caption font-black uppercase tracking-[0.16em]",
                     {
                       violet: "border-violet-200 bg-violet-50 text-violet-700",
                       indigo: "border-indigo-200 bg-indigo-50 text-indigo-700",
@@ -685,7 +685,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
               href={`mailto:${contactEmail}`}
               tone="secondary"
               variant="pill"
-              className="h-14 rounded-full bg-white px-6 text-[0.72rem] font-black uppercase tracking-[0.18em] text-violet-700 shadow-2xl"
+              className="h-14 rounded-full bg-white px-6 cmm-text-small font-black uppercase tracking-[0.18em] text-violet-700 shadow-2xl"
             >
               {fr ? "Nous contacter" : "Contact us"}
               <ArrowRight size={16} />
@@ -695,7 +695,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
               href="/partners/onboarding"
               tone="primary"
               variant="pill"
-              className="h-14 rounded-full border border-white/10 bg-violet-500 px-6 text-[0.72rem] font-black uppercase tracking-[0.18em] text-white shadow-2xl"
+              className="h-14 rounded-full border border-white/10 bg-violet-500 px-6 cmm-text-small font-black uppercase tracking-[0.18em] text-white shadow-2xl"
             >
               {fr ? "Devenir partenaire" : "Become a partner"}
             </CmmButton>

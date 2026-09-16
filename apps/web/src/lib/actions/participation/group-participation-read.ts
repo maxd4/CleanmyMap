@@ -32,6 +32,7 @@ import type {
   JoinableActionHistoryItem,
   JoinableActionItem,
 } from "./group-participation-contract";
+import { usesRegistrationStore } from "./action-phase";
 
 export function isVisibleInGroupForms(
   action: Pick<
@@ -213,9 +214,7 @@ export async function loadUserParticipationHistory(
         return [];
       }
 
-      const usesRegistrationHistory =
-        action.action_phase === "pre_action" ||
-        action.action_phase === "post_action_draft";
+      const usesRegistrationHistory = usesRegistrationStore(action.action_phase);
       const registrations = registrationRows.filter((row) => row.action_id === actionId);
       const participations = participationRows.filter((row) => row.action_id === actionId);
       const records = usesRegistrationHistory

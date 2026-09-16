@@ -158,7 +158,8 @@ describe("serializeActionGeometryToGpx", () => {
           geometry: openGeometry,
           geometrySource: "manual",
           waypoints: [
-            { coordinates: [48.87, 2.37], name: "Arrivée groupe 2", role: "arrival" },
+            { coordinates: [48.87, 2.37], name: "Départ groupe 2", role: "departure" },
+            { coordinates: [48.85, 2.35], name: "Arrivée groupe 2", role: "arrival" },
           ],
         },
       ],
@@ -166,8 +167,10 @@ describe("serializeActionGeometryToGpx", () => {
 
     const firstTrack = xml.indexOf("  <trk>");
     expect(xml.indexOf("Départ groupe 1")).toBeLessThan(firstTrack);
+    expect(xml.indexOf("Départ groupe 2")).toBeLessThan(firstTrack);
     expect(xml.indexOf("Arrivée groupe 2")).toBeLessThan(firstTrack);
-    expect(xml.match(/<wpt\b/g)).toHaveLength(2);
+    expect(xml.match(/<wpt\b/g)).toHaveLength(3);
+    expect(xml).toContain("Arrivée groupe 2");
     expect(xml.match(/<trk>/g)).toHaveLength(2);
     expect(xml.indexOf("<trk>")).toBeLessThan(xml.indexOf("</trk>\n  <trk>"));
   });

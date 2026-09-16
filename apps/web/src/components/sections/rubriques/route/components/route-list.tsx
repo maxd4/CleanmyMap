@@ -36,12 +36,12 @@ export function RouteList({
             >
               <div className="space-y-2">
                 <p className="flex items-center gap-2 font-bold text-white">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/90 text-[11px] font-black text-emerald-950">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-400/90 cmm-text-caption font-black text-emerald-950">
                     {index + 1}
                   </span>
                   {item.label}
                 </p>
-                <p className="inline-flex rounded-full border border-emerald-200/12 bg-[rgba(17,56,41,0.72)] px-2.5 py-1 text-[11px] font-semibold text-emerald-50/86">
+                <p className="inline-flex rounded-full border border-emerald-200/12 bg-[rgba(17,56,41,0.72)] px-2.5 py-1 cmm-text-small font-semibold text-emerald-50/86">
                   {item.priorityReason}
                 </p>
               </div>
@@ -51,7 +51,7 @@ export function RouteList({
                 </p>
                 {item.latitude !== null && item.longitude !== null ? (
                   <a
-                    className="inline-flex items-center gap-1 rounded-full border border-emerald-200/14 bg-emerald-400/10 px-3 py-1.5 text-[11px] font-semibold text-emerald-50/88 transition hover:border-emerald-200/30 hover:bg-emerald-400/16"
+                    className="inline-flex items-center gap-1 rounded-full border border-emerald-200/14 bg-emerald-400/10 px-3 py-1.5 cmm-text-small font-semibold text-emerald-50/88 transition hover:border-emerald-200/30 hover:bg-emerald-400/16"
                     href={`https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`}
                     target="_blank"
                     rel="noreferrer"

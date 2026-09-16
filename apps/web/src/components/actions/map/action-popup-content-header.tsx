@@ -91,7 +91,7 @@ function ScoreRing({
         <span className="text-xs font-bold leading-none" style={{ color }}>
           {scoreLoading ? "…" : Math.round(score)}
         </span>
-        <span className="text-[6px] font-bold uppercase tracking-tighter opacity-50">
+        <span className="cmm-text-caption font-bold uppercase tracking-tighter opacity-50">
           {label}
         </span>
       </div>
@@ -185,10 +185,10 @@ export function ActionPopupContentHeader({
             </p>
           )}
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-800 dark:border-sky-800/60 dark:bg-sky-950/40 dark:text-sky-300">
+            <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 cmm-text-caption font-semibold uppercase tracking-[0.14em] text-sky-800 dark:border-sky-800/60 dark:bg-sky-950/40 dark:text-sky-300">
               {statusLabel}
             </span>
-            <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300">
+            <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 cmm-text-caption font-semibold uppercase tracking-[0.14em] text-slate-600 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300">
               {observedAt}
             </span>
           </div>
@@ -272,7 +272,7 @@ export function ActionPopupContentHeader({
             <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
               Pollution constatée
             </p>
-            <div className="space-y-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+            <div className="space-y-1 cmm-text-small font-semibold text-slate-700 dark:text-slate-200">
               <p>Déchets {formatScorePercent(Math.round(globalScore?.wasteScore ?? wasteScore))}</p>
               <p>Mégots {formatScorePercent(Math.round(globalScore?.buttsScore ?? buttsScore))}</p>
               <p>Score global {formatScorePercent(Math.round(globalScore?.historicalScore ?? score))}</p>
@@ -283,14 +283,14 @@ export function ActionPopupContentHeader({
               Comparaison départementale
             </p>
             {departmentScore?.score !== null && departmentScore?.score !== undefined ? (
-              <div className="space-y-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+              <div className="space-y-1 cmm-text-small font-semibold text-slate-700 dark:text-slate-200">
                 <p>Déchets {formatScorePercent(Math.round(departmentScore.wasteScore ?? 0))}</p>
                 <p>Mégots {formatScorePercent(Math.round(departmentScore.buttsScore ?? 0))}</p>
                 <p>Score relatif {formatScorePercent(Math.round(departmentScore.score))}</p>
                 <p>Référence {departmentName ?? "département"}</p>
               </div>
             ) : (
-              <div className="space-y-1 text-xs font-semibold text-slate-600 dark:text-slate-300">
+              <div className="space-y-1 cmm-text-small font-semibold text-slate-600 dark:text-slate-300">
                 <p>
                   {departmentScore?.availability === "department_insufficient_data"
                     ? "Données départementales insuffisantes"
@@ -389,13 +389,13 @@ export function ActionPopupContentHeader({
             {displayMode &&
             currentPlaceState?.scoreKind === "unavailable" &&
             !hasQuantifiedPollutionScore ? (
-              <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-slate-700">
+              <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 cmm-text-caption font-black uppercase tracking-[0.14em] text-slate-700">
                 {currentPlaceState.stateLabel}
               </span>
             ) : hasQuantifiedPollutionScore ? (
               <span
                 className={[
-                "rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em]",
+                "rounded-full px-2.5 py-1 cmm-text-caption font-black uppercase tracking-[0.14em]",
                 scoreReading.tone === "sky"
                   ? "border border-sky-200 bg-sky-50 text-sky-800"
                   : scoreReading.tone === "emerald"
@@ -412,13 +412,13 @@ export function ActionPopupContentHeader({
             ) : null}
             {hasQuantifiedPollutionScore ? (
               <>
-                <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+                <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 cmm-text-caption font-semibold uppercase tracking-[0.14em] text-slate-600">
                   {scoreReading.label}
                 </span>
-                <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+                <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 cmm-text-caption font-semibold uppercase tracking-[0.14em] text-slate-600">
                   Déchets {formatScorePercent(Math.round(wasteScore))}
                 </span>
-                <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600">
+                <span className="rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 cmm-text-caption font-semibold uppercase tracking-[0.14em] text-slate-600">
                   Mégots {formatScorePercent(Math.round(buttsScore))}
                 </span>
               </>
@@ -437,7 +437,7 @@ export function ActionPopupContentHeader({
       <div className="rounded-2xl border border-slate-200/70 bg-slate-50/90 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/55">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="space-y-0.5">
-            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
+            <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-slate-500">
               Lecture terrain
             </p>
             {hasQuantifiedPollutionScore ? (
@@ -445,7 +445,7 @@ export function ActionPopupContentHeader({
                 <p className="text-sm font-semibold text-slate-900">
                   {scoreReading.guidance}
                 </p>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                <p className="cmm-text-caption font-semibold uppercase tracking-[0.12em] text-slate-500">
                   {scoreSourceLabel}
                 </p>
               </>

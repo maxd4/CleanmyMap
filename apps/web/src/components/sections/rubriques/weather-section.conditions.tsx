@@ -134,7 +134,7 @@ export function ConditionsPanel({
               <ShieldCheck size={18} />
             </span>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-emerald-700">
                 {fr ? "Repères de prudence" : "Prudence guidance"}
               </p>
               <h3 className="text-xl font-black tracking-tight text-emerald-800">
@@ -159,14 +159,14 @@ export function ConditionsPanel({
             ) : null}
 
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-slate-500">
                 {fr ? "Équipement à envisager" : "Gear to consider"}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {equipment.map((item) => (
                   <span
                     key={item}
-                    className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-700 shadow-sm"
+                    className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-3 py-2 cmm-text-small font-semibold text-slate-700 shadow-sm"
                   >
                     <CheckCircle2 size={12} className="text-emerald-600" />
                     {item}
@@ -176,7 +176,7 @@ export function ConditionsPanel({
             </div>
 
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-slate-500">
                 {fr ? "Checklist sécurité" : "Safety checklist"}
               </p>
               <ul className="mt-3 space-y-2.5">
@@ -199,7 +199,7 @@ export function ConditionsPanel({
           <LightCard className="p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+                <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-slate-500">
                   {fr ? "Prévisions horaires" : "Hourly forecast"}
                 </p>
                 <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
@@ -216,7 +216,7 @@ export function ConditionsPanel({
 
             <div className="mt-5 grid gap-3 md:grid-cols-3">
               <div className="rounded-[1.35rem] border border-emerald-200 bg-emerald-50/80 px-4 py-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-emerald-800/80">
+                <p className="cmm-text-caption font-black uppercase tracking-[0.26em] text-emerald-800/80">
                   {fr ? "Créneau favorable selon les données" : "Favorable slot based on the data"}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-emerald-950">
@@ -228,7 +228,7 @@ export function ConditionsPanel({
                 </p>
               </div>
               <div className="rounded-[1.35rem] border border-amber-200 bg-amber-50/80 px-4 py-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-amber-800/80">
+                <p className="cmm-text-caption font-black uppercase tracking-[0.26em] text-amber-800/80">
                   {fr ? "Vigilance météo" : "Weather vigilance"}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-amber-950">
@@ -236,7 +236,7 @@ export function ConditionsPanel({
                 </p>
               </div>
               <div className="rounded-[1.35rem] border border-rose-200 bg-rose-50/80 px-4 py-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.26em] text-rose-800/80">
+                <p className="cmm-text-caption font-black uppercase tracking-[0.26em] text-rose-800/80">
                   {fr ? "Décision selon les conditions" : "Decision based on conditions"}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-rose-950">
@@ -299,7 +299,7 @@ export function ConditionsPanel({
                           cardTone,
                         )}
                       >
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                        <p className="cmm-text-caption font-semibold uppercase tracking-[0.18em] text-slate-500">
                           {getForecastHourLabel(point.time)}
                         </p>
                         <div className="mt-3 flex items-center justify-between gap-3">
@@ -311,7 +311,7 @@ export function ConditionsPanel({
                           </p>
                         </div>
                         <p className="mt-3 text-sm font-semibold text-slate-700">{weather.label}</p>
-                        <div className="mt-3 space-y-1.5 text-[11px] font-medium text-slate-500">
+                        <div className="mt-3 space-y-1.5 cmm-text-small font-medium text-slate-500">
                           <span className="flex items-center justify-between gap-2">
                             <span className="flex items-center gap-1.5">
                               <Droplets size={12} className={precipTone} />
@@ -336,7 +336,7 @@ export function ConditionsPanel({
                             <span className="font-semibold text-slate-700">{Math.round(point.wind)} km/h</span>
                           </span>
                         </div>
-                        <div className="mt-3 flex items-center justify-between gap-3 border-t border-black/5 pt-2 text-[10px] font-semibold text-slate-500">
+                        <div className="mt-3 flex items-center justify-between gap-3 border-t border-black/5 pt-2 cmm-text-caption font-semibold text-slate-500">
                           <span>Hum. {Math.round(point.humidity)}%</span>
                           <span>UV {Math.round(point.uv)}</span>
                         </div>
@@ -384,7 +384,7 @@ export function ConditionsPanel({
               <Truck size={18} />
             </span>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-slate-500">
                 {fr ? "Préparation & logistique" : "Preparation & logistics"}
               </p>
               <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
@@ -480,7 +480,7 @@ export function ConditionsPanel({
               <ShieldCheck size={18} />
             </span>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-emerald-700">
                 {fr ? "Sécurité" : "Safety"}
               </p>
               <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">

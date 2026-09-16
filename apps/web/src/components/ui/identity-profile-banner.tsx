@@ -52,7 +52,7 @@ export function IdentityProfileBanner({ profile }: IdentityProfileBannerProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
             <Sparkles size={11} className="text-amber-100" />
-            <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-amber-100">
+            <p className="cmm-text-caption font-bold uppercase tracking-[0.28em] text-amber-100">
               Configuration active
             </p>
           </div>
@@ -63,7 +63,7 @@ export function IdentityProfileBanner({ profile }: IdentityProfileBannerProps) {
 
         {/* Badge profil */}
         <div className="hidden sm:flex shrink-0 flex-col items-end gap-0.5 pl-5 border-l border-amber-200/18">
-          <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-amber-100">Accès</p>
+          <p className="cmm-text-caption font-bold uppercase tracking-[0.2em] text-amber-100">Accès</p>
           <p className="text-sm font-black text-white uppercase tracking-wide">
             {getProfileLabel(profile, locale)}
           </p>

@@ -31,7 +31,7 @@ export function RouteSummaryCards({ options, fr }: RouteSummaryCardsProps) {
 
   return (
     <section className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(11,39,30,0.88)] p-5 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
-      <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-100/68">
+      <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-100/68">
         {fr ? "Lecture rapide" : "Quick read"}
       </p>
       <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-white">
@@ -49,7 +49,7 @@ export function RouteSummaryCards({ options, fr }: RouteSummaryCardsProps) {
             key={item.label}
             className="rounded-2xl border border-emerald-200/12 bg-[rgba(17,56,41,0.72)] px-4 py-3"
           >
-            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-100/58">
+            <p className="cmm-text-caption font-black uppercase tracking-[0.22em] text-emerald-100/58">
               {item.label}
             </p>
             <p className="mt-2 text-lg font-black text-white">{item.value}</p>

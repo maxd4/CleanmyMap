@@ -25,6 +25,28 @@ export type FinalActionGeometryInput = {
   reconstructedSource?: ActionGeometrySource | null;
 };
 
+const PERSISTED_ROUTE_SOURCES = [
+  "routed",
+  "estimated_route",
+  "reference",
+] as const satisfies readonly ActionGeometrySource[];
+
+type PersistedRouteSource = (typeof PERSISTED_ROUTE_SOURCES)[number];
+
+export type HydratedActionGeometry = {
+  manualDrawing: ActionDrawing | null;
+  manualDrawingSource: ActionGeometrySource | null;
+  reconstructedDrawing: ActionDrawing | null;
+  reconstructedSource: PersistedRouteSource | null;
+  finalGeometry: FinalActionGeometry | null;
+};
+
+function isPersistedRouteSource(
+  source: ActionGeometrySource | null | undefined,
+): source is PersistedRouteSource {
+  return Boolean(source && PERSISTED_ROUTE_SOURCES.includes(source as PersistedRouteSource));
+}
+
 function hasUsableGpxCandidate(input: FinalActionGeometryInput): boolean {
   const drawing = input.gpxDrawing;
   const metadata = input.gpxImport;
@@ -55,7 +77,9 @@ function routeDrawing(
 
 /**
  * Selects the one active geometry without routing, snapping, or reconstruction.
- * The order is GPX, manual drawing, operational route, then no active geometry.
+ * The order is GPX, manual drawing, operational route, persisted geometry, then
+ * no active geometry. Persisted route/reference drawings are deliberately kept
+ * out of the manual candidate slot.
  */
 export function resolveFinalActionGeometry(
   input: FinalActionGeometryInput,
@@ -76,20 +100,19 @@ export function resolveFinalActionGeometry(
       ? input.operationalRoute
       : null;
   const operationalCandidate = operationalRoute ? routeDrawing(operationalRoute) : null;
-  const manualSource =
-    manualDrawingKindIsPolygon(input.manualDrawing)
-      ? "manual"
-      : input.manualDrawingSource ?? "manual";
   const manualDrawing = input.manualDrawing;
   const canUseManualDrawing =
     !gpxTagged &&
+    (!input.manualDrawingSource ||
+      input.manualDrawingSource === "manual" ||
+      (manualDrawing?.kind === "polygon" && !input.reconstructedDrawing)) &&
     manualDrawing &&
     isRenderableDrawing(manualDrawing);
 
   if (canUseManualDrawing) {
     return {
       drawing: manualDrawing,
-      source: manualSource,
+      source: "manual",
       operationalRoute: null,
     };
   }
@@ -101,13 +124,21 @@ export function resolveFinalActionGeometry(
     };
   }
 
-  if (
-    input.reconstructedDrawing &&
-    isRenderableDrawing(input.reconstructedDrawing)
-  ) {
+  const persistedDrawing =
+    input.reconstructedDrawing ??
+    (isPersistedRouteSource(input.manualDrawingSource)
+      ? input.manualDrawing
+      : null);
+  const persistedSource =
+    input.reconstructedSource ??
+    (isPersistedRouteSource(input.manualDrawingSource)
+      ? input.manualDrawingSource
+      : null);
+
+  if (persistedDrawing && isRenderableDrawing(persistedDrawing)) {
     return {
-      drawing: input.reconstructedDrawing,
-      source: input.reconstructedSource ?? "routed",
+      drawing: persistedDrawing,
+      source: persistedSource ?? "routed",
       operationalRoute: null,
     };
   }
@@ -115,8 +146,51 @@ export function resolveFinalActionGeometry(
   return null;
 }
 
-function manualDrawingKindIsPolygon(
-  drawing: ActionDrawing | null | undefined,
-): boolean {
-  return drawing?.kind === "polygon";
+/**
+ * Splits an editor record's single persisted drawing field into the candidates
+ * understood by the final-geometry resolver. This keeps legacy storage
+ * compatible while preventing routed/reference geometry from becoming a user
+ * drawing during hydration.
+ */
+export function hydrateActionEditorGeometry(input: {
+  drawing?: ActionDrawing | null;
+  geometrySource?: ActionGeometrySource | null;
+  gpxImport?: ActionGpxImportMetadata | null;
+  operationalRoute?: OperationalRoute | null;
+}): HydratedActionGeometry {
+  const drawing = input.drawing ?? null;
+  const source =
+    input.geometrySource ??
+    (input.gpxImport?.source === "gpx_import"
+      ? "gpx_import"
+      : drawing
+        ? "manual"
+        : null);
+  const manualCandidate = source === "manual" || source === null ? drawing : null;
+  const persistedCandidate = isPersistedRouteSource(source) ? drawing : null;
+  const finalGeometry = resolveFinalActionGeometry({
+    gpxDrawing: source === "gpx_import" ? drawing : null,
+    gpxImport: input.gpxImport,
+    manualDrawing: manualCandidate,
+    manualDrawingSource: source,
+    operationalRoute: input.operationalRoute,
+    reconstructedDrawing: persistedCandidate,
+    reconstructedSource: isPersistedRouteSource(source) ? source : null,
+  });
+
+  return {
+    manualDrawing:
+      finalGeometry?.source === "gpx_import" || finalGeometry?.source === "manual"
+        ? drawing
+        : null,
+    manualDrawingSource:
+      finalGeometry?.source === "gpx_import"
+        ? "gpx_import"
+        : finalGeometry?.source === "manual"
+          ? "manual"
+          : null,
+    reconstructedDrawing: persistedCandidate,
+    reconstructedSource: isPersistedRouteSource(source) ? source : null,
+    finalGeometry,
+  };
 }

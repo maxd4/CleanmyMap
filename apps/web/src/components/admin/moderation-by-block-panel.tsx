@@ -80,12 +80,12 @@ export function ModerationByBlockPanel({
               </span>
             </div>
 
-            <p className="mt-3 text-sm leading-6 text-stone-700">
+            <p className="cmm-text-body mt-3">
               {block.description}
             </p>
 
             {block.details.length > 0 ? (
-              <ul className="mt-3 space-y-2 text-sm text-stone-700">
+              <ul className="cmm-text-small cmm-text-secondary mt-3 space-y-2">
                 {block.details.map((detail) => (
                   <li
                     key={`${block.id}-${detail}`}
@@ -107,7 +107,7 @@ export function ModerationByBlockPanel({
                     <p className="text-sm font-semibold text-stone-950">
                       {sample.label}
                     </p>
-                    <p className="mt-1 text-xs text-stone-600">
+                    <p className="cmm-text-caption cmm-text-muted mt-1">
                       {sample.meta}
                     </p>
                   </div>

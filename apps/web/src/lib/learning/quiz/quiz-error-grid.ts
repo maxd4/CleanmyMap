@@ -8,6 +8,7 @@ import {
   type QuizReviewTarget,
 } from "./quiz-review-targets.ts";
 import type { QuizQuestionCategory } from "@/lib/learning/quiz/quiz-question-categories";
+import { getSectionRubriqueById } from "@/lib/sections-registry";
 
 export type QuizErrorSeverityId = "low" | "medium" | "high";
 
@@ -52,6 +53,18 @@ const SAFETY_KEYWORDS = /(seringue|bidon|liquide inconnu|coupant|souillé|danger
 const TRI_KEYWORDS = /(tri|filière|recycl|emballag|verre|papier|brique|collecte)/i;
 const BIO_KEYWORDS = /(biodégrad|compost)/i;
 const RECYCLING_KEYWORDS = /(recycl|recyclabilité|recyclage|réemploi)/i;
+
+const WEATHER_REVIEW_TARGET = (() => {
+  const weather = getSectionRubriqueById("weather");
+  if (!weather) {
+    throw new Error("La rubrique Weather doit être présente dans le registre des sections.");
+  }
+
+  return {
+    label: weather.label.fr,
+    href: weather.route,
+  } satisfies QuizReviewTarget;
+})();
 
 const ERROR_TYPE_METADATA: Record<
   QuizErrorTypeId,
@@ -126,10 +139,7 @@ const ERROR_TYPE_METADATA: Record<
 
 const ERROR_REVIEW_TARGET_BY_TYPE: Record<QuizErrorTypeId, QuizReviewTarget> = {
   "idée reçue": QUIZ_REVIEW_TARGETS.comprendre,
-  "erreur de sécurité": {
-    label: "Organiser une action",
-    href: "/sections/weather",
-  },
+  "erreur de sécurité": WEATHER_REVIEW_TARGET,
   "mauvaise estimation": {
     label: "Méthodologie",
     href: "/methodologie",
@@ -138,10 +148,7 @@ const ERROR_REVIEW_TARGET_BY_TYPE: Record<QuizErrorTypeId, QuizReviewTarget> = {
     label: "Guide du tri",
     href: "/sections/recycling",
   },
-  "mauvais réflexe terrain": {
-    label: "Organiser une action",
-    href: "/sections/weather",
-  },
+  "mauvais réflexe terrain": WEATHER_REVIEW_TARGET,
   "confusion entre biodégradable et sans impact": QUIZ_REVIEW_TARGETS.comprendre,
   "mauvaise compréhension d'une filière de tri": {
     label: "Guide du tri",

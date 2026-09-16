@@ -37,8 +37,19 @@ assert.equal(
   true,
 );
 
+assert.equal(
+  auditWorkflowContent("- uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02\n  with:\n    path: artifacts/playwright\n", ".github/workflows/e2e-supabase.yml")[0].includes("raw Playwright"),
+  true,
+);
+
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const ciWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows", "ci.yml"), "utf8");
+const e2eWorkflow = readFileSync(path.join(repositoryRoot, ".github", "workflows", "e2e-supabase.yml"), "utf8");
+
+assert.doesNotMatch(e2eWorkflow, /path:\s*artifacts\/playwright\b/);
+assert.match(e2eWorkflow, /stage-public-e2e-artifact\.mjs/);
+assert.match(e2eWorkflow, /check-public-e2e-artifact\.mjs/);
+assert.match(e2eWorkflow, /path:\s*artifacts\/ci-public-evidence\b/);
 
 assert.match(ciWorkflow, /jobs:\n  scope:/);
 assert.match(ciWorkflow, /web_code_relevant:/);

@@ -107,7 +107,7 @@ export const WeatherTabs = memo(function WeatherTabs({
               <span className="block text-sm font-semibold tracking-tight">
                 {tab.label}
               </span>
-              <span className="mt-0.5 block text-[11px] font-medium text-slate-400">
+              <span className="mt-0.5 block cmm-text-small font-medium text-slate-400">
                 {tab.id === "conditions"
                   ? fr
                     ? "Est-ce le bon moment pour agir ?"
@@ -149,7 +149,7 @@ export const WeatherZonePicker = memo(function WeatherZonePicker({
         </div>
         <div>
           <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Périmètre Géo" : "Geo Perimeter"}</h3>
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-0.5">Configuration Zone</p>
+          <p className="cmm-text-caption font-black text-slate-500 uppercase tracking-widest mt-0.5">Configuration Zone</p>
         </div>
       </div>
 
@@ -160,7 +160,7 @@ export const WeatherZonePicker = memo(function WeatherZonePicker({
             tone={zoneMode === "auto" ? "primary" : "tertiary"}
             variant="pill"
             className={cn(
-              "px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-[color,background-color,border-color,box-shadow]",
+            "px-6 py-4 rounded-2xl cmm-text-small font-black uppercase tracking-widest border transition-[color,background-color,border-color,box-shadow]",
               zoneMode === "auto" ? "bg-blue-500/20 border-blue-500/50 text-white shadow-xl" : "bg-white/5 border-white/5 text-slate-500"
             )}
           >
@@ -171,7 +171,7 @@ export const WeatherZonePicker = memo(function WeatherZonePicker({
             tone={zoneMode === "manual" ? "primary" : "tertiary"}
             variant="pill"
             className={cn(
-              "px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-[color,background-color,border-color,box-shadow]",
+            "px-6 py-4 rounded-2xl cmm-text-small font-black uppercase tracking-widest border transition-[color,background-color,border-color,box-shadow]",
               zoneMode === "manual" ? "bg-blue-500/20 border-blue-500/50 text-white shadow-xl" : "bg-white/5 border-white/5 text-slate-500"
             )}
           >
@@ -222,7 +222,7 @@ export const WeatherRiskAlert = memo(function WeatherRiskAlert({ currentRisk, fr
         </div>
         <div className="space-y-1">
           <p className={cn(
-            "text-[10px] font-black uppercase tracking-[0.3em]",
+            "cmm-text-caption font-black uppercase tracking-[0.3em]",
             isDanger ? "text-rose-500" : isWarning ? "text-amber-500" : "text-emerald-500"
           )}>
             Niveau de Vigilance
@@ -235,10 +235,10 @@ export const WeatherRiskAlert = memo(function WeatherRiskAlert({ currentRisk, fr
 
       <div className="grid gap-6 relative z-10">
         <div className="p-6 rounded-3xl bg-white/5 border border-white/5 space-y-4">
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{fr ? "Matériel à envisager" : "Gear to consider"}</p>
+          <p className="cmm-text-caption font-black uppercase tracking-widest text-slate-500">{fr ? "Matériel à envisager" : "Gear to consider"}</p>
           <div className="flex flex-wrap gap-2">
             {currentRisk.equipment.map((item) => (
-              <span key={item} className="px-4 py-1.5 rounded-xl bg-white/10 text-[10px] font-black text-white border border-white/10 uppercase tracking-widest">
+              <span key={item} className="px-4 py-1.5 rounded-xl bg-white/10 cmm-text-caption font-black text-white border border-white/10 uppercase tracking-widest">
                 {item}
               </span>
             ))}
@@ -246,7 +246,7 @@ export const WeatherRiskAlert = memo(function WeatherRiskAlert({ currentRisk, fr
         </div>
 
         <div className="p-6 rounded-3xl bg-white/5 border border-white/5 space-y-4">
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{fr ? "Repères de prudence" : "Prudence guidance"}</p>
+          <p className="cmm-text-caption font-black uppercase tracking-widest text-slate-500">{fr ? "Repères de prudence" : "Prudence guidance"}</p>
           <ul className="space-y-3">
             {currentRisk.constraints.map((item) => (
               <li key={item} className="flex items-center gap-3 text-xs font-bold text-slate-400">
@@ -297,7 +297,7 @@ export const WeatherForecast = memo(function WeatherForecast({
             tone={activePeriod === p.id ? "primary" : "tertiary"}
             variant="pill"
             className={cn(
-              "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-[color,background-color,border-color,box-shadow]",
+            "px-6 py-2.5 rounded-xl cmm-text-small font-black uppercase tracking-[0.2em] transition-[color,background-color,border-color,box-shadow]",
               activePeriod === p.id ? "bg-white text-slate-950 shadow-xl" : "text-slate-500 hover:text-white"
             )}
           >
@@ -319,7 +319,7 @@ export const WeatherForecast = memo(function WeatherForecast({
             withTopBar={false}
             className="p-8 text-center space-y-6 group transition-[box-shadow,border-color,background-color] hover:shadow-lg"
           >
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-blue-400 transition-colors relative z-10">
+          <p className="cmm-text-caption font-black uppercase tracking-widest text-slate-500 group-hover:text-blue-400 transition-colors relative z-10">
               {point.time || point.day}
             </p>
             <div className="flex justify-center text-white/80 group-hover:scale-125 transition-transform duration-500 relative z-10">
@@ -327,7 +327,7 @@ export const WeatherForecast = memo(function WeatherForecast({
             </div>
             <div className="space-y-1 relative z-10">
               <p className="text-3xl font-black text-white tracking-tighter">{Math.round(point.temp)}°</p>
-              <div className="flex items-center justify-center gap-3 text-slate-500 text-[10px] font-black uppercase tracking-widest">
+              <div className="flex items-center justify-center gap-3 text-slate-500 cmm-text-caption font-black uppercase tracking-widest">
                 <span className="flex items-center gap-1"><Droplets size={10} className="text-blue-500" /> {point.pop}%</span>
                 <span className="flex items-center gap-1"><Wind size={10} className="text-slate-400" /> {point.wind}kmh</span>
               </div>
@@ -357,7 +357,7 @@ export const WeatherActionWindows = memo(function WeatherActionWindows({
 
       <div className="space-y-8">
         <div className="space-y-4">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">
+          <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-emerald-400">
             {fr ? "Favorables selon les données" : "Favorable based on the data"}
           </p>
           {windows.recommended.map((w, i) => (
@@ -379,12 +379,12 @@ export const WeatherActionWindows = memo(function WeatherActionWindows({
                     {new Date(w.from).toLocaleDateString(fr ? "fr-FR" : "en-US", { weekday: "long", day: "numeric" })}
                   </p>
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                    <span className="cmm-text-caption font-black uppercase tracking-widest text-slate-500">
                       {new Date(w.from).getHours()}h - {new Date(w.to).getHours()}h
                     </span>
                     <div className="w-1 h-1 rounded-full bg-white/10" />
                     <span className={cn(
-                      "text-[10px] font-black uppercase tracking-widest",
+                      "cmm-text-caption font-black uppercase tracking-widest",
                       w.level === "vert" ? "text-emerald-500" : "text-amber-500"
                     )}>
                       {w.reason}
@@ -392,7 +392,7 @@ export const WeatherActionWindows = memo(function WeatherActionWindows({
                   </div>
                 </div>
               </div>
-              <CmmButton tone="secondary" variant="pill" className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white">
+              <CmmButton tone="secondary" variant="pill" className="px-6 py-3 rounded-xl cmm-text-small font-black uppercase tracking-widest text-white">
                 {fr ? "Planifier" : "Schedule"}
               </CmmButton>
             </motion.div>
@@ -400,7 +400,7 @@ export const WeatherActionWindows = memo(function WeatherActionWindows({
         </div>
 
         <div className="space-y-4">
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-rose-400">
+          <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-rose-400">
             {fr ? "Vigilance renforcée" : "Increased vigilance"}
           </p>
           {windows.avoid.map((w, i) => (
@@ -418,12 +418,12 @@ export const WeatherActionWindows = memo(function WeatherActionWindows({
                   <p className="text-lg font-black text-white tracking-tight">
                     {new Date(w.from).toLocaleDateString(fr ? "fr-FR" : "en-US", { weekday: "long", day: "numeric" })}
                   </p>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                  <p className="cmm-text-caption font-black uppercase tracking-widest text-slate-500">
                     {new Date(w.from).getHours()}h - {new Date(w.to).getHours()}h
                   </p>
                 </div>
               </div>
-              <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">
+                  <span className="cmm-text-caption font-black uppercase tracking-widest text-rose-400">
                 {w.reason}
               </span>
             </motion.div>
@@ -478,7 +478,7 @@ export const KitConfiguration = memo(function KitConfiguration({
                   : "border-white/5 bg-white/5 text-slate-500 hover:bg-white/10 hover:text-slate-300"
               )}
             >
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">{type}</span>
+                  <span className="cmm-text-caption font-black uppercase tracking-[0.2em]">{type}</span>
             </CmmButton>
           ))}
         </div>
@@ -486,7 +486,7 @@ export const KitConfiguration = memo(function KitConfiguration({
         <div className="space-y-6">
           <div className="flex items-center gap-4 text-slate-500 border-b border-white/5 pb-4">
             <Layers size={14} />
-            <span className="text-[10px] font-black uppercase tracking-widest">{fr ? "Inventaire à envisager" : "Inventory to consider"}</span>
+            <span className="cmm-text-caption font-black uppercase tracking-widest">{fr ? "Inventaire à envisager" : "Inventory to consider"}</span>
           </div>
           <div className="grid gap-3">
             {packItems.map((item, i) => (
@@ -553,7 +553,7 @@ export const KitChecklist = memo(function KitChecklist({
               )}>
                 {item}
               </p>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 opacity-60">Prêt pour action</p>
+                <p className="cmm-text-caption font-black uppercase tracking-widest text-slate-500 opacity-60">Prêt pour action</p>
             </div>
           </label>
         ))}

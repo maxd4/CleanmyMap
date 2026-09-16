@@ -1,6 +1,7 @@
 import {
   BarChart3,
   BookOpen,
+  BookOpenText,
   Building2,
   CloudRainWind,
   Crown,
@@ -52,6 +53,7 @@ const NAVIGATION_DROPDOWN_ITEM_ICONS: Record<string, LucideIcon> = {
   community: Heart,
   messagerie: MessageCircle,
   "open-data": Eye,
+  annuaire: BookOpenText,
   history: History,
   "learn-comprendre": BookOpen,
   "learn-sentrainer": Dumbbell,

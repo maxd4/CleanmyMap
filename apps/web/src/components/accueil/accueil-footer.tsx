@@ -45,7 +45,7 @@ export function HomeFooter() {
   return (
     <footer className={FOOTER_RIBBON_CLASS}>
       <div className={`${FOOTER_CONTENT_CLASS} cmm-ribbon-text px-3 py-6 sm:px-5 sm:py-7 lg:px-7 lg:py-8`}>
-        <div className="flex min-w-0 max-w-full flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,auto)] lg:items-center lg:gap-6">
+        <div className="flex min-w-0 max-w-full flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_max-content] lg:items-center lg:gap-6 xl:grid-cols-[minmax(0,7fr)_minmax(29rem,max-content)_minmax(0,15fr)]">
           <div className="flex min-w-0 items-center gap-3 text-center sm:gap-2.5 sm:text-left">
             <BrandLogo
               variant="darkSurface"
@@ -64,15 +64,15 @@ export function HomeFooter() {
             </Link>
           </div>
 
-          <div className="flex min-w-0 max-w-full flex-nowrap justify-center gap-2.5 lg:justify-center">
+          <div className="cmm-footer-contact-actions lg:col-start-2 lg:row-start-1 lg:justify-self-center xl:col-start-2">
             <a
               href={`mailto:${contactEmail}`}
-              className="group flex min-h-10 min-w-0 basis-0 flex-1 items-center gap-2.5 rounded-xl border border-slate-700/80 bg-slate-950/55 px-3.5 py-2 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+              className="cmm-footer-contact-link group rounded-xl border border-slate-700/80 bg-slate-950/55 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80 sm:h-8 sm:w-8">
-                <Mail className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80">
+                <Mail className="h-4 w-4 text-white" />
               </div>
-              <span className="cmm-ribbon-text min-w-0 break-words font-bold text-white transition-colors group-hover:text-white">
+              <span className="text-white transition-colors group-hover:text-white">
                 {contactEmail}
               </span>
             </a>
@@ -80,12 +80,12 @@ export function HomeFooter() {
               href="https://instagram.com/cleanmymap.fr"
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex min-h-10 min-w-0 basis-0 flex-1 items-center gap-2.5 rounded-xl border border-slate-700/80 bg-slate-950/55 px-3.5 py-2 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+              className="cmm-footer-contact-link group rounded-xl border border-slate-700/80 bg-slate-950/55 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80 sm:h-8 sm:w-8">
-                <InstagramMark size={16} className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80">
+                <InstagramMark size={18} className="h-4 w-4 text-white" />
               </div>
-              <span className="cmm-ribbon-text min-w-0 break-words font-bold text-white transition-colors group-hover:text-white">
+              <span className="text-white transition-colors group-hover:text-white">
                 @cleanmymap.fr
               </span>
             </a>
@@ -93,41 +93,41 @@ export function HomeFooter() {
 
           <nav
             aria-label="Liens légaux"
-            className="cmm-ribbon-text flex min-w-0 max-w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-slate-700/60 pt-1 font-semibold uppercase tracking-[0.1em] text-white sm:pt-0 lg:justify-end lg:border-t-0"
+            className="cmm-footer-legal-links cmm-ribbon-text flex min-w-0 max-w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-slate-700/60 pt-1 font-semibold uppercase tracking-[0.1em] text-white sm:pt-0 lg:col-span-2 lg:col-start-1 lg:row-start-2 lg:justify-end xl:col-span-1 xl:col-start-3 xl:row-start-1 xl:border-t-0"
           >
-            <Link href="/mentions-legales" className="break-words transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50">
+            <Link href="/mentions-legales" className="shrink-0 whitespace-nowrap transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50">
               Mentions légales
             </Link>
             <Link
               href="/conditions-generales-utilisation"
-              className="break-words transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+              className="shrink-0 whitespace-nowrap transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               CGU
             </Link>
             <Link
               href="/politique-confidentialite"
-              className="break-words transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+              className="shrink-0 whitespace-nowrap transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               Confidentialité
             </Link>
             <Link
               href="/politique-cookies"
-              className="break-words transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+              className="shrink-0 whitespace-nowrap transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               Politique cookies
             </Link>
             <button
               type="button"
               onClick={requestCookieConsentPreferences}
-              className="cmm-ribbon-text break-words font-semibold uppercase tracking-[0.1em] text-white transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+              className="cmm-ribbon-text shrink-0 whitespace-nowrap font-semibold uppercase tracking-[0.1em] text-white transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               Gérer mes cookies
             </button>
-                          <div className="cmm-ribbon-text mt-2 text-center text-white">
-                  <p className="font-bold">Cultivons l&apos;entraide</p>
-                  <p>© 2026 CleanMyMap</p>
-                </div>
-                </nav>
+            <div className="cmm-ribbon-text mt-2 shrink-0 whitespace-nowrap text-center text-white">
+              <p className="font-bold">Cultivons l&apos;entraide</p>
+              <p>© 2026 CleanMyMap</p>
+            </div>
+          </nav>
         </div>
       </div>
     </footer>

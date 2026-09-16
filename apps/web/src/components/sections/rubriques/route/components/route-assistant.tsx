@@ -12,7 +12,7 @@ export function RouteAssistant({ data, hasData, fr }: RouteAssistantProps) {
   return (
     <>
       <section className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(14,56,40,0.9)] p-5 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
-        <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-100/68">
+        <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-100/68">
           {fr ? "Assistant proactif" : "Proactive assistant"}
         </p>
         <div className="mt-3 space-y-3">
@@ -27,7 +27,7 @@ export function RouteAssistant({ data, hasData, fr }: RouteAssistantProps) {
         <div className="mt-4 grid gap-2 md:grid-cols-2">
           {data.proactiveAssistant.operationalSignalZones.length > 0 ? (
             <div className="rounded-2xl border border-emerald-200/12 bg-[rgba(17,56,41,0.72)] p-3">
-              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-100/64">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.22em] text-emerald-100/64">
                 {fr ? "Signaux opérationnels" : "Operational signals"}
               </p>
               <ul className="mt-2 space-y-1 text-sm leading-relaxed text-white">
@@ -39,7 +39,7 @@ export function RouteAssistant({ data, hasData, fr }: RouteAssistantProps) {
           ) : null}
           {data.proactiveAssistant.upcomingEvents.length > 0 ? (
             <div className="rounded-2xl border border-emerald-200/12 bg-[rgba(17,56,41,0.72)] p-3">
-              <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-100/64">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.22em] text-emerald-100/64">
                 {fr ? "Événements à venir" : "Upcoming events"}
               </p>
               <ul className="mt-2 space-y-1 text-sm leading-relaxed text-white">
@@ -54,7 +54,7 @@ export function RouteAssistant({ data, hasData, fr }: RouteAssistantProps) {
 
       {data.proactiveAssistant.hotspots.length > 0 ? (
         <section className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(13,46,34,0.88)] p-5 shadow-[0_24px_56px_-32px_rgba(52,211,153,0.28)]">
-          <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-100/68">
+          <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-100/68">
             {fr ? "Hotspots détectés" : "Detected hotspots"}
           </p>
           <ul className="mt-4 space-y-2">

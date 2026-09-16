@@ -251,7 +251,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
           Le document détaillé n&apos;a pas pu être chargé
         </h2>
-        <p className="mt-2 text-sm leading-6 text-slate-500">
+        <p className="cmm-text-body mt-2">
           Réessayez dans un instant. Le chargement serveur des contrats a échoué.
         </p>
       </section>

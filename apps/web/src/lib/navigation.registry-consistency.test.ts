@@ -29,6 +29,10 @@ describe("navigation registry consistency", () => {
     expect(byRoute.get("/actions/new")?.description.fr).toBe(
       "Préparer une action et renseigner ses résultats.",
     );
+    expect(byRoute.get("/sections/weather")?.label).toEqual({
+      fr: "Météo & conditions terrain",
+      en: "Weather & field conditions",
+    });
     expect(byRoute.get("/sections/trash-spotter")?.label.fr).toBe(
       "Suivi Trash Spotter",
     );

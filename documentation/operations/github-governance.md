@@ -12,15 +12,37 @@ Ce mémo résume les garde-fous GitHub à garder en place pour CleanMyMap.
 
 ## Protection de `main`
 
-La branche `main` doit refuser les merges quand les checks requis échouent.
+Le dépôt conserve un workflow `MAIN-ONLY / SINGLE-WRITER` : les pushes
+fast-forward directs sur `main` restent autorisés pour l'intégrateur légitime.
+Le ruleset GitHub actif ciblant uniquement `refs/heads/main` interdit :
 
-Checks attendus pour la revue manuelle GitHub:
+- la suppression de `main` ;
+- les mises à jour non fast-forward et les force-push.
+
+Le ruleset n'impose ni Pull Request, ni approbation, ni required status check,
+ni merge queue. Les contrôles CI et CodeQL restent disponibles pour les runs
+GitHub et les revues, sans bloquer le push direct par une règle de branche.
+
+Checks conservés pour la revue manuelle GitHub :
 
 - `scope`
 - `web-checks`
 - `mobile-validation` lorsque le scope mobile est concerné
 - `CodeQL`
 - `Vercel`
+
+## Sécurité du dépôt public
+
+Les réglages GitHub attendus et conservés sont :
+
+- Secret Scanning activé ;
+- Push Protection activée ;
+- mises à jour de sécurité Dependabot activées ;
+- workflow CodeQL versionné conservé ; le `default setup` CodeQL reste distinct
+  de ce workflow et n'est pas configuré par ce lot.
+
+Les secrets restent uniquement dans les stores GitHub Actions, Vercel, Clerk et
+Supabase. Cette documentation ne contient aucune valeur secrète.
 
 ## CI et maintenance
 
@@ -91,4 +113,7 @@ résultats de sécurité ou la vérification des conditions propres à l'événe
 
 ## Point de vigilance
 
-Les réglages de protection de branche, les labels et les milestones vivent dans GitHub, pas dans le dépôt. Si un de ces éléments disparaît côté repo, il faut le remettre à la main dans les réglages GitHub ou via l'API.
+Les réglages de protection de branche, les labels et les milestones vivent dans
+GitHub, pas dans le dépôt. Le contrat distant doit être relu dans GitHub ou via
+l'API avant de conclure qu'il est toujours présent ; les checks locaux ne
+simulent pas cette lecture distante.

@@ -92,18 +92,11 @@ jobs:
             --project="signalement campaign 2"
 
       - name: Run persistent E2E
+        id: persistent_e2e
         env:
           CMM_E2E_CLERK_DEV_BACKEND_TOKEN: ${{ secrets.CMM_E2E_CLERK_DEV_BACKEND_TOKEN }}
           CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY: ${{ secrets.CMM_E2E_CLERK_DEV_PUBLISHABLE_KEY }}
         run: npm run test:e2e:persistent:ci
-
-      - name: Upload persistent E2E report
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: playwright-persistent-e2e-report
-          path: artifacts/playwright
-          if-no-files-found: ignore
 
       - name: Stop ephemeral Supabase
         if: always()
@@ -115,3 +108,22 @@ jobs:
         run: |
           rm -f apps/web/.env.local
           rm -f artifacts/ci/supabase-start.log artifacts/ci/supabase-reset.log artifacts/ci/supabase-stop.log
+
+      - name: Stage safe public E2E evidence
+        if: always()
+        env:
+          E2E_OUTCOME: ${{ steps.persistent_e2e.outcome }}
+        run: node scripts/checks/stage-public-e2e-artifact.mjs
+
+      - name: Validate safe public E2E evidence
+        id: validate_public_e2e
+        if: always()
+        run: node scripts/checks/check-public-e2e-artifact.mjs artifacts/ci-public-evidence
+
+      - name: Upload safe public E2E evidence
+        if: always() && steps.validate_public_e2e.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cleanmymap-public-e2e-evidence
+          path: artifacts/ci-public-evidence
+          if-no-files-found: error

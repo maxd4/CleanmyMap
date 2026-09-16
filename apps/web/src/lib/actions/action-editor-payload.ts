@@ -72,5 +72,6 @@ export function buildActionEditorPayload(row: ActionRow | null) {
     photos: metadata.photos,
     visionEstimate: metadata.visionEstimate,
     manualDrawing: parsedDrawing.manualDrawing,
+    geometrySource: row.geometry_source ?? null,
   };
 }

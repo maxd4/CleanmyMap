@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpDown, CalendarDays, CheckCircle2, ChevronRight, ClipboardList, Leaf, Loader2, MapPin, ShieldCheck, Sparkles, UserRound, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ActionParticipationReviewItem, JoinableActionItem } from "@/lib/actions/participation/group-participation";
+import { usesRegistrationStore } from "@/lib/actions/participation/action-phase";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 import { ActionThumbnail } from "./rejoindre-un-formulaire-section.illustrations";
@@ -90,7 +91,7 @@ export function ShortcutsCard() {
       </div>
       <div className="divide-y divide-slate-100 overflow-hidden rounded-[1.1rem] border border-slate-100">
         {[
-          { href: "#mon-suivi", label: "Mes inscriptions", icon: <UserRound size={18} /> },
+          { href: "#mon-suivi", label: "Mon suivi", icon: <UserRound size={18} /> },
           { href: "#file-publique", label: "Demandes d'inscription", icon: <ArrowUpDown size={18} /> },
           { href: "/actions/new", label: "Devenir organisateur", icon: <Sparkles size={18} /> },
           { href: "/sections/guide", label: "Météo & préparation terrain", icon: <ChevronRight size={18} /> },
@@ -163,9 +164,10 @@ export function ActionCard({
   onShareAction?: (actionId: string) => void;
 }) {
   const status = getActionDisplayStatus(item);
+  const usesRegistration = usesRegistrationStore(item.actionPhase);
   const isPreAction = item.actionPhase === "pre_action";
-  const cardStatus = isPreAction ? getCardDisplayStatus(item) : "completed";
-  const statusLabel = isPreAction
+  const cardStatus = getCardDisplayStatus(item);
+  const statusLabel = usesRegistration
     ? getRegistrationStatusLabel(cardStatus, fr)
     : getParticipationStatusLabel(cardStatus, fr);
   const lifecycleLabel = getLifecycleLabel(item.actionPhase, fr);
@@ -198,7 +200,7 @@ export function ActionCard({
             <div className="min-w-0 space-y-1">
               <h3 className="text-lg font-black tracking-tight text-emerald-950">{item.location_label}</h3>
               <div className="flex flex-wrap items-center gap-2">
-                <PillBadge tone={item.actionPhase === "pre_action" ? "amber" : "emerald"}>
+                <PillBadge tone={usesRegistration ? "amber" : "emerald"}>
                   {lifecycleLabel}
                 </PillBadge>
                 <p className="flex items-center gap-2 text-sm text-slate-600">
@@ -230,7 +232,13 @@ export function ActionCard({
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
               {formatCount(item.participantsCount)}/{formatCount(item.volunteers_count)}{" "}
-              {fr ? "Inscriptions confirmées" : "Confirmed registrations"}
+              {usesRegistration
+                ? fr
+                  ? "Inscriptions confirmées"
+                  : "Confirmed registrations"
+                : fr
+                  ? "Participations confirmées"
+                  : "Confirmed participations"}
             </span>
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
               {requestCountLabel}

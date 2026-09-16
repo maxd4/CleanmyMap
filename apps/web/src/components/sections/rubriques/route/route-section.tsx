@@ -176,7 +176,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
                fr={fr}
              />
              <fieldset className="rounded-[1.75rem] border border-emerald-300/18 bg-[rgba(11,39,30,0.88)] p-5">
-               <legend className="px-1 text-[11px] font-black uppercase tracking-[0.28em] text-emerald-100/68">
+              <legend className="px-1 cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-100/68">
                  {fr ? "Point de départ" : "Starting point"}
                </legend>
                <div className="mt-3 grid gap-3">
@@ -372,7 +372,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
                    
                    <div className="flex flex-wrap items-center justify-between gap-10 relative z-10">
                       <div className="space-y-6">
-                         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-black uppercase tracking-[0.3em] text-blue-400">
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 cmm-text-caption font-black uppercase tracking-[0.3em] text-blue-400">
                             <Sparkles size={12} />
                             {fr ? "Où agir" : "Where to act"}
                          </div>
@@ -388,15 +388,15 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
                            data-route-operational-budget
                          >
                            <div>
-                             <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Déplacement</dt>
+                    <dt className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500">Déplacement</dt>
                              <dd className="mt-1 font-bold">{totalMinutes} min</dd>
                            </div>
                            <div>
-                             <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Durée d’action</dt>
+                    <dt className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500">Durée d’action</dt>
                              <dd className="mt-1 font-bold">{serviceMinutes === null ? "Non fiable" : actionDurationLabel}</dd>
                            </div>
                            <div>
-                             <dt className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">Créneau total</dt>
+                    <dt className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500">Créneau total</dt>
                              <dd className="mt-1 font-bold">{operationalTotalMinutes === null ? "Non disponible" : operationalTotalLabel}</dd>
                            </div>
                          </dl>
@@ -418,7 +418,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
                       </div>
 
                       <div className="text-right space-y-2">
-                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{fr ? "Priorité moyenne" : "Average priority"}</p>
+                  <p className="cmm-text-caption font-black text-slate-500 uppercase tracking-widest">{fr ? "Priorité moyenne" : "Average priority"}</p>
                         <p className="text-6xl font-black text-white tracking-tighter leading-none">{data.scoreBreakdown.priority}</p>
                         <button
                           type="button"
@@ -438,7 +438,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
                   >
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="text-[11px] font-black uppercase tracking-[0.28em] text-emerald-100/68">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-100/68">
                           {fr ? "Boucles coordonnées" : "Coordinated loops"}
                         </p>
                         <p className="mt-2 text-sm font-semibold text-white/80">
@@ -451,7 +451,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
                         className="rounded-2xl border border-white/10 bg-white/[0.04] px-3 py-2"
                         aria-label={fr ? "Différencier les itinéraires par" : "Differentiate routes by"}
                       >
-                        <legend className="px-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100/70">
+                <legend className="px-1 cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-100/70">
                           {fr ? "Différencier les itinéraires par" : "Differentiate routes by"}
                         </legend>
                         <div className="mt-1 flex flex-wrap gap-3 text-xs font-semibold text-white" role="radiogroup">
@@ -541,7 +541,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
                             <p className="mt-2 text-xs text-slate-300">
                               {group.travelDistanceKm.toFixed(2)} km · {group.travelMinutes} min déplacement · {group.operationalBudget?.actionMinutes === null || group.operationalBudget?.actionMinutes === undefined ? "durée d’action indisponible" : `action ${formatBusinessDurationRangeMinutes(group.operationalBudget.actionMinutes)}`} · {group.targetCount} {fr ? "stops" : "stops"}
                             </p>
-                            <p className="mt-1 text-[11px] font-semibold text-emerald-100/70">
+                  <p className="mt-1 cmm-text-small font-semibold text-emerald-100/70">
                               {group.operationalBudget?.withinBudget === true
                                 ? "Budget d’action respecté"
                                 : group.operationalBudget?.withinBudget === false
@@ -549,7 +549,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
                                   : "Budget d’action non vérifiable"}
                             </p>
                             {multiRouteDisplayMode === "patterns" ? (
-                              <p className="mt-1 text-[11px] font-semibold text-emerald-100/70">
+                  <p className="mt-1 cmm-text-small font-semibold text-emerald-100/70">
                                 {fr ? "Trait : " : "Line: "}{getRouteGroupPatternLabel(group.groupIndex, fr)}
                               </p>
                             ) : null}

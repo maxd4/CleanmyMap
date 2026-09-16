@@ -12,6 +12,7 @@ const ENV_DTS_PATH = "apps/web/src/types/env.d.ts";
 
 export const ENV_PLATFORM_ALLOWLIST = Object.freeze({
   CI: "CI runner flag",
+  CODESPACES: "GitHub Codespaces platform flag",
   NODE_ENV: "Node.js runtime mode",
   PORT: "local tooling port",
   GIT_COMMIT_SHA: "deployment metadata",

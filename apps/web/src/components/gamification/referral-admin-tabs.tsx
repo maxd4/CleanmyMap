@@ -89,7 +89,7 @@ export function ReferralAdminTabs({
                 <h2 className="mt-3 text-4xl font-black tracking-tight text-white">
                   Choisir un utilisateur pour afficher son arbre
                 </h2>
-                <p className="mt-4 max-w-2xl text-sm leading-relaxed text-amber-100/45">
+                <p className="cmm-text-body cmm-text-inverse mt-4 max-w-2xl">
                   Sélectionnez un compte par son nom et visualisez la filiation
                   complète, avec les niveaux et les branches descendantes.
                 </p>
@@ -145,7 +145,7 @@ export function ReferralAdminTabs({
                 </div>
               </label>
 
-              <ul className="grid gap-3 text-sm text-amber-100/60 sm:grid-cols-2">
+              <ul className="cmm-text-small cmm-text-inverse grid gap-3 sm:grid-cols-2">
                 {[
                   "Nom d'affichage du profil",
                   "Parrain direct et date de rattachement",
@@ -169,7 +169,7 @@ export function ReferralAdminTabs({
               <h3 className="mt-3 text-2xl font-black tracking-tight text-white">
                 Exporter le CSV de filiation
               </h3>
-              <p className="mt-3 text-sm leading-relaxed text-amber-100/60">
+              <p className="cmm-text-body cmm-text-inverse mt-3">
                 Ouvre un fichier directement téléchargeable pour explorer la
                 filiation hors de l&apos;interface admin.
               </p>

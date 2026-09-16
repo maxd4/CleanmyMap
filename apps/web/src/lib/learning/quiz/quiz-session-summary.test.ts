@@ -45,4 +45,26 @@ describe("buildQuizSessionSummary", () => {
     expect(first?.themesToReview.length).toBeGreaterThanOrEqual(0);
     expect(first?.recommendedMode).not.toBeNull();
   });
+
+  it("keeps the canonical Weather label in the user-facing summary", () => {
+    const securityQuestion = QUIZ_QUESTIONS.find(
+      (question) => question.errorType === "erreur de sécurité",
+    );
+    expect(securityQuestion).toBeDefined();
+
+    const summary = buildQuizSessionSummary({
+      score: 0,
+      selectedAccessType: "terrain",
+      sessionCompleted: true,
+      sessionResults: { [securityQuestion!.id]: false },
+      sessionQuestions: [securityQuestion!],
+      questions: [securityQuestion!],
+    });
+
+    expect(summary?.nextReviewTarget).toEqual({
+      label: "Météo & conditions terrain",
+      href: "/sections/weather",
+    });
+    expect(summary?.themesToReview[0]?.label).toBe("Météo & conditions terrain");
+  });
 });
