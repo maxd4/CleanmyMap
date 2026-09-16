@@ -69,4 +69,18 @@ describe("PageHeader", () => {
     expect(source).toContain('"cmm-page-header-title"');
     expect(source).toContain('"cmm-page-header-subtitle"');
   });
+
+  it("keeps canonical titles and subtitles readable without CSS ellipses", () => {
+    const styles = readFileSync(
+      new URL("../../styles/typography.css", import.meta.url),
+      "utf8",
+    );
+    const titleBlock = styles.match(/\.cmm-page-header-title\s*\{([\s\S]*?)\n  \}/u)?.[1] ?? "";
+    const subtitleBlock = styles.match(/\.cmm-page-header-subtitle\s*\{([\s\S]*?)\n  \}/u)?.[1] ?? "";
+
+    expect(titleBlock).not.toContain("text-overflow");
+    expect(titleBlock).not.toContain("white-space: nowrap");
+    expect(subtitleBlock).not.toContain("text-overflow");
+    expect(subtitleBlock).not.toContain("-webkit-line-clamp");
+  });
 });

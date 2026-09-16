@@ -46,6 +46,9 @@ En cas de contradiction, ne pas créer une correction locale : aligner la docume
 - le header canonique est centré sur le couple **titre + sous-titre**, avec une éventuelle `action` latérale ;
 - les repères de contexte, pills, badges et eyebrow ne font pas partie du contrat canonique du titre de page ;
 - les sous-titres restent courts, lisibles et non exhaustifs ;
+- les titres et sous-titres sont affichés intégralement : une ellipse CSS ne
+  doit jamais compenser un conteneur sous-dimensionné ; sur petit écran, le
+  wrapping naturel est préféré à la troncature ;
 - les majuscules décoratives ne doivent pas remplacer la hiérarchie typographique.
 
 ## Invariants typographiques
@@ -69,7 +72,9 @@ Règles :
 - aucune page ne doit définir sa propre largeur, son propre `white-space` ou sa propre troncature pour le titre ;
 - aucun `<br>` manuel ne doit être injecté dans le titre pour obtenir une composition visuelle ;
 - le comportement responsive appartient au composant global et doit rester identique pour toutes les pages ;
-- si un titre ne tient pas correctement, raccourcir d'abord le libellé ; si le problème est systémique, corriger `PageHeader` globalement plutôt qu'une page isolée.
+- si un titre ne tient pas correctement, agrandir raisonnablement son espace
+  ou laisser le wrapping naturel ; si le problème est systémique, corriger
+  `PageHeader` globalement plutôt qu'une page isolée.
 
 ### Sous-titre
 
@@ -86,7 +91,8 @@ line-height: 1.55;
 
 Règles :
 
-- maximum deux lignes selon le comportement global du composant ;
+- wrapping naturel, sans limite artificielle de lignes ni ellipse générée par
+  CSS ;
 - aucune page ne doit ajouter une classe locale `text-*`, `font-*`, `leading-*`, `tracking-*`, `max-w-*` ou `line-clamp-*` au sous-titre ;
 - pas de `<br>` manuel ;
 - le sous-titre décrit la page, il ne remplace ni une introduction longue ni une liste d'informations ;
@@ -205,9 +211,12 @@ Les couleurs précises restent gouvernées par `BLOC_COLOR_SYSTEM_PREMIUM.md` et
 - ne jamais corriger localement un overflow par une taille de police spécifique à une route ;
 - ne jamais réduire le tracking ou la graisse sur une seule page ;
 - ne jamais utiliser un retour à la ligne décoratif ;
-- le comportement de wrapping / ellipsis doit être décidé une seule fois dans les classes `cmm-page-header-*` ;
+- le comportement de wrapping est décidé une seule fois dans les classes
+  `cmm-page-header-*` ; ces classes ne doivent pas tronquer le titre ou le
+  sous-titre avec `text-overflow`, `line-clamp` ou `white-space: nowrap` ;
 - si plusieurs pages rencontrent le même problème, modifier le composant canonique et ses tests plutôt que multiplier les exceptions ;
-- le sous-titre reste au maximum sur deux lignes et conserve le même rythme sur toutes les pages.
+- le sous-titre conserve le même rythme sur toutes les pages, avec autant de
+  lignes que nécessaire pour rester lisible.
 
 ## Exceptions
 
