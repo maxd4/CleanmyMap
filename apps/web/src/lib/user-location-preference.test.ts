@@ -1,6 +1,7 @@
 import { expect, it } from "vitest";
 import {
   clearLocationPreferenceMetadata,
+  createTerritoryLocationSelectionFromLegacyArrondissement,
   createLocationPreferencesMetadata,
   createTerritoryLocationMetadata,
   createGreaterParisMetadataFromZoneName,
@@ -18,6 +19,18 @@ it("extracts a complete preference from metadata", () => {
   });
 
   expect(result).toEqual({ arrondissement: 11, locationType: "work" });
+});
+
+it("normalizes a legacy arrondissement into the canonical territory selection", () => {
+  expect(createTerritoryLocationSelectionFromLegacyArrondissement(11)).toEqual({
+    country: "France",
+    level: "arrondissement",
+    label: "Paris 11e arrondissement",
+    subtitle: "Compatibilité historique",
+    arrondissement: 11,
+    arrondissementCity: "Paris",
+  });
+  expect(createTerritoryLocationSelectionFromLegacyArrondissement(44)).toBeNull();
 });
 
   it("extracts a national territory preference from the new metadata shape", () => {

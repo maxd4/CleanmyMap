@@ -30,7 +30,6 @@ const completeAccountState = {
   currentProfile: "benevole",
   role: "benevole",
   clerkReachable: true,
-  isLocalHost: true,
   initialArrondissement: null,
   initialLocationType: null,
 };

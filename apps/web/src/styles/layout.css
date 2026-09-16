@@ -247,8 +247,8 @@
 
   .cmm-account-setup-header-glyph,
   .cmm-account-setup-choice-glyph {
-    width: var(--cmm-account-setup-choice-glyph-size);
-    height: var(--cmm-account-setup-choice-glyph-size);
+    width: var(--cmm-account-setup-choice-glyph-size, 2rem);
+    height: var(--cmm-account-setup-choice-glyph-size, 2rem);
   }
 
   .cmm-account-setup-title {
@@ -261,11 +261,11 @@
   }
 
   .cmm-account-setup-card {
-    padding: var(--cmm-account-setup-card-padding);
+    padding: var(--cmm-account-setup-card-padding, var(--cmm-card-padding-md));
   }
 
   .cmm-account-setup-card-heading {
-    margin-block-end: var(--cmm-account-setup-card-heading-gap);
+    margin-block-end: var(--cmm-account-setup-card-heading-gap, 1rem);
   }
 
   .cmm-account-setup-section-title {
@@ -280,15 +280,15 @@
 
   .cmm-account-setup-choice {
     min-width: 0;
-    min-height: var(--cmm-account-setup-choice-min-height);
-    gap: var(--cmm-account-setup-choice-gap);
-    padding-block: var(--cmm-account-setup-choice-padding-block);
-    padding-inline: var(--cmm-account-setup-choice-padding-inline);
+    min-height: var(--cmm-account-setup-choice-min-height, 5rem);
+    gap: var(--cmm-account-setup-choice-gap, 0.5rem);
+    padding-block: var(--cmm-account-setup-choice-padding-block, 0.75rem);
+    padding-inline: var(--cmm-account-setup-choice-padding-inline, 1rem);
   }
 
   .cmm-account-setup-choice-icon {
-    width: var(--cmm-account-setup-choice-icon-size);
-    height: var(--cmm-account-setup-choice-icon-size);
+    width: var(--cmm-account-setup-choice-icon-size, 3rem);
+    height: var(--cmm-account-setup-choice-icon-size, 3rem);
   }
 
   .cmm-account-setup-actions {

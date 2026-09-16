@@ -1,5 +1,6 @@
 import {
   extractArrondissementFromLabel,
+  getArrondissementMunicipalLabel,
   inferArrondissementCityFromLabel,
   parseTerritoryArrondissement as parseTerritoryArrondissementValue,
   type ArrondissementCity,
@@ -114,6 +115,25 @@ function parseTerritoryArrondissement(value: unknown): ParisArrondissement | nul
   }
 
   return null;
+}
+
+/** Convert the former single arrondissement field to the canonical territory shape. */
+export function createTerritoryLocationSelectionFromLegacyArrondissement(
+  value: unknown,
+): TerritoryLocationSelection | null {
+  const arrondissement = parseTerritoryArrondissement(value);
+  if (!arrondissement) {
+    return null;
+  }
+
+  return {
+    country: "France",
+    level: "arrondissement",
+    label: getArrondissementMunicipalLabel("Paris", arrondissement),
+    subtitle: "Compatibilité historique",
+    arrondissement,
+    arrondissementCity: "Paris",
+  };
 }
 
 function parseCanonicalSelection(value: unknown): TerritoryLocationSelection | null {

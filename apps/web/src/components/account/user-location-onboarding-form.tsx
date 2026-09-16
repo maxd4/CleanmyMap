@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { Briefcase, House } from "lucide-react";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { InlineFieldError } from "@/components/ui/inline-field-error";
 import { PermissionErrorState } from "@/components/ui/permission-error-state";
@@ -16,37 +17,22 @@ import {
 import { logFailure } from "@/lib/logging/failure-log";
 import {
   GreaterParisSelect,
-  type TerritoryLocationSelection,
 } from "@/lib/geo/greater-paris-select";
+import { AccountSetupChoiceCard, AccountSetupSection } from "@/components/account/account-setup-primitives";
 import {
   clearLocationPreferenceMetadata,
   createLocationPreferencesMetadata,
+  createTerritoryLocationSelectionFromLegacyArrondissement,
   extractLocationPreferencesFromMetadata,
   extractTerritoryLocationPreferenceFromMetadata,
   extractUserLocationPreferenceFromMetadata,
+  type TerritoryLocationSelection,
   type UserLocationType,
 } from "@/lib/user-location-preference";
 
 type UserLocationOnboardingFormProps = {
   nextPath: string;
 };
-
-function createInitialTerritorySelection(
-  arrondissement: number | null | undefined,
-): TerritoryLocationSelection | null {
-  if (!arrondissement || arrondissement <= 0) {
-    return null;
-  }
-
-  return {
-    country: "France",
-    level: "arrondissement",
-    label: `Paris ${arrondissement === 1 ? "1er" : `${arrondissement}e`}`,
-    subtitle: "Compatibilité historique",
-    arrondissement: arrondissement as TerritoryLocationSelection["arrondissement"],
-    arrondissementCity: "Paris",
-  };
-}
 
 export function UserLocationOnboardingForm({
   nextPath,
@@ -63,7 +49,7 @@ export function UserLocationOnboardingForm({
     territoryPreference?.locationType ?? currentPreference?.locationType ?? "residence";
   const initialTerritorySelection =
     territoryPreference ??
-    createInitialTerritorySelection(currentPreference?.arrondissement ?? null);
+    createTerritoryLocationSelectionFromLegacyArrondissement(currentPreference?.arrondissement);
   const [locationTypeOverride, setLocationTypeOverride] = useState<
     UserLocationType | undefined
   >();
@@ -182,44 +168,51 @@ export function UserLocationOnboardingForm({
   }
 
   return (
-    <form
-      onSubmit={(event) => void handleSubmit(event)}
-      className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
-    >
-      <div>
-        <h1 className="text-lg font-semibold cmm-text-primary">
-          Votre territoire prioritaire
-        </h1>
-        <p className="mt-2 cmm-text-small cmm-text-secondary">
+    <form onSubmit={(event) => void handleSubmit(event)}>
+      <AccountSetupSection
+        variant="light"
+        title="Votre territoire prioritaire"
+        headingId="user-location-title"
+        description={
+          <>
           Indiquez votre lieu principal pour prioriser les associations et les
           commerçant·e·s proches dans les rubriques.
-        </p>
-      </div>
+          </>
+        }
+      >
 
       <fieldset className="space-y-2">
         <legend className="cmm-text-small font-medium cmm-text-primary">
           Ce territoire correspond à :
         </legend>
-        <label className="flex items-center gap-2 cmm-text-small cmm-text-secondary">
-          <input
-            type="radio"
-            name="locationType"
-            value="residence"
-            checked={locationType === "residence"}
-            onChange={() => setLocationType("residence")}
+        <div role="radiogroup" aria-label="Type de zone" className="grid gap-3 sm:grid-cols-2">
+          <AccountSetupChoiceCard
+            variant="light"
+            selected={locationType === "residence"}
+            icon={House}
+            label="Ma zone de résidence"
+            input={{
+              type: "radio",
+              name: "locationType",
+              value: "residence",
+              checked: locationType === "residence",
+              onChange: () => setLocationType("residence"),
+            }}
           />
-          Ma zone de résidence
-        </label>
-        <label className="flex items-center gap-2 cmm-text-small cmm-text-secondary">
-          <input
-            type="radio"
-            name="locationType"
-            value="work"
-            checked={locationType === "work"}
-            onChange={() => setLocationType("work")}
+          <AccountSetupChoiceCard
+            variant="light"
+            selected={locationType === "work"}
+            icon={Briefcase}
+            label="Ma zone de travail"
+            input={{
+              type: "radio",
+              name: "locationType",
+              value: "work",
+              checked: locationType === "work",
+              onChange: () => setLocationType("work"),
+            }}
           />
-          Ma zone de travail
-        </label>
+        </div>
       </fieldset>
 
       <label className="block space-y-2">
@@ -264,6 +257,7 @@ export function UserLocationOnboardingForm({
       >
         {isSaving ? "Enregistrement..." : "Valider et continuer"}
       </button>
+      </AccountSetupSection>
     </form>
   );
 }

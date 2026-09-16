@@ -1,25 +1,14 @@
 "use client";
 
-import type { AppProfile, DisplayNameMode } from "@/lib/profiles";
 import type { Role } from "@/lib/domain-language";
-import type { TerritoryLocationSelection } from "@/lib/user-location-preference";
 import { AccountSetupForm } from "@/components/account/account-setup-form";
+import type { AccountSetupFormProps } from "@/components/account/use-account-setup-controller";
 
 type AccountSetupReason = "initial_setup" | "schema_update" | null;
 
-export type AccountCompletionPageProps = {
+export type AccountCompletionPageProps = Omit<AccountSetupFormProps, "initialRole"> & {
   reason?: AccountSetupReason;
-  nextPath?: string;
   initialRole?: Role;
-  initialProfile: AppProfile;
-  clerkReachable: boolean;
-  isLocalHost: boolean;
-  initialDisplayNameMode?: DisplayNameMode | null;
-  initialResidence?: TerritoryLocationSelection | null;
-  initialWork?: TerritoryLocationSelection | null;
-  initialArrondissement?: number | null;
-  initialLocationType?: "residence" | "work" | null;
-  submitMode?: "navigate" | "refresh";
 };
 
 /** Full-page onboarding surface used by both /onboarding and the blocking gate. */
@@ -28,7 +17,6 @@ export function AccountCompletionPage({
   initialRole,
   initialProfile,
   clerkReachable,
-  isLocalHost,
   initialDisplayNameMode,
   initialResidence,
   initialWork,
@@ -45,7 +33,6 @@ export function AccountCompletionPage({
           initialRole={initialRole}
           initialProfile={initialProfile}
           clerkReachable={clerkReachable}
-          isLocalHost={isLocalHost}
           initialDisplayNameMode={initialDisplayNameMode}
           initialResidence={initialResidence}
           initialWork={initialWork}
@@ -55,9 +42,4 @@ export function AccountCompletionPage({
       </div>
     </div>
   );
-}
-
-/** Compatibility export for older callers; it no longer renders a dialog. */
-export function AccountCompletionModal(props: AccountCompletionPageProps) {
-  return <AccountCompletionPage {...props} />;
 }

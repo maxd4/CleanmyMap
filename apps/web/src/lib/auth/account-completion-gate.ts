@@ -1,10 +1,8 @@
-import { headers } from "next/headers";
 import type { AccountSetupRequirement } from "@/lib/auth/account-setup";
 import { getCurrentUserAccountSetupRequirement } from "@/lib/auth/account-setup";
 import { getCurrentUserLocationPreferences } from "@/lib/auth/user-location";
 import type { UserLocationPreferences } from "@/lib/user-location-preference";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
-import { isLocalhostHost } from "@/lib/auth/dev-auth";
 import type { AppProfile, AppRoleLabel, DisplayNameMode } from "@/lib/profiles";
 import { toProfile } from "@/lib/profiles";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
@@ -14,7 +12,6 @@ export type AccountCompletionGateState = {
   role: AppRoleLabel;
   currentProfile: AppProfile;
   clerkReachable: boolean;
-  isLocalHost: boolean;
   initialDisplayNameMode?: DisplayNameMode;
   initialArrondissement: number | null;
   initialLocationType: "residence" | "work" | null;
@@ -41,9 +38,6 @@ export async function loadAccountCompletionGateState(
     return null;
   }
 
-  const requestHeaders = await headers();
-  const isLocalHost = isLocalhostHost(requestHeaders.get("host"));
-
   const identity = resolvedSession.clerkReachable
     ? await getCurrentUserIdentity({ userId: resolvedSession.userId }).catch(() => null)
     : null;
@@ -58,7 +52,6 @@ export async function loadAccountCompletionGateState(
       role,
        currentProfile,
       clerkReachable: resolvedSession.clerkReachable,
-      isLocalHost,
       initialDisplayNameMode: identity?.displayNameMode,
       initialArrondissement: null,
       initialLocationType: null,
@@ -78,7 +71,6 @@ export async function loadAccountCompletionGateState(
     role,
     currentProfile,
     clerkReachable: resolvedSession.clerkReachable,
-    isLocalHost,
     initialDisplayNameMode: identity?.displayNameMode,
     initialArrondissement: existingPreference?.arrondissement ?? null,
     initialLocationType: locationPreferences.residence
