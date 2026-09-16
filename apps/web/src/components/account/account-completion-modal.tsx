@@ -37,8 +37,8 @@ export function AccountCompletionPage({
   submitMode = "navigate",
 }: AccountCompletionPageProps) {
   return (
-    <div className="relative isolate min-h-full w-full min-w-0 overflow-x-hidden bg-[linear-gradient(135deg,#eef6f2_0%,#f1f4f8_52%,#f5f2fb_100%)] px-4 py-6 sm:px-8 sm:py-8 lg:px-10 lg:py-10">
-      <div className="cmm-page-width flex flex-col">
+    <div className="cmm-account-setup-surface relative isolate min-h-0 w-full min-w-0 overflow-x-hidden bg-[linear-gradient(135deg,#eef6f2_0%,#f1f4f8_52%,#f5f2fb_100%)]">
+      <div className="cmm-account-setup-frame cmm-page-width flex min-h-0 flex-col">
         <AccountSetupForm
           nextPath={nextPath}
           submitMode={submitMode}
