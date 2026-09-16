@@ -23,8 +23,11 @@ import { useMapFeedData } from "@/components/actions/map-feed/use-map-feed-data"
 import { useActionsMapViewport } from "@/components/actions/map-feed/use-actions-map-viewport";
 import {
   ActionPollutionScoreReferencesProvider,
-  useActionPollutionScoreReferences,
 } from "@/components/actions/map/action-pollution-score-references-context";
+import {
+  ACTIONS_MAP_PUBLIC_FEED_DEFAULTS,
+  getActionsMapCurrentYearDays,
+} from "@/components/actions/map/actions-map-filters.utils";
 
 const ActionsVisualizationPanel = dynamic(
   () =>
@@ -57,11 +60,6 @@ const ActionStoriesCarousel = dynamic(
   },
 );
 
-const INITIAL_DAYS = Math.ceil(
-  (new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) /
-    (1000 * 60 * 60 * 24),
-);
-
 export function selectRecentActions(items: ActionMapItem[]): ActionMapItem[] {
   return items.filter((item) => mapItemType(item) === "action");
 }
@@ -86,14 +84,13 @@ function ActionsMapPageContent({
   const pageFamily = resolvePageFamily("/actions/map");
   const searchParams = useSearchParams();
   const requestedActionId = searchParams.get("actionId")?.trim() || null;
-  const { references } = useActionPollutionScoreReferences();
   const {
     filters,
     setDateScope,
     setZoneQuery,
     toggleCategory,
     resetFilters,
-  } = useActionsMapFilters(INITIAL_DAYS);
+  } = useActionsMapFilters(getActionsMapCurrentYearDays());
   const {
     days,
     dateScope,
@@ -150,12 +147,11 @@ function ActionsMapPageContent({
     types: "all",
     days,
     dateScope,
-    statusFilter: "approved",
+    statusFilter: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.statusFilter,
     impactFilter,
     qualityMin,
     zoneQuery,
     visibleCategories,
-    pollutionScoreReferences: references,
     limit: 300,
     viewport: mapViewport,
     enabled: isInitialViewportResolved && hasInitialPublicActions,

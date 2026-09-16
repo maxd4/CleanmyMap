@@ -19,8 +19,8 @@ import {
   normalizeZoneQuery,
   type ActionsMapDateScope,
 } from "@/components/actions/map/actions-map-filters.utils";
-import type { PollutionScoreReferences } from "@/lib/actions/pollution/pollution-score";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
+import { useActionPollutionScoreReferences } from "@/components/actions/map/action-pollution-score-references-context";
 
 type UseMapFeedDataParams = {
   types: ActionRecordType[] | "all";
@@ -31,7 +31,6 @@ type UseMapFeedDataParams = {
   qualityMin: number;
   zoneQuery?: string;
   visibleCategories: Record<MarkerCategory, boolean>;
-  pollutionScoreReferences?: PollutionScoreReferences | null;
   limit?: number;
   viewport?: MapViewportState | null;
   enabled?: boolean;
@@ -46,11 +45,11 @@ export function useMapFeedData({
   qualityMin,
   zoneQuery,
   visibleCategories,
-  pollutionScoreReferences,
   limit = 120,
   viewport = null,
   enabled = true,
 }: UseMapFeedDataParams) {
+  const { references: pollutionScoreReferences } = useActionPollutionScoreReferences();
   const normalizedZoneQuery = useMemo(
     () => normalizeZoneQuery(zoneQuery),
     [zoneQuery],

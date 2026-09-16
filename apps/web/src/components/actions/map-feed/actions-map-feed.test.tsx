@@ -5,6 +5,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { HOMEPAGE_MAP_VIEWPORT } from "@/components/actions/actions-map-canvas.utils";
 import { ActionsMapFeed } from "./actions-map-feed";
 
+vi.mock("@/components/actions/map/action-pollution-score-references-context", () => ({
+  ActionPollutionScoreReferencesProvider: ({ children }: { children?: React.ReactNode }) =>
+    React.createElement(
+      "div",
+      { "data-testid": "actions-map-pollution-score-boundary" },
+      children,
+    ),
+}));
+
 const useMapFeedDataMock = vi.fn();
 
 vi.mock("./use-map-feed-data", () => ({
@@ -16,6 +25,35 @@ afterEach(() => {
 });
 
 describe("ActionsMapFeed", () => {
+  it("keeps every feed surface inside the pollution references boundary", () => {
+    useMapFeedDataMock.mockReturnValue({
+      data: null,
+      allItems: [],
+      items: [],
+      summary: { totalKg: 0, totalButts: 0, wasteKnownActions: 0, wasteCoverageRate: 0 },
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      reload: vi.fn(),
+      freshnessLabel: null,
+      partialSourcesLabel: "inconnues",
+      hasPartialSource: false,
+    });
+
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionsMapFeed, {
+        days: 30,
+        statusFilter: "approved",
+        impactFilter: "all",
+        qualityMin: 0,
+        presentation: "homepage-preview",
+        showStoriesCarousel: false,
+      }),
+    );
+
+    expect(markup).toContain('data-testid="actions-map-pollution-score-boundary"');
+  });
+
   it("waits for the public city viewport before loading the map feed", () => {
     useMapFeedDataMock.mockReturnValue({
       data: null,

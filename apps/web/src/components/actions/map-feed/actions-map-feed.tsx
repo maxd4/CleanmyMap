@@ -2,10 +2,11 @@
 
 import { useEffect, useState, type RefObject } from "react";
 import { DEFAULT_VISIBLE_CATEGORIES } from "@/components/actions/map-marker-categories";
-import type {
-  ActionsMapCanvasComponent,
-  ActionsMapFeedProps,
+import {
+  type ActionsMapCanvasComponent,
+  type ActionsMapFeedProps,
 } from "./map-feed.types";
+import { ACTIONS_MAP_PUBLIC_FEED_DEFAULTS } from "@/components/actions/map/actions-map-filters.utils";
 import { useMapFeedData, type MapFeedDataState } from "./use-map-feed-data";
 import { ImmersiveLayout } from "./_layouts/immersive-layout";
 import { DefaultLayout } from "./_layouts/default-layout";
@@ -18,6 +19,7 @@ import { HOMEPAGE_MAP_VIEWPORT } from "@/components/actions/actions-map-canvas.u
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import { useActionsMapViewport } from "./use-actions-map-viewport";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
+import { ActionPollutionScoreReferencesProvider } from "@/components/actions/map/action-pollution-score-references-context";
 
 type ActionsMapFeedContentProps = {
   feedData: MapFeedDataState;
@@ -244,10 +246,10 @@ export function ActionsMapFeedContent({
   );
 }
 
-export function ActionsMapFeed({
+function ActionsMapFeedWithReferences({
   types = "all",
   days,
-  dateScope = "current_year",
+  dateScope = ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.dateScope,
   statusFilter,
   impactFilter,
   qualityMin,
@@ -329,5 +331,13 @@ export function ActionsMapFeed({
       scoreScope={scoreScope}
       onScoreScopeChange={onScoreScopeChange}
     />
+  );
+}
+
+export function ActionsMapFeed(props: ActionsMapFeedProps) {
+  return (
+    <ActionPollutionScoreReferencesProvider>
+      <ActionsMapFeedWithReferences {...props} />
+    </ActionPollutionScoreReferencesProvider>
   );
 }

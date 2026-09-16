@@ -47,6 +47,29 @@ La page ne présente pas les diagnostics techniques de qualité géométrique da
 la vue publique. La carte conserve sa géométrie et ses interactions ; les
 informations utiles à la lecture restent accessibles via la légende compacte.
 
+## Feed public partagé avec la homepage
+
+La carte de la homepage est une preview du même feed cartographique public que
+`/actions/map`. Les deux surfaces partagent le contrat `ActionsMapFeed` :
+
+- éléments publics `approved` ;
+- politique temporelle canonique `current_year`, calculée par
+  `getActionsMapCurrentYearDays()` ;
+- impact `all` et qualité minimale `0` par défaut ;
+- types et sémantique des catégories issus de `MarkerCategory` et
+  `DEFAULT_VISIBLE_CATEGORIES` ;
+- références de score fournies par
+  `ActionPollutionScoreReferencesProvider` →
+  `/api/actions/map/pollution-score-references` (snapshot V6, fallback RPC V2).
+
+`homepage-preview` peut utiliser un viewport et une limite plus petits, ainsi
+qu'une présentation compacte et des contrôles masqués. Ces différences sont
+bornées à la présentation et au volume affiché : à viewport et période
+identiques, l'éligibilité, le score et la couleur restent ceux de la carte
+publique. Une action disposant d'un score valide ne devient donc pas grise sur
+la homepage ; le gris reste réservé à l'indisponibilité réelle du score et le
+chargement possède sa couleur dédiée.
+
 ## Viewport initial public
 
 À l'ouverture, la carte ne présente pas de viewport monde neutre. La référence

@@ -8,6 +8,18 @@ import {
 export const ACTIONS_MAP_FILTERS_STORAGE_KEY = "cmm_actions_map_filters";
 export type ActionsMapDateScope = "current_year" | "all_time";
 
+export const ACTIONS_MAP_PUBLIC_FEED_DEFAULTS = {
+  dateScope: "current_year",
+  statusFilter: "approved",
+  impactFilter: "all",
+  qualityMin: 0,
+} as const;
+
+export function getActionsMapCurrentYearDays(now = new Date()): number {
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+  return Math.max(1, Math.ceil((now.getTime() - yearStart.getTime()) / (24 * 60 * 60 * 1000)));
+}
+
 export type ActionsMapFilters = {
   days: number;
   dateScope: ActionsMapDateScope;
@@ -134,9 +146,9 @@ export function buildDefaultActionsMapFilters(
 ): ActionsMapFilters {
   return {
     days: clampInteger(initialDays, 1, 3650, 90),
-    dateScope: "current_year",
-    impactFilter: "all",
-    qualityMin: 0,
+    dateScope: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.dateScope,
+    impactFilter: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.impactFilter,
+    qualityMin: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.qualityMin,
     zoneQuery: "",
     visibleCategories: { ...DEFAULT_VISIBLE_CATEGORIES },
   };
