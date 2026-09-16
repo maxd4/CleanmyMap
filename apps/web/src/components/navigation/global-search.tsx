@@ -11,13 +11,14 @@ import { getNavigationSpacesForProfile } from "@/lib/navigation";
 import type { AppProfile } from "@/lib/profiles";
 import type { DisplayMode, Locale } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
+import { filterGlobalSearchItems, type GlobalSearchItem } from "./global-search-matching";
 import { NavigationItemText } from "./navigation-item-text";
 
 type GlobalSearchProps = {
   currentProfile: AppProfile;
 };
 
-type SearchItem = ReturnType<typeof buildSearchItems>[number];
+type SearchItem = GlobalSearchItem;
 
 function buildSearchItems(
   currentProfile: AppProfile,
@@ -47,28 +48,10 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
     [currentProfile, displayMode, locale],
   );
 
-  const filteredItems = useMemo(() => {
-    if (!query.trim()) {
-      return [];
-    }
-
-    const searchTerms = query.toLowerCase().split(" ");
-    return allItems
-      .filter((item) => {
-        const label = item.label[locale].toLowerCase();
-        const description = item.description[locale].toLowerCase();
-        const space = item.spaceLabel.toLowerCase();
-        const searchKeywords = (item.searchKeywords?.[locale] ?? []).join(" ").toLowerCase();
-        return searchTerms.every(
-          (term) =>
-            label.includes(term) ||
-            description.includes(term) ||
-            space.includes(term) ||
-            searchKeywords.includes(term),
-        );
-      })
-      .slice(0, 8);
-  }, [allItems, locale, query]);
+  const filteredItems = useMemo(
+    () => filterGlobalSearchItems(allItems, query, locale),
+    [allItems, locale, query],
+  );
 
   const suggestedItems = useMemo(() => allItems.slice(0, 5), [allItems]);
 
