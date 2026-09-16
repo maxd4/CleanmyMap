@@ -11,6 +11,7 @@ import { ImmersiveLayout } from "./_layouts/immersive-layout";
 import { DefaultLayout } from "./_layouts/default-layout";
 import { logFailure } from "@/lib/logging/failure-log";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import { HOMEPAGE_MAP_VIEWPORT } from "@/components/actions/actions-map-canvas.utils";
@@ -38,6 +39,8 @@ type ActionsMapFeedContentProps = {
   viewportRequestKey?: number;
   recenterViewport?: MapViewportState | null;
   isInitialViewportResolved?: boolean;
+  initialViewportError?: Error | null;
+  onRetryInitialViewport?: () => void;
   scoreScope?: ActionsMapFeedProps["scoreScope"];
   onScoreScopeChange?: ActionsMapFeedProps["onScoreScopeChange"];
 };
@@ -62,6 +65,8 @@ export function ActionsMapFeedContent({
   viewportRequestKey = 0,
   recenterViewport = null,
   isInitialViewportResolved = true,
+  initialViewportError = null,
+  onRetryInitialViewport,
   scoreScope = "global",
   onScoreScopeChange,
 }: ActionsMapFeedContentProps) {
@@ -186,7 +191,21 @@ export function ActionsMapFeedContent({
 
   return (
     <section ref={mapShellRef} className={shellClass}>
-      {isImmersive ? (
+      {initialViewportError ? (
+        <CmmFeedback
+          tone="error"
+          title="Carte indisponible"
+          action={
+            onRetryInitialViewport ? (
+              <CmmButton type="button" tone="secondary" variant="pill" onClick={onRetryInitialViewport}>
+                Réessayer
+              </CmmButton>
+            ) : null
+          }
+        >
+          Impossible de résoudre une zone cartographique stable. Réessaie le chargement de la carte.
+        </CmmFeedback>
+      ) : isImmersive ? (
         <ImmersiveLayout {...layoutProps} />
       ) : (
         <DefaultLayout {...layoutProps} />
@@ -256,6 +275,8 @@ export function ActionsMapFeed({
     recenterViewport,
     isInitialViewportResolved,
     hasInitialPublicActions,
+    initialViewportError,
+    retryInitialViewport,
     handleManualViewportInteraction,
     handleViewportChange,
   } = useActionsMapViewport(
@@ -279,7 +300,7 @@ export function ActionsMapFeed({
     visibleCategories,
     limit,
     viewport: mapViewport,
-    enabled: isInitialViewportResolved && hasInitialPublicActions,
+    enabled: isInitialViewportResolved && hasInitialPublicActions && !initialViewportError,
   });
 
   return (
@@ -301,6 +322,8 @@ export function ActionsMapFeed({
       viewportRequestKey={viewportRequestKey}
       recenterViewport={recenterViewport}
       isInitialViewportResolved={isInitialViewportResolved}
+      initialViewportError={initialViewportError}
+      onRetryInitialViewport={retryInitialViewport}
       onViewportChange={handleViewportChange}
       onViewportInteraction={handleManualViewportInteraction}
       scoreScope={scoreScope}

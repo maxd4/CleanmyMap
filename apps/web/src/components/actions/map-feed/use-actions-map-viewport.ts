@@ -48,6 +48,31 @@ export type ActionsMapViewportOptions = {
   useRemoteFallback?: boolean;
 };
 
+export function resolveInitialViewportFailure(params: {
+  stableFallback: MapViewportState | null | undefined;
+  error: unknown;
+}): {
+  viewport: MapViewportState | null;
+  hasPublicActions: boolean;
+  error: Error | null;
+} {
+  if (params.stableFallback) {
+    return {
+      viewport: params.stableFallback,
+      hasPublicActions: true,
+      error: null,
+    };
+  }
+
+  return {
+    viewport: null,
+    hasPublicActions: false,
+    error: params.error instanceof Error
+      ? params.error
+      : new Error("La résolution initiale de la carte a échoué."),
+  };
+}
+
 export function shouldApplyAutomaticViewport(params: {
   isMounted: boolean;
   hasManualViewportChange: boolean;
@@ -82,6 +107,8 @@ export function useActionsMapViewport(
   const [hasInitialPublicActions, setHasInitialPublicActions] = useState(
     fallbackViewport !== undefined,
   );
+  const [initialViewportError, setInitialViewportError] = useState<Error | null>(null);
+  const [resolutionAttempt, setResolutionAttempt] = useState(0);
   const hasReceivedInitialViewportReportRef = useRef(false);
   const hasManualViewportChangeRef = useRef(false);
   const hasAutomaticViewportAppliedRef = useRef(false);
@@ -100,6 +127,7 @@ export function useActionsMapViewport(
 
       let nextViewport = stableFallback;
       let hasPublicActions = fallbackViewport !== undefined && !reference;
+      let resolutionError: Error | null = null;
       if (!useRemoteFallback && fallbackViewport !== undefined && !reference) {
         // Homepage previews intentionally keep their supplied stable viewport
         // when geolocation is unavailable; the public map uses the action
@@ -111,10 +139,16 @@ export function useActionsMapViewport(
           });
           nextViewport = resolution.viewport;
           hasPublicActions = resolution.cityItems.length > 0;
-        } catch {
+        } catch (error) {
           // Keep a useful location fallback when the bounded public resolution
           // fails; do not fall back to the neutral world viewport.
-          nextViewport = useRemoteFallback ? stableFallback : fallbackViewport;
+          const failure = resolveInitialViewportFailure({
+            stableFallback: stableFallback ?? (useRemoteFallback ? null : fallbackViewport),
+            error,
+          });
+          nextViewport = failure.viewport;
+          hasPublicActions = failure.hasPublicActions;
+          resolutionError = failure.error;
         }
       } else {
         try {
@@ -123,8 +157,11 @@ export function useActionsMapViewport(
           });
           nextViewport = resolution.viewport;
           hasPublicActions = resolution.cityItems.length > 0;
-        } catch {
-          nextViewport = stableFallback;
+        } catch (error) {
+          const failure = resolveInitialViewportFailure({ stableFallback, error });
+          nextViewport = failure.viewport;
+          hasPublicActions = failure.hasPublicActions;
+          resolutionError = failure.error;
         }
       }
 
@@ -137,6 +174,7 @@ export function useActionsMapViewport(
       }
 
       hasAutomaticViewportAppliedRef.current = true;
+      setInitialViewportError(resolutionError);
       setHasInitialPublicActions(hasPublicActions);
       setIsInitialViewportResolved(true);
       if (nextViewport) {
@@ -149,6 +187,21 @@ export function useActionsMapViewport(
     },
     [fallbackViewport, useRemoteFallback],
   );
+
+  const retryInitialViewport = useCallback(() => {
+    if (hasManualViewportChangeRef.current) {
+      return;
+    }
+
+    hasAutomaticViewportAppliedRef.current = false;
+    hasReceivedInitialViewportReportRef.current = false;
+    hasStartedInitialResolutionRef.current = false;
+    pendingProgrammaticViewportRef.current = null;
+    setInitialViewportError(null);
+    setIsInitialViewportResolved(false);
+    setHasInitialPublicActions(false);
+    setResolutionAttempt((current) => current + 1);
+  }, []);
 
   const loadFallbackViewport = useCallback(async (): Promise<FallbackPayload | null> => {
     try {
@@ -271,7 +324,7 @@ export function useActionsMapViewport(
     );
 
     return cleanup;
-  }, [applyAutomaticViewport, fallbackViewport, queueFallbackViewport, useRemoteFallback]);
+  }, [applyAutomaticViewport, fallbackViewport, queueFallbackViewport, resolutionAttempt, useRemoteFallback]);
 
   const handleManualViewportInteraction = useCallback(() => {
     if (pendingProgrammaticViewportRef.current) {
@@ -326,6 +379,8 @@ export function useActionsMapViewport(
     recenterViewport,
     isInitialViewportResolved,
     hasInitialPublicActions,
+    initialViewportError,
+    retryInitialViewport,
     handleManualViewportInteraction,
     handleViewportChange,
   };

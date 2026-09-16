@@ -52,17 +52,31 @@ informations utiles à la lecture restent accessibles via la légende compacte.
 À l'ouverture, la carte ne présente pas de viewport monde neutre. La référence
 géographique suit l'ordre navigateur GPS puis préférence de résidence. Le
 resolver public recherche alors, par rayons bornés, l'action `approved` visible
-géolocalisée la plus proche. Il cadre ensuite les actions de la même commune
-indiquée par `preparationData.communeZoneLabel` ; pour les contrats historiques
-qui ne portent pas ce champ, une ville explicitement associée à un code postal
-dans le libellé est privilégiée, puis le libellé de lieu existant est utilisé
-comme clé de repli sans déduire une commune à partir des coordonnées.
+géolocalisée la plus proche. Les rayons sont `5`, `20`, `75` puis `150 km`.
+Si aucun point n'est trouvé, une requête globale bornée à `limit=1` sélectionne
+l'action publique géolocalisée la plus récente, puis le resolver reprend sur son
+viewport local. Cette étape ne charge jamais le dataset mondial complet.
+
+Le cadrage par ville n'est utilisé que lorsqu'une identité postale fiable est
+présente dans le libellé structuré. `preparationData.communeZoneLabel` peut
+décrire une ville, un quartier ou un secteur ; il n'est donc pas traité comme
+une clé canonique par égalité. Sans ville fiable, le viewport est construit sur
+un cluster local borné autour de l'action sélectionnée, sans présenter ce
+cluster comme un regroupement exact par commune et sans déduire une ville des
+coordonnées.
 
 Sans GPS ni résidence, la première action publique récente sert de fallback
-déterministe, puis le même cadrage de ville est appliqué. Chaque lecture reste
-bornée par un rayon et une limite ; aucune table `actions` complète n'est
-chargée pour préparer le viewport. Si aucune action publique géolocalisée n'est
-disponible, la page affiche l'état vide canonique et ne montre pas de globe.
+déterministe, puis le même cadrage postal ou cluster local est appliqué. Chaque
+lecture reste bornée par un rayon et une limite ; aucune table `actions` complète
+n'est chargée pour préparer le viewport. Si aucune action publique géolocalisée
+n'est disponible, la page affiche l'état vide canonique et ne montre pas de
+globe.
+
+Une erreur de résolution ne vaut pas état vide. Lorsqu'un viewport GPS ou de
+résidence stable existe déjà, il est conservé et le flux principal borné peut
+se charger dessus. Lorsqu'aucun viewport exploitable n'existe, la page expose
+un état d'erreur avec retry ; elle ne désactive pas silencieusement le flux ni
+ne revient à `[0,0]`.
 
 Le viewport résolu devient aussi la cible du contrôle « Recentrer ». Après un
 déplacement ou un zoom manuel, aucun résultat asynchrone ultérieur ne reprend

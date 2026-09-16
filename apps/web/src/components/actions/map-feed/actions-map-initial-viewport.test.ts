@@ -5,14 +5,19 @@ import {
   haversineDistanceKm,
   isActivePollutionItem,
   isWithinRadialSearch,
+  mapItemCityLabel,
   resolveInitialPublicMapViewport,
   resolveInitialMapViewport,
+  selectMostRecentPublicAction,
   selectMapReferencePoint,
   selectNearestActivePollution,
   type InitialPollutionCandidateFetcher,
 } from "./actions-map-initial-viewport";
 import { loadAllInitialPollutionPages } from "@/lib/actions/pollution/initial-nearest-pollution-source";
-import { shouldApplyAutomaticViewport } from "./use-actions-map-viewport";
+import {
+  resolveInitialViewportFailure,
+  shouldApplyAutomaticViewport,
+} from "./use-actions-map-viewport";
 import { DEFAULT_ACTIONS_MAP_VIEWPORT, NEUTRAL_MAP_CENTER } from "../actions-map-canvas.utils";
 
 const RUNTIME_REFERENCES = {
@@ -87,7 +92,7 @@ describe("actions map initial viewport", () => {
     )?.id).toBe("old-nearest");
   });
 
-  it("selects the nearest public action and fits the actions from its city", async () => {
+  it("selects the nearest public action and fits its bounded local cluster", async () => {
     const reference = { latitude: 48.8566, longitude: 2.3522 };
     const nearest = buildItem({
       id: "nearest-action",
@@ -123,7 +128,7 @@ describe("actions map initial viewport", () => {
     });
 
     expect(result.selectedItem?.id).toBe("nearest-action");
-    expect(result.cityLabel).toBe("Paris");
+    expect(result.cityLabel).toBeNull();
     expect(result.cityItems.map((item) => item.id)).toEqual([
       "nearest-action",
       "same-city-action",
@@ -159,7 +164,49 @@ describe("actions map initial viewport", () => {
     expect(fetchActions).toHaveBeenCalledTimes(2);
   });
 
-  it("groups legacy action labels by their explicit postal city", async () => {
+  it("falls back globally with limit 1 after 150 km, then resolves a local viewport", async () => {
+    const older = buildItem({
+      id: "older-global-action",
+      action_date: "2026-08-01",
+      record_type: "action",
+      source: "actions",
+      latitude: 43.6,
+      longitude: 1.44,
+    });
+    const recent = buildItem({
+      id: "recent-global-action",
+      action_date: "2026-09-15",
+      record_type: "action",
+      source: "actions",
+      latitude: 43.6045,
+      longitude: 1.444,
+    });
+    let call = 0;
+    const fetchActions = vi.fn(async ({ viewport, limit }: { viewport?: unknown; limit: number }) => {
+      call += 1;
+      if (call <= 4) {
+        return { items: [] };
+      }
+      if (!viewport) {
+        return { items: [older, recent] };
+      }
+      return { items: [recent] };
+    });
+
+    const result = await resolveInitialPublicMapViewport({
+      reference: { latitude: 48.8566, longitude: 2.3522 },
+      fetchActions,
+    });
+
+    expect(result.selectedItem?.id).toBe("recent-global-action");
+    expect(result.reference).toEqual({ latitude: 43.6045, longitude: 1.444 });
+    expect(result.viewport?.center).toEqual([43.6045, 1.444]);
+    expect(fetchActions).toHaveBeenCalledTimes(6);
+    expect(fetchActions.mock.calls[4]?.[0]).toEqual({ limit: 1 });
+    expect(fetchActions.mock.calls[5]?.[0].limit).toBe(300);
+  });
+
+  it("groups legacy action labels only when a postal city is explicit", async () => {
     const selected = buildItem({
       id: "selected-paris-action",
       record_type: "action",
@@ -201,14 +248,93 @@ describe("actions map initial viewport", () => {
     ]);
   });
 
-  it("returns the canonical empty result when no public action has coordinates", async () => {
+  it("does not split Paris 15e and Paris 20e from communeZoneLabel", async () => {
+    const selected = buildItem({
+      id: "paris-15",
+      record_type: "action",
+      source: "actions",
+      latitude: 48.84,
+      longitude: 2.3,
+      contract: {
+        type: "action",
+        location: { label: "Secteur sud", latitude: 48.84, longitude: 2.3 },
+        metadata: { preparationData: { communeZoneLabel: "Paris 15e" } },
+      } as ActionMapItem["contract"],
+    });
+    const sibling = buildItem({
+      id: "paris-20",
+      record_type: "action",
+      source: "actions",
+      latitude: 48.86,
+      longitude: 2.4,
+      contract: {
+        type: "action",
+        location: { label: "Secteur est", latitude: 48.86, longitude: 2.4 },
+        metadata: { preparationData: { communeZoneLabel: "Paris 20e" } },
+      } as ActionMapItem["contract"],
+    });
+    let call = 0;
+    const fetchActions = vi.fn(async () => ({
+      items: call++ === 0 ? [selected] : [selected, sibling],
+    }));
+
     const result = await resolveInitialPublicMapViewport({
-      fetchActions: async () => ({ items: [] }),
+      reference: { latitude: 48.84, longitude: 2.3 },
+      fetchActions,
+    });
+
+    expect(mapItemCityLabel(selected)).toBeNull();
+    expect(result.cityLabel).toBeNull();
+    expect(result.cityItems.map((item) => item.id)).toEqual(["paris-15", "paris-20"]);
+  });
+
+  it("does not use a free-form commune sector as a canonical city identifier", () => {
+    const item = buildItem({
+      contract: {
+        type: "action",
+        location: { label: "Quai nord", latitude: 48.85, longitude: 2.35 },
+        metadata: { preparationData: { communeZoneLabel: "Paris 15e, berges nord" } },
+      } as ActionMapItem["contract"],
+    });
+
+    expect(mapItemCityLabel(item)).toBeNull();
+  });
+
+  it("returns the canonical empty result when no public action exists anywhere", async () => {
+    const fetchActions = vi.fn(async () => ({ items: [] }));
+    const result = await resolveInitialPublicMapViewport({
+      reference: { latitude: 48.8566, longitude: 2.3522 },
+      fetchActions,
     });
 
     expect(result.selectedItem).toBeNull();
     expect(result.viewport).toBeNull();
     expect(result.cityItems).toEqual([]);
+    expect(fetchActions).toHaveBeenCalledTimes(5);
+    expect(result.viewport?.center).not.toEqual([0, 0]);
+  });
+
+  it("keeps the stable fallback feedable after resolver failure", () => {
+    const fallback = {
+      center: [48.8566, 2.3522] as [number, number],
+      zoom: 12,
+      bounds: { south: 48.8, west: 2.2, north: 48.9, east: 2.4 },
+    };
+
+    expect(resolveInitialViewportFailure({
+      stableFallback: fallback,
+      error: new Error("network"),
+    })).toEqual({ viewport: fallback, hasPublicActions: true, error: null });
+  });
+
+  it("exposes resolver failure instead of converting it to empty", () => {
+    const error = new Error("network");
+
+    expect(resolveInitialViewportFailure({ stableFallback: null, error })).toEqual({
+      viewport: null,
+      hasPublicActions: false,
+      error,
+    });
   });
 
   it("applies the radial criterion instead of accepting a farther bbox corner", () => {
@@ -320,7 +446,7 @@ describe("actions map initial viewport", () => {
     expect(fetchInitialPollution).toHaveBeenCalledTimes(2);
     expect(result.searchRadiiKm).toEqual(INITIAL_MAP_SEARCH_RADII_KM.slice(0, 2));
     expect(result.selectedItem?.id).toBe("target-20km");
-    expect(result.viewport.zoom).toBe(15);
+    expect(result.viewport?.zoom).toBe(15);
   });
 
   it("keeps the stable reference viewport when no candidate exists within 150 km", async () => {
@@ -331,8 +457,35 @@ describe("actions map initial viewport", () => {
     });
 
     expect(result.selectedItem).toBeNull();
-    expect(result.viewport.center).toEqual([45.764, 4.8357]);
-    expect(result.viewport.zoom).toBe(12);
+    expect(result.viewport?.center).toEqual([45.764, 4.8357]);
+    expect(result.viewport?.zoom).toBe(12);
+  });
+
+  it("does not return a world viewport for an invalid pollution reference", async () => {
+    const result = await resolveInitialMapViewport({
+      reference: { latitude: Number.NaN, longitude: Number.NaN },
+      fetchInitialPollution: async () => ({ item: null }),
+    });
+
+    expect(result.viewport).toBeNull();
+    expect(result.viewport?.center).not.toEqual([0, 0]);
+  });
+
+  it("selects the most recent public geolocated action deterministically", () => {
+    const recent = buildItem({
+      id: "recent",
+      action_date: "2026-09-15",
+      record_type: "action",
+      source: "actions",
+    });
+    const older = buildItem({
+      id: "older",
+      action_date: "2026-09-01",
+      record_type: "action",
+      source: "actions",
+    });
+
+    expect(selectMostRecentPublicAction([older, recent])?.id).toBe("recent");
   });
 
   it("stops an asynchronous recenter as soon as the user interacts", () => {

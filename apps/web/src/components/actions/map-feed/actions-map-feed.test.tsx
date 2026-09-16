@@ -102,6 +102,15 @@ describe("ActionsMapFeed", () => {
     expect(source).not.toContain('presentation === "homepage-preview" ? null');
   });
 
+  it("keeps SWR available on a stable viewport and exposes a retryable resolver error", () => {
+    const source = readFileSync(new URL("./actions-map-feed.tsx", import.meta.url), "utf8");
+
+    expect(source).toContain("enabled: isInitialViewportResolved && hasInitialPublicActions && !initialViewportError");
+    expect(source).toContain("onRetryInitialViewport={retryInitialViewport}");
+    expect(source).toContain('title="Carte indisponible"');
+    expect(source).toContain("Impossible de résoudre une zone cartographique stable");
+  });
+
   it("uses the canonical feedback and skeleton primitives for feed states", () => {
     useMapFeedDataMock.mockReturnValue({
       data: null,
