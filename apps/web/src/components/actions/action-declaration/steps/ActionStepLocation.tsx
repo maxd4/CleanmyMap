@@ -13,6 +13,7 @@ import type {
   ActionLocationCoordinates,
 } from "@/lib/actions/types";
 import type { OperationalRoute } from "@/lib/route/route-operational";
+import { resolveFinalActionGeometry } from "@/lib/actions/geometry/final-geometry";
 import { OperationalRouteEditor } from "../operational-route-editor";
 import { ActionGpxExportButton } from "../action-gpx-export";
 import type { UpdateFormField } from "../types";
@@ -419,16 +420,26 @@ export function ActionStepLocation({
     rootMargin: "260px 0px",
   });
 
-  const manualSummary = summarizeActionDrawingValidation(manualDrawing);
   const previewSummary = summarizeActionDrawingValidation(routePreviewDrawing);
-  const displayedDrawing = manualSummary.normalized ?? previewSummary.normalized;
-  const activeSummary = manualSummary.normalized ? manualSummary : previewSummary;
-  const isManual = Boolean(manualSummary.normalized);
-  const isGpx = Boolean(gpxImport && manualSummary.normalized);
+  const activeGeometry = resolveFinalActionGeometry({
+    gpxDrawing: gpxImport ? manualDrawing : null,
+    gpxImport,
+    manualDrawing,
+    manualDrawingSource: gpxImport ? "gpx_import" : "manual",
+    operationalRoute: form.operationalRoute,
+    reconstructedDrawing: routePreviewDrawing,
+    reconstructedSource: "routed",
+  });
+  const displayedDrawing = activeGeometry?.drawing ?? previewSummary.normalized;
+  const activeSummary = activeGeometry?.drawing
+    ? summarizeActionDrawingValidation(activeGeometry.drawing)
+    : previewSummary;
+  const isManual = activeGeometry?.source === "manual";
+  const isGpx = activeGeometry?.source === "gpx_import";
   const hasDrawing = Boolean(displayedDrawing);
 
-  const statusTone = isManual
-    ? manualSummary.tone
+  const statusTone = activeGeometry?.drawing
+    ? activeSummary.tone
     : hasDrawing
       ? previewSummary.tone
       : "neutral";
@@ -650,15 +661,16 @@ export function ActionStepLocation({
         )}
       </div>
 
-      {form.operationalRoute ? (
+      {activeGeometry?.operationalRoute ? (
         <OperationalRouteEditor
-          operationalRoute={form.operationalRoute}
+          operationalRoute={activeGeometry.operationalRoute}
           onChange={(operationalRoute: OperationalRoute) => updateField("operationalRoute", operationalRoute)}
         />
       ) : null}
 
       <ActionGpxExportButton
         input={{
+          finalGeometry: activeGeometry,
           operationalRoute: form.operationalRoute,
           drawing: manualDrawing,
           gpxImport,

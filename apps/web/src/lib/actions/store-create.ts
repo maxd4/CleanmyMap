@@ -25,6 +25,7 @@ import {
   clearActionRouteArrivalForLoop,
   resolveActionRouteTopology,
 } from "@/lib/actions/route-topology";
+import { resolveFinalActionGeometry } from "@/lib/actions/geometry/final-geometry";
 import type { RouteGeometry } from "@/lib/route/route-contract";
 import {
   persistResolvedRouteTargetDistance,
@@ -74,13 +75,19 @@ function confidenceForGeometrySource(source: ActionGeometrySource): number | nul
 export async function resolveCreateActionDrawing(
   payload: CreateActionPayload,
 ): Promise<ResolvedCreateActionDrawing> {
-  const manualDrawing = payload.manualDrawing ?? null;
-  if (manualDrawing && manualDrawing.coordinates.length > 0) {
+  const activeGeometry = resolveFinalActionGeometry({
+    gpxDrawing: payload.preparationData?.gpxImport ? payload.manualDrawing : null,
+    gpxImport: payload.preparationData?.gpxImport,
+    manualDrawing: payload.manualDrawing,
+    manualDrawingSource: payload.geometrySource,
+    operationalRoute: payload.preparationData?.operationalRoute,
+  });
+  if (activeGeometry) {
     return {
-      drawing: manualDrawing,
-      geometrySource: payload.geometrySource ?? "manual",
-      routeGeometry: null,
-      origin: manualDrawing.coordinates[0] ?? null,
+      drawing: activeGeometry.drawing,
+      geometrySource: activeGeometry.source,
+      routeGeometry: activeGeometry.operationalRoute?.routes[0]?.geometry ?? null,
+      origin: activeGeometry.drawing.coordinates[0] ?? null,
     };
   }
 
@@ -158,10 +165,26 @@ export function buildActionInsertPayload(params: {
       params.payload.arrivalLocationLabel ?? params.payload.preparationData?.zoneCiblePrevue,
     recordType,
   });
+  const normalizedInputPreparationData = normalizeActionPreparationData({
+    ...(params.payload.preparationData ?? {}),
+    routeTopology,
+  });
+  const activeGeometry = resolveFinalActionGeometry({
+    gpxDrawing: normalizedInputPreparationData.gpxImport ? params.payload.manualDrawing : null,
+    gpxImport: normalizedInputPreparationData.gpxImport,
+    manualDrawing: params.payload.manualDrawing,
+    manualDrawingSource: params.payload.geometrySource,
+    operationalRoute: normalizedInputPreparationData.operationalRoute,
+  });
   const normalizedPreparationData = clearActionRouteArrivalForLoop(
     normalizeActionPreparationData({
-      ...(params.payload.preparationData ?? {}),
-      routeTopology,
+      ...normalizedInputPreparationData,
+      ...(activeGeometry?.operationalRoute
+        ? { operationalRoute: activeGeometry.operationalRoute }
+        : { operationalRoute: undefined }),
+      ...(activeGeometry?.source === "gpx_import"
+        ? {}
+        : { gpxImport: undefined, routeObservedDistanceKm: undefined }),
     }),
     { recordType, topology: routeTopology },
   );

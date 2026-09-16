@@ -144,6 +144,34 @@ describe("serializeActionGeometryToGpx", () => {
     expect(xml).not.toContain('lat="48.87" lon="2.37"></trkpt>\n        <trkpt lat="48.85"');
   });
 
+  it("places waypoints from every track before the first track", () => {
+    const xml = serializeActionGeometryToGpx({
+      tracks: [
+        {
+          geometry: closedGeometry,
+          geometrySource: "manual",
+          waypoints: [
+            { coordinates: [48.85, 2.35], name: "Départ groupe 1", role: "departure" },
+          ],
+        },
+        {
+          geometry: openGeometry,
+          geometrySource: "manual",
+          waypoints: [
+            { coordinates: [48.87, 2.37], name: "Arrivée groupe 2", role: "arrival" },
+          ],
+        },
+      ],
+    });
+
+    const firstTrack = xml.indexOf("  <trk>");
+    expect(xml.indexOf("Départ groupe 1")).toBeLessThan(firstTrack);
+    expect(xml.indexOf("Arrivée groupe 2")).toBeLessThan(firstTrack);
+    expect(xml.match(/<wpt\b/g)).toHaveLength(2);
+    expect(xml.match(/<trk>/g)).toHaveLength(2);
+    expect(xml.indexOf("<trk>")).toBeLessThan(xml.indexOf("</trk>\n  <trk>"));
+  });
+
   it("is deterministic, network-free and does not export personal fields", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const input = simpleInput(closedGeometry, "gpx_import", "loop");

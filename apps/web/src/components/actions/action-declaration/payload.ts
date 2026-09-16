@@ -14,6 +14,10 @@ import type {
  CreateActionPayload,
 } from"../../../lib/actions/types";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
+import {
+ resolveFinalActionGeometry,
+ type FinalActionGeometry,
+} from "@/lib/actions/geometry/final-geometry";
 import type { DeclarationMode, FormState } from"./types";
 import { normalizeActionDrawing } from"../map/actions-map-geometry.utils";
 import { formatWasteGuidanceLines } from "@/lib/waste";
@@ -24,17 +28,6 @@ import type { VolunteerParticipationInput } from "@/lib/actions/volunteer-partic
 import {
  resolveRouteTargetDistance,
 } from "@/lib/actions/route-target-distance";
-
-function deriveDrawingFromOperationalRoute(
- form: FormState,
-): ActionDrawing | null {
- const coordinates = form.operationalRoute?.routes[0]?.geometry.coordinates;
- if (!coordinates || coordinates.length < 2) return null;
- return {
-  kind: "polyline",
-  coordinates: structuredClone(coordinates),
- };
-}
 
 export const PARK_PLACE_TYPE ="Bois/Parc/Jardin/Square/Sentier";
 export const OTHER_VOLUNTEER_ASSOCIATION_VALUE = "__autre_benevole__";
@@ -149,6 +142,10 @@ export function createInitialFormState(
 
 export function buildPreparationDataFromForm(
  form: FormState,
+ finalGeometry: FinalActionGeometry | null = resolveFinalActionGeometry({
+  gpxImport: form.gpxImport,
+  operationalRoute: form.operationalRoute,
+ }),
 ): ActionPreparationData {
  const wasteCategories = form.wasteCategories ?? [];
  const routeTopology = resolveActionRouteTopology({
@@ -203,8 +200,10 @@ export function buildPreparationDataFromForm(
    form.recordType === "action" && routeTopology === "point_to_point"
     ? form.arrivalCoordinates ?? undefined
     : undefined,
-  routeObservedDistanceKm: form.gpxImport?.observedDistanceKm,
-  gpxImport: form.gpxImport ?? undefined,
+  routeObservedDistanceKm:
+   finalGeometry?.source === "gpx_import" ? form.gpxImport?.observedDistanceKm : undefined,
+  gpxImport:
+   finalGeometry?.source === "gpx_import" ? form.gpxImport ?? undefined : undefined,
   plannedObjective: form.plannedObjective,
   placeType: form.placeType || undefined,
   estimatedDifficulty: form.estimatedDifficulty,
@@ -223,7 +222,7 @@ export function buildPreparationDataFromForm(
   groupJoinEnabled: form.groupJoinEnabled,
   expectedWasteCategories: wasteCategories.length > 0 ? [...wasteCategories] : undefined,
   routeCalibrationContext: form.routeCalibrationContext ?? undefined,
-  operationalRoute: form.operationalRoute ?? undefined,
+  operationalRoute: finalGeometry?.operationalRoute ?? undefined,
   };
 }
 
@@ -433,19 +432,17 @@ export function buildCreateActionPayload(params: {
  let longitude = fallbackLongitude;
 
  const normalizedManualDrawing = normalizeActionDrawing(manualDrawing);
- const normalizedOperationalDrawing = normalizedManualDrawing
-  ? null
-  : normalizeActionDrawing(deriveDrawingFromOperationalRoute(form));
- const normalizedDrawing = normalizedManualDrawing ?? normalizedOperationalDrawing;
- const resolvedManualDrawingSource = normalizedDrawing
-  ? normalizedDrawing.kind === "polygon"
-   ? "manual"
-   : normalizedManualDrawing
-     ? manualDrawingSource ?? "manual"
-     : "routed"
-  : null;
+ const finalGeometry = resolveFinalActionGeometry({
+  gpxDrawing: form.gpxImport ? normalizedManualDrawing : null,
+  gpxImport: form.gpxImport,
+  manualDrawing: normalizedManualDrawing,
+  manualDrawingSource,
+  operationalRoute: form.operationalRoute,
+ });
+ const normalizedDrawing = finalGeometry?.drawing ?? null;
+ const resolvedManualDrawingSource = finalGeometry?.source ?? null;
 
- if (normalizedDrawing && (effectiveManualDrawingEnabled || normalizedOperationalDrawing)) {
+ if (normalizedDrawing && (effectiveManualDrawingEnabled || finalGeometry?.operationalRoute)) {
  const centroid = getDrawingCentroid(normalizedDrawing);
  latitude = centroid.latitude;
  longitude = centroid.longitude;
@@ -484,7 +481,7 @@ export function buildCreateActionPayload(params: {
     organizerType: form.organizerType || undefined,
     groupJoinEnabled: form.groupJoinEnabled,
     actionPhase: declarationMode === "quick" ? "pre_action" : "post_action_complete",
-    preparationData: buildPreparationDataFromForm(form),
+    preparationData: buildPreparationDataFromForm(form, finalGeometry),
     plannerSnapshotProof: form.plannerProof ?? null,
     organizerAccounts: isSpontaneousAction
    ? undefined
@@ -526,11 +523,11 @@ export function buildCreateActionPayload(params: {
  linkedEventId,
  ),
  manualDrawing:
- (effectiveManualDrawingEnabled && drawingIsValid && normalizedManualDrawing) || normalizedOperationalDrawing
+ (effectiveManualDrawingEnabled && drawingIsValid && normalizedDrawing) || finalGeometry?.operationalRoute
  ? normalizedDrawing!
  : undefined,
  geometrySource:
- ((effectiveManualDrawingEnabled && drawingIsValid && normalizedManualDrawing) || normalizedOperationalDrawing)
+ ((effectiveManualDrawingEnabled && drawingIsValid && normalizedDrawing) || finalGeometry?.operationalRoute)
   ? resolvedManualDrawingSource
   : undefined,
  placeType: form.placeType,
@@ -570,17 +567,22 @@ export async function prepareCreateActionPayload(params: {
  };
 }): Promise<CreateActionPayload> {
  const payload = buildCreateActionPayload(params);
-
- if (payload.manualDrawing) {
- return payload;
- }
-
  const normalizedRoutePreview = normalizeActionDrawing(params.routePreviewDrawing);
- if (normalizedRoutePreview) {
- return {
+ const finalGeometry = resolveFinalActionGeometry({
+  gpxDrawing: payload.preparationData?.gpxImport ? payload.manualDrawing : null,
+  gpxImport: payload.preparationData?.gpxImport,
+  manualDrawing: payload.manualDrawing,
+  manualDrawingSource: payload.geometrySource,
+  operationalRoute: payload.preparationData?.operationalRoute,
+  reconstructedDrawing: normalizedRoutePreview,
+  reconstructedSource: normalizedRoutePreview?.kind === "polygon" ? "manual" : "routed",
+ });
+
+ if (finalGeometry && (payload.manualDrawing || normalizedRoutePreview)) {
+   return {
  ...payload,
- manualDrawing: normalizedRoutePreview,
- geometrySource: normalizedRoutePreview.kind === "polygon" ? "manual" : "routed",
+ manualDrawing: finalGeometry.drawing,
+ geometrySource: finalGeometry.source,
  };
  }
 

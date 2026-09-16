@@ -179,9 +179,6 @@ function serializeTrack(track: GpxTrackInput): string {
   const description = metadata.description
     ? `    <desc>${escapeXml(metadata.description, "description de l'itinéraire")}</desc>`
     : "";
-  const waypoints = normalizeWaypoints(track.waypoints)
-    .map(serializeWaypoint)
-    .join("\n");
   const points = coordinates
     .map(
       (coordinate) =>
@@ -190,7 +187,6 @@ function serializeTrack(track: GpxTrackInput): string {
     .join("\n");
 
   return [
-    waypoints,
     "  <trk>",
     `    <name>${escapeXml(metadata.name, "nom de l'itinéraire")}</name>`,
     description,
@@ -218,7 +214,11 @@ export function serializeActionGeometryToGpx(
 
   const documentName = input.name?.trim() || "Export CleanMyMap";
   const documentDescription = input.description?.trim() ?? "";
-  const globalWaypoints = normalizeWaypoints(input.waypoints)
+  const allWaypoints = [
+    ...(input.waypoints ?? []),
+    ...input.tracks.flatMap((track) => track.waypoints ?? []),
+  ];
+  const globalWaypoints = normalizeWaypoints(allWaypoints)
     .map(serializeWaypoint)
     .join("\n");
   const tracks = input.tracks.map(serializeTrack).join("\n");

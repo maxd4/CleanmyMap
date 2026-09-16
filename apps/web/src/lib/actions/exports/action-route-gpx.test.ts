@@ -59,7 +59,7 @@ describe("action-route-gpx export adapter", () => {
     ).toBeNull();
   });
 
-  it("uses the operational route instead of a stale drawing and keeps its waypoints", () => {
+  it("uses the active manual drawing before an operational route", () => {
     const xml = buildActionRouteGpxDocument({
       operationalRoute,
       drawing: { coordinates: [[1, 1], [2, 2]] },
@@ -67,14 +67,30 @@ describe("action-route-gpx export adapter", () => {
       arrivalLabel: "Arrivée réelle",
     });
 
-    expect(xml).toContain('lat="48.85" lon="2.35"');
-    expect(xml).toContain('lat="48.86" lon="2.36"');
-    expect(xml).toContain("Stop CleanMyMap");
-    expect(xml).toContain("Mi-parcours");
-    expect(xml).not.toContain('lat="1" lon="1"');
-    expect(xml).not.toContain('lat="2" lon="2"');
+    expect(xml).toContain('lat="1" lon="1"');
+    expect(xml).toContain('lat="2" lon="2"');
+    expect(xml).not.toContain("Stop CleanMyMap");
     expect(xml).toContain("<name>Itinéraire CleanMyMap</name>");
     expect(xml).not.toContain("routeTargetDistance");
+  });
+
+  it("uses GPX as the active geometry before manual and operational candidates", () => {
+    const xml = buildActionRouteGpxDocument({
+      operationalRoute,
+      drawing: { coordinates: [[48.8, 2.3], [48.81, 2.31]] },
+      gpxImport: {
+        source: "gpx_import",
+        observedDistanceKm: 1,
+        pointCount: 2,
+        inferredTopology: "point_to_point",
+      },
+    });
+
+    expect(xml).toContain("Tracé GPX importé");
+    expect(xml).toContain('lat="48.8" lon="2.3"');
+    expect(xml).not.toContain('lat="48.85" lon="2.35"');
+    expect(xml).not.toContain('lat="48.86" lon="2.36"');
+    expect(xml).not.toContain("Stop CleanMyMap");
   });
 
   it("keeps multiple final operational routes as separate GPX tracks", () => {

@@ -1,10 +1,15 @@
 import type {
   ActionDrawing,
+  ActionGeometrySource,
   ActionGpxImportMetadata,
   ActionLocationCoordinates,
   ActionRouteTopology,
 } from "@/lib/actions/types";
 import type { OperationalRoute } from "@/lib/route/route-operational";
+import {
+  resolveFinalActionGeometry,
+  type FinalActionGeometry,
+} from "@/lib/actions/geometry/final-geometry";
 import {
   serializeActionGeometryToGpx,
   type GpxCoordinate,
@@ -16,11 +21,13 @@ import {
 export const ACTION_ROUTE_GPX_FILENAME = "cleanmymap-itineraire.gpx";
 
 export type ActionRouteGpxInput = {
-  /** The edited planner copy takes precedence over every stale preview/drawing. */
+  /** The already selected active geometry, when the caller has it available. */
+  finalGeometry?: FinalActionGeometry | null;
   operationalRoute?: OperationalRoute | null;
   /** A final manual drawing or the canonical drawing produced by GPX import. */
   drawing?: Pick<ActionDrawing, "coordinates"> | null;
   gpxImport?: ActionGpxImportMetadata | null;
+  drawingSource?: ActionGeometrySource | null;
   routeTopology?: ActionRouteTopology;
   departureLabel?: string;
   midpointLabel?: string;
@@ -42,6 +49,12 @@ function isValidCoordinate(value: readonly [number, number] | null | undefined):
 
 function hasUsableTrack(coordinates: readonly GpxCoordinate[]): boolean {
   return coordinates.length >= 2 && coordinates.every(isValidCoordinate);
+}
+
+function asPolylineDrawing(
+  drawing: Pick<ActionDrawing, "coordinates"> | null | undefined,
+): ActionDrawing | null {
+  return drawing ? { kind: "polyline", coordinates: drawing.coordinates } : null;
 }
 
 function sameCoordinate(left: GpxCoordinate, right: GpxCoordinate): boolean {
@@ -140,11 +153,21 @@ function trackFromOperationalRoute(
 export function buildActionRouteGpxInput(
   params: ActionRouteGpxInput,
 ): GpxSerializerInput | null {
-  if (params.operationalRoute) {
-    if (params.operationalRoute.routes.length === 0) return null;
-    const multipleRoutes = params.operationalRoute.routes.length > 1;
-    const tracks = params.operationalRoute.routes.map((route) =>
-      trackFromOperationalRoute(route, params.operationalRoute!, params, multipleRoutes),
+  const finalGeometry = params.finalGeometry ?? resolveFinalActionGeometry({
+    gpxDrawing: params.gpxImport ? asPolylineDrawing(params.drawing) : null,
+    gpxImport: params.gpxImport,
+    manualDrawing: asPolylineDrawing(params.drawing),
+    manualDrawingSource:
+      params.drawingSource ?? (params.gpxImport ? "gpx_import" : "manual"),
+    operationalRoute: params.operationalRoute,
+  });
+  if (!finalGeometry) return null;
+
+  if (finalGeometry.operationalRoute) {
+    if (finalGeometry.operationalRoute.routes.length === 0) return null;
+    const multipleRoutes = finalGeometry.operationalRoute.routes.length > 1;
+    const tracks = finalGeometry.operationalRoute.routes.map((route) =>
+      trackFromOperationalRoute(route, finalGeometry.operationalRoute!, params, multipleRoutes),
     );
     if (tracks.some((track) => track === null)) return null;
     return {
@@ -154,7 +177,7 @@ export function buildActionRouteGpxInput(
     };
   }
 
-  const coordinates = params.drawing?.coordinates ?? [];
+  const coordinates = finalGeometry.drawing.coordinates;
   if (!hasUsableTrack(coordinates)) return null;
   const origin = coordinates[0] ?? null;
   const midpoint = isValidCoordinate(
@@ -174,7 +197,7 @@ export function buildActionRouteGpxInput(
     tracks: [
       {
         geometry: { coordinates },
-        geometrySource: params.gpxImport ? "gpx_import" : "manual",
+        geometrySource: finalGeometry.source,
         routeTopology: params.routeTopology ?? params.gpxImport?.inferredTopology,
         waypoints: routeWaypoints({
           coordinates,

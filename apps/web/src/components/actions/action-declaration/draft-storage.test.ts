@@ -87,6 +87,55 @@ describe("action declaration draft storage", () => {
     expect(snapshot?.form.arrivalLocationLabel).toBe("Complément du lieu");
   });
 
+  it("saves and reloads a GPX drawing with its provenance and endpoint coordinates", () => {
+    installLocalStorage();
+    const draft = createInitialFormState("Alice");
+    const gpxDrawing = {
+      kind: "polyline" as const,
+      coordinates: [[48.85, 2.35], [48.86, 2.36]] as [number, number][],
+    };
+    draft.gpxImport = {
+      source: "gpx_import",
+      observedDistanceKm: 1.2,
+      pointCount: 2,
+      inferredTopology: "point_to_point",
+      fileName: "terrain.gpx",
+    };
+    draft.midRouteCoordinates = { latitude: 48.855, longitude: 2.355 };
+    draft.arrivalCoordinates = { latitude: 48.86, longitude: 2.36 };
+
+    saveDraft(draft, "2026-05-13T10:45:00.000Z", {
+      drawing: gpxDrawing,
+      source: "gpx_import",
+    });
+
+    const snapshot = loadDraftSnapshot(createInitialFormState("Fallback"));
+
+    expect(snapshot?.form.gpxImport).toEqual(draft.gpxImport);
+    expect(snapshot?.manualDrawing).toEqual(gpxDrawing);
+    expect(snapshot?.manualDrawingSource).toBe("gpx_import");
+    expect(snapshot?.form.midRouteCoordinates).toEqual(draft.midRouteCoordinates);
+    expect(snapshot?.form.arrivalCoordinates).toEqual(draft.arrivalCoordinates);
+  });
+
+  it("drops orphaned GPX provenance and geometry on reload", () => {
+    const { store } = installLocalStorage();
+    store.set(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify({
+      ...createInitialFormState("Alice"),
+      gpxImport: {
+        source: "gpx_import",
+        observedDistanceKm: 1,
+        pointCount: 2,
+        inferredTopology: "loop",
+      },
+    }));
+
+    const snapshot = loadDraftSnapshot(createInitialFormState("Fallback"));
+
+    expect(snapshot?.form.gpxImport).toBeNull();
+    expect(snapshot?.manualDrawing).toBeUndefined();
+  });
+
   it("clears both the draft payload and its timestamp", () => {
     const { store } = installLocalStorage();
     store.set(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify(createInitialFormState("Alice")));
