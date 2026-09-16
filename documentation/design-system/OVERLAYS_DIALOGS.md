@@ -66,6 +66,27 @@ feedback inline ne devient pas une modale parce qu’il possède une surface.
 `app-navigation-tree-menu.tsx` utilise `aria-modal="false"` pour une
 navigation non modale et reste volontairement hors de `CmmDialog`.
 
+## `CmmPopover`
+
+`CmmPopover` est la primitive canonique des panneaux contextuels riches et
+non modaux. Il se distingue de `CmmDialog` par l’absence de backdrop, de
+verrouillage du scroll, de focus trap et de `aria-modal="true"`. Le panneau
+reste interactif et expose `role="dialog"` avec un nom accessible obligatoire
+via `ariaLabel`.
+
+Le déclenchement est explicite par clic ou par `Enter`/`Space`. Le hover ne
+doit jamais être requis pour découvrir ou ouvrir le contenu. `Escape`, un
+pointerdown extérieur et les actions métier peuvent fermer le panneau ; le
+focus revient alors au déclencheur. Le consommateur conserve le focus dans le
+flux normal et ne recode pas un focus trap.
+
+`CmmPopover` est une façade de `CmmDropdown` : le placement vertical, la
+collision, le centrage horizontal, le pont et la flèche restent portés par
+`use-dropdown-placement` et la primitive partagée. `CmmDropdown` reste le
+contrat des menus/navigation flottants, tandis que `CmmPopover` porte le
+contenu riche non modal. `SiteTooltips` reste la primitive des aides
+contextuelles courtes et ne doit pas être remplacée par un popover.
+
 ## Dropdowns flottants
 
 Tout menu déroulant flottant ouvert par un bouton, une icône ou un chip doit

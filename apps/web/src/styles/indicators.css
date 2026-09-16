@@ -92,6 +92,19 @@
     border-radius: var(--radius-full);
   }
 
+  /* Compteur dynamique compact : réutilise la palette CmmBadge sans
+     animation ni sémantique live implicite. */
+  .cmm-count-badge {
+    min-width: 1.25rem;
+    min-height: 1.25rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--radius-full);
+    font-weight: var(--weight-bold);
+    line-height: 1;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+
   html[data-theme="dark"] .cmm-badge:not([data-badge-tone="muted"]) {
     --cmm-badge-background: color-mix(in srgb, var(--bg-elevated) 88%, var(--cmm-badge-accent));
     --cmm-badge-border: color-mix(in srgb, var(--border-default) 66%, var(--cmm-badge-accent));

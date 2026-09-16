@@ -7,7 +7,8 @@ import { useAuth } from "@clerk/nextjs";
 import { Bell, Check } from "lucide-react";
 
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { CmmDropdown } from "@/components/ui/cmm-dropdown";
+import { CmmCountBadge } from "@/components/ui/cmm-count-badge";
+import { CmmPopover } from "@/components/ui/cmm-popover";
 import { buildChatNotificationHref } from "@/lib/chat/chat-notification-targets";
 import { logFailure } from "@/lib/logging/failure-log";
 import {
@@ -233,12 +234,11 @@ function NotificationBellSession({
   };
 
   return (
-    <CmmDropdown
-      id="notifications-menu-panel"
+    <CmmPopover
+      id="notifications-popover-panel"
       ariaLabel={locale === "fr" ? "Notifications" : "Notifications"}
       open={isOpen}
       onOpenChange={setIsOpen}
-      panelRole="region"
       panelClassName="w-[min(22rem,calc(100vw-1rem))] overflow-visible rounded-2xl border border-white/15 bg-slate-950/95 text-white shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]"
       panelStyle={
         ribbonChrome
@@ -259,14 +259,11 @@ function NotificationBellSession({
           className={`h-5 w-5 ${unreadCount > 0 ? "text-pink-300 animate-swing" : "text-white/70"}`}
           aria-hidden="true"
         />
-        {unreadCount > 0 ? (
-          <span className="absolute right-1.5 top-1.5 flex h-4 w-4">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-pink-400 opacity-75" />
-            <span className="relative inline-flex h-4 w-4 items-center justify-center rounded-full bg-pink-500 text-white cmm-text-caption font-bold">
-              {unreadCount}
-            </span>
-          </span>
-        ) : null}
+        <CmmCountBadge
+          count={unreadCount}
+          tone="rose"
+          className="absolute right-1.5 top-1.5 !min-h-4 !min-w-4 !border-0 !p-0 text-white"
+        />
         </button>
       )}
     >
@@ -325,6 +322,6 @@ function NotificationBellSession({
                 Fermer
               </button>
             </div>
-    </CmmDropdown>
+    </CmmPopover>
   );
 }

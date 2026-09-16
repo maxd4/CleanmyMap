@@ -8,6 +8,15 @@ const itemSource = readFileSync(
 );
 
 describe("notification bell compact preview contract", () => {
+  it("uses the non-modal popover and canonical decorative counter", () => {
+    expect(source).toContain("CmmPopover");
+    expect(source).toContain("CmmCountBadge");
+    expect(source).not.toContain("CmmDropdown");
+    expect(source).toContain('id="notifications-popover-panel"');
+    expect(source).not.toContain('panelRole="region"');
+    expect(source).not.toContain("animate-ping");
+  });
+
   it("renders at most four notifications in the preview", () => {
     expect(source).toContain("visibleNotifications.slice(0, 4)");
     expect(source).toContain("previewNotifications.map");
