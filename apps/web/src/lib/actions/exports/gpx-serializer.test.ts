@@ -104,6 +104,7 @@ describe("serializeActionGeometryToGpx", () => {
     expect(loopPoints).toHaveLength(3);
     expect(openPoints).toHaveLength(2);
     expect(loopXml).toContain("Tracé GPX importé");
+    expect(loopXml.match(/<wpt\b/g)).toHaveLength(2);
     expect(openXml.match(/<trkpt\b[^>]*lat="48.85" lon="2.35"/g)).toHaveLength(1);
     expect(openXml.match(/<trkpt\b[^>]*lat="48.87" lon="2.37"/g)).toHaveLength(1);
   });
@@ -153,5 +154,37 @@ describe("serializeActionGeometryToGpx", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(first).not.toMatch(/email|clerk|user[_-]?id|participant|token/i);
     fetchSpy.mockRestore();
+  });
+
+  it("rejects personal data and invalid XML text instead of exporting it", () => {
+    expect(() =>
+      serializeActionGeometryToGpx({
+        name: "Action email test@example.com",
+        tracks: [
+          {
+            geometry: openGeometry,
+            geometrySource: "manual",
+          },
+        ],
+      }),
+    ).toThrow(/donnée personnelle/i);
+
+    expect(() =>
+      serializeActionGeometryToGpx({
+        tracks: [
+          {
+            geometry: openGeometry,
+            geometrySource: "manual",
+            waypoints: [
+              {
+                coordinates: openGeometry.coordinates[0]!,
+                name: "Départ\u0001",
+                role: "departure",
+              },
+            ],
+          },
+        ],
+      }),
+    ).toThrow(/caractère XML interdit/i);
   });
 });

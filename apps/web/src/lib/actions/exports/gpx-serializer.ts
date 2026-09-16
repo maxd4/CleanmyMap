@@ -4,14 +4,8 @@ import type {
   ActionRouteTopology,
 } from "@/lib/actions/types";
 
-/**
- * GPX 1.1 exportable geometry sources.
- *
- * `gpx_import` is kept in this compatibility union until the canonical
- * geometry-source type is present on every checkout that consumes this
- * serializer.
- */
-export type GpxGeometrySource = ActionGeometrySource | "gpx_import";
+/** GPX 1.1 exportable geometry sources. */
+export type GpxGeometrySource = ActionGeometrySource;
 
 export type GpxCoordinate = readonly [number, number];
 
@@ -47,9 +41,38 @@ export type GpxSerializerInput = {
   description?: string;
 };
 
-const GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1";
+export const GPX_1_1_NAMESPACE = "http://www.topografix.com/GPX/1/1";
 
-function escapeXml(value: string): string {
+const PERSONAL_DATA_PATTERN =
+  /(?:[\w.%+-]+@[\w.-]+\.[A-Za-z]{2,}|(?:clerk|user)(?:[_-]?(?:id))?\s*[:=]|(?:clerk|user)_[A-Za-z0-9_-]{4,}|(?:bearer|authorization|token)\s*[:=]|\bparticipants?\b)/i;
+
+function assertSafeXmlText(value: string, field: string): void {
+  if (PERSONAL_DATA_PATTERN.test(value)) {
+    throw new Error(`Le champ GPX ${field} contient une donnée personnelle interdite.`);
+  }
+
+  for (const character of value) {
+    const codePoint = character.codePointAt(0) ?? 0;
+    if (
+      codePoint < 0x20 &&
+      codePoint !== 0x09 &&
+      codePoint !== 0x0a &&
+      codePoint !== 0x0d
+    ) {
+      throw new Error(`Le champ GPX ${field} contient un caractère XML interdit.`);
+    }
+    if (
+      (codePoint >= 0xd800 && codePoint <= 0xdfff) ||
+      codePoint === 0xfffe ||
+      codePoint === 0xffff
+    ) {
+      throw new Error(`Le champ GPX ${field} contient un caractère XML interdit.`);
+    }
+  }
+}
+
+function escapeXml(value: string, field: string): string {
+  assertSafeXmlText(value, field);
   return value
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
@@ -72,6 +95,9 @@ function formatCoordinate(value: number, label: string): string {
 }
 
 function coordinateAttributes(coordinates: GpxCoordinate): string {
+  if (!Array.isArray(coordinates) || coordinates.length !== 2) {
+    throw new Error("Une coordonnée GPX doit être un couple latitude/longitude.");
+  }
   return `lat="${formatCoordinate(coordinates[0], "latitude")}" lon="${formatCoordinate(coordinates[1], "longitude")}"`;
 }
 
@@ -82,7 +108,11 @@ function appendMarker(value: string | undefined, marker: string): string {
 }
 
 function sourceMarker(source: GpxGeometrySource): string | null {
-  if (source === "estimated_route" || source === "estimated_area") {
+  if (
+    source === "estimated_route" ||
+    source === "estimated_area" ||
+    source === "fallback_point"
+  ) {
     return "Tracé estimé CleanMyMap";
   }
   if (source === "gpx_import") {
@@ -109,16 +139,34 @@ function serializeWaypoint(waypoint: GpxWaypoint): string {
     throw new Error("Un waypoint GPX doit avoir un nom.");
   }
   const type = waypoint.role
-    ? `\n      <type>${escapeXml(waypoint.role)}</type>`
+    ? `    <type>${escapeXml(waypoint.role, "rôle du waypoint")}</type>`
     : "";
   return [
     `  <wpt ${coordinateAttributes(waypoint.coordinates)}>`,
-    `    <name>${escapeXml(name)}</name>`,
+    `    <name>${escapeXml(name, "nom du waypoint")}</name>`,
     type,
     "  </wpt>",
   ]
     .filter(Boolean)
     .join("\n");
+}
+
+function sameCoordinate(a: GpxCoordinate, b: GpxCoordinate): boolean {
+  return a[0] === b[0] && a[1] === b[1];
+}
+
+function normalizeWaypoints(
+  waypoints: readonly GpxWaypoint[] | undefined,
+): readonly GpxWaypoint[] {
+  const normalized = waypoints ?? [];
+  const departure = normalized.find((waypoint) => waypoint.role === "departure");
+  if (!departure) return normalized;
+
+  return normalized.filter(
+    (waypoint) =>
+      waypoint.role !== "arrival" ||
+      !sameCoordinate(waypoint.coordinates, departure.coordinates),
+  );
 }
 
 function serializeTrack(track: GpxTrackInput): string {
@@ -129,10 +177,11 @@ function serializeTrack(track: GpxTrackInput): string {
 
   const metadata = trackMetadata(track);
   const description = metadata.description
-    ? `\n    <desc>${escapeXml(metadata.description)}</desc>`
+    ? `    <desc>${escapeXml(metadata.description, "description de l'itinéraire")}</desc>`
     : "";
-  const waypoints = (track.waypoints ?? []).map(serializeWaypoint).join("\n");
-  const waypointBlock = waypoints ? `${waypoints}\n` : "";
+  const waypoints = normalizeWaypoints(track.waypoints)
+    .map(serializeWaypoint)
+    .join("\n");
   const points = coordinates
     .map(
       (coordinate) =>
@@ -141,16 +190,16 @@ function serializeTrack(track: GpxTrackInput): string {
     .join("\n");
 
   return [
-    waypointBlock.trimEnd(),
+    waypoints,
     "  <trk>",
-    `    <name>${escapeXml(metadata.name)}</name>`,
-    description.trimStart(),
+    `    <name>${escapeXml(metadata.name, "nom de l'itinéraire")}</name>`,
+    description,
     "    <trkseg>",
     points,
     "    </trkseg>",
     "  </trk>",
   ]
-    .filter(Boolean)
+    .filter((line): line is string => Boolean(line))
     .join("\n");
 }
 
@@ -169,15 +218,19 @@ export function serializeActionGeometryToGpx(
 
   const documentName = input.name?.trim() || "Export CleanMyMap";
   const documentDescription = input.description?.trim() ?? "";
-  const globalWaypoints = (input.waypoints ?? []).map(serializeWaypoint).join("\n");
+  const globalWaypoints = normalizeWaypoints(input.waypoints)
+    .map(serializeWaypoint)
+    .join("\n");
   const tracks = input.tracks.map(serializeTrack).join("\n");
 
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
-    `<gpx version="1.1" creator="CleanMyMap" xmlns="${GPX_NAMESPACE}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="${GPX_NAMESPACE} http://www.topografix.com/GPX/1/1/gpx.xsd">`,
+    `<gpx version="1.1" creator="CleanMyMap" xmlns="${GPX_1_1_NAMESPACE}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="${GPX_1_1_NAMESPACE} http://www.topografix.com/GPX/1/1/gpx.xsd">`,
     "  <metadata>",
-    `    <name>${escapeXml(documentName)}</name>`,
-    documentDescription ? `    <desc>${escapeXml(documentDescription)}</desc>` : "",
+    `    <name>${escapeXml(documentName, "nom du document")}</name>`,
+    documentDescription
+      ? `    <desc>${escapeXml(documentDescription, "description du document")}</desc>`
+      : "",
     "  </metadata>",
     globalWaypoints,
     tracks,
