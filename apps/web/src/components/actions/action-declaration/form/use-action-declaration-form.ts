@@ -30,6 +30,7 @@ import {
   loadDraftSnapshot,
   saveDraft,
   subscribeToDraftChanges,
+  type ActionDeclarationDraftGeometry,
 } from "../draft-storage";
 import { summarizeActionDrawingValidation } from "../../map/actions-map-geometry.utils";
 import { computeActionDataQuality } from "./action-declaration-form.quality";
@@ -39,6 +40,7 @@ import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
 import { getTimeContractValidationMessage } from "@/lib/actions/time-contract";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
+import { resolveFinalActionGeometry } from "@/lib/actions/geometry/final-geometry";
 import { consumePlannerActionHandoff } from "@/lib/route/route-action-handoff";
 import type {
   FormState,
@@ -132,6 +134,8 @@ export function useActionDeclarationForm({
   function handleResumeDraft() {
     if (!pendingDraft) return;
     setForm(pendingDraft.form);
+    setManualDrawingState(pendingDraft.manualDrawing ?? null);
+    setManualDrawingSource(pendingDraft.manualDrawingSource ?? null);
     clearDraft();
     setHasAttemptedSubmit(false);
   }
@@ -332,9 +336,16 @@ export function useActionDeclarationForm({
     form.associationName.startsWith("Entreprise - ");
   const routePreviewInput = form.departureLocationLabel.trim() || form.locationLabel.trim();
   const manualDrawingValidation = summarizeActionDrawingValidation(manualDrawing);
+  const activeFinalGeometry = resolveFinalActionGeometry({
+    gpxDrawing: form.gpxImport ? manualDrawing : null,
+    gpxImport: form.gpxImport,
+    manualDrawing,
+    manualDrawingSource,
+    operationalRoute: form.operationalRoute,
+  });
   // Network reconstruction is server-only; the browser never routes or calls
   // a public routing provider for an action draft.
-  const effectiveRoutePreviewDrawing: ActionDrawing | null = null;
+  const effectiveRoutePreviewDrawing: ActionDrawing | null = activeFinalGeometry?.drawing ?? null;
   const effectiveDrawing = manualDrawingValidation.normalized ?? effectiveRoutePreviewDrawing;
   const hasValidDrawing = Boolean(effectiveDrawing);
   const hasServerRouteInput = routePreviewInput.length >= 2 || (
@@ -431,7 +442,10 @@ export function useActionDeclarationForm({
 
   }
 
-  function updateForm(updates: Partial<FormState>) {
+  function updateForm(
+    updates: Partial<FormState>,
+    draftGeometry?: ActionDeclarationDraftGeometry,
+  ) {
     if (
       updates.routeTopology &&
       form.gpxImport &&
@@ -468,7 +482,12 @@ export function useActionDeclarationForm({
       nextForm.organizerAccounts = "";
     }
     if (!pendingDraft && submissionState !== "success") {
-      saveDraft(nextForm);
+      const activeDraftGeometry = draftGeometry === undefined
+        ? nextForm.gpxImport && manualDrawingSource === "gpx_import" && manualDrawing
+          ? { drawing: manualDrawing, source: "gpx_import" as const }
+          : null
+        : draftGeometry;
+      saveDraft(nextForm, undefined, activeDraftGeometry);
     }
     if (updates.recordType !== undefined) {
       setHasAttemptedSubmit(false);
@@ -510,7 +529,10 @@ export function useActionDeclarationForm({
       setManualDrawingState(parsed.drawing);
       setManualDrawingSource("gpx_import");
       setGpxError(null);
-      updateForm({ gpxImport: parsed.metadata });
+      updateForm(
+        { gpxImport: parsed.metadata },
+        { drawing: parsed.drawing, source: "gpx_import" },
+      );
     } catch (error: unknown) {
       setGpxError(
         error instanceof GpxImportError
@@ -526,7 +548,7 @@ export function useActionDeclarationForm({
       setManualDrawingSource(null);
     }
     setGpxError(null);
-    updateForm({ gpxImport: null });
+    updateForm({ gpxImport: null }, null);
   }
 
   function normalizeFormBeforeSubmit(f: FormState): FormState {

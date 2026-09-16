@@ -95,4 +95,35 @@ describe("GPX create-action priority", () => {
       row.preparation_data.routeObservedDistanceKm,
     );
   });
+
+  it("does not persist an older operational route beside an active GPX", async () => {
+    const payload = buildGpxPayload({
+      preparationData: {
+        ...buildGpxPayload().preparationData,
+        operationalRoute: {
+          routes: [{
+            routeId: "stale-route",
+            groupIndex: 1,
+            geometry: { coordinates: [[48.7, 2.2], [48.71, 2.21]] },
+            plannerTechnicalStops: [],
+          }],
+        },
+      } as never,
+    });
+
+    const result = await resolveCreateActionDrawing(payload);
+    const row = buildActionInsertPayload({
+      userId: "user-test",
+      payload,
+      persistedGeometry: buildCreateActionGeometry(payload, result.drawing, result.geometrySource),
+      finalDrawing: result.drawing,
+      routeGeometry: result.routeGeometry,
+      status: "pending",
+    });
+
+    expect(result.geometrySource).toBe("gpx_import");
+    expect(result.routeGeometry).toBeNull();
+    expect(row.preparation_data.operationalRoute).toBeUndefined();
+    expect(row.geometry_source).toBe("gpx_import");
+  });
 });
