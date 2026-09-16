@@ -41,7 +41,7 @@ export function WeatherSection({
           <PageHeader
             family={pageFamily}
             align="center"
-            title={fr ? "Organiser une action" : "Organize an action"}
+            title={fr ? "Météo & conditions terrain" : "Weather & field conditions"}
             subtitle={
               fr
                 ? "Consultez la météo réelle du lieu puis préparez le terrain pour décider du bon créneau d’action."

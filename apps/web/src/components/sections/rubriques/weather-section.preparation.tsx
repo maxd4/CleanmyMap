@@ -38,8 +38,8 @@ export function PreparationPanel({
   const durationLabel = isWeatherReady
     ? getDurationLabel(currentRisk.level)
     : fr
-      ? "1 h à 2 h"
-      : "1h to 2h";
+      ? "1 h à 2 h · durée indicative"
+      : "1h to 2h · indicative duration";
   const effortLabel = isWeatherReady
     ? currentRisk.level === "rouge"
       ? fr

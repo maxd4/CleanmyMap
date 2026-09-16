@@ -235,7 +235,7 @@ export const WeatherRiskAlert = memo(function WeatherRiskAlert({ currentRisk, fr
 
       <div className="grid gap-6 relative z-10">
         <div className="p-6 rounded-3xl bg-white/5 border border-white/5 space-y-4">
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{fr ? "Matériel conseillé" : "Recommended gear"}</p>
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{fr ? "Matériel à envisager" : "Gear to consider"}</p>
           <div className="flex flex-wrap gap-2">
             {currentRisk.equipment.map((item) => (
               <span key={item} className="px-4 py-1.5 rounded-xl bg-white/10 text-[10px] font-black text-white border border-white/10 uppercase tracking-widest">
@@ -246,7 +246,7 @@ export const WeatherRiskAlert = memo(function WeatherRiskAlert({ currentRisk, fr
         </div>
 
         <div className="p-6 rounded-3xl bg-white/5 border border-white/5 space-y-4">
-          <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{fr ? "Contraintes critiques" : "Critical constraints"}</p>
+          <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{fr ? "Repères de prudence" : "Prudence guidance"}</p>
           <ul className="space-y-3">
             {currentRisk.constraints.map((item) => (
               <li key={item} className="flex items-center gap-3 text-xs font-bold text-slate-400">
@@ -352,13 +352,13 @@ export const WeatherActionWindows = memo(function WeatherActionWindows({
         <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
           <Timer size={20} className="text-emerald-400" />
         </div>
-        <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Fenêtres d'Action Optimales" : "Optimal Action Windows"}</h3>
+        <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Fenêtres selon les conditions" : "Windows based on conditions"}</h3>
       </div>
 
       <div className="space-y-8">
         <div className="space-y-4">
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">
-            {fr ? "Recommandées" : "Recommended"}
+            {fr ? "Favorables selon les données" : "Favorable based on the data"}
           </p>
           {windows.recommended.map((w, i) => (
             <motion.div
@@ -401,7 +401,7 @@ export const WeatherActionWindows = memo(function WeatherActionWindows({
 
         <div className="space-y-4">
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-rose-400">
-            {fr ? "À éviter" : "Avoid"}
+            {fr ? "Vigilance renforcée" : "Increased vigilance"}
           </p>
           {windows.avoid.map((w, i) => (
             <motion.div
@@ -486,7 +486,7 @@ export const KitConfiguration = memo(function KitConfiguration({
         <div className="space-y-6">
           <div className="flex items-center gap-4 text-slate-500 border-b border-white/5 pb-4">
             <Layers size={14} />
-            <span className="text-[10px] font-black uppercase tracking-widest">{fr ? "Inventaire recommandé" : "Recommended inventory"}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest">{fr ? "Inventaire à envisager" : "Inventory to consider"}</span>
           </div>
           <div className="grid gap-3">
             {packItems.map((item, i) => (

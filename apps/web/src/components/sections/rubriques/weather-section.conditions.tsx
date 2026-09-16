@@ -67,14 +67,14 @@ export function ConditionsPanel({
 }) {
   const isWeatherReady = weatherStatus === "ready" && currentRisk !== null;
   const checklist = [
-    fr ? "Informer son binôme" : "Tell your buddy",
-    fr ? "Nommer un référent sécurité" : "Name a safety lead",
-    fr ? "Prévoir 1,5 L d’eau minimum" : "Bring at least 1.5 L of water",
-    fr ? "Pauses toutes les 60 min" : "Breaks every 60 min",
+    fr ? "Informer un proche ou son binôme" : "Tell someone close or your buddy",
+    fr ? "Envisager un référent sécurité selon l’équipe" : "Consider a safety lead based on the team",
+    fr ? "Prévoir de l’eau selon la durée et les conditions" : "Bring water according to the duration and conditions",
+    fr ? "Prévoir des pauses selon la durée et les conditions" : "Plan breaks according to the duration and conditions",
     fr ? "Vérifier la météo avant le départ" : "Check the weather before leaving",
-    fr ? "Trousse de premiers secours" : "First-aid kit",
-    fr ? "Brief sécurité initial" : "Initial safety briefing",
-    fr ? "Rappeler les règles de conduite" : "State the conduct rules",
+    fr ? "Trousse de premiers secours à envisager" : "Consider a first-aid kit",
+    fr ? "Prévoir un brief sécurité initial" : "Plan an initial safety briefing",
+    fr ? "Rappeler les règles de conduite de l’équipe" : "Review the team conduct rules",
   ];
 
   const equipment = isWeatherReady
@@ -91,10 +91,10 @@ export function ConditionsPanel({
   const safetyConstraints = isWeatherReady
     ? currentRisk!.constraints
     : [
-        fr ? "Évite les déchets dangereux" : "Avoid hazardous waste",
-        fr ? "Garde les gants et l'eau à portée" : "Keep gloves and water nearby",
-        fr ? "Privilégie un binôme" : "Work in pairs",
-        fr ? "Respecte le site et les autres usagers" : "Respect the site and other users",
+        fr ? "Déchets dangereux : ne pas toucher et signaler" : "Hazardous waste: do not touch and report it",
+        fr ? "Gants et eau à garder à portée" : "Keep gloves and water nearby",
+        fr ? "Binôme à envisager selon les conditions" : "Consider working with a buddy based on conditions",
+        fr ? "Respect du site et des autres usagers" : "Respect for the site and other users",
       ];
 
   return (
@@ -135,7 +135,7 @@ export function ConditionsPanel({
             </span>
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700">
-                {fr ? "Recommandations" : "Recommendations"}
+                {fr ? "Repères de prudence" : "Prudence guidance"}
               </p>
               <h3 className="text-xl font-black tracking-tight text-emerald-800">
                 {isWeatherReady
@@ -160,7 +160,7 @@ export function ConditionsPanel({
 
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
-                {fr ? "Équipement recommandé" : "Recommended gear"}
+                {fr ? "Équipement à envisager" : "Gear to consider"}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {equipment.map((item) => (
@@ -217,7 +217,7 @@ export function ConditionsPanel({
             <div className="mt-5 grid gap-3 md:grid-cols-3">
               <div className="rounded-[1.35rem] border border-emerald-200 bg-emerald-50/80 px-4 py-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.26em] text-emerald-800/80">
-                  {fr ? "Créneau conseillé" : "Suggested slot"}
+                  {fr ? "Créneau favorable selon les données" : "Favorable slot based on the data"}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-emerald-950">
                   {recommendedWindows[0]
@@ -237,7 +237,7 @@ export function ConditionsPanel({
               </div>
               <div className="rounded-[1.35rem] border border-rose-200 bg-rose-50/80 px-4 py-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.26em] text-rose-800/80">
-                  {fr ? "Report recommandé" : "Postpone recommended"}
+                  {fr ? "Décision selon les conditions" : "Decision based on conditions"}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-rose-950">
                   {currentRisk ? getReportLabel(currentRisk.level, fr) : fr ? "Non disponible" : "Unavailable"}
@@ -407,8 +407,8 @@ export function ConditionsPanel({
               {
                 title: fr ? "Hydratation" : "Hydration",
                 description: fr
-                  ? "Prévoir 1,5 L d'eau par personne minimum."
-                  : "Bring at least 1.5 L of water per person.",
+                  ? "Prévoir de l’eau selon la durée, la météo et les besoins de l’équipe."
+                  : "Bring water according to the duration, weather and team needs.",
                 icon: Droplets,
               },
               {
@@ -434,8 +434,8 @@ export function ConditionsPanel({
                         ? "Rester attentif aux rafales et aux surfaces glissantes."
                         : "Watch for gusts and slippery surfaces."
                       : fr
-                        ? "Intervention courte, binômes et pauses impératives."
-                        : "Short intervention, pairs and breaks required."
+                        ? "Conseil de prudence : intervention courte, binôme et pauses à envisager selon les conditions."
+                        : "Prudence guidance: consider a short intervention, a buddy and breaks based on conditions."
                   : fr
                     ? "Reste vigilant sur le terrain, même sans détail météo."
                     : "Stay vigilant on the ground, even without detailed weather.",
