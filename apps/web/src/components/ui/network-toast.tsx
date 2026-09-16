@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, RotateCcw, WifiOff, X } from "lucide-react";
+import { RefreshCw, RotateCcw, WifiOff } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { cn } from "@/lib/utils";
+import { CmmToast } from "@/components/ui/cmm-toast";
 import {
   NETWORK_TOAST_EVENT,
   type NetworkToastPayload,
@@ -106,29 +106,17 @@ export function NetworkToast({
   );
 
   return (
-    <div className="fixed bottom-4 right-4 z-[90] w-[min(24rem,calc(100vw-2rem))]">
-      <div className="rounded-2xl border border-cyan-200 bg-white/95 p-4 shadow-[0_18px_36px_-24px_rgba(8,145,178,0.5)] backdrop-blur">
-        <div className="flex gap-3">
-          <div className="mt-0.5 shrink-0 rounded-full bg-cyan-50 p-2 text-cyan-700">
-            <WifiOff className="h-4 w-4" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold cmm-text-primary">{title}</p>
-            <p className="mt-1 text-sm cmm-text-secondary">{message}</p>
-            <div className="mt-3 flex flex-wrap gap-2">{actions}</div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className={cn(
-              "shrink-0 rounded-full p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700",
-            )}
-            aria-label="Fermer l'alerte réseau"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    </div>
+    <CmmToast
+      title={title}
+      tone="error"
+      announcement="assertive"
+      icon={<WifiOff className="h-4 w-4" />}
+      actions={actions}
+      onClose={onClose}
+      closeLabel="Fermer l'alerte réseau"
+      className="fixed bottom-4 right-4 z-[90] w-[min(24rem,calc(100vw-2rem))]"
+    >
+      {message}
+    </CmmToast>
   );
 }

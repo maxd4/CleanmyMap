@@ -66,6 +66,13 @@ feedback inline ne devient pas une modale parce qu’il possède une surface.
 `app-navigation-tree-menu.tsx` utilise `aria-modal="false"` pour une
 navigation non modale et reste volontairement hors de `CmmDialog`.
 
+`CmmToast` est une notification flottante temporaire et présentational ; il
+ne devient ni une modale ni un panneau contextuel :
+
+```text
+CmmToast ≠ CmmDialog ≠ CmmPopover
+```
+
 ## `CmmPopover`
 
 `CmmPopover` est la primitive canonique des panneaux contextuels riches et
