@@ -43,34 +43,61 @@ doit être vérifiée localement puis, si nécessaire, en production.
 
 ### Local
 
-Pour une validation locale protégée, suivre cet arbre de décision dans l'ordre :
+Avant de démarrer, classifier la surface :
 
-1. Confirmer que la validation locale d'une surface protégée est demandée.
-2. Utiliser d'abord le bypass local officiel `CMM_DEV_AUTH_BYPASS` plutôt que
-   rechercher une vraie session Clerk.
-3. Choisir le rôle minimal adapté au scénario parmi `benevole`,
-   `coordinateur`, `scientifique`, `entreprise`, `elu`, `admin` et `max`.
-   `max` n'est pas le choix automatique pour une capacité bénévole ordinaire.
-4. Démarrer le web avec le protocole local canonique, en consultant
-   `.aLANCER_SITE_LOCAL_ROLE_MAX.bat`,
-   `apps/web/src/lib/auth/dev-auth.ts` et
-   `apps/web/.env.local.example` lorsque nécessaire.
-5. Si le serveur démarre, aucune vraie connexion Clerk n'est nécessaire pour
-   cette validation locale ; les handlers continuent d'appliquer leurs
-   contrôles centraux d'AuthN et d'AuthZ.
-6. Si `clerk-session-config.ts` refuse la configuration avant démarrage,
-   diagnostiquer `CLERK_BOOT_CONFIG`, vérifier la configuration Clerk
-   Development locale, ne pas basculer vers des clés de production et ne pas
-   basculer vers un Agent Task.
-7. Seulement si le scénario demandé est réellement un smoke production,
-   utiliser le workflow Clerk de production documenté ci-dessous.
+- `PUBLIC` : aucune AuthN ; navigateur intégré ou Playwright public selon le
+  besoin, sans bypass.
+- `PROTECTED_SERVER_ONLY` : AuthN/AuthZ uniquement côté serveur ; utiliser le
+  lanceur local canonique avec `CMM_DEV_AUTH_BYPASS=1` et le rôle minimal.
+  Le port 3000 est préféré, mais le fallback est autorisé ; reprendre l'URL
+  réellement annoncée par le launcher.
+- `PROTECTED_CLERK_CLIENT` : la route ou son consommateur utilise `useUser`,
+  `useAuth`, l'UI Clerk, `SignedIn`/`SignedOut`, ou nécessite une vraie session
+  navigateur. Le bypass serveur ne suffit pas : utiliser le harness officiel
+  Playwright Clerk Development sur `127.0.0.1:3000` strict, avec
+  `CMM_DISABLE_DEV_AUTH_BYPASS=1` et le `storageState`/la session préparé(e)
+  par le global setup. `/onboarding` est un exemple.
+- `PROD_SMOKE` : vraie session Clerk Production selon le playbook, sans bypass
+  local.
+- `E2E_MUTABLE_SUPABASE` : uniquement la lane CI éphémère dédiée ; jamais de
+  Docker ou Supabase local sur le poste.
+
+Le launcher manuel/Codex peut donc annoncer un port de repli. Playwright Clerk
+doit libérer l'ancien serveur puis rester strict sur 3000 ; il ne doit jamais
+être lancé contre un serveur démarré avec le bypass, ni supposer
+`localhost:3000` après un fallback.
+
+Avant chaque test, annoncer :
+
+```text
+AUTH_SURFACE: PUBLIC | PROTECTED_SERVER_ONLY | PROTECTED_CLERK_CLIENT
+BROWSER_HARNESS: INTEGRATED_BROWSER | PLAYWRIGHT_CLERK
+AUTH_MODE: NONE | DEV_BYPASS | CLERK_DEVELOPMENT
+HOST_URL: URL réellement utilisée
+ROLE: rôle réel/simulé
+PERSISTENCE: NONE | REMOTE_READONLY | CI_EPHEMERAL
+```
+
+Pour `PROTECTED_SERVER_ONLY`, les rôles acceptés sont exactement `benevole`,
+`coordinateur`, `scientifique`, `entreprise`, `elu`, `admin` et `max` ; choisir
+le minimum requis. Une valeur invalide est bornée au rôle `benevole` par le
+runtime local. Aucune clé Clerk Production ne doit être injectée dans
+`localhost`.
+
+Si `clerk-session-config.ts` refuse la configuration avant démarrage,
+diagnostiquer `CLERK_BOOT_CONFIG`, vérifier la configuration Clerk Development
+locale et ne jamais la remplacer par une clé Production.
+
+Seul `PROD_SMOKE` utilise le workflow Clerk de production documenté ci-dessous.
 
 > **BYPASS AUTH != BYPASS DU BOOT CLERK**
 >
-> Le bypass simule l'identité et l'AuthZ locale. Le runtime peut néanmoins
-> exiger une configuration Clerk Development cohérente pour initialiser
-> l'application. Une erreur de boot `Invalid local Clerk configuration` est
-> donc `CLERK_BOOT_CONFIG`, et non « bypass indisponible ».
+> Le bypass simule l'identité et l'AuthZ locale uniquement pour
+> `PROTECTED_SERVER_ONLY`. Le runtime peut néanmoins exiger une configuration
+> Clerk Development cohérente pour initialiser l'application. Une erreur de
+> boot `Invalid local Clerk configuration` est donc `CLERK_BOOT_CONFIG`, et non
+> « bypass indisponible » ; une surface `PROTECTED_CLERK_CLIENT` doit malgré
+> tout utiliser une vraie session Clerk Development.
 
 Les handlers doivent continuer à appliquer leurs helpers centraux d'AuthN et
 d'AuthZ ; le bypass local ne rend aucune route publique et ne modifie pas les

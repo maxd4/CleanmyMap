@@ -1,5 +1,17 @@
+import type { GrantedRole } from "../domain-language";
+
 const LOCALHOST_HOSTNAME_RE =
   /^(localhost|127\.0\.0\.1|\[::1\]|::1)(?::\d+)?$/i;
+
+const DEV_AUTH_BYPASS_ROLES = [
+  "benevole",
+  "coordinateur",
+  "scientifique",
+  "entreprise",
+  "elu",
+  "admin",
+  "max",
+] as const satisfies readonly GrantedRole[];
 
 function readEnvFlag(name: string): boolean {
   return process.env[name] === "1" || process.env[name] === "true";
@@ -54,9 +66,9 @@ export function shouldUseDevAuthBypass(params: {
   return !params.clerkUserId;
 }
 
-export function getDevAuthBypassRole(): string {
+export function getDevAuthBypassRole(): GrantedRole {
   const role = readEnvValue("CMM_DEV_AUTH_BYPASS_ROLE", "benevole");
-  return role === "benevole" || role === "admin" || role === "max" ? role : "benevole";
+  return DEV_AUTH_BYPASS_ROLES.includes(role as GrantedRole) ? (role as GrantedRole) : "benevole";
 }
 
 export function getDevAuthBypassUserId(): string {

@@ -340,15 +340,41 @@ Vérifier :
 
 ## Clerk local
 
-Pour revue UX sans tester Clerk lui-même :
+Avant toute validation navigateur, classifier la surface :
 
-- utiliser le bypass de développement uniquement en `NODE_ENV=development` ;
-- ou utiliser `/preview/actions/new`.
+- `PUBLIC` : navigateur intégré ou Playwright public, sans bypass ;
+- `PROTECTED_SERVER_ONLY` : launcher local canonique, `CMM_DEV_AUTH_BYPASS=1`,
+  rôle minimal, port 3000 préféré avec fallback et URL effectivement annoncée ;
+- `PROTECTED_CLERK_CLIENT` : si la route consomme `useUser`, `useAuth`, l'UI
+  Clerk, `SignedIn`/`SignedOut` ou une vraie session navigateur, le bypass
+  serveur est insuffisant. Utiliser le harness Playwright Clerk Development,
+  `127.0.0.1:3000` strict, `CMM_DISABLE_DEV_AUTH_BYPASS=1` et le
+  `storageState`/la session du global setup. `/onboarding` est un exemple ;
+- `PROD_SMOKE` : session Clerk Production réelle selon le playbook, sans
+  bypass ;
+- `E2E_MUTABLE_SUPABASE` : uniquement la lane CI éphémère dédiée, jamais
+  Docker/Supabase local.
 
-Pour tester une vraie route protégée avec Playwright :
+Le launcher manuel/Codex utilise `3000` de préférence et peut basculer sur un
+port libre ; reprendre l'URL annoncée. Le harness Clerk doit libérer l'ancien
+serveur et rester strict sur `3000`. Ne jamais lancer Playwright Clerk contre
+un serveur bypass, ni supposer `localhost:3000` après un fallback.
 
-- préférer un `storageState` issu d'une connexion réelle ;
-- ne jamais committer session, token ou secret.
+Annoncer avant le test :
+
+```text
+AUTH_SURFACE: PUBLIC | PROTECTED_SERVER_ONLY | PROTECTED_CLERK_CLIENT
+BROWSER_HARNESS: INTEGRATED_BROWSER | PLAYWRIGHT_CLERK
+AUTH_MODE: NONE | DEV_BYPASS | CLERK_DEVELOPMENT
+HOST_URL: URL réellement utilisée
+ROLE: rôle réel/simulé
+PERSISTENCE: NONE | REMOTE_READONLY | CI_EPHEMERAL
+```
+
+Les rôles de bypass canoniques sont `benevole`, `coordinateur`,
+`scientifique`, `entreprise`, `elu`, `admin` et `max`. Ne jamais utiliser de
+clé Clerk Production sur localhost et ne jamais committer session, token ou
+secret.
 
 ## Critères de réussite
 

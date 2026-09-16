@@ -74,6 +74,26 @@ describe("dev auth bypass helpers", () => {
     ).toBe(true);
   });
 
+  it.each([
+    "benevole",
+    "coordinateur",
+    "scientifique",
+    "entreprise",
+    "elu",
+    "admin",
+    "max",
+  ])("accepts the canonical bypass role %s without falling back", (role) => {
+    vi.stubEnv("CMM_DEV_AUTH_BYPASS_ROLE", role);
+
+    expect(getDevAuthBypassRole()).toBe(role);
+  });
+
+  it("bounds an invalid bypass role to benevole", () => {
+    vi.stubEnv("CMM_DEV_AUTH_BYPASS_ROLE", "not-a-granted-role");
+
+    expect(getDevAuthBypassRole()).toBe("benevole");
+  });
+
   it("disables every bypass when the disable flag is set", () => {
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("CMM_DEV_AUTH_BYPASS", "1");
