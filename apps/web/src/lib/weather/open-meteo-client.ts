@@ -244,11 +244,11 @@ export async function fetchOpenMeteoForecast(
   }
   if (existing) forecastCache.delete(key);
 
-  const value = requestForecast(url, options);
-  forecastCache.set(key, {
+  const cacheEntry: CacheEntry = {
     expiresAt: now() + (options.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS),
-    value,
-  });
+    value: requestForecast(url, options),
+  };
+  forecastCache.set(key, cacheEntry);
   while (forecastCache.size > MAX_CACHE_ENTRIES) {
     const oldestKey = forecastCache.keys().next().value;
     if (typeof oldestKey !== "string") break;
@@ -256,9 +256,9 @@ export async function fetchOpenMeteoForecast(
   }
 
   try {
-    return await value;
+    return await cacheEntry.value;
   } catch (error) {
-    if (forecastCache.get(key)?.value === value) forecastCache.delete(key);
+    if (forecastCache.get(key) === cacheEntry) forecastCache.delete(key);
     throw error;
   }
 }

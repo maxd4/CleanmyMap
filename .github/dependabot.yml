@@ -4,7 +4,9 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    # Les mises à jour de version sont désactivées; les PR de sécurité restent
+    # indépendantes de cette limite selon le contrat Dependabot.
+    open-pull-requests-limit: 0
     reviewers:
       - "maxd4"
     labels:
@@ -27,7 +29,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    # Même politique pour les Actions: pas de bruit de versions, sécurité conservée.
+    open-pull-requests-limit: 0
     labels:
       - "dependencies"
       - "github-actions"

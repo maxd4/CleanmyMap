@@ -14,7 +14,7 @@ const ALLOWED_FILE_RULES = [
   { pattern: /^screenshots\/[a-z0-9][a-z0-9._-]*\.png$/i, binary: true },
 ];
 
-const FORBIDDEN_PATH_PATTERN = /(?:^|\/)(?:clerk|storage[state_-]*|user|managed-user|cookies?|sessions?|network|headers?)(?:\/|\.|$)|(?:trace|video|recording)\.(?:zip|webm|mp4)$/i;
+const FORBIDDEN_PATH_PATTERN = /(?:^|\/)(?:clerk|storage[stae_-]*|user|managed-user|cookies?|sessions?|network|headers?)(?:\/|\.|$)|(?:trace|video|recording)\.(?:zip|webm|mp4)$/i;
 const FORBIDDEN_EXTENSION = new Set([
   ".env",
   ".har",
