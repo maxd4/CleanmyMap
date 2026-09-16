@@ -182,7 +182,7 @@ describe("actions map initial viewport", () => {
       longitude: 1.444,
     });
     let call = 0;
-    const fetchActions = vi.fn(async ({ viewport, limit }: { viewport?: unknown; limit: number }) => {
+    const fetchActions = vi.fn(async ({ viewport }: { viewport?: unknown }) => {
       call += 1;
       if (call <= 4) {
         return { items: [] };
