@@ -43,8 +43,9 @@ Les onglets sont l'état de navigation canonique de l'URL (`tab=future` ou
 sémantique accessible `tablist` / `tab` / `tabpanel`, avec navigation clavier
 par flèches, `Home` et `End`. Sans deep link, l'onglet futur est sélectionné
 par défaut. Les filtres propres aux futures ne sont pas affichés dans la vue
-passée et aucune nouvelle source, aucun nouveau modèle `past` ou état de
-participation rétroactive n'est introduit.
+passée. Aucun nouveau modèle `past` ou état concurrent n'est introduit ; le
+claim rétroactif décrit plus bas est le flux existant de rattachement à une
+participation finale.
 
 Permettre au créateur, organisateur ou coorganisateur autorisé de :
 
@@ -82,12 +83,29 @@ La visibilité de l'ouverture à la participation reste distincte de :
 - validation d'une déclaration finale ;
 - comptabilisation dans les indicateurs d'impact.
 
+## Vocabulaire et sources temporelles
+
+La distinction métier suit la phase de l'action :
+
+| Phase | Source canonique | Sens des libellés UI |
+| --- | --- | --- |
+| Avant l'action | `public.action_registrations` | `Inscription confirmée`, `Inscriptions confirmées`, `Mes inscriptions`, `Demandes d'inscription` |
+| Après l'action | `public.action_participants` | `J’ai participé à cette action`, `Participation à confirmer`, `Participation confirmée`, `Demande refusée` |
+
+Une inscription future, même confirmée, indique une place acceptée avant le
+terrain ; elle ne confirme jamais une présence. L'onglet `Actions passées`
+permet à un bénévole authentifié de demander un rattachement rétroactif à une
+action publique terminée. Cette demande de claim est créée dans
+`action_participants` avec `participation_source = post_action_claim` et reste
+en attente de validation selon les permissions existantes.
+
 L'onglet `Actions futures` réutilise exclusivement `/api/actions/group-join`.
 L'onglet `Actions passées` lit les références publiques d'actions terminées,
-approuvées, publiées et visibles depuis la surface d'actions ; il ne lit pas
-l'historique personnel `historyItems` et ne permet aucune participation
-rétroactive. L'historique personnel et le partage d'une référence d'action
-restent des capacités distinctes de ce parcours.
+publiées et visibles depuis la surface d'actions ; il ne lit pas l'historique
+personnel `historyItems` pour construire cette liste. Il permet en revanche le
+claim rétroactif décrit ci-dessus, sans transformer une inscription antérieure
+en preuve de présence. L'historique personnel et le partage d'une référence
+d'action restent des capacités distinctes de ce parcours.
 
 Une action future annulée n'est plus renvoyée dans la liste normale et ne peut
 plus être rejointe. Lorsqu'un utilisateur y avait déjà une participation, son

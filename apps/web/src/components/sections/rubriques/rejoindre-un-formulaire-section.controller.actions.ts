@@ -76,7 +76,7 @@ export function useJoinFormSectionActions({
         if ((fetchError as { name?: string }).name === "AbortError") {
           return;
         }
-        setError(fr ? "Le flux de participation est temporairement indisponible." : "The participation flow is temporarily unavailable.");
+        setError(fr ? "Le flux d'inscription est temporairement indisponible." : "The registration flow is temporarily unavailable.");
       } finally {
         setLoading(false);
       }
@@ -217,8 +217,8 @@ export function useJoinFormSectionActions({
           typeof payload === "object" && payload && "error" in payload && payload.error
             ? payload.error
             : fr
-              ? "La participation n'a pas pu être retirée."
-              : "The participation could not be removed.";
+              ? "L'inscription n'a pas pu être annulée."
+              : "The registration could not be cancelled.";
         setNotice(message);
         return;
       }
@@ -267,19 +267,19 @@ export function useJoinFormSectionActions({
       setNotice(
         cancelled.alreadyCancelled
           ? fr
-            ? "Votre participation était déjà annulée."
-            : "Your participation was already cancelled."
+            ? "Votre inscription était déjà annulée."
+            : "Your registration was already cancelled."
           : wasPending
             ? fr
-              ? "Votre demande a été annulée."
+              ? "Votre demande d'inscription a été annulée."
               : "Your request has been cancelled."
             : wasConfirmed
               ? fr
-              ? "Vous avez quitté cette action."
-                : "You left this form."
+              ? "Votre inscription a été annulée."
+                : "Your registration was cancelled."
               : fr
-                ? "La participation a été retirée."
-                : "The participation has been removed.",
+                ? "L'inscription a été annulée."
+                : "The registration has been cancelled.",
       );
       onQueueMutation?.(actionId);
     } finally {

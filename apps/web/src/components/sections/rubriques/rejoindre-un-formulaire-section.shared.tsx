@@ -3,8 +3,9 @@ export {
   getActionDisplayStatus,
   getCardDisplayStatus,
   getLifecycleLabel,
+  getParticipationStatusLabel,
+  getRegistrationStatusLabel,
   getStatusDotTone,
-  getStatusLabel,
 } from "./rejoindre-un-formulaire-section.status";
 export { HeroIllustration } from "./rejoindre-un-formulaire-section.illustrations";
 export {

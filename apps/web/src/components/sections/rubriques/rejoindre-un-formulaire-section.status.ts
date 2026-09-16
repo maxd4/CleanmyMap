@@ -38,21 +38,37 @@ export function getCardDisplayStatus(item: JoinableActionItem): ActionCardStatus
   return "open";
 }
 
-export function getStatusLabel(status: ActionCardStatus, fr: boolean): string {
+export function getRegistrationStatusLabel(status: ActionCardStatus, fr: boolean): string {
   switch (status) {
     case "pending":
-      return fr ? "En attente" : "Pending";
-    case "closed":
-      return fr ? "Fermée" : "Closed";
+      return fr ? "Demande d'inscription" : "Registration request";
     case "confirmed":
-      return fr ? "Confirmée" : "Confirmed";
+      return fr ? "Inscription confirmée" : "Registration confirmed";
+    case "closed":
+      return fr ? "Inscriptions fermées" : "Registrations closed";
     case "cancelled":
-      return fr ? "Annulée" : "Cancelled";
+      return fr ? "Inscription annulée" : "Registration cancelled";
     case "completed":
-      return fr ? "Complétée" : "Completed";
+      return fr ? "Inscription clôturée" : "Registration closed";
     case "open":
     default:
-      return fr ? "Ouverte" : "Open";
+      return fr ? "Inscriptions ouvertes" : "Registrations open";
+  }
+}
+
+export function getParticipationStatusLabel(status: ActionCardStatus, fr: boolean): string {
+  switch (status) {
+    case "pending":
+      return fr ? "Participation à confirmer" : "Participation awaiting confirmation";
+    case "confirmed":
+      return fr ? "Participation confirmée" : "Participation confirmed";
+    case "cancelled":
+      return fr ? "Demande refusée" : "Request refused";
+    case "closed":
+    case "completed":
+    case "open":
+    default:
+      return fr ? "Participation indisponible" : "Participation unavailable";
   }
 }
 

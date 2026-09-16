@@ -144,8 +144,8 @@ export function JoinFormExplorer(props: ExplorerProps) {
         </div>
         <p className="text-sm text-slate-500">
           {fr
-            ? "Les actions futures sont publiées et ouvertes à la participation. Les résultats restent réservés à l'onglet des actions passées."
-            : "Published future actions are open for participation. Results stay in the past actions tab."}
+            ? "Les actions futures sont publiées et ouvertes aux inscriptions. Les résultats restent réservés à l'onglet des actions passées."
+            : "Published future actions are open for registration. Results stay in the past actions tab."}
         </p>
       </div>
       {(search || statusFilter !== "all" || locationFilter !== "all" || periodFilter !== "all" || sort !== "soonest") && (
@@ -200,9 +200,6 @@ export function JoinFormExplorer(props: ExplorerProps) {
           <div className="mt-4 flex flex-wrap gap-2">
             <CmmButton href="/actions/new" tone="primary" variant="pill">
               {fr ? "Créer une action" : "Create an action"}
-            </CmmButton>
-            <CmmButton href="/actions/new" tone="secondary" variant="pill">
-              {fr ? "Déclarer avant l'action" : "Declare before action"}
             </CmmButton>
           </div>
         </div>

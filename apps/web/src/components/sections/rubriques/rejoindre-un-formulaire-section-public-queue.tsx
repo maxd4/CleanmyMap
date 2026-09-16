@@ -166,7 +166,7 @@ export function JoinFormPublicQueue({
         <div className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <h4 className="text-sm font-semibold text-slate-900">
-              {fr ? "Demandes en attente" : "Pending requests"}
+              {fr ? "Demandes d'inscription en attente" : "Pending registration requests"}
             </h4>
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-amber-800">
               {formatCount(queueRequests.length)}
