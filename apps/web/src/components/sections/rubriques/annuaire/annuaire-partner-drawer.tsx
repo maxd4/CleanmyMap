@@ -52,7 +52,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
           >
             {/* Header with Visual Branding */}
             <div className="relative h-72 flex-shrink-0 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 via-indigo-600/10 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 via-violet-600/10 to-transparent" />
               <div className="absolute top-[-20%] right-[-10%] h-[120%] w-[80%] rounded-full bg-violet-500/10 blur-[100px]" />
               
               <div className="absolute top-8 right-8 z-20">

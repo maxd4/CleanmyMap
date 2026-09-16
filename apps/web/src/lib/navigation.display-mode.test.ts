@@ -28,6 +28,13 @@ const FORBIDDEN_ACT_ROUTE_IDS = [
   "trash-spotter",
   "history",
 ] as const;
+const EXPECTED_NETWORK_ROUTE_IDS = [
+  "community",
+  "feedback",
+  "messagerie",
+  "open-data",
+  "annuaire",
+] as const;
 
 function collectRouteIds(
   profile: "benevole" | "coordinateur" | "scientifique" | "entreprise" | "elu" | "admin" | "max",
@@ -67,12 +74,7 @@ describe("navigation display modes", () => {
       "reports",
       "gamification",
     ]);
-    expect(spaces.find((space) => space.id === "network")?.items.map((item) => item.routeId)).toEqual([
-      "open-data",
-      "community",
-      "feedback",
-      "messagerie",
-    ]);
+    expect(spaces.find((space) => space.id === "network")?.items.map((item) => item.routeId)).toEqual(EXPECTED_NETWORK_ROUTE_IDS);
     expect(spaces.find((space) => space.id === "learn")?.items.map((item) => item.routeId)).toEqual([
       "learn-comprendre",
       "learn-sentrainer",
@@ -177,12 +179,7 @@ describe("navigation display modes", () => {
       "exhaustif",
     ).find((space) => space.id === "network");
 
-    expect(networkSpace?.items.map((item) => item.routeId)).toEqual([
-      "open-data",
-      "community",
-      "feedback",
-      "messagerie",
-    ]);
+    expect(networkSpace?.items.map((item) => item.routeId)).toEqual(EXPECTED_NETWORK_ROUTE_IDS);
   });
 
   it("moves impact pages into the visualize space", () => {
@@ -237,12 +234,26 @@ describe("navigation display modes", () => {
       "exhaustif",
     ).find((space) => space.id === "network");
 
-    expect(networkSpace?.items.map((item) => item.routeId)).toEqual([
-      "open-data",
-      "community",
-      "feedback",
-      "messagerie",
-    ]);
+    expect(networkSpace?.items.map((item) => item.routeId)).toEqual(EXPECTED_NETWORK_ROUTE_IDS);
+  });
+
+  it("exposes the annuaire in the deterministic network order for every profile", () => {
+    for (const profile of PROFILES) {
+      const networkSpace = getNavigationSpacesForProfile(profile, "exhaustif").find(
+        (space) => space.id === "network",
+      );
+
+      expect(networkSpace?.items.map((item) => item.routeId)).toEqual(
+        EXPECTED_NETWORK_ROUTE_IDS,
+      );
+      expect(networkSpace?.items.map((item) => item.href)).toEqual([
+        "/sections/community",
+        "/sections/feedback",
+        "/sections/messagerie",
+        "/sections/open-data",
+        "/sections/annuaire",
+      ]);
+    }
   });
 
   it("uses sentence case labels in visible navigation items", () => {

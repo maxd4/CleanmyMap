@@ -98,7 +98,7 @@ Le garde-fou associé est `npm run check:surfaces`.
 | 01 | Accueil & Pilotage | `amber` / `orange` / `brun` (combinés) | `amber`/`orange` | Fond et titres de page en orange+brun ; cartes du sommaire `/explorer` inchangées |
 | 02 | Agir | `emerald` | `emerald` | Toutes pages terrain |
 | 03 | Cartographie & Impact | `sky` + `red` / `rose` | `sky` | Pages carto → sky, Pages impact → red / rose, `/methodologie` → rouge d'impact |
-| 04 | Réseau & Discussions | `pink` + `indigo` | `pink` | Pages réseau / discussion → pink, Pages partenaires → indigo |
+| 04 | Réseau & Discussions | `pink` + `indigo/violet` | `pink` | Pages réseau / discussion → pink, surfaces partenaires / données / annuaire → indigo/violet |
 | 05 | Apprendre | `yellow` | `yellow` / `amber` | Toutes pages éducatives, fond jaune et cartes orange/ambre |
 
 **Blocs système (non homepage) :**
@@ -306,10 +306,9 @@ point accent               : bg-pink-300
 - `/sections/community`
 - `/sections/feedback`
 - `/sections/messagerie`
-- `/sections/open-data`
 - écrans de discussion et d'échange associés
 
-### Pages type Partenaires · `indigo`
+### Pages type Partenaires / données / annuaire · `indigo/violet`
 
 ```
 fond page                 : indigo clair lumineux (radial-gradient indigo/violet)
@@ -324,8 +323,9 @@ point accent               : bg-indigo-300
 
 **Pages concernées :**
 - `/partners/dashboard`
-- `/sections/community`
 - `/partners/onboarding`
+- `/sections/open-data`
+- `/sections/annuaire`
 
 ---
 

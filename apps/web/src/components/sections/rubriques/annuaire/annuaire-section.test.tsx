@@ -16,8 +16,8 @@ vi.mock("@/components/sections/rubriques/annuaire/use-annuaire-logic", () => ({
 }));
 
 vi.mock("@/components/sections/rubriques/shared", () => ({
-  SectionShell: ({ children }: { children: React.ReactNode }) =>
-    React.createElement("section", null, children),
+  SectionShell: ({ children, gradient }: { children: React.ReactNode; gradient?: string }) =>
+    React.createElement("section", { "data-gradient": gradient }, children),
 }));
 
 vi.mock("@/components/sections/rubriques/annuaire/academie-climat-workshops-panel", () => ({
@@ -76,5 +76,15 @@ describe("AnnuaireSection partner onboarding CTA", () => {
     expect(markup).toContain(
       'aria-label="Référencer ma structure — ouvrir le parcours partenaire"',
     );
+  });
+
+  it("uses the existing violet family", () => {
+    const markup = renderToStaticMarkup(<AnnuaireSection />);
+
+    expect(markup).toContain(
+      'data-gradient="from-violet-600/20 via-violet-500/10 to-transparent"',
+    );
+    expect(markup).toContain("text-violet-400");
+    expect(markup).not.toContain("text-indigo-");
   });
 });
