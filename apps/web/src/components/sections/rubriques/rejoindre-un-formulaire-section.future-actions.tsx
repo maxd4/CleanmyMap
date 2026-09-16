@@ -116,7 +116,7 @@ export function FutureActionsPanel({
                     {onShareAction ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>Partager dans la messagerie</CmmButton> : null}
                   </div>
                 ) : (
-                  <div className="flex flex-wrap items-center gap-2"><span className="text-xs font-semibold text-slate-500">{fr ? "Participation fermée" : "Joining closed"}</span>{onShareAction ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>Partager dans la messagerie</CmmButton> : null}</div>
+                  <div className="flex flex-wrap items-center gap-2"><span className="text-xs font-semibold text-slate-500">{fr ? "Inscriptions fermées" : "Registration closed"}</span>{onShareAction ? <CmmButton type="button" tone="secondary" variant="pill" size="sm" onClick={() => onShareAction(item.id)}>Partager dans la messagerie</CmmButton> : null}</div>
                 )}
               </div>
             </article>

@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { ArrowUpDown, CalendarDays, CheckCircle2, ChevronRight, ClipboardList, Leaf, Loader2, MapPin, ShieldCheck, Sparkles, Users2, UserRound, X } from "lucide-react";
+import { ArrowUpDown, CalendarDays, CheckCircle2, ChevronRight, ClipboardList, Leaf, Loader2, MapPin, ShieldCheck, Sparkles, UserRound, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ActionParticipationReviewItem, JoinableActionItem } from "@/lib/actions/participation/group-participation";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 import { ActionThumbnail } from "./rejoindre-un-formulaire-section.illustrations";
-import { getActionDisplayStatus, getCardDisplayStatus, getLifecycleLabel, getStatusDotTone, getStatusLabel } from "./rejoindre-un-formulaire-section.status";
+import { getActionDisplayStatus, getCardDisplayStatus, getLifecycleLabel, getParticipationStatusLabel, getRegistrationStatusLabel, getStatusDotTone } from "./rejoindre-un-formulaire-section.status";
 
 export function PillBadge({
   tone,
@@ -90,10 +90,10 @@ export function ShortcutsCard() {
       </div>
       <div className="divide-y divide-slate-100 overflow-hidden rounded-[1.1rem] border border-slate-100">
         {[
-          { href: "#mon-suivi", label: "Mes participations", icon: <UserRound size={18} /> },
-          { href: "#file-publique", label: "Mes demandes envoyées", icon: <ArrowUpDown size={18} /> },
+          { href: "#mon-suivi", label: "Mes inscriptions", icon: <UserRound size={18} /> },
+          { href: "#file-publique", label: "Demandes d'inscription", icon: <ArrowUpDown size={18} /> },
           { href: "/actions/new", label: "Devenir organisateur", icon: <Sparkles size={18} /> },
-          { href: "/sections/guide", label: "Guide du bénévole", icon: <ChevronRight size={18} /> },
+          { href: "/sections/guide", label: "Météo & préparation terrain", icon: <ChevronRight size={18} /> },
         ].map((shortcut) => (
           <Link
             key={shortcut.label}
@@ -165,7 +165,9 @@ export function ActionCard({
   const status = getActionDisplayStatus(item);
   const isPreAction = item.actionPhase === "pre_action";
   const cardStatus = isPreAction ? getCardDisplayStatus(item) : "completed";
-  const statusLabel = getStatusLabel(cardStatus, fr);
+  const statusLabel = isPreAction
+    ? getRegistrationStatusLabel(cardStatus, fr)
+    : getParticipationStatusLabel(cardStatus, fr);
   const lifecycleLabel = getLifecycleLabel(item.actionPhase, fr);
   const footerLabel = isPreAction
     ? fr
@@ -223,16 +225,12 @@ export function ActionCard({
               <span className="text-slate-300">•</span>
               {item.duration_minutes > 0 ? `${formatCount(item.duration_minutes)} min` : "—"}
             </p>
-            <p className="flex items-center gap-2">
-              <Users2 size={14} className="text-slate-400" />
-              {fr ? `Organisé par Clean River Paris` : "Organized by Clean River Paris"}
-            </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
               {formatCount(item.participantsCount)}/{formatCount(item.volunteers_count)}{" "}
-              {fr ? "inscriptions confirmées" : "confirmed registrations"}
+              {fr ? "Inscriptions confirmées" : "Confirmed registrations"}
             </span>
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700">
               {requestCountLabel}

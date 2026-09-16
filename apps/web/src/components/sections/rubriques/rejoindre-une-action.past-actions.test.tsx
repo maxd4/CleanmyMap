@@ -9,7 +9,7 @@ describe("PastActionsPanel", () => {
       id: "past-action",
       created_at: "2026-08-01T10:00:00.000Z",
       actor_name: "Alex",
-      association_name: "Clean River Paris",
+      association_name: "Association locale",
       action_date: "2026-08-01",
       location_label: "Quai de Seine",
       latitude: null,
@@ -41,6 +41,8 @@ describe("PastActionsPanel", () => {
     expect(markup).toContain("7 participants déclarés");
     expect(markup).toContain("12 kg collectés");
     expect(markup).toContain("34 mégots collectés");
+    expect(markup).toContain("Organisateur : Association locale");
+    expect(markup).not.toContain("Clean River Paris");
     expect(markup).toContain("Parcours final/opérationnel disponible");
     expect(markup).not.toContain("participants prévus");
     expect(markup).not.toContain("Rejoindre");

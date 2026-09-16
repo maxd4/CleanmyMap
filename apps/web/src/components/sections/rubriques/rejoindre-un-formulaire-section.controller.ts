@@ -137,6 +137,10 @@ export function useJoinFormSectionController() {
     () => actions.historyItems.filter((item) => item.joined),
     [actions.historyItems],
   );
+  const activeRegistrationItems = useMemo(
+    () => actions.historyItems.filter((item) => item.joined && item.actionPhase !== "post_action_complete"),
+    [actions.historyItems],
+  );
   const sortedHistoryItems = useMemo(
     () =>
       [...actions.historyItems].sort((left, right) => {
@@ -217,6 +221,7 @@ export function useJoinFormSectionController() {
     hasVisibleItems,
     preActionVisibleItems,
     activeParticipationItems,
+    activeRegistrationItems,
     sortedHistoryItems,
     openActionsCount,
     volunteersExpectedCount,

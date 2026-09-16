@@ -12,13 +12,23 @@
   - le point d'entrée est la route `/sections/rejoindre-une-action` ;
   - l'ancien chemin `/sections/rejoindre-un-formulaire` redirige en conservant sa query string ;
   - l'onglet futur consomme les pré-actions ouvertes à la participation ;
-  - l'onglet passé consomme une lecture publique dédiée des actions `post_action_complete`, sans `historyItems` ;
+  - l'onglet passé consomme une lecture publique dédiée des actions `post_action_complete`, sans `historyItems`, et permet un claim rétroactif séparé ;
   - seules les actions satisfaisant `isJoinableFuturePreAction(...)` remontent dans la liste : phase `pre_action`, statut `pending` ou `approved`, `moderation_visibility = visible`, `published_at != null`, début futur selon Europe/Paris et `groupJoinEnabled === true` ;
   - une action masquée par modération reste absente de la liste et du lien direct public ;
   - la file de modération des demandes s'ouvre à partir de `actionId` ou de la première action visible ;
   - le CTA principal oriente vers une demande d'inscription future, pas vers une création de rubrique distincte ;
   - le CTA secondaire sur une inscription existante permet l'annulation sans effacer l'historique ;
   - le vocabulaire UI actif est `Rejoindre une action`, avec `Actions futures` et `Actions passées`.
+
+## Frontière inscription / participation
+
+Avant l'action, les états et demandes affichés proviennent de
+`action_registrations` et utilisent le vocabulaire de l'inscription : une
+`Inscription confirmée` est une demande acceptée, pas une présence terrain.
+Après l'action, un claim rétroactif ou une participation confirmée provient de
+`action_participants` et utilise le vocabulaire de la participation. Le claim
+reste soumis à la review prévue par le runtime et ne reconstitue pas
+automatiquement les effectifs ou les résultats.
 
 ## Structure visuelle cible
 

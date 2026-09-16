@@ -4,14 +4,14 @@ Cette page documente le flux `Rejoindre une action` pour CleanMyMap.
 
 ## But
 
-Permettre a un bénévole de rejoindre le formulaire d'une action deja validee par les administrateurs, sans creer une nouvelle action.
+Permettre a un bénévole de rejoindre le formulaire visible d'une action publiée, sans creer une nouvelle action.
 
 ## Flux utilisateur
 
 1. Un organisateur crée un formulaire de groupe depuis la déclaration d'action.
 2. Le pré-formulaire conserve les données communes et les membres ajoutés manuellement dans `participantAccounts`, mais pas les champs de récolte finale.
-3. L'action passe par la validation admin.
-4. Une fois validée, elle apparait dans `Rejoindre une action`.
+3. L'action est publiée avec les contrôles de visibilité applicables.
+4. Une pré-action `pending` ou `approved` peut apparaitre dans `Rejoindre une action` si elle est visible, publiée, future et ouverte aux inscriptions.
 5. Le bénévole rejoint ce formulaire existant.
 6. Les membres ajoutés manuellement à l'action sont enregistrés dans `action_registrations` avec la source `manual_add`, sans passer par la file publique.
 7. La demande future est enregistrée dans `action_registrations` avec `registration_status`, `registration_source` et `registered_at`. Un statut `confirmed` signifie uniquement que l'inscription a été acceptée ; il ne confirme pas une présence sur le terrain.
@@ -20,8 +20,7 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 
 ## Placement dans le bloc Agir
 
-- La rubrique publique est `Rejoindre une action`, première entrée du bloc `Agir`.
-- Elle se situe avant `Créer une action` et `Signaler un déchet`.
+- L'ordre canonique du bloc `Agir` est `Rejoindre → Créer → Signaler`.
 - Le bloc Agir expose exactement ces trois entrées ; l'historique, les moteurs
   itinéraire/météo et les missions restent des routes de workflow ou de
   compatibilité hors navigation primaire.
@@ -37,7 +36,7 @@ Permettre a un bénévole de rejoindre le formulaire d'une action deja validee p
 ## Règles de comportement
 
 - Le flux doit eviter la double saisie.
-- Le formulaire rejoint doit deja exister et etre valide par un admin.
+- Le formulaire rejoint doit deja exister et etre visible selon le contrat de publication ; une approbation administrative n'est pas une condition suffisante ou nécessaire isolée.
 - Le formulaire complet reste le seul parcours qui expose la récolte finale, la validation scientifique et les scores.
 - Le flux normal d'inscription ne change pas selon le rôle: un admin qui clique sur le bouton habituel passe aussi en `pending` dans `action_registrations` avec la source `group_form`.
 - Toute intervention admin hors flux normal doit passer par une commande explicite et être journalisée.
@@ -86,7 +85,7 @@ comptes CleanMyMap du créateur et des organisateurs comme participations finale
 Ce comportement est documenté comme état courant et reste une décision produit
 distincte à arbitrer ultérieurement si nécessaire.
 
-- Source d'affichage: table `actions` filtree sur `status = approved`.
+- Source d'affichage: table `actions`, limitée aux pré-actions `pending` ou `approved` qui sont publiées, visibles, futures et ouvertes aux inscriptions selon le contrat de `Rejoindre une action`.
 - Source d'inscription future: table `action_registrations` avec `registration_status`, `registration_source`, `registered_at` et `updated_at`.
 - Source de participation finale: table `action_participants` avec `participation_status`, `participation_source`, `joined_at` et `updated_at`.
 - Origine d'inscription: `group_form` pour les demandes publiques futures et `manual_add` pour les membres ajoutés directement.

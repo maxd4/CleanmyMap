@@ -4,18 +4,27 @@
 import { CheckCircle2, ChevronRight, Clock3, UserRound, Users2 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { useJoinFormSectionController } from "./rejoindre-un-formulaire-section.controller";
-import { HelpCard, HeroStatCard, PillBadge, ShortcutsCard, getCardDisplayStatus, getStatusLabel } from "./rejoindre-un-formulaire-section.shared";
+import {
+  HelpCard,
+  HeroStatCard,
+  PillBadge,
+  ShortcutsCard,
+  getCardDisplayStatus,
+  getParticipationStatusLabel,
+  getRegistrationStatusLabel,
+} from "./rejoindre-un-formulaire-section.shared";
 import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.format";
 
 type ControllerState = ReturnType<typeof useJoinFormSectionController>;
 
-type SidebarProps = Pick<ControllerState, "fr" | "authenticated" | "sortedHistoryItems" | "activeParticipationItems" | "preActionVisibleItems" | "pendingRequestsCount" | "volunteersExpectedCount" | "summaryIsCompact">;
+type SidebarProps = Pick<ControllerState, "fr" | "authenticated" | "sortedHistoryItems" | "activeParticipationItems" | "activeRegistrationItems" | "preActionVisibleItems" | "pendingRequestsCount" | "volunteersExpectedCount" | "summaryIsCompact">;
 
 export function JoinFormSidebar({
   fr,
   authenticated,
   sortedHistoryItems,
   activeParticipationItems,
+  activeRegistrationItems,
   preActionVisibleItems,
   pendingRequestsCount,
   volunteersExpectedCount,
@@ -58,7 +67,9 @@ export function JoinFormSidebar({
                   <p className="text-xs text-slate-500">{formatDate(item.action_date, fr ? "fr" : "en")}</p>
                 </div>
                 <PillBadge tone={status === "pending" ? "amber" : status === "closed" || status === "cancelled" ? "slate" : "emerald"}>
-                  {getStatusLabel(status, fr)}
+                  {item.actionPhase === "pre_action"
+                    ? getRegistrationStatusLabel(status, fr)
+                    : getParticipationStatusLabel(status, fr)}
                 </PillBadge>
               </div>
             </div>
@@ -94,14 +105,14 @@ export function JoinFormSidebar({
         <HeroStatCard
           icon={<Clock3 size={20} />}
           value={formatCount(pendingRequestsCount)}
-          label={fr ? "Demandes en attente" : "Pending requests"}
+          label={fr ? "Demandes d'inscription" : "Registration requests"}
           tone="amber"
           compact={summaryIsCompact}
         />
         <HeroStatCard
           icon={<CheckCircle2 size={20} />}
-          value={formatCount(activeParticipationItems.length)}
-          label={fr ? "Participations confirmées" : "Confirmed participations"}
+          value={formatCount(activeRegistrationItems.length)}
+          label={fr ? "Inscriptions confirmées" : "Confirmed registrations"}
           compact={summaryIsCompact}
         />
         <HeroStatCard
