@@ -27,14 +27,45 @@ describe("navigation registry consistency", () => {
     ).toEqual(["rejoindre-une-action", "new", "signalement"]);
     expect(byRoute.get("/actions/new")?.label.fr).toBe("Créer une action");
     expect(byRoute.get("/actions/new")?.description.fr).toBe(
-      "Préparer une action avant terrain ou compléter ses résultats après réalisation.",
+      "Préparer une action et renseigner ses résultats.",
     );
     expect(byRoute.get("/sections/trash-spotter")?.label.fr).toBe(
       "Suivi Trash Spotter",
     );
     expect(byRoute.get("/sections/trash-spotter")?.description.fr).toContain(
-      "Consulter la carte",
+      "signalements",
     );
+  });
+
+  it("keeps French navigation descriptions user-oriented", () => {
+    const internalTerms = /cockpit|architecture|back-office|surface|workflow|pilotage technique/i;
+
+    for (const rubrique of RUBRIQUE_REGISTRY) {
+      expect(rubrique.description.fr).not.toMatch(internalTerms);
+      expect(rubrique.description.fr.trim().length).toBeGreaterThan(0);
+    }
+
+    expect(
+      RUBRIQUE_REGISTRY.find((rubrique) => rubrique.id === "dashboard")?.description.fr,
+    ).toBe("Votre profil, vos actions et votre impact");
+    expect(
+      RUBRIQUE_REGISTRY.find((rubrique) => rubrique.id === "map")?.description.fr,
+    ).toBe("Explorer les actions et signalements sur la carte");
+    expect(
+      RUBRIQUE_REGISTRY.find((rubrique) => rubrique.id === "admin")?.description.fr,
+    ).toBe("Modérer et superviser la plateforme");
+  });
+
+  it("keeps non-visible search terms available through the navigation projection", () => {
+    const dashboard = getNavigationSpacesForProfile("benevole", "exhaustif")
+      .flatMap((space) => space.items)
+      .find((item) => item.routeId === "dashboard");
+    const admin = getNavigationSpacesForProfile("admin", "exhaustif")
+      .flatMap((space) => space.items)
+      .find((item) => item.routeId === "admin");
+
+    expect(dashboard?.searchKeywords?.fr).toContain("pilotage");
+    expect(admin?.searchKeywords?.fr).toContain("back-office");
   });
 
   it("maps only existing rubriques with matching hrefs", () => {

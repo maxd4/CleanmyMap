@@ -2,6 +2,7 @@ import type { RubriqueDefinition } from "./base-types";
 
 export type {
   LocalizedText,
+  LocalizedKeywords,
   RubriqueAvailability,
   RubriqueAnonymousPresentation,
   RubriqueCategory,

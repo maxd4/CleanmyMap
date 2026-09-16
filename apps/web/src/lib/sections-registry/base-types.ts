@@ -6,6 +6,7 @@ import type {
 } from "@/lib/domain-language";
 
 export type LocalizedText = Record<Locale, string>;
+export type LocalizedKeywords = Partial<Record<Locale, readonly string[]>>;
 
 export type RubriqueCategory = {
   id: "pilotage" | "terrain" | "analysis" | "resources" | "community";
@@ -27,6 +28,7 @@ type RubriqueDefinitionBase = {
   route: PageRoute;
   label: LocalizedText;
   description: LocalizedText;
+  searchKeywords?: LocalizedKeywords;
   availability: RubriqueAvailability;
   implementation: RubriqueImplementation;
   pendingNote?: LocalizedText;

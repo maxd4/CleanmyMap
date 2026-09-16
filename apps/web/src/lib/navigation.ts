@@ -22,6 +22,7 @@ export type NavigationItem = {
   href: string;
   label: LocalizedText;
   description: LocalizedText;
+  searchKeywords?: Partial<Record<Locale, readonly string[]>>;
   routeId: string;
 };
 
@@ -244,6 +245,7 @@ function toNavItem(rubrique: Rubrique): NavigationItem {
     href: rubrique.route,
     label: rubrique.label,
     description: rubrique.description,
+    searchKeywords: "searchKeywords" in rubrique ? rubrique.searchKeywords : undefined,
     routeId: rubrique.id,
   };
 }
