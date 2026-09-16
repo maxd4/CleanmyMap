@@ -11,6 +11,7 @@ import { getNavigationSpacesForProfile } from "@/lib/navigation";
 import type { AppProfile } from "@/lib/profiles";
 import type { DisplayMode, Locale } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
+import { NavigationItemText } from "./navigation-item-text";
 
 type GlobalSearchProps = {
   currentProfile: AppProfile;
@@ -128,7 +129,7 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
               {locale === "fr" ? "Rechercher" : "Search"}
             </span>
           </span>
-          <kbd className="cmm-ribbon-text hidden shrink-0 items-center gap-1 rounded-full border border-white/15 bg-black/30 px-1.5 py-0.5 font-semibold tracking-[0.06em] text-white/70 sm:inline-flex">
+          <kbd className="cmm-ribbon-text cmm-text-caption hidden shrink-0 items-center gap-1 rounded-full border border-white/15 bg-black/30 px-1.5 py-0.5 font-semibold tracking-[0.06em] text-white/70 sm:inline-flex">
             Ctrl K / ⌘ K
           </kbd>
         </button>
@@ -213,28 +214,28 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
                       {item.spaceIcon}
                     </div>
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-300/80">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 cmm-text-caption">
+                        <span className="font-bold uppercase tracking-widest text-emerald-300/80">
                           Rubrique
                         </span>
                         <span className="h-1 w-1 rounded-full bg-slate-600" aria-hidden="true" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                        <span className="font-bold uppercase tracking-widest text-slate-400">
                           {item.spaceLabel}
                         </span>
                       </div>
-                      <h3 className="break-words text-sm font-bold text-slate-100 sm:text-base">
-                        {item.label[locale]}
-                      </h3>
-                      <p className="break-words text-xs text-slate-400">
-                        {item.description[locale]}
-                      </p>
+                      <NavigationItemText
+                        label={item.label[locale]}
+                        description={item.description[locale]}
+                        labelClassName="font-bold text-slate-100 sm:text-base"
+                        descriptionClassName="text-slate-400"
+                      />
                     </div>
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                     {selectedIndex === index ? (
-                      <div className="hidden items-center gap-1 rounded border border-slate-700 bg-slate-950 px-1.5 py-0.5 text-[10px] font-bold text-slate-300 sm:flex">
-                        <CornerDownLeft size={10} aria-hidden="true" /> Entrée
+                      <div className="cmm-text-caption hidden items-center gap-1 rounded border border-slate-700 bg-slate-950 px-1.5 py-0.5 font-bold text-slate-300 sm:flex">
+                        <CornerDownLeft size={12} aria-hidden="true" /> Entrée
                       </div>
                     ) : null}
                     <ArrowRight
@@ -266,15 +267,15 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-800 bg-slate-950/40 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-400">
+          <div className="cmm-text-caption flex items-center gap-1.5 font-medium text-slate-400">
             <span className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5">↑↓</span>
             {locale === "fr" ? "Parcourir" : "Browse"}
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-400">
+          <div className="cmm-text-caption flex items-center gap-1.5 font-medium text-slate-400">
             <span className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5">Entrée</span>
             {locale === "fr" ? "Ouvrir" : "Open"}
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-400">
+          <div className="cmm-text-caption flex items-center gap-1.5 font-medium text-slate-400">
             <span className="rounded border border-slate-700 bg-slate-900 px-1 py-0.5">Échap</span>
             {locale === "fr" ? "Fermer" : "Close"}
           </div>

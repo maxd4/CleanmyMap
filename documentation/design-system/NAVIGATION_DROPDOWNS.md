@@ -32,6 +32,11 @@ vérité supérieure au runtime ou aux contrats UI.
   reste alignée à gauche, sans italique ni clamp de lignes, et la carte grandit
   selon son contenu. La composition canonique est donc : icône, puis titre et
   description, puis chevron.
+- La primitive locale `NavigationItemText` porte cette hiérarchie commune pour
+  les dropdowns, la recherche globale, le ruban compact et le menu responsive :
+  label en `cmm-text-small` (14 px minimum), description optionnelle en
+  `cmm-text-caption` (12 px minimum), retour à la ligne naturel et aucun clamp.
+  Les surfaces fournissent leurs propres couleurs et contrastes.
 - Les textes de navigation ne doivent pas être réduits à 9 px, masqués par
   `overflow-hidden` ou abrégés par une ellipse ; si nécessaire, le wrapping
   naturel augmente la hauteur de la carte.

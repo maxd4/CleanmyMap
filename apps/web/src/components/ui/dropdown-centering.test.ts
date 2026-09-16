@@ -80,6 +80,7 @@ describe("dropdown centering contract", () => {
     const borderTheme = readSource("navigation/navigation-dropdown-border-theme.ts");
     const helpText = readSource("navigation/navigation-dropdown-help-text.tsx");
     const itemCard = readSource("navigation/navigation-dropdown-item-card.tsx");
+    const itemText = readSource("navigation/navigation-item-text.tsx");
 
     expect(sizeTheme).toContain("cmm-text-caption text-left leading-snug");
     expect(sizeTheme).toContain("py-1.5");
@@ -88,6 +89,7 @@ describe("dropdown centering contract", () => {
     expect(sizeTheme).not.toContain("cmm-line-clamp-2");
     expect(sizeTheme).not.toContain("overflow-hidden whitespace-normal");
     expect(sizeTheme).not.toContain("whitespace-nowrap text-[0.86rem]");
+    expect(sizeTheme).toContain("cmm-text-small");
     expect(sizeTheme).not.toContain("max-w-0");
     expect(sizeTheme).not.toContain("group-hover/item:font-semibold");
     expect(sizeTheme).not.toContain("group-hover/item:p-[1.5px]");
@@ -96,7 +98,11 @@ describe("dropdown centering contract", () => {
     expect(itemTone).not.toContain("group-hover/item:text-transparent");
     expect(borderTheme).not.toContain("group-hover/item:[stroke-width");
     expect(helpText).toContain("NAVIGATION_DROPDOWN_HELP_TEXT_CLASS_NAME");
-    expect(itemCard).toContain("flex-col items-start");
+    expect(itemCard).toContain("NavigationItemText");
+    expect(itemText).toContain("cmm-text-small");
+    expect(itemText).toContain("cmm-text-caption");
+    expect(itemText).toContain("break-words");
+    expect(itemText).toContain("whitespace-normal");
   });
 
   it("keeps item rendering and accents in the shared navigation renderer", () => {

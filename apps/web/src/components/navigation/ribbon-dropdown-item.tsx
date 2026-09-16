@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ChevronRight, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { NavigationItemText } from "./navigation-item-text";
 
 type RibbonDropdownItemProps = {
   href: string;
@@ -42,14 +43,13 @@ export function RibbonDropdownItem({
       >
         <Icon className={compact ? "h-3.5 w-3.5" : "h-5 w-5"} aria-hidden="true" />
       </span>
-      <span
-        className={cn(
-          "min-w-0 flex-1 text-sm font-bold text-white",
-          compact && "text-xs leading-4 tracking-[-0.01em] whitespace-nowrap max-[320px]:whitespace-normal",
+      <NavigationItemText
+        label={label}
+        labelClassName={cn(
+          "font-bold text-white",
+          compact && "leading-4 tracking-[-0.01em]",
         )}
-      >
-        {label}
-      </span>
+      />
       <ChevronRight
         className={cn(
           "h-5 w-5 shrink-0 text-white/65 transition-colors group-hover:text-white",

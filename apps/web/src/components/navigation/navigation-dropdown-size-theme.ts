@@ -31,12 +31,10 @@ export const NAVIGATION_DROPDOWN_CARD_ICON_GLYPH_CLASS_NAME =
   "h-[0.55rem] w-[0.55rem] sm:h-[0.8rem] sm:w-[0.8rem]";
 
 export const NAVIGATION_DROPDOWN_CARD_LABEL_CLASS_NAME =
-  "block break-words text-[0.86rem] font-normal tracking-tight sm:text-[0.92rem]";
+  "block break-words cmm-text-small font-normal tracking-tight sm:text-[0.92rem]";
 
 export const NAVIGATION_DROPDOWN_CARD_CHEVRON_CLASS_NAME =
   "h-[0.58rem] w-[0.58rem] shrink-0 sm:h-[0.82rem] sm:w-[0.82rem]";
-
-export const NAVIGATION_DROPDOWN_ITEM_CONTENT_GAP_CLASS_NAME = "gap-1";
 
 export const NAVIGATION_DROPDOWN_ITEM_LINK_GAP_CLASS_NAME = "gap-1";
 

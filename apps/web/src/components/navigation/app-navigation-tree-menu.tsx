@@ -14,6 +14,7 @@ import {
   getNavigationDropdownTitleGradientStyle,
 } from "./navigation-dropdown-theme";
 import { getNavigationDropdownPanelStyle } from "./navigation-dropdown-shell-theme";
+import { NavigationItemText } from "./navigation-item-text";
 import {
   NAVIGATION_DROPDOWN_TREE_ITEM_ACTIVE_CLASS_NAME,
   NAVIGATION_DROPDOWN_TREE_ITEM_CARD_CLASS_NAME,
@@ -152,14 +153,11 @@ export function AppNavigationTreeMenu({
                             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/70 text-lg text-black">
                               {space.icon}
                             </span>
-                            <span className="min-w-0">
-                              <span
-                                className={NAVIGATION_DROPDOWN_TREE_SECTION_LABEL_CLASS_NAME}
-                                style={getNavigationDropdownTitleGradientStyle(space.id)}
-                              >
-                                {getLocalizedText(space.label, locale, space.id)}
-                              </span>
-                            </span>
+                            <NavigationItemText
+                              label={getLocalizedText(space.label, locale, space.id)}
+                              labelClassName={NAVIGATION_DROPDOWN_TREE_SECTION_LABEL_CLASS_NAME}
+                              labelStyle={getNavigationDropdownTitleGradientStyle(space.id)}
+                            />
                           </span>
                           <ChevronDown
                             className={cn(
@@ -203,9 +201,10 @@ export function AppNavigationTreeMenu({
                                             : NAVIGATION_DROPDOWN_TREE_ITEM_INACTIVE_CLASS_NAME,
                                         )}
                                       >
-                                        <span className={NAVIGATION_DROPDOWN_TREE_ITEM_LABEL_CLASS_NAME}>
-                                          {getLocalizedText(item.label, locale, item.href)}
-                                        </span>
+                                        <NavigationItemText
+                                          label={getLocalizedText(item.label, locale, item.href)}
+                                          labelClassName={NAVIGATION_DROPDOWN_TREE_ITEM_LABEL_CLASS_NAME}
+                                        />
                                       </Link>
                                     </li>
                                   );
