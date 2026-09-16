@@ -1,22 +1,5 @@
 import { execFileSync, spawn } from "node:child_process";
 
-function quoteCmdArg(value) {
-  const text = String(value);
-  return /^[A-Za-z0-9_./:-]+$/.test(text)
-    ? text
-    : `"${text.replaceAll('"', '\\"')}"`;
-}
-
-function commandInvocation(command) {
-  const executable = command.executable;
-  const isWindowsCommand = process.platform === "win32" && executable.endsWith(".cmd");
-  if (!isWindowsCommand) return { executable, args: command.args ?? [] };
-  return {
-    executable: "cmd.exe",
-    args: ["/d", "/s", "/c", [executable, ...(command.args ?? []).map(quoteCmdArg)].join(" ")],
-  };
-}
-
 export function terminateProcessTree(pid) {
   if (!pid) return;
   if (process.platform === "win32") {
@@ -61,9 +44,8 @@ function extractFailureFiles(output) {
 
 /** Run one check with a real process-tree timeout and deterministic cleanup. */
 export function runCommandWithTimeout({ command, cwd = process.cwd(), timeoutMs, env = process.env } = {}) {
-  const invocation = commandInvocation(command);
   const detached = process.platform !== "win32";
-  const child = spawn(invocation.executable, invocation.args, {
+  const child = spawn(command.executable, command.args ?? [], {
     cwd,
     env,
     detached,
