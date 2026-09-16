@@ -42,7 +42,7 @@ export function PreparationKitSectionView({
             <h3 className="text-3xl font-black tracking-tight text-emerald-950 lg:text-[3.35rem] lg:leading-[0.95]">
               {fr ? "Bien préparer sa cleanwalk" : "Prepare your cleanwalk well"}
             </h3>
-            <p className="max-w-2xl text-sm leading-relaxed text-slate-600 lg:text-base">
+            <p className="cmm-text-body max-w-2xl">
               {fr
                 ? "Une bonne préparation rend l’action plus sûre, plus agréable et plus efficace pour la nature. Anticipez, équipez-vous, respectez le lieu et repartez avec le sourire !"
                 : "Good preparation makes the action safer, more enjoyable and more effective for nature. Plan ahead, equip yourself, respect the site and leave with a smile!"}

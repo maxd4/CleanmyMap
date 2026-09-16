@@ -17,7 +17,7 @@ export function MapSidebarAid() {
           <span className="h-4 w-4 rounded-full bg-sky-500 shadow-[0_0_18px_rgba(56,189,248,0.45)]" />
           Aide secondaire
         </p>
-        <p className="text-sm font-medium leading-relaxed text-slate-600">
+        <p className="cmm-text-body font-medium">
           Accès court. Deux repères. Peu de lecture.
         </p>
       </div>
@@ -31,7 +31,7 @@ export function MapSidebarAid() {
             </span>
             <ChevronDown size={16} className="text-slate-500 transition-transform group-open:rotate-180" />
           </summary>
-          <p className="mt-3 text-sm leading-relaxed text-slate-600">
+          <p className="cmm-text-body mt-3">
             Lis la couleur, le compteur et la ligne active.
           </p>
           <ul className="mt-4 space-y-2 text-sm leading-relaxed text-slate-700">
@@ -58,7 +58,7 @@ export function MapSidebarAid() {
             </span>
             <ChevronDown size={16} className="text-slate-500 transition-transform group-open:rotate-180" />
           </summary>
-          <p className="mt-3 text-sm leading-relaxed text-slate-600">
+          <p className="cmm-text-body mt-3">
             Formules, sources et marges d&apos;erreur. À ouvrir seulement si besoin.
           </p>
           <div className="mt-4">

@@ -100,7 +100,7 @@ export function PreparationGuide({
 
                     <ul className="mt-3 space-y-2">
                       {step.points.map((point) => (
-                        <li key={point} className="flex items-start gap-2 text-sm text-slate-600">
+                        <li key={point} className="cmm-text-body flex items-start gap-2">
                           <span className="mt-1 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
                             <CheckCircle2 size={11} />
                           </span>

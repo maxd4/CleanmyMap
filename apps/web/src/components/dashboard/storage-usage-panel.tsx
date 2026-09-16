@@ -68,7 +68,7 @@ function BreakdownTable({
       </div>
 
       {rows.length === 0 ? (
-        <p className="mt-4 text-sm text-white/30">Aucune donnée à afficher.</p>
+        <p className="cmm-text-body cmm-text-inverse mt-4">Aucune donnée à afficher.</p>
       ) : (
         <ul className="mt-4 space-y-3">
           {rows.slice(0, 6).map((row) => (

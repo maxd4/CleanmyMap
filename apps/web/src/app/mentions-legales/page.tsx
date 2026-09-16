@@ -58,7 +58,7 @@ export default function MentionsLegalesPage() {
             <h2 className="mt-2 text-xl font-bold text-slate-950">
               Conditions d&apos;utilisation
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="cmm-text-body mt-2">
               Règles d&apos;accès, usage autorisé, contenu utilisateur, modération,
               responsabilité et droit applicable.
             </p>
@@ -74,7 +74,7 @@ export default function MentionsLegalesPage() {
             <h2 className="mt-2 text-xl font-bold text-slate-950">
               Politique de confidentialité
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="cmm-text-body mt-2">
               Détail des données collectées, bases légales, transferts, durées de
               conservation et exercice des droits.
             </p>
@@ -90,7 +90,7 @@ export default function MentionsLegalesPage() {
             <h2 className="mt-2 text-xl font-bold text-slate-950">
               Politique cookies
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="cmm-text-body mt-2">
               Consentement, cookie de session, préférences locales et services
               analytiques conditionnés au choix de l&apos;utilisateur.
             </p>
@@ -106,7 +106,7 @@ export default function MentionsLegalesPage() {
             <h2 className="mt-2 text-xl font-bold text-slate-950">
               Demandes juridiques
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="cmm-text-body mt-2">
               Accéder à la page de contact pour une demande RGPD, une question juridique ou un besoin de support.
             </p>
           </Link>
@@ -121,7 +121,7 @@ export default function MentionsLegalesPage() {
             <h2 className="mt-2 text-xl font-bold text-slate-950">
               Signaler un contenu potentiellement illicite
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="cmm-text-body mt-2">
               Accéder au formulaire de notification circonstanciée et retrouver les informations utiles.
             </p>
           </Link>
@@ -129,7 +129,7 @@ export default function MentionsLegalesPage() {
 
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
           <h2 className="text-xl font-bold text-slate-950">Édition et publication</h2>
-          <div className="space-y-2 text-sm leading-6 text-slate-600">
+          <div className="cmm-text-body space-y-2">
             <p>
               <strong>CleanMyMap</strong> est actuellement édité par{" "}
               <strong>Maxence Deroome</strong>, personne physique éditant à titre
@@ -152,7 +152,7 @@ export default function MentionsLegalesPage() {
 
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
           <h2 className="text-xl font-bold text-slate-950">Hébergement</h2>
-          <div className="space-y-2 text-sm leading-6 text-slate-600">
+          <div className="cmm-text-body space-y-2">
             <p><strong>Vercel Inc.</strong></p>
             <p>
               440 N Barranca Avenue #4133<br />
@@ -170,7 +170,7 @@ export default function MentionsLegalesPage() {
 
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5">
           <h2 className="text-xl font-bold text-slate-950">Services techniques</h2>
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body">
             Supabase (base de données et stockage), Clerk (identité et
             authentification), Resend (emails), PostHog (analytics avec
             consentement) et Sentry (observabilité et sécurité lorsqu&apos;activé)
@@ -183,7 +183,7 @@ export default function MentionsLegalesPage() {
           <h2 className="text-xl font-bold text-slate-950">
             Propriété intellectuelle
           </h2>
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body">
             Le code, les textes, les visuels, les logos et les interfaces de
             CleanMyMap sont protégés par le droit d&apos;auteur et le droit de la
             propriété intellectuelle. Toute réutilisation au-delà de l&apos;usage

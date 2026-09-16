@@ -99,7 +99,7 @@ export function WeatherLocationPicker({
           <p className="text-[10px] font-black uppercase tracking-[0.34em] text-emerald-700">
             {label}
           </p>
-          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+          <p className="cmm-text-body mt-1">
             {helperText}
           </p>
         </div>

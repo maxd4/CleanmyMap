@@ -31,7 +31,7 @@ export function MapKpiRibbon({ metrics }: MapKpiRibbonProps) {
             <span className="h-4 w-4 rounded-full bg-sky-500 shadow-[0_0_18px_rgba(56,189,248,0.45)]" />
             Indicateurs publics consolidés
           </p>
-          <p className="max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
+          <p className="cmm-text-body max-w-2xl font-medium">
             Les indicateurs publics consolidés CleanMyMap sont identiques à ceux de la page d&apos;accueil.
           </p>
         </div>

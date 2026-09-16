@@ -25,6 +25,7 @@
   /* Corps et texte courant */
   .cmm-text-body {
     font: var(--weight-body) var(--size-body)/var(--leading-body) var(--font-body-text);
+    color: var(--text-primary);
   }
 
   .cmm-text-small {

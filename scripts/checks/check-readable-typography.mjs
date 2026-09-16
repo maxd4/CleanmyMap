@@ -23,18 +23,24 @@ const allowlist = [
     rule: "truncation",
     reason: "search result description is an intentional two-line preview",
   },
+  {
+    file: "apps/web/src/app/(app)/prints/report/page.tsx",
+    rule: "body-color",
+    reason: "print/export document styles are kept independent from screen surfaces",
+  },
 ];
 
 const smallTextPattern = /text-\[(?:(?:[0-9]|1[01])px|0\.(?:[0-6]\d?|7[0-4]?)rem)\]/;
 const truncationPattern = /\b(?:truncate|line-clamp(?:-[1-9]\d*)?)\b/;
+const weakBodyColorPattern =
+  /\b(?:cmm-text-(?:secondary|muted)|text-(?:slate|gray|stone)-[4-7]\d{2}(?:\/[5-9]\d)?|text-(?:white|[a-z]+)-\d{2,3}\/(?:[2-7]\d))\b/;
+const bodyMeasurePattern =
+  /\b(?:cmm-text-body|text-(?:base|lg|xl|2xl)|leading-(?:6|relaxed))\b/;
 
 function isUserSurface(file) {
   return (
     file.startsWith("apps/web/src/app/") ||
-    file.startsWith("apps/web/src/components/navigation/") ||
-    file.startsWith("apps/web/src/components/account/") ||
-    file.startsWith("apps/web/src/components/chat/") ||
-    file.startsWith("apps/web/src/components/admin/")
+    file.startsWith("apps/web/src/components/")
   );
 }
 
@@ -47,8 +53,20 @@ function isAllowlisted(file, rule, line) {
     (entry) =>
       entry.file === file &&
       entry.rule === rule &&
-      (rule === "small-text" || truncationPattern.test(line)),
+      (rule === "small-text" ||
+        rule === "body-color" ||
+        truncationPattern.test(line)),
   );
+}
+
+function isWeakBodyColor(text) {
+  if (!bodyMeasurePattern.test(text) || !weakBodyColorPattern.test(text)) {
+    return false;
+  }
+
+  // Captions, small metadata, uppercase labels and tracking-based eyebrows are
+  // intentionally excluded; this rule protects ordinary reading copy only.
+  return !/\b(?:cmm-text-(?:caption|small)|uppercase|tracking-)\b/.test(text);
 }
 
 export function extractAddedLines(diff) {
@@ -83,6 +101,14 @@ export function analyzeDiff(diff) {
         allowlisted.push({ file, rule: "small-text" });
       } else {
         violations.push({ file, rule: "small-text", text });
+      }
+    }
+
+    if (isWeakBodyColor(text)) {
+      if (isAllowlisted(file, "body-color", text)) {
+        allowlisted.push({ file, rule: "body-color" });
+      } else {
+        violations.push({ file, rule: "body-color", text });
       }
     }
 

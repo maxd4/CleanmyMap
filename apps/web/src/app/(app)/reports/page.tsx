@@ -168,7 +168,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                   <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-700">
                     Compte requis pour générer
                   </p>
-                  <p className="mt-3 text-sm leading-6 text-slate-600">
+                  <p className="cmm-text-body mt-3">
                     La synthèse est publique. Connectez-vous uniquement pour préparer un export
                     détaillé ou consulter votre historique.
                   </p>
@@ -195,7 +195,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
           <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
             L&apos;impact visible des actions CleanMyMap
           </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body mt-2">
             Consultez les indicateurs publics. Un compte est demandé uniquement pour générer un
             export détaillé ou retrouver votre historique.
           </p>

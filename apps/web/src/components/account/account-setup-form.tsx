@@ -43,7 +43,7 @@ export function AccountSetupForm(props: AccountSetupFormProps) {
         </SystemStateLayout>
       );
     }
-    return <CmmCard variant="outlined" size="sm"><p className="text-slate-600">Chargement du compte…</p></CmmCard>;
+    return <CmmCard variant="outlined" size="sm"><p className="cmm-text-body cmm-text-primary">Chargement du compte…</p></CmmCard>;
   }
 
   if (!controller.user) {
@@ -58,7 +58,7 @@ export function AccountSetupForm(props: AccountSetupFormProps) {
         </span>
         <div>
           <h1 className="cmm-account-setup-title font-black tracking-tight text-slate-900">Configurez votre profil</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700/80 sm:text-base">Choisissez votre profil, vos lieux principaux et votre mode d’affichage. Ces préférences restent modifiables dans les paramètres de votre compte.</p>
+          <p className="cmm-text-body cmm-text-inverse mt-2 max-w-3xl">Choisissez votre profil, vos lieux principaux et votre mode d’affichage. Ces préférences restent modifiables dans les paramètres de votre compte.</p>
         </div>
       </header>
 

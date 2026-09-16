@@ -270,7 +270,7 @@ export function LearnComprendreVisualIntro({
             <h2 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
               {question}
             </h2>
-            <p className="max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
+            <p className="cmm-text-body max-w-2xl">
               {clue}
             </p>
           </div>

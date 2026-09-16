@@ -41,7 +41,7 @@ const legalSections: LegalSection[] = [
     number: 1,
     title: "Objet et acceptation",
     content: (
-      <p className="text-sm leading-6 text-slate-600">
+      <p className="cmm-text-body">
         Ces CGU décrivent l&apos;accès à CleanMyMap, les contributions des
         utilisateurs, les règles d&apos;usage et le traitement des contenus
         signalés. Le service peut évoluer, être temporairement indisponible
@@ -54,7 +54,7 @@ const legalSections: LegalSection[] = [
     title: "Accès et compte",
     content: (
       <div className="space-y-4">
-        <ul className="space-y-3 text-sm leading-6 text-slate-600">
+        <ul className="cmm-text-body space-y-3">
           {[
             "Le service est accessible gratuitement, sous réserve de disponibilité.",
             "Certaines fonctions nécessitent un compte authentifié géré par Clerk.",
@@ -81,14 +81,14 @@ const legalSections: LegalSection[] = [
     title: "Fonctionnalités proposées",
     content: (
       <div className="space-y-4">
-        <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
+        <ul className="cmm-text-body list-disc space-y-2 pl-5">
           <li>Carte, signalements de pollution ou de lieux propres et déclarations d&apos;actions.</li>
           <li>Rapports, statistiques et estimations d&apos;impact selon les données disponibles.</li>
           <li>Événements communautaires, messagerie et coordination entre utilisateurs.</li>
           <li>Liens d&apos;invitation, parrainage, newsletter et formulaires lorsqu&apos;ils sont proposés.</li>
           <li>Exports ou justificatifs générés par les parcours qui les proposent.</li>
         </ul>
-        <p className="text-sm leading-6 text-slate-600">
+        <p className="cmm-text-body">
           Les statistiques et exports dépendent des données déclarées et ne
           constituent ni une certification scientifique ni une garantie de
           résultat environnemental.
@@ -100,7 +100,7 @@ const legalSections: LegalSection[] = [
     number: 4,
     title: "Règles d’usage",
     content: (
-      <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
+      <ul className="cmm-text-body list-disc space-y-2 pl-5">
         <li>Respecter les lois, les présentes CGU, les personnes et les droits des tiers.</li>
         <li>Ne pas publier de contenu faux, trompeur, illicite, haineux, diffamatoire ou abusif.</li>
         <li>Ne pas publier les données personnelles d&apos;autrui sans base légitime.</li>
@@ -113,7 +113,7 @@ const legalSections: LegalSection[] = [
     number: 5,
     title: "Contributions et propriété",
     content: (
-      <div className="space-y-4 text-sm leading-6 text-slate-600">
+      <div className="cmm-text-body space-y-4">
         <p>
           Les contributions restent la propriété de leurs auteurs. Leur auteur
           accorde à CleanMyMap une licence non exclusive, limitée aux besoins
@@ -135,7 +135,7 @@ const legalSections: LegalSection[] = [
     number: 6,
     title: "Notification et modération",
     content: (
-      <div className="space-y-4 text-sm leading-6 text-slate-600">
+      <div className="cmm-text-body space-y-4">
         <p>
           Une notification électronique circonstanciée peut être adressée via
           le{" "}
@@ -162,7 +162,7 @@ const legalSections: LegalSection[] = [
     number: 7,
     title: "Terrain et sécurité",
     content: (
-      <div className="space-y-4 text-sm leading-6 text-slate-600">
+      <div className="cmm-text-body space-y-4">
         <p>
           Une action créée par un utilisateur, un groupe ou un organisateur
           tiers n&apos;est pas, du seul fait de sa présence sur CleanMyMap,
@@ -183,7 +183,7 @@ const legalSections: LegalSection[] = [
     number: 8,
     title: "Responsabilité et disponibilité",
     content: (
-      <div className="space-y-4 text-sm leading-6 text-slate-600">
+      <div className="cmm-text-body space-y-4">
         <p>
           Les informations et contenus sont fournis dans l&apos;état où ils sont
           disponibles. CleanMyMap ne garantit ni leur exhaustivité, ni leur
@@ -202,7 +202,7 @@ const legalSections: LegalSection[] = [
     number: 9,
     title: "Données, licences et cookies",
     content: (
-      <div className="space-y-4 text-sm leading-6 text-slate-600">
+      <div className="cmm-text-body space-y-4">
         <p>
           Consultez la{" "}
           <Link href="/politique-confidentialite" className={legalLinkClass}>Politique de confidentialité</Link>
@@ -241,7 +241,7 @@ const legalSections: LegalSection[] = [
     number: 10,
     title: "Modification et droit applicable",
     content: (
-      <p className="text-sm leading-6 text-slate-600">
+      <p className="cmm-text-body">
         CleanMyMap peut modifier ces CGU pour suivre l&apos;évolution du
         produit, du droit ou de la sécurité. La version publiée indique sa
         date de mise à jour. Le droit français s&apos;applique, sous réserve
@@ -288,7 +288,7 @@ export default function ConditionsGeneralesUtilisationPage() {
           </span>
           <div className="min-w-0">
             <h2 className="text-lg font-bold text-slate-900">Contact</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
+            <p className="cmm-text-body mt-1">
               Questions juridiques :{" "}
               <a href={"mailto:" + contactEmail} className={legalLinkClass}>{contactEmail}</a>
               {" "}ou le <Link href="/contact" className={legalLinkClass}>formulaire de contact</Link>.

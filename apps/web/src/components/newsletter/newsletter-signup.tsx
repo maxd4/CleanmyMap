@@ -140,7 +140,7 @@ export function NewsletterSignup() {
  <h3 className="text-3xl font-bold cmm-text-primary dark:text-white tracking-tight">
  Restez informé de l&apos;impact local.
  </h3>
- <p className="cmm-text-muted dark:cmm-text-muted leading-relaxed max-w-md">
+ <p className="cmm-text-body leading-relaxed max-w-md">
  Recevez un condensé mensuel des actions et résultats de votre territoire. Pas de spam, pas de futilités.
  </p>
  </div>

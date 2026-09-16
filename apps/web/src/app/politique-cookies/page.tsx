@@ -34,7 +34,7 @@ function CookieTypeCard({
         {label}
       </p>
       <h2 className="text-xl font-bold text-slate-950">{title}</h2>
-      <ul className="space-y-2 text-sm leading-6 text-slate-600">
+      <ul className="cmm-text-body space-y-2">
         {items.map((item) => (
           <li key={item} className="flex gap-3">
             <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
@@ -63,13 +63,13 @@ export default function PolitiqueCookiesPage() {
           <h2 className="text-xl font-bold text-slate-950">
             1. Choix de consentement
           </h2>
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body">
             La bannière de consentement propose deux choix de même niveau :
             tout accepter ou tout refuser. Les services essentiels au
             fonctionnement du site restent actifs dans les deux cas. Le choix
             est mémorisé pendant 6 mois.
           </p>
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body">
             La préférence est enregistrée dans <strong>localStorage</strong>{" "}
             sous <code className="rounded bg-slate-100 px-1 py-0.5">cleanmymap_cookie_consent</code>{" "}
             et synchronisée avec le cookie analytique{" "}
@@ -78,7 +78,7 @@ export default function PolitiqueCookiesPage() {
             </code>{" "}
             pour appliquer le choix côté navigateur et côté serveur.
           </p>
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body">
             Le parrainage et les liens d&apos;invitation n&apos;utilisent pas de
             cookie dédié : ils sont suivis en base de données via le profil
             utilisateur.
@@ -114,7 +114,7 @@ export default function PolitiqueCookiesPage() {
           <h2 className="text-xl font-bold text-slate-950">
             2. Données collectées par les analytics
           </h2>
-          <ul className="space-y-2 text-sm leading-6 text-slate-600">
+          <ul className="cmm-text-body space-y-2">
             <li>Pages consultées, durée de visite et événements de navigation.</li>
             <li>Informations techniques agrégées : navigateur, appareil, taille d&apos;écran et performance.</li>
             <li>
@@ -131,7 +131,7 @@ export default function PolitiqueCookiesPage() {
           <h2 className="text-xl font-bold text-slate-950">
             3. Comment modifier ou retirer votre choix
           </h2>
-          <ul className="space-y-2 text-sm leading-6 text-slate-600">
+          <ul className="cmm-text-body space-y-2">
             <li>
               Cliquer sur <strong>Gérer mes cookies</strong>, disponible en
               permanence dans le pied de page, pour rouvrir les choix.
@@ -181,7 +181,7 @@ export default function PolitiqueCookiesPage() {
           <h2 className="text-xl font-bold text-slate-950">
             5. Pages associées
           </h2>
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body">
             Pour les données personnelles et les droits RGPD, consultez la{" "}
             <Link
               href="/politique-confidentialite"

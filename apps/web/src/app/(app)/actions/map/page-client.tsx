@@ -251,7 +251,7 @@ function ActionsMapPageContent({
                       <span className="h-4 w-4 rounded-full bg-sky-500 shadow-[0_0_18px_rgba(56,189,248,0.45)]" />
                       Analyse &amp; journal
                     </p>
-                    <p className="text-sm font-medium leading-relaxed text-slate-600">
+                    <p className="cmm-text-body font-medium">
                       Flux terrain et répartition par période.
                     </p>
                   </div>

@@ -185,7 +185,7 @@ export function ExternalHubSection() {
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="mt-4 text-white/40 font-medium max-w-xl text-lg leading-relaxed"
+            className="cmm-text-body cmm-text-inverse mt-4 max-w-xl font-medium"
           >
             {fr 
               ? "Accédez aux outils et réseaux officiels pour amplifier vos actions de terrain."
@@ -232,7 +232,7 @@ export function ExternalHubSection() {
             <h3 className="text-3xl font-black tracking-tight text-white mb-4">
               {fr ? "Vous êtes une association ?" : "Are you an association?"}
             </h3>
-            <p className="text-white/40 font-medium max-w-lg text-lg">
+            <p className="cmm-text-body cmm-text-inverse max-w-lg font-medium">
               {fr 
                 ? "Rejoignez le réseau CleanMyMap pour bénéficier d'une visibilité accrue et d'outils dédiés à l'impact environnemental."
                 : "Join the CleanMyMap network to benefit from increased visibility and tools dedicated to environmental impact."

@@ -31,7 +31,7 @@ export function LearnArtworkAccordion({
           <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
             {locale === "fr" ? "Références artistiques à ouvrir si besoin" : "Art references to open when needed"}
           </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-700">
+          <p className="cmm-text-body mt-2 max-w-3xl">
             {locale === "fr"
               ? "Les fiches restent fermées au départ pour alléger le chargement. Ouvre la section pour voir une référence à la fois."
               : "The fiches stay closed at first to lighten loading. Open the section to view one reference at a time."}
@@ -63,7 +63,7 @@ export function LearnArtworkAccordion({
                     <h4 className="mt-1 text-lg font-black tracking-tight text-slate-900 md:text-xl">
                       {artwork.title[locale]}
                     </h4>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-700">
+                    <p className="cmm-text-body mt-1">
                       {artwork.artist[locale]} · {artwork.material[locale]}
                     </p>
                   </div>
@@ -98,7 +98,7 @@ export function LearnArtworkAccordion({
 
                     <div className="space-y-3">
                       {artwork.context.map((paragraph) => (
-                        <p key={paragraph[locale]} className="text-sm leading-relaxed text-slate-700">
+                        <p key={paragraph[locale]} className="cmm-text-body">
                           {paragraph[locale]}
                         </p>
                       ))}
@@ -107,7 +107,7 @@ export function LearnArtworkAccordion({
                         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
                           {locale === "fr" ? "Intérêt pour CleanMyMap" : "Why it matters for CleanMyMap"}
                         </p>
-                        <p className="mt-2 text-sm leading-relaxed text-slate-700">{artwork.interest[locale]}</p>
+                        <p className="cmm-text-body mt-2">{artwork.interest[locale]}</p>
                       </div>
                     </div>
                   </div>
@@ -116,7 +116,7 @@ export function LearnArtworkAccordion({
             ))}
           </div>
         ) : (
-          <p className="rounded-[1.35rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-relaxed text-slate-600">
+          <p className="cmm-text-body rounded-[1.35rem] border border-slate-200 bg-slate-50 px-4 py-3">
             {locale === "fr"
               ? "Les fiches restent fermées au départ pour alléger le chargement. Ouvre la section pour voir une référence à la fois."
               : "The fiches stay closed at first to lighten loading. Open the section to view one reference at a time."}

@@ -57,7 +57,7 @@ export function LearnBlockJourneySection({
                 ? "Other Learn pages"
                 : "The entry points stay visible here"}
           </h3>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+          <p className="cmm-text-body mt-2">
             {locale === "fr"
               ? compact
                 ? "Revenir au contexte ou passer à la suite sans surcharger la page."
@@ -78,7 +78,7 @@ export function LearnBlockJourneySection({
             {locale === "fr" ? "Vous êtes sur" : "You are on"}
           </p>
           <p className="mt-1 truncate text-base font-black text-slate-900">{currentCard.title}</p>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">{currentCard.detail}</p>
+          <p className="cmm-text-body mt-1 max-w-2xl">{currentCard.detail}</p>
         </div>
         <div className="ml-auto flex flex-wrap gap-2">
           <Link
@@ -127,7 +127,7 @@ export function LearnBlockJourneySection({
                     ) : null}
                   </div>
                   <h4 className="mt-4 text-lg font-black tracking-tight text-slate-900">{card.title}</h4>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">{card.detail}</p>
+                  <p className="cmm-text-body mt-2">{card.detail}</p>
                 </div>
 
                 <Link

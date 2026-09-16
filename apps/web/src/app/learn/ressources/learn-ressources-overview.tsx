@@ -47,7 +47,7 @@ function ResourceSpotlightCard({
 
       <div className="mt-4 space-y-2">
         <h3 className="text-xl font-black tracking-tight text-slate-900">{spotlight.title[locale]}</h3>
-        <p className="text-sm leading-relaxed text-slate-600">{spotlight.lead[locale]}</p>
+        <p className="cmm-text-body">{spotlight.lead[locale]}</p>
       </div>
 
       <div className="mt-4 space-y-2">
@@ -146,7 +146,7 @@ export function LearnRessourcesOverview({ locale }: { locale: LearnLocale }) {
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">
             {locale === "fr" ? "Orientation" : "Orientation"}
           </p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+          <p className="cmm-text-body mt-2">
             {locale === "fr"
               ? "Le calendrier reste un support. Les trois blocs du haut servent d'entrée rapide."
               : "The calendar stays supportive. The three blocks above are the quick entry points."}

@@ -21,7 +21,7 @@ export default function SignalerContenuIllicitePage() {
           title="Signaler un contenu potentiellement illicite"
           subtitle="Indiquez l’URL exacte du contenu et décrivez les faits. Aucun compte n’est nécessaire."
         />
-        <section className="space-y-3 text-sm leading-6 text-slate-600">
+        <section className="cmm-text-body space-y-3">
           <p>
             Ce formulaire permet de transmettre une notification électronique conçue pour le
             traitement prévu par l&apos;article 16 du règlement sur les services numériques (DSA),

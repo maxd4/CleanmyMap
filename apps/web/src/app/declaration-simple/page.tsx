@@ -54,7 +54,7 @@ export default function DeclarationSimplePage() {
                 <h2 className="mt-1 text-2xl font-black tracking-tight text-stone-950">
                   Vérifier la version simplifiée
                 </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
+                <p className="cmm-text-body mt-2 max-w-2xl">
                   Cette surface sert à confirmer qu’une version courte reste exploitable pour le
                   support, le contrôle qualité et la prévisualisation interne.
                 </p>
@@ -155,7 +155,7 @@ export default function DeclarationSimplePage() {
                 </div>
               </div>
 
-              <p className="text-sm leading-6 text-stone-600">
+              <p className="cmm-text-body">
                 La route reste autonome: elle sert à documenter un flux de déclaration simplifié
                 sans recopier la complexité du formulaire complet ni ajouter des contrôles
                 inutiles.

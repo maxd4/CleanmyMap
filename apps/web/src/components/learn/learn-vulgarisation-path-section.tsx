@@ -109,7 +109,7 @@ export function LearnVulgarisationPathSection({
                 ? "1 idée = 1 carte, puis on monte en échelle"
                 : "1 idea = 1 card, then we scale up"}
             </h3>
-            <p className="text-sm leading-relaxed text-slate-600">
+            <p className="cmm-text-body">
               {locale === "fr"
                 ? "La vulgarisation doit d'abord faire comprendre, ensuite comparer, puis seulement ouvrir la porte à l'action."
                 : "Explanation should first make things understandable, then comparable, and only then open the door to action."}
@@ -177,7 +177,7 @@ export function LearnVulgarisationPathSection({
                     <h4 className="text-lg font-black tracking-tight text-slate-900">
                       {step.title[locale]}
                     </h4>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                    <p className="cmm-text-body mt-2">
                       {step.detail[locale]}
                     </p>
                   </div>
@@ -215,7 +215,7 @@ export function LearnVulgarisationPathSection({
             </span>
           ))}
         </div>
-        <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">
+        <p className="cmm-text-body mt-3 max-w-3xl">
           {locale === "fr"
             ? "Cette séquence sert à passer du contexte à l'usage sans perdre l'échelle ni la rigueur de lecture."
             : "This sequence moves from context to use without losing scale or reading rigor."}

@@ -65,7 +65,7 @@ export function LearnRessourcesCalendar({ locale }: { locale: LearnLocale }) {
           <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
             {isFrench ? "Le mois courant si besoin" : "The current month if needed"}
           </h3>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-700">
+          <p className="cmm-text-body mt-2 max-w-2xl">
             {isFrench
               ? "Le module se charge seulement après ouverture. Il reste utile pour préparer, mais ne pèse plus sur l'entrée."
               : "The module loads only after opening. It stays useful for preparation without weighing down the entry."}
