@@ -7,12 +7,40 @@ import {
 } from "@/lib/actions/pollution/local-repollution-calibration";
 import { aggregatePublicActionMetrics } from "@/lib/accueil/action-participant-aggregation";
 import { buildActionPollutionProjectionMethodology } from "@/lib/actions/pollution/revisit-priority";
+import { getNavigationSpacesForProfile } from "@/lib/navigation";
 import {
   ActionMapMethodologySection,
   MethodologiePageClient,
 } from "./methodologie-page-client";
 
 import { RouteMethodologySection } from "./route-methodology-section";
+
+function renderMethodologyPage(currentProfile: "benevole" | "admin" = "benevole") {
+  return renderToStaticMarkup(
+    <SitePreferencesProvider initialLocale="fr">
+      <MethodologiePageClient
+        currentProfile={currentProfile}
+        freePlanServices={[]}
+        impactTotals={{
+          monthlyKgCo2eProxy: null,
+          annualKgCo2eProxy: null,
+          totalKgCo2eProxy: null,
+          generatedAt: null,
+        }}
+        impactSnapshots={[]}
+        impactGeneratedAt={null}
+        impactLaunchedAt={null}
+        githubStats={null}
+      />
+    </SitePreferencesProvider>,
+  );
+}
+
+function methodologyRouteIds(markup: string): string[] {
+  return [...markup.matchAll(/data-methodology-route-id="([^"]+)"/g)].map(
+    ([, routeId]) => routeId,
+  );
+}
 
 describe("RouteMethodologySection", () => {
   it("présente les cinq étapes sans exposer les détails de calcul", () => {
@@ -113,29 +141,13 @@ describe("ActionMapMethodologySection", () => {
   });
 
   it("keeps experimental and future-facing sections out of the public page", () => {
-    const markup = renderToStaticMarkup(
-      <SitePreferencesProvider>
-        <MethodologiePageClient
-          freePlanServices={[]}
-          impactTotals={{
-            monthlyKgCo2eProxy: null,
-            annualKgCo2eProxy: null,
-            totalKgCo2eProxy: null,
-            generatedAt: null,
-          }}
-          impactSnapshots={[]}
-          impactGeneratedAt={null}
-          impactLaunchedAt={null}
-          githubStats={null}
-        />
-      </SitePreferencesProvider>,
-    );
+    const markup = renderMethodologyPage();
 
     expect(markup).toContain("Méthode de calcul");
     expect(markup).toContain('id="indicateurs-impact-terrain"');
     expect(markup).toContain("Les 6 KPI Impact terrain 2026");
-    expect(markup.indexOf('id="indicateurs-impact-terrain"')).toBeLessThan(
-      markup.indexOf('id="methodologie-carte-actions"'),
+    expect(markup.indexOf('id="methodologie-carte-actions"')).toBeLessThan(
+      markup.indexOf('id="indicateurs-impact-terrain"'),
     );
     for (const title of [
       "Déchets récoltés",
@@ -166,6 +178,63 @@ describe("ActionMapMethodologySection", () => {
     expect(markup).not.toContain("Gamification");
     expect(markup).not.toContain("restez à l’écoute");
     expect(markup).not.toContain("COMING SOON");
+  });
+
+  it("dérive l’ordre des bulles et des pages de la navigation exhaustive", () => {
+    const markup = renderMethodologyPage();
+    const spaces = getNavigationSpacesForProfile("benevole", "exhaustif", "fr");
+
+    expect(markup).toContain('data-methodology-display-mode="exhaustif"');
+    expect([...markup.matchAll(/data-methodology-space-id="([^"]+)"/g)].map(([, id]) => id)).toEqual(
+      spaces.map((space) => space.id),
+    );
+    expect(methodologyRouteIds(markup)).toEqual(
+      spaces.flatMap((space) => space.items.map((item) => item.routeId)),
+    );
+    expect(new Set(methodologyRouteIds(markup)).size).toBe(
+      methodologyRouteIds(markup).length,
+    );
+    expect(
+      (
+        markup.match(
+          /data-methodology-content="(?:empty|present)">\s*<details/g,
+        ) ?? []
+      ).length,
+    ).toBe(
+      methodologyRouteIds(markup).length,
+    );
+  });
+
+  it("conserve le profil courant, sans ajouter les routes hors navigation", () => {
+    const markup = renderMethodologyPage("admin");
+    const routeIds = methodologyRouteIds(markup);
+    const expectedRouteIds = getNavigationSpacesForProfile(
+      "admin",
+      "exhaustif",
+      "fr",
+    ).flatMap((space) => space.items.map((item) => item.routeId));
+
+    expect(routeIds).toEqual(expectedRouteIds);
+    expect(routeIds).toContain("admin");
+    expect(routeIds).not.toContain("sign-in");
+    expect(routeIds).not.toContain("conditions-generales-utilisation");
+    expect(routeIds).not.toContain("reglages");
+  });
+
+  it("rend un disclosure réellement vide pour une page sans méthodologie", () => {
+    const markup = renderMethodologyPage();
+
+    expect(markup).toContain(
+      'data-methodology-route-id="dashboard" data-methodology-content="empty"',
+    );
+    expect(markup).toContain(
+      'data-methodology-route-id="methodologie" data-methodology-content="present"',
+    );
+    expect(markup).toContain(
+      'data-methodology-route-id="map" data-methodology-content="present"',
+    );
+    expect(markup).not.toContain("À venir");
+    expect(markup).not.toContain("Coming soon");
   });
 
   it("publishes the first two KPI results with qualified butt distribution", async () => {
