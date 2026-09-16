@@ -59,7 +59,7 @@ export default function ContactPage() {
                 </h2>
               </div>
             </div>
-            <p className="mt-4 text-sm leading-6 text-slate-600">
+            <p className="cmm-text-body mt-4">
               Cette adresse sert pour les réponses et le support. Les retours
               produit plus détaillés restent accessibles dans la rubrique
               feedback après connexion.
@@ -91,7 +91,7 @@ export default function ContactPage() {
                 </h2>
               </div>
             </div>
-            <p className="mt-4 text-sm leading-6 text-slate-600">
+            <p className="cmm-text-body mt-4">
               Remplissez le formulaire pour envoyer la demande depuis le site
               ou ouvrir votre boîte mail afin de modifier le texte avant envoi.
             </p>
@@ -106,7 +106,7 @@ export default function ContactPage() {
           <h2 className="text-2xl font-bold text-slate-950">
             Formulaire de contact
           </h2>
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body">
             Utilisez ce formulaire pour une demande RGPD, un support ou une
             question générale. Vous choisissez si le message part depuis le
             site ou s&apos;ouvre dans votre client mail pour être ajusté.

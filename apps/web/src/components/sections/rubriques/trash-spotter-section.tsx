@@ -165,7 +165,7 @@ export function TrashSpotterSection() {
                     <h3 className="text-2xl font-black tracking-[-0.04em] text-slate-950">
                       {fr ? "Une carte pour observer, un formulaire pour signaler" : "A map to monitor, a form to report"}
                     </h3>
-                    <p className="text-sm font-medium leading-relaxed text-slate-600">
+                    <p className="cmm-text-body font-medium">
                       {fr
                         ? "Cette surface est dédiée à la consultation des points Trash Spotter. Pour créer une observation et la retrouver dans Mes observations, utilisez l’entrée canonique de signalement."
                         : "This surface is dedicated to reviewing Trash Spotter points. To create a report and find it in My observations, use the canonical reporting entry."}
@@ -201,7 +201,7 @@ export function TrashSpotterSection() {
                     <h3 className="text-lg font-black tracking-[-0.03em] text-slate-950">
                       {fr ? "Carte des signalements" : "Reports map"}
                     </h3>
-                    <p className="text-sm font-medium text-slate-600">
+                    <p className="cmm-text-body font-medium">
                       {fr ? "Carte globale des signalements dédiés" : "Global map of Trash Spotter points"}
                     </p>
                   </div>
@@ -248,7 +248,7 @@ export function TrashSpotterSection() {
                 <h3 className="text-xl font-black tracking-[-0.03em] text-slate-950">
                   {fr ? "Comment ça marche ?" : "How it works"}
                 </h3>
-                <p className="text-sm font-medium leading-relaxed text-slate-600">
+                <p className="cmm-text-body font-medium">
                   {fr
                     ? "Le signalement alimente la carte globale, le calque dédié, l'itinéraire IA et le rapport d'impact."
                     : "The report feeds the global map, the Trash Spotter layer, AI routing and the impact report."}
@@ -284,7 +284,7 @@ export function TrashSpotterSection() {
                   <p className="mt-3 text-sm font-black tracking-[-0.02em] text-slate-950">
                     {step.title}
                   </p>
-                  <p className="mt-1 text-sm font-medium leading-relaxed text-slate-600">
+                  <p className="cmm-text-body mt-1 font-medium">
                     {step.text}
                   </p>
                 </div>
@@ -301,7 +301,7 @@ export function TrashSpotterSection() {
                 <h3 className="text-xl font-black tracking-[-0.03em] text-slate-950">
                   {fr ? "Modération & géovérification" : "Moderation & geovariation"}
                 </h3>
-                <p className="text-sm font-medium leading-relaxed text-slate-600">
+                <p className="cmm-text-body font-medium">
                   {fr
                     ? "Chaque signalement est vérifié pour éviter les doublons et sécuriser les données exploitées par les cartes et les rapports."
                     : "Every report is checked to avoid duplicates and secure the data used by maps and reports."}
@@ -314,7 +314,7 @@ export function TrashSpotterSection() {
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
                   {fr ? "Données sécurisées" : "Secured data"}
                 </p>
-                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">
+                <p className="cmm-text-body mt-2 font-medium">
                   {fr ? "Confidentielles et protégées." : "Confidential and protected."}
                 </p>
               </div>
@@ -322,7 +322,7 @@ export function TrashSpotterSection() {
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
                   {fr ? "Impact mesurable" : "Measurable impact"}
                 </p>
-                <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">
+                <p className="cmm-text-body mt-2 font-medium">
                   {fr ? "Suivi des actions et résultats." : "Actions and results tracking."}
                 </p>
               </div>

@@ -136,7 +136,7 @@ export function LearnVulgarisationMagnitudeComparator({
               ? "Passer du chiffre brut au sens utile"
               : "Move from raw number to useful meaning"}
           </h3>
-          <p className="text-sm leading-relaxed text-slate-600">
+          <p className="cmm-text-body">
             {locale === "fr"
               ? "Ce comparateur montre la bascule entre ce qu'on voit au départ et ce que CleanMyMap permet de lire ensuite."
               : "This comparator shows the shift between what you see at the start and what CleanMyMap lets you read afterwards."}
@@ -150,7 +150,7 @@ export function LearnVulgarisationMagnitudeComparator({
           <p className="mt-1 text-2xl font-black tracking-tight text-amber-900">
             {locale === "fr" ? "Avant / Après" : "Before / After"}
           </p>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="cmm-text-body mt-1">
             {locale === "fr"
               ? "Une lecture, deux niveaux."
               : "One reading, two levels."}
@@ -193,7 +193,7 @@ export function LearnVulgarisationMagnitudeComparator({
           <p className="mt-2 text-lg font-black tracking-tight text-slate-900">
             {scenario.label[locale]}
           </p>
-          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+          <p className="cmm-text-body mt-1">
             {scenario.description[locale]}
           </p>
 
@@ -229,7 +229,7 @@ export function LearnVulgarisationMagnitudeComparator({
           <p className="mt-2 text-lg font-black tracking-tight text-slate-900">
             {locale === "fr" ? "Lecture CleanMyMap" : "CleanMyMap reading"}
           </p>
-          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+          <p className="cmm-text-body mt-1">
             {locale === "fr"
               ? "Le même cas devient lisible à l'échelle utile: eau, CO2, surface et valeur de l'action."
               : "The same case becomes readable at a useful scale: water, CO2, surface and value of action."}
@@ -254,7 +254,7 @@ export function LearnVulgarisationMagnitudeComparator({
         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
           {locale === "fr" ? "Note de lecture" : "Reading note"}
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-slate-600">
+        <p className="cmm-text-body mt-2">
           {locale === "fr"
             ? "On ne remplace pas le chiffre brut, on l'accompagne d'une échelle qui permet de décider, d'expliquer et de prioriser."
             : "We do not replace the raw number; we pair it with a scale that helps decide, explain and prioritize."}

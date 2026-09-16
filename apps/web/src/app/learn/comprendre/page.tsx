@@ -31,7 +31,7 @@ function ProgressCue({ eyebrow, title, detail }: ProgressCueProps) {
           {eyebrow}
         </p>
         <h4 className="text-lg font-black tracking-tight text-slate-900 md:text-xl">{title}</h4>
-        <p className="text-sm leading-relaxed text-slate-600">{detail}</p>
+        <p className="cmm-text-body">{detail}</p>
       </div>
     </section>
   );
@@ -93,7 +93,7 @@ export default function LearnVulgarisationPage() {
                   ? "Aller au quiz, garder la méthodologie sous la main"
                   : "Go to the quiz, keep methodology close"}
               </h3>
-              <p className="text-sm leading-relaxed text-slate-600">
+              <p className="cmm-text-body">
                 {locale === "fr"
                   ? "Le quiz reste le prochain geste. La méthodologie sert de repère secondaire quand il faut creuser un point."
                   : "The quiz is the next step. Methodology stays as a secondary reference when you need to dig deeper."}
@@ -126,7 +126,7 @@ export default function LearnVulgarisationPage() {
                 ? "Contexte, repères, méthode, puis systèmes"
                 : "Context, cues, method, then systems"}
             </h3>
-            <p className="text-sm leading-relaxed text-slate-600">
+            <p className="cmm-text-body">
               {locale === "fr"
                 ? "Chaque bloc tient une seule idée. La page avance du cadrage vers l'échelle, puis vers les cadres de référence."
                 : "Each block carries a single idea. The page moves from framing to scale, then to reference systems."}
@@ -159,7 +159,7 @@ export default function LearnVulgarisationPage() {
                   ? "Comparer avant d'interpréter"
                   : "Compare before interpreting"}
               </h3>
-              <p className="text-sm leading-relaxed text-slate-600">
+              <p className="cmm-text-body">
                 {locale === "fr"
                   ? "Le comparateur et le calcul d'impact servent de pont entre le chiffre brut et la lecture utile."
                   : "The comparator and impact calculator bridge the raw number and a useful reading."}
@@ -194,7 +194,7 @@ export default function LearnVulgarisationPage() {
                   ? "Les cadres plus larges viennent ensuite"
                   : "Broader frameworks come next"}
               </h3>
-              <p className="text-sm leading-relaxed text-slate-600">
+              <p className="cmm-text-body">
                 {locale === "fr"
                   ? "On quitte le cas individuel pour les grands repères scientifiques et les cadres qui aident à situer l'action."
                   : "We move from the individual case to the larger scientific references and the frames that help situate action."}
@@ -230,7 +230,7 @@ export default function LearnVulgarisationPage() {
                   ? "À ouvrir si l'on veut voir plus large"
                   : "Open if you want the wider picture"}
               </h3>
-              <p className="text-sm leading-relaxed text-slate-600">
+              <p className="cmm-text-body">
                 {locale === "fr"
                   ? "Ces blocs prolongent la lecture après le repère principal. Ils n'ouvrent pas la page, ils l'étendent."
                   : "These blocks extend the reading after the main cue. They do not define the page; they extend it."}

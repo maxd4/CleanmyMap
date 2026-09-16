@@ -21,7 +21,7 @@ export function LearnSortingCuesSection({ locale }: { locale: LearnLocale }) {
         </div>
 
         <div className="space-y-3">
-          <p className="text-sm leading-relaxed text-slate-600">
+          <p className="cmm-text-body">
             {isFrench
               ? "Les repères sont réduits à l'essentiel pour tenir en lecture rapide."
               : "The cues are reduced to the essentials so they stay quick to read."}
@@ -39,7 +39,7 @@ export function LearnSortingCuesSection({ locale }: { locale: LearnLocale }) {
                       </span>
                       <div>
                         <p className="text-sm font-black text-slate-900">{isFrench ? cue.title.fr : cue.title.en}</p>
-                        <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                        <p className="cmm-text-body mt-1">
                           {isFrench ? cue.text.fr : cue.text.en}
                         </p>
                       </div>

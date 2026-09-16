@@ -32,7 +32,7 @@ export function LearnRessourcesCalendarPanel({ locale }: { locale: LearnLocale }
           <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900">
             {locale === "fr" ? "Ouvrir le calendrier si besoin" : "Open the calendar when needed"}
           </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-700">
+          <p className="cmm-text-body mt-2 max-w-2xl">
             {locale === "fr"
               ? "Le calendrier se charge à la demande. Les trois blocs du haut suffisent pour l'entrée rapide."
               : "The calendar loads on demand. The three blocks above are enough for the quick entry."}

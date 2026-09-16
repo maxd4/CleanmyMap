@@ -102,7 +102,7 @@ export function LearnRubricShell({
             <p
               className={
                 isLightOrange
-                  ? "max-w-3xl text-base leading-relaxed text-slate-600 md:text-lg"
+                  ? "cmm-text-body max-w-3xl"
                   : "max-w-3xl text-base leading-relaxed text-white md:text-lg"
               }
               >

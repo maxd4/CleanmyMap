@@ -154,7 +154,7 @@ export default async function SponsorPortalPage() {
             <p className="text-3xl font-bold text-white tracking-tight leading-tight">
               Analyse consolidée sur l&apos;ensemble de votre réseau territorial.
             </p>
-            <p className="text-lg text-white/30 leading-relaxed font-medium">
+            <p className="cmm-text-body cmm-text-inverse font-medium">
               Ce portail agrège les données de mobilisation pour offrir une lecture macroscopique de l&apos;impact environnemental et social.
             </p>
           </div>

@@ -96,7 +96,7 @@ export function EnvironmentalImpactProjectSignalsPanel({
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 text-sm text-white/35">
+              <p className="cmm-text-body cmm-text-inverse mt-3">
                 Aucune route détaillée disponible.
               </p>
             )}
@@ -165,7 +165,7 @@ export function EnvironmentalImpactProjectSignalsPanel({
               </p>
             </div>
           </div>
-          <p className="mt-4 text-xs leading-relaxed text-white/45">
+          <p className="cmm-text-small cmm-text-inverse mt-4">
             Le découpage reprend la structure de gouvernance du PDF mensuel:
             trafic fin, communauté, notifications et communications.
           </p>

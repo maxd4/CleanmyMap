@@ -72,7 +72,7 @@ export function CookieConsentBanner() {
               <h3 className="text-lg font-bold cmm-text-primary">
                 Paramètres de confidentialité
               </h3>
-              <p className="mt-1 text-sm cmm-text-secondary">
+              <p className="cmm-text-body mt-1">
                 Nous utilisons des cookies pour améliorer votre expérience. Certains cookies sont essentiels au fonctionnement du site, d&apos;autres nous aident à analyser la navigation.
               </p>
             </div>

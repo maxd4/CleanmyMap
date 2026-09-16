@@ -47,3 +47,33 @@ test("rejects new navigation truncation", () => {
   assert.equal(result.violations.length, 1);
   assert.equal(result.violations[0].rule, "truncation");
 });
+
+test("rejects weak colors on new reading copy", () => {
+  const result = analyzeDiff(
+    [
+      "diff --git a/apps/web/src/app/learn/comprendre/page.tsx b/apps/web/src/app/learn/comprendre/page.tsx",
+      "--- a/apps/web/src/app/learn/comprendre/page.tsx",
+      "+++ b/apps/web/src/app/learn/comprendre/page.tsx",
+      "@@ -1,0 +2 @@",
+      "+<p className=\"text-sm leading-relaxed text-slate-600\">Explication</p>",
+    ].join("\n"),
+  );
+
+  assert.equal(result.violations.length, 1);
+  assert.equal(result.violations[0].rule, "body-color");
+});
+
+test("keeps semantic inverse body copy and secondary captions valid", () => {
+  const result = analyzeDiff(
+    [
+      "diff --git a/apps/web/src/components/account/account-setup-form.tsx b/apps/web/src/components/account/account-setup-form.tsx",
+      "--- a/apps/web/src/components/account/account-setup-form.tsx",
+      "+++ b/apps/web/src/components/account/account-setup-form.tsx",
+      "@@ -1,0 +2,2 @@",
+      "+<p className=\"cmm-text-body cmm-text-inverse\">Texte sombre</p>",
+      "+<p className=\"cmm-text-caption cmm-text-muted\">Meta</p>",
+    ].join("\n"),
+  );
+
+  assert.equal(result.violations.length, 0);
+});

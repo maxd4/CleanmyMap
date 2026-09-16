@@ -49,7 +49,7 @@ export function AccountSetupSection({
         </div>
         <p className={cn(
           "mt-1 text-sm",
-          variant === "dark" ? "text-slate-200/80" : "cmm-text-secondary",
+          variant === "dark" ? "cmm-text-inverse" : "cmm-text-primary",
         )}>{description}</p>
       </div>
       {children}

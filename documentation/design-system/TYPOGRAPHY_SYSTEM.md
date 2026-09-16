@@ -9,6 +9,18 @@
 
 Système typographique complet avec échelle cohérente, paire de polices optimisée, et tokens CSS pour tous les modes d'affichage.
 
+### Invariant de lisibilité du texte courant
+
+Le corps de texte est noir/quasi-noir sur fond clair et blanc/quasi-blanc sur
+fond sombre. Les gris et couleurs servent à la hiérarchie, aux annotations,
+aux états et aux accents, pas au corps de texte principal.
+
+La primitive `cmm-text-body` porte donc `--text-primary`. Sur une surface
+sombre, utiliser `cmm-text-inverse` lorsque le contexte ne le fournit pas déjà.
+`cmm-text-secondary` reste réservé aux sous-titres, descriptions courtes,
+aides et libellés secondaires ; `cmm-text-muted` reste réservé aux méta,
+placeholders, légendes et états non essentiels.
+
 ---
 
 ## Paire de Polices
@@ -68,9 +80,9 @@ Système typographique complet avec échelle cohérente, paire de polices optimi
 <h4 className="cmm-text-h4 text-secondary">Titre carte</h4>
 
 // Corps
-<p className="cmm-text-body text-primary">Paragraphe</p>
-<span className="cmm-text-small text-secondary">Description</span>
-<span className="cmm-text-caption text-muted">Meta info</span>
+<p className="cmm-text-body cmm-text-primary">Paragraphe</p>
+<span className="cmm-text-small cmm-text-secondary">Description</span>
+<span className="cmm-text-caption cmm-text-muted">Meta info</span>
 ```
 
 ### Poids de police autorisés
@@ -125,11 +137,11 @@ Système typographique complet avec échelle cohérente, paire de polices optimi
 ### Usage React/Tailwind
 
 ```tsx
-<p className="text-primary">Texte principal</p>
-<p className="text-secondary">Texte secondaire</p>
-<p className="text-muted">Meta information</p>
-<p className="text-success">Message de succès</p>
-<a className="text-link">Lien cliquable</a>
+<p className="cmm-text-primary">Texte principal</p>
+<p className="cmm-text-secondary">Texte secondaire</p>
+<p className="cmm-text-muted">Meta information</p>
+<p className="cmm-text-success">Message de succès</p>
+<a className="cmm-text-link">Lien cliquable</a>
 ```
 
 ### Typographie sur cartes et bulles sombres
@@ -167,6 +179,9 @@ Utiliser les utilitaires canoniques suivants:
 - ✅ Grand texte (18px+ bold / 24px+): ratio minimum 3:1
 - ✅ UI components: ratio minimum 3:1
 - ❌ Éviter texte clair sur fond pastel sans vérification
+- ✅ Corps courant sur fond clair: `cmm-text-body` et `cmm-text-primary`
+- ✅ Corps courant sur fond sombre: `cmm-text-inverse` ou une surface canonique
+- ❌ Ne pas utiliser `cmm-text-muted`, une opacité faible ou un accent pour un paragraphe courant
 
 ### Règle de lisibilité des héros
 
@@ -299,7 +314,7 @@ const inter = Inter({
   Titre de page
 </h1>
 
-<p className="cmm-text-body text-secondary">
+<p className="cmm-text-body cmm-text-primary">
   Description détaillée du contenu
 </p>
 

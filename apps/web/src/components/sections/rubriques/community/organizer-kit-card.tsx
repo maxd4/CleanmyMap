@@ -180,7 +180,7 @@ export function OrganizerKitCard() {
           <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-900">
             {"Tout ce qu'il faut pour préparer, animer et clôturer un cleanup"}
           </h3>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+          <p className="cmm-text-body mt-2 max-w-2xl">
             Une base pratique pour créer un événement utile, mobiliser des bénévoles
             sans contact préalable et documenter les déchets collectés pour mieux
             comprendre les pollutions.
@@ -216,7 +216,7 @@ export function OrganizerKitCard() {
             <h4 className="mt-2 text-base font-bold text-slate-900">{block.title}</h4>
             <ul className="mt-3 space-y-2">
               {block.items.map((item) => (
-                <li key={item} className="flex gap-2 text-sm leading-relaxed text-slate-600">
+                <li key={item} className="cmm-text-body flex gap-2">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
                   <span>{item}</span>
                 </li>
@@ -247,7 +247,7 @@ export function OrganizerKitCard() {
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-600">
                 {"Guide d'animation"}
               </p>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              <p className="cmm-text-body mt-2">
                 Accueil, consignes, répartition, collecte, tri, bilan. Ce guide sert
                 {" d'appui à l'animateur pour garder un déroulé clair et rassurant."}
               </p>
@@ -256,7 +256,7 @@ export function OrganizerKitCard() {
               <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-600">
                 Fiche pratique
               </p>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              <p className="cmm-text-body mt-2">
                 Une fiche imprimable avec les essentiels: rendez-vous, matériel, sécurité,
                 tri, météo, contact et bilan.
               </p>
@@ -269,7 +269,7 @@ export function OrganizerKitCard() {
                 <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">
                   Modèle prêt à personnaliser
                 </p>
-                <p className="mt-1 text-sm text-slate-600">
+                <p className="cmm-text-body mt-1">
                   Remplacez les champs entre crochets par vos informations et
                   {" partagez l'affiche dans vos canaux."}
                 </p>
@@ -312,7 +312,7 @@ export function OrganizerKitCard() {
                 <Printer size={16} />
                 {"Modèle d'autorisation mairie"}
               </p>
-              <p className="mt-1 text-sm leading-relaxed text-slate-600">
+              <p className="cmm-text-body mt-1">
                 {"Texte de demande, périmètre d'action, horaires et contact responsable."}
               </p>
             </div>

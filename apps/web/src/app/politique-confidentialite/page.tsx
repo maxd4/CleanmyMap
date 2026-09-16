@@ -33,7 +33,7 @@ function Pill({ children }: { children: ReactNode }) {
 
 function DataList({ items }: { items: string[] }) {
   return (
-    <ul className="space-y-2 text-sm leading-6 text-slate-600">
+    <ul className="cmm-text-body space-y-2">
       {items.map((item) => (
         <li key={item} className="flex gap-3">
           <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
@@ -62,7 +62,7 @@ export default function PolitiqueConfidentialitePage() {
         <section className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 lg:grid-cols-2">
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-slate-950">Responsable du traitement</h2>
-            <p className="text-sm leading-6 text-slate-600">
+            <p className="cmm-text-body">
               Le responsable du traitement est <strong>Maxence Deroome</strong>,
               personne physique éditant CleanMyMap à titre non professionnel dans
               le cadre d&apos;un projet étudiant. Aucune société, entreprise,
@@ -77,7 +77,7 @@ export default function PolitiqueConfidentialitePage() {
           </div>
           <div className="space-y-2">
             <h2 className="text-xl font-bold text-slate-950">Principe appliqué</h2>
-            <p className="text-sm leading-6 text-slate-600">
+            <p className="cmm-text-body">
               Les traitements sont limités aux besoins du service. Les analytics et
               la mesure d&apos;audience soumis au consentement ne sont activés
               qu&apos;après un choix positif, conservé six mois.
@@ -100,7 +100,7 @@ export default function PolitiqueConfidentialitePage() {
               "Cookies de session Clerk et données techniques nécessaires à l'authentification et à la sécurité.",
             ]}
           />
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body">
             L&apos;adresse email et les éléments nécessaires à l&apos;authentification sont
             obligatoires pour un compte. Le téléphone et les informations de profil
             complémentaires sont facultatifs lorsqu&apos;ils ne sont pas nécessaires à
@@ -140,7 +140,7 @@ export default function PolitiqueConfidentialitePage() {
               "Notifications, progression, événements de service et journaux d'opérations d'administration nécessaires au fonctionnement et à la sécurité.",
             ]}
           />
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body">
             Certaines données peuvent être reçues indirectement lorsqu&apos;un autre
             utilisateur vous associe à un événement, une participation, une action,
             un message ou un parrainage. Elles sont alors utilisées pour la
@@ -224,7 +224,7 @@ export default function PolitiqueConfidentialitePage() {
             <Pill>Transferts</Pill>
             <h2 className="text-2xl font-bold text-slate-950">7. Transferts hors EEE</h2>
           </div>
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body">
             La configuration du projet privilégie l&apos;hôte UE par défaut de PostHog,
             mais elle permet aussi un hôte configurable et ne suffit pas à établir
             la localisation effective de chaque fournisseur ni la garantie applicable
@@ -269,7 +269,7 @@ export default function PolitiqueConfidentialitePage() {
               "Droit d'introduire une réclamation auprès de la CNIL.",
             ]}
           />
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body">
             Aucune fonctionnalité identifiée ne prend actuellement une décision
             exclusivement automatisée produisant des effets juridiques ou un effet
             significatif similaire à votre égard.
@@ -278,7 +278,7 @@ export default function PolitiqueConfidentialitePage() {
 
         <section className="space-y-5 rounded-3xl border border-slate-200 bg-slate-50 p-5">
           <h2 className="text-2xl font-bold text-slate-950">10. Exercer vos droits</h2>
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body">
             Utilisez le formulaire de la page{" "}
             <Link href="/contact" className="font-medium text-emerald-700 hover:underline">Contact</Link>{" "}
             ou le formulaire ci-dessous pour une demande d&apos;accès, de rectification,
@@ -308,16 +308,16 @@ export default function PolitiqueConfidentialitePage() {
 
         <section className="rounded-3xl border border-slate-200 bg-emerald-50 p-5">
           <h2 className="text-xl font-bold text-slate-950">12. Contact et réclamation</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body mt-2">
             Questions RGPD, retrait du consentement ou exercice de droits :{" "}
             <a href={`mailto:${contactEmail}`} className="font-medium text-emerald-700 hover:underline">{contactEmail}</a>.
           </p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body mt-2">
             Si vous estimez que votre demande n&apos;a pas été correctement traitée,
             vous pouvez saisir la CNIL via{" "}
             <a href="https://www.cnil.fr/fr/adresser-une-plainte" className="font-medium text-emerald-700 hover:underline">son site officiel</a>.
           </p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
+          <p className="cmm-text-body mt-2">
             Documents associés :{" "}
             <Link href="/conditions-generales-utilisation" className="font-medium text-emerald-700 hover:underline">CGU</Link>{" · "}
             <Link href="/politique-cookies" className="font-medium text-emerald-700 hover:underline">politique cookies</Link>{" · "}

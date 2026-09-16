@@ -193,7 +193,7 @@ export function LearnDigitalMaintenanceSection({ locale }: { locale: LearnLocale
                 <div className="min-w-0">
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-600">{topic.cadence[locale]}</p>
                   <h4 className="mt-1 text-lg font-black tracking-tight text-slate-900">{topic.title[locale]}</h4>
-                  <p className="mt-1 text-sm leading-relaxed text-slate-700">{topic.detail[locale]}</p>
+                  <p className="cmm-text-body mt-1">{topic.detail[locale]}</p>
                 </div>
               </div>
             </article>
@@ -205,12 +205,12 @@ export function LearnDigitalMaintenanceSection({ locale }: { locale: LearnLocale
         <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
           {locale === "fr" ? "Impact écologique et cadence" : "Environmental impact and cadence"}
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-slate-700">
+        <p className="cmm-text-body mt-2">
           {locale === "fr"
             ? "L'impact d'un seul geste reste faible à moyen selon le volume de données concerné. L'effet devient plus visible quand tu combines un nettoyage trimestriel des gros volumes avec un entretien mensuel des téléchargements, favoris et notifications. La cadence optimale est donc hybride: mensuel pour le bruit du quotidien, trimestriel pour les gros stocks, semestriel pour les comptes et la synchro."
             : "The impact of a single gesture stays low to medium depending on the data volume involved. The effect becomes more visible when you combine quarterly cleanup of large volumes with monthly maintenance of downloads, bookmarks, and notifications. The optimal cadence is therefore hybrid: monthly for daily noise, quarterly for large storage, and twice-yearly for accounts and sync."}
         </p>
-        <p className="mt-3 text-sm leading-relaxed text-slate-700">
+        <p className="cmm-text-body mt-3">
           {locale === "fr"
             ? "Pour les pièces jointes, les doublons et les corbeilles cloud, l'ordre de priorité est: supprimer ce qui n'a plus d'usage, puis vider la corbeille associée."
             : "For attachments, duplicates, and cloud trash, the priority is: delete what is no longer useful, then empty the associated trash."}

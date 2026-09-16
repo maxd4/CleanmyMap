@@ -181,7 +181,7 @@ export function ConditionsPanel({
               </p>
               <ul className="mt-3 space-y-2.5">
                 {checklist.map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-sm text-slate-600">
+                  <li key={item} className="cmm-text-body flex items-start gap-3">
                     <span className="mt-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-white">
                       <CheckCircle2 size={11} />
                     </span>
@@ -205,7 +205,7 @@ export function ConditionsPanel({
                 <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
                   {fr ? "7 jours par heure" : "7 days, hourly"}
                 </h3>
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="cmm-text-body mt-2">
                   {fr
                     ? "Chaque jour est déplié en prévisions horaires pour la météo réelle du lieu sélectionné."
                     : "Each day is expanded into hourly forecasts for the real weather of the selected place."}
@@ -454,7 +454,7 @@ export function ConditionsPanel({
                   </span>
                   <div className="min-w-0">
                     <p className="text-sm font-black text-slate-900">{item.title}</p>
-                    <p className="mt-1 text-sm leading-relaxed text-slate-500">{item.description}</p>
+                        <p className="cmm-text-body mt-1">{item.description}</p>
                   </div>
                   <CheckCircle2 size={18} className="ml-auto mt-1 shrink-0 text-emerald-600" />
                 </div>
@@ -462,7 +462,7 @@ export function ConditionsPanel({
             })}
           </div>
 
-          <div className="mt-6 rounded-[1.5rem] border border-emerald-200 bg-emerald-50/80 px-5 py-4 text-sm text-slate-600">
+          <div className="cmm-text-body mt-6 rounded-[1.5rem] border border-emerald-200 bg-emerald-50/80 px-5 py-4">
             <div className="flex items-start gap-3">
               <Leaf size={20} className="mt-0.5 text-emerald-700" />
               <p className="leading-relaxed">
@@ -493,7 +493,7 @@ export function ConditionsPanel({
             {safetyConstraints.map((constraint) => (
               <li
                 key={constraint}
-                className="flex items-start gap-3 rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm"
+                className="cmm-text-body flex items-start gap-3 rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 shadow-sm"
               >
                 <span className="mt-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-white">
                   <CheckCircle2 size={11} />

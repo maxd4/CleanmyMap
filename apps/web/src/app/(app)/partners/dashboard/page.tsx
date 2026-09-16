@@ -150,7 +150,7 @@ export default async function PartnersDashboardPage() {
                <ShieldCheck size={20} className="text-slate-400" />
                Vérification
              </h3>
-             <p className="text-sm text-slate-100/40 leading-relaxed font-medium relative z-10">
+             <p className="cmm-text-body cmm-text-inverse font-medium relative z-10">
                {staleEntries.length} fiches nécessitent une confirmation de données ou une vérification d&apos;activité récente.
              </p>
           </div>
