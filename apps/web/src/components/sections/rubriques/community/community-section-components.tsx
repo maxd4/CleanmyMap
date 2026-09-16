@@ -73,7 +73,7 @@ export const CommunityHubNav = memo(function CommunityHubNav({
               tone={isActive ? "primary" : "tertiary"}
               variant="pill"
               className={`relative flex items-center gap-3 px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${
-                isActive ? "text-white" : "text-slate-500 hover:text-slate-200 hover:bg-white/5"
+                isActive ? "text-white" : "!text-white hover:!text-white hover:!bg-white/10"
               }`}
             >
               {isActive && (
@@ -140,7 +140,7 @@ export const CommunityAgirView = memo(function CommunityAgirView({
             <div className="p-3 rounded-2xl bg-pink-500/10 border border-pink-500/20">
               <Target size={20} className="text-pink-400" />
             </div>
-            <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Actions de Terrain" : "Field Actions"}</h3>
+            <h3 className="text-2xl font-black text-slate-950 tracking-tighter">{fr ? "Actions de Terrain" : "Field Actions"}</h3>
           </div>
           <ActionsHistoryList />
         </section>
@@ -150,7 +150,7 @@ export const CommunityAgirView = memo(function CommunityAgirView({
             <div className="p-3 rounded-2xl bg-pink-500/10 border border-pink-500/20">
               <Globe size={20} className="text-pink-400" />
             </div>
-            <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Impact Écosystémique" : "Ecosystem Impact"}</h3>
+            <h3 className="text-2xl font-black text-slate-950 tracking-tighter">{fr ? "Impact Écosystémique" : "Ecosystem Impact"}</h3>
           </div>
           <CommunityConversionKpiGrid summary={conversionSummary} />
         </section>
@@ -236,7 +236,7 @@ export const CommunityMissionsView = memo(function CommunityMissionsView({
             <div className="p-3 rounded-2xl bg-pink-500/10 border border-pink-500/20">
               <Calendar size={20} className="text-pink-400" />
             </div>
-            <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Exploration des Missions" : "Missions Exploration"}</h3>
+            <h3 className="text-2xl font-black text-slate-950 tracking-tighter">{fr ? "Exploration des Missions" : "Missions Exploration"}</h3>
           </div>
           <CommunityEventsTabsCard
             activeTab={activeTab}
@@ -294,7 +294,7 @@ export const CommunitySolutionsView = memo(function CommunitySolutionsView({ fr 
             <div className="p-3 rounded-2xl bg-pink-500/10 border border-pink-500/20">
               <Lightbulb size={20} className="text-pink-400" />
             </div>
-            <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Bibliothèque de Solutions" : "Solutions Library"}</h3>
+            <h3 className="text-2xl font-black text-slate-950 tracking-tighter">{fr ? "Bibliothèque de Solutions" : "Solutions Library"}</h3>
           </div>
           <CampaignsSection />
           <MissionZeroSection />

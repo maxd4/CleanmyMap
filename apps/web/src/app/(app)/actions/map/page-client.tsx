@@ -173,9 +173,9 @@ function ActionsMapPageContent({
 
   return (
     <main className="min-h-screen text-slate-950 pb-24">
-      <div className="cmm-page-width px-6 py-8 space-y-10">
+      <div className="cmm-page-width px-6 py-6 space-y-6">
         {/* Premium Header - Lecture Spatiale */}
-        <header className="relative space-y-8 overflow-hidden pt-10 lg:pt-12">
+        <header className="relative space-y-6 overflow-hidden pt-4 lg:pt-6">
           <div className="absolute -top-24 -left-24 w-[600px] h-[600px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none" />
 
           <PageHeader

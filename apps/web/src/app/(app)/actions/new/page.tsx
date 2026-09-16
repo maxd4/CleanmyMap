@@ -59,10 +59,13 @@ export default async function NewActionPage({
   const identity = userId ? await getCurrentUserIdentity() : null;
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const fallbackActorName = userId ?? "Visiteur";
-  const actorNameOptions =
-    identity?.actorNameOptions && identity.actorNameOptions.length > 0
-      ? identity.actorNameOptions
-      : [fallbackActorName];
+  const actorNameOptions = Array.from(
+    new Set(
+      identity?.actorNameOptions && identity.actorNameOptions.length > 0
+        ? identity.actorNameOptions
+        : [fallbackActorName],
+    ),
+  );
   const defaultActorName = actorNameOptions[0] ?? fallbackActorName;
 
   const userMetadata = {

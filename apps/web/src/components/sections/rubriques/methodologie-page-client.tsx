@@ -235,17 +235,16 @@ export function MethodologiePageClient({
     });
 
   return (
-    <div className="relative left-1/2 w-screen -translate-x-1/2 isolate overflow-x-clip bg-[linear-gradient(180deg,rgba(255,244,246,0.98)_0%,rgba(255,251,252,0.92)_28%,rgba(15,23,42,1)_100%)] pb-20 pt-10">
+    <div className="relative left-1/2 w-screen -translate-x-1/2 isolate overflow-x-clip bg-[linear-gradient(180deg,rgba(255,244,246,0.98)_0%,rgba(255,251,252,0.92)_28%,rgba(15,23,42,1)_100%)] pb-20 pt-6">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[44rem] bg-[radial-gradient(circle_at_top,rgba(251,113,133,0.26)_0%,rgba(251,113,133,0.12)_24%,rgba(255,255,255,0.88)_52%,rgba(15,23,42,0.98)_100%)]"
       />
 
-      <div className="cmm-page-width flex flex-col space-y-16 px-4 sm:px-6 lg:px-8">
+      <div className="cmm-page-width flex flex-col space-y-10 px-4 pt-2 sm:px-6 lg:px-8">
         <PageHeader
           align="center"
           tone="red"
-          contrast="inverse"
           title={
             <span className="inline-flex items-center gap-3">
               <Beaker size={24} aria-hidden="true" />
