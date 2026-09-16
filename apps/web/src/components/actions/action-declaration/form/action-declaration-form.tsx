@@ -100,6 +100,8 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     resolvedDefaultActorName,
     manualDrawing,
     setManualDrawing,
+    gpxImport,
+    gpxError,
     photoAssets,
     visionEstimate,
     visionStatus,
@@ -123,6 +125,8 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     smartAssist,
     handlePhotoUpload,
     clearPhotos,
+    handleGpxImport,
+    removeGpxImport,
     updateField,
     updateFields,
     handleResumeDraft,
@@ -410,9 +414,14 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                     <ActionStepLocation
                       form={form}
                       updateField={updateField}
+                      updateFields={updateFields}
                       manualDrawing={manualDrawing}
                       setManualDrawing={setManualDrawing}
                       routePreviewDrawing={effectiveRoutePreviewDrawing}
+                      gpxImport={gpxImport ?? null}
+                      gpxError={gpxError}
+                      onImportGpx={handleGpxImport}
+                      onRemoveGpx={removeGpxImport}
                       onResetManualDrawing={() => setManualDrawing(null)}
                       gpsStatus={smartAssist.gpsStatus}
                       gpsMessage={smartAssist.gpsMessage}

@@ -40,6 +40,7 @@ export type LegacyActionRecordType = "action" | "clean_place" | "other";
 export type ActionGeometryKind = "point" | "polyline" | "polygon";
 export const ACTION_GEOMETRY_SOURCES = [
   "manual",
+  "gpx_import",
   "reference",
   "routed",
   "estimated_route",
@@ -49,6 +50,17 @@ export const ACTION_GEOMETRY_SOURCES = [
 export type ActionGeometryOrigin = (typeof ACTION_GEOMETRY_SOURCES)[number];
 export type ActionGeometrySource = ActionGeometryOrigin;
 export type ActionRouteTopology = "loop" | "point_to_point";
+export type ActionLocationCoordinates = {
+  latitude: number;
+  longitude: number;
+};
+export type ActionGpxImportMetadata = {
+  source: "gpx_import";
+  observedDistanceKm: number;
+  pointCount: number;
+  inferredTopology: ActionRouteTopology;
+  fileName?: string;
+};
 export type ActionSubmissionMode = "quick" | "complete";
 export type ActionPhase =
   | "pre_action"
@@ -98,6 +110,17 @@ export type ActionPreparationData = {
   actualRoute?: LegacyOperationalRoute;
   /** User target only; never treated as the measured provider distance. */
   routeTargetDistanceKm?: number;
+  /** Provenance of the target value; absent means legacy and therefore derived. */
+  routeTargetDistanceSource?: "derived" | "manual";
+  /** Version of the policy used for a derived target. */
+  routeTargetDistancePolicyVersion?: string;
+  /** Coordinates selected for route endpoints; avoids a second server geocode. */
+  midRouteCoordinates?: ActionLocationCoordinates;
+  arrivalCoordinates?: ActionLocationCoordinates;
+  /** Measured length of the user-provided GPX trace, kept separate from the target. */
+  routeObservedDistanceKm?: number;
+  /** Canonical metadata for a validated user-provided GPX trace. */
+  gpxImport?: ActionGpxImportMetadata;
   /** Measured or estimated result of the server-side route provider. */
   routeNetworkDistanceKm?: number;
   routeGeometryMode?: RouteGeometryMode;

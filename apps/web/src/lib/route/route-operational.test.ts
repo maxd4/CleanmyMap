@@ -65,6 +65,9 @@ describe("operational route contract", () => {
       meetingTime: "09:30",
       departureTime: "09:30",
       estimatedDurationMinutes: 45,
+      routeTargetDistanceKm: 0.75,
+      routeTargetDistanceSource: "derived",
+      routeTargetDistancePolicyVersion: "route-distance-v1",
       volunteersExpected: 8,
     });
     expect(preparation).not.toHaveProperty("wasteKg");

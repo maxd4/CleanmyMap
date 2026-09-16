@@ -37,13 +37,16 @@ export function getGeometryPresentation(
   switch (origin) {
     case "manual":
     case "reference":
+    case "gpx_import":
       return {
         origin,
         reality: "real",
         label:
           origin === "manual"
             ? "Géométrie réelle · manuelle"
-            : "Zone réelle · référence",
+            : origin === "gpx_import"
+              ? "Tracé réel · GPX importé"
+              : "Zone réelle · référence",
         strokeStyle: "solid",
       };
     case "routed":
@@ -79,7 +82,7 @@ export function getGeometryPresentation(
 }
 
 export function isRealGeometryOrigin(origin: ActionGeometryOrigin): boolean {
-  return origin === "manual" || origin === "reference";
+  return origin === "manual" || origin === "gpx_import" || origin === "reference";
 }
 
 export function isEstimatedGeometryOrigin(

@@ -16,6 +16,7 @@ import type {
   ActionPhotoAsset,
   ActionVisionEstimate,
 } from "@/lib/actions/types";
+import { GpxImportError, parseGpxFile } from "@/lib/actions/geometry/gpx";
 import {
   buildCreateActionPayload,
   applyPreparationDataToForm,
@@ -32,7 +33,7 @@ import {
 } from "../draft-storage";
 import { summarizeActionDrawingValidation } from "../../map/actions-map-geometry.utils";
 import { computeActionDataQuality } from "./action-declaration-form.quality";
-import { deriveRouteTargetDistanceKm } from "@/lib/actions/route-target-distance";
+import { resolveRouteTargetDistance } from "@/lib/actions/route-target-distance";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
 import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart-assist";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
@@ -97,6 +98,7 @@ export function useActionDeclarationForm({
   const [manualDrawingEnabled] = useState<boolean>(true);
   const [manualDrawing, setManualDrawingState] = useState<ActionDrawing | null>(null);
   const [manualDrawingSource, setManualDrawingSource] = useState<ActionGeometrySource | null>(null);
+  const [gpxError, setGpxError] = useState<string | null>(null);
   const [photoAssets, setPhotoAssets] = useState<ActionPhotoAsset[]>([]);
   const [visionEstimate, setVisionEstimate] = useState<ActionVisionEstimate | null>(null);
   const [visionStatus, setVisionStatus] = useState<"idle" | "processing" | "ready" | "error">("idle");
@@ -264,7 +266,12 @@ export function useActionDeclarationForm({
         };
 
         if (typeof action.preparationData?.routeTargetDistanceKm !== "number") {
-          nextForm.routeTargetDistanceKm = deriveRouteTargetDistanceKm(action.durationMinutes).toString();
+          nextForm.routeTargetDistanceKm = String(
+            resolveRouteTargetDistance({
+              durationMinutes: action.durationMinutes,
+              routeTargetDistanceSource: "derived",
+            }).distanceKm,
+          );
           nextForm.routeTargetDistanceKmManuallySet = false;
         }
 
@@ -295,6 +302,10 @@ export function useActionDeclarationForm({
 
         setLoadedActionPhase(action.actionPhase);
         setForm(nextForm);
+        if (nextForm.gpxImport && action.manualDrawing) {
+          setManualDrawingState(action.manualDrawing);
+          setManualDrawingSource("gpx_import");
+        }
         setIsHydratingAction(false);
       })
       .catch((error: unknown) => {
@@ -421,6 +432,18 @@ export function useActionDeclarationForm({
   }
 
   function updateForm(updates: Partial<FormState>) {
+    if (
+      updates.routeTopology &&
+      form.gpxImport &&
+      updates.routeTopology !== form.gpxImport.inferredTopology
+    ) {
+      setGpxError(
+        form.gpxImport.inferredTopology === "loop"
+          ? "Ce tracé GPX est fermé. Supprimez-le avant de choisir Départ → arrivée."
+          : "Ce tracé GPX est ouvert. Supprimez-le avant de choisir Boucle.",
+      );
+      return;
+    }
     const nextForm: FormState = { ...form, ...updates };
     if (updates.routeTargetDistanceKm !== undefined) {
       nextForm.routeTargetDistanceKmManuallySet = true;
@@ -428,9 +451,12 @@ export function useActionDeclarationForm({
       updates.durationMinutes !== undefined &&
       !form.routeTargetDistanceKmManuallySet
     ) {
-      nextForm.routeTargetDistanceKm = deriveRouteTargetDistanceKm(
-        updates.durationMinutes,
-      ).toString();
+      nextForm.routeTargetDistanceKm = String(
+        resolveRouteTargetDistance({
+          durationMinutes: updates.durationMinutes,
+          routeTargetDistanceSource: "derived",
+        }).distanceKm,
+      );
     }
     if (updates.routeStyle !== undefined) {
       nextForm.routeStyle = "souple";
@@ -458,6 +484,49 @@ export function useActionDeclarationForm({
   function updateFields(updates: Partial<FormState>) {
     trackFormStart();
     updateForm(updates);
+  }
+
+  async function handleGpxImport(file: File | null) {
+    if (!file) return;
+    try {
+      const parsed = await parseGpxFile(file);
+      if (parsed.metadata.inferredTopology !== form.routeTopology) {
+        setGpxError(
+          parsed.metadata.inferredTopology === "loop"
+            ? "Ce GPX est fermé. Sélectionnez Boucle avant de l’importer."
+            : "Ce GPX est ouvert. Sélectionnez Départ → arrivée avant de l’importer.",
+        );
+        return;
+      }
+      if (
+        (manualDrawing && manualDrawingSource !== "gpx_import") ||
+        form.gpxImport
+      ) {
+        const confirmed = window.confirm(
+          "Remplacer le tracé actuel par ce tracé GPX ?",
+        );
+        if (!confirmed) return;
+      }
+      setManualDrawingState(parsed.drawing);
+      setManualDrawingSource("gpx_import");
+      setGpxError(null);
+      updateForm({ gpxImport: parsed.metadata });
+    } catch (error: unknown) {
+      setGpxError(
+        error instanceof GpxImportError
+          ? error.message
+          : "Impossible de lire ce fichier GPX.",
+      );
+    }
+  }
+
+  function removeGpxImport() {
+    if (manualDrawingSource === "gpx_import") {
+      setManualDrawingState(null);
+      setManualDrawingSource(null);
+    }
+    setGpxError(null);
+    updateForm({ gpxImport: null });
   }
 
   function normalizeFormBeforeSubmit(f: FormState): FormState {
@@ -538,6 +607,20 @@ export function useActionDeclarationForm({
       return;
     }
 
+    if (form.gpxImport && manualDrawingSource !== "gpx_import") {
+      setValidationIssues([
+        {
+          field: "gpxImport",
+          message: "Le tracé GPX sélectionné n’est plus présent. Supprimez-le ou réimportez-le.",
+        },
+      ]);
+      setHasAttemptedSubmit(true);
+      setErrorMessage("Le tracé GPX sélectionné n’est plus présent. Supprimez-le ou réimportez-le.");
+      setSubmissionState("error");
+      setShowConfirmation(false);
+      return;
+    }
+
     setValidationIssues([]);
     setSubmissionState("pending");
     const normalizedForm = normalizeFormBeforeSubmit(form);
@@ -593,6 +676,8 @@ export function useActionDeclarationForm({
     setForm,
     resolvedDefaultActorName,
     manualDrawing,
+    gpxImport: form.gpxImport,
+    gpxError,
     setManualDrawing,
     photoAssets,
     visionEstimate,
@@ -623,6 +708,8 @@ export function useActionDeclarationForm({
 
     handlePhotoUpload,
     clearPhotos,
+    handleGpxImport,
+    removeGpxImport,
     updateField,
     updateFields,
     handleResumeDraft,

@@ -41,6 +41,49 @@ function buildCurrent(preparationData: ActionRow["preparation_data"]): ActionRow
 }
 
 describe("prepareActionUpdate administrative requirements boundary", () => {
+  it("recalculates a derived target when duration changes", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({
+        routeTargetDistanceKm: 0.5,
+        routeTargetDistanceSource: "derived",
+        routeTargetDistancePolicyVersion: "route-distance-v1",
+      }),
+      parsedBody: ({ durationMinutes: 90, eventEndTime: "11:00" } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.preparation_data).toMatchObject({
+      routeTargetDistanceKm: 1.5,
+      routeTargetDistanceSource: "derived",
+      routeTargetDistancePolicyVersion: "route-distance-v1",
+    });
+  });
+
+  it("does not recalculate a manual target when duration changes", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({
+        routeTargetDistanceKm: 2.25,
+        routeTargetDistanceSource: "manual",
+      }),
+      parsedBody: ({ durationMinutes: 90, eventEndTime: "11:00" } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.preparation_data).toMatchObject({
+      routeTargetDistanceKm: 2.25,
+      routeTargetDistanceSource: "manual",
+    });
+    expect(prepared.updateData.preparation_data).not.toHaveProperty(
+      "routeTargetDistancePolicyVersion",
+    );
+  });
+
   it("preserves the canonical value for a same-phase malicious PATCH", async () => {
     resolveActionDepartmentForPersistenceMock.mockResolvedValue({
       departmentCode: null,

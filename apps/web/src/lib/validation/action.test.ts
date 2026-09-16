@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { polylineDistanceKm } from "@/lib/geo/geodesic-distance";
 import { createActionSchema, updateActionSchema } from "./action";
 
 describe("createActionSchema", () => {
@@ -109,6 +110,79 @@ describe("createActionSchema", () => {
     if (!invalid.success) {
       expect(invalid.error.issues.some((issue) => issue.path.includes("arrivalLocationLabel"))).toBe(true);
     }
+  });
+
+  it("validates GPX provenance, topology and observed distance against the drawing", () => {
+    const loopCoordinates: [number, number][] = [
+      [48.85, 2.35],
+      [48.86, 2.36],
+      [48.85, 2.35],
+    ];
+    const observedDistanceKm = Number(polylineDistanceKm(loopCoordinates).toFixed(3));
+    const valid = createActionSchema.safeParse({
+      ...basePayload,
+      organizerType: "spontaneous",
+      routeTopology: "loop",
+      manualDrawing: {
+        kind: "polyline",
+        coordinates: [
+          ...loopCoordinates,
+        ],
+      },
+      geometrySource: "gpx_import",
+      preparationData: {
+        routeTopology: "loop",
+        gpxImport: {
+          source: "gpx_import",
+          observedDistanceKm,
+          pointCount: 3,
+          inferredTopology: "loop",
+          fileName: "terrain.gpx",
+        },
+      },
+    });
+    expect(valid.success).toBe(true);
+
+    const wrongTopology = createActionSchema.safeParse({
+      ...basePayload,
+      organizerType: "spontaneous",
+      routeTopology: "point_to_point",
+      arrivalLocationLabel: "Arrivée, Paris",
+      manualDrawing: {
+        kind: "polyline",
+        coordinates: [[48.85, 2.35], [48.86, 2.36], [48.85, 2.35]],
+      },
+      geometrySource: "gpx_import",
+      preparationData: {
+        gpxImport: {
+          source: "gpx_import",
+          observedDistanceKm,
+          pointCount: 3,
+          inferredTopology: "loop",
+        },
+      },
+    });
+    expect(wrongTopology.success).toBe(false);
+
+    const forgedDistance = createActionSchema.safeParse({
+      ...basePayload,
+      organizerType: "spontaneous",
+      routeTopology: "loop",
+      manualDrawing: {
+        kind: "polyline",
+        coordinates: [[48.85, 2.35], [48.86, 2.36], [48.85, 2.35]],
+      },
+      geometrySource: "gpx_import",
+      preparationData: {
+        gpxImport: {
+          source: "gpx_import",
+          observedDistanceKm: observedDistanceKm + 0.5,
+          pointCount: 3,
+          inferredTopology: "loop",
+        },
+      },
+    });
+    expect(forgedDistance.success).toBe(false);
   });
 
   it("uses the canonical five-million bound for every ordinary count alias", () => {

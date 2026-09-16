@@ -6,6 +6,7 @@ import { ActionRouteReconstructionError } from "./route-reconstruction-error";
 import type {
   ActionDrawing,
   ActionGeometrySource,
+  ActionLocationCoordinates,
   ActionRouteTopology,
 } from "@/lib/actions/types";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
@@ -17,12 +18,17 @@ import {
 import { findMatchingGeometry } from "@/lib/geo/geometry-reference";
 import { routePolylineThroughFossgisFoot } from "@/lib/route/fossgis-foot-routing";
 import type { RouteGeometry } from "@/lib/route/route-contract";
-import { resolveRouteTargetDistanceKm } from "../route-target-distance";
+import { resolveRouteTargetDistance } from "../route-target-distance";
 
 type GeoPoint = {
   latitude: number;
   longitude: number;
 };
+
+const GEOCODING_TIMEOUT_MS = 4_000;
+const GEOCODING_CACHE_TTL_MS = 5 * 60_000;
+const geocodingCache = new Map<string, { expiresAt: number; value: GeoPoint | null }>();
+const geocodingInFlight = new Map<string, Promise<GeoPoint | null>>();
 
 export type ReconstructedActionRoute = {
   drawing: ActionDrawing;
@@ -49,6 +55,11 @@ function toOrigin(
     return null;
   }
   return [latitude, longitude];
+}
+
+function toGeoPoint(value: ActionLocationCoordinates | null | undefined): GeoPoint | null {
+  const origin = toOrigin(value?.latitude, value?.longitude);
+  return origin ? { latitude: origin[0], longitude: origin[1] } : null;
 }
 
 function metersToLatitudeDelta(meters: number): number {
@@ -92,20 +103,46 @@ export function buildLoopWaypoints(
 }
 
 async function geocodeLabel(label: string): Promise<GeoPoint | null> {
-  const url = buildTerritoryNominatimSearchUrl(label);
-  if (!url) return null;
-  try {
-    const response = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!response.ok) return null;
-    const data = await response.json() as Array<{ lat?: string; lon?: string }>;
-    const coordinates = parseTerritoryCoordinates(data[0]);
-    if (!coordinates || !isWithinTerritoryBounds(coordinates.latitude, coordinates.longitude)) {
-      return null;
-    }
-    return coordinates;
-  } catch {
-    return null;
+  const normalizedLabel = label.trim().toLowerCase();
+  if (!normalizedLabel) return null;
+  const cached = geocodingCache.get(normalizedLabel);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
   }
+  const inFlight = geocodingInFlight.get(normalizedLabel);
+  if (inFlight) return inFlight;
+
+  const url = buildTerritoryNominatimSearchUrl(normalizedLabel);
+  if (!url) return null;
+  const request = (async () => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), GEOCODING_TIMEOUT_MS);
+    try {
+      const response = await fetch(url, {
+        headers: { Accept: "application/json" },
+        signal: controller.signal,
+      });
+      if (!response.ok) return null;
+      const data = await response.json() as Array<{ lat?: string; lon?: string }>;
+      const coordinates = parseTerritoryCoordinates(data[0]);
+      if (!coordinates || !isWithinTerritoryBounds(coordinates.latitude, coordinates.longitude)) {
+        return null;
+      }
+      return coordinates;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
+  })();
+  geocodingInFlight.set(normalizedLabel, request);
+  const value = await request;
+  geocodingInFlight.delete(normalizedLabel);
+  geocodingCache.set(normalizedLabel, {
+    expiresAt: Date.now() + GEOCODING_CACHE_TTL_MS,
+    value,
+  });
+  return value;
 }
 
 function referenceRoute(
@@ -131,10 +168,13 @@ export async function reconstructActionRoute(params: {
   locationLabel: string;
   departureLocationLabel?: string | null;
   midpointLocationLabel?: string | null;
+  midpointCoordinates?: ActionLocationCoordinates | null;
   arrivalLocationLabel?: string | null;
+  arrivalCoordinates?: ActionLocationCoordinates | null;
   topology?: ActionRouteTopology | null;
   durationMinutes: number | null | undefined;
   routeTargetDistanceKm?: number | null;
+  routeTargetDistanceSource?: "derived" | "manual" | null;
 }): Promise<ReconstructedActionRoute | null> {
   const topology = resolveActionRouteTopology({
     topology: params.topology,
@@ -178,12 +218,14 @@ export async function reconstructActionRoute(params: {
   if (!resolvedOrigin) return referenceRoute(params.locationLabel, departureLabel);
 
   const originPair: [number, number] = [resolvedOrigin.latitude, resolvedOrigin.longitude];
-  const targetDistanceKm = resolveRouteTargetDistanceKm({
+  const targetDistanceKm = resolveRouteTargetDistance({
     durationMinutes: params.durationMinutes,
     routeTargetDistanceKm: params.routeTargetDistanceKm,
-  });
+    routeTargetDistanceSource: params.routeTargetDistanceSource,
+  }).distanceKm;
   const midpointLabel = params.midpointLocationLabel?.trim();
-  const geocodedMidpoint = midpointLabel ? await geocodeLabel(midpointLabel) : null;
+  const knownMidpoint = toGeoPoint(params.midpointCoordinates);
+  const geocodedMidpoint = knownMidpoint ?? (midpointLabel ? await geocodeLabel(midpointLabel) : null);
   if (midpointLabel && !geocodedMidpoint) {
     throw new ActionRouteReconstructionError({
       midRouteLocationLabel: [
@@ -192,8 +234,9 @@ export async function reconstructActionRoute(params: {
     });
   }
 
+  const knownArrival = toGeoPoint(params.arrivalCoordinates);
   const geocodedArrival = topology === "point_to_point"
-    ? await geocodeLabel(params.arrivalLocationLabel!.trim())
+    ? knownArrival ?? await geocodeLabel(params.arrivalLocationLabel!.trim())
     : null;
   if (topology === "point_to_point" && !geocodedArrival) {
     throw new ActionRouteReconstructionError({

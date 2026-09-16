@@ -425,18 +425,29 @@ ajouté. Les anciens payloads sont centralisés par compatibilité : arrivée
 présente sans topologie → `point_to_point`, arrivée absente → `loop`. Une
 arrivée manquante ou non résolue est une erreur explicite.
 
-La distance cible est éditable dans `/actions/new` et vaut par défaut `durée en
-minutes / 60` (soit environ 1 km par heure). La distance finale affichée,
-lorsqu'elle existe, est celle retournée par FOSSGIS/OSRM et reste distincte de
-cette cible. Une réponse réseau porte la source `routed` ; un repli local
-déterministe porte `estimated_route` et ne doit pas être présenté comme un
-parcours mesuré.
+La distance cible est éditable dans `/actions/new`. La politique métier
+actuelle est versionnée `route-distance-v1` et applique 1 km par heure d'action.
+Une cible automatique est persistée avec `routeTargetDistanceSource =
+"derived"` et cette version de politique ; une modification explicite devient
+`"manual"` et sa valeur n'est jamais recalculée par une nouvelle politique.
+Les anciennes actions sans provenance canonique sont traitées comme dérivées
+à la lecture, sans mutation silencieuse de leur ligne. Les snapshots et les
+rebuilds recalculent uniquement la cible effective et sa présentation dérivée,
+jamais la géométrie persistée. La distance finale affichée, lorsqu'elle
+existe, est celle retournée par FOSSGIS/OSRM et reste distincte de cette cible.
+Une réponse réseau porte la source `routed` ; un repli local déterministe porte
+`estimated_route` et ne doit pas être présenté comme un parcours mesuré.
 
-La priorité de géométrie est : tracé réel dessiné ou importé, parcours
-opérationnel réel, reconstruction réseau serveur, repli estimé explicite, puis
-localisation ponctuelle. Aucun appel de routage n'est effectué depuis le
-navigateur et les anciennes polylignes synthétiques courtes ne sont plus
-produites par le resolver générique.
+La priorité de géométrie est : tracé GPX valide (`gpx_import`), tracé manuel
+valide, parcours opérationnel réel, reconstruction réseau serveur, géométrie de
+référence, repli estimé explicite, puis localisation ponctuelle. Un GPX est
+une géométrie fournie par l'utilisateur : sa distance observée est calculée
+depuis ses coordonnées et reste distincte de `routeTargetDistanceKm`. Il n'est
+ni classé `manual`, ni routé ou snappé par FOSSGIS/OSRM. Les traces multi-
+segments sont refusées lorsque la LineString canonique ne peut pas conserver
+leur séparation sans fabriquer une liaison. Aucun appel de routage n'est
+effectué depuis le navigateur et les anciennes polylignes synthétiques courtes
+ne sont plus produites par le resolver générique.
 
 ### Zones
 

@@ -21,6 +21,10 @@ import {
   normalizeAdministrativeRequirements,
   preserveCanonicalAdministrativeRequirements,
 } from "./administrative-requirements";
+import {
+  persistResolvedRouteTargetDistance,
+  resolveRouteTargetDistance,
+} from "@/lib/actions/route-target-distance";
 
 export class ActionUpdateValidationError extends Error {
   constructor(
@@ -115,8 +119,15 @@ export async function prepareActionUpdate(params: {
     }
   }
   if (body.preparationData !== undefined) {
-    updateData["preparation_data"] = normalizeActionPreparationData(
-      body.preparationData ?? {},
+    const nextPreparationData = normalizeActionPreparationData(body.preparationData ?? {});
+    const resolvedTarget = resolveRouteTargetDistance({
+      durationMinutes: body.durationMinutes ?? current.duration_minutes,
+      routeTargetDistanceKm: nextPreparationData.routeTargetDistanceKm,
+      routeTargetDistanceSource: nextPreparationData.routeTargetDistanceSource,
+    });
+    updateData["preparation_data"] = persistResolvedRouteTargetDistance(
+      nextPreparationData,
+      resolvedTarget,
     );
   }
   if (body.actorName !== undefined) {
@@ -238,6 +249,20 @@ export async function prepareActionUpdate(params: {
   }
   if (body.durationMinutes !== undefined) {
     updateData["duration_minutes"] = body.durationMinutes;
+    if (body.preparationData === undefined) {
+      const currentPreparationData = normalizeActionPreparationData(
+        current.preparation_data ?? {},
+      );
+      const resolvedTarget = resolveRouteTargetDistance({
+        durationMinutes: body.durationMinutes,
+        routeTargetDistanceKm: currentPreparationData.routeTargetDistanceKm,
+        routeTargetDistanceSource: currentPreparationData.routeTargetDistanceSource,
+      });
+      updateData["preparation_data"] = persistResolvedRouteTargetDistance(
+        currentPreparationData,
+        resolvedTarget,
+      );
+    }
   }
   if (body.eventStartTime !== undefined) {
     updateData["event_start_time"] = body.eventStartTime;

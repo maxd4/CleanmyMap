@@ -2,6 +2,7 @@ import type { ActionDrawing } from "@/lib/actions/types";
 
 export const GEOMETRY_CONFIDENCE = {
   MANUAL_DRAWING: 1,
+  GPX_IMPORT: 1,
   PERSISTED_IMPORTED: 0.92,
   AUTO_ROUTE: 0.78,
   REFERENCE_GEOMETRY: 0.72,

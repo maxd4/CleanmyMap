@@ -276,6 +276,13 @@ réseau ou son quota est indisponible. La distance cible saisie dans
 `/actions/new` n'est jamais confondue avec la distance réseau finale. Le
 navigateur ne déclenche pas de routage pour produire ou recaler cette géométrie.
 
+Un fichier GPX valide constitue un tracé fourni par l'utilisateur : sa source
+reste `gpx_import`, sa longueur observée est calculée séparément de la distance
+cible, et aucun routage ou snapping ne le remplace. Le formulaire conserve les
+segments dans leur ordre ; un fichier multi-segment est refusé tant que la
+géométrie canonique ne sait pas les persister sans inventer une liaison. La
+topologie choisie doit être cohérente avec le caractère fermé ou ouvert du GPX.
+
 Les polylines disposent d'une zone de clic/touch invisible élargie. L'action « Voir tout le tracé » cadre explicitement la géométrie sans recentrage automatique à chaque sélection.
 
 Infrastructure :

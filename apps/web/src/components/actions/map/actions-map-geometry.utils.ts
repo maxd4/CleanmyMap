@@ -544,7 +544,9 @@ export function formatGeometryModeLabel(
   }
 
   if (kind === "polyline") {
-    return presentation.origin === "routed" || presentation.origin === "estimated_route"
+    return presentation.origin === "gpx_import"
+      ? "Tracé GPX importé"
+      : presentation.origin === "routed" || presentation.origin === "estimated_route"
       ? "Parcours reconstruit"
       : "Parcours déclaré";
   }
