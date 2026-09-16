@@ -56,7 +56,7 @@ export function AccountSetupDisplayModeGrid({
           <label
             key={mode}
             htmlFor={`account-setup-display-mode-${mode}`}
-            className={`relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-300 focus-within:ring-offset-2 ${selected ? "border-violet-300 bg-white text-violet-700 shadow-sm" : "border-slate-300/35 bg-slate-800/75 text-white hover:border-slate-200/70 hover:bg-slate-700/80"}`}
+            className={`cmm-account-setup-choice relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border text-center transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-300 focus-within:ring-offset-2 ${selected ? "border-violet-300 bg-white text-violet-700 shadow-sm" : "border-slate-300/35 bg-slate-800/75 text-white hover:border-slate-200/70 hover:bg-slate-700/80"}`}
           >
             <input
               id={`account-setup-display-mode-${mode}`}
@@ -72,7 +72,7 @@ export function AccountSetupDisplayModeGrid({
                 <Check className="h-4 w-4" aria-hidden="true" />
               </span>
             ) : null}
-            <Eye className="h-7 w-7" aria-hidden="true" />
+            <Eye className="cmm-account-setup-choice-glyph" aria-hidden="true" />
             <span className="text-sm font-bold">{DISPLAY_MODE_LABELS[mode]}</span>
             <span className="text-xs leading-4 opacity-80">{DISPLAY_MODE_DESCRIPTIONS[mode][locale]}</span>
           </label>
@@ -113,7 +113,7 @@ export function AccountSetupProfileGrid({
             <label
               key={profile}
               className={cn(
-                "group relative flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-300 focus-within:ring-offset-2",
+                "cmm-account-setup-choice group relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border text-center transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-300 focus-within:ring-offset-2",
                 isSelected
                   ? "border-violet-300 bg-white text-violet-700 shadow-sm"
                   : "border-slate-300/35 bg-slate-800/75 text-white hover:border-slate-200/70 hover:bg-slate-700/80",
@@ -135,13 +135,13 @@ export function AccountSetupProfileGrid({
               ) : null}
               <span
                 className={cn(
-                  "flex h-12 w-12 items-center justify-center rounded-2xl border",
+                  "cmm-account-setup-choice-icon flex items-center justify-center rounded-2xl border",
                   isSelected
                     ? "border-violet-200 bg-violet-50 text-violet-600"
                     : "border-slate-300/30 bg-slate-700/40 text-slate-100",
                 )}
               >
-                <Icon className="h-6 w-6" aria-hidden="true" />
+                <Icon className="cmm-account-setup-choice-glyph" aria-hidden="true" />
               </span>
               <span className="text-sm font-bold leading-tight sm:text-base">
                 {getProfileLabel(profile, locale)}
@@ -217,7 +217,7 @@ export function AccountSetupLocationFields({
             <label
               key={value}
               className={cn(
-                "relative flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-300 focus-within:ring-offset-2",
+                "cmm-account-setup-choice relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border text-center transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-300 focus-within:ring-offset-2",
                 selected
                   ? "border-violet-300 bg-white text-violet-700"
                   : "border-slate-300/35 bg-slate-800/75 text-white hover:border-slate-200/70 hover:bg-slate-700/80",
@@ -235,14 +235,14 @@ export function AccountSetupLocationFields({
                   <Check className="h-4 w-4" aria-hidden="true" />
                 </span>
               ) : null}
-              <Icon className="h-8 w-8" aria-hidden="true" />
+              <Icon className="cmm-account-setup-choice-glyph" aria-hidden="true" />
               <span className="text-sm font-bold leading-5">{label}</span>
             </label>
           );
         })}
         <label
           className={cn(
-            "relative flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-300 focus-within:ring-offset-2",
+            "cmm-account-setup-choice relative flex cursor-pointer flex-col items-center justify-center rounded-2xl border text-center transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-300 focus-within:ring-offset-2",
             noneSelected
               ? "border-violet-300 bg-white text-violet-700"
               : "border-slate-300/35 bg-slate-800/75 text-white hover:border-slate-200/70 hover:bg-slate-700/80",

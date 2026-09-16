@@ -203,6 +203,145 @@
       0 -28px 64px -36px rgba(2, 6, 23, 0.66);
   }
 
+  /*
+   * Onboarding density contract.
+   *
+   * The page remains in the normal main/footer flow. Its minimum block size
+   * is bounded by the available containing block and by the real dynamic
+   * viewport, so the global navigation and footer are not counted twice.
+   * Spacing contracts, rather than a global zoom, absorb shorter CSS
+   * viewports (including browser zoom).
+   */
+  .cmm-account-setup-surface {
+    --cmm-account-setup-page-padding-block: clamp(0.75rem, 2.8vh, 2.5rem);
+    --cmm-account-setup-section-gap: clamp(0.75rem, 1.7vh, 1.5rem);
+    --cmm-account-setup-card-padding: clamp(1rem, min(1.5vw, 1.8vh), 1.5rem);
+    --cmm-account-setup-card-heading-gap: clamp(0.625rem, 1.4vh, 1.25rem);
+    --cmm-account-setup-choice-min-height: clamp(4.5rem, 10.5vh, 7rem);
+    --cmm-account-setup-choice-padding-block: clamp(0.625rem, 1.2vh, 0.75rem);
+    --cmm-account-setup-choice-padding-inline: clamp(0.75rem, 1vw, 1rem);
+    --cmm-account-setup-choice-gap: clamp(0.375rem, 1vh, 0.625rem);
+    --cmm-account-setup-choice-icon-size: clamp(2.5rem, 5.5vh, 3rem);
+    --cmm-account-setup-choice-glyph-size: clamp(1.5rem, 3.6vh, 2rem);
+    --cmm-account-setup-actions-gap: clamp(0.75rem, 1.3vh, 1rem);
+    min-block-size: min(100%, 100dvh);
+    padding-block: var(--cmm-account-setup-page-padding-block);
+    padding-inline: var(--cmm-page-gutter-mobile);
+  }
+
+  .cmm-account-setup-frame,
+  .cmm-account-setup-form,
+  .cmm-account-setup-content,
+  .cmm-account-setup-card {
+    min-width: 0;
+  }
+
+  .cmm-account-setup-header {
+    margin-block-end: clamp(0.75rem, 2.6vh, 2.25rem);
+  }
+
+  .cmm-account-setup-header-icon {
+    width: clamp(2.5rem, min(3.5vw, 6vh), 3rem);
+    height: clamp(2.5rem, min(3.5vw, 6vh), 3rem);
+  }
+
+  .cmm-account-setup-header-glyph,
+  .cmm-account-setup-choice-glyph {
+    width: var(--cmm-account-setup-choice-glyph-size);
+    height: var(--cmm-account-setup-choice-glyph-size);
+  }
+
+  .cmm-account-setup-title {
+    font-size: clamp(2rem, min(4vw, 5.5vh), 3rem);
+    line-height: 1.05;
+  }
+
+  .cmm-account-setup-content {
+    gap: var(--cmm-account-setup-section-gap);
+  }
+
+  .cmm-account-setup-card {
+    padding: var(--cmm-account-setup-card-padding);
+  }
+
+  .cmm-account-setup-card-heading {
+    margin-block-end: var(--cmm-account-setup-card-heading-gap);
+  }
+
+  .cmm-account-setup-section-title {
+    font-size: clamp(1.25rem, min(2.2vw, 3vh), 1.5rem);
+    line-height: 1.1;
+  }
+
+  .cmm-account-setup-location-mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--cmm-account-setup-section-gap);
+  }
+
+  .cmm-account-setup-choice {
+    min-width: 0;
+    min-height: var(--cmm-account-setup-choice-min-height);
+    gap: var(--cmm-account-setup-choice-gap);
+    padding-block: var(--cmm-account-setup-choice-padding-block);
+    padding-inline: var(--cmm-account-setup-choice-padding-inline);
+  }
+
+  .cmm-account-setup-choice-icon {
+    width: var(--cmm-account-setup-choice-icon-size);
+    height: var(--cmm-account-setup-choice-icon-size);
+  }
+
+  .cmm-account-setup-actions {
+    gap: var(--cmm-account-setup-actions-gap);
+    margin-block-start: var(--cmm-account-setup-section-gap);
+    padding-block: clamp(0.75rem, 1.3vh, 1rem);
+    padding-inline: clamp(1rem, 1.5vw, 1.5rem);
+  }
+
+  @media (min-width: 768px) {
+    .cmm-account-setup-surface {
+      padding-inline: var(--cmm-page-gutter-tablet);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .cmm-account-setup-surface {
+      padding-inline: var(--cmm-page-gutter-desktop);
+    }
+  }
+
+  /* Medium-height laptops and browser zoom compact decorative rhythm only. */
+  @media (min-width: 1024px) and (max-height: 900px) {
+    .cmm-account-setup-surface {
+      --cmm-account-setup-page-padding-block: clamp(0.625rem, 2vh, 1.5rem);
+      --cmm-account-setup-section-gap: clamp(0.625rem, 1.35vh, 1rem);
+      --cmm-account-setup-card-heading-gap: clamp(0.5rem, 1.1vh, 0.875rem);
+      --cmm-account-setup-choice-min-height: clamp(4.5rem, 9.5vh, 6rem);
+      --cmm-account-setup-choice-gap: clamp(0.375rem, 0.8vh, 0.5rem);
+    }
+  }
+
+  /* Low-height laptops: preserve text and controls, remove decorative slack. */
+  @media (min-width: 1024px) and (max-height: 760px) {
+    .cmm-account-setup-surface {
+      --cmm-account-setup-page-padding-block: 0.625rem;
+      --cmm-account-setup-card-padding: clamp(0.875rem, 1.5vh, 1rem);
+      --cmm-account-setup-choice-min-height: clamp(4.5rem, 9vh, 5.25rem);
+      --cmm-account-setup-choice-icon-size: clamp(2.25rem, 5vh, 2.75rem);
+      --cmm-account-setup-choice-glyph-size: clamp(1.5rem, 3.2vh, 1.75rem);
+    }
+
+    .cmm-account-setup-header {
+      margin-block-end: 0.75rem;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .cmm-account-setup-location-mode-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
   /* ============================================================
      CURSOR SYSTEM - Comportements tactiles cohérents
      ============================================================ */

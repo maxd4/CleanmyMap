@@ -451,20 +451,20 @@ export function AccountSetupForm({
   }
 
   return (
-    <form onSubmit={(event) => void handleSubmit(event)} className="flex min-h-full flex-col pb-2 text-white">
-      <header className="mb-7 flex items-start gap-4 sm:mb-9">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-300/40 bg-slate-700/25 text-slate-100">
-          <UserRound className="h-6 w-6" aria-hidden="true" />
+    <form onSubmit={(event) => void handleSubmit(event)} className="cmm-account-setup-form flex min-h-0 flex-col text-white">
+      <header className="cmm-account-setup-header flex items-start gap-4">
+        <span className="cmm-account-setup-header-icon flex shrink-0 items-center justify-center rounded-2xl border border-slate-300/40 bg-slate-700/25 text-slate-100">
+          <UserRound className="cmm-account-setup-header-glyph" aria-hidden="true" />
         </span>
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">Configurez votre profil</h1>
+          <h1 className="cmm-account-setup-title font-black tracking-tight text-slate-900">Configurez votre profil</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700/80 sm:text-base">Choisissez votre profil, vos lieux principaux et votre mode d’affichage. Ces préférences restent modifiables dans les paramètres de votre compte.</p>
         </div>
       </header>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-4">
-        <CmmCard as="section" variant="outlined" tone="slate" ariaLabel="Identité" className="border-slate-300/30 !bg-slate-900/90 !text-white p-5 shadow-none sm:p-6">
-          <div className="mb-5"><h2 id="account-identity-title" className="text-2xl font-bold">Identité</h2><p className="mt-1 text-sm text-slate-200/80">Renseignez l’identité affichée dans CleanMyMap.</p></div>
+      <div className="cmm-account-setup-content flex min-w-0 min-h-0 flex-1 flex-col">
+        <CmmCard as="section" variant="outlined" tone="slate" ariaLabel="Identité" className="cmm-account-setup-card border-slate-300/30 !bg-slate-900/90 !text-white shadow-none">
+          <div className="cmm-account-setup-card-heading"><h2 id="account-identity-title" className="cmm-account-setup-section-title font-bold">Identité</h2><p className="mt-1 text-sm text-slate-200/80">Renseignez l’identité affichée dans CleanMyMap.</p></div>
             <div className="grid gap-3 sm:grid-cols-3">
               <CmmField label="Pseudo" required error={shouldShowFieldError("pseudo") ? pseudoError : null} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-slate-200 [&_.cmm-field-error]:!text-rose-100">
                 <CmmInput value={pseudo} onChange={(event) => { markFormDirty(); setPseudoOverride(event.target.value); }} onBlur={() => touchField("pseudo")} autoComplete="username" placeholder="Vert_Tige" className="!min-h-14 w-full !border-slate-300/40 !bg-slate-800/80 !text-white placeholder:!text-slate-300/70" />
@@ -480,26 +480,26 @@ export function AccountSetupForm({
             </label>
         </CmmCard>
 
-        <CmmCard as="section" variant="outlined" tone="slate" ariaLabel="Profil / parcours" className="border-slate-300/30 !bg-slate-900/90 !text-white p-5 shadow-none sm:p-6">
-            <div className="mb-5"><h2 id="account-profile-title" className="text-2xl font-bold">Profil / parcours</h2><p className="mt-1 text-sm text-slate-200/80">Ce choix définit votre parcours, jamais vos permissions.</p></div>
+        <CmmCard as="section" variant="outlined" tone="slate" ariaLabel="Profil / parcours" className="cmm-account-setup-card border-slate-300/30 !bg-slate-900/90 !text-white shadow-none">
+            <div className="cmm-account-setup-card-heading"><h2 id="account-profile-title" className="cmm-account-setup-section-title font-bold">Profil / parcours</h2><p className="mt-1 text-sm text-slate-200/80">Ce choix définit votre parcours, jamais vos permissions.</p></div>
             <AccountSetupProfileGrid options={profileOptions} selectedProfile={selectedProfile} locale={locale} onChange={handleProfileChange} onBlur={() => touchField("profile")} error={shouldShowFieldError("profile") ? profileError : null} />
         </CmmCard>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <CmmCard as="section" variant="outlined" tone="slate" ariaLabel="Vos zones principales" className="border-slate-300/30 !bg-slate-900/90 !text-white p-5 shadow-none sm:p-6">
-            <div className="mb-5"><h2 id="account-location-title" className="text-2xl font-bold">Vos zones principales</h2><p className="mt-1 text-sm text-slate-200/80">Indiquez une ville ou un arrondissement pour chaque zone. Aucune adresse précise n’est demandée.</p></div>
+        <div className="cmm-account-setup-location-mode-grid grid items-start">
+          <CmmCard as="section" variant="outlined" tone="slate" ariaLabel="Vos zones principales" className="cmm-account-setup-card border-slate-300/30 !bg-slate-900/90 !text-white shadow-none">
+            <div className="cmm-account-setup-card-heading"><h2 id="account-location-title" className="cmm-account-setup-section-title font-bold">Vos zones principales</h2><p className="mt-1 text-sm text-slate-200/80">Indiquez une ville ou un arrondissement pour chaque zone. Aucune adresse précise n’est demandée.</p></div>
             <AccountSetupLocationFields residence={residence} work={work} residenceEnabled={residenceEnabled} workEnabled={workEnabled} noneSelected={noneSelected} setResidence={updateResidence} setWork={updateWork} setResidenceEnabled={updateResidenceEnabled} setWorkEnabled={updateWorkEnabled} setNoneSelected={updateNoneSelected} error={shouldShowFieldError("location") ? locationError : null} />
           </CmmCard>
 
-          <CmmCard as="section" variant="outlined" tone="slate" ariaLabel="Mode d’affichage" className="border-slate-300/30 !bg-slate-900/90 !text-white p-5 shadow-none sm:p-6">
-            <div className="mb-5"><div className="flex items-center gap-2"><div><h2 id="account-display-mode-title" className="text-2xl font-bold">Mode d’affichage</h2><p className="mt-1 text-sm text-slate-200/80">Le mode change uniquement la présentation : fonctionnalités et données restent identiques.</p></div><a href="/methodologie#modes-affichage" aria-label="Comprendre les modes d’affichage" className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-300/60 text-slate-100 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"><Info className="h-4 w-4" aria-hidden="true" /></a></div></div>
+          <CmmCard as="section" variant="outlined" tone="slate" ariaLabel="Mode d’affichage" className="cmm-account-setup-card border-slate-300/30 !bg-slate-900/90 !text-white shadow-none">
+            <div className="cmm-account-setup-card-heading"><div className="flex items-center gap-2"><div><h2 id="account-display-mode-title" className="cmm-account-setup-section-title font-bold">Mode d’affichage</h2><p className="mt-1 text-sm text-slate-200/80">Le mode change uniquement la présentation : fonctionnalités et données restent identiques.</p></div><a href="/methodologie#modes-affichage" aria-label="Comprendre les modes d’affichage" className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-300/60 text-slate-100 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"><Info className="h-4 w-4" aria-hidden="true" /></a></div></div>
             <AccountSetupDisplayModeGrid selectedMode={selectedDisplayMode} locale={locale} onChange={handleDisplayModeChange} ariaLabelledBy="account-display-mode-title" />
           </CmmCard>
         </div>
         </div>
 
       {error ? <div className="mt-4"><ErrorMessage kind={error.kind} title="Les réglages n’ont pas pu être enregistrés" message={error.message} actions={<CmmButton type="button" tone="secondary" size="sm" onClick={() => void handleSubmit()}>Réessayer</CmmButton>} /></div> : null}
-      <footer className="mt-5 flex flex-col gap-3 rounded-2xl border border-slate-300/30 bg-slate-900/90 px-4 py-4 shadow-none sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <footer className="cmm-account-setup-actions flex flex-col rounded-2xl border border-slate-300/30 bg-slate-900/90 shadow-none sm:flex-row sm:items-center sm:justify-between">
         <div className="max-w-xl space-y-2">
           <h2 className="text-lg font-bold text-white">Actions de validation</h2>
           <p className="text-sm text-slate-200/85">Vous pourrez modifier ces préférences à tout moment dans les paramètres de votre compte.</p>
