@@ -4,6 +4,7 @@ import { parseDrawingFromNotes } from "./geometry/drawing";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { normalizeClockTime } from "./time-contract";
 import { projectAdministrativeRequirementsForRead } from "./administrative-requirements";
+import { rebaseRouteTargetDistancePolicy } from "./route-target-policy-rebase";
 
 export function buildActionEditorPayload(row: ActionRow | null) {
   if (!row) {
@@ -12,7 +13,10 @@ export function buildActionEditorPayload(row: ActionRow | null) {
 
   const parsedDrawing = parseDrawingFromNotes(row.notes);
   const metadata = extractActionMetadataFromNotes(parsedDrawing.cleanNotes);
-  const preparationData = normalizeActionPreparationData(row.preparation_data ?? {});
+  const preparationData = rebaseRouteTargetDistancePolicy({
+    preparationData: normalizeActionPreparationData(row.preparation_data ?? {}),
+    durationMinutes: row.duration_minutes,
+  });
   return {
     id: row.id,
     createdAt: row.created_at,

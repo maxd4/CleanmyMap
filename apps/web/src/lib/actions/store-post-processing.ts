@@ -59,7 +59,7 @@ export async function recordRepollutionPredictionEvaluationForAction(
       requireCoordinates: true,
     });
     const current = toActionContract(currentRow);
-    const previous = [current, ...rows.map(toActionContract)].filter(
+    const previous = [current, ...rows.map((row) => toActionContract(row))].filter(
       (observation, index, all) =>
         observation.id !== current.id ||
         index === all.findIndex((candidate) => candidate.id === current.id),
