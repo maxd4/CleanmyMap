@@ -40,7 +40,7 @@ describe("desktop ribbon control geometry", () => {
     const source = readSource("app-navigation-block-dropdown.tsx");
 
     expect(source).toContain(
-      'inline-flex h-9 w-9 shrink-0 items-center justify-center',
+      'inline-flex h-8 w-9 shrink-0 items-center justify-center',
     );
     expect(source).not.toContain('"group inline-flex');
     expect(source).toContain('<CmmIcon icon={getNavigationBlockIcon(space.id)} size="lg" />');
