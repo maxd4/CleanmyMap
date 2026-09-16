@@ -38,7 +38,13 @@ describe("report export daily quota", () => {
     const select = vi.fn(() => ({ eq: eqUser }));
     getSupabaseAdminClientMock.mockReturnValue({ from: vi.fn(() => ({ select })) });
 
-    await expect(getReportExportAvailability("user-1")).resolves.toBe("used");
-    expect(eqDay).toHaveBeenCalledWith("quota_day", expect.stringMatching(/^2026-09-1[45]$/));
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-09-15T12:00:00+02:00"));
+      await expect(getReportExportAvailability("user-1")).resolves.toBe("used");
+      expect(eqDay).toHaveBeenCalledWith("quota_day", "2026-09-15");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
