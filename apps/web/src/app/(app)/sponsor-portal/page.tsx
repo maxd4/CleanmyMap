@@ -89,7 +89,7 @@ export default async function SponsorPortalPage() {
             subtitle="Analyse de la valeur territoriale générée par la mobilisation citoyenne et conformité aux standards ESG."
           />
           
-          <CmmButton tone="primary" variant="pill" className="group flex items-center gap-4 rounded-[2rem] px-10 py-7 text-[10px] font-black uppercase tracking-[0.2em] text-black shadow-2xl shadow-white/10">
+          <CmmButton tone="primary" variant="pill" className="group flex items-center gap-4 rounded-[2rem] px-10 py-7 cmm-text-small font-black uppercase tracking-[0.2em] text-black shadow-2xl shadow-white/10">
             <Download size={20} />
             Exporter le bilan certifié
           </CmmButton>
@@ -166,7 +166,7 @@ export default async function SponsorPortalPage() {
               { label: "Zones", val: overview?.zones.length ?? "n/a" },
             ].map((stat, i) => (
               <div key={i} className="space-y-1">
-                <p className="text-[9px] font-black uppercase tracking-widest text-white/20">{stat.label}</p>
+                <p className="cmm-text-caption font-black uppercase tracking-widest text-white/60">{stat.label}</p>
                 <p className="text-2xl font-black text-white">{stat.val}</p>
               </div>
             ))}
@@ -194,14 +194,14 @@ export default async function SponsorPortalPage() {
               observedZones.map((zone) => (
                 <div key={zone.area} className="group p-6 rounded-[2rem] border border-white/5 bg-white/5 transition-all hover:bg-white/10">
                   <div className="flex justify-between items-center mb-4">
-                    <p className="font-black text-white text-[11px] uppercase tracking-widest">{zone.area}</p>
-                    <div className="text-[10px] font-black text-amber-400">
+                    <p className="cmm-text-caption font-black text-white uppercase tracking-widest">{zone.area}</p>
+                    <div className="cmm-text-caption font-black text-amber-400">
                       SCORE {zone.normalizedScore.toFixed(1)}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">
+                    <p className="cmm-text-caption font-black text-white/65 uppercase tracking-widest">
                       Priorité : <span className="text-amber-400">{zone.urgency}</span>
                     </p>
                   </div>
@@ -209,7 +209,7 @@ export default async function SponsorPortalPage() {
                 </div>
               ))
             ) : (
-              <div className="p-12 text-center text-white/20 font-black uppercase tracking-widest text-[10px]">
+              <div className="p-12 text-center text-white/60 font-black uppercase tracking-widest cmm-text-caption">
                 Silence Radio • Aucune zone critique
               </div>
             )}
@@ -236,7 +236,7 @@ export default async function SponsorPortalPage() {
               La valorisation de voirie est une estimation méthodologique à deux lectures : <strong className="text-white">{streetCleaningSavings === null ? "n/a" : `${streetCleaningSavings.massEstimateEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € par la masse et ${streetCleaningSavings.timeEstimateEuros.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} € par le temps`}</strong>. La fourchette affichée ne constitue ni une dépense comptable économisée euro pour euro ni une certification.
             </p>
             
-            <CmmButton href="/methodologie" tone="secondary" variant="pill" className="inline-flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.3em] text-black transition-all group">
+            <CmmButton href="/methodologie" tone="secondary" variant="pill" className="inline-flex items-center gap-4 cmm-text-small font-black uppercase tracking-[0.3em] text-black transition-all group">
               Accéder au livre blanc méthodologique
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-2" />
             </CmmButton>

@@ -80,12 +80,12 @@ export const ChatSidebar = memo(function ChatSidebar({
       {currentChannelType === "admin_elu" && (topicSectionTitle || topicSectionDescription) ? (
         <div className="px-2 pb-1 pt-2">
           {topicSectionTitle ? (
-            <p className={`text-[10px] font-black uppercase tracking-[0.14em] ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+            <p className={`cmm-text-caption font-black uppercase tracking-[0.14em] ${isLight ? "text-slate-500" : "text-slate-400"}`}>
               {topicSectionTitle}
             </p>
           ) : null}
           {topicSectionDescription ? (
-            <p className={`mt-1 text-[10px] leading-relaxed ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+            <p className={`mt-1 cmm-text-caption leading-relaxed ${isLight ? "text-slate-400" : "text-slate-500"}`}>
               {topicSectionDescription}
             </p>
           ) : null}
@@ -120,13 +120,13 @@ export const ChatSidebar = memo(function ChatSidebar({
               <span className={`block text-xs font-bold leading-tight ${topicIsActive ? "text-indigo-900 dark:text-indigo-100" : ""}`}>
                 {topic.label}
               </span>
-              <span className={`block text-[10px] leading-tight ${topicIsActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}`}>
+              <span className={`block cmm-text-caption leading-tight ${topicIsActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}`}>
                 {topic.description}
               </span>
             </div>
             {topic.unreadCount && topic.unreadCount > 0 ? (
               <span
-                className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-black text-white"
+                className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 cmm-text-caption font-black text-white"
                 aria-label={`${topic.unreadCount} notification${topic.unreadCount > 1 ? "s" : ""} non lue${topic.unreadCount > 1 ? "s" : ""}`}
               >
                 {topic.unreadCount > 99 ? "99+" : topic.unreadCount}
@@ -166,7 +166,7 @@ export const ChatSidebar = memo(function ChatSidebar({
       
       {/* CANAUX PUBLICS */}
       <section className={isMessagerie ? "w-[17rem] shrink-0 space-y-2 md:w-auto md:shrink" : "space-y-2"}>
-        <p className={`px-2 text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+        <p className={`px-2 cmm-text-caption font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
           Canaux Publics
         </p>
         <div className="space-y-1">
@@ -214,7 +214,7 @@ export const ChatSidebar = memo(function ChatSidebar({
       {!isMessagerie ? (
         <section className="space-y-2">
           <div className="flex items-center justify-between px-2">
-            <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+            <p className={`cmm-text-caption font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
               Discussions Privées
             </p>
             <span className="text-lg leading-none text-slate-400">+</span>
@@ -234,7 +234,7 @@ export const ChatSidebar = memo(function ChatSidebar({
         <h4 className={`text-xs font-black flex items-center gap-1.5 z-10 ${isLight ? "text-emerald-700" : "text-emerald-400"}`}>
           Impact ensemble <Leaf size={12} />
         </h4>
-        <p className={`text-[10px] leading-relaxed z-10 font-medium ${isLight ? "text-emerald-600/80" : "text-emerald-300/70"}`}>
+        <p className={`cmm-text-caption leading-relaxed z-10 font-medium ${isLight ? "text-emerald-600/80" : "text-emerald-300/70"}`}>
           Chaque message partagé rapproche notre territoire d&apos;un environnement plus propre.
         </p>
       </div> : null}

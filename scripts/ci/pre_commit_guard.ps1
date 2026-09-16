@@ -32,6 +32,7 @@ try {
 
     Invoke-GuardStep "staged canonical workspace sentinels" { node scripts/checks/check-canonical-workspaces.mjs --staged }
     Invoke-GuardStep "staged-surface quick checks" { npm run checks:staged:quick }
+    Invoke-GuardStep "staged readable typography" { npm run check:readable-typography -- --staged }
     Invoke-GuardStep "staged secret audit" { npm run security:secrets -- --staged-only }
     Invoke-GuardStep "staged diff check" { git diff --cached --check }
 

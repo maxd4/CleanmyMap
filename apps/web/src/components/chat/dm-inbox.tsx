@@ -76,16 +76,16 @@ export const DmInbox = memo(function DmInbox({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+          <p className={`cmm-text-caption font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
             Messages privés
           </p>
           <div className="mt-1 flex items-center gap-2">
-            <h2 className={`truncate text-base font-black ${isLight ? "text-slate-900" : "text-white"}`}>
+            <h2 className={`text-base font-black ${isLight ? "text-slate-900" : "text-white"}`}>
               Conversations
             </h2>
             {notificationUnreadCount > 0 ? (
               <span
-                className="inline-flex min-w-5 items-center justify-center rounded-full bg-fuchsia-600 px-1.5 py-0.5 text-[10px] font-black text-white"
+                className="inline-flex min-w-5 items-center justify-center rounded-full bg-fuchsia-600 px-1.5 py-0.5 cmm-text-caption font-black text-white"
                 aria-label={`${notificationUnreadCount} notification${notificationUnreadCount > 1 ? "s" : ""} privée${notificationUnreadCount > 1 ? "s" : ""} non lue${notificationUnreadCount > 1 ? "s" : ""}`}
               >
                 {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
@@ -96,7 +96,7 @@ export const DmInbox = memo(function DmInbox({
         <button
           type="button"
           onClick={onStartConversation}
-          className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest transition ${isLight ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/20 hover:bg-indigo-700" : "bg-indigo-500 text-white hover:bg-indigo-400"}`}
+          className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 cmm-text-caption font-black uppercase tracking-widest transition ${isLight ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/20 hover:bg-indigo-700" : "bg-indigo-500 text-white hover:bg-indigo-400"}`}
         >
           <MessageCirclePlus size={15} aria-hidden="true" />
           <span className="hidden sm:inline">Nouveau</span>
@@ -118,7 +118,7 @@ export const DmInbox = memo(function DmInbox({
         {contactRequests.length > 0 ? (
           <section className="mb-4 space-y-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-3" aria-label="Demandes de partage d’action">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">Nouvelles demandes</p>
+              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-indigo-600">Nouvelles demandes</p>
               <p className="mt-1 text-xs text-slate-600">Acceptez pour ouvrir la conversation et recevoir le partage.</p>
             </div>
             {contactRequests.map((request) => (
@@ -132,9 +132,9 @@ export const DmInbox = memo(function DmInbox({
                   <ChatActionReferenceCard actionId={request.action.id} tone="light" />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "accept")} className="rounded-full bg-indigo-600 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-white disabled:opacity-50">Accepter</button>
-                  <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "reject")} className="rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-slate-600 disabled:opacity-50">Refuser</button>
-                  <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "ignore")} className="rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-slate-600 disabled:opacity-50">Ignorer</button>
+                  <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "accept")} className="rounded-full bg-indigo-600 px-3 py-1.5 cmm-text-caption font-black uppercase tracking-wide text-white disabled:opacity-50">Accepter</button>
+                  <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "reject")} className="rounded-full border border-slate-200 px-3 py-1.5 cmm-text-caption font-black uppercase tracking-wide text-slate-600 disabled:opacity-50">Refuser</button>
+                  <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "ignore")} className="rounded-full border border-slate-200 px-3 py-1.5 cmm-text-caption font-black uppercase tracking-wide text-slate-600 disabled:opacity-50">Ignorer</button>
                 </div>
               </article>
             ))}
@@ -155,7 +155,7 @@ export const DmInbox = memo(function DmInbox({
             <button
               type="button"
               onClick={onRetry}
-              className={`mt-3 inline-flex items-center gap-2 rounded-lg px-2 py-1 text-[10px] font-black uppercase tracking-widest ${isLight ? "bg-rose-50 text-rose-700 hover:bg-rose-100" : "bg-white/10 text-white hover:bg-white/15"}`}
+              className={`mt-3 inline-flex items-center gap-2 rounded-lg px-2 py-1 cmm-text-caption font-black uppercase tracking-widest ${isLight ? "bg-rose-50 text-rose-700 hover:bg-rose-100" : "bg-white/10 text-white hover:bg-white/15"}`}
             >
               <RefreshCw size={13} aria-hidden="true" /> Réessayer
             </button>
@@ -191,10 +191,10 @@ export const DmInbox = memo(function DmInbox({
                   />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center justify-between gap-2">
-                      <span className={`truncate text-sm ${hasUnread || isActive ? "font-black" : "font-bold"} ${isLight ? "text-slate-900" : "text-white"}`}>
+                      <span className={`break-words text-sm ${hasUnread || isActive ? "font-black" : "font-bold"} ${isLight ? "text-slate-900" : "text-white"}`}>
                         {conversation.peer.display_name}
                       </span>
-                      <span className={`shrink-0 text-[10px] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+                      <span className={`shrink-0 cmm-text-caption ${isLight ? "text-slate-400" : "text-slate-500"}`}>
                         {formatConversationDate(conversation.lastMessage.createdAt)}
                       </span>
                     </span>
@@ -204,7 +204,7 @@ export const DmInbox = memo(function DmInbox({
                         {conversation.lastMessage.content}
                       </span>
                       {hasUnread ? (
-                        <span className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 text-[10px] font-black text-white" aria-label={`${conversation.unreadCount} message${conversation.unreadCount > 1 ? "s" : ""} non lu${conversation.unreadCount > 1 ? "s" : ""}`}>
+                        <span className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 cmm-text-caption font-black text-white" aria-label={`${conversation.unreadCount} message${conversation.unreadCount > 1 ? "s" : ""} non lu${conversation.unreadCount > 1 ? "s" : ""}`}>
                           {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
                         </span>
                       ) : null}

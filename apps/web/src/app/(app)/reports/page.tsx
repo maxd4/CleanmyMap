@@ -165,7 +165,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               mode="blur"
               lockedPreview={
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-700">
+                  <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-700">
                     Compte requis pour générer
                   </p>
                   <p className="mt-3 text-sm leading-6 text-slate-600">

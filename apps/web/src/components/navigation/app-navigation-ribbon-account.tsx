@@ -77,16 +77,16 @@ export function AccountUserBubble({
         />
       </div>
       <div className="hidden min-w-0 flex-1 leading-tight xl:block">
-        <p className="cmm-ribbon-text truncate font-bold text-white">
+        <p className="cmm-ribbon-text break-words font-bold text-white">
           {username} · Niv. {identity.currentLevel}
         </p>
-        <p className="cmm-ribbon-text truncate font-medium text-slate-300">{fullName}</p>
+        <p className="cmm-ribbon-text break-words font-medium text-slate-300">{fullName}</p>
       </div>
       {activityStatusError ? (
         <span
           role="alert"
           aria-live="assertive"
-          className="absolute right-2 top-[calc(100%+0.35rem)] z-20 max-w-64 rounded-md border border-rose-300/40 bg-slate-950 px-2 py-1 text-[0.7rem] font-medium text-rose-100 shadow-lg"
+          className="absolute right-2 top-[calc(100%+0.35rem)] z-20 max-w-64 rounded-md border border-rose-300/40 bg-slate-950 px-2 py-1 cmm-text-caption font-medium text-rose-100 shadow-lg"
         >
           {activityStatusError}
         </span>

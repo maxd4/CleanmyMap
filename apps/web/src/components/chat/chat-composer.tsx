@@ -173,7 +173,7 @@ export const ChatComposer = memo(function ChatComposer({
         <div className={`mb-4 rounded-3xl border p-4 ${isLight ? "border-rose-100/70 bg-white/85" : "border-white/5 bg-white/5"}`}>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <p className="cmm-text-caption font-black uppercase tracking-widest text-slate-400">
                 Destinataire
               </p>
               <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-500"}`}>
@@ -184,7 +184,7 @@ export const ChatComposer = memo(function ChatComposer({
               <button
                 type="button"
                 onClick={onClearRecipient}
-                className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest ${isLight ? "border-rose-200 text-rose-700 hover:bg-rose-50" : "border-white/10 text-slate-300 hover:bg-white/5"}`}
+                className={`rounded-full border px-3 py-1 cmm-text-caption font-black uppercase tracking-widest ${isLight ? "border-rose-200 text-rose-700 hover:bg-rose-50" : "border-white/10 text-slate-300 hover:bg-white/5"}`}
               >
                 Changer
               </button>
@@ -200,10 +200,10 @@ export const ChatComposer = memo(function ChatComposer({
                 className={isLight ? "bg-rose-50 text-rose-700" : "bg-white/10 text-white"}
               />
               <div className="min-w-0">
-                <p className={`truncate text-sm font-black ${isLight ? "text-slate-900" : "text-white"}`}>
+                <p className={`break-words text-sm font-black ${isLight ? "text-slate-900" : "text-white"}`}>
                   {selectedRecipient.display_name}
                 </p>
-                <p className={`truncate text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                <p className={`cmm-text-caption break-words ${isLight ? "text-slate-500" : "text-slate-400"}`}>
                   @{selectedRecipient.handle}
                 </p>
               </div>
@@ -245,10 +245,10 @@ export const ChatComposer = memo(function ChatComposer({
                           className={isLight ? "bg-rose-50 text-rose-700" : "bg-white/10 text-white"}
                         />
                         <div className="min-w-0">
-                          <p className={`truncate text-sm font-bold ${isLight ? "text-slate-900" : "text-white"}`}>
+                          <p className={`break-words text-sm font-bold ${isLight ? "text-slate-900" : "text-white"}`}>
                             {candidate.display_name}
                           </p>
-                          <p className={`truncate text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                          <p className={`cmm-text-caption break-words ${isLight ? "text-slate-500" : "text-slate-400"}`}>
                             @{candidate.handle}
                           </p>
                         </div>
@@ -283,10 +283,10 @@ export const ChatComposer = memo(function ChatComposer({
                 className={isLight ? "bg-rose-50 text-rose-700" : "bg-white/10 text-white"}
               />
               <div className="min-w-0">
-                <p className={`truncate text-sm font-bold ${isLight ? "text-slate-900" : "text-white"}`}>
+                <p className={`break-words text-sm font-bold ${isLight ? "text-slate-900" : "text-white"}`}>
                   {candidate.display_name}
                 </p>
-                <p className={`truncate text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                <p className={`cmm-text-caption break-words ${isLight ? "text-slate-500" : "text-slate-400"}`}>
                   @{candidate.handle}
                 </p>
               </div>
@@ -301,7 +301,7 @@ export const ChatComposer = memo(function ChatComposer({
             <p className={`font-black uppercase tracking-widest ${isLight ? "text-rose-600" : "text-violet-400"}`}>
               Pièce jointe
             </p>
-            <p className={`truncate font-medium ${isLight ? "text-slate-700" : "text-slate-200"}`}>
+            <p className={`break-words cmm-text-small font-medium ${isLight ? "text-slate-700" : "text-slate-200"}`}>
               {file.name}
             </p>
           </div>
@@ -329,7 +329,7 @@ export const ChatComposer = memo(function ChatComposer({
                 key={tab.id}
                 type="button"
                 onClick={() => onComposerModeChange?.(tab.id as ChatComposerMode)}
-                className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition ${isActive ? (isLight ? "bg-rose-500 text-white" : "bg-pink-500 text-white") : (isLight ? "text-slate-500 hover:bg-rose-50" : "text-slate-400 hover:bg-white/5")}`}
+                className={`rounded-xl px-4 py-2 cmm-text-caption font-black uppercase tracking-widest transition ${isActive ? (isLight ? "bg-rose-500 text-white" : "bg-pink-500 text-white") : (isLight ? "text-slate-500 hover:bg-rose-50" : "text-slate-400 hover:bg-white/5")}`}
               >
                 {tab.label}
               </button>
@@ -346,7 +346,7 @@ export const ChatComposer = memo(function ChatComposer({
               <p className={`text-xs font-black ${isLight ? "text-slate-800" : "text-white"}`}>
                 Question du sondage
               </p>
-              <p className="text-[10px] text-slate-500">
+              <p className="cmm-text-caption text-slate-500">
                 Les votes sont enregistrés et affichés sous forme agrégée.
               </p>
             </div>
@@ -384,14 +384,14 @@ export const ChatComposer = memo(function ChatComposer({
               type="button"
               onClick={() => onPollOptionsChange?.([...pollOptions, ""])}
               disabled={pollOptions.length >= CHAT_POLL_MAX_OPTIONS}
-              className={`inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-[10px] font-black uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40 ${isLight ? "border-rose-100 text-rose-700 hover:bg-rose-50" : "border-white/10 text-slate-300 hover:bg-white/5"}`}
+              className={`inline-flex items-center gap-1 rounded-xl border px-3 py-2 cmm-text-caption font-black uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40 ${isLight ? "border-rose-100 text-rose-700 hover:bg-rose-50" : "border-white/10 text-slate-300 hover:bg-white/5"}`}
             >
               <Plus size={13} /> Ajouter une option
             </button>
-            <span className="text-[10px] font-bold text-slate-400">{pollOptions.length}/{CHAT_POLL_MAX_OPTIONS}</span>
+            <span className="cmm-text-caption font-bold text-slate-400">{pollOptions.length}/{CHAT_POLL_MAX_OPTIONS}</span>
           </div>
           {pollOptionsError ? (
-            <p className="mt-3 text-[10px] font-bold text-amber-600">{pollOptionsError}</p>
+            <p className="mt-3 cmm-text-caption font-bold text-amber-600">{pollOptionsError}</p>
           ) : null}
         </div>
       ) : null}
@@ -404,7 +404,7 @@ export const ChatComposer = memo(function ChatComposer({
               <p className={`text-xs font-black ${isLight ? "text-slate-800" : "text-white"}`}>
                 Choisissez un modèle de relais
               </p>
-              <p className="text-[10px] text-slate-500">
+              <p className="cmm-text-caption text-slate-500">
                 Le modèle prépare un brouillon éditable et son salon canonique.
               </p>
             </div>
@@ -428,10 +428,10 @@ export const ChatComposer = memo(function ChatComposer({
                         : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
                   }`}
                 >
-                  <span className="block text-[10px] font-black uppercase tracking-wider">
+                  <span className="block cmm-text-caption font-black uppercase tracking-wider">
                     {template.label}
                   </span>
-                  <span className="mt-1 block text-[10px] leading-tight text-slate-500">
+                  <span className="mt-1 block cmm-text-caption leading-tight text-slate-500">
                     {template.description}
                   </span>
                 </button>
@@ -439,27 +439,27 @@ export const ChatComposer = memo(function ChatComposer({
             })}
           </div>
           {announcementTemplate ? null : (
-            <p className="mt-3 text-[10px] font-bold text-amber-600">
+            <p className="mt-3 cmm-text-caption font-bold text-amber-600">
               Sélectionnez un modèle avant de publier l&apos;annonce.
             </p>
           )}
           {announcementEventLoading ? (
-            <p className="mt-3 text-[10px] font-bold text-slate-500">
+            <p className="mt-3 cmm-text-caption font-bold text-slate-500">
               Chargement du cleanup associé…
             </p>
           ) : announcementEventError ? (
-            <p className="mt-3 text-[10px] font-bold text-rose-600">
+            <p className="mt-3 cmm-text-caption font-bold text-rose-600">
               Le cleanup associé n&apos;est plus disponible. L&apos;annonce ne peut pas être publiée avec ce lien.
             </p>
           ) : relatedEvent ? (
             <div className={`mt-3 rounded-xl border p-3 ${isLight ? "border-rose-100 bg-rose-50/60" : "border-rose-400/20 bg-rose-500/10"}`}>
-              <p className="text-[9px] font-black uppercase tracking-widest text-rose-500">
+              <p className="cmm-text-caption font-black uppercase tracking-widest text-rose-500">
                 Cleanup associé
               </p>
               <p className={`mt-1 text-xs font-black ${isLight ? "text-slate-800" : "text-white"}`}>
                 {relatedEvent.title}
               </p>
-              <div className="mt-2 flex flex-wrap gap-3 text-[10px] font-bold text-slate-500">
+              <div className="mt-2 flex flex-wrap gap-3 cmm-text-caption font-bold text-slate-500">
                 <span className="inline-flex items-center gap-1">
                   <Calendar size={12} /> {formatEventDate(relatedEvent.event_date)}
                 </span>
@@ -469,7 +469,7 @@ export const ChatComposer = memo(function ChatComposer({
               </div>
             </div>
           ) : announcementEventRequested ? (
-            <p className="mt-3 text-[10px] font-bold text-rose-600">
+            <p className="mt-3 cmm-text-caption font-bold text-rose-600">
               Le cleanup indiqué dans le lien est introuvable ou inaccessible.
             </p>
           ) : null}

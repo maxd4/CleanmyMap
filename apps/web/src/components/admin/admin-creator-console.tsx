@@ -47,10 +47,10 @@ export function AdminCreatorConsole({
           <div className="flex items-center gap-4 rounded-2xl border border-white/5 bg-white/5 px-6 py-4 backdrop-blur-sm">
             <Activity size={18} className="text-emerald-500 animate-pulse" />
             <div className="space-y-0.5">
-              <p className="text-[10px] font-black uppercase tracking-widest text-white/40">
+              <p className="cmm-text-caption font-black uppercase tracking-widest text-white/60">
                 Santé API
               </p>
-              <p className="text-[11px] font-black tracking-widest text-emerald-500">
+              <p className="cmm-text-caption font-black tracking-widest text-emerald-500">
                 OPÉRATIONNEL
               </p>
             </div>
@@ -82,16 +82,16 @@ export function AdminCreatorConsole({
               <table className="cmm-data-table">
                 <thead>
                   <tr className="border-b border-white/5 bg-white/5">
-                    <th scope="col" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <th scope="col" className="cmm-text-caption font-black uppercase tracking-widest text-slate-400">
                       Acteur
                     </th>
-                    <th scope="col" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <th scope="col" className="cmm-text-caption font-black uppercase tracking-widest text-slate-400">
                       Rôle
                     </th>
-                    <th scope="col" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <th scope="col" className="cmm-text-caption font-black uppercase tracking-widest text-slate-400">
                       Connexion
                     </th>
-                    <th scope="col" className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    <th scope="col" className="cmm-text-caption font-black uppercase tracking-widest text-slate-400">
                       État
                     </th>
                   </tr>
@@ -102,10 +102,10 @@ export function AdminCreatorConsole({
                       <p className="font-bold text-white transition-colors group-hover:text-slate-200">
                         {displayName}
                       </p>
-                      <p className="mt-1 text-[10px] italic text-slate-500">Compte IMU (super-admin)</p>
+                      <p className="mt-1 cmm-text-caption text-slate-500">Compte IMU (super-admin)</p>
                     </td>
                     <td>
-                      <span className="rounded-full border border-slate-400/20 bg-slate-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        <span className="rounded-full border border-slate-400/20 bg-slate-400/10 px-3 py-1 cmm-text-caption font-black uppercase tracking-widest text-slate-400">
                         Sous-partie cachée
                       </span>
                     </td>
@@ -115,7 +115,7 @@ export function AdminCreatorConsole({
                     <td>
                       <div className="flex items-center gap-2">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500/80">
+                        <span className="cmm-text-caption font-black uppercase tracking-widest text-emerald-500/80">
                           Active
                         </span>
                       </div>
@@ -127,7 +127,7 @@ export function AdminCreatorConsole({
 
             <div className="flex items-center justify-center gap-3 rounded-xl border border-white/5 bg-slate-950/30 p-4">
               <Terminal size={14} className="text-slate-600" />
-              <p className="text-[10px] font-bold uppercase tracking-widest italic text-slate-600">
+              <p className="cmm-text-caption font-bold uppercase tracking-widest text-slate-600">
                 Vue restreinte : session courante uniquement
               </p>
             </div>
@@ -158,7 +158,7 @@ export function AdminCreatorConsole({
                 </div>
                 <div className="space-y-0.5">
                   <p className="text-sm font-bold text-white">Administration</p>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                    <p className="cmm-text-caption font-black uppercase tracking-widest text-slate-500">
                     Modération et audit
                   </p>
                 </div>
@@ -176,7 +176,7 @@ export function AdminCreatorConsole({
                 </div>
                 <div className="space-y-0.5">
                   <p className="text-sm font-bold text-white">Rapports d&apos;impact</p>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                    <p className="cmm-text-caption font-black uppercase tracking-widest text-slate-500">
                     Exports décideurs
                   </p>
                 </div>
@@ -194,7 +194,7 @@ export function AdminCreatorConsole({
                 </div>
                 <div className="space-y-0.5">
                   <p className="text-sm font-bold text-white">Santé du site</p>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                    <p className="cmm-text-caption font-black uppercase tracking-widest text-slate-500">
                     État des endpoints
                   </p>
                 </div>
@@ -205,7 +205,7 @@ export function AdminCreatorConsole({
 
           <div className="relative overflow-hidden space-y-4 rounded-[2rem] border border-red-500/20 bg-red-600/90 p-8 shadow-2xl shadow-red-600/10">
             <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-white/10 blur-2xl" />
-            <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.25em] text-white">
+              <h4 className="flex items-center gap-2 cmm-text-caption font-black uppercase tracking-[0.25em] text-white">
               <ShieldAlert size={14} />
               Avertissement sécurité
             </h4>

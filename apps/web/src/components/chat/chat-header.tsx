@@ -100,21 +100,21 @@ export const ChatHeader = memo(function ChatHeader({
           </div>
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className={`truncate font-black text-base uppercase tracking-tighter sm:text-lg ${isLight ? "text-slate-900" : "cmm-text-primary"}`}>
+              <h3 className={`break-words font-black text-base uppercase tracking-tighter sm:text-lg ${isLight ? "text-slate-900" : "cmm-text-primary"}`}>
                 {activeChannelLabel}
               </h3>
-              <div className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse ${isLight ? "bg-rose-100 text-rose-600" : "bg-pink-100 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300"}`}>
+              <div className={`px-2 py-0.5 rounded-full cmm-text-caption font-black uppercase tracking-widest animate-pulse ${isLight ? "bg-rose-100 text-rose-600" : "bg-pink-100 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300"}`}>
                 {isLive ? "Direct" : "Actualisation"}
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <p className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-1 ${isLight ? "text-indigo-500" : "text-indigo-500"}`}>
+              <p className={`cmm-text-caption font-black uppercase tracking-widest flex items-center gap-1 ${isLight ? "text-indigo-500" : "text-indigo-500"}`}>
                 <Sparkles size={10} className={activeChannelAccentClass} />
                 {activeChannelDescription}
               </p>
             </div>
             {activeChannelType === "dm" && selectedRecipient ? (
-              <p className="text-[10px] font-semibold text-indigo-500 dark:text-slate-400">
+              <p className="cmm-text-caption font-semibold text-indigo-500 dark:text-slate-400">
                 Conversation avec {selectedRecipient.display_name} @{selectedRecipient.handle}
               </p>
             ) : null}
@@ -221,7 +221,7 @@ export const ChatHeader = memo(function ChatHeader({
           {metaItems.map((item) => (
             <span
               key={item.label}
-              className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${isLight ? "bg-slate-100 text-slate-600" : "bg-slate-800 text-slate-300"}`}
+              className={`inline-flex items-center gap-2 rounded-full px-3 py-1 cmm-text-caption font-black uppercase tracking-widest ${isLight ? "bg-slate-100 text-slate-600" : "bg-slate-800 text-slate-300"}`}
             >
               <span className="opacity-70">{item.label}</span>
               <span className={isLight ? "text-slate-900" : "text-white"}>{item.value}</span>
@@ -233,7 +233,7 @@ export const ChatHeader = memo(function ChatHeader({
       {isEditingHandle ? (
         <div className={`p-5 border-b flex items-center gap-4 animate-in slide-in-from-top-4 relative z-20 ${isLight ? "bg-rose-50/80 border-rose-100" : "bg-pink-50 dark:bg-pink-950/20 border-pink-100 dark:border-pink-900/50"}`}>
           <div className="flex-1">
-            <p className={`text-[10px] font-black uppercase mb-2 tracking-widest ${isLight ? "text-rose-700" : "text-pink-700 dark:text-pink-400"}`}>
+            <p className={`cmm-text-caption font-black uppercase mb-2 tracking-widest ${isLight ? "text-rose-700" : "text-pink-700 dark:text-pink-400"}`}>
               Identité Numérique
             </p>
             <input
@@ -247,7 +247,7 @@ export const ChatHeader = memo(function ChatHeader({
           <button
             type="button"
             onClick={() => void onConfirmHandle()}
-            className={`mt-6 rounded-xl px-6 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-pink-600 shadow-pink-500/20"}`}
+            className={`mt-6 rounded-xl px-6 py-2 cmm-text-caption font-black uppercase tracking-widest text-white shadow-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-pink-600 shadow-pink-500/20"}`}
           >
             Confirmer
           </button>

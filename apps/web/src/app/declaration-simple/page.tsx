@@ -48,7 +48,7 @@ export default function DeclarationSimplePage() {
                 <ClipboardList size={20} />
               </span>
               <div className="min-w-0">
-                <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-700">
+                <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-700">
                   Contrôle interne
                 </p>
                 <h2 className="mt-1 text-2xl font-black tracking-tight text-stone-950">
@@ -67,7 +67,7 @@ export default function DeclarationSimplePage() {
                   key={row.label}
                   className="rounded-[1.25rem] border border-stone-200 bg-white/85 p-4 shadow-sm"
                 >
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-stone-500">
+                  <p className="cmm-text-caption font-black uppercase tracking-[0.22em] text-stone-500">
                     {row.label}
                   </p>
                   <p className="mt-2 text-lg font-black tracking-tight text-stone-950">{row.value}</p>
@@ -102,7 +102,7 @@ export default function DeclarationSimplePage() {
                   <Gauge size={20} />
                 </span>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">
+                  <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-slate-500">
                     Parcours conseillé
                   </p>
                   <h2 className="mt-1 text-xl font-black tracking-tight text-stone-950">
@@ -131,7 +131,7 @@ export default function DeclarationSimplePage() {
                     href={action.href}
                     tone="secondary"
                     variant="pill"
-                    className="w-full justify-between px-4 py-3 text-left text-[10px] font-black uppercase tracking-[0.18em]"
+                    className="w-full justify-between px-4 py-3 text-left cmm-text-small font-black uppercase tracking-[0.18em]"
                   >
                     <span>{action.label}</span>
                     <ArrowRight size={14} />
@@ -146,7 +146,7 @@ export default function DeclarationSimplePage() {
                   <LayoutGrid size={18} />
                 </span>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.28em] text-emerald-700">
+                  <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-700">
                     Structure
                   </p>
                   <h2 className="mt-1 text-xl font-black tracking-tight text-stone-950">

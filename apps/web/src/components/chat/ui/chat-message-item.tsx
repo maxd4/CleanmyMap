@@ -127,12 +127,12 @@ export function ChatMessageItem({
                   {message.sender.display_name}
                 </span>
                 {isMe && (
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300"}`}>
+                  <span className={`px-1.5 py-0.5 rounded cmm-text-caption font-black uppercase tracking-widest ${isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300"}`}>
                     Moi
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+              <span className={`cmm-text-caption ${isLight ? "text-slate-500" : "text-slate-400"}`}>
                 {formatDistanceToNow(new Date(message.created_at), { locale: fr, addSuffix: true })}
               </span>
             </div>
@@ -141,7 +141,7 @@ export function ChatMessageItem({
 
         {/* Content */}
         <div className="pl-[52px]">
-          <p className={`whitespace-pre-wrap text-[13px] leading-relaxed mb-3 ${isLight ? "text-slate-700" : "text-slate-300"}`}>
+          <p className={`whitespace-pre-wrap cmm-text-small leading-relaxed mb-3 ${isLight ? "text-slate-700" : "text-slate-300"}`}>
             {message.content}
           </p>
 
@@ -152,27 +152,27 @@ export function ChatMessageItem({
           {/* Tags */}
           <div className="flex flex-wrap gap-2 mb-3">
             {isAnnouncement && (
-              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-wider ${isLight ? "bg-rose-100 text-rose-700" : "bg-rose-500/20 text-rose-300"}`}>
+              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-black uppercase tracking-wider ${isLight ? "bg-rose-100 text-rose-700" : "bg-rose-500/20 text-rose-300"}`}>
                 <Megaphone size={10} /> Annonce / Relai
               </span>
             )}
             {isPoll && (
-              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-wider ${isLight ? "bg-pink-100 text-pink-700" : "bg-pink-500/20 text-pink-300"}`}>
+              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-black uppercase tracking-wider ${isLight ? "bg-pink-100 text-pink-700" : "bg-pink-500/20 text-pink-300"}`}>
                 <BarChart3 size={10} /> Sondage
               </span>
             )}
             {topic && (
-              <span className={`inline-flex items-center rounded-md px-2 py-1 text-[10px] font-bold ${isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300"}`}>
+              <span className={`inline-flex items-center rounded-md px-2 py-1 cmm-text-caption font-bold ${isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300"}`}>
                 {topic.label}
               </span>
             )}
             {isActionRelated && (
-              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${isLight ? "bg-rose-50 text-rose-600" : "bg-rose-500/20 text-rose-300"}`}>
+              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-bold ${isLight ? "bg-rose-50 text-rose-600" : "bg-rose-500/20 text-rose-300"}`}>
                 <Zap size={10} /> Nettoyage
               </span>
             )}
             {isQuestionRelated && (
-              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${isLight ? "bg-sky-50 text-sky-600" : "bg-sky-500/20 text-sky-300"}`}>
+              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-bold ${isLight ? "bg-sky-50 text-sky-600" : "bg-sky-500/20 text-sky-300"}`}>
                 <MessageSquare size={10} /> Question
               </span>
             )}
@@ -180,13 +180,13 @@ export function ChatMessageItem({
 
           {isAnnouncement && message.related_event ? (
             <div className={`mb-3 rounded-xl border p-3 ${isLight ? "border-rose-100 bg-rose-50/60" : "border-rose-400/20 bg-rose-500/10"}`}>
-              <p className="text-[9px] font-black uppercase tracking-widest text-rose-500">
+              <p className="cmm-text-caption font-black uppercase tracking-widest text-rose-500">
                 Cleanup associé
               </p>
               <p className={`mt-1 text-xs font-black ${isLight ? "text-slate-800" : "text-white"}`}>
                 {message.related_event.title}
               </p>
-              <div className="mt-2 flex flex-wrap gap-3 text-[10px] font-bold text-slate-500">
+              <div className="mt-2 flex flex-wrap gap-3 cmm-text-caption font-bold text-slate-500">
                 <span className="inline-flex items-center gap-1">
                   <Calendar size={12} /> {message.related_event.event_date}
                 </span>
@@ -200,11 +200,11 @@ export function ChatMessageItem({
           {isPoll && pollOptions.length > 0 ? (
             <div className={`mb-3 rounded-xl border p-3 ${isLight ? "border-pink-100 bg-pink-50/60" : "border-pink-400/20 bg-pink-500/10"}`}>
               <div className="mb-2 flex items-center justify-between gap-3">
-                <p className="text-[9px] font-black uppercase tracking-widest text-pink-500">
+                <p className="cmm-text-caption font-black uppercase tracking-widest text-pink-500">
                   {message.totalVotes ?? 0} vote{(message.totalVotes ?? 0) > 1 ? "s" : ""}
                 </p>
                 {pollVotePending ? (
-                  <span className="text-[10px] font-bold text-slate-400" role="status">
+                  <span className="cmm-text-caption font-bold text-slate-400" role="status">
                     Enregistrement…
                   </span>
                 ) : null}
@@ -227,14 +227,14 @@ export function ChatMessageItem({
                       />
                       <span className="relative flex min-w-0 flex-1 items-center gap-2 text-left">
                         <span className="text-pink-500">{option.position}.</span>
-                        <span className="truncate">{option.label}</span>
+                        <span className="break-words">{option.label}</span>
                         {isSelected ? (
-                          <span className="rounded-full bg-pink-500/15 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-pink-600">
+                          <span className="rounded-full bg-pink-500/15 px-1.5 py-0.5 cmm-text-caption font-black uppercase tracking-wide text-pink-600">
                             Votre choix
                           </span>
                         ) : null}
                       </span>
-                      <span className="relative shrink-0 text-[10px] font-black text-slate-500">
+                      <span className="relative shrink-0 cmm-text-caption font-black text-slate-500">
                         {voteCount} · {percentage} %
                       </span>
                     </>
@@ -275,13 +275,13 @@ export function ChatMessageItem({
                   type="button"
                   disabled={pollVotePending}
                   onClick={() => onPollVote(message.id, null)}
-                  className="mt-3 text-[10px] font-black uppercase tracking-wider text-pink-600 underline-offset-2 hover:underline disabled:cursor-wait disabled:opacity-60"
+                  className="mt-3 cmm-text-caption font-black uppercase tracking-wider text-pink-600 underline-offset-2 hover:underline disabled:cursor-wait disabled:opacity-60"
                 >
                   Retirer mon vote
                 </button>
               ) : null}
               {pollVoteError ? (
-                <p className="mt-2 text-[10px] font-bold text-rose-600" role="alert">
+                <p className="mt-2 cmm-text-caption font-bold text-rose-600" role="alert">
                   {pollVoteError}
                 </p>
               ) : null}
@@ -313,10 +313,10 @@ export function ChatMessageItem({
                     <FileText size={16} />
                   </div>
                   <div>
-                    <p className={`truncate text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>
+                    <p className={`break-words cmm-text-small font-bold ${isLight ? "text-slate-800" : "text-white"}`}>
                       {attachmentLabel}
                     </p>
-                    <p className={`text-[9px] font-bold uppercase tracking-widest ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                    <p className={`cmm-text-caption font-bold uppercase tracking-widest ${isLight ? "text-slate-500" : "text-slate-400"}`}>
                       Document
                     </p>
                   </div>

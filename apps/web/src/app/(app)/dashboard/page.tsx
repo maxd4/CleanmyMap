@@ -66,7 +66,7 @@ function DashboardReferralCard({
     >
       <div className="flex h-full flex-col justify-between gap-6">
         <div className="space-y-3">
-          <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-amber-100/72">
+          <p className="cmm-text-caption font-bold uppercase tracking-[0.28em] text-amber-100/72">
             {locale === "fr" ? "Compteur persistant" : "Persistent counter"}
           </p>
           <div className="flex items-end gap-3">
@@ -92,7 +92,7 @@ function DashboardReferralCard({
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl border border-amber-200/14 bg-[rgba(69,26,3,0.34)] px-4 py-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-100/55">
+            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-100/75">
               {locale === "fr" ? "Badge" : "Badge"}
             </p>
             <p className="mt-1 text-sm font-bold text-white">
@@ -111,7 +111,7 @@ function DashboardReferralCard({
           </div>
 
           <div className="rounded-2xl border border-amber-200/14 bg-[rgba(69,26,3,0.34)] px-4 py-3">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-100/55">
+            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-100/75">
               {locale === "fr" ? "Lien" : "Link"}
             </p>
             <p className="mt-1 text-sm font-bold text-white">
@@ -135,7 +135,7 @@ function DashboardReferralCard({
             href={buildProfileRoute(profile)}
             tone="secondary"
             variant="pill"
-            className="h-11 px-4 text-[11px] font-black gap-2"
+            className="h-11 px-4 cmm-text-small font-black gap-2"
           >
             <ArrowRight size={14} />
             {locale === "fr" ? "Ouvrir le badge" : "Open badge"}
@@ -178,7 +178,7 @@ export default async function DashboardPage() {
                 key={label}
                 className="rounded-2xl border border-amber-200/18 bg-[rgba(69,26,3,0.58)] p-5"
               >
-                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-100">
+                <p className="cmm-text-caption font-bold uppercase tracking-widest text-amber-100">
                   {label}
                 </p>
                 <div className="mt-3 h-3 w-3/4 rounded bg-amber-200/22" />
@@ -246,7 +246,7 @@ export default async function DashboardPage() {
               <span className="text-sm font-semibold text-amber-900">
                 {roleLabel}
               </span>
-              <span className="rounded-lg border border-amber-200/18 bg-[rgba(69,26,3,0.72)] px-3 py-1 text-[11px] font-mono font-bold text-amber-50 shadow-sm">
+              <span className="rounded-lg border border-amber-200/18 bg-[rgba(69,26,3,0.72)] px-3 py-1 cmm-text-caption font-mono font-bold text-amber-50 shadow-sm">
                 <Shield size={10} className="mr-1.5 inline text-amber-300" />
                 {userId.slice(-8).toUpperCase()}
               </span>
@@ -281,7 +281,7 @@ export default async function DashboardPage() {
             <div className="pointer-events-none absolute inset-0 rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.26)_100%)] shadow-[0_22px_54px_-34px_rgba(124,45,18,0.30)]" />
             <div className="relative z-10 flex flex-col gap-5 px-7 py-7 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1.5">
-                <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-amber-100">
+                <p className="cmm-text-caption font-bold uppercase tracking-[0.3em] text-amber-100">
                   {locale === "fr" ? "Action prioritaire" : "Priority action"}
                 </p>
                 <h2 className="text-2xl font-black tracking-tight text-white">
@@ -317,7 +317,7 @@ export default async function DashboardPage() {
 
           {/* ── Accès rapides ── */}
           <div data-gsap-reveal>
-            <p className="mb-6 text-[11px] font-bold uppercase tracking-[0.3em] text-amber-100/78">
+            <p className="mb-6 cmm-text-caption font-bold uppercase tracking-[0.3em] text-amber-100/78">
               {locale === "fr" ? "Accès rapides" : "Quick access"}
             </p>
             <RolePrimaryActions profile={profile} title="" tone="warm" />
@@ -365,7 +365,7 @@ export default async function DashboardPage() {
                         }`}
                       >
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-white">
+                          <p className="break-words text-sm font-bold text-white">
                             #{row.rank} - {row.actorName}
                           </p>
                           <p className="text-xs text-amber-100/80">

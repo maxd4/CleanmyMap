@@ -27,7 +27,7 @@ function getInitials(name: string): string {
 }
 
 const SIZE_CLASSES: Record<NonNullable<ChatAvatarProps["size"]>, string> = {
-  sm: "h-9 w-9 text-[11px]",
+  sm: "h-9 w-9 cmm-text-caption",
   md: "h-10 w-10 text-xs",
   lg: "h-12 w-12 text-sm",
 };
