@@ -80,7 +80,9 @@ describe("PageHeader", () => {
 
     expect(titleBlock).not.toContain("text-overflow");
     expect(titleBlock).not.toContain("white-space: nowrap");
+    expect(titleBlock).toContain("text-wrap: balance");
     expect(subtitleBlock).not.toContain("text-overflow");
     expect(subtitleBlock).not.toContain("-webkit-line-clamp");
+    expect(subtitleBlock).toContain("text-wrap: balance");
   });
 });
