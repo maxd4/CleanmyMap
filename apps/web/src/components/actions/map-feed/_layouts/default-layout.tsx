@@ -29,6 +29,7 @@ type DefaultLayoutProps = {
   viewportRequest?: MapViewportState | null;
   viewportRequestKey?: number;
   recenterViewport?: MapViewportState | null;
+  isInitialViewportResolved?: boolean;
   compact?: boolean;
   sourceCompleteness?: RepollutionDatasetCompleteness;
   scoreScope?: PollutionScoreScope;
@@ -57,6 +58,7 @@ export function DefaultLayout({
   viewportRequest,
   viewportRequestKey,
   recenterViewport,
+  isInitialViewportResolved = true,
   compact = false,
   sourceCompleteness = "partial",
   scoreScope = "global",
@@ -107,6 +109,8 @@ export function DefaultLayout({
               <p className="text-sm leading-6 text-slate-700">{mapCanvasError}</p>
             </div>
           </div>
+        ) : !isInitialViewportResolved ? (
+          <MapLoadingState tone={tone} />
         ) : !MapCanvas ? (
           <MapLoadingState tone={tone} />
         ) : !hasItems ? (

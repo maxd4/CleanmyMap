@@ -5,6 +5,7 @@ import {
   haversineDistanceKm,
   isActivePollutionItem,
   isWithinRadialSearch,
+  resolveInitialPublicMapViewport,
   resolveInitialMapViewport,
   selectMapReferencePoint,
   selectNearestActivePollution,
@@ -84,6 +85,130 @@ describe("actions map initial viewport", () => {
       reference,
       RUNTIME_REFERENCES,
     )?.id).toBe("old-nearest");
+  });
+
+  it("selects the nearest public action and fits the actions from its city", async () => {
+    const reference = { latitude: 48.8566, longitude: 2.3522 };
+    const nearest = buildItem({
+      id: "nearest-action",
+      record_type: "action",
+      source: "actions",
+      latitude: 48.857,
+      longitude: 2.353,
+      contract: {
+        type: "action",
+        location: { label: "Quai de test", latitude: 48.857, longitude: 2.353 },
+        metadata: { preparationData: { communeZoneLabel: "Paris" } },
+      } as ActionMapItem["contract"],
+    });
+    const sameCity = buildItem({
+      id: "same-city-action",
+      record_type: "action",
+      source: "actions",
+      latitude: 48.86,
+      longitude: 2.36,
+      contract: {
+        type: "action",
+        location: { label: "Autre quai", latitude: 48.86, longitude: 2.36 },
+        metadata: { preparationData: { communeZoneLabel: "PARIS" } },
+      } as ActionMapItem["contract"],
+    });
+    const fetchActions = vi.fn(async ({ viewport }: { viewport?: unknown }) => ({
+      items: viewport ? [nearest, sameCity] : [],
+    }));
+
+    const result = await resolveInitialPublicMapViewport({
+      reference,
+      fetchActions,
+    });
+
+    expect(result.selectedItem?.id).toBe("nearest-action");
+    expect(result.cityLabel).toBe("Paris");
+    expect(result.cityItems.map((item) => item.id)).toEqual([
+      "nearest-action",
+      "same-city-action",
+    ]);
+    expect(result.viewport?.center[0]).toBeCloseTo(48.8585, 4);
+    expect(result.viewport?.center[1]).toBeCloseTo(2.3565, 4);
+    expect(result.viewport?.zoom).toBeGreaterThanOrEqual(12);
+  });
+
+  it("uses the most recent public action as the deterministic no-location fallback", async () => {
+    const recent = buildItem({
+      id: "recent-action",
+      record_type: "action",
+      source: "actions",
+      latitude: 43.6045,
+      longitude: 1.444,
+      contract: {
+        type: "action",
+        location: { label: "Toulouse", latitude: 43.6045, longitude: 1.444 },
+        metadata: { preparationData: { communeZoneLabel: "Toulouse" } },
+      } as ActionMapItem["contract"],
+    });
+    const fetchActions = vi.fn(async ({ viewport }: { viewport?: unknown }) => ({
+      items: viewport ? [recent] : [recent],
+    }));
+
+    const result = await resolveInitialPublicMapViewport({ fetchActions });
+
+    expect(result.selectedItem?.id).toBe("recent-action");
+    expect(result.reference).toEqual({ latitude: 43.6045, longitude: 1.444 });
+    expect(result.cityItems).toHaveLength(1);
+    expect(result.viewport?.center).toEqual([43.6045, 1.444]);
+    expect(fetchActions).toHaveBeenCalledTimes(2);
+  });
+
+  it("groups legacy action labels by their explicit postal city", async () => {
+    const selected = buildItem({
+      id: "selected-paris-action",
+      record_type: "action",
+      source: "actions",
+      location_label: "Rue A, 75020 Paris → Rue B, 75020 Paris",
+      latitude: 48.87,
+      longitude: 2.4,
+    });
+    const sibling = buildItem({
+      id: "sibling-paris-action",
+      record_type: "action",
+      source: "actions",
+      location_label: "Porte C, 75010 Paris",
+      latitude: 48.87,
+      longitude: 2.37,
+    });
+    const otherCity = buildItem({
+      id: "other-city-action",
+      record_type: "action",
+      source: "actions",
+      location_label: "Place D, 69001 Lyon",
+      latitude: 45.77,
+      longitude: 4.83,
+    });
+    let call = 0;
+    const fetchActions = vi.fn(async () => ({
+      items: call++ === 0 ? [selected] : [selected, sibling, otherCity],
+    }));
+
+    const result = await resolveInitialPublicMapViewport({
+      reference: { latitude: 48.87, longitude: 2.4 },
+      fetchActions,
+    });
+
+    expect(result.cityLabel).toBe("Paris");
+    expect(result.cityItems.map((item) => item.id)).toEqual([
+      "selected-paris-action",
+      "sibling-paris-action",
+    ]);
+  });
+
+  it("returns the canonical empty result when no public action has coordinates", async () => {
+    const result = await resolveInitialPublicMapViewport({
+      fetchActions: async () => ({ items: [] }),
+    });
+
+    expect(result.selectedItem).toBeNull();
+    expect(result.viewport).toBeNull();
+    expect(result.cityItems).toEqual([]);
   });
 
   it("applies the radial criterion instead of accepting a farther bbox corner", () => {

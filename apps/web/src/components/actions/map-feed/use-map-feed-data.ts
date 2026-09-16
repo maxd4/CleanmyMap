@@ -34,6 +34,7 @@ type UseMapFeedDataParams = {
   pollutionScoreReferences?: PollutionScoreReferences | null;
   limit?: number;
   viewport?: MapViewportState | null;
+  enabled?: boolean;
 };
 
 export function useMapFeedData({
@@ -48,6 +49,7 @@ export function useMapFeedData({
   pollutionScoreReferences,
   limit = 120,
   viewport = null,
+  enabled = true,
 }: UseMapFeedDataParams) {
   const normalizedZoneQuery = useMemo(
     () => normalizeZoneQuery(zoneQuery),
@@ -60,7 +62,7 @@ export function useMapFeedData({
   );
 
   const swrKey = useMemo(
-    () => [
+    () => enabled ? [
       "actions-map",
       String(days),
       dateScope,
@@ -77,7 +79,7 @@ export function useMapFeedData({
             viewport.zoom,
           ].join(":")
         : "global",
-    ],
+    ] : null,
     [
       days,
       dateScope,
@@ -86,12 +88,13 @@ export function useMapFeedData({
       impactFilter,
       qualityMin,
       viewport,
+      enabled,
     ],
   );
 
   const [lastRefreshedAt, setLastRefreshedAt] = useState<number | null>(null);
 
-  const { data, error, isLoading, isValidating, mutate: reload } = useSWR(
+  const { data, error, isLoading: swrIsLoading, isValidating, mutate: reload } = useSWR(
     swrKey,
     () =>
       fetchMapActions({
@@ -111,6 +114,8 @@ export function useMapFeedData({
       },
     },
   );
+
+  const isLoading = enabled ? swrIsLoading : false;
 
   const allItems = useMemo(() => data?.items ?? [], [data?.items]);
 

@@ -115,6 +115,8 @@ function ActionsMapPageContent({
     viewportRequest,
     viewportRequestKey,
     recenterViewport,
+    isInitialViewportResolved,
+    hasInitialPublicActions,
     handleManualViewportInteraction,
     handleViewportChange,
   } = useActionsMapViewport();
@@ -156,6 +158,7 @@ function ActionsMapPageContent({
     pollutionScoreReferences: references,
     limit: 300,
     viewport: mapViewport,
+    enabled: isInitialViewportResolved && hasInitialPublicActions,
   });
   const filteredMapItems = useMemo(() => mapFeedData.items ?? [], [mapFeedData.items]);
   const loadedItems = useMemo(() => mapFeedData.allItems ?? [], [mapFeedData.allItems]);
@@ -209,6 +212,7 @@ function ActionsMapPageContent({
             onResetFilters={handleResetFilters}
             mapExportTargetRef={mapExportTargetRef}
             initialViewport={mapViewport}
+            isInitialViewportResolved={isInitialViewportResolved}
             viewportRequest={viewportRequest}
             viewportRequestKey={viewportRequestKey}
             recenterViewport={recenterViewport}
