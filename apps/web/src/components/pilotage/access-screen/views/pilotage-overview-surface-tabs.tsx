@@ -126,7 +126,7 @@ export function PilotageOverviewSurfaceTabs({
             <h2 className="text-2xl font-black tracking-tight text-white md:text-3xl">
               {locale === "fr" ? "Lecture gouvernance" : "Governance reading"}
             </h2>
-            <p className="text-sm leading-relaxed text-slate-300 md:text-base">
+            <p className="cmm-text-body cmm-text-inverse">
               {locale === "fr"
                 ? "Repères d'arbitrage territorial et de méthode, avec accès direct à la gouvernance élargie."
                 : "Territorial arbitration and method references, with direct access to the wider governance surface."}

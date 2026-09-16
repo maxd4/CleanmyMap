@@ -29,10 +29,10 @@ export function FundingSection() {
               </div>
               <div className="space-y-1">
                  <h4 className="text-sm font-black text-white uppercase tracking-widest">{fr ? "Action Indépendante" : "Independent Action"}</h4>
-                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{fr ? "Zéro influence sur la modération" : "Zero influence on moderation"}</p>
+                 <p className="cmm-text-caption font-bold text-slate-500 uppercase tracking-widest">{fr ? "Zéro influence sur la modération" : "Zero influence on moderation"}</p>
               </div>
            </div>
-           <p className="text-[11px] font-bold text-slate-400 leading-relaxed max-w-md md:text-right">
+           <p className="cmm-text-body cmm-text-inverse font-bold leading-relaxed max-w-md md:text-right">
               {fr
                 ?"Rubrique dédiée au modèle économique local: sponsoring de zones, mécénat écologique et appel au don pour renforcer les actions concrètes sur le terrain."
                 :"Section dedicated to the local funding model: zone sponsorship, ecological patronage and donations to strengthen field actions."}
@@ -63,7 +63,7 @@ export function FundingSection() {
                     ].map((item, i) => (
                       <li key={i} className="flex items-center gap-3">
                          <div className="h-1.5 w-1.5 rounded-full bg-rose-500/40" />
-                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
+                         <span className="cmm-text-caption font-black text-slate-400 uppercase tracking-widest">{item}</span>
                       </li>
                     ))}
                  </ul>
@@ -93,7 +93,7 @@ export function FundingSection() {
                     ].map((item, i) => (
                       <li key={i} className="flex items-center gap-3">
                          <div className="h-1.5 w-1.5 rounded-full bg-pink-500/40" />
-                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
+                         <span className="cmm-text-caption font-black text-slate-400 uppercase tracking-widest">{item}</span>
                       </li>
                     ))}
                  </ul>
@@ -123,7 +123,7 @@ export function FundingSection() {
                     ].map((item, i) => (
                       <li key={i} className="flex items-center gap-3">
                          <div className="h-1.5 w-1.5 rounded-full bg-fuchsia-500/40" />
-                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
+                         <span className="cmm-text-caption font-black text-slate-400 uppercase tracking-widest">{item}</span>
                       </li>
                     ))}
                  </ul>
@@ -138,7 +138,7 @@ export function FundingSection() {
            </div>
 
            <div className="relative z-10 space-y-4 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-[9px] font-black uppercase tracking-widest">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 cmm-text-caption font-black uppercase tracking-widest">
                  <Sparkles size={12} className="text-rose-300" />
                  {fr ? "Rejoindre l'Action" : "Join the Action"}
               </div>

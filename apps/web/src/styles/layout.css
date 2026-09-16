@@ -13,6 +13,38 @@
   line-height: var(--leading-tight);
 }
 
+.cmm-footer-contact-actions {
+  display: grid;
+  max-width: 100%;
+  grid-template-columns: repeat(2, minmax(14rem, 1fr));
+  justify-content: center;
+  gap: 0.75rem;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.cmm-footer-contact-link {
+  box-sizing: border-box;
+  display: flex;
+  min-width: max-content;
+  min-height: var(--cmm-button-height-md);
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.5rem var(--cmm-button-padding-x-md);
+  color: var(--text-inverse);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  white-space: nowrap;
+}
+
+@media (max-width: 639px) {
+  .cmm-footer-contact-actions {
+    grid-template-columns: minmax(14rem, 1fr);
+  }
+}
+
 @media (min-width: 640px) {
   .cmm-site-frame {
     padding-inline: clamp(0.5rem, 0.8vw, 1rem);

@@ -6,6 +6,7 @@ export type {
   JoinableActionItem,
 } from "./group-participation-contract";
 export { ActionParticipationOperationError } from "./group-participation-contract";
+export { usesRegistrationStore } from "./action-phase";
 
 export {
   isVisibleInGroupForms,

@@ -36,6 +36,7 @@ describe("canonical page layout primitives", () => {
       new URL("../../styles/display-modes.css", import.meta.url),
       "utf8",
     );
+    const layoutSource = readFileSync(new URL("../../app/layout.tsx", import.meta.url), "utf8");
 
     expect(globalsCss).toContain('@import "../styles/tokens.css";');
     expect(globalsCss).toContain('@import "../styles/display-modes.css";');
@@ -83,6 +84,11 @@ describe("canonical page layout primitives", () => {
     expect(layoutCss).toContain("var(--cmm-ribbon-text-size)");
     expect(baseCss).not.toMatch(/html\s*\{[\s\S]*zoom\s*:/);
     expect(baseCss).not.toMatch(/font-size\s*:\s*80%/);
+    expect(layoutSource).toContain('data-cmm-density="compact"');
+    expect(tokensCss).toMatch(/html\[data-cmm-density="compact"\]/);
+    expect(tokensCss).toContain("--cmm-density-factor: 0.9;");
+    expect(tokensCss).toContain("--text-body: 1rem");
+    expect(tokensCss).toContain("--text-caption: 0.75rem");
 
     const homepageSource = readFileSync(new URL("../../app/page.tsx", import.meta.url), "utf8");
     expect(homepageSource).not.toContain("[zoom:");

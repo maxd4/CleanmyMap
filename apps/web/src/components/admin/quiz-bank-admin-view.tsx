@@ -37,7 +37,7 @@ export function QuizBankAdminView({ snapshot }: { snapshot: QuizBankAdminSnapsho
             <h2 className="text-2xl font-black tracking-tight text-stone-950">
               Banque de questions du quiz
             </h2>
-            <p className="max-w-3xl text-sm leading-6 text-stone-600">
+            <p className="cmm-text-body max-w-3xl">
               Vue d&apos;audit réservée aux administrateurs pour relire, filtrer et corriger les questions sans ouvrir la banque dans le code. Cette interface reste en lecture seule tant qu&apos;aucun éditeur persistant n&apos;est branché.
             </p>
           </div>
@@ -138,7 +138,7 @@ export function QuizBankAdminView({ snapshot }: { snapshot: QuizBankAdminSnapsho
             </div>
           }
         />
-        <p className="mt-4 max-w-4xl text-sm leading-6 text-stone-600">
+        <p className="cmm-text-body mt-4 max-w-4xl">
           Cette vue ne modifie pas les données. Elle sert à repérer les questions sans source, trop évidentes ou trop faibles pédagogiquement, puis à renvoyer vers la rubrique de correction la plus pertinente.
         </p>
       </section>

@@ -38,7 +38,7 @@ export function PreparationGuide({
               <CalendarDays size={18} />
             </span>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-emerald-700">
                 {fr ? "Se préparer avant de partir" : "Prepare before leaving"}
               </p>
               <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
@@ -69,14 +69,14 @@ export function PreparationGuide({
                   <div className="rounded-[1.35rem] border border-slate-200 bg-white p-4 shadow-sm">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">
+                        <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-slate-500">
                           {step.label}
                         </p>
                         <h4 className="mt-1 text-base font-black tracking-tight text-slate-900">
                           {step.title}
                         </h4>
                       </div>
-                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-700">
                         {index === 0
                           ? fr
                             ? "Avant"
@@ -121,7 +121,7 @@ export function PreparationGuide({
               <Truck size={18} />
             </span>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.3em] text-emerald-700">
                 {fr ? "Repères utiles" : "Useful references"}
               </p>
               <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
@@ -169,7 +169,7 @@ export function PreparationGuide({
                       {block.chips.map((chip) => (
                         <span
                           key={chip}
-                          className="inline-flex items-center gap-1 rounded-full border border-current/20 bg-white/80 px-3 py-1 text-[11px] font-semibold"
+                          className="inline-flex items-center gap-1 rounded-full border border-current/20 bg-white/80 px-3 py-1 cmm-text-small font-semibold"
                         >
                           {chip}
                         </span>
@@ -187,7 +187,7 @@ export function PreparationGuide({
                             <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full border border-current/20 bg-white/90">
                               <ReflexIcon size={15} />
                             </div>
-                            <p className="mt-2 text-[11px] font-semibold leading-relaxed text-slate-700">
+                            <p className="mt-2 cmm-text-small font-semibold leading-relaxed text-slate-700">
                               {reflex.label}
                             </p>
                           </div>

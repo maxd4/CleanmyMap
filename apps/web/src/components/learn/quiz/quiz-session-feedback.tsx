@@ -85,7 +85,7 @@ export function QuizSessionFeedback({
           <p className="mt-1 text-sm cmm-text-secondary">{answerFeedbackBody}</p>
           {lastCheckResult === false && resolvedErrorType ? (
             <div className="mt-4 rounded-2xl border border-red-100 bg-white p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-700">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-red-700">
                 Erreur pédagogique
               </p>
               <p className="mt-2 text-sm font-bold text-red-950">{resolvedErrorType}</p>
@@ -101,7 +101,7 @@ export function QuizSessionFeedback({
           ) : null}
           {lastCheckResult === false && resolvedErrorType ? (
             <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-200">
                 Suite utile
               </p>
               <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
@@ -109,7 +109,7 @@ export function QuizSessionFeedback({
                   <p className="text-sm font-bold text-white">{errorTargetFollowUp.label}</p>
                   <p className="mt-1 text-sm text-white">{errorTargetFollowUp.reason}</p>
                 </div>
-                <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-white">
+                <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.14em] text-white">
                   {getQuizUiCopy(locale, "session.school.recommendedModeLabel")} : {errorTargetFollowUp.modeLabel}
                 </span>
               </div>
@@ -137,7 +137,7 @@ export function QuizSessionFeedback({
         </div>
           <div className="relative z-10 space-y-4">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-violet-200">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-violet-200">
                 {getQuizUiCopy(locale, "session.explanationLabel")}
               </p>
               <p className="mt-2">
@@ -146,7 +146,7 @@ export function QuizSessionFeedback({
             </div>
           {(question.takeaway || question.localized?.takeaway) ? (
             <div className="rounded-2xl border border-amber-200/30 bg-amber-500/10 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-200">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-200">
                 {getQuizUiCopy(locale, "session.school.atRetenir")}
               </p>
               <p className="mt-2 text-sm text-white">
@@ -156,7 +156,7 @@ export function QuizSessionFeedback({
           ) : null}
           {(question.feedbackCorrect || question.feedbackWrong || question.localized?.feedbackCorrect || question.localized?.feedbackWrong) ? (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-200">
                 {getQuizUiCopy(locale, "session.feedbackLabel")}
               </p>
               <p className="mt-2 text-sm text-white">
@@ -176,14 +176,14 @@ export function QuizSessionFeedback({
           ) : null}
           {question.type === "multiple-select" ? (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-200">
                 {getQuizUiCopy(locale, "session.expectedAnswersLabel")}
               </p>
               <p className="mt-2 text-sm text-white">{correctOptionsLabel}</p>
             </div>
           ) : null}
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-200">
+            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-200">
               {getQuizUiCopy(locale, "session.reviewTargetLabel")}
             </p>
             <Link
@@ -196,10 +196,10 @@ export function QuizSessionFeedback({
             </Link>
             <p className="mt-3 text-xs text-white">{reviewTargetFollowUp.reason}</p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-white">
+                <span className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.14em] text-white">
                 {getQuizUiCopy(locale, "session.school.recommendedModeLabel")} : {reviewTargetFollowUp.modeLabel}
               </span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-white">
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.14em] text-white">
                 {getQuizUiCopy(locale, "session.school.revisionLabel")}
               </span>
             </div>

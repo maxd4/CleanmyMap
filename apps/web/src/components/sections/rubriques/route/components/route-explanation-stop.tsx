@@ -81,7 +81,7 @@ export function MetricValue({
     <span className="inline-flex flex-wrap items-center gap-2">
       <span>{formatted}</span>
       <span
-        className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+              className={`rounded-full px-2 py-0.5 cmm-text-caption font-black uppercase tracking-wider ${
           measured
             ? "bg-emerald-400/15 text-emerald-200"
             : value === null

@@ -68,7 +68,7 @@ export function QuizSchoolLevelLauncher({ locale }: { locale: SupportedLocale })
           <h3 className="mt-1 text-2xl font-black tracking-tight text-slate-900">
             {getQuizUiCopy(locale, "school.title")}
           </h3>
-          <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-700">
+          <p className="cmm-text-body mt-2 max-w-3xl">
             {getQuizUiCopy(locale, "school.levelNote")}
           </p>
         </div>
@@ -106,14 +106,14 @@ export function QuizSchoolLevelLauncher({ locale }: { locale: SupportedLocale })
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-4" aria-live="polite">
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">{getQuizUiCopy(locale, "school.sessionCuesLabel")}</p>
             <p className="mt-1 text-lg font-black text-slate-950">{getQuizSchoolLaunchFormatFacts(selectedFormat, locale).duration}</p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">{getQuizSchoolLaunchFormatFacts(selectedFormat, locale).materials}</p>
-            <p className="mt-1 text-sm leading-relaxed text-slate-700">{getQuizSchoolLaunchFormatFacts(selectedFormat, locale).flow}</p>
+            <p className="cmm-text-body mt-2">{getQuizSchoolLaunchFormatFacts(selectedFormat, locale).materials}</p>
+            <p className="cmm-text-body mt-1">{getQuizSchoolLaunchFormatFacts(selectedFormat, locale).flow}</p>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {QUIZ_SCHOOL_FORMAT_ORDER.map((format) => (
               <button key={format} type="button" aria-pressed={selectedFormat === format} onClick={() => setSelectedFormat(format)} className={`rounded-2xl border p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 ${selectedFormat === format ? "border-amber-600 bg-amber-50" : "border-slate-200 bg-white"}`}>
                 <span className="text-base font-black text-slate-950">{getQuizUiCopy(locale, `school.format.${format}.label`)}</span>
-                <p className="mt-2 text-sm leading-relaxed text-slate-700">{getQuizUiCopy(locale, `school.format.${format}.description`)}</p>
+                <p className="cmm-text-body mt-2">{getQuizUiCopy(locale, `school.format.${format}.description`)}</p>
               </button>
             ))}
           </div>

@@ -36,6 +36,7 @@ export default async function RootLayout({
       suppressHydrationWarning
       data-theme={DEFAULT_THEME}
       data-display-mode={DEFAULT_DISPLAY_MODE}
+      data-cmm-density="compact"
     >
       <head>
         <DisplayModeInitializer />

@@ -51,7 +51,7 @@ export function EnvironmentalImpactEstimatorPanelOverview({
             {model.version}
           </span>
         </div>
-        <p className="max-w-3xl text-sm leading-relaxed text-red-100/45 md:text-base">
+        <p className="cmm-text-body cmm-text-inverse max-w-3xl">
           Socle transparent, documenté et extensible. Les lignes ci-dessous
           exposent les postes visibles, les hypothèses, les services
           d&apos;infrastructure et les sources de calcul sans masquer les zones
@@ -78,7 +78,7 @@ export function EnvironmentalImpactEstimatorPanelOverview({
       ) : null}
 
       {isUnbound ? (
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-relaxed text-red-100/55">
+        <div className="cmm-text-body cmm-text-inverse rounded-2xl border border-white/10 bg-white/5 p-4">
           Aucune source n&apos;est encore branchée. L&apos;estimateur conserve
           néanmoins sa structure complète pour rendre visibles les futurs
           flux, poste par poste.
@@ -115,7 +115,7 @@ export function EnvironmentalImpactEstimatorPanelOverview({
                     typeof item.value === "number" ? item.value : Number(item.value),
                   )}
                 </p>
-                <p className="mt-2 text-xs leading-relaxed text-red-100/45">
+                <p className="cmm-text-small cmm-text-inverse mt-2">
                   {item.detail}
                 </p>
               </div>
@@ -191,7 +191,7 @@ export function EnvironmentalImpactEstimatorPanelOverview({
                     </span>
                   </div>
                   <p className="mt-2 text-xl font-black text-white">{bucket.value}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-red-100/45">{bucket.detail}</p>
+                  <p className="cmm-text-small cmm-text-inverse mt-1">{bucket.detail}</p>
                 </div>
               ))}
             </div>
@@ -221,7 +221,7 @@ export function EnvironmentalImpactEstimatorPanelOverview({
                         {item.source}
                       </span>
                     </div>
-                    <p className="mt-2 text-xs leading-relaxed text-red-100/45">{item.detail}</p>
+                    <p className="cmm-text-small cmm-text-inverse mt-2">{item.detail}</p>
                   </div>
                 ))}
               </div>
@@ -405,7 +405,7 @@ export function EnvironmentalImpactEstimatorPanelOverview({
             <p className="mt-2 text-2xl font-black tracking-tight text-white">
               {formatCount(model.infrastructure.confidencePercent)}%
             </p>
-            <p className="mt-2 text-xs leading-relaxed text-red-100/45">
+            <p className="cmm-text-small cmm-text-inverse mt-2">
               Incertitude proxy ±
               {formatCount(model.infrastructure.uncertaintyPercent)}%.
             </p>
@@ -417,7 +417,7 @@ export function EnvironmentalImpactEstimatorPanelOverview({
             <p className="mt-2 text-2xl font-black tracking-tight text-white">
               {model.infrastructure.referencePeriodMonths} mois
             </p>
-            <p className="mt-2 text-xs leading-relaxed text-red-100/45">
+            <p className="cmm-text-small cmm-text-inverse mt-2">
               Graphique découpé en une semaine par point, depuis la mise en ligne.
             </p>
           </div>
@@ -428,7 +428,7 @@ export function EnvironmentalImpactEstimatorPanelOverview({
             <p className="mt-2 text-sm font-black text-white">
               {isUnbound ? "Structure prête, pas encore branchée" : "Lecture dynamique active"}
             </p>
-            <p className="mt-2 text-xs leading-relaxed text-red-100/45">
+            <p className="cmm-text-small cmm-text-inverse mt-2">
               {model.validation.valid
                 ? "Le socle est cohérent et prêt à afficher les signaux projet."
                 : "Des entrées restent à corriger avant la lecture finale."}

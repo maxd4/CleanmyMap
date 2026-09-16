@@ -39,7 +39,7 @@ export const NAVIGATION_DROPDOWN_CARD_CHEVRON_CLASS_NAME =
 export const NAVIGATION_DROPDOWN_ITEM_LINK_GAP_CLASS_NAME = "gap-1";
 
 export const NAVIGATION_DROPDOWN_HELP_TEXT_CLASS_NAME =
-  "block w-full whitespace-normal break-words cmm-text-caption text-left leading-snug text-black opacity-100";
+  "block w-full whitespace-normal break-words cmm-text-caption text-left leading-snug text-black opacity-100 !italic";
 
 export const NAVIGATION_DROPDOWN_TREE_SECTION_LABEL_CLASS_NAME =
   "block cmm-text-small font-bold tracking-[-0.02em]";

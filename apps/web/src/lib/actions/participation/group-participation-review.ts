@@ -2,6 +2,7 @@ import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { runSingleActionQuery } from "@/lib/actions/query";
 import type { ActionPhase } from "@/lib/actions/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { usesRegistrationStore } from "./action-phase";
 import {
   ACTION_PARTICIPATION_COLUMNS,
   ADMIN_PARTICIPATION_SOURCE,
@@ -45,10 +46,6 @@ type ParticipationRecord = {
   source: ParticipationSource;
   joined_at: string;
 };
-
-function usesRegistrationStore(actionPhase?: ActionPhase): boolean {
-  return actionPhase === "pre_action" || actionPhase === "post_action_draft";
-}
 
 function toParticipationAuditValue(record: ParticipationRecord): ParticipationAuditValue {
   return {

@@ -118,7 +118,7 @@ export function QuizAccessPicker({
             <h3 className="mt-1 text-xl font-black text-slate-950">
               {getQuizUiCopy(locale, "access.school.ctaTitle")}
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            <p className="cmm-text-body mt-2">
               {getQuizUiCopy(locale, "access.school.ctaText")}
             </p>
           </div>
@@ -150,7 +150,7 @@ export function QuizAccessPicker({
             <h3 className="mt-1 text-xl font-black text-slate-950">
               {getQuizUiCopy(locale, "access.demo.ctaTitle")}
             </h3>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">
+            <p className="cmm-text-body mt-2">
               {getQuizUiCopy(locale, "access.demo.ctaText")}
             </p>
           </div>
@@ -251,7 +251,7 @@ export function QuizAccessPicker({
               <h3 className="mb-2 text-xl font-black cmm-text-primary">
                 {getQuizUiCopy(locale, accessType.labelKey)}
               </h3>
-              <p className="text-sm font-medium leading-relaxed text-slate-700">
+              <p className="cmm-text-body font-medium">
                 {accessType.description[locale]}
               </p>
               <p className="mt-3 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 md:text-xs">
@@ -276,7 +276,7 @@ export function QuizAccessPicker({
                   </p>
                 </div>
               )}
-              <ul className="mt-5 space-y-2 text-sm font-medium text-slate-700">
+              <ul className="cmm-text-body mt-5 space-y-2 font-medium">
                 {accessType.focus[locale].map((focus) => (
                   <li key={focus} className="flex items-start gap-2">
                     <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" aria-hidden="true" />

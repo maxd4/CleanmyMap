@@ -30,6 +30,21 @@ export function auditWorkflowContent(content, filePath = "workflow") {
     }
   }
 
+  if (filePath.endsWith("e2e-supabase.yml") || filePath.endsWith("e2e-supabase.yaml")) {
+    if (/path:\s*artifacts\/playwright\b/.test(content)) {
+      issues.push(`${filePath}: raw Playwright artifacts must never be uploaded publicly.`);
+    }
+    if (!content.includes("scripts/checks/stage-public-e2e-artifact.mjs")) {
+      issues.push(`${filePath}: public E2E evidence must be built by the safe staging script.`);
+    }
+    if (!content.includes("scripts/checks/check-public-e2e-artifact.mjs")) {
+      issues.push(`${filePath}: public E2E evidence must pass its dedicated guard.`);
+    }
+    if (!/path:\s*artifacts\/ci-public-evidence\b/.test(content)) {
+      issues.push(`${filePath}: only artifacts/ci-public-evidence may be uploaded.`);
+    }
+  }
+
   for (const [index, line] of content.split(/\r?\n/).entries()) {
     const match = line.match(/^\s*(?:-\s*)?uses:\s*([^#]+?)(?:\s+#.*)?$/);
     if (!match) continue;

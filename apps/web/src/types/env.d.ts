@@ -3,6 +3,7 @@
 declare namespace NodeJS {
   interface ProcessEnv {
     CI?: string;
+    CODESPACES?: string;
     CMM_DEV_AUTH_BYPASS?: string;
     CMM_DEV_AUTH_BYPASS_DISPLAY_NAME?: string;
     CMM_DEV_AUTH_BYPASS_ROLE?: string;

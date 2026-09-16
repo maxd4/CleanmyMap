@@ -68,7 +68,7 @@ export function QuizSchoolPicker({
       <div className="mx-auto max-w-6xl rounded-[2rem] border border-amber-200 bg-amber-50/80 p-5 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="max-w-3xl">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700 md:text-xs">
+            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700 md:text-xs">
               {getQuizUiCopy(locale, "school.collectiveTitle")}
             </p>
             <h3 className="mt-1 text-xl font-black text-slate-950">
@@ -138,7 +138,7 @@ export function QuizSchoolPicker({
               </li>
             </ul>
             <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 md:text-xs">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500 md:text-xs">
                 {getQuizUiCopy(locale, "school.takeawayLabel")}
               </p>
               <p className="mt-1 text-sm font-medium text-slate-800">{getQuizUiCopy(locale, "school.collectiveDescription")}</p>
@@ -154,7 +154,7 @@ export function QuizSchoolPicker({
         <div className="mx-auto max-w-6xl rounded-[2rem] border border-amber-200 bg-amber-50/80 p-5 shadow-sm md:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">{getQuizUiCopy(locale, "school.format.badge")}</p>
+              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-amber-700">{getQuizUiCopy(locale, "school.format.badge")}</p>
               <h3 className="mt-1 text-2xl font-black text-slate-950">{getQuizUiCopy(locale, "school.formatPrompt")} · {selectedLevel}</h3>
             </div>
             <button type="button" onClick={() => setSelectedLevel(null)} className={`${INTERACTIVE_FOCUS_RING} rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-bold text-amber-900`}>{getQuizUiCopy(locale, "school.format.back")}</button>

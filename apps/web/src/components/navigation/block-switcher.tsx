@@ -62,7 +62,7 @@ export function BlockSwitcher({ currentProfile }: BlockSwitcherProps) {
  >
  <span className="text-2xl leading-none sm:text-3xl">{space.icon}</span>
  <span
- className={`hidden text-[9px] font-semibold uppercase leading-none tracking-wide sm:block ${
+className={`hidden cmm-text-small font-semibold uppercase leading-none tracking-wide sm:block ${
  isActive ?"text-emerald-800" :"cmm-text-muted"
  }`}
  >

@@ -21,6 +21,10 @@ export function isDevAuthBypassForced(): boolean {
   return readEnvFlag("CMM_DEV_AUTH_BYPASS");
 }
 
+export function isGitHubCodespaces(): boolean {
+  return readEnvFlag("CODESPACES");
+}
+
 function readEnvValue(name: string, fallback: string): string {
   const value = process.env[name]?.trim();
   return value && value.length > 0 ? value : fallback;
@@ -36,6 +40,12 @@ export function isLocalhostHost(hostname: string | null | undefined): boolean {
 
 export function isDevAuthBypassEnabled(hostname: string | null | undefined): boolean {
   if (process.env.NODE_ENV !== "development") {
+    return false;
+  }
+
+  // Codespaces is an interactive Clerk Development environment, never a
+  // synthetic identity surface, even when a launcher leaks the local flag.
+  if (isGitHubCodespaces()) {
     return false;
   }
 

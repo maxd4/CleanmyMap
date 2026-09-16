@@ -121,7 +121,7 @@ export function QRCodeDialog({ isOpen, onClose, value, title, description }: QRC
                   </div>
                 </div>
 
-                <p className="mt-8 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                <p className="mt-8 cmm-text-caption font-bold uppercase tracking-[0.2em] text-slate-400">
                   CleanMyMap • V1 Launch
                 </p>
               </div>

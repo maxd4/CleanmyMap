@@ -15,6 +15,7 @@ import {
   type PeriodFilter,
 } from "./rejoindre-un-formulaire-section.utils";
 import { fetchActions } from "@/lib/actions/http";
+import { usesRegistrationStore } from "@/lib/actions/participation/action-phase";
 import type { ActionListItem } from "@/lib/actions/types";
 import {
   isPastPublicAction,
@@ -134,11 +135,11 @@ export function useJoinFormSectionController() {
     [focusActionId, pastItems],
   );
   const activeParticipationItems = useMemo(
-    () => actions.historyItems.filter((item) => item.joined),
+    () => actions.historyItems.filter((item) => item.joined && !usesRegistrationStore(item.actionPhase)),
     [actions.historyItems],
   );
   const activeRegistrationItems = useMemo(
-    () => actions.historyItems.filter((item) => item.joined && item.actionPhase !== "post_action_complete"),
+    () => actions.historyItems.filter((item) => item.joined && usesRegistrationStore(item.actionPhase)),
     [actions.historyItems],
   );
   const sortedHistoryItems = useMemo(
@@ -162,7 +163,11 @@ export function useJoinFormSectionController() {
     () => preActionVisibleItems.reduce((total, item) => total + item.pendingRequestsCount, 0),
     [preActionVisibleItems],
   );
-  const summaryIsCompact = openActionsCount === 0 && pendingRequestsCount === 0 && activeParticipationItems.length === 0;
+  const summaryIsCompact =
+    openActionsCount === 0 &&
+    pendingRequestsCount === 0 &&
+    activeParticipationItems.length === 0 &&
+    activeRegistrationItems.length === 0;
   const queueActionId = useMemo(
     () => activeTab === "future"
       ? focusActionId ?? visibleItems[0]?.id ?? orderedItems[0]?.id ?? null

@@ -85,7 +85,7 @@ describe("dropdown centering contract", () => {
     expect(sizeTheme).toContain("cmm-text-caption text-left leading-snug");
     expect(sizeTheme).toContain("py-1.5");
     expect(sizeTheme).not.toContain("text-[0.56rem]");
-    expect(sizeTheme).not.toContain("italic");
+    expect(sizeTheme).toContain("cmm-text-caption text-left leading-snug text-black opacity-100 !italic");
     expect(sizeTheme).not.toContain("cmm-line-clamp-2");
     expect(sizeTheme).not.toContain("overflow-hidden whitespace-normal");
     expect(sizeTheme).not.toContain("whitespace-nowrap text-[0.86rem]");

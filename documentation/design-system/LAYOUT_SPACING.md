@@ -125,12 +125,15 @@ interne standard sans recréer une échelle locale.
 
 ## Densité UI
 
-La densité visuelle est indépendante de la largeur structurelle. Le corps de
-texte reste à `16px`, le petit texte à `14px` minimum et les captions à `12px`.
-Les boutons et champs conservent leurs hauteurs tactiles canoniques.
+La densité visuelle est indépendante de la largeur structurelle. Le site active
+la densité globale `compact` à `90 %` via `data-cmm-density` sur l'élément
+racine. Cette densité est portée par les tokens partagés et réduit le rythme,
+les surfaces, les rayons et les grands titres sur toutes les routes. Le corps
+de texte reste à `16px`, le petit texte à `14px` minimum et les captions à
+`12px`. Les boutons et champs conservent leurs hauteurs tactiles canoniques.
 
-À partir de `1024px`, les tokens partagés réduisent uniquement les grands
-rythmes et surfaces (`--cmm-page-padding-block`,
+À partir de `1024px`, la densité resserre également les grands espacements
+(`--cmm-page-padding-block`,
 `--cmm-page-header-content-gap`, `--cmm-section-gap`,
 `--cmm-content-group-gap`, `--cmm-rubrique-card-padding` et
 `--cmm-rubrique-card-icon-padding`). Le titre de page utilise

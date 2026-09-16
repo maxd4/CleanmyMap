@@ -84,7 +84,7 @@ function ActionDeclarationFormExportButton({
       <button
         type="button"
         onClick={onOpen}
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition-all hover:border-emerald-500/30 hover:bg-emerald-500 hover:text-white"
+        className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-600 px-3 py-2 cmm-text-small font-semibold text-white shadow-sm transition-all hover:border-emerald-500/30 hover:bg-emerald-500 hover:text-white"
       >
         <Download size={13} />
         Exporter
@@ -99,6 +99,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     setForm,
     resolvedDefaultActorName,
     manualDrawing,
+    manualDrawingSource,
     setManualDrawing,
     gpxImport,
     gpxError,
@@ -122,6 +123,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     payload,
     dataQuality,
     effectiveRoutePreviewDrawing,
+    effectiveRoutePreviewSource,
     smartAssist,
     handlePhotoUpload,
     clearPhotos,
@@ -235,7 +237,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                   <AlertTriangle size={18} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700/80">
+                  <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-amber-700/80">
                     Avertissement
                   </p>
                   <h3
@@ -416,8 +418,10 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                       updateField={updateField}
                       updateFields={updateFields}
                       manualDrawing={manualDrawing}
+                      manualDrawingSource={manualDrawingSource ?? null}
                       setManualDrawing={setManualDrawing}
                       routePreviewDrawing={effectiveRoutePreviewDrawing}
+                      routePreviewSource={effectiveRoutePreviewSource}
                       gpxImport={gpxImport ?? null}
                       gpxError={gpxError}
                       onImportGpx={handleGpxImport}

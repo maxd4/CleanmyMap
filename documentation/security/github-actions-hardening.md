@@ -1,7 +1,7 @@
 # Durcissement GitHub Actions
 
-Snapshot local du 10/08/2026. Ce document distingue les protections versionnées
-des paramètres de dépôt GitHub qui nécessitent une action manuelle.
+Ce document distingue les protections versionnées des paramètres de dépôt
+GitHub lus à distance. Il décrit le contrat courant sans exposer de secret.
 
 ## Protections versionnées
 
@@ -16,22 +16,39 @@ des paramètres de dépôt GitHub qui nécessitent une action manuelle.
   shell.
 - Les jobs gardent des permissions minimales et la concurrence annule les runs
   obsolètes.
+- La lane E2E persistante utilise Clerk Development réel et une instance
+  Supabase éphémère; aucun credential de Production n'est injecté.
+- Les artefacts Playwright authentifiés bruts ne sont jamais publiés. La lane
+  construit `artifacts/ci-public-evidence/` à partir d'une allowlist, exécute
+  `scripts/checks/check-public-e2e-artifact.mjs`, puis téléverse uniquement ce
+  staging validé. Les `storageState`, cookies, sessions, traces, HAR, vidéos,
+  dumps réseau, headers, logs sensibles et tokens sont exclus même lorsque les
+  E2E ou leur teardown échouent.
 - Le build CI reçoit uniquement les variables publiques de build
   `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` et `CONTACT_EMAIL`;
   aucune `service_role` n’est injectée.
 
 ## Paramètres GitHub observés
 
-Lecture effectuée sans mutation :
+Lecture GitHub effectuée le 16/09/2026 :
 
 - Actions activées ;
 - actions autorisées : `all` ;
 - obligation de SHA côté dépôt : désactivée ;
 - secret scanning et push protection activés ;
-- branche `main` non protégée.
+- mises à jour de sécurité Dependabot activées ;
+- workflow CodeQL versionné conservé ; le `default setup` CodeQL est distinct
+  et reste `not-configured` ;
+- ruleset actif `Protect main history` ciblant uniquement `refs/heads/main` ;
+- suppression de `main` interdite ;
+- force-push et mises à jour non fast-forward interdits ;
+- push fast-forward direct autorisé ; aucune Pull Request, approbation ou
+  required status check n'est imposée par ce ruleset.
 
-Ces réglages ne peuvent pas être corrigés par un fichier du dépôt. Leur évolution
-doit tenir compte de la politique actuelle de publication directe sur `main`.
+Ces réglages vivent dans GitHub et doivent être relus via l'API avant toute
+conclusion sur leur état. Les checks locaux ne prétendent pas vérifier le
+ruleset distant. Toute évolution doit préserver la publication directe
+fast-forward sur `main`.
 
 ## Dépendances
 
@@ -44,6 +61,8 @@ d’un lot séparé avec validation mobile.
 
 ```bash
 npm run check:github-actions
+npm run check:public-e2e-artifact
+npm run check:devcontainer
 npm run security:secrets
 npm run test:security
 npm run typecheck -w apps/mobile

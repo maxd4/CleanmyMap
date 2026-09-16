@@ -115,7 +115,7 @@ export function ActionCancellationControl({
         <div className="space-y-4 p-5">
           <div>
             <h2 className="text-lg font-black text-slate-950">Annuler l&apos;action</h2>
-            <p className="mt-2 text-sm text-slate-700">
+            <p className="cmm-text-body mt-2">
               Cette action ne sera plus rejoignable ni affichée parmi les actions futures.
               Les participants, messages et références existants seront conservés.
             </p>

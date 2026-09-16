@@ -105,7 +105,7 @@ export function SectionHeader({
           {eyebrow ? (
             <span
               className={cn(
-                "text-[11px] font-black uppercase tracking-[0.24em] text-stone-500",
+                "cmm-text-caption font-black uppercase tracking-[0.24em] text-stone-500",
                 eyebrowClassName,
               )}
             >
@@ -187,7 +187,7 @@ export function StatCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-black uppercase tracking-[0.22em] text-stone-500">
+          <p className="cmm-text-caption font-black uppercase tracking-[0.22em] text-stone-500">
             {label}
           </p>
           {source ? (

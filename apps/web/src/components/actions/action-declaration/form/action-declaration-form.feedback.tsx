@@ -147,7 +147,7 @@ export function ActionDeclarationFormFeedback({
                 En attente de validation par un administrateur.
               </p>
               {createdId && (
-                <p className="text-[10px] text-emerald-800/80 font-mono mt-1">Réf : {createdId}</p>
+                <p className="cmm-text-caption text-emerald-800/80 font-mono mt-1">Réf : {createdId}</p>
               )}
             </div>
           </div>
@@ -156,14 +156,14 @@ export function ActionDeclarationFormFeedback({
             <div className="space-y-4 rounded-2xl border border-emerald-200/70 bg-white/70 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                  <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-700">
                     Données enregistrées · confirmation exploitable
                   </p>
                   <p className="mt-1 text-sm font-bold text-emerald-950">
                     {postActionSummary.action.locationLabel} · {postActionSummary.action.actionDate}
                   </p>
                 </div>
-                <span className="rounded-full border border-emerald-200 bg-[#ECF8EF] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-900">
+                <span className="rounded-full border border-emerald-200 bg-[#ECF8EF] px-2.5 py-1 cmm-text-caption font-bold uppercase tracking-[0.14em] text-emerald-900">
                   {postActionSummary.impactStatus === "validated"
                     ? "Données validées"
                     : "En attente de validation"}
@@ -172,19 +172,19 @@ export function ActionDeclarationFormFeedback({
 
               <div className="grid gap-2 sm:grid-cols-4">
                 <div className="rounded-xl border border-emerald-100 bg-[#F3FBF6] p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">Déchets</p>
+                  <p className="cmm-text-caption font-bold uppercase tracking-[0.12em] text-emerald-700">Déchets</p>
                   <p className="mt-1 text-lg font-black text-emerald-950">{postActionSummary.action.wasteKg} kg</p>
                 </div>
                 <div className="rounded-xl border border-emerald-100 bg-[#F3FBF6] p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">Mégots</p>
+                  <p className="cmm-text-caption font-bold uppercase tracking-[0.12em] text-emerald-700">Mégots</p>
                   <p className="mt-1 text-lg font-black text-emerald-950">{postActionSummary.action.cigaretteButts}</p>
                 </div>
                 <div className="rounded-xl border border-emerald-100 bg-[#F3FBF6] p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">Bénévoles</p>
+                  <p className="cmm-text-caption font-bold uppercase tracking-[0.12em] text-emerald-700">Bénévoles</p>
                   <p className="mt-1 text-lg font-black text-emerald-950">{postActionSummary.action.volunteersCount}</p>
                 </div>
                 <div className="rounded-xl border border-emerald-100 bg-[#F3FBF6] p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">Durée</p>
+                  <p className="cmm-text-caption font-bold uppercase tracking-[0.12em] text-emerald-700">Durée</p>
                   <p className="mt-1 text-lg font-black text-emerald-950">{formatBusinessDurationMinutes(postActionSummary.action.durationMinutes)}</p>
                 </div>
               </div>
@@ -192,7 +192,7 @@ export function ActionDeclarationFormFeedback({
               <div>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-800">Résumé de l&apos;impact</p>
-                  <span className="text-[11px] font-semibold text-emerald-900/70">
+                  <span className="cmm-text-small font-semibold text-emerald-900/70">
                     Confiance des données: {formatScorePercent(postActionSummary.quality.score)} ({postActionSummary.quality.grade})
                   </span>
                 </div>
@@ -203,11 +203,11 @@ export function ActionDeclarationFormFeedback({
                       <p className="mt-1 text-xl font-black text-emerald-950">
                         {metric.value} {metric.unit}
                       </p>
-                      <p className="mt-1 text-[10px] leading-4 text-emerald-900/65">{metric.method}</p>
+                      <p className="mt-1 cmm-text-small leading-4 text-emerald-900/65">{metric.method}</p>
                     </div>
                   ))}
                 </div>
-                <p className="mt-2 text-[10px] leading-4 text-emerald-900/65">
+                  <p className="mt-2 cmm-text-small leading-4 text-emerald-900/65">
                   {postActionSummary.methodology.label} · {postActionSummary.methodology.version} · confiance calculée avec les règles {postActionSummary.quality.rulesVersion}.
                 </p>
               </div>
@@ -223,7 +223,7 @@ export function ActionDeclarationFormFeedback({
               <div className="flex items-center justify-between gap-2">
                 <p className="text-sm font-semibold text-emerald-950">🌿 {retentionLoop.summary}</p>
                 {retentionLoop.badge ? (
-                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-900 shrink-0">
+                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 cmm-text-caption font-bold text-emerald-900 shrink-0">
                     Badge attribué: {retentionLoop.badge}
                   </span>
                 ) : null}
@@ -242,7 +242,7 @@ export function ActionDeclarationFormFeedback({
             <div className="rounded-2xl border border-sky-200/70 bg-gradient-to-br from-sky-50 to-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
+                  <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-sky-700">
                     Créer un formulaire
                   </p>
                   <p className="text-sm font-semibold text-sky-950">
@@ -252,7 +252,7 @@ export function ActionDeclarationFormFeedback({
                     L&apos;organisateur / référant principal et les coorganisateurs peuvent partager ce lien. Il devient actif après validation.
                   </p>
                 </div>
-                <div className="rounded-full border border-sky-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-800">
+                <div className="rounded-full border border-sky-200 bg-white px-2.5 py-1 cmm-text-caption font-bold uppercase tracking-[0.16em] text-sky-800">
                   Prêt à partager
                 </div>
               </div>
@@ -281,10 +281,10 @@ export function ActionDeclarationFormFeedback({
           {showGroupInvite && (
             <div className="rounded-2xl border border-emerald-200/70 bg-[#F6FBF7] p-4 space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-700">
                   Après publication
                 </p>
-                <span className="rounded-full border border-emerald-200 bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-800">
+                <span className="rounded-full border border-emerald-200 bg-white px-2 py-0.5 cmm-text-caption font-bold uppercase tracking-[0.16em] text-emerald-800">
                   Cycle groupe
                 </span>
               </div>

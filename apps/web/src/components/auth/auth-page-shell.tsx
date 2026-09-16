@@ -175,7 +175,7 @@ export function AuthPageShell({ children, variant }: AuthPageShellProps) {
                 {children}
               </div>
 
-              <p className="mt-5 text-center text-sm text-slate-300">
+              <p className="cmm-text-body cmm-text-inverse mt-5 text-center">
                 {copy.switchPrompt}{" "}
                 <Link
                   href={copy.switchHref}

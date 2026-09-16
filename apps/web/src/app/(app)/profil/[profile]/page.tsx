@@ -50,7 +50,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
             <p className="cmm-text-caption font-bold uppercase tracking-wide text-amber-100">
               Profil {normalized}
             </p>
-            <p className="mt-2 text-sm text-amber-50/72">
+            <p className="cmm-text-body cmm-text-inverse mt-2">
               Les recommandations et raccourcis apparaissent après connexion.
             </p>
           </div>

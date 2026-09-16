@@ -271,7 +271,7 @@ export function MonthlyImpactHistoryChart({
     >
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div className="space-y-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.28em] text-red-400/60">
+<p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-red-400/60">
             Historique mensuel
           </p>
           <h2 className="text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
@@ -287,7 +287,7 @@ export function MonthlyImpactHistoryChart({
 
         <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[28rem]">
           <div className="rounded-[1.75rem] border border-white/10 bg-white/70 px-4 py-3 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+<p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
               Dernier mois enregistré
             </p>
             <p className="mt-1 text-xl font-black text-slate-950">{formatKg(latestPoint?.pollutionKg ?? null)}</p>
@@ -296,7 +296,7 @@ export function MonthlyImpactHistoryChart({
             </p>
           </div>
           <div className="rounded-[1.75rem] border border-white/10 bg-white/70 px-4 py-3 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+<p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
               IA de développement cumulée
             </p>
             <p className="mt-1 text-xl font-black text-slate-950">{formatKg(totalAiKgValue)}</p>
@@ -341,7 +341,7 @@ export function MonthlyImpactHistoryChart({
                       x={padding.left - 12}
                       y={y + 4}
                       textAnchor="end"
-                      className="fill-slate-500 text-[11px] font-bold"
+className="fill-slate-500 cmm-text-caption font-bold"
                     >
                       {formatAxisKg(value)}
                     </text>
@@ -437,7 +437,7 @@ export function MonthlyImpactHistoryChart({
                       x={xPoint.x}
                       y={padding.top + chartHeight + 32}
                       textAnchor="middle"
-                      className="fill-slate-500 text-[11px] font-bold"
+className="fill-slate-500 cmm-text-caption font-bold"
                     >
                       {point.monthLabel}
                     </text>
@@ -448,7 +448,7 @@ export function MonthlyImpactHistoryChart({
               <text
                 x={padding.left}
                 y={height - 18}
-                className="fill-slate-500 text-[10px] font-black uppercase tracking-[0.18em]"
+className="fill-slate-500 cmm-text-caption font-black uppercase tracking-[0.18em]"
               >
                 Mois
               </text>
@@ -456,14 +456,14 @@ export function MonthlyImpactHistoryChart({
                 x={width - padding.right}
                 y={20}
                 textAnchor="end"
-                className="fill-slate-500 text-[10px] font-black uppercase tracking-[0.18em]"
+className="fill-slate-500 cmm-text-caption font-black uppercase tracking-[0.18em]"
               >
                 kgCO2e mensuels
               </text>
             </svg>
           ) : (
             <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 px-6 py-10 text-center">
-              <div className="rounded-full border border-red-200 bg-red-50 px-4 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-red-500">
+<div className="rounded-full border border-red-200 bg-red-50 px-4 py-1 cmm-text-caption font-black uppercase tracking-[0.22em] text-red-500">
                 NA
               </div>
               <p className="max-w-lg text-sm leading-relaxed text-slate-600">
@@ -476,7 +476,7 @@ export function MonthlyImpactHistoryChart({
 
         <aside className="space-y-4 rounded-[2.25rem] border border-slate-200 bg-white p-5 shadow-sm">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">Légende</p>
+<p className="cmm-text-caption font-black uppercase tracking-[0.22em] text-slate-500">Légende</p>
             <h3 className="mt-1 text-lg font-black tracking-tight text-slate-950">
               Lecture du graphique
             </h3>
@@ -508,7 +508,7 @@ export function MonthlyImpactHistoryChart({
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">
+<p className="cmm-text-caption font-black uppercase tracking-[0.22em] text-slate-500">
                 Base de calcul IA
               </p>
               <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">

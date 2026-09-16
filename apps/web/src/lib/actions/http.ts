@@ -6,6 +6,7 @@ import type {
   ActionQualityGrade,
   ActionStatus,
   ActionPreparationData,
+  ActionGeometrySource,
   ActionWasteMeasurementMethod,
   CreateActionPayload,
 } from "@/lib/actions/types";
@@ -351,6 +352,8 @@ export type ActionEditorRecord = {
     kind: "polyline" | "polygon";
     coordinates: [number, number][];
   } | null;
+  /** Canonical provenance of the geometry carried by manualDrawing. */
+  geometrySource?: ActionGeometrySource | null;
   recordType?: string | null;
 };
 

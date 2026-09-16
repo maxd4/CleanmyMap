@@ -32,7 +32,7 @@ const BEFORE_ACTION_STEPS = [
 function BeforeActionStepper({ activeStep }: { activeStep: number }) {
   return (
     <ol
-      aria-label="Progression Organiser une action"
+      aria-label="Progression Créer une action"
       data-testid="before-action-stepper"
       className="cmm-page-width grid grid-cols-2 gap-2 px-4 md:grid-cols-5 md:px-6 lg:px-8"
     >

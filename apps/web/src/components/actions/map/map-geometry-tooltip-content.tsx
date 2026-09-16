@@ -54,7 +54,7 @@ export function GeometryTooltipContent({
         </CmmBadge>
       </div>
 
-      <p className="mt-1 text-[11px] font-bold leading-tight text-slate-900 dark:text-slate-50">
+      <p className="mt-1 cmm-text-small font-bold leading-tight text-slate-900 dark:text-slate-50">
         {title}
       </p>
 
@@ -67,7 +67,7 @@ export function GeometryTooltipContent({
       </div>
 
       {actionReading ? (
-        <div className="mt-2 space-y-0.5 border-t border-slate-200/80 pt-2 text-[9px] font-semibold text-slate-600 dark:border-slate-700/80 dark:text-slate-300">
+        <div className="mt-2 space-y-0.5 border-t border-slate-200/80 pt-2 cmm-text-small font-semibold text-slate-600 dark:border-slate-700/80 dark:text-slate-300">
           {actionReading.scoreScope === "department" ? (
             actionReading.departmentUnavailable ? (
               <>
@@ -122,7 +122,7 @@ export function GeometryTooltipContent({
                     <>
                       <p>Temps depuis la dernière action : {actionReading.elapsedDays} j</p>
                       <p>{actionReading.projectionConfidenceLabel}</p>
-                      <p className="pt-1 text-[8px] font-bold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
+                      <p className="pt-1 cmm-text-caption font-bold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
                         Estimation · pas une mesure en temps réel
                       </p>
                     </>
@@ -161,7 +161,7 @@ export function GeometryTooltipContent({
                 <>
                   <p>Temps depuis la dernière action : {actionReading.elapsedDays} j</p>
                   <p>{actionReading.projectionConfidenceLabel}</p>
-                  <p className="pt-1 text-[8px] font-bold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
+                      <p className="pt-1 cmm-text-caption font-bold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
                     Estimation · pas une mesure en temps réel
                   </p>
                 </>
@@ -176,7 +176,7 @@ export function GeometryTooltipContent({
               <p>Temps depuis la dernière action : {actionReading.elapsedDays} j</p>
               <p>{actionReading.projectionConfidenceLabel}</p>
               {actionReading.isEstimate && (
-                <p className="pt-1 text-[8px] font-bold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
+                <p className="pt-1 cmm-text-caption font-bold uppercase tracking-[0.12em] text-amber-700 dark:text-amber-300">
                   Estimation · pas une mesure en temps réel
                 </p>
               )}

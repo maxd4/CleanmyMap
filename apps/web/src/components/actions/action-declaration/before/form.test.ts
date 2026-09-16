@@ -26,6 +26,8 @@ describe("ActionBeforeDeclarationForm", () => {
 
     expect(html).toContain("Déclarer avant l&#x27;action");
     expect(html).toContain('data-testid="before-action-stepper"');
+    expect(html).toContain('aria-label="Progression Créer une action"');
+    expect(html).not.toContain(["Progression", "Organiser une action"].join(" "));
     expect(html).toContain("Publication");
     expect(html).toContain("Préparer le formulaire de groupe");
     expect(html).toContain("Enregistrer le pré-formulaire");

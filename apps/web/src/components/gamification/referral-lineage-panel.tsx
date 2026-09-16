@@ -79,7 +79,7 @@ export function ReferralLineagePanel({
           <h3 className="text-2xl font-black tracking-tight text-white">
             Impossible de charger la filiation pour le moment
           </h3>
-          <p className="max-w-2xl text-sm leading-relaxed text-red-50/76">
+            <p className="cmm-text-body cmm-text-inverse max-w-2xl">
             {errorMessage}
           </p>
           <CmmButton
@@ -120,7 +120,7 @@ export function ReferralLineagePanel({
             </div>
           </div>
 
-          <p className="max-w-2xl text-sm leading-relaxed text-amber-50/74">
+          <p className="cmm-text-body cmm-text-inverse max-w-2xl">
             Le compte n&apos;a pas encore de lien ascendant ou descendant à
             afficher. Créez votre lien pour commencer la chaîne et faire
             apparaître l&apos;arborescence ici.
@@ -151,13 +151,13 @@ export function ReferralLineagePanel({
             <p className="text-[10px] font-black uppercase tracking-[0.24em] text-amber-100/60">
               {title}
             </p>
-            <p className="mt-1 max-w-3xl text-sm leading-relaxed text-amber-50/72">
+            <p className="cmm-text-body cmm-text-inverse mt-1 max-w-3xl">
               {subtitle}
             </p>
             <h3 className="mt-1 text-2xl font-black tracking-tight text-white">
               Chaîne explicite et niveaux visibles
             </h3>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-amber-50/72">
+            <p className="cmm-text-body cmm-text-inverse mt-2 max-w-3xl">
               Le compte observé reste au centre. En haut, les parrains
               successifs. En bas, les branches créées à partir de ce compte.
             </p>
@@ -266,7 +266,7 @@ export function ReferralLineagePanel({
               <p className="text-sm font-semibold text-white">
                 Aucun filleul encore pour ce compte.
               </p>
-              <p className="text-sm leading-relaxed text-amber-50/72">
+              <p className="cmm-text-body cmm-text-inverse">
                 Le lien existe, mais il n&apos;a pas encore permis de faire
                 apparaître une branche descendante.
               </p>

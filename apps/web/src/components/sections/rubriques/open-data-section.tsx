@@ -197,7 +197,7 @@ export function OpenDataSection() {
                 <div className="mt-6">
                   <Link
                     href={`#${card.anchor}`}
-                    className="inline-flex items-center gap-2 rounded-full border border-violet-200 px-4 py-2 text-[0.72rem] font-black uppercase tracking-[0.16em] text-violet-700 transition hover:border-violet-300 hover:bg-violet-50"
+                    className="inline-flex items-center gap-2 rounded-full border border-violet-200 px-4 py-2 cmm-text-small font-black uppercase tracking-[0.16em] text-violet-700 transition hover:border-violet-300 hover:bg-violet-50"
                   >
                     {fr ? "En savoir plus" : "Learn more"}
                     <ArrowRight size={14} />
@@ -214,7 +214,7 @@ export function OpenDataSection() {
               <Code size={28} />
             </div>
             <div className="space-y-2">
-              <div className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-500">
+              <div className="cmm-text-caption font-black uppercase tracking-[0.2em] text-violet-500">
                 {fr ? "Documentation technique" : "Technical documentation"}
               </div>
               <h3 className="text-[clamp(1.6rem,3vw,2.5rem)] font-black leading-tight tracking-[-0.04em] text-[#2f1a78]">
@@ -234,7 +234,7 @@ export function OpenDataSection() {
               prefetch={false}
               tone="primary"
               variant="pill"
-              className="inline-flex h-14 items-center gap-3 rounded-full bg-[#4a2c8f] px-7 text-[0.72rem] font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_42px_-26px_rgba(74,44,143,0.8)]"
+              className="inline-flex h-14 items-center gap-3 rounded-full bg-[#4a2c8f] px-7 cmm-text-small font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_42px_-26px_rgba(74,44,143,0.8)]"
             >
               {fr ? "Ouvrir l'API publique" : "Open public API"}
               <ArrowRight size={16} />
@@ -249,7 +249,7 @@ export function OpenDataSection() {
           <div className="flex flex-col gap-2">
             <div className="inline-flex items-center gap-2 text-violet-500">
               <Sparkles size={18} />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+              <span className="cmm-text-caption font-black uppercase tracking-[0.2em]">
                 {fr ? "Modèle Économique" : "Economic model"}
               </span>
             </div>
@@ -309,7 +309,7 @@ export function OpenDataSection() {
               prefetch={false}
               tone="secondary"
               variant="pill"
-              className="inline-flex h-14 rounded-full bg-white px-6 text-[0.72rem] font-black uppercase tracking-[0.18em] text-[#8f226f] shadow-2xl"
+              className="inline-flex h-14 rounded-full bg-white px-6 cmm-text-small font-black uppercase tracking-[0.18em] text-[#8f226f] shadow-2xl"
             >
               {fr ? "Ouvrir le dossier" : "Open the file"}
               <ArrowRight size={16} />

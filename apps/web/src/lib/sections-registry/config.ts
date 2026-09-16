@@ -279,7 +279,7 @@ export const RUBRIQUE_REGISTRY = [
     kind: "section",
     anonymousPresentation: "visible",
     route: "/sections/weather",
-    label: { fr: "Organiser une action", en: "Organize an action" },
+    label: { fr: "Météo & conditions terrain", en: "Weather & field conditions" },
     description: {
       fr: "Consulter la météo et préparer une cleanwalk",
       en: "Check the real weather, prepare the field and organize an effective cleanwalk",

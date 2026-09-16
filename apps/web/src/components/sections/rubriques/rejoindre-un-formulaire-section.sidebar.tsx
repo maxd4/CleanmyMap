@@ -3,6 +3,7 @@
 
 import { CheckCircle2, ChevronRight, Clock3, UserRound, Users2 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { usesRegistrationStore } from "@/lib/actions/participation/action-phase";
 import type { useJoinFormSectionController } from "./rejoindre-un-formulaire-section.controller";
 import {
   HelpCard,
@@ -35,8 +36,8 @@ export function JoinFormSidebar({
       return (
         <p className="rounded-[1rem] border border-dashed border-slate-200 bg-slate-50/60 px-3 py-3 text-sm leading-relaxed text-slate-600">
           {fr
-            ? "Connectez-vous pour retrouver vos participations et leur statut."
-            : "Sign in to review your participations and their status."}
+            ? "Connectez-vous pour retrouver vos inscriptions et participations, ainsi que leur statut."
+            : "Sign in to review your registrations and participations, with their status."}
         </p>
       );
     }
@@ -45,8 +46,8 @@ export function JoinFormSidebar({
       return (
         <div className="rounded-[1rem] border border-dashed border-slate-200 bg-slate-50/60 px-3 py-3 text-sm leading-relaxed text-slate-600">
           {fr
-            ? "Aucune participation enregistrée pour le moment."
-            : "No participation recorded yet."}
+            ? "Aucune inscription ou participation enregistrée pour le moment."
+            : "No registration or participation recorded yet."}
           <CmmButton href="#explorer-actions" tone="secondary" variant="pill" size="sm" className="mt-3">
             {fr ? "Voir les actions" : "See actions"}
           </CmmButton>
@@ -67,7 +68,7 @@ export function JoinFormSidebar({
                   <p className="text-xs text-slate-500">{formatDate(item.action_date, fr ? "fr" : "en")}</p>
                 </div>
                 <PillBadge tone={status === "pending" ? "amber" : status === "closed" || status === "cancelled" ? "slate" : "emerald"}>
-                  {item.actionPhase === "pre_action"
+                  {usesRegistrationStore(item.actionPhase)
                     ? getRegistrationStatusLabel(status, fr)
                     : getParticipationStatusLabel(status, fr)}
                 </PillBadge>
@@ -77,7 +78,7 @@ export function JoinFormSidebar({
         })}
         <CmmButton href="/actions/history" tone="secondary" variant="pill" size="sm" className="mt-1 w-full">
           <span className="flex items-center gap-2">
-            {fr ? "Voir toutes mes participations" : "View all my participations"}
+            {fr ? "Voir tout mon suivi" : "View all my tracking"}
             <ChevronRight size={16} />
           </span>
         </CmmButton>
@@ -133,7 +134,7 @@ export function JoinFormSidebar({
           {fr ? "Mon suivi" : "My tracking"}
         </h3>
         <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800">
-          {formatCount(activeParticipationItems.length)}
+          {formatCount(activeRegistrationItems.length + activeParticipationItems.length)}
         </span>
       </div>
 

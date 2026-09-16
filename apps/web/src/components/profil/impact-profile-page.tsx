@@ -185,7 +185,7 @@ export default function ImpactProfilePage() {
                 Aperçu verrouillé
               </p>
               <div className="mt-4 rounded-2xl border border-white/5 bg-red-400/5 p-5">
-                <p className="text-sm leading-relaxed text-red-100/40">
+                <p className="cmm-text-body cmm-text-inverse">
                   La carte d&apos;impact montre tes actions validées, ton niveau et
                   tes badges après connexion.
                 </p>
@@ -269,7 +269,7 @@ export default function ImpactProfilePage() {
                 Votre impact en temps réel
                 <span className="block text-red-600">sans perdre la lisibilité.</span>
               </h2>
-              <p className="max-w-2xl text-lg leading-relaxed text-slate-700">
+              <p className="cmm-text-body max-w-2xl">
                 Générez une carte haute fidélité qui résume vos actions validées sur le
                 terrain, votre niveau d&apos;expertise et vos distinctions, avec une lecture
                 plus directe sur desktop et mobile.
@@ -332,7 +332,7 @@ export default function ImpactProfilePage() {
               <p className="text-[10px] font-black uppercase tracking-widest text-red-400/40">
                 Méthodologie
               </p>
-              <p className="text-sm leading-relaxed text-red-100/40">
+              <p className="cmm-text-body cmm-text-inverse">
                 Les données d&apos;impact sont consolidées à partir de vos actions validées. L&apos;eau préservée est un proxy calculé avec {IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt} L par mégot extrait ; elle ne constitue pas une mesure directe de la qualité de l&apos;eau.
               </p>
             </div>
@@ -353,7 +353,7 @@ export default function ImpactProfilePage() {
               <h3 className="text-lg font-black tracking-tight text-slate-950">
                 Les comparaisons globales restent dans les rapports
               </h3>
-              <p className="text-sm leading-relaxed text-slate-600">
+              <p className="cmm-text-body">
                 Cette page reste centrée sur votre progression, vos badges et vos actions validées.
                 Les indicateurs territoriaux, les méthodes et les exports collectifs sont regroupés
                 dans la surface de rapports.

@@ -69,6 +69,11 @@ CleanmyMap-sync/
 .gitnexus/
 .codex-remote-attachments/
 
+# Machine-local role launchers; never version these credentials/config wrappers.
+/.aLANCER_SITE_LOCAL_ROLE_BENEVOLE.bat
+/.aLANCER_SITE_LOCAL_ROLE_MAX.bat
+/.aLANCER_SITE_LOCAL_ROLE_ADMIN.bat
+
 # Next-generated local agent instructions
 /apps/web/AGENTS.md
 /apps/web/CLAUDE.md

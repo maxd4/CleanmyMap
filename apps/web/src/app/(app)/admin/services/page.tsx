@@ -106,7 +106,7 @@ export default async function AdminServicesPage() {
  <a
  href={`/api/reports/governance-monthly?month=${latestGovernanceReport.reportMonth}`}
  target="_blank"
- className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-[10px] font-black uppercase tracking-[0.18em] text-white transition hover:bg-slate-800"
+ className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 cmm-text-small font-black uppercase tracking-[0.18em] text-white transition hover:bg-slate-800"
  >
  Télécharger le PDF
  </a>

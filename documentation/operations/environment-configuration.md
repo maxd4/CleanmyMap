@@ -39,6 +39,8 @@ noms de variables.
 | Vercel Preview | Variables Preview du projet Vercel, idéalement scoping par branche | Configuration de test/recette isolée; aucune promotion implicite vers Production. |
 | Vercel Production | Variables Production du projet Vercel | Source de vérité distante; clés Clerk `live` et secrets de Production. Ne pas reconstruire cet environnement depuis `.env.local`. |
 | Tests | Fixtures, mocks et variables injectées par le runner | Pas de lecture implicite de secrets locaux; les tests doivent utiliser des valeurs fictives non sensibles. |
+| GitHub Actions E2E | Clerk Development + Supabase éphémère du runner | Credentials `pk_test_*`/`sk_test_*` fournis par les secrets GitHub; aucun secret de Production et aucun artefact Playwright authentifié publié. |
+| GitHub Codespaces | Environnement interactif Development + vraie session Clerk | Les credentials sont fournis par les secrets/variables Codespaces hors dépôt; `CODESPACES=true` désactive toujours le bypass synthétique. |
 | Expo mobile | Configuration Expo du projet mobile, uniquement variables publiques nécessaires au bundle | Les secrets restent côté API web; aucune clé serveur dans `EXPO_PUBLIC_*`. Le checkout courant ne contient pas de consommateur Expo d’environnement versionné. |
 
 ### Localhost humain et Codex
@@ -62,6 +64,12 @@ aucun compte Clerk ou profil Supabase.
 
 Changer `CMM_DEV_AUTH_BYPASS_ROLE` à la main ne donne pas de rôle en
 Production : le bypass est refusé hors développement.
+
+`CODESPACES` est une variable de plateforme/tooling, pas une variable secrète
+applicative. Dans GitHub Codespaces, l'AuthN Clerk Development est obligatoire
+et l'absence de `pk_test_*`/`sk_test_*` doit produire une erreur claire au
+démarrage. Le contournement synthétique reste limité au localhost Codex et ne
+doit jamais être utilisé par Codespaces ou par la CI E2E.
 
 ### Commandes de contrôle
 
@@ -186,6 +194,7 @@ Ces noms peuvent apparaître dans les accès statiques, mais ne sont pas des
 variables applicatives à recopier dans `.env.local.example` :
 
 - `NODE_ENV`, `CI`, `PORT` ;
+- `CODESPACES` ;
 - `VERCEL`, `VERCEL_ENV` et tout nom `VERCEL_*` ;
 - `GIT_COMMIT_SHA` ;
 - `SENTRY_CLI_BIN` ;
@@ -203,6 +212,8 @@ au contrat.
 
 - Localhost, Development et les Preview de développement utilisent une paire
   issue de la même instance Clerk Development : `pk_test_*` avec `sk_test_*`.
+- La CI E2E GitHub et GitHub Codespaces utilisent exclusivement cette paire
+  Development; une paire `pk_live_*`/`sk_live_*` est refusée par le runtime.
 - Production utilise la paire Clerk Production : `pk_live_*` avec `sk_live_*`.
 - Une clé `live` ne doit jamais entrer dans `.env.local`, et une clé `test` ne
   doit pas être déployée en Production.

@@ -392,6 +392,8 @@ export function buildCreateActionPayload(params: {
  drawingIsValid: boolean;
  manualDrawing: ActionDrawing | null;
  manualDrawingSource?: ActionGeometrySource | null;
+ routePreviewDrawing?: ActionDrawing | null;
+ routePreviewSource?: ActionGeometrySource | null;
  isEntrepriseMode: boolean;
  linkedEventId?: string;
  photos?: ActionPhotoAsset[];
@@ -407,9 +409,10 @@ export function buildCreateActionPayload(params: {
  form,
  declarationMode,
  effectiveManualDrawingEnabled,
- drawingIsValid,
  manualDrawing,
  manualDrawingSource,
+ routePreviewDrawing,
+ routePreviewSource,
  isEntrepriseMode,
  linkedEventId,
  } = params;
@@ -438,11 +441,13 @@ export function buildCreateActionPayload(params: {
   manualDrawing: normalizedManualDrawing,
   manualDrawingSource,
   operationalRoute: form.operationalRoute,
+  reconstructedDrawing: normalizeActionDrawing(routePreviewDrawing),
+  reconstructedSource: routePreviewSource,
  });
  const normalizedDrawing = finalGeometry?.drawing ?? null;
  const resolvedManualDrawingSource = finalGeometry?.source ?? null;
 
- if (normalizedDrawing && (effectiveManualDrawingEnabled || finalGeometry?.operationalRoute)) {
+ if (normalizedDrawing && (effectiveManualDrawingEnabled || finalGeometry?.operationalRoute || routePreviewDrawing)) {
  const centroid = getDrawingCentroid(normalizedDrawing);
  latitude = centroid.latitude;
  longitude = centroid.longitude;
@@ -523,11 +528,13 @@ export function buildCreateActionPayload(params: {
  linkedEventId,
  ),
  manualDrawing:
- (effectiveManualDrawingEnabled && drawingIsValid && normalizedDrawing) || finalGeometry?.operationalRoute
+ finalGeometry?.drawing &&
+ (effectiveManualDrawingEnabled || finalGeometry.operationalRoute || routePreviewDrawing)
  ? normalizedDrawing!
  : undefined,
  geometrySource:
- ((effectiveManualDrawingEnabled && drawingIsValid && normalizedDrawing) || finalGeometry?.operationalRoute)
+ (finalGeometry?.drawing &&
+   (effectiveManualDrawingEnabled || finalGeometry.operationalRoute || routePreviewDrawing))
   ? resolvedManualDrawingSource
   : undefined,
  placeType: form.placeType,
@@ -555,6 +562,7 @@ export async function prepareCreateActionPayload(params: {
  manualDrawing: ActionDrawing | null;
  manualDrawingSource?: ActionGeometrySource | null;
  routePreviewDrawing?: ActionDrawing | null;
+ routePreviewSource?: ActionGeometrySource | null;
  isEntrepriseMode: boolean;
  linkedEventId?: string;
  photos?: ActionPhotoAsset[];
@@ -575,7 +583,9 @@ export async function prepareCreateActionPayload(params: {
   manualDrawingSource: payload.geometrySource,
   operationalRoute: payload.preparationData?.operationalRoute,
   reconstructedDrawing: normalizedRoutePreview,
-  reconstructedSource: normalizedRoutePreview?.kind === "polygon" ? "manual" : "routed",
+  reconstructedSource:
+    params.routePreviewSource ??
+    (normalizedRoutePreview?.kind === "polygon" ? "manual" : "routed"),
  });
 
  if (finalGeometry && (payload.manualDrawing || normalizedRoutePreview)) {

@@ -39,7 +39,7 @@ type ActionDeclarationEntryFlowProps = ComponentProps<typeof ActionDeclarationFo
 
 function EntryFeature({ children }: { children: string }) {
   return (
-    <li className="flex items-start gap-2 text-sm leading-6 text-emerald-950/74">
+    <li className="cmm-text-small cmm-text-secondary flex items-start gap-2">
       <CheckCircle2 size={14} className="mt-1 shrink-0 text-emerald-600" />
       <span>{children}</span>
     </li>
@@ -83,7 +83,7 @@ function ChoiceCard({
             <h2 className="text-[1.35rem] font-black tracking-tight text-emerald-950">
               {title}
             </h2>
-            <p className="text-sm leading-6 text-emerald-900/70">{description}</p>
+            <p className="cmm-text-body">{description}</p>
           </div>
         </div>
 
@@ -121,7 +121,7 @@ function TransitionPanel({
             <h1 className="text-3xl font-black tracking-tight text-emerald-950">
               Passage vers les résultats terrain
             </h1>
-            <p className="mx-auto max-w-xl text-sm leading-6 text-emerald-900/70">
+            <p className="cmm-text-body mx-auto max-w-xl">
               Nous récupérons les informations préparées avant l&apos;action pour ouvrir la déclaration des résultats.
             </p>
           </div>
@@ -158,7 +158,7 @@ function ErrorPanel({
             <h1 className="text-2xl font-black tracking-tight text-rose-950">
               Le parcours n&apos;a pas pu être préparé
             </h1>
-            <p className="text-sm leading-6 text-rose-900/70">{message}</p>
+            <p className="cmm-text-body cmm-text-danger">{message}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <CmmButton tone="secondary" variant="pill" onClick={onRetry} size="md">
@@ -241,12 +241,12 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
               <h1 className="text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tighter text-emerald-950">
                 Choisissez votre parcours
               </h1>
-              <p className="max-w-3xl text-sm leading-6 text-emerald-900/72 md:text-[0.98rem]">
+              <p className="cmm-text-body max-w-3xl">
                 Choisissez entre la préparation d&apos;une action à venir et la déclaration des résultats terrain d&apos;une action réalisée.
               </p>
             </div>
 
-            <div className="max-w-sm rounded-[1.75rem] border border-emerald-200/80 bg-[#F3FBF6] px-4 py-3 text-sm leading-6 text-emerald-900/76 shadow-sm">
+            <div className="cmm-text-small cmm-text-secondary max-w-sm rounded-[1.75rem] border border-emerald-200/80 bg-[#F3FBF6] px-4 py-3 shadow-sm">
               <p>Choisir un parcours ne crée encore aucune action.</p>
             </div>
           </div>
@@ -322,7 +322,7 @@ export function ActionDeclarationEntryFlow(props: ActionDeclarationEntryFlowProp
               </CmmPill>
               <p className="text-sm font-bold text-emerald-950">Déclarer après l&apos;action</p>
             </div>
-            <p className="text-sm leading-6 text-emerald-900/70">
+            <p className="cmm-text-body">
               La déclaration des résultats terrain est prête à être complétée.
             </p>
           </div>

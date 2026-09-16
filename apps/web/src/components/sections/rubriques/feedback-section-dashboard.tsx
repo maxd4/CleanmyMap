@@ -166,7 +166,7 @@ function FeedbackDashboardMode({
                 <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-500">
                   <Icon size={18} />
                 </div>
-                <p className="mt-4 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                <p className="mt-4 cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500">
                   {localize(locale, metric.label)}
                 </p>
                 <p className="mt-3 text-[clamp(2rem,2.6vw,2.6rem)] font-black leading-none tracking-[-0.04em] text-slate-950">
@@ -275,7 +275,7 @@ function FeedbackDashboardMode({
               </div>
 
               <div className="rounded-[1.5rem] border border-slate-200 bg-white/90 p-5 shadow-sm">
-                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                <div className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500">
                   {fr ? "Résumé" : "Summary"}
                 </div>
                 <div className="mt-3 space-y-2">
@@ -414,7 +414,7 @@ function FeedbackDashboardMode({
 
                   <div className="flex flex-col items-start gap-2 md:items-end md:justify-center">
                     <span
-                      className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${getStatusTone(item.statusId)}`}
+                    className={`inline-flex rounded-full border px-3 py-1 cmm-text-caption font-black uppercase tracking-[0.14em] ${getStatusTone(item.statusId)}`}
                     >
                       {localize(locale, item.status)}
                     </span>
@@ -430,7 +430,7 @@ function FeedbackDashboardMode({
               href="/sections/feedback#bug"
               tone="secondary"
               variant="pill"
-              className="h-12 px-8 text-[0.72rem] font-black uppercase tracking-[0.16em] text-pink-600"
+              className="h-12 px-8 cmm-text-small font-black uppercase tracking-[0.16em] text-pink-600"
             >
               {fr ? "Voir tous mes retours" : "See all my feedback"}
               <ArrowRight size={16} />
