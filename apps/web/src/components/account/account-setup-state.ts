@@ -54,12 +54,29 @@ export function resolveAccountSetupDisplayMode(
   return manualSelection ?? providerDisplayMode;
 }
 
-export function getAccountSetupDeferralLabel(isDirty: boolean): string {
+export function getAccountSetupDeferralLabel(
+  isDirty: boolean,
+  completedPersistenceStepCount = 0,
+): string {
+  if (completedPersistenceStepCount > 0) {
+    return "Quitter, modifications conservées";
+  }
   return isDirty ? "Plus tard, sans enregistrer" : "Configurer plus tard";
 }
 
-export function shouldConfirmAccountSetupDeferral(isDirty: boolean): boolean {
-  return isDirty;
+export function shouldConfirmAccountSetupDeferral(
+  isDirty: boolean,
+  completedPersistenceStepCount = 0,
+): boolean {
+  return isDirty || completedPersistenceStepCount > 0;
+}
+
+export function getAccountSetupDeferralConfirmationMessage(
+  completedPersistenceStepCount = 0,
+): string {
+  return completedPersistenceStepCount > 0
+    ? "Certaines modifications ont déjà été enregistrées. Quitter ne les annulera pas."
+    : "Des modifications ne sont pas enregistrées. Continuer sans les enregistrer ?";
 }
 
 export function shouldShowAccountSetupFieldError(

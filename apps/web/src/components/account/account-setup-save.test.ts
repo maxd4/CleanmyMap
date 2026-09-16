@@ -67,8 +67,8 @@ describe("account setup persistence", () => {
     expect(calls).toEqual([
       "reverification",
       "activeProfile",
-      "identity",
       "displayMode",
+      "identity",
     ]);
   });
 
@@ -162,6 +162,63 @@ describe("account setup persistence", () => {
       failedStep === "metadata" ? 2 : 1,
     );
     expect(saveDisplayMode).toHaveBeenCalledTimes(failedStep === "displayMode" ? 2 : 1);
+  });
+
+  it("writes completion metadata only after display mode succeeds", async () => {
+    const calls: string[] = [];
+    const completedSteps = new Set<AccountSetupPersistenceStep>();
+    let shouldFailDisplayMode = true;
+    const updateUser = vi.fn(async (update: AccountSetupUserUpdate) => {
+      calls.push("unsafeMetadata" in update ? "metadata" : "identity");
+    });
+    const updateUserWithReverification = vi.fn(async () => {
+      calls.push("reverification");
+    });
+    const updateActiveProfile = vi.fn(async () => {
+      calls.push("activeProfile");
+    });
+    const saveDisplayMode = vi.fn(async () => {
+      calls.push("displayMode");
+      if (shouldFailDisplayMode) {
+        shouldFailDisplayMode = false;
+        throw new Error("displayMode failed");
+      }
+    });
+    const runPersistence = () => persistAccountSetupChanges({
+      currentUsername: "same-pseudo",
+      pseudo: "same-pseudo",
+      firstName: "Marie",
+      lastName: "Curie",
+      displayNameMode: "full_name",
+      metadata: { profileSetupCompleted: true },
+      initialProfile: "benevole",
+      selectedProfile: "scientifique",
+      updateUser,
+      updateUserWithReverification,
+      updateActiveProfile,
+      saveDisplayMode,
+      completedSteps,
+    });
+
+    await expect(runPersistence()).rejects.toThrow("displayMode failed");
+    expect(updateUser.mock.calls.filter(([update]) => "unsafeMetadata" in update)).toHaveLength(0);
+    expect(completedSteps).toEqual(new Set(["identity", "activeProfile"]));
+
+    await expect(runPersistence()).resolves.toBeUndefined();
+    expect(updateUser.mock.calls.filter(([update]) => "unsafeMetadata" in update)).toHaveLength(1);
+    expect(calls).toEqual([
+      "identity",
+      "activeProfile",
+      "displayMode",
+      "displayMode",
+      "metadata",
+    ]);
+    expect(completedSteps).toEqual(new Set([
+      "identity",
+      "activeProfile",
+      "displayMode",
+      "metadata",
+    ]));
   });
 
   it("leaves the pseudonymous user's existing names untouched", () => {

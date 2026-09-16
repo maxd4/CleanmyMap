@@ -24,7 +24,8 @@
 - validation
 - liens de bascule auth
 - lien secondaire « Vous représentez une collectivité ? » vers `/compte/evolution`
-- CTA secondaire « Configurer plus tard »
+- CTA secondaire « Configurer plus tard » ou « Plus tard, sans enregistrer » selon
+  l'état de la tentative
 - **Textes à réduire ou supprimer** :
 - Marketing de contexte
 - explications répétées
@@ -50,6 +51,25 @@ d'onboarding s'insère entre ces deux rubans et ne doit jamais les recouvrir.
 Le chrome est fourni exclusivement par le layout racine. La page onboarding ne
 doit pas dupliquer localement le header ou le footer.
 
+## Persistance séquentielle et reprise
+
+La validation persiste les étapes nécessaires dans un ordre déterministe :
+
+`identity` → `activeProfile` → `displayMode` → `metadata/completion`
+
+Chaque étape est ajoutée au ledger uniquement après son succès. Une erreur
+reprend au retry à l'étape échouée et réutilise les succès déjà enregistrés,
+sans rejouer les étapes complétées. `metadata/completion` est la dernière
+frontière faillible : `profileSetupCompleted=true`, `profileSetupVersion` et
+`profileSetupSchemaVersion` ne sont persistés qu'après la réussite de toutes les
+étapes précédentes. Ce marqueur final ne constitue donc jamais la preuve d'une
+configuration complète avant la fin de la séquence.
+
+Les systèmes d'identité, de profil actif, de préférences d'affichage et de
+métadonnées restent distincts. Il n'existe pas de transaction ni de rollback
+cross-system : une étape déjà réussie reste enregistrée si une étape suivante
+échoue.
+
 ## Configuration différée
 
 La configuration initiale peut être différée.
@@ -57,7 +77,9 @@ La configuration initiale peut être différée.
 À côté du CTA principal `Valider et continuer`, l'interface expose un CTA
 secondaire explicite :
 
-`Configurer plus tard`
+`Configurer plus tard` lorsque la tentative n'a encore persisté aucune étape.
+Après une modification locale non enregistrée, le libellé devient `Plus tard,
+sans enregistrer`.
 
 Ce CTA :
 
@@ -73,6 +95,13 @@ Ce CTA :
 - lorsqu'il est déclenché depuis un `AccountCompletionGate`, rafraîchit le gate
   et rend le contenu initialement demandé.
 
+Si aucune étape de persistance n'a réussi, la déférence suit le contrat normal :
+`Configurer plus tard` ou `Plus tard, sans enregistrer` selon que le formulaire
+a été modifié. Si une ou plusieurs étapes du ledger ont déjà réussi, l'interface
+affiche `Quitter, modifications conservées` et confirme brièvement que
+certaines modifications sont déjà enregistrées et que quitter ne les annulera
+pas. Cette déférence ne déclenche aucun rollback.
+
 Contrat de persistance actuel dans `unsafeMetadata` :
 
 - `profileSetupDeferred: true`
@@ -87,7 +116,8 @@ configuration lorsqu'une déférence enregistrée porte une version plus ancienn
 
 Lors d'une validation complète réussie :
 
-- `profileSetupCompleted` devient `true` ;
+- `profileSetupCompleted` devient `true` en dernier, après toutes les autres
+  étapes de persistance ;
 - les métadonnées de déférence sont supprimées ;
 - les préférences réellement choisies sont persistées selon leur contrat propre.
 

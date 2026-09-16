@@ -29,6 +29,7 @@ import {
 } from "@/components/account/account-setup-save";
 import {
   getAccountSetupProfileOptions,
+  getAccountSetupDeferralConfirmationMessage,
   getAccountSetupDeferralLabel,
   resolveAccountSetupDisplayMode,
   resolveAccountSetupDisplayNameMode,
@@ -299,9 +300,9 @@ export function useAccountSetupController({
       return;
     }
     if (
-      shouldConfirmAccountSetupDeferral(isDirty) &&
+      shouldConfirmAccountSetupDeferral(isDirty, completedPersistenceSteps.current.size) &&
       typeof window !== "undefined" &&
-      !window.confirm("Des modifications ne sont pas enregistrées. Continuer sans les enregistrer ?")
+      !window.confirm(getAccountSetupDeferralConfirmationMessage(completedPersistenceSteps.current.size))
     ) {
       return;
     }
@@ -450,6 +451,6 @@ export function useAccountSetupController({
     updateNoneSelected,
     handleDefer,
     handleSubmit,
-    getDeferralLabel: () => getAccountSetupDeferralLabel(isDirty),
+    getDeferralLabel: () => getAccountSetupDeferralLabel(isDirty, completedPersistenceSteps.current.size),
   };
 }
