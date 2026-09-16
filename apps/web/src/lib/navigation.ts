@@ -4,6 +4,7 @@ import {
   RUBRIQUE_REGISTRY,
   getVisibleRubriquesByCategory,
   type LocalizedText,
+  type LocalizedKeywords,
   type Rubrique,
 } from "./sections-registry";
 import {
@@ -22,7 +23,7 @@ export type NavigationItem = {
   href: string;
   label: LocalizedText;
   description: LocalizedText;
-  searchKeywords?: Partial<Record<Locale, readonly string[]>>;
+  searchKeywords?: LocalizedKeywords;
   routeId: string;
 };
 
