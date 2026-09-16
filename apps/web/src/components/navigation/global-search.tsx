@@ -124,7 +124,7 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
         >
           <span className="flex min-w-0 items-center gap-2">
             <Search className="h-4.5 w-4.5 shrink-0 text-cyan-100" aria-hidden="true" />
-            <span className="cmm-ribbon-text truncate font-black uppercase tracking-[0.14em]">
+            <span className="cmm-ribbon-text whitespace-nowrap font-black uppercase tracking-[0.14em]">
               {locale === "fr" ? "Rechercher" : "Search"}
             </span>
           </span>
@@ -222,10 +222,10 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
                           {item.spaceLabel}
                         </span>
                       </div>
-                      <h3 className="truncate text-sm font-bold text-slate-100 sm:text-base">
+                      <h3 className="break-words text-sm font-bold text-slate-100 sm:text-base">
                         {item.label[locale]}
                       </h3>
-                      <p className="line-clamp-2 text-xs text-slate-400">
+                      <p className="break-words text-xs text-slate-400">
                         {item.description[locale]}
                       </p>
                     </div>

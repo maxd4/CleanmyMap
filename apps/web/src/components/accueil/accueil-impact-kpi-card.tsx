@@ -63,7 +63,7 @@ export function HomeImpactKpiCard({
         </div>
 
         <div className="flex min-w-0 flex-1 items-center justify-center">
-          <p className={`w-full truncate text-center font-black leading-none tracking-[-0.04em] ${metric.key === "water" ? "text-[clamp(1.1rem,4.8vw,1.55rem)] min-[768px]:text-[clamp(1.5rem,3.2vw,1.95rem)] min-[1200px]:text-[clamp(2rem,1.75vw,2.5rem)]" : "text-[clamp(1.6rem,6.5vw,2rem)] min-[768px]:text-[clamp(1.9rem,3.8vw,2.35rem)] min-[1200px]:text-[clamp(2.5rem,2.7vw,3.2rem)]"} ${style.value}`}>
+          <p className={`w-full break-words text-center font-black leading-none tracking-[-0.04em] ${metric.key === "water" ? "text-[clamp(1.1rem,4.8vw,1.55rem)] min-[768px]:text-[clamp(1.5rem,3.2vw,1.95rem)] min-[1200px]:text-[clamp(2rem,1.75vw,2.5rem)]" : "text-[clamp(1.6rem,6.5vw,2rem)] min-[768px]:text-[clamp(1.9rem,3.8vw,2.35rem)] min-[1200px]:text-[clamp(2.5rem,2.7vw,3.2rem)]"} ${style.value}`}>
             {metric.value === "n/a" ? "—" : metric.value}
           </p>
         </div>

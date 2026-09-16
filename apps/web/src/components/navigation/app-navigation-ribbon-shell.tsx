@@ -150,7 +150,7 @@ function AppNavigationRibbonFrame({
             </Link>
 
             <div className="hidden min-w-0 flex-1 items-center xl:flex">
-              <div className="w-full max-w-[15rem]">
+              <div className="w-full max-w-[18rem]">
                 <GlobalSearch currentProfile={effectiveProfile} />
               </div>
             </div>

@@ -225,7 +225,7 @@ function CommunityActivityCard({
         <ActionPreview image={item.image} />
         <div className="flex min-w-0 flex-1 items-start gap-3 self-stretch py-0.5">
           <div className="min-w-0 flex-1">
-            <h3 className="line-clamp-2 text-[13px] font-black leading-tight text-[#082d35] sm:text-sm">
+            <h3 className="break-words text-[13px] font-black leading-tight text-[#082d35] sm:text-sm">
               {item.title}
             </h3>
             <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] leading-snug text-[#315c67] sm:text-[12px]">
@@ -248,7 +248,7 @@ function CommunityActivityCard({
               {!hasImpactMetrics ? item.summary : null}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <span className="line-clamp-1 max-w-full rounded-full bg-[#e8f1f0] px-2.5 py-1 text-[11px] font-bold text-[#315c67]">
+              <span className="max-w-full break-words rounded-full bg-[#e8f1f0] px-2.5 py-1 text-[11px] font-bold text-[#315c67]">
                 {item.location}
               </span>
             </div>

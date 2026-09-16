@@ -338,7 +338,7 @@ export function HomeImpactSummary({
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-black text-white">
+                            <p className="break-words text-sm font-black text-white">
                               {index + 1}. {zone.area}
                             </p>
                             <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white">

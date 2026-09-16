@@ -13,6 +13,9 @@ describe("GlobalSearch", () => {
     expect(searchSource).toContain('panelRole="region"');
     expect(searchSource).toContain('triggerHasPopup="dialog"');
     expect(searchSource).toContain('panelClassName="w-[min(42rem,calc(100vw-1rem))]"');
+    expect(searchSource).toContain("whitespace-nowrap font-black uppercase tracking-[0.14em]");
+    expect(searchSource).not.toContain("truncate");
+    expect(searchSource).not.toContain("line-clamp-2");
     expect(searchSource).toContain("verticalGap={8}");
     expect(searchSource).not.toContain("fixed inset-0");
     expect(searchSource).not.toContain("bg-slate-950/88");

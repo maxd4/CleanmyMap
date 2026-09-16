@@ -30,7 +30,7 @@ describe("desktop ribbon control geometry", () => {
     expect(ribbonSource).toContain("xl:h-10 xl:min-h-0");
     expect(searchSource).toContain("inline-flex h-10 min-h-10 w-full");
     expect(searchSource).toContain('panelAlignment="start"');
-    expect(ribbonSource).toContain("max-w-[15rem]");
+    expect(ribbonSource).toContain("max-w-[18rem]");
     expect(ribbonSource).toContain("w-[15rem] shrink-0 flex-nowrap items-center justify-center");
     expect(ribbonSource).toContain("<AppNavigationTreeMenu");
     expect(ribbonSource).toContain('className="lg:hidden"');

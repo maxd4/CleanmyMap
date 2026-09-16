@@ -108,9 +108,7 @@
     font-weight: 900;
     line-height: 0.96;
     letter-spacing: -0.05em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
   }
 
   .cmm-home-hero-title {
@@ -128,12 +126,8 @@
     font-size: 1rem;
     font-weight: 500;
     line-height: 1.55;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
     white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .cmm-page-header-action {
