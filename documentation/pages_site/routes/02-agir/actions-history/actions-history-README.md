@@ -1,4 +1,4 @@
-# Historique des actions
+# Historique terrain
 
 ## Fiche canonique
 
@@ -7,11 +7,12 @@
 - `apps/web/src/app/(app)/actions/history/page.tsx`
 - **Type fonctionnel** : page d'action
 - **Famille / bloc fonctionnel** : Agir (bloc)
-- **Navigation** : route directe de compatibilité/workflow hors navigation primaire du bloc Agir
+- **Navigation** : workflow secondaire protégé hors navigation primaire
 - **Statut** : protégé
+- **Disponibilité registry** : `hidden` — non exposé dans la navigation primaire, sans signifier legacy ou désactivé.
 - **Contexte nécessaire** : Compte Clerk connecté ; le rappel de complétion du compte reste non bloquant. Les fonctions de supervision et d'audit appliquent leurs autorisations propres.
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; l'historique reste soumis à l'authentification et à ses contrôles propres.
-- **Objectif utilisateur principal** : Relire l'historique des enregistrements accessibles, repérer les fiches à corriger et superviser leur qualité.
+- **Objectif utilisateur principal** : Consulter les enregistrements accessibles, leur qualité et les corrections à effectuer.
 - **Action principale attendue** : Filtrer et inspecter les lignes, consulter le détail qualité/contexte, les preuves photo d'un signalement lorsque demandé, l'audit autorisé et exporter les lignes approuvées filtrées en PDF.
 - **Palette attendue** : emerald
 - **Scope** : historique et supervision des enregistrements d'actions et de signalements accessibles au compte connecté, avec filtres de statut/qualité, recherche, correction prioritaire, détail, preuves et export.
@@ -68,7 +69,7 @@ concernés par ce bloc.
 
 
 
-## Références legacy
+## Références historiques
 
 - [historique.md](../../../../6-PAGES-STANDALONE/historique.md)
 

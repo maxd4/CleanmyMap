@@ -89,7 +89,7 @@ entrées visibles appartiennent à la navigation primaire Agir.
 
 | Route | Fiche | Accès | Palette runtime | Source |
 |---|---|---|---|---|
-| `/actions/history` | [Historique des actions](./routes/02-agir/actions-history/actions-history-README.md) | `protected` ; workflow hors navigation primaire | agir | `apps/web/src/app/(app)/actions/history/page.tsx` |
+| `/actions/history` | [Historique terrain](./routes/02-agir/actions-history/actions-history-README.md) | `protected` ; workflow secondaire protégé hors navigation primaire | agir | `apps/web/src/app/(app)/actions/history/page.tsx` |
 | `/actions/new` | [Créer une action](./routes/02-agir/actions-new/actions-new-README.md) | `clerk-context` ; **entrée visible** ; préparation accessible sans compte ; identité requise pour créer, compléter ou envoyer | agir | `apps/web/src/app/(app)/actions/new/page.tsx` |
 | `/sections/rejoindre-une-action` | [Rejoindre une action](./routes/02-agir/rejoindre-une-action/rejoindre-une-action-README.md) | `public-visible` ; **entrée visible** ; compte requis pour rejoindre | agir, exception nommée | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 | `/missions/[id]` | [Missions](./routes/02-agir/missions/missions-README.md) | `protected` ; workflow/deep-link hors navigation primaire | agir | `apps/web/src/app/(app)/missions/[id]/page.tsx` |
@@ -102,9 +102,11 @@ de l'App Router. Cette propriété décrit la forme de la route et ne remplace
 pas son contrôle d'accès, qui est `protected`. Cette route sert au workflow et
 aux deep-links ; elle ne devient pas une rubrique primaire.
 
-Les routes `/actions/history`, `/sections/route` et `/sections/weather` restent
-documentées et accessibles pour compatibilité. Les deux dernières redirigent
-vers le shell `/actions/new`; elles sont hors navigation primaire du bloc Agir.
+La route `/actions/history` reste documentée et accessible comme workflow
+secondaire protégé hors navigation primaire. Les routes `/sections/route` et
+`/sections/weather` restent documentées et accessibles pour compatibilité ;
+elles redirigent vers le shell `/actions/new` et restent hors navigation
+primaire du bloc Agir.
 
 ### Alias et redirections Agir
 
