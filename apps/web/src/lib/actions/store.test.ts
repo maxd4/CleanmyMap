@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { vi } from "vitest";
 import type { CreateActionPayload } from "@/lib/actions/types";
+vi.mock("server-only", () => ({}));
 import {
   buildInitialActionRegistrationRows,
   buildCreateActionGeometry,
@@ -261,6 +263,22 @@ describe("buildCreateActionGeometry", () => {
     const geometry = buildCreateActionGeometry(buildPayload(), drawing);
 
     expect(geometry.geometrySource).toBe("routed");
+  });
+
+  it("keeps a local route-provider fallback explicitly estimated", () => {
+    const drawing = {
+      kind: "polyline" as const,
+      coordinates: [
+        [48.85, 2.35] as [number, number],
+        [48.851, 2.351] as [number, number],
+        [48.85, 2.35] as [number, number],
+      ],
+    };
+
+    const geometry = buildCreateActionGeometry(buildPayload(), drawing, "estimated_route");
+
+    expect(geometry.geometrySource).toBe("estimated_route");
+    expect(geometry.confidence).toBe(0.6);
   });
 
   it("uses fallback_point when no final drawing can be resolved", () => {

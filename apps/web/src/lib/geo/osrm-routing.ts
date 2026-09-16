@@ -359,19 +359,3 @@ export async function routePolylineThroughStreetNetwork(
     createFallbackRouteGeometry(coordinates)
   );
 }
-
-/** Compatibility API retained for route-geometry.ts and existing map tooling. */
-export async function snapPolylineToStreetNetwork(
-  coordinates: [number, number][],
-): Promise<[number, number][] | null> {
-  if (
-    !coordinates ||
-    coordinates.length < 2 ||
-    coordinates.length > OSRM_MAX_COORDINATES
-  ) {
-    return coordinates;
-  }
-
-  const result = await routePolylineThroughStreetNetwork(coordinates);
-  return result.mode === "network" ? result.coordinates : null;
-}

@@ -99,6 +99,12 @@ function isPlannerPreparationData(value: unknown): value is ActionPreparationDat
       data.estimatedDurationMinutes >= 0 &&
       data.estimatedDurationMinutes <= 24 * 60)
   ) && (
+    data.routeTargetDistanceKm === undefined ||
+    (typeof data.routeTargetDistanceKm === "number" &&
+      Number.isFinite(data.routeTargetDistanceKm) &&
+      data.routeTargetDistanceKm >= 0 &&
+      data.routeTargetDistanceKm <= 100)
+  ) && (
     data.volunteersExpected === undefined ||
     (typeof data.volunteersExpected === "number" &&
       Number.isInteger(data.volunteersExpected) &&

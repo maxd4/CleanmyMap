@@ -35,6 +35,8 @@ test("RAPIDE TypeScript uses targeted evidence without a full suite", () => {
   assert.ok(ids(plan).includes("vitest-targeted"));
   assert.ok(!ids(plan).includes("vitest-full"));
   assert.ok(!ids(plan).includes("build"));
+  const lint = plan.checks.find((check) => check.id === "lint-targeted");
+  assert.deepEqual(lint.command.args, ["eslint", "--config", "apps/web/eslint.config.mjs", "apps/web/src/lib/chat/polls.ts"]);
 });
 
 test("RAPIDE resolves an unchanged co-located sibling test", () => {
@@ -45,6 +47,18 @@ test("RAPIDE resolves an unchanged co-located sibling test", () => {
   const targeted = plan.checks.find((check) => check.id === "vitest-targeted");
   assert.ok(targeted);
   assert.deepEqual(targeted.testFiles, ["src/lib/chat/polls.test.ts"]);
+});
+
+test("RAPIDE excludes deleted Web files from ESLint targets", () => {
+  const plan = createModeValidationPlan({
+    mode: "FAST",
+    changedFiles: [
+      "apps/web/src/lib/actions/geometry/route-geometry.test.ts",
+      "apps/web/src/lib/chat/polls.ts",
+    ],
+  });
+  const lint = plan.checks.find((check) => check.id === "lint-targeted");
+  assert.deepEqual(lint.command.args, ["eslint", "--config", "apps/web/eslint.config.mjs", "apps/web/src/lib/chat/polls.ts"]);
 });
 
 test("a source without a sibling test does not invent one", () => {

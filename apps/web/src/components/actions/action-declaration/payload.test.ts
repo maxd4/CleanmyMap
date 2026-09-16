@@ -1,6 +1,7 @@
 import { describe, expect, it } from"vitest";
 import {
  buildCreateActionPayload,
+ applyPreparationDataToForm,
  createInitialFormState,
  isDrawingValid,
  isLocationLikelyPark,
@@ -9,6 +10,7 @@ import {
  toOptionalNumber,
  toRequiredNumber,
 } from"./payload";
+import { deriveRouteTargetDistanceKm } from "@/lib/actions/route-target-distance";
 import type { ActionDrawing } from"@/lib/actions/types";
 
 function buildBaseForm() {
@@ -28,6 +30,38 @@ function buildBaseForm() {
 }
 
 describe("action declaration payload helpers", () => {
+  it("derives an editable route target from duration and preserves an explicit override", () => {
+    expect(deriveRouteTargetDistanceKm(60)).toBe(1);
+    expect(deriveRouteTargetDistanceKm(90)).toBe(1.5);
+
+    const form = createInitialFormState("Alice");
+    const prepared = applyPreparationDataToForm(form, {
+      estimatedDurationMinutes: 90,
+      routeTargetDistanceKm: 2.25,
+    });
+
+    expect(prepared.routeTargetDistanceKm).toBe("2.25");
+    expect(prepared.routeTargetDistanceKmManuallySet).toBe(true);
+  });
+
+  it("persists the route target in preparation metadata", () => {
+    const form = createInitialFormState("Alice");
+    form.durationMinutes = "90";
+    form.routeTargetDistanceKm = "1.75";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.preparationData?.routeTargetDistanceKm).toBe(1.75);
+  });
+
   it("parses optional/required numbers safely", () => {
     expect(toOptionalNumber("")).toBeUndefined();
     expect(toOptionalNumber("12.5")).toBe(12.5);

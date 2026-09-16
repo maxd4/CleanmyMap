@@ -67,6 +67,8 @@ export type FormState = {
  adultCount: string;
  retiredCount: string;
  durationMinutes: string;
+ routeTargetDistanceKm: string;
+ routeTargetDistanceKmManuallySet: boolean;
  eventStartTime: string;
  eventEndTime: string;
  notes: string;
@@ -137,6 +139,8 @@ export const initialState: FormState = {
  adultCount:"1",
  retiredCount:"0",
  durationMinutes:"60",
+ routeTargetDistanceKm:"1",
+ routeTargetDistanceKmManuallySet: false,
  eventStartTime:"",
  eventEndTime:"",
  notes:"",

@@ -4,7 +4,6 @@ import {
  buildEntrepriseAssociationName,
 } from"../../../lib/actions/association-options";
 import { PLACE_TYPE_OPTIONS } from"../../../lib/actions/place-type-options";
-import { deriveAutoDrawingFromLocation } from"@/lib/actions/geometry/route-geometry";
 import type {
  ActionDrawing,
  ActionGeometrySource,
@@ -20,6 +19,10 @@ import {
  normalizeVolunteerParticipation,
 } from "@/lib/actions/volunteer-participation";
 import type { VolunteerParticipationInput } from "@/lib/actions/volunteer-participation";
+import {
+  deriveRouteTargetDistanceKm,
+  normalizeRouteTargetDistanceKm,
+} from "@/lib/actions/route-target-distance";
 
 function deriveDrawingFromOperationalRoute(
  form: FormState,
@@ -114,6 +117,8 @@ const BASE_FORM_STATE: FormState = {
  adultCount:"1",
  retiredCount:"0",
  durationMinutes:"60",
+ routeTargetDistanceKm:"1",
+ routeTargetDistanceKmManuallySet:false,
  eventStartTime:"",
  eventEndTime:"",
  notes:"",
@@ -164,6 +169,7 @@ export function buildPreparationDataFromForm(
   actionDate: form.actionDate.trim() || undefined,
   meetingTime: form.meetingTime.trim() || undefined,
   departureTime: form.departureTime.trim() || undefined,
+  routeTargetDistanceKm: normalizeRouteTargetDistanceKm(form.routeTargetDistanceKm),
   plannedObjective: form.plannedObjective,
   placeType: form.placeType || undefined,
   estimatedDifficulty: form.estimatedDifficulty,
@@ -211,6 +217,10 @@ export function applyPreparationDataToForm(
    typeof preparationData.estimatedDurationMinutes === "number"
     ? String(preparationData.estimatedDurationMinutes)
     : form.durationMinutes,
+  routeTargetDistanceKm: typeof preparationData.routeTargetDistanceKm === "number"
+    ? String(preparationData.routeTargetDistanceKm)
+    : String(deriveRouteTargetDistanceKm(preparationData.estimatedDurationMinutes ?? form.durationMinutes)),
+  routeTargetDistanceKmManuallySet: typeof preparationData.routeTargetDistanceKm === "number",
   plannedObjective: preparationData.plannedObjective ?? form.plannedObjective,
   placeType: preparationData.placeType ?? form.placeType,
   estimatedDifficulty:
@@ -510,20 +520,8 @@ export async function prepareCreateActionPayload(params: {
  };
  }
 
- const derivedDrawing = await deriveAutoDrawingFromLocation({
- locationLabel: payload.locationLabel,
- departureLocationLabel: payload.departureLocationLabel,
- arrivalLocationLabel: payload.arrivalLocationLabel,
- routeStyle: payload.routeStyle,
- });
-
- if (!derivedDrawing) {
+ // Location-only drafts are routed by the server. Keeping this payload free
+ // of derived coordinates prevents browser-side provider calls and preserves
+ // the manual/operational geometry priority.
  return payload;
- }
-
- return {
- ...payload,
- manualDrawing: derivedDrawing,
- geometrySource: derivedDrawing.kind === "polygon" ? "manual" : "routed",
- };
 }

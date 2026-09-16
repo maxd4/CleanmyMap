@@ -210,7 +210,6 @@ export function buildPersistedGeometry(params: {
     locationLabel: params.locationLabel ?? null,
     departureLocationLabel: params.departureLocationLabel ?? null,
     arrivalLocationLabel: params.arrivalLocationLabel ?? null,
-    routeStyle: params.routeStyle ?? null,
   });
 
   return {

@@ -544,7 +544,7 @@ export function formatGeometryModeLabel(
   }
 
   if (kind === "polyline") {
-    return presentation.origin === "routed"
+    return presentation.origin === "routed" || presentation.origin === "estimated_route"
       ? "Parcours reconstruit"
       : "Parcours déclaré";
   }

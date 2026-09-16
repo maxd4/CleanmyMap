@@ -89,7 +89,7 @@ function geometryProvenance(
   if (source === "reference" || source === "routed") {
     return "derived";
   }
-  if (source === "estimated_area" || source === "fallback_point") {
+  if (source === "estimated_route" || source === "estimated_area" || source === "fallback_point") {
     return "estimated";
   }
   return "measured";

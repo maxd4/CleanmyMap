@@ -33,6 +33,7 @@ import type {
 } from "@/lib/route/route-operational";
 import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract";
 import type { AdministrativeRequirements } from "./administrative-requirements";
+import type { RouteGeometryMode, RouteGeometryProvider } from "@/lib/route/route-contract";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
@@ -41,6 +42,7 @@ export const ACTION_GEOMETRY_SOURCES = [
   "manual",
   "reference",
   "routed",
+  "estimated_route",
   "estimated_area",
   "fallback_point",
 ] as const;
@@ -91,6 +93,12 @@ export type ActionPreparationData = {
   operationalRoute?: OperationalRoute;
   /** @deprecated Read compatibility only; normalize to operationalRoute. */
   actualRoute?: LegacyOperationalRoute;
+  /** User target only; never treated as the measured provider distance. */
+  routeTargetDistanceKm?: number;
+  /** Measured or estimated result of the server-side route provider. */
+  routeNetworkDistanceKm?: number;
+  routeGeometryMode?: RouteGeometryMode;
+  routeGeometryProvider?: RouteGeometryProvider;
 };
 
 export type ActionPhotoAsset = {
@@ -241,6 +249,7 @@ export type ActionListItem = {
       departureLocationLabel?: string | null;
       arrivalLocationLabel?: string | null;
       routeStyle?: "direct" | "souple" | null;
+      routeTargetDistanceKm?: number;
       routeAdjustmentMessage?: string | null;
       photos?: ActionPhotoAsset[] | null;
       visionEstimate?: ActionVisionEstimate | null;
@@ -289,6 +298,7 @@ export type CreateActionPayload = {
   departureLocationLabel?: string;
   arrivalLocationLabel?: string;
   routeStyle?: "direct" | "souple";
+  routeTargetDistanceKm?: number;
   routeAdjustmentMessage?: string;
   latitude?: number;
   longitude?: number;

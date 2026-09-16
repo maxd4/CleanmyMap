@@ -9,7 +9,6 @@ import "leaflet-draw/dist/leaflet.draw.css";
 
 import type { ActionDrawing, ActionGeometrySource } from"@/lib/actions/types";
 
-import { snapPolylineToStreetNetwork } from"@/lib/geo/osrm-routing";
 import {
  normalizeActionDrawing,
 } from"./map/actions-map-geometry.utils";
@@ -178,7 +177,7 @@ function DrawingController({
  applyMapControlAccessibilityLabels(map.getContainer());
  }, 0);
 
- async function normalizeAndEmit(layer: DrawingLayer) {
+ function normalizeAndEmit(layer: DrawingLayer) {
  const rawDrawing = extractDrawing(layer);
  const normalizedDrawing = normalizeActionDrawing(rawDrawing);
 
@@ -193,28 +192,10 @@ function DrawingController({
  return;
  }
  
- // Auto-Snap pour les polylines avec OSRM
- document.body.style.cursor ="wait";
- try {
- const snappedCoords = await snapPolylineToStreetNetwork(
- normalizedDrawing.coordinates,
- );
- 
- if (snappedCoords && snappedCoords.length > 0) {
-  const resolved = resolveDrawnGeometry(normalizedDrawing, snappedCoords);
-  onChange(resolved.drawing, resolved.geometrySource);
- } else {
-  // Fallback vers les coordonnées brutes si le snap échoue
+ // Les tracés manuels restent les coordonnées saisies. Le routage réseau est
+ // réservé au serveur et ne doit pas être déclenché depuis le navigateur.
  const resolved = resolveDrawnGeometry(normalizedDrawing, null);
  onChange(resolved.drawing, resolved.geometrySource);
- }
- } catch {
-  // En cas d'erreur, utiliser les coordonnées brutes
- const resolved = resolveDrawnGeometry(normalizedDrawing, null);
- onChange(resolved.drawing, resolved.geometrySource);
- } finally {
-  document.body.style.cursor ="";
- }
  }
 
  function handleCreated(event: LeafletEvent & { layer: DrawingLayer }) {
