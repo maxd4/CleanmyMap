@@ -40,29 +40,50 @@ Les versions exactes restent celles de `apps/web/package.json`.
 
 ## Auth locale et validations navigateur
 
-- Pour toute validation locale d'une surface protégée, Codex doit utiliser en
-  priorité le bypass officiel `CMM_DEV_AUTH_BYPASS` plutôt que rechercher une
-  vraie session Clerk.
-- Sur `localhost` avec `NODE_ENV=development`, le bypass est prévu par le code
-  et doit être considéré avant de conclure à un blocage d'authentification.
-- Choisir le rôle minimal correspondant au scénario. Pour une capacité
-  bénévole ordinaire, utiliser `benevole` ; ne pas utiliser `max` par défaut.
-- Ne jamais demander une session Clerk de production ou un Agent Task
-  uniquement parce qu'une validation locale protégée nécessite une identité.
-- Ne jamais injecter de clés Clerk de production dans `localhost`.
-- Avant de déclarer une validation locale bloquée, rechercher et utiliser le
-  lanceur ou protocole local officiel du dépôt. Les références canoniques sont
-  `.aLANCER_SITE_LOCAL_ROLE_MAX.bat`,
-  `apps/web/src/lib/auth/dev-auth.ts`, `apps/web/.env.local.example` et
-  `documentation/security/CODEX_SECURITY_PLAYBOOK.md`.
-- Si le serveur échoue avant démarrage avec `Invalid local Clerk
-  configuration`, classifier séparément le problème : `AUTH_SESSION` relève
-  du bypass local ; `CLERK_BOOT_CONFIG` relève d'une configuration Clerk
-  Development cohérente nécessaire au démarrage. Une erreur
-  `CLERK_BOOT_CONFIG` ne doit jamais être décrite comme « bypass indisponible ».
-- Dans le rapport, classifier tout blocage parmi `AUTH_SESSION`,
-  `CLERK_BOOT_CONFIG`, `AUTHZ_ROLE`, `BROWSER_PERMISSION` et
-  `HOST_ENVIRONMENT`.
+Avant toute validation navigateur, classifier la surface et annoncer le
+protocole choisi :
+
+- `PUBLIC` : aucune AuthN ; utiliser le navigateur intégré ou Playwright public
+  selon le besoin, sans bypass.
+- `PROTECTED_SERVER_ONLY` : AuthN/AuthZ uniquement côté serveur ; utiliser le
+  lanceur local canonique avec `CMM_DEV_AUTH_BYPASS=1` et le rôle minimal.
+  Le port 3000 est préféré mais le lanceur peut basculer ; utiliser l'URL
+  réellement annoncée, jamais une URL supposée.
+- `PROTECTED_CLERK_CLIENT` : la surface consomme `useUser`, `useAuth`, les UI
+  Clerk, `SignedIn`/`SignedOut` ou exige une session navigateur réelle. Le
+  bypass serveur est insuffisant : utiliser le harness Playwright Clerk
+  Development, `127.0.0.1:3000` strict, `CMM_DISABLE_DEV_AUTH_BYPASS=1` et
+  l'état de session produit par le global setup. `/onboarding` est un exemple
+  explicite.
+- `PROD_SMOKE` : utiliser uniquement une vraie session Clerk Production selon
+  le playbook, sans bypass local.
+- `E2E_MUTABLE_SUPABASE` : lane CI éphémère dédiée uniquement ; jamais Docker
+  ou Supabase local sur le poste.
+
+Annoncer avant le test :
+
+```text
+AUTH_SURFACE: PUBLIC | PROTECTED_SERVER_ONLY | PROTECTED_CLERK_CLIENT
+BROWSER_HARNESS: INTEGRATED_BROWSER | PLAYWRIGHT_CLERK
+AUTH_MODE: NONE | DEV_BYPASS | CLERK_DEVELOPMENT
+HOST_URL: URL réellement utilisée
+ROLE: rôle réel/simulé
+PERSISTENCE: NONE | REMOTE_READONLY | CI_EPHEMERAL
+```
+
+Les rôles de bypass acceptés sont exactement `benevole`, `coordinateur`,
+`scientifique`, `entreprise`, `elu`, `admin` et `max`. Choisir le rôle minimal
+correspondant au scénario ; `max` n'est jamais le choix par défaut.
+
+Ne jamais injecter de clés Clerk Production dans `localhost`. Le bypass ne
+modifie ni les permissions métier ni les contrôles centraux d'AuthN/AuthZ. Si
+le serveur échoue avec `Invalid local Clerk configuration`, classifier
+`CLERK_BOOT_CONFIG` séparément d'une session manquante et utiliser une
+configuration Clerk Development cohérente.
+
+Dans le rapport, classifier tout blocage parmi `AUTH_SESSION`,
+`CLERK_BOOT_CONFIG`, `AUTHZ_ROLE`, `BROWSER_PERMISSION` et
+`HOST_ENVIRONMENT`.
 
 ## Frontières Server/Client
 

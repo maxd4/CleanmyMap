@@ -24,12 +24,44 @@ export const LOCAL_ROLE_CONFIGS = Object.freeze({
     displayName: "Dev Benevole",
     username: "dev-benevole",
   }),
+  coordinateur: Object.freeze({
+    role: "coordinateur",
+    userId: "dev-coordinateur",
+    displayName: "Dev Coordinateur",
+    username: "dev-coordinateur",
+  }),
+  scientifique: Object.freeze({
+    role: "scientifique",
+    userId: "dev-scientifique",
+    displayName: "Dev Scientifique",
+    username: "dev-scientifique",
+  }),
+  entreprise: Object.freeze({
+    role: "entreprise",
+    userId: "dev-entreprise",
+    displayName: "Dev Entreprise",
+    username: "dev-entreprise",
+  }),
+  elu: Object.freeze({
+    role: "elu",
+    userId: "dev-elu",
+    displayName: "Dev Élu",
+    username: "dev-elu",
+  }),
+  admin: Object.freeze({
+    role: "admin",
+    userId: "dev-admin",
+    displayName: "Dev Admin",
+    username: "dev-admin",
+  }),
 });
 
 export function getRoleConfig(role) {
   const config = LOCAL_ROLE_CONFIGS[role];
   if (!config) {
-    throw new Error(`[launcher] Rôle local inconnu: ${role}. Utilise max ou benevole.`);
+    throw new Error(
+      `[launcher] Rôle local inconnu: ${role}. Utilise benevole, coordinateur, scientifique, entreprise, elu, admin ou max.`,
+    );
   }
   return config;
 }

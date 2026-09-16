@@ -22,27 +22,33 @@ describe("launch-local-role", () => {
     assert.equal(exitCodeForChild(17, null), 17);
   });
 
-  it("injects coherent MAX and bénévole identities", () => {
-    assert.deepEqual(getRoleConfig("max"), {
-      role: "max",
-      userId: "dev-max",
-      displayName: "Dev Max",
-      username: "dev-max",
-    });
-    assert.deepEqual(getRoleConfig("benevole"), {
-      role: "benevole",
-      userId: "dev-benevole",
-      displayName: "Dev Benevole",
-      username: "dev-benevole",
-    });
+  it("injects coherent identities for every canonical bypass role", () => {
+    for (const role of ["benevole", "coordinateur", "scientifique", "entreprise", "elu", "admin", "max"]) {
+      assert.deepEqual(getRoleConfig(role), {
+        role,
+        userId: `dev-${role}`,
+        displayName: role === "elu" ? "Dev Élu" : `Dev ${role[0].toUpperCase()}${role.slice(1)}`,
+        username: `dev-${role}`,
+      });
+      assert.equal(buildRoleEnvironment(role).CMM_DEV_AUTH_BYPASS_ROLE, role);
+    }
     assert.throws(
-      () => getRoleConfig("admin"),
-      /Rôle local inconnu: admin\. Utilise max ou benevole\./,
+      () => getRoleConfig("invalid"),
+      /Rôle local inconnu: invalid\. Utilise benevole, coordinateur, scientifique, entreprise, elu, admin ou max\./,
     );
     assert.equal(buildRoleEnvironment("max", { KEEP_ME: "1" }).CMM_DEV_AUTH_BYPASS, "1");
-    assert.equal(buildRoleEnvironment("max").CMM_DEV_AUTH_BYPASS_ROLE, "max");
-    assert.equal(buildRoleEnvironment("benevole").CMM_DEV_AUTH_BYPASS_ROLE, "benevole");
     assert.equal(buildRoleEnvironment("benevole").CMM_DEV_AUTH_BYPASS_USER_ID, "dev-benevole");
+  });
+
+  it("keeps the manual launcher on the fallback-port protocol and announces the selected URL", () => {
+    const launcher = readFileSync("scripts/dev/launch-local-role.mjs", "utf8");
+    const fallbackPortServer = readFileSync("scripts/dev/dev-with-fallback-port.mjs", "utf8");
+
+    assert.match(launcher, /dev-with-fallback-port\.mjs/);
+    assert.match(launcher, /--open-browser/);
+    assert.match(fallbackPortServer, /Démarrage sur http:\/\/\$\{host\}:\$\{chosenPort\}/);
+    assert.match(fallbackPortServer, /openUrlInBrowserImpl\(url\)/);
+    assert.doesNotMatch(launcher, /DEV_STRICT_PORT\s*:/);
   });
 
   it("uses a non-interactive Vercel Development pull without Claude tooling", () => {

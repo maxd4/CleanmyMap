@@ -4,7 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import "./route-additionality.spec";
 
-const baseUrl = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
+const baseUrl = "http://127.0.0.1:3000";
 const baseOrigin = new URL(baseUrl).origin;
 const evidenceDirectory = path.join(process.cwd(), "artifacts", "playwright", "route-campaign-3c");
 const evidenceFile = path.join(evidenceDirectory, "evidence.json");
