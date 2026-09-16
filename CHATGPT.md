@@ -654,6 +654,13 @@ source de localhost. ChatGPT peut analyser plusieurs sujets en parallèle,
 mais ne doit jamais déclencher deux Codex d'écriture simultanément. Tant qu'un
 lot mutable n'est pas stabilisé, les autres sujets restent read-only/analyse.
 
+Lorsque l'utilisateur demande explicitement le mode de développement rapide,
+appliquer le protocole borné de
+[`documentation/development/rapid-development-mode.md`](documentation/development/rapid-development-mode.md) :
+une passe initiale, une validation ciblée, un commit local isolé et aucun push.
+Ne pas déclencher d'audit GitHub, de navigateur, de build complet ou de suite
+lourde sans nécessité démontrée par le périmètre.
+
 Le workflow normal ne propose ni branche de chantier, ni worktree, ni claims,
 ni mutex. Le lifecycle est :
 

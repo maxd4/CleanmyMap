@@ -22,6 +22,8 @@ concurrente.
   durable pour les frontières non fiables, types, casts et accès dynamiques ;
 - [Lint & Static Analysis Refactor Playbook](./lint-refactor-playbook.md) —
   méthode de correction des diagnostics statiques sans masquer la cause racine ;
+- [Mode de développement rapide](./rapid-development-mode.md) — protocole
+  borné pour un commit local par exécution, sans push ;
 - [Conventions de modularisation](./conventions-modularisation.md) — décision
   d'extraction, cohésion, contrats et validation des refactors structurels ;
 - [Doctrine Kaizen](./kaizen/README.md) — amélioration continue, méthode d'audit
