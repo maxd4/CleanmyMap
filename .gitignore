@@ -37,6 +37,7 @@ output/
 /.artifacts/validation/repository-inventory/
 /.artifacts/validation/prepush-candidate/
 /.artifacts/validation/publication-candidate/
+/.artifacts/validation/jury-ui/
 # Runtime-only metadata for local parallel work coordination.
 /.artifacts/coordination/
 /artifacts/
