@@ -61,7 +61,7 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
   const getColorClass = (type: string) => {
     switch (type) {
       case 'environnemental': return 'fill-violet-500 stroke-violet-300';
-      case 'social': return 'fill-indigo-500 stroke-indigo-300';
+      case 'social': return 'fill-violet-500 stroke-violet-300';
       case 'humanitaire': return 'fill-fuchsia-500 stroke-fuchsia-300';
       default: return 'fill-violet-500 stroke-violet-400';
     }
@@ -175,7 +175,7 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
                       </span>
                       <span className={cn("text-[1.2px] font-bold opacity-0 group-hover:opacity-70 transition-opacity uppercase tracking-tighter", 
                         primaryType === "environnemental" ? "text-violet-300" :
-                        primaryType === "social" ? "text-indigo-300" :
+                        primaryType === "social" ? "text-violet-300" :
                         primaryType === "humanitaire" ? "text-fuchsia-300" : "text-violet-300"
                       )}>
                         {nodeLocation}

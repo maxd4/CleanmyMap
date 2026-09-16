@@ -1,7 +1,7 @@
-import { NavigationItem } from "@/lib/navigation";
+import type { NavigationBlockId, NavigationItem } from "@/lib/navigation";
 
 export const BLOCK_PREVIEW_PRIORITY: Record<
-  "home" | "act" | "visualize" | "impact" | "network" | "learn",
+  NavigationBlockId,
   Partial<Record<NavigationItem["id"], number>>
 > = {
   home: {
@@ -10,7 +10,8 @@ export const BLOCK_PREVIEW_PRIORITY: Record<
     pilotage: 3,
     admin: 4,
     sponsor: 5,
-    elus: 6,
+    funding: 6,
+    elus: 7,
   },
   act: {
     "rejoindre-une-action": 1,
@@ -24,24 +25,25 @@ export const BLOCK_PREVIEW_PRIORITY: Record<
   },
   impact: {},
   network: {
-    network: 1,
-    community: 2,
-    feedback: 3,
-    messagerie: 4,
-    "open-data": 5,
-    annuaire: 6,
-    funding: 7,
-    actors: 8,
+    community: 1,
+    feedback: 2,
+    messagerie: 3,
+    network: 4,
+    funding: 5,
+    actors: 6,
+    "open-data": 7,
+    annuaire: 8,
   },
+  connect: { messagerie: 1, dm: 2 },
   learn: {
-    hub: 1,
-    climate: 2,
-    recycling: 3,
+    "learn-comprendre": 1,
+    "learn-sentrainer": 2,
+    "learn-bonnes-pratiques": 3,
   },
 };
 
 export function sortItemsForPreview(
-  blockId: keyof typeof BLOCK_PREVIEW_PRIORITY,
+  blockId: NavigationBlockId,
   items: NavigationItem[],
 ): NavigationItem[] {
   const blockPriority = BLOCK_PREVIEW_PRIORITY[blockId];

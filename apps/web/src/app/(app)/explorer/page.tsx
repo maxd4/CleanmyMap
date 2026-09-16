@@ -5,9 +5,9 @@ import { getCurrentUserActiveRole } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import {
   getNavigationSpacesForProfile,
-  type NavigationItem,
   type NavigationBlockId,
 } from "@/lib/navigation";
+import { sortItemsForPreview } from "@/lib/accueil/navigation";
 import { toProfile } from "@/lib/profiles";
 import { getServerDisplayModePreference, getServerLocale } from "@/lib/server-preferences";
 import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
@@ -17,28 +17,6 @@ export const metadata: Metadata = {
   description: "Explorez toutes les sections de CleanMyMap : carte interactive, actions de nettoyage, signalements de pollution, communauté de bénévoles écologistes.",
   robots: { index: true, follow: true },
 };
-
-const BLOCK_PREVIEW_PRIORITY: Record<NavigationBlockId, Partial<Record<NavigationItem["id"], number>>> = {
-  home:      { dashboard: 1, explorer: 2, pilotage: 3, admin: 4, sponsor: 5, funding: 6 },
-  act:       { "rejoindre-une-action": 1, new: 2, signalement: 3 },
-  visualize: { map: 1, methodologie: 2, reports: 3, gamification: 4 },
-  impact:    {},
-  network:   { "open-data": 1, network: 2, community: 3, feedback: 4, messagerie: 5, annuaire: 6 },
-  connect:   { messagerie: 1, dm: 2 },
-  learn:     {
-    "learn-comprendre": 1,
-    "learn-sentrainer": 2,
-    "learn-bonnes-pratiques": 3,
-  },
-};
-
-function getOrderedPreviewItems(blockId: NavigationBlockId, items: NavigationItem[]): NavigationItem[] {
-  const p = BLOCK_PREVIEW_PRIORITY[blockId];
-  return [...items].sort((a, b) => {
-    const pa = p[a.id] ?? 99, pb = p[b.id] ?? 99;
-    return pa !== pb ? pa - pb : a.label.fr.localeCompare(b.label.fr, "fr");
-  });
-}
 
 // Charte couleur officielle — même esprit que les blocs de navigation visibles
 const BLOCK_THEME: Record<NavigationBlockId, {
@@ -196,7 +174,7 @@ export default async function ExplorerPage() {
         {/* ── Grille de cartes hub — inspirée des blocs de navigation visibles ── */}
         <div className="mx-auto grid w-full grid-cols-1 items-start justify-center gap-5 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] lg:items-stretch lg:gap-6">
           {visibleSpaces.map((space) => {
-            const orderedItems = getOrderedPreviewItems(space.id, space.items);
+            const orderedItems = sortItemsForPreview(space.id, space.items);
             const t = BLOCK_THEME[space.id];
 
             return (

@@ -26,8 +26,8 @@ const createBubbleIcon = (
 ) => {
   const primaryType = entry.types[0];
   let color = "#8b5cf6"; // violet default
-  if (primaryType === "environnemental") color = "#6366f1"; // indigo/violet mix
-  if (primaryType === "social") color = "#4f46e5"; // indigo
+  if (primaryType === "environnemental") color = "#8b5cf6"; // violet
+  if (primaryType === "social") color = "#7c3aed"; // violet
   if (primaryType === "humanitaire") color = "#7c3aed"; // violet deeper
 
   const initials = entry.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();

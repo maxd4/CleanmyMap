@@ -56,9 +56,9 @@ export function AnnuaireThematicExploration({
       id: "climat", 
       label: fr ? "Climat" : "Climate", 
       icon: Wind, 
-      color: "text-indigo-400",
-      bg: "bg-indigo-500/10",
-      border: "border-indigo-500/20",
+      color: "text-violet-400",
+      bg: "bg-violet-500/10",
+      border: "border-violet-500/20",
       desc: fr ? "Actions directes contre le réchauffement climatique." : "Direct actions against global warming."
     },
     { 
@@ -94,7 +94,7 @@ export function AnnuaireThematicExploration({
             {isActive && (
               <motion.div 
                 layoutId="active-theme-glow"
-                className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-indigo-500/10 -z-10"
+                className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-purple-500/10 -z-10"
               />
             )}
             

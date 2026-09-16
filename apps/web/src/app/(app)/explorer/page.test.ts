@@ -36,9 +36,10 @@ describe("explorer summary presentation contract", () => {
     expect(source).not.toContain("xl:flex-nowrap");
   });
 
-  it("puts public data first in the network and discussions block", () => {
-    expect(source).toContain(
-      'network:   { "open-data": 1, network: 2, community: 3, feedback: 4, messagerie: 5, annuaire: 6 }',
-    );
+  it("uses the canonical accueil preview ordering", () => {
+    expect(source).toContain('import { sortItemsForPreview } from "@/lib/accueil/navigation";');
+    expect(source).toContain("sortItemsForPreview(space.id, space.items)");
+    expect(source).not.toContain("const BLOCK_PREVIEW_PRIORITY");
+    expect(source).not.toContain("function getOrderedPreviewItems");
   });
 });
