@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getAccountSetupProfileOptions,
+  getAccountSetupDeferralConfirmationMessage,
   getAccountSetupDeferralLabel,
   resolveAccountSetupDisplayMode,
   resolveAccountSetupDisplayNameMode,
@@ -38,6 +39,17 @@ describe("account setup initial state", () => {
     expect(getAccountSetupDeferralLabel(true)).toBe("Plus tard, sans enregistrer");
     expect(shouldConfirmAccountSetupDeferral(false)).toBe(false);
     expect(shouldConfirmAccountSetupDeferral(true)).toBe(true);
+    expect(getAccountSetupDeferralConfirmationMessage()).toBe(
+      "Des modifications ne sont pas enregistrées. Continuer sans les enregistrer ?",
+    );
+  });
+
+  it("makes a partial persistence deferral explicit", () => {
+    expect(getAccountSetupDeferralLabel(false, 1)).toBe("Quitter, modifications conservées");
+    expect(shouldConfirmAccountSetupDeferral(false, 1)).toBe(true);
+    expect(getAccountSetupDeferralConfirmationMessage(1)).toBe(
+      "Certaines modifications ont déjà été enregistrées. Quitter ne les annulera pas.",
+    );
   });
 
   it("only exposes field errors after touch or submit attempt", () => {

@@ -121,9 +121,10 @@ export async function persistAccountSetupChanges({
   saveDisplayMode: () => void | Promise<void>;
   /**
    * Progress owned by the caller and reused for a retry after a partial
-   * success. Clerk, active-profile persistence, metadata and browser
-   * preferences are separate external systems: there is no cross-system
-   * transaction, so these writes intentionally remain sequential.
+   * success. Clerk, active-profile persistence, browser preferences and
+   * completion metadata are separate external systems: there is no cross-system
+   * transaction, so these writes intentionally remain sequential. Completion
+   * metadata is the final persistence boundary.
    */
   completedSteps?: Set<AccountSetupPersistenceStep>;
 }): Promise<void> {
@@ -154,13 +155,13 @@ export async function persistAccountSetupChanges({
     completedSteps.add("activeProfile");
   }
 
-  if (!completedSteps.has("metadata")) {
-    await updateUser({ unsafeMetadata: metadata });
-    completedSteps.add("metadata");
-  }
-
   if (!completedSteps.has("displayMode")) {
     await saveDisplayMode();
     completedSteps.add("displayMode");
+  }
+
+  if (!completedSteps.has("metadata")) {
+    await updateUser({ unsafeMetadata: metadata });
+    completedSteps.add("metadata");
   }
 }
