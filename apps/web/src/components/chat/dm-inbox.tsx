@@ -8,6 +8,7 @@ import type { DmConversation } from "./chat-types";
 import type { ActionShareContactRequest } from "./chat-types";
 import { ChatAvatar } from "./chat-avatar";
 import { ChatActionReferenceCard } from "./ui/chat-action-reference-card";
+import { CmmCountBadge } from "@/components/ui/cmm-count-badge";
 
 type DmInboxProps = {
   conversations: DmConversation[];
@@ -83,14 +84,11 @@ export const DmInbox = memo(function DmInbox({
             <h2 className={`text-base font-black ${isLight ? "text-slate-900" : "text-white"}`}>
               Conversations
             </h2>
-            {notificationUnreadCount > 0 ? (
-              <span
-                className="inline-flex min-w-5 items-center justify-center rounded-full bg-fuchsia-600 px-1.5 py-0.5 cmm-text-caption font-black text-white"
-                aria-label={`${notificationUnreadCount} notification${notificationUnreadCount > 1 ? "s" : ""} privée${notificationUnreadCount > 1 ? "s" : ""} non lue${notificationUnreadCount > 1 ? "s" : ""}`}
-              >
-                {notificationUnreadCount > 99 ? "99+" : notificationUnreadCount}
-              </span>
-            ) : null}
+            <CmmCountBadge
+              count={notificationUnreadCount}
+              tone="violet"
+              accessibleLabel={`${notificationUnreadCount} notification${notificationUnreadCount > 1 ? "s" : ""} privée${notificationUnreadCount > 1 ? "s" : ""} non lue${notificationUnreadCount > 1 ? "s" : ""}`}
+            />
           </div>
         </div>
         <button
@@ -203,11 +201,12 @@ export const DmInbox = memo(function DmInbox({
                         {conversation.lastMessage.direction === "sent" ? "Vous : " : ""}
                         {conversation.lastMessage.content}
                       </span>
-                      {hasUnread ? (
-                        <span className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-indigo-600 px-1.5 py-0.5 cmm-text-caption font-black text-white" aria-label={`${conversation.unreadCount} message${conversation.unreadCount > 1 ? "s" : ""} non lu${conversation.unreadCount > 1 ? "s" : ""}`}>
-                          {conversation.unreadCount > 99 ? "99+" : conversation.unreadCount}
-                        </span>
-                      ) : null}
+                      <CmmCountBadge
+                        count={conversation.unreadCount}
+                        tone="indigo"
+                        className="shrink-0"
+                        accessibleLabel={`${conversation.unreadCount} message${conversation.unreadCount > 1 ? "s" : ""} non lu${conversation.unreadCount > 1 ? "s" : ""}`}
+                      />
                     </span>
                   </span>
                 </button>

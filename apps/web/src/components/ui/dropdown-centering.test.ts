@@ -49,8 +49,10 @@ describe("dropdown centering contract", () => {
     expect(ribbonItem).toContain("text-white");
     expect(ribbonItem).toContain("hover:bg-white/10");
     expect(ribbonItem).toContain("focus-visible:ring");
-    expect(notificationBell).toContain('panelRole="region"');
-    expect(notificationBell).not.toContain('role="dialog"');
+    expect(notificationBell).toContain("CmmPopover");
+    expect(notificationBell).toContain('id="notifications-popover-panel"');
+    expect(notificationBell).not.toContain('panelRole="region"');
+    expect(notificationBell).not.toContain('role="menu"');
     expect(notificationBell).not.toContain("aria-modal");
     expect(notificationBell).not.toContain("fixed inset-0");
   });

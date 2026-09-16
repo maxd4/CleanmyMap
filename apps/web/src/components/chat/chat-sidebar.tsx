@@ -9,6 +9,7 @@ import type { ChatTopicDefinition, ChatTopicId } from "./discussion-guidance";
 import { ChannelButton } from "./ui/channel-button";
 import { ChatActionSurface } from "./chat-action-surface";
 import { ChatTerritorySelector } from "./chat-territory-selector";
+import { CmmCountBadge } from "@/components/ui/cmm-count-badge";
 import type { ActionListItem } from "@/lib/actions/types";
 
 export type ChatSidebarChannel = {
@@ -124,14 +125,12 @@ export const ChatSidebar = memo(function ChatSidebar({
                 {topic.description}
               </span>
             </div>
-            {topic.unreadCount && topic.unreadCount > 0 ? (
-              <span
-                className="inline-flex min-w-5 shrink-0 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 cmm-text-caption font-black text-white"
-                aria-label={`${topic.unreadCount} notification${topic.unreadCount > 1 ? "s" : ""} non lue${topic.unreadCount > 1 ? "s" : ""}`}
-              >
-                {topic.unreadCount > 99 ? "99+" : topic.unreadCount}
-              </span>
-            ) : null}
+            <CmmCountBadge
+              count={topic.unreadCount ?? 0}
+              tone="rose"
+              className="shrink-0"
+              accessibleLabel={`${topic.unreadCount ?? 0} notification${(topic.unreadCount ?? 0) > 1 ? "s" : ""} non lue${(topic.unreadCount ?? 0) > 1 ? "s" : ""}`}
+            />
           </button>
         );
       })}

@@ -19,7 +19,7 @@ import {
   useDropdownPlacement,
 } from "./use-dropdown-placement";
 
-export type CmmDropdownPanelRole = "menu" | "region";
+export type CmmDropdownPanelRole = "menu" | "region" | "dialog";
 
 export type CmmDropdownTriggerProps = {
   ref: Ref<HTMLButtonElement>;
@@ -33,7 +33,7 @@ export type CmmDropdownTriggerProps = {
   onMouseEnter: () => void;
 };
 
-type CmmDropdownProps = {
+export type CmmDropdownProps = {
   id: string;
   ariaLabel: string;
   children: ReactNode;
@@ -48,6 +48,7 @@ type CmmDropdownProps = {
   panelAlignment?: "center" | "start";
   wrapperClassName?: string;
   verticalGap?: number;
+  openOnHover?: boolean;
   hoverCloseDelayMs?: number;
 };
 
@@ -68,6 +69,7 @@ export function CmmDropdown({
   panelAlignment = "center",
   wrapperClassName,
   verticalGap = DEFAULT_DROPDOWN_VERTICAL_GAP_PX,
+  openOnHover = true,
   hoverCloseDelayMs = DEFAULT_HOVER_CLOSE_DELAY_MS,
 }: CmmDropdownProps) {
   const isControlled = open !== undefined;
@@ -168,13 +170,17 @@ export function CmmDropdown({
   }, [clearCloseTimer, clearHoverOpenTimer, clearHoverOpenedMarker, isOpen, setOpen]);
 
   useEffect(() => {
+    if (!openOnHover) {
+      return;
+    }
+
     const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
     const updateCanHover = () => setCanHover(mediaQuery.matches);
 
     updateCanHover();
     mediaQuery.addEventListener("change", updateCanHover);
     return () => mediaQuery.removeEventListener("change", updateCanHover);
-  }, []);
+  }, [openOnHover]);
 
   useEffect(() => {
     if (wasOpenRef.current && !isOpen && restoreFocusOnCloseRef.current) {
@@ -289,8 +295,8 @@ export function CmmDropdown({
     <div
       ref={wrapperRef}
       className={cn("relative shrink-0", wrapperClassName)}
-      onMouseEnter={canHover ? openFromHover : undefined}
-      onMouseLeave={canHover ? closeFromHover : undefined}
+      onMouseEnter={openOnHover && canHover ? openFromHover : undefined}
+      onMouseLeave={openOnHover && canHover ? closeFromHover : undefined}
     >
       {renderTrigger(triggerProps)}
       {isOpen ? (
@@ -304,8 +310,8 @@ export function CmmDropdown({
             panelClassName,
           )}
           style={fixedPositionStyle}
-          onMouseEnter={canHover ? openFromHover : undefined}
-          onMouseLeave={canHover ? closeFromHover : undefined}
+          onMouseEnter={openOnHover && canHover ? openFromHover : undefined}
+          onMouseLeave={openOnHover && canHover ? closeFromHover : undefined}
         >
           <span
             aria-hidden="true"
@@ -315,7 +321,7 @@ export function CmmDropdown({
                 ? { bottom: `-${verticalGap}px`, height: `${verticalGap}px` }
                 : { top: `-${verticalGap}px`, height: `${verticalGap}px` }
             }
-            onMouseEnter={canHover ? openFromHover : undefined}
+            onMouseEnter={openOnHover && canHover ? openFromHover : undefined}
           />
           <span
             aria-hidden="true"

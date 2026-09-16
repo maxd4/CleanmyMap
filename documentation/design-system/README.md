@@ -24,7 +24,7 @@ expérimentales. Un README oriente ; il ne remplace pas un contrat spécialisé.
   marque web CleanMyMap.
 
 Les autres contrats spécialisés (`ICONS.md`, `DISCLOSURE_ACCORDIONS.md`,
-`OVERLAYS_DIALOGS.md`, `DATA_DISPLAY_TABLES_KPI.md`, `TEXTURE_SURFACES.md`,
+`OVERLAYS_DIALOGS.md`, `INDICATORS_BADGES.md`, `DATA_DISPLAY_TABLES_KPI.md`, `TEXTURE_SURFACES.md`,
 `HOMEPAGE_SECTION_HEADINGS.md`, `ui-score-formatting.md`, etc.) restent les
 références de leur responsabilité. Réutiliser les composants existants ; pour
 les titres principaux, `PageHeader` reste la référence runtime.

@@ -23,9 +23,40 @@ pas transformer le badge en bloc de métriques.
 conserve son export, ses huit tones, `children` et `className` afin de ne pas
 casser les consommateurs existants.
 
+## CmmCountBadge
+
+`CmmCountBadge` est la primitive canonique d’un compteur numérique dynamique
+compact : notification, message non lu ou autre quantité courte dont le
+calcul appartient au consommateur. Il ne remplace pas `CmmBadge`, qui reste
+réservé aux labels statiques, catégories et états déjà visibles.
+
+```tsx
+import { CmmCountBadge } from "@/components/ui/cmm-count-badge";
+
+<CmmCountBadge
+  count={unreadCount}
+  tone="rose"
+  accessibleLabel={`${unreadCount} messages non lus`}
+/>;
+```
+
+`count <= 0` ne rend rien. La valeur est affichée exactement jusqu’à `max`
+(`99` par défaut), puis sous la forme `max+` (`99+` par défaut). Les tones
+réutilisent la palette et les tokens de `CmmBadge` dans `indicators.css` ; la
+primitive n’introduit ni palette parallèle, ni animation pulse/ping, ni
+`role="status"` ou live region implicite.
+
+Un `accessibleLabel` rend le compteur compréhensible dans son contexte. Sans
+ce libellé, le compteur est décoratif (`aria-hidden`) lorsque le parent porte
+déjà l’information, afin que les mises à jour de polling ne provoquent pas
+d’annonces répétées.
+
 ## Badge, pill, action, feedback et progress
 
 - Un badge est statique et compact.
+- Un compteur numérique dynamique relève de `CmmCountBadge`, pas de
+  `CmmBadge` ; son libellé accessible et sa relation avec le parent restent
+  explicites.
 - `shape="rounded"` est la forme standard des labels et badges compacts.
 - `shape="pill"` est réservée à une capsule lorsque la forme est requise par
   le contexte visuel ou sémantique.
