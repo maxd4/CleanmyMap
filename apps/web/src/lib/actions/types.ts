@@ -48,6 +48,7 @@ export const ACTION_GEOMETRY_SOURCES = [
 ] as const;
 export type ActionGeometryOrigin = (typeof ACTION_GEOMETRY_SOURCES)[number];
 export type ActionGeometrySource = ActionGeometryOrigin;
+export type ActionRouteTopology = "loop" | "point_to_point";
 export type ActionSubmissionMode = "quick" | "complete";
 export type ActionPhase =
   | "pre_action"
@@ -87,6 +88,8 @@ export type ActionPreparationData = {
   groupJoinEnabled?: boolean;
   expectedWasteCategories?: WasteCategorySlug[];
   midRouteLocationLabel?: string;
+  /** Canonical route topology; legacy payloads are normalized before persistence. */
+  routeTopology?: ActionRouteTopology;
   /** Immutable route evidence captured before this action was created. */
   routeCalibrationContext?: RouteCalibrationContext;
   /** Mutable operational copy planned from the planner, kept separate from the snapshot. */
@@ -297,6 +300,7 @@ export type CreateActionPayload = {
   departmentName?: string | null;
   departureLocationLabel?: string;
   arrivalLocationLabel?: string;
+  routeTopology?: ActionRouteTopology;
   routeStyle?: "direct" | "souple";
   routeTargetDistanceKm?: number;
   routeAdjustmentMessage?: string;

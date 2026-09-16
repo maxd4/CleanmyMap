@@ -9,6 +9,7 @@ import {
   resolveDefaultActionOrganizerIds,
 } from "@/lib/actions/participation/organizers";
 import { createAction } from "@/lib/actions/store";
+import { ActionRouteReconstructionError } from "@/lib/actions/geometry/route-reconstruction-error";
 import {
   createSignalement,
   SignalementCreationValidationError,
@@ -172,13 +173,21 @@ export async function createActionSubmission(
 
   const status = "pending" as const;
 
-  const created = await createAction(params.supabase, {
-    userId: params.userId,
-    payload,
-    organizers: organizerResolution.organizers,
-    manualParticipants: participantResolution.participants,
-    status,
-  });
+  let created: Awaited<ReturnType<typeof createAction>>;
+  try {
+    created = await createAction(params.supabase, {
+      userId: params.userId,
+      payload,
+      organizers: organizerResolution.organizers,
+      manualParticipants: participantResolution.participants,
+      status,
+    });
+  } catch (error) {
+    if (error instanceof ActionRouteReconstructionError) {
+      throw new ActionCreationValidationError(error.fieldErrors);
+    }
+    throw error;
+  }
 
   try {
     await invalidatePublicSurfaceSnapshotsByRoute(["api/actions", "api/actions/map"]);

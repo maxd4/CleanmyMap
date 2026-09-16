@@ -261,7 +261,15 @@ La couleur ne porte pas la fiabilité géométrique :
 - point : localisation seule ;
 - épaisseur : sélection et lisibilité, jamais score.
 
-Une action sans tracé réel peut recevoir une boucle reconstruite côté serveur.
+Une action sans tracé réel peut recevoir une géométrie reconstruite côté serveur.
+La topologie canonique est `loop` ou `point_to_point`, indépendamment de
+`routeStyle`. Une `loop` impose un départ et revient explicitement à ce départ ;
+un `point_to_point` suit `départ → [mi-parcours] → arrivée` sans retour
+automatique. Les payloads historiques sont normalisés : une arrivée renseignée
+sans topologie signifie `point_to_point`, sinon `loop`. Une arrivée absente ou
+impossible à localiser dans le mode `point_to_point` produit une validation
+explicite.
+
 `routed` désigne une géométrie retournée par le réseau piéton FOSSGIS/OSRM ;
 `estimated_route` désigne uniquement le repli local déterministe lorsque ce
 réseau ou son quota est indisponible. La distance cible saisie dans

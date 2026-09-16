@@ -21,6 +21,7 @@ import {
   toGeoJsonString,
 } from "@/lib/actions/geometry/derived-geometry";
 import { reconstructActionRoute } from "@/lib/actions/geometry/route-reconstruction";
+import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
 import type { RouteGeometry } from "@/lib/route/route-contract";
 import { resolveRouteTargetDistanceKm } from "@/lib/actions/route-target-distance";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
@@ -54,11 +55,7 @@ async function resolveCreateActionDrawing(
   if (manualDrawing && manualDrawing.coordinates.length > 0) {
     return {
       drawing: manualDrawing,
-      geometrySource: payload.geometrySource === "routed"
-        ? "routed"
-        : payload.geometrySource === "reference"
-          ? "reference"
-          : "manual",
+      geometrySource: payload.geometrySource ?? "manual",
       routeGeometry: null,
       origin: manualDrawing.coordinates[0] ?? null,
     };
@@ -69,6 +66,14 @@ async function resolveCreateActionDrawing(
     longitude: payload.longitude,
     locationLabel: payload.locationLabel,
     departureLocationLabel: payload.departureLocationLabel,
+    midpointLocationLabel: payload.preparationData?.midRouteLocationLabel,
+    arrivalLocationLabel:
+      payload.arrivalLocationLabel ?? payload.preparationData?.zoneCiblePrevue,
+    topology: resolveActionRouteTopology({
+      topology: payload.routeTopology ?? payload.preparationData?.routeTopology,
+      arrivalLocationLabel:
+        payload.arrivalLocationLabel ?? payload.preparationData?.zoneCiblePrevue,
+    }),
     durationMinutes: payload.durationMinutes,
     routeTargetDistanceKm: payload.preparationData?.routeTargetDistanceKm,
   });
@@ -87,14 +92,12 @@ export function buildCreateActionGeometry(
   finalDrawing: ActionDrawing | null,
   finalGeometrySource?: ActionGeometrySource | null,
 ) {
-  const geometrySource = finalDrawing
-    ? finalDrawing.kind === "polygon"
+  const geometrySource: ActionGeometrySource = finalDrawing
+    ? finalGeometrySource ?? payload.geometrySource ?? (payload.manualDrawing
       ? "manual"
-      : finalGeometrySource ?? (payload.geometrySource === "manual" || payload.geometrySource === "routed"
-        ? payload.geometrySource
-        : payload.manualDrawing
-          ? "manual"
-          : "routed")
+      : finalDrawing.kind === "polyline"
+        ? "routed"
+        : "manual")
     : "fallback_point";
 
   return buildPersistedGeometry({
@@ -127,7 +130,15 @@ export function buildActionInsertPayload(params: {
   routeGeometry?: RouteGeometry | null;
   status: Exclude<ActionStatus, "cancelled"> | undefined;
 }) {
-  const normalizedPreparationData = normalizeActionPreparationData(params.payload.preparationData ?? {});
+  const routeTopology = resolveActionRouteTopology({
+    topology: params.payload.routeTopology ?? params.payload.preparationData?.routeTopology,
+    arrivalLocationLabel:
+      params.payload.arrivalLocationLabel ?? params.payload.preparationData?.zoneCiblePrevue,
+  });
+  const normalizedPreparationData = normalizeActionPreparationData({
+    ...(params.payload.preparationData ?? {}),
+    routeTopology,
+  });
   const preparationDataWithRoute = params.routeGeometry
     ? {
         ...normalizedPreparationData,
@@ -244,7 +255,19 @@ export async function createAction(
     };
   },
 ): Promise<{ id: string }> {
-  const payload = params.payload;
+  const routeTopology = resolveActionRouteTopology({
+    topology: params.payload.routeTopology ?? params.payload.preparationData?.routeTopology,
+    arrivalLocationLabel:
+      params.payload.arrivalLocationLabel ?? params.payload.preparationData?.zoneCiblePrevue,
+  });
+  const payload: CreateActionPayload = {
+    ...params.payload,
+    routeTopology,
+    preparationData: {
+      ...(params.payload.preparationData ?? {}),
+      routeTopology,
+    },
+  };
 
   const resolvedDrawing = await resolveCreateActionDrawing(payload);
   const payloadWithRouteTarget: CreateActionPayload = {

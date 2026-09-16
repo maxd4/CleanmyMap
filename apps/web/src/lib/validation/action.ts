@@ -31,6 +31,7 @@ import {
 } from "@/lib/waste/measurement";
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import { normalizeVolunteerParticipation } from "@/lib/actions/volunteer-participation";
+import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
 
 const coordinateSchema = z.tuple([
   z.number().min(-90).max(90),
@@ -246,6 +247,7 @@ const preparationDataSchema = z
     groupJoinEnabled: z.boolean().optional(),
     expectedWasteCategories: z.array(wasteCategorySlugSchema).max(20).optional(),
     midRouteLocationLabel: z.string().max(200).optional(),
+    routeTopology: z.enum(["loop", "point_to_point"]).optional(),
     routeCalibrationContext: z.custom<RouteCalibrationContext>(
       isRouteCalibrationContext,
       "Contexte historique de calibration invalide.",
@@ -319,6 +321,27 @@ function addTemporalContractIssue(
   }
 }
 
+function addRouteTopologyIssue(
+  value: {
+    routeTopology?: "loop" | "point_to_point";
+    arrivalLocationLabel?: string | null;
+  },
+  ctx: z.RefinementCtx,
+  path: (string | number)[] = ["arrivalLocationLabel"],
+) {
+  const topology = resolveActionRouteTopology({
+    topology: value.routeTopology,
+    arrivalLocationLabel: value.arrivalLocationLabel,
+  });
+  if (topology === "point_to_point" && !value.arrivalLocationLabel?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path,
+      message: "Une arrivée est obligatoire pour un parcours départ → arrivée.",
+    });
+  }
+}
+
 const createActionLegacyBaseSchema = z.object({
   actorName: z.string().min(1).max(120).optional(),
   associationName: associationNameSchema,
@@ -336,6 +359,7 @@ const createActionLegacyBaseSchema = z.object({
   departmentName: z.string().trim().max(120).nullable().optional(),
   departureLocationLabel: z.string().min(2).max(200).optional(),
   arrivalLocationLabel: z.string().min(2).max(200).optional(),
+  routeTopology: z.enum(["loop", "point_to_point"]).optional(),
   routeStyle: z.enum(["direct", "souple"]).optional(),
   routeAdjustmentMessage: z.string().max(500).optional(),
   latitude: z.number().min(-90).max(90).optional(),
@@ -375,9 +399,10 @@ const createActionLegacyBaseSchema = z.object({
 
 const createActionLegacySchema = createActionLegacyBaseSchema
   .extend({ plannerSnapshotProof: routePlannerProofSchema })
-  .superRefine(
-  addTemporalContractIssue,
-);
+  .superRefine((value, ctx) => {
+    addTemporalContractIssue(value, ctx);
+    addRouteTopologyIssue(value, ctx);
+  });
 
 const createActionContractSchema = z.object({
   type: z.enum(["action", "clean_place", "spot"]),
@@ -391,6 +416,7 @@ const createActionContractSchema = z.object({
   }),
   departureLocationLabel: z.string().min(2).max(200).optional(),
   arrivalLocationLabel: z.string().min(2).max(200).optional(),
+  routeTopology: z.enum(["loop", "point_to_point"]).optional(),
   routeStyle: z.enum(["direct", "souple"]).optional(),
   routeAdjustmentMessage: z.string().max(500).optional(),
   geometry: contractGeometrySchema.optional(),
@@ -424,7 +450,10 @@ const createActionContractSchema = z.object({
       .optional(),
     notes: z.string().max(1000).optional(),
     routeStyle: z.enum(["direct", "souple"]).optional(),
+    routeTopology: z.enum(["loop", "point_to_point"]).optional(),
     routeAdjustmentMessage: z.string().max(500).optional(),
+    departureLocationLabel: z.string().min(2).max(200).optional(),
+    arrivalLocationLabel: z.string().min(2).max(200).optional(),
     submissionMode: z.enum(["quick", "complete"]).optional(),
     actionPhase: actionPhaseSchema.optional(),
     preparationData: preparationDataSchema.nullable().optional(),
@@ -435,14 +464,24 @@ const createActionContractSchema = z.object({
     visionEstimate: visionEstimateSchema.nullable().optional(),
   }),
 }).superRefine((value, ctx) =>
-  addTemporalContractIssue(
-    {
-      durationMinutes: value.metadata.durationMinutes,
-      eventStartTime: value.dates.eventStartTime,
-      eventEndTime: value.dates.eventEndTime,
-    },
-    ctx,
-  ),
+  (() => {
+    addTemporalContractIssue(
+      {
+        durationMinutes: value.metadata.durationMinutes,
+        eventStartTime: value.dates.eventStartTime,
+        eventEndTime: value.dates.eventEndTime,
+      },
+      ctx,
+    );
+    addRouteTopologyIssue(
+      {
+        routeTopology: value.routeTopology ?? value.metadata.routeTopology,
+        arrivalLocationLabel:
+          value.arrivalLocationLabel ?? value.metadata.arrivalLocationLabel,
+      },
+      ctx,
+    );
+  })(),
 );
 
 export const createActionSchema = z

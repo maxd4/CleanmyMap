@@ -37,6 +37,7 @@ import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/
 import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart-assist";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
 import { getTimeContractValidationMessage } from "@/lib/actions/time-contract";
+import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
 import { consumePlannerActionHandoff } from "@/lib/route/route-action-handoff";
 import type {
   FormState,
@@ -434,6 +435,9 @@ export function useActionDeclarationForm({
     if (updates.routeStyle !== undefined) {
       nextForm.routeStyle = "souple";
     }
+    if (updates.routeTopology === "loop") {
+      nextForm.arrivalLocationLabel = "";
+    }
     if (updates.associationName === "Action spontanée") {
       nextForm.organizerAccounts = "";
     }
@@ -459,6 +463,13 @@ export function useActionDeclarationForm({
   function normalizeFormBeforeSubmit(f: FormState): FormState {
     const normalized = { ...f };
     normalized.routeStyle = "souple";
+    normalized.routeTopology = resolveActionRouteTopology({
+      topology: normalized.routeTopology,
+      arrivalLocationLabel: normalized.arrivalLocationLabel,
+    });
+    if (normalized.routeTopology === "loop") {
+      normalized.arrivalLocationLabel = "";
+    }
     if (normalized.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE) {
       normalized.associationName = "Action spontanée";
     }
@@ -652,6 +663,13 @@ function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
     issues.push({
       field: "actionDate",
       message: "Indiquez la date de l’action avant l’envoi.",
+    });
+  }
+
+  if (form.routeTopology === "point_to_point" && !form.arrivalLocationLabel.trim()) {
+    issues.push({
+      field: "arrivalLocationLabel",
+      message: "Indiquez une arrivée pour un parcours départ → arrivée.",
     });
   }
 

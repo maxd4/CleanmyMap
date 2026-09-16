@@ -1,4 +1,5 @@
 import type { FormState } from "./types";
+import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
 
 export const ACTION_DECLARATION_DRAFT_KEY = "cmm_action_draft";
 export const ACTION_DECLARATION_DRAFT_DATE_KEY = "cmm_action_draft_date";
@@ -29,6 +30,7 @@ const FORM_STATE_KEYS = [
   "locationLabel",
   "departureLocationLabel",
   "arrivalLocationLabel",
+  "routeTopology",
   "routeStyle",
   "routeAdjustmentMessage",
   "plannedObjective",
@@ -238,6 +240,10 @@ export function loadDraftSnapshot(
     }
 
     next.routeStyle = "souple";
+    next.routeTopology = resolveActionRouteTopology({
+      topology: next.routeTopology as FormState["routeTopology"],
+      arrivalLocationLabel: next.arrivalLocationLabel,
+    });
     if (recordTypeOverride) {
       next.recordType = recordTypeOverride;
     }

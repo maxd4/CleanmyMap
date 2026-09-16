@@ -2,6 +2,7 @@ import type {
  ActionDrawing,
  ActionMegotsCondition,
  ActionRecordType,
+ ActionRouteTopology,
  ActionWasteMeasurementMethod,
 } from"@/lib/actions/types";
 import {
@@ -35,6 +36,7 @@ export type FormState = {
  departureLocationLabel: string;
  midRouteLocationLabel?: string;
  arrivalLocationLabel: string;
+ routeTopology: ActionRouteTopology;
  routeStyle:"direct" |"souple";
  routeAdjustmentMessage: string;
  plannedObjective: "repérage" |"nettoyage" |"collecte_mégots" |"action_mixte" |"sensibilisation" |"autre";
@@ -107,6 +109,7 @@ export const initialState: FormState = {
  departureLocationLabel:"",
  midRouteLocationLabel:"",
  arrivalLocationLabel:"",
+ routeTopology:"loop",
  routeStyle:"souple",
  routeAdjustmentMessage:"",
  plannedObjective:"nettoyage",
@@ -219,6 +222,7 @@ export type ValidationIssue = {
  |"enterpriseName"
  |"actionDate"
  |"locationLabel"
+ |"arrivalLocationLabel"
  |"manualDrawing"
  |"wasteKg"
  |"volunteersCount"

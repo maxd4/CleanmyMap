@@ -3,11 +3,13 @@ import {
   ActionSubmissionMode,
   ActionPhase,
   ActionPreparationData,
+  ActionRouteTopology,
   ActionWasteBreakdown,
   ActionPhotoAsset,
   ActionVisionEstimate,
   CreateActionPayload,
 } from "../types";
+import { resolveActionRouteTopology } from "../route-topology";
 import type { ActionGeometrySource } from "../types";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract";
@@ -30,6 +32,7 @@ export type ActionContractCreatePayload = {
   };
   departureLocationLabel?: string;
   arrivalLocationLabel?: string;
+  routeTopology?: ActionRouteTopology;
   routeStyle?: "direct" | "souple";
   routeAdjustmentMessage?: string;
   geometry?: {
@@ -71,6 +74,7 @@ export type ActionContractCreatePayload = {
     wasteMeasurementMethod?: import("@/lib/waste/measurement").ActionWasteMeasurementMethod | null;
     departureLocationLabel?: string;
     arrivalLocationLabel?: string;
+    routeTopology?: ActionRouteTopology;
     photos?: ActionPhotoAsset[];
     visionEstimate?: ActionVisionEstimate | null;
   };
@@ -94,6 +98,7 @@ export function toContractCreatePayload(
     },
     departureLocationLabel: payload.departureLocationLabel,
     arrivalLocationLabel: payload.arrivalLocationLabel,
+    routeTopology: payload.routeTopology,
     routeStyle: payload.routeStyle,
     routeAdjustmentMessage: payload.routeAdjustmentMessage,
     geometry: payload.manualDrawing
@@ -134,6 +139,7 @@ export function toContractCreatePayload(
       durationMinutes: payload.durationMinutes,
       notes: payload.notes,
       routeStyle: payload.routeStyle,
+      routeTopology: payload.routeTopology,
       routeAdjustmentMessage: payload.routeAdjustmentMessage,
       submissionMode: payload.submissionMode,
       wasteBreakdown: payload.wasteBreakdown,
@@ -189,13 +195,24 @@ function buildManualDrawing(
 function normalizeContractCreatePayload(
   payload: ActionContractCreatePayload,
 ): CreateActionPayload {
+  const arrivalLocationLabel = fallbackString(
+    payload.arrivalLocationLabel,
+    payload.metadata.arrivalLocationLabel,
+  );
+  const routeTopology = resolveActionRouteTopology({
+    topology: payload.routeTopology ?? payload.metadata.routeTopology,
+    arrivalLocationLabel,
+  });
   return {
     actorName: payload.metadata.actorName,
     associationName: payload.metadata.associationName,
     organizerType: payload.metadata.organizerType ?? undefined,
     groupJoinEnabled: payload.metadata.groupJoinEnabled,
     actionPhase: payload.metadata.actionPhase ?? undefined,
-    preparationData: payload.metadata.preparationData ?? null,
+    preparationData: {
+      ...(payload.metadata.preparationData ?? {}),
+      routeTopology,
+    },
     plannerSnapshotProof: payload.metadata.plannerSnapshotProof ?? null,
     organizerAccounts: payload.metadata.organizerAccounts ?? undefined,
     participantAccounts: payload.metadata.participantAccounts ?? undefined,
@@ -203,7 +220,8 @@ function normalizeContractCreatePayload(
     recordType: payload.type,
     locationLabel: payload.location.label,
     departureLocationLabel: fallbackString(payload.departureLocationLabel, payload.metadata.departureLocationLabel),
-    arrivalLocationLabel: fallbackString(payload.arrivalLocationLabel, payload.metadata.arrivalLocationLabel),
+    arrivalLocationLabel,
+    routeTopology,
     routeStyle: payload.routeStyle ?? payload.metadata.routeStyle ?? undefined,
     routeAdjustmentMessage: payload.routeAdjustmentMessage ?? payload.metadata.routeAdjustmentMessage ?? undefined,
     latitude: payload.location.latitude,
@@ -242,12 +260,27 @@ export function normalizeCreatePayload(
       ...payload,
       wasteKg: payload.wasteKg ?? null,
       cigaretteButts: payload.cigaretteButts ?? null,
+      routeTopology: resolveActionRouteTopology({
+        topology: payload.routeTopology ?? payload.preparationData?.routeTopology,
+        arrivalLocationLabel: payload.arrivalLocationLabel ?? payload.preparationData?.zoneCiblePrevue,
+      }),
     };
-    if (!payload.routeCalibrationContext) return normalizedMeasurements;
+    if (!payload.routeCalibrationContext) {
+      return {
+        ...normalizedMeasurements,
+        preparationData: {
+          ...(payload.preparationData ?? {}),
+          routeTopology: normalizedMeasurements.routeTopology,
+        },
+      };
+    }
     return {
       ...normalizedMeasurements,
       preparationData: withRouteCalibrationContext(
-        normalizedMeasurements.preparationData,
+        {
+          ...(normalizedMeasurements.preparationData ?? {}),
+          routeTopology: normalizedMeasurements.routeTopology,
+        },
         payload.routeCalibrationContext,
       ),
     };
