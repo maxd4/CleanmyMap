@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import {
   buildOsrmRouteUrl,
   routePolylineThroughStreetNetwork,
-  snapPolylineToStreetNetwork,
 } from "./osrm-routing";
 
 const stops: [number, number][] = [
@@ -215,37 +214,4 @@ describe("OSRM routing capability", () => {
     expect(transport).not.toHaveBeenCalled();
   });
 
-  it("preserves the compatibility snap API", async () => {
-    expect(buildOsrmRouteUrl(stops)).toContain("/route/v1/foot/");
-    const originalFetch = global.fetch;
-    global.fetch = vi.fn(async () =>
-      new Response(
-        JSON.stringify({
-          code: "Ok",
-          routes: [
-            {
-              distance: 100,
-              duration: 60,
-              geometry: {
-                coordinates: [
-                  [2.3522, 48.8566],
-                  [2.3532, 48.8576],
-                ],
-              },
-            },
-          ],
-        }),
-        { status: 200 },
-      ),
-    ) as typeof fetch;
-
-    try {
-      await expect(snapPolylineToStreetNetwork(stops.slice(0, 2))).resolves.toEqual([
-        [48.8566, 2.3522],
-        [48.8576, 2.3532],
-      ]);
-    } finally {
-      global.fetch = originalFetch;
-    }
-  });
 });

@@ -233,7 +233,7 @@ it("keeps point geometry only as a last resort when nothing exploitable exists",
   expect(mapItem.contract?.geometry.origin).toBe("fallback_point");
 });
 
-it("derives at least a polyline when departure and arrival labels exist", () => {
+it("does not synthesize a short route in the generic contract resolver", () => {
   const contract = buildActionDataContract({
     id: "action-derived-route",
     type: "action",
@@ -250,11 +250,11 @@ it("derives at least a polyline when departure and arrival labels exist", () => 
 
   const mapItem = toActionMapItem(contract);
 
-  expect(mapItem.contract?.geometry.kind).toBe("polyline");
+  expect(mapItem.contract?.geometry.kind).toBe("polygon");
   expect(mapItem.contract?.geometry.coordinates.length).toBeGreaterThanOrEqual(3);
   expect(mapItemShouldRenderPoint(mapItem)).toBe(false);
-  expect(mapItem.contract?.geometry.geometrySource).toBe("routed");
-  expect(mapItem.contract?.geometry.origin).toBe("routed");
+  expect(mapItem.contract?.geometry.geometrySource).toBe("estimated_area");
+  expect(mapItem.contract?.geometry.origin).toBe("estimated_area");
 });
 
 it("derives a compact polygon when one precise location label exists", () => {

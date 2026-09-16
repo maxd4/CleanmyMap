@@ -219,6 +219,13 @@ La couleur ne porte pas la fiabilité géométrique :
 - point : localisation seule ;
 - épaisseur : sélection et lisibilité, jamais score.
 
+Une action sans tracé réel peut recevoir une boucle reconstruite côté serveur.
+`routed` désigne une géométrie retournée par le réseau piéton FOSSGIS/OSRM ;
+`estimated_route` désigne uniquement le repli local déterministe lorsque ce
+réseau ou son quota est indisponible. La distance cible saisie dans
+`/actions/new` n'est jamais confondue avec la distance réseau finale. Le
+navigateur ne déclenche pas de routage pour produire ou recaler cette géométrie.
+
 Les polylines disposent d'une zone de clic/touch invisible élargie. L'action « Voir tout le tracé » cadre explicitement la géométrie sans recentrage automatique à chaque sélection.
 
 Infrastructure :

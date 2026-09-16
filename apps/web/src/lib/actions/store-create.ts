@@ -1,5 +1,7 @@
 import type {
   ActionDrawing,
+  ActionGeometrySource,
+  ActionPreparationData,
   ActionStatus,
   CreateActionPayload,
 } from "@/lib/actions/types";
@@ -18,7 +20,9 @@ import {
   GEOMETRY_CONFIDENCE,
   toGeoJsonString,
 } from "@/lib/actions/geometry/derived-geometry";
-import { deriveAutoDrawingFromLocation } from "@/lib/actions/geometry/route-geometry";
+import { reconstructActionRoute } from "@/lib/actions/geometry/route-reconstruction";
+import type { RouteGeometry } from "@/lib/route/route-contract";
+import { resolveRouteTargetDistanceKm } from "@/lib/actions/route-target-distance";
 import { normalizeActionPreparationData } from "@/lib/route/route-operational";
 import { sanitizeAdministrativeRequirementsForCreation } from "./administrative-requirements";
 import {
@@ -36,36 +40,61 @@ import {
   recordRepollutionPredictionEvaluationForAction,
 } from "./store-post-processing";
 
+type ResolvedCreateActionDrawing = {
+  drawing: ActionDrawing | null;
+  geometrySource: ActionGeometrySource | null;
+  routeGeometry: RouteGeometry | null;
+  origin: [number, number] | null;
+};
+
 async function resolveCreateActionDrawing(
   payload: CreateActionPayload,
-): Promise<ActionDrawing | null> {
+): Promise<ResolvedCreateActionDrawing> {
   const manualDrawing = payload.manualDrawing ?? null;
   if (manualDrawing && manualDrawing.coordinates.length > 0) {
-    return manualDrawing;
+    return {
+      drawing: manualDrawing,
+      geometrySource: payload.geometrySource === "routed"
+        ? "routed"
+        : payload.geometrySource === "reference"
+          ? "reference"
+          : "manual",
+      routeGeometry: null,
+      origin: manualDrawing.coordinates[0] ?? null,
+    };
   }
 
-  return (
-    (await deriveAutoDrawingFromLocation({
-      locationLabel: payload.locationLabel,
-      departureLocationLabel: payload.departureLocationLabel,
-      arrivalLocationLabel: payload.arrivalLocationLabel,
-      routeStyle: payload.routeStyle,
-    })) ?? null
-  );
+  const route = await reconstructActionRoute({
+    latitude: payload.latitude,
+    longitude: payload.longitude,
+    locationLabel: payload.locationLabel,
+    departureLocationLabel: payload.departureLocationLabel,
+    durationMinutes: payload.durationMinutes,
+    routeTargetDistanceKm: payload.preparationData?.routeTargetDistanceKm,
+  });
+  return route
+    ? {
+        drawing: route.drawing,
+        geometrySource: route.geometrySource,
+        routeGeometry: route.routeGeometry,
+        origin: route.origin,
+      }
+    : { drawing: null, geometrySource: null, routeGeometry: null, origin: null };
 }
 
 export function buildCreateActionGeometry(
   payload: CreateActionPayload,
   finalDrawing: ActionDrawing | null,
+  finalGeometrySource?: ActionGeometrySource | null,
 ) {
   const geometrySource = finalDrawing
     ? finalDrawing.kind === "polygon"
       ? "manual"
-      : payload.geometrySource === "manual" || payload.geometrySource === "routed"
+      : finalGeometrySource ?? (payload.geometrySource === "manual" || payload.geometrySource === "routed"
         ? payload.geometrySource
         : payload.manualDrawing
           ? "manual"
-          : "routed"
+          : "routed")
     : "fallback_point";
 
   return buildPersistedGeometry({
@@ -76,6 +105,8 @@ export function buildCreateActionGeometry(
         ? GEOMETRY_CONFIDENCE.MANUAL_DRAWING
         : geometrySource === "routed"
           ? GEOMETRY_CONFIDENCE.AUTO_ROUTE
+          : geometrySource === "estimated_route"
+            ? GEOMETRY_CONFIDENCE.ESTIMATED_ROUTE
           : null
       : GEOMETRY_CONFIDENCE.POINT_FALLBACK,
     geometrySourceHint: geometrySource,
@@ -93,11 +124,21 @@ export function buildActionInsertPayload(params: {
   payload: CreateActionPayload;
   persistedGeometry: ReturnType<typeof buildCreateActionGeometry>;
   finalDrawing: ActionDrawing | null;
+  routeGeometry?: RouteGeometry | null;
   status: Exclude<ActionStatus, "cancelled"> | undefined;
 }) {
+  const normalizedPreparationData = normalizeActionPreparationData(params.payload.preparationData ?? {});
+  const preparationDataWithRoute = params.routeGeometry
+    ? {
+        ...normalizedPreparationData,
+        routeNetworkDistanceKm: params.routeGeometry.distanceKm,
+        routeGeometryMode: params.routeGeometry.mode,
+        routeGeometryProvider: params.routeGeometry.provider,
+      }
+    : normalizedPreparationData;
   const preparationData = sanitizeAdministrativeRequirementsForCreation(
     params.payload.actionPhase,
-    normalizeActionPreparationData(params.payload.preparationData ?? {}),
+    preparationDataWithRoute as ActionPreparationData,
   );
   return {
     created_by_clerk_id: params.userId,
@@ -139,6 +180,7 @@ async function insertCreatedAction(
     payload: CreateActionPayload;
     persistedGeometry: ReturnType<typeof buildCreateActionGeometry>;
     finalDrawing: ActionDrawing | null;
+    routeGeometry?: RouteGeometry | null;
     status: Exclude<ActionStatus, "cancelled"> | undefined;
   },
 ): Promise<string> {
@@ -204,14 +246,31 @@ export async function createAction(
 ): Promise<{ id: string }> {
   const payload = params.payload;
 
-  const finalDrawing = await resolveCreateActionDrawing(payload);
-  const persistedGeometry = buildCreateActionGeometry(payload, finalDrawing);
+  const resolvedDrawing = await resolveCreateActionDrawing(payload);
+  const payloadWithRouteTarget: CreateActionPayload = {
+    ...payload,
+    latitude: payload.latitude ?? resolvedDrawing.origin?.[0],
+    longitude: payload.longitude ?? resolvedDrawing.origin?.[1],
+    preparationData: {
+      ...(payload.preparationData ?? {}),
+      routeTargetDistanceKm: resolveRouteTargetDistanceKm({
+        durationMinutes: payload.durationMinutes,
+        routeTargetDistanceKm: payload.preparationData?.routeTargetDistanceKm,
+      }),
+    },
+  };
+  const finalDrawing = resolvedDrawing.drawing;
+  const persistedGeometry = buildCreateActionGeometry(
+    payloadWithRouteTarget,
+    finalDrawing,
+    resolvedDrawing.geometrySource,
+  );
   const departmentResolver = params.departmentAttribution?.trust === "trusted"
     ? resolveTrustedActionDepartmentForPersistence
     : resolveActionDepartmentForPersistence;
   const department = await departmentResolver({
-    latitude: payload.latitude,
-    longitude: payload.longitude,
+    latitude: payloadWithRouteTarget.latitude,
+    longitude: payloadWithRouteTarget.longitude,
     geometry: {
       kind: persistedGeometry.kind,
       coordinates: persistedGeometry.coordinates,
@@ -221,7 +280,7 @@ export async function createAction(
     spatiallyChanged: params.departmentAttribution?.trust !== "trusted",
   });
   const payloadWithDepartment: CreateActionPayload = {
-    ...payload,
+    ...payloadWithRouteTarget,
     departmentCode: department.departmentCode ?? undefined,
     departmentName: department.departmentName ?? undefined,
   };
@@ -230,6 +289,7 @@ export async function createAction(
     payload: payloadWithDepartment,
     persistedGeometry,
     finalDrawing,
+    routeGeometry: resolvedDrawing.routeGeometry,
     status: params.status,
   });
 

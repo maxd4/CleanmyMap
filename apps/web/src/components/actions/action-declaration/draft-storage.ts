@@ -61,6 +61,8 @@ const FORM_STATE_KEYS = [
   "adultCount",
   "retiredCount",
   "durationMinutes",
+  "routeTargetDistanceKm",
+  "routeTargetDistanceKmManuallySet",
   "notes",
   "wasteMegotsKg",
   "wasteMegotsCondition",
@@ -220,6 +222,12 @@ export function loadDraftSnapshot(
       if (key === "groupJoinEnabled") {
         if (typeof value === "boolean") {
           Object.assign(next, { groupJoinEnabled: value });
+        }
+        continue;
+      }
+      if (key === "routeTargetDistanceKmManuallySet") {
+        if (typeof value === "boolean") {
+          Object.assign(next, { routeTargetDistanceKmManuallySet: value });
         }
         continue;
       }

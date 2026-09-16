@@ -216,6 +216,10 @@ const preparationDataSchema = z
     meetingTime: z.string().max(20).optional(),
     departureTime: z.string().max(20).optional(),
     estimatedDurationMinutes: z.number().int().min(0).max(24 * 60).optional(),
+    routeTargetDistanceKm: z.number().min(0).max(100).optional(),
+    routeNetworkDistanceKm: z.number().min(0).max(1000).optional(),
+    routeGeometryMode: z.enum(["network", "fallback"]).optional(),
+    routeGeometryProvider: z.enum(["osrm", "fossgis-osrm", "none"]).optional(),
     plannedObjective: z
       .enum(["repérage", "nettoyage", "collecte_mégots", "action_mixte", "sensibilisation", "autre"])
       .optional(),

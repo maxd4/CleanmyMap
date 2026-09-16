@@ -244,6 +244,7 @@ function toActionContractFromMapFeedRow(row: ActionsMapFeedRow): ActionDataContr
       | "manual"
       | "reference"
       | "routed"
+      | "estimated_route"
       | "estimated_area"
       | "fallback_point"
       | null,

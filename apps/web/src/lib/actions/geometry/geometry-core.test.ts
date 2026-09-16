@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   GEOMETRY_CONFIDENCE,
   buildEllipsePolygon,
-  buildSyntheticRoute,
   hasCoordinates,
   hasPreciseLocationLabel,
   toPointCoordinates,
@@ -21,25 +20,14 @@ describe("geometry core helpers", () => {
     expect(toPointCoordinates(null, 2.35)).toEqual([]);
   });
 
-  it("builds reusable ellipse and route geometries", () => {
+  it("builds reusable ellipse geometries", () => {
     const ellipse = buildEllipsePolygon(
       { latitude: 48.85, longitude: 2.35 },
       85,
       55,
     );
-    const route = buildSyntheticRoute(
-      { latitude: 48.85, longitude: 2.35 },
-      "souple",
-    );
-
     expect(ellipse.kind).toBe("polygon");
     expect(ellipse.coordinates).toHaveLength(12);
-    expect(route.kind).toBe("polyline");
-    expect(route.coordinates).toHaveLength(5);
-    expect(route.coordinates[0][0]).toBeLessThan(48.85);
-    expect(route.coordinates[0][1]).toBeLessThan(2.35);
-    expect(route.coordinates[route.coordinates.length - 1][0]).toBeGreaterThan(48.85);
-    expect(route.coordinates[route.coordinates.length - 1][1]).toBeGreaterThan(2.35);
   });
 
   it("recognizes precise location labels without overfitting", () => {

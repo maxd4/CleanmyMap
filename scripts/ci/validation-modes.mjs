@@ -9,6 +9,7 @@ import {
   resolveAssociatedWebTestFiles,
   resolveMigrationContracts,
 } from "./validation-resolution.mjs";
+import fs from "node:fs";
 
 export const VALIDATION_MODE_BUDGETS = Object.freeze({
   FAST: 180,
@@ -333,7 +334,12 @@ export function createModeValidationPlan({
       }
       if (webSourceRelevant) {
         const lintFiles = files
-          .filter((file) => isWebSourceFile(file) && /\.(js|jsx|ts|tsx)$/.test(file))
+          .filter(
+            (file) =>
+              isWebSourceFile(file) &&
+              /\.(js|jsx|ts|tsx)$/.test(file) &&
+              fs.existsSync(file),
+          )
           .map((file) => file.slice("apps/web/".length));
         addCheck(checks, {
           id: "lint-targeted",
@@ -342,7 +348,12 @@ export function createModeValidationPlan({
           critical: true,
           command: {
             executable: "npx",
-            args: ["eslint", ...(lintFiles.length > 0 ? lintFiles : ["src"])],
+            args: [
+              "eslint",
+              "--config",
+              "apps/web/eslint.config.mjs",
+              ...(lintFiles.length > 0 ? lintFiles.map((file) => `apps/web/${file}`) : ["apps/web/src"]),
+            ],
           },
         });
       }

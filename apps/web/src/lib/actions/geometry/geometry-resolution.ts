@@ -7,7 +7,6 @@ import { findMatchingGeometry } from "../../geo/geometry-reference.ts";
 import {
   GEOMETRY_CONFIDENCE,
   buildEllipsePolygon,
-  buildSyntheticRoute,
   hasCoordinates,
   hasPreciseLocationLabel,
   normalizeLabel,
@@ -32,7 +31,6 @@ export type ResolveBestGeometryParams = {
   locationLabel?: string | null;
   departureLocationLabel?: string | null;
   arrivalLocationLabel?: string | null;
-  routeStyle?: "direct" | "souple" | null;
 };
 
 function clampConfidence(value: number | null | undefined): number | null {
@@ -101,6 +99,8 @@ function confidenceFromSource(source: ActionGeometrySource): number {
       return GEOMETRY_CONFIDENCE.REFERENCE_GEOMETRY;
     case "routed":
       return GEOMETRY_CONFIDENCE.AUTO_ROUTE;
+    case "estimated_route":
+      return GEOMETRY_CONFIDENCE.ESTIMATED_ROUTE;
     case "estimated_area":
       return GEOMETRY_CONFIDENCE.LABEL_POLYGON;
     case "fallback_point":
@@ -127,10 +127,7 @@ function buildReferenceGeometryResolution(anchorLabel: string): GeometryResoluti
 function buildCoordinateGeometryResolution(params: {
   latitude?: number | null;
   longitude?: number | null;
-  routeStyle?: "direct" | "souple" | null;
   anchorLabel: string;
-  departureLocationLabel: string | null;
-  arrivalLocationLabel: string | null;
 }): GeometryResolution | null {
   if (!hasCoordinates(params.latitude ?? null, params.longitude ?? null)) {
     return null;
@@ -140,17 +137,6 @@ function buildCoordinateGeometryResolution(params: {
     latitude: Number(params.latitude),
     longitude: Number(params.longitude),
   };
-
-  if (params.departureLocationLabel && params.arrivalLocationLabel) {
-    const drawing = buildSyntheticRoute(center, params.routeStyle);
-    return {
-      kind: drawing.kind,
-      coordinates: drawing.coordinates,
-      geojson: toGeoJsonString(drawing),
-      confidence: GEOMETRY_CONFIDENCE.SYNTHETIC_ROUTE,
-      geometrySource: "routed",
-    };
-  }
 
   if (hasPreciseLocationLabel(params.anchorLabel)) {
     const drawing = buildEllipsePolygon(center, 85, 55);
@@ -223,7 +209,6 @@ function deriveFallbackResolution(params: {
   locationLabel?: string | null;
   departureLocationLabel?: string | null;
   arrivalLocationLabel?: string | null;
-  routeStyle?: "direct" | "souple" | null;
 }): GeometryResolution {
   const locationLabel = normalizeLabel(params.locationLabel);
   const departureLocationLabel = normalizeLabel(params.departureLocationLabel);
@@ -236,10 +221,7 @@ function deriveFallbackResolution(params: {
     buildCoordinateGeometryResolution({
       latitude: params.latitude ?? null,
       longitude: params.longitude ?? null,
-      routeStyle: params.routeStyle ?? null,
       anchorLabel,
-      departureLocationLabel,
-      arrivalLocationLabel,
     }) ??
     buildFallbackPointResolution({
       latitude: params.latitude ?? null,
@@ -257,7 +239,6 @@ function resolveDrawingGeometry(params: ResolveBestGeometryParams): GeometryReso
       locationLabel: params.locationLabel ?? null,
       departureLocationLabel: params.departureLocationLabel ?? null,
       arrivalLocationLabel: params.arrivalLocationLabel ?? null,
-      routeStyle: params.routeStyle ?? null,
     });
   }
 

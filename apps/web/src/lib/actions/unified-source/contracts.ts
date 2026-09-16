@@ -53,7 +53,7 @@ export type TrashSpotterSpotRow = {
   derived_geometry_kind?: "point" | "polyline" | "polygon" | null;
   derived_geometry_geojson?: string | null;
   geometry_confidence?: number | null;
-  geometry_source?: "manual" | "reference" | "routed" | "estimated_area" | "fallback_point" | null;
+  geometry_source?: "manual" | "reference" | "routed" | "estimated_route" | "estimated_area" | "fallback_point" | null;
   status: "new" | "validated" | "cleaned";
   notes: string | null;
 };

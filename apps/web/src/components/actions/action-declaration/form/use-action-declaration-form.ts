@@ -32,7 +32,7 @@ import {
 } from "../draft-storage";
 import { summarizeActionDrawingValidation } from "../../map/actions-map-geometry.utils";
 import { computeActionDataQuality } from "./action-declaration-form.quality";
-import { deriveAutoDrawingFromLocation } from "@/lib/actions/geometry/route-geometry";
+import { deriveRouteTargetDistanceKm } from "@/lib/actions/route-target-distance";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
 import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart-assist";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
@@ -99,7 +99,6 @@ export function useActionDeclarationForm({
   const [photoAssets, setPhotoAssets] = useState<ActionPhotoAsset[]>([]);
   const [visionEstimate, setVisionEstimate] = useState<ActionVisionEstimate | null>(null);
   const [visionStatus, setVisionStatus] = useState<"idle" | "processing" | "ready" | "error">("idle");
-  const [routePreviewDrawing, setRoutePreviewDrawing] = useState<ActionDrawing | null>(null);
   const [declarationMode] = useState<"complete">("complete");
   const [submissionState, setSubmissionState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -263,6 +262,11 @@ export function useActionDeclarationForm({
           eventEndTime: action.eventEndTime ?? preparedForm.eventEndTime,
         };
 
+        if (typeof action.preparationData?.routeTargetDistanceKm !== "number") {
+          nextForm.routeTargetDistanceKm = deriveRouteTargetDistanceKm(action.durationMinutes).toString();
+          nextForm.routeTargetDistanceKmManuallySet = false;
+        }
+
         if (
           action.actionPhase === "pre_action" ||
           action.actionPhase === "post_action_draft"
@@ -316,14 +320,14 @@ export function useActionDeclarationForm({
     form.associationName.startsWith("Entreprise - ");
   const routePreviewInput = form.departureLocationLabel.trim() || form.locationLabel.trim();
   const manualDrawingValidation = summarizeActionDrawingValidation(manualDrawing);
-  const routePreviewValidation = summarizeActionDrawingValidation(
-    routePreviewInput ? routePreviewDrawing : null,
-  );
-  const effectiveRoutePreviewDrawing = routePreviewInput
-    ? routePreviewValidation.normalized
-    : null;
+  // Network reconstruction is server-only; the browser never routes or calls
+  // a public routing provider for an action draft.
+  const effectiveRoutePreviewDrawing: ActionDrawing | null = null;
   const effectiveDrawing = manualDrawingValidation.normalized ?? effectiveRoutePreviewDrawing;
   const hasValidDrawing = Boolean(effectiveDrawing);
+  const hasServerRouteInput = routePreviewInput.length >= 2 || (
+    Number.isFinite(Number(form.latitude)) && Number.isFinite(Number(form.longitude))
+  );
 
   const payload = useMemo(
     () =>
@@ -362,32 +366,6 @@ export function useActionDeclarationForm({
     setForm,
     visionEstimate,
   });
-
-  useEffect(() => {
-    let active = true;
-    const departure = form.departureLocationLabel.trim() || form.locationLabel.trim();
-    const arrival = form.arrivalLocationLabel.trim();
-
-    if (!departure) {
-      return () => { active = false; };
-    }
-
-    const timer = setTimeout(() => {
-      deriveAutoDrawingFromLocation({
-        locationLabel: form.locationLabel,
-        departureLocationLabel: departure,
-        arrivalLocationLabel: arrival || undefined,
-        routeStyle: form.routeStyle,
-      }).then(drawing => {
-        if (!active) return;
-        setRoutePreviewDrawing(drawing);
-      }).catch(() => {
-        if (!active) return;
-      });
-    }, 400);
-
-    return () => { active = false; clearTimeout(timer); };
-  }, [form.arrivalLocationLabel, form.departureLocationLabel, form.locationLabel, form.routeStyle]);
 
   async function handlePhotoUpload(files: FileList | null) {
     const selected = files ? Array.from(files) : [];
@@ -443,6 +421,16 @@ export function useActionDeclarationForm({
 
   function updateForm(updates: Partial<FormState>) {
     const nextForm: FormState = { ...form, ...updates };
+    if (updates.routeTargetDistanceKm !== undefined) {
+      nextForm.routeTargetDistanceKmManuallySet = true;
+    } else if (
+      updates.durationMinutes !== undefined &&
+      !form.routeTargetDistanceKmManuallySet
+    ) {
+      nextForm.routeTargetDistanceKm = deriveRouteTargetDistanceKm(
+        updates.durationMinutes,
+      ).toString();
+    }
     if (updates.routeStyle !== undefined) {
       nextForm.routeStyle = "souple";
     }
@@ -522,7 +510,7 @@ export function useActionDeclarationForm({
       return;
     }
 
-    if (declarationMode === "complete" && !hasValidDrawing && !isCleanPlaceMode) {
+    if (declarationMode === "complete" && !hasValidDrawing && !hasServerRouteInput && !isCleanPlaceMode) {
       setValidationIssues([
         {
           field: "manualDrawing",

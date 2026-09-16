@@ -482,6 +482,28 @@ export function ActionStepLocation({
             </div>
           )}
         </div>
+
+        {!isCleanPlaceMode && (
+          <div className="rounded-xl border border-sky-200/80 bg-white px-4 py-3">
+            <label htmlFor="route-target-distance" className="block text-sm font-semibold text-sky-950">
+              Distance cible du parcours (km)
+            </label>
+            <input
+              id="route-target-distance"
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              inputMode="decimal"
+              value={form.routeTargetDistanceKm}
+              onChange={(event) => updateField("routeTargetDistanceKm", event.target.value)}
+              className="mt-2 w-full rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-sky-950 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 sm:max-w-xs"
+            />
+            <p className="mt-1 text-xs text-sky-800/70">
+              Estimation par défaut : 1 km par heure d’action. Modifiable.
+            </p>
+          </div>
+        )}
       </div>
 
       {form.operationalRoute ? (

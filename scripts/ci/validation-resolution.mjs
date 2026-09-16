@@ -87,7 +87,9 @@ export function resolveAssociatedWebTestFiles(changedFiles = [], { existingFiles
     const file = String(rawFile).replaceAll("\\", "/").replace(/^\.\//, "");
     if (!file.startsWith("apps/web/src/") || !/\.(ts|tsx)$/.test(file)) continue;
     if (isWebTestPath(file)) {
-      resolved.add(file.slice("apps/web/".length));
+      if (fileExists(file, normalizedExisting)) {
+        resolved.add(file.slice("apps/web/".length));
+      }
       continue;
     }
     for (const candidate of getSiblingCandidates(file)) {

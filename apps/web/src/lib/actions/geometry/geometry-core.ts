@@ -5,7 +5,7 @@ export const GEOMETRY_CONFIDENCE = {
   PERSISTED_IMPORTED: 0.92,
   AUTO_ROUTE: 0.78,
   REFERENCE_GEOMETRY: 0.72,
-  SYNTHETIC_ROUTE: 0.58,
+  ESTIMATED_ROUTE: 0.6,
   LABEL_POLYGON: 0.52,
   COORDINATE_ELLIPSE: 0.44,
   POINT_FALLBACK: 0.24,
@@ -15,87 +15,6 @@ export type GeoPoint = {
   latitude: number;
   longitude: number;
 };
-
-function roundRouteCoordinate(value: number): number {
-  return Number(value.toFixed(6));
-}
-
-function toRoutePoint(latitude: number, longitude: number): [number, number] {
-  return [roundRouteCoordinate(latitude), roundRouteCoordinate(longitude)];
-}
-
-function resolveRouteDirection(primaryDelta: number, fallbackDelta: number): number {
-  if (primaryDelta !== 0) {
-    return Math.sign(primaryDelta);
-  }
-  if (fallbackDelta !== 0) {
-    return Math.sign(fallbackDelta);
-  }
-  return 1;
-}
-
-export function buildPedestrianRoute(
-  start: GeoPoint,
-  end: GeoPoint,
-  routeStyle: "direct" | "souple" | null | undefined,
-): ActionDrawing {
-  const latDiff = end.latitude - start.latitude;
-  const lngDiff = end.longitude - start.longitude;
-  const majorAxisIsLongitude = Math.abs(lngDiff) >= Math.abs(latDiff);
-  const detour = Math.max(
-    0.00012,
-    Math.min(0.001, Math.max(Math.abs(latDiff), Math.abs(lngDiff)) * 0.22),
-  );
-  const direction = majorAxisIsLongitude
-    ? resolveRouteDirection(latDiff, lngDiff)
-    : resolveRouteDirection(lngDiff, latDiff);
-
-  if (routeStyle === "souple") {
-    if (majorAxisIsLongitude) {
-      return {
-        kind: "polyline",
-        coordinates: [
-          toRoutePoint(start.latitude, start.longitude),
-          toRoutePoint(start.latitude + direction * detour, start.longitude + lngDiff * 0.25),
-          toRoutePoint(start.latitude + direction * detour * 1.35, start.longitude + lngDiff * 0.5),
-          toRoutePoint(start.latitude + direction * detour, start.longitude + lngDiff * 0.75),
-          toRoutePoint(end.latitude, end.longitude),
-        ],
-      };
-    }
-
-    return {
-      kind: "polyline",
-      coordinates: [
-        toRoutePoint(start.latitude, start.longitude),
-        toRoutePoint(start.latitude + latDiff * 0.25, start.longitude + direction * detour),
-        toRoutePoint(start.latitude + latDiff * 0.5, start.longitude + direction * detour * 1.35),
-        toRoutePoint(start.latitude + latDiff * 0.75, start.longitude + direction * detour),
-        toRoutePoint(end.latitude, end.longitude),
-      ],
-    };
-  }
-
-  if (majorAxisIsLongitude) {
-    return {
-      kind: "polyline",
-      coordinates: [
-        toRoutePoint(start.latitude, start.longitude),
-        toRoutePoint(start.latitude + direction * detour, end.longitude),
-        toRoutePoint(end.latitude, end.longitude),
-      ],
-    };
-  }
-
-  return {
-    kind: "polyline",
-    coordinates: [
-      toRoutePoint(start.latitude, start.longitude),
-      toRoutePoint(end.latitude, start.longitude + direction * detour),
-      toRoutePoint(end.latitude, end.longitude),
-    ],
-  };
-}
 
 export function toPointCoordinates(
   latitude: number | null,
@@ -151,26 +70,6 @@ export function buildEllipsePolygon(
     kind: "polygon",
     coordinates,
   };
-}
-
-export function buildSyntheticRoute(
-  center: GeoPoint,
-  routeStyle: "direct" | "souple" | null | undefined,
-): ActionDrawing {
-  const reachMeters = routeStyle === "direct" ? 120 : 180;
-  const latDelta = metersToLatitudeDelta(routeStyle === "direct" ? 20 : 55);
-  const lngDelta = metersToLongitudeDelta(reachMeters, center.latitude);
-  return buildPedestrianRoute(
-    {
-      latitude: center.latitude - latDelta,
-      longitude: center.longitude - lngDelta,
-    },
-    {
-      latitude: center.latitude + latDelta,
-      longitude: center.longitude + lngDelta,
-    },
-    routeStyle,
-  );
 }
 
 export function normalizeLabel(value: string | null | undefined): string {

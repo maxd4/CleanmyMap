@@ -53,6 +53,13 @@ export function getGeometryPresentation(
         label: "Parcours reconstruit · estimation",
         strokeStyle: "dashed",
       };
+    case "estimated_route":
+      return {
+        origin,
+        reality: "estimated",
+        label: "Parcours estimé · repli local",
+        strokeStyle: "dashed",
+      };
     case "estimated_area":
       return {
         origin,
@@ -78,5 +85,5 @@ export function isRealGeometryOrigin(origin: ActionGeometryOrigin): boolean {
 export function isEstimatedGeometryOrigin(
   origin: ActionGeometryOrigin,
 ): boolean {
-  return origin === "routed" || origin === "estimated_area";
+  return origin === "routed" || origin === "estimated_route" || origin === "estimated_area";
 }
