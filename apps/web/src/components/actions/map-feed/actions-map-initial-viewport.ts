@@ -271,12 +271,12 @@ export async function resolveInitialPublicMapViewport({
   resolvedReference ??= selectedPoint;
 
   const cityLabel = mapItemCityLabel(selectedItem);
-  let cityItems = [selectedItem];
   const cityResponse = await fetchActions({
     viewport: buildMapSearchViewport(selectedPoint, INITIAL_PUBLIC_CITY_SEARCH_RADIUS_KM),
     limit: INITIAL_PUBLIC_ACTION_LIMIT,
   });
   const localClusterItems = cityResponse.items.filter(isPublicGeolocatedAction);
+  let cityItems = localClusterItems;
   if (cityLabel) {
     const cityKey = normalizeCityKey(cityLabel);
     cityItems = localClusterItems.filter(
@@ -284,8 +284,6 @@ export async function resolveInitialPublicMapViewport({
         mapItemCityLabel(item) !== null &&
         normalizeCityKey(mapItemCityLabel(item) as string) === cityKey,
     );
-  } else {
-    cityItems = localClusterItems;
   }
   if (!cityItems.some((item) => item.id === selectedItem?.id)) {
     cityItems.unshift(selectedItem);

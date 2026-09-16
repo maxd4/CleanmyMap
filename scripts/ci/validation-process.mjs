@@ -12,7 +12,7 @@ function commandInvocation(command) {
   const isWindowsCommand = process.platform === "win32" && executable.endsWith(".cmd");
   if (!isWindowsCommand) return { executable, args: command.args ?? [] };
   return {
-    executable: process.env.ComSpec || "cmd.exe",
+    executable: "cmd.exe",
     args: ["/d", "/s", "/c", [executable, ...(command.args ?? []).map(quoteCmdArg)].join(" ")],
   };
 }
