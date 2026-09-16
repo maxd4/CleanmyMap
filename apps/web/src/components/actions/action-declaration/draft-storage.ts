@@ -239,14 +239,15 @@ export function loadDraftSnapshot(
       }
     }
 
+    if (recordTypeOverride) {
+      next.recordType = recordTypeOverride;
+    }
     next.routeStyle = "souple";
     next.routeTopology = resolveActionRouteTopology({
       topology: next.routeTopology as FormState["routeTopology"],
       arrivalLocationLabel: next.arrivalLocationLabel,
+      recordType: next.recordType,
     });
-    if (recordTypeOverride) {
-      next.recordType = recordTypeOverride;
-    }
 
     return cacheDraftSnapshot(cacheKey, {
       form: next as FormState,

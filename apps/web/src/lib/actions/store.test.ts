@@ -217,6 +217,81 @@ describe("administrative requirements persistence", () => {
   });
 });
 
+describe("route topology persistence", () => {
+  it("keeps a clean-place complement without persisting a route arrival", () => {
+    const payload = buildPayload({
+      recordType: "clean_place",
+      arrivalLocationLabel: "Complément du lieu",
+      routeTopology: "point_to_point",
+      preparationData: {
+        zoneCiblePrevue: "Complément du lieu",
+        routeTopology: "point_to_point",
+      },
+    });
+
+    const row = buildActionInsertPayload({
+      payload,
+      userId: "user-test",
+      status: "pending",
+      persistedGeometry: buildCreateActionGeometry(payload, null),
+      finalDrawing: null,
+    });
+
+    expect(row.preparation_data.routeTopology).toBe("loop");
+    expect(row.preparation_data.zoneCiblePrevue).toBe("Complément du lieu");
+    expect(row.preparation_data.arrivalCoordinates).toBeUndefined();
+  });
+
+  it("removes a residual loop arrival while preserving a point-to-point arrival", () => {
+    const loopPayload = buildPayload({
+      recordType: "action",
+      arrivalLocationLabel: "Ancienne arrivée",
+      routeTopology: "loop",
+      preparationData: {
+        zoneCiblePrevue: "Ancienne arrivée",
+        arrivalCoordinates: { latitude: 48.87, longitude: 2.37 },
+        routeTopology: "loop",
+      },
+    });
+    const loopRow = buildActionInsertPayload({
+      payload: loopPayload,
+      userId: "user-test",
+      status: "pending",
+      persistedGeometry: buildCreateActionGeometry(loopPayload, null),
+      finalDrawing: null,
+    });
+
+    expect(loopRow.preparation_data.routeTopology).toBe("loop");
+    expect(loopRow.preparation_data.zoneCiblePrevue).toBeUndefined();
+    expect(loopRow.preparation_data.arrivalCoordinates).toBeUndefined();
+
+    const pointPayload = buildPayload({
+      recordType: "action",
+      arrivalLocationLabel: "Arrivée, Paris",
+      routeTopology: "point_to_point",
+      preparationData: {
+        zoneCiblePrevue: "Arrivée, Paris",
+        arrivalCoordinates: { latitude: 48.87, longitude: 2.37 },
+        routeTopology: "point_to_point",
+      },
+    });
+    const pointRow = buildActionInsertPayload({
+      payload: pointPayload,
+      userId: "user-test",
+      status: "pending",
+      persistedGeometry: buildCreateActionGeometry(pointPayload, null),
+      finalDrawing: null,
+    });
+
+    expect(pointRow.preparation_data.routeTopology).toBe("point_to_point");
+    expect(pointRow.preparation_data.zoneCiblePrevue).toBe("Arrivée, Paris");
+    expect(pointRow.preparation_data.arrivalCoordinates).toEqual({
+      latitude: 48.87,
+      longitude: 2.37,
+    });
+  });
+});
+
 describe("buildCreateActionGeometry", () => {
   it("persists a routed final drawing as estimated geometry", () => {
     const drawing = {

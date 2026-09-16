@@ -1,6 +1,7 @@
 import { describe, expect, it } from"vitest";
 import {
- buildCreateActionPayload,
+  buildCreateActionPayload,
+ buildPreparationDataFromForm,
  applyPreparationDataToForm,
  createInitialFormState,
  isDrawingValid,
@@ -373,6 +374,8 @@ describe("action declaration payload helpers", () => {
   it("keeps the record type in the payload", () => {
     const form = buildBaseForm();
     form.recordType = "clean_place";
+    form.routeTopology = "point_to_point";
+    form.arrivalLocationLabel = "Complément du lieu";
 
     const payload = buildCreateActionPayload({
       form,
@@ -385,6 +388,22 @@ describe("action declaration payload helpers", () => {
     });
 
     expect(payload.recordType).toBe("clean_place");
+    expect(payload.routeTopology).toBe("loop");
+    expect(payload.arrivalLocationLabel).toBe("Complément du lieu");
+    expect(payload.preparationData?.zoneCiblePrevue).toBe("Complément du lieu");
+    expect(payload.preparationData?.arrivalCoordinates).toBeUndefined();
+  });
+
+  it("clears a residual arrival from an ordinary loop payload", () => {
+    const form = buildBaseForm();
+    form.routeTopology = "loop";
+    form.arrivalLocationLabel = "Ancienne arrivée";
+    form.arrivalCoordinates = { latitude: 48.87, longitude: 2.37 };
+
+    const preparation = buildPreparationDataFromForm(form);
+    expect(preparation.routeTopology).toBe("loop");
+    expect(preparation.zoneCiblePrevue).toBeUndefined();
+    expect(preparation.arrivalCoordinates).toBeUndefined();
   });
 
   it("keeps the structure type separate from the organizer name", () => {

@@ -281,6 +281,25 @@ describe("server-side action route reconstruction", () => {
     expect(routeProviderMock).not.toHaveBeenCalled();
   });
 
+  it("does not treat a clean-place complement as a route arrival", async () => {
+    routeProviderMock.mockResolvedValueOnce(networkGeometry);
+
+    const result = await reconstructActionRoute({
+      recordType: "clean_place",
+      topology: "point_to_point",
+      latitude: 48.85,
+      longitude: 2.35,
+      locationLabel: "Rue de test, Paris",
+      arrivalLocationLabel: "Complément du lieu",
+      durationMinutes: 60,
+    });
+
+    expect(result?.drawing.coordinates[0]).toEqual([48.85, 2.35]);
+    expect(result?.drawing.coordinates.at(-1)).toEqual([48.85, 2.35]);
+    expect(routeProviderMock.mock.calls[0]?.[0][0]).toEqual([48.85, 2.35]);
+    expect(routeProviderMock.mock.calls[0]?.[0].at(-1)).toEqual([48.85, 2.35]);
+  });
+
   it("keeps routing providers out of the client location form", () => {
     const source = readFileSync(
       new URL("../../../components/actions/action-declaration/steps/ActionStepLocation.tsx", import.meta.url),

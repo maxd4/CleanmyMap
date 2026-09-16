@@ -112,6 +112,20 @@ describe("createActionSchema", () => {
     }
   });
 
+  it("keeps clean-place complements without route-arrival validation", () => {
+    const parsed = createActionSchema.parse({
+      ...basePayload,
+      recordType: "clean_place",
+      routeTopology: "point_to_point",
+      arrivalLocationLabel: "Complément du lieu",
+    });
+
+    expect(parsed.routeTopology).toBe("loop");
+    expect(parsed.preparationData?.routeTopology).toBe("loop");
+    expect(parsed.preparationData?.zoneCiblePrevue).toBe("Complément du lieu");
+    expect(parsed.arrivalLocationLabel).toBe("Complément du lieu");
+  });
+
   it("validates GPX provenance, topology and observed distance against the drawing", () => {
     const loopCoordinates: [number, number][] = [
       [48.85, 2.35],

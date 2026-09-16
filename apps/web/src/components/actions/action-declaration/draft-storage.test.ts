@@ -72,6 +72,21 @@ describe("action declaration draft storage", () => {
     expect(first?.form.recordType).toBe("clean_place");
   });
 
+  it("keeps a clean-place complement when applying the record-type override", () => {
+    installLocalStorage();
+    const draft = createInitialFormState("Alice");
+    draft.recordType = "action";
+    draft.routeTopology = "point_to_point";
+    draft.arrivalLocationLabel = "Complément du lieu";
+    saveDraft(draft, "2026-05-13T10:45:00.000Z");
+
+    const snapshot = loadDraftSnapshot(createInitialFormState("Fallback"), "clean_place");
+
+    expect(snapshot?.form.recordType).toBe("clean_place");
+    expect(snapshot?.form.routeTopology).toBe("loop");
+    expect(snapshot?.form.arrivalLocationLabel).toBe("Complément du lieu");
+  });
+
   it("clears both the draft payload and its timestamp", () => {
     const { store } = installLocalStorage();
     store.set(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify(createInitialFormState("Alice")));

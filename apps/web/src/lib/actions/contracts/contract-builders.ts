@@ -9,7 +9,10 @@ import {
   ActionVisionEstimate,
   CreateActionPayload,
 } from "../types";
-import { resolveActionRouteTopology } from "../route-topology";
+import {
+  clearActionRouteArrivalForLoop,
+  resolveActionRouteTopology,
+} from "../route-topology";
 import type { ActionGeometrySource } from "../types";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract";
@@ -195,6 +198,7 @@ function buildManualDrawing(
 function normalizeContractCreatePayload(
   payload: ActionContractCreatePayload,
 ): CreateActionPayload {
+  const recordType = payload.type;
   const arrivalLocationLabel = fallbackString(
     payload.arrivalLocationLabel,
     payload.metadata.arrivalLocationLabel,
@@ -202,17 +206,25 @@ function normalizeContractCreatePayload(
   const routeTopology = resolveActionRouteTopology({
     topology: payload.routeTopology ?? payload.metadata.routeTopology,
     arrivalLocationLabel,
+    recordType,
   });
+  const preparationData = clearActionRouteArrivalForLoop(
+    {
+      ...(payload.metadata.preparationData ?? {}),
+      ...(recordType !== "action" && arrivalLocationLabel && !payload.metadata.preparationData?.zoneCiblePrevue
+        ? { zoneCiblePrevue: arrivalLocationLabel }
+        : {}),
+      routeTopology,
+    },
+    { recordType, topology: routeTopology },
+  );
   return {
     actorName: payload.metadata.actorName,
     associationName: payload.metadata.associationName,
     organizerType: payload.metadata.organizerType ?? undefined,
     groupJoinEnabled: payload.metadata.groupJoinEnabled,
     actionPhase: payload.metadata.actionPhase ?? undefined,
-    preparationData: {
-      ...(payload.metadata.preparationData ?? {}),
-      routeTopology,
-    },
+    preparationData,
     plannerSnapshotProof: payload.metadata.plannerSnapshotProof ?? null,
     organizerAccounts: payload.metadata.organizerAccounts ?? undefined,
     participantAccounts: payload.metadata.participantAccounts ?? undefined,
@@ -220,7 +232,10 @@ function normalizeContractCreatePayload(
     recordType: payload.type,
     locationLabel: payload.location.label,
     departureLocationLabel: fallbackString(payload.departureLocationLabel, payload.metadata.departureLocationLabel),
-    arrivalLocationLabel,
+    arrivalLocationLabel:
+      recordType !== "action" || routeTopology === "point_to_point"
+        ? arrivalLocationLabel
+        : undefined,
     routeTopology,
     routeStyle: payload.routeStyle ?? payload.metadata.routeStyle ?? undefined,
     routeAdjustmentMessage: payload.routeAdjustmentMessage ?? payload.metadata.routeAdjustmentMessage ?? undefined,
@@ -256,31 +271,44 @@ export function normalizeCreatePayload(
   payload: CreateActionPayload | ActionContractCreatePayload,
 ): CreateActionPayload {
   if ("actionDate" in payload) {
+    const recordType = payload.recordType ?? "action";
+    const arrivalLocationLabel =
+      payload.arrivalLocationLabel ?? payload.preparationData?.zoneCiblePrevue;
     const normalizedMeasurements = {
       ...payload,
       wasteKg: payload.wasteKg ?? null,
       cigaretteButts: payload.cigaretteButts ?? null,
       routeTopology: resolveActionRouteTopology({
         topology: payload.routeTopology ?? payload.preparationData?.routeTopology,
-        arrivalLocationLabel: payload.arrivalLocationLabel ?? payload.preparationData?.zoneCiblePrevue,
+        arrivalLocationLabel,
+        recordType,
       }),
     };
+    const preparationData = clearActionRouteArrivalForLoop(
+      {
+        ...(payload.preparationData ?? {}),
+        ...(recordType !== "action" && arrivalLocationLabel && !payload.preparationData?.zoneCiblePrevue
+          ? { zoneCiblePrevue: arrivalLocationLabel }
+          : {}),
+        routeTopology: normalizedMeasurements.routeTopology,
+      },
+      { recordType, topology: normalizedMeasurements.routeTopology },
+    );
+    const normalizedPayload = {
+      ...normalizedMeasurements,
+      arrivalLocationLabel:
+        recordType !== "action" || normalizedMeasurements.routeTopology === "point_to_point"
+          ? payload.arrivalLocationLabel
+          : undefined,
+      preparationData,
+    };
     if (!payload.routeCalibrationContext) {
-      return {
-        ...normalizedMeasurements,
-        preparationData: {
-          ...(payload.preparationData ?? {}),
-          routeTopology: normalizedMeasurements.routeTopology,
-        },
-      };
+      return normalizedPayload;
     }
     return {
-      ...normalizedMeasurements,
+      ...normalizedPayload,
       preparationData: withRouteCalibrationContext(
-        {
-          ...(normalizedMeasurements.preparationData ?? {}),
-          routeTopology: normalizedMeasurements.routeTopology,
-        },
+        normalizedPayload.preparationData,
         payload.routeCalibrationContext,
       ),
     };

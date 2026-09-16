@@ -379,6 +379,7 @@ function addRouteTopologyIssue(
   value: {
     routeTopology?: "loop" | "point_to_point";
     arrivalLocationLabel?: string | null;
+    recordType?: "action" | "clean_place" | "spot" | "other" | null;
   },
   ctx: z.RefinementCtx,
   path: (string | number)[] = ["arrivalLocationLabel"],
@@ -386,6 +387,7 @@ function addRouteTopologyIssue(
   const topology = resolveActionRouteTopology({
     topology: value.routeTopology,
     arrivalLocationLabel: value.arrivalLocationLabel,
+    recordType: value.recordType,
   });
   if (topology === "point_to_point" && !value.arrivalLocationLabel?.trim()) {
     ctx.addIssue({
@@ -411,6 +413,7 @@ function addGpxImportIssue(
     } | null;
     routeTopology?: "loop" | "point_to_point";
     arrivalLocationLabel?: string | null;
+    recordType?: "action" | "clean_place" | "spot" | "other" | null;
   },
   ctx: z.RefinementCtx,
 ) {
@@ -448,6 +451,7 @@ function addGpxImportIssue(
   const topology = resolveActionRouteTopology({
     topology: value.routeTopology ?? value.preparationData?.routeTopology,
     arrivalLocationLabel: value.arrivalLocationLabel,
+    recordType: value.recordType,
   });
   const inferredTopology = inferGpxTopology(drawing.coordinates);
   if (topology !== inferredTopology || metadata.inferredTopology !== inferredTopology) {
@@ -611,6 +615,7 @@ const createActionContractSchema = z.object({
         routeTopology: value.routeTopology ?? value.metadata.routeTopology,
         arrivalLocationLabel:
           value.arrivalLocationLabel ?? value.metadata.arrivalLocationLabel,
+        recordType: value.type,
       },
       ctx,
     );
@@ -622,6 +627,7 @@ const createActionContractSchema = z.object({
         routeTopology: value.routeTopology ?? value.metadata.routeTopology,
         arrivalLocationLabel:
           value.arrivalLocationLabel ?? value.metadata.arrivalLocationLabel,
+        recordType: value.type,
       },
       ctx,
     );
