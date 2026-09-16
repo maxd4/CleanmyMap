@@ -261,6 +261,13 @@ locaux successifs peuvent s'accumuler sur `main`. Avant tout push demandé,
 l'intégralité de `origin/main..HEAD` est auditée, puis le SHA exact est validé
 avec `PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE`.
 
+Sur demande explicite du mode de développement rapide, appliquer en complément
+le protocole borné de
+[`documentation/development/rapid-development-mode.md`](documentation/development/rapid-development-mode.md) :
+une seule passe initiale, validation ciblée, un commit local par exécution et
+arrêt sans push. Ce raccourci ne s'applique pas aux lots sensibles ou
+transversaux.
+
 Les anciens worktrees, branches et métadonnées du coordinateur peuvent rester
 présents comme preuves historiques pendant la migration, mais ne sont ni créés,
 ni revendiqués, ni nettoyés automatiquement par le workflow courant.
