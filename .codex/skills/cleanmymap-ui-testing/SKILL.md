@@ -25,7 +25,9 @@ Verify visible behavior locally before a change is considered done.
 
 - Test the exact route that changed.
 - Verify the happy path and at least one edge case.
-- Capture screenshots when visual changes matter.
+- For visual validation of a PAGE or a page-level BEFORE/AFTER comparison,
+  require one deterministic PNG with `fullPage: true`; viewport or element
+  screenshots are complementary evidence only.
 - Prefer deterministic selectors and avoid fragile timing hacks.
 
 ## Mandatory auth and browser preflight
@@ -72,6 +74,12 @@ bypass server or assume `localhost:3000` after a fallback.
 - Open the local app in the browser.
 - Confirm the UI loads without console errors.
 - Verify the main interaction path.
+- For page-level visual evidence, follow
+  `references/screenshot-patterns.md`: wait for data/fonts, auto-scroll to the
+  bottom to trigger lazy content, return to the top, wait for stabilization,
+  then capture a single full-page PNG from a deterministic desktop context
+  (typically 1440x1200, `deviceScaleFactor=1`). Record and verify the document
+  height against the PNG height for every page.
 - Re-test after fixes.
 
 ## References
