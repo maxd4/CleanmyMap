@@ -114,7 +114,7 @@ export function AuthPageShell({ children, variant }: AuthPageShellProps) {
                 <h1 className="text-4xl font-black leading-tight tracking-tight xl:text-5xl">
                   {copy.editorialTitle}
                 </h1>
-                <p className="text-base leading-relaxed text-slate-200 xl:text-lg">
+                <p className="cmm-text-body cmm-text-inverse">
                   {copy.editorialDescription}
                 </p>
               </div>
@@ -133,7 +133,7 @@ export function AuthPageShell({ children, variant }: AuthPageShellProps) {
                       </div>
                       <div className="min-w-0">
                         <p className="font-semibold text-white">{benefit.title}</p>
-                        <p className="mt-1 text-sm leading-relaxed text-slate-300">
+                        <p className="cmm-text-small cmm-text-inverse mt-1">
                           {benefit.description}
                         </p>
                       </div>
@@ -143,7 +143,7 @@ export function AuthPageShell({ children, variant }: AuthPageShellProps) {
               </div>
             </div>
 
-            <p className="pt-8 text-sm text-slate-400">
+            <p className="cmm-text-body cmm-text-inverse pt-8">
               Une entrée simple pour agir localement et durablement.
             </p>
           </section>

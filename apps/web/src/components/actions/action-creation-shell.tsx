@@ -199,7 +199,7 @@ export function ActionCreationShell({
             <h1 className="text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tighter text-emerald-950">
               Créer une action
             </h1>
-            <p className="max-w-3xl text-sm leading-6 text-emerald-900/72 md:text-base">
+            <p className="cmm-text-body cmm-text-primary max-w-3xl">
               Préparer une action avant terrain ou compléter ses résultats après réalisation.
               Chaque panneau est indépendant : aucun parcours guidé n&apos;est imposé.
             </p>
