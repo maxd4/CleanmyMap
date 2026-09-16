@@ -67,7 +67,7 @@ function SectionDivider({
         </div>
         <span className="h-px flex-1 bg-gradient-to-r from-emerald-300/35 via-emerald-200/10 to-transparent" />
       </div>
-      <p className="max-w-3xl text-left text-sm leading-6 text-emerald-100/62">
+      <p className="cmm-text-body cmm-text-inverse max-w-3xl text-left">
         {subtitle}
       </p>
     </div>

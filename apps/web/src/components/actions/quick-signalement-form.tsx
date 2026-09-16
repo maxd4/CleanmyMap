@@ -219,7 +219,7 @@ export function TrashSpotterObservationForm({
            <h2 className="text-4xl font-black text-white tracking-tighter uppercase">
              {submittedRecordType === "clean_place" ? "Lieu propre signalé" : "Pollution signalée"}
            </h2>
-           <p className="text-xl text-white/30 font-medium">
+           <p className="cmm-text-body cmm-text-inverse font-medium">
              {submittedRecordType === "clean_place"
                ? "La preuve du lieu propre est en cours de traitement par le cockpit."
                : "Le signalement de pollution est en cours de traitement par le cockpit."}
