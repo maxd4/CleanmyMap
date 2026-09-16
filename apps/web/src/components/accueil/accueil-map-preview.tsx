@@ -1,6 +1,10 @@
 "use client";
 
 import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
+import {
+  ACTIONS_MAP_PUBLIC_FEED_DEFAULTS,
+  getActionsMapCurrentYearDays,
+} from "@/components/actions/map/actions-map-filters.utils";
 
 export function HomeMapPreview() {
   const edgeMask =
@@ -21,10 +25,11 @@ export function HomeMapPreview() {
         }}
       >
         <ActionsMapFeed
-          days={365}
-          statusFilter="approved"
-          impactFilter="all"
-          qualityMin={0}
+          days={getActionsMapCurrentYearDays()}
+          dateScope={ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.dateScope}
+          statusFilter={ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.statusFilter}
+          impactFilter={ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.impactFilter}
+          qualityMin={ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.qualityMin}
           presentation="homepage-preview"
           tone="emerald"
           showIntro={false}

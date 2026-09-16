@@ -20,3 +20,16 @@ Famille autonome de la homepage canonique.
 - Les fiches de cette famille suivent le format d'audit standard du dossier `pages_site`.
 - Les snapshots de cette page vivent dans `screenshots/desktop/` ou
   `screenshots/mobile/` et conservent leur format d'origine.
+
+## Preview cartographique
+
+Le hero contient une preview publique de la carte des actions. Elle utilise le
+même `ActionsMapFeed` que `/actions/map`, avec le même statut `approved`, la
+même politique temporelle `current_year`, les mêmes catégories et les mêmes
+références de pollution V6 via `ActionPollutionScoreReferencesProvider`.
+
+La homepage peut limiter le volume, utiliser son viewport de présentation et
+masquer les contrôles. Elle ne possède pas de moteur de données, de formule de
+score ou de règle de couleur indépendant ; le vert reste réservé à
+`clean_place`, le gris à une indisponibilité réelle du score et le chargement à
+son état de chargement explicite.

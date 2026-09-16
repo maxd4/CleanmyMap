@@ -372,6 +372,23 @@ la projection temporelle décrite ci-dessus.
 Les polylines restent hors du rapprochement point/zone ; un spot ponctuel ne
 peut pas recolorer un parcours.
 
+### Parité avec la preview homepage
+
+La homepage affiche une preview du même feed cartographique public que
+`/actions/map`. Le contrat commun fixe les éléments `approved`, la politique
+temporelle `current_year`, les valeurs par défaut d'impact et de qualité, ainsi
+que la sémantique des catégories. Les deux surfaces utilisent
+`ActionPollutionScoreReferencesProvider`, qui lit
+`/api/actions/map/pollution-score-references` avec le snapshot V6 et son
+fallback RPC V2.
+
+La preview peut réduire le viewport et la limite d'affichage, mais ne possède
+ni moteur de données ni calcul de score/couleur indépendant. À période et
+viewport identiques, elle doit donc produire les mêmes actions éligibles, le
+même score et la même couleur que `/actions/map`. Le gris est réservé à une
+indisponibilité réelle du score ; une référence en chargement utilise l'état de
+chargement dédié.
+
 ## 9. Couleurs de la carte d'actions
 
 La couleur d'une action représente la pollution projetée, pas l'identité du type `action`.
