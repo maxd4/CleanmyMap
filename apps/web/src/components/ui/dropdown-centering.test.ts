@@ -79,8 +79,15 @@ describe("dropdown centering contract", () => {
     const itemTone = readSource("navigation/navigation-dropdown-item-theme.ts");
     const borderTheme = readSource("navigation/navigation-dropdown-border-theme.ts");
     const helpText = readSource("navigation/navigation-dropdown-help-text.tsx");
+    const itemCard = readSource("navigation/navigation-dropdown-item-card.tsx");
 
-    expect(sizeTheme).toContain("w-[min(11rem,35%)]");
+    expect(sizeTheme).toContain("cmm-text-caption text-left leading-snug");
+    expect(sizeTheme).toContain("py-1.5");
+    expect(sizeTheme).not.toContain("text-[0.56rem]");
+    expect(sizeTheme).not.toContain("italic");
+    expect(sizeTheme).not.toContain("cmm-line-clamp-2");
+    expect(sizeTheme).not.toContain("overflow-hidden whitespace-normal");
+    expect(sizeTheme).not.toContain("whitespace-nowrap text-[0.86rem]");
     expect(sizeTheme).not.toContain("max-w-0");
     expect(sizeTheme).not.toContain("group-hover/item:font-semibold");
     expect(sizeTheme).not.toContain("group-hover/item:p-[1.5px]");
@@ -89,6 +96,7 @@ describe("dropdown centering contract", () => {
     expect(itemTone).not.toContain("group-hover/item:text-transparent");
     expect(borderTheme).not.toContain("group-hover/item:[stroke-width");
     expect(helpText).toContain("NAVIGATION_DROPDOWN_HELP_TEXT_CLASS_NAME");
+    expect(itemCard).toContain("flex-col items-start");
   });
 
   it("keeps item rendering and accents in the shared navigation renderer", () => {

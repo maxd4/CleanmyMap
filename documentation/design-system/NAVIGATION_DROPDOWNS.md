@@ -27,6 +27,14 @@ vérité supérieure au runtime ou aux contrats UI.
   hover qui renforce la saturation sans remplacer toute la surface.
 - Les cartes utilisent une icône à gauche, un texte noir ou très sombre et une
   flèche dont la couleur au survol suit le bloc.
+- Chaque carte empile le titre et sa description dans la colonne centrale : la
+  description utilise au minimum le token `cmm-text-caption` (environ 12 px),
+  reste alignée à gauche, sans italique ni clamp de lignes, et la carte grandit
+  selon son contenu. La composition canonique est donc : icône, puis titre et
+  description, puis chevron.
+- Les textes de navigation ne doivent pas être réduits à 9 px, masqués par
+  `overflow-hidden` ou abrégés par une ellipse ; si nécessaire, le wrapping
+  naturel augmente la hauteur de la carte.
 - `Cartographie & Impact` conserve ses variations cyan, rouge et rose ;
   `Réseau & Discussions` sa logique violet vers rose ; `Apprendre` sa logique
   jaune vers orange.

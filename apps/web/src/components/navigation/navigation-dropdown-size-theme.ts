@@ -22,7 +22,7 @@ export const NAVIGATION_DROPDOWN_CARD_OUTER_HOVER_CLASS_NAME =
   "group-hover/item:shadow-[0_10px_24px_rgba(15,23,42,0.09)]";
 
 export const NAVIGATION_DROPDOWN_CARD_BODY_CLASS_NAME =
-  "flex min-h-[1.5rem] items-center gap-1.5 rounded-[calc(0.9rem-1px)] border px-[0.4rem] py-[0.18rem] text-left motion-safe:transition-colors motion-safe:duration-200";
+  "flex min-h-[1.5rem] items-center gap-1.5 rounded-[calc(0.9rem-1px)] border px-[0.4rem] py-1.5 text-left motion-safe:transition-colors motion-safe:duration-200";
 
 export const NAVIGATION_DROPDOWN_CARD_ICON_CLASS_NAME =
   "flex h-[1.28rem] w-[1.28rem] shrink-0 items-center justify-center rounded-full border sm:h-[1.4rem] sm:w-[1.4rem]";
@@ -31,7 +31,7 @@ export const NAVIGATION_DROPDOWN_CARD_ICON_GLYPH_CLASS_NAME =
   "h-[0.55rem] w-[0.55rem] sm:h-[0.8rem] sm:w-[0.8rem]";
 
 export const NAVIGATION_DROPDOWN_CARD_LABEL_CLASS_NAME =
-  "block whitespace-nowrap text-[0.86rem] font-normal tracking-tight sm:text-[0.92rem]";
+  "block break-words text-[0.86rem] font-normal tracking-tight sm:text-[0.92rem]";
 
 export const NAVIGATION_DROPDOWN_CARD_CHEVRON_CLASS_NAME =
   "h-[0.58rem] w-[0.58rem] shrink-0 sm:h-[0.82rem] sm:w-[0.82rem]";
@@ -41,7 +41,7 @@ export const NAVIGATION_DROPDOWN_ITEM_CONTENT_GAP_CLASS_NAME = "gap-1";
 export const NAVIGATION_DROPDOWN_ITEM_LINK_GAP_CLASS_NAME = "gap-1";
 
 export const NAVIGATION_DROPDOWN_HELP_TEXT_CLASS_NAME =
-  "w-[min(11rem,35%)] shrink-0 overflow-hidden whitespace-normal break-words cmm-line-clamp-2 text-center text-[0.56rem] italic leading-tight text-black opacity-100";
+  "block w-full whitespace-normal break-words cmm-text-caption text-left leading-snug text-black opacity-100";
 
 export const NAVIGATION_DROPDOWN_TREE_SECTION_LABEL_CLASS_NAME =
   "block cmm-text-small font-bold tracking-[-0.02em]";
