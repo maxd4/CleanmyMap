@@ -15,6 +15,7 @@ La route n'est pas protégée par le proxy et figure dans le sitemap public.
 ```txt
 apps/web/src/app/(app)/actions/map/page.tsx
 apps/web/src/components/actions/map-feed/actions-map-feed.tsx
+apps/web/src/components/actions/map-feed/actions-map-initial-viewport.ts
 apps/web/src/components/actions/actions-map-table.tsx
 apps/web/src/components/actions/map/use-actions-map-filters.ts
 apps/web/src/components/actions/map/action-pollution-score-references-context.tsx
@@ -45,6 +46,27 @@ Explorer les actions et hotspots, filtrer la vue, sélectionner une action et li
 La page ne présente pas les diagnostics techniques de qualité géométrique dans
 la vue publique. La carte conserve sa géométrie et ses interactions ; les
 informations utiles à la lecture restent accessibles via la légende compacte.
+
+## Viewport initial public
+
+À l'ouverture, la carte ne présente pas de viewport monde neutre. La référence
+géographique suit l'ordre navigateur GPS puis préférence de résidence. Le
+resolver public recherche alors, par rayons bornés, l'action `approved` visible
+géolocalisée la plus proche. Il cadre ensuite les actions de la même commune
+indiquée par `preparationData.communeZoneLabel` ; pour les contrats historiques
+qui ne portent pas ce champ, une ville explicitement associée à un code postal
+dans le libellé est privilégiée, puis le libellé de lieu existant est utilisé
+comme clé de repli sans déduire une commune à partir des coordonnées.
+
+Sans GPS ni résidence, la première action publique récente sert de fallback
+déterministe, puis le même cadrage de ville est appliqué. Chaque lecture reste
+bornée par un rayon et une limite ; aucune table `actions` complète n'est
+chargée pour préparer le viewport. Si aucune action publique géolocalisée n'est
+disponible, la page affiche l'état vide canonique et ne montre pas de globe.
+
+Le viewport résolu devient aussi la cible du contrôle « Recentrer ». Après un
+déplacement ou un zoom manuel, aucun résultat asynchrone ultérieur ne reprend
+le contrôle de la carte.
 
 ## KPI publics et statistiques contextuelles
 

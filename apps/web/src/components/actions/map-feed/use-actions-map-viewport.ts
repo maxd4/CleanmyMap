@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import {
-  DEFAULT_ACTIONS_MAP_VIEWPORT,
   createActionsMapViewport,
 } from "@/components/actions/actions-map-canvas.utils";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
 import {
-  resolveInitialMapViewport,
+  resolveInitialPublicMapViewport,
   selectMapReferencePoint,
   type MapReferencePoint,
 } from "./actions-map-initial-viewport";
@@ -67,15 +66,21 @@ export function useActionsMapViewport(
   onViewportChange?: (viewport: MapViewportState) => void,
   options: ActionsMapViewportOptions = {},
 ) {
-  const fallbackViewport = options.fallbackViewport ?? DEFAULT_ACTIONS_MAP_VIEWPORT;
+  const fallbackViewport = options.fallbackViewport;
   const useRemoteFallback = options.useRemoteFallback ?? true;
   const [viewport, setViewport] = useState<MapViewportState | null>(
-    fallbackViewport,
+    fallbackViewport ?? null,
   );
   const [viewportRequest, setViewportRequest] = useState<MapViewportState | null>(null);
   const [viewportRequestKey, setViewportRequestKey] = useState(0);
-  const [recenterViewport, setRecenterViewport] = useState<MapViewportState>(
-    fallbackViewport,
+  const [recenterViewport, setRecenterViewport] = useState<MapViewportState | null>(
+    fallbackViewport ?? null,
+  );
+  const [isInitialViewportResolved, setIsInitialViewportResolved] = useState(
+    fallbackViewport !== undefined,
+  );
+  const [hasInitialPublicActions, setHasInitialPublicActions] = useState(
+    fallbackViewport !== undefined,
   );
   const hasReceivedInitialViewportReportRef = useRef(false);
   const hasManualViewportChangeRef = useRef(false);
@@ -85,42 +90,62 @@ export function useActionsMapViewport(
   const hasStartedInitialResolutionRef = useRef(false);
 
   const applyAutomaticViewport = useCallback(
-    async (reference: MapReferencePoint | null, stableFallback: MapViewportState | null) => {
+    async (
+      reference: MapReferencePoint | null,
+      stableFallback: MapViewportState | null | undefined,
+    ) => {
       if (hasManualViewportChangeRef.current || hasAutomaticViewportAppliedRef.current) {
         return;
       }
 
       let nextViewport = stableFallback;
-      if (reference) {
+      let hasPublicActions = fallbackViewport !== undefined && !reference;
+      if (!useRemoteFallback && fallbackViewport !== undefined && !reference) {
+        // Homepage previews intentionally keep their supplied stable viewport
+        // when geolocation is unavailable; the public map uses the action
+        // resolver because it has no neutral viewport fallback.
+      } else if (reference) {
         try {
-          const resolution = await resolveInitialMapViewport({
+          const resolution = await resolveInitialPublicMapViewport({
             reference,
           });
           nextViewport = resolution.viewport;
+          hasPublicActions = resolution.cityItems.length > 0;
         } catch {
-          // The public homepage must remain on Paris when automatic resolution fails.
+          // Keep a useful location fallback when the bounded public resolution
+          // fails; do not fall back to the neutral world viewport.
           nextViewport = useRemoteFallback ? stableFallback : fallbackViewport;
+        }
+      } else {
+        try {
+          const resolution = await resolveInitialPublicMapViewport({
+            reference: null,
+          });
+          nextViewport = resolution.viewport;
+          hasPublicActions = resolution.cityItems.length > 0;
+        } catch {
+          nextViewport = stableFallback;
         }
       }
 
-      if (!shouldApplyAutomaticViewport({
-        isMounted: isMountedRef.current,
-        hasManualViewportChange: hasManualViewportChangeRef.current,
-        hasAutomaticViewportApplied: hasAutomaticViewportAppliedRef.current,
-        nextViewport,
-      })) {
-        return;
-      }
-      if (!nextViewport) {
+      if (
+        !isMountedRef.current ||
+        hasManualViewportChangeRef.current ||
+        hasAutomaticViewportAppliedRef.current
+      ) {
         return;
       }
 
       hasAutomaticViewportAppliedRef.current = true;
-      pendingProgrammaticViewportRef.current = nextViewport;
-      setRecenterViewport(nextViewport);
-      setViewportRequest(nextViewport);
-      setViewportRequestKey((current) => current + 1);
-      setViewport(nextViewport);
+      setHasInitialPublicActions(hasPublicActions);
+      setIsInitialViewportResolved(true);
+      if (nextViewport) {
+        pendingProgrammaticViewportRef.current = nextViewport;
+        setRecenterViewport(nextViewport);
+        setViewportRequest(nextViewport);
+        setViewportRequestKey((current) => current + 1);
+        setViewport(nextViewport);
+      }
     },
     [fallbackViewport, useRemoteFallback],
   );
@@ -299,6 +324,8 @@ export function useActionsMapViewport(
     viewportRequest,
     viewportRequestKey,
     recenterViewport,
+    isInitialViewportResolved,
+    hasInitialPublicActions,
     handleManualViewportInteraction,
     handleViewportChange,
   };

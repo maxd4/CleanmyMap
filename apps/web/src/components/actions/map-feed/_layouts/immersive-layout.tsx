@@ -45,6 +45,7 @@ type ImmersiveLayoutProps = {
   viewportRequest?: MapViewportState | null;
   viewportRequestKey?: number;
   recenterViewport?: MapViewportState | null;
+  isInitialViewportResolved?: boolean;
   sourceCompleteness?: RepollutionDatasetCompleteness;
   scoreScope?: PollutionScoreScope;
   onScoreScopeChange?: (scope: PollutionScoreScope) => void;
@@ -77,6 +78,7 @@ export function ImmersiveLayout({
   viewportRequest,
   viewportRequestKey,
   recenterViewport,
+  isInitialViewportResolved = true,
   sourceCompleteness = "partial",
   scoreScope = "global",
   onScoreScopeChange,
@@ -135,6 +137,8 @@ export function ImmersiveLayout({
                   </p>
                 </div>
               </div>
+            ) : !isInitialViewportResolved ? (
+              <MapLoadingState fullViewport={fullViewport} compact={compact} tone={tone} />
             ) : !hasItems ? (
               <MapEmptyState
                 mode={emptyMode}

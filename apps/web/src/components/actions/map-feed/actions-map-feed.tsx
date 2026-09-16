@@ -37,6 +37,7 @@ type ActionsMapFeedContentProps = {
   viewportRequest?: MapViewportState | null;
   viewportRequestKey?: number;
   recenterViewport?: MapViewportState | null;
+  isInitialViewportResolved?: boolean;
   scoreScope?: ActionsMapFeedProps["scoreScope"];
   onScoreScopeChange?: ActionsMapFeedProps["onScoreScopeChange"];
 };
@@ -60,6 +61,7 @@ export function ActionsMapFeedContent({
   viewportRequest = null,
   viewportRequestKey = 0,
   recenterViewport = null,
+  isInitialViewportResolved = true,
   scoreScope = "global",
   onScoreScopeChange,
 }: ActionsMapFeedContentProps) {
@@ -171,6 +173,7 @@ export function ActionsMapFeedContent({
     viewportRequest,
     viewportRequestKey,
     recenterViewport,
+    isInitialViewportResolved,
     tone,
     onViewportChange,
     onViewportInteraction,
@@ -251,6 +254,8 @@ export function ActionsMapFeed({
     viewportRequest,
     viewportRequestKey,
     recenterViewport,
+    isInitialViewportResolved,
+    hasInitialPublicActions,
     handleManualViewportInteraction,
     handleViewportChange,
   } = useActionsMapViewport(
@@ -274,6 +279,7 @@ export function ActionsMapFeed({
     visibleCategories,
     limit,
     viewport: mapViewport,
+    enabled: isInitialViewportResolved && hasInitialPublicActions,
   });
 
   return (
@@ -294,6 +300,7 @@ export function ActionsMapFeed({
       viewportRequest={viewportRequest}
       viewportRequestKey={viewportRequestKey}
       recenterViewport={recenterViewport}
+      isInitialViewportResolved={isInitialViewportResolved}
       onViewportChange={handleViewportChange}
       onViewportInteraction={handleManualViewportInteraction}
       scoreScope={scoreScope}

@@ -2,10 +2,7 @@ import * as React from "react";
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  DEFAULT_ACTIONS_MAP_VIEWPORT,
-  HOMEPAGE_MAP_VIEWPORT,
-} from "@/components/actions/actions-map-canvas.utils";
+import { HOMEPAGE_MAP_VIEWPORT } from "@/components/actions/actions-map-canvas.utils";
 import { ActionsMapFeed } from "./actions-map-feed";
 
 const useMapFeedDataMock = vi.fn();
@@ -19,7 +16,7 @@ afterEach(() => {
 });
 
 describe("ActionsMapFeed", () => {
-  it("passes the visible viewport to the data hook on first render", () => {
+  it("waits for the public city viewport before loading the map feed", () => {
     useMapFeedDataMock.mockReturnValue({
       data: null,
       allItems: [],
@@ -46,7 +43,8 @@ describe("ActionsMapFeed", () => {
 
     expect(useMapFeedDataMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        viewport: DEFAULT_ACTIONS_MAP_VIEWPORT,
+        viewport: null,
+        enabled: false,
       }),
     );
   });
