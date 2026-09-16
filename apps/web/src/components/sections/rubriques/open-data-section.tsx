@@ -222,8 +222,8 @@ export function OpenDataSection() {
               </h3>
               <p className="max-w-2xl text-[0.96rem] leading-[1.7] text-slate-600">
                 {fr
-                  ? "CleanMyMap fournit une documentation Swagger/OpenAPI complète pour faciliter l'intégration de nos données dans vos propres écosystèmes."
-                  : "CleanMyMap provides full Swagger/OpenAPI documentation to help integrate our data into your own ecosystems."}
+                  ? "L’API publique expose les actions cartographiées au format JSON. Les formats JSON/CSV disponibles facilitent l’analyse et la réutilisation des données."
+                  : "The public API exposes mapped actions in JSON. Available JSON/CSV formats support data analysis and reuse."}
               </p>
             </div>
           </div>
@@ -240,7 +240,7 @@ export function OpenDataSection() {
               <ArrowRight size={16} />
             </CmmButton>
             <p className="text-sm text-slate-500">
-              Swagger / OpenAPI
+              {fr ? "Réponse JSON de l’API publique" : "Public API JSON response"}
             </p>
           </div>
         </section>

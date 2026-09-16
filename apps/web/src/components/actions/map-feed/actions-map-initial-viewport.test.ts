@@ -29,6 +29,11 @@ const RUNTIME_REFERENCES = {
   },
 };
 
+type InitialViewportFetchParams = {
+  viewport?: unknown;
+  limit: number;
+};
+
 function buildItem(overrides: Partial<ActionMapItem> = {}): ActionMapItem {
   return {
     id: "item-1",
@@ -118,7 +123,7 @@ describe("actions map initial viewport", () => {
         metadata: { preparationData: { communeZoneLabel: "PARIS" } },
       } as ActionMapItem["contract"],
     });
-    const fetchActions = vi.fn(async ({ viewport }: { viewport?: unknown }) => ({
+    const fetchActions = vi.fn(async ({ viewport }: InitialViewportFetchParams) => ({
       items: viewport ? [nearest, sameCity] : [],
     }));
 
@@ -151,7 +156,7 @@ describe("actions map initial viewport", () => {
         metadata: { preparationData: { communeZoneLabel: "Toulouse" } },
       } as ActionMapItem["contract"],
     });
-    const fetchActions = vi.fn(async ({ viewport }: { viewport?: unknown }) => ({
+    const fetchActions = vi.fn(async ({ viewport }: InitialViewportFetchParams) => ({
       items: viewport ? [recent] : [recent],
     }));
 
@@ -182,7 +187,7 @@ describe("actions map initial viewport", () => {
       longitude: 1.444,
     });
     let call = 0;
-    const fetchActions = vi.fn(async ({ viewport }: { viewport?: unknown }) => {
+    const fetchActions = vi.fn(async ({ viewport }: InitialViewportFetchParams) => {
       call += 1;
       if (call <= 4) {
         return { items: [] };
