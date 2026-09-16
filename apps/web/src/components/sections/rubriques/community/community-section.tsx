@@ -102,13 +102,13 @@ export function CommunitySection() {
       icon={Users}
       hideHeader={isPartnersTab}
     >
-      <div className="space-y-12 pb-20">
+      <div className="space-y-6 pb-20">
         <div
           className={[
             "rounded-[2.5rem] p-2 backdrop-blur-2xl shadow-2xl transition-colors",
             isPartnersTab
               ? "border border-violet-200 bg-white/85 shadow-[0_20px_60px_-44px_rgba(79,70,229,0.4)]"
-              : "border border-white/10 bg-black/25",
+              : "border border-pink-200 bg-white/85 shadow-[0_20px_60px_-44px_rgba(190,24,93,0.35)]",
           ].join(" ")}
         >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -116,7 +116,7 @@ export function CommunitySection() {
               <p
                 className={[
                   "text-[10px] font-black uppercase tracking-[0.28em]",
-                  isPartnersTab ? "text-violet-500/70" : "text-white/45",
+                  isPartnersTab ? "text-violet-500/70" : "text-pink-700/70",
                 ].join(" ")}
               >
                 {fr ? "Navigation de la page" : "Page navigation"}
@@ -124,7 +124,7 @@ export function CommunitySection() {
               <p
                 className={[
                   "mt-2 text-sm font-semibold",
-                  isPartnersTab ? "text-slate-600" : "text-white",
+                  "text-slate-700",
                 ].join(" ")}
               >
                 {surfaceTab === "community"
@@ -169,7 +169,7 @@ export function CommunitySection() {
           animate={{ opacity: 1, y: 0 }}
           watermarkIcon={Sparkles}
           watermarkSize={80}
-          className="flex flex-col lg:flex-row lg:items-center justify-between gap-8"
+          className="flex flex-col justify-between gap-5 !rounded-[2rem] !py-5 lg:flex-row lg:items-center"
         >
 
           <div className="space-y-4 relative z-10">
@@ -265,12 +265,12 @@ export function CommunitySection() {
         <motion.div 
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          className="p-8 rounded-[2rem] border border-white/5 bg-slate-900/20 text-center"
+          className="p-6 rounded-[2rem] border border-pink-200 bg-white/70 text-center"
         >
-          <p className="text-slate-500 text-xs font-black uppercase tracking-[0.2em] italic">
-            {fr 
-              ? "Rejoignez plus de 15 000 bénévoles pour une ville plus propre." 
-              : "Join over 15,000 volunteers for a cleaner city."}
+          <p className="text-slate-600 text-xs font-black uppercase tracking-[0.2em] italic">
+            {fr
+              ? "Participez aux missions locales et consultez les résultats publics."
+              : "Join local missions and consult public results."}
           </p>
         </motion.div>
           </>

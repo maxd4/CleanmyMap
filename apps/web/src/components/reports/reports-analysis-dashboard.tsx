@@ -234,6 +234,17 @@ export function ReportsAnalysisDashboard({
         }
       />
 
+      <div className="mt-5 grid gap-3 rounded-2xl border border-red-100 bg-red-50/60 p-4 text-xs text-slate-600 sm:grid-cols-2">
+        <p>
+          <span className="font-black uppercase tracking-[0.14em] text-red-700">Provenance</span>
+          <span className="mt-1 block leading-5">Actions approuvées, couverture cartographique et méthodes actives sur la période.</span>
+        </p>
+        <p>
+          <span className="font-black uppercase tracking-[0.14em] text-red-700">Limites</span>
+          <span className="mt-1 block leading-5">Les impacts sont des proxys : les données absentes restent non renseignées.</span>
+        </p>
+      </div>
+
       <div className="mt-7 space-y-4">
         <section className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5" aria-labelledby="reports-impact-overview-title">
           <div className="flex flex-wrap items-center gap-2">

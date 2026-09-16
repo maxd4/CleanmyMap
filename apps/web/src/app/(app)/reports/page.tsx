@@ -53,7 +53,6 @@ type ReportsAnalysisContentParams = {
 
 function resolveReportsTab(
   requestedTab: string | undefined,
-  isAuthenticated: boolean,
 ): ReportsPageTabId {
   if (requestedTab === "generation") {
     return "generation";
@@ -63,7 +62,7 @@ function resolveReportsTab(
     return "analysis";
   }
 
-  return isAuthenticated ? "generation" : "analysis";
+  return "analysis";
 }
 
 function buildReportsAnalysisContent({
@@ -143,7 +142,6 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const profile = accountCompletion?.currentProfile ?? identity?.activeProfile ?? toProfile(authorizationRole);
   const activeTab = resolveReportsTab(
     resolvedSearchParams.tab,
-    Boolean(userId),
   );
   const primaryAction = getProfilePrimaryAction(profile);
   const secondaryAction = getProfileSecondaryAction(profile);

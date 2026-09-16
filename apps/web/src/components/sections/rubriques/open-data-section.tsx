@@ -230,12 +230,13 @@ export function OpenDataSection() {
 
           <div className="flex flex-col items-start gap-3 border-t border-violet-100 pt-5 lg:border-l lg:border-t-0 lg:pt-0 lg:pl-6">
             <CmmButton
-              type="button"
+              href="/api/actions/map?limit=1&floorDate=all&types=action&status=approved"
+              prefetch={false}
               tone="primary"
               variant="pill"
               className="inline-flex h-14 items-center gap-3 rounded-full bg-[#4a2c8f] px-7 text-[0.72rem] font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_42px_-26px_rgba(74,44,143,0.8)]"
             >
-              {fr ? "Accéder à l'API" : "Access API"}
+              {fr ? "Ouvrir l'API publique" : "Open public API"}
               <ArrowRight size={16} />
             </CmmButton>
             <p className="text-sm text-slate-500">
@@ -304,7 +305,8 @@ export function OpenDataSection() {
             </div>
 
             <CmmButton
-              type="button"
+              href="/partners/onboarding"
+              prefetch={false}
               tone="secondary"
               variant="pill"
               className="inline-flex h-14 rounded-full bg-white px-6 text-[0.72rem] font-black uppercase tracking-[0.18em] text-[#8f226f] shadow-2xl"

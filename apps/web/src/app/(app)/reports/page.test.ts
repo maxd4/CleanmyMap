@@ -276,6 +276,14 @@ describe("/reports page contract", () => {
     expect(markup).toContain('href="/actions/history"');
   });
 
+  it("defaults authenticated visitors to the analysis view", async () => {
+    const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({}) }));
+
+    expect(markup).toContain('data-active-tab="analysis"');
+    expect(markup).toContain('data-testid="reports-analysis-dashboard"');
+    expect(markup).not.toContain('data-testid="report-generation"');
+  });
+
   it("keeps a real zero visible after a successful analysis load", async () => {
     mocks.computeReportModel.mockReturnValueOnce({
       totals: { kg: 0, hours: 0, actions: 0 },

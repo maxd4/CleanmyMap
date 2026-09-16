@@ -80,7 +80,11 @@ function KpiMethodBlock({
         </div>
       </div>
 
-      <div className="mt-6 space-y-5">
+      <details open={method.key === "wasteKg"} className="group mt-5">
+        <summary className="cursor-pointer list-inside rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-black uppercase tracking-[0.16em] text-red-100/80 transition hover:bg-white/10">
+          {isFrench ? "Afficher la formule, les hypothèses et les limites" : "Show formula, assumptions and limits"}
+        </summary>
+        <div className="mt-5 space-y-5">
         <div>
           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-red-200/65">
             {isFrench ? "Donnée terrain mesurée ou déclarée" : "Measured or declared field data"}
@@ -275,7 +279,8 @@ function KpiMethodBlock({
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </details>
     </article>
   );
 }

@@ -1,7 +1,6 @@
 import { TrashSpotterOwnerLoop } from "@/components/actions/trash-spotter-owner-loop";
 import { PageHeader } from "@/components/ui/page-header";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
-import { MapPin, Zap } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
@@ -33,32 +32,17 @@ export default async function SignalementPage({
           id="signalement"
           hideHeader
         >
-          <div className="space-y-12 pt-8">
+          <div className="space-y-8 pt-8">
             <PageHeader
               family={pageFamily}
               title="Mettre à jour l’état du lieu"
               subtitle="Décrivez l’état observé : pollution constatée ou lieu constaté propre. Votre observation alimente la cartographie citoyenne."
             />
 
-            {/* Certification Status */}
-            <div className="flex flex-wrap gap-3">
-              <div className="inline-flex items-center gap-3 rounded-full border border-emerald-400/20 bg-emerald-400/5 px-6 py-2.5 backdrop-blur-md">
-                <MapPin size={14} className="text-emerald-400 animate-pulse" />
-                <span className="cmm-text-caption font-black uppercase tracking-[0.3em] text-emerald-400">
-                  Position Certifiée
-                </span>
-              </div>
-            </div>
-
             <FamilyRubriqueCard
-              withTopBar={true}
-              topBarContent={
-                <div className="flex items-center gap-2">
-                  <Zap size={14} className="text-emerald-400" />
-                  <span>Analyse Vision IA Active</span>
-                </div>
-              }
-              className="p-1 sm:p-12"
+              withTopBar={false}
+              withHover={false}
+              className="!border-emerald-200/80 !bg-white/95 !text-stone-950 !shadow-[0_22px_60px_-38px_rgba(16,185,129,0.35)] p-1 sm:p-8"
             >
             <TrashSpotterOwnerLoop
               initialLocation={initialLocation}
