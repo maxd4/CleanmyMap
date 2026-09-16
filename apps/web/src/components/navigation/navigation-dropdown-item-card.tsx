@@ -90,7 +90,7 @@ export function NavigationDropdownItemCard({
               <Icon className={cardGeometry.iconGlyphClassName} strokeWidth={iconStrokeWidth} aria-hidden="true" />
             </span>
 
-            <span className={cn("flex min-w-0 flex-1 items-center", NAVIGATION_DROPDOWN_ITEM_CONTENT_GAP_CLASS_NAME)}>
+            <span className={cn("flex min-w-0 flex-1 flex-col items-start", NAVIGATION_DROPDOWN_ITEM_CONTENT_GAP_CLASS_NAME)}>
               <span
                 className={cn(cardGeometry.labelClassName, itemTone.labelClassName, "min-w-0 flex-1")}
                 style={itemTone.labelStyle}
