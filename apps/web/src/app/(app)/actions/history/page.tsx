@@ -10,9 +10,9 @@ import { ActionsHistoryList } from "@/components/actions/actions-history-list";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 
 export const metadata: Metadata = {
- title: "Historique des actions validées - CleanMyMap",
+ title: "Historique terrain - CleanMyMap",
  description:
-  "Historique interne des actions validées, réservé aux comptes connectés.",
+  "Consulter les enregistrements accessibles, leur qualité et les corrections à effectuer.",
  robots: {
   index: false,
   follow: false,
@@ -72,8 +72,8 @@ export default async function ActionsHistoryPage() {
    <AccountCompletionGate state={accountCompletion}>
     <PageReadingTemplate
      context="Profil supervision"
-     title="Historique des actions validées"
-     objective="Prioriser les fiches à corriger et fiabiliser l'historique."
+     title="Historique terrain"
+     objective="Consulter les enregistrements accessibles, leur qualité et les corrections à effectuer."
      summary={
       <div className="space-y-3">
         <div className="grid gap-3 md:grid-cols-3">
@@ -118,7 +118,7 @@ export default async function ActionsHistoryPage() {
        />
       </div>
      }
-     primaryAction={{ href:"/actions/new", label:"Déclarer" }}
+     primaryAction={{ href:"/actions/new", label:"Créer une action" }}
      secondaryAction={{ href:"/reports", label:"Ouvrir reporting" }}
      analysis={<ActionsHistoryList />}
     />
@@ -132,11 +132,11 @@ export default async function ActionsHistoryPage() {
    <DecisionPageHeader
     context="Profil supervision"
     title="Historique terrain"
-    objective="Identifier les fiches à corriger et fiabiliser l'historique."
+    objective="Consulter les enregistrements accessibles, leur qualité et les corrections à effectuer."
     actions={[
      {
       href:"/actions/new",
-      label:"Nouvelle déclaration",
+      label:"Créer une action",
       tone:"primary",
      },
      { href:"/reports", label:"Ouvrir reporting" },

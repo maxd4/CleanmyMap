@@ -205,8 +205,11 @@ export const RUBRIQUE_REGISTRY = [
     priority: 20,
     kind: "app-route",
     route: "/actions/history",
-    label: { fr: "Historique", en: "History" },
-    description: { fr: "Retrouver vos actions passées", en: "All past actions" },
+    label: { fr: "Historique terrain", en: "Field history" },
+    description: {
+      fr: "Consulter les enregistrements accessibles, leur qualité et les corrections à effectuer.",
+      en: "Review accessible records, their quality, and corrections to make.",
+    },
     availability: "hidden",
     implementation: "finalized",
   },
