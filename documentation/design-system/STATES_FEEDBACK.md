@@ -10,14 +10,30 @@ et conserver leur logique métier, leurs textes et leurs actions.
 | --- | --- | --- |
 | `SystemState` | État bloquant, plein écran ou plein bloc ; état vide important | Utiliser `SystemStateLayout` avec un `variant` parmi `error`, `warning`, `empty`, `loading`, `forbidden` ou `offline`. |
 | `CmmFeedback` | Succès, erreur, avertissement ou information inline | Utiliser `tone="info"`, `"success"`, `"warning"` ou `"error"`. Les tones `warning` et `error` exposent `role="alert"`; les autres exposent `role="status"`. |
+| `CmmToast` | Notification flottante temporaire | Utiliser le shell présentational pour un message court, ses actions et sa fermeture ; le host conserve le lifecycle et le placement. |
 | `CmmSkeleton` | Chargement structurel dont la géométrie doit rester visible | Conserver les variants existants et choisir l’animation selon le mode d’affichage. |
 | `CmmField` `error` | Erreur attachée à un champ de formulaire | Utiliser `CmmField` pour l’association `aria-describedby` et `aria-invalid`; ne pas remplacer cette erreur par `CmmFeedback`. |
 
 En résumé :
 
 ```txt
-SystemState  ≠  CmmFeedback  ≠  CmmSkeleton  ≠  erreur CmmField
+SystemState  ≠  CmmFeedback  ≠  CmmToast  ≠  CmmSkeleton  ≠  erreur CmmField
 ```
+
+`CmmToast` est uniquement présentational : il porte la surface, la
+typographie, l’icône, le contenu, les actions, la fermeture et la sémantique
+ARIA. Les hosts métier conservent le lifecycle, les timers, les événements,
+les retries, la déduplication, les sons, les confettis et toute autre side
+effect. Le placement reste également la responsabilité du host. Il ne faut
+pas créer un bus ou une queue globale pour cette primitive.
+
+`announcement="polite"` convient à une information ou une célébration qui
+peut attendre le prochain silence de la technologie d’assistance ;
+`announcement="assertive"` est réservé à une erreur ou une interruption
+importante. `announcement="none"` ne crée pas de live region implicite. Un
+toast temporaire ne remplace pas un feedback persistant nécessaire, un état
+de page, une erreur de champ ou une action que l’utilisateur doit pouvoir
+retrouver.
 
 ## Règles de migration
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CmmToast } from "@/components/ui/cmm-toast";
 
 type GamificationToastTone = "explorer" | "forms" | "clean-zones" | "actions" | "generic";
 
@@ -51,36 +51,21 @@ export default function GamificationToast({
   const styles = TOAST_STYLES[tone];
 
   return (
-    <div
+    <CmmToast
+      title={title}
+      tone="neutral"
+      announcement="polite"
+      icon={icon}
+      iconClassName={cn("mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg font-black", styles.badge)}
+      onClose={onClose}
+      closeLabel="Fermer la notification de gamification"
       className={cn(
-        "relative overflow-hidden rounded-3xl border p-4 backdrop-blur-xl cmm-gamification-toast-shell",
+        "relative overflow-hidden rounded-3xl backdrop-blur-xl cmm-gamification-toast-shell",
         styles.shell,
       )}
     >
-      <div className={cn("absolute -right-10 -top-10 h-24 w-24 rounded-full blur-2xl", styles.glow)} />
-      <div className="relative flex gap-3">
-        <div className={cn("mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg font-black", styles.badge)}>
-          {icon}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.24em] opacity-60">
-            {title}
-          </p>
-          <p className="mt-1 text-sm font-semibold leading-relaxed opacity-90">
-            {message}
-          </p>
-        </div>
-        {onClose ? (
-          <button
-            type="button"
-            onClick={onClose}
-            className="shrink-0 rounded-full p-1 opacity-50 transition hover:bg-black/5 hover:opacity-80"
-            aria-label="Fermer la notification de gamification"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        ) : null}
-      </div>
-    </div>
+      <span aria-hidden="true" className={cn("absolute -right-10 -top-10 h-24 w-24 rounded-full blur-2xl", styles.glow)} />
+      <span className="relative">{message}</span>
+    </CmmToast>
   );
 }

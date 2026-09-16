@@ -229,6 +229,125 @@
   }
 
   /* ============================================================
+     TOASTS - shell présentational, tone via data-toast-tone
+     ============================================================ */
+  .cmm-toast {
+    --cmm-toast-accent: var(--text-secondary);
+    --cmm-toast-background: var(--cmm-surface-background);
+    --cmm-toast-border: var(--cmm-surface-border);
+    --cmm-toast-text: var(--text-primary);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    border: 1px solid var(--cmm-toast-border);
+    border-radius: var(--radius-lg);
+    padding: 0.75rem 1rem;
+    background: var(--cmm-toast-background);
+    box-shadow: var(--cmm-surface-shadow-elevated);
+    backdrop-filter: var(--cmm-surface-blur);
+    color: var(--cmm-toast-text);
+  }
+
+  .cmm-toast[data-toast-tone="info"] {
+    --cmm-toast-accent: var(--text-info);
+    --cmm-toast-background: color-mix(in srgb, var(--text-info) 7%, var(--bg-elevated));
+    --cmm-toast-border: color-mix(in srgb, var(--text-info) 22%, var(--border-default));
+  }
+
+  .cmm-toast[data-toast-tone="success"] {
+    --cmm-toast-accent: var(--text-success);
+    --cmm-toast-background: color-mix(in srgb, var(--text-success) 7%, var(--bg-elevated));
+    --cmm-toast-border: color-mix(in srgb, var(--text-success) 22%, var(--border-default));
+  }
+
+  .cmm-toast[data-toast-tone="warning"] {
+    --cmm-toast-accent: var(--text-warning);
+    --cmm-toast-background: color-mix(in srgb, var(--text-warning) 7%, var(--bg-elevated));
+    --cmm-toast-border: color-mix(in srgb, var(--text-warning) 22%, var(--border-default));
+  }
+
+  .cmm-toast[data-toast-tone="error"] {
+    --cmm-toast-accent: var(--text-danger);
+    --cmm-toast-background: color-mix(in srgb, var(--text-danger) 7%, var(--bg-elevated));
+    --cmm-toast-border: color-mix(in srgb, var(--text-danger) 22%, var(--border-default));
+  }
+
+  .cmm-toast__icon {
+    display: flex;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--cmm-toast-accent) 28%, var(--border-default));
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--cmm-toast-accent) 10%, var(--bg-muted));
+    color: var(--cmm-toast-accent);
+  }
+
+  .cmm-toast__content {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .cmm-toast__title {
+    margin: 0;
+    color: var(--cmm-toast-accent);
+    font-weight: var(--weight-semibold);
+  }
+
+  .cmm-toast__message {
+    margin-top: 0.25rem;
+    color: var(--cmm-toast-text);
+  }
+
+  .cmm-toast__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+  }
+
+  .cmm-toast__close {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+    padding: 0.25rem;
+    color: var(--text-secondary);
+    transition: background-color var(--cmm-surface-transition-duration) var(--cmm-surface-transition-easing),
+      color var(--cmm-surface-transition-duration) var(--cmm-surface-transition-easing);
+  }
+
+  .cmm-toast__close:hover {
+    background: var(--bg-muted);
+    color: var(--text-primary);
+  }
+
+  .cmm-toast__close:focus-visible {
+    outline: 2px solid var(--cmm-toast-accent);
+    outline-offset: 2px;
+  }
+
+  [data-display-mode="minimaliste"] .cmm-toast {
+    backdrop-filter: none;
+    box-shadow: var(--shadow-soft);
+  }
+
+  [data-display-mode="sobre"] .cmm-toast {
+    background: var(--background);
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cmm-toast__close {
+      transition: none;
+    }
+  }
+
+  /* ============================================================
      SKELETONS - dimensions, surfaces and motion via data attributes
      ============================================================ */
   .cmm-skeleton {
