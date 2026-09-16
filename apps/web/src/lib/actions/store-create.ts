@@ -21,7 +21,10 @@ import {
   toGeoJsonString,
 } from "@/lib/actions/geometry/derived-geometry";
 import { reconstructActionRoute } from "@/lib/actions/geometry/route-reconstruction";
-import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
+import {
+  clearActionRouteArrivalForLoop,
+  resolveActionRouteTopology,
+} from "@/lib/actions/route-topology";
 import type { RouteGeometry } from "@/lib/route/route-contract";
 import {
   persistResolvedRouteTargetDistance,
@@ -95,6 +98,7 @@ export async function resolveCreateActionDrawing(
       topology: payload.routeTopology ?? payload.preparationData?.routeTopology,
       arrivalLocationLabel:
         payload.arrivalLocationLabel ?? payload.preparationData?.zoneCiblePrevue,
+      recordType: payload.recordType ?? "action",
     }),
     durationMinutes: payload.durationMinutes,
     routeTargetDistanceKm: payload.preparationData?.routeTargetDistanceKm,
@@ -147,15 +151,20 @@ export function buildActionInsertPayload(params: {
   routeGeometry?: RouteGeometry | null;
   status: Exclude<ActionStatus, "cancelled"> | undefined;
 }) {
+  const recordType = params.payload.recordType ?? "action";
   const routeTopology = resolveActionRouteTopology({
     topology: params.payload.routeTopology ?? params.payload.preparationData?.routeTopology,
     arrivalLocationLabel:
       params.payload.arrivalLocationLabel ?? params.payload.preparationData?.zoneCiblePrevue,
+    recordType,
   });
-  const normalizedPreparationData = normalizeActionPreparationData({
-    ...(params.payload.preparationData ?? {}),
-    routeTopology,
-  });
+  const normalizedPreparationData = clearActionRouteArrivalForLoop(
+    normalizeActionPreparationData({
+      ...(params.payload.preparationData ?? {}),
+      routeTopology,
+    }),
+    { recordType, topology: routeTopology },
+  );
   const resolvedTarget = resolveRouteTargetDistance({
     durationMinutes: params.payload.durationMinutes,
     routeTargetDistanceKm:
@@ -201,6 +210,13 @@ export function buildActionInsertPayload(params: {
     params.payload.actionPhase,
     preparationDataWithRoute as ActionPreparationData,
   );
+  const persistedPayload = {
+    ...params.payload,
+    arrivalLocationLabel:
+      recordType === "action" && routeTopology === "loop"
+        ? undefined
+        : params.payload.arrivalLocationLabel,
+  };
   return {
     created_by_clerk_id: params.userId,
     actor_name: params.payload.actorName ?? null,
@@ -227,7 +243,7 @@ export function buildActionInsertPayload(params: {
     published_at: null,
     preparation_data: preparationData,
     notes: buildPersistedNotes({
-      ...params.payload,
+      ...persistedPayload,
       manualDrawing: params.finalDrawing ?? undefined,
     }),
     status: params.status ?? "pending",
@@ -305,18 +321,29 @@ export async function createAction(
     };
   },
 ): Promise<{ id: string }> {
+  const recordType = params.payload.recordType ?? "action";
   const routeTopology = resolveActionRouteTopology({
     topology: params.payload.routeTopology ?? params.payload.preparationData?.routeTopology,
     arrivalLocationLabel:
       params.payload.arrivalLocationLabel ?? params.payload.preparationData?.zoneCiblePrevue,
+    recordType,
   });
-  const payload: CreateActionPayload = {
-    ...params.payload,
-    routeTopology,
-    preparationData: {
+  const preparationData = clearActionRouteArrivalForLoop(
+    {
       ...(params.payload.preparationData ?? {}),
       routeTopology,
     },
+    { recordType, topology: routeTopology },
+  );
+  const payload: CreateActionPayload = {
+    ...params.payload,
+    recordType,
+    routeTopology,
+    arrivalLocationLabel:
+      recordType === "action" && routeTopology === "loop"
+        ? undefined
+        : params.payload.arrivalLocationLabel,
+    preparationData,
   };
 
   const resolvedTarget = resolveRouteTargetDistance({

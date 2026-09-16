@@ -461,7 +461,7 @@ export function useActionDeclarationForm({
     if (updates.routeStyle !== undefined) {
       nextForm.routeStyle = "souple";
     }
-    if (updates.routeTopology === "loop") {
+    if (updates.routeTopology === "loop" && nextForm.recordType === "action") {
       nextForm.arrivalLocationLabel = "";
     }
     if (updates.associationName === "Action spontanée") {
@@ -535,8 +535,9 @@ export function useActionDeclarationForm({
     normalized.routeTopology = resolveActionRouteTopology({
       topology: normalized.routeTopology,
       arrivalLocationLabel: normalized.arrivalLocationLabel,
+      recordType: normalized.recordType,
     });
-    if (normalized.routeTopology === "loop") {
+    if (normalized.recordType === "action" && normalized.routeTopology === "loop") {
       normalized.arrivalLocationLabel = "";
     }
     if (normalized.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE) {
@@ -753,7 +754,13 @@ function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
     });
   }
 
-  if (form.routeTopology === "point_to_point" && !form.arrivalLocationLabel.trim()) {
+  const routeTopology = resolveActionRouteTopology({
+    topology: form.routeTopology,
+    arrivalLocationLabel: form.arrivalLocationLabel,
+    recordType: form.recordType,
+  });
+
+  if (form.recordType === "action" && routeTopology === "point_to_point" && !form.arrivalLocationLabel.trim()) {
     issues.push({
       field: "arrivalLocationLabel",
       message: "Indiquez une arrivée pour un parcours départ → arrivée.",

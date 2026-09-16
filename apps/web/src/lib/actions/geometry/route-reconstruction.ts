@@ -7,7 +7,9 @@ import type {
   ActionDrawing,
   ActionGeometrySource,
   ActionLocationCoordinates,
+  ActionRecordType,
   ActionRouteTopology,
+  LegacyActionRecordType,
 } from "@/lib/actions/types";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
 import {
@@ -172,6 +174,7 @@ export async function reconstructActionRoute(params: {
   arrivalLocationLabel?: string | null;
   arrivalCoordinates?: ActionLocationCoordinates | null;
   topology?: ActionRouteTopology | null;
+  recordType?: ActionRecordType | LegacyActionRecordType | null;
   durationMinutes: number | null | undefined;
   routeTargetDistanceKm?: number | null;
   routeTargetDistanceSource?: "derived" | "manual" | null;
@@ -179,6 +182,7 @@ export async function reconstructActionRoute(params: {
   const topology = resolveActionRouteTopology({
     topology: params.topology,
     arrivalLocationLabel: params.arrivalLocationLabel,
+    recordType: params.recordType,
   });
   const departureLabel = params.departureLocationLabel?.trim() || params.locationLabel.trim();
   const existingOrigin = toOrigin(params.latitude, params.longitude);

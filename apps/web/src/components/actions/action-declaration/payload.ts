@@ -154,6 +154,7 @@ export function buildPreparationDataFromForm(
  const routeTopology = resolveActionRouteTopology({
   topology: form.routeTopology,
   arrivalLocationLabel: form.arrivalLocationLabel,
+  recordType: form.recordType,
  });
  const volunteerParticipationInput: VolunteerParticipationInput = {
   childrenCount: toOptionalNumber(form.childrenCount) ?? null,
@@ -183,7 +184,9 @@ export function buildPreparationDataFromForm(
  pointDeRendezVous: form.departureLocationLabel.trim() || undefined,
   midRouteLocationLabel: form.midRouteLocationLabel?.trim() || undefined,
   zoneCiblePrevue:
-   routeTopology === "point_to_point"
+   form.recordType !== "action"
+    ? form.arrivalLocationLabel.trim() || undefined
+    : routeTopology === "point_to_point"
     ? form.arrivalLocationLabel.trim() || undefined
     : undefined,
   routeTopology,
@@ -196,7 +199,10 @@ export function buildPreparationDataFromForm(
     ? { routeTargetDistancePolicyVersion: resolvedTarget.policyVersion }
     : {}),
   midRouteCoordinates: form.midRouteCoordinates ?? undefined,
-  arrivalCoordinates: form.arrivalCoordinates ?? undefined,
+  arrivalCoordinates:
+   form.recordType === "action" && routeTopology === "point_to_point"
+    ? form.arrivalCoordinates ?? undefined
+    : undefined,
   routeObservedDistanceKm: form.gpxImport?.observedDistanceKm,
   gpxImport: form.gpxImport ?? undefined,
   plannedObjective: form.plannedObjective,
@@ -229,6 +235,12 @@ export function applyPreparationDataToForm(
   return form;
  }
 
+ const routeTopology = resolveActionRouteTopology({
+  topology: preparationData.routeTopology,
+  arrivalLocationLabel: preparationData.zoneCiblePrevue ?? form.arrivalLocationLabel,
+  recordType: form.recordType,
+ });
+
   return {
   ...form,
   actionTitle: preparationData.actionTitle ?? form.actionTitle,
@@ -238,11 +250,11 @@ export function applyPreparationDataToForm(
    preparationData.pointDeRendezVous ?? form.departureLocationLabel,
   midRouteLocationLabel:
    preparationData.midRouteLocationLabel ?? form.midRouteLocationLabel,
-  arrivalLocationLabel: preparationData.zoneCiblePrevue ?? form.arrivalLocationLabel,
-  routeTopology: resolveActionRouteTopology({
-    topology: preparationData.routeTopology,
-    arrivalLocationLabel: preparationData.zoneCiblePrevue ?? form.arrivalLocationLabel,
-  }),
+  arrivalLocationLabel:
+   form.recordType === "action" && routeTopology === "loop"
+    ? ""
+    : preparationData.zoneCiblePrevue ?? form.arrivalLocationLabel,
+  routeTopology,
   actionDate: preparationData.actionDate ?? form.actionDate,
   meetingTime: preparationData.meetingTime ?? form.meetingTime,
   departureTime: preparationData.departureTime ?? form.departureTime,
@@ -407,6 +419,7 @@ export function buildCreateActionPayload(params: {
  const routeTopology: ActionRouteTopology = resolveActionRouteTopology({
   topology: form.routeTopology,
   arrivalLocationLabel,
+  recordType: form.recordType,
  });
  const routeLocationLabel =
  routeTopology === "point_to_point" && departureLocationLabel && arrivalLocationLabel
@@ -482,7 +495,10 @@ export function buildCreateActionPayload(params: {
  actionDate: form.actionDate,
  locationLabel: routeLocationLabel,
  departureLocationLabel: departureLocationLabel || undefined,
- arrivalLocationLabel: routeTopology === "point_to_point" ? arrivalLocationLabel || undefined : undefined,
+ arrivalLocationLabel:
+  form.recordType !== "action" || routeTopology === "point_to_point"
+   ? arrivalLocationLabel || undefined
+   : undefined,
  routeTopology,
  routeStyle: "souple",
  routeAdjustmentMessage: form.routeAdjustmentMessage.trim() || undefined,
