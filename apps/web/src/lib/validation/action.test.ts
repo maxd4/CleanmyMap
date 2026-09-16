@@ -90,6 +90,27 @@ describe("createActionSchema", () => {
     expect(parsed.cigaretteButtsCount).toBe(0);
   });
 
+  it("normalizes legacy route topology from the arrival and rejects missing point-to-point arrivals", () => {
+    const legacyPointToPoint = createActionSchema.parse({
+      ...basePayload,
+      arrivalLocationLabel: "Place de la République",
+    });
+    expect(legacyPointToPoint.routeTopology).toBe("point_to_point");
+    expect(legacyPointToPoint.preparationData?.routeTopology).toBe("point_to_point");
+
+    const legacyLoop = createActionSchema.parse(basePayload);
+    expect(legacyLoop.routeTopology).toBe("loop");
+
+    const invalid = createActionSchema.safeParse({
+      ...basePayload,
+      routeTopology: "point_to_point",
+    });
+    expect(invalid.success).toBe(false);
+    if (!invalid.success) {
+      expect(invalid.error.issues.some((issue) => issue.path.includes("arrivalLocationLabel"))).toBe(true);
+    }
+  });
+
   it("uses the canonical five-million bound for every ordinary count alias", () => {
     for (const field of ["cigaretteButts", "cigaretteButtsCount"] as const) {
       expect(

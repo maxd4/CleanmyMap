@@ -62,6 +62,39 @@ describe("action declaration payload helpers", () => {
     expect(payload.preparationData?.routeTargetDistanceKm).toBe(1.75);
   });
 
+  it("sends the explicit point-to-point topology and keeps loop payloads arrival-free", () => {
+    const pointForm = createInitialFormState("Alice");
+    pointForm.routeTopology = "point_to_point";
+    pointForm.departureLocationLabel = "Départ, Paris";
+    pointForm.arrivalLocationLabel = "Arrivée, Paris";
+    const pointPayload = buildCreateActionPayload({
+      form: pointForm,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+    expect(pointPayload.routeTopology).toBe("point_to_point");
+    expect(pointPayload.preparationData?.routeTopology).toBe("point_to_point");
+    expect(pointPayload.arrivalLocationLabel).toBe("Arrivée, Paris");
+
+    const loopForm = { ...pointForm, routeTopology: "loop" as const };
+    const loopPayload = buildCreateActionPayload({
+      form: loopForm,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+    expect(loopPayload.routeTopology).toBe("loop");
+    expect(loopPayload.arrivalLocationLabel).toBeUndefined();
+    expect(loopPayload.preparationData?.zoneCiblePrevue).toBeUndefined();
+  });
+
   it("parses optional/required numbers safely", () => {
     expect(toOptionalNumber("")).toBeUndefined();
     expect(toOptionalNumber("12.5")).toBe(12.5);

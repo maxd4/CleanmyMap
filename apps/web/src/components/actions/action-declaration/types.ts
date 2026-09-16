@@ -1,6 +1,7 @@
 import type {
  ActionMegotsCondition,
  ActionRecordType,
+ ActionRouteTopology,
  ActionWasteMeasurementMethod,
 } from"@/lib/actions/types";
 import type { WasteCategorySlug } from "@/lib/waste";
@@ -28,6 +29,7 @@ export type FormState = {
  departureLocationLabel: string;
  midRouteLocationLabel?: string;
  arrivalLocationLabel: string;
+ routeTopology: ActionRouteTopology;
  routeStyle:"direct" |"souple";
  routeAdjustmentMessage: string;
  plannedObjective:"repérage" |"nettoyage" |"collecte_mégots" |"action_mixte" |"sensibilisation" |"autre";

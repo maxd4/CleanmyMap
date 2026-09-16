@@ -72,7 +72,7 @@ export function ActionDeclarationSummarySection({
  </p>
  <p className="mt-1 cmm-text-small font-semibold cmm-text-primary">{routeSummary}</p>
  <p className="mt-1 cmm-text-caption cmm-text-muted">
- {form.routeStyle ==="direct" ?"Direct" :"Souple"}
+ {form.routeTopology === "point_to_point" ? "Départ → arrivée" : "Boucle · retour au départ"}
  </p>
  </div>
  <div className="rounded-xl border border-white/70 bg-white p-3">

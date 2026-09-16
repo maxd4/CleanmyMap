@@ -455,17 +455,67 @@ export function ActionStepLocation({
             optional
             helperText="Zone intermédiaire de l'action"
           />
-          <AddressAutocompleteInput
-            id="arrival"
-            icon={Navigation}
-            label={isCleanPlaceMode ? "Complément" : "Arrivée"}
-            placeholder={isCleanPlaceMode ? "Précision (optionnel)" : "Ex : Place de la République"}
-            value={form.arrivalLocationLabel}
-            onChange={(v) => updateField("arrivalLocationLabel", v)}
-            optional
-            helperText={isCleanPlaceMode ? "Complément géographique exact" : "Adresse exacte de l’arrivée"}
-          />
+          {(isCleanPlaceMode || form.routeTopology === "point_to_point") && (
+            <AddressAutocompleteInput
+              id="arrival"
+              icon={Navigation}
+              label={isCleanPlaceMode ? "Complément" : "Arrivée"}
+              placeholder={isCleanPlaceMode ? "Précision (optionnel)" : "Ex : Place de la République"}
+              value={form.arrivalLocationLabel}
+              onChange={(v) => updateField("arrivalLocationLabel", v)}
+              optional={isCleanPlaceMode}
+              helperText={isCleanPlaceMode ? "Complément géographique exact" : "Adresse exacte de l’arrivée"}
+            />
+          )}
         </div>
+
+        {!isCleanPlaceMode && (
+          <fieldset className="rounded-xl border border-sky-200/80 bg-white p-4">
+            <legend className="px-1 text-xs font-bold uppercase tracking-[0.16em] text-sky-900/65">
+              Type de parcours
+            </legend>
+            <div className="mt-2 grid gap-2 sm:grid-cols-2">
+              {([
+                {
+                  value: "loop" as const,
+                  title: "Boucle",
+                  description: "Retour explicite au point de départ.",
+                },
+                {
+                  value: "point_to_point" as const,
+                  title: "Départ → arrivée",
+                  description: "Arrivée obligatoire, sans retour automatique.",
+                },
+              ]).map((option) => {
+                const selected = form.routeTopology === option.value;
+                return (
+                  <label
+                    key={option.value}
+                    className={cn(
+                      "flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3 transition",
+                      selected
+                        ? "border-sky-400 bg-sky-50 ring-2 ring-sky-500/15"
+                        : "border-slate-200 bg-white hover:border-sky-300",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="route-topology"
+                      value={option.value}
+                      checked={selected}
+                      onChange={() => updateField("routeTopology", option.value)}
+                      className="mt-1 accent-sky-600"
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-sky-950">{option.title}</span>
+                      <span className="mt-0.5 block text-xs text-sky-900/60">{option.description}</span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <GpsButton status={gpsStatus} message={gpsMessage} onAutofill={onAutofillGps} />
@@ -473,8 +523,10 @@ export function ActionStepLocation({
           {!isCleanPlaceMode && (
             <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200/70 bg-[#ECF8EF] px-4 py-3">
               <div>
-                <p className="text-xs font-medium text-emerald-700">Souple par défaut</p>
-                <p className="mt-0.5 text-sm font-semibold text-emerald-900">Réglage appliqué</p>
+                <p className="text-xs font-medium text-emerald-700">Topologie sélectionnée</p>
+                <p className="mt-0.5 text-sm font-semibold text-emerald-900">
+                  {form.routeTopology === "point_to_point" ? "Départ → arrivée" : "Boucle · retour au départ"}
+                </p>
               </div>
               <span className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700">
                 Actif

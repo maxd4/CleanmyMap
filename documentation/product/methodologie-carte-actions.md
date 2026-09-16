@@ -415,14 +415,22 @@ La couleur ne doit pas porter l'information de fiabilité géométrique. Cette i
 
 Le pointillé signifie donc « parcours reconstruit », pas « pollution incertaine ».
 
-Pour une action sans géométrie réelle, le serveur construit une boucle piétonne
-fermée autour de l'origine à partir d'un petit nombre borné de points et de la
-distance cible. La distance cible est éditable dans `/actions/new` et vaut par
-défaut `durée en minutes / 60` (soit environ 1 km par heure). La distance finale
-affichée, lorsqu'elle existe, est celle retournée par FOSSGIS/OSRM et reste
-distincte de cette cible. Une réponse réseau porte la source `routed`; un repli
-local déterministe porte `estimated_route` et ne doit pas être présenté comme
-un parcours mesuré.
+Pour une action sans géométrie réelle, le serveur reconstruit une topologie
+canonique explicite : `loop` ou `point_to_point`. En mode `loop`, le départ est
+obligatoire, le mi-parcours est optionnel et le dernier point revient
+explicitement au départ ; sans mi-parcours, quelques points bornés sont générés
+autour de l'origine. En mode `point_to_point`, le départ et l'arrivée sont
+obligatoires, le mi-parcours reste optionnel et aucun retour automatique n'est
+ajouté. Les anciens payloads sont centralisés par compatibilité : arrivée
+présente sans topologie → `point_to_point`, arrivée absente → `loop`. Une
+arrivée manquante ou non résolue est une erreur explicite.
+
+La distance cible est éditable dans `/actions/new` et vaut par défaut `durée en
+minutes / 60` (soit environ 1 km par heure). La distance finale affichée,
+lorsqu'elle existe, est celle retournée par FOSSGIS/OSRM et reste distincte de
+cette cible. Une réponse réseau porte la source `routed` ; un repli local
+déterministe porte `estimated_route` et ne doit pas être présenté comme un
+parcours mesuré.
 
 La priorité de géométrie est : tracé réel dessiné ou importé, parcours
 opérationnel réel, reconstruction réseau serveur, repli estimé explicite, puis

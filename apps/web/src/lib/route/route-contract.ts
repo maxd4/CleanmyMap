@@ -25,11 +25,11 @@ export type RouteGeometryLeg = {
 };
 
 export type RouteGeometry = {
-  /** A route returned by the recommendation engine is always a closed loop. */
+  /** Whether the route returns to its origin. */
   isLoop: boolean;
-  /** Coordinates are latitude/longitude and identify the loop origin. */
+  /** Coordinates are latitude/longitude and identify the route origin. */
   origin: [number, number] | null;
-  /** The final leg back to `origin`, when it is available. */
+  /** The final leg back to `origin`, when this is a loop. */
   returnLeg: RouteGeometryLeg | null;
   coordinates: [number, number][];
   distanceKm: number;

@@ -1,9 +1,14 @@
 import "server-only";
 
+export { ActionRouteReconstructionError } from "./route-reconstruction-error";
+import { ActionRouteReconstructionError } from "./route-reconstruction-error";
+
 import type {
   ActionDrawing,
   ActionGeometrySource,
+  ActionRouteTopology,
 } from "@/lib/actions/types";
+import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
 import {
   buildTerritoryNominatimSearchUrl,
   isWithinTerritoryBounds,
@@ -76,6 +81,16 @@ export function buildClosedLoopWaypoints(
   return [origin, north, northEast, east, origin];
 }
 
+export function buildLoopWaypoints(
+  origin: [number, number],
+  midpoint?: [number, number] | null,
+  targetDistanceKm = 1,
+): [number, number][] {
+  return midpoint
+    ? [origin, midpoint, origin]
+    : buildClosedLoopWaypoints(origin, targetDistanceKm);
+}
+
 async function geocodeLabel(label: string): Promise<GeoPoint | null> {
   const url = buildTerritoryNominatimSearchUrl(label);
   if (!url) return null;
@@ -115,15 +130,45 @@ export async function reconstructActionRoute(params: {
   longitude?: number | null;
   locationLabel: string;
   departureLocationLabel?: string | null;
+  midpointLocationLabel?: string | null;
+  arrivalLocationLabel?: string | null;
+  topology?: ActionRouteTopology | null;
   durationMinutes: number | null | undefined;
   routeTargetDistanceKm?: number | null;
 }): Promise<ReconstructedActionRoute | null> {
+  const topology = resolveActionRouteTopology({
+    topology: params.topology,
+    arrivalLocationLabel: params.arrivalLocationLabel,
+  });
   const departureLabel = params.departureLocationLabel?.trim() || params.locationLabel.trim();
   const existingOrigin = toOrigin(params.latitude, params.longitude);
   const geocodedOrigin = existingOrigin ? null : await geocodeLabel(departureLabel);
 
+  if (topology === "point_to_point" && !params.arrivalLocationLabel?.trim()) {
+    throw new ActionRouteReconstructionError({
+      arrivalLocationLabel: [
+        "Une arrivée est obligatoire pour un parcours départ → arrivée.",
+      ],
+    });
+  }
+
+  if (topology === "point_to_point" && !existingOrigin && !geocodedOrigin) {
+    throw new ActionRouteReconstructionError({
+      departureLocationLabel: [
+        "Le départ ne peut pas être localisé. Vérifiez l’adresse indiquée.",
+      ],
+    });
+  }
+
   // Keep the reference geometry fallback explicit and separate from routing.
   if (!existingOrigin && !geocodedOrigin) {
+    if (topology === "point_to_point") {
+      throw new ActionRouteReconstructionError({
+        departureLocationLabel: [
+          "Le départ ne peut pas être localisé. Vérifiez l’adresse indiquée.",
+        ],
+      });
+    }
     return referenceRoute(params.locationLabel, departureLabel);
   }
 
@@ -133,13 +178,40 @@ export async function reconstructActionRoute(params: {
   if (!resolvedOrigin) return referenceRoute(params.locationLabel, departureLabel);
 
   const originPair: [number, number] = [resolvedOrigin.latitude, resolvedOrigin.longitude];
-  const waypoints = buildClosedLoopWaypoints(
-    originPair,
-    resolveRouteTargetDistanceKm({
-      durationMinutes: params.durationMinutes,
-      routeTargetDistanceKm: params.routeTargetDistanceKm,
-    }),
-  );
+  const targetDistanceKm = resolveRouteTargetDistanceKm({
+    durationMinutes: params.durationMinutes,
+    routeTargetDistanceKm: params.routeTargetDistanceKm,
+  });
+  const midpointLabel = params.midpointLocationLabel?.trim();
+  const geocodedMidpoint = midpointLabel ? await geocodeLabel(midpointLabel) : null;
+  if (midpointLabel && !geocodedMidpoint) {
+    throw new ActionRouteReconstructionError({
+      midRouteLocationLabel: [
+        "Le mi-parcours ne peut pas être localisé. Vérifiez l’adresse indiquée.",
+      ],
+    });
+  }
+
+  const geocodedArrival = topology === "point_to_point"
+    ? await geocodeLabel(params.arrivalLocationLabel!.trim())
+    : null;
+  if (topology === "point_to_point" && !geocodedArrival) {
+    throw new ActionRouteReconstructionError({
+      arrivalLocationLabel: [
+        "L’arrivée ne peut pas être localisée. Vérifiez l’adresse indiquée.",
+      ],
+    });
+  }
+
+  const midpointPair = geocodedMidpoint
+    ? [geocodedMidpoint.latitude, geocodedMidpoint.longitude] as [number, number]
+    : null;
+  const arrivalPair = geocodedArrival
+    ? [geocodedArrival.latitude, geocodedArrival.longitude] as [number, number]
+    : null;
+  const waypoints = topology === "point_to_point"
+    ? [originPair, ...(midpointPair ? [midpointPair] : []), arrivalPair!]
+    : buildLoopWaypoints(originPair, midpointPair, targetDistanceKm);
   const routeGeometry = await routePolylineThroughFossgisFoot(waypoints);
   if (!routeGeometry.coordinates.every(isCoordinatePair) || routeGeometry.coordinates.length < 2) {
     return null;

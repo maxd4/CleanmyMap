@@ -206,7 +206,10 @@ describe("administrative requirements persistence", () => {
       finalDrawing: null,
     });
 
-    expect(row.preparation_data).toEqual({ actionTitle: "Résultat terrain" });
+    expect(row.preparation_data).toEqual({
+      actionTitle: "Résultat terrain",
+      routeTopology: "loop",
+    });
     expect(row.preparation_data.administrativeRequirements).toBeUndefined();
   });
 });
@@ -249,6 +252,26 @@ describe("buildCreateActionGeometry", () => {
 
     expect(geometry.geometrySource).toBe("manual");
     expect(geometry.confidence).toBe(1);
+  });
+
+  it("keeps a reference polygon as reference geometry", () => {
+    const drawing = {
+      kind: "polygon" as const,
+      coordinates: [
+        [48.85, 2.35] as [number, number],
+        [48.86, 2.36] as [number, number],
+        [48.87, 2.37] as [number, number],
+      ],
+    };
+
+    const geometry = buildCreateActionGeometry(
+      buildPayload({ geometrySource: "reference" }),
+      drawing,
+      "reference",
+    );
+
+    expect(geometry.geometrySource).toBe("reference");
+    expect(geometry.geometrySource).not.toBe("manual");
   });
 
   it("marks a final automatically constructed route as routed", () => {
