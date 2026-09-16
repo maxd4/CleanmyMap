@@ -14,7 +14,6 @@ const completeAccountState = {
   currentProfile: "entreprise",
   role: "entreprise",
   clerkReachable: true,
-  isLocalHost: false,
   initialArrondissement: null,
   initialLocationType: null,
 };

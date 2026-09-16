@@ -7,7 +7,7 @@ vi.mock("./account-setup-form", () => ({
   AccountSetupForm: () => <div data-testid="account-setup-form" />,
 }));
 
-import { AccountCompletionPage } from "./account-completion-modal";
+import { AccountCompletionPage } from "./account-completion-page";
 
 const layoutCss = readFileSync(new URL("../../styles/layout.css", import.meta.url), "utf8");
 
@@ -17,7 +17,6 @@ describe("AccountCompletionPage", () => {
       <AccountCompletionPage
         initialProfile="benevole"
         clerkReachable
-        isLocalHost
       />,
     );
 

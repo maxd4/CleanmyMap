@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { AccountCompletionPage } from "@/components/account/account-completion-modal";
+import { AccountCompletionPage } from "@/components/account/account-completion-page";
 import { getCurrentUserLocationPreferences } from "@/lib/auth/user-location";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
@@ -52,8 +52,6 @@ export default async function OnboardingPage({
 
   const resolvedSearchParams = await searchParams;
   const referralCode = resolvedSearchParams.ref?.trim() ?? "";
-  const isLocalHost = process.env.NODE_ENV !== "production";
-
   if (referralCode) {
     const supabase = getSupabaseServerClient(true);
     await claimReferralInviteForUser(supabase, {
@@ -75,7 +73,6 @@ export default async function OnboardingPage({
       initialRole={identity.role}
       initialProfile={profile}
       clerkReachable={clerkReachable}
-      isLocalHost={isLocalHost}
       initialDisplayNameMode={identity.displayNameMode}
       initialResidence={locationPreferences.residence}
       initialWork={locationPreferences.work}

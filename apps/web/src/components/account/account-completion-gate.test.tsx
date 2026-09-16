@@ -2,7 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@/components/account/account-completion-modal", () => ({
+vi.mock("@/components/account/account-completion-page", () => ({
   AccountCompletionPage: () => <div data-testid="account-completion-page" />,
 }));
 
@@ -19,7 +19,6 @@ const incompleteState = {
   role: "benevole" as const,
   currentProfile: "benevole" as const,
   clerkReachable: true,
-  isLocalHost: true,
   initialArrondissement: null,
   initialLocationType: null,
 };

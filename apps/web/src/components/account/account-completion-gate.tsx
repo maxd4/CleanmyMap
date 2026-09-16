@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { AccountCompletionPage } from "@/components/account/account-completion-modal";
+import { AccountCompletionPage } from "@/components/account/account-completion-page";
 import type { AccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 
 type AccountCompletionGateProps = {
@@ -26,7 +26,6 @@ export function AccountCompletionGate({
         initialRole={state.role === "anonymous" ? undefined : state.role}
         initialProfile={state.currentProfile}
         clerkReachable={state.clerkReachable}
-        isLocalHost={state.isLocalHost}
         initialDisplayNameMode={state.initialDisplayNameMode}
         initialResidence={state.initialResidence}
         initialWork={state.initialWork}
