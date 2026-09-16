@@ -111,6 +111,30 @@ powershell -ExecutionPolicy Bypass -File scripts/ci/run_checks.ps1 -Scope full
 
 Les E2E ne sont pas lancés automatiquement par défaut.
 
+## Triage des échecs CI
+
+Avant d'attribuer un échec au lot courant, comparer le workflow, le job, le
+step et l'environnement avec un run antérieur pertinent.
+
+- Si le même step était déjà rouge avant le lot et qu'aucun fichier causal
+  n'est touché, classer l'échec `PREEXISTING_CI_FAILURE` et ne pas corriger ce
+  défaut dans le lot courant sauf demande explicite.
+- Si `npm ci` échoue sur Windows avec un fichier verrouillé ou `EPERM`, classer
+  le blocage `HOST_ENVIRONMENT` et conserver le diagnostic exact : chemin,
+  opération et erreur native.
+- Un `npm install` réussi après cet incident ne constitue pas une preuve
+  équivalente à `npm ci` ; signaler explicitement la différence.
+- Un override npm qui force une version hors de la plage semver déclarée par
+  un consommateur est une mitigation temporaire et doit être signalé comme
+  dette, jamais présenté comme la résolution durable.
+- Pour une erreur `server-only`, appliquer uniquement cette méthode de
+  classification et comparer les runs pertinents. Ne pas transformer le bug
+  observé en comportement attendu dans la documentation.
+
+Les classes `PREEXISTING_CI_FAILURE` et `HOST_ENVIRONMENT` décrivent la preuve
+du blocage ; elles ne rendent pas la validation courante verte et doivent
+rester distinctes de `PASS`, `FAIL` et `NOT_RUN`.
+
 ## Commandes ciblées
 
 ```bash

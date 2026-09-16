@@ -2,6 +2,53 @@
 
 Ce mémo résume les garde-fous GitHub à garder en place pour CleanMyMap.
 
+## Runbook de maintenance GitHub — `CURRENT`
+
+### Contrat durable
+
+La maintenance suit `MAIN-ONLY / SINGLE-WRITER` : un seul checkout local
+mutable sur `main`, un seul writer, des lots isolés et aucune publication
+implicite. Les branches distantes attendues sont `main` uniquement.
+
+- Les PR Dependabot de mise à jour de version ne sont pas souhaitées.
+- `open-pull-requests-limit: 0` désactive les version updates mais ne doit pas
+  masquer ni désactiver les security updates.
+- Le ruleset de `main` interdit la suppression de la branche et les mises à
+  jour `non_fast_forward` ; un push fast-forward direct reste permis.
+- Une alerte CodeQL se corrige dans le code, puis doit être vérifiée par un run
+  GitHub réussi sur le SHA publié exact.
+- Secret Scanning et Push Protection sont des réglages distants à relire ; un
+  check local ne constitue pas une simulation de leur état GitHub.
+
+### Séquence minimale d'audit
+
+Exécuter dans cet ordre, en limitant chaque lecture à la preuve utile :
+
+```text
+REMOTE_BASELINE
+→ PR/branches
+→ ruleset/protection
+→ Dependabot
+→ CodeQL
+→ Secret Scanning
+→ corrections locales nécessaires
+→ validation finale
+→ relecture distante
+```
+
+Lire l'état distant avant toute exploration large du checkout. Utiliser les
+anciens commits uniquement pour établir une cause ou une régression. Pendant
+l'itération, lancer les validations ciblées ; réserver le full/pre-push au
+candidat final et ne le relancer qu'après une modification qui invalide sa
+preuve. La fermeture d'une PR ou la suppression d'une branche est une mutation
+distante et nécessite l'autorisation explicite de l'utilisateur.
+
+### STOP CONDITION
+
+Arrêter le chantier dès que les invariants demandés sont prouvés. Ne pas
+poursuivre vers des upgrades, refactors ou nettoyages sans rapport avec ces
+invariants.
+
 ## Éléments à conserver
 
 - `SECURITY.md` à la racine du dépôt.
