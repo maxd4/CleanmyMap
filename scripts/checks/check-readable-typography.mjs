@@ -30,7 +30,9 @@ const allowlist = [
   },
 ];
 
-const smallTextPattern = /text-\[(?:(?:[0-9]|1[01])px|0\.(?:[0-6]\d?|7[0-4]?)rem)\]/;
+const smallTextPattern = /text-\[((?:\d+(?:\.\d+)?|\.\d+))(px|rem)\]/g;
+const MIN_READABLE_FONT_SIZE_PX = 12;
+const ROOT_FONT_SIZE_PX = 16;
 const truncationPattern = /\b(?:truncate|line-clamp(?:-[1-9]\d*)?)\b/;
 const weakBodyColorPattern =
   /\b(?:cmm-text-(?:secondary|muted)|text-(?:slate|gray|stone)-[4-7]\d{2}(?:\/[5-9]\d)?|text-(?:white|[a-z]+)-\d{2,3}\/(?:[2-7]\d))\b/;
@@ -57,6 +59,21 @@ function isAllowlisted(file, rule, line) {
         rule === "body-color" ||
         truncationPattern.test(line)),
   );
+}
+
+function extractSmallTextSizes(text) {
+  const matches = [];
+  for (const match of text.matchAll(smallTextPattern)) {
+    const value = Number(match[1]);
+    const unit = match[2];
+    if (!Number.isFinite(value)) continue;
+
+    const sizeInPixels = unit === "rem" ? value * ROOT_FONT_SIZE_PX : value;
+    if (sizeInPixels < MIN_READABLE_FONT_SIZE_PX) {
+      matches.push({ value, unit, sizeInPixels });
+    }
+  }
+  return matches;
 }
 
 function isWeakBodyColor(text) {
@@ -96,7 +113,7 @@ export function analyzeDiff(diff) {
   for (const { file, text } of extractAddedLines(diff)) {
     if (!isUserSurface(file) || /\.test\.[jt]sx?$/.test(file)) continue;
 
-    if (smallTextPattern.test(text)) {
+    if (extractSmallTextSizes(text).length > 0) {
       if (isAllowlisted(file, "small-text", text)) {
         allowlisted.push({ file, rule: "small-text" });
       } else {

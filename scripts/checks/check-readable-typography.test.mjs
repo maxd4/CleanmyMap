@@ -18,6 +18,51 @@ test("rejects a new sub-12px text class on a user-facing surface", () => {
   assert.equal(result.violations[0].rule, "small-text");
 });
 
+test("parses arbitrary decimal px and rem sizes at the 12px boundary", () => {
+  const cases = [
+    ["text-[11.5px]", true],
+    ["text-[11.99px]", true],
+    ["text-[12px]", false],
+    ["text-[12.5px]", false],
+    ["text-[0.745rem]", true],
+    ["text-[0.749rem]", true],
+    ["text-[0.75rem]", false],
+    ["text-[0.8rem]", false],
+  ];
+
+  for (const [className, shouldReject] of cases) {
+    const result = analyzeDiff(
+      [
+        "diff --git a/apps/web/src/app/other/page.tsx b/apps/web/src/app/other/page.tsx",
+        "--- a/apps/web/src/app/other/page.tsx",
+        "+++ b/apps/web/src/app/other/page.tsx",
+        "@@ -1,0 +2 @@",
+        `+<p className=\"${className}\">Texte</p>`,
+      ].join("\n"),
+    );
+
+    assert.equal(
+      result.violations.some((violation) => violation.rule === "small-text"),
+      shouldReject,
+      className,
+    );
+  }
+});
+
+test("does not flag arbitrary values from non-font-size classes", () => {
+  const result = analyzeDiff(
+    [
+      "diff --git a/apps/web/src/app/other/page.tsx b/apps/web/src/app/other/page.tsx",
+      "--- a/apps/web/src/app/other/page.tsx",
+      "+++ b/apps/web/src/app/other/page.tsx",
+      "@@ -1,0 +2 @@",
+      "+<div className=\"bg-[11.5px] tracking-[11.5px] text-[color:var(--accent)]\">Texte</div>",
+    ].join("\n"),
+  );
+
+  assert.equal(result.violations.length, 0);
+});
+
 test("allows documented print metadata while keeping the rule strict elsewhere", () => {
   const result = analyzeDiff(
     [
