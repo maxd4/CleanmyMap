@@ -114,6 +114,8 @@ function ActionsMapPageContent({
     recenterViewport,
     isInitialViewportResolved,
     hasInitialPublicActions,
+    initialViewportError,
+    retryInitialViewport,
     handleManualViewportInteraction,
     handleViewportChange,
   } = useActionsMapViewport();
@@ -154,7 +156,7 @@ function ActionsMapPageContent({
     visibleCategories,
     limit: 300,
     viewport: mapViewport,
-    enabled: isInitialViewportResolved && hasInitialPublicActions,
+    enabled: isInitialViewportResolved && hasInitialPublicActions && !initialViewportError,
   });
   const filteredMapItems = useMemo(() => mapFeedData.items ?? [], [mapFeedData.items]);
   const loadedItems = useMemo(() => mapFeedData.allItems ?? [], [mapFeedData.allItems]);
@@ -212,6 +214,8 @@ function ActionsMapPageContent({
             viewportRequest={viewportRequest}
             viewportRequestKey={viewportRequestKey}
             recenterViewport={recenterViewport}
+            initialViewportError={initialViewportError}
+            onRetryInitialViewport={retryInitialViewport}
             onViewportChange={handleViewportChange}
             onViewportInteraction={handleManualViewportInteraction}
             scoreScope={scoreScope}
