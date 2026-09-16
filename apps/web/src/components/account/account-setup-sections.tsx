@@ -5,6 +5,7 @@ import {
   Briefcase,
   Building2,
   Check,
+  Eye,
   FlaskConical,
   House,
   Landmark,
@@ -15,7 +16,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { GreaterParisSelect, type TerritoryLocationSelection } from "@/lib/geo/greater-paris-select";
 import { getProfileLabel, getProfileSubtitle, type AppProfile } from "@/lib/profiles";
-import type { Locale } from "@/lib/ui/preferences";
+import { DISPLAY_MODE_DESCRIPTIONS, DISPLAY_MODES, type DisplayMode, type Locale } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
 
 export const PROFILE_ICONS: Record<AppProfile, LucideIcon> = {
@@ -28,11 +29,65 @@ export const PROFILE_ICONS: Record<AppProfile, LucideIcon> = {
   max: Building2,
 };
 
+const DISPLAY_MODE_LABELS: Record<DisplayMode, string> = {
+  exhaustif: "Exhaustif",
+  minimaliste: "Minimaliste",
+  sobre: "Sobre",
+};
+
+type DisplayModeGridProps = {
+  selectedMode: DisplayMode;
+  locale: Locale;
+  onChange: (mode: DisplayMode) => void;
+  ariaLabelledBy: string;
+};
+
+export function AccountSetupDisplayModeGrid({
+  selectedMode,
+  locale,
+  onChange,
+  ariaLabelledBy,
+}: DisplayModeGridProps) {
+  return (
+    <div role="radiogroup" aria-labelledby={ariaLabelledBy} className="grid gap-3 sm:grid-cols-3">
+      {DISPLAY_MODES.map((mode) => {
+        const selected = selectedMode === mode;
+        return (
+          <label
+            key={mode}
+            htmlFor={`account-setup-display-mode-${mode}`}
+            className={`relative flex min-h-24 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-300 focus-within:ring-offset-2 ${selected ? "border-violet-300 bg-white text-violet-700 shadow-sm" : "border-slate-300/35 bg-slate-800/75 text-white hover:border-slate-200/70 hover:bg-slate-700/80"}`}
+          >
+            <input
+              id={`account-setup-display-mode-${mode}`}
+              type="radio"
+              name="account-setup-display-mode"
+              value={mode}
+              checked={selected}
+              onChange={() => onChange(mode)}
+              className="sr-only"
+            />
+            {selected ? (
+              <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500 text-white">
+                <Check className="h-4 w-4" aria-hidden="true" />
+              </span>
+            ) : null}
+            <Eye className="h-7 w-7" aria-hidden="true" />
+            <span className="text-sm font-bold">{DISPLAY_MODE_LABELS[mode]}</span>
+            <span className="text-xs leading-4 opacity-80">{DISPLAY_MODE_DESCRIPTIONS[mode][locale]}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
 type ProfileGridProps = {
   options: AppProfile[];
   selectedProfile: AppProfile;
   locale: Locale;
   onChange: (profile: AppProfile) => void;
+  onBlur?: () => void;
   error?: string | null;
 };
 
@@ -41,6 +96,7 @@ export function AccountSetupProfileGrid({
   selectedProfile,
   locale,
   onChange,
+  onBlur,
   error,
 }: ProfileGridProps) {
   return (
@@ -48,28 +104,30 @@ export function AccountSetupProfileGrid({
       <div
         role="radiogroup"
         aria-label="Profil CleanMyMap"
-        className="grid grid-cols-1 gap-3 sm:grid-cols-6"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
       >
-        {options.map((profile, index) => {
+        {options.map((profile) => {
           const isSelected = selectedProfile === profile;
           const Icon = PROFILE_ICONS[profile];
-          const isFiveCardSecondRow = options.length === 5 && index === 3;
           return (
-            <button
+            <label
               key={profile}
-              type="button"
-              role="radio"
-              aria-checked={isSelected}
-              onClick={() => onChange(profile)}
               className={cn(
-                "group relative flex min-h-36 flex-col items-center justify-center gap-3 rounded-2xl border px-3 py-4 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 sm:col-span-2",
-                isFiveCardSecondRow && "sm:col-start-2",
-                options.length === 6 && index === 3 && "sm:col-start-1",
+                "group relative flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-300 focus-within:ring-offset-2",
                 isSelected
-                  ? "border-violet-300 bg-white text-violet-700 shadow-[0_10px_28px_-18px_rgba(124,58,237,0.9)]"
-                  : "border-emerald-100/40 bg-emerald-950/45 text-white hover:border-violet-200/70 hover:bg-emerald-950/60",
+                  ? "border-violet-300 bg-white text-violet-700 shadow-sm"
+                  : "border-slate-300/35 bg-slate-800/75 text-white hover:border-slate-200/70 hover:bg-slate-700/80",
               )}
             >
+              <input
+                type="radio"
+                name="account-setup-profile"
+                value={profile}
+                checked={isSelected}
+                onChange={() => onChange(profile)}
+                onBlur={onBlur}
+                className="sr-only"
+              />
               {isSelected ? (
                 <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500 text-white">
                   <Check className="h-4 w-4" aria-hidden="true" />
@@ -80,7 +138,7 @@ export function AccountSetupProfileGrid({
                   "flex h-12 w-12 items-center justify-center rounded-2xl border",
                   isSelected
                     ? "border-violet-200 bg-violet-50 text-violet-600"
-                    : "border-emerald-100/30 bg-emerald-950/25 text-emerald-50",
+                    : "border-slate-300/30 bg-slate-700/40 text-slate-100",
                 )}
               >
                 <Icon className="h-6 w-6" aria-hidden="true" />
@@ -91,11 +149,11 @@ export function AccountSetupProfileGrid({
               <span className="text-xs leading-4 opacity-80">
                 {getProfileSubtitle(profile, locale)}
               </span>
-            </button>
+            </label>
           );
         })}
       </div>
-      {error ? <p className="mt-2 text-sm font-medium text-violet-100">{error}</p> : null}
+      {error ? <p className="mt-2 text-sm font-medium text-rose-100">{error}</p> : null}
     </div>
   );
 }
@@ -159,15 +217,15 @@ export function AccountSetupLocationFields({
             <label
               key={value}
               className={cn(
-                "relative flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-within:ring-2 focus-within:ring-violet-300",
+                "relative flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-300 focus-within:ring-offset-2",
                 selected
                   ? "border-violet-300 bg-white text-violet-700"
-                  : "border-emerald-100/40 bg-emerald-950/45 text-white hover:border-violet-200/70 hover:bg-emerald-950/60",
+                  : "border-slate-300/35 bg-slate-800/75 text-white hover:border-slate-200/70 hover:bg-slate-700/80",
               )}
             >
               <input
                 type="checkbox"
-              checked={selected}
+                checked={selected}
                 onChange={() => toggleLocation(value)}
                 className="sr-only"
                 aria-label={label}
@@ -184,10 +242,10 @@ export function AccountSetupLocationFields({
         })}
         <label
           className={cn(
-            "relative flex min-h-36 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-within:ring-2 focus-within:ring-violet-300",
+            "relative flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-within:outline-none focus-within:ring-2 focus-within:ring-violet-300 focus-within:ring-offset-2",
             noneSelected
               ? "border-violet-300 bg-white text-violet-700"
-              : "border-emerald-100/40 bg-emerald-950/45 text-white hover:border-violet-200/70 hover:bg-emerald-950/60",
+              : "border-slate-300/35 bg-slate-800/75 text-white hover:border-slate-200/70 hover:bg-slate-700/80",
           )}
         >
           <input
@@ -243,7 +301,7 @@ export function AccountSetupLocationFields({
           </label>
         </div>
       ) : null}
-      {error ? <p className="text-sm font-medium text-violet-100">{error}</p> : null}
+      {error ? <p className="text-sm font-medium text-rose-100">{error}</p> : null}
     </div>
   );
 }

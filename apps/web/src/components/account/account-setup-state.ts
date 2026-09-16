@@ -61,3 +61,10 @@ export function getAccountSetupDeferralLabel(isDirty: boolean): string {
 export function shouldConfirmAccountSetupDeferral(isDirty: boolean): boolean {
   return isDirty;
 }
+
+export function shouldShowAccountSetupFieldError(
+  submitAttempted: boolean,
+  touched: boolean,
+): boolean {
+  return submitAttempted || touched;
+}

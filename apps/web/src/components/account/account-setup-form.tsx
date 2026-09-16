@@ -5,12 +5,8 @@ import { useReverification, useUser } from "@clerk/nextjs";
 import { isReverificationCancelledError } from "@clerk/nextjs/errors";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Check, Eye, Info, UserRound } from "lucide-react";
-import {
-  DISPLAY_MODE_DESCRIPTIONS,
-  DISPLAY_MODES,
-  type DisplayMode,
-} from "@/lib/ui/preferences";
+import { Eye, Info, UserRound } from "lucide-react";
+import type { DisplayMode } from "@/lib/ui/preferences";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import type { TerritoryLocationSelection } from "@/lib/user-location-preference";
 import {
@@ -20,7 +16,11 @@ import {
 } from "@/lib/user-location-preference";
 import type { AppProfile, DisplayNameMode } from "@/lib/profiles";
 import type { Role } from "@/lib/domain-language";
-import { AccountSetupLocationFields, AccountSetupProfileGrid } from "@/components/account/account-setup-sections";
+import {
+  AccountSetupDisplayModeGrid,
+  AccountSetupLocationFields,
+  AccountSetupProfileGrid,
+} from "@/components/account/account-setup-sections";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { PermissionErrorState } from "@/components/ui/permission-error-state";
 import {
@@ -55,6 +55,7 @@ import {
   shouldHydrateAccountSetupDisplayNameMode,
   shouldHydrateAccountSetupLocations,
   shouldConfirmAccountSetupDeferral,
+  shouldShowAccountSetupFieldError,
 } from "@/components/account/account-setup-state";
 
 type AccountSetupFormProps = {
@@ -71,6 +72,8 @@ type AccountSetupFormProps = {
   initialLocationType?: "residence" | "work" | null;
   submitMode?: "navigate" | "refresh";
 };
+
+type AccountSetupField = "pseudo" | "firstName" | "lastName" | "profile" | "location";
 
 async function updateActiveProfile(activeProfile: AppProfile) {
   const response = await fetch("/api/account/active-profile", {
@@ -104,12 +107,6 @@ function isValidSelection(selection: TerritoryLocationSelection | null): boolean
       (selection.level !== "arrondissement" || selection.arrondissement != null),
   );
 }
-
-const DISPLAY_MODE_LABELS: Record<DisplayMode, string> = {
-  exhaustif: "Exhaustif",
-  minimaliste: "Minimaliste",
-  sobre: "Sobre",
-};
 
 function readDisplayNameMode(metadata: Record<string, unknown> | null | undefined): DisplayNameMode {
   const value = metadata?.["display_name_mode"] ?? metadata?.["displayNameMode"];
@@ -172,6 +169,8 @@ export function AccountSetupForm({
   const completedPersistenceSteps = useRef<Set<AccountSetupPersistenceStep>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [touchedFields, setTouchedFields] = useState<Set<AccountSetupField>>(() => new Set());
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
 
   const pseudo = pseudoOverride ?? user?.username ?? "";
@@ -191,8 +190,22 @@ export function AccountSetupForm({
     setIsDirty(true);
   }
 
+  function touchField(field: AccountSetupField) {
+    setTouchedFields((current) => {
+      if (current.has(field)) {
+        return current;
+      }
+      return new Set(current).add(field);
+    });
+  }
+
+  function shouldShowFieldError(field: AccountSetupField) {
+    return shouldShowAccountSetupFieldError(submitAttempted, touchedFields.has(field));
+  }
+
   function handleProfileChange(profile: AppProfile) {
     markFormDirty();
+    touchField("profile");
     setSelectedProfileCandidate(profile);
   }
 
@@ -208,26 +221,31 @@ export function AccountSetupForm({
 
   function updateResidence(value: SetStateAction<TerritoryLocationSelection | null>) {
     markFormDirty();
+    touchField("location");
     setResidence(value);
   }
 
   function updateWork(value: SetStateAction<TerritoryLocationSelection | null>) {
     markFormDirty();
+    touchField("location");
     setWork(value);
   }
 
   function updateResidenceEnabled(value: SetStateAction<boolean>) {
     markFormDirty();
+    touchField("location");
     setResidenceEnabled(value);
   }
 
   function updateWorkEnabled(value: SetStateAction<boolean>) {
     markFormDirty();
+    touchField("location");
     setWorkEnabled(value);
   }
 
   function updateNoneSelected(value: SetStateAction<boolean>) {
     markFormDirty();
+    touchField("location");
     setNoneSelected(value);
   }
 
@@ -291,7 +309,8 @@ export function AccountSetupForm({
     (activeWork && !isValidSelection(work))
       ? "Sélectionnez une ville ou un arrondissement pour chaque lieu activé."
       : null;
-  const canSubmit = !pseudoError && !firstNameError && !lastNameError && !profileError && !locationError && !isSaving;
+  const formIsValid = !pseudoError && !firstNameError && !lastNameError && !profileError && !locationError;
+  const canSubmit = !isSaving;
 
   async function handleDefer() {
     setError(null);
@@ -335,12 +354,13 @@ export function AccountSetupForm({
 
   async function handleSubmit(event?: React.FormEvent<HTMLFormElement>) {
     event?.preventDefault();
+    setSubmitAttempted(true);
     setError(null);
     if (!user) {
       setError(toAppError("Compte introuvable, reconnectez-vous.", { kind: "permission", message: "Compte introuvable, reconnectez-vous." }));
       return;
     }
-    if (!canSubmit) {
+    if (!formIsValid) {
       setError(toAppError("Vérifiez les informations obligatoires.", { kind: "validation", message: "Vérifiez les informations obligatoires." }));
       return;
     }
@@ -433,74 +453,60 @@ export function AccountSetupForm({
   return (
     <form onSubmit={(event) => void handleSubmit(event)} className="flex min-h-full flex-col pb-2 text-white">
       <header className="mb-7 flex items-start gap-4 sm:mb-9">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-violet-300/50 bg-violet-300/20 text-violet-50 shadow-[0_0_24px_-8px_rgba(139,92,246,0.9)]">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-300/40 bg-slate-700/25 text-slate-100">
           <UserRound className="h-6 w-6" aria-hidden="true" />
         </span>
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-emerald-950 sm:text-5xl">Configurez votre profil</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-emerald-950/80 sm:text-base">Choisissez votre profil, vos lieux principaux et votre mode d’affichage. Ces préférences restent modifiables dans les paramètres de votre compte.</p>
+          <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">Configurez votre profil</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-700/80 sm:text-base">Choisissez votre profil, vos lieux principaux et votre mode d’affichage. Ces préférences restent modifiables dans les paramètres de votre compte.</p>
         </div>
       </header>
 
-      <div className="grid min-w-0 flex-1 gap-4 lg:grid-cols-2 lg:gap-6">
-        <div className="space-y-4">
-          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Identité" className="border-emerald-100/45 !bg-emerald-950/60 !text-white p-6 shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-7">
-            <div className="mb-5"><h2 id="account-identity-title" className="text-2xl font-bold">Identité</h2><p className="mt-1 text-sm text-emerald-50/80">Renseignez l’identité affichée dans CleanMyMap.</p></div>
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
+        <CmmCard as="section" variant="outlined" tone="slate" ariaLabel="Identité" className="border-slate-300/30 !bg-slate-900/90 !text-white p-5 shadow-none sm:p-6">
+          <div className="mb-5"><h2 id="account-identity-title" className="text-2xl font-bold">Identité</h2><p className="mt-1 text-sm text-slate-200/80">Renseignez l’identité affichée dans CleanMyMap.</p></div>
             <div className="grid gap-3 sm:grid-cols-3">
-              <CmmField label="Pseudo" required error={pseudoError} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-violet-100 [&_.cmm-field-error]:!text-violet-100">
-                <CmmInput value={pseudo} onChange={(event) => { markFormDirty(); setPseudoOverride(event.target.value); }} autoComplete="username" placeholder="Vert_Tige" className="!min-h-14 w-full !border-emerald-100/45 !bg-emerald-950/45 !text-white placeholder:!text-emerald-50/65" />
+              <CmmField label="Pseudo" required error={shouldShowFieldError("pseudo") ? pseudoError : null} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-slate-200 [&_.cmm-field-error]:!text-rose-100">
+                <CmmInput value={pseudo} onChange={(event) => { markFormDirty(); setPseudoOverride(event.target.value); }} onBlur={() => touchField("pseudo")} autoComplete="username" placeholder="Vert_Tige" className="!min-h-14 w-full !border-slate-300/40 !bg-slate-800/80 !text-white placeholder:!text-slate-300/70" />
               </CmmField>
               {!isPseudonymous ? <>
-                <CmmField label="Prénom" required error={firstNameError} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-violet-100 [&_.cmm-field-error]:!text-violet-100"><CmmInput value={firstName} onChange={(event) => { markFormDirty(); setFirstNameOverride(event.target.value); }} autoComplete="given-name" placeholder="Marie" className="!min-h-14 w-full !border-emerald-100/45 !bg-emerald-950/45 !text-white placeholder:!text-emerald-50/65" /></CmmField>
-                <CmmField label="Nom" required error={lastNameError} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-violet-100 [&_.cmm-field-error]:!text-violet-100"><CmmInput value={lastName} onChange={(event) => { markFormDirty(); setLastNameOverride(event.target.value); }} autoComplete="family-name" placeholder="Curie" className="!min-h-14 w-full !border-emerald-100/45 !bg-emerald-950/45 !text-white placeholder:!text-emerald-50/65" /></CmmField>
+                <CmmField label="Prénom" required error={shouldShowFieldError("firstName") ? firstNameError : null} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-slate-200 [&_.cmm-field-error]:!text-rose-100"><CmmInput value={firstName} onChange={(event) => { markFormDirty(); setFirstNameOverride(event.target.value); }} onBlur={() => touchField("firstName")} autoComplete="given-name" placeholder="Marie" className="!min-h-14 w-full !border-slate-300/40 !bg-slate-800/80 !text-white placeholder:!text-slate-300/70" /></CmmField>
+                <CmmField label="Nom" required error={shouldShowFieldError("lastName") ? lastNameError : null} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-slate-200 [&_.cmm-field-error]:!text-rose-100"><CmmInput value={lastName} onChange={(event) => { markFormDirty(); setLastNameOverride(event.target.value); }} onBlur={() => touchField("lastName")} autoComplete="family-name" placeholder="Curie" className="!min-h-14 w-full !border-slate-300/40 !bg-slate-800/80 !text-white placeholder:!text-slate-300/70" /></CmmField>
               </> : null}
             </div>
             <label className="mt-5 flex cursor-pointer items-start gap-3 text-sm font-semibold text-white">
-              <input type="checkbox" checked={isPseudonymous} onChange={(event) => handleDisplayNameModeChange(event.target.checked ? "pseudo" : "full_name")} className="mt-0.5 h-5 w-5 rounded border-emerald-100/50 accent-violet-500" />
-              <span>Je reste pseudonyme<span className="mt-1 block text-sm font-normal text-emerald-50/80">Seul votre pseudo sera affiché</span></span>
+              <input type="checkbox" checked={isPseudonymous} onChange={(event) => handleDisplayNameModeChange(event.target.checked ? "pseudo" : "full_name")} className="mt-0.5 h-5 w-5 rounded border-slate-300/50 accent-violet-500" />
+              <span>Je reste pseudonyme<span className="mt-1 block text-sm font-normal text-slate-200/80">Seul votre pseudo sera affiché</span></span>
             </label>
+        </CmmCard>
+
+        <CmmCard as="section" variant="outlined" tone="slate" ariaLabel="Profil / parcours" className="border-slate-300/30 !bg-slate-900/90 !text-white p-5 shadow-none sm:p-6">
+            <div className="mb-5"><h2 id="account-profile-title" className="text-2xl font-bold">Profil / parcours</h2><p className="mt-1 text-sm text-slate-200/80">Ce choix définit votre parcours, jamais vos permissions.</p></div>
+            <AccountSetupProfileGrid options={profileOptions} selectedProfile={selectedProfile} locale={locale} onChange={handleProfileChange} onBlur={() => touchField("profile")} error={shouldShowFieldError("profile") ? profileError : null} />
+        </CmmCard>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <CmmCard as="section" variant="outlined" tone="slate" ariaLabel="Vos zones principales" className="border-slate-300/30 !bg-slate-900/90 !text-white p-5 shadow-none sm:p-6">
+            <div className="mb-5"><h2 id="account-location-title" className="text-2xl font-bold">Vos zones principales</h2><p className="mt-1 text-sm text-slate-200/80">Indiquez une ville ou un arrondissement pour chaque zone. Aucune adresse précise n’est demandée.</p></div>
+            <AccountSetupLocationFields residence={residence} work={work} residenceEnabled={residenceEnabled} workEnabled={workEnabled} noneSelected={noneSelected} setResidence={updateResidence} setWork={updateWork} setResidenceEnabled={updateResidenceEnabled} setWorkEnabled={updateWorkEnabled} setNoneSelected={updateNoneSelected} error={shouldShowFieldError("location") ? locationError : null} />
           </CmmCard>
 
-          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Profil et parcours" className="border-emerald-100/45 !bg-emerald-950/60 !text-white p-6 shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-7">
-            <div className="mb-5"><h2 id="account-profile-title" className="text-2xl font-bold">Profil / parcours</h2><p className="mt-1 text-sm text-emerald-50/80">Ce choix définit votre parcours, jamais vos permissions.</p></div>
-            <AccountSetupProfileGrid options={profileOptions} selectedProfile={selectedProfile} locale={locale} onChange={handleProfileChange} error={profileError} />
+          <CmmCard as="section" variant="outlined" tone="slate" ariaLabel="Mode d’affichage" className="border-slate-300/30 !bg-slate-900/90 !text-white p-5 shadow-none sm:p-6">
+            <div className="mb-5"><div className="flex items-center gap-2"><div><h2 id="account-display-mode-title" className="text-2xl font-bold">Mode d’affichage</h2><p className="mt-1 text-sm text-slate-200/80">Le mode change uniquement la présentation : fonctionnalités et données restent identiques.</p></div><a href="/methodologie#modes-affichage" aria-label="Comprendre les modes d’affichage" className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-300/60 text-slate-100 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"><Info className="h-4 w-4" aria-hidden="true" /></a></div></div>
+            <AccountSetupDisplayModeGrid selectedMode={selectedDisplayMode} locale={locale} onChange={handleDisplayModeChange} ariaLabelledBy="account-display-mode-title" />
           </CmmCard>
         </div>
-
-        <div className="space-y-4">
-          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Vos zones principales" className="border-emerald-100/45 !bg-emerald-950/60 !text-white p-6 shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-7">
-            <div className="mb-5"><h2 id="account-location-title" className="text-2xl font-bold">Vos zones principales</h2><p className="mt-1 text-sm text-emerald-50/80">Indiquez une ville ou un arrondissement pour chaque zone. Aucune adresse précise n’est demandée.</p></div>
-            <AccountSetupLocationFields residence={residence} work={work} residenceEnabled={residenceEnabled} workEnabled={workEnabled} noneSelected={noneSelected} setResidence={updateResidence} setWork={updateWork} setResidenceEnabled={updateResidenceEnabled} setWorkEnabled={updateWorkEnabled} setNoneSelected={updateNoneSelected} error={locationError} />
-          </CmmCard>
-
-          <CmmCard as="section" variant="outlined" tone="emerald" ariaLabel="Mode d’affichage" className="border-emerald-100/45 !bg-emerald-950/60 !text-white p-6 shadow-[0_24px_55px_-42px_rgba(6,78,59,0.9)] sm:p-7">
-            <div className="mb-5"><div className="flex items-center gap-2"><div><h2 id="account-display-mode-title" className="text-2xl font-bold">Mode d’affichage</h2><p className="mt-1 text-sm text-emerald-50/80">Le mode change uniquement la présentation : fonctionnalités et données restent identiques.</p></div><a href="/methodologie#modes-affichage" aria-label="Comprendre les modes d’affichage" className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-violet-200/80 text-sm font-black text-violet-100 transition hover:bg-violet-300/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"><Info className="h-4 w-4" aria-hidden="true" /></a></div></div>
-            <div role="radiogroup" aria-labelledby="account-display-mode-title" className="grid gap-3 sm:grid-cols-3">
-              {DISPLAY_MODES.map((mode) => {
-                  const selected = selectedDisplayMode === mode;
-                  const label = DISPLAY_MODE_LABELS[mode];
-                  const description = DISPLAY_MODE_DESCRIPTIONS[mode][locale];
-                  return <button key={mode} type="button" role="radio" aria-checked={selected} onClick={() => handleDisplayModeChange(mode)} className={`relative flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 ${selected ? "border-violet-300 bg-white text-violet-700 shadow-[0_10px_28px_-18px_rgba(124,58,237,0.9)]" : "border-emerald-100/40 bg-emerald-950/45 text-white hover:border-violet-200/70 hover:bg-emerald-950/60"}`}>
-                  {selected ? <span className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full bg-violet-500 text-white"><Check className="h-4 w-4" aria-hidden="true" /></span> : null}
-                  <Eye className="h-7 w-7" aria-hidden="true" />
-                  <span className="text-sm font-bold">{label}</span>
-                  <span className="text-xs leading-4 opacity-80">{description}</span>
-                </button>;
-              })}
-            </div>
-          </CmmCard>
         </div>
-      </div>
 
       {error ? <div className="mt-4"><ErrorMessage kind={error.kind} title="Les réglages n’ont pas pu être enregistrés" message={error.message} actions={<CmmButton type="button" tone="secondary" size="sm" onClick={() => void handleSubmit()}>Réessayer</CmmButton>} /></div> : null}
-      <footer className="sticky bottom-0 z-10 mt-5 flex flex-col gap-3 rounded-2xl border border-emerald-100/35 bg-emerald-950/65 px-4 py-4 shadow-[0_-16px_35px_-30px_rgba(6,78,59,0.9)] backdrop-blur-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <footer className="mt-5 flex flex-col gap-3 rounded-2xl border border-slate-300/30 bg-slate-900/90 px-4 py-4 shadow-none sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="max-w-xl space-y-2">
           <h2 className="text-lg font-bold text-white">Actions de validation</h2>
-          <p className="text-sm text-emerald-50/85">Vous pourrez modifier ces préférences à tout moment dans les paramètres de votre compte.</p>
+          <p className="text-sm text-slate-200/85">Vous pourrez modifier ces préférences à tout moment dans les paramètres de votre compte.</p>
           <Link
             href="/compte/evolution"
             prefetch={false}
-            className="inline-flex min-h-11 items-center text-sm font-bold text-violet-100 underline decoration-violet-200/70 underline-offset-4 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
+            className="inline-flex min-h-11 items-center text-sm font-bold text-slate-200 underline decoration-slate-300/70 underline-offset-4 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200"
           >
             Vous représentez une collectivité&nbsp;?
           </Link>
@@ -509,7 +515,7 @@ export function AccountSetupForm({
           <CmmButton type="button" tone="secondary" size="lg" disabled={isSaving} onClick={() => void handleDefer()}>
             {getAccountSetupDeferralLabel(isDirty)}
           </CmmButton>
-          <CmmButton type="submit" tone="primary" size="lg" disabled={!canSubmit} loading={isSaving} className="!border-violet-300 !bg-violet-500 !bg-none !text-white hover:!bg-violet-600">{isSaving ? "Enregistrement…" : "Valider et continuer"}</CmmButton>
+          <CmmButton type="submit" tone="primary" size="lg" disabled={!canSubmit} loading={isSaving}>{isSaving ? "Enregistrement…" : "Valider et continuer"}</CmmButton>
         </div>
       </footer>
     </form>

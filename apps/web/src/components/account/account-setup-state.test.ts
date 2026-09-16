@@ -8,6 +8,7 @@ import {
   shouldHydrateAccountSetupDisplayNameMode,
   shouldHydrateAccountSetupLocations,
   shouldConfirmAccountSetupDeferral,
+  shouldShowAccountSetupFieldError,
 } from "./account-setup-state";
 
 describe("account setup initial state", () => {
@@ -37,5 +38,11 @@ describe("account setup initial state", () => {
     expect(getAccountSetupDeferralLabel(true)).toBe("Plus tard, sans enregistrer");
     expect(shouldConfirmAccountSetupDeferral(false)).toBe(false);
     expect(shouldConfirmAccountSetupDeferral(true)).toBe(true);
+  });
+
+  it("only exposes field errors after touch or submit attempt", () => {
+    expect(shouldShowAccountSetupFieldError(false, false)).toBe(false);
+    expect(shouldShowAccountSetupFieldError(false, true)).toBe(true);
+    expect(shouldShowAccountSetupFieldError(true, false)).toBe(true);
   });
 });
