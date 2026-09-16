@@ -64,6 +64,7 @@ font-size: clamp(2.5rem, 4vw, 4.5rem);
 font-weight: 900;
 line-height: 0.96;
 letter-spacing: -0.05em;
+text-wrap: balance;
 ```
 
 Règles :
@@ -87,6 +88,7 @@ max-width: 42rem;
 font-size: 1rem;
 font-weight: 500;
 line-height: 1.55;
+text-wrap: balance;
 ```
 
 Règles :

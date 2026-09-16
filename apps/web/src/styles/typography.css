@@ -108,6 +108,7 @@
     font-weight: 900;
     line-height: 0.96;
     letter-spacing: -0.05em;
+    text-wrap: balance;
     overflow-wrap: anywhere;
   }
 
@@ -127,6 +128,7 @@
     font-weight: 500;
     line-height: 1.55;
     white-space: normal;
+    text-wrap: balance;
     overflow-wrap: anywhere;
   }
 
