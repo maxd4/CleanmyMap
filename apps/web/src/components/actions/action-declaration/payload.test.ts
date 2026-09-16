@@ -30,7 +30,7 @@ function buildBaseForm() {
 }
 
 describe("action declaration payload helpers", () => {
-  it("derives an editable route target from duration and preserves an explicit override", () => {
+  it("derives an editable route target from duration and ignores legacy unproven values", () => {
     expect(deriveRouteTargetDistanceKm(60)).toBe(1);
     expect(deriveRouteTargetDistanceKm(90)).toBe(1.5);
 
@@ -40,11 +40,11 @@ describe("action declaration payload helpers", () => {
       routeTargetDistanceKm: 2.25,
     });
 
-    expect(prepared.routeTargetDistanceKm).toBe("2.25");
-    expect(prepared.routeTargetDistanceKmManuallySet).toBe(true);
+    expect(prepared.routeTargetDistanceKm).toBe("1.5");
+    expect(prepared.routeTargetDistanceKmManuallySet).toBe(false);
   });
 
-  it("persists the route target in preparation metadata", () => {
+  it("persists a derived target with its source and policy version", () => {
     const form = createInitialFormState("Alice");
     form.durationMinutes = "90";
     form.routeTargetDistanceKm = "1.75";
@@ -59,7 +59,63 @@ describe("action declaration payload helpers", () => {
       linkedEventId: undefined,
     });
 
+    expect(payload.preparationData?.routeTargetDistanceKm).toBe(1.5);
+    expect(payload.preparationData?.routeTargetDistanceSource).toBe("derived");
+    expect(payload.preparationData?.routeTargetDistancePolicyVersion).toBe("route-distance-v1");
+  });
+
+  it("persists a manual target without a policy version", () => {
+    const form = createInitialFormState("Alice");
+    form.durationMinutes = "90";
+    form.routeTargetDistanceKm = "1.75";
+    form.routeTargetDistanceKmManuallySet = true;
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
     expect(payload.preparationData?.routeTargetDistanceKm).toBe(1.75);
+    expect(payload.preparationData?.routeTargetDistanceSource).toBe("manual");
+    expect(payload.preparationData?.routeTargetDistancePolicyVersion).toBeUndefined();
+  });
+
+  it("keeps selected route endpoint coordinates for server reconstruction", () => {
+    const form = createInitialFormState("Alice");
+    form.departureLocationLabel = "Départ, Paris";
+    form.latitude = "48.850000";
+    form.longitude = "2.350000";
+    form.midRouteLocationLabel = "Mi-parcours, Paris";
+    form.midRouteCoordinates = { latitude: 48.86, longitude: 2.36 };
+    form.routeTopology = "point_to_point";
+    form.arrivalLocationLabel = "Arrivée, Paris";
+    form.arrivalCoordinates = { latitude: 48.87, longitude: 2.37 };
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.latitude).toBe(48.85);
+    expect(payload.longitude).toBe(2.35);
+    expect(payload.preparationData?.midRouteCoordinates).toEqual({
+      latitude: 48.86,
+      longitude: 2.36,
+    });
+    expect(payload.preparationData?.arrivalCoordinates).toEqual({
+      latitude: 48.87,
+      longitude: 2.37,
+    });
   });
 
   it("sends the explicit point-to-point topology and keeps loop payloads arrival-free", () => {
@@ -521,6 +577,49 @@ describe("action declaration payload helpers", () => {
 
     expect(payload.manualDrawing).toEqual(previewDrawing);
     expect(payload.geometrySource).toBe("routed");
+  });
+
+  it("keeps a validated GPX ahead of a previous manual or route-preview drawing", async () => {
+    const form = buildBaseForm();
+    form.routeTopology = "loop";
+    form.gpxImport = {
+      source: "gpx_import",
+      observedDistanceKm: 2.35,
+      pointCount: 3,
+      inferredTopology: "loop",
+      fileName: "terrain.gpx",
+    };
+    const gpxDrawing: ActionDrawing = {
+      kind: "polyline",
+      coordinates: [
+        [48.85, 2.35],
+        [48.86, 2.36],
+        [48.85, 2.35],
+      ],
+    };
+
+    const payload = await prepareCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: true,
+      drawingIsValid: true,
+      manualDrawing: gpxDrawing,
+      manualDrawingSource: "gpx_import",
+      routePreviewDrawing: {
+        kind: "polyline",
+        coordinates: [[48.8, 2.3], [48.81, 2.31]],
+      },
+      isEntrepriseMode: false,
+    });
+
+    expect(payload.geometrySource).toBe("gpx_import");
+    expect(payload.manualDrawing).toEqual(gpxDrawing);
+    expect(payload.preparationData?.gpxImport).toMatchObject({
+      source: "gpx_import",
+      observedDistanceKm: 2.35,
+      fileName: "terrain.gpx",
+    });
+    expect(payload.preparationData?.routeTargetDistanceKm).toBe(1.25);
   });
 
   it("uses the editable operational route as routed geometry without observations", () => {

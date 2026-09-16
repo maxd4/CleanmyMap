@@ -5,12 +5,15 @@ import {
   mergeGeoAddressSuggestions,
   type GeoAddressSuggestion,
 } from "@/lib/geo/address-suggestions";
+import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
+import { isWithinTerritoryBounds } from "@/lib/geo/territory";
 
 export const runtime = "nodejs";
 const ADDRESS_SUGGESTIONS_CACHE_HEADERS = {
   "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
 };
 const ADDRESS_SUGGESTIONS_REVALIDATE_SECONDS = 300;
+const ADDRESS_SUGGESTIONS_TIMEOUT_MS = 4_000;
 
 type GeoplateformeCompletionResult = {
   x?: number;
@@ -114,11 +117,19 @@ async function loadCachedRemoteAddressSuggestions(
         return [];
       }
 
-      const response = await fetch(geoplateformeUrl, {
-        headers: {
-          Accept: "application/json",
-        },
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), ADDRESS_SUGGESTIONS_TIMEOUT_MS);
+      let response: Response;
+      try {
+        response = await fetch(geoplateformeUrl, {
+          headers: {
+            Accept: "application/json",
+          },
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
 
       if (!response.ok) {
         return [];
@@ -129,7 +140,13 @@ async function loadCachedRemoteAddressSuggestions(
       const items: GeoAddressSuggestion[] = [];
 
       for (const item of data.results ?? []) {
-        if (typeof item.x !== "number" || typeof item.y !== "number") {
+        if (
+          typeof item.x !== "number" ||
+          typeof item.y !== "number" ||
+          !Number.isFinite(item.x) ||
+          !Number.isFinite(item.y) ||
+          !isWithinTerritoryBounds(item.y, item.x)
+        ) {
           continue;
         }
 
@@ -163,6 +180,16 @@ async function loadCachedRemoteAddressSuggestions(
 }
 
 export async function GET(request: Request) {
+  const rateLimit = await verifyRateLimit(request, { limit: 60, window: 60 });
+  const rateLimitResponse = createServerRateLimitResponse(
+    rateLimit.allowed,
+    rateLimit.retryAfter,
+    rateLimit,
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const url = new URL(request.url);
   const query = url.searchParams.get("q")?.trim() ?? "";
   const limit = parseLimit(url.searchParams.get("limit"));

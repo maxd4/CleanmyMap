@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { MapPin, Navigation, Crosshair, CheckCircle2, AlertCircle, Loader2, MapPinOff, Pencil, X } from "lucide-react";
+import { MapPin, Navigation, Crosshair, CheckCircle2, AlertCircle, Loader2, MapPinOff, Pencil, X, Upload, Trash2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import type { FormState } from "../form/model";
-import type { ActionDrawing, ActionGeometrySource } from "@/lib/actions/types";
+import type {
+  ActionDrawing,
+  ActionGeometrySource,
+  ActionGpxImportMetadata,
+  ActionLocationCoordinates,
+} from "@/lib/actions/types";
 import type { OperationalRoute } from "@/lib/route/route-operational";
 import { OperationalRouteEditor } from "../operational-route-editor";
 import type { UpdateFormField } from "../types";
@@ -34,6 +39,7 @@ const ActionDrawingMap = dynamic(
 interface ActionStepLocationProps {
   form: FormState;
   updateField: UpdateFormField;
+  updateFields: (updates: Partial<FormState>) => void;
   recordType: FormState["recordType"];
   manualDrawing: ActionDrawing | null;
   setManualDrawing: (
@@ -41,6 +47,10 @@ interface ActionStepLocationProps {
     geometrySource?: ActionGeometrySource | null,
   ) => void;
   routePreviewDrawing: ActionDrawing | null;
+  gpxImport: ActionGpxImportMetadata | null;
+  gpxError: string | null;
+  onImportGpx: (file: File | null) => Promise<void>;
+  onRemoveGpx: () => void;
   onResetManualDrawing?: () => void;
   gpsStatus: "idle" | "locating" | "success" | "error";
   gpsMessage: string | null;
@@ -129,7 +139,7 @@ function AddressAutocompleteInput({
   label: string;
   placeholder: string;
   value: string;
-  onChange: (v: string) => void;
+  onChange: (v: string, coordinates?: ActionLocationCoordinates | null) => void;
   optional?: boolean;
   helperText: string;
 }) {
@@ -210,7 +220,10 @@ function AddressAutocompleteInput({
   }, []);
 
   const selectSuggestion = (suggestion: GeoAddressSuggestion) => {
-    onChange(suggestion.label);
+    onChange(suggestion.label, {
+      latitude: suggestion.latitude,
+      longitude: suggestion.longitude,
+    });
     setIsOpen(false);
     setSuggestions([]);
     setIsLoading(false);
@@ -386,10 +399,15 @@ function SectionTitle({ color, children }: { color: string; children: React.Reac
 export function ActionStepLocation({
   form,
   updateField,
+  updateFields,
   recordType,
   manualDrawing,
   setManualDrawing,
   routePreviewDrawing,
+  gpxImport,
+  gpxError,
+  onImportGpx,
+  onRemoveGpx,
   onResetManualDrawing,
   gpsStatus,
   gpsMessage,
@@ -405,6 +423,7 @@ export function ActionStepLocation({
   const displayedDrawing = manualSummary.normalized ?? previewSummary.normalized;
   const activeSummary = manualSummary.normalized ? manualSummary : previewSummary;
   const isManual = Boolean(manualSummary.normalized);
+  const isGpx = Boolean(gpxImport && manualSummary.normalized);
   const hasDrawing = Boolean(displayedDrawing);
 
   const statusTone = isManual
@@ -442,7 +461,13 @@ export function ActionStepLocation({
             label={isCleanPlaceMode ? "Adresse du lieu" : "Départ"}
             placeholder={isCleanPlaceMode ? "Ex : Square des Batignolles" : "Ex : Rue de Rivoli, Paris"}
             value={form.departureLocationLabel}
-          onChange={(v) => updateField("departureLocationLabel", v)}
+            onChange={(value, coordinates) => {
+              updateFields({
+                departureLocationLabel: value,
+                latitude: coordinates ? String(coordinates.latitude) : "",
+                longitude: coordinates ? String(coordinates.longitude) : "",
+              });
+            }}
           helperText={isCleanPlaceMode ? "Adresse exacte du lieu" : "Adresse exacte du départ"}
         />
           <AddressAutocompleteInput
@@ -451,7 +476,12 @@ export function ActionStepLocation({
             label="Mi-parcours"
             placeholder="Zone intermédiaire (optionnel)"
             value={form.midRouteLocationLabel ?? ""}
-            onChange={(v) => updateField("midRouteLocationLabel", v)}
+            onChange={(value, coordinates) => {
+              updateFields({
+                midRouteLocationLabel: value,
+                midRouteCoordinates: coordinates ?? null,
+              });
+            }}
             optional
             helperText="Zone intermédiaire de l'action"
           />
@@ -462,7 +492,12 @@ export function ActionStepLocation({
               label={isCleanPlaceMode ? "Complément" : "Arrivée"}
               placeholder={isCleanPlaceMode ? "Précision (optionnel)" : "Ex : Place de la République"}
               value={form.arrivalLocationLabel}
-              onChange={(v) => updateField("arrivalLocationLabel", v)}
+              onChange={(value, coordinates) => {
+                updateFields({
+                  arrivalLocationLabel: value,
+                  arrivalCoordinates: coordinates ?? null,
+                });
+              }}
               optional={isCleanPlaceMode}
               helperText={isCleanPlaceMode ? "Complément géographique exact" : "Adresse exacte de l’arrivée"}
             />
@@ -556,6 +591,62 @@ export function ActionStepLocation({
             </p>
           </div>
         )}
+
+        {!isCleanPlaceMode && (
+          <div className="rounded-xl border border-violet-200/80 bg-violet-50/55 px-4 py-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="flex items-center gap-2 text-sm font-semibold text-violet-950">
+                  <Upload size={16} aria-hidden="true" />
+                  Importer un tracé GPX
+                </p>
+                <p className="mt-1 text-xs text-violet-900/70">
+                  Le tracé importé est conservé tel quel, sans reconstruction réseau.
+                </p>
+              </div>
+              <label
+                htmlFor="gpx-import"
+                className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-violet-300 bg-white px-3 py-2 text-xs font-semibold text-violet-900 transition hover:bg-violet-100 focus-within:ring-2 focus-within:ring-violet-500/20"
+              >
+                <Upload size={14} aria-hidden="true" />
+                {gpxImport ? "Remplacer le GPX" : "Choisir un fichier .gpx"}
+                <input
+                  id="gpx-import"
+                  type="file"
+                  accept=".gpx,application/gpx+xml"
+                  className="sr-only"
+                  onChange={(event) => {
+                    const file = event.currentTarget.files?.[0] ?? null;
+                    event.currentTarget.value = "";
+                    void onImportGpx(file);
+                  }}
+                />
+              </label>
+            </div>
+            {gpxImport && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs text-violet-950">
+                <span>
+                  <strong>Tracé GPX importé</strong>
+                  {gpxImport.fileName ? ` · ${gpxImport.fileName}` : ""}
+                  {` · ${gpxImport.observedDistanceKm.toFixed(2).replace(".", ",")} km · ${gpxImport.pointCount} points`}
+                </span>
+                <button
+                  type="button"
+                  onClick={onRemoveGpx}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 font-semibold text-rose-700 transition hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/30"
+                >
+                  <Trash2 size={13} aria-hidden="true" />
+                  Supprimer le GPX
+                </button>
+              </div>
+            )}
+            {gpxError && (
+              <p role="alert" className="mt-2 text-xs font-medium text-rose-700">
+                {gpxError}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {form.operationalRoute ? (
@@ -588,7 +679,7 @@ export function ActionStepLocation({
               <ActionDrawingMap
                 drawing={displayedDrawing}
                 onDrawingChange={setManualDrawing}
-                readOnly={false}
+                readOnly={Boolean(gpxImport)}
               />
 
               {/* Overlay si aucun repère */}
@@ -601,6 +692,11 @@ export function ActionStepLocation({
                       Saisissez une adresse ou utilisez le GPS pour placer le lieu
                     </p>
                   </div>
+                </div>
+              )}
+              {gpxImport && hasDrawing && (
+                <div className="pointer-events-none absolute left-3 top-3 z-[1000] rounded-lg border border-violet-200 bg-white/95 px-3 py-2 text-xs font-semibold text-violet-900 shadow-sm">
+                  Tracé GPX importé · aucune reconstruction réseau
                 </div>
               )}
             </>
@@ -623,7 +719,7 @@ export function ActionStepLocation({
               "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold",
               statusStyles[statusTone]
             )}>
-              {isManual ? "Repère manuel" : hasDrawing ? "Aperçu automatique" : "Aucun repère"}
+              {isGpx ? "Tracé GPX importé" : isManual ? "Repère manuel" : hasDrawing ? "Aperçu automatique" : "Aucun repère"}
             </span>
             {hasDrawing && (
               <span className="text-xs text-emerald-900/55">
@@ -632,7 +728,7 @@ export function ActionStepLocation({
             )}
           </div>
 
-          {isManual && onResetManualDrawing && (
+          {isManual && !isGpx && onResetManualDrawing && (
             <button
               type="button"
               onClick={onResetManualDrawing}

@@ -15,6 +15,7 @@ export {
   buildCreateActionGeometry,
   buildActionInsertPayload,
   createAction,
+  resolveCreateActionDrawing,
 } from "./store-create";
 
 export {

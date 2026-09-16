@@ -16,6 +16,7 @@ import type {
   RouteRecommendationResponse,
 } from "./route-response-contract";
 import type { ActionPreparationData } from "@/lib/actions/types";
+import { resolveRouteTargetDistance } from "@/lib/actions/route-target-distance";
 
 export const OPERATIONAL_ROUTE_VERSION = "operational-route-v1" as const;
 
@@ -127,12 +128,25 @@ export function createPlannerActionPreparationData(
     recommendation.operationalBudget?.actionMinutes ??
     undefined;
   const departureLabel = `Coordonnées du départ : ${recommendation.origin.latitude.toFixed(6)}, ${recommendation.origin.longitude.toFixed(6)}`;
+  const resolvedTarget = typeof actionMinutes === "number"
+    ? resolveRouteTargetDistance({
+        durationMinutes: actionMinutes,
+        routeTargetDistanceSource: "derived",
+      })
+    : null;
 
   return {
     pointDeRendezVous: departureLabel,
     ...(scheduledDate ? { actionDate: scheduledDate } : {}),
     ...(scheduledTime ? { meetingTime: scheduledTime, departureTime: scheduledTime } : {}),
     ...(typeof actionMinutes === "number" ? { estimatedDurationMinutes: actionMinutes } : {}),
+    ...(resolvedTarget
+      ? {
+          routeTargetDistanceKm: resolvedTarget.distanceKm,
+          routeTargetDistanceSource: resolvedTarget.source,
+          routeTargetDistancePolicyVersion: resolvedTarget.policyVersion,
+        }
+      : {}),
     volunteersExpected: recommendation.volunteers,
   };
 }

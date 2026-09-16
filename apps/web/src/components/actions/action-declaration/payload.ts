@@ -22,8 +22,7 @@ import {
 } from "@/lib/actions/volunteer-participation";
 import type { VolunteerParticipationInput } from "@/lib/actions/volunteer-participation";
 import {
-  deriveRouteTargetDistanceKm,
-  normalizeRouteTargetDistanceKm,
+ resolveRouteTargetDistance,
 } from "@/lib/actions/route-target-distance";
 
 function deriveDrawingFromOperationalRoute(
@@ -122,6 +121,8 @@ const BASE_FORM_STATE: FormState = {
  durationMinutes:"60",
  routeTargetDistanceKm:"1",
  routeTargetDistanceKmManuallySet:false,
+ midRouteCoordinates: null,
+ arrivalCoordinates: null,
  eventStartTime:"",
  eventEndTime:"",
  notes:"",
@@ -136,6 +137,7 @@ const BASE_FORM_STATE: FormState = {
  visionBagsCount:"",
  visionFillLevel:"",
  visionDensity:"",
+ gpxImport: null,
 };
 
 export function createInitialFormState(
@@ -160,6 +162,14 @@ export function buildPreparationDataFromForm(
  };
  const volunteerParticipation = normalizeVolunteerParticipation(volunteerParticipationInput);
  const guidance = formatWasteGuidanceLines(wasteCategories);
+ const targetSource: "derived" | "manual" = form.routeTargetDistanceKmManuallySet
+  ? "manual"
+  : "derived";
+ const resolvedTarget = resolveRouteTargetDistance({
+  durationMinutes: form.durationMinutes,
+  routeTargetDistanceKm: form.routeTargetDistanceKm,
+  routeTargetDistanceSource: targetSource,
+ });
  const supplement = (manual: string, derived: string, title: string) => {
   const value = manual.trim();
   if (!derived) return value || undefined;
@@ -180,7 +190,15 @@ export function buildPreparationDataFromForm(
   actionDate: form.actionDate.trim() || undefined,
   meetingTime: form.meetingTime.trim() || undefined,
   departureTime: form.departureTime.trim() || undefined,
-  routeTargetDistanceKm: normalizeRouteTargetDistanceKm(form.routeTargetDistanceKm),
+  routeTargetDistanceKm: resolvedTarget.distanceKm,
+  routeTargetDistanceSource: resolvedTarget.source,
+  ...(resolvedTarget.source === "derived"
+    ? { routeTargetDistancePolicyVersion: resolvedTarget.policyVersion }
+    : {}),
+  midRouteCoordinates: form.midRouteCoordinates ?? undefined,
+  arrivalCoordinates: form.arrivalCoordinates ?? undefined,
+  routeObservedDistanceKm: form.gpxImport?.observedDistanceKm,
+  gpxImport: form.gpxImport ?? undefined,
   plannedObjective: form.plannedObjective,
   placeType: form.placeType || undefined,
   estimatedDifficulty: form.estimatedDifficulty,
@@ -199,7 +217,7 @@ export function buildPreparationDataFromForm(
   groupJoinEnabled: form.groupJoinEnabled,
   expectedWasteCategories: wasteCategories.length > 0 ? [...wasteCategories] : undefined,
   routeCalibrationContext: form.routeCalibrationContext ?? undefined,
-    operationalRoute: form.operationalRoute ?? undefined,
+  operationalRoute: form.operationalRoute ?? undefined,
   };
 }
 
@@ -232,10 +250,20 @@ export function applyPreparationDataToForm(
    typeof preparationData.estimatedDurationMinutes === "number"
     ? String(preparationData.estimatedDurationMinutes)
     : form.durationMinutes,
-  routeTargetDistanceKm: typeof preparationData.routeTargetDistanceKm === "number"
-    ? String(preparationData.routeTargetDistanceKm)
-    : String(deriveRouteTargetDistanceKm(preparationData.estimatedDurationMinutes ?? form.durationMinutes)),
-  routeTargetDistanceKmManuallySet: typeof preparationData.routeTargetDistanceKm === "number",
+  ...(() => {
+    const resolvedTarget = resolveRouteTargetDistance({
+      durationMinutes: preparationData.estimatedDurationMinutes ?? form.durationMinutes,
+      routeTargetDistanceKm: preparationData.routeTargetDistanceKm,
+      routeTargetDistanceSource: preparationData.routeTargetDistanceSource,
+    });
+    return {
+      routeTargetDistanceKm: String(resolvedTarget.distanceKm),
+      routeTargetDistanceKmManuallySet: resolvedTarget.source === "manual",
+    };
+  })(),
+  midRouteCoordinates: preparationData.midRouteCoordinates ?? form.midRouteCoordinates,
+  arrivalCoordinates: preparationData.arrivalCoordinates ?? form.arrivalCoordinates,
+  gpxImport: preparationData.gpxImport ?? form.gpxImport,
   plannedObjective: preparationData.plannedObjective ?? form.plannedObjective,
   placeType: preparationData.placeType ?? form.placeType,
   estimatedDifficulty:

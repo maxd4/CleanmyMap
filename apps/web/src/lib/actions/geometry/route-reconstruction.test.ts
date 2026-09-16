@@ -71,6 +71,7 @@ describe("server-side action route reconstruction", () => {
       locationLabel: "Rue de test, Paris",
       durationMinutes: 60,
       routeTargetDistanceKm: 1.5,
+      routeTargetDistanceSource: "manual",
     });
 
     const requestedWaypoints = routeProviderMock.mock.calls[0]?.[0] as [number, number][];
@@ -207,6 +208,64 @@ describe("server-side action route reconstruction", () => {
       midpoint,
       arrival,
     ]);
+  });
+
+  it("does not geocode route endpoints when selected coordinates are already known", async () => {
+    const midpoint: [number, number] = [48.86, 2.36];
+    const arrival: [number, number] = [48.87, 2.37];
+    routeProviderMock.mockResolvedValueOnce({
+      ...networkGeometry,
+      isLoop: false,
+      returnLeg: null,
+      coordinates: [[48.85, 2.35], midpoint, arrival],
+    });
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await reconstructActionRoute({
+      topology: "point_to_point",
+      latitude: 48.85,
+      longitude: 2.35,
+      locationLabel: "Rue de test, Paris",
+      midpointLocationLabel: "Mi-parcours, Paris",
+      midpointCoordinates: { latitude: midpoint[0], longitude: midpoint[1] },
+      arrivalLocationLabel: "Arrivée, Paris",
+      arrivalCoordinates: { latitude: arrival[0], longitude: arrival[1] },
+      durationMinutes: 60,
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(routeProviderMock.mock.calls[0]?.[0]).toEqual([
+      [48.85, 2.35],
+      midpoint,
+      arrival,
+    ]);
+  });
+
+  it("uses the deterministic reference fallback when free geocoding times out", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn((_input: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<never>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(new Error("timeout")));
+        }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+
+      const routePromise = reconstructActionRoute({
+        locationLabel: "Jardin du Luxembourg",
+        departureLocationLabel: "Jardin du Luxembourg",
+        durationMinutes: 60,
+      });
+      await vi.advanceTimersByTimeAsync(4_000);
+
+      await expect(routePromise).resolves.toMatchObject({
+        geometrySource: "reference",
+      });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("rejects a point-to-point route without an arrival explicitly", async () => {

@@ -3,6 +3,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("next/cache", () => ({
   unstable_cache: (fn: unknown) => fn,
 }));
+vi.mock("@/lib/rate-limit/server", () => ({
+  verifyRateLimit: vi.fn().mockResolvedValue({
+    allowed: true,
+    limit: 60,
+    remaining: 59,
+    reset: Date.now() + 60_000,
+  }),
+  createServerRateLimitResponse: vi.fn().mockReturnValue(null),
+}));
 
 import { GET } from "./route";
 
@@ -101,5 +110,27 @@ describe("/api/geo/address-suggestions", () => {
       latitude: 45.764,
       longitude: 4.8357,
     });
+  });
+
+  it("drops remote coordinates outside the territorial bounds", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        results: [{
+          x: 151.2093,
+          y: -33.8688,
+          fulltext: "Sydney",
+          city: "Sydney",
+        }],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/address-suggestions?q=Sydney&limit=3"),
+    );
+    const body = (await response.json()) as { items: unknown[] };
+
+    expect(body.items).toEqual([]);
   });
 });

@@ -32,11 +32,37 @@ import {
 import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 import { normalizeVolunteerParticipation } from "@/lib/actions/volunteer-participation";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
+import {
+  inferGpxTopology,
+  MAX_GPX_POINTS,
+} from "@/lib/actions/geometry/gpx";
+import { polylineDistanceKm } from "@/lib/geo/geodesic-distance";
 
 const coordinateSchema = z.tuple([
-  z.number().min(-90).max(90),
-  z.number().min(-180).max(180),
+  z.number().finite().min(-90).max(90),
+  z.number().finite().min(-180).max(180),
 ]);
+
+const locationCoordinatesSchema = z
+  .object({
+    latitude: z.number().finite().min(-90).max(90),
+    longitude: z.number().finite().min(-180).max(180),
+  })
+  .strict();
+
+const gpxImportMetadataSchema = z
+  .object({
+    source: z.literal("gpx_import"),
+    observedDistanceKm: z.number().finite().min(0).max(1000),
+    pointCount: z.number().int().min(2).max(MAX_GPX_POINTS),
+    inferredTopology: z.enum(["loop", "point_to_point"]),
+    fileName: z
+      .string()
+      .max(120)
+      .refine((value) => !/[\u0000-\u001f\u007f]/.test(value), "Nom de fichier GPX invalide.")
+      .optional(),
+  })
+  .strict();
 
 const manualDrawingSchema = z
   .object({
@@ -218,6 +244,12 @@ const preparationDataSchema = z
     departureTime: z.string().max(20).optional(),
     estimatedDurationMinutes: z.number().int().min(0).max(24 * 60).optional(),
     routeTargetDistanceKm: z.number().min(0).max(100).optional(),
+    routeTargetDistanceSource: z.enum(["derived", "manual"]).optional(),
+    routeTargetDistancePolicyVersion: z.string().min(1).max(64).optional(),
+    midRouteCoordinates: locationCoordinatesSchema.optional(),
+    arrivalCoordinates: locationCoordinatesSchema.optional(),
+    routeObservedDistanceKm: z.number().finite().min(0).max(1000).optional(),
+    gpxImport: gpxImportMetadataSchema.optional(),
     routeNetworkDistanceKm: z.number().min(0).max(1000).optional(),
     routeGeometryMode: z.enum(["network", "fallback"]).optional(),
     routeGeometryProvider: z.enum(["osrm", "fossgis-osrm", "none"]).optional(),
@@ -259,6 +291,28 @@ const preparationDataSchema = z
     actualRoute: z.custom(isLegacyActualRoute, "Ancien parcours invalide.").optional(),
   })
   .strict()
+  .superRefine((value, ctx) => {
+    if (
+      value.routeTargetDistanceSource === "derived" &&
+      !value.routeTargetDistancePolicyVersion
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["routeTargetDistancePolicyVersion"],
+        message: "Une cible dérivée doit porter la version de sa policy.",
+      });
+    }
+    if (
+      value.routeTargetDistanceSource === "manual" &&
+      value.routeTargetDistancePolicyVersion !== undefined
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["routeTargetDistancePolicyVersion"],
+        message: "Une cible manuelle ne doit pas porter de version de policy.",
+      });
+    }
+  })
   .transform(({ actualRoute, operationalRoute, ...rest }) => {
     delete rest.administrativeRequirements;
     return {
@@ -342,6 +396,84 @@ function addRouteTopologyIssue(
   }
 }
 
+function addGpxImportIssue(
+  value: {
+    geometrySource?: string | null;
+    manualDrawing?: { kind: "polyline" | "polygon"; coordinates: [number, number][] };
+    preparationData?: {
+      routeTopology?: "loop" | "point_to_point";
+      gpxImport?: {
+        source: "gpx_import";
+        observedDistanceKm: number;
+        pointCount: number;
+        inferredTopology: "loop" | "point_to_point";
+      };
+    } | null;
+    routeTopology?: "loop" | "point_to_point";
+    arrivalLocationLabel?: string | null;
+  },
+  ctx: z.RefinementCtx,
+) {
+  const metadata = value.preparationData?.gpxImport;
+  if (value.geometrySource !== "gpx_import" && !metadata) {
+    return;
+  }
+
+  const drawing = value.manualDrawing;
+  if (value.geometrySource !== "gpx_import") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["geometrySource"],
+      message: "Un tracé GPX doit conserver la provenance gpx_import.",
+    });
+    return;
+  }
+  if (!drawing || drawing.kind !== "polyline") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["manualDrawing"],
+      message: "Un tracé GPX valide est obligatoire lorsque la provenance est gpx_import.",
+    });
+    return;
+  }
+  if (!metadata) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["preparationData", "gpxImport"],
+      message: "Les métadonnées du tracé GPX sont obligatoires.",
+    });
+    return;
+  }
+
+  const topology = resolveActionRouteTopology({
+    topology: value.routeTopology ?? value.preparationData?.routeTopology,
+    arrivalLocationLabel: value.arrivalLocationLabel,
+  });
+  const inferredTopology = inferGpxTopology(drawing.coordinates);
+  if (topology !== inferredTopology || metadata.inferredTopology !== inferredTopology) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["routeTopology"],
+      message:
+        inferredTopology === "loop"
+          ? "Ce GPX est fermé : sélectionnez la topologie Boucle ou choisissez un autre fichier."
+          : "Ce GPX est ouvert : sélectionnez la topologie Départ → arrivée ou choisissez un autre fichier.",
+    });
+  }
+
+  const observedDistanceKm = polylineDistanceKm(drawing.coordinates);
+  if (
+    metadata.pointCount !== drawing.coordinates.length ||
+    Math.abs(metadata.observedDistanceKm - observedDistanceKm) > 0.01
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["preparationData", "gpxImport"],
+      message: "La distance ou le nombre de points du GPX ne correspond pas au tracé fourni.",
+    });
+  }
+}
+
 const createActionLegacyBaseSchema = z.object({
   actorName: z.string().min(1).max(120).optional(),
   associationName: associationNameSchema,
@@ -402,6 +534,7 @@ const createActionLegacySchema = createActionLegacyBaseSchema
   .superRefine((value, ctx) => {
     addTemporalContractIssue(value, ctx);
     addRouteTopologyIssue(value, ctx);
+    addGpxImportIssue(value, ctx);
   });
 
 const createActionContractSchema = z.object({
@@ -475,6 +608,17 @@ const createActionContractSchema = z.object({
     );
     addRouteTopologyIssue(
       {
+        routeTopology: value.routeTopology ?? value.metadata.routeTopology,
+        arrivalLocationLabel:
+          value.arrivalLocationLabel ?? value.metadata.arrivalLocationLabel,
+      },
+      ctx,
+    );
+    addGpxImportIssue(
+      {
+        geometrySource: value.geometry?.geometrySource,
+        manualDrawing: value.geometry,
+        preparationData: value.metadata.preparationData,
         routeTopology: value.routeTopology ?? value.metadata.routeTopology,
         arrivalLocationLabel:
           value.arrivalLocationLabel ?? value.metadata.arrivalLocationLabel,

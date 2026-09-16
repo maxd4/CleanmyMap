@@ -95,6 +95,8 @@ function confidenceFromSource(source: ActionGeometrySource): number {
   switch (source) {
     case "manual":
       return GEOMETRY_CONFIDENCE.MANUAL_DRAWING;
+    case "gpx_import":
+      return GEOMETRY_CONFIDENCE.GPX_IMPORT;
     case "reference":
       return GEOMETRY_CONFIDENCE.REFERENCE_GEOMETRY;
     case "routed":

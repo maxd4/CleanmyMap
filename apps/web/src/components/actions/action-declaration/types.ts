@@ -1,5 +1,7 @@
 import type {
  ActionMegotsCondition,
+ ActionGpxImportMetadata,
+ ActionLocationCoordinates,
  ActionRecordType,
  ActionRouteTopology,
  ActionWasteMeasurementMethod,
@@ -64,6 +66,8 @@ export type FormState = {
  durationMinutes: string;
  routeTargetDistanceKm: string;
  routeTargetDistanceKmManuallySet: boolean;
+ midRouteCoordinates?: ActionLocationCoordinates | null;
+ arrivalCoordinates?: ActionLocationCoordinates | null;
  eventStartTime: string;
  eventEndTime: string;
  notes: string;
@@ -79,6 +83,7 @@ export type FormState = {
  visionFillLevel:"" |"25" |"50" |"75" |"100";
  visionDensity:"" |"sec" |"humide_dense" |"mouille";
   operationalRoute?: OperationalRoute | null;
+  gpxImport?: ActionGpxImportMetadata | null;
   routeCalibrationContext?: RouteCalibrationContext | null;
   plannerProof?: RoutePlannerProof | null;
 };
@@ -94,6 +99,7 @@ export type ValidationIssue = {
  |"actionDate"
  |"locationLabel"
  |"manualDrawing"
+ |"gpxImport"
  |"wasteKg"
  |"volunteersCount"
  |"eventStartTime"
