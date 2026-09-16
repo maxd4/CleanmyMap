@@ -57,11 +57,11 @@ export function ChannelButton({
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
-            <span className={`block text-[10px] font-black uppercase tracking-widest leading-none ${isLight ? "tracking-[0.18em]" : ""}`}>
+            <span className={`block cmm-text-caption font-black uppercase tracking-widest leading-none ${isLight ? "tracking-[0.18em]" : ""}`}>
               {label}
             </span>
             <span
-              className={`mt-1 block text-[10px] leading-tight ${
+              className={`mt-1 block cmm-text-caption leading-tight ${
                 active
                   ? "text-white"
                   : isLight
@@ -74,7 +74,7 @@ export function ChannelButton({
           </div>
           {count !== undefined ? (
             <span
-              className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest ${
+              className={`rounded-full px-2 py-0.5 cmm-text-caption font-black uppercase tracking-widest ${
                 active
                   ? "bg-white/15 text-white"
                   : isLight

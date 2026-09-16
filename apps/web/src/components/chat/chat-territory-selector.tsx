@@ -26,7 +26,7 @@ export function ChatTerritorySelector({
   return (
     <div className="space-y-2 rounded-2xl border border-slate-200/70 bg-white/70 p-3 dark:border-slate-700/70 dark:bg-slate-900/60">
       <label className="block space-y-1.5">
-        <span className={`block text-[10px] font-black uppercase tracking-[0.16em] ${isLight ? "text-slate-500" : "text-slate-500"}`}>
+        <span className={`block cmm-text-caption font-black uppercase tracking-[0.16em] ${isLight ? "text-slate-500" : "text-slate-500"}`}>
           Territoire consulté
         </span>
         <select
@@ -43,11 +43,11 @@ export function ChatTerritorySelector({
         </select>
       </label>
       {profileDefaultZone ? (
-        <p className="text-[10px] leading-4 text-slate-500">
+        <p className="cmm-text-caption leading-4 text-slate-500">
           Territoire par défaut : {profileDefaultZone}. Ce choix ponctuel ne modifie pas votre profil.
         </p>
       ) : (
-        <p className="text-[10px] leading-4 text-slate-500">
+        <p className="cmm-text-caption leading-4 text-slate-500">
           Choisissez une zone valide pour consulter et écrire dans son fil.
         </p>
       )}

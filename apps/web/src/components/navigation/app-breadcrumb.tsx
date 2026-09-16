@@ -29,7 +29,7 @@ export function AppBreadcrumb({ currentProfile, profileLabel }: AppBreadcrumbPro
  return (
  <nav
  aria-label="Breadcrumb"
- className="flex w-full items-center gap-1.5 rounded-2xl border border-white/40 bg-white/80 px-3 py-2 cmm-text-caption cmm-text-muted shadow-sm backdrop-blur-md"
+ className="flex w-full flex-wrap items-center gap-1.5 rounded-2xl border border-white/40 bg-white/80 px-3 py-2 cmm-text-caption cmm-text-muted shadow-sm backdrop-blur-md"
  >
 <Link
  href={DASHBOARD_ROUTE}
@@ -47,13 +47,13 @@ export function AppBreadcrumb({ currentProfile, profileLabel }: AppBreadcrumbPro
 
  <span className="text-slate-300">/</span>
 
- <span className="max-w-[80px] truncate cmm-text-muted">{profileLabel}</span>
+ <span className="min-w-0 break-words cmm-text-muted">{profileLabel}</span>
 
  {activeSpace && (
  <>
  <span className="text-slate-300">/</span>
  <span className="text-base leading-none">{activeSpace.icon}</span>
- <span className="max-w-[90px] truncate font-medium cmm-text-secondary">
+ <span className="min-w-0 break-words font-medium cmm-text-secondary">
  {activeSpace.label[locale]}
  </span>
  </>
@@ -62,7 +62,7 @@ export function AppBreadcrumb({ currentProfile, profileLabel }: AppBreadcrumbPro
  {activeItem && (
  <>
  <span className="text-slate-300">/</span>
- <span className="max-w-[120px] truncate font-semibold text-emerald-800">
+ <span className="min-w-0 break-words font-semibold text-emerald-800">
  {activeItem.label[locale]}
  </span>
  </>

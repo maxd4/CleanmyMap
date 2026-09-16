@@ -39,7 +39,7 @@ export function AdminOperationsAuditPanel({
                     </p>
                   </div>
                   <span
-                    className={`rounded-full px-2 py-1 text-[11px] font-semibold ${
+                    className={`rounded-full px-2 py-1 cmm-text-caption font-semibold ${
                       entry.outcome === "success"
                         ? "bg-emerald-100 text-emerald-800"
                         : "bg-rose-100 text-rose-800"

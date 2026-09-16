@@ -66,7 +66,7 @@ export function MapSidebarAid() {
               href="/methodologie"
               tone="secondary"
               variant="pill"
-              className="w-full justify-center px-5 py-3 text-[10px] font-black uppercase tracking-[0.18em] gap-2"
+              className="w-full justify-center px-5 py-3 cmm-text-small font-black uppercase tracking-[0.18em] gap-2"
             >
               Ouvrir la méthodologie
               <ExternalLink size={14} />

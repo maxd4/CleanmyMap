@@ -34,10 +34,10 @@ export default async function ParcoursRootPage() {
                 }
               ].map((item, i) => (
                 <article key={i} className="rounded-2xl border border-amber-200/40 bg-amber-50/80 p-5">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-600/70">
+                  <p className="cmm-text-caption font-black uppercase tracking-widest text-amber-600/70">
                     {item.label}
                   </p>
-                  <p className="mt-2 text-xs text-slate-700/80 leading-relaxed">
+                  <p className="mt-2 cmm-text-caption text-slate-700/80 leading-relaxed">
                     {item.desc}
                   </p>
                 </article>

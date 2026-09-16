@@ -35,7 +35,7 @@ export const ChatContextSidebar = memo(function ChatContextSidebar({
           </div>
           <div>
             <h3 className={`text-sm font-black ${isLight ? "text-slate-800" : "text-slate-200"}`}>Bonnes pratiques</h3>
-            <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-slate-400"}`}>Pour des échanges utiles et respectueux</p>
+            <p className={`cmm-text-caption ${isLight ? "text-slate-500" : "text-slate-400"}`}>Pour des échanges utiles et respectueux</p>
           </div>
         </div>
         <ul className="space-y-2 mb-4">
@@ -63,7 +63,7 @@ export const ChatContextSidebar = memo(function ChatContextSidebar({
           </div>
           <div>
             <h3 className={`text-sm font-black ${isLight ? "text-slate-800" : "text-slate-200"}`}>Modèles rapides</h3>
-            <p className={`text-[10px] ${isLight ? "text-slate-500" : "text-slate-400"}`}>Gagnez du temps avec nos modèles</p>
+            <p className={`cmm-text-caption ${isLight ? "text-slate-500" : "text-slate-400"}`}>Gagnez du temps avec nos modèles</p>
           </div>
         </div>
         <div className="space-y-2">

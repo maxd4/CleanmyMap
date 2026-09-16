@@ -96,8 +96,8 @@ export default async function PartnersDashboardPage() {
             </div>
             <div className="space-y-1">
               <p className="text-3xl font-black text-white">{card.val}</p>
-              <p className="text-[9px] font-black uppercase tracking-widest text-white/20">{card.label}</p>
-              {card.sub && <p className="text-[9px] font-bold text-amber-400/60 mt-1">{card.sub}</p>}
+              <p className="cmm-text-caption font-black uppercase tracking-widest text-white/60">{card.label}</p>
+              {card.sub && <p className="cmm-text-caption font-bold text-amber-400/80 mt-1">{card.sub}</p>}
             </div>
           </div>
         ))}
@@ -136,7 +136,7 @@ export default async function PartnersDashboardPage() {
               "Documenter chaque décision et sa date dans les données de modération",
             ].map((item, i) => (
               <li key={i} className="flex items-center gap-4 p-5 rounded-2xl bg-white/5 border border-white/5 group hover:bg-white/[0.07] transition-all">
-                <span className="w-8 h-8 rounded-lg bg-slate-400/10 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-slate-400 group-hover:text-black transition-all">0{i+1}</span>
+                <span className="w-8 h-8 rounded-lg bg-slate-400/10 flex items-center justify-center cmm-text-caption font-black text-slate-400 group-hover:bg-slate-400 group-hover:text-black transition-all">0{i+1}</span>
                 <span className="text-sm font-medium text-white/60 group-hover:text-white transition-colors">{item}</span>
               </li>
             ))}

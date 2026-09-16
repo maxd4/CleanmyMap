@@ -121,7 +121,7 @@ export function AdminHeroStrip({
             <Icon size={22} className="text-amber-100" />
           </div>
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-white">
+            <p className="cmm-text-caption font-black uppercase tracking-[0.24em] text-white">
               {eyebrow}
             </p>
             <p className="mt-1 text-sm font-medium text-white">
@@ -161,7 +161,7 @@ export function AdminPillLink({
     <Link
       href={href}
       className={cn(
-        "inline-flex h-11 items-center justify-center rounded-full border px-4 text-[11px] font-black uppercase tracking-[0.18em] transition hover:-translate-y-0.5",
+        "inline-flex h-11 items-center justify-center rounded-full border px-4 cmm-text-caption font-black uppercase tracking-[0.18em] transition hover:-translate-y-0.5",
         subdued
           ? "border-white/12 bg-white/10 text-white hover:border-white/20 hover:bg-white/14"
           : "border-stone-200/80 bg-white text-stone-900 shadow-[0_10px_24px_-18px_rgba(0,0,0,0.35)] hover:border-amber-300/60",
@@ -193,7 +193,7 @@ export function AdminSectionHeader({
         subtitle={description}
         action={action}
         className={className}
-        eyebrowClassName="text-[11px] font-black uppercase tracking-[0.22em] text-stone-900/80"
+        eyebrowClassName="cmm-text-caption font-black uppercase tracking-[0.22em] text-stone-900/80"
         subtitleClassName="text-sm text-stone-600"
       />
     );
@@ -207,7 +207,7 @@ export function AdminSectionHeader({
       action={action}
       titleSize="sm"
       className={className}
-      eyebrowClassName="text-[11px] font-black uppercase tracking-[0.22em] text-stone-900/80"
+      eyebrowClassName="cmm-text-caption font-black uppercase tracking-[0.22em] text-stone-900/80"
       subtitleClassName="text-sm text-stone-600"
     />
   );
@@ -255,7 +255,7 @@ export function AdminMetricCard({
       }
       footer={
         forecastLabel ? (
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-stone-500">
+          <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-stone-500">
             {forecastLabel}
           </p>
         ) : null
@@ -471,7 +471,7 @@ export function AdminInfoBanner({
           <div className="min-w-0">
             <p
               className={cn(
-                "text-[11px] font-black uppercase tracking-[0.22em]",
+                "cmm-text-caption font-black uppercase tracking-[0.22em]",
                 textClasses.eyebrow,
               )}
             >
@@ -510,7 +510,7 @@ export function AdminInfoBanner({
             <span
               key={chip}
               className={cn(
-                "inline-flex rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em]",
+                "inline-flex rounded-full px-3 py-1.5 cmm-text-caption font-black uppercase tracking-[0.16em]",
                 textClasses.chip,
               )}
             >
@@ -556,7 +556,7 @@ export function AdminProfileSwitchStrip({
                 key={item}
                 href={getHref(item)}
                 className={cn(
-                  "inline-flex items-center rounded-full border px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] transition hover:-translate-y-0.5",
+                  "inline-flex items-center rounded-full border px-4 py-2 cmm-text-caption font-black uppercase tracking-[0.18em] transition hover:-translate-y-0.5",
                   isActive
                     ? "border-amber-100/50 bg-amber-100/32 text-white shadow-[0_8px_18px_-12px_rgba(0,0,0,0.32)]"
                     : "border-white/10 bg-white/8 text-white hover:border-white/20 hover:bg-white/12 hover:text-white",
@@ -568,7 +568,7 @@ export function AdminProfileSwitchStrip({
           })}
         </div>
 
-        <span className="inline-flex items-center rounded-full border border-white/12 bg-white/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-white">
+        <span className="inline-flex items-center rounded-full border border-white/12 bg-white/10 px-4 py-2 cmm-text-caption font-black uppercase tracking-[0.18em] text-white">
           {label}
         </span>
       </div>

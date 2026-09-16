@@ -41,7 +41,7 @@ export function ChatDegradedState({ error, tone = "dark" }: ChatDegradedStatePro
         <p className={`text-xs font-bold mb-1 ${isLight ? "text-rose-700" : "text-rose-700 dark:text-rose-500"}`}>
           {error?.message || "Erreur inconnue"}
         </p>
-        <p className={`text-[10px] opacity-80 italic ${isLight ? "text-rose-600" : "text-rose-600 dark:text-rose-400"}`}>
+        <p className={`cmm-text-caption opacity-80 ${isLight ? "text-rose-600" : "text-rose-600 dark:text-rose-400"}`}>
           {error?.message?.includes("profiles")
             ? "Vérifiez que la migration des profils et de la messagerie a bien été appliquée."
             : "Vérifiez votre console (F12) et assurez-vous que votre profil est synchronisé."}
@@ -85,7 +85,7 @@ export function ChatEmptyState({
           {emptyState.description}
         </p>
         <div className={`mt-4 rounded-2xl border p-4 text-left shadow-sm ${isLight ? "border-rose-100/70 bg-rose-50/50" : "border-pink-100/40 bg-[rgba(255,248,251,0.96)] dark:border-slate-800 dark:bg-slate-950/80"}`}>
-          <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-rose-600" : "text-pink-600"}`}>
+          <p className={`cmm-text-caption font-black uppercase tracking-[0.18em] ${isLight ? "text-rose-600" : "text-pink-600"}`}>
             {emptyState.starterTitle}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -101,7 +101,7 @@ export function ChatEmptyState({
             ))}
           </div>
           <div className={`mt-4 rounded-2xl border p-4 text-left ${isLight ? "border-rose-100/70 bg-white/90" : "border-pink-100/40 bg-pink-50/80 dark:border-slate-800 dark:bg-slate-950/70"}`}>
-            <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-rose-600" : "text-pink-600"}`}>
+            <p className={`cmm-text-caption font-black uppercase tracking-[0.18em] ${isLight ? "text-rose-600" : "text-pink-600"}`}>
               {locale === "fr" ? "Format recommandé" : "Recommended format"}
             </p>
             <p className={`mt-2 text-sm font-semibold ${isLight ? "text-slate-800" : "cmm-text-primary"}`}>
@@ -111,7 +111,7 @@ export function ChatEmptyState({
               {emptyState.purposeTags.map((tag: string) => (
                 <span
                   key={tag}
-                  className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${isLight ? "border-rose-200 bg-white text-rose-700" : "border-pink-200/30 bg-pink-50 text-pink-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"}`}
+                  className={`inline-flex rounded-full border px-2.5 py-1 cmm-text-caption font-bold uppercase tracking-[0.14em] ${isLight ? "border-rose-200 bg-white text-rose-700" : "border-pink-200/30 bg-pink-50 text-pink-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"}`}
                 >
                   {tag}
                 </span>
@@ -122,13 +122,13 @@ export function ChatEmptyState({
             {emptyState.composerHint}
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${isLight ? "bg-rose-100 text-rose-700" : "bg-pink-100 text-pink-700 dark:bg-slate-900 dark:text-slate-300"}`}>
+            <span className={`rounded-full px-3 py-1 cmm-text-caption font-bold uppercase tracking-[0.16em] ${isLight ? "bg-rose-100 text-rose-700" : "bg-pink-100 text-pink-700 dark:bg-slate-900 dark:text-slate-300"}`}>
               {emptyState.audienceLabel}
             </span>
-            <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${isLight ? "bg-rose-100 text-rose-700" : "bg-pink-100 text-pink-700 dark:bg-slate-900 dark:text-slate-300"}`}>
+            <span className={`rounded-full px-3 py-1 cmm-text-caption font-bold uppercase tracking-[0.16em] ${isLight ? "bg-rose-100 text-rose-700" : "bg-pink-100 text-pink-700 dark:bg-slate-900 dark:text-slate-300"}`}>
               {emptyState.visibilityLabel}
             </span>
-            <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${isLight ? "bg-rose-100 text-rose-700" : "bg-pink-100 text-pink-700 dark:bg-slate-900 dark:text-slate-300"}`}>
+            <span className={`rounded-full px-3 py-1 cmm-text-caption font-bold uppercase tracking-[0.16em] ${isLight ? "bg-rose-100 text-rose-700" : "bg-pink-100 text-pink-700 dark:bg-slate-900 dark:text-slate-300"}`}>
               {emptyState.channelGoal}
             </span>
           </div>

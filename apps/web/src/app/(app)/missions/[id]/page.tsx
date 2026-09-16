@@ -68,7 +68,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
                 <div className="group rounded-[2rem] border border-white/5 bg-white/5 p-6 transition-all hover:border-emerald-400/30">
                   <div className="mb-3 flex items-center gap-2 text-emerald-400">
                     <MapPin size={14} />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Distance</span>
+                    <span className="cmm-text-caption font-black uppercase tracking-widest">Distance</span>
                   </div>
                   <p className="text-3xl font-black text-white">
                     {formatMissionDistance(m.distance_m)}
@@ -78,7 +78,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
                 <div className="group rounded-[2rem] border border-white/5 bg-white/5 p-6 transition-all hover:border-sky-400/30">
                   <div className="mb-3 flex items-center gap-2 text-sky-400">
                     <Clock size={14} />
-                    <span className="text-[9px] font-black uppercase tracking-widest">Durée</span>
+                    <span className="cmm-text-caption font-black uppercase tracking-widest">Durée</span>
                   </div>
                   <p className="text-3xl font-black text-white">
                     {formatMissionDuration(m.duration_s)}
@@ -89,7 +89,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
           )}
 
           <div className={cn("rounded-[2.5rem] border bg-white/5 p-8 transition-all duration-500 border-white/5 shadow-sm")}>
-            <h4 className="mb-6 text-[10px] font-black uppercase tracking-[0.3em] text-white/20">
+            <h4 className="mb-6 cmm-text-caption font-black uppercase tracking-[0.3em] text-white/60">
               Informations Logistiques
             </h4>
             <ul className="space-y-6">
@@ -98,7 +98,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
                   <Clock size={16} />
                 </div>
                 <div className="space-y-0.5">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-white/20">Départ le</p>
+                  <p className="cmm-text-caption font-black uppercase tracking-widest text-white/60">Départ le</p>
                   <p className="text-sm font-bold text-white">
                     {formatMissionTimestamp(m.started_at)}
                   </p>
@@ -110,7 +110,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
                   <MapPin size={16} />
                 </div>
                 <div className="space-y-0.5">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-white/20">Fin le</p>
+                  <p className="cmm-text-caption font-black uppercase tracking-widest text-white/60">Fin le</p>
                   <p className="text-sm font-bold text-white">
                     {formatMissionTimestamp(m.ended_at)}
                   </p>
@@ -123,7 +123,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
         <div className="space-y-6 lg:col-span-2">
           <div className="group relative overflow-hidden rounded-[3rem] border border-white/10 shadow-2xl">
             <DeferredMissionMap points={points} />
-            <div className="absolute right-6 top-6 rounded-2xl border border-white/10 bg-black/40 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white opacity-0 backdrop-blur-xl transition-opacity group-hover:opacity-100">
+            <div className="absolute right-6 top-6 rounded-2xl border border-white/10 bg-black/40 px-4 py-2 cmm-text-caption font-black uppercase tracking-widest text-white opacity-0 backdrop-blur-xl transition-opacity group-hover:opacity-100">
               Tracé GPS enregistré
             </div>
           </div>

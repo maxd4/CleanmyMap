@@ -51,7 +51,7 @@ export function ChatActionReferenceCard({
     )}>
       <div className="space-y-3">
         <div>
-          <p className="text-[9px] font-black uppercase tracking-[0.18em] text-sky-500">Action partagée</p>
+          <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-sky-500">Action partagée</p>
           <h3 className={cn("mt-1 text-base font-black", isLight ? "text-sky-950" : "text-sky-100")}>{data.title}</h3>
         </div>
         <div className="grid gap-2 text-xs text-slate-500">
@@ -67,14 +67,14 @@ export function ChatActionReferenceCard({
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/actions/map?actionId=${encodeURIComponent(data.id)}`}
-            className="inline-flex items-center rounded-full bg-sky-600 px-3 py-2 text-[10px] font-black uppercase tracking-wide text-white transition hover:bg-sky-700"
+            className="inline-flex items-center rounded-full bg-sky-600 px-3 py-2 cmm-text-caption font-black uppercase tracking-wide text-white transition hover:bg-sky-700"
           >
             Ouvrir l’action
           </Link>
           {data.groupJoinEnabled ? (
             <Link
               href={buildJoinHref(data.id)}
-              className="inline-flex items-center rounded-full border border-emerald-300 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-wide text-emerald-700 transition hover:bg-emerald-50"
+            className="inline-flex items-center rounded-full border border-emerald-300 bg-white px-3 py-2 cmm-text-caption font-black uppercase tracking-wide text-emerald-700 transition hover:bg-emerald-50"
             >
               Rejoindre l’action
             </Link>

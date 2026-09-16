@@ -58,6 +58,6 @@ describe("top ribbon dropdown sizing contract", () => {
     expect(accountSource).toContain("<UserPlus className=\"h-4 w-4 xl:hidden\"");
     expect(accountSource).not.toContain("active:scale-");
     expect(identitySource).toContain("h-11 min-h-11 w-11 min-w-11");
-    expect(identitySource).toContain("hidden truncate font-bold xl:inline");
+    expect(identitySource).toContain("hidden min-w-0 break-words font-bold xl:inline");
   });
 });

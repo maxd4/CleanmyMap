@@ -167,7 +167,7 @@ export function ChatActionShareDialog({
       <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-[1.75rem] border border-sky-100 bg-white p-5 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-600">Messagerie</p>
+            <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-sky-600">Messagerie</p>
             <h2 id="share-action-title" className="mt-1 text-xl font-black text-slate-900">{shareKind === "result" ? "Partager un résultat" : "Partager une invitation"}</h2>
           </div>
           <button type="button" onClick={onClose} aria-label="Fermer" className="rounded-full p-2 text-slate-500 hover:bg-slate-100"><X size={18} /></button>
@@ -210,7 +210,7 @@ export function ChatActionShareDialog({
                     <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
                 </select>
-                <span className="block text-[10px] text-slate-500">Ce choix ponctuel ne modifie pas votre profil.</span>
+                <span className="block cmm-text-caption text-slate-500">Ce choix ponctuel ne modifie pas votre profil.</span>
               </label>
             ) : null}
             <div className="space-y-2 rounded-xl border border-dashed border-slate-200 p-3">

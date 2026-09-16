@@ -106,14 +106,14 @@ export default async function ActionsHistoryPage() {
         eyebrow="Alerte prioritaire"
         title="Traiter en premier les lignes grade C pour limiter les biais d’analyse."
         titleSize="sm"
-        eyebrowClassName="text-[11px] font-semibold uppercase tracking-[0.14em] text-rose-800"
+        eyebrowClassName="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-rose-800"
         subtitleClassName="text-sm text-rose-800"
        />
        <SectionHeader
         eyebrow="Action recommandée"
         title="Appliquer le filtre “à corriger” puis corriger les champs géoloc/trace en priorité."
         titleSize="sm"
-        eyebrowClassName="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-800"
+        eyebrowClassName="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-emerald-800"
         subtitleClassName="text-sm text-emerald-900"
        />
       </div>
@@ -148,7 +148,7 @@ export default async function ActionsHistoryPage() {
     title="L&apos;export PDF est disponible directement dans la liste filtrable."
     titleSize="sm"
     className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-    eyebrowClassName="text-[11px] font-semibold uppercase tracking-[0.14em] cmm-text-muted"
+    eyebrowClassName="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted"
     subtitleClassName="mt-2 cmm-text-small cmm-text-secondary"
    />
 

@@ -47,7 +47,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
         mode="blur"
         lockedPreview={
           <div className="rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.26)_100%)] p-6 shadow-[0_18px_42px_-26px_rgba(124,45,18,0.30)]">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-amber-100">
+            <p className="cmm-text-caption font-bold uppercase tracking-wide text-amber-100">
               Profil {normalized}
             </p>
             <p className="mt-2 text-sm text-amber-50/72">

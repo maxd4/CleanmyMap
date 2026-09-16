@@ -152,7 +152,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
                 size={16}
               />
             </span>
-            <span className="cmm-ribbon-text hidden truncate font-bold xl:inline">
+            <span className="cmm-ribbon-text hidden min-w-0 break-words font-bold xl:inline">
               {getProfileLabel(identity.activeRole, locale)}
             </span>
             <ChevronDown
@@ -165,7 +165,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
             </button>
           )}
         >
-            <p className="px-2 pb-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-300">
+            <p className="px-2 pb-2 cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-300">
               {locale === "fr" ? "UTILISER LE SITE COMME" : "USE THE SITE AS"}
             </p>
             <ul className="space-y-1" role="none">
@@ -198,7 +198,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
                           size={17}
                         />
                       </span>
-                      <span className="min-w-0 flex-1 truncate">
+                      <span className="min-w-0 flex-1 break-words">
                         {getProfileLabel(profile, locale)}
                       </span>
                       {isActive ? (
@@ -214,7 +214,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
 
             <div role="separator" className="my-3 border-t border-white/12" />
             <div className="space-y-2 px-2">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-300">
+              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-300">
                 {locale === "fr" ? "NIVEAU DE COMPTE" : "ACCOUNT LEVEL"}
               </p>
               <p className="text-sm font-bold text-white">
@@ -252,7 +252,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
                             size={17}
                           />
                         </span>
-                        <span className="min-w-0 flex-1 truncate">
+                        <span className="min-w-0 flex-1 break-words">
                           {getProfileLabel(profile, locale)}
                         </span>
                         {isActive ? (
@@ -315,7 +315,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
             </button>
           )}
         >
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-white">
+            <p className="cmm-text-caption font-semibold uppercase tracking-wide text-white">
               Badges d&apos;engagement
             </p>
             <ul className="mt-2 space-y-1">
