@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   MAINTENANCE_JOB_IDS,
   MAINTENANCE_JOB_REGISTRY,
+  isWeeklySnapshotProduced,
   runMaintenanceJobs,
   type MaintenanceJobDefinition,
 } from "./maintenance-job-registry";
@@ -51,6 +52,39 @@ function makeJobs(params: {
 }
 
 describe("maintenance job registry", () => {
+  it("ne considère produit que le snapshot hebdomadaire de la bonne version et période", () => {
+    expect(
+      isWeeklySnapshotProduced(
+        {
+          snapshotDate: "2026-09-14",
+          version: "map-pollution-score-references-2026.09-v6-pre77-approved-visible-population",
+        },
+        "map-pollution-score-references-2026.09-v6-pre77-approved-visible-population",
+        "2026-09-14",
+      ),
+    ).toBe(true);
+    expect(
+      isWeeklySnapshotProduced(
+        {
+          snapshotDate: "2026-09-14",
+          version: "map-pollution-score-references-2026.09-v1",
+        },
+        "map-pollution-score-references-2026.09-v6-pre77-approved-visible-population",
+        "2026-09-14",
+      ),
+    ).toBe(false);
+    expect(
+      isWeeklySnapshotProduced(
+        {
+          snapshotDate: "2026-09-07",
+          version: "map-pollution-score-references-2026.09-v6-pre77-approved-visible-population",
+        },
+        "map-pollution-score-references-2026.09-v6-pre77-approved-visible-population",
+        "2026-09-14",
+      ),
+    ).toBe(false);
+  });
+
   it("déclare exactement les quatre jobs et leurs cadences", () => {
     expect(MAINTENANCE_JOB_REGISTRY.map((job) => job.id)).toEqual([
       ...MAINTENANCE_JOB_IDS,

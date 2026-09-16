@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  buildPollutionScoreReferenceSnapshot,
   MAP_POLLUTION_REFERENCES_VERSION,
   loadPollutionScoreReferencesForMap,
   runPollutionScoreReferencesJob,
@@ -59,6 +60,9 @@ describe("pollution score reference snapshot V2", () => {
     expect(second.status).toBe("reused");
     expect(loadReferences).toHaveBeenCalledOnce();
     expect(writeSnapshot).toHaveBeenCalledOnce();
+    expect(first.snapshot.snapshotDate).toBe("2026-09-07");
+    expect(first.snapshot.version).toBe(MAP_POLLUTION_REFERENCES_VERSION);
+    expect(first.snapshot.payload.source).toBe("action_pollution_score_references_v2");
     expect(first.snapshot.payload.references).toEqual({
       global,
       departments: references.departmentReferences,
@@ -66,6 +70,20 @@ describe("pollution score reference snapshot V2", () => {
     expect(first.snapshot.meta.population).toBe(
       "status=approved AND moderation_visibility=visible",
     );
+  });
+
+  it("persists only calibration references, never per-action scores, colors or projections", () => {
+    const snapshot = buildPollutionScoreReferenceSnapshot({
+      now: new Date("2026-09-14T03:20:00.000Z"),
+      references,
+    });
+
+    expect(snapshot.payload).toEqual({
+      references: { global, departments: references.departmentReferences },
+      source: "action_pollution_score_references_v2",
+      weekStart: "2026-09-14",
+    });
+    expect(JSON.stringify(snapshot.payload)).not.toMatch(/"(?:actionId|score|color|projection)"/i);
   });
 
   it("uses the V2 RPC fallback when the weekly snapshot is missing", async () => {

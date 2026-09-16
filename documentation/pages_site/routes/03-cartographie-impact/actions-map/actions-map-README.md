@@ -141,8 +141,14 @@ La référence globale est capturée par le job hebdomadaire
 `MAP_POLLUTION_REFERENCES` dans le snapshot public
 `map-pollution-score-references`. La carte lit cette petite référence
 persistée ; si elle est absente, le contrat de lecture expose explicitement
-un fallback RPC temporaire. Ce snapshot ne fige ni le score d'une action, ni
-sa projection temporelle, ni sa couleur ou la légende.
+un fallback RPC temporaire en mode dégradé uniquement. La version attendue est
+`map-pollution-score-references-2026.09-v6-pre77-approved-visible-population` et
+la source du payload est `action_pollution_score_references_v2`. En régime
+nominal, `GET /api/actions/map/pollution-score-references` retourne donc
+`source = weekly_snapshot`, avec une date de snapshot et une date de génération.
+Ce snapshot ne fige ni le score d'une action, ni sa projection temporelle, ni
+sa couleur ou la légende : scores, couleurs et projection sont calculés à la
+lecture par le runtime.
 
 Formules :
 
