@@ -79,6 +79,19 @@ async function hasWeeklySnapshot(
   period: string,
 ): Promise<boolean> {
   const snapshot = await readLatestPublicSurfaceSnapshot(snapshotKey);
+  return isWeeklySnapshotProduced(snapshot, version, period);
+}
+
+type WeeklySnapshotIdentity = {
+  snapshotDate: string;
+  version: string;
+};
+
+export function isWeeklySnapshotProduced(
+  snapshot: WeeklySnapshotIdentity | null | undefined,
+  version: string,
+  period: string,
+): boolean {
   return Boolean(
     snapshot &&
       snapshot.snapshotDate === period &&
