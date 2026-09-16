@@ -127,7 +127,7 @@ export function evaluateWeatherRisk(input: {
       ? [
           "EPI complet pluie/vent",
           "Gants renforces",
-          "Hydratation obligatoire",
+          "Hydratation à envisager selon la durée et les conditions",
           "Couverture thermique",
         ]
       : level === "orange"
@@ -137,20 +137,21 @@ export function evaluateWeatherRisk(input: {
   const constraints =
     level === "rouge"
       ? [
-          "Intervention courte <=45 min",
+          "Durée indicative : jusqu’à 45 min",
           "Pauses frequentes",
-          "Binomes obligatoires",
+          "Binôme à envisager selon les conditions",
         ]
       : level === "orange"
         ? [
-            "Intervention <=90 min",
-            "Pause toutes les 30 min",
-            "Binomes recommandes",
+            "Durée indicative : jusqu’à 90 min",
+            "Pauses à prévoir selon les conditions",
+            "Binôme à envisager selon les conditions",
           ]
         : [
             "Intervention standard",
-            "Pause toutes les 60 min",
-            "Brief securite initial",
+            "Durée indicative : 90 à 120 min",
+            "Pauses à prévoir selon la durée",
+            "Brief sécurité à envisager",
           ];
 
   return {

@@ -1,6 +1,5 @@
 import {
   CalendarDays,
-  Download,
   Droplets,
   Heart,
   Leaf,
@@ -8,7 +7,6 @@ import {
   Mountain,
   Package,
   Recycle,
-  Share2,
   ShieldCheck,
   Users,
   TriangleAlert,
@@ -71,7 +69,7 @@ export function buildPreparationHeroStats(
     },
     {
       icon: Package,
-      label: fr ? "Kit recommandé" : "Recommended kit",
+      label: fr ? "Kit à envisager" : "Kit to consider",
       value: gearPreview,
       note: fr ? "léger et pratique" : "light and practical",
     },
@@ -79,7 +77,7 @@ export function buildPreparationHeroStats(
       icon: Heart,
       label: fr ? "Niveau d'effort" : "Effort level",
       value: effortLabel,
-      note: fr ? "adapté à tous" : "suitable for most teams",
+      note: fr ? "à ajuster selon l’équipe et le terrain" : "adjust to the team and terrain",
     },
     {
       icon: Mountain,
@@ -118,7 +116,7 @@ export function buildPreparationKitSections(fr: boolean): PreparationKitSection[
       title: fr ? "Confort" : "Comfort",
       tone: "amber",
       items: [
-        { label: fr ? "Eau" : "Water", qty: "x1 L+" },
+        { label: fr ? "Eau" : "Water", qty: fr ? "selon les besoins" : "as needed" },
         { label: fr ? "Casquette / chapeau" : "Cap / hat", qty: "x1" },
         { label: fr ? "Crème solaire" : "Sunscreen", qty: "x1" },
       ],
@@ -220,7 +218,12 @@ export function buildUsefulBlocks(fr: boolean): UsefulBlock[] {
         { icon: Droplets, label: fr ? "Utilisez l'eau avec parcimonie" : "Use water sparingly" },
         { icon: Recycle, label: fr ? "Préférez des matériaux réutilisables" : "Prefer reusable materials" },
         { icon: Leaf, label: fr ? "Ne laissez aucun déchet sur place" : "Leave no litter behind" },
-        { icon: Heart, label: fr ? "Merci la nature vous dit merci !" : "Nature says thank you!" },
+        {
+          icon: Heart,
+          label: fr
+            ? "Laisser le lieu propre profite à la biodiversité et aux usagers."
+            : "Leaving the place clean helps biodiversity and other users.",
+        },
       ],
     },
   ];
@@ -229,24 +232,6 @@ export function buildUsefulBlocks(fr: boolean): UsefulBlock[] {
 export function buildQuickActions(fr: boolean): PreparationQuickAction[] {
   return [
     {
-      icon: Download,
-      tone: "emerald",
-      title: fr ? "Télécharger la checklist" : "Download the checklist",
-      description: fr
-        ? "La fiche récapitulative à imprimer ou à garder sous la main."
-        : "A concise sheet to print or keep close by.",
-      href: "/sections/reports",
-    },
-    {
-      icon: Package,
-      tone: "sky",
-      title: fr ? "Voir le matériel conseillé" : "See the recommended gear",
-      description: fr
-        ? "Une sélection d'équipements pratiques et responsables."
-        : "A selection of practical, responsible gear.",
-      href: "/sections/weather",
-    },
-    {
       icon: Recycle,
       tone: "violet",
       title: fr ? "Comprendre le tri" : "Understand sorting",
@@ -254,15 +239,6 @@ export function buildQuickActions(fr: boolean): PreparationQuickAction[] {
         ? "Mieux trier pour mieux valoriser chaque déchet collecté."
         : "Sort better to value every collected item.",
       href: "/sections/recycling",
-    },
-    {
-      icon: Share2,
-      tone: "amber",
-      title: fr ? "Partager la fiche" : "Share the sheet",
-      description: fr
-        ? "Diffuser cette fiche à vos amis et à votre équipe."
-        : "Share this sheet with your friends and team.",
-      href: "/sections/community",
     },
   ];
 }

@@ -116,7 +116,7 @@ export function PreparationKitCard({
           </span>
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700">
-              {fr ? "Kit recommandé" : "Recommended kit"}
+              {fr ? "Kit à envisager" : "Kit to consider"}
             </p>
             <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
               {fr ? "Essentiel léger et pratique" : "Lightweight, practical essentials"}

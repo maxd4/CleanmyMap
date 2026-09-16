@@ -15,9 +15,9 @@ import { formatDateTimeShort } from "@/components/sections/rubriques/helpers";
 export type WeatherRiskLevel = "vert" | "orange" | "rouge";
 
 export function getDurationLabel(level: WeatherRiskLevel): string {
-  if (level === "rouge") return "45 min max";
-  if (level === "orange") return "60-90 min";
-  return "90-120 min";
+  if (level === "rouge") return "Jusqu’à 45 min · durée indicative";
+  if (level === "orange") return "60 à 90 min · durée indicative";
+  return "90 à 120 min · durée indicative";
 }
 
 export function getCurrentWindowLabel(
@@ -97,8 +97,8 @@ export function getWeatherStateCopy({
         variant: "ready",
         title: fr ? "Conditions disponibles" : "Conditions available",
         description: fr
-          ? "Les conseils affichés ci-dessous sont basés sur les données météo courantes."
-          : "The advice below is based on the current weather data.",
+          ? "Les repères indicatifs ci-dessous s’appuient sur les données météo courantes."
+          : "The indicative guidance below is based on current weather data.",
         meta: fr
           ? `Zone analysée: ${selectedZoneLabel}.`
           : `Analyzed area: ${selectedZoneLabel}.`,
@@ -182,10 +182,10 @@ export function getVigilanceLabel(level: WeatherRiskLevel, fr: boolean): string 
 
 export function getReportLabel(level: WeatherRiskLevel, fr: boolean): string {
   if (level === "rouge") {
-    return fr ? "Oui, report recommandé" : "Yes, postpone";
+    return fr ? "À envisager selon les conditions" : "Consider based on conditions";
   }
   if (level === "orange") {
     return fr ? "À confirmer selon le créneau" : "Confirm based on the slot";
   }
-  return fr ? "Non" : "No";
+  return fr ? "Pas de signal identifié" : "No signal identified";
 }

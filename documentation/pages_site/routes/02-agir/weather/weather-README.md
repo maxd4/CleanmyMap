@@ -29,9 +29,16 @@ La page sert à :
 
 1. choisir une commune, une ville ou un lieu précis ;
 2. consulter les prévisions horaires sur 7 jours ;
-3. identifier un créneau conseillé ;
+3. repérer un créneau favorable selon les données ;
 4. adapter la durée et le kit ;
-5. vérifier les consignes de sécurité avant départ.
+5. vérifier les repères de prudence avant le départ.
+
+Les données météo affichées sont des observations et des prévisions fournies
+par le service météo. Les niveaux, durées et listes d’équipement sont des
+calculs et des repères indicatifs internes destinés à aider la préparation.
+Ils ne constituent ni une prescription officielle, ni une règle réglementaire
+ou médicale : l’utilisateur décide selon le terrain, l’équipe et les
+conditions réelles.
 
 ## Contrat runtime
 
@@ -47,11 +54,11 @@ La page sert à :
 - hero centré ;
 - lieu sélectionné ;
 - sélecteur de lieu ;
-- carte de recommandations ;
+- carte de repères indicatifs ;
 - prévisions horaires ;
-- créneaux conseillés ;
+- créneaux favorables selon les données ;
 - préparation et logistique ;
-- consignes de sécurité.
+- conseils de prudence et de sécurité.
 
 ## États à documenter
 

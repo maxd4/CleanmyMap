@@ -93,7 +93,7 @@ export function PreparationGuide({
 
                     {index === 0 && recommendedWindow ? (
                       <div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 px-3 py-2 text-xs font-medium text-emerald-900">
-                        {fr ? "Créneau conseillé" : "Suggested slot"}: {" "}
+                        {fr ? "Créneau favorable selon les données" : "Favorable slot based on the data"}: {" "}
                         {getCurrentWindowLabel(recommendedWindow.from, recommendedWindow.to, fr ? "fr" : "en")}
                       </div>
                     ) : null}
