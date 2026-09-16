@@ -3,6 +3,7 @@ import {
   buildActionDataContract,
   mapItemDrawing,
   mapItemShouldRenderPoint,
+  mapItemVolunteersCount,
   normalizeCreatePayload,
   toActionMapItem,
   toContractCreatePayload,
@@ -67,6 +68,9 @@ it("maps polygon geometry to map payload without breaking point fields", () => {
   expect(mapItem.contract?.geometry.origin).toBe("manual");
   expect(mapItem.waste_pollution_score).toBe(63);
   expect(mapItem.cigarette_butts_pollution_score).toBe(6);
+  expect(mapItem.volunteers_count).toBe(4);
+  expect(mapItem.duration_minutes).toBe(55);
+  expect(mapItemVolunteersCount(mapItem)).toBe(4);
 });
 
 it("keeps geometry optional when normalizing create payload", () => {

@@ -27,6 +27,8 @@ export type LeafletClusterLike = {
 
 export const ACTION_TRACE_HIT_AREA_WEIGHT = 18;
 export const ACTION_TRACE_FIT_PADDING: [number, number] = [32, 32];
+/** Visual-only loading state; unavailable remains reserved for a real null score. */
+export const POLLUTION_SCORE_LOADING_COLOR = "#38bdf8";
 
 export type ShapeBasemapMode = "light" | "dark";
 export type ShapePollutionCategory = "black" | "other";
@@ -113,6 +115,7 @@ export function resolvePointColor(
   displayMode: CurrentPlaceStateMode = "projected_today",
   currentPlaceState: CurrentPlaceState | null = null,
   scoreScope: PollutionScoreScope = "global",
+  referencesLoading = false,
 ): string {
   const itemType = mapItemType(item);
   if (itemType === "clean_place") {
@@ -128,11 +131,17 @@ export function resolvePointColor(
     scoreScope,
   );
 
-  return resolvedScore === null
-    ? itemType === "spot"
+  if (resolvedScore === null) {
+    if (itemType === "action" && referencesLoading && !references) {
+      return POLLUTION_SCORE_LOADING_COLOR;
+    }
+
+    return itemType === "spot"
       ? TRASH_SPOTTER_NEUTRAL_COLOR
-      : POLLUTION_SCORE_UNAVAILABLE_COLOR
-    : resolveDynamicColor(resolvedScore);
+      : POLLUTION_SCORE_UNAVAILABLE_COLOR;
+  }
+
+  return resolveDynamicColor(resolvedScore);
 }
 
 export function resolvePointPollutionScore(

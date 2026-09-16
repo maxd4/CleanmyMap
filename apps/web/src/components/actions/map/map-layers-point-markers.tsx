@@ -41,7 +41,7 @@ export function SignalementMarkers({
   currentPlaceStateViews = [],
   scoreScope = "global",
 }: ActionPointLayerProps) {
-  const { references } = useActionPollutionScoreReferences();
+  const { references, isLoading: referencesLoading } = useActionPollutionScoreReferences();
   const now = new Date();
   const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
 
@@ -117,6 +117,7 @@ export function SignalementMarkers({
           displayMode,
           currentPlaceState,
           scoreScope,
+          referencesLoading && !references,
         );
         const geometry = resolveActionMapGeometryViewModel(item);
         const renderStyle = resolveGeometryRenderStyle(geometry);

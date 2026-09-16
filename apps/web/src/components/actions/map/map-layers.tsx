@@ -3,6 +3,7 @@
 export {
   ACTION_TRACE_FIT_PADDING,
   ACTION_TRACE_HIT_AREA_WEIGHT,
+  POLLUTION_SCORE_LOADING_COLOR,
   fitActionGeometryBounds,
   isTrashSpotterItem,
   resolvePointPollutionScore,

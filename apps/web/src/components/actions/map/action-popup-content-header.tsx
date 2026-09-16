@@ -152,7 +152,9 @@ export function ActionPopupContentHeader({
           ? actionProjection?.projectedPollutionScore ?? score
           : score);
     const displayedScoreLabel =
-      scoreUnavailable
+      scoreLoading
+        ? "Chargement du score"
+        : scoreUnavailable
         ? scoreScope === "department"
           ? "Score départemental indisponible"
           : "Score global indisponible"
@@ -201,7 +203,9 @@ export function ActionPopupContentHeader({
                   : "Pollution constatée avant l'action"}
               </p>
               <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-50">
-                {scoreUnavailable
+                {scoreLoading
+                  ? "…"
+                  : scoreUnavailable
                   ? "Indisponible"
                   : formatScorePercent(
                       Math.round(actionProjection?.historicalScore ?? score),
@@ -238,7 +242,9 @@ export function ActionPopupContentHeader({
         </div>
 
         <p className="cmm-text-caption font-semibold text-amber-700 dark:text-amber-300">
-          {scoreScope === "department"
+          {scoreLoading
+            ? "Référence du score en cours de chargement"
+            : scoreScope === "department"
             ? scoreUnavailable
               ? "Référence départementale insuffisante pour comparer cette action"
               : "Score relatif départemental · sans projection temporelle"

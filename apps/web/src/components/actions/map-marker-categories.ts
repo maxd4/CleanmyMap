@@ -4,6 +4,7 @@ import {
  mapItemObservedAt,
  mapItemPostActionPollutionScore,
  mapItemType,
+ mapItemVolunteersCount,
  mapItemWasteKg,
 } from"../../lib/actions/data-contract";
 import {
@@ -85,8 +86,7 @@ export function resolveItemPollutionScores(
  {
  wasteKg: mapItemWasteKg(item),
  cigaretteButts: mapItemCigaretteButts(item),
-      volunteersCount:
-        item.contract?.metadata.volunteersCount ?? item.volunteers_count,
+      volunteersCount: mapItemVolunteersCount(item),
  durationMinutes: item.contract?.metadata.durationMinutes ?? item.duration_minutes,
  actionType: mapItemType(item),
  status: item.status,

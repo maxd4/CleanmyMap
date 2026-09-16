@@ -17,6 +17,7 @@ export {
   mapItemType,
   mapItemWasteKg,
   mapItemCigaretteButts,
+  mapItemVolunteersCount,
   mapItemLocationLabel,
   mapItemCoordinates,
   mapItemObservedAt,

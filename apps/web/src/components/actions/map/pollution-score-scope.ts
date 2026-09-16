@@ -13,6 +13,9 @@ import {
   mapItemObservedAt,
   mapItemPostActionPollutionScore,
   mapItemType,
+  mapItemWasteKg,
+  mapItemCigaretteButts,
+  mapItemVolunteersCount,
 } from "@/lib/actions/data-contract";
 
 export type ActionPollutionScoreAvailability =
@@ -89,10 +92,9 @@ function resolveGlobalActionScore(
 
   const scores = computePollutionScoresRelativeToReferences(
     {
-      wasteKg: item.waste_kg,
-      cigaretteButts: item.cigarette_butts,
-      volunteersCount:
-        item.contract?.metadata.volunteersCount ?? item.volunteers_count,
+      wasteKg: mapItemWasteKg(item),
+      cigaretteButts: mapItemCigaretteButts(item),
+      volunteersCount: mapItemVolunteersCount(item),
       durationMinutes:
         item.contract?.metadata.durationMinutes ?? item.duration_minutes,
       actionType: mapItemType(item),
@@ -161,10 +163,9 @@ function resolveDepartmentActionScore(
 
   const scores = computePollutionScoresRelativeToReferences(
     {
-      wasteKg: item.waste_kg,
-      cigaretteButts: item.cigarette_butts,
-      volunteersCount:
-        item.contract?.metadata.volunteersCount ?? item.volunteers_count,
+      wasteKg: mapItemWasteKg(item),
+      cigaretteButts: mapItemCigaretteButts(item),
+      volunteersCount: mapItemVolunteersCount(item),
       durationMinutes:
         item.contract?.metadata.durationMinutes ?? item.duration_minutes,
       actionType: mapItemType(item),

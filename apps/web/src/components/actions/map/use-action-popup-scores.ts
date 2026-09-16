@@ -100,14 +100,17 @@ export function useActionPopupScores({
   const scopedActionScore = scoreScope === "department"
     ? departmentActionScore
     : globalActionScore;
+  const scoreLoading = hasPollution && isLoading && !references;
   const isDepartmentScoreUnavailable =
     mapItemType(item) === "action" &&
     scoreScope === "department" &&
-    scopedActionScore?.score === null;
+    scopedActionScore?.score === null &&
+    !scoreLoading;
   const isGlobalScoreUnavailable =
     mapItemType(item) === "action" &&
     scoreScope === "global" &&
-    scopedActionScore?.score === null;
+    scopedActionScore?.score === null &&
+    !scoreLoading;
   const isScoreUnavailable = isDepartmentScoreUnavailable || isGlobalScoreUnavailable;
 
   const score = isScoreUnavailable
@@ -120,16 +123,15 @@ export function useActionPopupScores({
     ? 0
     : scopedActionScore?.buttsScore ?? pollutionScores.buttsScore ?? 0;
   const scoreReading = getScoreReading(score);
-  const scoreLoading = hasPollution && isLoading;
 
   const scoreSourceLabel = !hasPollution
     ? "Aucun calcul nécessaire"
+    : scoreLoading
+      ? "Chargement de la référence globale"
       : isScoreUnavailable
         ? scoreScope === "department"
           ? "Score départemental indisponible"
           : "Score global indisponible"
-      : scoreLoading
-        ? "Référence locale provisoire"
         : error
           ? "Référence locale"
           : "Référence terrain";
