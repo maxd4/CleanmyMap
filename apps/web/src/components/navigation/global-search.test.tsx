@@ -32,6 +32,8 @@ describe("GlobalSearch", () => {
 
   it("keeps the global search keyboard and navigation contract", () => {
     expect(searchSource).toContain("getNavigationSpacesForProfile");
+    expect(searchSource).toContain("item.searchKeywords?.[locale]");
+    expect(searchSource).toContain("searchKeywords.includes(term)");
     expect(searchSource).toContain(".slice(0, 8)");
     expect(searchSource).toContain("event.metaKey || event.ctrlKey");
     expect(searchSource).toContain('event.key === "ArrowDown"');

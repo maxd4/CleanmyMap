@@ -58,8 +58,13 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
         const label = item.label[locale].toLowerCase();
         const description = item.description[locale].toLowerCase();
         const space = item.spaceLabel.toLowerCase();
+        const searchKeywords = (item.searchKeywords?.[locale] ?? []).join(" ").toLowerCase();
         return searchTerms.every(
-          (term) => label.includes(term) || description.includes(term) || space.includes(term),
+          (term) =>
+            label.includes(term) ||
+            description.includes(term) ||
+            space.includes(term) ||
+            searchKeywords.includes(term),
         );
       })
       .slice(0, 8);
