@@ -11,10 +11,10 @@ import type { NavigationDropdownCardBorderTokens } from "./navigation-dropdown-b
 import type { NavigationDropdownCardGeometry } from "./navigation-dropdown-card-theme";
 import { getNavigationDropdownItemTone } from "./navigation-dropdown-item-theme";
 import { NavigationDropdownHelpText } from "./navigation-dropdown-help-text";
+import { NavigationItemText } from "./navigation-item-text";
 import {
   NAVIGATION_DROPDOWN_CARD_OUTER_HOVER_CLASS_NAME,
   NAVIGATION_DROPDOWN_CARD_OUTER_SHADOW_CLASS_NAME,
-  NAVIGATION_DROPDOWN_ITEM_CONTENT_GAP_CLASS_NAME,
 } from "./navigation-dropdown-size-theme";
 
 type NavigationDropdownItemCardProps = {
@@ -90,15 +90,12 @@ export function NavigationDropdownItemCard({
               <Icon className={cardGeometry.iconGlyphClassName} strokeWidth={iconStrokeWidth} aria-hidden="true" />
             </span>
 
-            <span className={cn("flex min-w-0 flex-1 flex-col items-start", NAVIGATION_DROPDOWN_ITEM_CONTENT_GAP_CLASS_NAME)}>
-              <span
-                className={cn(cardGeometry.labelClassName, itemTone.labelClassName, "min-w-0 flex-1")}
-                style={itemTone.labelStyle}
-              >
-                {itemLabel}
-              </span>
-              <NavigationDropdownHelpText id={descriptionId} text={itemDescription} />
-            </span>
+            <NavigationItemText
+              label={itemLabel}
+              description={<NavigationDropdownHelpText id={descriptionId} text={itemDescription} />}
+              labelClassName={cn(cardGeometry.labelClassName, itemTone.labelClassName)}
+              labelStyle={itemTone.labelStyle}
+            />
 
             <ChevronRight
               className={cn(cardGeometry.chevronClassName, cardBorderTokens.chevronClassName, itemTone.chevronClassName)}

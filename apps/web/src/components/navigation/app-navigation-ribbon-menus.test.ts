@@ -37,7 +37,10 @@ describe("top ribbon dropdown sizing contract", () => {
     expect(source).toContain("compact?: boolean");
     expect(source).toContain("min-h-10 gap-1.5 px-1.5 py-1.5");
     expect(source).toContain("h-7 w-7");
-    expect(source).toContain("whitespace-nowrap max-[320px]:whitespace-normal");
+    expect(source).toContain("NavigationItemText");
+    expect(source).toContain("font-bold text-white");
+    expect(source).not.toContain("text-xs");
+    expect(source).not.toContain("whitespace-nowrap");
     expect(source).not.toContain("group-hover:translate-x-0.5");
   });
 

@@ -14,6 +14,9 @@ describe("GlobalSearch", () => {
     expect(searchSource).toContain('triggerHasPopup="dialog"');
     expect(searchSource).toContain('panelClassName="w-[min(42rem,calc(100vw-1rem))]"');
     expect(searchSource).toContain("whitespace-nowrap font-black uppercase tracking-[0.14em]");
+    expect(searchSource).toContain("NavigationItemText");
+    expect(searchSource).toContain("cmm-text-caption");
+    expect(searchSource).not.toContain("text-[10px]");
     expect(searchSource).not.toContain("truncate");
     expect(searchSource).not.toContain("line-clamp-2");
     expect(searchSource).toContain("verticalGap={8}");
