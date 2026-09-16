@@ -96,6 +96,8 @@ export function toActionMapItem(
     longitude: contract.location.longitude,
     waste_kg: contract.metadata.wasteKg,
     cigarette_butts: contract.metadata.cigaretteButts,
+    volunteers_count: contract.metadata.volunteersCount,
+    duration_minutes: contract.metadata.durationMinutes,
     waste_pollution_score: pollutionScores?.wasteScore,
     cigarette_butts_pollution_score: pollutionScores?.buttsScore,
     post_action_pollution_score: contract.metadata.postActionPollutionScore ?? null,
@@ -227,6 +229,12 @@ export function mapItemCigaretteButts(item: ActionMapItem): number | null {
   }
 
   return rawValue;
+}
+
+export function mapItemVolunteersCount(item: ActionMapItem): number | null {
+  const value = item.contract?.metadata.volunteersCount ?? item.volunteers_count;
+
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 export function mapItemLocationLabel(item: ActionMapItem): string {

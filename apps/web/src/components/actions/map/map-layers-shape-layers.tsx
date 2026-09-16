@@ -107,7 +107,7 @@ export function ShapeLayers({
   scoreScope = "global",
   basemapMode = "light",
 }: ActionPointLayerProps) {
-  const { references } = useActionPollutionScoreReferences();
+  const { references, isLoading: referencesLoading } = useActionPollutionScoreReferences();
   const map = useMap();
   const now = new Date();
   const [hoveredActionId, setHoveredActionId] = useState<string | null>(null);
@@ -184,6 +184,7 @@ export function ShapeLayers({
           displayMode,
           currentPlaceState,
           scoreScope,
+          referencesLoading && !references,
         );
         const pollutionCategory = resolveShapePollutionCategory(
           resolvePointPollutionScore(
@@ -404,6 +405,7 @@ export function ShapeLayers({
                           displayMode,
                         ),
                         scoreScope,
+                        referencesLoading && !references,
                       )
                     }
                   />
@@ -520,6 +522,7 @@ export function ShapeLayers({
                         displayMode,
                       ),
                       scoreScope,
+                      referencesLoading && !references,
                     )
                   }
                 />

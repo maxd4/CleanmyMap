@@ -140,6 +140,7 @@ import {
   ACTION_TRACE_HIT_AREA_WEIGHT,
   fitActionGeometryBounds,
   isTrashSpotterItem,
+  POLLUTION_SCORE_LOADING_COLOR,
   resolveShapeCasingStyle,
   resolveShapeDisplayColor,
   resolveShapePollutionCategory,
@@ -435,6 +436,9 @@ describe("ShapeLayers", () => {
     expect(resolvePointColor(spot, null, now)).toBe(TRASH_SPOTTER_NEUTRAL_COLOR);
     expect(resolvePointColor(cleanPlace, null, now)).toBe(CLEAN_PLACE_COLOR);
     expect(resolvePointColor(action, null, now)).toBe(POLLUTION_SCORE_UNAVAILABLE_COLOR);
+    expect(
+      resolvePointColor(action, null, now, "observed", null, "global", true),
+    ).toBe(POLLUTION_SCORE_LOADING_COLOR);
 
     const reliableGeometryAction = buildShapeItem("action", 80, "polyline", {
       id: "reliable-geometry-action",

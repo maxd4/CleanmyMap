@@ -6,6 +6,7 @@ import {
   resolveActionPollutionScore,
 } from "./pollution-score-scope";
 import { resolvePointColor } from "./map-layers.shared";
+import { resolveDynamicColor } from "@/components/actions/map-marker-categories";
 import type { PollutionScoreReferences } from "@/lib/actions/pollution/pollution-score";
 
 const references: PollutionScoreReferences = {
@@ -74,6 +75,68 @@ function buildAction(departmentCode?: string | null): ActionMapItem {
 }
 
 describe("pollution score scope", () => {
+  it("calculates the five public map actions from their measured values", () => {
+    const publicActions = [
+      { wasteKg: 20, cigaretteButts: 1250, volunteersCount: 10, wasteScore: 100, buttsScore: 40 },
+      { wasteKg: null, cigaretteButts: 1875, volunteersCount: 10, wasteScore: null, buttsScore: 60 },
+      { wasteKg: 20, cigaretteButts: 6250, volunteersCount: 20, wasteScore: 50, buttsScore: 100 },
+      { wasteKg: null, cigaretteButts: 750, volunteersCount: 10, wasteScore: null, buttsScore: 24 },
+      { wasteKg: null, cigaretteButts: 3750, volunteersCount: 15, wasteScore: null, buttsScore: 80 },
+    ] as const;
+
+    for (const [index, values] of publicActions.entries()) {
+      const item = toActionMapItem(
+        buildActionDataContract({
+          id: `public-map-action-${index + 1}`,
+          type: "action",
+          status: "approved",
+          source: "actions",
+          observedAt: "2026-04-01",
+          locationLabel: `Action publique ${index + 1}`,
+          latitude: 48.85,
+          longitude: 2.35,
+          wasteKg: values.wasteKg,
+          cigaretteButts: values.cigaretteButts,
+          volunteersCount: values.volunteersCount,
+        }),
+      );
+      const result = resolveActionPollutionScore(item, {
+        global: {
+          wastePerVolunteer: 2,
+          buttsPerVolunteer: 312.5,
+          wasteSourceCount: 2,
+          buttsSourceCount: 5,
+        },
+      }, { displayMode: "observed" });
+
+      expect(item.waste_kg).toBe(values.wasteKg);
+      expect(item.cigarette_butts).toBe(values.cigaretteButts);
+      expect(item.volunteers_count).toBe(values.volunteersCount);
+      expect(result).toMatchObject({
+        score: Math.max(values.wasteScore ?? 0, values.buttsScore ?? 0),
+        wasteScore: values.wasteScore,
+        buttsScore: values.buttsScore,
+        availability: "available",
+      });
+      expect(resolvePointColor(
+        item,
+        {
+          global: {
+            wastePerVolunteer: 2,
+            buttsPerVolunteer: 312.5,
+            wasteSourceCount: 2,
+            buttsSourceCount: 5,
+          },
+        },
+        "2026-04-01",
+        "observed",
+      )).toBe(resolveDynamicColor(result.score ?? 0));
+      expect(resolvePointColor(item, null, "2026-04-01", "observed")).not.toBe(
+        resolveDynamicColor(result.score ?? 0),
+      );
+    }
+  });
+
   it("uses the authorized global score and keeps the temporal projection input global", () => {
     const result = resolveActionPollutionScore(buildAction("75"), references, {
       now: "2026-09-13",
