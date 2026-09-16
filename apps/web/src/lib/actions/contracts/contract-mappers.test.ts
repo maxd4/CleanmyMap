@@ -1,6 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { toActionContract } from "@/lib/actions/unified-source/contracts";
 import { buildActionInsertPayload } from "@/lib/actions/store";
+import { buildActionEditorPayload } from "@/lib/actions/action-editor-payload";
+import type { RouteDistancePolicy } from "@/lib/actions/route-target-distance";
+
+vi.mock("server-only", () => ({}));
 
 function buildRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -105,5 +109,104 @@ describe("canonical department attribution", () => {
     expect(contract.metadata.durationMinutes).toBe(75);
     expect(contract.dates.eventStartTime).toBe("09:00");
     expect(contract.dates.eventEndTime).toBe("10:45");
+  });
+
+  it("resolves legacy and derived targets for presentation without mutating the row", () => {
+    const policy: RouteDistancePolicy = {
+      version: "route-distance-v2",
+      kilometersPerHour: 2,
+    };
+    const row = buildRow({
+      duration_minutes: 90,
+      preparation_data: {
+        routeTargetDistanceKm: 1.5,
+        routeTargetDistanceSource: "derived",
+        routeTargetDistancePolicyVersion: "route-distance-v1",
+      },
+    });
+    const before = structuredClone(row);
+
+    const contract = toActionContract(row as never, policy);
+
+    expect(contract.metadata.preparationData).toMatchObject({
+      routeTargetDistanceKm: 3,
+      routeTargetDistanceSource: "derived",
+      routeTargetDistancePolicyVersion: "route-distance-v2",
+    });
+    expect(buildActionEditorPayload(row as never)?.preparationData).toMatchObject({
+      routeTargetDistanceKm: 1.5,
+      routeTargetDistanceSource: "derived",
+      routeTargetDistancePolicyVersion: "route-distance-v1",
+    });
+    expect(toActionContract(buildRow({ duration_minutes: 90 }) as never, policy)
+      .metadata.preparationData).toMatchObject({
+      routeTargetDistanceKm: 3,
+      routeTargetDistanceSource: "derived",
+      routeTargetDistancePolicyVersion: "route-distance-v2",
+    });
+    expect(row).toEqual(before);
+  });
+
+  it("keeps manual targets and GPX observations unchanged during presentation rebasing", () => {
+    const policy: RouteDistancePolicy = {
+      version: "route-distance-v2",
+      kilometersPerHour: 2,
+    };
+    const gpxImport = {
+      source: "gpx_import" as const,
+      observedDistanceKm: 1.572,
+      pointCount: 3,
+      inferredTopology: "loop" as const,
+      fileName: "terrain.gpx",
+    };
+    const gpxCoordinates: [number, number][] = [
+      [48.85, 2.35],
+      [48.86, 2.36],
+      [48.85, 2.35],
+    ];
+    const gpxRow = buildRow({
+      duration_minutes: 90,
+      geometry_source: "gpx_import",
+      notes: `[DRAWING_GEOJSON]${JSON.stringify({
+        kind: "polyline",
+        coordinates: gpxCoordinates,
+      })}`,
+      preparation_data: {
+        routeTargetDistanceKm: 1.5,
+        routeTargetDistanceSource: "derived",
+        routeTargetDistancePolicyVersion: "route-distance-v1",
+        routeObservedDistanceKm: gpxImport.observedDistanceKm,
+        gpxImport,
+      },
+    });
+    const manualRow = buildRow({
+      duration_minutes: 90,
+      preparation_data: {
+        routeTargetDistanceKm: 2.25,
+        routeTargetDistanceSource: "manual",
+        routeTargetDistancePolicyVersion: "route-distance-v1",
+      },
+    });
+
+    const gpxContract = toActionContract(gpxRow as never, policy);
+    const manualContract = toActionContract(manualRow as never, policy);
+
+    expect(gpxContract.metadata.preparationData).toMatchObject({
+      routeTargetDistanceKm: 3,
+      routeTargetDistanceSource: "derived",
+      routeObservedDistanceKm: gpxImport.observedDistanceKm,
+      gpxImport,
+    });
+    expect(gpxContract.metadata.manualDrawing).toEqual({
+      kind: "polyline",
+      coordinates: gpxCoordinates,
+    });
+    expect(manualContract.metadata.preparationData).toMatchObject({
+      routeTargetDistanceKm: 2.25,
+      routeTargetDistanceSource: "manual",
+    });
+    expect(manualContract.metadata.preparationData).not.toHaveProperty(
+      "routeTargetDistancePolicyVersion",
+    );
   });
 });

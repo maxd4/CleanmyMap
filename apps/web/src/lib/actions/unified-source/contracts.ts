@@ -22,6 +22,11 @@ import type {
   ActionStatus,
 } from "@/lib/actions/types";
 import type { ActionRow } from "@/types/database";
+import {
+  CURRENT_ROUTE_DISTANCE_POLICY,
+  type RouteDistancePolicy,
+} from "@/lib/actions/route-target-distance";
+import { rebaseRouteTargetDistancePolicy } from "@/lib/actions/route-target-policy-rebase";
 
 export type UnifiedActionContractsParams = {
   /** null means the caller explicitly requests the complete source result. */
@@ -128,9 +133,17 @@ function mapCanonicalSpotTypeToEntityType(
     : "clean_place";
 }
 
-function toActionContractFromRow(row: ActionRow): ActionDataContract {
+function toActionContractFromRow(
+  row: ActionRow,
+  policy: RouteDistancePolicy,
+): ActionDataContract {
   const parsedNotes = parseDrawingFromNotes(row.notes);
   const parsedMetadata = extractActionMetadataFromNotes(parsedNotes.cleanNotes);
+  const preparationData = rebaseRouteTargetDistancePolicy({
+    preparationData: row.preparation_data ?? {},
+    durationMinutes: row.duration_minutes,
+    policy,
+  });
   const contract = buildActionDataContract({
     id: row.id,
     type: "action",
@@ -165,7 +178,7 @@ function toActionContractFromRow(row: ActionRow): ActionDataContract {
     organizerType: row.organizer_type,
     groupJoinEnabled: parsedMetadata.groupJoinEnabled,
     actionPhase: row.action_phase ?? "post_action_complete",
-    preparationData: row.preparation_data ?? {},
+    preparationData,
     placeType: parsedMetadata.placeType,
     departureLocationLabel: parsedMetadata.departureLocationLabel,
     arrivalLocationLabel: parsedMetadata.arrivalLocationLabel,
@@ -242,8 +255,11 @@ function toSpotContractFromRow(row: TrashSpotterSpotRow): ActionDataContract {
   };
 }
 
-export function toActionContract(row: ActionRow): ActionDataContract {
-  return toActionContractFromRow(row);
+export function toActionContract(
+  row: ActionRow,
+  policy: RouteDistancePolicy = CURRENT_ROUTE_DISTANCE_POLICY,
+): ActionDataContract {
+  return toActionContractFromRow(row, policy);
 }
 
 export function toCanonicalSpotContract(row: TrashSpotterSpotRow): ActionDataContract {
