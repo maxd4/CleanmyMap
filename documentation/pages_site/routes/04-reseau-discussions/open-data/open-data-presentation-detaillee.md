@@ -1,29 +1,57 @@
-# Données publiques - Présentation détaillée
+# Données publiques — présentation détaillée
 
-## Résumé
+## Positionnement runtime
 
-La page `Données publiques` expose les jeux de données, les exports et les points d'accès API utiles à la réutilisation. Elle doit parler d'ouverture, de méthode et de lisibilité des informations, sans devenir un catalogue technique illisible.
+La page `Données publiques` est une page publique de présentation, disponible
+sur `/sections/open-data`. L’alias `/open-data` redirige vers cette surface
+canonique.
 
-## Ce que la page montre
+Elle présente les possibilités de consultation et de réutilisation des données
+CleanMyMap. Elle ne constitue pas une page d’export autonome et ne promet pas
+une fonctionnalité qui n’est pas rendue par le runtime.
 
-- des formats d'échange JSON et CSV
-- des accès orientés recherche et réutilisation
-- des indicateurs exploitables pour les collectivités
-- un cadrage clair de la transparence des données
+## Consultation de l’API publique
 
-## Ce que la page doit préserver
+La page permet d’ouvrir l’endpoint public suivant :
 
-- une palette `pink` du bloc 04
-- une promesse simple sur l'accès public et la réutilisation
-- des CTA clairs pour exporter ou consulter les données
-- une structure lisible malgré le contenu technique
+`GET /api/actions/map`
 
-## Points d'attention
+Cet endpoint est consultable en JSON et expose les actions cartographiées selon
+les paramètres publics pris en charge par la route. Le bouton de la page ouvre
+cette réponse JSON ; il ne déclenche pas un export CSV ni un autre téléchargement
+depuis la page de présentation.
 
-- ne pas alourdir la page avec trop d'explications répétées
-- garder les formats d'échange immédiatement visibles
-- éviter le mélange avec les parcours partenaires
+CleanMyMap n’expose actuellement aucun Swagger ni document OpenAPI public pour
+cette API.
+
+## Formats et exports disponibles
+
+Les formats réellement disponibles dans CleanMyMap sont :
+
+- JSON, notamment via l’API publique `/api/actions/map` ;
+- JSON et CSV via les surfaces de rapports qui implémentent ces exports, avec
+  leurs propres règles d’accès et de disponibilité.
+
+La consultation de l’API publique et l’accès aux exports de rapports sont deux
+usages distincts. Les formats ou exports disponibles ailleurs ne doivent pas
+être présentés comme un téléchargement déclenché directement depuis la page
+`Données publiques`.
+
+## Présentation visuelle
+
+La page suit la palette runtime violet / blanc : accents violets, cartes
+blanches et fonds lavande légers. Cette identité visuelle accompagne une
+présentation publique, lisible et orientée vers la réutilisation.
+
+## Limites à préserver
+
+- ne pas inventer de CTA d’export sur cette page ;
+- ne pas présenter l’API publique comme une documentation Swagger/OpenAPI ;
+- ne pas confondre consultation JSON et exports JSON/CSV des surfaces de
+  rapports ;
+- conserver la distinction entre la présentation publique et les règles
+  d’accès propres aux endpoints d’export.
 
 ## Référence canonique
 
-- [README de la page](./README.md)
+- [Fiche canonique de la page](./open-data-README.md)
