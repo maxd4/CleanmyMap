@@ -38,7 +38,7 @@ export function selectMapReferencePoint(
 
 export type InitialMapViewportResolution = {
   reference: MapReferencePoint;
-  viewport: MapViewportState;
+  viewport: MapViewportState | null;
   selectedItem: ActionMapItem | null;
   searchRadiiKm: number[];
 };
@@ -96,16 +96,11 @@ function normalizeCityKey(value: string): string {
 }
 
 /**
- * The preparation contract carries the explicit commune selected for an
- * action. The location label is the existing public fallback when older
- * actions predate communeZoneLabel; it is never fabricated from coordinates.
+ * Only a postal city is a reliable city identity in the current map contract.
+ * communeZoneLabel is intentionally excluded: it can describe a district,
+ * sector or neighborhood and is therefore suitable for display, not equality.
  */
 export function mapItemCityLabel(item: ActionMapItem): string | null {
-  const preparationLabel = item.contract?.metadata.preparationData?.communeZoneLabel;
-  if (typeof preparationLabel === "string" && preparationLabel.trim()) {
-    return preparationLabel.trim();
-  }
-
   const locationLabel = item.contract?.location.label ?? item.location_label;
   const postalCityMatch =
     typeof locationLabel === "string"
@@ -115,9 +110,40 @@ export function mapItemCityLabel(item: ActionMapItem): string | null {
     return postalCityMatch[1].trim();
   }
 
-  return typeof locationLabel === "string" && locationLabel.trim()
-    ? locationLabel.trim()
-    : null;
+  return null;
+}
+
+function mapItemRecency(item: ActionMapItem): {
+  observedAt: string;
+  createdAt: string;
+} {
+  return {
+    observedAt: item.action_date,
+    createdAt:
+      item.contract?.dates.createdAt ??
+      item.contract?.dates.importedAt ??
+      item.contract?.dates.observedAt ??
+      item.action_date,
+  };
+}
+
+export function selectMostRecentPublicAction(items: ActionMapItem[]): ActionMapItem | null {
+  return items
+    .filter(isPublicGeolocatedAction)
+    .slice()
+    .sort((left, right) => {
+      const leftRecency = mapItemRecency(left);
+      const rightRecency = mapItemRecency(right);
+      const observedComparison = rightRecency.observedAt.localeCompare(leftRecency.observedAt);
+      if (observedComparison !== 0) {
+        return observedComparison;
+      }
+      const createdComparison = rightRecency.createdAt.localeCompare(leftRecency.createdAt);
+      if (createdComparison !== 0) {
+        return createdComparison;
+      }
+      return left.id.localeCompare(right.id);
+    })[0] ?? null;
 }
 
 export function selectNearestPublicAction(
@@ -208,13 +234,16 @@ export async function resolveInitialPublicMapViewport({
         break;
       }
     }
+
+    if (!selectedItem) {
+      const globalFallbackResponse = await fetchActions({ limit: 1 });
+      selectedItem = selectMostRecentPublicAction(globalFallbackResponse.items);
+      resolvedReference = actionPoint(selectedItem);
+    }
   } else {
     const response = await fetchActions({ limit: 1 });
-    const firstPoint = actionPoint(response.items[0]);
-    selectedItem = firstPoint
-      ? selectNearestPublicAction(response.items, firstPoint)
-      : null;
-    resolvedReference = actionPoint(selectedItem ?? response.items[0]);
+    selectedItem = selectMostRecentPublicAction(response.items);
+    resolvedReference = actionPoint(selectedItem);
   }
 
   if (!selectedItem) {
@@ -247,17 +276,19 @@ export async function resolveInitialPublicMapViewport({
     viewport: buildMapSearchViewport(selectedPoint, INITIAL_PUBLIC_CITY_SEARCH_RADIUS_KM),
     limit: INITIAL_PUBLIC_ACTION_LIMIT,
   });
+  const localClusterItems = cityResponse.items.filter(isPublicGeolocatedAction);
   if (cityLabel) {
     const cityKey = normalizeCityKey(cityLabel);
-    cityItems = cityResponse.items.filter(
+    cityItems = localClusterItems.filter(
       (item) =>
-        isPublicGeolocatedAction(item) &&
         mapItemCityLabel(item) !== null &&
         normalizeCityKey(mapItemCityLabel(item) as string) === cityKey,
     );
-    if (!cityItems.some((item) => item.id === selectedItem?.id)) {
-      cityItems.unshift(selectedItem);
-    }
+  } else {
+    cityItems = localClusterItems;
+  }
+  if (!cityItems.some((item) => item.id === selectedItem?.id)) {
+    cityItems.unshift(selectedItem);
   }
 
   return {
@@ -317,7 +348,7 @@ export async function resolveInitialMapViewport({
   if (!isValidReferencePoint(reference)) {
     return {
       reference,
-      viewport: createActionsMapViewport([0, 0], 12),
+      viewport: null,
       selectedItem: null,
       searchRadiiKm,
     };
