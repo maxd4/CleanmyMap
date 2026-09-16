@@ -13,7 +13,7 @@
 - **Objectif utilisateur principal** : Consulter une présentation publique des formats d'échange, des usages de données et des possibilités de réutilisation.
 - **Action principale attendue** : Explorer les rubriques de présentation. Cette section n'est pas, à elle seule, une preuve qu'un téléchargement ou un export est déclenché depuis la page.
 - **Palette attendue** : violet / blanc
-- **Scope** : présentation publique des formats JSON/CSV, indicateurs et usages de données, documentation API/OpenAPI, modèle économique et CTA partenaire ; aucun export n'est déclenché directement par cette section.
+- **Scope** : présentation publique des formats JSON/CSV réellement disponibles, de l'API publique cartographiée et de leurs usages de réutilisation, modèle économique et CTA partenaire ; aucun export n'est déclenché directement par cette section.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : violet / blanc — cartes et accents violet, fonds blancs et lavande.
 - **Incohérences de couleurs** : Aucune incohérence avec le rendu runtime violet/blanc ; cette identité est une exception visuelle de la section réseau.
