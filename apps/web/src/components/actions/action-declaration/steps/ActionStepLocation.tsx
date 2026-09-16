@@ -14,6 +14,7 @@ import type {
 } from "@/lib/actions/types";
 import type { OperationalRoute } from "@/lib/route/route-operational";
 import { OperationalRouteEditor } from "../operational-route-editor";
+import { ActionGpxExportButton } from "../action-gpx-export";
 import type { UpdateFormField } from "../types";
 import {
   getLocalGeoAddressSuggestions,
@@ -655,6 +656,19 @@ export function ActionStepLocation({
           onChange={(operationalRoute: OperationalRoute) => updateField("operationalRoute", operationalRoute)}
         />
       ) : null}
+
+      <ActionGpxExportButton
+        input={{
+          operationalRoute: form.operationalRoute,
+          drawing: manualDrawing,
+          gpxImport,
+          routeTopology: form.routeTopology,
+          departureLabel: form.departureLocationLabel,
+          midpointLabel: form.midRouteLocationLabel,
+          midpointCoordinates: form.midRouteCoordinates,
+          arrivalLabel: form.arrivalLocationLabel,
+        }}
+      />
 
       {/* ── Ligne 2a : Carte (desktop/tablette uniquement) ───────────────── */}
       <div className="hidden md:block rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)] space-y-3">

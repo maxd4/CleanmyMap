@@ -245,6 +245,18 @@ affichés comme étapes publiques. Le nombre historique `plannerGroupCount` rest
 immuable, même après suppression de toutes les boucles ; le nombre courant de
 boucles n’est jamais présenté comme une répartition de bénévoles.
 
+L’export GPX de la surface itinéraire réutilise cette géométrie finale
+`operationalRoute`, issue du handoff de `RouteRecommendationResponse`, et non
+une proposition intermédiaire ou une ancienne prévisualisation. Le serializer
+est pur et sans réseau : il conserve l’ordre exact des coordonnées, la
+latitude/longitude et la topologie (boucle fermée ou parcours
+`point_to_point` ouvert), tandis que les arrêts et repères sont ajoutés comme
+waypoints sans modifier le track. Une géométrie manual ou `gpx_import` reste
+exportable lorsqu’elle est la géométrie finale disponible ; un import conserve
+ses coordonnées canoniques sans reroutage ni application de policy. Les
+géométries estimées restent exportables et sont identifiées comme telles dans
+le GPX.
+
 Les nouvelles écritures utilisent exclusivement `operational-route-v1` dans le
 champ JSONB existant `preparation_data`. Les anciennes valeurs
 `preparationData.actualRoute` (`actual-route-v1`) restent lisibles et sont
