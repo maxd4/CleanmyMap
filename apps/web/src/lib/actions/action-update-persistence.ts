@@ -13,6 +13,7 @@ import {
   resolveParticipantsCount,
 } from "./volunteer-participation";
 import { extractActionMetadataFromNotes } from "./metadata";
+import { parseDrawingFromNotes } from "./geometry/drawing";
 import type { ActionRow } from "@/types/database";
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
 import { resolveNextActionStatus } from "./action-update-status";
@@ -329,6 +330,33 @@ export async function prepareActionUpdate(params: {
           ? nextCigaretteButtsMeasurements
           : undefined,
     });
+  }
+
+  const currentDrawing = parseDrawingFromNotes(current.notes).manualDrawing;
+  if (currentDrawing && typeof updateData["notes"] === "string") {
+    updateData["notes"] = buildPersistedNotes({
+      notes: updateData["notes"] as string,
+      manualDrawing: currentDrawing,
+    });
+  }
+
+  const currentPreparationData = normalizeActionPreparationData(
+    current.preparation_data ?? {},
+  );
+  const hasGpxObservation =
+    current.geometry_source === "gpx_import" ||
+    currentPreparationData.gpxImport?.source === "gpx_import";
+  if (hasGpxObservation && updateData["preparation_data"]) {
+    const nextPreparationData = updateData["preparation_data"] as ActionRow["preparation_data"];
+    updateData["preparation_data"] = {
+      ...nextPreparationData,
+      ...(currentPreparationData.routeObservedDistanceKm !== undefined
+        ? { routeObservedDistanceKm: currentPreparationData.routeObservedDistanceKm }
+        : {}),
+      ...(currentPreparationData.gpxImport
+        ? { gpxImport: structuredClone(currentPreparationData.gpxImport) }
+        : {}),
+    };
   }
 
   return { body, currentMetadata, updateData };
