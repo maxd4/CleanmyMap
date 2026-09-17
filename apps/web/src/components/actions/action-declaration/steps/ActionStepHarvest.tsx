@@ -11,6 +11,9 @@ import { HarvestCleanPlaceSection } from "../sections/harvest-clean-place";
 import { HarvestMegotsSection } from "../sections/harvest-megots-section";
 import { HarvestPhotoSection } from "../sections/harvest-photo-section";
 import { HarvestWasteSection } from "../sections/harvest-waste-section";
+import { Cigarette, Trash2 } from "lucide-react";
+import { CmmField, CmmInput } from "@/components/ui/cmm-field";
+import { MAX_CIGARETTE_BUTTS_COUNT } from "@/lib/waste/cigarette-butts";
 
 interface ActionStepHarvestProps {
   form: FormState;
@@ -26,6 +29,7 @@ interface ActionStepHarvestProps {
   wasteSuggestionSource: "vision" | "heuristic";
   onPhotoUpload: (files: FileList | null) => void;
   onClearPhotos: () => void;
+  mode?: "all" | "essentials" | "details";
 }
 
 export function ActionStepHarvest({
@@ -42,6 +46,7 @@ export function ActionStepHarvest({
   wasteSuggestionSource,
   onPhotoUpload,
   onClearPhotos,
+  mode = "all",
 }: ActionStepHarvestProps) {
   const isCleanPlaceMode = recordType === "clean_place";
   const hasPhotos = photoAssets.length > 0;
@@ -74,6 +79,71 @@ export function ActionStepHarvest({
     syncMegotsCondition,
   } = harvest;
 
+  if (mode === "essentials") {
+    return isCleanPlaceMode ? (
+      <HarvestCleanPlaceSection />
+    ) : (
+      <div className="grid gap-3 lg:grid-cols-3">
+        <label className="space-y-1.5 rounded-2xl border border-emerald-200/70 bg-white p-4">
+          <span className="flex items-center gap-2 text-xs font-semibold text-emerald-900/75">
+            <Trash2 size={14} className="text-emerald-600" />
+            Déchets hors mégots (kg)
+          </span>
+          <input
+            id="harvest-waste-kg"
+            inputMode="decimal"
+            type="number"
+            min="0"
+            max="100"
+            step="0.01"
+            className="min-h-12 w-full rounded-xl border border-emerald-200 bg-white px-3.5 text-base font-bold text-emerald-950 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
+            value={form.wasteKg}
+            onChange={(event) => updateField("wasteKg", event.target.value)}
+            placeholder="0"
+          />
+        </label>
+        <CmmField
+          label={(
+            <span className="flex items-center gap-2">
+              <Cigarette size={14} className="text-amber-600" />
+              Nombre de mégots
+            </span>
+          )}
+          hint={`Maximum ${MAX_CIGARETTE_BUTTS_COUNT.toLocaleString("fr-FR")} mégots.`}
+        >
+          <CmmInput
+            id="harvest-megots-count"
+            inputMode="numeric"
+            type="number"
+            min={0}
+            max={MAX_CIGARETTE_BUTTS_COUNT}
+            step={1}
+            value={form.cigaretteButtsCount}
+            onChange={(event) => syncMegotsWeightFromCount(event.target.value)}
+            className="!min-h-12 !w-full !rounded-xl !border-emerald-200 !bg-white !px-3.5 !text-base !font-bold !text-emerald-950 focus:!border-amber-400 focus:!ring-2 focus:!ring-amber-500/15"
+          />
+        </CmmField>
+        <label className="space-y-1.5 rounded-2xl border border-emerald-200/70 bg-white p-4">
+          <span className="flex items-center gap-2 text-xs font-semibold text-emerald-900/75">
+            <Cigarette size={14} className="text-amber-600" />
+            Masse de mégots (kg)
+          </span>
+          <input
+            id="harvest-megots-kg"
+            inputMode="decimal"
+            type="number"
+            min="0"
+            step="0.01"
+            className="min-h-12 w-full rounded-xl border border-emerald-200 bg-white px-3.5 text-base font-bold text-emerald-950 outline-none transition focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15"
+            value={form.wasteMegotsKg}
+            onChange={(event) => syncMegotsWeightFromWeight(event.target.value)}
+            placeholder="0"
+          />
+        </label>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {isCleanPlaceMode ? (
@@ -101,6 +171,7 @@ export function ActionStepHarvest({
             notes={form.notes}
             wasteCategories={form.wasteCategories ?? []}
             onTriChange={(key, value) => updateField(key, value)}
+            hidePrimaryMeasurement={mode === "details"}
           />
           <HarvestMegotsSection
             wasteMegotsKg={form.wasteMegotsKg}
@@ -122,6 +193,7 @@ export function ActionStepHarvest({
             onMegotsVolumeChange={(value) => updateField("cigaretteButtsVolumeLiters", value)}
             onMegotsCountChange={syncMegotsWeightFromCount}
             onMegotsConditionChange={syncMegotsCondition}
+            hidePrimaryMeasurements={mode === "details"}
           />
         </div>
       )}

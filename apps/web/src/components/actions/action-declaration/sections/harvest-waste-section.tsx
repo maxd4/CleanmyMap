@@ -39,6 +39,7 @@ type HarvestWasteSectionProps = {
   onTriChange: <K extends "wasteRecyclablesKg" | "wasteGlassKg" | "wasteHouseholdKg" | "wasteOtherKg" | "wasteUnusualObjects" | "wasteSpecialHandlingWaste" | "notes" | "wasteCategories">(
     key: K, value: FormState[K]
   ) => void;
+  hidePrimaryMeasurement?: boolean;
 };
 
 const triInputCls = "w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15";
@@ -64,6 +65,7 @@ export function HarvestWasteSection({
   notes,
   wasteCategories,
   onTriChange,
+  hidePrimaryMeasurement = false,
 }: HarvestWasteSectionProps) {
   const [triOpen, setTriOpen] = useState(false);
   const delta = wasteDeltaPercent;
@@ -95,27 +97,28 @@ export function HarvestWasteSection({
             <p className="text-xs text-slate-400">Masse totale en kilogrammes</p>
           </div>
         </div>
-        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold text-slate-500">
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-500">
           0 – 100 kg
         </span>
       </div>
 
-      {/* Input */}
-      <label className="block space-y-1.5">
-        <span className="text-xs font-medium text-slate-500">Masse totale hors mégots (kg)</span>
-        <input
-          id="harvest-waste-kg"
-          inputMode="decimal"
-          type="number"
-          step={ACTION_WASTE_MASS_RESOLUTION_KG}
-          min="0"
-          max="100"
-          className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 placeholder:text-slate-300"
-          value={wasteKg}
-          onChange={(e) => onWasteKgChange(e.target.value)}
-          placeholder="Ex : 12,5"
-        />
-      </label>
+      {!hidePrimaryMeasurement ? (
+        <label className="block space-y-1.5">
+          <span className="text-xs font-medium text-slate-500">Masse totale hors mégots (kg)</span>
+          <input
+            id="harvest-waste-kg"
+            inputMode="decimal"
+            type="number"
+            step={ACTION_WASTE_MASS_RESOLUTION_KG}
+            min="0"
+            max="100"
+            className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-base font-bold text-slate-900 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 placeholder:text-slate-300"
+            value={wasteKg}
+            onChange={(e) => onWasteKgChange(e.target.value)}
+            placeholder="Ex : 12,5"
+          />
+        </label>
+      ) : null}
 
       <label className="block space-y-1.5">
         <span className="text-xs font-medium text-slate-500">Méthode de mesure (facultatif)</span>
@@ -136,14 +139,16 @@ export function HarvestWasteSection({
       </label>
 
       {/* Slider */}
-      <VolumeSliderWidget
-        value={wasteKgClamped}
-        onChange={(val) => onWasteKgChange(val.toString())}
-        label="Déchets collectés"
-        max={100}
-        unit="kg"
-        inputId="harvest-waste-slider"
-      />
+      {!hidePrimaryMeasurement ? (
+        <VolumeSliderWidget
+          value={wasteKgClamped}
+          onChange={(val) => onWasteKgChange(val.toString())}
+          label="Déchets collectés"
+          max={100}
+          unit="kg"
+          inputId="harvest-waste-slider"
+        />
+      ) : null}
 
       {/* Gauge */}
       <TrashBinGauge value={wasteKgClamped} comparisonValue={Math.min(100, wasteBenchmarkKg)} />
@@ -164,7 +169,7 @@ export function HarvestWasteSection({
       </div>
 
       {/* Source */}
-      <p className="text-[10px] text-slate-400 text-right">
+      <p className="text-xs text-slate-400 text-right">
         {sourceLabel}{confidenceLabel ? ` · ${confidenceLabel}` : ""}
       </p>
 
@@ -203,7 +208,7 @@ export function HarvestWasteSection({
                 { key: "wasteOtherKg" as const,       label: "Autres déchets (kg)", value: wasteOtherKg },
               ].map(({ key, label, value }) => (
                 <label key={key} className="block space-y-1">
-                  <span className="text-[10px] font-medium text-slate-400">{label}</span>
+                  <span className="text-xs font-medium text-slate-400">{label}</span>
                   <input
                     type="number"
                     min="0"
@@ -218,7 +223,7 @@ export function HarvestWasteSection({
             </div>
 
             <label className="block space-y-1">
-              <span className="text-[10px] font-medium text-slate-400">Objets insolites (facultatif)</span>
+              <span className="text-xs font-medium text-slate-400">Objets insolites (facultatif)</span>
               <textarea
                 rows={2}
                 maxLength={2000}
@@ -230,7 +235,7 @@ export function HarvestWasteSection({
             </label>
 
             <label className="block space-y-1">
-              <span className="text-[10px] font-medium text-slate-400">Filière ou point spécialisé (facultatif)</span>
+              <span className="text-xs font-medium text-slate-400">Filière ou point spécialisé (facultatif)</span>
               <textarea
                 rows={2}
                 maxLength={2000}
@@ -242,7 +247,7 @@ export function HarvestWasteSection({
             </label>
 
             <label className="block space-y-1">
-              <span className="text-[10px] font-medium text-slate-400">Notes sur la collecte</span>
+              <span className="text-xs font-medium text-slate-400">Notes sur la collecte</span>
               <textarea
                 rows={3}
                 placeholder="Observations, contexte particulier, difficultés rencontrées…"
