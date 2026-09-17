@@ -18,6 +18,7 @@ const moderateSignalementMock = vi.hoisted(() => vi.fn());
 const readSignalementForModerationMock = vi.hoisted(() => vi.fn());
 const emitActionValidatedMock = vi.hoisted(() => vi.fn());
 const emitSpotValidatedMock = vi.hoisted(() => vi.fn());
+const recordRepollutionPredictionEvaluationForActionMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAdminAccess: requireAdminAccessMock,
@@ -61,6 +62,11 @@ vi.mock("@/lib/public-surface-snapshots", () => ({
   invalidatePublicSurfaceSnapshotsByRoute: invalidatePublicSurfaceSnapshotsByRouteMock,
 }));
 
+vi.mock("@/lib/actions/store", () => ({
+  recordRepollutionPredictionEvaluationForAction:
+    recordRepollutionPredictionEvaluationForActionMock,
+}));
+
 describe("POST /api/admin/moderation", () => {
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
@@ -72,6 +78,7 @@ describe("POST /api/admin/moderation", () => {
     loadActionOrganizerIdsForActionMock.mockResolvedValue(["creator-1", "organizer-1"]);
     refreshProgressionProfileMock.mockResolvedValue(undefined);
     syncUserActionProgressionMock.mockResolvedValue(1);
+    recordRepollutionPredictionEvaluationForActionMock.mockResolvedValue(undefined);
     invalidatePublicSurfaceSnapshotsByRouteMock.mockResolvedValue(undefined);
     copyValidatedActionToLocalStoreMock.mockResolvedValue({
       source: "actions",

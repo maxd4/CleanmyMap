@@ -1,4 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("@/lib/actions/store", () => ({
+  buildPersistedNotes: vi.fn(),
+}));
 import { actionEditsSchema } from "./action-moderation-edits";
 
 describe("action moderation edit contract", () => {

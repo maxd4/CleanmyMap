@@ -5,7 +5,7 @@ import useSWR from "swr";
 import { toActionListItem, toActionMapItem, type ActionDataContract } from "@/lib/actions/data-contract";
 import { computeActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { fetchCommunityEvents, type CommunityEventItem } from "@/lib/community/http";
-import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
+import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { computeReportModel } from "@/lib/reports/report-model";
 import type {

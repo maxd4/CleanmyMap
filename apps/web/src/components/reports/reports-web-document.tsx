@@ -37,7 +37,7 @@ import {
 } from "@/lib/pdf-export/browser-report";
 import { buildPdfReportFilename, type PdfReportPayload } from "@/lib/pdf-export/simple-pdf";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
-import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
+import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 import type { CommunityEventItem } from "@/lib/community/http";
 import {
   buildReportDataAvailabilityNotices,

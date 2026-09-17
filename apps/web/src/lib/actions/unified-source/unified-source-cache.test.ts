@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildUnifiedActionContractsCacheKey } from "./unified-source-cache";
+import { buildUnifiedActionContractsCacheKey } from "./cache-key";
 
 describe("unified source cache key", () => {
   it("encodes the query shape used by pilotage and reports views", () => {

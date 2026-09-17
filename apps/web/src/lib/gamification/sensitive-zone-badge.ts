@@ -1,5 +1,4 @@
 import type { ActionDataContract } from "@/lib/actions/data-contract";
-import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
 import { buildZones } from "@/lib/pilotage/overview.zones";
 import { buildDateFloor, areaFromLabel } from "@/lib/pilotage/overview.utils";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -286,6 +285,9 @@ async function loadSensitiveZoneAreasFromContracts(
   supabase: SupabaseClient,
   now: Date,
 ): Promise<string[]> {
+  const { fetchUnifiedActionContracts } = await import(
+    "@/lib/actions/unified-source"
+  );
   const zoneContractsResult = await fetchUnifiedActionContracts(supabase, {
     limit: 6000,
     status: "approved",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
+import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 import {
   resolveRouteDataLayers,
   resolveRouteDataStatus,

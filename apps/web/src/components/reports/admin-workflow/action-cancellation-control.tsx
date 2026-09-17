@@ -8,7 +8,7 @@ import {
   ACTION_CANCELLATION_CONFIRMATION,
   ACTION_CANCELLATION_REASONS,
   type ActionCancellationReason,
-} from "@/lib/actions/cancellation";
+} from "@/lib/actions/cancellation-contract";
 import { isFutureActionCancellationEligible } from "@/lib/actions/temporal";
 import type { ActionListItem } from "@/lib/actions/types";
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildActionDataContract } from "@/lib/actions/data-contract";
-import { toReportsExportRow } from "./page-data";
+import { toReportsExportRow } from "./page-data-export";
 
 describe("reports export impact fields", () => {
   it("keeps declared mass separate from the canonical impact estimate", () => {

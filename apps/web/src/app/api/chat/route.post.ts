@@ -15,14 +15,12 @@ import {
 } from "@/lib/chat/chat-attachments";
 import { createChatNotificationsForMessage } from "@/lib/chat/chat-notifications";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { resolveActionDiscussionAccess } from "@/lib/chat/action-conversations";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 import {
   reserveDiscussionMessageSlot,
   toDiscussionRateLimitErrorPayload,
 } from "@/lib/community/discussion-rate-limit";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
-import { loadActionById } from "@/lib/actions/store";
 import {
   getCommunityBugReportById,
 } from "@/lib/community/bug-reports-store";
@@ -216,9 +214,15 @@ export async function POST(request: Request) {
       };
     }
 
-    let sharedAction: Awaited<ReturnType<typeof loadActionById>> = null;
+    let sharedAction: {
+      location_label: string;
+      status: string | null;
+    } | null = null;
+    const loadActionById = isExternalActionShare
+      ? (await import("@/lib/actions/store")).loadActionById
+      : null;
     if (isExternalActionShare) {
-      const action = await loadActionById(serviceSupabase, parsed.data.actionId!);
+      const action = await loadActionById!(serviceSupabase, parsed.data.actionId!);
       if (!action || !isPublicActionReferenceAvailable(action)) {
         return NextResponse.json(
           { error: "Action non partageable", hint: "Cette action n'est plus publiée ou accessible." },
@@ -229,6 +233,8 @@ export async function POST(request: Request) {
     }
 
     if (parsed.data.channelType === "action" && parsed.data.actionId && typeof serviceSupabase.from === "function") {
+      const { resolveActionDiscussionAccess } =
+        await import("@/lib/chat/action-conversations");
       const access = await resolveActionDiscussionAccess(serviceSupabase, parsed.data.actionId, userId);
       if (access.state === "excluded") {
         return NextResponse.json({ error: "Vous êtes exclu de cette discussion." }, { status: 403 });
@@ -236,7 +242,7 @@ export async function POST(request: Request) {
       if (access.state === "unavailable") {
         return NextResponse.json({ error: "Discussion d'action introuvable." }, { status: 404 });
       }
-      const action = await loadActionById(serviceSupabase, parsed.data.actionId);
+      const action = await loadActionById!(serviceSupabase, parsed.data.actionId);
       if (action?.status === "cancelled") {
         return NextResponse.json(
           { error: "Cette action a été annulée.", hint: "La discussion est conservée en lecture seule." },

@@ -4,7 +4,7 @@ import {
   toActionMapItem,
 } from "./contract-mappers";
 import { buildActionDataContract } from "./contract-model";
-import { parseEntityTypesParam } from "@/lib/actions/unified-source";
+import { parseEntityTypesParam } from "@/lib/actions/unified-source/query";
 
 describe("actions contract regression gates", () => {
   it("preserves required fields for map, history, KPI and exports", () => {

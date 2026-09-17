@@ -1,5 +1,5 @@
 import type { ActionDataContract, ActionEntityType } from "../actions/data-contract";
-import type { UnifiedSourceHealth } from "../actions/unified-source";
+import type { UnifiedSourceHealth } from "../actions/unified-source/types";
 import type { PilotageComparisonResult } from "./metrics";
 import type { OperationalPriority, ZoneComparisonRow } from "./prioritization";
 
