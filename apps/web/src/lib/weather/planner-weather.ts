@@ -4,6 +4,12 @@ import {
   type OpenMeteoClientOptions,
   type OpenMeteoForecastResponse,
 } from "./open-meteo-client";
+import {
+  evaluateWeatherWindowRisk,
+  WEATHER_OPERATIONAL_RULE_SOURCE,
+  WEATHER_OPERATIONAL_RULE_VERSION,
+  type WeatherRiskLevel,
+} from "./ops-weather";
 
 export const PLANNER_WEATHER_SNAPSHOT_VERSION = "planner-weather-snapshot-v1" as const;
 export const PLANNER_WEATHER_PROVIDER = "open-meteo" as const;
@@ -47,6 +53,15 @@ export type PlannerWeatherSummary = {
   weatherCode: number | null;
 };
 
+export type PlannerWeatherOperationalAssessment = {
+  status: "nominal" | "limited" | "fallback";
+  riskLevel: WeatherRiskLevel | null;
+  reasons: string[];
+  ruleVersion: typeof WEATHER_OPERATIONAL_RULE_VERSION;
+  ruleSource: typeof WEATHER_OPERATIONAL_RULE_SOURCE;
+  operationalLimitMinutes: number | null;
+};
+
 export type PlannerWeatherContext = {
   version: typeof PLANNER_WEATHER_SNAPSHOT_VERSION;
   provider: typeof PLANNER_WEATHER_PROVIDER;
@@ -62,6 +77,7 @@ export type PlannerWeatherContext = {
   };
   hourly: PlannerWeatherHourlyPoint[];
   summary: PlannerWeatherSummary | null;
+  operationalRisk?: PlannerWeatherOperationalAssessment;
   unavailableReason?: PlannerWeatherUnavailableReason;
 };
 
@@ -140,8 +156,63 @@ function unavailableContext(
     },
     hourly: [],
     summary: null,
+    operationalRisk: {
+      status: "fallback",
+      riskLevel: null,
+      reasons: [`Météo indisponible : ${reason}`],
+      ruleVersion: WEATHER_OPERATIONAL_RULE_VERSION,
+      ruleSource: WEATHER_OPERATIONAL_RULE_SOURCE,
+      operationalLimitMinutes: null,
+    },
     unavailableReason: reason,
   };
+}
+
+function operationalRiskForPoints(
+  points: PlannerWeatherHourlyPoint[],
+): PlannerWeatherOperationalAssessment {
+  const assessment = evaluateWeatherWindowRisk(points.map((point) => ({
+    time: point.time,
+    temperature: point.temperatureC ?? Number.NaN,
+    rain: point.precipitationMm ?? Number.NaN,
+    wind: point.windKmh ?? Number.NaN,
+  })));
+  if (!assessment) {
+    return {
+      status: "fallback",
+      riskLevel: null,
+      reasons: ["Données météo opérationnelles incomplètes"],
+      ruleVersion: WEATHER_OPERATIONAL_RULE_VERSION,
+      ruleSource: WEATHER_OPERATIONAL_RULE_SOURCE,
+      operationalLimitMinutes: null,
+    };
+  }
+  return {
+    status: assessment.operationalLimitMinutes === null ? "nominal" : "limited",
+    riskLevel: assessment.level,
+    reasons: assessment.reasons,
+    ruleVersion: assessment.operationalRule.version,
+    ruleSource: assessment.operationalRule.source,
+    operationalLimitMinutes: assessment.operationalLimitMinutes,
+  };
+}
+
+export function plannerWeatherOperationalAssessment(
+  context: PlannerWeatherContext | null | undefined,
+): PlannerWeatherOperationalAssessment | null {
+  if (!context) return null;
+  if (context.operationalRisk) return context.operationalRisk;
+  if (context.status !== "available") {
+    return {
+      status: "fallback",
+      riskLevel: null,
+      reasons: [`Météo indisponible : ${context.unavailableReason ?? "unknown"}`],
+      ruleVersion: WEATHER_OPERATIONAL_RULE_VERSION,
+      ruleSource: WEATHER_OPERATIONAL_RULE_SOURCE,
+      operationalLimitMinutes: null,
+    };
+  }
+  return operationalRiskForPoints(context.hourly);
 }
 
 function values(values: Array<number | null>): number[] {
@@ -243,7 +314,32 @@ export function isPlannerWeatherContext(value: unknown): value is PlannerWeather
     Boolean(context.location && Number.isFinite(context.location.latitude) && Number.isFinite(context.location.longitude)) &&
     context.location?.timezone === PLANNER_WEATHER_TIMEZONE &&
     Array.isArray(context.hourly) &&
-    (context.summary === null || typeof context.summary === "object");
+    (context.summary === null || typeof context.summary === "object") &&
+    (context.operationalRisk === undefined || isPlannerWeatherOperationalAssessment(context.operationalRisk));
+}
+
+function isPlannerWeatherOperationalAssessment(
+  value: unknown,
+): value is PlannerWeatherOperationalAssessment {
+  if (!value || typeof value !== "object") return false;
+  const assessment = value as Partial<PlannerWeatherOperationalAssessment>;
+  return (
+    (assessment.status === "nominal" ||
+      assessment.status === "limited" ||
+      assessment.status === "fallback") &&
+    (assessment.riskLevel === null ||
+      assessment.riskLevel === "vert" ||
+      assessment.riskLevel === "orange" ||
+      assessment.riskLevel === "rouge") &&
+    Array.isArray(assessment.reasons) &&
+    assessment.reasons.every((reason) => typeof reason === "string") &&
+    assessment.ruleVersion === WEATHER_OPERATIONAL_RULE_VERSION &&
+    assessment.ruleSource === WEATHER_OPERATIONAL_RULE_SOURCE &&
+    (assessment.operationalLimitMinutes === null ||
+      (typeof assessment.operationalLimitMinutes === "number" &&
+        Number.isFinite(assessment.operationalLimitMinutes) &&
+        assessment.operationalLimitMinutes >= 0))
+  );
 }
 
 export async function fetchPlannerWeatherContext(
@@ -304,6 +400,7 @@ export async function fetchPlannerWeatherContext(
       },
       hourly: points,
       summary: summarize(points),
+      operationalRisk: operationalRiskForPoints(points),
     };
   } catch (error) {
     const reason = error instanceof OpenMeteoError

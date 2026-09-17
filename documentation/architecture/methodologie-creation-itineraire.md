@@ -274,7 +274,7 @@ cleanupWorkload → contexte historique → données terrain → readiness
 ### Budget opérationnel
 
 Le budget opérationnel est un contrat distinct et versionné :
-`route-operational-budget-v2`. Il sépare toujours :
+`route-operational-budget-v3`. Il sépare toujours :
 
 - `travelMinutes` : déplacement réseau ou estimation de fallback ;
 - `actionMinutes` : durée estimée de l’action future, c’est-à-dire marche,
@@ -285,7 +285,12 @@ Le budget opérationnel est un contrat distinct et versionné :
 - `organizationMarginMinutes` : marge fixe de 15 minutes pour le dépôt des
   sacs, boire, le regroupement et les petites opérations de fin ; ce n’est pas
   une incertitude statistique ;
-- `actionBudgetMinutes` : `eventBudgetMinutes - 15`, borné à zéro ;
+- `weather` : contexte météo opérationnel partagé, avec niveau de risque,
+  raisons, règle/version, limite éventuelle, budget avant météo et budget
+  limité ;
+- `actionBudgetMinutes` : `eventBudgetMinutes - 15`, borné à zéro ; lorsque
+  la règle météo canonique porte une limite, `eventBudgetMinutes` vaut
+  `min(budget utilisateur, limite météo)` avant l’application de cette marge ;
 - `totalMinutes` : `actionMinutes + 15`, uniquement lorsque la durée d’action
   est disponible ;
 - `uncertaintyReserveMinutes` : diagnostic de l’estimateur, conservé pour la
@@ -531,10 +536,31 @@ la trace et le snapshot planner au moment de la génération. Elle décrit ce
 que CleanMyMap savait alors et ne constitue pas une observation météo de
 l’action réalisée.
 
-Le contexte météo n’est pas une entrée de `pollutionPriority`, du ranking,
-de `cleanupWorkload`, de la durée estimée, du budget, de la partition des
-groupes ou de la géométrie. La météo observée pendant l’action relève d’un
-futur lot de calibration distinct.
+La source canonique des règles opérationnelles est
+`apps/web/src/lib/weather/ops-weather.ts`, version
+`weather-operational-rules-v1`. Elle conserve les seuils existants et les
+durées indicatives déjà affichées : orange jusqu’à 90 minutes, rouge jusqu’à
+45 minutes ; vert ne porte aucune limite opérationnelle. Le planner dérive un
+niveau et des raisons sur la fenêtre horaire complète, sans remplacer une
+valeur absente par zéro.
+
+Lorsqu’une limite existe, elle ne touche qu’au temps opérationnel disponible :
+
+```text
+weatherLimitedEventMinutes = min(eventBudgetMinutes, weatherOperationalLimit)
+actionBudget = weatherLimitedEventMinutes - 15 min
+```
+
+Le même contexte météo est transmis à tous les groupes simultanés, mais la
+conformité du budget est recalculée séparément pour chaque route. La météo ne
+modifie jamais `networkTravelMinutes`, la distance réseau,
+`cleanupWorkload`, une vitesse de marche ou une vitesse de collecte. Aucun
+coefficient météo n’est appliqué.
+
+Si la météo est indisponible, hors horizon ou incomplète, le comportement reste
+nominal : aucune limite fictive n’est appliquée et la trace porte explicitement
+le statut `fallback`, la raison et le snapshot utilisé. La météo observée
+pendant l’action relève d’un futur lot de calibration distinct.
 
 Les fondations suivantes bornent la capacité actuelle sans devenir des
 affirmations métier supplémentaires :
@@ -557,9 +583,9 @@ Une difficulté d’accès mécanique ou une inférence géométrique ne peut do
 Les extensions suivantes restent explicitement futures dans le périmètre
 actuel :
 
-- l’utilisation de la météo pour modifier le ranking, la durée, le budget ou
-  la géométrie ; le contexte prévisionnel est disponible mais reste
-  informatif et traçable uniquement ;
+- l’utilisation de la météo pour modifier le ranking, la durée estimée, la
+  géométrie ou les vitesses ; la seule réduction disponible concerne la limite
+  opérationnelle canonique décrite ci-dessus ;
 - la durée d’intervention et l’estimation du temps de nettoyage, qui ne sont
   pas encore calibrées par `route-cleanup-workload-v1` ;
 - une allocation détaillée des catégories de bénévoles par groupe, lorsque

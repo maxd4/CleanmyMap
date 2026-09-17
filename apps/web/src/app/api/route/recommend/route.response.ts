@@ -191,6 +191,7 @@ export function buildRouteRecommendationResponse(input: {
     budgetMinutes: travelBudgetMinutes,
     calibrationContext: calibrationContextForBudget,
     durationDependency,
+    weatherContext,
   });
   const candidateById = new Map(
     plannedStops.map((stop) => [stop.candidate.id, stop.candidate]),
@@ -217,6 +218,7 @@ export function buildRouteRecommendationResponse(input: {
       budgetMinutes: group.travelBudgetMinutes,
       calibrationContext: groupContext,
       durationDependency,
+      weatherContext,
     });
     return {
       ...group,

@@ -72,6 +72,12 @@ describe("planner weather context", () => {
       },
     });
     expect(context.hourly).toHaveLength(2);
+    expect(context.operationalRisk).toMatchObject({
+      status: "limited",
+      riskLevel: "orange",
+      operationalLimitMinutes: 90,
+      ruleVersion: "weather-operational-rules-v1",
+    });
   });
 
   it("keeps a missing metric null instead of manufacturing a zero", async () => {
@@ -93,6 +99,10 @@ describe("planner weather context", () => {
     expect(context.summary?.temperatureC).toBe(26);
     expect(context.summary?.gustKmh).toBeNull();
     expect(context.hourly[0]?.temperatureC).toBeNull();
+    expect(context.operationalRisk).toMatchObject({
+      status: "fallback",
+      operationalLimitMinutes: null,
+    });
   });
 
   it("preserves rain, heat and wind/gust values for a changing window", async () => {
@@ -164,6 +174,7 @@ describe("planner weather context", () => {
 
     expect(missing).toMatchObject({ status: "unavailable", unavailableReason: "missing_window" });
     expect(future).toMatchObject({ status: "unavailable", unavailableReason: "outside_forecast_horizon" });
+    expect(missing.operationalRisk).toMatchObject({ status: "fallback", operationalLimitMinutes: null });
     expect(fetcher).not.toHaveBeenCalled();
     expect(PLANNER_WEATHER_FORECAST_DAYS).toBe(16);
   });

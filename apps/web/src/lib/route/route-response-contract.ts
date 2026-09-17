@@ -116,7 +116,7 @@ export type RouteRecommendationResponse = {
   /** Exact planner snapshot and server proof used by the action trust boundary. */
   plannerSnapshot?: NonNullable<RouteCalibrationContext["plannerSnapshot"]>;
   plannerProof?: RoutePlannerProof;
-  /** Forecast known at generation time; it does not affect route calculations. */
+  /** Forecast known at generation time; it may limit the operational budget only. */
   weatherContext?: PlannerWeatherContext;
   stops: RouteStop[];
   prediction: RoutePredictionSummary;

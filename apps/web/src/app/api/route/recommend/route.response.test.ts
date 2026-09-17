@@ -492,7 +492,7 @@ describe("route recommendation response trace contract", () => {
     expect(payload.organizationMarginMinutes).toBe(15);
     expect(payload.totalMinutesEstimate).toBe(33);
     expect(payload.operationalBudget).toMatchObject({
-      contractVersion: "route-operational-budget-v2",
+      contractVersion: "route-operational-budget-v3",
       travelMinutes: 12,
       actionMinutes: 18,
       eventBudgetMinutes: 60,
@@ -549,6 +549,26 @@ describe("route recommendation response trace contract", () => {
     const response = buildRouteRecommendationResponse(responseInput({
       volunteers: 4,
       groupCount: 2,
+      weatherContext: {
+        version: "planner-weather-snapshot-v1",
+        provider: "open-meteo",
+        source: "forecast",
+        fetchedAt: "2026-09-14T08:00:00.000Z",
+        coveredWindow: null,
+        status: "available",
+        weatherStatus: "available",
+        location: { latitude: 48.85, longitude: 2.35, timezone: "Europe/Paris" },
+        hourly: [],
+        summary: null,
+        operationalRisk: {
+          status: "limited",
+          riskLevel: "rouge",
+          reasons: ["Vent fort (>=45 km/h)"],
+          ruleVersion: "weather-operational-rules-v1",
+          ruleSource: "apps/web/src/lib/weather/ops-weather",
+          operationalLimitMinutes: 45,
+        },
+      },
       candidateData: {
         candidates: [first, second],
         spatialCandidates: [first, second],
@@ -633,10 +653,14 @@ describe("route recommendation response trace contract", () => {
     expect(payload.groupRoutes.map(({ operationalBudget }) => operationalBudget?.totalMinutes))
       .toEqual([25, 25]);
     expect(payload.groupRoutes.every(({ operationalBudget, withinBudget }) =>
-      operationalBudget?.eventBudgetMinutes === 60 &&
-      operationalBudget.actionBudgetMinutes === 45 &&
+      operationalBudget?.eventBudgetMinutes === 45 &&
+      operationalBudget.actionBudgetMinutes === 30 &&
       operationalBudget.withinBudget === true &&
       withinBudget === true,
+    )).toBe(true);
+    expect(payload.groupRoutes.every(({ operationalBudget }) =>
+      operationalBudget?.weather.operationalLimitMinutes === 45 &&
+      operationalBudget.weather.weatherLimitedEventMinutes === 45,
     )).toBe(true);
     expect(payload.multiRoute).toMatchObject({
       operationalBudgetAvailable: true,

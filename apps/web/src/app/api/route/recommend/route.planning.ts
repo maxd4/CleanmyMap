@@ -100,9 +100,10 @@ export async function planRouteRecommendation(input: {
     maxStops: input.maxStops,
     priorityVsTravel: input.priorityVsTravel,
     effectiveRiskFocus,
-    ...(input.operationalBudget
+    ...(input.operationalBudget || input.weatherContext
       ? {
           operationalBudget: input.operationalBudget,
+          weatherContext: input.weatherContext,
           volunteersExpected: input.volunteers,
           groupCount: input.groupCount,
         }
@@ -163,9 +164,10 @@ export async function planRouteRecommendation(input: {
     maxStops: input.maxStops,
     priorityVsTravel: input.priorityVsTravel,
     effectiveRiskFocus,
-    ...(input.operationalBudget
+    ...(input.operationalBudget || input.weatherContext
       ? {
           operationalBudget: input.operationalBudget,
+          weatherContext: input.weatherContext,
           volunteersExpected: input.volunteers,
           groupCount: input.groupCount,
         }
@@ -182,6 +184,7 @@ export async function planRouteRecommendation(input: {
     planningMode: input.planningMode,
     effectiveRiskFocus,
     operationalBudget: input.operationalBudget,
+    weatherContext: input.weatherContext,
   };
   let groupPartition: RouteGroupPartitionResult | null =
     input.groupCount === 1
@@ -342,6 +345,7 @@ export async function planRouteRecommendation(input: {
       travelBudgetMinutes: input.travelBudgetMinutes,
       effectiveRiskFocus,
       operationalBudget: input.operationalBudget,
+      weatherContext: input.weatherContext,
     });
     groupPartition = multiRouteResult.partition;
     groupRoutes = multiRouteResult.groupRoutes;
@@ -395,6 +399,7 @@ export async function planRouteRecommendation(input: {
     groupRoutes,
     multiRouteMetrics,
     operationalBudget: input.operationalBudget,
+    weatherContext: input.weatherContext,
     ...(input.weatherContext ? { weatherContext: structuredClone(input.weatherContext) } : {}),
   };
 }
