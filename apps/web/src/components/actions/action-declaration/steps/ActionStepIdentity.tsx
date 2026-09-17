@@ -94,6 +94,7 @@ interface Props {
   userMetadata: { userId: string; displayName?: string; username?: string };
   recordType: FormState["recordType"];
   hasAttemptedSubmit?: boolean;
+  mode?: "all" | "action" | "participants" | "duration" | "details";
 }
 
 function SectionTitle({ color, children }: { color: string; children: React.ReactNode }) {
@@ -116,7 +117,15 @@ function Field({ icon: Icon, children, className }: { icon: LucideIcon; children
   );
 }
 
-export function ActionStepIdentity({ form, updateField, updateFields, userMetadata, recordType, hasAttemptedSubmit }: Props) {
+export function ActionStepIdentity({
+  form,
+  updateField,
+  updateFields,
+  userMetadata,
+  recordType,
+  hasAttemptedSubmit,
+  mode = "all",
+}: Props) {
   const isActionMode = recordType === "action";
   const isSpontaneousAction = form.organizerType === "spontaneous";
   const isEntreprise =
@@ -210,6 +219,235 @@ export function ActionStepIdentity({ form, updateField, updateFields, userMetada
         ? buildEntrepriseAssociationName(val)
         : ENTREPRISE_ASSOCIATION_OPTION,
     });
+  }
+
+  if (mode !== "all") {
+    const compactInputCls = "w-full min-h-12 rounded-xl border border-emerald-200/70 bg-white px-3.5 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15";
+
+    if (mode === "action") {
+      return (
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="space-y-1.5">
+            <label htmlFor="action-action-date" className="text-xs font-semibold text-emerald-900/75">
+              Date de l’action <span aria-hidden="true">*</span>
+            </label>
+            <input
+              id="action-action-date"
+              type="date"
+              className={cn(compactInputCls, missingDate && inputErrCls)}
+              value={form.actionDate}
+              onChange={(event) => updateField("actionDate", event.target.value)}
+              aria-invalid={missingDate}
+              aria-describedby={missingDate ? dateErrorId : undefined}
+            />
+            {missingDate ? (
+              <p id={dateErrorId} className="text-xs font-medium text-rose-700">
+                Indiquez la date de l’action.
+              </p>
+            ) : null}
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="action-organizer-type" className="text-xs font-semibold text-emerald-900/75">
+              Type de structure <span aria-hidden="true">*</span>
+            </label>
+            <select
+              id="action-organizer-type"
+              className={cn(compactInputCls, "appearance-none cursor-pointer", missingOrganizerType && inputErrCls)}
+              value={form.organizerType}
+              onChange={(event) => handleOrganizerTypeChange(event.target.value as FormState["organizerType"])}
+              required={isActionMode}
+              aria-invalid={missingOrganizerType}
+              aria-describedby={missingOrganizerType ? organizerTypeErrorId : undefined}
+            >
+              <option value="">Sélectionnez un type</option>
+              {ORGANIZER_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            {missingOrganizerType ? (
+              <p id={organizerTypeErrorId} className="text-xs font-medium text-rose-700">
+                Sélectionnez un type de structure.
+              </p>
+            ) : null}
+          </div>
+
+          {form.organizerType && !isSpontaneousAction ? (
+            <div className="space-y-1.5">
+              <label htmlFor="action-organizer-structure" className="text-xs font-semibold text-emerald-900/75">
+                Structure <span aria-hidden="true">*</span>
+              </label>
+              <select
+                id="action-organizer-structure"
+                data-testid="action-organizer-structure"
+                className={cn(compactInputCls, "appearance-none cursor-pointer", missingAssociation && inputErrCls)}
+                value={isAutreBénévole ? OTHER_VOLUNTEER_ASSOCIATION_VALUE : structureSelectValue}
+                onChange={(event) => handleAssociationChange(event.target.value)}
+                aria-invalid={missingAssociation}
+                aria-describedby={missingAssociation ? associationErrorId : undefined}
+              >
+                <option value="">
+                  {form.organizerType === "company" ? "Choisissez une entreprise" : "Sélectionnez une structure"}
+                </option>
+                {currentLegacyAssociation ? (
+                  <option value={currentLegacyAssociation}>{currentLegacyAssociation} — valeur historique</option>
+                ) : null}
+                {directoryEntries.map((entry) => {
+                  const location = getOrganizerDirectoryLocationLabel(entry);
+                  return (
+                    <option key={entry.id} value={entry.value}>
+                      {entry.name}{location ? ` — ${location}` : ""}
+                    </option>
+                  );
+                })}
+              </select>
+              {missingAssociation ? (
+                <p id={associationErrorId} className="text-xs font-medium text-rose-700">
+                  Sélectionnez une structure.
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (mode === "participants") {
+      return (
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {([
+              ["action-children-count", "Enfants", "childrenCount"],
+              ["action-adult-count", "Adultes", "adultCount"],
+              ["action-retired-count", "Retraités", "retiredCount"],
+            ] as const).map(([id, label, key]) => (
+              <label key={id} htmlFor={id} className="space-y-1.5">
+                <span className="block text-xs font-semibold text-emerald-900/75">{label}</span>
+                <input
+                  id={id}
+                  type="number"
+                  min="0"
+                  inputMode="numeric"
+                  placeholder="0"
+                  className={compactInputCls}
+                  value={form[key]}
+                  onChange={(event) => updateField(key, event.target.value)}
+                />
+              </label>
+            ))}
+          </div>
+          <p className="text-xs font-semibold text-emerald-900/70">
+            Total calculé : {volunteerParticipation.participantsCount ?? "—"} participant(s)
+          </p>
+          <p className="text-xs text-emerald-900/55">
+            Si une catégorie est renseignée, renseignez les trois catégories. Le total doit être au moins égal à 1.
+          </p>
+        </div>
+      );
+    }
+
+    if (mode === "duration") {
+      return (
+        <div className="grid gap-3 md:grid-cols-3">
+          <label htmlFor="action-duration-minutes" className="space-y-1.5">
+            <span className="block text-xs font-semibold text-emerald-900/75">Durée d’action (min)</span>
+            <input
+              id="action-duration-minutes"
+              type="number"
+              min="1"
+              inputMode="numeric"
+              className={compactInputCls}
+              value={form.durationMinutes}
+              onChange={(event) => updateField("durationMinutes", event.target.value)}
+            />
+          </label>
+          <label htmlFor="action-event-start" className="space-y-1.5">
+            <span className="block text-xs font-semibold text-emerald-900/75">Rendez-vous · début</span>
+            <input
+              id="action-event-start"
+              type="time"
+              className={compactInputCls}
+              value={form.eventStartTime}
+              onChange={(event) => updateField("eventStartTime", event.target.value)}
+            />
+          </label>
+          <label htmlFor="action-event-end" className="space-y-1.5">
+            <span className="block text-xs font-semibold text-emerald-900/75">Fin du créneau</span>
+            <input
+              id="action-event-end"
+              type="time"
+              className={compactInputCls}
+              value={form.eventEndTime}
+              onChange={(event) => updateField("eventEndTime", event.target.value)}
+            />
+          </label>
+          {event.status !== "incomplete" ? (
+            <p className={cn("text-xs md:col-span-3", event.status === "inconsistent" || event.status === "invalid" ? "font-medium text-rose-700" : "text-emerald-900/65")}>
+              {event.status === "available"
+                ? `Créneau global : ${formatBusinessDurationMinutes(event.eventDurationMinutes)}`
+                : event.status === "inconsistent"
+                  ? "Incohérence : la fin est antérieure au début."
+                  : "Les horaires doivent respecter le format HH:MM."}
+            </p>
+          ) : null}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {isEntreprise ? (
+          <div className="space-y-1.5">
+            <label htmlFor="action-enterprise-name" className="text-xs font-semibold text-emerald-900/75">Nom de l’entreprise</label>
+            <input id="action-enterprise-name" type="text" className={compactInputCls} value={form.enterpriseName} onChange={(event) => handleEntrepriseName(event.target.value)} maxLength={100} />
+          </div>
+        ) : null}
+        {isActionMode && !isSpontaneousAction ? (
+          <div className="space-y-1.5">
+            <label htmlFor="action-organizer-accounts" className="text-xs font-semibold text-emerald-900/75">Organisateurs associés</label>
+            <input id="action-organizer-accounts" type="text" className={compactInputCls} value={form.organizerAccounts} onChange={(event) => updateField("organizerAccounts", event.target.value)} maxLength={300} placeholder="Pseudo, nom affiché ou ID" />
+          </div>
+        ) : null}
+        {isActionMode ? (
+          <ActionParticipantPicker
+            currentUserId={userMetadata.userId}
+            value={form.participantAccounts}
+            onChange={(next) => updateField("participantAccounts", next)}
+            description="Ajoutez les participants connus avant l’envoi du formulaire complet."
+          />
+        ) : null}
+        {isAutreBénévole ? (
+          <div className="space-y-1.5">
+            <label htmlFor="action-other-volunteer-name" className="text-xs font-semibold text-emerald-900/75">Nom ou pseudo du bénévole</label>
+            <input id="action-other-volunteer-name" type="text" className={cn(compactInputCls, missingOtherVolunteerName && inputErrCls)} value={autreBenevoleName} onChange={(event) => handleAutreBenevoleName(event.target.value)} maxLength={80} aria-invalid={missingOtherVolunteerName} />
+            {missingOtherVolunteerName ? <p id={otherVolunteerErrorId} className="text-xs font-medium text-rose-700">Renseignez le nom ou pseudo du bénévole.</p> : null}
+          </div>
+        ) : null}
+        {isActionMode ? (
+          <div>
+            <SectionTitle color="bg-emerald-500">Environnement de collecte</SectionTitle>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {PLACE_TYPE_TILE_OPTIONS.map((option) => {
+                const Icon = option.icon;
+                const isSelected = option.values.some((value) => value === form.placeType);
+                return (
+                  <button
+                    key={option.label}
+                    type="button"
+                    title={option.sub}
+                    onClick={() => updateField("placeType", option.value)}
+                    className={cn("relative flex min-h-[80px] flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-all", isSelected ? "border-emerald-300 bg-[#ECF8EF] shadow-sm" : "border-emerald-200/70 bg-[#F3FBF6] hover:border-emerald-300 hover:bg-[#EAF7EF]")}
+                  >
+                    <Icon size={16} className={isSelected ? "text-emerald-700" : "text-emerald-600/70"} />
+                    <span className={cn("text-xs font-semibold leading-tight", isSelected ? "text-emerald-950" : "text-emerald-900/70")}>{option.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
   }
 
   return (

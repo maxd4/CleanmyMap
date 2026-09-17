@@ -1,19 +1,17 @@
 "use client";
 
-import { type ElementType, type FormEvent, useState } from "react";
+import { type FormEvent, useState } from "react";
 import {
   AlertTriangle,
-  ClipboardCheck,
   Download,
   History,
   Loader2,
-  Sparkles,
-  User,
   X,
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmDialog } from "@/components/ui/cmm-dialog";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { ActionDeclarationFormConfirmation } from "./action-declaration-form-confirmation";
@@ -45,33 +43,6 @@ type ActionDeclarationFormProps = {
   signInHref?: string;
   signUpHref?: string;
 };
-
-function SectionDivider({
-  icon: Icon,
-  title,
-  subtitle,
-}: {
-  icon: ElementType;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/18 bg-[rgba(17,56,41,0.76)] px-3 py-1.5 shadow-[0_10px_20px_-12px_rgba(16,185,129,0.4)] backdrop-blur-xl">
-          <Icon size={14} className="text-emerald-300" />
-          <span className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-100/88">
-            {title}
-          </span>
-        </div>
-        <span className="h-px flex-1 bg-gradient-to-r from-emerald-300/35 via-emerald-200/10 to-transparent" />
-      </div>
-      <p className="cmm-text-body cmm-text-inverse max-w-3xl text-left">
-        {subtitle}
-      </p>
-    </div>
-  );
-}
 
 function ActionDeclarationFormExportButton({
   onOpen,
@@ -333,16 +304,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
             className="overflow-hidden rounded-[3rem] border border-emerald-200/70 bg-[#F3FBF6] shadow-[0_20px_44px_-30px_rgba(34,197,94,0.18)] backdrop-blur-3xl"
           >
             <div className="relative p-6 md:p-10 space-y-8">
-              {showPreparationSummary ? (
-                <section className="rounded-2xl border border-emerald-200/70 bg-white/88 px-5 py-4 shadow-sm">
-                  <p className="text-sm font-bold text-emerald-950">
-                    Préparation existante reprise
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-emerald-900/70">
-                    Les informations déjà saisies sont conservées pour compléter les résultats terrain.
-                  </p>
-                </section>
-              ) : null}
               <fieldset className="relative z-10 space-y-8">
               <header className="flex flex-wrap items-start justify-between gap-4">
                 <div className="max-w-2xl">
@@ -350,21 +311,72 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                     Déclarer les résultats terrain
                   </h2>
                   <p className="mt-2 max-w-xl text-sm leading-6 font-medium text-emerald-900/62 md:text-[0.98rem]">
-                    Renseignez les informations de l&apos;action, les résultats de collecte, le parcours et les éléments de validation.
+                    Commencez par les informations essentielles. Les détails complémentaires restent disponibles à la demande.
                   </p>
                 </div>
 
               </header>
 
-              <div className="space-y-10">
-                <section className="space-y-5">
-                  <SectionDivider
-                    icon={User}
-                    title="Identité"
-                    subtitle="Qui déclare, quelle structure porte l’action et à quelle date elle se rattache."
+              <div className="space-y-6">
+                <section aria-labelledby="action-declaration-action" className="space-y-4 rounded-2xl border border-emerald-200/80 bg-white/75 p-5 shadow-sm">
+                  <div>
+                    <h3 id="action-declaration-action" className="text-lg font-bold text-emerald-950">Action</h3>
+                    <p className="mt-1 text-sm text-emerald-900/60">Les informations indispensables pour rattacher cette déclaration à l’action.</p>
+                  </div>
+                  {showPreparationSummary ? (
+                    <div className="rounded-xl border border-emerald-200 bg-[#ECF8EF] px-4 py-3">
+                      <p className="text-sm font-bold text-emerald-950">Préparation existante reprise</p>
+                      <p className="mt-1 text-xs leading-5 text-emerald-900/70">Les informations déjà saisies sont conservées pour compléter les résultats terrain.</p>
+                    </div>
+                  ) : null}
+                  <ActionStepIdentity
+                    mode="action"
+                    form={form}
+                    updateField={updateField}
+                    updateFields={updateFields}
+                    userMetadata={props.userMetadata}
+                    recordType={form.recordType}
+                    hasAttemptedSubmit={hasAttemptedSubmit}
                   />
-                  <div className="space-y-4">
+                  <ActionStepLocation
+                    mode="primary"
+                    form={form}
+                    updateField={updateField}
+                    updateFields={updateFields}
+                    manualDrawing={manualDrawing}
+                    manualDrawingSource={manualDrawingSource ?? null}
+                    setManualDrawing={setManualDrawing}
+                    routePreviewDrawing={effectiveRoutePreviewDrawing}
+                    routePreviewSource={effectiveRoutePreviewSource}
+                    gpxImport={gpxImport ?? null}
+                    gpxError={gpxError}
+                    onImportGpx={handleGpxImport}
+                    onRemoveGpx={removeGpxImport}
+                    onResetManualDrawing={() => setManualDrawing(null)}
+                    gpsStatus={smartAssist.gpsStatus}
+                    gpsMessage={smartAssist.gpsMessage}
+                    onAutofillGps={smartAssist.autofillGps}
+                    recordType={form.recordType}
+                  />
+                  <ActionStepIdentity
+                    mode="duration"
+                    form={form}
+                    updateField={updateField}
+                    updateFields={updateFields}
+                    userMetadata={props.userMetadata}
+                    recordType={form.recordType}
+                    hasAttemptedSubmit={hasAttemptedSubmit}
+                  />
+                </section>
+
+                {form.recordType === "action" ? (
+                  <section aria-labelledby="action-declaration-participants" className="space-y-4 rounded-2xl border border-emerald-200/80 bg-white/75 p-5 shadow-sm">
+                    <div>
+                      <h3 id="action-declaration-participants" className="text-lg font-bold text-emerald-950">Participants</h3>
+                      <p className="mt-1 text-sm text-emerald-900/60">Répartition des personnes présentes et total calculé.</p>
+                    </div>
                     <ActionStepIdentity
+                      mode="participants"
                       form={form}
                       updateField={updateField}
                       updateFields={updateFields}
@@ -372,42 +384,69 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                       recordType={form.recordType}
                       hasAttemptedSubmit={hasAttemptedSubmit}
                     />
+                  </section>
+                ) : null}
+
+                <section aria-labelledby="action-declaration-results" className="space-y-4 rounded-2xl border border-emerald-200/80 bg-white/75 p-5 shadow-sm">
+                  <div>
+                    <h3 id="action-declaration-results" className="text-lg font-bold text-emerald-950">Résultats essentiels</h3>
+                    <p className="mt-1 text-sm text-emerald-900/60">Saisissez les mesures brutes. Une valeur à 0 est une mesure valide.</p>
                   </div>
+                  <ActionStepHarvest
+                    mode="essentials"
+                    form={form}
+                    updateField={updateField}
+                    recordType={form.recordType}
+                    photoAssets={photoAssets}
+                    visionEstimate={visionEstimate}
+                    visionStatus={visionStatus}
+                    heuristicEstimatedWasteKg={smartAssist.heuristicEstimatedWasteKg}
+                    estimatedWasteKg={smartAssist.estimatedWasteKg}
+                    estimatedWasteKgInterval={smartAssist.estimatedWasteKgInterval}
+                    estimatedWasteKgConfidence={smartAssist.estimatedWasteKgConfidence}
+                    wasteSuggestionSource={smartAssist.wasteSuggestionSource}
+                    onPhotoUpload={handlePhotoUpload}
+                    onClearPhotos={clearPhotos}
+                  />
+                  {form.recordType === "action" && !form.wasteKg.trim() && !form.wasteMegotsKg.trim() && !form.cigaretteButtsCount.trim() ? (
+                    <p className="text-xs font-medium text-amber-800">Au moins une mesure déchets ou mégots est requise.</p>
+                  ) : null}
                 </section>
 
-                <section className="space-y-5">
-                  <SectionDivider
-                    icon={Sparkles}
-                    title="Récolte"
-                    subtitle="Les volumes, mégots, photos et indices de collecte qui alimentent le résumé et l’impact."
-                  />
-                  <div className="space-y-4">
-                    <ActionStepHarvest
-                      form={form}
-                      updateField={updateField}
-                      recordType={form.recordType}
-                      photoAssets={photoAssets}
-                      visionEstimate={visionEstimate}
-                      visionStatus={visionStatus}
-                      heuristicEstimatedWasteKg={smartAssist.heuristicEstimatedWasteKg}
-                      estimatedWasteKg={smartAssist.estimatedWasteKg}
-                      estimatedWasteKgInterval={smartAssist.estimatedWasteKgInterval}
-                      estimatedWasteKgConfidence={smartAssist.estimatedWasteKgConfidence}
-                      wasteSuggestionSource={smartAssist.wasteSuggestionSource}
-                      onPhotoUpload={handlePhotoUpload}
-                      onClearPhotos={clearPhotos}
-                    />
-                  </div>
-                </section>
+                <div className="space-y-3">
+                  <CmmDisclosure summary="Informations complémentaires" tone="emerald" size="md">
+                    <div className="space-y-5">
+                      <ActionStepIdentity
+                        mode="details"
+                        form={form}
+                        updateField={updateField}
+                        updateFields={updateFields}
+                        userMetadata={props.userMetadata}
+                        recordType={form.recordType}
+                        hasAttemptedSubmit={hasAttemptedSubmit}
+                      />
+                      <ActionStepHarvest
+                        mode="details"
+                        form={form}
+                        updateField={updateField}
+                        recordType={form.recordType}
+                        photoAssets={photoAssets}
+                        visionEstimate={visionEstimate}
+                        visionStatus={visionStatus}
+                        heuristicEstimatedWasteKg={smartAssist.heuristicEstimatedWasteKg}
+                        estimatedWasteKg={smartAssist.estimatedWasteKg}
+                        estimatedWasteKgInterval={smartAssist.estimatedWasteKgInterval}
+                        estimatedWasteKgConfidence={smartAssist.estimatedWasteKgConfidence}
+                        wasteSuggestionSource={smartAssist.wasteSuggestionSource}
+                        onPhotoUpload={handlePhotoUpload}
+                        onClearPhotos={clearPhotos}
+                      />
+                    </div>
+                  </CmmDisclosure>
 
-                <section className="space-y-5">
-                  <SectionDivider
-                    icon={ClipboardCheck}
-                    title="Parcours"
-                    subtitle="Le lieu, le trajet et le géo-aperçu qui servent à situer l’action sans alourdir la lecture."
-                  />
-                  <div className="space-y-4">
+                  <CmmDisclosure summary="Parcours détaillé" tone="emerald" size="md">
                     <ActionStepLocation
+                      mode="details"
                       form={form}
                       updateField={updateField}
                       updateFields={updateFields}
@@ -426,27 +465,47 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                       onAutofillGps={smartAssist.autofillGps}
                       recordType={form.recordType}
                     />
-                  </div>
-                </section>
+                  </CmmDisclosure>
 
-                <section className="space-y-5">
-                  <SectionDivider
-                    icon={ClipboardCheck}
-                    title="Validation"
-                    subtitle="La vérification finale avant confirmation, avec les points d’attention et le récapitulatif d’envoi."
-                  />
-                  <div className="space-y-4">
-                    <ActionStepReview
-                      payload={payload}
-                      dataQuality={dataQuality}
-                      isSubmitting={submissionState === "pending"}
-                      onSubmit={() => onSubmit()}
-                    />
-                    <ActionDeclarationFormExportButton
-                      onOpen={() => setIsExportPickerOpen(true)}
-                    />
+                  <CmmDisclosure summary="Vérification et export" tone="emerald" size="md">
+                    <div className="space-y-4">
+                      <ActionStepReview
+                        payload={payload}
+                        dataQuality={dataQuality}
+                        isSubmitting={submissionState === "pending"}
+                        onSubmit={() => onSubmit()}
+                        showSubmitButton={false}
+                      />
+                      <ActionDeclarationFormExportButton
+                        onOpen={() => setIsExportPickerOpen(true)}
+                      />
+                    </div>
+                  </CmmDisclosure>
+                </div>
+
+                <div className="sticky bottom-3 z-20 rounded-2xl border border-emerald-300/80 bg-[#F3FBF6]/95 p-4 shadow-[0_18px_36px_-20px_rgba(6,95,70,0.35)] backdrop-blur-xl">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      {hasAttemptedSubmit && validationIssues.length > 0 ? (
+                        <p role="alert" className="text-sm font-semibold text-rose-700">
+                          {validationIssues.length} point{validationIssues.length > 1 ? "s" : ""} à vérifier dans le formulaire.
+                        </p>
+                      ) : (
+                        <p className="text-sm text-emerald-900/65">Vérifiez les mesures avant de confirmer l’envoi.</p>
+                      )}
+                    </div>
+                    <CmmButton
+                      type="submit"
+                      tone="primary"
+                      variant="default"
+                      size="md"
+                      loading={submissionState === "pending"}
+                      className="min-h-12 w-full shrink-0 justify-center px-5 sm:w-auto"
+                    >
+                      Vérifier et envoyer
+                    </CmmButton>
                   </div>
-                </section>
+                </div>
               </div>
               </fieldset>
             </div>

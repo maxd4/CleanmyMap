@@ -59,6 +59,7 @@ interface ActionStepLocationProps {
   gpsStatus: "idle" | "locating" | "success" | "error";
   gpsMessage: string | null;
   onAutofillGps: () => void;
+  mode?: "all" | "primary" | "details";
 }
 
 // ─── GPS button ───────────────────────────────────────────────────────────────
@@ -418,6 +419,7 @@ export function ActionStepLocation({
   gpsStatus,
   gpsMessage,
   onAutofillGps,
+  mode = "all",
 }: ActionStepLocationProps) {
   const isCleanPlaceMode = recordType === "clean_place";
   const { ref: mapShellRef, isInView: isMapVisible } = useInViewOnce<HTMLDivElement>({
@@ -455,6 +457,33 @@ export function ActionStepLocation({
     neutral: "border-emerald-200/70 bg-[#F3FBF6] text-emerald-800/70",
   } as const;
 
+  const departureInput = (
+    <AddressAutocompleteInput
+      id="departure"
+      icon={MapPin}
+      label={isCleanPlaceMode ? "Adresse du lieu" : "Départ"
+      }
+      placeholder={isCleanPlaceMode ? "Ex : Square des Batignolles" : "Ex : Rue de Rivoli, Paris"}
+      value={form.departureLocationLabel}
+      onChange={(value, coordinates) => {
+        updateFields({
+          departureLocationLabel: value,
+          latitude: coordinates ? String(coordinates.latitude) : "",
+          longitude: coordinates ? String(coordinates.longitude) : "",
+        });
+      }}
+      helperText={isCleanPlaceMode ? "Adresse exacte du lieu" : "Adresse exacte du départ"}
+    />
+  );
+
+  if (mode === "primary") {
+    return (
+      <div className="rounded-2xl border border-emerald-200/70 bg-white p-4 shadow-sm">
+        {departureInput}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
@@ -471,21 +500,7 @@ export function ActionStepLocation({
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <AddressAutocompleteInput
-            id="departure"
-            icon={MapPin}
-            label={isCleanPlaceMode ? "Adresse du lieu" : "Départ"}
-            placeholder={isCleanPlaceMode ? "Ex : Square des Batignolles" : "Ex : Rue de Rivoli, Paris"}
-            value={form.departureLocationLabel}
-            onChange={(value, coordinates) => {
-              updateFields({
-                departureLocationLabel: value,
-                latitude: coordinates ? String(coordinates.latitude) : "",
-                longitude: coordinates ? String(coordinates.longitude) : "",
-              });
-            }}
-          helperText={isCleanPlaceMode ? "Adresse exacte du lieu" : "Adresse exacte du départ"}
-        />
+          {mode !== "details" ? departureInput : null}
           <AddressAutocompleteInput
             id="midpoint"
             icon={MapPin}
