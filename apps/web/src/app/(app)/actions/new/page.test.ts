@@ -8,8 +8,7 @@ const mocks = vi.hoisted(() => ({
   getLocalDevAuthState: vi.fn(() => ({ active: false, role: null })),
   getCurrentUserIdentity: vi.fn(),
   isFeatureEnabled: vi.fn(() => true),
-  getSupabaseServerClient: vi.fn(() => ({})),
-  loadActionById: vi.fn(),
+  resolveActionResumePhase: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/safe-session", () => ({
@@ -27,11 +26,8 @@ vi.mock("@/lib/authz", () => ({
 vi.mock("@/lib/feature-flags", () => ({
   isFeatureEnabled: mocks.isFeatureEnabled,
 }));
-vi.mock("@/lib/supabase/server", () => ({
-  getSupabaseServerClient: mocks.getSupabaseServerClient,
-}));
-vi.mock("@/lib/actions/store", () => ({
-  loadActionById: mocks.loadActionById,
+vi.mock("@/lib/actions/action-resume", () => ({
+  resolveActionResumePhase: mocks.resolveActionResumePhase,
 }));
 
 vi.mock("@/components/actions/action-creation-shell", () => ({
@@ -61,13 +57,15 @@ describe("action creation entry point", () => {
       state: "anonymous",
     });
     mocks.getCurrentUserIdentity.mockResolvedValue(null);
-    mocks.loadActionById.mockResolvedValue({ action_phase: "post_action_draft" });
+    mocks.resolveActionResumePhase.mockResolvedValue("post_action_draft");
   });
 
   it("does not expose the former clean-place mode", () => {
     expect(source).not.toContain('params?.["mode"]');
     expect(source).not.toContain("mode=propre");
     expect(source).not.toContain('initialRecordType={initialRecordType}');
+    expect(source).not.toContain("getSupabaseServerClient()");
+    expect(source).not.toContain("loadActionById");
   });
 
   it("keeps the action metadata in French", () => {
@@ -145,7 +143,7 @@ describe("action creation entry point", () => {
   });
 
   it("keeps a published pre-action on the before-action path when it is resumed", async () => {
-    mocks.loadActionById.mockResolvedValue({ action_phase: "pre_action" });
+    mocks.resolveActionResumePhase.mockResolvedValue("pre_action");
     const html = renderToStaticMarkup(
       await NewActionPage({
         searchParams: Promise.resolve({ from: "before", actionId: "action-42" }),
@@ -158,7 +156,7 @@ describe("action creation entry point", () => {
   });
 
   it("resumes a persisted pre-action on the Pré-formulaire tab", async () => {
-    mocks.loadActionById.mockResolvedValue({ action_phase: "pre_action" });
+    mocks.resolveActionResumePhase.mockResolvedValue("pre_action");
 
     const html = renderToStaticMarkup(
       await NewActionPage({
@@ -168,6 +166,20 @@ describe("action creation entry point", () => {
 
     expect(html).toContain('data-initial-tab="before"');
     expect(html).toContain('data-action-id="pre-action-42"');
+  });
+
+  it("does not resolve an action when an explicit tab is supplied", async () => {
+    const html = renderToStaticMarkup(
+      await NewActionPage({
+        searchParams: Promise.resolve({
+          actionId: "private-action-42",
+          tab: "before",
+        }),
+      }),
+    );
+
+    expect(html).toContain('data-initial-tab="before"');
+    expect(mocks.resolveActionResumePhase).not.toHaveBeenCalled();
   });
 
   it("does not block the authenticated complete form by viewport", () => {
@@ -209,8 +221,17 @@ describe("action creation entry point", () => {
     expect(formSource).not.toContain("loadedActionPhase ??");
     expect(identitySource).not.toContain("Type d&apos;action");
     expect(identitySource).not.toContain("Action terrain");
-    for (const sectionTitle of ["Identité", "Récolte", "Parcours", "Validation"]) {
-      expect(formSource).toContain(`title="${sectionTitle}"`);
+    for (const sectionLabel of [
+      "Action",
+      "Participants",
+      "Résultats essentiels",
+      "Détails de l’organisation",
+      "Détails de la collecte",
+      "Photos et estimation",
+      "Parcours et géométrie",
+      "Détails temporels",
+    ]) {
+      expect(formSource).toContain(sectionLabel);
     }
   });
 });
