@@ -126,7 +126,7 @@ interne standard sans recréer une échelle locale.
 ## Densité UI
 
 La densité visuelle est indépendante de la largeur structurelle. Le site active
-la densité globale `compact` à `90 %` via `data-cmm-density` sur l'élément
+la densité globale `compact` à `80 %` via `data-cmm-density` sur l'élément
 racine. Cette densité est portée par les tokens partagés et réduit le rythme,
 les surfaces, les rayons et les grands titres sur toutes les routes. Le corps
 de texte reste à `16px`, le petit texte à `14px` minimum et les captions à
@@ -175,12 +175,14 @@ unités CSS, les media queries et les `clamp()` répondent à la largeur CSS
 réellement disponible. À fort zoom, le reflow naturel et la lisibilité priment
 sur le maintien d'une grille desktop.
 
-Pour préserver la densité appréciée sur grand écran :
+Pour préserver la lisibilité et la densité appréciée sur grand écran :
 
 - réduire d'abord les grands espacements via les tokens desktop partagés ;
 - plafonner les titres avec `clamp()` plutôt que réduire le body ;
 - conserver les hauteurs tactiles des boutons et champs ;
-- ne jamais appliquer une réduction uniforme de `20 %` aux textes ou contrôles.
+- ne jamais appliquer une réduction uniforme de `20 %` aux textes de lecture ou
+  aux contrôles tactiles ; la densité `compact` ne réduit que les dimensions
+  visuelles non critiques définies par les tokens partagés.
 
 ## Grilles internes de composition
 
