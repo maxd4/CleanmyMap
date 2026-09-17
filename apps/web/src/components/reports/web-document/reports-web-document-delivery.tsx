@@ -2,7 +2,6 @@
 
 import {
   FileText,
-  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -10,7 +9,6 @@ import { CmmFeedback } from "@/components/ui/cmm-feedback";
 import { SystemStateLayout, SystemStateTitle } from "@/components/ui/system-state";
 import type { ReportGenerationHistoryRow } from "@/lib/reports/report-generation-history-contract";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
-import { GenerationStageCard } from "./reports-web-document.shared";
 
 export type ReportsWebDocumentExportStatus = {
   icon: LucideIcon;
@@ -62,74 +60,47 @@ export function ReportsWebDocumentDelivery({
     state === "error" ? "error" : state === "success" ? "success" : "info";
 
   return (
-    <GenerationStageCard
-      tone="export"
-      step="3"
-      title="Ce qui est prêt à exporter"
-      description="Lancez le PDF dès que la configuration est validée."
-      action={
+    <div className="space-y-4 border-t border-slate-200 pt-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold text-slate-500">État de l&apos;export</p>
+          <CmmFeedback tone={feedbackTone} title={exportStatus.label} className="mt-2">
+            <span className="inline-flex items-start gap-2">
+              <ExportStatusIcon size={18} aria-hidden="true" />
+              {exportStatus.description}
+            </span>
+          </CmmFeedback>
+        </div>
+
         <CmmButton
           onClick={onGenerate}
           disabled={isDisabled}
           loading={state === "pending"}
           tone="primary"
           size="lg"
+          width="wide"
+          className="shrink-0"
         >
-          <FileText size={18} />
+          <FileText size={18} aria-hidden="true" />
           {state === "pending" ? pendingLabel : "Générer le rapport"}
         </CmmButton>
-      }
-    >
-      <div className="space-y-3">
-        <CmmFeedback tone={feedbackTone} title={exportStatus.label}>
-          <span className="inline-flex items-center gap-2">
-            <ExportStatusIcon size={18} aria-hidden="true" />
-            {exportStatus.description}
-          </span>
-        </CmmFeedback>
-
-        <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-            Ce qui est prêt à exporter
-          </p>
-          <ul className="mt-2 space-y-2 text-sm leading-6 text-slate-600">
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
-              Le PDF officiel reprend la configuration et les modules sélectionnés.
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
-              Les contenus verrouillés restent réduits lorsque le niveau choisi ne suffit pas.
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
-              L&apos;export s&apos;ouvre une fois la préparation terminée et valide.
-            </li>
-          </ul>
-        </div>
-
-        <p className="flex items-start gap-2 rounded-xl border border-slate-100 bg-white px-3 py-2 text-xs leading-5 text-slate-500">
-          <ShieldCheck size={16} className="mt-0.5 shrink-0 text-red-600" />
-          Le rapport est généré à partir des données et de la méthodologie CleanMyMap.
-        </p>
-
-        <p className="rounded-xl border border-slate-100 bg-white px-3 py-2 text-xs leading-5 text-slate-600" role="status">
-          <strong>1 export détaillé par jour (Europe/Paris).</strong>{" "}
-          {dailyExportAvailability === "available"
-            ? "Votre export est disponible aujourd'hui."
-            : dailyExportAvailability === "used"
-              ? "Export déjà utilisé aujourd'hui ; le prochain sera disponible le jour civil suivant."
-              : "Disponibilité temporairement indisponible ; réessayez plus tard."}
-        </p>
-
-        {message ? (
-          <CmmFeedback tone={state === "error" ? "error" : "info"}>{message}</CmmFeedback>
-        ) : null}
-        {historyWarning ? (
-          <CmmFeedback tone="warning">{historyWarning}</CmmFeedback>
-        ) : null}
       </div>
-    </GenerationStageCard>
+
+      <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-5 text-slate-700" role="status">
+        <strong>Quota :</strong> 1 export détaillé par jour (Europe/Paris). {dailyExportAvailability === "available"
+          ? "Disponible aujourd'hui."
+          : dailyExportAvailability === "used"
+            ? "Déjà utilisé aujourd'hui ; prochain créneau le jour civil suivant."
+            : "Disponibilité temporairement indisponible ; réessayez plus tard."}
+      </p>
+
+      {message ? (
+        <CmmFeedback tone={state === "error" ? "error" : "info"}>{message}</CmmFeedback>
+      ) : null}
+      {historyWarning ? (
+        <CmmFeedback tone="warning">{historyWarning}</CmmFeedback>
+      ) : null}
+      </div>
   );
 }
 

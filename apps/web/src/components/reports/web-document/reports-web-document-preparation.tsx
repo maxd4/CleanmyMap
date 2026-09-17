@@ -3,10 +3,8 @@
 import {
   CalendarDays,
   MapPin,
-  ShieldCheck,
 } from "lucide-react";
 import {
-  GenerationStageCard,
   REPORT_MODULE_DEFINITIONS,
   type ModuleState,
   type SelectedPeriodId,
@@ -42,13 +40,21 @@ export function ReportsWebDocumentPreparation({
   onModuleToggle,
 }: ReportsWebDocumentPreparationProps) {
   return (
-    <GenerationStageCard
-      tone="prepare"
-      step="1"
-      title="Préparer le rapport"
-      description="Choisissez la période, le périmètre et les modules à inclure avant de lancer la génération."
+    <section
+      aria-labelledby="reports-configuration-title"
+      className="rounded-2xl border border-red-100 bg-white p-5 shadow-[0_12px_30px_-24px_rgba(220,38,38,0.28)] sm:p-6"
     >
-      <div className="space-y-3">
+      <div>
+        <p className="text-xs font-semibold text-red-600">Rapport d&apos;impact</p>
+        <h3 id="reports-configuration-title" className="mt-1 text-xl font-bold tracking-tight text-slate-950">
+          Configuration
+        </h3>
+        <p className="mt-1 text-sm leading-5 text-slate-600">
+          Période, périmètre et modules du rapport.
+        </p>
+      </div>
+
+      <div className="mt-5 space-y-5">
         <div className="space-y-3">
           <label className="block text-sm font-black text-slate-900">Période</label>
           <div className="relative">
@@ -149,11 +155,7 @@ export function ReportsWebDocumentPreparation({
           </div>
         </div>
 
-        <p className="flex items-start gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
-          <ShieldCheck size={16} className="mt-0.5 shrink-0 text-red-600" />
-          Le rapport est généré à partir des données et de la méthodologie CleanMyMap.
-        </p>
       </div>
-    </GenerationStageCard>
+    </section>
   );
 }

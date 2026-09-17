@@ -1,7 +1,6 @@
 import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { FileText } from "lucide-react";
 import {
   ReportsWebDocumentPreview,
   type ReportsWebDocumentPreviewProps,
@@ -24,14 +23,6 @@ const report = {
   areas: [],
 } as unknown as ReportModel;
 
-const exportStatus = {
-  icon: FileText,
-  label: "Prêt à générer",
-  description: "La configuration actuelle permet de lancer l'export.",
-  tone: "border-slate-200 bg-slate-50 text-slate-900",
-  iconTone: "text-red-600",
-};
-
 function createProps(
   overrides: Partial<ReportsWebDocumentPreviewProps> = {},
 ): ReportsWebDocumentPreviewProps {
@@ -42,17 +33,9 @@ function createProps(
     previewRef: { current: null },
     onTogglePreview: vi.fn(),
     periodDisplayLabel: "Six mois",
-    modules: {
-      dataAndCartography: true,
-      transparencyAndMethods: true,
-      rawData: false,
-      detailedFiles: true,
-    },
-    historyCoverageLabel: "Historique: 4 actions",
-    historyGuaranteeLabel: "Historique: couverture conforme à la fenêtre sélectionnée.",
     coverageRangeLabel: "01/01/2026 → 23/08/2026",
-    moduleCoverageLabel: "Modules optionnels inclus: Données & cartographie.",
-    exportStatus,
+    modulesLabel: "Données & cartographie",
+    dataStatusLabel: "Données disponibles",
     ...overrides,
   };
 }
@@ -71,10 +54,15 @@ describe("ReportsWebDocumentPreview", () => {
     );
 
     expect(closedMarkup).toContain("Voir l&#x27;aperçu");
-    expect(closedMarkup).toContain("Historique: 4 actions");
+    expect(closedMarkup).toContain("Périmètre actif");
+    expect(closedMarkup).toContain("Actions incluses");
+    expect(closedMarkup).toContain("4 actions");
     expect(closedMarkup).toContain("Six mois");
-    expect(closedMarkup).toContain("Modules optionnels inclus: Données &amp; cartographie.");
+    expect(closedMarkup).toContain("01/01/2026 → 23/08/2026");
+    expect(closedMarkup).toContain("Données &amp; cartographie");
+    expect(closedMarkup).toContain("Données disponibles");
     expect(closedMarkup).not.toMatch(/6 à 8 pages|12 à 16 pages|20 à 28 pages/);
+    expect(closedMarkup).not.toContain("Étape 2");
     expect(closedMarkup).not.toContain("synthese-executive");
 
     const openMarkup = renderToStaticMarkup(
@@ -84,7 +72,7 @@ describe("ReportsWebDocumentPreview", () => {
       ),
     );
     expect(openMarkup).toContain("Masquer l&#x27;aperçu");
-    expect(openMarkup).toContain("Aperçu du PDF");
+    expect(openMarkup).toContain("Première page du PDF");
   });
 
   it("passes the unchanged report-cover contract and preserves the executive id", () => {
@@ -105,46 +93,19 @@ describe("ReportsWebDocumentPreview", () => {
     );
   });
 
-  it("keeps the export status badge in Preview without owning export or data logic", () => {
+  it("keeps the preview focused on the actual report summary", () => {
     const markup = renderToStaticMarkup(
       React.createElement(
         ReportsWebDocumentPreview,
         createProps({
-          exportStatus: {
-            ...exportStatus,
-            label: "Export à vérifier",
-            tone: "border-red-200 bg-red-50 text-red-900",
-          },
+          modulesLabel: "Transparence & méthodes",
         }),
       ),
     );
 
-    expect(markup).toContain("Export à vérifier");
-    expect(markup).toContain("border-red-200 bg-red-50 text-red-900");
-  });
-
-  it("shows only enabled optional modules and keeps the core chapters visible", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(
-        ReportsWebDocumentPreview,
-        createProps({
-          modules: {
-            dataAndCartography: false,
-            transparencyAndMethods: true,
-            rawData: false,
-            detailedFiles: false,
-          },
-          moduleCoverageLabel: "Modules optionnels inclus: Transparence & méthodes.",
-        }),
-      ),
-    );
-
-    expect(markup).toContain("Synthèse exécutive");
-    expect(markup).toContain("Périmètre du rapport");
-    expect(markup).toContain("Résultats terrain");
+    expect(markup).toContain("Résumé du rapport");
     expect(markup).toContain("Transparence &amp; méthodes");
-    expect(markup).not.toContain("Données &amp; cartographie");
-    expect(markup).not.toContain("Données brutes");
-    expect(markup).not.toContain("Fichiers détaillés");
+    expect(markup).not.toContain("Ce qui sortira dans le PDF");
+    expect(markup).not.toContain("Par défaut");
   });
 });

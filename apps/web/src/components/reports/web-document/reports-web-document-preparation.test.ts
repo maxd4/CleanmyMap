@@ -180,14 +180,14 @@ describe("ReportsWebDocumentPreparation", () => {
       React.createElement(ReportsWebDocumentPreparation, preparationProps),
     );
 
-    expect(markup).toContain("Préparer le rapport");
+    expect(markup).toContain("Configuration");
     expect(markup).not.toContain("plafonné à");
     expect(markup).not.toContain("1000 actions approuvées");
     expect(markup).toContain("Périmètre du rapport");
     expect(markup).not.toContain("Niveau de détail");
     expect(markup).not.toMatch(/6 à 8 pages|12 à 16 pages|20 à 28 pages/);
     expect(markup).toContain("Modules optionnels");
-    expect(markup).toContain("Le rapport est généré à partir des données");
+    expect(markup).not.toContain("Étape 1");
   });
 
   it("propagates the final payload to history after a successful PDF generation", async () => {
@@ -278,7 +278,9 @@ describe("ReportsWebDocumentPreparation", () => {
     const previewProps = (
       mocks.preview.mock.calls as unknown as Array<[{ onTogglePreview?: () => void; modules?: unknown }]>
     )[0]?.[0];
-    expect(previewProps?.modules).toEqual(preparationProps.modules);
+    expect(previewProps?.modulesLabel).toBe(
+      "Données & cartographie, Transparence & méthodes, Fichiers détaillés",
+    );
   });
 
   it("does not fail an already successful PDF when history persistence fails", async () => {
