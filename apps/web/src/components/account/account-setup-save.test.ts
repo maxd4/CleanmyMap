@@ -8,230 +8,110 @@ import {
   type AccountSetupUserUpdate,
 } from "./account-setup-save";
 
-describe("account setup persistence", () => {
-  it("omits username when the normalized pseudo is unchanged", () => {
-    const result = buildAccountSetupIdentityUpdate({
-      currentUsername: "  Vert_Tige ",
-      pseudo: "Vert_Tige",
-      firstName: "Marie",
-      lastName: "Curie",
-      displayNameMode: "full_name",
-    });
+function createPersistenceDependencies() {
+  return {
+    updateUser: vi.fn(async (update: AccountSetupUserUpdate) => {
+      void update;
+    }),
+    updateActiveProfile: vi.fn(async () => undefined),
+    saveDisplayMode: vi.fn(),
+  };
+}
 
-    expect(result.usernameChanged).toBe(false);
-    expect(result.update).toEqual({ firstName: "Marie", lastName: "Curie" });
+describe("account setup persistence", () => {
+  it("updates only first and last names, never the Clerk username", () => {
+    const result = buildAccountSetupIdentityUpdate({ firstName: " Marie ", lastName: " Curie " });
+    expect(result).toEqual({ firstName: "Marie", lastName: "Curie" });
+    expect(result).not.toHaveProperty("username");
   });
 
-  it("uses the reverification wrapper only when the pseudo changes", async () => {
-    const calls: string[] = [];
-    const updateUser = vi.fn(async () => {
-      calls.push("identity");
-    });
-    const updateUserWithReverification = vi.fn(async () => {
-      calls.push("reverification");
-    });
-    const updateActiveProfile = vi.fn(async () => {
-      calls.push("activeProfile");
-    });
-    const saveDisplayMode = vi.fn(() => {
-      calls.push("displayMode");
-    });
-
+  it("persists identity without requiring a username", async () => {
+    const dependencies = createPersistenceDependencies();
     await persistAccountSetupChanges({
-      currentUsername: "old-pseudo",
-      pseudo: "new-pseudo",
       firstName: "Marie",
       lastName: "Curie",
-      displayNameMode: "full_name",
       metadata: { profileSetupCompleted: true },
       initialProfile: "benevole",
       selectedProfile: "scientifique",
-      updateUser,
-      updateUserWithReverification,
-      updateActiveProfile,
-      saveDisplayMode,
+      ...dependencies,
     });
 
-    expect(updateUserWithReverification).toHaveBeenCalledWith({
-      username: "new-pseudo",
-      firstName: "Marie",
-      lastName: "Curie",
-    });
-    expect(updateUser).toHaveBeenCalledWith({
-      unsafeMetadata: { profileSetupCompleted: true },
-    });
-    expect(updateUser).not.toHaveBeenCalledWith(
-      expect.objectContaining({ username: expect.any(String) }),
+    expect(dependencies.updateUser).toHaveBeenNthCalledWith(1, { firstName: "Marie", lastName: "Curie" });
+    expect(dependencies.updateUser).toHaveBeenNthCalledWith(2, { unsafeMetadata: { profileSetupCompleted: true } });
+    expect(dependencies.updateUser.mock.calls.flat()).not.toContainEqual(
+      expect.objectContaining({ username: expect.anything() }),
     );
-    expect(updateActiveProfile).toHaveBeenCalledWith("scientifique");
-    expect(calls).toEqual([
-      "reverification",
-      "activeProfile",
-      "displayMode",
-      "identity",
-    ]);
+    expect(dependencies.updateActiveProfile).toHaveBeenCalledWith("scientifique");
   });
 
-  it("does not require reverification when only identity/preferences metadata change", async () => {
-    const updateUser = vi.fn(async () => undefined);
-    const updateUserWithReverification = vi.fn(async () => undefined);
-    const updateActiveProfile = vi.fn(async () => undefined);
-    const saveDisplayMode = vi.fn();
+  it.each(["identity", "activeProfile", "metadata", "displayMode"] as const)(
+    "resumes after a partial %s success without replaying completed steps",
+    async (failedStep) => {
+      const completedSteps = new Set<AccountSetupPersistenceStep>();
+      let failureRaised = false;
+      const failOnce = (step: AccountSetupPersistenceStep) => {
+        if (failedStep === step && !failureRaised) {
+          failureRaised = true;
+          throw new Error(`${step} failed`);
+        }
+      };
+      const updateUser = vi.fn(async (update: AccountSetupUserUpdate) => {
+        failOnce("identity");
+        if ("unsafeMetadata" in update) failOnce("metadata");
+      });
+      const updateActiveProfile = vi.fn(async () => failOnce("activeProfile"));
+      const saveDisplayMode = vi.fn(() => failOnce("displayMode"));
+      const runPersistence = () => persistAccountSetupChanges({
+        firstName: "Marie",
+        lastName: "Curie",
+        metadata: { profileSetupCompleted: true },
+        initialProfile: "benevole",
+        selectedProfile: failedStep === "activeProfile" ? "scientifique" : "benevole",
+        updateUser,
+        updateActiveProfile,
+        saveDisplayMode,
+        completedSteps,
+      });
 
-    await persistAccountSetupChanges({
-      currentUsername: "same-pseudo",
-      pseudo: " same-pseudo ",
-      firstName: "Marie",
-      lastName: "Curie",
-      displayNameMode: "full_name",
-      metadata: { display_name_mode: "full_name" },
-      initialProfile: "benevole",
-      selectedProfile: "benevole",
-      updateUser,
-      updateUserWithReverification,
-      updateActiveProfile,
-      saveDisplayMode,
-    });
-
-    expect(updateUserWithReverification).not.toHaveBeenCalled();
-    expect(updateUser).toHaveBeenNthCalledWith(1, {
-      firstName: "Marie",
-      lastName: "Curie",
-    });
-    expect(updateUser).toHaveBeenNthCalledWith(2, {
-      unsafeMetadata: { display_name_mode: "full_name" },
-    });
-  });
-
-  it.each([
-    "identity",
-    "activeProfile",
-    "metadata",
-    "displayMode",
-  ] as const)("resumes after a partial %s success without replaying completed steps", async (failedStep) => {
-    const completedSteps = new Set<AccountSetupPersistenceStep>();
-    let failureRaised = false;
-    const failOnce = (step: AccountSetupPersistenceStep) => {
-      if (failedStep === step && !failureRaised) {
-        failureRaised = true;
-        throw new Error(`${step} failed`);
-      }
-    };
-    const updateUser = vi.fn(async (update: AccountSetupUserUpdate) => {
-      if ("unsafeMetadata" in update) {
-        failOnce("metadata");
-      }
-    });
-    const updateUserWithReverification = vi.fn(async () => {
-      failOnce("identity");
-    });
-    const updateActiveProfile = vi.fn(async () => {
-      failOnce("activeProfile");
-    });
-    const saveDisplayMode = vi.fn(() => {
-      failOnce("displayMode");
-    });
-    const runPersistence = () => persistAccountSetupChanges({
-      currentUsername: failedStep === "identity" ? "old-pseudo" : "same-pseudo",
-      pseudo: failedStep === "identity" ? "new-pseudo" : "same-pseudo",
-      firstName: "Marie",
-      lastName: "Curie",
-      displayNameMode: "full_name",
-      metadata: { profileSetupCompleted: true },
-      initialProfile: "benevole",
-      selectedProfile: failedStep === "activeProfile" ? "scientifique" : "benevole",
-      updateUser,
-      updateUserWithReverification,
-      updateActiveProfile,
-      saveDisplayMode,
-      completedSteps,
-    });
-
-    await expect(runPersistence()).rejects.toThrow(`${failedStep} failed`);
-    await expect(runPersistence()).resolves.toBeUndefined();
-
-    expect(completedSteps).toEqual(new Set([
-      "identity",
-      "activeProfile",
-      "metadata",
-      "displayMode",
-    ]));
-    expect(updateUserWithReverification).toHaveBeenCalledTimes(failedStep === "identity" ? 2 : 0);
-    expect(updateActiveProfile).toHaveBeenCalledTimes(failedStep === "activeProfile" ? 2 : 0);
-    expect(updateUser.mock.calls.filter(([update]) => "unsafeMetadata" in update)).toHaveLength(
-      failedStep === "metadata" ? 2 : 1,
-    );
-    expect(saveDisplayMode).toHaveBeenCalledTimes(failedStep === "displayMode" ? 2 : 1);
-  });
+      await expect(runPersistence()).rejects.toThrow(`${failedStep} failed`);
+      await expect(runPersistence()).resolves.toBeUndefined();
+      expect(completedSteps).toEqual(new Set(["identity", "activeProfile", "metadata", "displayMode"]));
+      expect(updateActiveProfile).toHaveBeenCalledTimes(failedStep === "activeProfile" ? 2 : 0);
+      expect(saveDisplayMode).toHaveBeenCalledTimes(failedStep === "displayMode" ? 2 : 1);
+    },
+  );
 
   it("writes completion metadata only after display mode succeeds", async () => {
-    const calls: string[] = [];
-    const completedSteps = new Set<AccountSetupPersistenceStep>();
+    const dependencies = createPersistenceDependencies();
     let shouldFailDisplayMode = true;
-    const updateUser = vi.fn(async (update: AccountSetupUserUpdate) => {
-      calls.push("unsafeMetadata" in update ? "metadata" : "identity");
-    });
-    const updateUserWithReverification = vi.fn(async () => {
-      calls.push("reverification");
-    });
-    const updateActiveProfile = vi.fn(async () => {
-      calls.push("activeProfile");
-    });
-    const saveDisplayMode = vi.fn(async () => {
-      calls.push("displayMode");
+    dependencies.saveDisplayMode.mockImplementation(() => {
       if (shouldFailDisplayMode) {
         shouldFailDisplayMode = false;
         throw new Error("displayMode failed");
       }
     });
+    const completedSteps = new Set<AccountSetupPersistenceStep>();
     const runPersistence = () => persistAccountSetupChanges({
-      currentUsername: "same-pseudo",
-      pseudo: "same-pseudo",
       firstName: "Marie",
       lastName: "Curie",
-      displayNameMode: "full_name",
       metadata: { profileSetupCompleted: true },
       initialProfile: "benevole",
       selectedProfile: "scientifique",
-      updateUser,
-      updateUserWithReverification,
-      updateActiveProfile,
-      saveDisplayMode,
+      ...dependencies,
       completedSteps,
     });
 
     await expect(runPersistence()).rejects.toThrow("displayMode failed");
-    expect(updateUser.mock.calls.filter(([update]) => "unsafeMetadata" in update)).toHaveLength(0);
-    expect(completedSteps).toEqual(new Set(["identity", "activeProfile"]));
-
+    expect(dependencies.updateUser).toHaveBeenCalledTimes(1);
     await expect(runPersistence()).resolves.toBeUndefined();
-    expect(updateUser.mock.calls.filter(([update]) => "unsafeMetadata" in update)).toHaveLength(1);
-    expect(calls).toEqual([
-      "identity",
-      "activeProfile",
-      "displayMode",
-      "displayMode",
-      "metadata",
-    ]);
-    expect(completedSteps).toEqual(new Set([
-      "identity",
-      "activeProfile",
-      "displayMode",
-      "metadata",
-    ]));
+    expect(dependencies.updateUser).toHaveBeenCalledTimes(2);
+    expect(completedSteps).toEqual(new Set(["identity", "activeProfile", "displayMode", "metadata"]));
   });
 
-  it("leaves the pseudonymous user's existing names untouched", () => {
-    const result = buildAccountSetupIdentityUpdate({
-      currentUsername: "Vert_Tige",
-      pseudo: "Vert_Tige",
-      firstName: "",
-      lastName: "",
-      displayNameMode: "pseudo",
-    });
-
-    expect(result.update).toEqual({});
-    expect(result.usernameChanged).toBe(false);
+  it("keeps a historical username outside the identity update", () => {
+    const result = buildAccountSetupIdentityUpdate({ firstName: "Marie", lastName: "Curie" });
+    expect(result).toEqual({ firstName: "Marie", lastName: "Curie" });
+    expect(result).not.toHaveProperty("username");
   });
 
   it("preserves unrelated metadata when deferring and clears it on completion", () => {
@@ -240,16 +120,7 @@ describe("account setup persistence", () => {
       3,
       "2026-09-05T12:00:00.000Z",
     );
-
-    expect(deferred).toMatchObject({
-      activeProfile: "benevole",
-      profileSetupDeferred: true,
-      profileSetupDeferredVersion: 3,
-      profileSetupDeferredAt: "2026-09-05T12:00:00.000Z",
-    });
-    expect(clearAccountSetupDeferralMetadata(deferred)).toEqual({
-      activeProfile: "benevole",
-      display_name_mode: "full_name",
-    });
+    expect(deferred).toMatchObject({ activeProfile: "benevole", profileSetupDeferred: true, profileSetupDeferredVersion: 3, profileSetupDeferredAt: "2026-09-05T12:00:00.000Z" });
+    expect(clearAccountSetupDeferralMetadata(deferred)).toEqual({ activeProfile: "benevole", display_name_mode: "full_name" });
   });
 });

@@ -125,6 +125,27 @@ Lors d'une validation complète réussie :
 
 - Aucun fichier legacy dédié.
 
+## Contrat d'identité initiale
+
+La configuration initiale exige un prénom et un nom. Le pseudo Clerk est
+facultatif et ne fait pas partie de la création ni de la finalisation du
+compte CleanMyMap ; il reste configurable séparément dans les préférences du
+compte. Une absence de pseudo ne déclenche donc ni le gate, ni une mise à jour
+de schéma, ni une validation supplémentaire. Les pseudos historiques sont
+conservés tels quels.
+
+Lorsque Clerk fournit une identité Google, les champs `firstName` et `lastName`
+de l'utilisateur Clerk sont prioritaires. À défaut, les mêmes champs du compte
+Google lié servent de valeurs initiales. Ces valeurs restent éditables, une
+modification manuelle n'est pas écrasée lors de la réhydratation, et aucune
+partie du nom n'est déduite de l'adresse email.
+
+La configuration Dashboard Clerk doit être vérifiée séparément pour les
+instances de développement et de production afin que le username soit
+facultatif à l'inscription et que les noms soient compatibles avec ce contrat.
+Cette configuration d'instance n'est pas versionnée dans le dépôt et aucune
+modification distante n'est incluse dans ce lot.
+
 ## Notes d'audit
 
 - Cette fiche est la source de vérité canonique pour la page.

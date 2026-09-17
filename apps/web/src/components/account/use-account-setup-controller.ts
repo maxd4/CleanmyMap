@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent, type SetStateAction } from "react";
-import { useReverification, useUser } from "@clerk/nextjs";
-import { isReverificationCancelledError } from "@clerk/nextjs/errors";
+import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import type { DisplayMode } from "@/lib/ui/preferences";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -25,7 +24,6 @@ import {
   createAccountSetupDeferralMetadata,
   persistAccountSetupChanges,
   type AccountSetupPersistenceStep,
-  type AccountSetupUserUpdate,
 } from "@/components/account/account-setup-save";
 import {
   getAccountSetupProfileOptions,
@@ -39,6 +37,10 @@ import {
   shouldConfirmAccountSetupDeferral,
   shouldShowAccountSetupFieldError,
 } from "@/components/account/account-setup-state";
+import {
+  resolveAccountSetupIdentityNames,
+  resolveAccountSetupNameField,
+} from "@/components/account/account-setup-identity";
 
 export type AccountSetupFormProps = {
   nextPath?: string;
@@ -54,7 +56,7 @@ export type AccountSetupFormProps = {
   submitMode?: "navigate" | "refresh";
 };
 
-type AccountSetupField = "pseudo" | "firstName" | "lastName" | "profile" | "location";
+type AccountSetupField = "firstName" | "lastName" | "profile" | "location";
 
 async function updateActiveProfile(activeProfile: AppProfile) {
   const response = await fetch("/api/account/active-profile", {
@@ -94,14 +96,6 @@ export function useAccountSetupController({
 }: AccountSetupFormProps) {
   const router = useRouter();
   const { user, isLoaded } = useUser();
-  const updateUserWithReverification = useReverification(
-    async (update: AccountSetupUserUpdate) => {
-      if (!user) {
-        throw new Error("Compte introuvable, reconnectez-vous.");
-      }
-      return user.update(update);
-    },
-  );
   const { locale, displayMode, setDisplayMode } = useSitePreferences();
   const legacySelection = useMemo(
     () => createTerritoryLocationSelectionFromLegacyArrondissement(initialArrondissement),
@@ -119,7 +113,6 @@ export function useAccountSetupController({
   const [selectedProfileCandidate, setSelectedProfileCandidate] = useState<AppProfile>(() =>
     resolveAccountSetupProfileSelection(initialProfile, profileOptions),
   );
-  const [pseudoOverride, setPseudoOverride] = useState<string | null>(null);
   const [firstNameOverride, setFirstNameOverride] = useState<string | null>(null);
   const [lastNameOverride, setLastNameOverride] = useState<string | null>(null);
   const [displayNameMode, setDisplayNameMode] = useState<DisplayNameMode>(() =>
@@ -140,13 +133,15 @@ export function useAccountSetupController({
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
 
-  const pseudo = pseudoOverride ?? user?.username ?? "";
-  const firstName = firstNameOverride ?? user?.firstName ?? "";
-  const lastName = lastNameOverride ?? user?.lastName ?? "";
-  const trimmedPseudo = pseudo.trim();
+  const providerIdentityNames = resolveAccountSetupIdentityNames({
+    firstName: user?.firstName,
+    lastName: user?.lastName,
+    externalAccounts: user?.externalAccounts,
+  });
+  const firstName = resolveAccountSetupNameField(firstNameOverride, providerIdentityNames.firstName);
+  const lastName = resolveAccountSetupNameField(lastNameOverride, providerIdentityNames.lastName);
   const trimmedFirstName = firstName.trim();
   const trimmedLastName = lastName.trim();
-  const isPseudonymous = displayNameMode === "pseudo";
   const selectedProfile = profileOptions.includes(selectedProfileCandidate)
     ? selectedProfileCandidate
     : resolveAccountSetupProfileSelection(selectedProfileCandidate, profileOptions);
@@ -176,11 +171,6 @@ export function useAccountSetupController({
     setSelectedProfileCandidate(profile);
   }
 
-  function handlePseudoChange(value: string) {
-    markFormDirty();
-    setPseudoOverride(value);
-  }
-
   function handleFirstNameChange(value: string) {
     markFormDirty();
     setFirstNameOverride(value);
@@ -189,11 +179,6 @@ export function useAccountSetupController({
   function handleLastNameChange(value: string) {
     markFormDirty();
     setLastNameOverride(value);
-  }
-
-  function handleDisplayNameModeChange(mode: DisplayNameMode) {
-    markFormDirty();
-    setDisplayNameMode(mode);
   }
 
   function handleDisplayModeChange(mode: DisplayMode) {
@@ -280,9 +265,8 @@ export function useAccountSetupController({
   }, [initialDisplayNameMode, isLoaded, user]);
 
   const profileIsValid = profileOptions.includes(selectedProfile);
-  const pseudoError = !trimmedPseudo ? "Renseignez votre pseudo." : null;
-  const firstNameError = !isPseudonymous && !trimmedFirstName ? "Renseignez votre prénom." : null;
-  const lastNameError = !isPseudonymous && !trimmedLastName ? "Renseignez votre nom." : null;
+  const firstNameError = !trimmedFirstName ? "Renseignez votre prénom." : null;
+  const lastNameError = !trimmedLastName ? "Renseignez votre nom." : null;
   const profileError = !profileIsValid ? "Sélectionnez un profil valide." : null;
   const activeResidence = !noneSelected && residenceEnabled;
   const activeWork = !noneSelected && workEnabled;
@@ -291,7 +275,7 @@ export function useAccountSetupController({
     (activeWork && !isValidSelection(work))
       ? "Sélectionnez une ville ou un arrondissement pour chaque lieu activé."
       : null;
-  const formIsValid = !pseudoError && !firstNameError && !lastNameError && !profileError && !locationError;
+  const formIsValid = !firstNameError && !lastNameError && !profileError && !locationError;
 
   async function handleDefer() {
     setError(null);
@@ -365,16 +349,12 @@ export function useAccountSetupController({
       );
 
       await persistAccountSetupChanges({
-        currentUsername: user.username,
-        pseudo: trimmedPseudo,
         firstName: trimmedFirstName,
         lastName: trimmedLastName,
-        displayNameMode,
         metadata: completedMetadata,
         initialProfile,
         selectedProfile,
         updateUser: (update) => user.update(update),
-        updateUserWithReverification,
         updateActiveProfile,
         saveDisplayMode: () => setDisplayMode(selectedDisplayMode),
         completedSteps: completedPersistenceSteps.current,
@@ -385,16 +365,7 @@ export function useAccountSetupController({
       navigateAfterSetup();
     } catch (caughtError) {
       logFailure("AccountSetup", "Update failed", caughtError, { profile: selectedProfile });
-      const appError = isReverificationCancelledError(caughtError)
-        ? toAppError(
-            "Vérification de sécurité annulée. Aucune modification n’a été enregistrée.",
-            {
-              kind: "permission",
-              message:
-                "Vérification de sécurité annulée. Aucune modification n’a été enregistrée.",
-            },
-          )
-        : isAppError(caughtError)
+      const appError = isAppError(caughtError)
         ? caughtError
         : toAppError(caughtError, { kind: "server", message: "Impossible d’enregistrer les préférences. Réessayez." });
       if (appError.kind === "network") {
@@ -417,10 +388,8 @@ export function useAccountSetupController({
     locale,
     profileOptions,
     selectedProfile,
-    pseudo,
     firstName,
     lastName,
-    isPseudonymous,
     selectedDisplayMode,
     residence,
     work,
@@ -430,7 +399,6 @@ export function useAccountSetupController({
     isSaving,
     isDirty,
     error,
-    pseudoError,
     firstNameError,
     lastNameError,
     profileError,
@@ -438,11 +406,9 @@ export function useAccountSetupController({
     shouldShowFieldError,
     markFormDirty,
     touchField,
-    handlePseudoChange,
     handleFirstNameChange,
     handleLastNameChange,
     handleProfileChange,
-    handleDisplayNameModeChange,
     handleDisplayModeChange,
     updateResidence,
     updateWork,
