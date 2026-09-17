@@ -22,7 +22,7 @@ export function PillBadge({
   }[tone];
 
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] ${toneClasses}`}>
+    <span className={`inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold tracking-normal ${toneClasses}`}>
       {children}
     </span>
   );
@@ -42,7 +42,7 @@ export function FilterField({
     <label
       className={`flex min-h-[56px] flex-col justify-between rounded-[1rem] border border-slate-200 bg-white px-3.5 py-2.5 shadow-[0_12px_22px_-20px_rgba(15,23,42,0.18)] ${className}`}
     >
-      <span className="flex items-center gap-2 text-[8px] font-black uppercase tracking-[0.22em] text-slate-500">
+      <span className="flex items-center gap-2 text-xs font-semibold tracking-normal text-slate-600">
         {icon}
         {label}
       </span>
@@ -65,7 +65,7 @@ export function ShortcutsCard() {
           <Link
             key={shortcut.label}
             href={shortcut.href}
-            className="flex items-center justify-between gap-3 bg-white px-4 py-3 transition hover:bg-emerald-50/60"
+            className="flex min-h-14 items-center justify-between gap-3 bg-white px-4 py-3 transition-colors motion-reduce:transition-none hover:bg-emerald-50/60"
           >
             <span className="flex items-center gap-3 text-sm font-medium text-slate-700">
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50 text-emerald-700">
@@ -151,20 +151,20 @@ export function ActionCard({
       id={`join-action-${item.id}`}
       tabIndex={isFocused ? -1 : undefined}
       aria-describedby={isFocused ? `join-action-${item.id}-target` : undefined}
-      className={`rounded-[1.4rem] border bg-white p-4 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.35)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_56px_-34px_rgba(15,23,42,0.38)] ${isFocused ? "border-emerald-500 bg-emerald-50/30 ring-2 ring-emerald-300/80 ring-offset-2" : "border-slate-200"}`}
+      className={`rounded-2xl border bg-white p-4 shadow-[0_20px_50px_-38px_rgba(15,23,42,0.35)] transition motion-reduce:transition-none motion-reduce:hover:transform-none hover:-translate-y-0.5 hover:shadow-[0_24px_56px_-34px_rgba(15,23,42,0.38)] ${isFocused ? "border-emerald-500 bg-emerald-50/30 ring-2 ring-emerald-300/80 ring-offset-2" : "border-slate-200"}`}
     >
       {isFocused ? (
         <p id={`join-action-${item.id}-target`} className="mb-3 inline-flex rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-900">
           {fr ? "Action ciblée par le lien" : "Action targeted by this link"}
         </p>
       ) : null}
-      <div className="grid gap-4 md:grid-cols-[180px_minmax(0,1fr)_auto] md:items-stretch">
+      <div className="grid gap-4 md:grid-cols-[minmax(150px,180px)_minmax(0,1fr)_minmax(180px,auto)] md:items-stretch">
         <ActionThumbnail item={item} index={index} />
 
         <div className="min-w-0 space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
-              <h3 className="text-lg font-black tracking-tight text-emerald-950">
+              <h3 className="text-xl font-black text-emerald-950">
                 {item.actionTitle?.trim() || item.location_label}
               </h3>
               <div className="flex flex-wrap items-center gap-2">
@@ -334,7 +334,7 @@ export function QueueRow({
   return (
     <div className="grid gap-3 border-b border-slate-100 px-4 py-3 last:border-b-0 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1.1fr)_auto_auto] md:items-center">
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-slate-900">
+        <p className="break-words text-sm font-semibold text-slate-900">
           {request.displayName}
         </p>
         <p className="text-xs text-slate-500">
@@ -370,7 +370,7 @@ export function QueueRow({
               aria-label={fr ? "Accepter la demande" : "Accept request"}
               disabled={reviewingQueueId === request.id}
               onClick={() => onReviewQueueRequest(request.id, "accept")}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 transition hover:bg-emerald-50 disabled:opacity-50"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-emerald-200 bg-white text-emerald-700 transition-colors motion-reduce:transition-none hover:bg-emerald-50 disabled:opacity-50"
             >
               <CheckCircle2 size={16} />
             </button>
@@ -380,7 +380,7 @@ export function QueueRow({
             aria-label={fr ? "Exclure le compte" : "Remove account"}
             disabled={reviewingQueueId === request.id}
             onClick={() => onReviewQueueRequest(request.id, "reject")}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-600 transition hover:bg-rose-50 disabled:opacity-50"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-rose-200 bg-white text-rose-600 transition-colors motion-reduce:transition-none hover:bg-rose-50 disabled:opacity-50"
           >
             <X size={16} />
           </button>

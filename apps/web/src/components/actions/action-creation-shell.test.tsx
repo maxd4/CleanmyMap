@@ -125,7 +125,7 @@ describe("ActionCreationShell", () => {
       markup.match(/id="action-creation-panel-(pre-formulaire|itineraire|meteo|formalites)"/g),
     ).toHaveLength(4);
     expect(markup).toContain("Pré-formulaire");
-    expect(markup).toContain("<h1 class=\"text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tighter text-emerald-950\">Créer une action</h1>");
+    expect(markup).toContain("<h1 class=\"text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tight text-emerald-950\">Créer une action</h1>");
     expect(markup).toContain("Itinéraire");
     expect(markup).toContain("Météo &amp; conditions terrain");
     expect(markup).toContain("Formalités juridiques");
