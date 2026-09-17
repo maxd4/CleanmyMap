@@ -15,15 +15,18 @@ class StreamValues extends StreamBase {
   constructor(options) {
     super(options);
     this._counter = 0;
+    this._level = 0;
   }
 
-  _push() {
-    this.push({key: this._counter++, value: this._assembler.current});
-    this._assembler.current = null;
-    this._assembler.key = null;
+  _push(discard) {
+    if (discard) {
+      ++this._counter;
+    } else {
+      this.push({key: this._counter++, value: this._assembler.current});
+    }
+    this._assembler.current = this._assembler.key = null;
   }
 }
-
 StreamValues.streamValues = StreamValues.make;
 StreamValues.make.Constructor = StreamValues;
 

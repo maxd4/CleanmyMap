@@ -63,12 +63,13 @@ entrée est ESM et ses chemins publics sont différents. L'override global
 `apps/mobile/vendor/stream-json` est un backport CleanMyMap versionné sous le
 nom `stream-json` et la version de contrat `1.9.1` afin de satisfaire la plage
 `^1.9.1` de `jayson`. Il ne prétend pas être le code upstream
-`stream-json@3.6.0`. Il conserve seulement le parseur JSON nécessaire à
-`StreamValues`, l'assemblage de valeurs et `Verifier` du contrat historique.
-Le package local ne réintroduit pas `stream-chain` comme dépendance autonome :
-son pont interne conserve uniquement le comportement de pipeline nécessaire à
-`StreamValues.withParser()`. Les modules de filtres `pick`,
-`ignore`, `filter` et `replace` ne sont pas présents dans le package local.
+`stream-json@3.6.0`. Il conserve uniquement les modules upstream nécessaires au
+parseur incrémental, à `StreamValues`, à l'assemblage de valeurs, à
+`StreamValues.withParser()` et à `Verifier`. Il embarque uniquement le pipeline
+compatible `stream-chain@2.2.5`, indispensable au comportement historique de
+`withParser()`, sans ajouter de dépendance workspace ni d'override global.
+Les modules de filtres `pick`, `ignore`, `filter` et `replace` ne sont pas
+présents.
 
 La redirection est strictement scoped à `jayson@4.3.0` dans `package.json` :
 
@@ -80,8 +81,10 @@ La redirection est strictement scoped à `jayson@4.3.0` dans `package.json` :
 
 La compatibilité est vérifiée par
 `apps/mobile/security/stream-json-jayson-security.test.mjs`, qui couvre le
-chargement de `jayson`, les deux imports profonds, un échange JSON-RPC minimal
-via `jayson.Utils.parseStream()` et l'absence des modules de filtres exclus.
+chargement de `jayson`, les deux imports profonds, l'émission incrémentale
+d'une valeur complète, plusieurs valeurs sur un flux ouvert, un JSON
+fragmenté, un échange JSON-RPC minimal via `jayson.Utils.parseStream()` et
+l'absence des modules de filtres exclus.
 La chaîne effective doit rester vérifiable avec
 `npm ls jayson stream-json @solana/web3.js`; aucun contrat fonctionnel de
 Clerk, Supabase ou Solana n'est modifié et ce lot ne migre pas vers
