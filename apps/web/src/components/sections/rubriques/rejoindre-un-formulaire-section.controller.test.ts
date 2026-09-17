@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { JoinableActionItem } from "@/lib/actions/participation/group-participation";
-import { getLocationFilterBucket, isWithinPeriod, sortItemsByStatusRank } from "./rejoindre-un-formulaire-section.controller";
+import { getLocationFilterBucket, isWithinPeriod, resolveJoinFormQueueActionId, sortItemsByStatusRank } from "./rejoindre-un-formulaire-section.controller";
 
 function makeItem(
   partial: Partial<JoinableActionItem> & Pick<JoinableActionItem, "id" | "action_date" | "location_label">,
@@ -90,5 +90,16 @@ describe("sortItemsByStatusRank", () => {
       "confirmed",
       "closed",
     ]);
+  });
+});
+
+describe("resolveJoinFormQueueActionId", () => {
+  it("requires an explicit future action target", () => {
+    expect(resolveJoinFormQueueActionId({ activeTab: "future", focusActionId: null })).toBeNull();
+    expect(resolveJoinFormQueueActionId({ activeTab: "future", focusActionId: "action-42" })).toBe("action-42");
+  });
+
+  it("does not open moderation from a past-action deep link", () => {
+    expect(resolveJoinFormQueueActionId({ activeTab: "past", focusActionId: "action-42" })).toBeNull();
   });
 });

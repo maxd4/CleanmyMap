@@ -23,6 +23,7 @@ type ActionRow = {
   action_phase?: "pre_action" | "post_action_draft" | "post_action_complete";
   notes?: string | null;
   published_at?: string | null;
+  preparation_data?: { actionTitle?: string };
 };
 
 const TEST_NOW = new Date("2026-06-01T09:00:00.000Z");
@@ -208,6 +209,7 @@ describe("group participation fallback handling", () => {
         status: "approved",
         notes: null,
         action_phase: "pre_action",
+        preparation_data: { actionTitle: "Nettoyage des berges" },
       },
       { groupJoinEnabled: true },
       4,
@@ -224,6 +226,7 @@ describe("group participation fallback handling", () => {
 
     expect(item).toMatchObject({
       actionPhase: "pre_action",
+      actionTitle: "Nettoyage des berges",
       participantsCount: 4,
       joined: false,
       awaitingApproval: true,

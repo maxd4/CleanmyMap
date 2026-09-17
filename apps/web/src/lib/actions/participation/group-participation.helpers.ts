@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionParticipantRow, ActionRow } from "@/types/database";
 import type { ActionParticipantSummary } from "./participant-summaries";
-import type { ActionPhase } from "@/lib/actions/types";
+import type { ActionPhase, ActionPreparationData } from "@/lib/actions/types";
 
 export const PENDING_PARTICIPATION_STATUS = "pending" as const;
 export const ACTIVE_PARTICIPATION_STATUS = "confirmed" as const;
@@ -42,7 +42,9 @@ export type ActionPreviewRow = Pick<
   | "cancelled_by_clerk_id"
   | "cancellation_reason"
   | "cancelled_from_status"
->;
+> & {
+  preparation_data?: ActionRow["preparation_data"];
+};
 
 export type ActionParticipantRecordRow = Pick<
   ActionParticipantRow,
@@ -80,7 +82,7 @@ export type ActionParticipantReviewRow = Pick<
 };
 
 const ACTION_PREVIEW_COLUMNS =
-  "id, created_at, action_date, event_start_time, location_label, volunteers_count, duration_minutes, status, moderation_visibility, notes, action_phase, published_at, cancelled_at, cancelled_by_clerk_id, cancellation_reason, cancelled_from_status";
+  "id, created_at, action_date, event_start_time, location_label, volunteers_count, duration_minutes, status, moderation_visibility, notes, action_phase, published_at, cancelled_at, cancelled_by_clerk_id, cancellation_reason, cancelled_from_status, preparation_data";
 const ACTION_PARTICIPATION_COLUMNS =
   "status, moderation_visibility, notes, published_at, action_phase, action_date, event_start_time, cancelled_at";
 
@@ -122,6 +124,11 @@ function resolvePendingRequestsCount(
   return Math.max(0, (participantSummary?.totalCount ?? participantsCount) - participantsCount);
 }
 
+export function getActionTitle(action: Pick<ActionPreviewRow, "preparation_data">): string | null {
+  const preparationData = action.preparation_data as ActionPreparationData | null | undefined;
+  return preparationData?.actionTitle?.trim() || null;
+}
+
 export function buildJoinableItem(
   action: ActionPreviewRow,
   metadata: JoinableActionMetadata,
@@ -132,6 +139,7 @@ export function buildJoinableItem(
   created_at: string;
   action_date: string;
   location_label: string;
+  actionTitle?: string | null;
   volunteers_count: number;
   duration_minutes: number;
   status: ActionRow["status"];
@@ -146,8 +154,11 @@ export function buildJoinableItem(
   groupJoinEnabled: boolean;
   pendingRequestsCount: number;
 } {
+  const publicAction = { ...action };
+  delete publicAction.preparation_data;
   return {
-    ...action,
+    ...publicAction,
+    actionTitle: getActionTitle(action),
     actionPhase: action.action_phase ?? "post_action_complete",
     participantsCount,
     joined: isJoinedParticipant(participantSummary),

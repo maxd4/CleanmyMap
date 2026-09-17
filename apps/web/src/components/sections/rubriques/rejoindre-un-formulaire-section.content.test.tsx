@@ -4,6 +4,11 @@ import { describe, expect, it } from "vitest";
 import type { JoinableActionItem } from "@/lib/actions/participation/group-participation";
 import { ActionCard } from "./rejoindre-un-formulaire-section.cards";
 
+const sectionSource = readFileSync(
+  new URL("./rejoindre-un-formulaire-section.tsx", import.meta.url),
+  "utf8",
+);
+
 const joinDocumentation = readFileSync(
   new URL(
     "../../../../../../documentation/pages_site/routes/02-agir/rejoindre-une-action/rejoindre-une-action-README.md",
@@ -55,6 +60,13 @@ function renderCard(item: JoinableActionItem) {
 }
 
 describe("Rejoindre une action content contract", () => {
+  it("keeps the page header and a canonical Agir breadcrumb", () => {
+    expect(sectionSource).toContain("<PageHeader");
+    expect(sectionSource).toContain('href="/actions/new"');
+    expect(sectionSource).not.toContain("Actions futures et passées");
+    expect(sectionSource).not.toContain('href="/sections/route"');
+  });
+
   it("uses registration vocabulary for a confirmed future registration", () => {
     const markup = renderCard(buildItem({ joined: true, participationStatus: "confirmed" }));
 
@@ -62,6 +74,13 @@ describe("Rejoindre une action content contract", () => {
     expect(markup).toContain("Inscriptions confirmées");
     expect(markup).not.toContain("Participation confirmée");
     expect(markup).not.toContain("Clean River Paris");
+  });
+
+  it("uses the action title while keeping the location as the place", () => {
+    const markup = renderCard(buildItem({ actionTitle: "Nettoyage des berges" }));
+
+    expect(markup).toContain("Nettoyage des berges");
+    expect(markup).toContain("Quai de Seine");
   });
 
   it("uses registration vocabulary for a pending future request", () => {

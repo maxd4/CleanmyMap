@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ArrowUpDown, CalendarDays, ChevronDown, ExternalLink, Filter, Loader2, MapPin, Search, ShieldCheck } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { useJoinFormSectionController } from "./rejoindre-un-formulaire-section.controller";
@@ -43,6 +43,7 @@ export function JoinFormExplorer(props: ExplorerProps) {
     reviewQueueRequest, addQueueParticipant,
     onShareAction,
   } = props;
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     if (!focusActionId || loading) return;
@@ -57,80 +58,105 @@ export function JoinFormExplorer(props: ExplorerProps) {
 
   return (
   <div className="space-y-5">
-    <div className="grid gap-2.5 lg:grid-cols-[minmax(0,2.1fr)_repeat(4,minmax(0,1fr))]">
-      <FilterField label={fr ? "Rechercher une action, un lieu..." : "Search an action or location..."} icon={<Search size={13} />}>
-        <input
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder={fr ? "Rechercher une action, un lieu..." : "Search an action or location..."}
-          className="w-full border-0 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
-        />
-      </FilterField>
+    {hasItems ? (
+      <>
+        <div className="grid gap-2.5 md:grid-cols-[minmax(0,1fr)_auto_minmax(220px,auto)]">
+          <FilterField label={fr ? "Recherche" : "Search"} icon={<Search size={13} />}>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder={fr ? "Action ou lieu..." : "Action or location..."}
+              className="w-full border-0 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
+            />
+          </FilterField>
 
-      <FilterField label={fr ? "Localisation" : "Location"} icon={<MapPin size={13} />}>
-        <div className="relative">
-          <select
-            value={locationFilter}
-            onChange={(event) => setLocationFilter(event.target.value as LocationFilter)}
-            className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
+          <button
+            type="button"
+            aria-expanded={filtersOpen}
+            aria-controls="join-action-filter-panel"
+            onClick={() => setFiltersOpen((open) => !open)}
+            className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-[1rem] border border-slate-200 bg-white px-4 text-sm font-bold text-emerald-900 shadow-[0_12px_22px_-20px_rgba(15,23,42,0.18)] transition hover:border-emerald-300 hover:bg-emerald-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
           >
-            <option value="all">{fr ? "Toutes" : "All"}</option>
-            <option value="ile-de-france">{fr ? "Île-de-France" : "Île-de-France"}</option>
-            <option value="autres">{fr ? "Autres régions" : "Other regions"}</option>
-          </select>
-          <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
-        </div>
-      </FilterField>
+            <Filter size={14} />
+            {fr ? "Filtres" : "Filters"}
+            <ChevronDown size={15} className={`transition-transform ${filtersOpen ? "rotate-180" : ""}`} />
+          </button>
 
-      <FilterField label={fr ? "Période" : "Period"} icon={<CalendarDays size={13} />}>
-        <div className="relative">
-          <select
-            value={periodFilter}
-            onChange={(event) => setPeriodFilter(event.target.value as PeriodFilter)}
-            className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
-          >
-            <option value="all">{fr ? "Toutes" : "All"}</option>
-            <option value="seven-days">{fr ? "7 prochains jours" : "Next 7 days"}</option>
-            <option value="thirty-days">{fr ? "30 prochains jours" : "Next 30 days"}</option>
-            <option value="ninety-days">{fr ? "90 prochains jours" : "Next 90 days"}</option>
-          </select>
-          <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
+          <FilterField label={fr ? "Trier" : "Sort"} icon={<ArrowUpDown size={13} />}>
+            <div className="relative">
+              <select
+                value={sort}
+                onChange={(event) => setSort(event.target.value as JoinableActionSort)}
+                className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
+              >
+                <option value="soonest">{fr ? "Date (la plus proche)" : "Date (soonest)"}</option>
+                <option value="latest">{fr ? "Date (plus lointaine)" : "Date (latest)"}</option>
+                <option value="participants-desc">{fr ? "Plus de bénévoles" : "Most volunteers"}</option>
+                <option value="participants-asc">{fr ? "Moins de bénévoles" : "Fewest volunteers"}</option>
+                <option value="location-asc">{fr ? "Lieu A → Z" : "Location A → Z"}</option>
+              </select>
+              <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
+            </div>
+          </FilterField>
         </div>
-      </FilterField>
 
-      <FilterField label={fr ? "Statut" : "Status"} icon={<Filter size={13} />}>
-        <div className="relative">
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-            className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
+        {filtersOpen ? (
+          <div
+            id="join-action-filter-panel"
+            role="region"
+            aria-label={fr ? "Filtres des actions" : "Action filters"}
+            className="grid gap-2.5 rounded-[1.1rem] border border-emerald-100 bg-emerald-50/45 p-3 md:grid-cols-3"
           >
-            <option value="all">{fr ? "Tous" : "All"}</option>
-            <option value="open">{fr ? "Ouverte" : "Open"}</option>
-            <option value="pending">{fr ? "En attente" : "Pending"}</option>
-            <option value="closed">{fr ? "Fermée" : "Closed"}</option>
-          </select>
-          <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
-        </div>
-      </FilterField>
+            <FilterField label={fr ? "Localisation" : "Location"} icon={<MapPin size={13} />}>
+              <div className="relative">
+                <select
+                  value={locationFilter}
+                  onChange={(event) => setLocationFilter(event.target.value as LocationFilter)}
+                  className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
+                >
+                  <option value="all">{fr ? "Toutes" : "All"}</option>
+                  <option value="ile-de-france">{fr ? "Île-de-France" : "Île-de-France"}</option>
+                  <option value="autres">{fr ? "Autres régions" : "Other regions"}</option>
+                </select>
+                <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
+              </div>
+            </FilterField>
 
-      <FilterField label={fr ? "Trier par" : "Sort by"} icon={<ArrowUpDown size={13} />}>
-        <div className="relative">
-          <select
-            value={sort}
-            onChange={(event) => setSort(event.target.value as JoinableActionSort)}
-            className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
-          >
-            <option value="soonest">{fr ? "Date (la plus proche)" : "Date (soonest)"}</option>
-            <option value="latest">{fr ? "Date (plus lointaine)" : "Date (latest)"}</option>
-            <option value="participants-desc">{fr ? "Plus de bénévoles" : "Most volunteers"}</option>
-            <option value="participants-asc">{fr ? "Moins de bénévoles" : "Fewest volunteers"}</option>
-            <option value="location-asc">{fr ? "Lieu A → Z" : "Location A → Z"}</option>
-          </select>
-          <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
-        </div>
-      </FilterField>
-    </div>
+            <FilterField label={fr ? "Période" : "Period"} icon={<CalendarDays size={13} />}>
+              <div className="relative">
+                <select
+                  value={periodFilter}
+                  onChange={(event) => setPeriodFilter(event.target.value as PeriodFilter)}
+                  className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
+                >
+                  <option value="all">{fr ? "Toutes" : "All"}</option>
+                  <option value="seven-days">{fr ? "7 prochains jours" : "Next 7 days"}</option>
+                  <option value="thirty-days">{fr ? "30 prochains jours" : "Next 30 days"}</option>
+                  <option value="ninety-days">{fr ? "90 prochains jours" : "Next 90 days"}</option>
+                </select>
+                <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
+              </div>
+            </FilterField>
+
+            <FilterField label={fr ? "Statut" : "Status"} icon={<Filter size={13} />}>
+              <div className="relative">
+                <select
+                  value={statusFilter}
+                  onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+                  className="w-full appearance-none border-0 bg-transparent pr-7 text-sm font-semibold text-slate-900 outline-none"
+                >
+                  <option value="all">{fr ? "Tous" : "All"}</option>
+                  <option value="open">{fr ? "Ouverte" : "Open"}</option>
+                  <option value="pending">{fr ? "En attente" : "Pending"}</option>
+                  <option value="closed">{fr ? "Fermée" : "Closed"}</option>
+                </select>
+                <ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-slate-400" />
+              </div>
+            </FilterField>
+          </div>
+        ) : null}
+      </>
+    ) : null}
 
     <div className="flex items-end justify-between gap-3">
       <div className="space-y-1">
@@ -286,23 +312,25 @@ export function JoinFormExplorer(props: ExplorerProps) {
         </div>
       )}
 
-      <JoinFormPublicQueue
-        fr={fr}
-        queueRequests={queueRequests}
-        queueConfirmedParticipants={queueConfirmedParticipants}
-        queueLoading={queueLoading}
-        queueError={queueError}
-        queueCanReview={queueCanReview}
-        reviewingQueueId={reviewingQueueId}
-        addingQueueParticipantId={addingQueueParticipantId}
-        queueSearchQuery={queueSearchQuery}
-        queueSearchResults={queueSearchResults}
-        queueSearchLoading={queueSearchLoading}
-        queueSearchError={queueSearchError}
-        setQueueSearchQuery={setQueueSearchQuery}
-        onReviewQueueRequest={reviewQueueRequest}
-        onAddQueueParticipant={addQueueParticipant}
-      />
+      {focusActionId && queueCanReview ? (
+        <JoinFormPublicQueue
+          fr={fr}
+          queueRequests={queueRequests}
+          queueConfirmedParticipants={queueConfirmedParticipants}
+          queueLoading={queueLoading}
+          queueError={queueError}
+          queueCanReview={queueCanReview}
+          reviewingQueueId={reviewingQueueId}
+          addingQueueParticipantId={addingQueueParticipantId}
+          queueSearchQuery={queueSearchQuery}
+          queueSearchResults={queueSearchResults}
+          queueSearchLoading={queueSearchLoading}
+          queueSearchError={queueSearchError}
+          setQueueSearchQuery={setQueueSearchQuery}
+          onReviewQueueRequest={reviewQueueRequest}
+          onAddQueueParticipant={addQueueParticipant}
+        />
+      ) : null}
 
       <div className="rounded-[1rem] border border-emerald-100 bg-emerald-50/70 px-4 py-3 text-sm leading-relaxed text-slate-700 shadow-[0_16px_32px_-26px_rgba(15,23,42,0.22)]">
         <div className="flex items-start gap-3">

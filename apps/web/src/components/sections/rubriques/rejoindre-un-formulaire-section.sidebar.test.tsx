@@ -39,10 +39,6 @@ describe("JoinFormSidebar tracking vocabulary", () => {
         sortedHistoryItems={[registration, participation]}
         activeRegistrationItems={[registration]}
         activeParticipationItems={[participation]}
-        preActionVisibleItems={[]}
-        pendingRequestsCount={0}
-        volunteersExpectedCount={0}
-        summaryIsCompact={false}
       />,
     );
 
@@ -50,6 +46,8 @@ describe("JoinFormSidebar tracking vocabulary", () => {
     expect(markup).toContain("Participation confirmée");
     expect(markup).toContain("Voir tout mon suivi");
     expect(markup).toContain("Mon suivi");
+    expect(markup).not.toContain("Résumé");
+    expect(markup).not.toContain("Demandes d'inscription");
     expect(markup).not.toContain("Mes inscriptions");
     expect(markup).not.toContain("Voir toutes mes participations");
   });

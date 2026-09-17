@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpDown, CalendarDays, CheckCircle2, ChevronRight, ClipboardList, Leaf, Loader2, MapPin, ShieldCheck, Sparkles, UserRound, X } from "lucide-react";
+import { CalendarDays, CheckCircle2, ChevronRight, ClipboardList, Leaf, Loader2, MapPin, ShieldCheck, Sparkles, UserRound, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ActionParticipationReviewItem, JoinableActionItem } from "@/lib/actions/participation/group-participation";
 import { usesRegistrationStore } from "@/lib/actions/participation/action-phase";
@@ -27,38 +27,6 @@ export function PillBadge({
     </span>
   );
 }
-export function HeroStatCard({
-  icon,
-  value,
-  label,
-  tone = "emerald",
-  compact = false,
-}: {
-  icon: ReactNode;
-  value: string;
-  label: string;
-  tone?: "emerald" | "amber";
-  compact?: boolean;
-}) {
-  return (
-    <div
-      className={`flex h-full ${compact ? "min-h-[80px] px-3 py-2.5" : "min-h-[102px] px-4 py-3"} flex-col justify-between rounded-[1.25rem] border shadow-[0_18px_34px_-30px_rgba(15,23,42,0.18)] ${
-        tone === "amber" ? "border-amber-100 bg-amber-50/70" : "border-emerald-100 bg-white/85"
-      }`}
-    >
-      <div className="flex items-center justify-between">
-        <span className={`inline-flex ${compact ? "h-8 w-8" : "h-10 w-10"} items-center justify-center rounded-2xl bg-white text-emerald-700 shadow-sm`}>
-          {icon}
-        </span>
-      </div>
-      <div className="space-y-1">
-        <p className={`font-black uppercase tracking-[0.22em] text-slate-500 ${compact ? "text-[8px]" : "text-[10px]"}`}>{label}</p>
-        <p className={`${compact ? "text-[1.55rem]" : "text-[1.95rem]"} font-black tracking-tight text-slate-900`}>{value}</p>
-      </div>
-    </div>
-  );
-}
-
 export function FilterField({
   label,
   icon,
@@ -92,9 +60,7 @@ export function ShortcutsCard() {
       <div className="divide-y divide-slate-100 overflow-hidden rounded-[1.1rem] border border-slate-100">
         {[
           { href: "#mon-suivi", label: "Mon suivi", icon: <UserRound size={18} /> },
-          { href: "#file-publique", label: "Demandes d'inscription", icon: <ArrowUpDown size={18} /> },
           { href: "/actions/new", label: "Devenir organisateur", icon: <Sparkles size={18} /> },
-          { href: "/sections/guide", label: "Météo & préparation terrain", icon: <ChevronRight size={18} /> },
         ].map((shortcut) => (
           <Link
             key={shortcut.label}
@@ -198,7 +164,9 @@ export function ActionCard({
         <div className="min-w-0 space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
-              <h3 className="text-lg font-black tracking-tight text-emerald-950">{item.location_label}</h3>
+              <h3 className="text-lg font-black tracking-tight text-emerald-950">
+                {item.actionTitle?.trim() || item.location_label}
+              </h3>
               <div className="flex flex-wrap items-center gap-2">
                 <PillBadge tone={usesRegistration ? "amber" : "emerald"}>
                   {lifecycleLabel}
