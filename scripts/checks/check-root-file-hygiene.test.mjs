@@ -9,7 +9,9 @@ import {
   allowedRootDirectories,
   findForbiddenRootDirectories,
   findForbiddenTrackedPaths,
+  findForbiddenTrackedRootFiles,
   getTrackedFilesForHygiene,
+  machineLocalRootFiles,
   validateRootFileHygiene,
   localOnlyRootDirectories,
   localOnlyTrackedPrefixes,
@@ -41,6 +43,17 @@ test("linked worktree metadata file is allowed at the repository root", () => {
     rootDirectories: () => [],
   });
   assert.deepEqual(result.forbidden, []);
+});
+
+test("machine-local launcher wrappers are allowed in the worktree but not as tracked root files", () => {
+  assert.deepEqual(
+    findForbiddenTrackedRootFiles([
+      "README.md",
+      ...machineLocalRootFiles,
+      "scripts/dev/launch-local-role.mjs",
+    ]),
+    [...machineLocalRootFiles],
+  );
 });
 
 test("root directory contract accepts local-only directories when untracked", () => {
@@ -112,6 +125,33 @@ test("filesystem mode distinguishes physical artifacts from tracked artifacts", 
     { repositoryRoot: root },
   );
   assert.deepEqual(blocked.forbiddenTrackedPaths, ["artifacts/tracked-output.json"]);
+});
+
+test("filesystem mode passes without wrappers and with local wrappers, but rejects tracked wrappers", (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-root-hygiene-launchers-"));
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+
+  execFileSync("git", ["init", "-q"], { cwd: root });
+  writeFile(root, ".gitignore", "/.aLANCER_SITE_LOCAL_ROLE_*.bat\n");
+  writeFile(root, "README.md", "fixture\n");
+  execFileSync("git", ["add", "--", ".gitignore", "README.md"], { cwd: root });
+  execFileSync("git", [
+    "-c", "user.name=Codex test", "-c", "user.email=codex-test",
+    "commit", "-qm", "fixture",
+  ], { cwd: root });
+
+  const clean = validateRootFileHygiene(createFilesystemRepositoryView(root), { repositoryRoot: root });
+  assert.deepEqual(clean.forbidden, []);
+  assert.deepEqual(clean.forbiddenTrackedRootFiles, []);
+
+  writeFile(root, ".aLANCER_SITE_LOCAL_ROLE_ADMIN.bat", "local wrapper\n");
+  const localOnly = validateRootFileHygiene(createFilesystemRepositoryView(root), { repositoryRoot: root });
+  assert.deepEqual(localOnly.forbidden, []);
+  assert.deepEqual(localOnly.forbiddenTrackedRootFiles, []);
+
+  execFileSync("git", ["add", "-f", "--", ".aLANCER_SITE_LOCAL_ROLE_ADMIN.bat"], { cwd: root });
+  const tracked = validateRootFileHygiene(createFilesystemRepositoryView(root), { repositoryRoot: root });
+  assert.deepEqual(tracked.forbiddenTrackedRootFiles, [".aLANCER_SITE_LOCAL_ROLE_ADMIN.bat"]);
 });
 
 test("filesystem mode still reports unknown root directories", (t) => {

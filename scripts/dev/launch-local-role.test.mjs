@@ -132,21 +132,4 @@ describe("launch-local-role", () => {
     assert.deepEqual(result, { envFile, pulled: true });
   });
 
-  it("keeps both batch launchers thin and free of stale port/env logic", () => {
-    for (const [file, role] of [
-      [".aLANCER_SITE_LOCAL_ROLE_MAX.bat", "max"],
-      [".aLANCER_SITE_LOCAL_ROLE_BENEVOLE.bat", "benevole"],
-    ]) {
-      const content = readFileSync(file, "utf8");
-      assert.match(content, /chcp 65001 >nul/);
-      assert.match(content, /launch-local-role\.mjs/);
-      assert.match(content, new RegExp(`launch-local-role\\.mjs[\" ]+${role}`));
-      assert.doesNotMatch(content, /vercel-sync-env\.mjs|timeout\s+\/t|localhost:3000|start\s+http/i);
-      assert.match(content, /Serveur local arrêté/);
-      assert.match(content, /s'est arrêté de manière inattendue \(code %EXIT_CODE%\)/);
-      if (role === "benevole") {
-        assert.match(content, /BÉNÉVOLE/);
-      }
-    }
-  });
 });
