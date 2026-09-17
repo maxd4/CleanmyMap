@@ -195,10 +195,17 @@ describe("ActionsMapPageClient initial viewport contract", () => {
     expect(markup).toContain("Carte indisponible");
     expect(markup).toContain("Réessayer");
     expect(markup).not.toContain("Aucune action");
-    expect(feedRequest).toEqual(expect.objectContaining({ enabled: false, viewport: null }));
+    expect(feedRequest).toEqual(expect.objectContaining({
+      enabled: false,
+      viewport: null,
+      scoreScope: "global",
+      displayMode: "projected_today",
+    }));
     expect(feedContentProps).toEqual(expect.objectContaining({
       initialViewportError: resolverError,
       onRetryInitialViewport: retryInitialViewport,
+      scoreScope: "global",
+      displayMode: "projected_today",
     }));
   });
 
@@ -211,6 +218,8 @@ describe("ActionsMapPageClient initial viewport contract", () => {
     expect(feedRequest).toEqual(expect.objectContaining({
       enabled: true,
       viewport: FALLBACK_VIEWPORT,
+      scoreScope: "global",
+      displayMode: "projected_today",
     }));
     expect(feedRequest.viewport.center).not.toEqual([0, 0]);
     expect(markup).toContain('data-testid="immersive-layout"');

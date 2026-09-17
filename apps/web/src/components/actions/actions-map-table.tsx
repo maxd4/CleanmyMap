@@ -12,6 +12,8 @@ import {
 import { getGeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
 import { classifyPollutionColor } from"@/components/actions/map-marker-categories";
 import { useActionPollutionScoreReferences } from"./map/action-pollution-score-references-context";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
+import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
 
 function formatDate(value: string): string {
  const parsed = new Date(value);
@@ -28,6 +30,8 @@ type ActionsMapTableProps = {
   compact?: boolean;
   selectedActionId?: string | null;
   onSelectAction?: (actionId: string) => void;
+  scoreScope?: PollutionScoreScope;
+  displayMode?: CurrentPlaceStateMode;
 };
 
 const ACTIONS_BATCH_SIZE = 4;
@@ -37,6 +41,8 @@ export function ActionsMapTable({
   compact = false,
   selectedActionId = null,
   onSelectAction,
+  scoreScope = "global",
+  displayMode = "projected_today",
 }: ActionsMapTableProps) {
   const [isManuallyVisible, setIsManuallyVisible] = useState(false);
   const [visibleCount, setVisibleCount] = useState(ACTIONS_BATCH_SIZE);
@@ -216,7 +222,7 @@ export function ActionsMapTable({
  {item.status}
  </span>
  <span className="cmm-text-caption font-medium text-slate-500">
- {classifyPollutionColor(item, references)}
+ {classifyPollutionColor(item, references, { scoreScope, displayMode })}
  </span>
  </div>
  </td>

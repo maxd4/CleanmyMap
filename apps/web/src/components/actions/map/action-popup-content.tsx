@@ -169,6 +169,8 @@ function SingleActionPopupContent({
     cigaretteButts: butts,
     volunteersCount: volunteers,
     scoreScope,
+    displayMode,
+    currentPlaceState,
   });
   const popupScore =
     !isAction && typeof dataContract?.metadata.observedPollutionScore === "number"

@@ -12,6 +12,7 @@ import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { mapItemType } from "@/lib/actions/data-contract";
 import type { ActionMapItem } from "@/lib/actions/types";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
+import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
 import { useActionsMapFilters } from "@/components/actions/map/use-actions-map-filters";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 import { PageHeader } from "@/components/ui/page-header";
@@ -107,6 +108,7 @@ function ActionsMapPageContent({
     requestedActionId,
   );
   const [scoreScope, setScoreScope] = useState<PollutionScoreScope>("global");
+  const [displayMode, setDisplayMode] = useState<CurrentPlaceStateMode>("projected_today");
   const {
     viewport: mapViewport,
     viewportRequest,
@@ -157,6 +159,8 @@ function ActionsMapPageContent({
     limit: 300,
     viewport: mapViewport,
     enabled: isInitialViewportResolved && hasInitialPublicActions && !initialViewportError,
+    scoreScope,
+    displayMode,
   });
   const filteredMapItems = useMemo(() => mapFeedData.items ?? [], [mapFeedData.items]);
   const loadedItems = useMemo(() => mapFeedData.allItems ?? [], [mapFeedData.allItems]);
@@ -181,8 +185,10 @@ function ActionsMapPageContent({
             title="Cartographie des actions"
             subtitle={
               scoreScope === "department"
-                ? "Les couleurs comparent l'intensité de collecte à la référence du département. Ce score relatif n'est pas projeté dans le temps."
-                : "Les couleurs représentent une pollution projetée à partir de la dernière action ; elles ne constituent pas une mesure actuelle du terrain. La pollution constatée avant l’action et le temps écoulé alimentent cette estimation."
+                ? "Les couleurs montrent le score relatif réel de chaque action par rapport à la référence de son département. Ce score n'est pas projeté dans le temps."
+                : displayMode === "observed"
+                  ? "Les couleurs montrent la pollution observée ou mesurée pour chaque action. Aucune projection temporelle n'est utilisée dans ce mode."
+                  : "Les couleurs montrent une pollution projetée à partir de la dernière action. Cette estimation ne constitue pas une mesure actuelle du terrain."
             }
             className="w-full"
           />
@@ -220,6 +226,8 @@ function ActionsMapPageContent({
             onViewportInteraction={handleManualViewportInteraction}
             scoreScope={scoreScope}
             onScoreScopeChange={setScoreScope}
+            displayMode={displayMode}
+            onDisplayModeChange={setDisplayMode}
           />
         </section>
 
@@ -242,6 +250,7 @@ function ActionsMapPageContent({
                 onCategoryToggle={handleCategoryToggle}
                 onReset={handleResetFilters}
                 scoreScope={scoreScope}
+                displayMode={displayMode}
               />
 
               <section className={cn(surfaceCard, "p-8 space-y-8")}>
@@ -308,6 +317,8 @@ function ActionsMapPageContent({
                         compact
                         selectedActionId={selectedActionId}
                         onSelectAction={handleSelectAction}
+                        scoreScope={scoreScope}
+                        displayMode={displayMode}
                       />
                     </div>
                   )}

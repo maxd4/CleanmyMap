@@ -82,7 +82,7 @@ describe("MapLegend", () => {
       React.createElement(MapLegend, { scoreScope: "department" }),
     );
 
-    expect(markup).toContain("Comparaison départementale");
+    expect(markup).toContain("Score relatif départemental");
     expect(markup).toContain(
       "100 % correspond à l&#x27;intensité de collecte de référence la plus élevée du département, normalisée par bénévole.",
     );

@@ -5,12 +5,21 @@ import {
   resolveDynamicColor,
 } from "../map-marker-categories";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
+import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
+import { POLLUTION_SCORE_UNAVAILABLE_COLOR } from "./pollution-score-scope";
 
 export function MapGeometryLegend({
   scoreScope = "global",
+  displayMode = "projected_today",
 }: {
   scoreScope?: PollutionScoreScope;
+  displayMode?: CurrentPlaceStateMode;
 }) {
+  const actionReading = scoreScope === "department"
+    ? "Actions : la couleur compare le score relatif réel à la référence du département."
+    : displayMode === "observed"
+      ? "Actions : la couleur représente la pollution observée ou mesurée, sans projection temporelle."
+      : "Actions : la couleur représente la pollution projetée depuis la dernière action."
   return (
     <div
       role="note"
@@ -22,9 +31,7 @@ export function MapGeometryLegend({
       </p>
       <div className="mt-2 space-y-2 text-[10px] font-semibold leading-snug">
         <p className="text-slate-600">
-          {scoreScope === "department"
-            ? "Actions : la couleur compare l'intensité de collecte à la référence du département."
-            : "Actions : la couleur représente la pollution projetée depuis la dernière action."}
+          {actionReading}
         </p>
         <div className="grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-2">
           {ACTION_POLLUTION_COLOR_STOPS.map((stop) => (
@@ -44,6 +51,14 @@ export function MapGeometryLegend({
               aria-hidden="true"
             />
             <span className="min-w-0 break-words">Vert · lieu explicitement propre</span>
+          </p>
+          <p className="flex min-w-0 items-center gap-1.5">
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-full border border-slate-600/30"
+              style={{ backgroundColor: POLLUTION_SCORE_UNAVAILABLE_COLOR }}
+              aria-hidden="true"
+            />
+            <span className="min-w-0 break-words">Indisponible : score non calculable</span>
           </p>
         </div>
         <p className="text-slate-600">

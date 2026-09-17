@@ -17,6 +17,7 @@ import { MapLegend } from "./map-legend";
 import { useActionPollutionScoreReferences } from "@/components/actions/map/action-pollution-score-references-context";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
+import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
 
 type MapControlTowerProps = {
   filters: ActionsMapFilters;
@@ -32,6 +33,7 @@ type MapControlTowerProps = {
   onCategoryToggle: (category: MarkerCategory) => void;
   onReset: () => void;
   scoreScope?: PollutionScoreScope;
+  displayMode?: CurrentPlaceStateMode;
 };
 
 export function MapControlTower({
@@ -48,6 +50,7 @@ export function MapControlTower({
   onCategoryToggle,
   onReset,
   scoreScope = "global",
+  displayMode = "projected_today",
 }: MapControlTowerProps) {
   const { references } = useActionPollutionScoreReferences();
   const classes = getBlockClasses("visualize");
@@ -58,7 +61,10 @@ export function MapControlTower({
 
   const categoryCounts = allMapItems.reduce<Record<MarkerCategory, number>>(
     (acc, item) => {
-      for (const category of deriveMarkerCategories(item, references)) {
+      for (const category of deriveMarkerCategories(item, references, {
+        scoreScope,
+        displayMode,
+      })) {
         acc[category] += 1;
       }
       return acc;
@@ -73,6 +79,7 @@ export function MapControlTower({
       bin: 0,
       ashtray: 0,
       combo: 0,
+      unavailable: 0,
     },
   );
 
@@ -116,7 +123,7 @@ export function MapControlTower({
         onReset={onReset}
       />
 
-      <MapLegend scoreScope={scoreScope} />
+      <MapLegend scoreScope={scoreScope} displayMode={displayMode} />
     </section>
   );
 }

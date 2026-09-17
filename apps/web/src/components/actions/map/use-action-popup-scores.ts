@@ -8,6 +8,10 @@ import {
 } from "@/lib/actions/pollution/pollution-score";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { mapItemType } from "@/lib/actions/data-contract";
+import type {
+  CurrentPlaceState,
+  CurrentPlaceStateMode,
+} from "@/lib/actions/pollution/current-place-state";
 import {
   resolveActionPollutionScore,
   type ScopedActionPollutionScore,
@@ -22,6 +26,8 @@ type UseActionPopupScoresParams = {
   cigaretteButts: number;
   volunteersCount: number;
   scoreScope?: PollutionScoreScope;
+  displayMode?: CurrentPlaceStateMode;
+  currentPlaceState?: CurrentPlaceState | null;
 };
 
 type UseActionPopupScoresResult = {
@@ -44,6 +50,8 @@ export function useActionPopupScores({
   cigaretteButts,
   volunteersCount,
   scoreScope = "global",
+  displayMode = "projected_today",
+  currentPlaceState = null,
 }: UseActionPopupScoresParams): UseActionPopupScoresResult {
   const { references, isLoading, error } = useActionPollutionScoreReferences();
 
@@ -86,20 +94,29 @@ export function useActionPopupScores({
   const globalActionScore = useMemo(
     () =>
       mapItemType(item) === "action"
-        ? resolveActionPollutionScore(item, references, { scope: "global" })
+        ? resolveActionPollutionScore(item, references, {
+            scope: "global",
+            displayMode,
+            currentPlaceState,
+          })
         : null,
-    [item, references],
+    [currentPlaceState, displayMode, item, references],
   );
   const departmentActionScore = useMemo(
     () =>
       mapItemType(item) === "action"
-        ? resolveActionPollutionScore(item, references, { scope: "department" })
+        ? resolveActionPollutionScore(item, references, {
+            scope: "department",
+            displayMode,
+            currentPlaceState,
+          })
         : null,
-    [item, references],
+    [currentPlaceState, displayMode, item, references],
   );
   const scopedActionScore = scoreScope === "department"
     ? departmentActionScore
     : globalActionScore;
+  const isAction = mapItemType(item) === "action";
   const scoreLoading = hasPollution && isLoading && !references;
   const isDepartmentScoreUnavailable =
     mapItemType(item) === "action" &&
@@ -113,15 +130,15 @@ export function useActionPopupScores({
     !scoreLoading;
   const isScoreUnavailable = isDepartmentScoreUnavailable || isGlobalScoreUnavailable;
 
-  const score = isScoreUnavailable
+  const score = isScoreUnavailable || scoreLoading
     ? 0
-    : scopedActionScore?.score ?? pollutionScores.severityScore ?? 0;
-  const wasteScore = isScoreUnavailable
+    : scopedActionScore?.score ?? (isAction ? 0 : pollutionScores.severityScore) ?? 0;
+  const wasteScore = isScoreUnavailable || scoreLoading
     ? 0
-    : scopedActionScore?.wasteScore ?? pollutionScores.wasteScore ?? 0;
-  const buttsScore = isScoreUnavailable
+    : scopedActionScore?.wasteScore ?? (isAction ? 0 : pollutionScores.wasteScore) ?? 0;
+  const buttsScore = isScoreUnavailable || scoreLoading
     ? 0
-    : scopedActionScore?.buttsScore ?? pollutionScores.buttsScore ?? 0;
+    : scopedActionScore?.buttsScore ?? (isAction ? 0 : pollutionScores.buttsScore) ?? 0;
   const scoreReading = getScoreReading(score);
 
   const scoreSourceLabel = !hasPollution
@@ -142,7 +159,7 @@ export function useActionPopupScores({
       ? null
       : scoreScope === "department"
         ? null
-        : scopedActionScore?.historicalScore ?? pollutionScores.severityScore,
+      : scopedActionScore?.historicalScore ?? (isAction ? null : pollutionScores.severityScore),
     wasteScore,
     buttsScore,
     scoreReading,

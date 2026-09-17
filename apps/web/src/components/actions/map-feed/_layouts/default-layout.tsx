@@ -6,6 +6,7 @@ import { MapLoadingState } from "./map-loading-state";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
+import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
 
 type DefaultLayoutProps = {
   items: ActionMapItem[];
@@ -34,6 +35,8 @@ type DefaultLayoutProps = {
   sourceCompleteness?: RepollutionDatasetCompleteness;
   scoreScope?: PollutionScoreScope;
   onScoreScopeChange?: (scope: PollutionScoreScope) => void;
+  displayMode?: CurrentPlaceStateMode;
+  onDisplayModeChange?: (mode: CurrentPlaceStateMode) => void;
 };
 
 export function DefaultLayout({
@@ -63,6 +66,8 @@ export function DefaultLayout({
   sourceCompleteness = "partial",
   scoreScope = "global",
   onScoreScopeChange,
+  displayMode = "projected_today",
+  onDisplayModeChange,
 }: DefaultLayoutProps) {
   const isEmerald = tone === "emerald";
   const hasItems = items.length > 0;
@@ -143,6 +148,8 @@ export function DefaultLayout({
             tone={tone}
             scoreScope={scoreScope}
             onScoreScopeChange={onScoreScopeChange}
+            displayMode={displayMode}
+            onDisplayModeChange={onDisplayModeChange}
           />
         )}
       </div>

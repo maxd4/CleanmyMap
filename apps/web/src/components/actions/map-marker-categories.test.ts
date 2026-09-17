@@ -72,8 +72,47 @@ describe("map marker categories", () => {
   });
 
   it("keeps a missing V2 reference explicitly unavailable", () => {
-    expect(classifyPollutionColor(buildItem({ waste_kg: 20 }))).toBe("blue");
+    expect(classifyPollutionColor(buildItem({ waste_kg: 20 }))).toBe("unavailable");
+    expect(deriveMarkerCategories(buildItem({ waste_kg: 20 }))).toContain("unavailable");
     expect(resolveInfrastructureNeed(buildItem({ waste_kg: 20 }))).toBeNull();
+  });
+
+  it("keeps the score scope and display mode matrix on the same resolver", () => {
+    const item = buildItem({
+      action_date: "2026-01-01",
+      waste_kg: 20,
+      cigarette_butts: 800,
+      contract: {
+        type: "action",
+        id: "action-1",
+        status: "approved",
+        source: "actions",
+        dates: { observedAt: "2026-01-01" },
+        location: { departmentCode: "99" },
+        metadata: {
+          wasteKg: 20,
+          cigaretteButts: 800,
+          volunteersCount: 1,
+        },
+      } as never,
+    });
+
+    for (const scoreScope of ["global", "department"] as const) {
+      for (const displayMode of ["observed", "projected_today"] as const) {
+        const category = classifyPollutionColor(item, references, {
+          scoreScope,
+          displayMode,
+          now: "2026-09-17",
+        });
+
+        if (scoreScope === "department") {
+          expect(category).toBe("unavailable");
+        } else {
+          expect(category).not.toBe("unavailable");
+          expect(["orange", "red", "violet", "black"]).toContain(category);
+        }
+      }
+    }
   });
 
   it("applies visibility filters to derived pollution categories", () => {

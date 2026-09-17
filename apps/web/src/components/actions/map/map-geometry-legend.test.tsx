@@ -62,10 +62,21 @@ describe("MapGeometryLegend", () => {
     );
 
     expect(markup).toContain(
-      "Actions : la couleur compare l&#x27;intensité de collecte à la référence du département.",
+      "Actions : la couleur compare le score relatif réel à la référence du département.",
     );
     expect(markup).toContain("Trait plein : parcours déclaré/connu");
     expect(markup).toContain("Trait pointillé : parcours reconstruit");
+    expect(markup).not.toContain("pollution projetée depuis la dernière action");
+  });
+
+  it("describes observed mode without projection language", () => {
+    const markup = renderToStaticMarkup(
+      <MapGeometryLegend displayMode="observed" />,
+    );
+
+    expect(markup).toContain(
+      "Actions : la couleur représente la pollution observée ou mesurée, sans projection temporelle.",
+    );
     expect(markup).not.toContain("pollution projetée depuis la dernière action");
   });
 });

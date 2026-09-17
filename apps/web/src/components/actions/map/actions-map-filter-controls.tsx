@@ -9,6 +9,7 @@ import type {
 
 const CATEGORY_LABELS: Array<{ value: MarkerCategory; label: string }> = [
   { value: "blue", label: "Premier seuil" },
+  { value: "unavailable", label: "Indisponible" },
   { value: "orange", label: "Moyen" },
   { value: "red", label: "Fort" },
   { value: "violet", label: "Critique" },
@@ -21,7 +22,7 @@ const CATEGORY_LABELS: Array<{ value: MarkerCategory; label: string }> = [
 
 type ActionsMapFilterControlsProps = {
   filters: ActionsMapFilters;
-  categoryCounts: Record<MarkerCategory, number>;
+  categoryCounts: Partial<Record<MarkerCategory, number>>;
   onZoneQueryChange: (zoneQuery: string) => void;
   onDateScopeChange: (dateScope: ActionsMapDateScope) => void;
   onCategoryToggle: (category: MarkerCategory) => void;

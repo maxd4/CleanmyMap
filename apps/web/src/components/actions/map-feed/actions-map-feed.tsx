@@ -45,6 +45,8 @@ type ActionsMapFeedContentProps = {
   onRetryInitialViewport?: () => void;
   scoreScope?: ActionsMapFeedProps["scoreScope"];
   onScoreScopeChange?: ActionsMapFeedProps["onScoreScopeChange"];
+  displayMode?: ActionsMapFeedProps["displayMode"];
+  onDisplayModeChange?: ActionsMapFeedProps["onDisplayModeChange"];
 };
 
 export function ActionsMapFeedContent({
@@ -71,6 +73,8 @@ export function ActionsMapFeedContent({
   onRetryInitialViewport,
   scoreScope = "global",
   onScoreScopeChange,
+  displayMode = "projected_today",
+  onDisplayModeChange,
 }: ActionsMapFeedContentProps) {
   const [MapCanvas, setMapCanvas] = useState<ActionsMapCanvasComponent | null>(null);
   const [mapCanvasError, setMapCanvasError] = useState<string | null>(null);
@@ -189,6 +193,8 @@ export function ActionsMapFeedContent({
       : "complete") as RepollutionDatasetCompleteness,
     scoreScope,
     onScoreScopeChange,
+    displayMode,
+    onDisplayModeChange,
   };
 
   return (
@@ -269,6 +275,8 @@ function ActionsMapFeedWithReferences({
   onViewportChange,
   scoreScope = "global",
   onScoreScopeChange,
+  displayMode = "projected_today",
+  onDisplayModeChange,
 }: ActionsMapFeedProps) {
   const {
     viewport: mapViewport,
@@ -303,6 +311,8 @@ function ActionsMapFeedWithReferences({
     limit,
     viewport: mapViewport,
     enabled: isInitialViewportResolved && hasInitialPublicActions && !initialViewportError,
+    scoreScope,
+    displayMode,
   });
 
   return (
@@ -330,6 +340,8 @@ function ActionsMapFeedWithReferences({
       onViewportInteraction={handleManualViewportInteraction}
       scoreScope={scoreScope}
       onScoreScopeChange={onScoreScopeChange}
+      displayMode={displayMode}
+      onDisplayModeChange={onDisplayModeChange}
     />
   );
 }

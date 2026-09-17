@@ -6,7 +6,10 @@ import {
   resolveActionPollutionScore,
 } from "./pollution-score-scope";
 import { resolvePointColor } from "./map-layers.shared";
-import { resolveDynamicColor } from "@/components/actions/map-marker-categories";
+import {
+  classifyPollutionColor,
+  resolveDynamicColor,
+} from "@/components/actions/map-marker-categories";
 import type { PollutionScoreReferences } from "@/lib/actions/pollution/pollution-score";
 
 const references: PollutionScoreReferences = {
@@ -242,5 +245,42 @@ describe("pollution score scope", () => {
 
     expect(result.score).toBeNull();
     expect(result.availability).toBe("global_unavailable");
+  });
+
+  it("keeps Global/Department x Observed/Projected aligned for unavailable scores", () => {
+    const item = buildAction("99");
+
+    for (const scope of ["global", "department"] as const) {
+      for (const displayMode of ["observed", "projected_today"] as const) {
+        const resolved = resolveActionPollutionScore(item, references, {
+          scope,
+          displayMode,
+          now: "2026-09-17",
+        });
+        const category = classifyPollutionColor(item, references, {
+          scoreScope: scope,
+          displayMode,
+          now: "2026-09-17",
+        });
+        const color = resolvePointColor(
+          item,
+          references,
+          "2026-09-17",
+          displayMode,
+          null,
+          scope,
+        );
+
+        if (scope === "department") {
+          expect(resolved.score).toBeNull();
+          expect(category).toBe("unavailable");
+          expect(color).toBe(POLLUTION_SCORE_UNAVAILABLE_COLOR);
+        } else {
+          expect(resolved.score).not.toBeNull();
+          expect(category).not.toBe("unavailable");
+          expect(color).not.toBe(POLLUTION_SCORE_UNAVAILABLE_COLOR);
+        }
+      }
+    }
   });
 });
