@@ -84,10 +84,10 @@ describe("MapLegend", () => {
 
     expect(markup).toContain("Score relatif départemental");
     expect(markup).toContain(
-      "100 % correspond à l&#x27;intensité de collecte de référence la plus élevée du département, normalisée par bénévole.",
+      "Les cinq seuils sont normalisés par bénévole à partir de la référence du département.",
     );
     expect(markup).toContain(
-      "Score relatif : ne comparez directement que les actions d&#x27;un même département.",
+      "Comparez directement seulement les actions d&#x27;un même département.",
     );
     expect(markup).toContain("Détails de la légende");
     expect(markup).toContain("Lieu propre");

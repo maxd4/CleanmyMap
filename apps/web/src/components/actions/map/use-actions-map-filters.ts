@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ActionImpactLevel } from "@/lib/actions/types";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 import {
   buildDefaultActionsMapFilters,
@@ -31,10 +30,6 @@ export function useActionsMapFilters(initialDays: number) {
       setFilters((current) => ({ ...current, days })),
     setDateScope: (dateScope: ActionsMapDateScope) =>
       setFilters((current) => ({ ...current, dateScope })),
-    setImpactFilter: (impactFilter: ActionImpactLevel | "all") =>
-      setFilters((current) => ({ ...current, impactFilter })),
-    setQualityMin: (qualityMin: number) =>
-      setFilters((current) => ({ ...current, qualityMin })),
     setZoneQuery: (zoneQuery: string) =>
       setFilters((current) => ({ ...current, zoneQuery })),
     toggleCategory: (category: MarkerCategory) =>

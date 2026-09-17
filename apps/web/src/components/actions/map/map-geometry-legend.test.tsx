@@ -12,7 +12,7 @@ describe("MapGeometryLegend", () => {
   it("explains the final geometry interaction grammar and indicative opacity", () => {
     const markup = renderToStaticMarkup(<MapGeometryLegend />);
 
-    expect(markup).toContain("Trait plein : parcours déclaré/connu");
+    expect(markup).toContain("Trait plein : parcours déclaré ou connu");
     expect(markup).toContain("Trait pointillé : parcours reconstruit");
     expect(markup).toMatch(/Surface remplie : zone d(?:'|&#x27;)action/);
     expect(markup).toContain("Point : localisation seule");
@@ -30,17 +30,12 @@ describe("MapGeometryLegend", () => {
     const markup = renderToStaticMarkup(<MapGeometryLegend />);
 
     expect(markup).toContain(
-      "Actions : la couleur représente la pollution projetée depuis la dernière action.",
+      "Les couleurs indiquent la pollution projetée à partir de la dernière action.",
     );
-    expect(markup).toContain(
-      "Trash Spotter : signalements actuellement observés ; la palette pollution s&#x27;applique seulement à un score quantifié, sinon le style reste neutre.",
-    );
-    expect(markup).toContain("Trash Spotter qualitatif : signalement neutre, sans score");
-    expect(markup).toContain("Vert · lieu explicitement propre");
-    expect(markup).not.toContain("Vert · faible");
+    expect(markup).toContain("Signalement neutre, non quantifié");
+    expect(markup).toContain("Lieu explicitement propre · clean_place");
 
     for (const stop of ACTION_POLLUTION_COLOR_STOPS) {
-      expect(markup).toContain(stop.label);
       expect(markup).toContain(`background-color:${resolveDynamicColor(stop.threshold)}`);
     }
     expect(markup).toContain(`background-color:${CLEAN_PLACE_COLOR}`);
@@ -62,9 +57,9 @@ describe("MapGeometryLegend", () => {
     );
 
     expect(markup).toContain(
-      "Actions : la couleur compare le score relatif réel à la référence du département.",
+      "Les couleurs comparent le score réel de chaque action à la référence de son département.",
     );
-    expect(markup).toContain("Trait plein : parcours déclaré/connu");
+    expect(markup).toContain("Trait plein : parcours déclaré ou connu");
     expect(markup).toContain("Trait pointillé : parcours reconstruit");
     expect(markup).not.toContain("pollution projetée depuis la dernière action");
   });
@@ -75,7 +70,7 @@ describe("MapGeometryLegend", () => {
     );
 
     expect(markup).toContain(
-      "Actions : la couleur représente la pollution observée ou mesurée, sans projection temporelle.",
+      "Les couleurs indiquent la pollution observée ou mesurée.",
     );
     expect(markup).not.toContain("pollution projetée depuis la dernière action");
   });

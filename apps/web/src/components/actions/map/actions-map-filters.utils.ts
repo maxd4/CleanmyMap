@@ -1,4 +1,4 @@
-import type { ActionImpactLevel, ActionMapItem } from "@/lib/actions/types";
+import type { ActionMapItem } from "@/lib/actions/types";
 import { extractArrondissement } from "@/components/sections/rubriques/helpers";
 import {
   DEFAULT_VISIBLE_CATEGORIES,
@@ -23,8 +23,6 @@ export function getActionsMapCurrentYearDays(now = new Date()): number {
 export type ActionsMapFilters = {
   days: number;
   dateScope: ActionsMapDateScope;
-  impactFilter: ActionImpactLevel | "all";
-  qualityMin: number;
   zoneQuery: string;
   visibleCategories: Record<MarkerCategory, boolean>;
 };
@@ -32,14 +30,6 @@ export type ActionsMapFilters = {
 const VALID_DATE_SCOPES = new Set<ActionsMapDateScope>([
   "current_year",
   "all_time",
-]);
-
-const VALID_IMPACTS = new Set<ActionImpactLevel | "all">([
-  "all",
-  "faible",
-  "moyen",
-  "fort",
-  "critique",
 ]);
 
 const MAX_ZONE_QUERY_LENGTH = 120;
@@ -147,8 +137,6 @@ export function buildDefaultActionsMapFilters(
   return {
     days: clampInteger(initialDays, 1, 3650, 90),
     dateScope: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.dateScope,
-    impactFilter: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.impactFilter,
-    qualityMin: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.qualityMin,
     zoneQuery: "",
     visibleCategories: { ...DEFAULT_VISIBLE_CATEGORIES },
   };
@@ -177,10 +165,6 @@ export function normalizeActionsMapFilters(
   return {
     days: defaults.days,
     dateScope: normalizedDateScope,
-    impactFilter: VALID_IMPACTS.has(source.impactFilter ?? "all")
-      ? (source.impactFilter as ActionImpactLevel | "all")
-      : defaults.impactFilter,
-    qualityMin: clampInteger(source.qualityMin, 0, 100, defaults.qualityMin),
     zoneQuery: normalizeZoneQuery(source.zoneQuery),
     visibleCategories: normalizeVisibleCategories(source.visibleCategories),
   };

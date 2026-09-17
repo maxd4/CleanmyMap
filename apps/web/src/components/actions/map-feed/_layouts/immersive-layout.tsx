@@ -8,6 +8,11 @@ import type { MapViewportState } from "@/lib/geo/map-viewport";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
+import type {
+  ActionsMapDateScope,
+  ActionsMapFilters,
+} from "@/components/actions/map/actions-map-filters.utils";
+import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 
 const ActionStoriesCarousel = dynamic(
   () => import("@/components/map/ActionStoriesCarousel").then((mod) => mod.ActionStoriesCarousel),
@@ -52,6 +57,10 @@ type ImmersiveLayoutProps = {
   onScoreScopeChange?: (scope: PollutionScoreScope) => void;
   displayMode?: CurrentPlaceStateMode;
   onDisplayModeChange?: (mode: CurrentPlaceStateMode) => void;
+  filters?: ActionsMapFilters;
+  onZoneQueryChange?: (zoneQuery: string) => void;
+  onDateScopeChange?: (dateScope: ActionsMapDateScope) => void;
+  onCategoryToggle?: (category: MarkerCategory) => void;
 };
 
 export function ImmersiveLayout({
@@ -87,6 +96,10 @@ export function ImmersiveLayout({
   onScoreScopeChange,
   displayMode = "projected_today",
   onDisplayModeChange,
+  filters,
+  onZoneQueryChange,
+  onDateScopeChange,
+  onCategoryToggle,
 }: ImmersiveLayoutProps) {
   const isEmerald = tone === "emerald";
   const hasItems = items.length > 0;
@@ -179,6 +192,11 @@ export function ImmersiveLayout({
                 onScoreScopeChange={onScoreScopeChange}
                 displayMode={displayMode}
                 onDisplayModeChange={onDisplayModeChange}
+                filters={filters}
+                onZoneQueryChange={onZoneQueryChange}
+                onDateScopeChange={onDateScopeChange}
+                onCategoryToggle={onCategoryToggle}
+                onResetFilters={onResetFilters}
               />
             )}
           </div>

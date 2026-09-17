@@ -8,11 +8,13 @@ export function MapControls({
   zoom,
   variant = "default",
   tone = "sky",
+  position = "left",
 }: {
   center: LatLngTuple;
   zoom: number;
   variant?: "default" | "immersive";
   tone?: "sky" | "emerald";
+  position?: "left" | "right";
 }) {
   const map = useMap();
   const isEmerald = tone === "emerald";
@@ -20,7 +22,8 @@ export function MapControls({
   return (
     <div
       className={[
-        "absolute left-3 z-[1000] flex flex-col gap-2",
+        "absolute z-[1000] flex flex-col gap-2",
+        position === "right" ? "right-3" : "left-3",
         variant === "immersive" ? "top-3 sm:top-4" : "top-3 sm:top-20",
       ].join(" ")}
     >
@@ -29,7 +32,7 @@ export function MapControls({
         onClick={() => map.flyTo(center, zoom)}
         aria-label="Recentrer la carte"
         className={[
-          "flex w-fit items-center gap-2 rounded-full border px-3 py-2.5 text-sm font-black text-slate-950 backdrop-blur-xl transition max-sm:px-4",
+          "flex min-h-11 w-fit items-center gap-2 rounded-full border px-3 py-2.5 text-sm font-semibold text-slate-950 backdrop-blur-xl transition max-sm:px-4",
           isEmerald
             ? "shadow-[0_24px_56px_-32px_rgba(34,197,94,0.18)]"
             : "shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)]",
@@ -39,7 +42,7 @@ export function MapControls({
         ].join(" ")}
       >
         <span aria-hidden="true">📍</span>
-        <span className="whitespace-nowrap text-[11px] font-black uppercase tracking-[0.16em]">
+        <span className="whitespace-nowrap text-sm font-semibold">
           Recentrer
         </span>
       </button>

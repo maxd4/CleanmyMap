@@ -95,8 +95,6 @@ function ActionsMapPageContent({
   const {
     days,
     dateScope,
-    impactFilter,
-    qualityMin,
     zoneQuery,
     visibleCategories,
   } = filters;
@@ -152,8 +150,8 @@ function ActionsMapPageContent({
     days,
     dateScope,
     statusFilter: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.statusFilter,
-    impactFilter,
-    qualityMin,
+    impactFilter: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.impactFilter,
+    qualityMin: ACTIONS_MAP_PUBLIC_FEED_DEFAULTS.qualityMin,
     zoneQuery,
     visibleCategories,
     limit: 300,
@@ -214,6 +212,10 @@ function ActionsMapPageContent({
             selectedActionId={selectedActionId}
             onOpenAction={handleSelectAction}
             onResetFilters={handleResetFilters}
+            filters={filters}
+            onZoneQueryChange={handleZoneQueryChange}
+            onDateScopeChange={handleDateScopeChange}
+            onCategoryToggle={handleCategoryToggle}
             mapExportTargetRef={mapExportTargetRef}
             initialViewport={mapViewport}
             isInitialViewportResolved={isInitialViewportResolved}
@@ -240,17 +242,10 @@ function ActionsMapPageContent({
                 filters={filters}
                 visibleCount={visibleCount}
                 loadedCount={loadedCount}
-                allMapItems={loadedItems}
                 filteredMapItems={filteredMapItems}
                 freshnessLabel={mapFeedData.freshnessLabel}
                 mapExportTargetRef={mapExportTargetRef}
                 viewport={mapViewport}
-                onZoneQueryChange={handleZoneQueryChange}
-                onDateScopeChange={handleDateScopeChange}
-                onCategoryToggle={handleCategoryToggle}
-                onReset={handleResetFilters}
-                scoreScope={scoreScope}
-                displayMode={displayMode}
               />
 
               <section className={cn(surfaceCard, "p-8 space-y-8")}>

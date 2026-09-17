@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   LayerGroup,
-  LayersControl,
   MapContainer,
   TileLayer,
   useMap,
@@ -26,6 +25,9 @@ import { MapGeometryLegend } from "./map/map-geometry-legend";
 import { useActionPollutionScoreReferences } from "./map/action-pollution-score-references-context";
 import { resolveMapPlaceStateViews } from "./map/actions-map-display-state";
 import { ACTIONS_MAP_DISPLAY_MODE_OPTIONS } from "./map/actions-map-display-mode";
+import { ActionsMapFilterControls } from "./map/actions-map-filter-controls";
+import type { ActionsMapDateScope, ActionsMapFilters } from "./map/actions-map-filters.utils";
+import { deriveMarkerCategories, type MarkerCategory } from "./map-marker-categories";
 import {
   SignalementMarkers,
   ShapeLayers,
@@ -69,6 +71,11 @@ type ActionsMapCanvasProps = {
   onScoreScopeChange?: (scope: PollutionScoreScope) => void;
   displayMode?: CurrentPlaceStateMode;
   onDisplayModeChange?: (mode: CurrentPlaceStateMode) => void;
+  filters?: ActionsMapFilters;
+  onZoneQueryChange?: (zoneQuery: string) => void;
+  onDateScopeChange?: (dateScope: ActionsMapDateScope) => void;
+  onCategoryToggle?: (category: MarkerCategory) => void;
+  onResetFilters?: () => void;
 };
 
 function MapViewportReporter({
@@ -135,20 +142,6 @@ function MapViewportSync({
   return null;
 }
 
-function BasemapModeReporter({
-  onChange,
-}: {
-  onChange: (mode: ShapeBasemapMode) => void;
-}) {
-  useMapEvents({
-    baselayerchange: (event) => {
-      onChange(event.name === "Plan contrasté" ? "dark" : "light");
-    },
-  });
-
-  return null;
-}
-
 export function ActionsMapCanvas({
   items,
   selectedActionId = null,
@@ -170,6 +163,11 @@ export function ActionsMapCanvas({
   onScoreScopeChange,
   displayMode: controlledDisplayMode,
   onDisplayModeChange,
+  filters,
+  onZoneQueryChange,
+  onDateScopeChange,
+  onCategoryToggle,
+  onResetFilters,
 }: ActionsMapCanvasProps) {
   const isHomepagePreview = presentation === "homepage-preview";
   const isMinimalPreview = compact || isHomepagePreview;
@@ -187,6 +185,7 @@ export function ActionsMapCanvas({
   );
   const [internalScoreScope, setInternalScoreScope] =
     useState<PollutionScoreScope>("global");
+  const [activePanel, setActivePanel] = useState<"filter" | "display" | "legend" | null>(null);
   const scoreScope = controlledScoreScope ?? internalScoreScope;
   const displayMode = controlledDisplayMode ?? internalDisplayMode;
   const handleDisplayModeChange = (mode: CurrentPlaceStateMode) => {
@@ -202,6 +201,14 @@ export function ActionsMapCanvas({
     onScoreScopeChange?.(scope);
   };
   const { references } = useActionPollutionScoreReferences();
+  const categoryCounts = useMemo(() => {
+    return sourceItems.reduce<Partial<Record<MarkerCategory, number>>>((counts, item) => {
+      for (const category of deriveMarkerCategories(item, references, { scoreScope, displayMode })) {
+        counts[category] = (counts[category] ?? 0) + 1;
+      }
+      return counts;
+    }, {});
+  }, [displayMode, references, scoreScope, sourceItems]);
   const [displayAsOf] = useState(() => new Date());
   const currentPlaceStateViews = useMemo<CurrentPlaceStateViews[]>(
     () =>
@@ -249,76 +256,63 @@ export function ActionsMapCanvas({
         className,
       )}
     >
-      <div className="pointer-events-none absolute left-3 top-28 z-[1000] flex flex-wrap gap-2 md:top-32">
-        {isMinimalPreview ? null : [
-          { key: "points" as const, label: MAP_LAYER_LABELS.points },
-          { key: "shapes" as const, label: MAP_LAYER_LABELS.shapes },
-          { key: "infrastructure" as const, label: MAP_LAYER_LABELS.infrastructure },
-          { key: "trashSpotter" as const, label: MAP_LAYER_LABELS.trashSpotter },
-        ].map((layer) => {
-          const active = visibleLayers[layer.key];
-          return (
-            <button
-              key={layer.key}
-              type="button"
-              onClick={() => toggleLayer(layer.key)}
-              className={[
-                "pointer-events-auto rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] backdrop-blur-xl transition",
-                isEmerald
-                  ? "shadow-[0_24px_56px_-32px_rgba(34,197,94,0.22)]"
-                  : "shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)]",
-                active ? layerButtonClasses.active : layerButtonClasses.inactive,
-              ].join(" ")}
-              aria-pressed={active}
-            >
-              {layer.label}
-            </button>
-          );
-        })}
-      </div>
       {isMinimalPreview ? null : (
-        <div
-          className="pointer-events-none absolute right-3 top-16 z-[1000] sm:top-3"
-          role="group"
-          aria-label="Mode d’affichage des états"
-        >
-          <div className="pointer-events-auto flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-1.5">
-            <MapScoreScopeControl
-              value={scoreScope}
-              onChange={handleScoreScopeChange}
-            />
-            {scoreScope === "global" ? (
-              <div
-                className="inline-flex rounded-full border border-slate-200/70 bg-white/90 p-1 shadow-lg backdrop-blur-xl dark:border-slate-700/70 dark:bg-slate-950/90"
-                role="group"
-                aria-label="Mode temporel du score global"
-              >
-                {ACTIONS_MAP_DISPLAY_MODE_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={[
-                      "rounded-full px-2.5 py-1.5 text-[10px] font-bold transition sm:px-3",
-                      displayMode === option.value
-                        ? "bg-slate-900 text-white dark:bg-sky-400 dark:text-slate-950"
-                        : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
-                    ].join(" ")}
-                    aria-pressed={displayMode === option.value}
-                    onClick={() => handleDisplayModeChange(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
+        <div className="absolute inset-x-3 top-3 z-[1000] flex flex-wrap items-start justify-between gap-2">
+          <div className="flex max-w-full flex-wrap gap-2" role="toolbar" aria-label="Contrôles de la carte">
+            {filters && onZoneQueryChange && onDateScopeChange && onCategoryToggle && onResetFilters ? (
+              <button type="button" onClick={() => setActivePanel((current) => current === "filter" ? null : "filter")} aria-expanded={activePanel === "filter"} aria-controls="actions-map-filter-panel" className="min-h-11 rounded-xl border border-sky-200/90 bg-white/95 px-4 py-2 text-sm font-semibold text-slate-900 shadow-lg backdrop-blur-xl transition hover:border-sky-300 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50">
+                Filtrer
+              </button>
             ) : null}
+            <button type="button" onClick={() => setActivePanel((current) => current === "display" ? null : "display")} aria-expanded={activePanel === "display"} aria-controls="actions-map-display-panel" className="min-h-11 rounded-xl border border-sky-200/90 bg-white/95 px-4 py-2 text-sm font-semibold text-slate-900 shadow-lg backdrop-blur-xl transition hover:border-sky-300 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50">
+              Affichage
+            </button>
+            <button type="button" onClick={() => setActivePanel((current) => current === "legend" ? null : "legend")} aria-expanded={activePanel === "legend"} aria-controls="actions-map-legend-panel" className="min-h-11 rounded-xl border border-sky-200/90 bg-white/95 px-4 py-2 text-sm font-semibold text-slate-900 shadow-lg backdrop-blur-xl transition hover:border-sky-300 hover:bg-sky-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50">
+              Légende
+            </button>
           </div>
         </div>
       )}
-      {isMinimalPreview ? null : (
-        <div className="pointer-events-none absolute left-3 top-40 z-[1000] md:top-44">
+      {!isMinimalPreview && activePanel === "filter" && filters && onZoneQueryChange && onDateScopeChange && onCategoryToggle && onResetFilters ? (
+        <div id="actions-map-filter-panel" className="absolute left-3 right-3 top-16 z-[1000] max-h-[calc(100%-5rem)] overflow-y-auto rounded-2xl border border-sky-200/90 bg-white/95 p-4 shadow-xl backdrop-blur-xl sm:left-3 sm:max-w-2xl" role="region" aria-label="Filtres de la carte">
+          <ActionsMapFilterControls filters={filters} categoryCounts={categoryCounts} onZoneQueryChange={onZoneQueryChange} onDateScopeChange={onDateScopeChange} onCategoryToggle={onCategoryToggle} onReset={onResetFilters} />
+        </div>
+      ) : null}
+      {!isMinimalPreview && activePanel === "display" ? (
+        <div id="actions-map-display-panel" className="absolute left-3 right-3 top-16 z-[1000] max-h-[calc(100%-5rem)] overflow-y-auto rounded-2xl border border-sky-200/90 bg-white/95 p-4 text-slate-900 shadow-xl backdrop-blur-xl sm:left-auto sm:right-3 sm:max-w-md" role="region" aria-label="Options d’affichage">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-slate-900">Référence du score</p>
+              <MapScoreScopeControl value={scoreScope} onChange={handleScoreScopeChange} />
+            </div>
+            {scoreScope === "global" ? (
+              <div className="space-y-2" role="group" aria-label="Mode temporel du score global">
+                <p className="text-sm font-semibold text-slate-900">Période du score</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {ACTIONS_MAP_DISPLAY_MODE_OPTIONS.map((option) => <button key={option.value} type="button" className={["min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50", displayMode === option.value ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"].join(" ")} aria-pressed={displayMode === option.value} onClick={() => handleDisplayModeChange(option.value)}>{option.label}</button>)}
+                </div>
+              </div>
+            ) : null}
+            <div className="space-y-2" role="group" aria-label="Calques visibles">
+              <p className="text-sm font-semibold text-slate-900">Calques</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {([{ key: "points" as const, label: MAP_LAYER_LABELS.points }, { key: "shapes" as const, label: MAP_LAYER_LABELS.shapes }, { key: "infrastructure" as const, label: MAP_LAYER_LABELS.infrastructure }, { key: "trashSpotter" as const, label: MAP_LAYER_LABELS.trashSpotter }]).map((layer) => <button key={layer.key} type="button" onClick={() => toggleLayer(layer.key)} aria-pressed={visibleLayers[layer.key]} className={["min-h-11 rounded-xl border px-3 py-2 text-left text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50", visibleLayers[layer.key] ? layerButtonClasses.active : layerButtonClasses.inactive].join(" ")}>{layer.label}</button>)}
+              </div>
+            </div>
+            <div className="space-y-2" role="group" aria-label="Fond de carte">
+              <p className="text-sm font-semibold text-slate-900">Fond de carte</p>
+              <div className="grid grid-cols-2 gap-2">
+                {([{ value: "light" as const, label: "Fond clair" }, { value: "dark" as const, label: "Fond contrasté" }]).map((option) => <button key={option.value} type="button" onClick={() => setBasemapMode(option.value)} aria-pressed={basemapMode === option.value} className={["min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50", basemapMode === option.value ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"].join(" ")}>{option.label}</button>)}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {!isMinimalPreview && activePanel === "legend" ? (
+        <div id="actions-map-legend-panel" className="absolute left-3 right-3 top-16 z-[1000] sm:left-auto sm:right-3" role="region" aria-label="Légende de la carte">
           <MapGeometryLegend scoreScope={scoreScope} displayMode={displayMode} />
         </div>
-      )}
+      ) : null}
 
       <MapContainer
         center={mapCenter}
@@ -345,39 +339,20 @@ export function ActionsMapCanvas({
           onViewportChange={onViewportChange}
           onViewportInteraction={onViewportInteraction}
         />
-        <BasemapModeReporter onChange={setBasemapMode} />
-        {isMinimalPreview ? null : (
+        {!isMinimalPreview ? (
           <MapControls
             center={logicalRecenterViewport.center}
             zoom={logicalRecenterViewport.zoom}
             variant="immersive"
             tone={tone}
+            position="right"
           />
-        )}
-        {isMinimalPreview ? (
-          <TileLayer
-            attribution={CARTO_BASEMAPS.light.attribution}
-            url={CARTO_BASEMAPS.light.url}
-            crossOrigin="anonymous"
-          />
-        ) : (
-          <LayersControl position="topright">
-            <LayersControl.BaseLayer checked name="Plan clair">
-              <TileLayer
-                attribution={CARTO_BASEMAPS.light.attribution}
-                url={CARTO_BASEMAPS.light.url}
-                crossOrigin="anonymous"
-              />
-            </LayersControl.BaseLayer>
-            <LayersControl.BaseLayer name="Plan contrasté">
-              <TileLayer
-                attribution={CARTO_BASEMAPS.dark.attribution}
-                url={CARTO_BASEMAPS.dark.url}
-                crossOrigin="anonymous"
-              />
-            </LayersControl.BaseLayer>
-          </LayersControl>
-        )}
+        ) : null}
+        <TileLayer
+          attribution={CARTO_BASEMAPS[isMinimalPreview ? "light" : basemapMode].attribution}
+          url={CARTO_BASEMAPS[isMinimalPreview ? "light" : basemapMode].url}
+          crossOrigin="anonymous"
+        />
 
         <LayerGroup>
           <SignalementMarkers

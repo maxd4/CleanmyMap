@@ -20,6 +20,11 @@ import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import { useActionsMapViewport } from "./use-actions-map-viewport";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 import { ActionPollutionScoreReferencesProvider } from "@/components/actions/map/action-pollution-score-references-context";
+import type {
+  ActionsMapDateScope,
+  ActionsMapFilters,
+} from "@/components/actions/map/actions-map-filters.utils";
+import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 
 type ActionsMapFeedContentProps = {
   feedData: MapFeedDataState;
@@ -47,6 +52,10 @@ type ActionsMapFeedContentProps = {
   onScoreScopeChange?: ActionsMapFeedProps["onScoreScopeChange"];
   displayMode?: ActionsMapFeedProps["displayMode"];
   onDisplayModeChange?: ActionsMapFeedProps["onDisplayModeChange"];
+  filters?: ActionsMapFilters;
+  onZoneQueryChange?: (zoneQuery: string) => void;
+  onDateScopeChange?: (dateScope: ActionsMapDateScope) => void;
+  onCategoryToggle?: (category: MarkerCategory) => void;
 };
 
 export function ActionsMapFeedContent({
@@ -75,6 +84,10 @@ export function ActionsMapFeedContent({
   onScoreScopeChange,
   displayMode = "projected_today",
   onDisplayModeChange,
+  filters,
+  onZoneQueryChange,
+  onDateScopeChange,
+  onCategoryToggle,
 }: ActionsMapFeedContentProps) {
   const [MapCanvas, setMapCanvas] = useState<ActionsMapCanvasComponent | null>(null);
   const [mapCanvasError, setMapCanvasError] = useState<string | null>(null);
@@ -195,6 +208,10 @@ export function ActionsMapFeedContent({
     onScoreScopeChange,
     displayMode,
     onDisplayModeChange,
+    filters,
+    onZoneQueryChange,
+    onDateScopeChange,
+    onCategoryToggle,
   };
 
   return (

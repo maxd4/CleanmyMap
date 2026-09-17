@@ -40,8 +40,6 @@ describe("actions map filters utils", () => {
     const filters = buildDefaultActionsMapFilters(120);
     expect(filters.days).toBe(120);
     expect(filters.dateScope).toBe("current_year");
-    expect(filters.impactFilter).toBe("all");
-    expect(filters.qualityMin).toBe(0);
     expect(filters.zoneQuery).toBe("");
     expect(filters.visibleCategories.blue).toBe(true);
   });
@@ -60,8 +58,6 @@ describe("actions map filters utils", () => {
 
     expect(filters.days).toBe(90);
     expect(filters.dateScope).toBe("all_time");
-    expect(filters.impactFilter).toBe("all");
-    expect(filters.qualityMin).toBe(0);
     expect(filters.zoneQuery).toBe("République");
     expect(filters.visibleCategories.blue).toBe(false);
     expect(filters.visibleCategories.green).toBe(true);
@@ -83,14 +79,15 @@ describe("actions map filters utils", () => {
     expect(currentYear.days).toBe(90);
   });
 
-  it("ignores legacy persisted status filters", () => {
+  it("ignores legacy persisted status and hidden quality filters", () => {
     const filters = normalizeActionsMapFilters(
       { statusFilter: "all", impactFilter: "critique" },
       90,
     );
 
     expect(filters).not.toHaveProperty("statusFilter");
-    expect(filters.impactFilter).toBe("critique");
+    expect(filters).not.toHaveProperty("impactFilter");
+    expect(filters).not.toHaveProperty("qualityMin");
   });
 
   it("reads defaults when storage is empty or invalid", () => {
@@ -120,6 +117,8 @@ describe("actions map filters utils", () => {
     writeActionsMapFiltersToStorage(storage, filters);
 
     expect(readActionsMapFiltersFromStorage(storage, 90)).toEqual(filters);
+    expect(JSON.parse(storage.getItem(ACTIONS_MAP_FILTERS_STORAGE_KEY) ?? "{}")).not.toHaveProperty("impactFilter");
+    expect(JSON.parse(storage.getItem(ACTIONS_MAP_FILTERS_STORAGE_KEY) ?? "{}")).not.toHaveProperty("qualityMin");
   });
 
   it("normalizes zone queries and matches labels", () => {
