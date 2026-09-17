@@ -610,7 +610,6 @@ export function ChatShell({
 
   const {
     handleBackToDmInbox,
-    handleClearRecipient,
     handleRecipientQueryChange,
     handleSelectDmConversation,
     handleSelectRecipient,
@@ -785,6 +784,11 @@ export function ChatShell({
             contactRequestsLoading={actionShareContactRequestsLoading}
             contactRequestsError={actionShareContactRequestsError}
             onRespondToContactRequest={handleRespondToActionShareContactRequest}
+            recipientQuery={recipientQuery}
+            isRecipientPickerOpen={isRecipientPickerOpen}
+            dmSuggestions={dmSuggestions}
+            onRecipientQueryChange={handleRecipientQueryChange}
+            onSelectRecipient={handleSelectRecipient}
             tone={isLight ? "light" : "dark"}
             className={!showDmThreadOnMobile ? "flex" : "hidden md:flex"}
           />
@@ -922,17 +926,10 @@ export function ChatShell({
                 isUploading={isUploading}
                 sendError={sendError}
                 selectedRecipient={selectedRecipient}
-                recipientQuery={recipientQuery}
-                onRecipientQueryChange={handleRecipientQueryChange}
-                isRecipientPickerOpen={isRecipientPickerOpen}
-                onRecipientPickerOpenChange={setIsRecipientPickerOpen}
-                dmSuggestions={dmSuggestions}
                 showMentions={showMentions}
                 mentionSuggestions={mentionSuggestions}
                 onInsertMention={insertMention}
                 onSubmit={handleSend}
-                onSelectRecipient={handleSelectRecipient}
-                onClearRecipient={handleClearRecipient}
                 canSubmit={canSubmitMessage}
               />
             </>

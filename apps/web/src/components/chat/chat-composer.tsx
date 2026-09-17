@@ -1,6 +1,6 @@
 "use client";
-import { BarChart3, Calendar, MapPin, Megaphone, Paperclip, Plus, Search, Send, Trash2, X } from "lucide-react";
-import { memo } from "react";
+import { BarChart3, Calendar, MapPin, Megaphone, Paperclip, Plus, Send, Trash2, X } from "lucide-react";
+import { memo, useState } from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent, RefObject } from "react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
@@ -51,17 +51,10 @@ type ChatComposerProps = {
   isUploading: boolean;
   sendError: string | null;
   selectedRecipient: ChatUser | null;
-  recipientQuery: string;
-  onRecipientQueryChange: (value: string) => void;
-  isRecipientPickerOpen: boolean;
-  onRecipientPickerOpenChange: (isOpen: boolean) => void;
-  dmSuggestions: ChatUser[];
   showMentions: boolean;
   mentionSuggestions: ChatUser[];
   onInsertMention: (handle: string) => void;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
-  onSelectRecipient: (recipient: ChatUser) => void;
-  onClearRecipient: () => void;
   canSubmit: boolean;
 };
 
@@ -78,17 +71,10 @@ export const ChatComposer = memo(function ChatComposer({
   isUploading,
   sendError,
   selectedRecipient,
-  recipientQuery,
-  onRecipientQueryChange,
-  isRecipientPickerOpen,
-  onRecipientPickerOpenChange,
-  dmSuggestions,
   showMentions,
   mentionSuggestions,
   onInsertMention,
   onSubmit,
-  onSelectRecipient,
-  onClearRecipient,
   canSubmit,
   tone = "dark",
   composerMode = "message",
@@ -105,6 +91,7 @@ export const ChatComposer = memo(function ChatComposer({
   composerModes = ["message", "announcement", "poll"],
 }: ChatComposerProps) {
   const isLight = tone === "light";
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
   const placeholder =
     composerMode === "announcement"
       ? "Décrivez l'annonce ou le relais à diffuser..."
@@ -112,6 +99,13 @@ export const ChatComposer = memo(function ChatComposer({
         ? "Formulez votre sondage ou votre question..."
         : composerPlaceholder;
   const pollOptionsError = getChatPollOptionsValidationError(pollOptions);
+  const canAttach = Boolean(userId) && composerMode !== "poll" && !isSending && !isUploading;
+  const canChooseAnnouncement = showModeTabs && composerModes.includes("announcement");
+  const canChoosePoll = showModeTabs && composerModes.includes("poll");
+  const selectComposerMode = (mode: ChatComposerMode) => {
+    onComposerModeChange?.(mode);
+    setIsToolsOpen(false);
+  };
   const handleFileSelection = (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile && !isSupportedChatAttachmentFile(selectedFile)) {
@@ -169,101 +163,10 @@ export const ChatComposer = memo(function ChatComposer({
         </div>
       ) : null}
 
-      {activeChannelType === "dm" ? (
-        <div className={`mb-4 rounded-3xl border p-4 ${isLight ? "border-rose-100/70 bg-white/85" : "border-white/5 bg-white/5"}`}>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="cmm-text-caption font-black uppercase tracking-widest text-slate-400">
-                Destinataire
-              </p>
-              <p className={`text-xs ${isLight ? "text-slate-500" : "text-slate-500"}`}>
-                Sélectionnez le membre avec qui ouvrir la conversation.
-              </p>
-            </div>
-            {selectedRecipient ? (
-              <button
-                type="button"
-                onClick={onClearRecipient}
-                className={`rounded-full border px-3 py-1 cmm-text-caption font-black uppercase tracking-widest ${isLight ? "border-rose-200 text-rose-700 hover:bg-rose-50" : "border-white/10 text-slate-300 hover:bg-white/5"}`}
-              >
-                Changer
-              </button>
-            ) : null}
-          </div>
-
-          {selectedRecipient ? (
-            <div className={`mt-3 flex items-center gap-3 rounded-2xl border px-3 py-3 ${isLight ? "border-rose-100 bg-white" : "border-violet-500/20 bg-violet-500/5"}`}>
-              <ChatAvatar
-                src={selectedRecipient.avatar_url}
-                name={selectedRecipient.display_name}
-                tone={isLight ? "light" : "dark"}
-                className={isLight ? "bg-rose-50 text-rose-700" : "bg-white/10 text-white"}
-              />
-              <div className="min-w-0">
-                <p className={`break-words text-sm font-black ${isLight ? "text-slate-900" : "text-white"}`}>
-                  {selectedRecipient.display_name}
-                </p>
-                <p className={`cmm-text-caption break-words ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                  @{selectedRecipient.handle}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-3 space-y-3">
-              <div className="relative">
-                <Search
-                  size={16}
-                  className={`pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 ${isLight ? "text-slate-400" : "text-slate-400"}`}
-                />
-                <input
-                  value={recipientQuery}
-                  onChange={(e) => {
-                    onRecipientQueryChange(e.target.value);
-                    onRecipientPickerOpenChange(true);
-                  }}
-                  onFocus={() => onRecipientPickerOpenChange(true)}
-                  placeholder="Rechercher un membre"
-                  className={`w-full rounded-2xl border px-10 py-3 text-sm font-medium outline-none transition ${isLight ? "border-rose-100 bg-white text-slate-900 focus:border-rose-300 focus:ring-4 focus:ring-rose-500/10" : "border-white/10 bg-white/5 text-white focus:border-violet-500/50 focus:ring-4 focus:ring-violet-500/10"}`}
-                />
-              </div>
-
-              {isRecipientPickerOpen ? (
-                <div className={`max-h-52 overflow-auto rounded-2xl border p-2 shadow-2xl ${isLight ? "border-rose-100 bg-white" : "border-white/10 bg-slate-900"}`}>
-                  {dmSuggestions.length > 0 ? (
-                    dmSuggestions.map((candidate) => (
-                      <button
-                        key={candidate.id}
-                        type="button"
-                        onClick={() => onSelectRecipient(candidate)}
-                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-white/5"
-                      >
-                        <ChatAvatar
-                          src={candidate.avatar_url}
-                          name={candidate.display_name}
-                          size="sm"
-                          tone={isLight ? "light" : "dark"}
-                          className={isLight ? "bg-rose-50 text-rose-700" : "bg-white/10 text-white"}
-                        />
-                        <div className="min-w-0">
-                          <p className={`break-words text-sm font-bold ${isLight ? "text-slate-900" : "text-white"}`}>
-                            {candidate.display_name}
-                          </p>
-                          <p className={`cmm-text-caption break-words ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-                            @{candidate.handle}
-                          </p>
-                        </div>
-                      </button>
-                    ))
-                  ) : (
-                    <p className="px-3 py-4 text-sm text-slate-500">
-                      Aucun membre trouvé.
-                    </p>
-                  )}
-                </div>
-              ) : null}
-            </div>
-          )}
-        </div>
+      {activeChannelType === "dm" && !selectedRecipient ? (
+        <p className={`mb-3 cmm-text-small ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+          Choisissez un membre depuis Conversations pour ouvrir ce fil.
+        </p>
       ) : null}
 
       {showMentions && mentionSuggestions.length > 0 ? (
@@ -313,28 +216,6 @@ export const ChatComposer = memo(function ChatComposer({
             <X size={12} />
             Retirer
           </button>
-        </div>
-      ) : null}
-
-      {showModeTabs ? (
-        <div className={`mb-3 inline-flex rounded-2xl border p-1 ${isLight ? "border-rose-100 bg-white/85" : "border-white/5 bg-white/5"}`}>
-            {[
-              { id: "message", label: "Message" },
-              { id: "announcement", label: "Annonce / Relai" },
-              { id: "poll", label: "Sondage" },
-            ].filter((tab) => composerModes.includes(tab.id as ChatComposerMode)).map((tab) => {
-            const isActive = composerMode === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => onComposerModeChange?.(tab.id as ChatComposerMode)}
-                className={`rounded-xl px-4 py-2 cmm-text-caption font-black uppercase tracking-widest transition ${isActive ? (isLight ? "bg-rose-500 text-white" : "bg-pink-500 text-white") : (isLight ? "text-slate-500 hover:bg-rose-50" : "text-slate-400 hover:bg-white/5")}`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
         </div>
       ) : null}
 
@@ -486,31 +367,85 @@ export const ChatComposer = memo(function ChatComposer({
         />
         <button
           type="button"
-          disabled={composerMode === "poll" || !userId || isSending || isUploading}
-          onClick={() => fileInputRef.current?.click()}
-          aria-label="Joindre un fichier"
-          className={`p-3 rounded-2xl transition-[color,background-color] disabled:opacity-30 ${isLight ? "text-slate-400 hover:text-rose-500 hover:bg-rose-50" : "text-slate-400 hover:text-violet-400 hover:bg-white/5"}`}
+          aria-label="Options d’écriture"
+          aria-expanded={isToolsOpen}
+          aria-controls="chat-composer-options"
+          onClick={() => setIsToolsOpen((open) => !open)}
+          className={`p-3 rounded-2xl transition-[color,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isLight ? "text-slate-400 hover:text-rose-500 hover:bg-rose-50" : "text-slate-400 hover:text-violet-400 hover:bg-white/5"}`}
         >
-          <Paperclip size={20} />
+          <Plus size={20} aria-hidden="true" />
         </button>
         <textarea
           rows={1}
           value={message}
           onChange={onMessageChange}
           onKeyDown={handleComposerKeyDown}
-          disabled={!userId || isSending || isUploading}
+          disabled={!userId || isSending || isUploading || (activeChannelType === "dm" && !selectedRecipient)}
           className={`flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium py-3 px-1 max-h-40 resize-none ${isLight ? "text-slate-900 placeholder:text-slate-400" : "text-white placeholder:text-slate-500"}`}
-          placeholder={userId ? placeholder : "Connectez-vous pour participer"}
+          placeholder={!userId ? "Connectez-vous pour participer" : activeChannelType === "dm" && !selectedRecipient ? "Choisissez un membre dans Conversations" : placeholder}
         />
         <CmmButton
           disabled={!canSubmit}
           type="submit"
           aria-label={composerMode === "poll" ? "Publier le sondage" : "Envoyer le message"}
-          tone={isLight ? "destructive" : "important"}
+          tone={isLight ? "primary" : "important"}
           className={`w-12 h-12 text-white rounded-2xl shadow-xl disabled:opacity-30 disabled:grayscale ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-violet-600 shadow-violet-600/30"}`}
         >
           <Send size={20} />
         </CmmButton>
+        {isToolsOpen ? (
+          <div
+            id="chat-composer-options"
+            role="menu"
+            aria-label="Options d’écriture"
+            className={`absolute bottom-full left-0 mb-2 min-w-56 rounded-2xl border p-2 shadow-xl ${isLight ? "border-rose-100 bg-white" : "border-white/10 bg-slate-900"}`}
+          >
+            {composerMode !== "message" ? (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => selectComposerMode("message")}
+                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left cmm-text-small font-semibold ${isLight ? "text-slate-700 hover:bg-rose-50" : "text-slate-200 hover:bg-white/5"}`}
+              >
+                Écrire un message
+              </button>
+            ) : null}
+            {userId ? (
+              <button
+                type="button"
+                role="menuitem"
+                disabled={!canAttach}
+                onClick={() => {
+                  setIsToolsOpen(false);
+                  fileInputRef.current?.click();
+                }}
+                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left cmm-text-small font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${isLight ? "text-slate-700 hover:bg-rose-50" : "text-slate-200 hover:bg-white/5"}`}
+              >
+                <Paperclip size={16} aria-hidden="true" /> Pièce jointe
+              </button>
+            ) : null}
+            {canChooseAnnouncement ? (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => selectComposerMode("announcement")}
+                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left cmm-text-small font-semibold ${isLight ? "text-slate-700 hover:bg-rose-50" : "text-slate-200 hover:bg-white/5"}`}
+              >
+                <Megaphone size={16} aria-hidden="true" /> Annonce / Relai
+              </button>
+            ) : null}
+            {canChoosePoll ? (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => selectComposerMode("poll")}
+                className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left cmm-text-small font-semibold ${isLight ? "text-slate-700 hover:bg-rose-50" : "text-slate-200 hover:bg-white/5"}`}
+              >
+                <BarChart3 size={16} aria-hidden="true" /> Sondage
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
     </form>
   );
