@@ -1,13 +1,11 @@
 "use client";
 
-import { AlertCircle, MessageCirclePlus, RefreshCw } from "lucide-react";
+import { AlertCircle, MessageCirclePlus, RefreshCw, Search } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { memo, useState } from "react";
-import type { DmConversation } from "./chat-types";
-import type { ActionShareContactRequest } from "./chat-types";
+import type { ActionShareContactRequest, ChatUser, DmConversation } from "./chat-types";
 import { ChatAvatar } from "./chat-avatar";
-import { ChatActionReferenceCard } from "./ui/chat-action-reference-card";
 import { CmmCountBadge } from "@/components/ui/cmm-count-badge";
 
 type DmInboxProps = {
@@ -28,6 +26,11 @@ type DmInboxProps = {
     request: ActionShareContactRequest,
     decision: "accept" | "reject" | "ignore",
   ) => Promise<void>;
+  recipientQuery?: string;
+  isRecipientPickerOpen?: boolean;
+  dmSuggestions?: ChatUser[];
+  onRecipientQueryChange?: (value: string) => void;
+  onSelectRecipient?: (recipient: ChatUser) => void;
 };
 
 function formatConversationDate(value: string): string {
@@ -53,6 +56,11 @@ export const DmInbox = memo(function DmInbox({
   contactRequestsLoading = false,
   contactRequestsError,
   onRespondToContactRequest,
+  recipientQuery = "",
+  isRecipientPickerOpen = false,
+  dmSuggestions = [],
+  onRecipientQueryChange,
+  onSelectRecipient,
 }: DmInboxProps) {
   const isLight = tone === "light";
   const [respondingRequestId, setRespondingRequestId] = useState<string | null>(null);
@@ -97,10 +105,56 @@ export const DmInbox = memo(function DmInbox({
           className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 cmm-text-caption font-black uppercase tracking-widest transition ${isLight ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/20 hover:bg-indigo-700" : "bg-indigo-500 text-white hover:bg-indigo-400"}`}
         >
           <MessageCirclePlus size={15} aria-hidden="true" />
-          <span className="hidden sm:inline">Nouveau</span>
+          <span className="hidden sm:inline">Nouveau message</span>
           <span className="sr-only sm:hidden">Démarrer une conversation</span>
         </button>
       </div>
+
+      {isRecipientPickerOpen && !activePeerId ? (
+        <div className={`mt-4 rounded-2xl border p-3 ${isLight ? "border-indigo-100 bg-white" : "border-white/10 bg-slate-900"}`}>
+          <label className="relative block">
+            <span className="sr-only">Rechercher un membre</span>
+            <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              autoFocus
+              value={recipientQuery}
+              onChange={(event) => onRecipientQueryChange?.(event.target.value)}
+              placeholder="Rechercher un membre"
+              className={`w-full rounded-xl border px-10 py-2.5 cmm-text-small outline-none focus:ring-2 focus:ring-indigo-300 ${isLight ? "border-indigo-100 bg-white text-slate-900" : "border-white/10 bg-white/5 text-white"}`}
+            />
+          </label>
+          <div className="mt-2 max-h-48 overflow-y-auto">
+            {dmSuggestions.length > 0 ? (
+              dmSuggestions.map((candidate) => (
+                <button
+                  key={candidate.id}
+                  type="button"
+                  onClick={() => onSelectRecipient?.(candidate)}
+                  className={`flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left ${isLight ? "hover:bg-indigo-50" : "hover:bg-white/5"}`}
+                >
+                  <ChatAvatar
+                    src={candidate.avatar_url}
+                    name={candidate.display_name}
+                    size="sm"
+                    tone={isLight ? "light" : "dark"}
+                    className={isLight ? "bg-indigo-50 text-indigo-700" : "bg-white/10 text-white"}
+                  />
+                  <span className="min-w-0">
+                    <span className={`block truncate cmm-text-small font-bold ${isLight ? "text-slate-900" : "text-white"}`}>
+                      {candidate.display_name}
+                    </span>
+                    <span className="block truncate cmm-text-caption text-slate-500">@{candidate.handle}</span>
+                  </span>
+                </button>
+              ))
+            ) : (
+              <p className="px-2 py-3 cmm-text-small text-slate-500">
+                {recipientQuery ? "Aucun membre trouvé." : "Saisissez un nom ou un pseudo."}
+              </p>
+            )}
+          </div>
+        </div>
+      ) : null}
 
       <div className="mt-4 min-h-0 flex-1 overflow-y-auto custom-scrollbar">
         {contactRequestsLoading ? (
@@ -114,28 +168,31 @@ export const DmInbox = memo(function DmInbox({
           </p>
         ) : null}
         {contactRequests.length > 0 ? (
-          <section className="mb-4 space-y-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-3" aria-label="Demandes de partage d’action">
-            <div>
-              <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-indigo-600">Nouvelles demandes</p>
-              <p className="mt-1 text-xs text-slate-600">Acceptez pour ouvrir la conversation et recevoir le partage.</p>
-            </div>
-            {contactRequests.map((request) => (
-              <article key={request.id} className="rounded-xl border border-indigo-100 bg-white p-3">
-                <div className="flex items-center gap-2">
-                  <ChatAvatar src={request.sender.avatar_url} name={request.sender.display_name} size="sm" tone="light" />
-                  <p className="text-sm font-bold text-slate-900">{request.sender.display_name} souhaite vous partager une action</p>
-                </div>
-                <p className="mt-2 text-xs text-slate-600">{request.message}</p>
-                <div className="mt-2">
-                  <ChatActionReferenceCard actionId={request.action.id} tone="light" />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "accept")} className="rounded-full bg-indigo-600 px-3 py-1.5 cmm-text-caption font-black uppercase tracking-wide text-white disabled:opacity-50">Accepter</button>
-                  <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "reject")} className="rounded-full border border-slate-200 px-3 py-1.5 cmm-text-caption font-black uppercase tracking-wide text-slate-600 disabled:opacity-50">Refuser</button>
-                  <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "ignore")} className="rounded-full border border-slate-200 px-3 py-1.5 cmm-text-caption font-black uppercase tracking-wide text-slate-600 disabled:opacity-50">Ignorer</button>
-                </div>
-              </article>
-            ))}
+          <section className="mb-3 rounded-xl border border-indigo-200 bg-indigo-50/70 p-2" aria-label="Demandes de partage d’action">
+            <details>
+              <summary className="cursor-pointer list-none rounded-lg px-2 py-1 cmm-text-small font-black text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400">
+                Demandes ({contactRequests.length})
+              </summary>
+              <div className="mt-2 space-y-2">
+                {contactRequests.map((request) => (
+                  <article key={request.id} className="rounded-lg border border-indigo-100 bg-white p-2">
+                    <div className="flex items-center gap-2">
+                      <ChatAvatar src={request.sender.avatar_url} name={request.sender.display_name} size="sm" tone="light" />
+                      <p className="min-w-0 truncate cmm-text-small font-bold text-slate-900">{request.sender.display_name}</p>
+                    </div>
+                    <p className="mt-1 truncate cmm-text-caption text-slate-600">{request.message}</p>
+                    <p className="mt-1 truncate cmm-text-caption font-semibold text-indigo-700">
+                      {request.action.title} · {request.action.locationLabel}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "accept")} className="rounded-full bg-indigo-600 px-3 py-1.5 cmm-text-caption font-black text-white disabled:opacity-50">Accepter</button>
+                      <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "reject")} className="rounded-full border border-slate-200 px-3 py-1.5 cmm-text-caption font-black text-slate-600 disabled:opacity-50">Refuser</button>
+                      <button type="button" disabled={respondingRequestId !== null} onClick={() => void respondToRequest(request, "ignore")} className="rounded-full border border-slate-200 px-3 py-1.5 cmm-text-caption font-black text-slate-600 disabled:opacity-50">Ignorer</button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </details>
           </section>
         ) : null}
         {isLoading ? (

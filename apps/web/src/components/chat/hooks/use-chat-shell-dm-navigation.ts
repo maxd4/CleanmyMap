@@ -67,7 +67,7 @@ export function useChatShellDmNavigation({
     setSelectedRecipient(null);
     setRecipientQuery("");
     setIsRecipientPickerOpen(true);
-    setIsDmThreadOpen(true);
+    setIsDmThreadOpen(false);
   }, [
     setActiveTopicId,
     setActiveChannelType,

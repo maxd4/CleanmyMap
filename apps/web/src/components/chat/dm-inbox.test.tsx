@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DmInbox } from "./dm-inbox";
-import type { DmConversation } from "./chat-types";
+import type { ActionShareContactRequest, DmConversation } from "./chat-types";
 
 const conversation: DmConversation = {
   peer: {
@@ -48,5 +48,74 @@ describe("DmInbox count consumers", () => {
 
     expect(markup).not.toContain("notifications privées non lues");
     expect(markup).toContain('aria-label="100 messages non lus"');
+  });
+
+  it("opens member search in the conversations column", () => {
+    const markup = renderToStaticMarkup(
+      <DmInbox
+        conversations={[conversation]}
+        activePeerId={null}
+        isLoading={false}
+        onSelectConversation={() => undefined}
+        onStartConversation={() => undefined}
+        onRetry={() => undefined}
+        isRecipientPickerOpen
+        recipientQuery="ali"
+        dmSuggestions={[{
+          id: "peer-2",
+          display_name: "Alice Test",
+          handle: "alice-test",
+          avatar_url: null,
+        }]}
+        onRecipientQueryChange={() => undefined}
+        onSelectRecipient={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("Rechercher un membre");
+    expect(markup).toContain("Alice Test");
+    expect(markup).toContain("@alice-test");
+  });
+
+  it("groups first-contact requests without replacing the conversation list", () => {
+    const request: ActionShareContactRequest = {
+      id: "request-1",
+      createdAt: "2026-09-17T10:00:00.000Z",
+      message: "Peux-tu rejoindre cette action ?",
+      sender: conversation.peer,
+      action: {
+        id: "action-1",
+        shareKind: "invitation",
+        title: "Action du canal",
+        actionDate: "2026-09-20",
+        eventStartTime: null,
+        eventEndTime: null,
+        locationLabel: "Paris 11e",
+        organizerLabel: "Association test",
+        participantsExpected: 4,
+        durationMinutes: 60,
+        objective: null,
+        route: null,
+        groupJoinEnabled: true,
+        event: null,
+      },
+    };
+    const markup = renderToStaticMarkup(
+      <DmInbox
+        conversations={[conversation]}
+        activePeerId={null}
+        isLoading={false}
+        onSelectConversation={() => undefined}
+        onStartConversation={() => undefined}
+        onRetry={() => undefined}
+        contactRequests={[request]}
+        onRespondToContactRequest={async () => undefined}
+      />,
+    );
+
+    expect(markup).toContain("Demandes (1)");
+    expect(markup).toContain("Action du canal");
+    expect(markup).toContain("Membre test");
+    expect(markup).toContain("Bonjour");
   });
 });
