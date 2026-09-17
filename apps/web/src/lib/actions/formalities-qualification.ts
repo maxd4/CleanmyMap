@@ -49,9 +49,11 @@ export type FormalitiesOfficialSource = {
 };
 
 export type FormalitiesOfficialChannel = {
-  kind: "official_page" | "official_platform" | "manager_to_confirm";
+  kind: "official_page" | "official_platform" | "official_email" | "manager_to_confirm";
   label: string;
   url: string | null;
+  /** Only populated when the source explicitly proves an official email channel. */
+  emailAddress?: string | null;
 };
 
 export type FormalitiesDeadline = {

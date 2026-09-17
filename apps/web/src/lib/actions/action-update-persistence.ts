@@ -22,6 +22,10 @@ import {
   preserveCanonicalAdministrativeRequirements,
 } from "./administrative-requirements";
 import {
+  preserveCanonicalFormalitiesWorkflow,
+  preserveFormalitiesContextWhenOmitted,
+} from "./formalities-workflow";
+import {
   persistResolvedRouteTargetDistance,
   resolveRouteTargetDistance,
 } from "@/lib/actions/route-target-distance";
@@ -53,13 +57,21 @@ export async function prepareActionUpdate(params: {
   if (parsedBody.preparationData !== undefined) {
     let preservedPreparationData: typeof parsedBody.preparationData;
     try {
-      preservedPreparationData = preserveCanonicalAdministrativeRequirements(
+      const preservedAdministrativeRequirements = preserveCanonicalAdministrativeRequirements(
         current.preparation_data,
         preserveHistoricalRouteCalibrationContext(
           current.preparation_data,
           parsedBody.preparationData,
         ),
       );
+      const withFormalitiesWorkflow = preserveCanonicalFormalitiesWorkflow(
+        current.preparation_data,
+        preservedAdministrativeRequirements as Record<string, unknown>,
+      );
+      preservedPreparationData = preserveFormalitiesContextWhenOmitted(
+        current.preparation_data,
+        withFormalitiesWorkflow,
+      ) as typeof parsedBody.preparationData;
     } catch (error) {
       if (
         error instanceof Error &&

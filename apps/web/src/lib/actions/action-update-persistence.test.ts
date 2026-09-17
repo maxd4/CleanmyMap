@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ActionRow } from "@/types/database";
 import type { ActionUpdateInput } from "./action-update-audit";
+import type { ActionFormalitiesFacts } from "./formalities-qualification";
+import type { ActionFormalitiesWorkflowState } from "./formalities-workflow";
 import { prepareActionUpdate } from "./action-update-persistence";
 
 const resolveActionDepartmentForPersistenceMock = vi.hoisted(() => vi.fn());
@@ -155,6 +157,33 @@ describe("prepareActionUpdate administrative requirements boundary", () => {
         validatedAt: null,
         validatedByUserId: null,
       },
+    });
+  });
+
+  it("preserves formalities context and server-managed workflow when the ordinary form omits them", async () => {
+    resolveActionDepartmentForPersistenceMock.mockResolvedValue({
+      departmentCode: null,
+      departmentName: null,
+    });
+    const workflow = {
+      schemaVersion: "action-formalities-workflow-v1",
+      contentVersion: "qualification-v1",
+      trace: { determiningFacts: { publicSpace: "public_domain" } },
+      progress: [],
+    } as unknown as ActionFormalitiesWorkflowState;
+    const prepared = await prepareActionUpdate({
+      current: buildCurrent({
+        actionTitle: "Avant",
+        formalitiesContext: { publicSpace: "public_domain" } as unknown as ActionFormalitiesFacts,
+        formalitiesWorkflow: workflow,
+      }),
+      parsedBody: ({ preparationData: { actionTitle: "Après" } } as unknown as ActionUpdateInput),
+    });
+
+    expect(prepared.updateData.preparation_data).toMatchObject({
+      actionTitle: "Après",
+      formalitiesContext: { publicSpace: "public_domain" },
+      formalitiesWorkflow: workflow,
     });
   });
 

@@ -91,12 +91,14 @@ describe("administrative requirements", () => {
       preparationData: {
         actionTitle: "Action hostile",
         administrativeRequirements: maliciousRequirements,
+        formalitiesWorkflow: { userStatus: "sent" },
       },
     });
     const updateResult = updateActionSchema.safeParse({
       preparationData: {
         actionTitle: "Action modifiée",
         administrativeRequirements: maliciousRequirements,
+        formalitiesWorkflow: { userStatus: "sent" },
       },
     });
 
@@ -108,6 +110,12 @@ describe("administrative requirements", () => {
       );
       expect(updateResult.data.preparationData).not.toHaveProperty(
         "administrativeRequirements",
+      );
+      expect(createResult.data.preparationData).not.toHaveProperty(
+        "formalitiesWorkflow",
+      );
+      expect(updateResult.data.preparationData).not.toHaveProperty(
+        "formalitiesWorkflow",
       );
     }
   });

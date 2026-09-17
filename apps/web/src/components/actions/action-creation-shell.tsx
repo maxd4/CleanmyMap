@@ -216,8 +216,8 @@ export function ActionCreationShell({
     },
     {
       id: "formalites",
-      label: "Formalités juridiques",
-      description: "Repérer ce qui reste à documenter depuis une source officielle.",
+      label: "Formalités & autorisations locales",
+      description: "Qualifier les démarches applicables et préparer leur suivi.",
       icon: FileWarning,
       content: mountedPanels.has("formalites") ? (
         <ActionCreationLegalPanel actionId={currentActionId} />

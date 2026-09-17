@@ -2,6 +2,7 @@ import { FileWarning } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmPill } from "@/components/ui/cmm-pill";
 import { AdministrativeRequirementsStatus } from "./administrative-requirements-status";
+import { ActionFormalitiesWorkflowPanel } from "./action-formalities-workflow-panel";
 
 export function ActionCreationLegalPanel({ actionId }: { actionId?: string | null }) {
   return (
@@ -14,7 +15,7 @@ export function ActionCreationLegalPanel({ actionId }: { actionId?: string | nul
           <div className="space-y-2">
             <CmmPill tone="amber" size="sm">À compléter</CmmPill>
             <h2 className="text-xl font-black tracking-tight text-emerald-950">
-              Formalités juridiques
+              Formalités & autorisations locales
             </h2>
           </div>
         </div>
@@ -29,7 +30,13 @@ export function ActionCreationLegalPanel({ actionId }: { actionId?: string | nul
           cleanwalk sans installation ne vaut pas automatiquement AOT ; la
           Ville de Paris n&apos;est pas supposée compétente pour tous les lieux.
         </p>
-        <AdministrativeRequirementsStatus actionId={actionId} surface="formalities" />
+        <ActionFormalitiesWorkflowPanel actionId={actionId} />
+        <div className="border-t border-amber-200/70 pt-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-800/70">
+            État technique de la pré-action
+          </p>
+          <AdministrativeRequirementsStatus actionId={actionId} surface="formalities" />
+        </div>
       </div>
     </CmmCard>
   );
