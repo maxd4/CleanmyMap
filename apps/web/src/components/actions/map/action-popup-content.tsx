@@ -45,6 +45,7 @@ type ActionPopupContentProps = {
   item: ActionMapItem;
   color: string;
   coords: { latitude: number | null; longitude: number | null };
+  compact?: boolean;
   onViewGeometry?: () => void;
   corridorItems?: readonly ActionMapItem[];
   corridorHistory?: CorridorHistory;
@@ -83,6 +84,7 @@ export function ActionPopupContent(props: ActionPopupContentProps) {
               props.resolveCurrentPlaceStateForItem?.(item) ?? null
             }
             scoreScope={props.scoreScope}
+            compact={props.compact}
             wrap={false}
           />
         )}
@@ -100,8 +102,9 @@ function SingleActionPopupContent({
   onViewGeometry,
   displayMode,
   currentPlaceState = null,
-  scoreScope = "global",
-  wrap = true,
+    scoreScope = "global",
+    compact = false,
+    wrap = true,
 }: {
   item: ActionMapItem;
   color: string;
@@ -110,6 +113,7 @@ function SingleActionPopupContent({
   displayMode?: CurrentPlaceStateMode;
   currentPlaceState?: CurrentPlaceState | null;
   scoreScope?: PollutionScoreScope;
+  compact?: boolean;
   wrap?: boolean;
 }) {
   const contract = item.contract;
@@ -238,6 +242,7 @@ function SingleActionPopupContent({
         departmentScore={departmentScore}
         departmentName={contract?.location.departmentName ?? null}
         hasQuantifiedPollutionScore={hasQuantifiedPollutionScore}
+        compact={compact}
       />
 
       <ActionPopupContentBody
@@ -263,6 +268,7 @@ function SingleActionPopupContent({
         signalementId={isSignalementMapItem(item) ? item.id : null}
         onViewGeometry={onViewGeometry}
         geometryKind={geometryView.kind}
+        compact={compact}
       />
     </>
   );
