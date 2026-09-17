@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
   getLocalDevAuthState: vi.fn(() => ({ active: false, role: null })),
   getCurrentUserIdentity: vi.fn(),
   isFeatureEnabled: vi.fn(() => true),
+  getSupabaseServerClient: vi.fn(() => ({})),
+  loadActionById: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/safe-session", () => ({
@@ -25,6 +27,12 @@ vi.mock("@/lib/authz", () => ({
 vi.mock("@/lib/feature-flags", () => ({
   isFeatureEnabled: mocks.isFeatureEnabled,
 }));
+vi.mock("@/lib/supabase/server", () => ({
+  getSupabaseServerClient: mocks.getSupabaseServerClient,
+}));
+vi.mock("@/lib/actions/store", () => ({
+  loadActionById: mocks.loadActionById,
+}));
 
 vi.mock("@/components/actions/action-creation-shell", () => ({
   ActionCreationShell: (props: Record<string, unknown>) =>
@@ -33,7 +41,6 @@ vi.mock("@/components/actions/action-creation-shell", () => ({
       "data-authenticated": String(props.isAuthenticated),
       "data-action-id": String(props.initialActionId ?? ""),
       "data-event-id": String(props.linkedEventId ?? ""),
-      "data-entry-path": String(props.initialEntryPath ?? ""),
       "data-initial-tab": String(props.initialTab ?? ""),
       "data-initial-panel": String(props.initialPanel ?? ""),
       "data-sign-in-href": String(props.signInHref ?? ""),
@@ -54,6 +61,7 @@ describe("action creation entry point", () => {
       state: "anonymous",
     });
     mocks.getCurrentUserIdentity.mockResolvedValue(null);
+    mocks.loadActionById.mockResolvedValue({ action_phase: "post_action_draft" });
   });
 
   it("does not expose the former clean-place mode", () => {
@@ -67,7 +75,7 @@ describe("action creation entry point", () => {
     expect(source).toContain("estimations d’impact");
   });
 
-  it("passes the anonymous auth state and return context to the entry flow", async () => {
+  it("passes the anonymous auth state and return context to the direct action forms", async () => {
     const html = renderToStaticMarkup(
       await NewActionPage({
         searchParams: Promise.resolve({
@@ -129,7 +137,6 @@ describe("action creation entry point", () => {
       }),
     );
 
-    expect(html).toContain('data-entry-path="before"');
     expect(html).toContain('data-initial-tab="before"');
     expect(html).toContain('data-initial-panel="pre-formulaire"');
     expect(html).toContain(
@@ -138,16 +145,29 @@ describe("action creation entry point", () => {
   });
 
   it("keeps a published pre-action on the before-action path when it is resumed", async () => {
+    mocks.loadActionById.mockResolvedValue({ action_phase: "pre_action" });
     const html = renderToStaticMarkup(
       await NewActionPage({
         searchParams: Promise.resolve({ from: "before", actionId: "action-42" }),
       }),
     );
 
-    expect(html).toContain('data-entry-path="before"');
     expect(html).toContain('data-initial-tab="before"');
     expect(html).toContain('data-initial-panel="pre-formulaire"');
     expect(html).toContain('data-action-id="action-42"');
+  });
+
+  it("resumes a persisted pre-action on the Pré-formulaire tab", async () => {
+    mocks.loadActionById.mockResolvedValue({ action_phase: "pre_action" });
+
+    const html = renderToStaticMarkup(
+      await NewActionPage({
+        searchParams: Promise.resolve({ actionId: "pre-action-42" }),
+      }),
+    );
+
+    expect(html).toContain('data-initial-tab="before"');
+    expect(html).toContain('data-action-id="pre-action-42"');
   });
 
   it("does not block the authenticated complete form by viewport", () => {

@@ -8,6 +8,8 @@ import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getLocalDevAuthState } from "@/lib/auth/local-dev-auth-state.server";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { loadActionById } from "@/lib/actions/store";
 
 export const metadata: Metadata = {
   title: "Créer une action - CleanMyMap",
@@ -54,7 +56,16 @@ export default async function NewActionPage({
   const from = resolveSingleSearchParam(params?.["from"]);
   const actionId = resolveSingleSearchParam(params?.["actionId"]);
   const panel = normalizeActionCreationPanel(params?.["panel"]);
-  const tab = normalizeActionCreationTab(params?.["tab"], { actionId, from });
+  const requestedTab = resolveSingleSearchParam(params?.["tab"]);
+  const resumedAction =
+    actionId && !requestedTab
+      ? await loadActionById(getSupabaseServerClient(), actionId).catch(() => null)
+      : null;
+  const tab = normalizeActionCreationTab(requestedTab, {
+    actionId,
+    from,
+    actionPhase: resumedAction?.action_phase,
+  });
   const returnUrl = buildActionReturnUrl({ fromEventId, actionId, from, panel, tab });
   const { userId } = await getSafeAuthSession();
   const localDevAuth = await getLocalDevAuthState();
@@ -87,7 +98,6 @@ export default async function NewActionPage({
           defaultActorName={defaultActorName}
           userMetadata={userMetadata}
           linkedEventId={fromEventId}
-          initialEntryPath={from === "planner" || from === "before" ? "before" : undefined}
           initialActionId={actionId ?? null}
           initialPanel={panel}
           initialTab={tab}
@@ -108,7 +118,6 @@ export default async function NewActionPage({
         defaultActorName={defaultActorName}
         userMetadata={userMetadata}
         linkedEventId={fromEventId}
-        initialEntryPath={from === "planner" || from === "before" ? "before" : undefined}
         initialActionId={actionId ?? null}
         initialPanel={panel}
         initialTab={tab}

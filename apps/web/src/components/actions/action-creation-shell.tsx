@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState, type ComponentProps, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ClipboardList,
@@ -9,7 +10,8 @@ import {
   CloudSun,
   type LucideIcon,
 } from "lucide-react";
-import { ActionDeclarationEntryFlow } from "./action-declaration-entry-flow";
+import { ActionBeforeDeclarationForm } from "./action-declaration/before/form";
+import { ActionDeclarationForm } from "./action-declaration/form/action-declaration-form";
 import { ActionCreationLegalPanel } from "./action-creation-legal-panel";
 import { RouteSection } from "@/components/sections/rubriques/route";
 import { WeatherSection } from "@/components/sections/rubriques/weather-section";
@@ -25,10 +27,14 @@ import {
   type ActionCreationPanelId,
   type ActionCreationTab,
 } from "@/lib/actions/action-creation-routes";
+import { updateAction } from "@/lib/actions/http";
 import type { FormState } from "./action-declaration/form/model";
 import { JoinActionTabs } from "@/components/sections/rubriques/rejoindre-une-action.tabs";
 
-type ActionCreationShellProps = ComponentProps<typeof ActionDeclarationEntryFlow> & {
+type ActionCreationShellProps = Omit<
+  ComponentProps<typeof ActionBeforeDeclarationForm>,
+  "onPassToComplete" | "onFormChange" | "onActionPersisted"
+> & {
   initialPanel: ActionCreationPanelId;
   initialTab?: ActionCreationTab;
   tabSearchParams?: Record<string, string | string[] | undefined>;
@@ -106,14 +112,15 @@ export function ActionCreationShell({
   initialTab = "before",
   tabSearchParams,
   localDevAuth = INACTIVE_LOCAL_DEV_AUTH,
-  ...flowProps
+  ...formProps
 }: ActionCreationShellProps) {
+  const router = useRouter();
   const [draftContext, setDraftContext] = useState<{
     locationLabel?: string;
     actionDate?: string;
   }>({});
   const [currentActionId, setCurrentActionId] = useState<string | null>(
-    flowProps.initialActionId ?? null,
+    formProps.initialActionId ?? null,
   );
   const [openPanels, setOpenPanels] = useState<Record<ActionCreationPanelId, boolean>>(() => ({
     "pre-formulaire": initialPanel === "pre-formulaire",
@@ -124,6 +131,7 @@ export function ActionCreationShell({
   const [mountedPanels, setMountedPanels] = useState<ReadonlySet<ActionCreationPanelId>>(
     () => new Set([initialPanel]),
   );
+  const [transitionError, setTransitionError] = useState<string | null>(null);
 
   const togglePanel = (panel: ActionCreationPanelId) => {
     if (!openPanels[panel]) {
@@ -134,7 +142,6 @@ export function ActionCreationShell({
     }
     setOpenPanels((current) => ({ ...current, [panel]: !current[panel] }));
   };
-  const initialEntryPath = initialTab === "after" ? "after" : "before";
   const handleBeforeFormChange = useCallback((form: FormState) => {
     setDraftContext({
       locationLabel:
@@ -145,6 +152,26 @@ export function ActionCreationShell({
   const handleBeforeActionPersisted = useCallback((actionId: string) => {
     setCurrentActionId(actionId);
   }, []);
+  const handlePassToComplete = useCallback(
+    async (actionId: string) => {
+      setTransitionError(null);
+      try {
+        await updateAction(actionId, { actionPhase: "post_action_draft" });
+        const nextParams = { ...(tabSearchParams ?? {}), actionId };
+        router.replace(buildActionCreationTabHref("after", nextParams));
+      } catch (error: unknown) {
+        setTransitionError(
+          error instanceof Error && error.message
+            ? error.message
+            : "Impossible d’ouvrir le formulaire complet pour le moment.",
+        );
+      }
+    },
+    [router, tabSearchParams],
+  );
+  const actionCreationSearchParams = currentActionId
+    ? { ...(tabSearchParams ?? {}), actionId: currentActionId }
+    : tabSearchParams;
 
   const panels: ActionCreationPanel[] = [
     {
@@ -153,12 +180,20 @@ export function ActionCreationShell({
       description: "Créer une pré-action autonome et la publier explicitement si nécessaire.",
       icon: ClipboardList,
       content: mountedPanels.has("pre-formulaire") ? (
-        <ActionDeclarationEntryFlow
-          {...flowProps}
-          initialEntryPath={initialEntryPath}
-          onBeforeFormChange={handleBeforeFormChange}
-          onBeforeActionPersisted={handleBeforeActionPersisted}
-        />
+        initialTab === "before" ? (
+          <ActionBeforeDeclarationForm
+            {...formProps}
+            initialActionId={formProps.initialActionId ?? null}
+            onFormChange={handleBeforeFormChange}
+            onActionPersisted={handleBeforeActionPersisted}
+            onPassToComplete={handlePassToComplete}
+          />
+        ) : (
+          <ActionDeclarationForm
+            {...formProps}
+            initialActionId={formProps.initialActionId ?? null}
+          />
+        )
       ) : null,
     },
     {
@@ -223,9 +258,15 @@ export function ActionCreationShell({
             { id: "after", label: "Formulaire", panelId: "action-creation-tabpanel-after" },
           ]}
           buildHref={(tab) =>
-            buildActionCreationTabHref(tab as ActionCreationTab, tabSearchParams)
+            buildActionCreationTabHref(tab as ActionCreationTab, actionCreationSearchParams)
           }
         />
+
+        {transitionError ? (
+          <p role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
+            {transitionError}
+          </p>
+        ) : null}
 
         <div className="space-y-4" data-testid="action-creation-panels">
           {panels.map((panel) => {

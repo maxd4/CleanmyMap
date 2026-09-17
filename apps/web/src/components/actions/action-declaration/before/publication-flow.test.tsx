@@ -69,7 +69,6 @@ const props = {
   defaultActorName: "Maxence",
   isAuthenticated: true,
   userMetadata: { userId: "user-1", displayName: "Maxence" },
-  onReturnToChoice: vi.fn(),
   onPassToComplete: vi.fn(),
 };
 
