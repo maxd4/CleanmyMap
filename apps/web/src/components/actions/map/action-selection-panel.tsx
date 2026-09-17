@@ -91,26 +91,27 @@ export function ActionSelectionPanel({
   return (
     <aside
       aria-label={`Détail de ${item.location_label}`}
-      className="absolute inset-x-2 bottom-2 z-[1200] max-h-[min(72dvh,42rem)] overflow-y-auto rounded-3xl border border-slate-200/90 bg-white/95 shadow-[0_24px_64px_-28px_rgba(15,23,42,0.55)] backdrop-blur-xl md:bottom-auto md:left-auto md:right-3 md:top-16 md:w-[min(23rem,calc(100%-1.5rem))] md:max-h-[calc(100%-5.5rem)]"
+      className="absolute inset-x-2 bottom-2 z-[1200] max-h-[min(68dvh,38rem)] overflow-y-auto rounded-2xl border border-slate-200/90 bg-white/95 shadow-[0_24px_64px_-28px_rgba(15,23,42,0.55)] backdrop-blur-xl motion-reduce:scroll-auto md:bottom-auto md:left-auto md:right-3 md:top-16 md:w-[min(21rem,calc(100%-1.5rem))] md:max-h-[calc(100%-5rem)]"
     >
-      <div className="flex items-center justify-between gap-3 border-b border-slate-200/80 px-4 py-3">
-        <p className="cmm-text-caption font-semibold text-slate-700">
-          Détail lié à la carte
+      <div className="flex items-center justify-between gap-3 border-b border-slate-200/80 px-3 py-2">
+        <p className="text-xs font-semibold text-slate-700">
+          Détail carte
         </p>
         <button
           type="button"
           onClick={onClose}
           aria-label="Fermer le détail de l’action"
-          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-600 transition motion-reduce:transition-none hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/60"
         >
           <X size={18} aria-hidden="true" />
         </button>
       </div>
-      <div className="px-1 pb-1">
+      <div className="pb-1">
         <ActionPopupContent
           item={item}
           color={color}
           coords={coordinates}
+          compact
           onViewGeometry={
             geometry.positions.length > 1
               ? () => fitActionGeometryBounds(map, geometry.positions)

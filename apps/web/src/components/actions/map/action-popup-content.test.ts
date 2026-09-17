@@ -188,7 +188,7 @@ describe("action popup presentation", () => {
     expect(markup).toContain("Rejoindre une action");
     expect(markup).toContain("Voir tout le parcours");
     expect(markup).toContain("max-w-full px-3");
-    expect(markup).not.toContain("h-11 w-full");
+    expect(markup).not.toMatch(/(?<!min-)h-11 w-full/);
   });
 
   it("labels observed pollution and revisit priority separately", () => {
@@ -246,6 +246,84 @@ describe("action popup presentation", () => {
     expect(markup).toContain("pas une mesure en temps réel");
     expect(markup).not.toContain("Priorité de revisite");
     expect(markup).not.toContain("pollution actuelle");
+  });
+
+  it("condenses the selected-action panel without repeating the score framing", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionPopupContentHeader, {
+        recordTypeLabel: "Action terrain",
+        locationLabel: "Quai de test, 75020 Paris",
+        actionTitle: "Nettoyage du quai",
+        isAction: true,
+        compact: true,
+        color: "#f97316",
+        score: 80,
+        scoreLoading: false,
+        scoreReading: {
+          label: "Moyen/Fort",
+          guidance: "Passage à planifier",
+          tone: "amber",
+        },
+        scoreSourceLabel: "Référence terrain",
+        wasteScore: 74,
+        buttsScore: 86,
+        statusLabel: "Validée",
+        placeType: null,
+        quality: null,
+        geometryLabel: "Parcours déclaré",
+        geometryModeLabel: "Parcours connu",
+        geometryKind: "polyline",
+        geometryPointLabel: "2 points",
+        geometryConfidenceLabel: null,
+        geometryMetricLabel: "Longueur ~ 1 km",
+        geometryReality: "real",
+        observedAt: "08/04/2026",
+        wasteKg: 5,
+        butts: 42,
+        actionProjection: {
+          historicalScore: 80,
+          postActionScore: 0,
+          postActionScoreSource: "model_baseline",
+          elapsedDays: 215,
+          t80Days: 100,
+          projectedPollutionScore: 80,
+          isEstimate: true,
+          projectionConfidence: resolveProjectionConfidence({
+            geometryConfidence: 0.58,
+            postActionScoreSource: "model_baseline",
+            sourceCompleteness: "partial",
+          }),
+        },
+        globalScore: {
+          score: 80,
+          historicalScore: 80,
+          wasteScore: 74,
+          buttsScore: 86,
+          departmentRelativeScore: null,
+          availability: "available",
+          source: "global",
+        },
+        departmentScore: {
+          score: null,
+          historicalScore: null,
+          wasteScore: null,
+          buttsScore: null,
+          departmentRelativeScore: null,
+          availability: "department_unavailable",
+          source: "department",
+        },
+      }),
+    );
+
+    expect(markup).toContain('data-testid="popup-score-summary"');
+    expect(markup).toContain("Constaté");
+    expect(markup).toContain("Projeté");
+    expect(markup).toContain("+ jours");
+    expect(markup).toContain("Projection estimée");
+    expect(markup).toContain("Indisponible");
+    expect(markup).not.toContain("Pollution constatée avant l&#x27;action");
+    expect(markup).not.toContain("Projection modélisée");
+    expect(markup).not.toContain("Aucune référence départementale disponible");
   });
 
   it("shows global and department score references together", () => {

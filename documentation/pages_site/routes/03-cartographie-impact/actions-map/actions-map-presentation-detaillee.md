@@ -33,3 +33,11 @@ Estimation modélisée, pas une mesure en temps réel
 `S` et `P` conservent l'échelle interne `0–100`, mais tout rendu utilisateur
 utilise le format en pourcentage défini dans
 [`ui-score-formatting.md`](../../../../design-system/ui-score-formatting.md).
+
+Le panneau latéral d'une action sélectionnée utilise une fiche compacte :
+badge de type, titre et lieux sur une ou deux lignes, statut et date regroupés,
+un bloc unique `Score` avec `Constaté`, `Projeté` ou `Observé`, `+ jours`,
+méthode et confiance en badges courts, puis les détails constatés et la
+comparaison départementale sous forme condensée. Les valeurs et les règles de
+disponibilité restent celles des contrats existants ; `Indisponible` remplace
+les explications longues dans cette surface orientée carte.

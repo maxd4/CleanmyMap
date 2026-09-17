@@ -35,6 +35,7 @@ type ActionPopupContentBodyProps = {
   signalementId?: string | null;
   onViewGeometry?: () => void;
   geometryKind?: "polyline" | "polygon" | "point" | null;
+  compact?: boolean;
 };
 
 export function ActionPopupContentBody({
@@ -57,64 +58,80 @@ export function ActionPopupContentBody({
   signalementId = null,
   onViewGeometry,
   geometryKind,
+  compact = false,
 }: ActionPopupContentBodyProps) {
   const [isNotesExpanded, setIsNotesExpanded] = useState(false);
-  const wasteLabel = isAction ? "Déchets collectés" : "Déchets";
-  const buttsLabel = isAction ? "Mégots collectés" : "Mégots";
+  const wasteLabel = compact || !isAction ? "Déchets" : "Déchets collectés";
+  const buttsLabel = compact || !isAction ? "Mégots" : "Mégots collectés";
   const actionLabel = isAction
     ? "Nouvelle action ici"
     : hasPollution
       ? "Déclarer une action"
       : "Mettre à jour l’état du lieu";
+  const metricCellClass = compact
+    ? "space-y-0.5 bg-white p-2.5 dark:bg-slate-900"
+    : "space-y-1 bg-white p-4 dark:bg-slate-900";
+  const metricLabelClass = compact
+    ? "text-xs font-semibold"
+    : "cmm-text-caption font-bold uppercase tracking-wider";
+  const metricValueClass = compact
+    ? "text-lg font-bold tracking-tight text-slate-950"
+    : "text-xl font-bold tracking-tight text-slate-950";
 
   return (
-    <div className="space-y-4 p-5">
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 dark:border-slate-800 dark:bg-slate-800">
-        <div className="space-y-1 bg-white p-4 dark:bg-slate-900">
+    <div className={compact ? "space-y-3 p-4" : "space-y-4 p-5"}>
+      <div className={compact
+        ? "grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 dark:border-slate-800 dark:bg-slate-800"
+        : "grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-slate-200 bg-slate-200 dark:border-slate-800 dark:bg-slate-800"}>
+        <div className={metricCellClass}>
           <div className="flex items-center gap-2 text-slate-600">
             <Trash2 size={12} />
-            <span className="cmm-text-caption font-bold uppercase tracking-wider">{wasteLabel}</span>
+            <span className={metricLabelClass}>{wasteLabel}</span>
           </div>
-          <p className="text-xl font-bold tracking-tight text-slate-950">
+          <p className={metricValueClass}>
             {formatNumber(wasteKg)}{" "}
             <span className="cmm-text-caption font-semibold text-slate-500">kg</span>
           </p>
         </div>
-        <div className="space-y-1 bg-white p-4 dark:bg-slate-900">
+        <div className={metricCellClass}>
           <div className="flex items-center gap-2 text-slate-600">
             <Sparkles size={12} className="text-amber-500" />
-            <span className="cmm-text-caption font-bold uppercase tracking-wider">{buttsLabel}</span>
+            <span className={metricLabelClass}>{buttsLabel}</span>
           </div>
-          <p className="text-xl font-bold tracking-tight text-slate-950">{formatNumber(butts)}</p>
+          <p className={metricValueClass}>{formatNumber(butts)}</p>
         </div>
-        <div className="space-y-1 bg-white p-4 dark:bg-slate-900">
+        <div className={metricCellClass}>
           <div className="flex items-center gap-2 text-slate-600">
             <Users size={12} />
-            <span className="cmm-text-caption font-bold uppercase tracking-wider">Équipe</span>
+            <span className={metricLabelClass}>Équipe</span>
           </div>
-          <p className="text-xl font-bold tracking-tight text-slate-950">
+          <p className={metricValueClass}>
             {formatNumber(volunteers)}{" "}
             <span className="cmm-text-caption font-semibold text-slate-500">pers.</span>
           </p>
         </div>
-        <div className="space-y-1 bg-white p-4 dark:bg-slate-900">
+        <div className={metricCellClass}>
           <div className="flex items-center gap-2 text-slate-600">
             <Clock size={12} />
-            <span className="cmm-text-caption font-bold uppercase tracking-wider">Temps</span>
+            <span className={metricLabelClass}>Temps</span>
           </div>
-          <p className="text-xl font-bold tracking-tight text-slate-950">
+          <p className={metricValueClass}>
             {formatNumber(durationMinutes)}{" "}
             <span className="cmm-text-caption font-semibold text-slate-500">min</span>
           </p>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-emerald-100/70 bg-gradient-to-br from-emerald-50 to-white p-3 shadow-sm dark:border-emerald-800/40 dark:from-emerald-950/20 dark:to-slate-900/30">
+      <div className={compact
+        ? "rounded-xl border border-emerald-100/70 bg-gradient-to-br from-emerald-50 to-white p-2.5 shadow-sm dark:border-emerald-800/40 dark:from-emerald-950/20 dark:to-slate-900/30"
+        : "rounded-2xl border border-emerald-100/70 bg-gradient-to-br from-emerald-50 to-white p-3 shadow-sm dark:border-emerald-800/40 dark:from-emerald-950/20 dark:to-slate-900/30"}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap size={14} className="text-emerald-600" />
-            <span className="cmm-text-caption font-bold uppercase text-emerald-700 dark:text-emerald-400">
-              Impact Mobilisation
+            <span className={compact
+              ? "text-xs font-semibold text-emerald-700 dark:text-emerald-400"
+              : "cmm-text-caption font-bold uppercase text-emerald-700 dark:text-emerald-400"}>
+              {compact ? "Mobilisation" : "Impact Mobilisation"}
             </span>
           </div>
           <span className="cmm-text-small font-bold text-emerald-700 dark:text-emerald-400">
@@ -124,7 +141,9 @@ export function ActionPopupContentBody({
       </div>
 
       {(associationName || departure || arrival) && (
-        <div className="space-y-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/45">
+        <div className={compact
+          ? "space-y-2 rounded-xl border border-slate-100 bg-slate-50/80 p-2.5 dark:border-slate-800 dark:bg-slate-900/45"
+          : "space-y-3 rounded-2xl border border-slate-100 bg-slate-50/80 p-3 dark:border-slate-800 dark:bg-slate-900/45"}>
           {associationName && (
             <div className="flex items-center gap-3">
               <div className="rounded-full bg-indigo-50 p-1.5 text-indigo-600 ring-1 ring-inset ring-indigo-200/60 dark:bg-indigo-900/30 dark:ring-indigo-800/50">
@@ -156,9 +175,11 @@ export function ActionPopupContentBody({
       )}
 
       {notes && (
-        <div className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm dark:border-slate-800 dark:from-slate-900/70 dark:to-slate-900/30">
+        <div className={compact
+          ? "relative overflow-hidden rounded-xl border border-slate-200/70 bg-gradient-to-br from-slate-50 to-white p-3 shadow-sm dark:border-slate-800 dark:from-slate-900/70 dark:to-slate-900/30"
+          : "relative overflow-hidden rounded-2xl border border-slate-200/70 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm dark:border-slate-800 dark:from-slate-900/70 dark:to-slate-900/30"}>
           <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-slate-300 via-slate-200 to-slate-300 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700" />
-          <p className="mb-2 cmm-text-caption font-bold uppercase tracking-wider cmm-text-muted">
+          <p className={compact ? "mb-1.5 text-xs font-semibold cmm-text-muted" : "mb-2 cmm-text-caption font-bold uppercase tracking-wider cmm-text-muted"}>
             Bilan terrain
           </p>
           <p
@@ -183,7 +204,9 @@ export function ActionPopupContentBody({
 
       {signalementId ? <SignalementMediaProofs signalementId={signalementId} /> : null}
 
-      <div className="flex items-center justify-between border-t border-slate-100 pt-2 cmm-text-caption dark:border-slate-800">
+      <div className={compact
+        ? "flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2 text-xs text-slate-500 dark:border-slate-800"
+        : "flex items-center justify-between border-t border-slate-100 pt-2 cmm-text-caption dark:border-slate-800"}>
         <div className="flex items-center gap-1.5 text-slate-500">
           <Calendar size={12} />
           <span>{observedAt}</span>
@@ -199,7 +222,7 @@ export function ActionPopupContentBody({
           href="/reports"
           tone="critical"
           variant="pill"
-          className="w-full justify-center gap-2 px-4 py-3 text-[11px] font-black uppercase tracking-[0.1em]"
+          className="min-h-11 w-full justify-center gap-2 px-4 py-2.5 text-xs font-semibold"
         >
           <FileText size={15} />
           Générer le rapport d&apos;impact
@@ -212,13 +235,15 @@ export function ActionPopupContentBody({
           href={updateHref}
           tone="secondary"
           width="wide"
-          className="group relative overflow-hidden rounded-2xl bg-sky-200 px-4 py-4 text-center shadow-lg shadow-slate-950/10"
+          className={compact
+            ? "group relative min-h-11 overflow-hidden rounded-xl bg-sky-200 px-4 py-3 text-center shadow-lg shadow-slate-950/10"
+            : "group relative overflow-hidden rounded-2xl bg-sky-200 px-4 py-4 text-center shadow-lg shadow-slate-950/10"}
         >
-          <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-emerald-500/0 via-white/10 to-emerald-500/0 transition-transform duration-1000 group-hover:translate-x-[100%]" />
+          <div className="absolute inset-0 translate-x-[-100%] bg-gradient-to-r from-emerald-500/0 via-white/10 to-emerald-500/0 transition-transform duration-1000 motion-reduce:transition-none group-hover:translate-x-[100%]" />
           <span className="cmm-text-small font-bold text-slate-950">
             {actionLabel}
           </span>
-          <ArrowRight size={16} className="text-slate-700 transition-transform group-hover:translate-x-1" />
+          <ArrowRight size={16} className="text-slate-700 transition-transform motion-reduce:transition-none group-hover:translate-x-1" />
         </CmmButton>
       ) : (
         <div className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-center dark:border-slate-700 dark:bg-slate-800/60">
@@ -238,7 +263,7 @@ export function ActionPopupContentBody({
               tone="secondary"
               variant="ghost"
               size="sm"
-              className="min-h-9 max-w-full px-3 text-[10px] font-black uppercase tracking-[0.12em]"
+              className="min-h-11 max-w-full px-3 text-xs font-semibold"
             >
               Rejoindre une action
             </CmmButton>
@@ -259,7 +284,7 @@ export function ActionPopupContentBody({
               tone="tertiary"
               variant="ghost"
               size="sm"
-              className="min-h-9 max-w-full px-3 text-[10px] font-black uppercase tracking-[0.12em]"
+              className="min-h-11 max-w-full px-3 text-xs font-semibold"
             >
               {geometryKind === "polygon"
                 ? "Voir toute la zone"
