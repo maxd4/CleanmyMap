@@ -19,12 +19,15 @@ export function ActionCreationLegalPanel({ actionId }: { actionId?: string | nul
           </div>
         </div>
         <p className="max-w-3xl text-sm leading-6 text-emerald-950/75">
-          Le contenu juridique fiable de ce panneau reste à documenter à partir
-          de sources officielles applicables au lieu et au type d&apos;action.
+          Le moteur de qualification distingue désormais les formalités
+          parisiennes selon le lieu, le gestionnaire et la forme de l&apos;action.
+          Il reste explicable et retourne « inconnu » lorsque les faits ou la
+          source officielle ne permettent pas de conclure.
         </p>
         <p className="max-w-3xl text-xs leading-5 text-emerald-900/65">
-          Aucun avis sur une obligation légale, une assurance, une autorisation
-          municipale ou une responsabilité n&apos;est déduit par cette page.
+          Aucune procédure n&apos;est envoyée ou bloquée par ce panneau. Une simple
+          cleanwalk sans installation ne vaut pas automatiquement AOT ; la
+          Ville de Paris n&apos;est pas supposée compétente pour tous les lieux.
         </p>
         <AdministrativeRequirementsStatus actionId={actionId} surface="formalities" />
       </div>
