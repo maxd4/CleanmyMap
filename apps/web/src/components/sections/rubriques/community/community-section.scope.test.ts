@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -9,6 +9,11 @@ const sectionHookSource = readFileSync(join(communityRoot, "use-community-sectio
 const eventsHookSource = readFileSync(join(communityRoot, "use-community-events.ts"), "utf8");
 const eventsComponentSource = readFileSync(join(communityRoot, "community-events-components.tsx"), "utf8");
 const actionsHookSource = readFileSync(join(communityRoot, "use-community-actions.ts"), "utf8");
+const legalSource = readFileSync(join(communityRoot, "../legal-section.tsx"), "utf8");
+const learnInsightsSource = readFileSync(
+  join(communityRoot, "../../../learn/learn-gestes-propres-insights-section.tsx"),
+  "utf8",
+);
 
 describe("CommunitySection scope", () => {
   it("keeps only mission participation and the preserved partners surface", () => {
@@ -35,5 +40,25 @@ describe("CommunitySection scope", () => {
     const createEventSource = readFileSync(join(communityRoot, "create-event-card.tsx"), "utf8");
 
     expect(createEventSource).not.toMatch(/validé par l.?IA CleanMyMap|Cleanwalk\.org/);
+  });
+
+  it("keeps former solution surfaces out of Community and points to canonical owners", () => {
+    expect(sectionSource).not.toContain("CommunitySolutionsView");
+    expect(legalSource).toContain('href: "/mentions-legales"');
+    expect(legalSource).toContain('href: "/conditions-generales-utilisation"');
+    expect(legalSource).toContain('href: "/politique-confidentialite"');
+    expect(legalSource).toContain('href: "/politique-cookies"');
+    expect(learnInsightsSource).toContain("LearnGestesPropresCampaignSection");
+
+    for (const legacyFile of [
+      "campaigns-section.tsx",
+      "cleanup-guide-card.tsx",
+      "external-hub-section.tsx",
+      "highlights-card.tsx",
+      "organizer-kit-card.tsx",
+      "use-community-highlights.ts",
+    ]) {
+      expect(existsSync(join(communityRoot, legacyFile))).toBe(false);
+    }
   });
 });
