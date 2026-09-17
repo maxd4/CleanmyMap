@@ -179,7 +179,7 @@ const COLLABORATIONS: CollaborationCard[] = [
   },
 ];
 
-export function PartnersNetworkSection({ fr }: { fr: boolean }) {
+export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean; showHeader?: boolean }) {
   const entries = INITIAL_ANNUAIRE_ENTRIES;
   const [query, setQuery] = useState("");
   const [kindFilter, setKindFilter] = useState<PartnerKindFilter>("all");
@@ -211,7 +211,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
 
   return (
     <div className="space-y-8 text-slate-950">
-      <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
+      {showHeader ? <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
         <div className="space-y-6">
           <div className="space-y-4">
             <PageHeader
@@ -259,7 +259,7 @@ export function PartnersNetworkSection({ fr }: { fr: boolean }) {
             );
           })}
         </div>
-      </section>
+      </section> : null}
 
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)]">
         <div

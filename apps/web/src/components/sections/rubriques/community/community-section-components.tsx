@@ -2,9 +2,10 @@
 
 import { memo } from "react";
 import Link from "next/link";
-import { Calendar } from "lucide-react";
+import { MessageCircle, Search } from "lucide-react";
 import { CommunityCreateEventCard } from "@/components/sections/rubriques/community/create-event-card";
 import { CommunityEventsTabsCard } from "@/components/sections/rubriques/community/events-tabs-card";
+import { ErrorMessage } from "@/components/ui/error-message";
 import type { UseCommunitySectionModel } from "./use-community-section";
 
 export const CommunityMissionsView = memo(function CommunityMissionsView({
@@ -23,6 +24,8 @@ export const CommunityMissionsView = memo(function CommunityMissionsView({
   getOpsDraft,
   updateOpsDraft,
   onSaveEventOps,
+  communitySuccessMessage,
+  communityError,
   createForm,
   updateCreateForm,
   onCreateEvent,
@@ -45,39 +48,44 @@ export const CommunityMissionsView = memo(function CommunityMissionsView({
   | "getOpsDraft"
   | "updateOpsDraft"
   | "onSaveEventOps"
+  | "communitySuccessMessage"
+  | "communityError"
   | "createForm"
   | "updateCreateForm"
   | "onCreateEvent"
   | "isCreatingEvent"
 >) {
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
-      <section className="min-w-0 space-y-4" aria-labelledby="community-missions-title">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-          <div className="rounded-xl border border-pink-200 bg-pink-50 p-2 text-pink-700">
-            <Calendar size={18} aria-hidden="true" />
-          </div>
-          <div>
-            <h2 id="community-missions-title" className="text-xl font-bold text-slate-950">
-              {fr ? "Missions communautaires" : "Community missions"}
-            </h2>
-            <p className="cmm-text-small cmm-text-secondary">
-              {fr
-                ? "Consultez les missions et choisissez votre niveau de participation."
-              : "Browse missions and choose how you want to participate."}
-            </p>
-          </div>
-          </div>
-          <nav aria-label={fr ? "Destinations de suivi" : "Tracking destinations"} className="flex flex-wrap gap-2">
-            <Link href="/actions/history" className="cmm-text-caption rounded-full border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700 transition hover:border-pink-300 hover:text-pink-700">
-              {fr ? "Historique terrain" : "Field history"}
-            </Link>
-            <Link href="/reports" className="cmm-text-caption rounded-full border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-700 transition hover:border-pink-300 hover:text-pink-700">
-              {fr ? "Rapports d’impact" : "Impact reports"}
-            </Link>
-          </nav>
+    <div className="space-y-8">
+      <section className="min-w-0 space-y-5" aria-labelledby="community-missions-title">
+        <div className="flex flex-col gap-4 border-b border-pink-100 pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <h2 id="community-missions-title" className="text-2xl font-bold tracking-tight text-slate-950">
+            {fr ? "Missions à venir" : "Upcoming missions"}
+          </h2>
+          <CommunityCreateEventCard
+            createForm={createForm}
+            updateCreateForm={updateCreateForm}
+            onCreateEvent={onCreateEvent}
+            isCreatingEvent={isCreatingEvent}
+          />
         </div>
+
+        {communitySuccessMessage ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900"
+          >
+            {communitySuccessMessage}
+          </div>
+        ) : null}
+        {communityError ? (
+          <ErrorMessage
+            kind={communityError.kind}
+            title={fr ? "L’opération n’a pas abouti" : "The operation could not be completed"}
+            message={communityError.message}
+          />
+        ) : null}
 
         <CommunityEventsTabsCard
           activeTab={activeTab}
@@ -97,14 +105,25 @@ export const CommunityMissionsView = memo(function CommunityMissionsView({
         />
       </section>
 
-      <aside className="min-w-0">
-        <CommunityCreateEventCard
-          createForm={createForm}
-          updateCreateForm={updateCreateForm}
-          onCreateEvent={onCreateEvent}
-          isCreatingEvent={isCreatingEvent}
-        />
-      </aside>
+      <nav
+        aria-label={fr ? "Passerelles utiles" : "Useful links"}
+        className="flex flex-wrap gap-3 border-t border-pink-100 pt-5"
+      >
+        <Link
+          href="/sections/annuaire"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-pink-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-pink-400 hover:text-pink-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
+        >
+          <Search size={16} aria-hidden="true" />
+          {fr ? "Trouver des acteurs" : "Find organisations"}
+        </Link>
+        <Link
+          href="/sections/messagerie"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-pink-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:border-pink-400 hover:text-pink-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2"
+        >
+          <MessageCircle size={16} aria-hidden="true" />
+          {fr ? "Ouvrir la messagerie" : "Open messaging"}
+        </Link>
+      </nav>
     </div>
   );
 });

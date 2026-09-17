@@ -1,12 +1,15 @@
 "use client";
 
-import { PlusCircle, Calendar, Users, MapPin, AlignLeft, Target, Layers, Info, Check } from "lucide-react";
+import { useState } from "react";
+import { useAuth, useClerk } from "@clerk/nextjs";
+import { AlignLeft, Calendar, Check, Info, Layers, MapPin, Plus, Target, Users } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import type { CreateCommunityEventForm } from "@/components/sections/rubriques/community/types";
 import { InlineFieldError } from "@/components/ui/inline-field-error";
 import { cn } from "@/lib/utils";
 import { getWasteCategory } from "@/lib/waste";
+import { canOpenCommunityCreateForm, redirectToCommunitySignIn } from "./mutation-auth";
 
 const CLEANUP_WASTE_TYPE_OPTIONS = [
   { value: "megots", label: getWasteCategory("cigarette_butt").labels.fr },
@@ -32,45 +35,29 @@ type CommunityCreateEventCardProps = {
   isCreatingEvent: boolean;
 };
 
-function CommunityCreateEventCard(props: CommunityCreateEventCardProps) {
-  const {
-    createForm,
-    updateCreateForm,
-    onCreateEvent,
-    isCreatingEvent,
-  } = props;
+function CommunityCreateEventCard({
+  createForm,
+  updateCreateForm,
+  onCreateEvent,
+  isCreatingEvent,
+}: CommunityCreateEventCardProps) {
+  const { isLoaded, isSignedIn } = useAuth();
+  const { redirectToSignIn } = useClerk();
+  const [open, setOpen] = useState(false);
 
-  const titleError =
-    createForm.title.trim().length < 4
-      ? "Le titre doit contenir au moins 4 caractères."
-      : null;
-  const dateError =
-    createForm.eventDate.trim().length === 0
-      ? "Choisissez une date."
-      : null;
-  const locationError =
-    createForm.locationLabel.trim().length < 3
-      ? "Le lieu doit être précisé."
-      : null;
+  const titleError = createForm.title.trim().length < 4 ? "Le titre doit contenir au moins 4 caractères." : null;
+  const dateError = createForm.eventDate.trim().length === 0 ? "Choisissez une date." : null;
+  const locationError = createForm.locationLabel.trim().length < 3 ? "Le lieu doit être précisé." : null;
   const capacityValue = createForm.capacityTarget.trim();
   const capacityError =
     capacityValue.length > 0 && Number.isInteger(Number(capacityValue)) && Number(capacityValue) >= 1
       ? null
       : capacityValue.length > 0
-      ? "La capacité cible doit être un entier strictement positif."
-      : null;
-  const cleanupObjectiveError =
-    createForm.cleanupObjective.trim().length < 2
-      ? "Précisez l'objectif du cleanup."
-      : null;
-  const cleanupZoneError =
-    createForm.cleanupZone.trim().length < 2
-      ? "Précisez la zone ciblée."
-      : null;
-  const cleanupWasteTypeError =
-    createForm.cleanupWasteTypesExpected.length === 0
-      ? "Sélectionnez au moins un type de déchets attendu."
-      : null;
+        ? "La capacité cible doit être un entier strictement positif."
+        : null;
+  const cleanupObjectiveError = createForm.cleanupObjective.trim().length < 2 ? "Précisez l’objectif de la mission." : null;
+  const cleanupZoneError = createForm.cleanupZone.trim().length < 2 ? "Précisez la zone ciblée." : null;
+  const cleanupWasteTypeError = createForm.cleanupWasteTypesExpected.length === 0 ? "Sélectionnez au moins un type de déchets attendu." : null;
   const canSubmit =
     !titleError &&
     !dateError &&
@@ -80,218 +67,138 @@ function CommunityCreateEventCard(props: CommunityCreateEventCardProps) {
     !cleanupZoneError &&
     !cleanupWasteTypeError;
 
-  const toggleWasteType = (
-    value: (typeof CLEANUP_WASTE_TYPE_OPTIONS)[number]["value"],
-  ) => {
+  function handleToggle(nextOpen: boolean) {
+    if (!nextOpen) {
+      setOpen(false);
+      return;
+    }
+
+    if (!isLoaded) {
+      setOpen(false);
+      return;
+    }
+
+    if (!canOpenCommunityCreateForm(isLoaded, isSignedIn)) {
+      setOpen(false);
+      redirectToCommunitySignIn(redirectToSignIn);
+      return;
+    }
+
+    setOpen(true);
+  }
+
+  function toggleWasteType(value: (typeof CLEANUP_WASTE_TYPE_OPTIONS)[number]["value"]) {
     updateCreateForm(
       "cleanupWasteTypesExpected",
       createForm.cleanupWasteTypesExpected.includes(value)
         ? createForm.cleanupWasteTypesExpected.filter((item) => item !== value)
         : [...createForm.cleanupWasteTypesExpected, value],
     );
-  };
+  }
 
-  const inputClasses = "w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-pink-500/50 focus:bg-white/[0.08] transition-all duration-300";
-  const labelClasses = "flex flex-col gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-focus-within:text-pink-400 transition-colors";
+  const inputClasses = "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-950 placeholder:text-slate-400 outline-none transition focus:border-pink-500 focus:ring-2 focus:ring-pink-100";
+  const labelClasses = "flex flex-col gap-2 text-sm font-semibold text-slate-700";
 
   return (
     <CmmDisclosure
+      open={open}
+      onToggle={handleToggle}
       summary={
-        <span className="flex items-center gap-3">
-          <PlusCircle size={20} aria-hidden="true" />
-          <span>
-            <span className="block font-semibold">Organiser une mission</span>
-            <span className="cmm-text-small cmm-text-secondary">Ouvrir le parcours de création</span>
-          </span>
+        <span className="flex items-center gap-2">
+          <Plus size={17} aria-hidden="true" />
+          <span>Organiser une mission</span>
         </span>
       }
       tone="rose"
-      size="md"
-      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+      size="sm"
+      className="w-full rounded-full border border-pink-200 bg-white px-4 py-1 shadow-sm sm:w-auto"
     >
-      <div className="pt-4">
-
-        <div className="grid gap-8 md:grid-cols-2">
-          {/* Main Info */}
-          <div className="space-y-6 md:col-span-2 grid md:grid-cols-2 gap-6 items-start">
-            <div className="group space-y-2">
-              <label className={labelClasses}>
-                <span className="flex items-center gap-2"><AlignLeft size={12} /> Titre de l&apos;action</span>
-                <input
-                  value={createForm.title}
-                  onChange={(e) => updateCreateForm("title", e.target.value)}
-                  placeholder="Ex: Opération Canal Propre"
-                  className={inputClasses}
-                />
-                {titleError && <InlineFieldError message={titleError} />}
-              </label>
-            </div>
-
-            <div className="group space-y-2">
-              <label className={labelClasses}>
-                <span className="flex items-center gap-2"><Calendar size={12} /> Date prévue</span>
-                <input
-                  type="date"
-                  value={createForm.eventDate}
-                  onChange={(e) => updateCreateForm("eventDate", e.target.value)}
-                  className={cn(inputClasses, "appearance-none")}
-                  style={{ colorScheme: 'dark' }}
-                />
-                {dateError && <InlineFieldError message={dateError} />}
-              </label>
-            </div>
-
-            <div className="group space-y-2">
-              <label className={labelClasses}>
-                <span className="flex items-center gap-2"><Users size={12} /> Capacité cible</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={createForm.capacityTarget}
-                  onChange={(e) => updateCreateForm("capacityTarget", e.target.value)}
-                  placeholder="Nombre de volontaires"
-                  className={inputClasses}
-                />
-                {capacityError && <InlineFieldError message={capacityError} />}
-              </label>
-            </div>
-
-            <div className="group space-y-2">
-              <label className={labelClasses}>
-                <span className="flex items-center gap-2"><MapPin size={12} /> Localisation précise</span>
-                <input
-                  value={createForm.locationLabel}
-                  onChange={(e) => updateCreateForm("locationLabel", e.target.value)}
-                  placeholder="Adresse ou point de RDV"
-                  className={inputClasses}
-                />
-                {locationError && <InlineFieldError message={locationError} />}
-              </label>
-            </div>
-
-            <div className="group space-y-2">
-              <label className={labelClasses}>
-                <span className="flex items-center gap-2"><MapPin size={12} /> Latitude (optionnelle)</span>
-                <input
-                  type="number"
-                  min={-90}
-                  max={90}
-                  step="any"
-                  value={createForm.latitude}
-                  onChange={(e) => updateCreateForm("latitude", e.target.value)}
-                  placeholder="Ex: 48.8566"
-                  className={inputClasses}
-                />
-              </label>
-            </div>
-
-            <div className="group space-y-2">
-              <label className={labelClasses}>
-                <span className="flex items-center gap-2"><MapPin size={12} /> Longitude (optionnelle)</span>
-                <input
-                  type="number"
-                  min={-180}
-                  max={180}
-                  step="any"
-                  value={createForm.longitude}
-                  onChange={(e) => updateCreateForm("longitude", e.target.value)}
-                  placeholder="Ex: 2.3522"
-                  className={inputClasses}
-                />
-              </label>
-              <p className="text-[10px] font-medium normal-case tracking-normal text-slate-500">
-                Laissez les deux champs vides si la position précise n&apos;est pas connue. Aucun arrondissement ne sera converti automatiquement.
-              </p>
-            </div>
-          </div>
-
-          <div className="md:col-span-2 h-px bg-white/5" />
-
-          {/* Cleanup Details */}
-          <div className="space-y-6 md:col-span-2">
-            <div className="group space-y-2">
-              <label className={labelClasses}>
-                <span className="flex items-center gap-2"><Target size={12} /> Objectif principal</span>
-                <input
-                  value={createForm.cleanupObjective}
-                  onChange={(e) => updateCreateForm("cleanupObjective", e.target.value)}
-                  placeholder="Ex: Éradication des dépôts sauvages"
-                  className={inputClasses}
-                />
-                {cleanupObjectiveError && <InlineFieldError message={cleanupObjectiveError} />}
-              </label>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="group space-y-2">
-                <label className={labelClasses}>
-                  <span className="flex items-center gap-2"><Layers size={12} /> Zone ciblée</span>
-                  <input
-                    value={createForm.cleanupZone}
-                    onChange={(e) => updateCreateForm("cleanupZone", e.target.value)}
-                    placeholder="Ex: Berges du Canal"
-                    className={inputClasses}
-                  />
-                  {cleanupZoneError && <InlineFieldError message={cleanupZoneError} />}
-                </label>
-              </div>
-
-              <div className="group space-y-2">
-                <label className={labelClasses}>
-                  <span className="flex items-center gap-2"><Info size={12} /> Niveau de soutien</span>
-                  <select
-                    value={createForm.cleanupSupportLevel}
-                    onChange={(e) => updateCreateForm("cleanupSupportLevel", e.target.value as CreateCommunityEventForm["cleanupSupportLevel"])}
-                    className={cn(inputClasses, "appearance-none bg-slate-900")}
-                  >
-                    {CLEANUP_SUPPORT_LEVEL_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            </div>
-
-            <div className="group space-y-4">
-              <span className={labelClasses}>Flux de déchets attendus</span>
-              <div className="flex flex-wrap gap-3">
-                {CLEANUP_WASTE_TYPE_OPTIONS.map((opt) => {
-                  const active = createForm.cleanupWasteTypesExpected.includes(opt.value);
-                  return (
-                    <CmmButton
-                      key={opt.value}
-                      type="button"
-                      onClick={() => toggleWasteType(opt.value)}
-                      tone={active ? "primary" : "tertiary"}
-                      variant="pill"
-                      className={cn(
-                        "flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border",
-                        active ? "shadow-lg shadow-pink-600/20" : "hover:text-slate-300 hover:bg-white/10"
-                      )}
-                    >
-                      {active && <Check size={10} />}
-                      {opt.label}
-                    </CmmButton>
-                  );
-                })}
-              </div>
-              {cleanupWasteTypeError && <InlineFieldError message={cleanupWasteTypeError} />}
-            </div>
-          </div>
+      <form
+        className="mt-4 grid gap-5 border-t border-pink-100 pt-5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (canSubmit) void onCreateEvent();
+        }}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className={labelClasses}>
+            <span className="flex items-center gap-2"><AlignLeft size={15} aria-hidden="true" /> Titre de la mission</span>
+            <input value={createForm.title} onChange={(event) => updateCreateForm("title", event.target.value)} placeholder="Ex. Opération Canal Propre" className={inputClasses} />
+            {titleError ? <InlineFieldError message={titleError} /> : null}
+          </label>
+          <label className={labelClasses}>
+            <span className="flex items-center gap-2"><Calendar size={15} aria-hidden="true" /> Date prévue</span>
+            <input type="date" value={createForm.eventDate} onChange={(event) => updateCreateForm("eventDate", event.target.value)} className={inputClasses} />
+            {dateError ? <InlineFieldError message={dateError} /> : null}
+          </label>
+          <label className={labelClasses}>
+            <span className="flex items-center gap-2"><Users size={15} aria-hidden="true" /> Capacité cible</span>
+            <input type="number" min={1} value={createForm.capacityTarget} onChange={(event) => updateCreateForm("capacityTarget", event.target.value)} placeholder="Nombre de bénévoles" className={inputClasses} />
+            {capacityError ? <InlineFieldError message={capacityError} /> : null}
+          </label>
+          <label className={labelClasses}>
+            <span className="flex items-center gap-2"><MapPin size={15} aria-hidden="true" /> Lieu</span>
+            <input value={createForm.locationLabel} onChange={(event) => updateCreateForm("locationLabel", event.target.value)} placeholder="Adresse ou point de rendez-vous" className={inputClasses} />
+            {locationError ? <InlineFieldError message={locationError} /> : null}
+          </label>
+          <label className={labelClasses}>
+            <span className="flex items-center gap-2"><MapPin size={15} aria-hidden="true" /> Latitude (optionnelle)</span>
+            <input type="number" min={-90} max={90} step="any" value={createForm.latitude} onChange={(event) => updateCreateForm("latitude", event.target.value)} placeholder="Ex. 48.8566" className={inputClasses} />
+          </label>
+          <label className={labelClasses}>
+            <span className="flex items-center gap-2"><MapPin size={15} aria-hidden="true" /> Longitude (optionnelle)</span>
+            <input type="number" min={-180} max={180} step="any" value={createForm.longitude} onChange={(event) => updateCreateForm("longitude", event.target.value)} placeholder="Ex. 2.3522" className={inputClasses} />
+          </label>
+          <label className={cn(labelClasses, "sm:col-span-2")}>
+            <span>Description (optionnelle)</span>
+            <textarea value={createForm.description} onChange={(event) => updateCreateForm("description", event.target.value)} rows={3} placeholder="Présentez brièvement la mission." className={inputClasses} />
+          </label>
         </div>
 
-        <div className="mt-8 flex items-center justify-end border-t border-white/5 pt-6">
-          <CmmButton
-            onClick={() => void onCreateEvent()}
-            disabled={isCreatingEvent || !canSubmit}
-            tone="primary"
-            variant="pill"
-            className="px-10 py-4 rounded-2xl text-white text-xs font-black uppercase tracking-[0.2em] hover:bg-pink-500 transition-all shadow-2xl shadow-pink-600/40 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed group/btn overflow-hidden relative"
-          >
-            <span className="relative z-10">{isCreatingEvent ? "Création en cours..." : "Créer la mission"}</span>
+        <div className="grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
+          <label className={labelClasses}>
+            <span className="flex items-center gap-2"><Target size={15} aria-hidden="true" /> Objectif principal</span>
+            <input value={createForm.cleanupObjective} onChange={(event) => updateCreateForm("cleanupObjective", event.target.value)} placeholder="Ex. Retirer des dépôts sauvages" className={inputClasses} />
+            {cleanupObjectiveError ? <InlineFieldError message={cleanupObjectiveError} /> : null}
+          </label>
+          <label className={labelClasses}>
+            <span className="flex items-center gap-2"><Layers size={15} aria-hidden="true" /> Zone ciblée</span>
+            <input value={createForm.cleanupZone} onChange={(event) => updateCreateForm("cleanupZone", event.target.value)} placeholder="Ex. Berges du canal" className={inputClasses} />
+            {cleanupZoneError ? <InlineFieldError message={cleanupZoneError} /> : null}
+          </label>
+          <label className={labelClasses}>
+            <span className="flex items-center gap-2"><Info size={15} aria-hidden="true" /> Niveau de soutien</span>
+            <select value={createForm.cleanupSupportLevel} onChange={(event) => updateCreateForm("cleanupSupportLevel", event.target.value as CreateCommunityEventForm["cleanupSupportLevel"])} className={cn(inputClasses, "appearance-none")}>
+              {CLEANUP_SUPPORT_LEVEL_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </label>
+          <label className={labelClasses}>
+            <span>Logistique (optionnelle)</span>
+            <input value={createForm.cleanupLogisticsNeeds} onChange={(event) => updateCreateForm("cleanupLogisticsNeeds", event.target.value)} placeholder="Ex. sacs et gants à prévoir" className={inputClasses} />
+          </label>
+          <fieldset className="space-y-2">
+            <legend className={labelClasses}>Déchets attendus</legend>
+            <div className="flex flex-wrap gap-2">
+              {CLEANUP_WASTE_TYPE_OPTIONS.map((option) => {
+                const active = createForm.cleanupWasteTypesExpected.includes(option.value);
+                return (
+                  <CmmButton key={option.value} type="button" onClick={() => toggleWasteType(option.value)} tone={active ? "primary" : "tertiary"} variant="pill" className="min-h-10 px-3 text-sm">
+                    {active ? <Check size={14} aria-hidden="true" /> : null}
+                    {option.label}
+                  </CmmButton>
+                );
+              })}
+            </div>
+            {cleanupWasteTypeError ? <InlineFieldError message={cleanupWasteTypeError} /> : null}
+          </fieldset>
+        </div>
+
+        <div className="flex justify-end border-t border-slate-100 pt-4">
+          <CmmButton type="submit" disabled={isCreatingEvent || !canSubmit} loading={isCreatingEvent} tone="primary" variant="pill" className="min-h-11">
+            {isCreatingEvent ? "Création en cours…" : "Créer la mission"}
           </CmmButton>
         </div>
-      </div>
+      </form>
     </CmmDisclosure>
   );
 }

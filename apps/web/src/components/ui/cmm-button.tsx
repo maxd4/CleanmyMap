@@ -27,6 +27,7 @@ export interface CmmButtonProps {
  variant?: ButtonVariant;
  width?: ButtonWidth;
  className?: string;
+ id?: string;
  disabled?: boolean;
  loading?: boolean;
  ariaLabel?: string;
@@ -62,6 +63,7 @@ export function CmmButton({
  variant ="default",
  width ="auto",
  className,
+ id,
  disabled,
  ariaLabel,
  title,
@@ -101,6 +103,7 @@ export function CmmButton({
  return (
  <Link
   href={href}
+  id={id}
   prefetch={prefetch}
   className={classes}
   onClick={handleClick}
@@ -147,6 +150,7 @@ export function CmmButton({
  return (
  <button
   ref={ref}
+  id={id}
   type={type}
   onClick={handleClick}
   onKeyDown={onKeyDown}

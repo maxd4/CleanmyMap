@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { Handshake, Users } from "lucide-react";
 import { useCommunitySection } from "@/components/sections/rubriques/community/use-community-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
-import { CmmButton } from "@/components/ui/cmm-button";
+import { PageHeader } from "@/components/ui/page-header";
 import { CommunityMissionsView } from "./community-section-components";
 import { PartnersNetworkSection } from "../partners-network-section";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { cn } from "@/lib/utils";
 
 type SurfaceTab = "community" | "partners";
 
@@ -18,7 +20,6 @@ export function CommunitySection() {
   const { eventsLoadError, reloadEvents } = model;
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const lastToastRef = useRef<string | null>(null);
@@ -26,18 +27,6 @@ export function CommunitySection() {
   const surfaceTab: SurfaceTab =
     searchParams.get("tab") === "partners" ? "partners" : "community";
   const isPartnersTab = surfaceTab === "partners";
-
-  function setSurfaceTab(nextTab: SurfaceTab) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (nextTab === "partners") {
-      params.set("tab", "partners");
-    } else {
-      params.delete("tab");
-    }
-
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }
 
   useEffect(() => {
     const error = eventsLoadError?.kind === "network" ? eventsLoadError : null;
@@ -57,52 +46,53 @@ export function CommunitySection() {
   return (
     <SectionShell
       id="community"
-      title={fr ? "Communauté" : "Community"}
-      subtitle={
-        fr
-          ? "Consultez les missions, inscrivez-vous et accédez au réseau de partenaires."
-          : "Browse missions, register and access the partner network."
-      }
-      icon={Users}
-      hideHeader={isPartnersTab}
+      hideHeader
     >
-      <div className="space-y-6 pb-20">
-        <div className="rounded-[2rem] border border-pink-200 bg-white/85 p-3 shadow-[0_20px_60px_-44px_rgba(190,24,93,0.35)]">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="px-3 text-sm font-semibold text-slate-700">
-              {surfaceTab === "community"
-                ? fr
-                  ? "Missions communautaires"
-                  : "Community missions"
-                : fr
-                  ? "Réseau de partenaires"
-                  : "Partner network"}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <CmmButton
-                onClick={() => setSurfaceTab("community")}
-                tone={surfaceTab === "community" ? "primary" : "tertiary"}
-                variant="pill"
-                className="px-4 py-2.5"
+      <div className="space-y-8 pb-20">
+        <PageHeader
+          title={fr ? "Communauté" : "Community"}
+          subtitle={
+            fr
+              ? "Participez aux missions communautaires et retrouvez les acteurs du réseau."
+              : "Join community missions and find organisations in the network."
+          }
+          action={
+            <nav
+              aria-label={fr ? "Sections de la page" : "Page sections"}
+              className="flex flex-wrap gap-2"
+            >
+              <Link
+                href={pathname}
+                aria-current={!isPartnersTab ? "page" : undefined}
+                className={cn(
+                  "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 focus-visible:ring-offset-2",
+                  !isPartnersTab
+                    ? "border-pink-600 bg-pink-600 text-white"
+                    : "border-pink-200 bg-white text-slate-700 hover:border-pink-400 hover:text-pink-700",
+                )}
               >
-                <Users size={16} />
-                <span>{fr ? "Communauté" : "Community"}</span>
-              </CmmButton>
-              <CmmButton
-                onClick={() => setSurfaceTab("partners")}
-                tone={surfaceTab === "partners" ? "primary" : "tertiary"}
-                variant="pill"
-                className="px-4 py-2.5"
+                <Users size={16} aria-hidden="true" />
+                {fr ? "Communauté" : "Community"}
+              </Link>
+              <Link
+                href={`${pathname}?tab=partners`}
+                aria-current={isPartnersTab ? "page" : undefined}
+                className={cn(
+                  "inline-flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+                  isPartnersTab
+                    ? "border-indigo-600 bg-indigo-600 text-white"
+                    : "border-indigo-200 bg-white text-slate-700 hover:border-indigo-400 hover:text-indigo-700",
+                )}
               >
-                <Handshake size={16} />
-                <span>{fr ? "Partenaires" : "Partners"}</span>
-              </CmmButton>
-            </div>
-          </div>
-        </div>
+                <Handshake size={16} aria-hidden="true" />
+                {fr ? "Partenaires" : "Partners"}
+              </Link>
+            </nav>
+          }
+        />
 
         {surfaceTab === "partners" ? (
-          <PartnersNetworkSection fr={fr} />
+          <PartnersNetworkSection fr={fr} showHeader={false} />
         ) : (
           <CommunityMissionsView
             fr={fr}
@@ -120,6 +110,8 @@ export function CommunitySection() {
             getOpsDraft={model.getOpsDraft}
             updateOpsDraft={model.updateOpsDraft}
             onSaveEventOps={model.onSaveEventOps}
+            communitySuccessMessage={model.communitySuccessMessage}
+            communityError={model.communityError}
             createForm={model.createForm}
             updateCreateForm={model.updateCreateForm}
             onCreateEvent={model.onCreateEvent}
