@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback, useEffect, useRef, useState } from "react";
+import { useMemo, useCallback, useState } from "react";
 import { usePathname } from "next/navigation";
 import { FeedbackSection } from "@/components/sections/rubriques/feedback-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -35,6 +35,7 @@ import { useChatShellRuntimeContext } from "./hooks/use-chat-shell-runtime-conte
 import { useChatShellComposer } from "./hooks/use-chat-shell-composer";
 import { useChatShellPollVoting } from "./hooks/use-chat-shell-poll-voting";
 import { useChatShellDmNavigation } from "./hooks/use-chat-shell-dm-navigation";
+import { useChatShellNavigation } from "./hooks/use-chat-shell-navigation";
 import type { ActionShareContactRequest, ChatUser } from "./chat-types";
 import type { ChatTopicId } from "@/lib/chat/topics";
 import {
@@ -53,7 +54,6 @@ import {
 import { useChatSearch } from "./hooks/use-chat-search";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 import {
-  getChatShellNavigationKey,
   type ChatShellNavigationState,
 } from "./chat-navigation";
 
@@ -371,95 +371,31 @@ export function ChatShell({
     setSendError,
   });
 
-  const navigationStateKey = navigationState
-    ? getChatShellNavigationKey(navigationState)
-    : null;
-  const appliedNavigationStateKeyRef = useRef<string | null>(null);
-  const restoringNavigationRef = useRef(false);
-  useEffect(() => {
-    if (
-      !navigationState ||
-      !navigationStateKey ||
-      appliedNavigationStateKeyRef.current === navigationStateKey
-    ) {
-      return;
-    }
-
-    if (appliedNavigationStateKeyRef.current !== null) {
-      restoringNavigationRef.current = true;
-    }
-    appliedNavigationStateKeyRef.current = navigationStateKey;
-    setActiveChannelType(navigationState.activeChannelType);
-    setSelectedActionId(
-      navigationState.activeChannelType === "action"
-        ? navigationState.selectedActionId
-        : null,
-    );
-    setActiveTopicId(navigationState.activeTopicId);
-    setSelectedRecipient(navigationState.selectedRecipient);
-    setSelectedZone(navigationState.selectedZone);
-    setActiveFeedbackId(navigationState.feedbackId);
-    if (navigationState.announcementTemplate) {
-      handleAnnouncementTemplateChange(navigationState.announcementTemplate);
-    } else if (announcementTemplate) {
-      handleComposerModeChange("message");
-    }
-  }, [
+  useChatShellNavigation({
+    navigationState,
+    onNavigationChange,
+    initialRecipient,
+    initialContactRequestId,
+    initialAnnouncementTemplate,
+    initialEventId,
     announcementTemplate,
     handleAnnouncementTemplateChange,
     handleComposerModeChange,
-    navigationState,
-    navigationStateKey,
-    setActiveChannelType,
-    setActiveTopicId,
-    setSelectedActionId,
-    setSelectedRecipient,
-    setSelectedZone,
-  ]);
-
-  const navigationChangeRef = useRef(onNavigationChange);
-  useEffect(() => {
-    navigationChangeRef.current = onNavigationChange;
-  }, [onNavigationChange]);
-  useEffect(() => {
-    if (restoringNavigationRef.current) {
-      restoringNavigationRef.current = false;
-      return;
-    }
-    navigationChangeRef.current?.({
-      activeChannelType,
-      activeTopicId,
-      selectedActionId,
-      selectedRecipient,
-      selectedZone,
-      territoryFocus,
-      messageId: targetMessageIdForScope,
-      feedbackId: activeFeedbackId,
-      contactRequestId:
-        selectedRecipient?.id === initialRecipient?.id
-          ? initialContactRequestId
-          : null,
-      announcementTemplate,
-      eventId:
-        announcementTemplate && announcementTemplate === initialAnnouncementTemplate
-          ? initialEventId
-          : null,
-    });
-  }, [
     activeChannelType,
-    activeFeedbackId,
     activeTopicId,
-    announcementTemplate,
-    initialAnnouncementTemplate,
-    initialContactRequestId,
-    initialEventId,
-    initialRecipient?.id,
     selectedActionId,
     selectedRecipient,
     selectedZone,
-    targetMessageIdForScope,
     territoryFocus,
-  ]);
+    targetMessageIdForScope,
+    activeFeedbackId,
+    setActiveChannelType,
+    setSelectedActionId,
+    setActiveTopicId,
+    setSelectedRecipient,
+    setSelectedZone,
+    setActiveFeedbackId,
+  });
 
   const { handlePollVote, pollVoteStates } = useChatShellPollVoting({
     messages,

@@ -280,12 +280,13 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
       setActiveTabState((current) => {
         const currentValue =
           current.source === initialTab ? current.value : initialTab;
+        const value =
+          typeof nextValue === "function"
+            ? nextValue(currentValue)
+            : nextValue;
         return {
-          source: initialTab,
-          value:
-            typeof nextValue === "function"
-              ? nextValue(currentValue)
-              : nextValue,
+          source: value,
+          value,
         };
       });
     },
