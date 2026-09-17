@@ -19,6 +19,7 @@ import type {
   RoutePredictedCandidate,
   RouteRiskFocus,
 } from "./route-target-contract";
+import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 export const ROUTE_PLANNER_ENGINE_VERSION = "route-planner-v2" as const;
 export const WALKING_SPEED_KM_PER_HOUR = 4.5;
@@ -109,6 +110,7 @@ export type RoutePlannerInput = {
   priorityVsTravel: number;
   effectiveRiskFocus?: RouteRiskFocus;
   operationalBudget?: RouteOperationalBudgetDependency;
+  weatherContext?: PlannerWeatherContext;
   volunteersExpected?: number;
   groupCount?: number;
 };
@@ -230,7 +232,7 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
     candidates: readonly RoutePlannerCandidate[],
     travelMinutes: number,
   ): RouteOperationalBudget | null {
-    if (!input.operationalBudget) return null;
+    if (!input.operationalBudget && !input.weatherContext) return null;
     const context: RouteCalibrationContext = buildRouteCalibrationContext({
       generatedAt: calibrationGeneratedAt,
       routeEngineVersion: ROUTE_PLANNER_ENGINE_VERSION,
@@ -247,6 +249,7 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
       budgetMinutes,
       calibrationContext: context,
       durationDependency: input.operationalBudget,
+      weatherContext: input.weatherContext,
     });
   }
 
@@ -304,9 +307,11 @@ export function planRoute(input: RoutePlannerInput): RoutePlannerResult {
           volunteerAdditionality: candidate.volunteerAdditionality ?? null,
           finalPlannerContribution,
           additionalityWeight: candidate.additionalityWeight ?? 0,
-          feasible:
-            budgetCost <=
-            budgetMinutes + 1e-9,
+          feasible: operationalBudget === null
+            ? budgetCost <= budgetMinutes + 1e-9
+            : operationalBudget.totalMinutes === null
+              ? loopTravelMinutes <= budgetMinutes + 1e-9
+              : operationalBudget.withinBudget === true,
           operationalBudget,
         };
       });

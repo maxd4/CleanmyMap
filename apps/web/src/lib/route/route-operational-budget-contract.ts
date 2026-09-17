@@ -7,7 +7,7 @@ import {
 import type { RouteOperationalBudget } from "./route-operational-budget";
 
 export const ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION =
-  "route-operational-budget-v2" as const;
+  "route-operational-budget-v3" as const;
 export const ROUTE_ORGANIZATION_MARGIN_MINUTES = 15 as const;
 
 const ROUTE_CALIBRATION_CONTEXT_VERSIONS = [
@@ -36,6 +36,7 @@ export function isRouteOperationalBudget(
     isNonEmptyString(budget.durationModelVersion) &&
     isNonEmptyString(budget.durationReason) &&
     isDurationProvenance(budget.durationProvenance) &&
+    isWeatherBudgetEffect(budget.weather) &&
     budget.serviceMinutes === budget.actionMinutes &&
     budget.actionBudgetMinutes === expectedActionBudgetMinutes(budget.eventBudgetMinutes) &&
     budget.totalMinutes === expectedTotalMinutes(budget.actionMinutes) &&
@@ -44,6 +45,45 @@ export function isRouteOperationalBudget(
       budget.actionBudgetMinutes,
     )
   );
+}
+
+function isWeatherBudgetEffect(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false;
+  const weather = value as Partial<RouteOperationalBudget["weather"]>;
+  return (
+    (weather.status === "not_provided" ||
+      weather.status === "nominal" ||
+      weather.status === "limited" ||
+      weather.status === "fallback") &&
+    (weather.riskLevel === null ||
+      weather.riskLevel === "vert" ||
+      weather.riskLevel === "orange" ||
+      weather.riskLevel === "rouge") &&
+    Array.isArray(weather.reasons) &&
+    weather.reasons.every((reason) => typeof reason === "string") &&
+    (weather.ruleVersion === null || typeof weather.ruleVersion === "string") &&
+    (weather.ruleSource === null || typeof weather.ruleSource === "string") &&
+    isNullableNonNegative(weather.operationalLimitMinutes) &&
+    isNullableNonNegative(weather.eventBudgetBeforeWeatherMinutes) &&
+    isNullableNonNegative(weather.weatherLimitedEventMinutes) &&
+    weather.weatherLimitedEventMinutes === expectedWeatherLimitedEventMinutes(weather) &&
+    (weather.status !== "limited" || weather.operationalLimitMinutes !== null)
+  );
+}
+
+function expectedWeatherLimitedEventMinutes(
+  weather: Partial<RouteOperationalBudget["weather"]>,
+): number | null {
+  if (weather.eventBudgetBeforeWeatherMinutes === null ||
+    weather.eventBudgetBeforeWeatherMinutes === undefined) return null;
+  if (weather.operationalLimitMinutes === null ||
+    weather.operationalLimitMinutes === undefined) {
+    return weather.eventBudgetBeforeWeatherMinutes;
+  }
+  return round(Math.min(
+    weather.eventBudgetBeforeWeatherMinutes,
+    weather.operationalLimitMinutes,
+  ));
 }
 
 function isCalibrationStatus(value: unknown): boolean {

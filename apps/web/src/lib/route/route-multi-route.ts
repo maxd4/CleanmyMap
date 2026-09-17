@@ -26,6 +26,7 @@ import {
   type RouteOperationalBudgetDependency,
 } from "./route-operational-budget";
 import { buildCleanupWorkload } from "./route-cleanup-workload";
+import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 type Coordinate = [number, number];
 
@@ -163,6 +164,7 @@ async function routeGroupWithinBudget(
   candidatesById: Map<string, RoutePlannerCandidate>,
   travelBudgetMinutes: number,
   operationalBudget?: RouteOperationalBudgetDependency,
+  weatherContext?: PlannerWeatherContext,
   volunteersExpected = 1,
   groupCount = 1,
 ): Promise<RouteGroupRoutingResult> {
@@ -197,6 +199,7 @@ async function routeGroupWithinBudget(
       budgetMinutes: travelBudgetMinutes,
       calibrationContext: context,
       durationDependency: operationalBudget,
+      weatherContext,
     });
     return budget.totalMinutes === null ? true : budget.withinBudget === true;
   };
@@ -342,6 +345,7 @@ export async function routePartitionedGroups(input: {
   travelBudgetMinutes: number;
   effectiveRiskFocus?: RouteRiskFocus;
   operationalBudget?: RouteOperationalBudgetDependency;
+  weatherContext?: PlannerWeatherContext;
 }): Promise<RouteMultiRouteResult> {
   const candidatesById = new Map(input.candidates.map((candidate) => [candidate.id, candidate]));
   const routedGroups: RouteGroupRoutingResult[] = [];
@@ -352,6 +356,7 @@ export async function routePartitionedGroups(input: {
       candidatesById,
       input.travelBudgetMinutes,
       input.operationalBudget,
+      input.weatherContext,
       group.volunteerCount,
       input.partition.groupCount,
     ));

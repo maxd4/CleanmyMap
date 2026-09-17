@@ -8,11 +8,22 @@ export type OperationalZone = {
 
 export type WeatherRiskLevel = "vert" | "orange" | "rouge";
 
+export const WEATHER_OPERATIONAL_RULE_VERSION = "weather-operational-rules-v1" as const;
+export const WEATHER_OPERATIONAL_RULE_SOURCE = "apps/web/src/lib/weather/ops-weather" as const;
+
+export type WeatherOperationalRule = {
+  version: typeof WEATHER_OPERATIONAL_RULE_VERSION;
+  source: typeof WEATHER_OPERATIONAL_RULE_SOURCE;
+  maxInterventionMinutes: number | null;
+};
+
 export type WeatherRiskAssessment = {
   level: WeatherRiskLevel;
   reasons: string[];
   equipment: string[];
   constraints: string[];
+  operationalRule: WeatherOperationalRule;
+  operationalLimitMinutes: number | null;
 };
 
 export type HourlyPoint = {
@@ -75,6 +86,22 @@ function maxLevel(levels: WeatherRiskLevel[]): WeatherRiskLevel {
     return "orange";
   }
   return "vert";
+}
+
+function riskRank(level: WeatherRiskLevel): number {
+  return level === "rouge" ? 2 : level === "orange" ? 1 : 0;
+}
+
+export function weatherOperationalRuleForLevel(
+  level: WeatherRiskLevel,
+): WeatherOperationalRule {
+  return {
+    version: WEATHER_OPERATIONAL_RULE_VERSION,
+    source: WEATHER_OPERATIONAL_RULE_SOURCE,
+    // These limits are the existing operational guidance below, not a speed
+    // or collection coefficient. Green conditions intentionally have no limit.
+    maxInterventionMinutes: level === "rouge" ? 45 : level === "orange" ? 90 : null,
+  };
 }
 
 export function evaluateWeatherRisk(input: {
@@ -152,13 +179,50 @@ export function evaluateWeatherRisk(input: {
             "Durée indicative : 90 à 120 min",
             "Pauses à prévoir selon la durée",
             "Brief sécurité à envisager",
-          ];
+        ];
+
+  const operationalRule = weatherOperationalRuleForLevel(level);
 
   return {
     level,
     reasons: reasons.length > 0 ? reasons : ["Conditions meteo stables"],
     equipment,
     constraints,
+    operationalRule,
+    operationalLimitMinutes: operationalRule.maxInterventionMinutes,
+  };
+}
+
+export function evaluateWeatherWindowRisk(
+  hourly: readonly HourlyPoint[],
+): WeatherRiskAssessment | null {
+  if (
+    hourly.length === 0 ||
+    hourly.some((point) =>
+      !Number.isFinite(point.temperature) ||
+      !Number.isFinite(point.rain) ||
+      !Number.isFinite(point.wind),
+    )
+  ) {
+    return null;
+  }
+
+  const assessments = hourly.map((point) => evaluateWeatherRisk(point));
+  const level = maxLevel(assessments.map((assessment) => assessment.level));
+  const reasons = [...new Set(
+    assessments
+      .filter((assessment) => riskRank(assessment.level) === riskRank(level))
+      .flatMap((assessment) => assessment.reasons),
+  )];
+  const representative = evaluateWeatherRisk({
+    temperature: level === "rouge" ? 33 : level === "orange" ? 28 : 20,
+    rain: level === "rouge" ? 3 : level === "orange" ? 0.8 : 0,
+    wind: level === "rouge" ? 45 : level === "orange" ? 30 : 10,
+  });
+
+  return {
+    ...representative,
+    reasons: reasons.length > 0 ? reasons : representative.reasons,
   };
 }
 

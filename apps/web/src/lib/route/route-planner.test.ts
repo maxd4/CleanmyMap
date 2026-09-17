@@ -4,6 +4,7 @@ import {
   buildTrashSpotterActionableCandidates,
 } from "@/lib/actions/trash-spotter-actionable-candidates";
 import type { WasteCategorySlug } from "@/lib/waste";
+import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import type { RouteGeometry } from "./route-contract";
 import type { RouteCalibrationContext } from "./route-calibration";
 import {
@@ -66,6 +67,29 @@ function plannerInput(overrides: Partial<RoutePlannerInput> = {}): RoutePlannerI
     maxStops: 6,
     priorityVsTravel: 50,
     ...overrides,
+  };
+}
+
+function limitedWeatherContext(): PlannerWeatherContext {
+  return {
+    version: "planner-weather-snapshot-v1",
+    provider: "open-meteo",
+    source: "forecast",
+    fetchedAt: "2026-09-14T08:00:00.000Z",
+    coveredWindow: null,
+    status: "available",
+    weatherStatus: "available",
+    location: { latitude: 48.85, longitude: 2.35, timezone: "Europe/Paris" },
+    hourly: [],
+    summary: null,
+    operationalRisk: {
+      status: "limited",
+      riskLevel: "orange",
+      reasons: ["Pluie moderee (>=0.8 mm/h)"],
+      ruleVersion: "weather-operational-rules-v1",
+      ruleSource: "apps/web/src/lib/weather/ops-weather",
+      operationalLimitMinutes: 45,
+    },
   };
 }
 
@@ -160,6 +184,49 @@ describe("route planner V1", () => {
     expect(cheapEvaluation?.loopOperationalMinutes).toBeGreaterThan(
       cheapEvaluation?.incrementalTravelMinutes ?? 0,
     );
+  });
+
+  it("uses the shared weather context only to reduce operational admission budget", () => {
+    const candidateValue = candidate("weather-limited", 0.001, 0, 90);
+    const dependency = {
+      generatedAt: "2026-09-12T00:00:00.000Z",
+      estimateDuration: () => ({
+        contractVersion: "route-cleanup-duration-v1" as const,
+        minutes: 40,
+        uncertaintyMinutes: null,
+        modelVersion: "fixture-weather-v1",
+        calibrationStatus: "calibrated" as const,
+        reason: "fixture",
+        provenance: {
+          source: "route-calibration" as const,
+          contextVersion: "action-route-calibration-v2" as const,
+          artifactVersion: "fixture-weather-v1",
+        },
+      }),
+    };
+
+    const nominal = planRoute(plannerInput({
+      candidates: [candidateValue],
+      travelBudgetMinutes: 60,
+      maxStops: 1,
+      operationalBudget: dependency,
+    }));
+    const weatherLimited = planRoute(plannerInput({
+      candidates: [candidateValue],
+      travelBudgetMinutes: 60,
+      maxStops: 1,
+      operationalBudget: dependency,
+      weatherContext: limitedWeatherContext(),
+    }));
+
+    expect(nominal.stops).toHaveLength(1);
+    expect(weatherLimited.stops).toHaveLength(0);
+    expect(weatherLimited.audit.evaluations[0]).toMatchObject({
+      loopOperationalMinutes: 55,
+      feasible: false,
+    });
+    expect(weatherLimited.audit.evaluations[0]?.loopTravelMinutes)
+      .toBe(nominal.audit.evaluations[0]?.loopTravelMinutes);
   });
 
   it("lets a changed volunteer count change the operationally feasible proposal", () => {

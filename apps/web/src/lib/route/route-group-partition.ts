@@ -16,6 +16,7 @@ import {
 } from "./route-operational-budget";
 import { buildCleanupWorkload } from "./route-cleanup-workload";
 import type { RoutePlanningMode } from "./route-planning-mode";
+import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 export const MAX_ROUTE_VOLUNTEERS = 100;
 export const MAX_ROUTE_GROUP_COUNT = 12;
@@ -35,6 +36,7 @@ export type RouteGroupPartitionInput = {
   plannerResult?: RoutePlannerResult;
   effectiveRiskFocus?: RouteRiskFocus;
   operationalBudget?: RouteOperationalBudgetDependency;
+  weatherContext?: PlannerWeatherContext;
 };
 
 export type RouteGroupAssignment = {
@@ -340,12 +342,12 @@ function evaluateCandidateForGroup(
   const cumulativeTravelMinutes = groupDuration(group) - (group.stops.at(-1)?.returnTravelMinutes ?? 0);
   const loopDistanceKm = cumulativeDistanceKm + incrementalDistanceKm + returnDistanceKm;
   const loopTravelMinutes = cumulativeTravelMinutes + incrementalTravelMinutes + returnTravelMinutes;
-  const operationalBudget = input.operationalBudget
+  const operationalBudget = input.operationalBudget || input.weatherContext
     ? buildRouteOperationalBudget({
         travelMinutes: loopTravelMinutes,
         budgetMinutes: input.travelBudgetMinutes,
         calibrationContext: buildRouteCalibrationContext({
-          generatedAt: input.operationalBudget.generatedAt ?? new Date().toISOString(),
+          generatedAt: input.operationalBudget?.generatedAt ?? new Date().toISOString(),
           routeEngineVersion: "route-planner-v2",
           volunteersExpected: group.volunteerCount,
           groupCount: input.groupCount,
@@ -359,10 +361,16 @@ function evaluateCandidateForGroup(
           })),
         }),
         durationDependency: input.operationalBudget,
+        weatherContext: input.weatherContext,
       })
     : null;
   const budgetCost = operationalBudget?.totalMinutes ?? loopTravelMinutes;
-  if (budgetCost > Math.max(0, input.travelBudgetMinutes) + 1e-9) return null;
+  if (
+    operationalBudget?.totalMinutes !== null &&
+    operationalBudget?.totalMinutes !== undefined
+      ? operationalBudget.withinBudget !== true
+      : budgetCost > Math.max(0, input.travelBudgetMinutes) + 1e-9
+  ) return null;
 
   const overlap = overlapEvaluation(candidate, group, groups, input.origin);
   const projectedDistances = groups.map((item) =>

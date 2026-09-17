@@ -8,6 +8,11 @@ import {
   ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION,
   ROUTE_ORGANIZATION_MARGIN_MINUTES,
 } from "./route-operational-budget-contract";
+import {
+  plannerWeatherOperationalAssessment,
+  type PlannerWeatherContext,
+} from "@/lib/weather/planner-weather";
+import type { WeatherRiskLevel } from "@/lib/weather/ops-weather";
 
 export {
   ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION,
@@ -34,6 +39,18 @@ export type RouteOperationalBudget = {
   durationModelVersion: string;
   durationReason: string;
   durationProvenance: RouteCleanupDurationEstimate["provenance"];
+  weather: RouteWeatherBudgetEffect;
+};
+
+export type RouteWeatherBudgetEffect = {
+  status: "not_provided" | "nominal" | "limited" | "fallback";
+  riskLevel: WeatherRiskLevel | null;
+  reasons: string[];
+  ruleVersion: string | null;
+  ruleSource: string | null;
+  operationalLimitMinutes: number | null;
+  eventBudgetBeforeWeatherMinutes: number | null;
+  weatherLimitedEventMinutes: number | null;
 };
 
 export type RouteOperationalBudgetEstimator = (input: {
@@ -55,13 +72,26 @@ export function buildRouteOperationalBudget(input: {
   /** Existing transport field now carries the total user event slot. */
   budgetMinutes?: number | null;
   durationDependency?: RouteOperationalBudgetDependency | null;
+  weatherContext?: PlannerWeatherContext | null;
 }): RouteOperationalBudget {
   const travelMinutes = finiteNonNegative(input.travelMinutes)
     ? round(input.travelMinutes)
     : null;
-  const eventBudgetMinutes = finiteNonNegative(input.budgetMinutes)
+  const eventBudgetBeforeWeatherMinutes = finiteNonNegative(input.budgetMinutes)
     ? round(input.budgetMinutes)
     : null;
+  const weatherAssessment = plannerWeatherOperationalAssessment(input.weatherContext);
+  const operationalLimitMinutes = finiteNonNegative(
+    weatherAssessment?.operationalLimitMinutes,
+  )
+    ? round(weatherAssessment.operationalLimitMinutes)
+    : null;
+  const weatherLimitedEventMinutes = eventBudgetBeforeWeatherMinutes === null
+    ? null
+    : operationalLimitMinutes === null
+      ? eventBudgetBeforeWeatherMinutes
+      : Math.min(eventBudgetBeforeWeatherMinutes, operationalLimitMinutes);
+  const eventBudgetMinutes = weatherLimitedEventMinutes;
   const actionBudgetMinutes = eventBudgetMinutes === null
     ? null
     : Math.max(0, eventBudgetMinutes - ROUTE_ORGANIZATION_MARGIN_MINUTES);
@@ -82,6 +112,16 @@ export function buildRouteOperationalBudget(input: {
   const totalMinutes = actionMinutes !== null
       ? round(actionMinutes + ROUTE_ORGANIZATION_MARGIN_MINUTES)
       : null;
+  const weather: RouteWeatherBudgetEffect = {
+    status: weatherAssessment?.status ?? "not_provided",
+    riskLevel: weatherAssessment?.riskLevel ?? null,
+    reasons: weatherAssessment?.reasons ?? [],
+    ruleVersion: weatherAssessment?.ruleVersion ?? null,
+    ruleSource: weatherAssessment?.ruleSource ?? null,
+    operationalLimitMinutes,
+    eventBudgetBeforeWeatherMinutes,
+    weatherLimitedEventMinutes,
+  };
 
   return {
     contractVersion: ROUTE_OPERATIONAL_BUDGET_CONTRACT_VERSION,
@@ -102,6 +142,7 @@ export function buildRouteOperationalBudget(input: {
     durationModelVersion: durationEstimate.modelVersion,
     durationReason: durationEstimate.reason,
     durationProvenance: durationEstimate.provenance,
+    weather,
   };
 }
 
