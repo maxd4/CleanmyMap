@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildActionDataContract } from "@/lib/actions/data-contract";
 import { buildTrashSpotterActionableCandidates } from "@/lib/actions/trash-spotter-actionable-candidates";
-import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
+import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 import { buildRouteRecommendationTrace } from "./route-trace";
 import { buildCleanupWorkload } from "./route-cleanup-workload";
 import type { RouteGeometry } from "./route-contract";

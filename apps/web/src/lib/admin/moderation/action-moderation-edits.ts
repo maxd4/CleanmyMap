@@ -9,7 +9,7 @@ import {
   toGeoJsonString,
 } from "@/lib/actions/geometry/derived-geometry";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
-import { buildPersistedNotes } from "@/lib/actions/store";
+import { buildPersistedNotes } from "@/lib/actions/store-notes";
 import type { ActionDrawing, CreateActionPayload } from "@/lib/actions/types";
 import type { getSupabaseServerClient } from "@/lib/supabase/server";
 import { runSingleActionQuery } from "@/lib/actions/query";

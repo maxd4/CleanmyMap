@@ -1,6 +1,5 @@
 import { unstable_cache } from "next/cache";
 import type { ActionDataContract, ActionEntityType } from "../actions/data-contract";
-import { fetchCachedUnifiedActionContracts } from "../actions/unified-source/unified-source-cache";
 import {
   computePilotageComparison,
   type PilotageModerationAvailability,
@@ -119,6 +118,9 @@ function buildPilotageOverviewCacheKey(
 export async function loadPilotageOverview(
   params: LoadPilotageOverviewParams,
 ): Promise<PilotageOverview> {
+  const { fetchCachedUnifiedActionContracts } = await import(
+    "../actions/unified-source/unified-source-cache"
+  );
   const cached = unstable_cache(
     async () => {
       const limit = params.limit ?? 1500;

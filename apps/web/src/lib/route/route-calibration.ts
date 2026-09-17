@@ -24,7 +24,7 @@ import {
   CLEANUP_WORKLOAD_MODEL_VERSION,
   type CleanupWorkload,
 } from "./route-cleanup-workload";
-import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
+import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 import type { RouteDataLayers, RouteDataStatus } from "./route-data-status";
 import type { RouteGeometry, RouteStop } from "./route-contract";
 import type { RoutePlanningMode } from "./route-planning-mode";

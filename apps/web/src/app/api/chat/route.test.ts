@@ -12,6 +12,7 @@ const verifyRateLimitMock = vi.hoisted(() => vi.fn());
 const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 const reserveDiscussionMessageSlotMock = vi.hoisted(() => vi.fn());
 const createChatNotificationsForMessageMock = vi.hoisted(() => vi.fn());
+const resolveActionDiscussionAccessMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -43,6 +44,10 @@ vi.mock("@/lib/chat/chat-notifications", () => ({
   createChatNotificationsForMessage: createChatNotificationsForMessageMock,
 }));
 
+vi.mock("@/lib/chat/action-conversations", () => ({
+  resolveActionDiscussionAccess: resolveActionDiscussionAccessMock,
+}));
+
 describe("GET /api/chat and POST /api/chat", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -59,6 +64,10 @@ describe("GET /api/chat and POST /api/chat", () => {
     createServerRateLimitResponseMock.mockReturnValue(null);
     reserveDiscussionMessageSlotMock.mockResolvedValue({ allowed: true });
     createChatNotificationsForMessageMock.mockResolvedValue(undefined);
+    resolveActionDiscussionAccessMock.mockResolvedValue({
+      state: "allowed",
+      conversationId: "conversation-1",
+    });
   });
 
   it("returns chat messages in ascending order for GET /api/chat", async () => {

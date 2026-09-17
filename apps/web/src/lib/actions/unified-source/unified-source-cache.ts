@@ -1,19 +1,16 @@
 import { unstable_cache } from "next/cache";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import type { ActionEntityType } from "@/lib/actions/contracts/contract-model";
-import type { ActionStatus } from "@/lib/actions/types";
 import {
   fetchUnifiedActionContracts,
   type UnifiedSourceHealth,
 } from "../unified-source";
+import {
+  buildUnifiedActionContractsCacheKey,
+  type CachedUnifiedActionContractsParams,
+} from "./cache-key";
 
-export type CachedUnifiedActionContractsParams = {
-  limit: number | null;
-  status: ActionStatus | null;
-  floorDate: string | null;
-  requireCoordinates: boolean;
-  types: ActionEntityType[] | null;
-};
+export { buildUnifiedActionContractsCacheKey } from "./cache-key";
+export type { CachedUnifiedActionContractsParams } from "./cache-key";
 
 export type UnifiedActionContractsCacheOptions = {
   revalidateSeconds?: number;
@@ -21,21 +18,6 @@ export type UnifiedActionContractsCacheOptions = {
 
 export const UNIFIED_ACTION_CONTRACTS_CACHE_REVALIDATE_SECONDS = 600;
 
-function buildTypesCacheKey(types: ActionEntityType[] | null): string {
-  return types && types.length > 0 ? types.join(",") : "all";
-}
-
-export function buildUnifiedActionContractsCacheKey(
-  params: CachedUnifiedActionContractsParams,
-): string {
-  return [
-    `limit:${params.limit}`,
-    `status:${params.status ?? "all"}`,
-    `floor:${params.floorDate ?? "all"}`,
-    `coords:${params.requireCoordinates ? "1" : "0"}`,
-    `types:${buildTypesCacheKey(params.types)}`,
-  ].join("|");
-}
 
 export async function fetchCachedUnifiedActionContracts(
   params: CachedUnifiedActionContractsParams,

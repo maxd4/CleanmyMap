@@ -7,7 +7,6 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   buildMonthlyActionDataQualityReview,
 } from "@/lib/actions/quality/data-quality";
-import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
 
 export const runtime = "nodejs";
 const GOVERNANCE_MONTHLY_REPORT_PDF_BUCKET = "reports";
@@ -38,6 +37,7 @@ export async function GET(request: Request) {
       );
     }
     const supabase = getSupabaseServerClient();
+    const { fetchUnifiedActionContracts } = await import("@/lib/actions/unified-source");
     const { items, sourceHealth } = await fetchUnifiedActionContracts(supabase, {
       limit: 2000,
       status: null,

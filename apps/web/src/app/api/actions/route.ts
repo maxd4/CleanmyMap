@@ -17,10 +17,6 @@ import {
   fetchUnifiedActionContracts,
   parseEntityTypesParam,
 } from "@/lib/actions/unified-source";
-import {
-  ActionCreationValidationError,
-  createActionSubmission,
-} from "@/lib/actions/create-submission";
 import { buildActionInsights } from "@/lib/actions/insights";
 import { filterActionContractsByScope, type ReportScope } from "@/lib/reports/scope";
 import {
@@ -395,6 +391,10 @@ export async function POST(request: Request) {
 
   try {
     const supabase = getSupabaseServerClient();
+    const {
+      ActionCreationValidationError,
+      createActionSubmission,
+    } = await import("@/lib/actions/create-submission");
     const identity = await getCurrentUserIdentity();
     const isCreatorGlobalAdmin = canManageActionsGlobally(identity);
     const resolvedIdentity = identity ?? {

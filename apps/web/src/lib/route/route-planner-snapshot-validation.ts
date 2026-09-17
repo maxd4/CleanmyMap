@@ -1,4 +1,4 @@
-import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
+import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 import type { RouteDataLayers } from "./route-data-status";
 import type { RouteStop } from "./route-contract";
 import type { RoutePlanningMode } from "./route-planning-mode";

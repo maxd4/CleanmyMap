@@ -1,8 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ACTION_ENTITY_TYPES } from "@/lib/actions/types";
 import type {
   ActionDataContract,
-  ActionEntityType,
 } from "@/lib/actions/contracts/contract-model";
 import {
   type UnifiedActionContractsParams,
@@ -26,23 +24,7 @@ export {
   toCanonicalSpotContract,
 } from "./contracts";
 
-export function parseEntityTypesParam(
-  raw: string | null,
-): ActionEntityType[] | null {
-  if (!raw || raw.trim() === "" || raw === "all") {
-    return null;
-  }
-  const tokens = raw
-    .split(",")
-    .map((token) => token.trim())
-    .filter((token): token is ActionEntityType =>
-      ACTION_ENTITY_TYPES.includes(token as ActionEntityType),
-    );
-  if (tokens.length === 0) {
-    return null;
-  }
-  return [...new Set(tokens)];
-}
+export { parseEntityTypesParam } from "./query";
 
 function buildUnifiedSourceHealth(
   failedSources: UnifiedSourceHealth["failedSources"],

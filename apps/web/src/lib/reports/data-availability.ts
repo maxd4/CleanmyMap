@@ -1,4 +1,4 @@
-import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
+import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 
 export type CommunityEventsAvailability = "available" | "unavailable";
 

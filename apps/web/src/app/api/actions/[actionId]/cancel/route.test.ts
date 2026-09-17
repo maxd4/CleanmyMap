@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ActionCancellationError } from "@/lib/actions/cancellation";
 
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const getSupabaseAdminClientMock = vi.hoisted(() => vi.fn());
@@ -9,13 +8,7 @@ const cancelFutureActionMock = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/authz", () => ({ requireAdminAccess: requireAdminAccessMock }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseAdminClient: getSupabaseAdminClientMock }));
 vi.mock("@/lib/actions/moderation-audit", () => ({ appendActionModerationAudit: appendActionModerationAuditMock }));
-vi.mock("@/lib/actions/cancellation", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/actions/cancellation")>("@/lib/actions/cancellation");
-  return {
-    ...actual,
-    cancelFutureAction: cancelFutureActionMock,
-  };
-});
+vi.mock("@/lib/actions/cancellation", () => ({ cancelFutureAction: cancelFutureActionMock }));
 
 function request(payload: unknown) {
   return new Request("http://localhost/api/actions/action-1/cancel", {
@@ -65,6 +58,9 @@ describe("POST /api/actions/:actionId/cancel", () => {
   });
 
   it("distinguishes a CAS state conflict from missing confirmation", async () => {
+    const { ActionCancellationError } = await import(
+      "@/lib/actions/cancellation-contract"
+    );
     cancelFutureActionMock.mockRejectedValueOnce(
       new ActionCancellationError(
         "conflict",

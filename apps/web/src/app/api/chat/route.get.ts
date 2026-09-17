@@ -12,7 +12,6 @@ import {
 import { mergeRowGroupsById } from "@/lib/chat/postgrest";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
-import { resolveActionDiscussionAccess } from "@/lib/chat/action-conversations";
 import {
   CHAT_PAGE_SIZE,
   buildChatHistoryCursor,
@@ -154,6 +153,8 @@ export async function GET(request: Request) {
     let actionConversationId: string | null = null;
     if (channelType === "action" && requestedActionId) {
       const serviceSupabase = getSupabaseServerClient();
+      const { resolveActionDiscussionAccess } =
+        await import("@/lib/chat/action-conversations");
       // The service preflight gives excluded users a stable explicit state;
       // RLS remains the final authority for the actual message query.
       if (typeof serviceSupabase.from === "function") {

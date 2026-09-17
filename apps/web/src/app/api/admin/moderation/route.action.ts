@@ -1,7 +1,6 @@
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { runSingleActionQuery } from "@/lib/actions/query";
-import { recordRepollutionPredictionEvaluationForAction } from "@/lib/actions/store";
 import {
   buildAdminActionUpdates,
 } from "@/lib/admin/moderation/action-moderation-edits";
@@ -445,6 +444,8 @@ export async function moderateAction({
 
   setErrorStage("post_update");
   if (payload.status === "approved" && statusUpdate.source === "actions") {
+    const { recordRepollutionPredictionEvaluationForAction } =
+      await import("@/lib/actions/store");
     await recordRepollutionPredictionEvaluationForAction(supabase, payload.id);
   }
   if (visibilityUpdate && !visibilityUpdate.found) {

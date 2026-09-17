@@ -1,11 +1,6 @@
 import type { ActionDataContract } from "@/lib/actions/data-contract";
-import { fetchCachedUnifiedActionContracts } from "@/lib/actions/unified-source/unified-source-cache";
-import type { UnifiedActionContractsCacheOptions } from "@/lib/actions/unified-source/unified-source-cache";
-import type { UnifiedSourceHealth } from "@/lib/actions/unified-source";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
 import {
-  loadLatestPublicImpactSnapshot,
-  type PublicImpactSnapshotRecord,
   type PublicImpactSnapshotPayload,
 } from "@/lib/impact/public-impact-snapshot";
 import {
@@ -299,6 +294,7 @@ async function resolveActionPreviewImageUrl(
   actionId: string,
 ): Promise<string | null> {
   try {
+    const { getSupabaseServerClient } = await import("@/lib/supabase/server");
     const storage = getSupabaseServerClient().storage.from("action-photos");
     const result = await storage.list(actionId, {
       limit: 1,
@@ -521,9 +517,14 @@ type RecentCommunityActivityData = {
 };
 
 async function loadRecentCommunityActivityData(
-  snapshot: PublicImpactSnapshotRecord | null,
-  cacheOptions: UnifiedActionContractsCacheOptions = {},
+  snapshot: {
+    payload: PublicImpactSnapshotPayload;
+  } | null,
+  cacheOptions: { revalidateSeconds?: number } = {},
 ): Promise<RecentCommunityActivityData> {
+  const { fetchCachedUnifiedActionContracts } = await import(
+    "@/lib/actions/unified-source/unified-source-cache"
+  );
   const floorDate = snapshot?.payload.period.fromDate ?? buildLandingFloorDate();
   const recent = await fetchCachedUnifiedActionContracts({
     limit: snapshot ? HOMEPAGE_COMMUNITY_ACTION_LIMIT : LANDING_FALLBACK_CONTRACT_LIMIT,
@@ -557,6 +558,9 @@ export type HomeCommunityActivityResponse = {
 };
 
 export async function loadRecentCommunityActivity(): Promise<HomeCommunityActivityResponse> {
+  const { loadLatestPublicImpactSnapshot } = await import(
+    "@/lib/impact/public-impact-snapshot"
+  );
   const snapshot = await loadLatestPublicImpactSnapshot();
   const recent = await loadRecentCommunityActivityData(snapshot);
 
@@ -569,6 +573,9 @@ export async function loadRecentCommunityActivity(): Promise<HomeCommunityActivi
 }
 
 export async function loadLandingSummary(): Promise<LandingSummary> {
+  const { loadLatestPublicImpactSnapshot } = await import(
+    "@/lib/impact/public-impact-snapshot"
+  );
   const snapshot = await loadLatestPublicImpactSnapshot();
   if (!snapshot) {
     const fallback = await loadRecentCommunityActivityData(null, {
