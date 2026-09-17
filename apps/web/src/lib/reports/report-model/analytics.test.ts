@@ -253,6 +253,31 @@ describe("reports web analytics", () => {
  expect(report.impactMethodology.proxyVersion.length).toBeGreaterThan(0);
  });
 
+ it("centralizes community event conversion metrics in the report model", () => {
+ const event = makeEvent({ id:"event-001" });
+ const linkedAction = makeListItem({
+   id:"linked-action",
+   notes:"[EVENT_REF]event-001",
+ });
+ const report = computeReportModel({
+   allItems: [linkedAction],
+   approvedItems: [linkedAction],
+   mapItems: [makeMapItem({ id:"linked-map", contract: linkedAction.contract })],
+   events: [event],
+   now: new Date("2026-03-25T12:00:00.000Z"),
+ });
+
+ expect(report.community.conversion).toMatchObject({
+   eventsCount: 1,
+   rsvpYesTotal: 10,
+   attendanceTotalKnown: 12,
+   linkedActionsTotal: 1,
+   rsvpToAttendanceRate: 120,
+   attendanceToActionRate: 8.3,
+   rsvpToActionRate: 10,
+ });
+ });
+
  it("keeps approved-only moderation explicitly unavailable", () => {
  const report = computeReportModel({
  allItems: [makeListItem({ id:"approved-only", status:"approved" })],

@@ -8,11 +8,19 @@ import { cn } from "@/lib/utils";
 
 type CommunityRemindersCardProps = {
   reminders: EventReminder[];
-  onCopyReminderMessage: (message: string) => Promise<void>;
+  onCopyReminderMessage?: (message: string) => Promise<void>;
 };
 
 function CommunityRemindersCard(props: CommunityRemindersCardProps) {
   const { reminders, onCopyReminderMessage } = props;
+
+  async function copyReminderMessage(message: string): Promise<void> {
+    if (onCopyReminderMessage) {
+      await onCopyReminderMessage(message);
+      return;
+    }
+    await navigator.clipboard.writeText(message);
+  }
 
   return (
     <div className="rounded-[2.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl p-8 shadow-2xl relative overflow-hidden group">
@@ -56,7 +64,7 @@ function CommunityRemindersCard(props: CommunityRemindersCardProps) {
                 </div>
                 
                 <CmmButton
-                  onClick={() => void onCopyReminderMessage(reminder.message)}
+                  onClick={() => void copyReminderMessage(reminder.message)}
                   tone="secondary"
                   variant="pill"
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-100 transition-all shadow-lg shadow-indigo-600/20 opacity-0 group-hover/item:opacity-100"

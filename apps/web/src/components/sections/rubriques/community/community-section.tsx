@@ -116,6 +116,10 @@ export function CommunitySection() {
             pastEvents={model.pastEvents}
             rsvpLoadingEventId={model.rsvpLoadingEventId}
             onRsvp={model.onRsvp}
+            isUpdatingEventOpsId={model.isUpdatingEventOpsId}
+            getOpsDraft={model.getOpsDraft}
+            updateOpsDraft={model.updateOpsDraft}
+            onSaveEventOps={model.onSaveEventOps}
             createForm={model.createForm}
             updateCreateForm={model.updateCreateForm}
             onCreateEvent={model.onCreateEvent}

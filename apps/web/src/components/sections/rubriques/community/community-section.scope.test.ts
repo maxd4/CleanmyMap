@@ -7,6 +7,8 @@ const sectionSource = readFileSync(join(communityRoot, "community-section.tsx"),
 const viewSource = readFileSync(join(communityRoot, "community-section-components.tsx"), "utf8");
 const sectionHookSource = readFileSync(join(communityRoot, "use-community-section.ts"), "utf8");
 const eventsHookSource = readFileSync(join(communityRoot, "use-community-events.ts"), "utf8");
+const eventsComponentSource = readFileSync(join(communityRoot, "community-events-components.tsx"), "utf8");
+const actionsHookSource = readFileSync(join(communityRoot, "use-community-actions.ts"), "utf8");
 
 describe("CommunitySection scope", () => {
   it("keeps only mission participation and the preserved partners surface", () => {
@@ -18,10 +20,15 @@ describe("CommunitySection scope", () => {
 
     expect(viewSource).toContain("CommunityEventsTabsCard");
     expect(viewSource).toContain("CommunityCreateEventCard");
+    expect(viewSource).toContain("/actions/history");
+    expect(viewSource).toContain("/reports");
     expect(sectionSource).toContain("PartnersNetworkSection");
     expect(sectionHookSource).not.toContain("useCommunityHighlights");
     expect(eventsHookSource).not.toContain("fetchActions");
     expect(eventsHookSource).not.toContain("computeEventConversions");
+    expect(eventsComponentSource).toContain("event.organizerClerkId === userId");
+    expect(eventsComponentSource).toContain("Suivi de ma mission");
+    expect(actionsHookSource).toContain("updateCommunityEventOps");
   });
 
   it("does not retain the unsourced operational promise removed from the journey", () => {

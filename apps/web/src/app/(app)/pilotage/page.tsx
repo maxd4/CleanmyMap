@@ -5,6 +5,7 @@ import { toProfile } from "@/lib/profiles";
 import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { getServerLocale } from "@/lib/server-preferences";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
+import { loadPilotageCommunityOperations } from "@/lib/pilotage/community-operations";
 import {
   PilotageLockedPage,
   PilotageOverviewPage,
@@ -48,5 +49,15 @@ export default async function PilotageAccessPage() {
   }
 
   const overview = await loadOverview().catch(() => null);
-  return <PilotageOverviewPage locale={locale} profile={profile} overview={overview} />;
+  const communityOperations = overview
+    ? await loadPilotageCommunityOperations(overview.contracts).catch(() => null)
+    : null;
+  return (
+    <PilotageOverviewPage
+      locale={locale}
+      profile={profile}
+      overview={overview}
+      communityOperations={communityOperations}
+    />
+  );
 }

@@ -3,8 +3,10 @@
 import { memo } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useAuth } from "@clerk/nextjs";
 import { Calendar, MapPin, Users } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { cn } from "@/lib/utils";
 import { formatCleanupSupportLabel, formatCleanupWasteTypesLabel } from "@/lib/community/event-ops";
 import { CommunityEventItem, CommunityRsvpStatus } from "@/lib/community/http";
@@ -13,7 +15,7 @@ import { ErrorMessage } from "@/components/ui/error-message";
 import { PermissionErrorState } from "@/components/ui/permission-error-state";
 import { ServerErrorCard } from "@/components/ui/server-error-card";
 import { AppError } from "@/lib/errors/app-errors";
-import { CommunityTab } from "./types";
+import type { CommunityTab, OpsDraft } from "./types";
 
 // Helpers
 export function cleanupNeedLabel(event: CommunityEventItem): string | null {
@@ -346,9 +348,21 @@ export const EventArticleMine = memo(function EventArticleMine({
 
 export const EventArticlePast = memo(function EventArticlePast({
   event,
+  isUpdating,
+  getOpsDraft,
+  updateOpsDraft,
+  onSaveEventOps,
 }: {
   event: CommunityEventItem;
+  isUpdating: boolean;
+  getOpsDraft: (event: CommunityEventItem) => OpsDraft;
+  updateOpsDraft: (eventId: string, patch: Partial<OpsDraft>) => void;
+  onSaveEventOps: (event: CommunityEventItem) => Promise<void>;
 }) {
+  const { userId } = useAuth();
+  const canEditOwnEvent = Boolean(userId && event.organizerClerkId === userId);
+  const opsDraft = getOpsDraft(event);
+
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -367,6 +381,42 @@ export const EventArticlePast = memo(function EventArticlePast({
           {event.rsvpCounts.total} RSVP
         </span>
       </div>
+      {canEditOwnEvent ? (
+        <CmmDisclosure summary="Suivi de ma mission" tone="rose" size="sm" className="mt-4">
+          <div className="grid gap-3 sm:grid-cols-[12rem_minmax(0,1fr)]">
+            <label className="cmm-text-small font-semibold text-slate-700">
+              Présence constatée
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={opsDraft.attendanceCount}
+                onChange={(inputEvent) => updateOpsDraft(event.id, { attendanceCount: inputEvent.target.value })}
+                className="cmm-input mt-1 w-full"
+              />
+            </label>
+            <label className="cmm-text-small font-semibold text-slate-700">
+              Retour d&apos;expérience
+              <textarea
+                value={opsDraft.postMortem}
+                onChange={(inputEvent) => updateOpsDraft(event.id, { postMortem: inputEvent.target.value })}
+                className="cmm-input mt-1 min-h-28 w-full"
+                rows={5}
+              />
+            </label>
+          </div>
+          <CmmButton
+            type="button"
+            className="mt-3"
+            tone="primary"
+            variant="pill"
+            disabled={isUpdating}
+            onClick={() => void onSaveEventOps(event)}
+          >
+            {isUpdating ? "Enregistrement…" : "Enregistrer le suivi"}
+          </CmmButton>
+        </CmmDisclosure>
+      ) : null}
     </article>
   );
 });

@@ -15,6 +15,7 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
+import { ReportsCommunityConversionKpis } from "@/components/reports/reports-community-conversion-kpis";
 import { formatScorePercent } from "@/lib/formatters/score";
 import type { MethodDefinition } from "@/lib/pilotage/overview.types";
 import type { MonthlyAnalyticsPoint } from "@/lib/pilotage/analytics-data-utils";
@@ -255,6 +256,8 @@ export function ReportsAnalysisDashboard({
             {metrics.map((metric) => <ImpactMetricCard key={metric.label} metric={metric} periodDays={periodDays} />)}
           </div>
         </section>
+
+        <ReportsCommunityConversionKpis summary={report.community.conversion} />
 
         <div className="grid gap-4 lg:grid-cols-[1.06fr_0.94fr]">
           <section className="rounded-2xl border border-slate-200/80 bg-white p-4 sm:p-5" aria-labelledby="reports-quality-title">

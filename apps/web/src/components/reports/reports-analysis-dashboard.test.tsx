@@ -27,6 +27,17 @@ const report = {
     waterProtectedLiters: 250,
     co2AvoidedKg: 14.4,
   },
+  community: {
+    conversion: {
+      eventsCount: 2,
+      rsvpYesTotal: 10,
+      attendanceTotalKnown: 8,
+      linkedActionsTotal: 3,
+      rsvpToAttendanceRate: 80,
+      attendanceToActionRate: 37.5,
+      rsvpToActionRate: 30,
+    },
+  },
 } as unknown as ReportModel;
 
 const method: MethodDefinition = {
@@ -82,6 +93,8 @@ describe("ReportsAnalysisDashboard contract", () => {
     expect(markup).toContain("90 jours glissants");
     expect(markup).toContain("12 derniers mois");
     expect(markup).toContain("90 jours précédents");
+    expect(markup).toContain("Engagement des événements communautaires");
+    expect(markup).toContain("Conversion RSVP → présence");
   });
 
   it("keeps quality metrics distinct from environmental impact claims", () => {

@@ -55,7 +55,7 @@ jusqu'à 2 200 actions approuvées pour le tableau de bord d'analyse
 - comparaisons de périodes issues de l'overview de pilotage ;
 - méthode KPI ;
 - données d'actions ;
-- événements communautaires ;
+- événements communautaires et conversions RSVP → présence → action ;
 - génération de document ;
 - export détaillé CSV serveur pour tout compte connecté ;
 - génération de document PDF détaillée pour tout compte connecté.
@@ -67,6 +67,16 @@ lignes ou de longueur n'est ajoutée volontairement à l'export détaillé.
 La météo et la logistique ne font pas partie du contrat `/reports` et ne
 conditionnent pas la génération d'un rapport d'impact. Elles restent des
 capacités produit séparées.
+
+## Conversions des événements communautaires
+
+`ReportModel.community.conversion` est la source de calcul des conversions
+affichées dans l'analyse : RSVP oui, présences connues et actions liées par la
+référence d'événement. Les calculs réutilisent `computeEventConversions` avec
+les contrats d'actions et les événements chargés par `/reports` ; aucune
+formule parallèle ne reste dans Communauté. Les vues de staffing, de relance,
+de boucle post-événement et l'export funnel relèvent du cockpit `/pilotage`,
+selon son contrat d'accès.
 
 ## Sémantique des indicateurs visibles
 
