@@ -25,10 +25,16 @@ export function normalizeActionCreationPanel(
 
 export function normalizeActionCreationTab(
   value: string | string[] | undefined,
-  context: { actionId?: string; from?: string } = {},
+  context: {
+    actionId?: string;
+    from?: string;
+    actionPhase?: "pre_action" | "post_action_draft" | "post_action_complete" | null;
+  } = {},
 ): ActionCreationTab {
   const candidate = Array.isArray(value) ? value[0] : value;
   if (candidate === "before" || candidate === "after") return candidate;
+  if (context.actionPhase === "pre_action") return "before";
+  if (context.actionPhase) return "after";
   if (context.from === "planner" || context.from === "before") return "before";
   return context.actionId?.trim() ? "after" : "before";
 }

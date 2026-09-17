@@ -31,7 +31,25 @@ describe("action creation panel routes", () => {
   it("defaults to the before tab and keeps deep-link context when selecting it", () => {
     expect(normalizeActionCreationTab(undefined)).toBe("before");
     expect(normalizeActionCreationTab(undefined, { actionId: "action-42" })).toBe("after");
+    expect(
+      normalizeActionCreationTab(undefined, {
+        actionId: "pre-action-42",
+        actionPhase: "pre_action",
+      }),
+    ).toBe("before");
+    expect(
+      normalizeActionCreationTab(undefined, {
+        actionId: "draft-42",
+        actionPhase: "post_action_draft",
+      }),
+    ).toBe("after");
     expect(normalizeActionCreationTab("before", { actionId: "action-42" })).toBe("before");
+    expect(
+      normalizeActionCreationTab(undefined, {
+        from: "before",
+        actionPhase: "post_action_draft",
+      }),
+    ).toBe("after");
     expect(
       buildActionCreationTabHref("after", {
         tab: "before",

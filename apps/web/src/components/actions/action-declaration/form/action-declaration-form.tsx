@@ -42,7 +42,6 @@ type ActionDeclarationFormProps = {
   linkedEventId?: string;
   initialRecordType?: "action";
   initialActionId?: string | null;
-  onReturnToChoice?: () => void;
   signInHref?: string;
   signUpHref?: string;
 };
@@ -185,11 +184,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                 Le formulaire existant n&apos;a pas pu être chargé
               </h2>
               <p className="text-sm leading-6 text-rose-900/72">{hydrationError}</p>
-              {props.onReturnToChoice ? (
-                <CmmButton tone="secondary" variant="pill" size="md" onClick={props.onReturnToChoice}>
-                  Retour au choix
-                </CmmButton>
-              ) : null}
             </div>
           </CmmCard>
         </div>
@@ -473,10 +467,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                 : null
             }
             onReset={() => {
-              if (props.initialActionId && props.onReturnToChoice) {
-                props.onReturnToChoice();
-                return;
-              }
               setForm(createInitialFormState(resolvedDefaultActorName, props.initialRecordType ?? "action"));
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}

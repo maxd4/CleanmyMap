@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
@@ -68,7 +68,6 @@ export function ActionBeforeDeclarationForm({
   linkedEventId,
   initialActionId,
   initialRecordType = "action",
-  onReturnToChoice,
   onPassToComplete,
   onFormChange,
   onActionPersisted,
@@ -105,7 +104,6 @@ export function ActionBeforeDeclarationForm({
     linkedEventId,
     initialActionId,
     initialRecordType,
-    onReturnToChoice,
     onPassToComplete,
     onFormChange,
     onActionPersisted,
@@ -156,10 +154,6 @@ export function ActionBeforeDeclarationForm({
               {createdId ? (
                 <p className="text-xs font-mono text-emerald-900/60">Référence: {createdId}</p>
               ) : null}
-              <CmmButton tone="tertiary" variant="pill" size="md" onClick={onReturnToChoice}>
-                <ArrowLeft size={14} />
-                Retour au choix
-              </CmmButton>
             </div>
           </CmmCard>
         </div>
@@ -234,10 +228,6 @@ export function ActionBeforeDeclarationForm({
                     Voir les actions futures
                   </CmmButton>
                 ) : null}
-                <CmmButton tone="tertiary" variant="pill" size="md" onClick={onReturnToChoice}>
-                  <ArrowLeft size={14} />
-                  Retour au choix
-                </CmmButton>
               </div>
             </div>
             <div className="mt-6 border-t border-emerald-200/70 pt-5" data-testid="action-publication-summary">
@@ -392,10 +382,6 @@ export function ActionBeforeDeclarationForm({
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <CmmButton tone="secondary" variant="pill" size="md" onClick={onReturnToChoice} type="button">
-                <ArrowLeft size={14} />
-                Retour au choix
-              </CmmButton>
               <CmmButton tone="primary" variant="pill" size="md" type="submit" disabled={submissionState === "pending"}>
                 {submissionState === "pending" ? (
                   <>

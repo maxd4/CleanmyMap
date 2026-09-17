@@ -1,16 +1,29 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ComponentProps } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ActionCreationShell } from "./action-creation-shell";
 
-const entryFlowPropsMock = vi.hoisted(() => vi.fn());
+const beforeFormPropsMock = vi.hoisted(() => vi.fn());
+const completeFormPropsMock = vi.hoisted(() => vi.fn());
+const updateActionMock = vi.hoisted(() => vi.fn(() => Promise.resolve({ id: "action-42" })));
+const routerReplaceMock = vi.hoisted(() => vi.fn());
 
-vi.mock("./action-declaration-entry-flow", () => ({
-  ActionDeclarationEntryFlow: (props: Record<string, unknown>) => {
-    entryFlowPropsMock(props);
+vi.mock("./action-declaration/before/form", () => ({
+  ActionBeforeDeclarationForm: (props: Record<string, unknown>) => {
+    beforeFormPropsMock(props);
     return <div data-testid="pre-formulaire-engine" />;
   },
+}));
+vi.mock("./action-declaration/form/action-declaration-form", () => ({
+  ActionDeclarationForm: (props: Record<string, unknown>) => {
+    completeFormPropsMock(props);
+    return <div data-testid="formulaire-engine" />;
+  },
+}));
+vi.mock("@/lib/actions/http", () => ({ updateAction: updateActionMock }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: routerReplaceMock }),
 }));
 vi.mock("./action-creation-legal-panel", () => ({
   ActionCreationLegalPanel: ({ actionId }: { actionId?: string | null }) => (
@@ -25,21 +38,60 @@ vi.mock("@/components/sections/rubriques/weather-section", () => ({
 }));
 
 describe("ActionCreationShell", () => {
-  it("passes the persistence callback to the pre-form engine", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    updateActionMock.mockResolvedValue({ id: "action-42" });
+  });
+
+  it("renders the direct pre-form and keeps the transition on the same action", async () => {
     renderToStaticMarkup(
       React.createElement(ActionCreationShell, {
         actorNameOptions: ["Test"],
         defaultActorName: "Test",
         isAuthenticated: false,
         userMetadata: { userId: "test" },
+        initialActionId: "action-42",
         initialPanel: "pre-formulaire",
       } as ComponentProps<typeof ActionCreationShell>),
     );
 
-    expect(entryFlowPropsMock).toHaveBeenCalledWith(
+    expect(beforeFormPropsMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        onBeforeActionPersisted: expect.any(Function),
+        onActionPersisted: expect.any(Function),
+        onPassToComplete: expect.any(Function),
       }),
+    );
+
+    const beforeProps = beforeFormPropsMock.mock.lastCall?.[0] as {
+      onPassToComplete: (actionId: string) => Promise<void>;
+    };
+    await beforeProps.onPassToComplete("action-42");
+    expect(updateActionMock).toHaveBeenCalledWith("action-42", {
+      actionPhase: "post_action_draft",
+    });
+    expect(routerReplaceMock).toHaveBeenCalledWith(
+      "/actions/new?tab=after&actionId=action-42",
+    );
+  });
+
+  it("renders the complete form directly on the Formulaire tab without creating an action", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionCreationShell, {
+        actorNameOptions: ["Test"],
+        defaultActorName: "Test",
+        isAuthenticated: true,
+        userMetadata: { userId: "test" },
+        initialActionId: "action-42",
+        initialPanel: "pre-formulaire",
+        initialTab: "after",
+      } as ComponentProps<typeof ActionCreationShell>),
+    );
+
+    expect(markup).toContain('data-testid="formulaire-engine"');
+    expect(markup).not.toContain('data-testid="pre-formulaire-engine"');
+    expect(updateActionMock).not.toHaveBeenCalled();
+    expect(completeFormPropsMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ initialActionId: "action-42" }),
     );
   });
 
@@ -84,7 +136,7 @@ describe("ActionCreationShell", () => {
     expect(markup).not.toContain('data-testid="formalities-action-id"');
   });
 
-  it("keeps the pre-form engine autonomous when no panel is supplied", () => {
+  it("keeps the pre-form direct when no panel is supplied", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ActionCreationShell, {
         actorNameOptions: ["Test"],
@@ -109,6 +161,7 @@ describe("ActionCreationShell", () => {
         defaultActorName: "Test",
         isAuthenticated: false,
         userMetadata: { userId: "test" },
+        initialActionId: "action-42",
         initialPanel: "pre-formulaire",
         initialTab: "after",
         tabSearchParams: {
@@ -128,8 +181,8 @@ describe("ActionCreationShell", () => {
     expect(markup).toContain(
       "/actions/new?tab=before&amp;panel=meteo&amp;actionId=action-42&amp;tag=terrain&amp;tag=safety",
     );
-    expect(entryFlowPropsMock).toHaveBeenLastCalledWith(
-      expect.objectContaining({ initialEntryPath: "after" }),
+    expect(completeFormPropsMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ initialActionId: "action-42" }),
     );
   });
 });

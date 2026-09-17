@@ -26,7 +26,6 @@ export type ActionBeforeDeclarationFormProps = {
   linkedEventId?: string;
   initialActionId?: string | null;
   initialRecordType?: "action";
-  onReturnToChoice: () => void;
   onPassToComplete: (actionId: string) => void | Promise<void>;
   onFormChange?: (form: FormState) => void;
   onActionPersisted?: (actionId: string) => void;
