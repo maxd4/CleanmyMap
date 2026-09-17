@@ -90,7 +90,7 @@ export function JoinFormSidebar({
         <h3 className="text-lg font-black tracking-tight text-emerald-950">
           {fr ? "Mon suivi" : "My tracking"}
         </h3>
-        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800">
+        <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
           {formatCount(activeRegistrationItems.length + activeParticipationItems.length)}
         </span>
       </div>

@@ -262,29 +262,38 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                   </div>
 
                   <div className="space-y-4">
-                    <FieldShell
-                      label="Localisation du rendez-vous"
-                      hint="Facultatif si l'adresse suffit."
-                    >
-                      <div className="grid max-w-2xl gap-3 sm:grid-cols-2">
-                        <input
-                          type="number"
-                          step="any"
-                          value={form.latitude}
-                          onChange={(event) => updateField("latitude", event.target.value)}
-                          className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
-                          placeholder="Latitude"
-                        />
-                        <input
-                          type="number"
-                          step="any"
-                          value={form.longitude}
-                          onChange={(event) => updateField("longitude", event.target.value)}
-                          className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
-                          placeholder="Longitude"
-                        />
+                    <details className="rounded-2xl border border-emerald-200/70 bg-emerald-50/45 px-4 py-3">
+                      <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-emerald-950 marker:text-emerald-700">
+                        Localisation du rendez-vous · coordonnées avancées (facultatif)
+                      </summary>
+                      <div className="mt-3 space-y-2">
+                        <p className="text-sm leading-5 text-emerald-900/70">
+                          L&apos;adresse ou le lieu saisi suffit généralement. Ces coordonnées conservent le contrat existant lorsqu&apos;elles sont déjà connues.
+                        </p>
+                        <div className="grid max-w-2xl gap-3 sm:grid-cols-2">
+                          <FieldShell label="Latitude">
+                            <input
+                              type="number"
+                              step="any"
+                              value={form.latitude}
+                              onChange={(event) => updateField("latitude", event.target.value)}
+                              className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                              placeholder="Latitude"
+                            />
+                          </FieldShell>
+                          <FieldShell label="Longitude">
+                            <input
+                              type="number"
+                              step="any"
+                              value={form.longitude}
+                              onChange={(event) => updateField("longitude", event.target.value)}
+                              className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                              placeholder="Longitude"
+                            />
+                          </FieldShell>
+                        </div>
                       </div>
-                    </FieldShell>
+                    </details>
 
                     <FieldShell
                       label="Message pour les participants"

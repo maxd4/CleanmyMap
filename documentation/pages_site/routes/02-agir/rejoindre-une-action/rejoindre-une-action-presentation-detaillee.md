@@ -7,7 +7,7 @@
 - **Rôle** : permettre de rejoindre une action future ouverte ou de consulter les résultats publics d'une action passée.
 - **Périmètre** : onglets futurs/passés, liste des actions futures, recherche, filtres, tri, demande de participation, annulation d'une demande, file de modération, suivi personnel, résultats finaux publics et confirmation avant action sensible.
 - **États à documenter** : chargement, absence d'actions, erreur de chargement, file de modération vide, file de modération alimentée, modale de confirmation, accès refusé si le compte n'est pas disponible selon le contexte, annulation de demande, départ confirmé.
-- **Composants concernés** : `SectionShell`, `PageHero`, `PageHeroBadge`, `FamilyRubriqueCard`, `CmmButton`, `FilterPill`, modale de confirmation, cartes d'action, panneau de résumé, panneau de file de modération, suivi personnel.
+- **Composants concernés** : `SectionShell`, `PageHeader`, `JoinActionTabs`, `CmmButton`, modale de confirmation, cartes d'action, panneau de file de modération, suivi personnel.
 - **Notes d'audit** :
   - le point d'entrée est la route `/sections/rejoindre-une-action` ;
   - l'ancien chemin `/sections/rejoindre-un-formulaire` redirige en conservant sa query string ;
@@ -33,19 +33,19 @@ automatiquement les effectifs ou les résultats.
 ## Structure visuelle cible
 
 - **Fil d'Ariane** : `Agir > Rejoindre une action`.
-- **Hero** : fond vert très clair, titre large, sous-titre explicatif, badge de contexte et illustration panoramique.
-- **Onglets** : `Actions futures` est sélectionné par défaut ; `Actions passées` expose les résultats publics terminés.
-- **Zone de recherche et filtres** : recherche texte + 4 contrôles alignés sur l'onglet futur.
+- **Hero** : fond vert très clair, titre large, sous-titre explicatif et illustration panoramique, sans pilule de contexte redondante.
+- **Onglets** : `Action future` est sélectionné par défaut ; `Action passée` expose les résultats publics terminés. La navigation est une vraie tablist clavier et reste reflétée par `tab` dans l'URL.
+- **Zone de recherche et filtres** : `Recherche`, `Filtres` et `Trier` sont visibles sur l'onglet futur ; Localisation, Période et Statut restent dans le panneau `Filtres`.
 - **Bloc principal** : liste des actions futures ouvertes, avec vignette visuelle, métadonnées, badges d'état et CTA `Demander à participer` ou `Quitter` selon l'état de participation.
-- **Colonne latérale** : résumé chiffré des inscriptions et participations, raccourcis, carte `Mon suivi`, aide.
-- **Bas de page** : file de modération des demandes, légende des actions de traitement, rappel de sécurité.
+- **Colonne latérale** : raccourcis réellement utiles, suivi personnel compact et aide ; aucune colonne latérale disproportionnée sur mobile.
+- **Bas de page** : file de demandes uniquement après sélection explicite d'une action et si `canReview` est vrai côté serveur, puis rappel de sécurité.
 - **Interaction critique** : ouverture d'une modale avant validation d'une demande de participation.
 
 ## Intentions UI
 
-- La page doit rester lisible sur desktop avec une hiérarchie forte entre la liste principale et la colonne latérale.
+- La page doit rester lisible sur desktop et mobile avec une largeur partagée, des cartes emerald cohérentes et une hiérarchie sans micro-typographie uppercase.
 - Le vert doit rester la teinte dominante unique de la page.
-- Les cartes doivent rester aérées et garder un rythme de lecture simple.
+- Les cartes, états loading/empty/error et zones tactiles suivent le même rythme de lecture ; les libellés utiles ne sont pas tronqués.
 - Les états vides doivent proposer un CTA utile, pas une simple notice.
 - La file de modération doit rester visible comme un bloc métier à part entière, et non comme un simple détail de la liste.
 - Le retrait d'une inscription future doit conserver la trace dans `action_registrations` et rester visible dans l'historique de l'utilisateur.

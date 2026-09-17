@@ -63,7 +63,7 @@ function ActionCreationPanelView({
   return (
     <section
       id={`action-creation-panel-${panel.id}`}
-      className="overflow-hidden rounded-[2.25rem] border border-emerald-200/80 bg-white/90 shadow-[0_22px_60px_-36px_rgba(16,185,129,0.45)]"
+      className="overflow-hidden rounded-2xl border border-emerald-200/80 bg-white/95 shadow-[0_22px_60px_-36px_rgba(16,185,129,0.45)]"
     >
       <h2>
         <button
@@ -71,14 +71,14 @@ function ActionCreationPanelView({
           aria-controls={`action-creation-panel-${panel.id}-content`}
           aria-expanded={open}
           onClick={onToggle}
-          className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-emerald-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset md:px-7 md:py-5"
+          className="flex min-h-16 w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors motion-reduce:transition-none hover:bg-emerald-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-inset md:px-7 md:py-5"
         >
           <span className="flex min-w-0 items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-emerald-200/80 bg-emerald-50 text-emerald-700">
               <Icon size={18} aria-hidden="true" />
             </span>
             <span className="min-w-0">
-              <span className="block text-base font-black tracking-tight text-emerald-950 md:text-lg">
+              <span className="block text-base font-bold text-emerald-950 md:text-lg">
                 {panel.label}
               </span>
               <span className="mt-1 block text-xs leading-5 text-emerald-900/65 md:text-sm">
@@ -90,7 +90,7 @@ function ActionCreationPanelView({
             size={20}
             aria-hidden="true"
             className={cn(
-              "shrink-0 text-emerald-700 transition-transform",
+              "shrink-0 text-emerald-700 transition-transform motion-reduce:transition-none",
               open && "rotate-180",
             )}
           />
@@ -229,7 +229,7 @@ export function ActionCreationShell({
     <div
       data-testid="action-creation-shell"
       data-open-panel={initialPanel}
-      className="relative overflow-hidden rounded-[2.75rem] bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"
+      className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#ECF8EF] via-white to-[#F7FCF8] px-3 py-4 md:px-5 md:py-6"
     >
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-emerald-200/45 blur-[110px]" />
@@ -238,8 +238,8 @@ export function ActionCreationShell({
       <div className="cmm-page-width relative space-y-4">
         <CmmCard tone="emerald" variant="glass" size="lg">
           <div className="space-y-3">
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Agir</p>
-            <h1 className="text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tighter text-emerald-950">
+            <p className="text-sm font-semibold text-emerald-700">Agir</p>
+            <h1 className="text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tight text-emerald-950">
               Créer une action
             </h1>
             <p className="cmm-text-body cmm-text-primary max-w-3xl">

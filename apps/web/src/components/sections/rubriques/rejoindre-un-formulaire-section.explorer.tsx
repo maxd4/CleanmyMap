@@ -50,7 +50,10 @@ export function JoinFormExplorer(props: ExplorerProps) {
     const frame = window.requestAnimationFrame(() => {
       const target = document.getElementById(`join-action-${focusActionId}`);
       if (!(target instanceof HTMLElement)) return;
-      target.scrollIntoView({ block: "center", behavior: "smooth" });
+      target.scrollIntoView({
+        block: "center",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+      });
       target.focus({ preventScroll: true });
     });
     return () => window.cancelAnimationFrame(frame);
@@ -75,7 +78,7 @@ export function JoinFormExplorer(props: ExplorerProps) {
             aria-expanded={filtersOpen}
             aria-controls="join-action-filter-panel"
             onClick={() => setFiltersOpen((open) => !open)}
-            className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-[1rem] border border-slate-200 bg-white px-4 text-sm font-bold text-emerald-900 shadow-[0_12px_22px_-20px_rgba(15,23,42,0.18)] transition hover:border-emerald-300 hover:bg-emerald-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
+            className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-[1rem] border border-slate-200 bg-white px-4 text-sm font-bold text-emerald-900 shadow-[0_12px_22px_-20px_rgba(15,23,42,0.18)] transition-colors motion-reduce:transition-none hover:border-emerald-300 hover:bg-emerald-50/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2"
           >
             <Filter size={14} />
             {fr ? "Filtres" : "Filters"}
@@ -161,10 +164,10 @@ export function JoinFormExplorer(props: ExplorerProps) {
     <div className="flex items-end justify-between gap-3">
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-[2rem] font-black tracking-tight text-emerald-950 md:text-[2.15rem]">
+          <h2 className="text-[2rem] font-black text-emerald-950 md:text-[2.15rem]">
             {fr ? "Actions futures" : "Future actions"}
           </h2>
-          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800">
+          <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
             {`${formatCount(preActionVisibleItems.length)} actions`}
           </span>
         </div>
@@ -236,7 +239,7 @@ export function JoinFormExplorer(props: ExplorerProps) {
           <section className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="space-y-1">
-                <h3 className="text-sm font-black uppercase tracking-[0.18em] text-emerald-900">
+                <h3 className="text-base font-bold text-emerald-900">
                   {fr ? "Actions futures ouvertes" : "Open future actions"}
                 </h3>
                 <p className="text-xs leading-relaxed text-slate-500">
@@ -245,7 +248,7 @@ export function JoinFormExplorer(props: ExplorerProps) {
                     : "They are visible before the final declaration and stay separate from completed actions."}
                 </p>
               </div>
-              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800">
+              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-800">
                 {formatCount(preActionVisibleItems.length)}
               </span>
             </div>
