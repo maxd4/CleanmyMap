@@ -189,6 +189,7 @@ export function useJoinFormSectionController() {
 
   return {
     fr,
+    navigationSearchParams: searchParams.toString(),
     focusActionId,
     targetResolution,
     items: actions.items,

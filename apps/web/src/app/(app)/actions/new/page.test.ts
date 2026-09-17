@@ -34,6 +34,7 @@ vi.mock("@/components/actions/action-creation-shell", () => ({
       "data-action-id": String(props.initialActionId ?? ""),
       "data-event-id": String(props.linkedEventId ?? ""),
       "data-entry-path": String(props.initialEntryPath ?? ""),
+      "data-initial-tab": String(props.initialTab ?? ""),
       "data-initial-panel": String(props.initialPanel ?? ""),
       "data-sign-in-href": String(props.signInHref ?? ""),
       "data-sign-up-href": String(props.signUpHref ?? ""),
@@ -81,11 +82,12 @@ describe("action creation entry point", () => {
     expect(html).toContain('data-action-id="action-7"');
     expect(html).toContain('data-event-id="event-42"');
     expect(html).toContain('data-initial-panel="pre-formulaire"');
+    expect(html).toContain('data-initial-tab="after"');
     expect(html).toContain(
-      'data-sign-in-href="/sign-in?redirect_url=%2Factions%2Fnew%3FfromEventId%3Devent-42%26actionId%3Daction-7"',
+      'data-sign-in-href="/sign-in?redirect_url=%2Factions%2Fnew%3Ftab%3Dafter%26fromEventId%3Devent-42%26actionId%3Daction-7"',
     );
     expect(html).toContain(
-      'data-sign-up-href="/sign-up?redirect_url=%2Factions%2Fnew%3FfromEventId%3Devent-42%26actionId%3Daction-7"',
+      'data-sign-up-href="/sign-up?redirect_url=%2Factions%2Fnew%3Ftab%3Dafter%26fromEventId%3Devent-42%26actionId%3Daction-7"',
     );
   });
 
@@ -115,6 +117,7 @@ describe("action creation entry point", () => {
     expect(html).toContain('data-action-id="action-7"');
     expect(html).toContain('data-event-id="event-42"');
     expect(html).toContain('data-initial-panel="pre-formulaire"');
+    expect(html).toContain('data-initial-tab="after"');
     expect(html).not.toContain("public-preview");
     expect(html).not.toContain("Aperçu public");
   });
@@ -127,6 +130,7 @@ describe("action creation entry point", () => {
     );
 
     expect(html).toContain('data-entry-path="before"');
+    expect(html).toContain('data-initial-tab="before"');
     expect(html).toContain('data-initial-panel="pre-formulaire"');
     expect(html).toContain(
       'data-sign-in-href="/sign-in?redirect_url=%2Factions%2Fnew%3FfromEventId%3Devent-42%26from%3Dplanner"',
@@ -141,6 +145,7 @@ describe("action creation entry point", () => {
     );
 
     expect(html).toContain('data-entry-path="before"');
+    expect(html).toContain('data-initial-tab="before"');
     expect(html).toContain('data-initial-panel="pre-formulaire"');
     expect(html).toContain('data-action-id="action-42"');
   });

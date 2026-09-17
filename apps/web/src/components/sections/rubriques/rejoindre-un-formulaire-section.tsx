@@ -69,6 +69,7 @@ export function JoinActionSection() {
         activeTab={controller.activeTab}
         focusActionId={controller.focusActionId}
         fr={fr}
+        searchParams={controller.navigationSearchParams}
       />
 
       <div

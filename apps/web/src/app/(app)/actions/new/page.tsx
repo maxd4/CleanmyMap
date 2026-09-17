@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { ActionCreationShell } from "@/components/actions/action-creation-shell";
-import { normalizeActionCreationPanel } from "@/lib/actions/action-creation-routes";
+import {
+  normalizeActionCreationPanel,
+  normalizeActionCreationTab,
+} from "@/lib/actions/action-creation-routes";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getLocalDevAuthState } from "@/lib/auth/local-dev-auth-state.server";
 import { getCurrentUserIdentity } from "@/lib/authz";
@@ -51,7 +54,8 @@ export default async function NewActionPage({
   const from = resolveSingleSearchParam(params?.["from"]);
   const actionId = resolveSingleSearchParam(params?.["actionId"]);
   const panel = normalizeActionCreationPanel(params?.["panel"]);
-  const returnUrl = buildActionReturnUrl({ fromEventId, actionId, from, panel });
+  const tab = normalizeActionCreationTab(params?.["tab"], { actionId, from });
+  const returnUrl = buildActionReturnUrl({ fromEventId, actionId, from, panel, tab });
   const { userId } = await getSafeAuthSession();
   const localDevAuth = await getLocalDevAuthState();
 
@@ -86,6 +90,8 @@ export default async function NewActionPage({
           initialEntryPath={from === "planner" || from === "before" ? "before" : undefined}
           initialActionId={actionId ?? null}
           initialPanel={panel}
+          initialTab={tab}
+          tabSearchParams={params}
           localDevAuth={localDevAuth}
           isAuthenticated={isAuthenticated}
           signInHref={buildAuthRedirectHref("/sign-in", returnUrl)}
@@ -105,6 +111,8 @@ export default async function NewActionPage({
         initialEntryPath={from === "planner" || from === "before" ? "before" : undefined}
         initialActionId={actionId ?? null}
         initialPanel={panel}
+        initialTab={tab}
+        tabSearchParams={params}
         localDevAuth={localDevAuth}
         isAuthenticated={isAuthenticated}
         signInHref={buildAuthRedirectHref("/sign-in", returnUrl)}
@@ -119,14 +127,17 @@ function buildActionReturnUrl({
   actionId,
   from,
   panel,
+  tab,
 }: {
   fromEventId?: string;
   actionId?: string;
   from?: string;
   panel: ReturnType<typeof normalizeActionCreationPanel>;
+  tab: ReturnType<typeof normalizeActionCreationTab>;
 }): string {
   const returnParams = new URLSearchParams();
   if (panel !== "pre-formulaire") returnParams.set("panel", panel);
+  if (tab !== "before") returnParams.set("tab", tab);
   if (fromEventId) returnParams.set("fromEventId", fromEventId);
   if (actionId) returnParams.set("actionId", actionId);
   if (from) returnParams.set("from", from);
