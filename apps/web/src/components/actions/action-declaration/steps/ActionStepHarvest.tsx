@@ -185,7 +185,7 @@ export function ActionStepHarvest({
             notes={form.notes}
             wasteCategories={form.wasteCategories ?? []}
             onTriChange={(key, value) => updateField(key, value)}
-            hidePrimaryMeasurement={mode === "details"}
+            hidePrimaryMeasurement={mode === "collection" || mode === "details"}
           />
           <HarvestMegotsSection
             wasteMegotsKg={form.wasteMegotsKg}
@@ -207,7 +207,7 @@ export function ActionStepHarvest({
             onMegotsVolumeChange={(value) => updateField("cigaretteButtsVolumeLiters", value)}
             onMegotsCountChange={syncMegotsWeightFromCount}
             onMegotsConditionChange={syncMegotsCondition}
-            hidePrimaryMeasurements={mode === "details"}
+            hidePrimaryMeasurements={mode === "collection" || mode === "details"}
           />
         </div>
       )}
