@@ -1318,6 +1318,22 @@ try {
 }
 finally { $readme.Dispose() }
 
+$chatgptReviewFiles = @(
+    $readmePath,
+    $rootFilesPath,
+    $rootSummaryCsv,
+    $structuralCandidatesPath,
+    $structuralCandidatesCsv
+)
+$missingChatgptReviewFiles = @(
+    $chatgptReviewFiles |
+        Where-Object { -not (Test-Path -LiteralPath $_ -PathType Leaf) } |
+        ForEach-Object { [System.IO.Path]::GetFileName($_) }
+)
+if ($missingChatgptReviewFiles.Count -gt 0) {
+    throw "Audit output contract violated; missing required review file(s): $($missingChatgptReviewFiles -join ', ')"
+}
+
 Write-Host ""
 Write-Host "Inventaire termine."
 Write-Host "Sortie : $outputDir"
@@ -1330,4 +1346,10 @@ Write-Host (("Duree snapshot : {0:N2} s" -f ($finishedScanAt - $startedAt).Total
 
 if ($scanErrors.Count -gt 0) { exit 2 }
 if ($FailOnSnapshotRace -and $raceFindings.Count -gt 0) { exit 3 }
+
+Write-Host "AUDIT_OUTPUT_DIR: $outputDir"
+Write-Host "CHATGPT_REVIEW_FILES:"
+foreach ($reviewFile in $chatgptReviewFiles) {
+    Write-Host $reviewFile
+}
 exit 0
