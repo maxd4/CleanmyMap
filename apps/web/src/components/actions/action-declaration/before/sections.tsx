@@ -8,6 +8,8 @@ import {
 } from "@/lib/actions/association-options";
 import { ORGANIZER_TYPE_OPTIONS } from "@/lib/actions/organizer-type";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
 import type { FormState } from "../form/model";
 import { ActionParticipantPicker } from "../../action-participant-picker";
 import { WasteCategorySelector, WasteFieldSummary } from "@/components/waste/waste-category-selector";
@@ -25,11 +27,27 @@ import {
   formatBusinessDurationMinutes,
 } from "@/lib/actions/time-contract";
 import { normalizeVolunteerParticipation } from "@/lib/actions/volunteer-participation";
+import { cn } from "@/lib/utils";
 
 type BaseSectionProps = {
   form: FormState;
   updateField: BeforeActionFieldUpdater;
+  hasAttemptedSubmit?: boolean;
+  validationIssueFields?: readonly string[];
 };
+
+function hasValidationIssue(
+  validationIssueFields: readonly string[] | undefined,
+  field: string,
+): boolean {
+  return validationIssueFields?.includes(field) ?? false;
+}
+
+function RequiredMark() {
+  return (
+    <span className="ml-1 text-xs font-semibold text-rose-700">Obligatoire</span>
+  );
+}
 
 type IdentityAndSharingSectionProps = BaseSectionProps & {
   actorNameOptions: string[];
@@ -45,7 +63,11 @@ export function IdentityAndSharingSection({
   userMetadata,
   showGroupJoinHelp,
   onToggleGroupJoinHelp,
+  hasAttemptedSubmit,
+  validationIssueFields,
 }: IdentityAndSharingSectionProps) {
+  const missingOrganizerType = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "organizerType"));
+  const missingAssociation = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "associationName"));
   return (
             <CmmCard tone="emerald" variant="glass" size="lg">
               <div className="space-y-6">
@@ -70,14 +92,17 @@ export function IdentityAndSharingSection({
                     </select>
                   </FieldShell>
 
-                  <FieldShell label="Type de structure" hint="Indiquez le cadre de l’action, indépendamment du nom de l’organisateur.">
+                  <FieldShell label={<span>Type de structure<RequiredMark /></span>} hint="Indiquez le cadre de l’action, indépendamment du nom de l’organisateur.">
                     <select
+                      id="before-organizer-type"
                       value={form.organizerType}
                       onChange={(event) =>
                         updateField("organizerType", event.target.value as FormState["organizerType"])
                       }
                       required
-                      className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                      aria-invalid={missingOrganizerType}
+                      aria-describedby={missingOrganizerType ? "before-organizer-type-error" : undefined}
+                      className={cn("w-full rounded-2xl border bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", missingOrganizerType ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")}
                     >
                       <option value="">Sélectionnez un type de structure</option>
                       {ORGANIZER_TYPE_OPTIONS.map((option) => (
@@ -86,13 +111,17 @@ export function IdentityAndSharingSection({
                         </option>
                       ))}
                     </select>
+                    {missingOrganizerType ? <span id="before-organizer-type-error" className="block text-xs font-medium text-rose-700">Sélectionnez un type de structure.</span> : null}
                   </FieldShell>
 
-                  <FieldShell label="Structure ou cadre">
+                  <FieldShell label={<span>Structure ou cadre<RequiredMark /></span>}>
                     <select
+                      id="before-organizer-structure"
                       value={form.associationName}
                       onChange={(event) => updateField("associationName", event.target.value)}
-                      className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                      aria-invalid={missingAssociation}
+                      aria-describedby={missingAssociation ? "before-organizer-structure-error" : undefined}
+                      className={cn("w-full rounded-2xl border bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", missingAssociation ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")}
                     >
                       {ASSOCIATION_SELECTION_OPTIONS.map((option) => (
                         <option key={option} value={option}>
@@ -100,6 +129,7 @@ export function IdentityAndSharingSection({
                         </option>
                       ))}
                     </select>
+                    {missingAssociation ? <span id="before-organizer-structure-error" className="block text-xs font-medium text-rose-700">Sélectionnez une structure ou un cadre.</span> : null}
                   </FieldShell>
 
                   {form.associationName === ENTREPRISE_ASSOCIATION_OPTION ? (
@@ -135,12 +165,23 @@ export function IdentityAndSharingSection({
                   />
                 </div>
 
-                <ActionParticipantPicker
-                  currentUserId={userMetadata.userId}
-                  value={form.participantAccounts}
-                  onChange={(next) => updateField("participantAccounts", next)}
-                  description="Ajoutez des membres connus avant de publier l'action ou de passer au formulaire complet."
-                />
+                <CmmDisclosure
+                  summary={
+                    <ActionFormDisclosureSummary
+                      label="Participants associés"
+                      detail={form.participantAccounts.length ? `${form.participantAccounts.length} participant${form.participantAccounts.length > 1 ? "s" : ""}` : undefined}
+                    />
+                  }
+                  tone="emerald"
+                  size="md"
+                >
+                  <ActionParticipantPicker
+                    currentUserId={userMetadata.userId}
+                    value={form.participantAccounts}
+                    onChange={(next) => updateField("participantAccounts", next)}
+                    description="Ajoutez des membres connus avant de publier l'action ou de passer au formulaire complet."
+                  />
+                </CmmDisclosure>
 
                 <GroupJoinPublishCard
                   checked={form.groupJoinEnabled}
@@ -153,7 +194,10 @@ export function IdentityAndSharingSection({
   );
 }
 
-export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
+export function PlannedActionSection({ form, updateField, hasAttemptedSubmit, validationIssueFields }: BaseSectionProps) {
+  const missingTitle = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "actionTitle"));
+  const missingDate = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "actionDate"));
+  const missingDeparture = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "departureLocationLabel"));
   const event = deriveEventDurationMinutes(form.eventStartTime, form.eventEndTime);
   const organization = deriveOrganizationMinutes({
     actionDurationMinutes: Number(form.durationMinutes),
@@ -178,14 +222,18 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                 />
 
                 <div className="space-y-4">
-                  <FieldShell label="Titre de l'action" hint="Nom affiché dans le formulaire de groupe.">
+                  <FieldShell label={<span>Titre de l&apos;action<RequiredMark /></span>} hint="Nom affiché dans le formulaire de groupe.">
                     <input
+                      id="before-action-title"
                       type="text"
                       value={form.actionTitle}
                       onChange={(event) => updateField("actionTitle", event.target.value)}
-                      className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                      aria-invalid={missingTitle}
+                      aria-describedby={missingTitle ? "before-action-title-error" : undefined}
+                      className={cn("w-full rounded-2xl border bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", missingTitle ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")}
                       placeholder="Ex. Nettoyage des berges de la Seine"
                     />
+                    {missingTitle ? <span id="before-action-title-error" className="block text-xs font-medium text-rose-700">Indiquez un titre pour enregistrer la préparation.</span> : null}
                   </FieldShell>
 
                   <FieldShell label="Description courte" hint="Quelques lignes pour expliquer le contexte.">
@@ -209,16 +257,20 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                     </FieldShell>
 
                   <FieldShell
-                      label="Point de rendez-vous précis"
+                      label={<span>Point de rendez-vous précis<RequiredMark /></span>}
                       hint="Adresse, entrée ou repère exact avant le départ."
                     >
                       <input
                         type="text"
                         value={form.departureLocationLabel}
                         onChange={(event) => updateField("departureLocationLabel", event.target.value)}
-                        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                        id="before-departure-location"
+                        aria-invalid={missingDeparture}
+                        aria-describedby={missingDeparture ? "before-departure-location-error" : undefined}
+                        className={cn("w-full rounded-2xl border bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", missingDeparture ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")}
                         placeholder="Ex. Entrée principale, côté métro"
                       />
+                      {missingDeparture ? <span id="before-departure-location-error" className="block text-xs font-medium text-rose-700">Indiquez le point de rendez-vous avant d’enregistrer.</span> : null}
                     </FieldShell>
                   </div>
 
@@ -262,11 +314,17 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                   </div>
 
                   <div className="space-y-4">
-                    <details className="rounded-2xl border border-emerald-200/70 bg-emerald-50/45 px-4 py-3">
-                      <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-emerald-950 marker:text-emerald-700">
-                        Localisation du rendez-vous · coordonnées avancées (facultatif)
-                      </summary>
-                      <div className="mt-3 space-y-2">
+                    <CmmDisclosure
+                      summary={
+                        <ActionFormDisclosureSummary
+                          label="Localisation du rendez-vous"
+                          detail={form.latitude.trim() || form.longitude.trim() ? "Coordonnées avancées · coordonnées renseignées" : "Coordonnées avancées (facultatif)"}
+                        />
+                      }
+                      tone="emerald"
+                      size="md"
+                    >
+                      <div className="space-y-2">
                         <p className="text-sm leading-5 text-emerald-900/70">
                           L&apos;adresse ou le lieu saisi suffit généralement. Ces coordonnées conservent le contrat existant lorsqu&apos;elles sont déjà connues.
                         </p>
@@ -293,7 +351,7 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                           </FieldShell>
                         </div>
                       </div>
-                    </details>
+                    </CmmDisclosure>
 
                     <FieldShell
                       label="Message pour les participants"
@@ -311,17 +369,22 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                   <fieldset className="rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] p-4 md:p-5">
                     <legend className="px-2 text-base font-black text-emerald-950">Date et horaires</legend>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    <FieldShell label="Date prévue">
+                    <FieldShell label={<span>Date prévue<RequiredMark /></span>}>
                       <input
+                        id="before-action-date"
                         type="date"
                         value={form.actionDate}
                         onChange={(event) => updateField("actionDate", event.target.value)}
-                        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
+                        aria-invalid={missingDate}
+                        aria-describedby={missingDate ? "before-action-date-error" : undefined}
+                        className={cn("w-full rounded-2xl border bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", missingDate ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")}
                       />
+                      {missingDate ? <span id="before-action-date-error" className="block text-xs font-medium text-rose-700">Indiquez la date prévue avant d’enregistrer.</span> : null}
                     </FieldShell>
 
                     <FieldShell label="Heure de rendez-vous">
                       <input
+                        id="before-meeting-time"
                         type="time"
                         value={form.meetingTime}
                         onChange={(event) => updateField("meetingTime", event.target.value)}
@@ -331,6 +394,7 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
 
                     <FieldShell label="Heure de départ prévue">
                       <input
+                        id="before-action-event-start"
                         type="time"
                         value={form.departureTime}
                         onChange={(event) => updateField("departureTime", event.target.value)}
@@ -432,7 +496,18 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                     />
                   </div>
 
-                  <ExpectedWasteSection form={form} updateField={updateField} />
+                  <CmmDisclosure
+                    summary={
+                      <ActionFormDisclosureSummary
+                        label="Déchets attendus"
+                        detail={form.wasteCategories?.length ? `${form.wasteCategories.length} catégorie${form.wasteCategories.length > 1 ? "s" : ""}` : undefined}
+                      />
+                    }
+                    tone="emerald"
+                    size="md"
+                  >
+                    <ExpectedWasteSection form={form} updateField={updateField} />
+                  </CmmDisclosure>
                 </div>
               </div>
             </CmmCard>

@@ -12,9 +12,9 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmDialog } from "@/components/ui/cmm-dialog";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
+import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
-import { PLACE_TYPE_OPTIONS } from "@/lib/actions/place-type-options";
 import { ActionDeclarationFormConfirmation } from "./action-declaration-form-confirmation";
 import { ActionDeclarationExportPicker } from "./action-declaration-export-picker";
 import { ActionDeclarationFormFeedback } from "./action-declaration-form.feedback";
@@ -26,6 +26,22 @@ import {
   formatDraftDate,
 } from "./action-declaration-form.summary";
 import { useActionDeclarationForm } from "./use-action-declaration-form";
+
+const ACTION_VALIDATION_FIELD_IDS: Record<string, string> = {
+  organizerType: "action-organizer-type",
+  associationName: "action-organizer-structure",
+  enterpriseName: "action-enterprise-name",
+  actionDate: "action-action-date",
+  arrivalLocationLabel: "arrival",
+  manualDrawing: "action-disclosure-route",
+  gpxImport: "gpx-import",
+  wasteKg: "harvest-waste-kg",
+  volunteersCount: "action-children-count",
+  volunteerParticipation: "action-children-count",
+  durationMinutes: "action-duration-minutes",
+  eventStartTime: "action-event-start",
+  eventEndTime: "action-event-end",
+};
 
 type ActionDeclarationFormProps = {
   actorNameOptions: string[];
@@ -134,61 +150,74 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
   const hasValidationIssue = (fields: string[]) =>
     validationIssues.some((issue) => fields.includes(issue.field));
   const organizationNeedsAttention =
-    Boolean(form.enterpriseName.trim()) ||
-    Boolean(form.organizerAccounts.trim()) ||
-    form.participantAccounts.length > 0 ||
-    form.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE ||
-    hasValidationIssue(["associationName", "organizerType", "enterpriseName"]);
+    hasValidationIssue(["associationName", "organizerType", "enterpriseName"]) ||
+    (form.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE && !form.actorName.trim());
   const collectionNeedsAttention =
-    Boolean(form.wasteMeasurementMethod) ||
-    Boolean(form.wasteCategories?.length) ||
-    Boolean(form.wasteRecyclablesKg.trim()) ||
-    Boolean(form.wasteGlassKg.trim()) ||
-    Boolean(form.wasteHouseholdKg.trim()) ||
-    Boolean(form.wasteOtherKg.trim()) ||
-    Boolean(form.wasteUnusualObjects.trim()) ||
-    Boolean(form.wasteSpecialHandlingWaste.trim()) ||
-    Boolean(form.notes.trim()) ||
-    Boolean(form.cigaretteButtsVolumeLiters.trim()) ||
-    form.wasteMegotsCondition !== "propre" ||
-    (Boolean(form.placeType.trim()) && form.placeType !== PLACE_TYPE_OPTIONS[0]) ||
     hasValidationIssue(["wasteKg"]);
-  const photoNeedsAttention =
-    photoAssets.length > 0 ||
-    Boolean(visionEstimate) ||
-    visionStatus === "processing" ||
-    visionStatus === "ready" ||
-    visionStatus === "error";
   const routeNeedsAttention =
-    Boolean(form.midRouteLocationLabel?.trim()) ||
-    Boolean(form.arrivalLocationLabel.trim()) ||
-    Boolean(form.midRouteCoordinates) ||
-    Boolean(form.arrivalCoordinates) ||
-    Boolean(form.operationalRoute) ||
-    Boolean(form.gpxImport) ||
-    Boolean(manualDrawing) ||
-    Boolean(form.routeAdjustmentMessage.trim()) ||
-    form.routeTopology === "point_to_point" ||
-    form.routeTargetDistanceKmManuallySet ||
-    hasValidationIssue(["locationLabel", "arrivalLocationLabel", "manualDrawing", "gpxImport"]);
+    hasValidationIssue(["locationLabel", "arrivalLocationLabel", "manualDrawing", "gpxImport"]) ||
+    (form.routeTopology === "point_to_point" && !form.arrivalLocationLabel.trim());
   const timeNeedsAttention =
-    Boolean(form.eventStartTime.trim()) ||
-    Boolean(form.eventEndTime.trim()) ||
     hasValidationIssue(["eventStartTime", "eventEndTime"]);
 
+  const organizationSummary = [
+    form.participantAccounts.length > 0
+      ? `${form.participantAccounts.length} participant${form.participantAccounts.length > 1 ? "s" : ""}`
+      : null,
+    form.organizerAccounts.trim() ? "comptes associés" : null,
+    form.enterpriseName.trim() ? "entreprise renseignée" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const collectionSummary = form.wasteCategories?.length
+    ? `${form.wasteCategories.length} catégorie${form.wasteCategories.length > 1 ? "s" : ""} de déchets`
+    : form.wasteMeasurementMethod
+      ? "méthode renseignée"
+      : undefined;
+  const photoSummary = photoAssets.length
+    ? `${photoAssets.length} photo${photoAssets.length > 1 ? "s" : ""}`
+    : visionEstimate
+      ? "estimation disponible"
+      : undefined;
+  const routeSummary = form.gpxImport
+    ? "GPX importé"
+    : manualDrawing
+      ? "tracé manuel"
+      : form.operationalRoute
+        ? "parcours calculé"
+        : undefined;
+  const timeSummary = form.eventStartTime.trim() || form.eventEndTime.trim()
+    ? [form.eventStartTime, form.eventEndTime].filter(Boolean).join("–")
+    : undefined;
+
+  useEffect(() => {
+    if (!hasAttemptedSubmit || validationIssues.length === 0) return;
+    let frame = 0;
+    frame = window.requestAnimationFrame(() => {
+      const issue = validationIssues[0];
+      const targetId = ACTION_VALIDATION_FIELD_IDS[issue?.field ?? ""];
+      if (!targetId) return;
+      const target = document.getElementById(targetId);
+      const focusTarget = target ?? document.querySelector(`#${targetId} summary`);
+      if (focusTarget instanceof HTMLElement) focusTarget.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [hasAttemptedSubmit, validationIssues, openOrganizationDetails, openCollectionDetails, openPhotoDetails, openRouteDetails, openTimeDetails]);
+
+  // Opening a disclosure in response to validation is intentional: it reveals the invalid field.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (organizationNeedsAttention) setOpenOrganizationDetails(true);
     if (collectionNeedsAttention) setOpenCollectionDetails(true);
-    if (photoNeedsAttention) setOpenPhotoDetails(true);
     if (routeNeedsAttention) setOpenRouteDetails(true);
     if (timeNeedsAttention) setOpenTimeDetails(true);
   }, [
     organizationNeedsAttention,
     collectionNeedsAttention,
-    photoNeedsAttention,
     routeNeedsAttention,
     timeNeedsAttention,
   ]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (isHydratingAction) {
     return (
@@ -477,7 +506,13 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
 
                 <div className="space-y-3">
                   <CmmDisclosure
-                    summary="Détails de l’organisation"
+                    id="action-disclosure-organization"
+                    summary={
+                      <ActionFormDisclosureSummary
+                        label="Détails de l’organisation"
+                        detail={organizationSummary}
+                      />
+                    }
                     tone="emerald"
                     size="md"
                     open={openOrganizationDetails}
@@ -497,7 +532,13 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                   </CmmDisclosure>
 
                   <CmmDisclosure
-                    summary="Détails de la collecte"
+                    id="action-disclosure-collection"
+                    summary={
+                      <ActionFormDisclosureSummary
+                        label="Détails de la collecte"
+                        detail={collectionSummary}
+                      />
+                    }
                     tone="emerald"
                     size="md"
                     open={openCollectionDetails}
@@ -535,7 +576,13 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                   </CmmDisclosure>
 
                   <CmmDisclosure
-                    summary="Photos et estimation"
+                    id="action-disclosure-photos"
+                    summary={
+                      <ActionFormDisclosureSummary
+                        label="Photos et estimation"
+                        detail={photoSummary}
+                      />
+                    }
                     tone="emerald"
                     size="md"
                     open={openPhotoDetails}
@@ -562,7 +609,13 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                   </CmmDisclosure>
 
                   <CmmDisclosure
-                    summary="Parcours et géométrie"
+                    id="action-disclosure-route"
+                    summary={
+                      <ActionFormDisclosureSummary
+                        label="Parcours et géométrie"
+                        detail={routeSummary}
+                      />
+                    }
                     tone="emerald"
                     size="md"
                     open={openRouteDetails}
@@ -593,7 +646,13 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                   </CmmDisclosure>
 
                   <CmmDisclosure
-                    summary="Détails temporels"
+                    id="action-disclosure-time"
+                    summary={
+                      <ActionFormDisclosureSummary
+                        label="Détails temporels"
+                        detail={timeSummary}
+                      />
+                    }
                     tone="emerald"
                     size="md"
                     open={openTimeDetails}

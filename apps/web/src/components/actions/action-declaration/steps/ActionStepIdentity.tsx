@@ -237,7 +237,7 @@ export function ActionStepIdentity({
         <div className="grid gap-3 md:grid-cols-3">
           <div className="space-y-1.5">
             <label htmlFor="action-action-date" className="text-xs font-semibold text-emerald-900/75">
-              Date de l’action <span aria-hidden="true">*</span>
+              Date de l’action <span aria-hidden="true">*</span><span className="ml-2 text-xs font-semibold text-rose-700">Obligatoire</span>
             </label>
             <input
               id="action-action-date"
@@ -257,7 +257,7 @@ export function ActionStepIdentity({
 
           <div className="space-y-1.5">
             <label htmlFor="action-organizer-type" className="text-xs font-semibold text-emerald-900/75">
-              Type de structure <span aria-hidden="true">*</span>
+              Type de structure <span aria-hidden="true">*</span><span className="ml-2 text-xs font-semibold text-rose-700">Obligatoire</span>
             </label>
             <select
               id="action-organizer-type"
@@ -283,7 +283,7 @@ export function ActionStepIdentity({
           {form.organizerType && !isSpontaneousAction ? (
             <div className="space-y-1.5">
               <label htmlFor="action-organizer-structure" className="text-xs font-semibold text-emerald-900/75">
-                Structure <span aria-hidden="true">*</span>
+                Structure <span aria-hidden="true">*</span><span className="ml-2 text-xs font-semibold text-rose-700">Obligatoire</span>
               </label>
               <select
                 id="action-organizer-structure"
