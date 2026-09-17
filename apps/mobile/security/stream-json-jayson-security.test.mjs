@@ -22,6 +22,14 @@ const writeChunk = (stream, chunk) =>
 
 const nextTurn = () => new Promise((resolve) => setImmediate(resolve));
 
+const waitFor = async (predicate, message) => {
+  const deadline = Date.now() + 1000;
+  while (!predicate()) {
+    if (Date.now() >= deadline) throw new Error(message);
+    await nextTurn();
+  }
+};
+
 test("keeps jayson on the bounded CommonJS compatibility surface", () => {
   const rootPackage = JSON.parse(
     fs.readFileSync(path.join(repositoryRoot, "package.json"), "utf8"),
@@ -93,6 +101,115 @@ test("performs a minimal streaming JSON-RPC exchange through jayson", async () =
   input.end();
   await nextTurn();
   assert.equal(streamError, undefined);
+});
+
+test("jayson emits a complete request before an open PassThrough reaches EOF", async () => {
+  const jayson = require("jayson");
+  const input = new PassThrough();
+  const callbacks = [];
+
+  jayson.Utils.parseStream(input, {}, (error, parsedRequest) => {
+    callbacks.push({ error, parsedRequest });
+  });
+
+  input.write(JSON.stringify({ jsonrpc: "2.0", method: "ping", id: 10 }));
+  await waitFor(
+    () => callbacks.length === 1,
+    "parseStream did not emit the complete request before EOF",
+  );
+
+  assert.equal(input.readableEnded, false);
+  assert.equal(callbacks[0].error, null);
+  assert.deepEqual(callbacks[0].parsedRequest, {
+    jsonrpc: "2.0",
+    method: "ping",
+    id: 10,
+  });
+  input.destroy();
+});
+
+test("jayson emits successive requests in order on the same open stream", async () => {
+  const jayson = require("jayson");
+  const input = new PassThrough();
+  const callbacks = [];
+
+  jayson.Utils.parseStream(input, {}, (error, parsedRequest) => {
+    callbacks.push({ error, parsedRequest });
+  });
+
+  input.write(JSON.stringify({ jsonrpc: "2.0", method: "first", id: 1 }));
+  await waitFor(() => callbacks.length === 1, "first request was not emitted");
+  assert.equal(input.readableEnded, false);
+
+  input.write(JSON.stringify({ jsonrpc: "2.0", method: "second", id: 2 }));
+  await waitFor(() => callbacks.length === 2, "second request was not emitted");
+
+  assert.deepEqual(
+    callbacks.map(({ error, parsedRequest }) => ({ error, parsedRequest })),
+    [
+      {
+        error: null,
+        parsedRequest: { jsonrpc: "2.0", method: "first", id: 1 },
+      },
+      {
+        error: null,
+        parsedRequest: { jsonrpc: "2.0", method: "second", id: 2 },
+      },
+    ],
+  );
+  assert.equal(input.readableEnded, false);
+  input.destroy();
+});
+
+test("jayson waits for a fragmented request and emits it before EOF", async () => {
+  const jayson = require("jayson");
+  const input = new PassThrough();
+  const callbacks = [];
+
+  jayson.Utils.parseStream(input, {}, (error, parsedRequest) => {
+    callbacks.push({ error, parsedRequest });
+  });
+
+  input.write('{"jsonrpc":"2.0","method":"add","params":[');
+  await nextTurn();
+  assert.equal(callbacks.length, 0);
+
+  input.write('2,3],"id":3}');
+  await waitFor(
+    () => callbacks.length === 1,
+    "fragmented request was not emitted after its final chunk",
+  );
+
+  assert.equal(input.readableEnded, false);
+  assert.equal(callbacks[0].error, null);
+  assert.deepEqual(callbacks[0].parsedRequest, {
+    jsonrpc: "2.0",
+    method: "add",
+    params: [2, 3],
+    id: 3,
+  });
+  input.destroy();
+});
+
+test("jayson reports malformed JSON through the parseStream error callback", async () => {
+  const jayson = require("jayson");
+  const input = new PassThrough();
+  const callbacks = [];
+
+  jayson.Utils.parseStream(input, {}, (error, parsedRequest) => {
+    callbacks.push({ error, parsedRequest });
+  });
+
+  input.write('{"jsonrpc":"2.0","method":]');
+  await waitFor(
+    () => callbacks.length === 1,
+    "malformed JSON did not reach the parseStream error callback",
+  );
+
+  assert.equal(input.readableEnded, false);
+  assert.ok(callbacks[0].error instanceof Error);
+  assert.equal(callbacks[0].parsedRequest, undefined);
+  input.destroy();
 });
 
 test("keeps StreamValues and Verifier incremental on an open stream", async () => {

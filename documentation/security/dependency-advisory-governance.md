@@ -63,13 +63,21 @@ entrée est ESM et ses chemins publics sont différents. L'override global
 `apps/mobile/vendor/stream-json` est un backport CleanMyMap versionné sous le
 nom `stream-json` et la version de contrat `1.9.1` afin de satisfaire la plage
 `^1.9.1` de `jayson`. Il ne prétend pas être le code upstream
-`stream-json@3.6.0`. Il conserve uniquement les modules upstream nécessaires au
-parseur incrémental, à `StreamValues`, à l'assemblage de valeurs, à
-`StreamValues.withParser()` et à `Verifier`. Il embarque uniquement le pipeline
-compatible `stream-chain@2.2.5`, indispensable au comportement historique de
-`withParser()`, sans ajouter de dépendance workspace ni d'override global.
-Les modules de filtres `pick`, `ignore`, `filter` et `replace` ne sont pas
-présents.
+`stream-json@3.6.0`.
+
+La provenance upstream réellement conservée est limitée aux modules
+nécessaires au contrat historique :
+
+- le parseur incrémental `Parser` et son support UTF-8 ;
+- `Assembler`, `StreamBase` et `streamers/StreamValues` ;
+- `utils/Verifier` ;
+- `utils/withParser` et le pipeline compatible `stream-chain@2.2.5`.
+
+Le package CleanMyMap conserve les licences BSD-3-Clause correspondantes, mais
+exclut volontairement toute la surface de filtres JSON concernée par
+CVE-2026-71429. Les modules de filtres `pick`, `ignore`, `filter` et `replace`
+ne sont ni embarqués ni résolubles. Il n'y a aucun override global et la
+redirection reste limitée à `jayson@4.3.0`.
 
 La redirection est strictement scoped à `jayson@4.3.0` dans `package.json` :
 
@@ -79,12 +87,15 @@ La redirection est strictement scoped à `jayson@4.3.0` dans `package.json` :
 }
 ```
 
-La compatibilité est vérifiée par
+La garantie de streaming incrémental est vérifiée par
 `apps/mobile/security/stream-json-jayson-security.test.mjs`, qui couvre le
 chargement de `jayson`, les deux imports profonds, l'émission incrémentale
 d'une valeur complète, plusieurs valeurs sur un flux ouvert, un JSON
-fragmenté, un échange JSON-RPC minimal via `jayson.Utils.parseStream()` et
-l'absence des modules de filtres exclus.
+fragmenté, l'absence de callback avant complétion, l'erreur JSON invalide, un
+échange JSON-RPC minimal via `jayson.Utils.parseStream()` et l'absence des
+modules de filtres exclus. Une requête complète ou fragmentée est émise dès
+qu'elle est complète, sans attendre EOF ; plusieurs requêtes successives sont
+émises dans l'ordre sur une connexion persistante.
 La chaîne effective doit rester vérifiable avec
 `npm ls jayson stream-json @solana/web3.js`; aucun contrat fonctionnel de
 Clerk, Supabase ou Solana n'est modifié et ce lot ne migre pas vers
@@ -97,21 +108,24 @@ ignoré globalement ; il est contrôlé par le test de surface local ci-dessus e
 doit rester visible jusqu'à la suppression de la mitigation ou à la prise en
 charge explicite de ce backport par le scanner.
 
-Cette mitigation ne peut être retirée que si `jayson` cesse d'exiger ces deux
-chemins CommonJS, ou si une release upstream compatible les préserve tout en
-corrigeant l'advisory. Le retrait exige alors une validation de l'arbre exact,
-la régénération du lockfile et le succès du test de compatibilité, de
-`npm audit` et de `npm run check:lockfile-policy`. Si cette preuve n'est pas
-disponible, le package local et son override scoped doivent rester en place.
+## Conditions de retrait — `image-size`
 
-## Suivi vers l'upstream
-
-Le vendor et les overrides ne pourront être retirés que lorsqu'une release
-upstream `image-size` contenant les deux correctifs sera publiée et validée ;
-la version upstream devra être une version contenant les deux correctifs
-dans le graphe Expo/React Native/Metro de l'application mobile. À ce moment seulement,
+Le vendor et les overrides `image-size` ne pourront être retirés que lorsqu'une
+release upstream `image-size` contenant les deux correctifs sera publiée et
+validée. La version contenant les deux correctifs devra être compatible avec le
+graphe Expo/React Native/Metro de l'application mobile. À ce moment seulement,
 le dépôt devra revenir à cette release officielle, régénérer le lockfile et
 supprimer le backport local après validation ciblée.
+
+## Conditions de retrait — `stream-json`
+
+Le package local et son override scoped ne pourront être retirés que si
+`jayson` cesse d'exiger les deux chemins CommonJS historiques, ou si une
+release upstream compatible les préserve tout en corrigeant l'advisory et en
+garantissant le même streaming incrémental. Le retrait exige alors une preuve
+de l'arbre exact, la régénération du lockfile et le succès du test de
+compatibilité, de `npm audit` et de `npm run check:lockfile-policy`. Si cette
+preuve n'est pas disponible, la mitigation `stream-json` reste en place.
 
 L'état de cette mitigation dans le dépôt ne préjuge pas de l'état affiché par
 Dependabot côté GitHub. Une alerte peut rester visible jusqu'à l'actualisation
