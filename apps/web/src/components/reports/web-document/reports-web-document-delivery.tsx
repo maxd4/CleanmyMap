@@ -87,14 +87,14 @@ export function ReportsWebDocumentDelivery({
       </div>
 
       <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-5 text-slate-700" role="status">
-        <strong>Quota :</strong> 1 export détaillé par jour (Europe/Paris). {dailyExportAvailability === "available"
+        <strong>Quota :</strong> 1 export détaillé par jour civil · Europe/Paris. {dailyExportAvailability === "available"
           ? "Disponible aujourd'hui."
           : dailyExportAvailability === "used"
             ? "Déjà utilisé aujourd'hui ; prochain créneau le jour civil suivant."
             : "Disponibilité temporairement indisponible ; réessayez plus tard."}
       </p>
 
-      {message ? (
+      {message && state !== "success" ? (
         <CmmFeedback tone={state === "error" ? "error" : "info"}>{message}</CmmFeedback>
       ) : null}
       {historyWarning ? (

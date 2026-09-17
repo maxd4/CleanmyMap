@@ -18,7 +18,6 @@ type ScopeChoice = {
 export type ReportsWebDocumentPreparationProps = {
   period: SelectedPeriodId;
   onPeriodChange: (period: SelectedPeriodId) => void;
-  historyCompletenessWarning?: boolean;
   selectedScopeValue: string;
   scopeOptions: {
     accounts: ScopeChoice[];

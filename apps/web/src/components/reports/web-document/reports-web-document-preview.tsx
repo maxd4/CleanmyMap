@@ -14,6 +14,7 @@ export type ReportsWebDocumentPreviewProps = {
   onTogglePreview: () => void;
   periodDisplayLabel: string;
   coverageRangeLabel: string;
+  isTruncated: boolean;
   modulesLabel: string;
   dataStatusLabel: string;
 };
@@ -35,6 +36,7 @@ export function ReportsWebDocumentPreview({
   onTogglePreview,
   periodDisplayLabel,
   coverageRangeLabel,
+  isTruncated,
   modulesLabel,
   dataStatusLabel,
 }: ReportsWebDocumentPreviewProps) {
@@ -68,7 +70,9 @@ export function ReportsWebDocumentPreview({
           className="shrink-0"
         >
           <Eye size={16} aria-hidden="true" />
-          {showPreview ? "Masquer l'aperçu" : "Voir l'aperçu"}
+          {showPreview
+            ? "Masquer l’aperçu de la première page"
+            : "Voir l’aperçu de la première page"}
         </CmmButton>
       </div>
 
@@ -79,7 +83,11 @@ export function ReportsWebDocumentPreview({
           label="Actions incluses"
           value={`${actionCount} ${actionCount === 1 ? "action" : "actions"}`}
         />
-        <SummaryValue label="Plage couverte" value={coverageRangeLabel} />
+        <SummaryValue
+          label="Couverture"
+          value={isTruncated ? "Couverture partielle" : "Couverture complète"}
+        />
+        <SummaryValue label="Plage réelle" value={coverageRangeLabel} />
         <SummaryValue label="Modules inclus" value={modulesLabel} />
         <SummaryValue label="État des données" value={dataStatusLabel} />
       </dl>

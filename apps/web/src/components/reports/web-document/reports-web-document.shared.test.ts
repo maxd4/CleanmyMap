@@ -12,6 +12,7 @@ import {
   reportPeriodLabel,
   parseScopeSelectValue,
   detailLevelLabel,
+  resolveReportExportStatus,
 } from "./reports-web-document.shared";
 
 const fixtureModel = {
@@ -192,6 +193,56 @@ describe("reports web document shared helpers", () => {
     expect(reportPeriodLabel("full_history", true)).toBe("Historique complet");
     expect(detailLevelLabel("default")).toBe("Par défaut");
     expect(detailLevelLabel("default")).not.toMatch(/pages/i);
+  });
+
+  it.each([
+    ["available", "ready", "Prêt à générer"],
+    ["used", "quota-used", "Quota quotidien atteint"],
+    ["unavailable", "quota-unavailable", "Quota indisponible"],
+  ] as const)("resolves the %s quota state without a contradictory ready label", (quota, kind, label) => {
+    const status = resolveReportExportStatus({
+      state: "idle",
+      hasData: true,
+      isLoading: false,
+      hasError: false,
+      dailyExportAvailability: quota,
+    });
+
+    expect(status).toMatchObject({ kind, label });
+    if (quota !== "available") {
+      expect(status.label).not.toBe("Prêt à générer");
+    }
+  });
+
+  it("prioritizes loading, errors and success over the quota copy", () => {
+    expect(
+      resolveReportExportStatus({
+        state: "pending",
+        hasData: true,
+        isLoading: true,
+        hasError: false,
+        dailyExportAvailability: "used",
+      }),
+    ).toMatchObject({ kind: "loading", label: "Génération en cours" });
+    expect(
+      resolveReportExportStatus({
+        state: "error",
+        hasData: true,
+        isLoading: false,
+        hasError: false,
+        dailyExportAvailability: "available",
+        message: "Erreur de génération.",
+      }),
+    ).toMatchObject({ kind: "error", label: "Erreur d’export", description: "Erreur de génération." });
+    expect(
+      resolveReportExportStatus({
+        state: "success",
+        hasData: true,
+        isLoading: false,
+        hasError: false,
+        dailyExportAvailability: "used",
+      }),
+    ).toMatchObject({ kind: "success", label: "Rapport généré", description: "PDF ouvert." });
   });
 
   it("builds PDF payloads with the selected period and detail level", () => {

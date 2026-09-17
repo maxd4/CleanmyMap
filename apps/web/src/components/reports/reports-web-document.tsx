@@ -25,6 +25,7 @@ import {
   buildScopeSelectValue,
   parseScopeSelectValue,
   reportPeriodLabel,
+  resolveReportExportStatus,
   type DetailLevelId,
   type ModuleState,
   type SelectedPeriodId,
@@ -261,46 +262,34 @@ export function ReportsWebDocument({
     setShowPreview((current) => !current);
   }
 
-  const exportStatus =
-    state === "pending"
-      ? {
-          icon: Loader2,
-          label: "Génération en cours",
-          description: "Le livrable est en cours de préparation.",
-          tone: "border-red-200 bg-red-50 text-red-900",
-          iconTone: "text-red-600",
-        }
-      : state === "success"
-          ? {
-              icon: CheckCircle2,
-              label: "Prêt à exporter",
-              description: "Le PDF officiel est ouvert et prêt à être enregistré.",
-              tone: "border-red-200 bg-red-50 text-red-900",
-              iconTone: "text-red-600",
-            }
-          : state === "error"
-          ? {
-              icon: TriangleAlert,
-              label: "Export à vérifier",
-              description: message ?? "Une action est nécessaire avant de relancer l'export.",
-              tone: "border-red-200 bg-red-50 text-red-900",
-              iconTone: "text-red-600",
-            }
-          : hasData
-            ? {
-                icon: FileText,
-                label: "Prêt à générer",
-                description: "La configuration actuelle permet de lancer l'export.",
-                tone: "border-slate-200 bg-slate-50 text-slate-900",
-                iconTone: "text-red-600",
-              }
-            : {
-                icon: TriangleAlert,
-                label: "Export indisponible",
-                description: "Aucune donnée exploitable n'est disponible pour cette configuration.",
-                tone: "border-slate-200 bg-slate-50 text-slate-900",
-              iconTone: "text-slate-400",
-              };
+  const resolvedExportStatus = resolveReportExportStatus({
+    state,
+    hasData,
+    isLoading: model.isLoading,
+    hasError: model.hasError,
+    dailyExportAvailability,
+    message,
+  });
+  const exportStatus = {
+    ...resolvedExportStatus,
+    icon:
+      resolvedExportStatus.kind === "success"
+        ? CheckCircle2
+        : resolvedExportStatus.kind === "ready"
+          ? FileText
+          : resolvedExportStatus.kind === "loading"
+            ? Loader2
+            : TriangleAlert,
+    tone:
+      resolvedExportStatus.kind === "success"
+        ? "border-red-200 bg-red-50 text-red-900"
+        : resolvedExportStatus.kind === "ready"
+          ? "border-slate-200 bg-slate-50 text-slate-900"
+          : resolvedExportStatus.kind === "quota-unavailable" || resolvedExportStatus.kind === "no-data"
+            ? "border-slate-200 bg-slate-50 text-slate-900"
+            : "border-red-200 bg-red-50 text-red-900",
+    iconTone: "text-red-600",
+  };
   const dataStatusLabel = model.isLoading
     ? "Chargement en cours"
     : model.hasError
@@ -355,6 +344,7 @@ export function ReportsWebDocument({
             onTogglePreview={handlePreview}
             periodDisplayLabel={reportPeriodLabel(period, false)}
             coverageRangeLabel={coverageRangeLabel}
+            isTruncated={Boolean(model.dataAvailability.isTruncated)}
             modulesLabel={buildModuleSelectionLabel(modules)}
             dataStatusLabel={dataStatusLabel}
           />

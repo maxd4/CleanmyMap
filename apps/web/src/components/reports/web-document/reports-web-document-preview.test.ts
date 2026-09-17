@@ -34,6 +34,7 @@ function createProps(
     onTogglePreview: vi.fn(),
     periodDisplayLabel: "Six mois",
     coverageRangeLabel: "01/01/2026 → 23/08/2026",
+    isTruncated: false,
     modulesLabel: "Données & cartographie",
     dataStatusLabel: "Données disponibles",
     ...overrides,
@@ -53,7 +54,7 @@ describe("ReportsWebDocumentPreview", () => {
       ),
     );
 
-    expect(closedMarkup).toContain("Voir l&#x27;aperçu");
+    expect(closedMarkup).toContain("Voir l’aperçu de la première page");
     expect(closedMarkup).toContain("Périmètre actif");
     expect(closedMarkup).toContain("Actions incluses");
     expect(closedMarkup).toContain("4 actions");
@@ -71,7 +72,7 @@ describe("ReportsWebDocumentPreview", () => {
         createProps({ showPreview: true }),
       ),
     );
-    expect(openMarkup).toContain("Masquer l&#x27;aperçu");
+    expect(openMarkup).toContain("Masquer l’aperçu de la première page");
     expect(openMarkup).toContain("Première page du PDF");
   });
 
@@ -107,5 +108,18 @@ describe("ReportsWebDocumentPreview", () => {
     expect(markup).toContain("Transparence &amp; méthodes");
     expect(markup).not.toContain("Ce qui sortira dans le PDF");
     expect(markup).not.toContain("Par défaut");
+  });
+
+  it("states a partial coverage with the real available range", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(
+        ReportsWebDocumentPreview,
+        createProps({ isTruncated: true }),
+      ),
+    );
+
+    expect(markup).toContain("Couverture partielle");
+    expect(markup).toContain("01/01/2026 → 23/08/2026");
+    expect(markup).not.toContain("couverture conforme");
   });
 });

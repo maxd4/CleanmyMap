@@ -58,7 +58,6 @@ const scopeOptions = {
 const preparationProps: ReportsWebDocumentPreparationProps = {
   period: "six_months",
   onPeriodChange: vi.fn(),
-  historyCompletenessWarning: true,
   selectedScopeValue: "global",
   scopeOptions,
   onScopeChange: vi.fn(),
@@ -107,7 +106,7 @@ const reportModel = {
     moderation: { approved: 1, rejected: 0, delayDays: 1 },
     calendar: [],
   },
-  dataAvailability: {},
+  dataAvailability: { isTruncated: true },
   wasteProfile: { dominantLabel: "Plastique", coveragePercent: 100, categories: [] },
   accountScopeCoverage: { coveragePercent: 100 },
   exportRows: [],
@@ -281,6 +280,7 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(previewProps?.modulesLabel).toBe(
       "Données & cartographie, Transparence & méthodes, Fichiers détaillés",
     );
+    expect(previewProps?.isTruncated).toBe(true);
   });
 
   it("does not fail an already successful PDF when history persistence fails", async () => {
