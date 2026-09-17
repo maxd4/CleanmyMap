@@ -22,7 +22,7 @@ vi.mock("@/lib/github/github-repository-stats", () => ({
   loadGitHubRepositoryStats: githubStatsMock,
 }));
 
-vi.mock("@/components/sections/rubriques/methodologie-page-client", () => ({
+vi.mock("@/components/sections/rubriques/methodologie-page-composition", () => ({
   MethodologiePageClient: (props: Record<string, unknown>) => {
     clientCalls.push(props);
     return React.createElement("div", { "data-testid": "methodologie-client" });
