@@ -56,6 +56,7 @@ type ActionPopupContentProps = {
   resolveCurrentPlaceStateForItem?: (
     item: ActionMapItem,
   ) => CurrentPlaceState | null;
+  wrap?: boolean;
 };
 
 export function ActionPopupContent(props: ActionPopupContentProps) {
@@ -89,7 +90,7 @@ export function ActionPopupContent(props: ActionPopupContentProps) {
     );
   }
 
-  return <SingleActionPopupContent {...props} wrap />;
+  return <SingleActionPopupContent {...props} wrap={props.wrap ?? true} />;
 }
 
 function SingleActionPopupContent({

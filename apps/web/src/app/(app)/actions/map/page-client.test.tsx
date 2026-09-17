@@ -7,6 +7,9 @@ const mocks = vi.hoisted(() => ({
   useActionsMapViewport: vi.fn(),
   useMapFeedData: vi.fn(),
   feedContentProps: vi.fn(),
+  routerPush: vi.fn(),
+  searchParams: new URLSearchParams(),
+  selectedAction: null as unknown,
 }));
 
 vi.mock("next/dynamic", () => ({
@@ -14,7 +17,9 @@ vi.mock("next/dynamic", () => ({
 }));
 
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => mocks.searchParams,
+  usePathname: () => "/actions/map",
+  useRouter: () => ({ push: mocks.routerPush }),
 }));
 
 vi.mock("@/components/actions/map-feed/use-actions-map-viewport", () => ({
@@ -23,6 +28,15 @@ vi.mock("@/components/actions/map-feed/use-actions-map-viewport", () => ({
 
 vi.mock("@/components/actions/map-feed/use-map-feed-data", () => ({
   useMapFeedData: (...args: unknown[]) => mocks.useMapFeedData(...args),
+}));
+
+vi.mock("@/components/actions/map-feed/use-map-action-by-id", () => ({
+  useMapActionById: (...args: unknown[]) => ({
+    item: args[1] ?? mocks.selectedAction,
+    error: null,
+    isLoading: false,
+    reload: vi.fn(),
+  }),
 }));
 
 vi.mock("@/components/actions/map/use-actions-map-filters", () => ({
@@ -174,6 +188,9 @@ describe("ActionsMapPageClient initial viewport contract", () => {
     mocks.useActionsMapViewport.mockReset();
     mocks.useMapFeedData.mockReset();
     mocks.feedContentProps.mockReset();
+    mocks.routerPush.mockReset();
+    mocks.searchParams = new URLSearchParams();
+    mocks.selectedAction = null;
   });
 
   it("exposes a resolver error with retry and never renders a false empty feed", () => {
@@ -244,9 +261,49 @@ describe("ActionsMapPageClient initial viewport contract", () => {
 
     expect(feedRequest.viewport).toBe(manualViewport);
     expect(feedRequest.viewport.center).not.toEqual([0, 0]);
-    expect(feedContentProps).toEqual(expect.objectContaining({
-      initialViewport: manualViewport,
-      onViewportInteraction: handleManualViewportInteraction,
-    }));
+    expect(feedContentProps.initialViewport).toBe(manualViewport);
+    expect(feedContentProps.onViewportInteraction).toEqual(expect.any(Function));
+    feedContentProps.onViewportInteraction();
+    expect(handleManualViewportInteraction).toHaveBeenCalledTimes(1);
+  });
+
+  it("merges a public deep-link target fetched outside the initial viewport", () => {
+    const outsideViewportAction = {
+      id: "outside-viewport",
+      location_label: "Action hors viewport",
+    };
+    mocks.searchParams = new URLSearchParams("tab=journal&actionId=outside-viewport");
+    mocks.selectedAction = outsideViewportAction;
+    configurePageState({
+      items: [{ id: "visible-action", location_label: "Action visible" }],
+    });
+
+    renderPage();
+    const feedContentProps = mocks.feedContentProps.mock.calls[0]?.[0];
+
+    expect(feedContentProps.selectedActionId).toBe("outside-viewport");
+    expect(feedContentProps.frameSelectedActionId).toBe("outside-viewport");
+    expect(feedContentProps.feedData.items).toContain(outsideViewportAction);
+    expect(feedContentProps.feedData.allItems).toContain(outsideViewportAction);
+  });
+
+  it("writes selection and deselection as browser-history navigations", () => {
+    configurePageState();
+    renderPage();
+    const feedContentProps = mocks.feedContentProps.mock.calls[0]?.[0];
+
+    feedContentProps.onOpenAction("action-1");
+    expect(mocks.routerPush).toHaveBeenCalledWith(
+      "/actions/map?actionId=action-1",
+      { scroll: false },
+    );
+
+    mocks.routerPush.mockReset();
+    mocks.searchParams = new URLSearchParams("actionId=action-1");
+    configurePageState();
+    renderPage();
+    const selectedFeedContentProps = mocks.feedContentProps.mock.calls.at(-1)?.[0];
+    selectedFeedContentProps.onOpenAction("action-1");
+    expect(mocks.routerPush).toHaveBeenCalledWith("/actions/map", { scroll: false });
   });
 });

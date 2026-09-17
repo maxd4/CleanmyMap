@@ -29,6 +29,8 @@ import {
 import { rebaseRouteTargetDistancePolicy } from "@/lib/actions/route-target-policy-rebase";
 
 export type UnifiedActionContractsParams = {
+  /** Explicit public deep-link target. It is loaded without viewport filtering. */
+  actionId?: string | null;
   /** null means the caller explicitly requests the complete source result. */
   limit: number | null;
   status: ActionStatus | null;

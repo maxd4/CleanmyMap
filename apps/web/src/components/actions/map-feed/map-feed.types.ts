@@ -24,6 +24,8 @@ export type ActionsMapCanvasComponent = ComponentType<{
   sourceCompleteness?: RepollutionDatasetCompleteness;
   selectedActionId?: string | null;
   onSelectAction?: (actionId: string) => void;
+  onClearSelection?: () => void;
+  frameSelectedActionId?: string | null;
   fullViewport?: boolean;
   compact?: boolean;
   presentation?: ActionsMapPresentation;

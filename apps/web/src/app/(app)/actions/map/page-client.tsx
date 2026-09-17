@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { BarChart3, Table2, ArrowRight } from "lucide-react";
 import type { PublicImpactMetric } from "@/lib/impact/public-impact-kpis";
 import { ActionsMapFeedContent } from "@/components/actions/map-feed/actions-map-feed";
@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { MapKpiRibbon } from "./_components/map-kpi-ribbon";
 import { MapControlTower } from "./_components/map-control-tower";
 import { useMapFeedData } from "@/components/actions/map-feed/use-map-feed-data";
+import { useMapActionById } from "@/components/actions/map-feed/use-map-action-by-id";
+import { buildActionsMapSelectionHref, mergeSelectedActionIntoMapItems } from "@/components/actions/map-feed/actions-map-selection";
 import { useActionsMapViewport } from "@/components/actions/map-feed/use-actions-map-viewport";
 import {
   ActionPollutionScoreReferencesProvider,
@@ -84,6 +86,8 @@ function ActionsMapPageContent({
 }: ActionsMapPageClientProps) {
   const pageFamily = resolvePageFamily("/actions/map");
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const requestedActionId = searchParams.get("actionId")?.trim() || null;
   const {
     filters,
@@ -102,9 +106,8 @@ function ActionsMapPageContent({
   const [railTab, setRailTab] = useState<"insights" | "journal">(
     requestedActionId ? "journal" : "insights",
   );
-  const [selectedActionId, setSelectedActionId] = useState<string | null>(
-    requestedActionId,
-  );
+  const activeRailTab = requestedActionId ? "journal" : railTab;
+  const selectedActionId = requestedActionId;
   const [scoreScope, setScoreScope] = useState<PollutionScoreScope>("global");
   const [displayMode, setDisplayMode] = useState<CurrentPlaceStateMode>("projected_today");
   const {
@@ -120,30 +123,46 @@ function ActionsMapPageContent({
     handleViewportChange,
   } = useActionsMapViewport();
   const mapExportTargetRef = useRef<HTMLDivElement | null>(null);
-  const handleSelectAction = (actionId: string) => {
-    setSelectedActionId((current) => (current === actionId ? null : actionId));
+  const [hasManualViewportInteraction, setHasManualViewportInteraction] =
+    useState(false);
+  const handleMapViewportInteraction = useCallback(() => {
+    setHasManualViewportInteraction(true);
+    handleManualViewportInteraction();
+  }, [handleManualViewportInteraction]);
+  const updateSelectionUrl = useCallback(
+    (actionId: string | null) => {
+      router.push(
+        buildActionsMapSelectionHref(pathname, searchParams.toString(), actionId),
+        { scroll: false },
+      );
+    },
+    [pathname, router, searchParams],
+  );
+  const handleSelectAction = useCallback((actionId: string) => {
+    const nextActionId = requestedActionId === actionId ? null : actionId;
     setRailTab("journal");
-  };
+    updateSelectionUrl(nextActionId);
+  }, [requestedActionId, updateSelectionUrl]);
 
   const handleDateScopeChange = useCallback((dateScopeValue: typeof dateScope) => {
-    setSelectedActionId(null);
+    updateSelectionUrl(null);
     setDateScope(dateScopeValue);
-  }, [setDateScope]);
+  }, [setDateScope, updateSelectionUrl]);
 
   const handleZoneQueryChange = useCallback((zoneQueryValue: string) => {
-    setSelectedActionId(null);
+    updateSelectionUrl(null);
     setZoneQuery(zoneQueryValue);
-  }, [setZoneQuery]);
+  }, [setZoneQuery, updateSelectionUrl]);
 
   const handleCategoryToggle = useCallback((category: MarkerCategory) => {
-    setSelectedActionId(null);
+    updateSelectionUrl(null);
     toggleCategory(category);
-  }, [toggleCategory]);
+  }, [toggleCategory, updateSelectionUrl]);
 
   const handleResetFilters = useCallback(() => {
-    setSelectedActionId(null);
+    updateSelectionUrl(null);
     resetFilters();
-  }, [resetFilters]);
+  }, [resetFilters, updateSelectionUrl]);
 
   const mapFeedData = useMapFeedData({
     types: "all",
@@ -160,14 +179,43 @@ function ActionsMapPageContent({
     scoreScope,
     displayMode,
   });
-  const filteredMapItems = useMemo(() => mapFeedData.items ?? [], [mapFeedData.items]);
   const loadedItems = useMemo(() => mapFeedData.allItems ?? [], [mapFeedData.allItems]);
+  const knownSelectedAction = useMemo(
+    () =>
+      requestedActionId
+        ? loadedItems.find((item) => item.id === requestedActionId) ?? null
+        : null,
+    [loadedItems, requestedActionId],
+  );
+  const selectedActionLoad = useMapActionById(
+    requestedActionId,
+    knownSelectedAction,
+  );
+  const selectedAction = selectedActionLoad.item;
+  const mapFeedDataForView = useMemo(() => {
+    if (!selectedAction) {
+      return mapFeedData;
+    }
+
+    const allItems = mergeSelectedActionIntoMapItems(
+      mapFeedData.allItems,
+      selectedAction,
+    );
+    const items = mergeSelectedActionIntoMapItems(mapFeedData.items, selectedAction);
+
+    return { ...mapFeedData, allItems, items };
+  }, [mapFeedData, selectedAction]);
+  const filteredMapItems = useMemo(() => mapFeedDataForView.items ?? [], [mapFeedDataForView.items]);
   const recentActions = useMemo(
     () => selectRecentActions(filteredMapItems),
     [filteredMapItems],
   );
   const visibleCount = filteredMapItems.length;
-  const loadedCount = loadedItems.length;
+  const loadedCount = mapFeedDataForView.allItems.length;
+
+  const clearSelection = useCallback(() => {
+    updateSelectionUrl(null);
+  }, [updateSelectionUrl]);
 
   const surfaceCard = "rounded-[3rem] border border-sky-200/70 bg-sky-50/90 backdrop-blur-3xl transition-all duration-700 relative overflow-hidden shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]";
 
@@ -203,7 +251,7 @@ function ActionsMapPageContent({
 
         <section className="relative mx-auto w-full lg:left-1/2 lg:right-1/2 lg:w-[calc(100vw-1.5rem)] lg:-translate-x-1/2">
           <ActionsMapFeedContent
-            feedData={mapFeedData}
+            feedData={mapFeedDataForView}
             presentation="immersive"
             showIntro={false}
             fullViewport
@@ -211,6 +259,14 @@ function ActionsMapPageContent({
             zoneQuery={zoneQuery}
             selectedActionId={selectedActionId}
             onOpenAction={handleSelectAction}
+            onClearSelection={clearSelection}
+            frameSelectedActionId={
+              !hasManualViewportInteraction &&
+              selectedActionLoad.item &&
+              !knownSelectedAction
+                ? selectedActionLoad.item.id
+                : null
+            }
             onResetFilters={handleResetFilters}
             filters={filters}
             onZoneQueryChange={handleZoneQueryChange}
@@ -225,7 +281,7 @@ function ActionsMapPageContent({
             initialViewportError={initialViewportError}
             onRetryInitialViewport={retryInitialViewport}
             onViewportChange={handleViewportChange}
-            onViewportInteraction={handleManualViewportInteraction}
+            onViewportInteraction={handleMapViewportInteraction}
             scoreScope={scoreScope}
             onScoreScopeChange={setScoreScope}
             displayMode={displayMode}
@@ -263,11 +319,11 @@ function ActionsMapPageContent({
                     <CmmButton
                       type="button"
                       onClick={() => setRailTab("insights")}
-                      tone={railTab === "insights" ? "primary" : "tertiary"}
+                      tone={activeRailTab === "insights" ? "primary" : "tertiary"}
                       variant="pill"
                       className={cn(
                         "relative z-10 flex items-center justify-center gap-3 px-5 py-3 cmm-text-caption font-semibold tracking-[0.12em] transition-all duration-500",
-                        railTab === "insights" ? "text-slate-950" : "text-slate-600 hover:text-slate-950"
+                        activeRailTab === "insights" ? "text-slate-950" : "text-slate-600 hover:text-slate-950"
                       )}
                     >
                       <BarChart3 size={16} />
@@ -276,11 +332,11 @@ function ActionsMapPageContent({
                     <CmmButton
                       type="button"
                       onClick={() => setRailTab("journal")}
-                      tone={railTab === "journal" ? "primary" : "tertiary"}
+                      tone={activeRailTab === "journal" ? "primary" : "tertiary"}
                       variant="pill"
                       className={cn(
                         "relative z-10 flex items-center justify-center gap-3 px-5 py-3 cmm-text-caption font-semibold tracking-[0.12em] transition-all duration-500",
-                        railTab === "journal" ? "text-slate-950" : "text-slate-600 hover:text-slate-950"
+                        activeRailTab === "journal" ? "text-slate-950" : "text-slate-600 hover:text-slate-950"
                       )}
                     >
                       <Table2 size={16} />
@@ -289,14 +345,14 @@ function ActionsMapPageContent({
                     <div
                       className="absolute left-1.5 top-1.5 bottom-1.5 w-[calc(50%-4.5px)] rounded-[1.5rem] bg-sky-200 border border-sky-300 shadow-2xl transition-transform duration-700 ease-out"
                       style={{
-                        transform: railTab === "insights" ? "translateX(0)" : "translateX(calc(100% + 6px))",
+                        transform: activeRailTab === "insights" ? "translateX(0)" : "translateX(calc(100% + 6px))",
                       }}
                     />
                   </div>
                 </div>
 
                 <div className="min-h-[450px]">
-                  {railTab === "insights" ? (
+                  {activeRailTab === "insights" ? (
                     <div className="animate-in fade-in zoom-in-95 duration-700">
                       <ActionsVisualizationPanel
                         items={filteredMapItems}

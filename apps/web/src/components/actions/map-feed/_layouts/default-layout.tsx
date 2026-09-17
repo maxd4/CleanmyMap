@@ -23,6 +23,8 @@ type DefaultLayoutProps = {
   mapCanvasError: string | null;
   MapCanvas: ActionsMapCanvasComponent | null;
   selectedActionId: string | null;
+  onClearSelection?: () => void;
+  frameSelectedActionId?: string | null;
   onSelectAction: (actionId: string) => void;
   onResetFilters: () => void;
   onReload: () => void;
@@ -58,6 +60,8 @@ export function DefaultLayout({
   mapCanvasError,
   MapCanvas,
   selectedActionId,
+  onClearSelection,
+  frameSelectedActionId,
   onSelectAction,
   onResetFilters,
   onReload,
@@ -151,6 +155,8 @@ export function DefaultLayout({
             sourceCompleteness={sourceCompleteness}
             selectedActionId={selectedActionId}
             onSelectAction={onSelectAction}
+            onClearSelection={onClearSelection}
+            frameSelectedActionId={frameSelectedActionId}
             compact={compact}
             onViewportChange={onViewportChange}
             onViewportInteraction={onViewportInteraction}
