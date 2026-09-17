@@ -11,6 +11,86 @@ async function openMessagerie(page: Page, viewport: { width: number; height: num
 }
 
 test.describe("Messagerie — architecture d'information", () => {
+  test("restaure les sélections Discussions et DM avec Back puis Forward", async ({ page }) => {
+    await openMessagerie(page, { width: 1280, height: 900 });
+    await page.goto("/sections/messagerie?tab=discussions&channel=community");
+
+    const discussionsTab = page.getByRole("tab", { name: "Discussions", exact: true });
+    const privateTab = page.getByRole("tab", { name: "Messages privés", exact: true });
+    const discussionsSidebar = page.locator('[data-connect-panel="discussions"] aside').first();
+    const community = discussionsSidebar.getByRole("button", {
+      name: "Communauté globale",
+      exact: true,
+    });
+    const territory = discussionsSidebar.getByRole("button", {
+      name: "Territoire",
+      exact: true,
+    });
+
+    await expect(discussionsTab).toHaveAttribute("aria-selected", "true");
+    await expect(community).toHaveAttribute("aria-pressed", "true");
+
+    await territory.click();
+    await expect
+      .poll(() => {
+        const url = new URL(page.url());
+        return `${url.searchParams.get("tab")}:${url.searchParams.get("channel")}`;
+      })
+      .toBe("discussions:territory");
+    await expect(territory).toHaveAttribute("aria-pressed", "true");
+
+    await page.goBack();
+    await expect
+      .poll(() => {
+        const url = new URL(page.url());
+        return `${url.searchParams.get("tab")}:${url.searchParams.get("channel")}`;
+      })
+      .toBe("discussions:community");
+    await expect(community).toHaveAttribute("aria-pressed", "true");
+    await expect(territory).toHaveAttribute("aria-pressed", "false");
+
+    await page.goForward();
+    await expect
+      .poll(() => {
+        const url = new URL(page.url());
+        return `${url.searchParams.get("tab")}:${url.searchParams.get("channel")}`;
+      })
+      .toBe("discussions:territory");
+    await expect(territory).toHaveAttribute("aria-pressed", "true");
+
+    await page.goto("/sections/messagerie?tab=discussions&channel=community");
+    await expect(community).toHaveAttribute("aria-pressed", "true");
+    await privateTab.click();
+    await expect
+      .poll(() => {
+        const url = new URL(page.url());
+        return `${url.searchParams.get("tab")}:${url.searchParams.get("channel")}`;
+      })
+      .toBe("dm:dm");
+    await expect(privateTab).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("heading", { name: "Conversations", exact: true })).toBeVisible();
+
+    await page.goBack();
+    await expect
+      .poll(() => {
+        const url = new URL(page.url());
+        return `${url.searchParams.get("tab")}:${url.searchParams.get("channel")}`;
+      })
+      .toBe("discussions:community");
+    await expect(discussionsTab).toHaveAttribute("aria-selected", "true");
+    await expect(community).toHaveAttribute("aria-pressed", "true");
+
+    await page.goForward();
+    await expect
+      .poll(() => {
+        const url = new URL(page.url());
+        return `${url.searchParams.get("tab")}:${url.searchParams.get("channel")}`;
+      })
+      .toBe("dm:dm");
+    await expect(privateTab).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("heading", { name: "Conversations", exact: true })).toBeVisible();
+  });
+
   test("desktop expose les contextes dans l'ordre et masque Admin non autorisé", async ({ page }) => {
     await openMessagerie(page, { width: 1280, height: 900 });
 

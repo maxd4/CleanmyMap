@@ -51,8 +51,6 @@ describe("Messagerie navigation shell", () => {
     expect(connectSectionSource).toContain("onNavigationChange");
     expect(connectSectionSource).toContain("navigationState={activeTab ===");
     expect(connectSectionSource).toContain("router[historyMode]");
-    expect(chatShellSource).toContain("getChatShellNavigationKey");
-    expect(chatShellSource).toContain("setActiveFeedbackId(navigationState.feedbackId)");
   });
 
   it("keeps the public surface vocabulary aligned with the primary tabs", () => {
