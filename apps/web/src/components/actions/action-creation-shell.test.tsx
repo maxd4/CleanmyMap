@@ -128,7 +128,7 @@ describe("ActionCreationShell", () => {
     expect(markup).toContain("<h1 class=\"text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tight text-emerald-950\">Créer une action</h1>");
     expect(markup).toContain("Itinéraire");
     expect(markup).toContain("Météo &amp; conditions terrain");
-    expect(markup).toContain("Formalités juridiques");
+    expect(markup).toContain("Formalités &amp; autorisations locales");
     expect(markup).toContain('data-open-panel="itineraire"');
     expect(markup).toContain('data-testid="route-engine"');
     expect(markup).not.toContain('data-testid="weather-engine"');

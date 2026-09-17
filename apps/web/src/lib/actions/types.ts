@@ -33,6 +33,8 @@ import type {
 } from "@/lib/route/route-operational";
 import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract";
 import type { AdministrativeRequirements } from "./administrative-requirements";
+import type { ActionFormalitiesFacts } from "./formalities-qualification";
+import type { ActionFormalitiesWorkflowState } from "./formalities-workflow";
 import type { RouteGeometryMode, RouteGeometryProvider } from "@/lib/route/route-contract";
 
 export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
@@ -93,6 +95,10 @@ export type ActionPreparationData = {
   preparationState?: "brouillon" | "pret_a_partager" | "action_en_cours" | "a_completer_apres_action";
   /** Dedicated administrative validation state; distinct from preparationState. */
   administrativeRequirements?: AdministrativeRequirements;
+  /** User-supplied legal facts used by the separately persisted qualification workflow. */
+  formalitiesContext?: ActionFormalitiesFacts;
+  /** Server-managed qualification trace and per-formality user progress. */
+  formalitiesWorkflow?: ActionFormalitiesWorkflowState;
   logisticsNotes?: string;
   checklistBeforeDeparture?: string;
   volunteersExpected?: number;

@@ -1,4 +1,5 @@
 import type { ActionPhase, ActionPreparationData } from "./types";
+import { sanitizeFormalitiesWorkflowForCreation } from "./formalities-workflow";
 
 export const ADMINISTRATIVE_REQUIREMENT_STATUSES = ["pending", "validated"] as const;
 export type AdministrativeRequirementsStatus =
@@ -31,13 +32,16 @@ export function sanitizeAdministrativeRequirementsForCreation(
 ): ActionPreparationData {
   const clientPreparationData = { ...preparationData };
   delete clientPreparationData.administrativeRequirements;
+  const sanitizedPreparationData = sanitizeFormalitiesWorkflowForCreation(
+    clientPreparationData,
+  );
 
   return actionPhase === "pre_action"
     ? {
-        ...clientPreparationData,
+        ...sanitizedPreparationData,
         administrativeRequirements: { ...PENDING_ADMINISTRATIVE_REQUIREMENTS },
       }
-    : clientPreparationData;
+    : sanitizedPreparationData;
 }
 
 /**

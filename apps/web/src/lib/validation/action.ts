@@ -37,6 +37,8 @@ import {
   MAX_GPX_POINTS,
 } from "@/lib/actions/geometry/gpx";
 import { polylineDistanceKm } from "@/lib/geo/geodesic-distance";
+import { actionFormalitiesFactsSchema } from "@/lib/actions/formalities-workflow";
+import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities-workflow";
 
 const coordinateSchema = z.tuple([
   z.number().finite().min(-90).max(90),
@@ -272,6 +274,10 @@ const preparationDataSchema = z
       })
       .strict()
       .optional(),
+    formalitiesContext: actionFormalitiesFactsSchema.optional(),
+    // This protected sub-state is accepted for read/compatibility payloads,
+    // then removed below so generic writes cannot forge workflow progress.
+    formalitiesWorkflow: z.custom<ActionFormalitiesWorkflowState>().optional(),
     logisticsNotes: z.string().max(2000).optional(),
     checklistBeforeDeparture: z.string().max(2000).optional(),
     volunteersExpected: z.number().int().min(0).max(500).optional(),
@@ -315,6 +321,7 @@ const preparationDataSchema = z
   })
   .transform(({ actualRoute, operationalRoute, ...rest }) => {
     delete rest.administrativeRequirements;
+    delete rest.formalitiesWorkflow;
     return {
       ...rest,
       ...(operationalRoute
