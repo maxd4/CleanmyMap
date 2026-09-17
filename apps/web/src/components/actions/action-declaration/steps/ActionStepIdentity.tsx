@@ -94,7 +94,15 @@ interface Props {
   userMetadata: { userId: string; displayName?: string; username?: string };
   recordType: FormState["recordType"];
   hasAttemptedSubmit?: boolean;
-  mode?: "all" | "action" | "participants" | "duration" | "details";
+  mode?:
+    | "all"
+    | "action"
+    | "participants"
+    | "duration"
+    | "time"
+    | "organization"
+    | "collection"
+    | "details";
 }
 
 function SectionTitle({ color, children }: { color: string; children: React.ReactNode }) {
@@ -348,7 +356,7 @@ export function ActionStepIdentity({
 
     if (mode === "duration") {
       return (
-        <div className="grid gap-3 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2">
           <label htmlFor="action-duration-minutes" className="space-y-1.5">
             <span className="block text-xs font-semibold text-emerald-900/75">Durée d’action (min)</span>
             <input
@@ -361,6 +369,14 @@ export function ActionStepIdentity({
               onChange={(event) => updateField("durationMinutes", event.target.value)}
             />
           </label>
+        </div>
+      );
+    }
+
+    if (mode === "time") {
+      return (
+        <div className="space-y-3">
+          <div className="grid gap-3 md:grid-cols-2">
           <label htmlFor="action-event-start" className="space-y-1.5">
             <span className="block text-xs font-semibold text-emerald-900/75">Rendez-vous · début</span>
             <input
@@ -381,10 +397,11 @@ export function ActionStepIdentity({
               onChange={(event) => updateField("eventEndTime", event.target.value)}
             />
           </label>
+          </div>
           {event.status !== "incomplete" ? (
-            <p className={cn("text-xs md:col-span-3", event.status === "inconsistent" || event.status === "invalid" ? "font-medium text-rose-700" : "text-emerald-900/65")}>
+            <p className={cn("text-xs", event.status === "inconsistent" || event.status === "invalid" ? "font-medium text-rose-700" : "text-emerald-900/65")}>
               {event.status === "available"
-                ? `Créneau global : ${formatBusinessDurationMinutes(event.eventDurationMinutes)}`
+                ? `Créneau global : ${formatBusinessDurationMinutes(event.eventDurationMinutes)}${organization.status === "available" ? ` · Organisation : ${formatBusinessDurationMinutes(organization.organizationMinutes)}` : organization.status === "inconsistent" ? " · Incohérence avec la durée d’action." : ""}`
                 : event.status === "inconsistent"
                   ? "Incohérence : la fin est antérieure au début."
                   : "Les horaires doivent respecter le format HH:MM."}
@@ -396,19 +413,19 @@ export function ActionStepIdentity({
 
     return (
       <div className="space-y-4">
-        {isEntreprise ? (
+        {mode !== "collection" && isEntreprise ? (
           <div className="space-y-1.5">
             <label htmlFor="action-enterprise-name" className="text-xs font-semibold text-emerald-900/75">Nom de l’entreprise</label>
             <input id="action-enterprise-name" type="text" className={compactInputCls} value={form.enterpriseName} onChange={(event) => handleEntrepriseName(event.target.value)} maxLength={100} />
           </div>
         ) : null}
-        {isActionMode && !isSpontaneousAction ? (
+        {mode !== "collection" && isActionMode && !isSpontaneousAction ? (
           <div className="space-y-1.5">
             <label htmlFor="action-organizer-accounts" className="text-xs font-semibold text-emerald-900/75">Organisateurs associés</label>
             <input id="action-organizer-accounts" type="text" className={compactInputCls} value={form.organizerAccounts} onChange={(event) => updateField("organizerAccounts", event.target.value)} maxLength={300} placeholder="Pseudo, nom affiché ou ID" />
           </div>
         ) : null}
-        {isActionMode ? (
+        {mode !== "collection" && isActionMode ? (
           <ActionParticipantPicker
             currentUserId={userMetadata.userId}
             value={form.participantAccounts}
@@ -416,14 +433,14 @@ export function ActionStepIdentity({
             description="Ajoutez les participants connus avant l’envoi du formulaire complet."
           />
         ) : null}
-        {isAutreBénévole ? (
+        {mode !== "collection" && isAutreBénévole ? (
           <div className="space-y-1.5">
             <label htmlFor="action-other-volunteer-name" className="text-xs font-semibold text-emerald-900/75">Nom ou pseudo du bénévole</label>
             <input id="action-other-volunteer-name" type="text" className={cn(compactInputCls, missingOtherVolunteerName && inputErrCls)} value={autreBenevoleName} onChange={(event) => handleAutreBenevoleName(event.target.value)} maxLength={80} aria-invalid={missingOtherVolunteerName} />
             {missingOtherVolunteerName ? <p id={otherVolunteerErrorId} className="text-xs font-medium text-rose-700">Renseignez le nom ou pseudo du bénévole.</p> : null}
           </div>
         ) : null}
-        {isActionMode ? (
+        {mode !== "organization" && isActionMode ? (
           <div>
             <SectionTitle color="bg-emerald-500">Environnement de collecte</SectionTitle>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">

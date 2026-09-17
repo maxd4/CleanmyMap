@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import {
   AlertTriangle,
   Download,
@@ -14,14 +14,14 @@ import { CmmDialog } from "@/components/ui/cmm-dialog";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
+import { PLACE_TYPE_OPTIONS } from "@/lib/actions/place-type-options";
 import { ActionDeclarationFormConfirmation } from "./action-declaration-form-confirmation";
 import { ActionDeclarationExportPicker } from "./action-declaration-export-picker";
 import { ActionDeclarationFormFeedback } from "./action-declaration-form.feedback";
-import { createInitialFormState } from "../payload";
+import { createInitialFormState, OTHER_VOLUNTEER_ASSOCIATION_VALUE } from "../payload";
 import { ActionStepHarvest } from "../steps/ActionStepHarvest";
 import { ActionStepIdentity } from "../steps/ActionStepIdentity";
 import { ActionStepLocation } from "../steps/ActionStepLocation";
-import { ActionStepReview } from "../steps/ActionStepReview";
 import {
   formatDraftDate,
 } from "./action-declaration-form.summary";
@@ -91,7 +91,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     pendingDraftSavedAt,
     showDraftBanner,
     payload,
-    dataQuality,
     effectiveRoutePreviewDrawing,
     effectiveRoutePreviewSource,
     smartAssist,
@@ -121,6 +120,75 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     }
     setShowConfirmation(true);
   }
+
+  const showPreparationSummary = Boolean(props.initialActionId || loadedActionPhase);
+  const canShowGroupInvite =
+    form.recordType === "action" &&
+    form.groupJoinEnabled &&
+    loadedActionPhase !== "post_action_complete";
+  const [openOrganizationDetails, setOpenOrganizationDetails] = useState(false);
+  const [openCollectionDetails, setOpenCollectionDetails] = useState(false);
+  const [openPhotoDetails, setOpenPhotoDetails] = useState(false);
+  const [openRouteDetails, setOpenRouteDetails] = useState(false);
+  const [openTimeDetails, setOpenTimeDetails] = useState(false);
+  const hasValidationIssue = (fields: string[]) =>
+    validationIssues.some((issue) => fields.includes(issue.field));
+  const organizationNeedsAttention =
+    Boolean(form.enterpriseName.trim()) ||
+    Boolean(form.organizerAccounts.trim()) ||
+    form.participantAccounts.length > 0 ||
+    form.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE ||
+    hasValidationIssue(["associationName", "organizerType", "enterpriseName"]);
+  const collectionNeedsAttention =
+    Boolean(form.wasteMeasurementMethod) ||
+    Boolean(form.wasteCategories?.length) ||
+    Boolean(form.wasteRecyclablesKg.trim()) ||
+    Boolean(form.wasteGlassKg.trim()) ||
+    Boolean(form.wasteHouseholdKg.trim()) ||
+    Boolean(form.wasteOtherKg.trim()) ||
+    Boolean(form.wasteUnusualObjects.trim()) ||
+    Boolean(form.wasteSpecialHandlingWaste.trim()) ||
+    Boolean(form.notes.trim()) ||
+    Boolean(form.cigaretteButtsVolumeLiters.trim()) ||
+    form.wasteMegotsCondition !== "propre" ||
+    (Boolean(form.placeType.trim()) && form.placeType !== PLACE_TYPE_OPTIONS[0]) ||
+    hasValidationIssue(["wasteKg"]);
+  const photoNeedsAttention =
+    photoAssets.length > 0 ||
+    Boolean(visionEstimate) ||
+    visionStatus === "processing" ||
+    visionStatus === "ready" ||
+    visionStatus === "error";
+  const routeNeedsAttention =
+    Boolean(form.midRouteLocationLabel?.trim()) ||
+    Boolean(form.arrivalLocationLabel.trim()) ||
+    Boolean(form.midRouteCoordinates) ||
+    Boolean(form.arrivalCoordinates) ||
+    Boolean(form.operationalRoute) ||
+    Boolean(form.gpxImport) ||
+    Boolean(manualDrawing) ||
+    Boolean(form.routeAdjustmentMessage.trim()) ||
+    form.routeTopology === "point_to_point" ||
+    form.routeTargetDistanceKmManuallySet ||
+    hasValidationIssue(["locationLabel", "arrivalLocationLabel", "manualDrawing", "gpxImport"]);
+  const timeNeedsAttention =
+    Boolean(form.eventStartTime.trim()) ||
+    Boolean(form.eventEndTime.trim()) ||
+    hasValidationIssue(["eventStartTime", "eventEndTime"]);
+
+  useEffect(() => {
+    if (organizationNeedsAttention) setOpenOrganizationDetails(true);
+    if (collectionNeedsAttention) setOpenCollectionDetails(true);
+    if (photoNeedsAttention) setOpenPhotoDetails(true);
+    if (routeNeedsAttention) setOpenRouteDetails(true);
+    if (timeNeedsAttention) setOpenTimeDetails(true);
+  }, [
+    organizationNeedsAttention,
+    collectionNeedsAttention,
+    photoNeedsAttention,
+    routeNeedsAttention,
+    timeNeedsAttention,
+  ]);
 
   if (isHydratingAction) {
     return (
@@ -161,12 +229,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
       </div>
     );
   }
-
-  const showPreparationSummary = Boolean(props.initialActionId || loadedActionPhase);
-  const canShowGroupInvite =
-    form.recordType === "action" &&
-    form.groupJoinEnabled &&
-    loadedActionPhase !== "post_action_complete";
 
   return (
     <>
@@ -414,10 +476,16 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                 </section>
 
                 <div className="space-y-3">
-                  <CmmDisclosure summary="Informations complémentaires" tone="emerald" size="md">
-                    <div className="space-y-5">
+                  <CmmDisclosure
+                    summary="Détails de l’organisation"
+                    tone="emerald"
+                    size="md"
+                    open={openOrganizationDetails}
+                    onToggle={setOpenOrganizationDetails}
+                  >
+                    {openOrganizationDetails ? (
                       <ActionStepIdentity
-                        mode="details"
+                        mode="organization"
                         form={form}
                         updateField={updateField}
                         updateFields={updateFields}
@@ -425,8 +493,57 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                         recordType={form.recordType}
                         hasAttemptedSubmit={hasAttemptedSubmit}
                       />
+                    ) : null}
+                  </CmmDisclosure>
+
+                  <CmmDisclosure
+                    summary="Détails de la collecte"
+                    tone="emerald"
+                    size="md"
+                    open={openCollectionDetails}
+                    onToggle={setOpenCollectionDetails}
+                  >
+                    {openCollectionDetails ? (
+                      <div className="space-y-5">
+                        <ActionStepIdentity
+                          mode="collection"
+                          form={form}
+                          updateField={updateField}
+                          updateFields={updateFields}
+                          userMetadata={props.userMetadata}
+                          recordType={form.recordType}
+                          hasAttemptedSubmit={hasAttemptedSubmit}
+                        />
+                        <ActionStepHarvest
+                          mode="collection"
+                          form={form}
+                          updateField={updateField}
+                          recordType={form.recordType}
+                          photoAssets={photoAssets}
+                          visionEstimate={visionEstimate}
+                          visionStatus={visionStatus}
+                          heuristicEstimatedWasteKg={smartAssist.heuristicEstimatedWasteKg}
+                          estimatedWasteKg={smartAssist.estimatedWasteKg}
+                          estimatedWasteKgInterval={smartAssist.estimatedWasteKgInterval}
+                          estimatedWasteKgConfidence={smartAssist.estimatedWasteKgConfidence}
+                          wasteSuggestionSource={smartAssist.wasteSuggestionSource}
+                          onPhotoUpload={handlePhotoUpload}
+                          onClearPhotos={clearPhotos}
+                        />
+                      </div>
+                    ) : null}
+                  </CmmDisclosure>
+
+                  <CmmDisclosure
+                    summary="Photos et estimation"
+                    tone="emerald"
+                    size="md"
+                    open={openPhotoDetails}
+                    onToggle={setOpenPhotoDetails}
+                  >
+                    {openPhotoDetails ? (
                       <ActionStepHarvest
-                        mode="details"
+                        mode="photos"
                         form={form}
                         updateField={updateField}
                         recordType={form.recordType}
@@ -441,45 +558,58 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                         onPhotoUpload={handlePhotoUpload}
                         onClearPhotos={clearPhotos}
                       />
-                    </div>
+                    ) : null}
                   </CmmDisclosure>
 
-                  <CmmDisclosure summary="Parcours détaillé" tone="emerald" size="md">
-                    <ActionStepLocation
-                      mode="details"
-                      form={form}
-                      updateField={updateField}
-                      updateFields={updateFields}
-                      manualDrawing={manualDrawing}
-                      manualDrawingSource={manualDrawingSource ?? null}
-                      setManualDrawing={setManualDrawing}
-                      routePreviewDrawing={effectiveRoutePreviewDrawing}
-                      routePreviewSource={effectiveRoutePreviewSource}
-                      gpxImport={gpxImport ?? null}
-                      gpxError={gpxError}
-                      onImportGpx={handleGpxImport}
-                      onRemoveGpx={removeGpxImport}
-                      onResetManualDrawing={() => setManualDrawing(null)}
-                      gpsStatus={smartAssist.gpsStatus}
-                      gpsMessage={smartAssist.gpsMessage}
-                      onAutofillGps={smartAssist.autofillGps}
-                      recordType={form.recordType}
-                    />
+                  <CmmDisclosure
+                    summary="Parcours et géométrie"
+                    tone="emerald"
+                    size="md"
+                    open={openRouteDetails}
+                    onToggle={setOpenRouteDetails}
+                  >
+                    {openRouteDetails ? (
+                      <ActionStepLocation
+                        mode="details"
+                        form={form}
+                        updateField={updateField}
+                        updateFields={updateFields}
+                        manualDrawing={manualDrawing}
+                        manualDrawingSource={manualDrawingSource ?? null}
+                        setManualDrawing={setManualDrawing}
+                        routePreviewDrawing={effectiveRoutePreviewDrawing}
+                        routePreviewSource={effectiveRoutePreviewSource}
+                        gpxImport={gpxImport ?? null}
+                        gpxError={gpxError}
+                        onImportGpx={handleGpxImport}
+                        onRemoveGpx={removeGpxImport}
+                        onResetManualDrawing={() => setManualDrawing(null)}
+                        gpsStatus={smartAssist.gpsStatus}
+                        gpsMessage={smartAssist.gpsMessage}
+                        onAutofillGps={smartAssist.autofillGps}
+                        recordType={form.recordType}
+                      />
+                    ) : null}
                   </CmmDisclosure>
 
-                  <CmmDisclosure summary="Vérification et export" tone="emerald" size="md">
-                    <div className="space-y-4">
-                      <ActionStepReview
-                        payload={payload}
-                        dataQuality={dataQuality}
-                        isSubmitting={submissionState === "pending"}
-                        onSubmit={() => onSubmit()}
-                        showSubmitButton={false}
+                  <CmmDisclosure
+                    summary="Détails temporels"
+                    tone="emerald"
+                    size="md"
+                    open={openTimeDetails}
+                    onToggle={setOpenTimeDetails}
+                  >
+                    {openTimeDetails ? (
+                      <ActionStepIdentity
+                        mode="time"
+                        form={form}
+                        updateField={updateField}
+                        updateFields={updateFields}
+                        userMetadata={props.userMetadata}
+                        recordType={form.recordType}
+                        hasAttemptedSubmit={hasAttemptedSubmit}
                       />
-                      <ActionDeclarationFormExportButton
-                        onOpen={() => setIsExportPickerOpen(true)}
-                      />
-                    </div>
+                    ) : null}
                   </CmmDisclosure>
                 </div>
 
@@ -494,16 +624,21 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                         <p className="text-sm text-emerald-900/65">Vérifiez les mesures avant de confirmer l’envoi.</p>
                       )}
                     </div>
-                    <CmmButton
-                      type="submit"
-                      tone="primary"
-                      variant="default"
-                      size="md"
-                      loading={submissionState === "pending"}
-                      className="min-h-12 w-full shrink-0 justify-center px-5 sm:w-auto"
-                    >
-                      Vérifier et envoyer
-                    </CmmButton>
+                    <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+                      <ActionDeclarationFormExportButton
+                        onOpen={() => setIsExportPickerOpen(true)}
+                      />
+                      <CmmButton
+                        type="submit"
+                        tone="primary"
+                        variant="default"
+                        size="md"
+                        loading={submissionState === "pending"}
+                        className="min-h-12 w-full shrink-0 justify-center px-5 sm:w-auto"
+                      >
+                        Vérifier et envoyer
+                      </CmmButton>
+                    </div>
                   </div>
                 </div>
               </div>

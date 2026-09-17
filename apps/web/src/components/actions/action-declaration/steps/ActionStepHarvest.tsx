@@ -29,7 +29,7 @@ interface ActionStepHarvestProps {
   wasteSuggestionSource: "vision" | "heuristic";
   onPhotoUpload: (files: FileList | null) => void;
   onClearPhotos: () => void;
-  mode?: "all" | "essentials" | "details";
+  mode?: "all" | "essentials" | "collection" | "photos" | "details";
 }
 
 export function ActionStepHarvest({
@@ -144,6 +144,20 @@ export function ActionStepHarvest({
     );
   }
 
+  if (mode === "photos") {
+    return (
+      <HarvestPhotoSection
+        photoAssets={photoAssets}
+        visionEstimate={visionEstimate}
+        visionStatus={visionStatus}
+        estimatedWasteKgInterval={estimatedWasteKgInterval}
+        hasPhotos={hasPhotos}
+        onPhotoUpload={onPhotoUpload}
+        onClearPhotos={onClearPhotos}
+      />
+    );
+  }
+
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {isCleanPlaceMode ? (
@@ -198,15 +212,17 @@ export function ActionStepHarvest({
         </div>
       )}
 
-      <HarvestPhotoSection
-        photoAssets={photoAssets}
-        visionEstimate={visionEstimate}
-        visionStatus={visionStatus}
-        estimatedWasteKgInterval={estimatedWasteKgInterval}
-        hasPhotos={hasPhotos}
-        onPhotoUpload={onPhotoUpload}
-        onClearPhotos={onClearPhotos}
-      />
+      {mode === "all" || mode === "details" ? (
+        <HarvestPhotoSection
+          photoAssets={photoAssets}
+          visionEstimate={visionEstimate}
+          visionStatus={visionStatus}
+          estimatedWasteKgInterval={estimatedWasteKgInterval}
+          hasPhotos={hasPhotos}
+          onPhotoUpload={onPhotoUpload}
+          onClearPhotos={onClearPhotos}
+        />
+      ) : null}
     </div>
   );
 }
