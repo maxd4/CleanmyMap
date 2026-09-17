@@ -124,6 +124,12 @@ export function ChatShell({
   const { locale } = useSitePreferences();
   const pathname = usePathname();
   const [activeFeedbackId, setActiveFeedbackId] = useState(initialFeedbackId);
+  const [isPublicThreadOpen, setIsPublicThreadOpen] = useState(
+    () =>
+      !messagerieMode ||
+      initialChannelType !== "community" ||
+      Boolean(initialTopicId || initialActionId || initialMessageId),
+  );
 
   const {
     activeChannelType,
@@ -680,9 +686,30 @@ export function ChatShell({
       setSelectedActionId(actionId);
       setActiveChannelType("action");
       setIsDmThreadOpen(false);
+      setIsPublicThreadOpen(true);
     },
-    [resetComposerForChannelChange, setActiveChannelType, setActiveTopicId, setIsDmThreadOpen, setSelectedActionId],
+    [resetComposerForChannelChange, setActiveChannelType, setActiveTopicId, setIsDmThreadOpen, setIsPublicThreadOpen, setSelectedActionId],
   );
+
+  const handleSelectChannelForPresentation = useCallback(
+    (channelType: ChatChannelType) => {
+      handleSelectChannel(channelType);
+      setIsPublicThreadOpen(true);
+    },
+    [handleSelectChannel],
+  );
+
+  const handleSelectTopicForPresentation = useCallback(
+    (topicId: ChatTopicId) => {
+      handleSelectTopic(topicId);
+      setIsPublicThreadOpen(true);
+    },
+    [handleSelectTopic],
+  );
+
+  const handleBackToPublicContextList = useCallback(() => {
+    setIsPublicThreadOpen(false);
+  }, []);
 
   const handleViewModeChange = useCallback(
     (mode: "messages" | "graph") => {
@@ -718,6 +745,10 @@ export function ChatShell({
 
   const isDmSurface = messagerieMode && activeChannelType === "dm";
   const showDmThreadOnMobile = !isDmSurface || Boolean(selectedRecipient) || isDmThreadOpen;
+  const showPublicThreadOnMobile = !messagerieMode || isDmSurface || isPublicThreadOpen;
+  const showThreadOnMobile = isDmSurface
+    ? showDmThreadOnMobile
+    : showPublicThreadOnMobile;
 
   const handleStarterPrompt = useCallback(
     (prompt: string) => {
@@ -762,8 +793,8 @@ export function ChatShell({
           <ChatSidebar
             channels={sidebarChannels}
             currentChannelType={activeChannelType}
-            onSelectChannel={handleSelectChannel}
-            onSelectTopic={handleSelectTopic}
+            onSelectChannel={handleSelectChannelForPresentation}
+            onSelectTopic={handleSelectTopicForPresentation}
             topicSectionTitle={sidebarTopicSectionTitle}
             topicSectionDescription={sidebarTopicSectionDescription}
             topics={sidebarTopics}
@@ -777,9 +808,10 @@ export function ChatShell({
             currentZone={effectiveZone}
             profileDefaultZone={profileDefaultZone}
             onSelectZone={setSelectedZone}
+            className={!isDmSurface && !showPublicThreadOnMobile ? "flex" : "hidden md:flex"}
           />
         )}
-        <div className={`min-h-0 min-w-0 flex-1 flex-col relative ${isDmSurface && !showDmThreadOnMobile ? "hidden md:flex" : "flex"} ${isLight ? "bg-white/60" : "bg-white/5 dark:bg-slate-950/20"}`}>
+        <div className={`min-h-0 min-w-0 flex-1 flex-col relative ${messagerieMode && !showThreadOnMobile ? "hidden md:flex" : "flex"} ${isLight ? "bg-white/60" : "bg-white/5 dark:bg-slate-950/20"}`}>
           <ChatHeader
             activeChannelType={activeChannelType}
             activeChannelLabel={activeChannelLabel}
@@ -802,6 +834,7 @@ export function ChatShell({
             showControls={!isLight}
             isLive={isLive}
             onBackToDmInbox={isDmSurface && showDmThreadOnMobile ? handleBackToDmInbox : undefined}
+            onBackToContextList={messagerieMode && !isDmSurface && showPublicThreadOnMobile ? handleBackToPublicContextList : undefined}
             showSearch={messagerieMode && !isBugReportChannel && activeChannelType !== "action"}
             isSearchOpen={isSearchOpen}
             searchQuery={searchQuery}

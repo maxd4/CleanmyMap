@@ -8,7 +8,7 @@ La page `Messagerie` sert aux échanges publics thématiques et directs entre me
 
 - une liste de conversations ou de fils
 - des messages à lire et à répondre
-- une navigation primaire entre `Canaux Publics` et `Messages privés`
+- une navigation primaire entre `Discussions` et `Messages privés`
 - une vue publique agrégée ou un salon thématique explicitement sélectionné
 - une recherche débouncée dans l’historique du scope ouvert, avec résultats paginés et ancrage sur le message ciblé
 - une composition `Message` ou `Annonce / Relai` ; les trois modèles de relais préparent un brouillon éditable et sélectionnent leur topic canonique
@@ -30,10 +30,10 @@ La page `Messagerie` sert aux échanges publics thématiques et directs entre me
 ## Points d'attention
 
 - garder la surface compacte sur mobile
-- afficher l’inbox puis le fil avec retour sur mobile ; afficher les deux simultanément sur desktop lorsque l’espace le permet
+- sur mobile, afficher la liste des contextes puis le fil avec retour ; afficher les deux simultanément sur desktop lorsque l’espace le permet
 - éviter une densité de cartes trop élevée
 - ne pas mélanger la messagerie avec les retours `Feedback`
-- ne pas afficher une sidebar DM dans l’onglet `Canaux Publics`
+- ne pas afficher une sidebar DM dans l’onglet `Discussions`
 - laisser `Communauté globale` et `Territoire global` afficher les messages non classés ; un salon sélectionné ne montre que son `topic_id`
 - afficher sobrement le topic porté par un message dans une vue agrégée
 - conserver les annonces dans `app_messages` avec leur `message_kind` et ne publier un contexte événementiel qu'après résolution d'un `community_events.id` canonique

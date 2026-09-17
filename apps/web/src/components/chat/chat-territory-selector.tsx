@@ -10,11 +10,13 @@ export function ChatTerritorySelector({
   profileDefaultZone,
   onChange,
   tone = "dark",
+  compact = false,
 }: {
   currentZone: string;
   profileDefaultZone: string;
   onChange: (zoneName: string) => void;
   tone?: "light" | "dark";
+  compact?: boolean;
 }) {
   const isLight = tone === "light";
   const currentArrondissement = extractParisArrondissementFromLabel(currentZone);
@@ -24,10 +26,10 @@ export function ChatTerritorySelector({
     "";
 
   return (
-    <div className="space-y-2 rounded-2xl border border-slate-200/70 bg-white/70 p-3 dark:border-slate-700/70 dark:bg-slate-900/60">
-      <label className="block space-y-1.5">
+    <div className={`${compact ? "space-y-1 rounded-xl p-2" : "space-y-2 rounded-2xl p-3"} border border-slate-200/70 bg-white/70 dark:border-slate-700/70 dark:bg-slate-900/60`}>
+      <label className={compact ? "block space-y-1" : "block space-y-1.5"}>
         <span className={`block cmm-text-caption font-black uppercase tracking-[0.16em] ${isLight ? "text-slate-500" : "text-slate-500"}`}>
-          Territoire consulté
+          {compact ? "Zone active" : "Territoire consulté"}
         </span>
         <select
           value={currentOptionValue}
@@ -42,15 +44,13 @@ export function ChatTerritorySelector({
           ))}
         </select>
       </label>
-      {profileDefaultZone ? (
-        <p className="cmm-text-caption leading-4 text-slate-500">
-          Territoire par défaut : {profileDefaultZone}. Ce choix ponctuel ne modifie pas votre profil.
-        </p>
-      ) : (
-        <p className="cmm-text-caption leading-4 text-slate-500">
-          Choisissez une zone valide pour consulter et écrire dans son fil.
-        </p>
-      )}
+      <p className="cmm-text-caption leading-4 text-slate-500">
+        {profileDefaultZone
+          ? compact
+            ? `Défaut : ${profileDefaultZone}`
+            : `Territoire par défaut : ${profileDefaultZone}. Ce choix ponctuel ne modifie pas votre profil.`
+          : "Choisissez une zone valide pour consulter et écrire dans son fil."}
+      </p>
     </div>
   );
 }
