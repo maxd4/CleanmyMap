@@ -176,7 +176,7 @@ export function ReportsWebDocument({
       [id]: {
         action,
         state: "pending",
-        message: action === "view" ? "Ouverture du rapport historique..." : "Préparation de la réexportation...",
+        message: action === "view" ? "Ouverture du rapport historique..." : "Préparation du téléchargement...",
       },
     }));
 
@@ -208,9 +208,9 @@ export function ReportsWebDocument({
           message:
             action === "view"
               ? "Rapport historique ouvert depuis le snapshot enregistré."
-              : "Réexport traité depuis le snapshot historique (" +
+              : "Téléchargement à nouveau effectué depuis le snapshot enregistré (" +
                 generation.filename +
-                "). Aucune nouvelle génération n'a été créée.",
+                "). Aucune nouvelle génération n'a été créée et aucun nouveau quota n'a été consommé.",
         },
       }));
     } catch (error) {

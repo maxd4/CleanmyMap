@@ -275,7 +275,14 @@ describe("ReportsWebDocumentPreparation", () => {
     vi.unstubAllGlobals();
 
     const previewProps = (
-      mocks.preview.mock.calls as unknown as Array<[{ onTogglePreview?: () => void; modules?: unknown }]>
+    mocks.preview.mock.calls as unknown as Array<[
+      {
+        onTogglePreview?: () => void;
+        modules?: unknown;
+        modulesLabel?: string;
+        isTruncated?: boolean;
+      },
+    ]>
     )[0]?.[0];
     expect(previewProps?.modulesLabel).toBe(
       "Données & cartographie, Transparence & méthodes, Fichiers détaillés",

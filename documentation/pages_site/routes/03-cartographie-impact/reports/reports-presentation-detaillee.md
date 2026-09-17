@@ -33,11 +33,15 @@
   12 mois glissants, tandis que la comparaison oppose la fenêtre courante aux
   90 jours précédents selon les bornes de `computePilotageComparison()`.
 
-  La Génération conserve trois paramètres distincts : période, périmètre et
-  niveau de détail. Le niveau de détail est une métadonnée de génération ; il
-  ne sélectionne, ne désélectionne et ne verrouille aucun module ou chapitre.
+  La Génération conserve trois paramètres internes distincts : période,
+  périmètre et niveau de détail. Le sélecteur de niveau de détail est
+  temporairement retiré de l'UI, car les sorties des trois niveaux ne sont pas
+  encore différenciées ; `detailLevel="default"` reste conservé dans les
+  payloads, l'API, l'historique et les snapshots pour compatibilité. Ce
+  paramètre ne sélectionne, ne désélectionne et ne verrouille aucun module ou
+  chapitre.
   Un `ModuleState` unique porte la composition sélectionnée par les cases de
-  modules pour le preview, le résumé « ce que l'utilisateur verra »,
+  modules pour le preview et le résumé,
   `buildPdfData()` et le PDF. Les trois chapitres cœur restent présents ;
   `dataAndCartography`, `transparencyAndMethods`, `rawData` et
   `detailedFiles` contrôlent respectivement leur contenu cartographique,
@@ -46,17 +50,21 @@
   dans ce chantier ; le contenu précis des modules et l'effet fonctionnel des
   trois niveaux de détail seront traités séparément.
 
-  L'historique « Rapports récents » ne contient que les générations réellement
+  L'historique « Mes rapports récents » ne contient que les générations réellement
   persistées par le compte connecté dans `public.report_generations`, au maximum
   les 12 plus récentes de ce compte.
   Il expose le titre, la période, le périmètre, le niveau de détail et la date
   réelle. L'état vide affiche « Aucun rapport généré ». Le snapshot JSON final
   et les modules sont stockés sans binaire PDF ; le quota est réservé côté
-  serveur avant l'ouverture du rendu. Les actions « Voir » et « Réexporter »
+  serveur avant l'ouverture du rendu. Les actions « Voir » et « Télécharger à
+  nouveau »
   chargent le snapshot par ID à la demande. Elles rendent/réexportent ce
   payload immuable sans données actuelles, en conservant son `generatedAt` et
-  son filename ; le réexport ne crée pas de nouvelle génération et aucune
-  durée de conservation n'est annoncée.
+  son filename ; le téléchargement à nouveau ne crée pas de nouvelle
+  génération, ne consomme pas de nouveau quota et aucune durée de conservation
+  n'est annoncée. L'aperçu est fermé par défaut et rend uniquement la première
+  page via `ReportCover`, jamais un aperçu complet du PDF. Une couverture
+  tronquée est signalée comme partielle avec sa plage réellement disponible.
 
   La requête de liste ne charge que les métadonnées nécessaires à l'affichage :
   `id`, `generated_at`, `title`, `period_id`, `scope_label` et `detail_level`.

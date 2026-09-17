@@ -11,6 +11,18 @@
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; il ne remplace pas la page et ne modifie pas l'AuthN/AuthZ des opérations.
 - **Source principale** : `apps/web/src/app/(app)/reports/page.tsx`
 
+## Shell et onglets
+
+Le shell commun suit toujours l'ordre `PageHeader → onglets → contenu`. Le
+`PageHeader` canonique affiche « Rapports d’impact » dans la famille Impact,
+palette `red`.
+
+Les onglets sont `Génération` et `Analyse`. `Génération` est l'onglet par
+défaut lorsque `tab` est absent ou invalide ; `tab=generation` et
+`tab=analysis` sont les liens courants, et `tab=pilotage` reste accepté comme
+compatibilité historique vers `Analyse`. Le contenu Analyse n'est pas
+recalculé ni modifié par cette navigation.
+
 ## Contrat d'accès
 
 La synthèse de la route est publique en lecture et n'expose que des indicateurs
@@ -166,9 +178,21 @@ fixe de l'onglet Analyse. Les décisions prospectives sur la préconfiguration
 depuis une action et la génération dérivée versionnée sont conservées dans la
 liste PLAN associée ; elles ne constituent pas des fonctionnalités actuelles.
 
+Le sélecteur de niveau de détail est temporairement absent de l'interface,
+car les trois niveaux ne produisent pas encore de sorties différenciées.
+`detailLevel="default"` reste toutefois conservé dans les payloads, l'API,
+l'historique et les snapshots existants pour compatibilité.
+
+Le résumé expose la plage réellement couverte. Si `isTruncated=true`, il
+affiche « Couverture partielle » avec cette plage disponible ; il ne présente
+pas cette couverture comme conforme à la fenêtre demandée. L'aperçu est fermé
+par défaut et le bouton « Voir l’aperçu de la première page » ne rend que le
+composant `ReportCover`, c'est-à-dire la première page, pas un aperçu complet
+du PDF.
+
 ## Historique des générations
 
-« Rapports récents » lit les générations réellement persistées par le compte
+« Mes rapports récents » lit les générations réellement persistées par le compte
 connecté dans `public.report_generations`, triées par `generated_at` décroissant
 et limitées aux 12 dernières entrées de ce compte. Une ligne contient le titre,
 la période, le périmètre, le niveau de détail et la date de génération. Aucun
@@ -178,13 +202,13 @@ affiche « Aucun rapport généré ».
 La lecture de cette liste ne sélectionne que les métadonnées nécessaires à ces
 colonnes (`id`, `generated_at`, `title`, `period_id`, `scope_label` et
 `detail_level`). Le `snapshot` et les `modules` restent hors de cette requête.
-Les actions « Voir » et « Réexporter » chargent ensuite le snapshot par son
+Les actions « Voir » et « Télécharger à nouveau » chargent ensuite le snapshot par son
 identifiant uniquement au clic, via `GET /api/reports/generations/[id]`.
 
 « Voir » rend le payload immuable enregistré, sans relire les données actuelles
-ni recalculer le rapport. « Réexporter » réutilise le renderer existant, garde
+ni recalculer le rapport. « Télécharger à nouveau » réutilise le renderer existant, garde
 le `generatedAt` et le filename historiques, et ne crée aucune nouvelle ligne
-dans `report_generations`. Un snapshot absent, invalide ou incompatible produit
+dans `report_generations` ni ne consomme un nouveau quota. Un snapshot absent, invalide ou incompatible produit
 une erreur explicite ; il n'est jamais remplacé par un recalcul courant.
 
 Avant l'ouverture du PDF, le serveur réserve atomiquement le quota puis
@@ -217,6 +241,9 @@ visiteur anonyme → synthèse publique légère
 compte connecté standard → rapports, export détaillé et historique de son compte
 admin ou bénévole → même règle d'export détaillé
 quota déjà utilisé → génération désactivée jusqu'au jour civil suivant
+aperçu → première page uniquement, fermé par défaut
+couverture tronquée → état « Couverture partielle » et plage disponible
+quota export → 1 export détaillé par jour civil Europe/Paris, réservé côté serveur
 Analyse indisponible → erreur explicite, sans faux modèle zéro
 historique indisponible → erreur explicite, sans faux état vide
 ```
