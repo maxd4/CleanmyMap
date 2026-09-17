@@ -112,6 +112,32 @@ mission, les commandes événementielles autorisées par l'API : présence et
 post-mortem notamment. Ces commandes personnelles ne sont pas placées derrière
 `/pilotage` et ne donnent pas accès à ses agrégats.
 
+## Nettoyage des anciens contenus de solutions
+
+La page ne rend aucun `CommunitySolutionsView` et ne monte aucun shell de chat,
+bloc légal, FAQ générale, campagne, kit d'organisation ou promesse « Mission
+Zéro Déchet ». Un lien vers `/sections/messagerie` peut orienter vers la
+conversation canonique, mais la messagerie n'est pas embarquée dans cette
+surface.
+
+Les autorités juridiques restent leurs pages dédiées :
+`/mentions-legales`, `/conditions-generales-utilisation`,
+`/politique-confidentialite` et `/politique-cookies`. Les anciennes réponses FAQ
+qui promettaient un délai de modération, un certificat d'impact, une formule
+fixe, un export collectivité ou une capacité partenaire non démontrée n'ont pas
+été recopiées. Les parcours exacts restent portés par leurs surfaces runtime :
+`/signalement`, `/actions/new`, `/methodologie`, `/profil/impact`,
+`/sections/elus`, `/reports`, `/sections/open-data` et
+`/sections/annuaire`.
+
+Les ressources de sensibilisation valides existent déjà dans
+`/learn/bonnes-pratiques`, notamment la campagne Gestes Propres avec sa source
+et sa date. Les chiffres et slogans non sourcés de l'ancien kit campagnes ne
+sont pas conservés. Les éléments territoriaux de l'ancien bloc Mission Zéro
+Déchet relèvent de `/sections/elus` uniquement lorsqu'un contrat les prouve ;
+aucune promesse de labellisation, d'audit gratuit ou de standard d'excellence
+n'est actuelle.
+
 ## États
 
 ```txt
