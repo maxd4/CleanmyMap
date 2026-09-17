@@ -1,15 +1,3 @@
-@layer base {
-  [data-gsap-reveal] {
-    opacity: 0;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    [data-gsap-reveal] {
-      opacity: 1;
-    }
-  }
-}
-
 * {
   box-sizing: border-box;
 }

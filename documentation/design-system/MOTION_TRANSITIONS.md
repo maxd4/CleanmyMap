@@ -18,6 +18,13 @@ animation décorative par défaut.
 le mouvement, le blur et les transitions animées. Les animations Framer Motion
 doivent utiliser `useReducedMotion()` pour respecter cette préférence.
 
+Les reveals GSAP restent visibles par défaut : `data-gsap-reveal` ne doit
+jamais être masqué par un CSS global. Le hook ne prend possession des éléments
+qu'après hydratation, utilise un état initial différé (`immediateRender: false`)
+et restaure la visibilité si GSAP, ScrollTrigger, le calcul de layout ou le
+cycle de vie du composant échoue. `prefers-reduced-motion` laisse le contenu
+visible et désactive le reveal.
+
 ## Autorités
 
 `apps/web/src/styles/motion.css` porte les helpers CSS communs. Les adaptations
