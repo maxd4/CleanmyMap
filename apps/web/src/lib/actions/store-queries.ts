@@ -12,6 +12,29 @@ import {
 } from "./store-selects";
 import { normalizeStoredAction } from "./store-normalization";
 
+const ACTION_RESUME_SELECT_FIELDS = [
+  "id",
+  "created_by_clerk_id",
+  "action_date",
+  "event_start_time",
+  "status",
+  "published_at",
+  "moderation_visibility",
+  "action_phase",
+].join(", ");
+
+export type ActionResumeRow = Pick<
+  ActionRow,
+  | "id"
+  | "created_by_clerk_id"
+  | "action_date"
+  | "event_start_time"
+  | "status"
+  | "published_at"
+  | "moderation_visibility"
+  | "action_phase"
+>;
+
 type ActionListParams = {
   actionId?: string | null;
   limit: number | null;
@@ -221,4 +244,21 @@ export async function loadActionById(
   actionId: string,
 ): Promise<ActionRow | null> {
   return fetchActionRowById(supabase, actionId);
+}
+
+/**
+ * Minimal action projection for resume-tab inference.
+ * RLS remains the authorization boundary; callers must not replace this
+ * client with a service-role client for anonymous requests.
+ */
+export async function loadActionResumeRowById(
+  supabase: SupabaseClient,
+  actionId: string,
+): Promise<ActionResumeRow | null> {
+  return runSingleActionQuery<ActionResumeRow>(supabase, (query) =>
+    query
+      .select(ACTION_RESUME_SELECT_FIELDS)
+      .eq("id", actionId)
+      .maybeSingle(),
+  );
 }

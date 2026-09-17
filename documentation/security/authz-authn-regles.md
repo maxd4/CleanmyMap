@@ -448,6 +448,25 @@ La lecture propriétaire `GET /api/signalements/me` reste séparée : elle utili
 la session du compte courant et peut restituer ses propres observations `new`,
 sans les exposer à la carte publique.
 
+### Reprise de `/actions/new?actionId=...`
+
+La reprise d'une action ne doit utiliser l'identifiant fourni par l'URL que
+pour déduire l'onglet initial ; elle ne constitue ni une autorité de lecture
+ni une autorité de mutation. Un `tab=` explicite reste prioritaire et évite
+toute lecture de l'action.
+
+- un visiteur anonyme utilise uniquement la projection minimale autorisée par
+  la RLS publique ; une action privée ou inaccessible produit un fallback
+  neutre et ne révèle ni son existence ni sa phase ;
+- un utilisateur authentifié utilise d'abord la frontière Clerk/RLS ; si une
+  résolution serveur explicite est nécessaire pour un propriétaire ou un
+  organisateur, elle réévalue `canManageAction` avant de retourner la phase ;
+- aucun chemin anonyme ne remplace cette projection par le `service_role`.
+
+Les règles d'interface restent inchangées : `pre_action` ouvre l'onglet
+Pré-formulaire, les phases de formulaire complet ouvrent Formulaire, et le
+changement d'onglet ne crée pas d'action.
+
 ### Partage d'action et discussion : capacités distinctes
 
 Les deux décisions d'accès sont indépendantes :

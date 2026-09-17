@@ -4,7 +4,10 @@ export {
   fetchActions,
   fetchRecentActionsByUser,
   loadActionById,
+  loadActionResumeRowById,
 } from "./store-queries";
+
+export type { ActionResumeRow } from "./store-queries";
 
 export {
   buildPersistedNotes,

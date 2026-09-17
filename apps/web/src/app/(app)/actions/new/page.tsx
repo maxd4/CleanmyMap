@@ -8,8 +8,7 @@ import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getLocalDevAuthState } from "@/lib/auth/local-dev-auth-state.server";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { loadActionById } from "@/lib/actions/store";
+import { resolveActionResumePhase } from "@/lib/actions/action-resume";
 
 export const metadata: Metadata = {
   title: "Créer une action - CleanMyMap",
@@ -57,22 +56,21 @@ export default async function NewActionPage({
   const actionId = resolveSingleSearchParam(params?.["actionId"]);
   const panel = normalizeActionCreationPanel(params?.["panel"]);
   const requestedTab = resolveSingleSearchParam(params?.["tab"]);
-  const resumedAction =
+  const { userId } = await getSafeAuthSession();
+  const localDevAuth = await getLocalDevAuthState();
+  const isAuthenticated = Boolean(userId);
+  const identity = userId ? await getCurrentUserIdentity() : null;
+  const actionPhase =
     actionId && !requestedTab
-      ? await loadActionById(getSupabaseServerClient(), actionId).catch(() => null)
+      ? await resolveActionResumePhase({ actionId, userId, identity })
       : null;
   const tab = normalizeActionCreationTab(requestedTab, {
     actionId,
     from,
-    actionPhase: resumedAction?.action_phase,
+    actionPhase,
     panel,
   });
   const returnUrl = buildActionReturnUrl({ fromEventId, actionId, from, panel, tab });
-  const { userId } = await getSafeAuthSession();
-  const localDevAuth = await getLocalDevAuthState();
-
-  const isAuthenticated = Boolean(userId);
-  const identity = userId ? await getCurrentUserIdentity() : null;
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const fallbackActorName = userId ?? "Visiteur";
   const actorNameOptions = Array.from(
