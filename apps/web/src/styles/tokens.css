@@ -343,66 +343,66 @@ html[data-theme="dark"] {
 }
 
 /*
- * Densité globale du site : 90 % sur les dimensions visuelles non critiques.
+ * Densité globale du site : 80 % sur les dimensions visuelles non critiques.
  * Le corps, les captions et les hauteurs tactiles restent sur leurs minima
  * sémantiques ; ce n'est ni un zoom CSS ni une transformation du document.
  */
 html[data-cmm-density="compact"] {
-  --cmm-density-factor: 0.9;
+  --cmm-density-factor: 0.8;
 
-  --text-h4: 1.2rem;
-  --text-h3: 1.599rem;
-  --text-h2: 2.132rem;
-  --text-h1: 2.841rem;
-  --text-display: 3.788rem;
+  --text-h4: 1.066rem;
+  --text-h3: 1.422rem;
+  --text-h2: 1.895rem;
+  --text-h1: 2.526rem;
+  --text-display: 3.367rem;
 
-  --space-1: 0.45rem;
-  --space-2: 0.9rem;
-  --space-3: 1.35rem;
-  --space-4: 1.8rem;
-  --space-5: 2.25rem;
-  --space-6: 2.7rem;
-  --space-8: 3.6rem;
-  --space-12: 5.4rem;
+  --space-1: 0.4rem;
+  --space-2: 0.8rem;
+  --space-3: 1.2rem;
+  --space-4: 1.6rem;
+  --space-5: 2rem;
+  --space-6: 2.4rem;
+  --space-8: 3.2rem;
+  --space-12: 4.8rem;
 
-  --cmm-grid-margin-mobile: 0.9rem;
-  --cmm-grid-margin-tablet: 1.35rem;
-  --cmm-grid-margin-desktop: 1.8rem;
-  --cmm-grid-gutter-mobile: 0.9rem;
-  --cmm-grid-gutter-tablet: 1.35rem;
-  --cmm-grid-gutter-desktop: 1.35rem;
-  --cmm-grid-step: 0.45rem;
+  --cmm-grid-margin-mobile: 0.8rem;
+  --cmm-grid-margin-tablet: 1.2rem;
+  --cmm-grid-margin-desktop: 1.6rem;
+  --cmm-grid-gutter-mobile: 0.8rem;
+  --cmm-grid-gutter-tablet: 1.2rem;
+  --cmm-grid-gutter-desktop: 1.2rem;
+  --cmm-grid-step: 0.4rem;
 
-  --radius-sm: 0.45rem;
-  --radius-md: 0.9rem;
-  --radius-lg: 1.35rem;
+  --radius-sm: 0.4rem;
+  --radius-md: 0.8rem;
+  --radius-lg: 1.2rem;
 
-  --cmm-page-header-title-size: clamp(2.25rem, 3.6vw, 3.24rem);
-  --cmm-home-hero-title-size: clamp(3.15rem, 4.68vw, 3.825rem);
-  --cmm-home-impact-title-size: clamp(1.71rem, 3.42vw, 2.43rem);
-  --cmm-page-padding-block: 1.8rem;
-  --cmm-page-header-content-gap: 1.8rem;
-  --cmm-section-gap: 1.8rem;
-  --cmm-content-group-gap: 0.9rem;
-  --cmm-rubrique-card-padding: 1.8rem;
-  --cmm-rubrique-card-icon-padding: 0.9rem;
+  --cmm-page-header-title-size: clamp(2rem, 3.2vw, 2.88rem);
+  --cmm-home-hero-title-size: clamp(2.8rem, 4.16vw, 3.4rem);
+  --cmm-home-impact-title-size: clamp(1.52rem, 3.04vw, 2.16rem);
+  --cmm-page-padding-block: 1.6rem;
+  --cmm-page-header-content-gap: 1.6rem;
+  --cmm-section-gap: 1.6rem;
+  --cmm-content-group-gap: 0.8rem;
+  --cmm-rubrique-card-padding: 1.6rem;
+  --cmm-rubrique-card-icon-padding: 0.8rem;
 
-  --cmm-system-state-content-gap: 1.125rem;
-  --cmm-system-state-padding-block: 1.8rem;
-  --cmm-system-state-padding-inline: 1.125rem;
-  --cmm-feedback-padding-block: 0.675rem;
-  --cmm-feedback-padding-inline: 0.9rem;
-  --cmm-feedback-gap: 0.45rem;
+  --cmm-system-state-content-gap: 1rem;
+  --cmm-system-state-padding-block: 1.6rem;
+  --cmm-system-state-padding-inline: 1rem;
+  --cmm-feedback-padding-block: 0.6rem;
+  --cmm-feedback-padding-inline: 0.8rem;
+  --cmm-feedback-gap: 0.4rem;
 }
 
 @media (min-width: 1024px) {
   html[data-cmm-density="compact"] {
-    --cmm-page-padding-block: 1.35rem;
-    --cmm-page-header-content-gap: 1.35rem;
-    --cmm-section-gap: 1.35rem;
-    --cmm-content-group-gap: 0.675rem;
-    --cmm-rubrique-card-padding: 1.35rem;
-    --cmm-rubrique-card-icon-padding: 0.675rem;
+    --cmm-page-padding-block: 1.2rem;
+    --cmm-page-header-content-gap: 1.2rem;
+    --cmm-section-gap: 1.2rem;
+    --cmm-content-group-gap: 0.6rem;
+    --cmm-rubrique-card-padding: 1.2rem;
+    --cmm-rubrique-card-icon-padding: 0.6rem;
   }
 }
 

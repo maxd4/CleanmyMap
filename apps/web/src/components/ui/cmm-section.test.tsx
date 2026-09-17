@@ -86,7 +86,7 @@ describe("canonical page layout primitives", () => {
     expect(baseCss).not.toMatch(/font-size\s*:\s*80%/);
     expect(layoutSource).toContain('data-cmm-density="compact"');
     expect(tokensCss).toMatch(/html\[data-cmm-density="compact"\]/);
-    expect(tokensCss).toContain("--cmm-density-factor: 0.9;");
+    expect(tokensCss).toContain("--cmm-density-factor: 0.8;");
     expect(tokensCss).toContain("--text-body: 1rem");
     expect(tokensCss).toContain("--text-caption: 0.75rem");
 
