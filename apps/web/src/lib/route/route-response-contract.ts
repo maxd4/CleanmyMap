@@ -18,6 +18,7 @@ import type { RouteCalibrationContext } from "./route-calibration";
 import type { RoutePlannerProof } from "./route-planner-proof-contract";
 import type { RouteOperationalBudget } from "./route-operational-budget";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
+import type { StreetCleaningCorridorHandoff } from "./street-cleaning-corridor";
 
 export {
   ROUTE_PICKUP_PREFERENCES,
@@ -118,6 +119,8 @@ export type RouteRecommendationResponse = {
   plannerProof?: RoutePlannerProof;
   /** Forecast known at generation time; it may limit the operational budget only. */
   weatherContext?: PlannerWeatherContext;
+  /** Side-specific cleanable corridors; unknown when no audited source proves one. */
+  streetCleaningCorridors?: StreetCleaningCorridorHandoff;
   stops: RouteStop[];
   prediction: RoutePredictionSummary;
   trace: RouteRecommendationTrace;
@@ -172,6 +175,10 @@ export type RouteMultiRouteMetrics = {
   sharedTargetRatio: number;
   sharedDistanceKm: number | null;
   sharedDistanceRatio: number | null;
+  /** Shared/proximate movement; independent from cleaning duplication. */
+  networkOverlap?: number;
+  /** Repeated cleaning of the same operational corridor. */
+  cleaningCoverageOverlap?: number;
   balanceDistance: number;
   balanceDuration: number;
   balanceTargetCount: number;

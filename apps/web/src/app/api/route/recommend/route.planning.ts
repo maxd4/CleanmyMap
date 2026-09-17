@@ -44,6 +44,12 @@ import {
 } from "@/lib/route/route-group-partition";
 import type { RouteRiskFocus } from "@/lib/route/route-predicted-targets";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
+import {
+  buildStreetCleaningStreetPassesFromGeometry,
+  buildUnknownStreetCleaningCorridorHandoff,
+  planOperationalStreetCorridors,
+  type StreetCleaningCorridorHandoff,
+} from "@/lib/route/street-cleaning-corridor";
 
 export type RoutePlanningResult = {
   plannerResult: RoutePlannerResult;
@@ -60,6 +66,7 @@ export type RoutePlanningResult = {
   multiRouteMetrics?: RouteMultiRouteMetrics;
   operationalBudget?: RouteOperationalBudgetDependency;
   weatherContext?: PlannerWeatherContext;
+  streetCleaningCorridors?: StreetCleaningCorridorHandoff;
 };
 
 function fallbackGeometryForPrefix(
@@ -375,6 +382,22 @@ export async function planRouteRecommendation(input: {
         plannedStops.map(({ candidate }) => candidate.id),
       )
     : null;
+  const operationalPasses = groupRoutes.length > 1
+    ? groupRoutes.flatMap((group, index) =>
+        buildStreetCleaningStreetPassesFromGeometry({
+          routeId: `group-${group.groupIndex}`,
+          routeOrder: index,
+          routeGeometry: group.routeGeometry,
+        }),
+      )
+    : buildStreetCleaningStreetPassesFromGeometry({
+        routeId: "main",
+        routeOrder: 0,
+        routeGeometry,
+      });
+  const operationalCorridorPlan = planOperationalStreetCorridors({
+    passes: operationalPasses,
+  });
   return {
     plannerResult,
     predictionSummary,
@@ -400,6 +423,10 @@ export async function planRouteRecommendation(input: {
     multiRouteMetrics,
     operationalBudget: input.operationalBudget,
     weatherContext: input.weatherContext,
+    streetCleaningCorridors: buildUnknownStreetCleaningCorridorHandoff(
+      "Aucune source géographique auditée ne prouve encore le côté du corridor.",
+      operationalCorridorPlan,
+    ),
     ...(input.weatherContext ? { weatherContext: structuredClone(input.weatherContext) } : {}),
   };
 }

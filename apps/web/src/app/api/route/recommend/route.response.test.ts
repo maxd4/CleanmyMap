@@ -276,6 +276,21 @@ function installDefaultMocks() {
 }
 
 describe("route recommendation response trace contract", () => {
+  it("exposes an explicit unknown corridor handoff when no side proof exists", async () => {
+    installDefaultMocks();
+
+    const response = buildRouteRecommendationResponse(responseInput());
+    const payload: RouteRecommendationResponse = await response.json();
+
+    expect(payload.streetCleaningCorridors).toMatchObject({
+      schemaVersion: "street-cleaning-corridor-v1",
+      status: "unknown",
+      sourceStatus: "unavailable",
+      fallback: "unknown",
+      corridors: [],
+    });
+  });
+
   it("carries the forecast snapshot through response, trace and planner snapshot", async () => {
     installDefaultMocks();
     const weatherContext: PlannerWeatherContext = {

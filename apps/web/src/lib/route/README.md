@@ -23,6 +23,9 @@ pour produire une décision de planner contrainte et explicable.
   `event-centered`/`planningMode` n’est pas un contrat courant.
 - `route-trace.ts` : contrat de trace et d’explicabilité lorsqu’il est fourni
   par le pipeline courant.
+- `street-cleaning-corridor.ts` : contrat séparé du corridor réellement
+  nettoyable. Il exige une preuve géographique latérale ou d’un corridor
+  unique ; sans cette preuve, le handoff reste `unknown`.
 - `paris-pressure-route-adapter.ts` : politique d’utilisation du prior
   géospatial par le planner. Le rattachement spatial reste dans
   `lib/geo/paris-pressure-lookup.ts`.
@@ -34,6 +37,23 @@ justifié par ce seul classement. Une extraction ultérieure devra réduire un
 couplage réel et préserver les imports publics. La couche de serviceabilité
 municipale est une fondation de données distincte ; elle ne constitue pas
 encore une politique d’additionalité branchée au planner.
+
+La géométrie `network`/`fallback` décrit le déplacement. Elle ne prouve pas
+le trottoir nettoyable : ni OSRM/FOSSGIS, ni une polyline, ni les steps ne
+permettent seuls de produire `left`, `right` ou `single`. Le contrat de
+corridor exige une orientation de référence explicite, une source versionnée,
+la provenance et, lorsque connu, les traversées prouvées qui restent sur le
+même côté. Aucun nom de rue, largeur supposée, intersection ou terre-plein ne
+crée à lui seul un corridor. Le handoff courant est donc `unknown`, car le
+snapshot de serviceabilité municipal versionné ne contient pas encore de
+preuve latérale ni de traversée ; aucune dépendance Overpass live n’est
+ajoutée au hot path. Le planner peut toutefois répartir l’hypothèse
+opérationnelle en deux identifiants abstraits `A` et `B` pour une rue routable
+(aller/retour ou groupes distincts). `A`/`B` restent `geographicSide:
+"unknown"` tant qu’aucune preuve n’est disponible. `networkOverlap` mesure le
+passage réseau commun ou proche, tandis que `cleaningCoverageOverlap` ne
+compte que la répétition du même corridor opérationnel ; une exception
+versionnée à un seul corridor prévaut sur le défaut.
 
 La frontière suit le flux `API → domaine route → UI` : l’API valide et orchestre,
 le domaine calcule et trace, l’UI affiche sans recalculer la géographie ni le
