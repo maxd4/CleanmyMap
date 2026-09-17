@@ -23,6 +23,7 @@ function buildMapActionsSnapshotKey(url: URL): string {
   const parsed = parseMapActionsParams(url, parseEntityTypesParam);
   return JSON.stringify({
     route: "api/actions/map",
+    actionId: parsed.actionId ?? "all",
     limit: parsed.limit,
     days: parsed.days,
     status: parsed.status ?? "all",

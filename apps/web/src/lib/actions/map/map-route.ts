@@ -73,6 +73,7 @@ function toPublicMapContract(contract: ActionDataContract, now: Date): ActionDat
 }
 
 export type ParseMapActionsParams = {
+  actionId: string | null;
   limit: number;
   days: number;
   status: ActionStatus | null;
@@ -89,6 +90,7 @@ export type MapActionsRouteDependencies = {
   fetchUnifiedActionContracts: (
     supabase: SupabaseClient,
     params: {
+      actionId?: string | null;
       limit: number;
       status: ActionStatus | null;
       includeFuturePublicActions?: boolean;
@@ -195,7 +197,9 @@ function parseViewportParam(url: URL): ActionMapViewportQuery | undefined {
 export function parseMapActionsParams(url: URL, parseEntityTypesParam: MapActionsRouteDependencies["parseEntityTypesParam"]): ParseMapActionsParams {
   const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 300, 80);
   const days = parsePositiveInteger(url.searchParams.get("days"), 1, 3650, 30);
+  const actionId = url.searchParams.get("actionId")?.trim() || null;
   return {
+    actionId,
     limit,
     days,
     status: parseStatusParam(url.searchParams.get("status")),
@@ -204,7 +208,7 @@ export function parseMapActionsParams(url: URL, parseEntityTypesParam: MapAction
     qualityMin: parseQualityMin(url.searchParams.get("qualityMin")),
     impact: parseImpactParam(url.searchParams.get("impact")),
     scope: resolveReportScopeFromQuery(url),
-    viewport: parseViewportParam(url),
+    viewport: actionId ? undefined : parseViewportParam(url),
   };
 }
 
@@ -225,6 +229,7 @@ export async function buildMapActionsRouteResult(
   const supabase = deps.getSupabaseServerClient(false);
   const now = new Date();
   const result = await deps.fetchUnifiedActionContracts(supabase, {
+    actionId: params.actionId,
     limit: Math.max(params.limit * 4, params.limit),
     status: params.status,
     includeFuturePublicActions: true,
@@ -250,6 +255,18 @@ export async function buildMapActionsRouteResult(
     .map((contract) => {
       const insights = deps.buildActionInsights(contract, now);
       return deps.toActionMapItem(contract, insights);
+    })
+    .filter((item) => {
+      const coordinates = {
+        latitude: item.contract?.location?.latitude ?? item.latitude,
+        longitude: item.contract?.location?.longitude ?? item.longitude,
+      };
+      return (
+        typeof coordinates.latitude === "number" &&
+        Number.isFinite(coordinates.latitude) &&
+        typeof coordinates.longitude === "number" &&
+        Number.isFinite(coordinates.longitude)
+      );
     })
     .filter((item) => {
       if (params.impact && item.impact_level !== params.impact) {

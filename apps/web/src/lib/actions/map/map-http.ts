@@ -38,6 +38,7 @@ import {
 } from "./map-http-utils";
 
 export type FetchMapActionsParams = {
+  actionId?: string | null;
   status?: ActionStatus | "all";
   limit?: number;
   days?: number;
@@ -467,6 +468,10 @@ export function buildMapActionsQueryString(
 
   if (params.impact) {
     query.set("impact", params.impact);
+  }
+
+  if (params.actionId) {
+    query.set("actionId", params.actionId);
   }
 
   if (params.viewport) {

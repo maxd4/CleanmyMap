@@ -95,6 +95,16 @@ describe("parseMapActionsParams", () => {
       zoom: 12,
     });
   });
+
+  it("keeps an explicit public action deep-link independent from the viewport", () => {
+    const params = parseMapActionsParams(
+      new URL("http://localhost/api/actions/map?actionId=outside&south=48.8&west=2.2&north=48.9&east=2.4"),
+      () => null,
+    );
+
+    expect(params.actionId).toBe("outside");
+    expect(params.viewport).toBeUndefined();
+  });
 });
 
 describe("buildMapActionsRouteResult", () => {
@@ -147,6 +157,20 @@ describe("buildMapActionsRouteResult", () => {
           zoom: 12,
         },
       }),
+    );
+  });
+
+  it("forwards the explicit action target to the unified public source", async () => {
+    const deps = buildDeps();
+
+    await buildMapActionsRouteResult(
+      new URL("http://localhost/api/actions/map?actionId=outside&floorDate=all"),
+      deps,
+    );
+
+    expect(deps.fetchUnifiedActionContracts).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ actionId: "outside", viewport: undefined }),
     );
   });
 

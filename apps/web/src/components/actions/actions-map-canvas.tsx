@@ -20,6 +20,7 @@ import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/loc
 import { isTrashSpotterSpotRecord } from "@/lib/actions/trash-spotter-actionable-candidates";
 import { cn } from "@/lib/utils";
 import { MapControls } from "./map/map-controls";
+import { ActionSelectionPanel } from "./map/action-selection-panel";
 import { MapScoreScopeControl } from "./map/map-score-scope-control";
 import { MapGeometryLegend } from "./map/map-geometry-legend";
 import { useActionPollutionScoreReferences } from "./map/action-pollution-score-references-context";
@@ -54,6 +55,8 @@ type ActionsMapCanvasProps = {
   items: ActionMapItem[];
   selectedActionId?: string | null;
   onSelectAction?: (actionId: string) => void;
+  onClearSelection?: () => void;
+  frameSelectedActionId?: string | null;
   fullViewport?: boolean;
   compact?: boolean;
   presentation?: ActionsMapPresentation;
@@ -146,6 +149,8 @@ export function ActionsMapCanvas({
   items,
   selectedActionId = null,
   onSelectAction,
+  onClearSelection,
+  frameSelectedActionId = null,
   fullViewport = false,
   compact = false,
   presentation = "default",
@@ -241,6 +246,10 @@ export function ActionsMapCanvas({
   const trashSpotterItems = useMemo(
     () => items.filter((item) => isTrashSpotterItem(item)),
     [items],
+  );
+  const selectedItem = useMemo(
+    () => items.find((item) => item.id === selectedActionId) ?? null,
+    [items, selectedActionId],
   );
 
   function toggleLayer(key: VisibleMapLayerKey) {
@@ -394,6 +403,17 @@ export function ActionsMapCanvas({
             </>
           )}
         </LayerGroup>
+
+        {!isMinimalPreview && selectedItem && onClearSelection ? (
+          <ActionSelectionPanel
+            item={selectedItem}
+            displayMode={displayMode}
+            scoreScope={scoreScope}
+            currentPlaceStateViews={currentPlaceStateViews}
+            frameOnMount={frameSelectedActionId === selectedItem.id}
+            onClose={onClearSelection}
+          />
+        ) : null}
 
         <style>{`
           .cmm-infrastructure-marker {

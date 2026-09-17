@@ -37,6 +37,8 @@ type ActionsMapFeedContentProps = {
   zoneQuery?: string;
   selectedActionId?: string | null;
   onOpenAction?: (actionId: string) => void;
+  onClearSelection?: () => void;
+  frameSelectedActionId?: string | null;
   onResetFilters?: () => void;
   mapExportTargetRef?: RefObject<HTMLDivElement | null>;
   onViewportChange?: (viewport: MapViewportState) => void;
@@ -69,6 +71,8 @@ export function ActionsMapFeedContent({
   zoneQuery = "",
   selectedActionId = null,
   onOpenAction,
+  onClearSelection,
+  frameSelectedActionId = null,
   onResetFilters,
   mapExportTargetRef,
   onViewportChange,
@@ -185,6 +189,8 @@ export function ActionsMapFeedContent({
     selectedActionId,
     onOpenAction: onOpenAction ?? (() => {}),
     onSelectAction: onOpenAction ?? (() => {}),
+    onClearSelection,
+    frameSelectedActionId,
     onReload: () => void feedData.reload(),
     onResetFilters: onResetFilters ?? (() => {}),
     showIntro,

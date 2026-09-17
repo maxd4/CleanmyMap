@@ -35,12 +35,15 @@ async function loadCanonicalSpots(
   if (params.requireCoordinates) {
     query = query.not("latitude", "is", null).not("longitude", "is", null);
   }
-  if (params.viewport) {
+  if (params.viewport && !params.actionId) {
     query = query
       .gte("latitude", params.viewport.south)
       .lte("latitude", params.viewport.north)
       .gte("longitude", params.viewport.west)
       .lte("longitude", params.viewport.east);
+  }
+  if (params.actionId) {
+    query = query.eq("id", params.actionId);
   }
   if (spotStatuses) {
     query = query.in("status", spotStatuses);
@@ -69,6 +72,7 @@ export async function loadUnifiedActionSourceData(
   const [remoteRowsResult, remoteSpotsResult] = await Promise.allSettled([
     wantsActions
       ? fetchActions(supabase, {
+          actionId: params.actionId,
           limit: sourceLimit,
           status: params.status,
           includeFuturePublicActions: params.includeFuturePublicActions,

@@ -34,6 +34,8 @@ type ImmersiveLayoutProps = {
   mapCanvasError: string | null;
   MapCanvas: ActionsMapCanvasComponent | null;
   selectedActionId: string | null;
+  onClearSelection?: () => void;
+  frameSelectedActionId?: string | null;
   onOpenAction: (actionId: string) => void;
   onSelectAction: (actionId: string) => void;
   onReload: () => void;
@@ -73,6 +75,8 @@ export function ImmersiveLayout({
   mapCanvasError,
   MapCanvas,
   selectedActionId,
+  onClearSelection,
+  frameSelectedActionId,
   onOpenAction,
   onSelectAction,
   onReload,
@@ -179,6 +183,8 @@ export function ImmersiveLayout({
                 sourceCompleteness={sourceCompleteness}
                 selectedActionId={selectedActionId}
                 onSelectAction={onSelectAction}
+                onClearSelection={onClearSelection}
+                frameSelectedActionId={frameSelectedActionId}
                 compact={compact}
                 fullViewport={fullViewport}
                 tone={tone}

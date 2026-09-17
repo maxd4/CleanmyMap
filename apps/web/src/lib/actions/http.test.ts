@@ -172,6 +172,15 @@ describe("buildMapActionsQueryString", () => {
     expect(params.get("floorDate")).toBe("all");
     expect(params.has("days")).toBe(false);
   });
+
+  it("serializes an explicit public action target without adding a viewport", () => {
+    const params = new URLSearchParams(
+      buildMapActionsQueryString({ actionId: "outside-viewport", floorDate: null }),
+    );
+
+    expect(params.get("actionId")).toBe("outside-viewport");
+    expect(params.has("south")).toBe(false);
+  });
 });
 
 describe("buildActionsQueryString", () => {
