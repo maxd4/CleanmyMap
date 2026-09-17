@@ -93,6 +93,7 @@ export const ConnectTabs = memo(function ConnectTabs({
         return (
           <CmmButton
             key={tab.id}
+            id={`connect-tab-${tab.id}`}
             tone="tertiary"
             variant="pill"
             role="tab"
