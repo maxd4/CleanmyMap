@@ -21,6 +21,7 @@ const EVENT_DEFAULTS: CommunityEventItem = {
   id: "ev-1",
   createdAt: "2026-03-20T09:00:00.000Z",
   organizerClerkId: "org-1",
+  canEditOwnOps: false,
   title: "Collecte Test",
   eventDate: "2026-04-05",
   locationLabel: "France",

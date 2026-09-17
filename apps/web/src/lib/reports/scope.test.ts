@@ -125,6 +125,7 @@ it("filters contracts and community events by scope", () => {
           id: "event-1",
           createdAt: "2026-04-01T10:00:00Z",
           organizerClerkId: "user-1",
+          canEditOwnOps: false,
           title: "Collecte Bastille",
           eventDate: "2026-04-10",
           locationLabel: "Paris 11e",

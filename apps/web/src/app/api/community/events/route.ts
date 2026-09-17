@@ -71,6 +71,7 @@ function toEventResponseItem(
   myRsvpStatus: "yes" | "maybe" | "no" | null;
  } | null,
  organizerIdentity: OrganizerIdentity,
+ currentUserId: string | null,
 ) {
  const parsedDescription = parseCommunityEventDescription(event.description);
  const ops = parsedDescription.ops ?? defaultCommunityEventOps();
@@ -79,6 +80,9 @@ function toEventResponseItem(
  id: event.id,
  createdAt: event.created_at,
  organizerClerkId: null,
+ canEditOwnOps: Boolean(
+  currentUserId && event.organizer_clerk_id === currentUserId,
+ ),
  title: event.title,
  eventDate: event.event_date,
  locationLabel: event.location_label,
@@ -104,7 +108,10 @@ function toEventResponseItem(
  total: summary?.totalCount ?? 0,
   },
   myRsvpStatus: summary?.myRsvpStatus ?? null,
-  organizer: organizerIdentity,
+  organizer: {
+   ...organizerIdentity,
+   userId: null,
+  },
   };
 }
 
@@ -183,6 +190,7 @@ async function loadCachedCommunityEvents(
      event,
      summaryByEventId.get(event.id) ?? null,
      organizer,
+     userId,
     );
    });
    return { status: "ok" as const, count: items.length, items };

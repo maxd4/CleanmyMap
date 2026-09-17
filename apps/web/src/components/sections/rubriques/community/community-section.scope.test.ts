@@ -35,7 +35,8 @@ describe("CommunitySection scope", () => {
     expect(sectionHookSource).not.toContain("useCommunityHighlights");
     expect(eventsHookSource).not.toContain("fetchActions");
     expect(eventsHookSource).not.toContain("computeEventConversions");
-    expect(eventsComponentSource).toContain("event.organizerClerkId === userId");
+    expect(eventsComponentSource).toContain("event.canEditOwnOps");
+    expect(eventsComponentSource).not.toContain("organizerClerkId === userId");
     expect(eventsComponentSource).toContain("Suivi de ma mission");
     expect(eventsComponentSource).toContain('role="tablist"');
     expect(eventsComponentSource).toContain("Participer");

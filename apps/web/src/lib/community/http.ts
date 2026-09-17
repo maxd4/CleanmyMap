@@ -10,6 +10,7 @@ export type CommunityEventItem = {
   id: string;
   createdAt: string;
   organizerClerkId: string | null;
+  canEditOwnOps: boolean;
   title: string;
   eventDate: string;
   locationLabel: string;
@@ -33,7 +34,7 @@ export type CommunityEventItem = {
   };
   myRsvpStatus: CommunityRsvpStatus | null;
   organizer?: {
-    userId: string | null;
+    userId: null;
     displayName: string;
     roleBadge: {
       id: string;

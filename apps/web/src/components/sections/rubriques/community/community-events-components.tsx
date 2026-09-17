@@ -117,10 +117,7 @@ export const EventListStates = memo(function EventListStates({
   }
 
   if (eventsLoadError) {
-    const message =
-      eventsLoadError.kind === "permission"
-        ? "La consultation des missions nécessite une connexion."
-        : "Les missions ne sont pas disponibles pour le moment.";
+    const message = "Les missions ne sont pas disponibles pour le moment.";
 
     return (
       <ErrorMessage
@@ -348,8 +345,6 @@ export const EventArticlePast = memo(function EventArticlePast({
   updateOpsDraft: (eventId: string, patch: Partial<OpsDraft>) => void;
   onSaveEventOps: (event: CommunityEventItem) => Promise<void>;
 }) {
-  const { userId } = useAuth();
-  const canEditOwnEvent = Boolean(userId && event.organizerClerkId === userId);
   const opsDraft = getOpsDraft(event);
 
   return (
@@ -370,7 +365,7 @@ export const EventArticlePast = memo(function EventArticlePast({
           {event.rsvpCounts.total} inscription(s)
         </span>
       </div>
-      {canEditOwnEvent ? (
+      {event.canEditOwnOps ? (
         <CmmDisclosure summary="Suivi de ma mission" tone="rose" size="sm" className="mt-4">
           <div className="grid gap-3 pt-3 sm:grid-cols-[12rem_minmax(0,1fr)]">
             <label className="cmm-text-small font-semibold text-slate-700">
