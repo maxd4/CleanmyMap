@@ -33,6 +33,12 @@ describe("action creation panel routes", () => {
     expect(normalizeActionCreationTab(undefined, { actionId: "action-42" })).toBe("after");
     expect(
       normalizeActionCreationTab(undefined, {
+        actionId: "action-42",
+        panel: "formalites",
+      }),
+    ).toBe("before");
+    expect(
+      normalizeActionCreationTab(undefined, {
         actionId: "pre-action-42",
         actionPhase: "pre_action",
       }),

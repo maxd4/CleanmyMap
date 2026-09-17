@@ -181,6 +181,10 @@ describe("ActionCreationShell", () => {
     expect(markup).toContain(
       "/actions/new?tab=before&amp;panel=meteo&amp;actionId=action-42&amp;tag=terrain&amp;tag=safety",
     );
+    expect(markup).not.toContain('id="action-creation-panel-itineraire"');
+    expect(markup).not.toContain('id="action-creation-panel-meteo"');
+    expect(markup).not.toContain('id="action-creation-panel-formalites"');
+    expect(markup).not.toContain('data-testid="weather-engine"');
     expect(completeFormPropsMock).toHaveBeenLastCalledWith(
       expect.objectContaining({ initialActionId: "action-42" }),
     );

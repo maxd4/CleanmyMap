@@ -29,10 +29,12 @@ export function normalizeActionCreationTab(
     actionId?: string;
     from?: string;
     actionPhase?: "pre_action" | "post_action_draft" | "post_action_complete" | null;
+    panel?: ActionCreationPanelId;
   } = {},
 ): ActionCreationTab {
   const candidate = Array.isArray(value) ? value[0] : value;
   if (candidate === "before" || candidate === "after") return candidate;
+  if (context.panel && context.panel !== "pre-formulaire") return "before";
   if (context.actionPhase === "pre_action") return "before";
   if (context.actionPhase) return "after";
   if (context.from === "planner" || context.from === "before") return "before";
