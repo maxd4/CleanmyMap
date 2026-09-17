@@ -1,6 +1,11 @@
 "use client";
 
-import { useCallback, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useCallback,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicId } from "@/lib/chat/topics";
@@ -28,9 +33,16 @@ export function useChatShellSearch({
   selectedRecipientId,
   setViewMode,
 }: UseChatShellSearchParams) {
-  const [searchTargetMessageId, setSearchTargetMessageId] = useState<string | null>(null);
+  const [searchTarget, setSearchTarget] = useState<{
+    messageId: string;
+    scopeKey: string;
+  } | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const navigationScopeKey = `${activeChannelType}:${activeTopicId ?? "global"}:${selectedRecipientId ?? "none"}:${initialMessageId ?? "none"}`;
+  const searchTargetMessageId =
+    searchTarget?.scopeKey === navigationScopeKey ? searchTarget.messageId : null;
 
   const targetMessageIdForScope = searchTargetMessageId ?? (
     initialMessageId &&
@@ -51,14 +63,17 @@ export function useChatShellSearch({
   }, []);
 
   const handleSelectSearchResult = useCallback((result: ChatSearchResult) => {
-    setSearchTargetMessageId(result.messageId);
+    setSearchTarget({
+      messageId: result.messageId,
+      scopeKey: `${activeChannelType}:${activeTopicId ?? "global"}:${selectedRecipientId ?? "none"}:${initialMessageId ?? "none"}`,
+    });
     setIsSearchOpen(false);
     setSearchQuery("");
     setViewMode("messages");
-  }, [setViewMode]);
+  }, [activeChannelType, activeTopicId, initialMessageId, selectedRecipientId, setViewMode]);
 
   const resetSearch = useCallback(() => {
-    setSearchTargetMessageId(null);
+    setSearchTarget(null);
     setIsSearchOpen(false);
     setSearchQuery("");
   }, []);

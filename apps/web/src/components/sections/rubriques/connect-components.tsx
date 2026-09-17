@@ -32,7 +32,7 @@ const TAB_TONES: Record<ConnectTab, TabTone> = {
 export const CONNECT_TABS: ConnectTabItem[] = [
   {
     id: "discussions",
-    label: { fr: "Canaux Publics", en: "Public Channels" },
+    label: { fr: "Discussions", en: "Discussions" },
     icon: Hash,
     desc: {
       fr: "Communauté & Territoire",

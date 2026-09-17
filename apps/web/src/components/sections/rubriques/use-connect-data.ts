@@ -14,7 +14,9 @@ import {
   type CommunityAnnouncementTemplateKey,
 } from "@/lib/chat/announcements";
 import type { ChatUser } from "@/components/chat/chat-types";
+import type { ChatShellNavigationState } from "@/components/chat/chat-navigation";
 import type { ConnectTab } from "./connect-types";
+import { extractParisArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
 
 type CommunityEventReferenceResponse = {
   items?: Array<{
@@ -90,6 +92,94 @@ export function resolveInitialConnectTab({
 
 export function resolveInitialArrondissement(value: number): number | null {
   return Number.isInteger(value) && value >= 1 && value <= 20 ? value : null;
+}
+
+const CONNECT_NAVIGATION_PARAMS = [
+  "tab",
+  "channel",
+  "topicId",
+  "actionId",
+  "recipientId",
+  "recipientLabel",
+  "recipientHandle",
+  "messageId",
+  "feedbackId",
+  "contactRequestId",
+  "zoneName",
+  "arrondissementId",
+  "template",
+  "eventId",
+] as const;
+
+function setOrDeleteParam(params: URLSearchParams, key: string, value: string | null): void {
+  if (value?.trim()) {
+    params.set(key, value.trim());
+  } else {
+    params.delete(key);
+  }
+}
+
+/**
+ * Serializes the navigation that is actually selected in a ChatShell. Unknown
+ * query parameters are retained so existing links outside the chat contract
+ * remain compatible.
+ */
+export function synchronizeConnectNavigationParams(
+  current: URLSearchParams | string,
+  tab: ConnectTab,
+  state: ChatShellNavigationState,
+): URLSearchParams {
+  const params = new URLSearchParams(
+    typeof current === "string" ? current : current.toString(),
+  );
+  for (const key of CONNECT_NAVIGATION_PARAMS) {
+    params.delete(key);
+  }
+
+  params.set("tab", tab);
+  params.set("channel", state.activeChannelType);
+
+  if (state.activeChannelType === "dm") {
+    setOrDeleteParam(params, "recipientId", state.selectedRecipient?.id ?? null);
+    setOrDeleteParam(
+      params,
+      "recipientLabel",
+      state.selectedRecipient?.display_name ?? null,
+    );
+    setOrDeleteParam(
+      params,
+      "recipientHandle",
+      state.selectedRecipient?.handle ?? null,
+    );
+    setOrDeleteParam(params, "messageId", state.messageId);
+    setOrDeleteParam(params, "feedbackId", state.feedbackId);
+    setOrDeleteParam(params, "contactRequestId", state.contactRequestId);
+    return params;
+  }
+
+  setOrDeleteParam(params, "topicId", state.activeTopicId);
+  if (state.activeChannelType === "action") {
+    setOrDeleteParam(params, "actionId", state.selectedActionId);
+  }
+  setOrDeleteParam(params, "messageId", state.messageId);
+
+  if (state.activeChannelType === "territory") {
+    setOrDeleteParam(params, "zoneName", state.selectedZone);
+    const arrondissementId =
+      state.territoryFocus ?? extractParisArrondissementFromLabel(state.selectedZone);
+    setOrDeleteParam(
+      params,
+      "arrondissementId",
+      arrondissementId === null ? null : String(arrondissementId),
+    );
+  }
+
+  if (state.activeChannelType === "community" && state.announcementTemplate) {
+    setOrDeleteParam(params, "template", state.announcementTemplate);
+    setOrDeleteParam(params, "eventId", state.eventId);
+  }
+
+  return params;
 }
 
 export function useConnectData(defaultTab: ConnectTab = "discussions") {
@@ -207,9 +297,6 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
   const initialZoneName = requestedZoneName?.trim().length ? requestedZoneName.trim() : null;
 
   const initialMessageId = requestedMessageId?.trim() || null;
-  const discussionShellKey = `discussions:${initialChannelType}:${requestedActionId ?? "none"}:${initialTopicId ?? "global"}:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}:${initialAnnouncementTemplate ?? "none"}:${requestedEventId ?? "none"}:${initialMessageId ?? "none"}`;
-  const dmShellKey = `dm:${initialRecipient?.id ?? "none"}:${initialArrondissement}:${initialZoneName ?? "no-zone"}:${initialMessageId ?? "none"}:${requestedFeedbackId ?? "none"}`;
-
   return {
     activeTab,
     setActiveTab,
@@ -230,7 +317,7 @@ export function useConnectData(defaultTab: ConnectTab = "discussions") {
     initialArrondissement,
     initialZoneName,
     initialMessageId,
-    discussionShellKey,
-    dmShellKey,
+    initialEventId: requestedEventId,
+    initialContactRequestId: requestedContactRequestId,
   };
 }

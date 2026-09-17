@@ -5,8 +5,25 @@ import {
   buildInitialTopicId,
   resolveInitialArrondissement,
   resolveInitialConnectTab,
+  synchronizeConnectNavigationParams,
 } from "./use-connect-data";
 import { getAnnouncementTopicId } from "@/lib/chat/announcements";
+import type { ChatShellNavigationState } from "@/components/chat/chat-navigation";
+import { CONNECT_TABS } from "./connect-components";
+
+const publicNavigationState: ChatShellNavigationState = {
+  activeChannelType: "community",
+  activeTopicId: "relais_associatif",
+  selectedActionId: null,
+  selectedRecipient: null,
+  selectedZone: "",
+  territoryFocus: null,
+  messageId: "public-message-1",
+  feedbackId: null,
+  contactRequestId: null,
+  announcementTemplate: null,
+  eventId: null,
+};
 
 describe("DM deep-link recipient contract", () => {
   it("keeps the URL identity and opens a private thread", () => {
@@ -85,6 +102,88 @@ describe("connect tab routing", () => {
         hasAnnouncementTemplate: true,
       }),
     ).toBe("discussions");
+  });
+
+  it("uses the product vocabulary for the primary tabs", () => {
+    expect(CONNECT_TABS.map((tab) => tab.label.fr)).toEqual([
+      "Discussions",
+      "Messages privés",
+    ]);
+    expect(CONNECT_TABS.map((tab) => tab.label.fr)).not.toContain("Canaux Publics");
+  });
+});
+
+describe("selected navigation URL contract", () => {
+  it("serializes a public topic and removes stale DM state", () => {
+    const params = synchronizeConnectNavigationParams(
+      "tab=dm&channel=dm&recipientId=peer-1&recipientLabel=Alex&feedbackId=feedback-1&keep=1",
+      "discussions",
+      publicNavigationState,
+    );
+
+    expect(params.get("tab")).toBe("discussions");
+    expect(params.get("channel")).toBe("community");
+    expect(params.get("topicId")).toBe("relais_associatif");
+    expect(params.get("messageId")).toBe("public-message-1");
+    expect(params.get("keep")).toBe("1");
+    expect(params.has("recipientId")).toBe(false);
+    expect(params.has("feedbackId")).toBe(false);
+  });
+
+  it("serializes an action selection and its message anchor", () => {
+    const params = synchronizeConnectNavigationParams("source=notification", "discussions", {
+      ...publicNavigationState,
+      activeChannelType: "action",
+      activeTopicId: null,
+      selectedActionId: "action-42",
+    });
+
+    expect(params.get("channel")).toBe("action");
+    expect(params.get("actionId")).toBe("action-42");
+    expect(params.get("messageId")).toBe("public-message-1");
+    expect(params.has("topicId")).toBe(false);
+  });
+
+  it("serializes a DM recipient, message and feedback deep-link", () => {
+    const params = synchronizeConnectNavigationParams("tab=discussions&channel=community", "dm", {
+      ...publicNavigationState,
+      activeChannelType: "dm",
+      activeTopicId: null,
+      messageId: "dm-message-1",
+      feedbackId: "feedback-1",
+      contactRequestId: "request-1",
+      selectedRecipient: {
+        id: "peer-1",
+        display_name: "Alex",
+        handle: "alex_75",
+        avatar_url: null,
+      },
+    });
+
+    expect(params.get("tab")).toBe("dm");
+    expect(params.get("channel")).toBe("dm");
+    expect(params.get("recipientId")).toBe("peer-1");
+    expect(params.get("recipientLabel")).toBe("Alex");
+    expect(params.get("recipientHandle")).toBe("alex_75");
+    expect(params.get("messageId")).toBe("dm-message-1");
+    expect(params.get("feedbackId")).toBe("feedback-1");
+    expect(params.get("contactRequestId")).toBe("request-1");
+    expect(params.has("topicId")).toBe(false);
+  });
+
+  it("keeps a territory deep-link round-trippable with its arrondissement", () => {
+    const params = synchronizeConnectNavigationParams("", "discussions", {
+      ...publicNavigationState,
+      activeChannelType: "territory",
+      activeTopicId: "mon_territoire",
+      selectedZone: "11e arrondissement",
+      territoryFocus: null,
+    });
+
+    expect(params.get("channel")).toBe("territory");
+    expect(params.get("topicId")).toBe("mon_territoire");
+    expect(params.get("zoneName")).toBe("11e arrondissement");
+    expect(params.get("arrondissementId")).toBe("11");
   });
 });
 
