@@ -15,50 +15,11 @@ import {
 } from "./sections";
 import { useBeforeActionForm } from "./use-before-action-form";
 import type { ActionBeforeDeclarationFormProps } from "./model";
-import { buildPublicationSummary, labelForPreparationState } from "./model";
+import { buildPublicationSummary } from "./model";
 import { OperationalRouteEditor } from "../operational-route-editor";
 import { ChatActionShareDialog } from "@/components/chat/chat-action-share-dialog";
 import { buildJoinActionHref } from "@/lib/sections/join-action-routes";
 import { AdministrativeRequirementsStatus } from "../../administrative-requirements-status";
-
-const BEFORE_ACTION_STEPS = [
-  "Identité",
-  "Action",
-  "Préparation",
-  "Récapitulatif",
-  "Publication",
-] as const;
-
-function BeforeActionStepper({ activeStep }: { activeStep: number }) {
-  return (
-    <ol
-      aria-label="Progression Créer une action"
-      data-testid="before-action-stepper"
-      className="cmm-page-width grid grid-cols-2 gap-2 px-4 md:grid-cols-5 md:px-6 lg:px-8"
-    >
-      {BEFORE_ACTION_STEPS.map((label, index) => {
-        const step = index + 1;
-        const isActive = step === activeStep;
-        const isComplete = step < activeStep;
-        return (
-          <li
-            key={label}
-            aria-current={isActive ? "step" : undefined}
-            className={cn(
-              "rounded-2xl border px-3 py-2 text-xs font-bold transition",
-              isActive || isComplete
-                ? "border-emerald-300 bg-emerald-50 text-emerald-900"
-                : "border-emerald-100 bg-white/70 text-emerald-900/55",
-            )}
-          >
-            <span className="mr-1 text-[10px] uppercase tracking-[0.12em]">{step}</span>
-            {label}
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
 
 export function ActionBeforeDeclarationForm({
   actorNameOptions,
@@ -135,7 +96,6 @@ export function ActionBeforeDeclarationForm({
     const isCancelled = terminalActionStatus === "cancelled";
     return (
       <div className="space-y-6 px-4 py-6 md:px-6 lg:px-8">
-        <BeforeActionStepper activeStep={5} />
         <div className="mx-auto w-full max-w-3xl">
           <CmmCard tone="amber" variant="glass" size="lg">
             <div className="space-y-4">
@@ -166,7 +126,6 @@ export function ActionBeforeDeclarationForm({
     const publicationSummary = buildPublicationSummary(publishedAction ?? form);
     return (
       <div className="space-y-6 px-4 py-6 md:px-6 lg:px-8">
-        <BeforeActionStepper activeStep={isPublished || publicationConfirmationOpen ? 5 : 4} />
         <div className="cmm-page-width">
           <CmmCard tone="emerald" variant="glass" size="lg">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -256,7 +215,6 @@ export function ActionBeforeDeclarationForm({
           >
             <div className="space-y-5">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">Étape 5</p>
                   <h2 id="publish-action-title" className="mt-1 text-2xl font-black text-emerald-950">Confirmer la publication</h2>
                   <p id="publish-action-description" className="mt-2 text-sm leading-6 text-emerald-900/70">La publication rend cette même action visible dans les parcours publics. Elle ne crée aucune action, participation ou conversation.</p>
                 </div>
@@ -288,29 +246,15 @@ export function ActionBeforeDeclarationForm({
       </div>
 
       <div className="cmm-page-width relative space-y-6">
-        <BeforeActionStepper activeStep={1} />
         <CmmCard tone="emerald" variant="glass" size="lg">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl space-y-3">
-              <CmmPill tone="emerald" size="sm" className="tracking-[0.18em]">
-                Déclarer avant l&apos;action
-              </CmmPill>
-              <h1 className="text-[clamp(2rem,4vw,3.15rem)] font-black tracking-tighter text-emerald-950">
-                Préparer le formulaire de groupe
-              </h1>
-              <p className="max-w-3xl text-sm leading-6 text-emerald-900/72 md:text-[0.98rem]">
-                Renseignez uniquement les informations utiles avant le terrain. Les champs de récolte,
-                de bilan final et de validation restent réservés au formulaire complet.
-              </p>
-            </div>
-            <div className="max-w-sm rounded-[1.5rem] border border-emerald-200/80 bg-[#F3FBF6] px-4 py-3 text-sm leading-6 text-emerald-900/76 shadow-sm">
-              <p className="font-bold text-emerald-950">Statut du formulaire</p>
-              <p className="mt-1 text-emerald-950">Pré-action — les données de collecte seront ajoutées après le terrain.</p>
-              <p className="mt-1">{labelForPreparationState(form.preparationState)}</p>
-              <p className="mt-2 text-xs leading-5 text-emerald-900/60">
-                La pré-action reste privée jusqu&apos;à la publication explicite.
-              </p>
-            </div>
+          <div className="space-y-3">
+            <h2 className="text-3xl font-black tracking-tight text-emerald-950">
+              Préparer une action future
+            </h2>
+            <p className="cmm-text-body cmm-text-primary max-w-3xl">
+              Renseignez les informations utiles avant le terrain. Les champs de récolte,
+              de bilan final et de validation restent réservés au formulaire complet.
+            </p>
           </div>
         </CmmCard>
 
@@ -320,7 +264,7 @@ export function ActionBeforeDeclarationForm({
           }}
           className="space-y-6"
         >
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="space-y-6">
             <IdentityAndSharingSection
               form={form}
               updateField={updateField}
@@ -330,9 +274,8 @@ export function ActionBeforeDeclarationForm({
               onToggleGroupJoinHelp={() => setShowGroupJoinHelp((current) => !current)}
             />
             <PlannedActionSection form={form} updateField={updateField} />
+            <PreparationAndSafetySection form={form} updateField={updateField} />
           </div>
-
-          <PreparationAndSafetySection form={form} updateField={updateField} />
 
           {form.operationalRoute ? (
             <CmmCard tone="emerald" variant="glass" size="lg">
@@ -347,7 +290,7 @@ export function ActionBeforeDeclarationForm({
             <div className="rounded-[1.5rem] border border-rose-200/70 bg-[#FFF7F8] px-4 py-3 text-sm leading-6 text-rose-950">
                 <div className="flex items-center gap-2 font-semibold">
                 <AlertTriangle size={16} className="text-rose-500" />
-                  Le pré-formulaire n&apos;a pas encore pu être enregistré
+                  La préparation n&apos;a pas encore pu être enregistrée
               </div>
               {validationIssues.length > 0 ? (
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-rose-800/80">
@@ -376,7 +319,7 @@ export function ActionBeforeDeclarationForm({
 
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-emerald-200/70 bg-white/90 px-4 py-3 shadow-sm">
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-emerald-950">Pré-formulaire avant action</p>
+              <p className="text-sm font-semibold text-emerald-950">Enregistrer la préparation</p>
               <p className="text-xs leading-5 text-emerald-900/66">
                 L&apos;enregistrement reste privé ; la publication sera déclenchée explicitement après vérification.
               </p>
@@ -390,7 +333,7 @@ export function ActionBeforeDeclarationForm({
                   </>
                 ) : (
                   <>
-                    Enregistrer le pré-formulaire
+                    Enregistrer la préparation
                     <ArrowRight size={14} />
                   </>
                 )}
