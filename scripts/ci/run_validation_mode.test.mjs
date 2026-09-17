@@ -84,6 +84,17 @@ function makeRepository() {
   return root;
 }
 
+test("stores mode evidence below the canonical artifacts root", () => {
+  assert.equal(
+    VALIDATION_EVIDENCE_RELATIVE_ROOT,
+    path.join("artifacts", "validation", "mode-evidence"),
+  );
+  assert.notEqual(
+    VALIDATION_EVIDENCE_RELATIVE_ROOT,
+    path.join(".artifacts", "validation", "mode-evidence"),
+  );
+});
+
 test("FULL reuses FAST evidence only for the exact unchanged candidate", async () => {
   const root = makeRepository();
   const options = {

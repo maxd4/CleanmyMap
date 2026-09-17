@@ -5,7 +5,7 @@ import path from "node:path";
 
 export const VALIDATION_EVIDENCE_VERSION = 1;
 export const VALIDATION_EVIDENCE_RELATIVE_ROOT = path.join(
-  ".artifacts",
+  "artifacts",
   "validation",
   "mode-evidence",
 );

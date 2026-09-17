@@ -34,6 +34,8 @@ cache/
 tmp/
 output/
 # CleanMyMap local generated outputs. `.artifacts/validation/` is intentional evidence.
+# Legacy location for the FAST/FULL mode-evidence cache; current code writes below /artifacts/.
+/.artifacts/validation/mode-evidence/
 /.artifacts/validation/repository-inventory/
 /.artifacts/validation/prepush-candidate/
 /.artifacts/validation/publication-candidate/
