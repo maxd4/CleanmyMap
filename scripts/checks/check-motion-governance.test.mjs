@@ -4,6 +4,7 @@ import {
   auditActionCard,
   auditDisplayModesCss,
   auditMotionCss,
+  auditRevealVisibilityCss,
   auditPageTransition,
   auditPunchySlogan,
 } from "./check-motion-governance.mjs";
@@ -31,6 +32,28 @@ test("rejects a Motion stylesheet without prefers-reduced-motion", () => {
   ));
 
   assert.ok(violations.some((violation) => /prefers-reduced-motion/.test(violation)));
+});
+
+test("rejects a global reveal rule that hides SSR content", () => {
+  const violations = auditRevealVisibilityCss(
+    "[data-gsap-reveal] { opacity: 0; }",
+    "base.css",
+  );
+
+  assert.ok(violations.some((violation) => /visible without JavaScript\/GSAP/.test(violation)));
+});
+
+test("rejects equivalent visibility hiding for reveal content", () => {
+  assert.ok(
+    auditRevealVisibilityCss("[data-gsap-reveal], .other-content { visibility: hidden; }").length > 0,
+  );
+});
+
+test("accepts reveal markup without a hiding CSS contract", () => {
+  assert.deepEqual(
+    auditRevealVisibilityCss("[data-gsap-reveal] { transition: transform 0.2s ease; }"),
+    [],
+  );
 });
 
 test("accepts a static sobre helper contract", () => {

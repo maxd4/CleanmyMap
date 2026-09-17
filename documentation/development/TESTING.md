@@ -28,6 +28,23 @@ Pour les tests E2E Playwright :
 npx playwright install chromium
 ```
 
+Pour une modification de motion/reveal, exécuter le scénario public dédié
+avec Chromium et WebKit :
+
+```bash
+npx playwright install webkit
+npx playwright test e2e/homepage-reveal.spec.ts --project="homepage chromium" --project="homepage webkit"
+```
+
+Le scénario utilise `devices["Desktop Safari"]`, vérifie la visibilité après
+hydratation, après scroll et avec `prefers-reduced-motion: reduce`, puis tente
+le rendu SSR public avec JavaScript désactivé. Si Next/React conserve la
+frontière client streamée avec l'attribut `hidden` dans ce mode, le contrôle
+SSR est explicitement `SKIPPED` avec sa cause ; il ne doit pas être confondu
+avec un échec de visibilité GSAP. WebKit ne peut être déclaré validé que si
+son projet a réellement été exécuté. Cette procédure reste publique et
+n'utilise aucun identifiant de production.
+
 Les validations Supabase courantes utilisent `npx supabase` contre le projet
 distant explicitement lié. Les advisors se lancent avec
 `npm run backend:supabase:advisors` depuis `apps/web` ; cette commande est

@@ -39,6 +39,19 @@ test("RAPIDE TypeScript uses targeted evidence without a full suite", () => {
   assert.deepEqual(lint.command.args, ["eslint", "--config", "apps/web/eslint.config.mjs", "apps/web/src/lib/chat/polls.ts"]);
 });
 
+test("RAPIDE Motion/reveal changes run the canonical Motion governance check", () => {
+  const plan = createModeValidationPlan({
+    mode: "FAST",
+    changedFiles: ["apps/web/src/lib/animations/use-gsap-reveal.ts"],
+  });
+
+  assert.ok(ids(plan).includes("check:motion"));
+  assert.deepEqual(
+    plan.checks.find((check) => check.id === "check:motion").command,
+    { executable: "npm", args: ["run", "check:motion"] },
+  );
+});
+
 test("RAPIDE resolves an unchanged co-located sibling test", () => {
   const plan = createModeValidationPlan({
     mode: "FAST",
