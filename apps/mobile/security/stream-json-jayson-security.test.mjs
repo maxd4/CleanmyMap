@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { Readable } from "node:stream";
+import { once } from "node:events";
+import { PassThrough } from "node:stream";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import fs from "node:fs";
@@ -13,6 +14,13 @@ const mobileRoot = path.resolve(
 );
 const repositoryRoot = path.resolve(mobileRoot, "../..");
 const vendorRoot = path.join(mobileRoot, "vendor/stream-json");
+
+const writeChunk = (stream, chunk) =>
+  new Promise((resolve, reject) => {
+    stream.write(chunk, (error) => (error ? reject(error) : resolve()));
+  });
+
+const nextTurn = () => new Promise((resolve) => setImmediate(resolve));
 
 test("keeps jayson on the bounded CommonJS compatibility surface", () => {
   const rootPackage = JSON.parse(
@@ -40,31 +48,90 @@ test("performs a minimal streaming JSON-RPC exchange through jayson", async () =
   const server = new jayson.Server({
     add: (args, callback) => callback(null, args[0] + args[1]),
   });
-  const request = JSON.stringify({
+  const firstRequest = JSON.stringify({
     jsonrpc: "2.0",
     method: "add",
     params: [2, 3],
     id: 1,
   });
+  const secondRequest = JSON.stringify({
+    jsonrpc: "2.0",
+    method: "add",
+    params: [4, 5],
+    id: 2,
+  });
+  const input = new PassThrough();
+  const responses = [];
+  let streamError;
 
-  const response = await new Promise((resolve, reject) => {
-    jayson.Utils.parseStream(
-      Readable.from([request]),
-      {},
-      (error, parsedRequest) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-        server.call(parsedRequest, (callError, result) => {
-          if (callError) reject(callError);
-          else resolve(result);
-        });
-      },
-    );
+  jayson.Utils.parseStream(input, {}, (error, parsedRequest) => {
+    if (error) {
+      streamError = error;
+      return;
+    }
+    server.call(parsedRequest, (callError, result) => {
+      if (callError) streamError = callError;
+      else responses.push(result);
+    });
   });
 
-  assert.deepEqual(response, { jsonrpc: "2.0", id: 1, result: 5 });
+  await writeChunk(input, firstRequest);
+  await nextTurn();
+  assert.equal(input.readableEnded, false);
+  assert.equal(streamError, undefined);
+  assert.deepEqual(responses, [{ jsonrpc: "2.0", id: 1, result: 5 }]);
+
+  await writeChunk(input, secondRequest);
+  await nextTurn();
+  assert.equal(input.readableEnded, false);
+  assert.equal(streamError, undefined);
+  assert.deepEqual(responses, [
+    { jsonrpc: "2.0", id: 1, result: 5 },
+    { jsonrpc: "2.0", id: 2, result: 9 },
+  ]);
+
+  input.end();
+  await nextTurn();
+  assert.equal(streamError, undefined);
+});
+
+test("keeps StreamValues and Verifier incremental on an open stream", async () => {
+  const StreamValues = require("stream-json/streamers/StreamValues");
+  const Verifier = require("stream-json/utils/Verifier");
+  const parser = StreamValues.withParser();
+  const values = [];
+  parser.on("data", (item) => values.push(item.value));
+
+  await writeChunk(parser, '{"first":1}');
+  await nextTurn();
+  assert.deepEqual(values, [{ first: 1 }]);
+
+  await writeChunk(parser, '{"second":2}');
+  await nextTurn();
+  assert.deepEqual(values, [{ first: 1 }, { second: 2 }]);
+
+  await writeChunk(parser, '{"fragment":');
+  await nextTurn();
+  assert.deepEqual(values, [{ first: 1 }, { second: 2 }]);
+
+  await writeChunk(parser, '{"nested":true}}');
+  await nextTurn();
+  assert.deepEqual(values, [
+    { first: 1 },
+    { second: 2 },
+    { fragment: { nested: true } },
+  ]);
+
+  const verifier = new Verifier({ jsonStreaming: true });
+  await writeChunk(verifier, '{"partial":');
+  await writeChunk(verifier, 'true}');
+  const verifierFinished = once(verifier, "finish");
+  verifier.end();
+  await verifierFinished;
+
+  const parserFinished = once(parser, "end");
+  parser.end();
+  await parserFinished;
 });
 
 test("does not ship the excluded vulnerable path-filter modules", () => {
