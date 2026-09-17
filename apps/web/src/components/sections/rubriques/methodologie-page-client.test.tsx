@@ -186,6 +186,18 @@ describe("ActionMapMethodologySection", () => {
     expect(markup).not.toContain("COMING SOON");
   });
 
+  it("publie le shell clair et les libellés de l’en-tête de la méthodologie", () => {
+    const markup = renderMethodologyPage();
+
+    expect(markup).toContain('class="methodology-page relative');
+    expect(markup).toContain('class="methodology-page__ambient');
+    expect(markup).toContain("Calcul de l&#x27;impact");
+    expect(markup).toContain(
+      "Des métriques courtes, lisibles et fondées sur des sources documentées.",
+    );
+    expect(markup).toContain('class="cmm-disclosure methodology-page__disclosure"');
+  });
+
   it("dérive l’ordre des bulles et des pages de la navigation exhaustive", () => {
     const markup = renderMethodologyPage();
     const spaces = getNavigationSpacesForProfile("benevole", "exhaustif", "fr");

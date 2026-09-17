@@ -98,19 +98,19 @@ function MethodologyNavigationDocumentation({
     <div
       data-testid="methodology-navigation-documentation"
       data-methodology-display-mode="exhaustif"
-      className="space-y-8"
+      className="methodology-page__navigation space-y-8"
     >
       {spaces.map((space) => (
         <section
           key={space.id}
           data-methodology-space-id={space.id}
-          className="space-y-6 rounded-[2.5rem] border border-white/10 bg-slate-950/75 p-6 text-white shadow-[0_24px_60px_-42px_rgba(15,23,42,0.9)] sm:p-8 lg:p-10"
+          className="methodology-page__space space-y-6 rounded-[2.5rem] p-6 sm:p-8 lg:p-10"
         >
-          <div className="flex items-center gap-4">
-            <span aria-hidden="true" className="text-2xl">
+          <div className="methodology-page__space-heading flex items-center gap-4">
+            <span aria-hidden="true" className="methodology-page__space-icon text-2xl">
               {space.icon}
             </span>
-            <h2 className="text-2xl font-black tracking-tight sm:text-3xl">
+            <h2 className="methodology-page__space-title text-2xl font-black tracking-tight sm:text-3xl">
               Méthodologie — {space.label[locale]}
             </h2>
           </div>
@@ -126,9 +126,10 @@ function MethodologyNavigationDocumentation({
                 >
                   <CmmDisclosure
                     summary={item.label[locale]}
-                    defaultOpen={Boolean(content)}
+                    defaultOpen={false}
                     tone="rose"
                     size="lg"
+                    className="methodology-page__disclosure"
                   >
                     {content ?? null}
                   </CmmDisclosure>
@@ -779,22 +780,23 @@ export function MethodologiePageClient(props: MethodologiePageClientProps) {
   };
 
   return (
-    <div className="relative left-1/2 w-screen -translate-x-1/2 isolate overflow-x-clip bg-[linear-gradient(180deg,rgba(255,244,246,0.98)_0%,rgba(255,251,252,0.92)_28%,rgba(15,23,42,1)_100%)] pb-20 pt-6">
+    <div className="methodology-page relative left-1/2 w-screen -translate-x-1/2 isolate overflow-x-clip pb-20 pt-6">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[44rem] bg-[radial-gradient(circle_at_top,rgba(251,113,133,0.26)_0%,rgba(251,113,133,0.12)_24%,rgba(255,255,255,0.88)_52%,rgba(15,23,42,0.98)_100%)]"
+        className="methodology-page__ambient pointer-events-none absolute inset-x-0 top-0 -z-10 h-[44rem]"
       />
 
-      <div className="cmm-page-width flex flex-col space-y-10 px-4 pt-2 sm:px-6 lg:px-8">
+      <div className="methodology-page__shell cmm-page-width flex flex-col space-y-10 px-4 pt-2 sm:px-6 lg:px-8">
         <PageHeader
           align="center"
           tone="red"
-            title={
-              <span className="inline-flex items-center gap-3">
-                <Beaker size={24} aria-hidden="true" />
-                <span>{t("header_title")}</span>
-              </span>
-            }
+          className="methodology-page__header"
+          title={
+            <span className="methodology-page__title">
+              <span aria-hidden="true" className="methodology-page__title-accent" />
+              <span>{t("header_title")}</span>
+            </span>
+          }
           subtitle={t("header_desc")}
         />
 
