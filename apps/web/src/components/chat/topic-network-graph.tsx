@@ -1,5 +1,6 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Sparkles, TrendingUp, Hash } from "lucide-react";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 interface Topic {
   id: string;
@@ -18,6 +19,11 @@ const TOPICS: Topic[] = [
 ];
 
 export function TopicNetworkGraph() {
+  const { displayMode } = useSitePreferences();
+  const reducedMotion = useReducedMotion();
+  const shouldAnimate = reducedMotion !== true && displayMode !== "sobre";
+  const entryDuration = displayMode === "minimaliste" ? 0.12 : 0.25;
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-50/50 dark:bg-slate-900/50 backdrop-blur-3xl overflow-hidden relative">
       {/* Decorative background grid */}
@@ -26,11 +32,11 @@ export function TopicNetworkGraph() {
 
       <div className="text-center mb-12 relative z-10">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/10 text-violet-600 mb-3">
-          <TrendingUp size={14} />
-          <span className="text-[10px] font-black uppercase tracking-widest">Sujets Chauds</span>
+          <TrendingUp size={14} aria-hidden="true" />
+          <span className="cmm-text-caption font-semibold">Sujets chauds</span>
         </div>
         <h3 className="text-2xl font-black cmm-text-primary tracking-tight">Réseau de Discussion</h3>
-        <p className="cmm-text-muted text-xs font-bold uppercase tracking-tighter mt-1">Intelligence collective en temps réel</p>
+        <p className="cmm-text-muted cmm-text-small font-medium mt-1">Intelligence collective en temps réel</p>
       </div>
 
       <div className="relative w-full max-w-xl h-[400px]">
@@ -43,14 +49,15 @@ export function TopicNetworkGraph() {
           return (
             <motion.div
               key={topic.id}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ 
+              initial={shouldAnimate ? { scale: displayMode === "minimaliste" ? 0.96 : 0, opacity: 0 } : false}
+              animate={{
                 scale: 1, 
                 opacity: 1,
                 x: `${x}%`,
                 y: `${y}%`,
               }}
-              whileHover={{ scale: 1.1, zIndex: 50 }}
+              whileHover={shouldAnimate ? { scale: 1.1, zIndex: 50 } : undefined}
+              transition={{ duration: shouldAnimate ? entryDuration : 0 }}
               className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer"
             >
               <div 
@@ -63,10 +70,10 @@ export function TopicNetworkGraph() {
                                    'rgba(99, 102, 241, 0.15)'
                 }}
               >
-                <Hash size={14} className={
-                  topic.sentiment === 'urgent' ? 'text-red-500' : 
-                  topic.sentiment === 'positive' ? 'text-emerald-500' : 
-                  'text-violet-500'
+                <Hash size={14} aria-hidden="true" className={
+                  topic.sentiment === 'urgent' ? 'text-rose-500' :
+                  topic.sentiment === 'positive' ? 'text-pink-600' :
+                  'text-slate-500'
                 } />
                 <span className="text-[10px] font-black cmm-text-primary mt-1 px-2 text-center leading-tight">
                   {topic.name}
@@ -75,13 +82,13 @@ export function TopicNetworkGraph() {
               </div>
               
               {/* Pulse effect for urgent topics */}
-              {topic.sentiment === 'urgent' && (
+              {topic.sentiment === 'urgent' && shouldAnimate ? (
                 <motion.div 
                   animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.1, 0.3] }}
                   transition={{ repeat: Infinity, duration: 2 }}
-                  className="absolute inset-0 bg-red-500/20 rounded-full blur-xl -z-10"
+                  className="absolute inset-0 rounded-full bg-rose-500/20 blur-xl -z-10"
                 />
-              )}
+              ) : null}
             </motion.div>
           );
         })}
@@ -89,8 +96,8 @@ export function TopicNetworkGraph() {
         {/* Central Hub */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
           <div className="w-24 h-24 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-inner border border-slate-100 dark:border-slate-700">
-            <div className="w-16 h-16 bg-violet-500/10 rounded-full flex items-center justify-center animate-pulse">
-              <Sparkles className="text-violet-500" />
+          <div className={`w-16 h-16 rounded-full bg-pink-500/10 flex items-center justify-center ${shouldAnimate ? "animate-pulse" : ""}`}>
+              <Sparkles className="text-pink-600" />
             </div>
           </div>
         </div>
@@ -98,13 +105,13 @@ export function TopicNetworkGraph() {
       
       <div className="mt-auto pt-8 flex gap-6">
         {[
-          { label: 'Action Positive', color: 'bg-emerald-500' },
-          { label: 'Alerte Urgente', color: 'bg-red-500' },
-          { label: 'Neutre', color: 'bg-violet-500' }
+          { label: 'Action positive', color: 'bg-pink-600' },
+          { label: 'Alerte urgente', color: 'bg-rose-500' },
+          { label: 'Neutre', color: 'bg-slate-500' }
         ].map(item => (
           <div key={item.label} className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${item.color}`} />
-            <span className="text-[9px] font-black uppercase tracking-widest cmm-text-muted">{item.label}</span>
+            <span className="cmm-text-caption font-semibold cmm-text-muted">{item.label}</span>
           </div>
         ))}
       </div>

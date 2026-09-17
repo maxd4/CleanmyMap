@@ -21,6 +21,22 @@ const channelButtonSource = readFileSync(
   new URL("../../chat/ui/channel-button.tsx", import.meta.url),
   "utf8",
 );
+const connectComponentsSource = readFileSync(
+  new URL("./connect-components.tsx", import.meta.url),
+  "utf8",
+);
+const chatHeaderSource = readFileSync(
+  new URL("../../chat/chat-header.tsx", import.meta.url),
+  "utf8",
+);
+const chatMessageItemSource = readFileSync(
+  new URL("../../chat/ui/chat-message-item.tsx", import.meta.url),
+  "utf8",
+);
+const topicGraphSource = readFileSync(
+  new URL("../../chat/topic-network-graph.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("Messagerie navigation shell", () => {
   it("keeps both tab shells mounted so tab round-trips retain local state", () => {
@@ -69,5 +85,26 @@ describe("Messagerie navigation shell", () => {
     expect(channelButtonSource).toContain("<button");
     expect(channelButtonSource).toContain("focus-visible:ring-2");
     expect(chatActionSurfaceSource).toContain("focus-visible:ring-2");
+  });
+
+  it("uses the canonical page header, fluid shell height, and real tab semantics", () => {
+    expect(connectSectionSource).toContain("<PageHeader");
+    expect(connectSectionSource).not.toContain("h-[calc(100dvh-8.5rem)]");
+    expect(connectSectionSource).toContain('role="tabpanel"');
+    expect(connectSectionSource).toContain("useReducedMotion");
+    expect(connectComponentsSource).toContain('role="tablist"');
+    expect(connectComponentsSource).toContain('role="tab"');
+    expect(connectComponentsSource).toContain("ariaSelected={isActive}");
+    expect(connectComponentsSource).toContain("ArrowRight");
+  });
+
+  it("keeps the light network palette and motion state discreet", () => {
+    expect(connectComponentsSource).not.toContain("bg-fuchsia-500");
+    expect(chatHeaderSource).not.toContain("animate-pulse");
+    expect(chatHeaderSource).toContain("Actualisation");
+    expect(chatMessageItemSource).toContain("useReducedMotion");
+    expect(chatMessageItemSource).toContain('displayMode !== "sobre"');
+    expect(topicGraphSource).toContain("useReducedMotion");
+    expect(topicGraphSource).toContain('displayMode !== "sobre"');
   });
 });

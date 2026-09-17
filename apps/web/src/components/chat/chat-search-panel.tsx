@@ -93,7 +93,7 @@ export function ChatSearchPanel({
                     className={`block w-full rounded-lg border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 ${isLight ? "border-transparent hover:border-rose-200 hover:bg-rose-50 focus-visible:ring-rose-400" : "border-transparent hover:border-white/10 hover:bg-white/5 focus-visible:ring-pink-400"}`}
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <span className={`truncate text-xs font-bold ${isLight ? "text-slate-800" : "text-slate-200"}`}>
+                      <span className={`break-words text-xs font-bold ${isLight ? "text-slate-800" : "text-slate-200"}`}>
                         {result.author.displayName} <span className="font-normal text-slate-500">@{result.author.handle}</span>
                       </span>
                       <time className="shrink-0 text-[10px] text-slate-500" dateTime={result.createdAt}>

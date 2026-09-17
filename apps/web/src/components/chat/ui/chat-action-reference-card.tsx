@@ -36,7 +36,7 @@ export function ChatActionReferenceCard({
   );
 
   if (isLoading) {
-    return <p className="mb-3 rounded-xl border border-sky-200/60 px-3 py-3 text-xs text-slate-500" role="status">Chargement de l’action…</p>;
+    return <p className="mb-3 rounded-xl border border-pink-200/60 px-3 py-3 cmm-text-small text-slate-500" role="status">Chargement de l’action…</p>;
   }
 
   if (error || !data) {
@@ -47,12 +47,12 @@ export function ChatActionReferenceCard({
   return (
     <article className={cn(
       "mb-3 rounded-2xl border p-4 shadow-sm",
-      isLight ? "border-sky-200 bg-sky-50/70" : "border-sky-400/25 bg-sky-500/10",
+      isLight ? "border-pink-200 bg-pink-50/70" : "border-pink-400/25 bg-pink-500/10",
     )}>
       <div className="space-y-3">
         <div>
-          <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-sky-500">Action partagée</p>
-          <h3 className={cn("mt-1 text-base font-black", isLight ? "text-sky-950" : "text-sky-100")}>{data.title}</h3>
+          <p className="cmm-text-caption font-semibold text-pink-700">Action partagée</p>
+          <h3 className={cn("mt-1 text-base font-bold", isLight ? "text-pink-950" : "text-pink-100")}>{data.title}</h3>
         </div>
         <div className="grid gap-2 text-xs text-slate-500">
           <span className="inline-flex items-center gap-2"><CalendarDays size={13} />{dateLabel(data)}{time ? ` · ${time}` : ""}</span>
@@ -67,14 +67,14 @@ export function ChatActionReferenceCard({
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/actions/map?actionId=${encodeURIComponent(data.id)}`}
-            className="inline-flex items-center rounded-full bg-sky-600 px-3 py-2 cmm-text-caption font-black uppercase tracking-wide text-white transition hover:bg-sky-700"
+            className="inline-flex items-center rounded-full bg-pink-600 px-3 py-2 cmm-text-small font-semibold text-white transition hover:bg-pink-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
           >
             Ouvrir l’action
           </Link>
           {data.groupJoinEnabled ? (
             <Link
               href={buildJoinHref(data.id)}
-            className="inline-flex items-center rounded-full border border-emerald-300 bg-white px-3 py-2 cmm-text-caption font-black uppercase tracking-wide text-emerald-700 transition hover:bg-emerald-50"
+            className="inline-flex items-center rounded-full border border-emerald-300 bg-white px-3 py-2 cmm-text-small font-semibold text-emerald-700 transition hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
             >
               Rejoindre l’action
             </Link>

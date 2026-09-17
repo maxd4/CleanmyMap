@@ -201,7 +201,7 @@ export const ChatComposer = memo(function ChatComposer({
       {composerMode !== "poll" && file ? (
         <div className={`mb-3 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-xs ${isLight ? "border-rose-100 bg-white" : "border-violet-500/20 bg-violet-500/10"}`}>
           <div className="min-w-0">
-            <p className={`font-black uppercase tracking-widest ${isLight ? "text-rose-600" : "text-violet-400"}`}>
+            <p className={`font-semibold ${isLight ? "text-rose-600" : "text-violet-400"}`}>
               Pièce jointe
             </p>
             <p className={`break-words cmm-text-small font-medium ${isLight ? "text-slate-700" : "text-slate-200"}`}>
@@ -211,7 +211,7 @@ export const ChatComposer = memo(function ChatComposer({
           <button
             type="button"
             onClick={() => onFileChange(null)}
-            className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-3 py-1 font-black uppercase tracking-widest transition ${isLight ? "border-rose-100 bg-white text-slate-600 hover:bg-rose-50" : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"}`}
+            className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-3 py-1 font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isLight ? "border-rose-100 bg-white text-slate-600 hover:bg-rose-50" : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"}`}
           >
             <X size={12} />
             Retirer
@@ -265,7 +265,7 @@ export const ChatComposer = memo(function ChatComposer({
               type="button"
               onClick={() => onPollOptionsChange?.([...pollOptions, ""])}
               disabled={pollOptions.length >= CHAT_POLL_MAX_OPTIONS}
-              className={`inline-flex items-center gap-1 rounded-xl border px-3 py-2 cmm-text-caption font-black uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40 ${isLight ? "border-rose-100 text-rose-700 hover:bg-rose-50" : "border-white/10 text-slate-300 hover:bg-white/5"}`}
+              className={`inline-flex items-center gap-1 rounded-xl border px-3 py-2 cmm-text-caption font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 disabled:cursor-not-allowed disabled:opacity-40 ${isLight ? "border-rose-100 text-rose-700 hover:bg-rose-50" : "border-white/10 text-slate-300 hover:bg-white/5"}`}
             >
               <Plus size={13} /> Ajouter une option
             </button>
@@ -309,7 +309,7 @@ export const ChatComposer = memo(function ChatComposer({
                         : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
                   }`}
                 >
-                  <span className="block cmm-text-caption font-black uppercase tracking-wider">
+                  <span className="block cmm-text-caption font-semibold">
                     {template.label}
                   </span>
                   <span className="mt-1 block cmm-text-caption leading-tight text-slate-500">
@@ -334,7 +334,7 @@ export const ChatComposer = memo(function ChatComposer({
             </p>
           ) : relatedEvent ? (
             <div className={`mt-3 rounded-xl border p-3 ${isLight ? "border-rose-100 bg-rose-50/60" : "border-rose-400/20 bg-rose-500/10"}`}>
-              <p className="cmm-text-caption font-black uppercase tracking-widest text-rose-500">
+              <p className="cmm-text-caption font-semibold text-rose-500">
                 Cleanup associé
               </p>
               <p className={`mt-1 text-xs font-black ${isLight ? "text-slate-800" : "text-white"}`}>

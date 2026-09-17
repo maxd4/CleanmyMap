@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   BarChart3,
   Calendar,
@@ -19,6 +19,7 @@ import { ChatActionReferenceCard } from "./chat-action-reference-card";
 
 import type { ChatMessage } from "../chat-types";
 import { getDiscussionTopic } from "../discussion-guidance";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type ChatMessageItemProps = {
   message: ChatMessage;
@@ -61,7 +62,11 @@ export function ChatMessageItem({
   isHighlighted = false,
 }: ChatMessageItemProps) {
   const isLight = tone === "light";
+  const { displayMode } = useSitePreferences();
+  const reducedMotion = useReducedMotion();
   const isMe = message.sender_id === userId;
+  const isPrivateChannel = message.channel_type === "dm";
+  const shouldAnimate = reducedMotion !== true && displayMode !== "sobre";
   const safeAttachmentUrl = isSafeChatAttachmentUrl(message.attachment_url)
     ? message.attachment_url
     : null;
@@ -89,8 +94,9 @@ export function ChatMessageItem({
       id={`chat-message-${message.id}`}
       tabIndex={isHighlighted ? -1 : undefined}
       data-chat-message-id={message.id}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={shouldAnimate ? { opacity: 0, y: displayMode === "minimaliste" ? 2 : 10 } : false}
+      animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
+      transition={{ duration: shouldAnimate ? (displayMode === "minimaliste" ? 0.1 : 0.18) : 0 }}
       className="flex w-full group mb-4"
     >
       <div 
@@ -105,12 +111,12 @@ export function ChatMessageItem({
               ? isPoll
                 ? "border-pink-200 bg-pink-50/30 shadow-sm"
                 : hasActionReference
-                  ? "border-sky-200 bg-sky-50/40"
+                  ? "border-pink-200 bg-pink-50/40"
                   : "border-rose-200 bg-rose-50/30"
               : isPoll
                 ? "border-pink-400/20 bg-pink-500/5 shadow-sm"
                 : hasActionReference
-                  ? "border-sky-400/20 bg-sky-500/5"
+                  ? "border-pink-400/20 bg-pink-500/5"
                   : "border-rose-400/20 bg-rose-500/5"
             : isLight
               ? "border-slate-200/80"
@@ -125,7 +131,7 @@ export function ChatMessageItem({
               name={message.sender.display_name}
               size="md"
               tone={isLight ? "light" : "dark"}
-              className={isLight ? "bg-indigo-50 text-indigo-700" : "bg-slate-900 text-slate-100"}
+              className={isPrivateChannel ? (isLight ? "bg-indigo-50 text-indigo-700" : "bg-indigo-500/20 text-indigo-300") : (isLight ? "bg-pink-50 text-pink-700" : "bg-pink-500/20 text-pink-300")}
             />
             <div>
               <div className="flex items-center gap-2">
@@ -133,7 +139,7 @@ export function ChatMessageItem({
                   {message.sender.display_name}
                 </span>
                 {isMe && (
-                  <span className={`px-1.5 py-0.5 rounded cmm-text-caption font-black uppercase tracking-widest ${isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300"}`}>
+                  <span className={`rounded px-1.5 py-0.5 cmm-text-caption font-semibold ${isPrivateChannel ? (isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300") : (isLight ? "bg-pink-50 text-pink-700" : "bg-pink-500/20 text-pink-300")}`}>
                     Moi
                   </span>
                 )}
@@ -158,22 +164,22 @@ export function ChatMessageItem({
           {hasStructuredMetadata ? (
             <div className="mb-3 flex flex-wrap gap-2">
               {isAnnouncement ? (
-                <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-black uppercase tracking-wider ${isLight ? "bg-rose-100 text-rose-700" : "bg-rose-500/20 text-rose-300"}`}>
+                <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-semibold ${isLight ? "bg-rose-100 text-rose-700" : "bg-rose-500/20 text-rose-300"}`}>
                   <Megaphone size={10} aria-hidden="true" /> Annonce / Relai
                 </span>
               ) : null}
               {isPoll ? (
-                <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-black uppercase tracking-wider ${isLight ? "bg-pink-100 text-pink-700" : "bg-pink-500/20 text-pink-300"}`}>
+                <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-semibold ${isLight ? "bg-pink-100 text-pink-700" : "bg-pink-500/20 text-pink-300"}`}>
                   <BarChart3 size={10} aria-hidden="true" /> Sondage
                 </span>
               ) : null}
               {topic ? (
-                <span className={`inline-flex items-center rounded-md px-2 py-1 cmm-text-caption font-bold ${isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300"}`}>
+                <span className={`inline-flex items-center rounded-md px-2 py-1 cmm-text-caption font-bold ${isPrivateChannel ? (isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300") : (isLight ? "bg-pink-50 text-pink-700" : "bg-pink-500/20 text-pink-300")}`}>
                   {topic.label}
                 </span>
               ) : null}
               {hasActionReference ? (
-                <span className={`inline-flex items-center rounded-md px-2 py-1 cmm-text-caption font-bold ${isLight ? "bg-sky-50 text-sky-700" : "bg-sky-500/20 text-sky-300"}`}>
+                <span className={`inline-flex items-center rounded-md px-2 py-1 cmm-text-caption font-bold ${isLight ? "bg-pink-50 text-pink-700" : "bg-pink-500/20 text-pink-300"}`}>
                   Action
                 </span>
               ) : null}
@@ -182,7 +188,7 @@ export function ChatMessageItem({
 
           {isAnnouncement && message.related_event ? (
             <div className={`mb-3 rounded-xl border p-3 ${isLight ? "border-rose-100 bg-rose-50/60" : "border-rose-400/20 bg-rose-500/10"}`}>
-              <p className="cmm-text-caption font-black uppercase tracking-widest text-rose-500">
+              <p className="cmm-text-caption font-semibold text-rose-500">
                 Cleanup associé
               </p>
               <p className={`mt-1 text-xs font-black ${isLight ? "text-slate-800" : "text-white"}`}>
@@ -202,7 +208,7 @@ export function ChatMessageItem({
           {isPoll && pollOptions.length > 0 ? (
             <div className={`mb-3 rounded-xl border p-3 ${isLight ? "border-pink-100 bg-pink-50/60" : "border-pink-400/20 bg-pink-500/10"}`}>
               <div className="mb-2 flex items-center justify-between gap-3">
-                <p className="cmm-text-caption font-black uppercase tracking-widest text-pink-500">
+                <p className="cmm-text-caption font-semibold text-pink-700">
                   {message.totalVotes ?? 0} vote{(message.totalVotes ?? 0) > 1 ? "s" : ""}
                 </p>
                 {pollVotePending ? (
@@ -231,7 +237,7 @@ export function ChatMessageItem({
                         <span className="text-pink-500">{option.position}.</span>
                         <span className="break-words">{option.label}</span>
                         {isSelected ? (
-                          <span className="rounded-full bg-pink-500/15 px-1.5 py-0.5 cmm-text-caption font-black uppercase tracking-wide text-pink-600">
+                          <span className="rounded-full bg-pink-500/15 px-1.5 py-0.5 cmm-text-caption font-semibold text-pink-600">
                             Votre choix
                           </span>
                         ) : null}
@@ -277,7 +283,7 @@ export function ChatMessageItem({
                   type="button"
                   disabled={pollVotePending}
                   onClick={() => onPollVote(message.id, null)}
-                  className="mt-3 cmm-text-caption font-black uppercase tracking-wider text-pink-600 underline-offset-2 hover:underline disabled:cursor-wait disabled:opacity-60"
+                  className="mt-3 cmm-text-caption font-semibold text-pink-700 underline-offset-2 hover:underline disabled:cursor-wait disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
                 >
                   Retirer mon vote
                 </button>
@@ -309,20 +315,20 @@ export function ChatMessageItem({
                   href={safeAttachmentUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className={`inline-flex items-center gap-3 rounded-xl border p-3 transition-all ${isLight ? "border-indigo-100 bg-indigo-50/50 hover:bg-white" : "border-slate-700 bg-slate-800 hover:bg-slate-700"}`}
+                  className={`inline-flex items-center gap-3 rounded-xl border p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 ${isPrivateChannel ? (isLight ? "border-indigo-100 bg-indigo-50/50 hover:bg-white" : "border-slate-700 bg-slate-800 hover:bg-slate-700") : (isLight ? "border-pink-100 bg-pink-50/50 hover:bg-white" : "border-slate-700 bg-slate-800 hover:bg-slate-700")}`}
                 >
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isLight ? "bg-indigo-100 text-indigo-500" : "bg-indigo-500/20 text-indigo-400"}`}>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${isPrivateChannel ? (isLight ? "bg-indigo-100 text-indigo-500" : "bg-indigo-500/20 text-indigo-400") : (isLight ? "bg-pink-100 text-pink-600" : "bg-pink-500/20 text-pink-300")}`}>
                     <FileText size={16} />
                   </div>
                   <div>
                     <p className={`break-words cmm-text-small font-bold ${isLight ? "text-slate-800" : "text-white"}`}>
                       {attachmentLabel}
                     </p>
-                    <p className={`cmm-text-caption font-bold uppercase tracking-widest ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                    <p className={`cmm-text-caption font-semibold ${isLight ? "text-slate-500" : "text-slate-400"}`}>
                       Document
                     </p>
                   </div>
-                  <Download size={14} className={isLight ? "text-indigo-500 ml-2" : "text-indigo-400 ml-2"} />
+                  <Download size={14} className={isPrivateChannel ? (isLight ? "ml-2 text-indigo-500" : "ml-2 text-indigo-400") : (isLight ? "ml-2 text-pink-600" : "ml-2 text-pink-300")} />
                 </a>
               )}
             </div>

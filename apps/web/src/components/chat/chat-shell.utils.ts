@@ -20,23 +20,23 @@ export type ChannelVisual = {
 export const CHANNEL_VISUALS: Record<ChatChannelType, ChannelVisual> = {
   community: {
     icon: Users,
-    accentClass: "text-emerald-500",
-    chipClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+    accentClass: "text-pink-600",
+    chipClass: "bg-pink-50 text-pink-700 dark:bg-pink-950/40 dark:text-pink-300",
   },
   dm: {
     icon: Mail,
-    accentClass: "text-sky-500",
-    chipClass: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300",
+    accentClass: "text-indigo-600",
+    chipClass: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300",
   },
   admin_elu: {
     icon: Shield,
-    accentClass: "text-violet-500",
-    chipClass: "bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300",
+    accentClass: "text-pink-600",
+    chipClass: "bg-pink-50 text-pink-700 dark:bg-pink-950/40 dark:text-pink-300",
   },
   territory: {
     icon: MapPin,
-    accentClass: "text-amber-500",
-    chipClass: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+    accentClass: "text-rose-600",
+    chipClass: "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300",
   },
   bug_report: {
     icon: Bug,
@@ -45,8 +45,8 @@ export const CHANNEL_VISUALS: Record<ChatChannelType, ChannelVisual> = {
   },
   action: {
     icon: MessageCircle,
-    accentClass: "text-sky-500",
-    chipClass: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300",
+    accentClass: "text-pink-600",
+    chipClass: "bg-pink-50 text-pink-700 dark:bg-pink-950/40 dark:text-pink-300",
   },
 };
 
