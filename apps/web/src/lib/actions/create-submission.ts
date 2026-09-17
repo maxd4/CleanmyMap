@@ -33,7 +33,7 @@ type CreatorIdentity = {
   userId: string;
   displayName: string;
   handle: string;
-  username: string;
+  username: string | null;
   email: string | null;
 };
 

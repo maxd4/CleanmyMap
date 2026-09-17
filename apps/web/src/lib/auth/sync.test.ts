@@ -270,6 +270,33 @@ describe("syncClerkUserToSupabase", () => {
     );
   });
 
+  it("uses the non-sensitive handle fallback when username and email are absent", async () => {
+    const { supabase, upsert } = createSupabaseMock({
+      existingProfile: null,
+    });
+    getSupabaseAdminClientMock.mockReturnValue(supabase);
+
+    await syncClerkUserToSupabase({
+      id: "user_contact_only",
+      username: null,
+      emailAddresses: [{ emailAddress: "contact@cleanmymap.fr" }],
+      primaryEmailAddress: { emailAddress: "contact@cleanmymap.fr" },
+      imageUrl: "https://example.com/avatar.png",
+      publicMetadata: {},
+      privateMetadata: {},
+      firstName: "Contact",
+      lastName: "Only",
+    } as never);
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        handle: "user_t_only",
+        display_name: "Contact Only",
+      }),
+      { onConflict: "id" },
+    );
+  });
+
   it("derives the arrondissement from a district zone name during sync", async () => {
     const { supabase, upsert } = createSupabaseMock({
       existingProfile: null,

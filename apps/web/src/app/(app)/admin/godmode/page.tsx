@@ -15,8 +15,8 @@ export default async function GodModeAdminPage() {
   const displayName =
     identity?.displayName?.trim() ||
     identity?.firstName?.trim() ||
-    identity?.username ||
     identity?.handle ||
+    identity?.username ||
     "Administration avancée";
 
   return <AdminCreatorConsole displayName={displayName} />;

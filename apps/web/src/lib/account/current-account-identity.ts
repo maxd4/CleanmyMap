@@ -4,6 +4,7 @@ import {
 } from "@/lib/profiles";
 import type { Role } from "@/lib/domain-language";
 import type { UserIdentity } from "@/lib/authz";
+import { buildFallbackHandle } from "@/lib/auth/identity-handle";
 
 export type CurrentAccountIdentity = UserIdentity;
 
@@ -25,7 +26,8 @@ function hasRequiredIdentityFields(
 function buildCurrentAccountIdentity(
   payload: CurrentAccountIdentityResponse & { userId: string; displayName: string },
 ): CurrentAccountIdentity {
-  const username = trimOrNull(payload.username) ?? trimOrNull(payload.handle) ?? payload.userId;
+  const username = trimOrNull(payload.username);
+  const handle = trimOrNull(payload.handle) ?? buildFallbackHandle(payload.userId);
   const role = payload.role && [
     "benevole",
     "coordinateur",
@@ -41,7 +43,7 @@ function buildCurrentAccountIdentity(
     userId: payload.userId,
     displayName: payload.displayName,
     displayNameMode: normalizeDisplayNameMode(payload.displayNameMode),
-    handle: trimOrNull(payload.handle) ?? username,
+    handle,
     username,
     firstName: trimOrNull(payload.firstName),
     email: trimOrNull(payload.email),
@@ -53,7 +55,7 @@ function buildCurrentAccountIdentity(
       Array.isArray(payload.actorNameOptions) &&
       payload.actorNameOptions.every((value): value is string => typeof value === "string")
         ? payload.actorNameOptions
-        : [username, payload.userId],
+        : [handle],
     role,
     activeRole: resolveActiveProfile({
       metadataActiveProfile: payload.activeProfile,

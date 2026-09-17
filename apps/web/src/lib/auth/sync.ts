@@ -25,6 +25,7 @@ import {
   createTerritoryLocationMetadataFromLabel,
   extractTerritoryLocationPreferenceFromMetadata,
 } from "@/lib/user-location-preference";
+import { buildFallbackHandle } from "@/lib/auth/identity-handle";
 
 const MAX_HANDLE_LENGTH = 30;
 
@@ -321,7 +322,7 @@ function resolveDisplayNameForUser(
   return resolveAccountDisplayName({
     firstName: user.firstName?.trim() ?? "",
     lastName: user.lastName?.trim() ?? "",
-    username: user.username?.trim() || null,
+    username: user.username?.trim() || buildFallbackHandle(user.id),
     userId: user.id,
     mode: displayNameMode,
   });
@@ -403,10 +404,6 @@ function normalizeHandleSegment(value: string): string {
   return normalized.slice(0, MAX_HANDLE_LENGTH);
 }
 
-function buildFallbackHandle(userId: string): string {
-  return `user_${userId.slice(-6).toLowerCase()}`;
-}
-
 async function isHandleAvailable(
   supabase: ReturnType<typeof getSupabaseAdminClient>,
   handle: string,
@@ -436,9 +433,7 @@ async function resolveUniqueHandle(
   }
 
   const baseHandleSource =
-    user.username?.trim() ||
-    user.emailAddresses[0]?.emailAddress.split("@")[0] ||
-    buildFallbackHandle(user.id);
+    user.username?.trim() || buildFallbackHandle(user.id);
 
   const baseHandle =
     normalizeHandleSegment(baseHandleSource) || buildFallbackHandle(user.id);

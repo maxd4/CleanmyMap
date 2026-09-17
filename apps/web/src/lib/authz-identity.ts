@@ -21,6 +21,7 @@ import {
   resolveIdentityHandle,
   resolveIdentityNameParts,
 } from "./authz-identity-names";
+import { buildFallbackHandle } from "./auth/identity-handle";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import {
@@ -51,7 +52,7 @@ export type UserIdentity = {
   displayNameMode?: DisplayNameMode;
   handle: string;
   firstName: string | null;
-  username: string;
+  username: string | null;
   email: string | null;
   currentLevel: number;
   actorNameOptions: string[];
@@ -82,10 +83,10 @@ export { getRoleBadgeId, getProfileBadgeId, getRoleBadge, getProfileBadge, mapBa
 
 export function buildActorNameOptions(
   firstName: string | null,
-  username: string,
+  username: string | null,
   userId: string,
 ): string[] {
-  const candidates = [firstName ?? "", username, userId]
+  const candidates = [firstName ?? "", username ?? "", userId]
     .map((value) => value.trim())
     .filter((value) => value.length > 0);
   return Array.from(new Set(candidates));
@@ -229,17 +230,18 @@ async function buildDevBypassIdentity(devBypass: {
 
 function buildFallbackIdentity(userId: string): UserIdentity {
   const resolvedRole = "benevole" as const;
+  const handle = buildFallbackHandle(userId);
 
   return {
     userId,
-    displayName: userId,
+    displayName: handle,
     displayNameMode: "full_name",
-    handle: userId,
+    handle,
     firstName: null,
-    username: userId,
+    username: null,
     email: null,
     currentLevel: 1,
-    actorNameOptions: [userId],
+    actorNameOptions: [handle],
     role: resolvedRole,
     activeRole: resolvedRole,
     activeProfile: resolvedRole,
@@ -254,15 +256,16 @@ function resolveIdentityNames(
   storedProfile: StoredProfileRow | null,
 ): {
   firstName: string;
-  username: string;
+  username: string | null;
   email: string | null;
   displayNameMode: DisplayNameMode;
   displayName: string;
   handle: string;
   actorNameOptions: string[];
 } {
-  const { firstName, lastName, username, email } = resolveIdentityNameParts(user, userId);
+  const { firstName, lastName, username, email } = resolveIdentityNameParts(user);
   const displayNameMode = resolveIdentityDisplayNameMode(userId, storedProfile);
+  const handle = resolveIdentityHandle(username, userId, storedProfile);
   return {
     firstName,
     username,
@@ -272,12 +275,13 @@ function resolveIdentityNames(
       firstName,
       lastName,
       username,
+      handle,
       userId,
       displayNameMode,
       storedProfile,
     ),
-    handle: resolveIdentityHandle(username, storedProfile),
-    actorNameOptions: resolveIdentityActorNameOptions(firstName, username, userId),
+    handle,
+    actorNameOptions: resolveIdentityActorNameOptions(firstName, username, handle),
   };
 }
 

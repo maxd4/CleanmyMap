@@ -91,7 +91,7 @@ interface Props {
   form: FormState;
   updateField: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
   updateFields: (updates: Partial<FormState>) => void;
-  userMetadata: { userId: string; displayName?: string; username?: string };
+  userMetadata: { userId: string; handle?: string; displayName?: string; username?: string };
   recordType: FormState["recordType"];
   hasAttemptedSubmit?: boolean;
   mode?:
@@ -188,7 +188,7 @@ export function ActionStepIdentity({
           ? extractEntrepriseName(nextAssociationName) ?? ""
           : "",
       ...(nextAssociationName !== OTHER_VOLUNTEER_ASSOCIATION_VALUE
-        ? { actorName: userMetadata.displayName ?? userMetadata.username ?? "" }
+        ? { actorName: userMetadata.displayName ?? userMetadata.handle ?? userMetadata.username ?? "" }
         : {}),
     });
   }

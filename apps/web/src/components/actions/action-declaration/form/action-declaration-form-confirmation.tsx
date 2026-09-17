@@ -19,6 +19,7 @@ type ActionDeclarationFormConfirmationProps = {
   payload: CreateActionPayload;
   userMetadata: {
     userId: string;
+    handle?: string;
     username?: string;
     displayName?: string;
     email?: string;
@@ -79,7 +80,7 @@ export function ActionDeclarationFormConfirmation({
                   Déclaré par
                 </p>
                 <p className="text-base font-bold text-emerald-950">
-                  {userMetadata.displayName || userMetadata.username || 'Utilisateur'}
+                  {userMetadata.displayName || userMetadata.handle || userMetadata.username || 'Utilisateur'}
                 </p>
               </div>
               <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold text-emerald-900 shadow-sm">

@@ -45,7 +45,7 @@ export function AccountUserBubble({
   activityStatusError: string | null;
   onActivityStatusChange: () => void;
 }) {
-  const username = user.username?.trim() || identity.username;
+  const username = user.username?.trim() || identity.handle;
   const fullName = [user.firstName?.trim(), user.lastName?.trim()]
     .filter((part): part is string => Boolean(part))
     .join(" ") || identity.displayName;

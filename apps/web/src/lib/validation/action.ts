@@ -348,6 +348,7 @@ const eventTimeSchema = z
 
 const userMetadataSchema = z.object({
   userId: z.string().min(1).max(120),
+  handle: z.string().min(1).max(120).optional(),
   username: z.string().min(1).max(120).optional(),
   displayName: z.string().min(1).max(200).optional(),
   email: z.string().email().max(200).optional(),

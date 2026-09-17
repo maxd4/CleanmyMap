@@ -398,9 +398,10 @@ export function buildCreateActionPayload(params: {
  linkedEventId?: string;
  photos?: ActionPhotoAsset[];
  visionEstimate?: ActionVisionEstimate | null;
- userMetadata?: {
- userId: string;
- username?: string;
+  userMetadata?: {
+    userId: string;
+    handle?: string;
+    username?: string;
  displayName?: string;
  email?: string;
  };
@@ -567,9 +568,10 @@ export async function prepareCreateActionPayload(params: {
  linkedEventId?: string;
  photos?: ActionPhotoAsset[];
  visionEstimate?: ActionVisionEstimate | null;
- userMetadata?: {
- userId: string;
- username?: string;
+  userMetadata?: {
+    userId: string;
+    handle?: string;
+    username?: string;
  displayName?: string;
  email?: string;
  };

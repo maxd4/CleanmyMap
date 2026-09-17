@@ -91,8 +91,8 @@ export default async function AdminPage({
   const creatorDisplayName =
     creatorIdentity?.displayName?.trim() ||
     creatorIdentity?.firstName?.trim() ||
-    creatorIdentity?.username ||
     creatorIdentity?.handle ||
+    creatorIdentity?.username ||
     "Administration avancée";
 
   if (!isAdminLikeProfile(profile)) {

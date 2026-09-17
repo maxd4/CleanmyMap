@@ -1,6 +1,7 @@
 type UserMetadataDisplayProps = {
  userMetadata?: {
  userId: string;
+ handle?: string;
  username?: string;
  displayName?: string;
  email?: string;
@@ -39,6 +40,12 @@ if (!userMetadata) {
  <div className="flex justify-between">
  <span className="cmm-text-secondary">Nom d&apos;utilisateur :</span>
  <span className="cmm-text-primary">{userMetadata.username}</span>
+ </div>
+ )}
+ {userMetadata.handle && (
+ <div className="flex justify-between">
+ <span className="cmm-text-secondary">Identifiant public :</span>
+ <span className="cmm-text-primary">{userMetadata.handle}</span>
  </div>
  )}
  {userMetadata.email && (
