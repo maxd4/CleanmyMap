@@ -181,8 +181,8 @@ export const ChatSidebar = memo(function ChatSidebar({
 
           {/* Render territory as a public channel as well */}
           {renderButton(territoryChannel, {
-            label: currentChannelType === "territory" ? "Territoire global" : "Coordination de secteur",
-            description: currentChannelType === "territory" ? "Tous les sujets de la zone choisie" : "Organisation locale",
+            label: "Territoire",
+            description: "Organisation locale",
           })}
           {currentChannelType === "territory" && onSelectZone ? (
             <ChatTerritorySelector

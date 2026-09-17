@@ -36,7 +36,7 @@ export type ChatMessageFeedProps = {
   activeChannelType: ChatChannelType;
   selectedRecipientId?: string | null;
   onStarterPrompt: (prompt: string) => void;
-  onOpenRecipientPicker: () => void;
+  isAuthenticated?: boolean;
 };
 
 export function ChatMessageFeed({
@@ -59,7 +59,7 @@ export function ChatMessageFeed({
   activeChannelType,
   selectedRecipientId,
   onStarterPrompt,
-  onOpenRecipientPicker,
+  isAuthenticated,
 }: ChatMessageFeedProps) {
   const isLight = tone === "light";
 
@@ -107,7 +107,7 @@ export function ChatMessageFeed({
           activeChannelType={activeChannelType}
           selectedRecipientId={selectedRecipientId}
           onStarterPrompt={onStarterPrompt}
-          onOpenRecipientPicker={onOpenRecipientPicker}
+          isAuthenticated={isAuthenticated}
           tone={tone}
         />
       )}

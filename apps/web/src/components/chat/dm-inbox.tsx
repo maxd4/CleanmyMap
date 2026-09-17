@@ -102,7 +102,7 @@ export const DmInbox = memo(function DmInbox({
         <button
           type="button"
           onClick={onStartConversation}
-          className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 cmm-text-caption font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${isLight ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/20 hover:bg-indigo-700" : "bg-indigo-500 text-white hover:bg-indigo-400"}`}
+          className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-3 py-2 cmm-text-caption font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${isLight ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/20 hover:bg-indigo-700" : "bg-indigo-500 text-white hover:bg-indigo-400"}`}
         >
           <MessageCirclePlus size={15} aria-hidden="true" />
           <span className="hidden sm:inline">Nouveau message</span>
@@ -120,7 +120,7 @@ export const DmInbox = memo(function DmInbox({
               value={recipientQuery}
               onChange={(event) => onRecipientQueryChange?.(event.target.value)}
               placeholder="Rechercher un membre"
-              className={`w-full rounded-xl border px-10 py-2.5 cmm-text-small outline-none focus:ring-2 focus:ring-indigo-300 ${isLight ? "border-indigo-100 bg-white text-slate-900" : "border-white/10 bg-white/5 text-white"}`}
+              className={`min-h-11 w-full rounded-xl border px-10 py-2.5 cmm-text-small outline-none focus:ring-2 focus:ring-indigo-300 ${isLight ? "border-indigo-100 bg-white text-slate-900" : "border-white/10 bg-white/5 text-white"}`}
             />
           </label>
           <div className="mt-2 max-h-48 overflow-y-auto">

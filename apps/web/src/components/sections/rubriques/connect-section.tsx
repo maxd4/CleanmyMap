@@ -187,10 +187,12 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
           </span>
         }
         subtitle={fr ? "Échangez et coordonnez vos actions." : "Exchange and coordinate your actions."}
-        action={<ConnectTabs activeTab={activeTab} setActiveTab={handleTabChange} fr={fr} />}
-        className="shrink-0 border-b border-rose-100/60 bg-white/80 px-3 py-4 sm:px-6"
-        actionClassName="w-full sm:w-auto"
+        className="w-full max-w-none shrink-0 border-b border-rose-100/60 bg-white/80 px-3 py-3 sm:px-6 sm:py-4"
       />
+
+      <div className="shrink-0 border-b border-rose-100/60 bg-white/80 px-3 pb-3 sm:px-6">
+        <ConnectTabs activeTab={activeTab} setActiveTab={handleTabChange} fr={fr} />
+      </div>
 
       <div className="min-h-0 flex-1">
         <div

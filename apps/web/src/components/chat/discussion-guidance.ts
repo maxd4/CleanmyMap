@@ -130,9 +130,9 @@ const GUIDANCE: Record<
       audienceLabel: () => "Conversation directe",
       purposeTags: ["Direct", "Confidentiel", "Pièce jointe", "Suivi"],
       messagePattern: "Objet → contexte → réponse attendue",
-      emptyTitle: "Choisissez un membre puis écrivez",
+      emptyTitle: "Aucune conversation sélectionnée",
       emptyDescription:
-        "Le message privé sert aux échanges courts, ciblés et confidentiels.",
+        "Sélectionnez une conversation dans la liste ou utilisez Nouveau message.",
       starterTitle: "Idées pour démarrer",
       starterPrompts: [
         "Peux-tu me dire...",
@@ -150,9 +150,9 @@ const GUIDANCE: Record<
       audienceLabel: () => "Direct conversation",
       purposeTags: ["Direct", "Confidential", "Attachment", "Follow-up"],
       messagePattern: "Subject → context → expected answer",
-      emptyTitle: "Choose a member and write",
+      emptyTitle: "No conversation selected",
       emptyDescription:
-        "Private messages are for short, targeted and confidential exchanges.",
+        "Select a conversation from the list or use New message.",
       starterTitle: "Ideas to get started",
       starterPrompts: [
         "Could you tell me...",

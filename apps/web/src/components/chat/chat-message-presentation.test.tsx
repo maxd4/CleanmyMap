@@ -46,7 +46,6 @@ describe("Chat message presentation", () => {
         emptyState,
         activeChannelType: "community",
         onStarterPrompt: vi.fn(),
-        onOpenRecipientPicker: vi.fn(),
         tone: "light",
       }),
     );
@@ -56,6 +55,40 @@ describe("Chat message presentation", () => {
     expect(markup).toContain("Troisième sujet");
     expect(markup).not.toContain("À masquer");
     expect((markup.match(/<button/g) ?? []).length).toBe(3);
+  });
+
+  it("keeps the invited discussion readable without a start CTA", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ChatEmptyState, {
+        emptyState,
+        activeChannelType: "community",
+        onStarterPrompt: vi.fn(),
+        isAuthenticated: false,
+        tone: "light",
+      }),
+    );
+
+    expect(markup).toContain("Connectez-vous pour participer à la discussion.");
+    expect(markup).not.toContain("Premier sujet");
+    expect(markup).not.toContain("Lancez");
+    expect(markup).not.toContain("Choisir un membre");
+  });
+
+  it("does not add a second member-creation CTA to the private empty state", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ChatEmptyState, {
+        emptyState,
+        activeChannelType: "dm",
+        onStarterPrompt: vi.fn(),
+        isAuthenticated: true,
+        tone: "light",
+      }),
+    );
+
+    expect(markup).toContain("Aucun message");
+    expect(markup).not.toContain("Choisir un membre");
+    expect(markup).not.toContain("Premier sujet");
+    expect((markup.match(/<button/g) ?? []).length).toBe(0);
   });
 
   it("offers a simple retry without exposing implementation details", () => {

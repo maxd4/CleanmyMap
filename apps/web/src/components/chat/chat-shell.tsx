@@ -890,7 +890,7 @@ export function ChatShell({
                 activeChannelType={activeChannelType}
                 selectedRecipientId={selectedRecipient?.id}
                 onStarterPrompt={handleStarterPrompt}
-                onOpenRecipientPicker={() => setIsRecipientPickerOpen(true)}
+                isAuthenticated={Boolean(userId)}
               />
 
               <ChatComposer
