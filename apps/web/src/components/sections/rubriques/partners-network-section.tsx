@@ -6,19 +6,18 @@ import {
   ArrowRight,
   Building2,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Handshake,
   Landmark,
   MapPin,
   Search,
   ShieldCheck,
-  Sparkles,
-  Target,
   Users,
 } from "lucide-react";
 import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
-import { getEntryTrustState } from "@/components/sections/rubriques/annuaire/annuaire-helpers";
+import {
+  getEntryTrustState,
+  isEditorialAnnuaireEntry,
+} from "@/components/sections/rubriques/annuaire/annuaire-helpers";
 import {
   buildPartnersNetworkEntriesModel,
   formatCount,
@@ -39,39 +38,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 import { SPONSOR_PORTAL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { cn } from "@/lib/utils";
-
-type CollaborationTone = "violet" | "indigo" | "sky" | "rose" | "amber";
-
-type CollaborationCard = {
-  tone: CollaborationTone;
-  badge: string;
-  title: string;
-  partner: string;
-  period: string;
-  summary: string;
-  metric: string;
-};
-
-const HERO_METRICS = [
-  {
-    label: { fr: "Partenaires actifs", en: "Active partners" },
-    value: "38",
-    detail: { fr: "Actifs sur les 6 derniers mois", en: "Active in the last 6 months" },
-    icon: Users,
-  },
-  {
-    label: { fr: "Actions coordonnées", en: "Coordinated actions" },
-    value: "126",
-    detail: { fr: "Opérations menées ensemble", en: "Operations run together" },
-    icon: Target,
-  },
-  {
-    label: { fr: "Impact multiple", en: "Impact multiple" },
-    value: "2,4x",
-    detail: { fr: "Gain d'impact collectif estimé", en: "Estimated collective impact gain" },
-    icon: Sparkles,
-  },
-] as const;
 
 const PARTNER_TYPES = [
   {
@@ -131,54 +97,6 @@ const WHY_PARTNER = [
   },
 ] as const;
 
-const COLLABORATIONS: CollaborationCard[] = [
-  {
-    tone: "violet",
-    badge: "Nettoyage côtier",
-    title: "Clean Coast Challenge",
-    partner: "Surfrider Paris",
-    period: "Mai - Juin 2024",
-    summary: "Mobilisation citoyenne pour nettoyer 10 plages sur la côte Atlantique.",
-    metric: "320 participants",
-  },
-  {
-    tone: "sky",
-    badge: "Cartographie",
-    title: "Cartographie des dépôts",
-    partner: "Paris.fr - Nettoyages participatifs",
-    period: "Fév. - Avr. 2024",
-    summary: "Cartographie collaborative des dépôts sauvages sur le territoire.",
-    metric: "128 signalements",
-  },
-  {
-    tone: "rose",
-    badge: "Sensibilisation",
-    title: "Écoles zéro déchet",
-    partner: "Zero Waste Paris",
-    period: "Mars - Juin 2024",
-    summary: "Ateliers et fresques pour sensibiliser les jeunes à la pollution plastique.",
-    metric: "15 établissements",
-  },
-  {
-    tone: "amber",
-    badge: "Valorisation",
-    title: "Recyclage & réemploi",
-    partner: "La REcyclerie - Ateliers",
-    period: "Janv. - Déc. 2024",
-    summary: "Optimiser la valorisation des déchets collectés sur le territoire partenaire.",
-    metric: "2,1 t valorisées",
-  },
-  {
-    tone: "indigo",
-    badge: "Recherche & données",
-    title: "Référentiel commun",
-    partner: "JeVeuxAider",
-    period: "En continu",
-    summary: "Harmonisation des indicateurs et méthodes de calcul d'impact.",
-    metric: "Référentiel partagé",
-  },
-];
-
 export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean; showHeader?: boolean }) {
   const entries = INITIAL_ANNUAIRE_ENTRIES;
   const [query, setQuery] = useState("");
@@ -186,7 +104,6 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
   const [domainFilter, setDomainFilter] = useState<DomainFilter>("all");
   const [zoneFilter, setZoneFilter] = useState<TerritoryFilter>("all");
   const resultsRef = useRef<HTMLDivElement | null>(null);
-  const collaborationsRef = useRef<HTMLDivElement | null>(null);
 
   const { filteredEntries, visibleEntries } = useMemo(
     () =>
@@ -205,15 +122,9 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
     resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const scrollCollaborations = (direction: number) => {
-    collaborationsRef.current?.scrollBy({ left: direction, behavior: "smooth" });
-  };
-
   return (
-    <div className="space-y-8 text-slate-950">
-      {showHeader ? <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
-        <div className="space-y-6">
-          <div className="space-y-4">
+    <div className="space-y-6 text-slate-950">
+      {showHeader ? <section className="space-y-4">
             <PageHeader
               title={
                 <span className="inline-flex items-center gap-3">
@@ -223,55 +134,28 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
               }
               subtitle={
                 fr
-                  ? "Un réseau solide pour décupler notre impact."
-                  : "A solid network to multiply our impact."
+                  ? "Consultez les fiches du référentiel partenaire."
+                  : "Browse the partner directory records."
               }
             />
-            <p className="max-w-3xl text-[1.02rem] leading-[1.75] text-slate-600">
+            <p className="max-w-3xl text-base leading-[1.7] text-slate-800">
               {fr
-                ? "Découvrez les organisations, entreprises et institutions qui agissent à nos côtés pour des territoires plus propres et des données fiables."
-                : "Discover the organizations, companies and institutions working with us for cleaner territories and reliable data."}
+                ? "Recherchez une structure par type, domaine ou niveau territorial, puis ouvrez l’annuaire pour consulter l’ensemble de ses sources."
+                : "Search by type, field or territorial level, then open the directory to consult its full set of sources."}
             </p>
-          </div>
-        </div>
+          </section> : null}
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          {HERO_METRICS.map((metric) => {
-            const Icon = metric.icon;
-            return (
-              <article
-                key={metric.label.fr}
-                className="rounded-[1.5rem] border border-violet-200 bg-white p-5 shadow-[0_20px_54px_-40px_rgba(79,70,229,0.34)]"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-600">
-                  <Icon size={18} />
-                </div>
-                <p className="mt-4 cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
-                  {localize(fr ? "fr" : "en", metric.label)}
-                </p>
-                <p className="mt-2 text-[clamp(1.9rem,2.5vw,2.5rem)] font-black leading-none tracking-[-0.04em] text-slate-950">
-                  {metric.value}
-                </p>
-                <p className="mt-2 text-[0.82rem] leading-relaxed text-slate-500">
-                  {localize(fr ? "fr" : "en", metric.detail)}
-                </p>
-              </article>
-            );
-          })}
-        </div>
-      </section> : null}
-
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(320px,0.85fr)]">
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.55fr)_minmax(280px,0.85fr)]">
         <div
           ref={resultsRef}
-          className="rounded-[2rem] border border-violet-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97)_0%,rgba(248,247,255,0.98)_100%)] p-5 shadow-[0_24px_70px_-56px_rgba(79,70,229,0.36)] sm:p-6"
+          className="rounded-3xl border border-pink-100 bg-white p-5 shadow-sm sm:p-6"
         >
           <div className="space-y-5">
             <div>
-              <h2 className="text-[0.92rem] font-black uppercase tracking-[0.18em] text-violet-600">
-                {fr ? "Trouver le bon partenaire" : "Find the right partner"}
+              <h2 className="text-lg font-black text-slate-950">
+                {fr ? "Rechercher dans le référentiel" : "Search the directory"}
               </h2>
-              <p className="mt-2 text-[0.96rem] leading-[1.7] text-slate-600">
+              <p className="mt-2 text-base leading-[1.7] text-slate-800">
                 {fr
                   ? "Filtrez par type, territoire ou domaine d'action."
                   : "Filter by type, territory or field of action."}
@@ -280,31 +164,31 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
 
             <div className="grid gap-3 xl:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))_auto]">
               <label className="space-y-2 xl:col-span-5">
-                <span className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
+                <span className="cmm-text-small font-semibold text-slate-700">
                   {fr ? "Rechercher" : "Search"}
                 </span>
                 <div className="relative">
                   <Search
                     size={16}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-violet-400"
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-pink-500"
                   />
                   <input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder={fr ? "Rechercher un partenaire..." : "Search a partner..."}
-                    className="h-12 w-full rounded-2xl border border-violet-200 bg-white px-4 pl-11 text-sm font-semibold text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                    className="h-12 w-full rounded-2xl border border-pink-200 bg-white px-4 pl-11 text-sm font-semibold text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-pink-400 focus:ring-4 focus:ring-pink-100"
                   />
                 </div>
               </label>
 
               <label className="space-y-2">
-                <span className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
+                <span className="cmm-text-small font-semibold text-slate-700">
                   {fr ? "Type" : "Type"}
                 </span>
                 <select
                   value={kindFilter}
                   onChange={(event) => setKindFilter(event.target.value as PartnerKindFilter)}
-                  className="h-12 w-full rounded-2xl border border-violet-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                  className="h-12 w-full rounded-2xl border border-pink-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-pink-400 focus:ring-4 focus:ring-pink-100"
                 >
                   <option value="all">{fr ? "Tous" : "All"}</option>
                   <option value="association">{fr ? "Associations" : "Associations"}</option>
@@ -315,13 +199,13 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
               </label>
 
               <label className="space-y-2">
-                <span className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
+                <span className="cmm-text-small font-semibold text-slate-700">
                   {fr ? "Domaine d'action" : "Field of action"}
                 </span>
                 <select
                   value={domainFilter}
                   onChange={(event) => setDomainFilter(event.target.value as DomainFilter)}
-                  className="h-12 w-full rounded-2xl border border-violet-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                  className="h-12 w-full rounded-2xl border border-pink-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-pink-400 focus:ring-4 focus:ring-pink-100"
                 >
                   <option value="all">{fr ? "Tous" : "All"}</option>
                   <option value="environnemental">{fr ? "Environnement" : "Environment"}</option>
@@ -331,13 +215,13 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
               </label>
 
               <label className="space-y-2">
-                <span className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
+                <span className="cmm-text-small font-semibold text-slate-700">
                   {fr ? "Niveau territorial" : "Territorial level"}
                 </span>
                 <select
                   value={zoneFilter}
                   onChange={(event) => setZoneFilter(event.target.value as TerritoryFilter)}
-                  className="h-12 w-full rounded-2xl border border-violet-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
+                  className="h-12 w-full rounded-2xl border border-pink-200 bg-white px-4 text-sm font-semibold text-slate-700 outline-none transition focus:border-pink-400 focus:ring-4 focus:ring-pink-100"
                 >
                   <option value="all">{fr ? "Toutes" : "All"}</option>
                   <option value="france">{fr ? "France" : "National"}</option>
@@ -348,7 +232,7 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
               </label>
 
               <div className="space-y-2">
-                <span className="cmm-text-caption font-black uppercase tracking-[0.2em] text-transparent">
+                <span className="cmm-text-small font-semibold text-transparent" aria-hidden="true">
                   {fr ? "Action" : "Action"}
                 </span>
                 <CmmButton
@@ -356,7 +240,7 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
                   tone="primary"
                   variant="pill"
                   onClick={handleSearch}
-                className="inline-flex h-12 w-full items-center justify-center gap-3 rounded-2xl bg-indigo-600 px-5 cmm-text-small font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_42px_-22px_rgba(79,70,229,0.55)]"
+                className="inline-flex h-12 w-full items-center justify-center gap-3 rounded-2xl bg-pink-600 px-5 cmm-text-small font-semibold text-white shadow-sm"
                 >
                   {fr ? "Rechercher" : "Search"}
                   <ArrowRight size={16} />
@@ -364,16 +248,24 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-3 rounded-[1.25rem] border border-violet-200 bg-white px-4 py-3">
-              <p className="text-sm font-semibold text-slate-600">
+            <div className="space-y-1 rounded-2xl border border-pink-100 bg-pink-50/60 px-4 py-3">
+              <p className="text-sm font-semibold text-slate-700">
                 {fr
-                  ? `${formatCount(filteredEntries.length)} partenaires affichés`
-                  : `${formatCount(filteredEntries.length)} partners displayed`}
+                  ? `${formatCount(filteredEntries.length)} fiches correspondent aux filtres`
+                  : `${formatCount(filteredEntries.length)} records match the filters`}
               </p>
-              <div className="flex items-center gap-2 cmm-text-caption font-black uppercase tracking-[0.18em] text-violet-500">
-                <CheckCircle2 size={14} />
-                {fr ? "Mise à jour" : "Updated"}
-              </div>
+              <p className="text-sm leading-relaxed text-slate-800">
+                {fr
+                  ? "Source : registre éditorial de cet onglet. Il ne constitue pas une liste exhaustive et n'indique pas une activité récente."
+                  : "Source: this tab's editorial register. It is not exhaustive and does not indicate recent activity."}
+              </p>
+              {filteredEntries.length > visibleEntries.length ? (
+                <p className="text-sm text-slate-600">
+                  {fr
+                    ? `${formatCount(visibleEntries.length)} premières fiches affichées ici.`
+                    : `First ${formatCount(visibleEntries.length)} records are shown here.`}
+                </p>
+              ) : null}
             </div>
 
             {visibleEntries.length > 0 ? (
@@ -388,7 +280,7 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
                   return (
                     <article
                       key={entry.id}
-                      className="rounded-[1.6rem] border border-violet-200 bg-white p-4 shadow-[0_16px_42px_-34px_rgba(79,70,229,0.36)]"
+                      className="rounded-2xl border border-pink-100 bg-white p-4 shadow-sm"
                     >
                       <div className="flex items-start gap-3">
                         <div
@@ -403,7 +295,7 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
                           <div className="flex flex-wrap items-center gap-2">
                             <span
                               className={cn(
-                                "inline-flex rounded-full border px-2.5 py-1 cmm-text-caption font-black uppercase tracking-[0.16em]",
+                                "inline-flex rounded-full border px-2.5 py-1 cmm-text-caption font-semibold",
                                 kindTone,
                               )}
                             >
@@ -411,35 +303,37 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
                             </span>
                             <span
                               className={cn(
-                                "inline-flex rounded-full border px-2.5 py-1 cmm-text-caption font-black uppercase tracking-[0.16em]",
+                                "inline-flex rounded-full border px-2.5 py-1 cmm-text-caption font-semibold",
                                 trustTone,
                               )}
                             >
                               {trustLabel}
                             </span>
                           </div>
-                          <h3 className="mt-2 truncate text-[1.02rem] font-black leading-tight text-slate-950">
+                          <h3 className="mt-2 text-base font-black leading-tight text-slate-950">
                             {entry.name}
                           </h3>
-                          <p className="mt-1 text-[0.8rem] font-medium uppercase tracking-[0.14em] text-slate-500">
+                          <p className="mt-1 cmm-text-small font-medium text-slate-500">
                             {getDomainLabel(entry, fr ? "fr" : "en")}
                           </p>
                         </div>
                       </div>
 
                       <div className="mt-4 space-y-3">
-                        <p className="text-[0.95rem] leading-[1.6] text-slate-600">
+                        <p className="text-base leading-[1.6] text-slate-800">
                           {entry.description}
                         </p>
 
                         <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
-                          <MapPin size={14} className="text-violet-500" />
+                          <MapPin size={14} className="text-pink-600" />
                           <span>{getTerritoryLabel(entry)}</span>
                         </div>
 
-                        <div className="rounded-2xl border border-violet-200 bg-violet-50/60 px-3 py-2 text-[0.78rem] font-medium text-slate-600">
-                          {entry.availability}
-                        </div>
+                        {!isEditorialAnnuaireEntry(entry) && entry.availability ? (
+                          <div className="rounded-2xl border border-pink-100 bg-pink-50/60 px-3 py-2 cmm-text-small font-medium text-slate-600">
+                            {entry.availability}
+                          </div>
+                        ) : null}
                       </div>
 
                       <div className="mt-4">
@@ -447,7 +341,7 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
                           href="/sections/annuaire"
                           tone="secondary"
                           variant="pill"
-                          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 px-4 cmm-text-small font-black uppercase tracking-[0.18em] text-violet-700 shadow-none"
+                          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-pink-200 bg-pink-50 px-4 cmm-text-small font-semibold text-pink-800 shadow-none"
                         >
                           {fr ? "Voir le profil" : "View profile"}
                           <ArrowRight size={16} />
@@ -458,7 +352,7 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
                 })}
               </div>
             ) : (
-              <div className="rounded-[1.6rem] border border-dashed border-violet-200 bg-white px-5 py-10 text-center">
+                <div className="rounded-2xl border border-dashed border-pink-200 bg-pink-50/40 px-5 py-10 text-center">
                 <p className="text-lg font-black text-slate-950">
                   {fr ? "Aucun partenaire ne correspond aux filtres." : "No partner matches the filters."}
                 </p>
@@ -478,7 +372,7 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
                       setDomainFilter("all");
                       setZoneFilter("all");
                     }}
-                    className="h-11 rounded-2xl border border-violet-200 bg-white px-5 cmm-text-small font-black uppercase tracking-[0.16em] text-violet-700"
+                    className="h-11 rounded-2xl border border-pink-200 bg-white px-5 cmm-text-small font-semibold text-pink-800"
                   >
                     {fr ? "Réinitialiser" : "Reset filters"}
                   </CmmButton>
@@ -491,7 +385,7 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
                 href="/sections/annuaire"
                 tone="secondary"
                 variant="pill"
-                className="h-12 rounded-full border border-violet-200 bg-white px-8 cmm-text-small font-black uppercase tracking-[0.16em] text-violet-700"
+                className="h-12 rounded-full border border-pink-200 bg-white px-8 cmm-text-small font-semibold text-pink-800"
               >
                 {fr ? "Voir tous les partenaires" : "See all partners"}
                 <ArrowRight size={16} />
@@ -501,8 +395,8 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
         </div>
 
         <div className="space-y-6">
-          <aside className="rounded-[2rem] border border-violet-200 bg-[linear-gradient(180deg,#29245f_0%,#1c173f_100%)] p-6 text-white shadow-[0_24px_72px_-50px_rgba(37,34,110,0.55)]">
-            <h2 className="text-[0.92rem] font-black uppercase tracking-[0.2em] text-white">
+          <aside className="rounded-3xl border border-pink-100 bg-pink-50/70 p-5 shadow-sm sm:p-6">
+            <h2 className="text-lg font-black text-slate-950">
               {fr ? "Types de partenaires" : "Partner types"}
             </h2>
             <div className="mt-6 space-y-4">
@@ -510,12 +404,12 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
                 const Icon = item.icon;
                 return (
                   <div key={item.title.fr} className="flex items-start gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-pink-200 bg-white text-pink-700">
                       <Icon size={18} />
                     </div>
                     <div className="space-y-1">
-                      <p className="text-sm font-black text-white">{localize(fr ? "fr" : "en", item.title)}</p>
-                      <p className="text-[0.86rem] leading-relaxed text-white">
+                      <p className="text-sm font-black text-slate-950">{localize(fr ? "fr" : "en", item.title)}</p>
+                      <p className="cmm-text-small leading-relaxed text-slate-800">
                         {localize(fr ? "fr" : "en", item.description)}
                       </p>
                     </div>
@@ -525,18 +419,18 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
             </div>
           </aside>
 
-          <aside className="rounded-[2rem] border border-violet-200 bg-white p-6 shadow-[0_24px_72px_-54px_rgba(79,70,229,0.24)]">
-            <h2 className="text-[0.92rem] font-black uppercase tracking-[0.18em] text-violet-700">
+          <aside className="rounded-3xl border border-pink-100 bg-white p-5 shadow-sm sm:p-6">
+            <h2 className="text-lg font-black text-slate-950">
               {fr ? "Pourquoi devenir partenaire ?" : "Why become a partner?"}
             </h2>
 
             <div className="mt-5 space-y-3">
               {WHY_PARTNER.map((item) => (
                 <div key={item.fr} className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-600">
+                  <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-pink-100 text-pink-700">
                     <CheckCircle2 size={14} />
                   </div>
-                  <p className="text-[0.95rem] leading-relaxed text-slate-700">
+                  <p className="text-base leading-relaxed text-slate-800">
                     {localize(fr ? "fr" : "en", item)}
                   </p>
                 </div>
@@ -547,7 +441,7 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
               href="/partners/onboarding"
               tone="primary"
               variant="pill"
-              className="mt-6 inline-flex h-12 w-full items-center justify-center gap-3 rounded-2xl bg-indigo-600 px-5 cmm-text-small font-black uppercase tracking-[0.18em] text-white shadow-[0_18px_42px_-22px_rgba(79,70,229,0.55)]"
+              className="mt-6 inline-flex h-12 w-full items-center justify-center gap-3 rounded-2xl bg-pink-600 px-5 cmm-text-small font-semibold text-white shadow-sm"
             >
               {fr ? "Devenir partenaire" : "Become a partner"}
               <ArrowRight size={16} />
@@ -561,7 +455,7 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
               </p>
               <Link
                 href={SPONSOR_PORTAL_ROUTE}
-                className="inline-flex items-center gap-2 cmm-text-small font-black uppercase tracking-[0.16em] text-violet-700 hover:text-violet-800"
+                className="inline-flex items-center gap-2 cmm-text-small font-semibold text-pink-800 hover:text-pink-900"
               >
                 {fr ? "Découvrir le programme" : "Discover the program"}
                 <ArrowRight size={14} />
@@ -571,111 +465,20 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
         </div>
       </section>
 
-      <section className="rounded-[2rem] border border-violet-200 bg-white p-5 shadow-[0_24px_72px_-54px_rgba(79,70,229,0.24)] sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <h2 className="text-[0.92rem] font-black uppercase tracking-[0.18em] text-violet-700">
-              {fr ? "Collaborations en cours" : "Current collaborations"}
-            </h2>
-            <p className="text-[0.96rem] leading-[1.7] text-slate-600">
-              {fr
-                ? "Projets et initiatives menées avec nos partenaires."
-                : "Projects and initiatives carried out with our partners."}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => scrollCollaborations(-360)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-violet-200 bg-white text-violet-700 shadow-sm transition hover:border-violet-300 hover:bg-violet-50"
-              aria-label={fr ? "Faire défiler vers la gauche" : "Scroll left"}
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollCollaborations(360)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-violet-200 bg-white text-violet-700 shadow-sm transition hover:border-violet-300 hover:bg-violet-50"
-              aria-label={fr ? "Faire défiler vers la droite" : "Scroll right"}
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        </div>
-
-        <div
-          ref={collaborationsRef}
-          className="mt-6 flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {COLLABORATIONS.map((item) => (
-            <article
-              key={item.title}
-              className="min-w-[240px] flex-1 snap-start rounded-[1.6rem] border border-violet-200 bg-white p-4 shadow-[0_16px_40px_-34px_rgba(79,70,229,0.32)]"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span
-                  className={cn(
-                    "inline-flex rounded-full border px-3 py-1 cmm-text-caption font-black uppercase tracking-[0.16em]",
-                    {
-                      violet: "border-violet-200 bg-violet-50 text-violet-700",
-                      indigo: "border-indigo-200 bg-indigo-50 text-indigo-700",
-                      sky: "border-sky-200 bg-sky-50 text-sky-700",
-                      rose: "border-rose-200 bg-rose-50 text-rose-700",
-                      amber: "border-amber-200 bg-amber-50 text-amber-700",
-                    }[item.tone],
-                  )}
-                >
-                  {item.badge}
-                </span>
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-violet-50 text-violet-600">
-                  <Sparkles size={16} />
-                </div>
-              </div>
-
-              <h3 className="mt-4 text-[1rem] font-black leading-tight text-slate-950">
-                {item.title}
-              </h3>
-              <div className="mt-2 space-y-1 text-xs font-medium text-slate-500">
-                <div className="flex items-center gap-2">
-                  <MapPin size={14} className="text-violet-500" />
-                  <span>{item.partner}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 size={14} className="text-violet-500" />
-                  <span>{item.period}</span>
-                </div>
-              </div>
-
-              <p className="mt-4 text-[0.92rem] leading-[1.65] text-slate-600">
-                {item.summary}
-              </p>
-
-              <div className="mt-5 flex items-center justify-between">
-                <span className="text-[0.78rem] font-semibold text-violet-700">
-                  {item.metric}
-                </span>
-                <ArrowRight className="h-4 w-4 text-violet-400" />
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="overflow-hidden rounded-[2.4rem] bg-[linear-gradient(135deg,#2e256f_0%,#221c54_48%,#2a2270_100%)] p-6 text-white shadow-[0_30px_100px_-54px_rgba(44,39,120,0.8)]">
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-5">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-white/95 text-violet-600 shadow-2xl">
-              <Handshake size={34} />
+      <section className="rounded-3xl border border-pink-200 bg-pink-50/70 p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-pink-700">
+              <Handshake size={22} aria-hidden="true" />
             </div>
             <div className="max-w-2xl space-y-2">
-              <h2 className="text-[1.2rem] font-black leading-tight tracking-[-0.03em] sm:text-[1.35rem]">
+              <h2 className="text-lg font-black leading-tight text-slate-950">
                 {fr ? "Vous représentez une structure engagée ?" : "Do you represent an engaged organization?"}
               </h2>
-              <p className="max-w-xl text-[0.96rem] leading-[1.7] text-white">
+              <p className="text-base leading-[1.7] text-slate-800">
                 {fr
-                  ? "Rejoignez CleanMyMap et construisons ensemble des territoires plus propres, des données plus fiables et un impact réel."
-                  : "Join CleanMyMap and build cleaner territories, more reliable data and real impact together."}
+                  ? "Consultez l'annuaire, puis utilisez le parcours partenaire si vous souhaitez proposer une fiche."
+                  : "Browse the directory, then use the partner path if you want to submit a record."}
               </p>
             </div>
           </div>
@@ -685,7 +488,7 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
               href={`mailto:${contactEmail}`}
               tone="secondary"
               variant="pill"
-              className="h-14 rounded-full bg-white px-6 cmm-text-small font-black uppercase tracking-[0.18em] text-violet-700 shadow-2xl"
+              className="h-11 rounded-full border border-pink-200 bg-white px-5 cmm-text-small font-semibold text-pink-800 shadow-none"
             >
               {fr ? "Nous contacter" : "Contact us"}
               <ArrowRight size={16} />
@@ -695,7 +498,7 @@ export function PartnersNetworkSection({ fr, showHeader = true }: { fr: boolean;
               href="/partners/onboarding"
               tone="primary"
               variant="pill"
-              className="h-14 rounded-full border border-white/10 bg-violet-500 px-6 cmm-text-small font-black uppercase tracking-[0.18em] text-white shadow-2xl"
+              className="h-11 rounded-full bg-pink-600 px-5 cmm-text-small font-semibold text-white shadow-sm"
             >
               {fr ? "Devenir partenaire" : "Become a partner"}
             </CmmButton>

@@ -78,6 +78,13 @@ conserver les alias historiques. Les parcours protégés de création ou de
 gouvernance partenaire restent `/partners/onboarding` et
 `/partners/dashboard`.
 
+Dans cet onglet, la recherche et les filtres s'appuient sur
+`INITIAL_ANNUAIRE_ENTRIES`, le registre éditorial versionné de l'annuaire. Ce
+registre n'est pas présenté comme exhaustif, récemment mis à jour ou comme la
+preuve d'une activité partenaire. `/sections/annuaire` reste la surface
+canonique pour l'exploration complète, qui combine les ressources éditoriales
+et les fiches partenaire publiées selon leur contrat.
+
 La page affiche un `PageHeader` unique avec les deux destinations URL
 `Communauté` et `Partenaires`. Dans `Communauté`, la liste est organisée par
 les onglets légers `À venir`, `Mes inscriptions` et `Passées`. Les missions
