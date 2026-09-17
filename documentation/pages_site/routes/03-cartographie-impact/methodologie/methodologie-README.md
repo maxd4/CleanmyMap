@@ -7,7 +7,7 @@
 - **Famille** : Cartographie & Impact
 - **Exception page-family** : `methodologie-impact`
 - **Palette runtime actuelle** : red
-- **Revalidation** : `3600 s`
+- **Revalidation** : `86400 s`
 - **Source principale** : `apps/web/src/app/(app)/methodologie/page.tsx`
 - **Source du contenu** : `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx`
 
@@ -27,6 +27,30 @@ La page publique présente :
 La page ne présente pas de comparaison cartographique expérimentale, de fonctionnalité en cours
 de développement ni de promesse de fonctionnalité future. Les textes affichés décrivent uniquement
 les calculs, les sources, les limites et l’infrastructure effectivement suivis.
+
+## Structure runtime par navigation
+
+La page rend une bulle par bloc effectivement retourné par
+`getNavigationSpacesForProfile`, dans son ordre runtime, puis un disclosure par
+page dans l’ordre fourni par ce même contrat. La page demande explicitement le
+mode `exhaustif` afin que son corpus documentaire ne varie pas selon le mode
+d’affichage choisi par l’utilisateur ; le profil courant reste appliqué et le
+profil anonyme conserve le parcours `benevole`.
+
+Les contenus existants sont associés uniquement à leur `routeId` :
+
+- `map` porte la lecture de la carte d’actions, ses scores, couleurs,
+  géométries, sources et limites ;
+- `new` porte le parcours d’itinéraire, dont l’entrée de compatibilité
+  `/sections/route` ;
+- `reports` porte les KPI Impact terrain, les proxys et l’historique ;
+- `methodologie` porte les règles transversales, le versionnement, les modes
+  d’affichage et la transparence méthodologique.
+
+Les autres pages exposées par la navigation reçoivent leur disclosure sans
+contenu tant qu’aucune méthodologie existante ne leur est attribuée. Les routes
+d’authentification, légales, système, administratives et les routes hors
+navigation primaire ne sont pas ajoutées artificiellement à cette page.
 
 La documentation de la page doit également orienter vers la méthodologie spécifique de la carte d'actions :
 
