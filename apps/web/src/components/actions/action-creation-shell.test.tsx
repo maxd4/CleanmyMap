@@ -101,4 +101,35 @@ describe("ActionCreationShell", () => {
     expect(markup).not.toContain('data-testid="weather-engine"');
     expect(markup).toContain('hidden=""');
   });
+
+  it("renders the shared before/after tabs with an independent panel query", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ActionCreationShell, {
+        actorNameOptions: ["Test"],
+        defaultActorName: "Test",
+        isAuthenticated: false,
+        userMetadata: { userId: "test" },
+        initialPanel: "pre-formulaire",
+        initialTab: "after",
+        tabSearchParams: {
+          tab: "before",
+          panel: "meteo",
+          actionId: "action-42",
+          tag: ["terrain", "safety"],
+        },
+      } as ComponentProps<typeof ActionCreationShell>),
+    );
+
+    expect(markup).toContain('role="tablist"');
+    expect(markup).toContain('id="action-creation-tab-before"');
+    expect(markup).toContain('id="action-creation-tab-after"');
+    expect(markup).toContain('role="tabpanel"');
+    expect(markup).toContain('aria-labelledby="action-creation-tab-after"');
+    expect(markup).toContain(
+      "/actions/new?tab=before&amp;panel=meteo&amp;actionId=action-42&amp;tag=terrain&amp;tag=safety",
+    );
+    expect(entryFlowPropsMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ initialEntryPath: "after" }),
+    );
+  });
 });

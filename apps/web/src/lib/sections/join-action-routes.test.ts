@@ -18,6 +18,14 @@ describe("join action routes", () => {
     );
   });
 
+  it("preserves unrelated query parameters when changing tabs", () => {
+    expect(
+      buildJoinActionTabHref("past", "action-42", "tab=future&actionId=action-42&source=guide&tag=terrain&tag=safety"),
+    ).toBe(
+      "/sections/rejoindre-une-action?tab=past&source=guide&tag=terrain&tag=safety&actionId=action-42",
+    );
+  });
+
   it("preserves legacy query parameters during compatibility redirect", () => {
     expect(
       buildLegacyJoinActionRedirect({ actionId: "action 42", tab: ["future", "past"] }),

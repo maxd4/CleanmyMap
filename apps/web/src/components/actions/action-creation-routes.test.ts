@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildActionCreationTabHref,
   buildActionCreationPanelHref,
+  normalizeActionCreationTab,
   normalizeActionCreationPanel,
 } from "@/lib/actions/action-creation-routes";
 
@@ -17,11 +19,29 @@ describe("action creation panel routes", () => {
       buildActionCreationPanelHref("meteo", {
         source: "guide",
         actionId: "action-42",
+        tab: "after",
         panel: "itineraire",
         tag: ["terrain", "safety"],
       }),
     ).toBe(
-      "/actions/new?panel=meteo&source=guide&actionId=action-42&tag=terrain&tag=safety",
+      "/actions/new?panel=meteo&source=guide&actionId=action-42&tab=after&tag=terrain&tag=safety",
+    );
+  });
+
+  it("defaults to the before tab and keeps deep-link context when selecting it", () => {
+    expect(normalizeActionCreationTab(undefined)).toBe("before");
+    expect(normalizeActionCreationTab(undefined, { actionId: "action-42" })).toBe("after");
+    expect(normalizeActionCreationTab("before", { actionId: "action-42" })).toBe("before");
+    expect(
+      buildActionCreationTabHref("after", {
+        tab: "before",
+        panel: "meteo",
+        actionId: "action-42",
+        from: "planner",
+        tag: ["terrain", "safety"],
+      }),
+    ).toBe(
+      "/actions/new?tab=after&panel=meteo&actionId=action-42&from=planner&tag=terrain&tag=safety",
     );
   });
 });

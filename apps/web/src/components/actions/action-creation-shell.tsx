@@ -20,11 +20,18 @@ import {
   type LocalDevAuthState,
 } from "@/lib/auth/effective-auth-contract";
 import { cn } from "@/lib/utils";
-import type { ActionCreationPanelId } from "@/lib/actions/action-creation-routes";
+import {
+  buildActionCreationTabHref,
+  type ActionCreationPanelId,
+  type ActionCreationTab,
+} from "@/lib/actions/action-creation-routes";
 import type { FormState } from "./action-declaration/form/model";
+import { JoinActionTabs } from "@/components/sections/rubriques/rejoindre-une-action.tabs";
 
 type ActionCreationShellProps = ComponentProps<typeof ActionDeclarationEntryFlow> & {
   initialPanel: ActionCreationPanelId;
+  initialTab?: ActionCreationTab;
+  tabSearchParams?: Record<string, string | string[] | undefined>;
   localDevAuth?: LocalDevAuthState;
 };
 
@@ -96,6 +103,8 @@ function ActionCreationPanelView({
 
 export function ActionCreationShell({
   initialPanel,
+  initialTab = "before",
+  tabSearchParams,
   localDevAuth = INACTIVE_LOCAL_DEV_AUTH,
   ...flowProps
 }: ActionCreationShellProps) {
@@ -125,8 +134,7 @@ export function ActionCreationShell({
     }
     setOpenPanels((current) => ({ ...current, [panel]: !current[panel] }));
   };
-  const initialEntryPath =
-    flowProps.initialEntryPath ?? (flowProps.initialActionId ? undefined : "before");
+  const initialEntryPath = initialTab === "after" ? "after" : "before";
   const handleBeforeFormChange = useCallback((form: FormState) => {
     setDraftContext({
       locationLabel:
@@ -141,7 +149,7 @@ export function ActionCreationShell({
   const panels: ActionCreationPanel[] = [
     {
       id: "pre-formulaire",
-      label: "Pré-formulaire",
+      label: initialTab === "before" ? "Pré-formulaire" : "Formulaire",
       description: "Créer une pré-action autonome et la publier explicitement si nécessaire.",
       icon: ClipboardList,
       content: mountedPanels.has("pre-formulaire") ? (
@@ -206,15 +214,45 @@ export function ActionCreationShell({
           </div>
         </CmmCard>
 
+        <JoinActionTabs
+          activeTab={initialTab}
+          ariaLabel="Onglets du parcours d'action"
+          idPrefix="action-creation-tab"
+          tabs={[
+            { id: "before", label: "Pré-formulaire", panelId: "action-creation-tabpanel-before" },
+            { id: "after", label: "Formulaire", panelId: "action-creation-tabpanel-after" },
+          ]}
+          buildHref={(tab) =>
+            buildActionCreationTabHref(tab as ActionCreationTab, tabSearchParams)
+          }
+        />
+
         <div className="space-y-4" data-testid="action-creation-panels">
-          {panels.map((panel) => (
-            <ActionCreationPanelView
-              key={panel.id}
-              panel={panel}
-              open={openPanels[panel.id]}
-              onToggle={() => togglePanel(panel.id)}
-            />
-          ))}
+          {panels.map((panel) => {
+            const panelView = (
+              <ActionCreationPanelView
+                key={panel.id}
+                panel={panel}
+                open={openPanels[panel.id]}
+                onToggle={() => togglePanel(panel.id)}
+              />
+            );
+
+            if (panel.id !== "pre-formulaire") return panelView;
+
+            return (
+              <div
+                key={panel.id}
+                id={`action-creation-tabpanel-${initialTab}`}
+                role="tabpanel"
+                aria-labelledby={`action-creation-tab-${initialTab}`}
+                tabIndex={-1}
+                className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-4"
+              >
+                {panelView}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

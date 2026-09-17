@@ -4,6 +4,8 @@ export type ActionCreationPanelId =
   | "meteo"
   | "formalites";
 
+export type ActionCreationTab = "before" | "after";
+
 export const ACTION_CREATION_ROUTE = "/actions/new";
 
 export function normalizeActionCreationPanel(
@@ -19,6 +21,34 @@ export function normalizeActionCreationPanel(
     default:
       return "pre-formulaire";
   }
+}
+
+export function normalizeActionCreationTab(
+  value: string | string[] | undefined,
+  context: { actionId?: string; from?: string } = {},
+): ActionCreationTab {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  if (candidate === "before" || candidate === "after") return candidate;
+  if (context.from === "planner" || context.from === "before") return "before";
+  return context.actionId?.trim() ? "after" : "before";
+}
+
+export function buildActionCreationTabHref(
+  tab: ActionCreationTab,
+  searchParams: Record<string, string | string[] | undefined> = {},
+): string {
+  const params = new URLSearchParams({ tab });
+
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (key === "tab" || value === undefined) continue;
+    if (Array.isArray(value)) {
+      for (const item of value) params.append(key, item);
+    } else {
+      params.append(key, value);
+    }
+  }
+
+  return `${ACTION_CREATION_ROUTE}?${params.toString()}`;
 }
 
 export function buildActionCreationPanelHref(
