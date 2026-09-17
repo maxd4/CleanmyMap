@@ -45,6 +45,20 @@ avec un échec de visibilité GSAP. WebKit ne peut être déclaré validé que s
 son projet a réellement été exécuté. Cette procédure reste publique et
 n'utilise aucun identifiant de production.
 
+Toute modification d’une primitive Motion, d’`IntersectionObserver`, d’une
+opacity initiale, d’un reveal ou d’un CSS global de visibilité doit déclencher
+au minimum :
+
+- `npm run check:motion` ;
+- les tests ciblés de la primitive ou des consommateurs concernés ;
+- le scénario WebKit ci-dessus lorsque le comportement navigateur ou le
+  calcul de visibilité est concerné.
+
+Le garde `check:motion` doit rester vert avant commit ; il refuse les états
+Framer Motion essentiels initialement invisibles et accepte uniquement les
+overlays, éléments conditionnels, toasts et décorations explicitement
+identifiés.
+
 Les validations Supabase courantes utilisent `npx supabase` contre le projet
 distant explicitement lié. Les advisors se lancent avec
 `npm run backend:supabase:advisors` depuis `apps/web` ; cette commande est

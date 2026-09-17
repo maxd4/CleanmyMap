@@ -31,7 +31,7 @@ export function PunchySlogan() {
  return (
  <header className="mb-8 mt-4 px-2">
  <motion.div
- initial={shouldReduceMotion ? false : isMinimal ? { opacity: 0 } : { opacity: 0, y: 20 }}
+ initial={shouldReduceMotion ? false : isMinimal ? { opacity: 1 } : { opacity: 1, y: 20 }}
  animate={shouldReduceMotion ? { opacity: 1 } : isMinimal ? { opacity: 1 } : { opacity: 1, y: 0 }}
  transition={shouldReduceMotion ? { duration: 0 } : isMinimal ? { duration: 0.2, ease: "easeOut" } : { duration: 0.6, ease:"easeOut" }}
  className="flex items-center gap-2 whitespace-nowrap overflow-x-auto scrollbar-none sm:gap-3"
@@ -39,7 +39,7 @@ export function PunchySlogan() {
  {words.map((word, i) => (
  <motion.span
  key={word}
- initial={shouldReduceMotion ? false : isMinimal ? { opacity: 0 } : { opacity: 0, x: -20 }}
+ initial={shouldReduceMotion ? false : isMinimal ? { opacity: 1 } : { opacity: 1, x: -20 }}
  animate={shouldReduceMotion ? { opacity: 1 } : isMinimal ? { opacity: 1 } : { opacity: 1, x: 0 }}
  transition={shouldReduceMotion ? { duration: 0 } : isMinimal ? { duration: 0.2 } : { duration: 0.5, delay: i * 0.15 }}
  className="text-3xl font-bold leading-none tracking-tighter text-emerald-950 sm:text-5xl md:text-6xl"
@@ -53,7 +53,7 @@ export function PunchySlogan() {
  ))}
  </motion.div>
  <motion.div
- initial={shouldReduceMotion ? false : isMinimal ? { opacity: 0 } : { scaleX: 0 }}
+ initial={shouldReduceMotion ? false : isMinimal ? { opacity: 1 } : { scaleX: 0 }}
  animate={shouldReduceMotion ? { opacity: 1 } : isMinimal ? { opacity: 1 } : { scaleX: 1 }}
  transition={shouldReduceMotion ? { duration: 0 } : isMinimal ? { duration: 0.2 } : { duration: 1, delay: 0.5 }}
  className="mt-6 h-1 w-24 origin-left rounded-full bg-emerald-500"

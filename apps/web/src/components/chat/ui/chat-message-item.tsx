@@ -94,7 +94,7 @@ export function ChatMessageItem({
       id={`chat-message-${message.id}`}
       tabIndex={isHighlighted ? -1 : undefined}
       data-chat-message-id={message.id}
-      initial={shouldAnimate ? { opacity: 0, y: displayMode === "minimaliste" ? 2 : 10 } : false}
+      initial={shouldAnimate ? { opacity: 1, y: displayMode === "minimaliste" ? 2 : 10 } : false}
       animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
       transition={{ duration: shouldAnimate ? (displayMode === "minimaliste" ? 0.1 : 0.18) : 0 }}
       className="flex w-full group mb-4"

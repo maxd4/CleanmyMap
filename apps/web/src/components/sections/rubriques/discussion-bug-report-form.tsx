@@ -140,7 +140,7 @@ export function DiscussionBugReportForm() {
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 1, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       id="discussion-bug-report-form"
       className="rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl p-10 shadow-2xl relative overflow-hidden group"
@@ -275,7 +275,7 @@ export function DiscussionBugReportForm() {
         <AnimatePresence>
           {submitState === "success" && (
             <motion.div
-               initial={{ opacity: 0, height: 0 }}
+               initial={{ opacity: 1, height: 0 }}
                animate={{ opacity: 1, height: 'auto' }}
                exit={{ opacity: 0, height: 0 }}
                className="flex items-center gap-4 p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
@@ -289,7 +289,7 @@ export function DiscussionBugReportForm() {
 
           {error && (
             <motion.div
-               initial={{ opacity: 0, height: 0 }}
+               initial={{ opacity: 1, height: 0 }}
                animate={{ opacity: 1, height: 'auto' }}
                exit={{ opacity: 0, height: 0 }}
             >

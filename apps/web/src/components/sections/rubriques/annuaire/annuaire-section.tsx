@@ -12,7 +12,7 @@ import { SectionShell } from "@/components/sections/rubriques/shared";
 import { motion } from "framer-motion";
 
 const containerVariants = {
-  hidden: { opacity: 0 },
+  hidden: { opacity: 1 },
   visible: {
     opacity: 1,
     transition: { staggerChildren: 0.2 }
@@ -20,7 +20,7 @@ const containerVariants = {
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 40 },
+  hidden: { opacity: 1, y: 40 },
   visible: { opacity: 1, y: 0 }
 };
 

@@ -7,6 +7,7 @@ export const MOTION_PATHS = {
   displayModesCss: "apps/web/src/styles/display-modes.css",
   pageTransition: "apps/web/src/components/ui/page-transition.tsx",
   punchySlogan: "apps/web/src/components/ui/punchy-slogan.tsx",
+  rubriqueCard: "apps/web/src/components/ui/rubrique-card.tsx",
   pageStructure: "apps/web/src/components/ui/page-structure.tsx",
   documentation: "documentation/design-system/MOTION_TRANSITIONS.md",
   readme: "documentation/design-system/README.md",
@@ -88,6 +89,78 @@ export function auditRevealVisibilityCss(source, filePath = MOTION_PATHS.baseCss
   return violations;
 }
 
+const ALLOWED_INITIAL_VISIBILITY_ROLES = /data-motion-role\s*=\s*["'](?:overlay|conditional|transient|decorative)["']/;
+
+export function auditFramerMotionVisibility(source, filePath = "apps/web/src") {
+  const violations = [];
+  const openingTagPattern = /<(?:motion\.[A-Za-z]+|RubriqueCard)\b[\s\S]*?>/g;
+
+  for (const match of source.matchAll(openingTagPattern)) {
+    const tag = match[0];
+    const initialAttributes = [
+      ...tag.matchAll(/\binitial\s*=\s*\{\{([\s\S]*?)\}\}/g),
+      ...tag.matchAll(/\binitial\s*=\s*\{([\s\S]*?)\}/g),
+    ];
+    const startsInvisible = initialAttributes.some((initialAttribute) =>
+      /opacity\s*:\s*0(?:\s*[,}])/i.test(initialAttribute[1]),
+    );
+
+    if (
+      startsInvisible &&
+      !tag.includes("<RubriqueCard") &&
+      !ALLOWED_INITIAL_VISIBILITY_ROLES.test(tag)
+    ) {
+      violations.push(
+        `${filePath}: essential Motion content must not start with opacity: 0; use a visible initial state or an explicit motion role`,
+      );
+    }
+  }
+
+  const hiddenVariantPattern = /hidden\s*:\s*\{[^{}]*opacity\s*:\s*0\b[^{}]*\}/g;
+  for (const match of source.matchAll(hiddenVariantPattern)) {
+    violations.push(
+      `${filePath}: hidden variants with opacity: 0 are fail-closed for initial content`,
+    );
+  }
+
+  return violations;
+}
+
+export function auditRubriqueCard(source, filePath = MOTION_PATHS.rubriqueCard) {
+  const violations = [];
+  for (const marker of [
+    "normalizeRubriqueCardInitial",
+    "initial={normalizeRubriqueCardInitial(initial)}",
+    "opacity: 1",
+  ]) {
+    requireText(source, filePath, marker, violations);
+  }
+  return violations;
+}
+
+function listMotionSourceFiles(repositoryRoot) {
+  const root = absolutePath(repositoryRoot, "apps/web/src");
+  const files = [];
+  const visit = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        visit(entryPath);
+        continue;
+      }
+      if (
+        /\.(?:ts|tsx)$/.test(entry.name) &&
+        !/\.(?:test|spec)\.(?:ts|tsx)$/.test(entry.name)
+      ) {
+        files.push(entryPath);
+      }
+    }
+  };
+
+  visit(root);
+  return files;
+}
+
 function auditConsumer(source, filePath) {
   const violations = [];
   for (const marker of [
@@ -159,6 +232,13 @@ export function auditMotionRepository(repositoryRoot) {
   violations.push(...auditMotionCss(sources.motionCss));
   violations.push(...auditRevealVisibilityCss(sources.baseCss));
   violations.push(...auditDisplayModesCss(sources.displayModesCss));
+  violations.push(...auditRubriqueCard(sources.rubriqueCard));
+  for (const filePath of listMotionSourceFiles(repositoryRoot)) {
+    const relativePath = path.relative(repositoryRoot, filePath).split(path.sep).join("/");
+    violations.push(
+      ...auditFramerMotionVisibility(fs.readFileSync(filePath, "utf8"), relativePath),
+    );
+  }
   violations.push(...auditPageTransition(sources.pageTransition));
   violations.push(...auditPunchySlogan(sources.punchySlogan));
   violations.push(...auditActionCard(sources.pageStructure));

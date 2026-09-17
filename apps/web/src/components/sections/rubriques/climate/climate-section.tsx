@@ -20,7 +20,7 @@ import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 
 const containerVariants = {
-  hidden: { opacity: 0 },
+  hidden: { opacity: 1 },
   visible: {
     opacity: 1,
     transition: {
@@ -30,7 +30,7 @@ const containerVariants = {
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 1, y: 30 },
   visible: { opacity: 1, y: 0 },
 };
 
@@ -132,7 +132,7 @@ export function ClimateSection() {
           {isLoading ? (
             <motion.div
               key="loading"
-              initial={{ opacity: 0 }}
+              initial={{ opacity: 1 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="space-y-12"
@@ -182,7 +182,7 @@ export function ClimateSection() {
                   </motion.div>
 
                   <RubriqueCard 
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 1, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     themeColor="blue"
                     watermarkIcon={Globe}

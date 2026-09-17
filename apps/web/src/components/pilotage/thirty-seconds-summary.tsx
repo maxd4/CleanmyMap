@@ -88,7 +88,7 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
     <div className="space-y-8">
       {alert ? (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 1, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className={cn(
             "group relative overflow-hidden rounded-[3rem] border p-10 backdrop-blur-3xl",
@@ -154,7 +154,7 @@ export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
             return (
               <motion.div
                 key={kpi.label}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 1, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
                 className="group relative overflow-hidden rounded-[3rem] border border-white/5 bg-slate-900/40 p-10 shadow-2xl backdrop-blur-3xl transition-all hover:bg-white/5"

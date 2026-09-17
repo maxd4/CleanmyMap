@@ -169,7 +169,7 @@ export function CompostSection() {
         {/* Section 3: Rules & Steps */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10">
            <RubriqueCard 
-             initial={{ opacity: 0, x: -20 }}
+             initial={{ opacity: 1, x: -20 }}
              whileInView={{ opacity: 1, x: 0 }}
              themeColor="emerald"
              watermarkIcon={ShieldCheck}

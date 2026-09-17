@@ -94,7 +94,7 @@ const STAT_SOURCES: Record<string, string> = {
 };
 
 const containerVariants = {
-  hidden: { opacity: 0 },
+  hidden: { opacity: 1 },
   visible: {
     opacity: 1,
     transition: { staggerChildren: 0.1 }
@@ -102,7 +102,7 @@ const containerVariants = {
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 1, y: 20 },
   visible: { opacity: 1, y: 0 }
 };
 
@@ -241,7 +241,7 @@ export function NationalStatsSection() {
           <CmmSkeleton className="h-[500px] rounded-[4rem]" />
         ) : platformStats && (
           <motion.section 
-            initial={{ opacity: 0, scale: 0.98 }}
+              initial={{ opacity: 1, scale: 0.98 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             className="relative p-12 md:p-20 rounded-[4rem] border border-sky-500/30 bg-slate-900/40 backdrop-blur-3xl shadow-[0_0_100px_rgba(14,165,233,0.1)] overflow-hidden group"

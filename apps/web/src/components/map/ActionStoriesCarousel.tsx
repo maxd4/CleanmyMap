@@ -82,7 +82,7 @@ export function ActionStoriesCarousel({ items, onOpenAction, compact = false }: 
             return (
               <motion.div
                 key={item.id}
-                initial={{ x: 300, opacity: 0, scale: 0.8 }}
+                initial={{ x: 300, opacity: 1, scale: 0.8 }}
                 animate={{
                   x: i * 40,
                   z: -i * 50,

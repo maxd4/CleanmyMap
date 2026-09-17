@@ -14,7 +14,7 @@ export function DiscussionBadgesPanel() {
       themeColor="fuchsia"
       watermarkIcon={UserCog}
       watermarkSize={120}
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 1, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">

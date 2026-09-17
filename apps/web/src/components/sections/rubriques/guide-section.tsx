@@ -162,7 +162,7 @@ export function GuideOperationalPanel() {
   return (
     <div className="grid grid-cols-1 gap-8 pt-8">
       <motion.article
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 1, y: 12 }}
         whileInView={{ opacity: 1, y: 0 }}
         className="relative overflow-hidden rounded-[2.5rem] border border-emerald-200/70 bg-[linear-gradient(180deg,rgba(244,251,240,0.98)_0%,rgba(255,255,255,0.99)_100%)] p-8 shadow-[0_28px_80px_rgba(15,23,42,0.08)] lg:p-10"
       >
@@ -210,7 +210,7 @@ export function GuideOperationalPanel() {
           {CHECKLIST_ITEMS.map((item, idx) => (
             <motion.div
               key={item.id}
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 1, y: 8 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
             >

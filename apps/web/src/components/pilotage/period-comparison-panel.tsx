@@ -85,7 +85,7 @@ export function PeriodComparisonPanel({
 
   return (
     <motion.section 
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 1, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="rounded-[3rem] border border-white/10 bg-slate-900/40 p-10 shadow-2xl backdrop-blur-3xl"
     >
@@ -117,7 +117,7 @@ export function PeriodComparisonPanel({
           return (
             <motion.article 
               key={stat.label}
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 1, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
               className="group rounded-3xl border border-white/5 bg-white/[0.02] p-6 transition-all hover:bg-white/[0.05] hover:border-white/10"

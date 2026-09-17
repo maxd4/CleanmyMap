@@ -8,7 +8,7 @@ import { sumActionImpactKpis } from "@/lib/actions/impact-calculators";
 import { resolveEffectiveVolunteerUnits } from "@/lib/actions/volunteer-participation";
 
 const containerVariant = {
-  hidden: { opacity: 0 },
+  hidden: { opacity: 1 },
   show: {
     opacity: 1,
     transition: {
@@ -18,7 +18,7 @@ const containerVariant = {
 } as const satisfies Variants;
 
 const itemVariant = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 1, y: 20 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } },
 } as const satisfies Variants;
 

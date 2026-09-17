@@ -160,7 +160,7 @@ export function AnnuaireFiltersCard({
       <AnimatePresence>
         {resultsCount === 0 && (
           <motion.div 
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 1, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             className="p-8 rounded-[2rem] border border-amber-500/20 bg-amber-500/5 backdrop-blur-3xl"

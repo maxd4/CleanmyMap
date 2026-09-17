@@ -49,7 +49,7 @@ export function TopicNetworkGraph() {
           return (
             <motion.div
               key={topic.id}
-              initial={shouldAnimate ? { scale: displayMode === "minimaliste" ? 0.96 : 0, opacity: 0 } : false}
+              initial={shouldAnimate ? { scale: displayMode === "minimaliste" ? 0.96 : 0, opacity: 1 } : false}
               animate={{
                 scale: 1, 
                 opacity: 1,

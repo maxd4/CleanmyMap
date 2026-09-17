@@ -44,7 +44,7 @@ export function AcademieClimatWorkshopsPanel() {
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 1, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-10 p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden group"
     >
@@ -89,7 +89,7 @@ export function AcademieClimatWorkshopsPanel() {
           return (
             <motion.article
               key={category.id}
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 1, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.1 }}
               className={cn(

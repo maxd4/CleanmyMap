@@ -52,7 +52,7 @@ export function AnimatedImpactMetrics({ kpis }: AnimatedImpactMetricsProps) {
       {kpis.map((kpi, idx) => (
         <motion.div
           key={kpi.label}
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 1, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: idx * 0.1, duration: 0.8 }}
           className="group relative"

@@ -5,6 +5,8 @@ import {
   auditDisplayModesCss,
   auditMotionCss,
   auditRevealVisibilityCss,
+  auditFramerMotionVisibility,
+  auditRubriqueCard,
   auditPageTransition,
   auditPunchySlogan,
 } from "./check-motion-governance.mjs";
@@ -52,6 +54,52 @@ test("rejects equivalent visibility hiding for reveal content", () => {
 test("accepts reveal markup without a hiding CSS contract", () => {
   assert.deepEqual(
     auditRevealVisibilityCss("[data-gsap-reveal] { transition: transform 0.2s ease; }"),
+    [],
+  );
+});
+
+test("rejects essential Framer Motion content that starts invisible", () => {
+  const violations = auditFramerMotionVisibility(
+    `<motion.section
+      initial={{
+        opacity: 0,
+        y: 20,
+      }}
+      animate={{ opacity: 1 }}
+    />`,
+    "fixture.tsx",
+  );
+
+  assert.ok(violations.some((violation) => /opacity: 0/.test(violation)));
+});
+
+test("rejects hidden variants that make initial content depend on Motion", () => {
+  const violations = auditFramerMotionVisibility(
+    'const variants = { hidden: { opacity: 0 }, visible: { opacity: 1 } };',
+    "fixture.tsx",
+  );
+
+  assert.ok(violations.some((violation) => /hidden variants/.test(violation)));
+});
+
+test("accepts exit, overlay, conditional, transient and decorative Motion opacity", () => {
+  const source = `
+    <motion.div data-motion-role="overlay" initial={{ opacity: 0 }} />
+    <motion.div data-motion-role="conditional" initial={{ opacity: 0 }} />
+    <motion.div data-motion-role="transient" initial={{ opacity: 0 }} />
+    <motion.svg data-motion-role="decorative" initial={{ opacity: 0 }} />
+    <motion.div exit={{ opacity: 0 }} />
+  `;
+
+  assert.deepEqual(auditFramerMotionVisibility(source, "fixture.tsx"), []);
+});
+
+test("requires RubriqueCard to normalize an invisible initial state", () => {
+  assert.deepEqual(
+    auditRubriqueCard(
+      'export function RubriqueCard() { return <motion.div initial={normalizeRubriqueCardInitial(initial)} />; } function normalizeRubriqueCardInitial() { return { opacity: 1 }; }',
+      "rubrique-card.tsx",
+    ),
     [],
   );
 });

@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 
 const containerVariants = {
-  hidden: { opacity: 0 },
+  hidden: { opacity: 1 },
   visible: {
     opacity: 1,
     transition: { staggerChildren: 0.1 }
@@ -35,7 +35,7 @@ const containerVariants = {
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 1, y: 20 },
   visible: { opacity: 1, y: 0 }
 };
 
@@ -76,7 +76,7 @@ export function CompareSection() {
       <div className="space-y-12 pt-8">
         {/* Navigation & Period Selector */}
         <motion.div 
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 1, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 p-6 rounded-[2.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl"
         >

@@ -57,7 +57,7 @@ export function ActorsSection() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10 pt-8 items-start">
         {/* GAUCHE : Pression territoriale */}
         <RubriqueCard 
-          initial={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 1, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           themeColor="indigo"
           watermarkIcon={TrendingUp}
@@ -84,7 +84,7 @@ export function ActorsSection() {
               {hotspots.map(([area, count], index) => (
                 <motion.li 
                   key={area}
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 1, y: 10 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                   className="group flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 px-5 py-4 hover:bg-white/10 transition-all"
@@ -143,7 +143,7 @@ export function ActorsSection() {
                 {actorActivityCards.map((card, idx) => (
                   <RubriqueCard 
                     key={card.actor}
-                    initial={{ opacity: 0, scale: 0.95 }}
+                    initial={{ opacity: 1, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     transition={{ delay: idx * 0.05 }}
                     themeColor="indigo"

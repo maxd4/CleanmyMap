@@ -172,6 +172,7 @@ export function AppNavigationTreeMenu({
                           {isOpenSpace ? (
                             <motion.div
                               key={panelId}
+                              data-motion-role="conditional"
                               id={panelId}
                               role="region"
                               aria-labelledby={buttonId}

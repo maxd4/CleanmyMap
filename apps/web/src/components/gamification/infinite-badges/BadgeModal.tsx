@@ -48,6 +48,7 @@ export function BadgeModal({
       {isOpen && (
         <>
           <motion.div
+            data-motion-role="overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -56,6 +57,7 @@ export function BadgeModal({
           />
           <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
             <motion.div
+              data-motion-role="overlay"
               initial={{ opacity: 0, scale: 0.9, y: 30 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}

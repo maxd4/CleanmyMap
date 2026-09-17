@@ -33,7 +33,7 @@ type Props = {
 export function GamificationImpactMethodologyCard({ methodology }: Props) {
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 1, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl p-8 shadow-2xl relative overflow-hidden group"
     >

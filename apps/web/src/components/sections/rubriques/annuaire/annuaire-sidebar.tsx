@@ -37,7 +37,7 @@ export function AnnuaireSidebar({
 
   return (
     <motion.div 
-      initial={{ opacity: 0, x: 20 }}
+      initial={{ opacity: 1, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       className="sticky top-24 space-y-6"
     >

@@ -43,7 +43,7 @@ export function FundingSection() {
         <div className="grid gap-6 md:grid-cols-3">
            {/* Section 1: Business Sponsoring */}
            <motion.div 
-             initial={{ opacity: 0, y: 20 }}
+             initial={{ opacity: 1, y: 20 }}
              whileInView={{ opacity: 1, y: 0 }}
              className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"
            >
@@ -72,7 +72,7 @@ export function FundingSection() {
 
            {/* Section 2: Mécénat */}
            <motion.div 
-             initial={{ opacity: 0, y: 20 }}
+             initial={{ opacity: 1, y: 20 }}
              whileInView={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.1 }}
              className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"
@@ -102,7 +102,7 @@ export function FundingSection() {
 
            {/* Section 3: Donations */}
            <motion.div 
-             initial={{ opacity: 0, y: 20 }}
+             initial={{ opacity: 1, y: 20 }}
              whileInView={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.2 }}
              className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"

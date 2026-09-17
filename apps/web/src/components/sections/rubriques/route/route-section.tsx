@@ -306,7 +306,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
 
           {error && (
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 1, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               className="p-10 rounded-[3rem] border border-rose-500/20 bg-rose-500/5 backdrop-blur-3xl shadow-2xl flex items-center gap-8"
             >
@@ -360,7 +360,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
           <AnimatePresence mode="wait">
             {hasRoute && data && (
               <motion.div 
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 1, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-8"
               >

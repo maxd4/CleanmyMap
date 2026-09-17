@@ -220,7 +220,7 @@ export function ElusSection() {
 
         <AnimatePresence mode="wait">
           {isLoading ? (
-            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-12">
+            <motion.div key="loading" initial={{ opacity: 1 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-12">
                <CmmSkeleton className="h-80 rounded-[4rem]" />
                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   <CmmSkeleton className="h-48 rounded-[3rem]" />
@@ -231,7 +231,7 @@ export function ElusSection() {
           ) : data && (
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 1, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -30 }}
               transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
@@ -291,7 +291,7 @@ export function ElusSection() {
                          {data.summary.kpis.map((kpi, i) => (
                            <motion.div
                               key={i}
-                              initial={{ opacity: 0, scale: 0.95 }}
+                              initial={{ opacity: 1, scale: 0.95 }}
                               whileInView={{ opacity: 1, scale: 1 }}
                               viewport={{ once: true }}
                               transition={{ delay: i * 0.1 }}

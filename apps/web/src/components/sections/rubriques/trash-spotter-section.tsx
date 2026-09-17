@@ -17,7 +17,7 @@ import { useTrashSpotter } from "./use-trash-spotter";
 import { SpotterRecentList } from "./trash-spotter-components";
 
 const containerVariants = {
-  hidden: { opacity: 0 },
+  hidden: { opacity: 1 },
   visible: {
     opacity: 1,
     transition: {
@@ -27,7 +27,7 @@ const containerVariants = {
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 18 },
+  hidden: { opacity: 1, y: 18 },
   visible: { opacity: 1, y: 0 },
 };
 
