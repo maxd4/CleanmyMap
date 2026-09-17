@@ -3,6 +3,7 @@ import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { PersonalImpactMethodology } from "@/lib/gamification/progression-types";
 import type { ImpactTerrain2026StreetCleaningSavings } from "@/lib/impact/impact-terrain-2026";
+import type { EventConversionSummary } from "@/lib/community/engagement";
 
 export type ChapterAudience = "terrain" | "strategie" | "mixte";
 
@@ -109,6 +110,7 @@ export type ReportModel = {
     badgeConfirmed: number;
     badgeExpert: number;
     sourceBuckets: { citoyen: number; associatif: number; institutionnel: number };
+    conversion: EventConversionSummary;
   };
   impactMethodology: PersonalImpactMethodology;
   annualRows: string[][];

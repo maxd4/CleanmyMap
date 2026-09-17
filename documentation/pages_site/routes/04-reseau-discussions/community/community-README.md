@@ -95,6 +95,23 @@ responsable de la lecture protégée d'une mission terrain et de ses données
 enregistrées. Communauté ne transforme pas un RSVP en participation terrain et
 ne déplace aucun résultat ou KPI vers cette page.
 
+## Destinations canoniques des suivis
+
+Communauté fournit uniquement les liens de sortie vers les surfaces qui
+portent déjà ces responsabilités :
+
+- `/actions/history` porte l'historique terrain, sa supervision, ses preuves et
+  ses exports ;
+- `/reports` porte les lectures d'impact et les conversions calculées à partir
+  des événements communautaires et des actions liées ;
+- `/pilotage` porte les vues agrégées de staffing, relances, boucles
+  post-événement et l'export funnel lorsqu'il est autorisé par son contrat.
+
+L'organisateur ordinaire conserve uniquement, dans le détail de sa propre
+mission, les commandes événementielles autorisées par l'API : présence et
+post-mortem notamment. Ces commandes personnelles ne sont pas placées derrière
+`/pilotage` et ne donnent pas accès à ses agrégats.
+
 ## États
 
 ```txt

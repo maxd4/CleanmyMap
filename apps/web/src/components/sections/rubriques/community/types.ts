@@ -90,5 +90,9 @@ export type UseCommunitySectionModel = {
   pastEvents: CommunityEventItem[];
   myEvents: CommunityEventItem[];
   onRsvp: (eventId: string, status: CommunityRsvpStatus) => Promise<void>;
+  isUpdatingEventOpsId: string | null;
+  getOpsDraft: (event: CommunityEventItem) => OpsDraft;
+  updateOpsDraft: (eventId: string, patch: Partial<OpsDraft>) => void;
+  onSaveEventOps: (event: CommunityEventItem) => Promise<void>;
   toRsvpLabel: typeof toRsvpLabel;
 };

@@ -28,6 +28,10 @@ const CommunityEventsTabsCard = memo(function CommunityEventsTabsCard(props: Com
     pastEvents,
     rsvpLoadingEventId,
     onRsvp,
+    isUpdatingEventOpsId,
+    getOpsDraft,
+    updateOpsDraft,
+    onSaveEventOps,
   } = props;
 
   const showContent = !eventsLoading && !eventsLoadError;
@@ -89,6 +93,10 @@ const CommunityEventsTabsCard = memo(function CommunityEventsTabsCard(props: Com
             <EventArticlePast
               key={event.id}
               event={event}
+              isUpdating={isUpdatingEventOpsId === event.id}
+              getOpsDraft={getOpsDraft}
+              updateOpsDraft={updateOpsDraft}
+              onSaveEventOps={onSaveEventOps}
             />
           ))}
           {pastEvents.length === 0 && (

@@ -1,6 +1,6 @@
 import { describe, expect, it } from"vitest";
 import type { EventConversionSummary } from"@/lib/community/engagement";
-import { buildConversionKpiCards, formatPct } from"./kpis";
+import { buildConversionKpiCards, formatPct } from"@/lib/community/engagement/conversion-kpis";
 
 const summary: EventConversionSummary = {
  eventsCount: 5,
@@ -28,11 +28,11 @@ describe("community KPI helpers", () => {
 "rsvp_to_action",
  ]);
  expect(cards[0]).toMatchObject({
- title:"Conversion RSVP -> présence",
+ title:"Conversion RSVP → présence",
  value:"70.0%",
  });
  expect(cards[1]).toMatchObject({
- title:"Conversion présence -> action",
+ title:"Conversion présence → action",
  value:"42.9%",
  });
  });

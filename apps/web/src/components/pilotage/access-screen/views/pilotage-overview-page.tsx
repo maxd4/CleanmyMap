@@ -4,6 +4,7 @@ import type { AppProfile } from "@/lib/profiles";
 import { getProfileLabel } from "@/lib/profiles";
 import { getEffectiveAccessForSessionRole } from "@/lib/domain-language";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
+import type { PilotageCommunityOperations } from "@/lib/pilotage/community-operations";
 import { PageHeader } from "@/components/ui/page-header";
 import { PilotageOverviewContent } from "./pilotage-overview-content";
 import { formatDateTime } from "../access-screen-utils";
@@ -13,10 +14,12 @@ export function PilotageOverviewPage({
   locale,
   profile,
   overview,
+  communityOperations,
 }: {
   locale: PilotageLocale;
   profile: AppProfile;
   overview: PilotageOverview | null;
+  communityOperations: PilotageCommunityOperations | null;
 }) {
   const copy = PAGE_COPY[locale];
   const overviewLinks = buildAccessLinks(profile, locale);
@@ -42,8 +45,10 @@ export function PilotageOverviewPage({
         locale={locale}
         copy={copy}
         overview={overview}
+        communityOperations={communityOperations}
         overviewLinks={overviewLinks}
         accessAllowed={accessAllowed}
+        canExportCommunityFunnel={profile === "max"}
         lastUpdatedAt={overview ? formatDateTime(overview.generatedAt, locale) : null}
       />
     </section>

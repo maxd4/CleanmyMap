@@ -38,6 +38,20 @@
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : moyenne
 
+## Opérations communautaires
+
+Lorsque l'overview est disponible, le cockpit réservé aux profils autorisés
+peut afficher les agrégats communautaires issus des mêmes calculateurs que le
+reste du produit : staffing à venir, relances RSVP, boucles post-événement et,
+pour le profil qui satisfait le contrat de l'endpoint, export funnel.
+
+L'accès à ces agrégats suit `canAccessPilotage` (`coordinateur`, `admin` ou
+`max`, avec redirection de l'admin vers `/admin`). L'export funnel conserve en
+plus le contrôle `requireAdminAccess` de son endpoint. Les capacités personnelles
+de l'organisateur ordinaire, notamment la présence et le post-mortem de sa
+propre mission, restent dans le détail Communauté et ne sont pas déplacées
+derrière `/pilotage`.
+
 
 ## États à documenter
 

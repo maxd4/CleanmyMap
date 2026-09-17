@@ -11,11 +11,13 @@ import {
 } from "../access-screen-utils";
 import type { PilotageLocale } from "../access-screen-constants";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
+import type { PilotageCommunityOperations } from "@/lib/pilotage/community-operations";
 import { buildReportDataAvailabilityNotices } from "@/lib/reports/data-availability";
 import { PilotageOverviewSupportSections } from "./pilotage-overview-support-sections";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { DecisionClusterSection } from "@/components/pilotage/decision-cluster-section";
 import { PilotageOverviewSurfaceTabs } from "./pilotage-overview-surface-tabs";
+import { PilotageCommunityOperationsPanel } from "@/components/pilotage/community-operations-panel";
 
 import type { NavigationGridItem } from "@/components/ui/navigation-grid";
 
@@ -34,6 +36,8 @@ type PilotageOverviewContentProps = {
   overviewLinks: NavigationGridItem[];
   accessAllowed: boolean;
   lastUpdatedAt: string | null;
+  communityOperations: PilotageCommunityOperations | null;
+  canExportCommunityFunnel: boolean;
 };
 
 export function PilotageOverviewContent({
@@ -43,6 +47,8 @@ export function PilotageOverviewContent({
   overviewLinks,
   accessAllowed,
   lastUpdatedAt,
+  communityOperations,
+  canExportCommunityFunnel,
 }: PilotageOverviewContentProps) {
   const topZones = overview?.zones.slice(0, 3) ?? [];
   const topPriorities = overview?.priorities ?? [];
@@ -64,6 +70,13 @@ export function PilotageOverviewContent({
           </div>
         ) : null}
         <PilotageOverviewSurfaceTabs locale={locale} overview={overview} />
+
+        {communityOperations ? (
+          <PilotageCommunityOperationsPanel
+            operations={communityOperations}
+            canExportFunnel={canExportCommunityFunnel}
+          />
+        ) : null}
 
         <div className="space-y-8">
           <div className="space-y-3">

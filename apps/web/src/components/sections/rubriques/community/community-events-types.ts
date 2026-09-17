@@ -4,6 +4,7 @@ import type {
   CommunityRsvpStatus,
 } from "@/lib/community/http";
 import type { CommunityTab } from "./types";
+import type { OpsDraft } from "./types";
 
 export type CommunityEventsTabsCardProps = {
   activeTab: CommunityTab;
@@ -16,4 +17,8 @@ export type CommunityEventsTabsCardProps = {
   pastEvents: CommunityEventItem[];
   rsvpLoadingEventId: string | null;
   onRsvp: (eventId: string, status: CommunityRsvpStatus) => Promise<void>;
+  isUpdatingEventOpsId: string | null;
+  getOpsDraft: (event: CommunityEventItem) => OpsDraft;
+  updateOpsDraft: (eventId: string, patch: Partial<OpsDraft>) => void;
+  onSaveEventOps: (event: CommunityEventItem) => Promise<void>;
 };

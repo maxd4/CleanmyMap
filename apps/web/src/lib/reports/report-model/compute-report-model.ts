@@ -10,12 +10,14 @@ import {
   type ActionImpactInput,
 } from "@/lib/actions/impact-calculators";
 import { extractArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
+import { computeEventConversions } from "@/lib/community/engagement";
 import type {
   ReportModel,
   ReportModelInput,
   ReportModerationAvailability,
 } from "./types";
 import type { ActionListItem, ActionMapItem } from "@/lib/actions/types";
+import type { CommunityEventItem } from "@/lib/community/http";
 
 import { normalizeListType } from "./helpers";
 import { average, median } from "./math";
@@ -192,14 +194,7 @@ function computeQualityMetrics(approvedActions: ActionListItem[], nowMs: number)
   return { completenessScore, coherenceScore, freshnessDays, pollutionScoreAverage };
 }
 
-type CommunityEvent = {
-  eventDate: string;
-  rsvpCounts: {
-    yes: number;
-    maybe: number;
-    no: number;
-  };
-};
+type CommunityEvent = CommunityEventItem;
 
 function computeCommunityStats(allItems: ActionListItem[], approvedActions: ActionListItem[], events: CommunityEvent[], now: Date) {
   const eventUpcoming = events.filter((event) => event.eventDate >= now.toISOString().slice(0, 10));
@@ -221,6 +216,7 @@ function computeCommunityStats(allItems: ActionListItem[], approvedActions: Acti
     sourceItems: allItems,
     leaderboardLimit: 8,
   });
+  const conversion = computeEventConversions(events, approvedActions).summary;
 
   return {
     totalEvents: events.length,
@@ -229,6 +225,7 @@ function computeCommunityStats(allItems: ActionListItem[], approvedActions: Acti
     rsvp,
     participationRate,
     ...engagement,
+    conversion,
   };
 }
 
