@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BarChart3, FileText } from "lucide-react";
 
-type ReportsPageTabId = "generation" | "analysis";
+export type ReportsPageTabId = "generation" | "analysis";
 
 type ReportsPageTabsProps = {
   activeTab: ReportsPageTabId;
@@ -10,29 +10,38 @@ type ReportsPageTabsProps = {
 const TAB_DEFINITIONS: Array<{
   id: ReportsPageTabId;
   label: string;
-  description: string;
   icon: typeof FileText;
-  accent: string;
 }> = [
   {
     id: "generation",
     label: "Génération",
-    description: "Choix, aperçu et export du rapport.",
     icon: FileText,
-    accent: "text-slate-500",
   },
   {
     id: "analysis",
     label: "Analyse",
-    description: "KPI, comparaisons, résultats et méthodes.",
     icon: BarChart3,
-    accent: "text-red-600",
   },
 ];
 
+export function resolveReportsTab(
+  requestedTab: string | undefined,
+): ReportsPageTabId {
+  if (requestedTab === "analysis" || requestedTab === "pilotage") {
+    return "analysis";
+  }
+
+  return "generation";
+}
+
 export function ReportsPageTabs({ activeTab }: ReportsPageTabsProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-[1.5rem] border border-rose-100/80 bg-white/95 p-2 shadow-[0_14px_30px_-22px_rgba(190,24,93,0.3)]">
+    <nav
+      aria-label="Onglets des rapports"
+      data-testid="reports-page-tabs"
+      className="w-fit max-w-full"
+    >
+      <div className="inline-flex max-w-full flex-wrap gap-1 rounded-2xl border border-rose-100 bg-white/90 p-1 shadow-[0_12px_28px_-22px_rgba(190,24,93,0.35)]">
       {TAB_DEFINITIONS.map((tab) => {
         const Icon = tab.icon;
         const active = activeTab === tab.id;
@@ -43,30 +52,18 @@ export function ReportsPageTabs({ activeTab }: ReportsPageTabsProps) {
             key={tab.id}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`flex min-w-[220px] flex-1 items-center gap-3 rounded-[1.15rem] px-4 py-3 text-left transition ${
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 ${
               active
-                ? "border border-red-200 bg-red-50/70 text-slate-950 shadow-[0_12px_26px_-20px_rgba(220,38,38,0.3)]"
-                : "border border-transparent bg-white text-slate-700 hover:border-slate-200 hover:bg-slate-50"
+                ? "border-red-600 bg-red-600 text-white shadow-[0_10px_22px_-16px_rgba(220,38,38,0.65)]"
+                : "border-transparent bg-white text-slate-700 hover:border-rose-200 hover:bg-rose-50"
             }`}
           >
-            <span
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl ${
-                active ? "bg-white text-red-600" : "bg-slate-50 text-slate-500"
-              } ${tab.accent}`}
-            >
-              <Icon size={18} />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-sm font-black">{tab.label}</span>
-              <span
-                className="block text-xs leading-5 text-slate-500"
-              >
-                {tab.description}
-              </span>
-            </span>
+            <Icon size={17} aria-hidden="true" />
+            <span>{tab.label}</span>
           </Link>
         );
       })}
-    </div>
+      </div>
+    </nav>
   );
 }

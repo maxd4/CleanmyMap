@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { DeferredReportsWebDocument } from "@/components/reports/deferred-reports-web-document";
 import { ReportsPageV2Layout } from "@/components/reports/page-sections/reports-page-v2-layout";
+import { resolveReportsTab } from "@/components/reports/page-sections/reports-page-tabs";
 import { ReportsAnalysisDashboard } from "@/components/reports/reports-analysis-dashboard";
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { CTAGroup, SectionHeader } from "@/components/ui/page-structure";
@@ -33,8 +34,6 @@ import {
 } from "@/lib/reports/report-export-quota";
 import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
 
-type ReportsPageTabId = "generation" | "analysis";
-
 type ReportsPageProps = {
   searchParams: Promise<{ tab?: string }>;
 };
@@ -50,20 +49,6 @@ type ReportsAnalysisContentParams = {
   monthlyData: Awaited<ReturnType<typeof loadReportsAnalysisData>>["monthlyData"];
   dailyExportAvailability: ReportExportAvailability;
 };
-
-function resolveReportsTab(
-  requestedTab: string | undefined,
-): ReportsPageTabId {
-  if (requestedTab === "generation") {
-    return "generation";
-  }
-
-  if (requestedTab === "analysis" || requestedTab === "pilotage") {
-    return "analysis";
-  }
-
-  return "analysis";
-}
 
 function buildReportsAnalysisContent({
   locale,
