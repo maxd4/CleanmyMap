@@ -13,6 +13,7 @@ const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 const reserveDiscussionMessageSlotMock = vi.hoisted(() => vi.fn());
 const createChatNotificationsForMessageMock = vi.hoisted(() => vi.fn());
 const resolveActionDiscussionAccessMock = vi.hoisted(() => vi.fn());
+const loadActionByIdMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -46,6 +47,10 @@ vi.mock("@/lib/chat/chat-notifications", () => ({
 
 vi.mock("@/lib/chat/action-conversations", () => ({
   resolveActionDiscussionAccess: resolveActionDiscussionAccessMock,
+}));
+
+vi.mock("@/lib/actions/store", () => ({
+  loadActionById: loadActionByIdMock,
 }));
 
 describe("GET /api/chat and POST /api/chat", () => {
@@ -388,6 +393,137 @@ describe("GET /api/chat and POST /api/chat", () => {
       { service: true },
       "message-42",
     );
+    expect(loadActionByIdMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("creates a message in an allowed action discussion", async () => {
+    const actionId = "33333333-3333-4333-8333-333333333333";
+    const conversationId = "44444444-4444-4444-8444-444444444444";
+    const insertedMessage: ChatMessageRow = {
+      id: "action-message-42",
+      created_at: "2026-05-01T11:30:00.000Z",
+      content: "Je participe",
+      channel_type: "action",
+      sender_id: "user-1",
+      recipient_id: null,
+      arrondissement_id: null,
+      zone_name: null,
+      conversation_id: conversationId,
+      poll_options: [],
+    };
+    const supabaseMock = buildSupabaseMock({
+      profile: {
+        id: "user-1",
+        display_name: "Alex",
+        handle: "alex",
+        paris_arrondissement: null,
+        role_label: "member",
+        metadata: null,
+      },
+      messages: [],
+      actionConversation: { id: conversationId, action_id: actionId },
+      insertedMessage,
+    });
+    loadActionByIdMock.mockResolvedValue({ id: actionId, status: "approved" });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue({
+      ...supabaseMock.serviceSupabase,
+      from: supabaseMock.supabase.from,
+    });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          channelType: "action",
+          actionId,
+          content: "Je participe",
+        }),
+      }),
+    );
+    const body = (await response.json()) as {
+      status?: string;
+      message?: ChatMessageRow;
+    };
+
+    expect(response.status).toBe(201);
+    expect(body.status).toBe("sent");
+    expect(body.message).toEqual(insertedMessage);
+    expect(resolveActionDiscussionAccessMock).toHaveBeenCalledWith(
+      expect.objectContaining({ from: expect.any(Function) }),
+      actionId,
+      "user-1",
+    );
+    expect(loadActionByIdMock).toHaveBeenCalledWith(
+      expect.objectContaining({ from: expect.any(Function) }),
+      actionId,
+    );
+    expect(supabaseMock.actionConversationQuery.eq).toHaveBeenCalledWith(
+      "action_id",
+      actionId,
+    );
+    expect(supabaseMock.appMessagesTable.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        channel_type: "action",
+        conversation_id: conversationId,
+        action_id: null,
+      }),
+    );
+  }, 15000);
+
+  it("rejects a cancelled action before creating a message", async () => {
+    const actionId = "55555555-5555-4555-8555-555555555555";
+    const supabaseMock = buildSupabaseMock({
+      profile: {
+        id: "user-1",
+        display_name: "Alex",
+        handle: "alex",
+        paris_arrondissement: null,
+        role_label: "member",
+        metadata: null,
+      },
+      messages: [],
+      insertedMessage: {
+        id: "unused",
+        created_at: "2026-05-01T11:30:00.000Z",
+        content: "unused",
+        channel_type: "action",
+        sender_id: "user-1",
+        recipient_id: null,
+        arrondissement_id: null,
+        zone_name: null,
+      },
+    });
+    loadActionByIdMock.mockResolvedValue({ id: actionId, status: "cancelled" });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+    getSupabaseServerClientMock.mockReturnValue({
+      ...supabaseMock.serviceSupabase,
+      from: supabaseMock.supabase.from,
+    });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          channelType: "action",
+          actionId,
+          content: "Je participe",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    expect((await response.json()).error).toBe("Cette action a été annulée.");
+    expect(loadActionByIdMock).toHaveBeenCalledWith(
+      expect.objectContaining({ from: expect.any(Function) }),
+      actionId,
+    );
+    expect(supabaseMock.appMessagesTable.insert).not.toHaveBeenCalled();
+    expect(reserveDiscussionMessageSlotMock).not.toHaveBeenCalled();
   }, 15000);
 
   it("persists a valid community topic and filters a topic feed without hiding legacy messages from the aggregate", async () => {

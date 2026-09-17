@@ -218,11 +218,16 @@ export async function POST(request: Request) {
       location_label: string;
       status: string | null;
     } | null = null;
-    const loadActionById = isExternalActionShare
-      ? (await import("@/lib/actions/store")).loadActionById
-      : null;
     if (isExternalActionShare) {
-      const action = await loadActionById!(serviceSupabase, parsed.data.actionId!);
+      const actionId = parsed.data.actionId;
+      if (!actionId) {
+        return NextResponse.json(
+          { error: "Action non partageable", hint: "Cette action n'est plus publiée ou accessible." },
+          { status: 403 },
+        );
+      }
+      const { loadActionById } = await import("@/lib/actions/store");
+      const action = await loadActionById(serviceSupabase, actionId);
       if (!action || !isPublicActionReferenceAvailable(action)) {
         return NextResponse.json(
           { error: "Action non partageable", hint: "Cette action n'est plus publiée ou accessible." },
@@ -233,16 +238,18 @@ export async function POST(request: Request) {
     }
 
     if (parsed.data.channelType === "action" && parsed.data.actionId && typeof serviceSupabase.from === "function") {
+      const actionId = parsed.data.actionId;
       const { resolveActionDiscussionAccess } =
         await import("@/lib/chat/action-conversations");
-      const access = await resolveActionDiscussionAccess(serviceSupabase, parsed.data.actionId, userId);
+      const access = await resolveActionDiscussionAccess(serviceSupabase, actionId, userId);
       if (access.state === "excluded") {
         return NextResponse.json({ error: "Vous êtes exclu de cette discussion." }, { status: 403 });
       }
       if (access.state === "unavailable") {
         return NextResponse.json({ error: "Discussion d'action introuvable." }, { status: 404 });
       }
-      const action = await loadActionById!(serviceSupabase, parsed.data.actionId);
+      const { loadActionById } = await import("@/lib/actions/store");
+      const action = await loadActionById(serviceSupabase, actionId);
       if (action?.status === "cancelled") {
         return NextResponse.json(
           { error: "Cette action a été annulée.", hint: "La discussion est conservée en lecture seule." },
