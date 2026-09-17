@@ -1,21 +1,10 @@
 import { useMemo } from "react";
 import useSWR from "swr";
 import { fetchCommunityEvents } from "@/lib/community/http";
-import type { ActionListItem } from "@/lib/actions/types";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { isAppError, toAppError } from "@/lib/errors/app-errors";
-import {
-  computeEventConversions,
-  computeEventRelances,
-  computeEventStaffingPlan,
-  type EventConversionRow,
-  type EventReminder,
-  type EventStaffingRow,
-} from "@/lib/community/engagement";
-import { extractEventRefFromAction } from "@/lib/community/engagement.helpers";
-import type { PostEventLoop } from "./types";
 
-export function useCommunityEvents(actionItems: ActionListItem[]) {
+export function useCommunityEvents() {
   const {
     data: eventsData,
     error: eventsError,
@@ -50,81 +39,6 @@ export function useCommunityEvents(actionItems: ActionListItem[]) {
     [allEvents],
   );
 
-  const conversion = useMemo(
-    () => computeEventConversions(allEvents, actionItems),
-    [allEvents, actionItems],
-  );
-  const reminders = useMemo(
-    () => computeEventRelances(upcomingEvents),
-    [upcomingEvents],
-  );
-  const staffingPlan = useMemo(
-    () => computeEventStaffingPlan(upcomingEvents),
-    [upcomingEvents],
-  );
-
-  const remindersByEventId = useMemo(() => {
-    const grouped = new Map<string, EventReminder>();
-    for (const reminder of reminders) {
-      grouped.set(reminder.eventId, reminder);
-    }
-    return grouped;
-  }, [reminders]);
-
-  const conversionByEventId = useMemo(() => {
-    const grouped = new Map<string, EventConversionRow>();
-    for (const row of conversion.rows) {
-      grouped.set(row.eventId, row);
-    }
-    return grouped;
-  }, [conversion.rows]);
-
-  const staffingByEventId = useMemo(() => {
-    const grouped = new Map<string, EventStaffingRow>();
-    for (const row of staffingPlan.rows) {
-      grouped.set(row.eventId, row);
-    }
-    return grouped;
-  }, [staffingPlan.rows]);
-
-  const postEventLoop = useMemo<PostEventLoop>(() => {
-    const rows = pastEvents.map((event) => {
-      const conversionRow = conversionByEventId.get(event.id);
-      const hasWasteCharacterization = actionItems.some((item) => {
-        if (!item.waste_breakdown) {
-          return false;
-        }
-        return extractEventRefFromAction(item) === event.id;
-      });
-      const hasAttendance =
-        event.attendanceCount !== null && event.attendanceCount >= 0;
-      const hasPostMortem = Boolean(
-        event.postMortem && event.postMortem.trim().length > 0,
-      );
-      const hasLinkedAction = (conversionRow?.linkedActions ?? 0) > 0;
-      const closed =
-        hasAttendance && hasPostMortem && hasLinkedAction && hasWasteCharacterization;
-      return {
-        event,
-        closed,
-        hasAttendance,
-        hasPostMortem,
-        hasLinkedAction,
-        hasWasteCharacterization,
-      };
-    });
-    const closedCount = rows.filter((row) => row.closed).length;
-    const completionRate =
-      rows.length > 0 ? (closedCount / rows.length) * 100 : 0;
-    return {
-      rows,
-      closedCount,
-      total: rows.length,
-      completionRate,
-      missing: rows.filter((row) => !row.closed).slice(0, 6),
-    };
-  }, [actionItems, conversionByEventId, pastEvents]);
-
   const eventsLoadError = isAppError(eventsError)
     ? eventsError
     : eventsError instanceof Error
@@ -143,12 +57,5 @@ export function useCommunityEvents(actionItems: ActionListItem[]) {
     upcomingEvents,
     pastEvents,
     myEvents,
-    conversionSummary: conversion.summary,
-    conversionByEventId,
-    reminders,
-    remindersByEventId,
-    staffingPlan,
-    staffingByEventId,
-    postEventLoop,
   };
 }
