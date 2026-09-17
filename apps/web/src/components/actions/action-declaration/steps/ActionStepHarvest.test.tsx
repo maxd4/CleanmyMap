@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { createInitialFormState } from "../payload";
 import { ActionStepHarvest } from "./ActionStepHarvest";
 
-function renderHarvest(mode: "essentials" | "details") {
+function renderHarvest(mode: "essentials" | "collection" | "details") {
   const form = createInitialFormState("Aperçu local", "action");
   form.wasteKg = "0";
   form.cigaretteButtsCount = "0";
@@ -45,6 +45,15 @@ describe("ActionStepHarvest compact modes", () => {
 
     expect(html).toContain('id="harvest-megots-volume"');
     expect(html).not.toContain('id="harvest-megots-count"');
+    expect(html).not.toContain('id="harvest-waste-kg"');
+  });
+
+  it("does not duplicate essential measurements in the collection details", () => {
+    const html = renderHarvest("collection");
+
+    expect(html).toContain('id="harvest-megots-volume"');
+    expect(html).not.toContain('id="harvest-megots-count"');
+    expect(html).not.toContain('id="harvest-megots-kg"');
     expect(html).not.toContain('id="harvest-waste-kg"');
   });
 });
