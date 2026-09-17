@@ -10,8 +10,8 @@ import { buildActionPollutionProjectionMethodology } from "@/lib/actions/polluti
 import { getNavigationSpacesForProfile } from "@/lib/navigation";
 import {
   ActionMapMethodologySection,
-  MethodologiePageClient,
 } from "./methodologie-page-client";
+import { MethodologiePageClient } from "./methodologie-page-composition";
 
 import { RouteMethodologySection } from "./route-methodology-section";
 

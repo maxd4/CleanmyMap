@@ -4,7 +4,7 @@ import { loadEnvironmentalImpactDashboardSnapshotOnly } from "@/lib/environmenta
 import { buildElectricityEstimate } from "@/lib/environmental-impact-estimator/services/electricity";
 import { buildWaterEstimate } from "@/lib/environmental-impact-estimator/services/water";
 import { loadGitHubRepositoryStats } from "@/lib/github/github-repository-stats";
-import { MethodologiePageClient } from "@/components/sections/rubriques/methodologie-page-client";
+import { MethodologiePageClient } from "@/components/sections/rubriques/methodologie-page-composition";
 import type {
   EnvironmentalImpactInfrastructureServiceEstimate,
   EnvironmentalImpactSnapshotRecord,

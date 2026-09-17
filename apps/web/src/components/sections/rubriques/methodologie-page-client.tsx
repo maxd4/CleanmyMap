@@ -18,15 +18,10 @@ import { buildActionImpactMethodology } from "@/lib/actions/impact-calculators";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { DISPLAY_MODE_DESCRIPTIONS } from "@/lib/ui/preferences";
-import {
-  getNavigationSpacesForProfile,
-  type NavigationSpace,
-} from "@/lib/navigation";
 import type { AppProfile } from "@/lib/profiles";
 import { cn } from "@/lib/utils";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { PageHeader } from "@/components/ui/page-header";
-import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import type {
   EnvironmentalImpactElectricityEstimate,
   EnvironmentalImpactWaterEstimate,
@@ -58,7 +53,7 @@ type MethodologyCardProps = {
   icon: ReactNode;
 };
 
-type MethodologiePageClientProps = {
+export type MethodologiePageClientProps = {
   currentProfile?: AppProfile;
   freePlanServices: EnvironmentalImpactInfrastructureServiceEstimate[];
   impactTotals: {
@@ -82,66 +77,6 @@ type LegacyMethodologieContentProps = MethodologiePageClientProps & {
   includeReportsContent?: boolean;
   includeTransverseContent?: boolean;
 };
-
-type MethodologyContentRegistry = Partial<Record<string, ReactNode>>;
-
-function MethodologyNavigationDocumentation({
-  spaces,
-  locale,
-  contentByRouteId,
-}: {
-  spaces: NavigationSpace[];
-  locale: "fr" | "en";
-  contentByRouteId: MethodologyContentRegistry;
-}) {
-  return (
-    <div
-      data-testid="methodology-navigation-documentation"
-      data-methodology-display-mode="exhaustif"
-      className="methodology-page__navigation space-y-8"
-    >
-      {spaces.map((space) => (
-        <section
-          key={space.id}
-          data-methodology-space-id={space.id}
-          className="methodology-page__space space-y-6 rounded-[2.5rem] p-6 sm:p-8 lg:p-10"
-        >
-          <div className="methodology-page__space-heading flex items-center gap-4">
-            <span aria-hidden="true" className="methodology-page__space-icon text-2xl">
-              {space.icon}
-            </span>
-            <h2 className="methodology-page__space-title text-2xl font-black tracking-tight sm:text-3xl">
-              Méthodologie — {space.label[locale]}
-            </h2>
-          </div>
-
-          <div className="space-y-3">
-            {space.items.map((item) => {
-              const content = contentByRouteId[item.routeId];
-              return (
-                <div
-                  key={item.routeId}
-                  data-methodology-route-id={item.routeId}
-                  data-methodology-content={content ? "present" : "empty"}
-                >
-                  <CmmDisclosure
-                    summary={item.label[locale]}
-                    defaultOpen={false}
-                    tone="rose"
-                    size="lg"
-                    className="methodology-page__disclosure"
-                  >
-                    {content ?? null}
-                  </CmmDisclosure>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      ))}
-    </div>
-  );
-}
 
 function MethodologyCard({
   title,
@@ -281,7 +216,7 @@ export function ActionMapMethodologySection({ isFrench }: { isFrench: boolean })
   );
 }
 
-function LegacyMethodologieContent({
+export function LegacyMethodologieContent({
   contentOnly = false,
   includeMapAndRouteContent = true,
   includeReportsContent = true,
@@ -743,68 +678,6 @@ function LegacyMethodologieContent({
             </p>
           </div>
         </footer>
-      </div>
-    </div>
-  );
-}
-
-export function MethodologiePageClient(props: MethodologiePageClientProps) {
-  const { locale } = useSitePreferences();
-  const { t } = useTranslation("methodologie");
-  const currentProfile = props.currentProfile ?? "benevole";
-  const isFrench = locale === "fr";
-  const navigationSpaces = getNavigationSpacesForProfile(
-    currentProfile,
-    "exhaustif",
-    locale,
-  );
-  const contentByRouteId: MethodologyContentRegistry = {
-    methodologie: (
-      <LegacyMethodologieContent
-        {...props}
-        contentOnly
-        includeMapAndRouteContent={false}
-        includeReportsContent={false}
-      />
-    ),
-    map: <ActionMapMethodologySection isFrench={isFrench} />,
-    new: <RouteMethodologySection />,
-    reports: (
-      <LegacyMethodologieContent
-        {...props}
-        contentOnly
-        includeMapAndRouteContent={false}
-        includeTransverseContent={false}
-      />
-    ),
-  };
-
-  return (
-    <div className="methodology-page relative left-1/2 w-screen -translate-x-1/2 isolate overflow-x-clip pb-20 pt-6">
-      <div
-        aria-hidden="true"
-        className="methodology-page__ambient pointer-events-none absolute inset-x-0 top-0 -z-10 h-[44rem]"
-      />
-
-      <div className="methodology-page__shell cmm-page-width flex flex-col space-y-10 px-4 pt-2 sm:px-6 lg:px-8">
-        <PageHeader
-          align="center"
-          tone="red"
-          className="methodology-page__header"
-          title={
-            <span className="methodology-page__title">
-              <span aria-hidden="true" className="methodology-page__title-accent" />
-              <span>{t("header_title")}</span>
-            </span>
-          }
-          subtitle={t("header_desc")}
-        />
-
-        <MethodologyNavigationDocumentation
-          spaces={navigationSpaces}
-          locale={locale}
-          contentByRouteId={contentByRouteId}
-        />
       </div>
     </div>
   );
