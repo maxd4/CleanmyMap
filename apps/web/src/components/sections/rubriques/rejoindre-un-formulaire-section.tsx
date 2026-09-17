@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { CheckCircle2, ChevronRight, Leaf } from "lucide-react";
+import { ChevronRight, Leaf } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { PageHeader } from "@/components/ui/page-header";
 import { JoinFormExplorer } from "./rejoindre-un-formulaire-section.explorer";
@@ -34,7 +34,7 @@ export function JoinActionSection() {
           <div className="grid gap-4 px-5 py-3.5 md:px-6 md:py-4 lg:grid-cols-[minmax(0,1.12fr)_minmax(260px,0.88fr)] lg:items-center">
             <div className="relative z-10 space-y-2.5">
               <div className="flex items-center gap-2 text-sm font-medium text-slate-500">
-                <Link href="/sections/route" className="inline-flex items-center gap-2 text-emerald-800 transition hover:text-emerald-900">
+                <Link href="/actions/new" className="inline-flex items-center gap-2 text-emerald-800 transition hover:text-emerald-900">
                   <Leaf size={16} />
                   {fr ? "Agir" : "Act"}
                 </Link>
@@ -51,12 +51,6 @@ export function JoinActionSection() {
                 }
               />
 
-              <div className="inline-flex flex-wrap items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/75 px-3.5 py-1.5 text-xs font-semibold text-emerald-900 shadow-sm">
-                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                  <CheckCircle2 size={12} />
-                </span>
-                {fr ? "Actions futures et passées" : "Future and past actions"}
-              </div>
             </div>
 
             <div className="min-h-[140px] self-end">

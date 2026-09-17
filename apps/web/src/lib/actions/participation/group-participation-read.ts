@@ -16,6 +16,7 @@ import {
   PENDING_PARTICIPATION_STATUS,
   resolveJoinedAt,
   resolveParticipationUpdatedAt,
+  getActionTitle,
   type ActionParticipantRecordRow,
   type ActionPreviewRow,
 } from "./group-participation.helpers";
@@ -233,10 +234,13 @@ export async function loadUserParticipationHistory(
 
       return records.map((record) => {
         const metadata = extractActionMetadataFromNotes(action.notes);
+        const publicAction = { ...action };
+        delete publicAction.preparation_data;
         const joined = record.status === ACTIVE_PARTICIPATION_STATUS;
         const awaitingApproval = record.status === PENDING_PARTICIPATION_STATUS;
         return {
-          ...action,
+          ...publicAction,
+          actionTitle: getActionTitle(action),
           actionPhase: action.action_phase ?? "post_action_complete",
           participantsCount: participantCounts.get(action.id) ?? 0,
           joined,

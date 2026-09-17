@@ -32,6 +32,16 @@ export type { LocationFilter, PeriodFilter } from "./rejoindre-un-formulaire-sec
 export { getLocationFilterBucket, isWithinPeriod, sortItemsByStatusRank } from "./rejoindre-un-formulaire-section.utils";
 export type StatusFilter = "all" | "open" | "pending" | "closed";
 
+export function resolveJoinFormQueueActionId({
+  activeTab,
+  focusActionId,
+}: {
+  activeTab: JoinActionTab;
+  focusActionId: string | null;
+}): string | null {
+  return activeTab === "future" ? focusActionId : null;
+}
+
 export function useJoinFormSectionController() {
   const { locale } = useSitePreferences();
   const searchParams = useSearchParams();
@@ -151,28 +161,9 @@ export function useJoinFormSectionController() {
       }),
     [actions.historyItems],
   );
-  const openActionsCount = useMemo(
-    () => preActionVisibleItems.filter((item) => getActionDisplayStatus(item) === "open").length,
-    [preActionVisibleItems],
-  );
-  const volunteersExpectedCount = useMemo(
-    () => preActionVisibleItems.reduce((total, item) => total + Math.max(0, item.volunteers_count), 0),
-    [preActionVisibleItems],
-  );
-  const pendingRequestsCount = useMemo(
-    () => preActionVisibleItems.reduce((total, item) => total + item.pendingRequestsCount, 0),
-    [preActionVisibleItems],
-  );
-  const summaryIsCompact =
-    openActionsCount === 0 &&
-    pendingRequestsCount === 0 &&
-    activeParticipationItems.length === 0 &&
-    activeRegistrationItems.length === 0;
   const queueActionId = useMemo(
-    () => activeTab === "future"
-      ? focusActionId ?? visibleItems[0]?.id ?? orderedItems[0]?.id ?? null
-      : null,
-    [activeTab, focusActionId, orderedItems, visibleItems],
+    () => resolveJoinFormQueueActionId({ activeTab, focusActionId }),
+    [activeTab, focusActionId],
   );
 
   const queue = useJoinFormSectionQueue({
@@ -229,10 +220,6 @@ export function useJoinFormSectionController() {
     activeParticipationItems,
     activeRegistrationItems,
     sortedHistoryItems,
-    openActionsCount,
-    volunteersExpectedCount,
-    pendingRequestsCount,
-    summaryIsCompact,
     noResultsMessage,
     setSearch,
     setStatusFilter,

@@ -49,7 +49,7 @@ export function JoinFormPublicQueue({
         <div className="space-y-1.5">
           <div className="flex items-center gap-3">
             <h3 className="text-base font-black tracking-tight text-emerald-950">
-              {fr ? "File publique des demandes" : "Public request queue"}
+              {fr ? "Demandes d'inscription à revoir" : "Registration requests to review"}
             </h3>
             <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800">
               {formatCount(queueRequests.length + queueConfirmedParticipants.length)}
@@ -58,11 +58,11 @@ export function JoinFormPublicQueue({
           <p className="max-w-2xl text-xs leading-relaxed text-slate-600">
             {queueCanReview
               ? fr
-                ? "Recherche, validation, exclusion et ajout manuel réservés aux admin et élus."
-                : "Search, validation, exclusion and manual addition are reserved for admins and elected users."
+                ? "Les actions de revue disponibles dépendent de vos droits sur cette action."
+                : "Available review actions depend on your permissions for this action."
               : fr
-                ? "Seuls les admin et élus peuvent modérer cette file."
-                : "Only admins and elected users can moderate this queue."}
+                ? "Aucune action de revue n'est disponible pour ce compte."
+                : "No review action is available for this account."}
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -243,11 +243,11 @@ export function JoinFormPublicQueue({
         <span>
           {queueCanReview
             ? fr
-              ? "Les admin et élus peuvent accepter, exclure et ajouter un compte."
-              : "Admins and elected users can approve, remove and add an account."
+              ? "Les actions proposées sont contrôlées par les droits de revue serveur."
+              : "Available actions are controlled by server-side review permissions."
             : fr
-              ? "La modération des comptes est réservée aux admin et élus."
-              : "Account moderation is reserved for admins and elected users."}
+              ? "Les droits de revue sont contrôlés par le serveur."
+              : "Review permissions are controlled by the server."}
         </span>
         <span className="inline-flex items-center gap-1.5 text-emerald-700">
           {fr ? "Vue de modération" : "Moderation view"}

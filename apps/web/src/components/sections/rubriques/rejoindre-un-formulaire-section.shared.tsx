@@ -12,7 +12,6 @@ export {
   ActionCard,
   FilterField,
   HelpCard,
-  HeroStatCard,
   PillBadge,
   QueueRow,
   ShortcutsCard,

@@ -73,6 +73,8 @@ export type JoinableActionItem = {
   created_at: string;
   action_date: string;
   location_label: string;
+  /** Read-only display metadata; participation mutations do not depend on it. */
+  actionTitle?: string | null;
   volunteers_count: number;
   duration_minutes: number;
   status: "pending" | "approved" | "rejected" | "cancelled";

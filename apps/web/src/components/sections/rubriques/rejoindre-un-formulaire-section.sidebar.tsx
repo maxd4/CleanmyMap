@@ -1,13 +1,12 @@
 
 "use client";
 
-import { CheckCircle2, ChevronRight, Clock3, UserRound, Users2 } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { usesRegistrationStore } from "@/lib/actions/participation/action-phase";
 import type { useJoinFormSectionController } from "./rejoindre-un-formulaire-section.controller";
 import {
   HelpCard,
-  HeroStatCard,
   PillBadge,
   ShortcutsCard,
   getCardDisplayStatus,
@@ -18,7 +17,7 @@ import { formatCount, formatDate } from "./rejoindre-un-formulaire-section.forma
 
 type ControllerState = ReturnType<typeof useJoinFormSectionController>;
 
-type SidebarProps = Pick<ControllerState, "fr" | "authenticated" | "sortedHistoryItems" | "activeParticipationItems" | "activeRegistrationItems" | "preActionVisibleItems" | "pendingRequestsCount" | "volunteersExpectedCount" | "summaryIsCompact">;
+type SidebarProps = Pick<ControllerState, "fr" | "authenticated" | "sortedHistoryItems" | "activeParticipationItems" | "activeRegistrationItems">;
 
 export function JoinFormSidebar({
   fr,
@@ -26,10 +25,6 @@ export function JoinFormSidebar({
   sortedHistoryItems,
   activeParticipationItems,
   activeRegistrationItems,
-  preActionVisibleItems,
-  pendingRequestsCount,
-  volunteersExpectedCount,
-  summaryIsCompact,
 }: SidebarProps) {
   function renderHistorySection() {
     if (!authenticated) {
@@ -88,44 +83,6 @@ export function JoinFormSidebar({
 
   return (
   <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
-    <div className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.18)]">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-black tracking-tight text-emerald-950">{fr ? "Résumé" : "Summary"}</h2>
-        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-800">
-          {formatCount(preActionVisibleItems.length)}
-        </span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2">
-        <HeroStatCard
-          icon={<Users2 size={20} />}
-          value={formatCount(preActionVisibleItems.length)}
-          label={fr ? "Actions futures" : "Future actions"}
-          compact={summaryIsCompact}
-        />
-        <HeroStatCard
-          icon={<Clock3 size={20} />}
-          value={formatCount(pendingRequestsCount)}
-          label={fr ? "Demandes d'inscription" : "Registration requests"}
-          tone="amber"
-          compact={summaryIsCompact}
-        />
-        <HeroStatCard
-          icon={<CheckCircle2 size={20} />}
-          value={formatCount(activeRegistrationItems.length)}
-          label={fr ? "Inscriptions confirmées" : "Confirmed registrations"}
-          compact={summaryIsCompact}
-        />
-        <HeroStatCard
-          icon={<UserRound size={20} />}
-          value={formatCount(volunteersExpectedCount)}
-          label={fr ? "Bénévoles attendus" : "Expected volunteers"}
-          tone="amber"
-          compact={summaryIsCompact}
-        />
-      </div>
-    </div>
-
     <ShortcutsCard />
 
     <div id="mon-suivi" className="rounded-[1.25rem] border border-slate-200 bg-white p-4 shadow-[0_18px_36px_-30px_rgba(15,23,42,0.18)]">
