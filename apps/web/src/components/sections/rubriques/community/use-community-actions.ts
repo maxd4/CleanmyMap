@@ -83,9 +83,9 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
       createForm.cleanupWasteTypesExpected.length === 0
     ) {
       setCommunityError(
-        toAppError("Renseigne le titre, la date, le lieu et le cadrage cleanup.", {
+        toAppError("Renseignez le titre, la date, le lieu et l’objectif de la mission.", {
           kind: "validation",
-          message: "Renseigne le titre, la date, le lieu et le cadrage cleanup.",
+          message: "Renseignez le titre, la date, le lieu et l’objectif de la mission.",
         }),
       );
       return;
@@ -96,9 +96,9 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
       (parsedCapacity === null || parsedCapacity < 1)
     ) {
       setCommunityError(
-        toAppError("La capacite cible doit etre un entier strictement positif.", {
+        toAppError("La capacité cible doit être un entier strictement positif.", {
           kind: "validation",
-          message: "La capacite cible doit etre un entier strictement positif.",
+          message: "La capacité cible doit être un entier strictement positif.",
         }),
       );
       return;
@@ -152,14 +152,14 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
         cleanupSupportLevel: "moyen",
         cleanupWasteTypesExpected: ["megots", "plastique"],
       }));
-      setCommunitySuccessMessage("Evenement cree et partage avec la communaute.");
+      setCommunitySuccessMessage("Mission créée et partagée avec la communauté.");
       await reloadEvents();
     } catch (error) {
       const appError = isAppError(error)
         ? error
         : toAppError(error, {
             kind: "server",
-          message: "Creation evenement impossible.",
+          message: "Création de la mission impossible.",
           });
       if (appError.status === 401) {
         redirectAnonymousToCommunity();
@@ -191,14 +191,14 @@ export function useCommunityActions(reloadEvents: () => Promise<unknown>) {
     setRsvpLoadingEventId(eventId);
     try {
       await upsertCommunityRsvp({ eventId, status });
-      setCommunitySuccessMessage(`RSVP enregistre: ${toRsvpLabel(status)}.`);
+      setCommunitySuccessMessage(`Inscription enregistrée : ${toRsvpLabel(status)}.`);
       await reloadEvents();
     } catch (error) {
       const appError = isAppError(error)
         ? error
         : toAppError(error, {
             kind: "server",
-          message: "RSVP impossible.",
+          message: "Inscription impossible.",
           });
       if (appError.status === 401) {
         redirectAnonymousToCommunity();

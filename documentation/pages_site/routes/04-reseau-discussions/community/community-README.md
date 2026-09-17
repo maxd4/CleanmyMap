@@ -78,6 +78,14 @@ conserver les alias historiques. Les parcours protégés de création ou de
 gouvernance partenaire restent `/partners/onboarding` et
 `/partners/dashboard`.
 
+La page affiche un `PageHeader` unique avec les deux destinations URL
+`Communauté` et `Partenaires`. Dans `Communauté`, la liste est organisée par
+les onglets légers `À venir`, `Mes inscriptions` et `Passées`. Les missions
+restent compactes : `Participer` est l'action principale et les actions de
+relais, de création de l'action terrain et de partage sont repliées dans le
+détail. Les seules passerelles générales en bas de page sont l'annuaire et la
+messagerie.
+
 ## Périmètre fonctionnel actuel
 
 L'onglet `Communauté` expose uniquement :
@@ -87,7 +95,10 @@ L'onglet `Communauté` expose uniquement :
   mutation ;
 - `Mes inscriptions`, dérivé du statut RSVP retourné pour le compte courant ;
 - l'organisation d'une mission dans un parcours replié, sans modification du
-  payload ou des permissions de création.
+  payload ou des permissions de création. Pour un visiteur anonyme, l'onglet
+  explique qu'une connexion est nécessaire et le formulaire de création reste
+  fermé jusqu'à l'authentification ; aucun brouillon n'est saisi avant la
+  redirection.
 
 La surface canonique `/sections/rejoindre-une-action` reste responsable des
 inscriptions aux actions de groupe et de leur suivi ; `/missions/[id]` reste

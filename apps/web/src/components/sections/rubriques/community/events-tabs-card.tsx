@@ -3,12 +3,14 @@
 import { useState, memo } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { QRCodeDialog } from "@/components/ui/qrcode-dialog";
+import { useAuth } from "@clerk/nextjs";
 import { 
   EventTabsHeader, 
   EventListStates, 
   EventArticleUpcoming, 
   EventArticleMine, 
-  EventArticlePast 
+  EventArticlePast,
+  AnonymousRegistrationState,
 } from "./community-events-components";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { CommunityEventsTabsCardProps } from "./community-events-types";
@@ -34,6 +36,7 @@ const CommunityEventsTabsCard = memo(function CommunityEventsTabsCard(props: Com
     onSaveEventOps,
   } = props;
 
+  const { isLoaded, isSignedIn } = useAuth();
   const showContent = !eventsLoading && !eventsLoadError;
 
   return (
@@ -50,9 +53,16 @@ const CommunityEventsTabsCard = memo(function CommunityEventsTabsCard(props: Com
         onRetry={onRetry ? () => void onRetry() : undefined}
       />
 
+      <section
+        id="community-missions-panel"
+        role="tabpanel"
+        aria-labelledby={`community-tab-${activeTab}`}
+        tabIndex={-1}
+        className="space-y-4"
+      >
       {showContent && activeTab === "upcoming" && (
         <>
-          <div className="grid gap-4 sm:grid-cols-1">
+          <div className="grid gap-3">
             {upcomingEvents.map((event) => (
               <EventArticleUpcoming
                 key={event.id}
@@ -66,19 +76,29 @@ const CommunityEventsTabsCard = memo(function CommunityEventsTabsCard(props: Com
           </div>
 
           {upcomingEvents.length === 0 && (
-            <p className="cmm-text-small cmm-text-secondary">
-              Aucun événement à venir sur cette vue. Revenez plus tard ou ouvrez l&apos;onglet Passé pour relier une action à un événement clôturé.
-            </p>
+            <div className="rounded-2xl border border-pink-100 bg-white p-5">
+              <h3 className="font-semibold text-slate-950">Aucune mission à venir</h3>
+              <p className="mt-1 cmm-text-small cmm-text-secondary">
+                Revenez plus tard pour découvrir les prochaines missions.
+              </p>
+            </div>
           )}
         </>
       )}
 
       {showContent && activeTab === "mine" && (
         <div className="mt-4 space-y-2">
-          {myEvents.length === 0 ? (
-            <p className="cmm-text-small cmm-text-secondary">
-              Vous n&apos;avez pas encore d&apos;inscription sur cette période. Ouvrez l&apos;onglet &quot;À venir&quot; pour rejoindre une action disponible.
-            </p>
+          {!isLoaded ? (
+            <p className="cmm-text-small cmm-text-muted" role="status">Vérification de la connexion…</p>
+          ) : !isSignedIn ? (
+            <AnonymousRegistrationState />
+          ) : myEvents.length === 0 ? (
+            <div className="rounded-2xl border border-pink-100 bg-white p-5">
+              <h3 className="font-semibold text-slate-950">Aucune inscription</h3>
+              <p className="mt-1 cmm-text-small cmm-text-secondary">
+                Ouvrez l’onglet « À venir » pour rejoindre une mission.
+              </p>
+            </div>
           ) : (
             myEvents.map((event) => (
               <EventArticleMine key={event.id} event={event} />
@@ -100,12 +120,16 @@ const CommunityEventsTabsCard = memo(function CommunityEventsTabsCard(props: Com
             />
           ))}
           {pastEvents.length === 0 && (
-            <p className="cmm-text-small cmm-text-secondary">
-              Aucun événement passé n&apos;est encore disponible sur cette période. Les suivis apparaîtront ici une fois les événements clôturés.
-            </p>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <h3 className="font-semibold text-slate-950">Aucune mission passée</h3>
+              <p className="mt-1 cmm-text-small cmm-text-secondary">
+                Les missions terminées apparaîtront ici après leur publication.
+              </p>
+            </div>
           )}
         </div>
       )}
+      </section>
 
       <QRCodeDialog
         isOpen={!!shareEvent}
