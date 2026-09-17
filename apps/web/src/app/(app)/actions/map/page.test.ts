@@ -29,7 +29,14 @@ describe("actions map public semantics", () => {
   it("keeps the methodology CTA and removes secondary technical surfaces", () => {
     expect(source).toContain('href="/methodologie"');
     expect(source).not.toContain("MapSidebarAid");
-    expect(source).toContain("Analyse &amp; journal");
+    expect(source).toContain("Journal des actions");
+    expect(source).toContain('href="/reports"');
+    expect(source).not.toContain("ActionStoriesCarousel");
+    expect(source).not.toContain("ActionsVisualizationPanel");
+    expect(source).not.toContain("Dernières actions");
+    expect(source).not.toContain("Action urgente");
+    expect(source).not.toContain("images.unsplash.com");
+    expect(source).not.toContain("<aside");
     expect(controlTowerSource).not.toContain("buildActionsMapGeoQuality");
     expect(controlTowerSource).not.toContain("Qualité géo");
     expect(controlTowerSource).not.toContain("Sans coord.");
@@ -53,7 +60,7 @@ describe("actions map public semantics", () => {
 
   it("keeps map counts contextual and separate from public Impact metrics", () => {
     expect(source).toContain("const visibleCount = filteredMapItems.length");
-    expect(source).toContain("const loadedCount = loadedItems.length");
+    expect(source).toContain("const loadedCount = mapFeedDataForView.allItems.length");
     expect(source).not.toContain("useMapKpiStats");
     expect(source).not.toContain("stats.wasteKg");
     expect(source).not.toContain("stats.co2AvoidedKg");

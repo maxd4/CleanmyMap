@@ -1,16 +1,12 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { BarChart3, Table2, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import type { PublicImpactMetric } from "@/lib/impact/public-impact-kpis";
 import { ActionsMapFeedContent } from "@/components/actions/map-feed/actions-map-feed";
 import { ActionsMapTable } from "@/components/actions/actions-map-table";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
-import { mapItemType } from "@/lib/actions/data-contract";
-import type { ActionMapItem } from "@/lib/actions/types";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
 import { useActionsMapFilters } from "@/components/actions/map/use-actions-map-filters";
@@ -31,41 +27,6 @@ import {
   ACTIONS_MAP_PUBLIC_FEED_DEFAULTS,
   getActionsMapCurrentYearDays,
 } from "@/components/actions/map/actions-map-filters.utils";
-
-const ActionsVisualizationPanel = dynamic(
-  () =>
-    import("@/components/actions/actions-visualization-panel").then(
-      (mod) => mod.ActionsVisualizationPanel,
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="rounded-[2.5rem] border border-sky-200/80 bg-white p-8">
-        <div className="space-y-4">
-          <CmmSkeleton variant="title" className="w-40" />
-          <CmmSkeleton variant="chart" className="h-40" />
-        </div>
-      </div>
-    ),
-  },
-);
-
-const ActionStoriesCarousel = dynamic(
-  () => import("@/components/map/ActionStoriesCarousel").then((mod) => mod.ActionStoriesCarousel),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="space-y-4 rounded-[2rem] border border-cyan-200/80 bg-white/80 p-5">
-        <CmmSkeleton variant="title" className="w-40" />
-        <CmmSkeleton variant="card" className="h-[340px]" />
-      </div>
-    ),
-  },
-);
-
-export function selectRecentActions(items: ActionMapItem[]): ActionMapItem[] {
-  return items.filter((item) => mapItemType(item) === "action");
-}
 
 type ActionsMapPageClientProps = {
   impactMetrics: PublicImpactMetric[];
@@ -103,10 +64,6 @@ function ActionsMapPageContent({
     visibleCategories,
   } = filters;
 
-  const [railTab, setRailTab] = useState<"insights" | "journal">(
-    requestedActionId ? "journal" : "insights",
-  );
-  const activeRailTab = requestedActionId ? "journal" : railTab;
   const selectedActionId = requestedActionId;
   const [scoreScope, setScoreScope] = useState<PollutionScoreScope>("global");
   const [displayMode, setDisplayMode] = useState<CurrentPlaceStateMode>("projected_today");
@@ -140,7 +97,6 @@ function ActionsMapPageContent({
   );
   const handleSelectAction = useCallback((actionId: string) => {
     const nextActionId = requestedActionId === actionId ? null : actionId;
-    setRailTab("journal");
     updateSelectionUrl(nextActionId);
   }, [requestedActionId, updateSelectionUrl]);
 
@@ -206,10 +162,6 @@ function ActionsMapPageContent({
     return { ...mapFeedData, allItems, items };
   }, [mapFeedData, selectedAction]);
   const filteredMapItems = useMemo(() => mapFeedDataForView.items ?? [], [mapFeedDataForView.items]);
-  const recentActions = useMemo(
-    () => selectRecentActions(filteredMapItems),
-    [filteredMapItems],
-  );
   const visibleCount = filteredMapItems.length;
   const loadedCount = mapFeedDataForView.allItems.length;
 
@@ -290,98 +242,44 @@ function ActionsMapPageContent({
         </section>
 
         <div className="cmm-page-width px-6 space-y-10">
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.62fr)_minmax(340px,0.88fr)]">
-            <div className="min-w-0 space-y-6">
-              <MapKpiRibbon metrics={impactMetrics} />
+          <div className="min-w-0 space-y-6">
+            <MapKpiRibbon metrics={impactMetrics} />
 
-              <MapControlTower
-                filters={filters}
-                visibleCount={visibleCount}
-                loadedCount={loadedCount}
-                filteredMapItems={filteredMapItems}
-                freshnessLabel={mapFeedData.freshnessLabel}
-                mapExportTargetRef={mapExportTargetRef}
-                viewport={mapViewport}
+            <MapControlTower
+              filters={filters}
+              visibleCount={visibleCount}
+              loadedCount={loadedCount}
+              filteredMapItems={filteredMapItems}
+              freshnessLabel={mapFeedData.freshnessLabel}
+              mapExportTargetRef={mapExportTargetRef}
+              viewport={mapViewport}
+            />
+
+            <section className={cn(surfaceCard, "space-y-6 p-6 sm:p-8")}>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
+                    <span className="h-4 w-4 rounded-full bg-sky-500 shadow-[0_0_18px_rgba(56,189,248,0.45)]" />
+                    Journal des actions
+                  </p>
+                  <p className="cmm-text-body font-medium">
+                    Les éléments visibles et leurs données utiles, dans le contexte de cette vue.
+                  </p>
+                </div>
+                <CmmButton href="/reports" tone="tertiary" variant="pill" className="w-full justify-center gap-2 sm:w-auto">
+                  Voir les rapports <ArrowRight size={14} />
+                </CmmButton>
+              </div>
+
+              <ActionsMapTable
+                items={filteredMapItems}
+                compact
+                selectedActionId={selectedActionId}
+                onSelectAction={handleSelectAction}
+                scoreScope={scoreScope}
+                displayMode={displayMode}
               />
-
-              <section className={cn(surfaceCard, "p-8 space-y-8")}>
-                <div className="flex items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
-                      <span className="h-4 w-4 rounded-full bg-sky-500 shadow-[0_0_18px_rgba(56,189,248,0.45)]" />
-                      Analyse &amp; journal
-                    </p>
-                    <p className="cmm-text-body font-medium">
-                      Flux terrain et répartition par période.
-                    </p>
-                  </div>
-                  <div className="relative flex rounded-[2rem] border border-sky-200/80 bg-sky-50/90 p-1.5">
-                    <CmmButton
-                      type="button"
-                      onClick={() => setRailTab("insights")}
-                      tone={activeRailTab === "insights" ? "primary" : "tertiary"}
-                      variant="pill"
-                      className={cn(
-                        "relative z-10 flex items-center justify-center gap-3 px-5 py-3 cmm-text-caption font-semibold tracking-[0.12em] transition-all duration-500",
-                        activeRailTab === "insights" ? "text-slate-950" : "text-slate-600 hover:text-slate-950"
-                      )}
-                    >
-                      <BarChart3 size={16} />
-                      Analytique
-                    </CmmButton>
-                    <CmmButton
-                      type="button"
-                      onClick={() => setRailTab("journal")}
-                      tone={activeRailTab === "journal" ? "primary" : "tertiary"}
-                      variant="pill"
-                      className={cn(
-                        "relative z-10 flex items-center justify-center gap-3 px-5 py-3 cmm-text-caption font-semibold tracking-[0.12em] transition-all duration-500",
-                        activeRailTab === "journal" ? "text-slate-950" : "text-slate-600 hover:text-slate-950"
-                      )}
-                    >
-                      <Table2 size={16} />
-                      Journal
-                    </CmmButton>
-                    <div
-                      className="absolute left-1.5 top-1.5 bottom-1.5 w-[calc(50%-4.5px)] rounded-[1.5rem] bg-sky-200 border border-sky-300 shadow-2xl transition-transform duration-700 ease-out"
-                      style={{
-                        transform: activeRailTab === "insights" ? "translateX(0)" : "translateX(calc(100% + 6px))",
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="min-h-[450px]">
-                  {activeRailTab === "insights" ? (
-                    <div className="animate-in fade-in zoom-in-95 duration-700">
-                      <ActionsVisualizationPanel
-                        items={filteredMapItems}
-                        isLoading={mapFeedData.isLoading}
-                        error={mapFeedData.error instanceof Error ? mapFeedData.error : null}
-                        compact
-                      />
-                    </div>
-                  ) : (
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                      <ActionsMapTable
-                        items={filteredMapItems}
-                        compact
-                        selectedActionId={selectedActionId}
-                        onSelectAction={handleSelectAction}
-                        scoreScope={scoreScope}
-                        displayMode={displayMode}
-                      />
-                    </div>
-                  )}
-                </div>
-              </section>
-            </div>
-
-            <aside className="min-w-0 space-y-4 self-start xl:sticky xl:top-8">
-              <section className={cn(surfaceCard, "p-5 sm:p-6")}>
-                <ActionStoriesCarousel items={recentActions} onOpenAction={handleSelectAction} compact />
-              </section>
-            </aside>
+            </section>
           </div>
         </div>
       </div>
