@@ -16,5 +16,13 @@ describe("ReportsPageV2Layout", () => {
     expect(markup).toContain("cmm-grid-shell");
     expect(markup).not.toContain("Génération verrouillée");
     expect(markup).toContain("Analyse active");
+    expect(markup.indexOf("cmm-page-header")).toBeLessThan(
+      markup.indexOf('data-testid="reports-page-tabs"'),
+    );
+    expect(markup.indexOf('data-testid="reports-page-tabs"')).toBeLessThan(
+      markup.indexOf('data-testid="reports-tab-content"'),
+    );
+    expect(markup).toContain("Rapports d’impact");
+    expect(markup).toContain('id="reports-tabpanel-analysis"');
   });
 });

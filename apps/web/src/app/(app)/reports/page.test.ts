@@ -231,7 +231,7 @@ describe("/reports page contract", () => {
   it("renders a public summary without loading authenticated reports", async () => {
     mocks.getSafeAuthSession.mockResolvedValue({ userId: null, clerkReachable: true });
 
-    const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({}) }));
+    const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({ tab: "analysis" }) }));
 
     expect(markup).toContain('data-testid="reports-layout"');
     expect(markup).toContain('data-testid="reports-public-summary"');
@@ -254,7 +254,7 @@ describe("/reports page contract", () => {
       requirement: { requiresSetup: true, reason: "missing_profile" },
     });
 
-    const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({}) }));
+    const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({ tab: "analysis" }) }));
 
     expect(markup).toContain('data-testid="reports-layout"');
     expect(markup).not.toContain('data-testid="profile-completion-required"');
@@ -276,12 +276,11 @@ describe("/reports page contract", () => {
     expect(markup).toContain('href="/actions/history"');
   });
 
-  it("defaults authenticated visitors to the analysis view", async () => {
+  it("defaults authenticated visitors to the generation view", async () => {
     const markup = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve({}) }));
 
-    expect(markup).toContain('data-active-tab="analysis"');
-    expect(markup).toContain('data-testid="reports-analysis-dashboard"');
-    expect(markup).not.toContain('data-testid="report-generation"');
+    expect(markup).toContain('data-active-tab="generation"');
+    expect(markup).not.toContain('data-testid="reports-analysis-dashboard"');
   });
 
   it("keeps a real zero visible after a successful analysis load", async () => {
