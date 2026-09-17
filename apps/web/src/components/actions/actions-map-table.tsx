@@ -7,7 +7,6 @@ import {
  mapItemLocationLabel,
  mapItemObservedAt,
  mapItemType,
- mapItemCoordinates,
 } from"@/lib/actions/data-contract";
 import { getGeometryPresentation } from "@/lib/actions/geometry/geometry-presentation";
 import { classifyPollutionColor } from"@/components/actions/map-marker-categories";
@@ -35,6 +34,16 @@ type ActionsMapTableProps = {
 };
 
 const ACTIONS_BATCH_SIZE = 4;
+
+const POLLUTION_CATEGORY_LABELS = {
+  blue: "Premier seuil",
+  orange: "Moyen",
+  red: "Fort",
+  violet: "Critique",
+  black: "Extrême",
+  green: "Lieu propre",
+  unavailable: "Indisponible",
+} as const;
 
 export function ActionsMapTable({
   items,
@@ -75,7 +84,11 @@ export function ActionsMapTable({
 
     selectedRowRef.current?.scrollIntoView({
       block: "center",
-      behavior: "smooth",
+      behavior:
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
     });
   }, [effectiveVisibleCount, isVisible, selectedActionId]);
 
@@ -141,23 +154,23 @@ export function ActionsMapTable({
 {isVisible ? (
  <div className={compact ?"cmm-data-table-wrap max-h-[30rem] overflow-auto" :"cmm-data-table-wrap"}>
  <table className="cmm-data-table cmm-text-small" data-density={compact ? "compact" : undefined}>
- <caption className="sr-only">Journal des actions filtrées. Utilise Entrée ou Espace sur une ligne pour ouvrir la carte sur cette action.</caption>
+ <caption className="sr-only">Journal des actions filtrées. Utilise le bouton d&apos;action de chaque ligne pour ouvrir la carte sur cette action.</caption>
  <thead>
  <tr>
  <th scope="col">Date</th>
  <th scope="col">Lieu</th>
  <th scope="col">Type</th>
  <th scope="col">Tracé</th>
- <th scope="col">Coordonnées</th>
- <th scope="col">Statut</th>
+ <th scope="col">Lecture</th>
  <th scope="col" className="cmm-data-table__end">Impact / Qualité</th>
+ <th scope="col" className="cmm-data-table__end">Action</th>
  </tr>
  </thead>
  <tbody>
  {visibleItems.map((item: ActionMapItem) => {
  const drawing = mapItemDrawing(item);
  const geometry = getGeometryPresentation(item);
-  const rowLabel = `${formatDate(mapItemObservedAt(item))}. ${mapItemLocationLabel(item)}. ${mapItemType(item) === "clean_place" ? "lieu" : mapItemType(item) === "spot" ? "spot" : "action"}.`;
+ const pollutionCategory = classifyPollutionColor(item, references, { scoreScope, displayMode });
  return (
           <tr
             key={item.id}
@@ -165,23 +178,7 @@ export function ActionsMapTable({
             className={[
               "text-slate-700 transition-colors",
               selectedActionId === item.id ? "bg-sky-100 ring-1 ring-inset ring-sky-300/22" : "hover:bg-sky-100/70",
-              onSelectAction ? "cursor-pointer" : "",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-400",
             ].join(" ")}
-            onClick={() => onSelectAction?.(item.id)}
-            onKeyDown={(event) => {
-              if (!onSelectAction) {
-                return;
-              }
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                onSelectAction(item.id);
-              }
-            }}
-            tabIndex={onSelectAction ? 0 : undefined}
-            role={onSelectAction ? "button" : undefined}
-            aria-pressed={selectedActionId === item.id}
-            aria-label={rowLabel}
           >
             <td className="cmm-data-table__nowrap">
               {formatDate(mapItemObservedAt(item))}
@@ -213,28 +210,32 @@ export function ActionsMapTable({
  <span className="cmm-text-caption text-slate-500">Point discret</span>
  )}
  </td>
- <td className="cmm-data-table__numeric cmm-data-table__nowrap font-mono cmm-text-caption text-slate-500">
- {mapItemCoordinates(item).latitude?.toFixed(4)}, {mapItemCoordinates(item).longitude?.toFixed(4)}
- </td>
  <td>
- <div className="flex items-center gap-2">
- <span className="rounded-full bg-slate-100 px-2 py-0.5 cmm-text-caption font-bold uppercase text-slate-700">
- {item.status}
+ <span className="cmm-text-small font-medium text-slate-700">
+ {POLLUTION_CATEGORY_LABELS[pollutionCategory]}
  </span>
- <span className="cmm-text-caption font-medium text-slate-500">
- {classifyPollutionColor(item, references, { scoreScope, displayMode })}
- </span>
- </div>
  </td>
  <td className="cmm-data-table__end">
  <div className="flex justify-end gap-1">
  <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-0.5 cmm-text-caption font-bold text-emerald-800">
- {item.impact_level ??"faible"}
+ {item.impact_level ?? "Indisponible"}
  </span>
  <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 cmm-text-caption font-bold text-slate-700">
- {item.quality_grade ??"C"}
+ {item.quality_grade ?? "Non évalué"}
  </span>
  </div>
+ </td>
+ <td className="cmm-data-table__end">
+   {onSelectAction ? (
+     <button
+       type="button"
+       onClick={() => onSelectAction(item.id)}
+       className="rounded-xl border border-sky-200/80 bg-sky-100 px-3 py-2 cmm-text-small font-semibold text-slate-950 transition hover:border-sky-300 hover:bg-sky-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+       aria-label={`Ouvrir le détail de ${mapItemLocationLabel(item)}`}
+     >
+       Ouvrir
+     </button>
+   ) : null}
  </td>
  </tr>
  );

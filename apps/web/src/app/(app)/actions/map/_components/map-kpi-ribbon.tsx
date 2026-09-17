@@ -22,38 +22,34 @@ const metricAccentStyles = {
 
 export function MapKpiRibbon({ metrics }: MapKpiRibbonProps) {
   return (
-    <section className="relative overflow-hidden rounded-[3rem] border border-sky-200/80 bg-sky-50/95 p-5 sm:p-6 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.16),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(186,230,253,0.28),transparent_24%)]" />
-
-      <div className="relative z-10 flex flex-wrap items-start justify-between gap-4 px-1 pb-5 sm:px-2">
-        <div className="space-y-1">
-          <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
-            <span className="h-4 w-4 rounded-full bg-sky-500 shadow-[0_0_18px_rgba(56,189,248,0.45)]" />
-            Indicateurs publics consolidés
-          </p>
-          <p className="cmm-text-body max-w-2xl font-medium">
-            Les indicateurs publics consolidés CleanMyMap sont identiques à ceux de la page d&apos;accueil.
-          </p>
-        </div>
+    <section
+      className="rounded-2xl border border-sky-200/80 bg-sky-50/80 p-4 shadow-[0_14px_32px_-24px_rgba(14,165,233,0.2)]"
+      aria-labelledby="actions-map-global-kpis-title"
+    >
+      <div className="mb-3 space-y-1">
+        <p id="actions-map-global-kpis-title" className="cmm-text-small font-semibold text-slate-800">
+          Bilan global CleanMyMap — indépendant des filtres de cette carte
+        </p>
+        <p className="cmm-text-caption text-slate-600">
+          Six indicateurs consolidés, distincts du viewport courant.
+        </p>
       </div>
 
-      <div className="relative z-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         {metrics.map((metric) => {
           const accent = metricAccentStyles[metric.accent];
 
           return (
             <div
               key={metric.key}
-              className={cn(
-                "group relative min-h-[152px] overflow-hidden rounded-[1.6rem] border border-sky-100 bg-white p-6 shadow-[0_14px_32px_-20px_rgba(6,17,30,0.18)] transition-transform duration-300 hover:-translate-y-0.5",
-              )}
+              className="min-w-0 rounded-xl border border-sky-100 bg-white/90 px-3 py-3"
             >
-              <div className={cn("absolute inset-y-4 left-0 w-1 rounded-r-full", accent.bar)} />
-              <p className="mb-4 min-h-[2.5rem] cmm-text-caption font-semibold leading-snug tracking-[0.12em] text-slate-600">
+              <div className={cn("mb-2 h-1 w-8 rounded-full", accent.bar)} />
+              <p className="cmm-text-caption font-medium leading-snug text-slate-600">
                 {metric.label}
                 {metric.classification === "proxy" ? " (proxy)" : null}
               </p>
-              <div className={cn("text-[clamp(2.1rem,4vw,3rem)] font-black leading-none tracking-tight", accent.value)}>
+              <div className={cn("mt-2 text-lg font-bold leading-tight tracking-tight sm:text-xl", accent.value)}>
                 {metric.value}
               </div>
             </div>

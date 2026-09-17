@@ -42,5 +42,7 @@ describe("selected action card utils", () => {
     expect(summary.durationLabel).toBe("90 min");
     expect(summary.coordinatesLabel).toContain("48.8566");
     expect(summary.notes).toBe("Sélection test");
+    expect(summary.impactLabel).toBe("Indisponible");
+    expect(summary.qualityLabel).toBe("Non évalué");
   });
 });

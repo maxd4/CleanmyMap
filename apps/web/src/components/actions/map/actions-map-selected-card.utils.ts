@@ -115,8 +115,8 @@ export function buildSelectedActionCardModel(
     buttsLabel: `${mapItemCigaretteButts(item) ?? 0}`,
     volunteersLabel: `${operational.volunteersCount}`,
     durationLabel: `${operational.durationMinutes} min`,
-    impactLabel: item.impact_level ?? "faible",
-    qualityLabel: item.quality_grade ?? "C",
+    impactLabel: item.impact_level ?? "Indisponible",
+    qualityLabel: item.quality_grade ?? "Non évalué",
     dateLabel: formatObservedDate(contract?.dates.observedAt ?? mapItemObservedAt(item)),
     sourceLabel: formatActionSourceLabel(
       contract?.source ?? item.source ?? "n/a",
