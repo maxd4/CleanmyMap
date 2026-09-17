@@ -64,19 +64,10 @@ export function AccountSetupForm(props: AccountSetupFormProps) {
 
       <div className="cmm-account-setup-content flex min-w-0 min-h-0 flex-1 flex-col">
         <AccountSetupSection title="Identité" description="Renseignez l’identité affichée dans CleanMyMap." headingId="account-identity-title">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <CmmField label="Pseudo" required error={controller.shouldShowFieldError("pseudo") ? controller.pseudoError : null} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-slate-200 [&_.cmm-field-error]:!text-rose-100">
-              <CmmInput value={controller.pseudo} onChange={(event) => controller.handlePseudoChange(event.target.value)} onBlur={() => controller.touchField("pseudo")} autoComplete="username" placeholder="Vert_Tige" className="!min-h-14 w-full !border-slate-300/40 !bg-slate-800/80 !text-white placeholder:!text-slate-300/70" />
-            </CmmField>
-            {!controller.isPseudonymous ? <>
-              <CmmField label="Prénom" required error={controller.shouldShowFieldError("firstName") ? controller.firstNameError : null} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-slate-200 [&_.cmm-field-error]:!text-rose-100"><CmmInput value={controller.firstName} onChange={(event) => controller.handleFirstNameChange(event.target.value)} onBlur={() => controller.touchField("firstName")} autoComplete="given-name" placeholder="Marie" className="!min-h-14 w-full !border-slate-300/40 !bg-slate-800/80 !text-white placeholder:!text-slate-300/70" /></CmmField>
-              <CmmField label="Nom" required error={controller.shouldShowFieldError("lastName") ? controller.lastNameError : null} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-slate-200 [&_.cmm-field-error]:!text-rose-100"><CmmInput value={controller.lastName} onChange={(event) => controller.handleLastNameChange(event.target.value)} onBlur={() => controller.touchField("lastName")} autoComplete="family-name" placeholder="Curie" className="!min-h-14 w-full !border-slate-300/40 !bg-slate-800/80 !text-white placeholder:!text-slate-300/70" /></CmmField>
-            </> : null}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <CmmField label="Prénom" required error={controller.shouldShowFieldError("firstName") ? controller.firstNameError : null} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-slate-200 [&_.cmm-field-error]:!text-rose-100"><CmmInput value={controller.firstName} onChange={(event) => controller.handleFirstNameChange(event.target.value)} onBlur={() => controller.touchField("firstName")} autoComplete="given-name" placeholder="Marie" className="!min-h-14 w-full !border-slate-300/40 !bg-slate-800/80 !text-white placeholder:!text-slate-300/70" /></CmmField>
+            <CmmField label="Nom" required error={controller.shouldShowFieldError("lastName") ? controller.lastNameError : null} className="[&_.cmm-field-label]:!text-white [&_.cmm-field-required]:!text-slate-200 [&_.cmm-field-error]:!text-rose-100"><CmmInput value={controller.lastName} onChange={(event) => controller.handleLastNameChange(event.target.value)} onBlur={() => controller.touchField("lastName")} autoComplete="family-name" placeholder="Curie" className="!min-h-14 w-full !border-slate-300/40 !bg-slate-800/80 !text-white placeholder:!text-slate-300/70" /></CmmField>
           </div>
-          <label className="mt-5 flex cursor-pointer items-start gap-3 text-sm font-semibold text-white">
-            <input type="checkbox" checked={controller.isPseudonymous} onChange={(event) => controller.handleDisplayNameModeChange(event.target.checked ? "pseudo" : "full_name")} className="mt-0.5 h-5 w-5 rounded border-slate-300/50 accent-violet-500" />
-            <span>Je reste pseudonyme<span className="mt-1 block text-sm font-normal text-slate-200/80">Seul votre pseudo sera affiché</span></span>
-          </label>
         </AccountSetupSection>
 
         <AccountSetupSection title="Profil / parcours" description="Ce choix définit votre parcours, jamais vos permissions." headingId="account-profile-title">

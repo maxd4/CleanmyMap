@@ -45,8 +45,8 @@ export function AccountCompletionGate({
       >
         <p className="font-semibold">Configuration du compte à poursuivre</p>
         <p className="mt-1 leading-6">
-          Vous pouvez utiliser cette page sans compléter maintenant votre pseudo,
-          votre identité ou votre territoire.
+          Vous pouvez utiliser cette page sans compléter maintenant votre identité
+          ou votre territoire.
         </p>
         <a
           className="mt-2 inline-flex font-semibold underline underline-offset-2"
