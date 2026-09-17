@@ -42,6 +42,22 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      name: "homepage chromium",
+      testMatch: /homepage-reveal\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 900 },
+      },
+    },
+    {
+      name: "homepage webkit",
+      testMatch: /homepage-reveal\.spec\.ts/,
+      use: {
+        ...devices["Desktop Safari"],
+        viewport: { width: 1440, height: 900 },
+      },
+    },
+    {
       name: "authenticated campaign",
       testMatch: /authenticated-campaign\.spec\.ts/,
       dependencies: ["global setup"],
