@@ -42,6 +42,12 @@ function methodologyRouteIds(markup: string): string[] {
   );
 }
 
+function methodologyDisclosureSegment(markup: string, routeId: string): string {
+  const start = markup.indexOf(`data-methodology-route-id="${routeId}"`);
+  const next = markup.indexOf("data-methodology-route-id=", start + 1);
+  return markup.slice(start, next === -1 ? undefined : next);
+}
+
 describe("RouteMethodologySection", () => {
   it("présente les cinq étapes sans exposer les détails de calcul", () => {
     const markup = renderToStaticMarkup(
@@ -235,6 +241,37 @@ describe("ActionMapMethodologySection", () => {
     );
     expect(markup).not.toContain("À venir");
     expect(markup).not.toContain("Coming soon");
+  });
+
+  it("rattache les contenus existants au bon disclosure sans recopier les formules", () => {
+    const markup = renderMethodologyPage();
+    const map = methodologyDisclosureSegment(markup, "map");
+    const createAction = methodologyDisclosureSegment(markup, "new");
+    const reports = methodologyDisclosureSegment(markup, "reports");
+    const methodology = methodologyDisclosureSegment(markup, "methodologie");
+
+    expect(map).toContain("Pollution constatée");
+    expect(map).toContain("Pollution projetée");
+    expect(map).toContain("géométrie");
+    expect(map).toContain('href="/docs/product/methodologie-carte-actions.md"');
+
+    expect(createAction).toContain("Méthodologie de création d’itinéraire");
+    expect(createAction).toContain('href="/sections/route"');
+    expect(createAction).toContain(
+      'href="/docs/architecture/methodologie-creation-itineraire.md"',
+    );
+
+    expect(reports).toContain("Les 6 KPI Impact terrain 2026");
+    expect(reports).toContain("Déchets récoltés");
+    expect(reports).toContain("Courbe de pollution et impact IA de développement");
+    expect(reports).toContain("Proxy d’impact");
+    expect(reports).toContain('id="impact-history"');
+
+    expect(methodology).toContain('id="modes-affichage"');
+    expect(methodology).toContain("Proxy versionné");
+    expect(methodology).toContain("Plans et quotas");
+    expect(methodology).not.toContain("Les 6 KPI Impact terrain 2026");
+    expect(methodology).not.toContain("Pollution projetée");
   });
 
   it("publishes the first two KPI results with qualified butt distribution", async () => {

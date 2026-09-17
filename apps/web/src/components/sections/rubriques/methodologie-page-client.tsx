@@ -79,6 +79,8 @@ type MethodologiePageClientProps = {
 type LegacyMethodologieContentProps = MethodologiePageClientProps & {
   contentOnly?: boolean;
   includeMapAndRouteContent?: boolean;
+  includeReportsContent?: boolean;
+  includeTransverseContent?: boolean;
 };
 
 type MethodologyContentRegistry = Partial<Record<string, ReactNode>>;
@@ -122,7 +124,12 @@ function MethodologyNavigationDocumentation({
                   data-methodology-route-id={item.routeId}
                   data-methodology-content={content ? "present" : "empty"}
                 >
-                  <CmmDisclosure summary={item.label[locale]} tone="rose" size="lg">
+                  <CmmDisclosure
+                    summary={item.label[locale]}
+                    defaultOpen={Boolean(content)}
+                    tone="rose"
+                    size="lg"
+                  >
                     {content ?? null}
                   </CmmDisclosure>
                 </div>
@@ -276,6 +283,8 @@ export function ActionMapMethodologySection({ isFrench }: { isFrench: boolean })
 function LegacyMethodologieContent({
   contentOnly = false,
   includeMapAndRouteContent = true,
+  includeReportsContent = true,
+  includeTransverseContent = true,
   freePlanServices,
   impactTotals,
   impactSnapshots,
@@ -337,10 +346,12 @@ function LegacyMethodologieContent({
           />
         ) : null}
 
-        <ImpactTerrain2026MethodologySection
-          isFrench={isFrench}
-          results={impactTerrainResults}
-        />
+        {includeReportsContent ? (
+          <ImpactTerrain2026MethodologySection
+            isFrench={isFrench}
+            results={impactTerrainResults}
+          />
+        ) : null}
 
         {includeMapAndRouteContent ? (
           <ActionMapMethodologySection isFrench={isFrench} />
@@ -348,11 +359,12 @@ function LegacyMethodologieContent({
 
         {includeMapAndRouteContent ? <RouteMethodologySection /> : null}
 
-        <section
-          id="modes-affichage"
-          aria-labelledby="modes-affichage-title"
-          className="scroll-mt-28 space-y-6 rounded-[2.5rem] border border-white/10 bg-slate-950/75 p-6 text-white shadow-[0_24px_60px_-42px_rgba(15,23,42,0.9)] sm:p-8 lg:p-10"
-        >
+        {includeTransverseContent ? (
+          <section
+            id="modes-affichage"
+            aria-labelledby="modes-affichage-title"
+            className="scroll-mt-28 space-y-6 rounded-[2.5rem] border border-white/10 bg-slate-950/75 p-6 text-white shadow-[0_24px_60px_-42px_rgba(15,23,42,0.9)] sm:p-8 lg:p-10"
+          >
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-red-300/25 bg-red-400/10 text-red-300">
               <Info className="h-5 w-5" aria-hidden="true" />
@@ -396,15 +408,17 @@ function LegacyMethodologieContent({
               ? "Le mode change la présentation, jamais les fonctionnalités, permissions ou données."
               : "The mode changes presentation, never features, permissions or data."}
           </p>
-        </section>
+          </section>
+        ) : null}
 
-        <div
-          className={cn(
-            "relative overflow-hidden rounded-[3rem] border p-10 transition-all duration-700 md:p-16",
-            classes.surface,
-            classes.shadow,
-          )}
-        >
+        {includeTransverseContent ? (
+          <div
+            className={cn(
+              "relative overflow-hidden rounded-[3rem] border p-10 transition-all duration-700 md:p-16",
+              classes.surface,
+              classes.shadow,
+            )}
+          >
           <div className="pointer-events-none absolute right-0 top-0 p-12 opacity-5">
             <ShieldCheck size={400} className="text-red-400" />
           </div>
@@ -452,9 +466,11 @@ function LegacyMethodologieContent({
               ))}
             </div>
           </div>
-        </div>
+          </div>
+        ) : null}
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+        {includeReportsContent ? (
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {[
             { icon: <MapPin className="text-red-400" />, title: "Données terrain", desc: "Coordonnées et volumes issus des déclarations" },
             { icon: <Zap className="text-red-400" />, title: "Calcul des proxys", desc: "Application des formules versionnées" },
@@ -477,9 +493,11 @@ function LegacyMethodologieContent({
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        ) : null}
 
-        <section className="space-y-8 pt-10 border-t border-white/10">
+        {includeTransverseContent ? (
+          <section className="space-y-8 pt-10 border-t border-white/10">
           <div className="space-y-4 text-center">
             <p className="text-[10px] font-black uppercase tracking-[0.4em] text-red-200/60">
               {isFrench ? "Quota" : "Quota"}
@@ -511,9 +529,11 @@ function LegacyMethodologieContent({
               sectionId="quota-services"
             />
           </div>
-        </section>
+          </section>
+        ) : null}
 
-        <section className="grid gap-10 xl:grid-cols-2">
+        {includeReportsContent ? (
+          <section className="grid gap-10 xl:grid-cols-2">
           <MethodologyCard
             title={t("cards.waste.title")}
             formula={methodology.formulas.wasteKg}
@@ -585,10 +605,13 @@ function LegacyMethodologieContent({
             color="slate"
             icon={<Zap size={24} />}
           />
-        </section>
+          </section>
+        ) : null}
 
-        {/* Limites de la déclaration terrain */}
-        <div className="relative overflow-hidden rounded-[3rem] border border-white/5 bg-white/5 p-10 md:p-12 space-y-6">
+        {includeReportsContent ? (
+          <>
+            {/* Limites de la déclaration terrain */}
+            <div className="relative overflow-hidden rounded-[3rem] border border-white/5 bg-white/5 p-10 md:p-12 space-y-6">
           <div className="flex items-center gap-4 text-red-400">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-400/5 shadow-inner">
               <Scaling size={20} />
@@ -609,9 +632,12 @@ function LegacyMethodologieContent({
                 : "The affected indicators remain versioned proxies: they provide a reproducible order of magnitude, but are neither instrument measurements nor scientific certification."}
             </p>
           </div>
-        </div>
+            </div>
+          </>
+        ) : null}
 
-        <section className="space-y-8 pt-10 border-t border-white/10">
+        {includeReportsContent ? (
+          <section className="space-y-8 pt-10 border-t border-white/10">
           <div className="space-y-4 text-center">
             <p className="text-[10px] font-black uppercase tracking-[0.4em] text-red-200/60">
               {isFrench ? "Rapport d'impact" : "Impact report"}
@@ -703,7 +729,8 @@ function LegacyMethodologieContent({
               </section>
             </div>
           </div>
-        </section>
+          </section>
+        ) : null}
 
         <footer className="cmm-ribbon-surface flex flex-col items-center justify-between gap-10 pt-20 sm:flex-row">
           <div className="space-y-3 text-center sm:text-left">
@@ -736,10 +763,19 @@ export function MethodologiePageClient(props: MethodologiePageClientProps) {
         {...props}
         contentOnly
         includeMapAndRouteContent={false}
+        includeReportsContent={false}
       />
     ),
     map: <ActionMapMethodologySection isFrench={isFrench} />,
     new: <RouteMethodologySection />,
+    reports: (
+      <LegacyMethodologieContent
+        {...props}
+        contentOnly
+        includeMapAndRouteContent={false}
+        includeTransverseContent={false}
+      />
+    ),
   };
 
   return (
