@@ -5,6 +5,7 @@ import {
   resolveAccountDisplayName,
   type DisplayNameMode,
 } from "./profiles";
+import { buildFallbackHandle } from "./auth/identity-handle";
 
 type StoredProfileNameRow = {
   display_name: string | null;
@@ -20,13 +21,8 @@ function resolveIdentityLastName(user: User): string {
   return user.lastName?.trim() || "";
 }
 
-function resolveIdentityUsername(user: User, userId: string): string {
-  return (
-    user.username?.trim() ||
-    user.primaryEmailAddress?.emailAddress?.trim() ||
-    user.primaryPhoneNumber?.phoneNumber?.trim() ||
-    userId
-  );
+function resolveIdentityUsername(user: User): string | null {
+  return user.username?.trim() || null;
 }
 
 function resolveIdentityEmail(user: User): string | null {
@@ -35,10 +31,10 @@ function resolveIdentityEmail(user: User): string | null {
 
 function buildActorNameOptions(
   firstName: string | null,
-  username: string,
-  userId: string,
+  username: string | null,
+  handle: string,
 ): string[] {
-  const candidates = [firstName ?? "", username, userId]
+  const candidates = [firstName ?? "", username ?? "", handle]
     .map((value) => value.trim())
     .filter((value) => value.length > 0);
   return Array.from(new Set(candidates));
@@ -46,17 +42,16 @@ function buildActorNameOptions(
 
 export function resolveIdentityNameParts(
   user: User,
-  userId: string,
 ): {
   firstName: string;
   lastName: string;
-  username: string;
+  username: string | null;
   email: string | null;
 } {
   return {
     firstName: resolveIdentityFirstName(user),
     lastName: resolveIdentityLastName(user),
-    username: resolveIdentityUsername(user, userId),
+    username: resolveIdentityUsername(user),
     email: resolveIdentityEmail(user),
   };
 }
@@ -71,7 +66,8 @@ export function resolveIdentityDisplayNameMode(
 export function resolveIdentityDisplayName(
   firstName: string,
   lastName: string,
-  username: string,
+  username: string | null,
+  handle: string,
   userId: string,
   displayNameMode: DisplayNameMode,
   storedProfile: StoredProfileNameRow | null,
@@ -80,21 +76,25 @@ export function resolveIdentityDisplayName(
     resolveAccountDisplayName({
       firstName,
       lastName,
-      username,
+      username: displayNameMode === "pseudo" ? handle : username ?? handle,
       userId,
       mode: displayNameMode,
-    }) || storedProfile?.display_name?.trim() || username
+    }) || storedProfile?.display_name?.trim() || handle
   );
 }
 
-export function resolveIdentityHandle(username: string, storedProfile: StoredProfileNameRow | null): string {
-  return storedProfile?.handle?.trim() || username;
+export function resolveIdentityHandle(
+  username: string | null,
+  userId: string,
+  storedProfile: StoredProfileNameRow | null,
+): string {
+  return storedProfile?.handle?.trim() || username || buildFallbackHandle(userId);
 }
 
 export function resolveIdentityActorNameOptions(
   firstName: string,
-  username: string,
-  userId: string,
+  username: string | null,
+  handle: string,
 ): string[] {
-  return buildActorNameOptions(firstName || null, username, userId);
+  return buildActorNameOptions(firstName || null, username, handle);
 }

@@ -86,7 +86,8 @@ export default async function NewActionPage({
 
   const userMetadata = {
     userId: userId ?? "anonymous",
-    username: identity?.username,
+    handle: identity?.handle,
+    username: identity?.username ?? undefined,
     displayName: identity?.displayName ?? fallbackActorName,
     email: undefined,
   };

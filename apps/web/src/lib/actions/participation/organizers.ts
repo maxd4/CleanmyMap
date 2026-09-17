@@ -2,6 +2,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { runSingleActionQuery } from "@/lib/actions/query";
 import { env } from "@/lib/env";
+import { buildFallbackHandle } from "@/lib/auth/identity-handle";
 import {
   ACTIVE_PARTICIPATION_STATUS,
 } from "./group-participation.helpers";
@@ -95,7 +96,7 @@ function buildClerkDisplayName(user: ClerkUserLookup): string {
       .join(" ")
       .trim() ||
     user.username?.trim() ||
-    user.id
+    buildFallbackHandle(user.id)
   );
 }
 
@@ -111,8 +112,11 @@ function buildPrimaryOrganizer(creator: {
       creator.displayName.trim() ||
       creator.handle?.trim() ||
       creator.username?.trim() ||
-      creator.userId,
-    handle: creator.handle?.trim() || creator.username?.trim() || null,
+      buildFallbackHandle(creator.userId),
+    handle:
+      creator.handle?.trim() ||
+      creator.username?.trim() ||
+      buildFallbackHandle(creator.userId),
     isPrimary: true,
     sourceToken: null,
   };
@@ -159,9 +163,8 @@ function normalizeProfileRow(row: ProfileLookupRow): ResolvedActionAccount {
     displayName:
       row.display_name?.trim() ||
       row.handle?.trim() ||
-      row.id ||
-      "Membre",
-    handle: row.handle?.trim() || null,
+      buildFallbackHandle(row.id),
+    handle: row.handle?.trim() || buildFallbackHandle(row.id),
     sourceToken: null,
   };
 }
@@ -251,7 +254,7 @@ async function lookupClerkUserByToken(
   return {
     userId: match.id,
     displayName: buildClerkDisplayName(match),
-    handle: match.username?.trim() || null,
+    handle: match.username?.trim() || buildFallbackHandle(match.id),
     sourceToken: token,
   };
 }

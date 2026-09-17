@@ -19,6 +19,7 @@ export type ActionBeforeDeclarationFormProps = {
   isAuthenticated: boolean;
   userMetadata: {
     userId: string;
+    handle?: string;
     username?: string;
     displayName?: string;
     email?: string;

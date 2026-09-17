@@ -108,7 +108,7 @@ export async function PATCH(request: Request) {
     const displayName = resolveAccountDisplayName({
       firstName: identity.firstName?.trim() || null,
       lastName: null,
-      username: identity.username?.trim() || null,
+      username: identity.handle?.trim() || identity.username?.trim() || null,
       userId,
       mode: displayNameMode,
     });

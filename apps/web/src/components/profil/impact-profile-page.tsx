@@ -241,6 +241,7 @@ export default function ImpactProfilePage() {
           <ImpactCard
             userName={
               currentAccountIdentity?.displayName ||
+              currentAccountIdentity?.handle ||
               currentAccountIdentity?.username ||
               "Contributeur anonyme"
             }

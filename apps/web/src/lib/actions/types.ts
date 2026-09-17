@@ -356,6 +356,7 @@ export type CreateActionPayload = {
   // Données utilisateur automatiques
   userMetadata?: {
     userId: string;
+    handle?: string;
     username?: string;
     displayName?: string;
     email?: string;
