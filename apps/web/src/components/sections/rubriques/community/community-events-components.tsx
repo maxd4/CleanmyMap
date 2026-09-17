@@ -9,27 +9,13 @@ import { cn } from "@/lib/utils";
 import { formatCleanupSupportLabel, formatCleanupWasteTypesLabel } from "@/lib/community/event-ops";
 import { CommunityEventItem, CommunityRsvpStatus } from "@/lib/community/http";
 import { formatFrDate, toRsvpLabel } from "./helpers";
-import { formatPct } from "./kpis";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { PermissionErrorState } from "@/components/ui/permission-error-state";
 import { ServerErrorCard } from "@/components/ui/server-error-card";
-import { IdentityBadge } from "@/components/ui/identity-badge";
 import { AppError } from "@/lib/errors/app-errors";
-import { EventReminder, EventConversionRow } from "@/lib/community/engagement";
-import { CommunityTab, OpsDraft } from "./types";
+import { CommunityTab } from "./types";
 
 // Helpers
-export function organizerView(event: CommunityEventItem) {
-  return (
-    event.organizer ?? {
-      userId: event.organizerClerkId ?? null,
-      displayName: "Membre",
-      roleBadge: { id: "role_benevole", label: "Bénévole", icon: "RBV" },
-      profileBadge: { id: "profile_benevole", label: "Profil bénévole", icon: "PBV" },
-    }
-  );
-}
-
 export function cleanupNeedLabel(event: CommunityEventItem): string | null {
   if (!event.cleanupSupportLevel) {
     return null;
@@ -162,14 +148,12 @@ export const EventListStates = memo(function EventListStates({
 
 export const EventArticleUpcoming = memo(function EventArticleUpcoming({
   event,
-  reminder,
   locale,
   onRsvp,
   rsvpLoading,
   onShare,
 }: {
   event: CommunityEventItem;
-  reminder?: EventReminder;
   locale: string;
   onRsvp: (eventId: string, status: CommunityRsvpStatus) => Promise<void>;
   rsvpLoading: boolean;
@@ -195,11 +179,6 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
               <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
               {fr ? "Mission active" : "Active mission"}
             </span>
-            {reminder && (
-            <span className="inline-flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-rose-400">
-                {reminder.reason}
-              </span>
-            )}
           </div>
 
           <div>
@@ -367,111 +346,26 @@ export const EventArticleMine = memo(function EventArticleMine({
 
 export const EventArticlePast = memo(function EventArticlePast({
   event,
-  conversion,
-  opsDraft,
-  updateOpsDraft,
-  onSaveEventOps,
-  isUpdating,
 }: {
   event: CommunityEventItem;
-  conversion?: EventConversionRow;
-  opsDraft: OpsDraft;
-  updateOpsDraft: (eventId: string, patch: Partial<OpsDraft>) => void;
-  onSaveEventOps: (event: CommunityEventItem) => Promise<void>;
-  isUpdating: boolean;
 }) {
-  const organizer = organizerView(event);
-
   return (
-    <article className="group relative overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl p-8 shadow-2xl transition-all duration-500 hover:border-rose-500/30">
-      <div className="relative z-10">
-        <div className="flex flex-col lg:flex-row items-start justify-between gap-8">
-          <div className="space-y-6 flex-1">
-            <div className="flex flex-wrap items-center gap-4">
-              <h3 className="text-2xl font-black text-white uppercase tracking-tight">{event.title}</h3>
-              <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-widest text-slate-500">
-                {formatFrDate(event.eventDate)}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-               <div className="space-y-1">
-                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 block">RSVP TOTAL</span>
-                  <span className="text-lg font-black text-white">{event.rsvpCounts.total}</span>
-               </div>
-               <div className="space-y-1">
-                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 block">CONV. PRÉSENCE</span>
-              <span className="text-lg font-black text-rose-400">{formatPct(conversion?.rsvpToAttendanceRate ?? null)}</span>
-               </div>
-               <div className="space-y-1">
-                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 block">CONV. ACTION</span>
-              <span className="text-lg font-black text-pink-400">{formatPct(conversion?.attendanceToActionRate ?? null)}</span>
-               </div>
-               <div className="space-y-1">
-                  <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 block">LOCALISATION</span>
-                  <span className="text-[10px] font-bold text-slate-400 block truncate">{event.locationLabel}</span>
-               </div>
-            </div>
-
-            <div className="p-6 rounded-[2rem] bg-white/5 border border-white/5 space-y-4">
-               <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-black text-white">
-                       {organizer.displayName[0]}
-                    </div>
-                    <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{organizer.displayName}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <IdentityBadge icon={organizer.roleBadge.icon} label={organizer.roleBadge.label} tone="role" />
-                    <IdentityBadge icon={organizer.profileBadge.icon} label={organizer.profileBadge.label} tone="profile" />
-                  </div>
-               </div>
-            </div>
-          </div>
-
-          <div className="w-full lg:w-80 space-y-6 pt-8 lg:pt-0 lg:pl-8 lg:border-l lg:border-white/5">
-            <div className="space-y-4">
-              <label className="flex flex-col gap-2">
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Présence constatée</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={opsDraft.attendanceCount}
-                  onChange={(input) => updateOpsDraft(event.id, { attendanceCount: input.target.value })}
-                className="w-full rounded-xl bg-slate-950/40 border border-white/10 px-4 py-2.5 text-sm text-white focus:border-rose-500/50 outline-none transition-all"
-                />
-              </label>
-
-              <label className="flex flex-col gap-2">
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Rapport post-événement</span>
-                <textarea
-                  rows={4}
-                  value={opsDraft.postMortem}
-                  onChange={(input) => updateOpsDraft(event.id, { postMortem: input.target.value })}
-                  placeholder="Points forts, défis, besoins..."
-                className="w-full rounded-xl bg-slate-950/40 border border-white/10 px-4 py-2.5 text-sm text-white focus:border-rose-500/50 outline-none transition-all resize-none"
-                />
-              </label>
-            </div>
-
-            <CmmButton
-              onClick={() => void onSaveEventOps(event)}
-              disabled={isUpdating}
-              tone="secondary"
-              variant="pill"
-              className="w-full py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-300 hover:bg-rose-600 hover:text-white hover:border-rose-500 transition-all disabled:opacity-50"
-            >
-              {isUpdating ? "Synchronisation..." : "Enregistrer le suivi"}
-            </CmmButton>
-
-            <Link
-              href={`/actions/new?mode=complete&fromEventId=${event.id}`}
-              className="flex w-full items-center justify-center gap-2 py-4 rounded-2xl bg-pink-600 text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-pink-600/20 hover:bg-pink-500 transition-all"
-            >
-              Déclarer une action
-            </Link>
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="font-semibold text-slate-950">{event.title}</h3>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 cmm-text-small cmm-text-secondary">
+            <span className="inline-flex items-center gap-1.5">
+              <Calendar size={14} aria-hidden="true" /> {formatFrDate(event.eventDate)}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <MapPin size={14} aria-hidden="true" /> {event.locationLabel}
+            </span>
           </div>
         </div>
+        <span className="cmm-text-small cmm-text-secondary">
+          {event.rsvpCounts.total} RSVP
+        </span>
       </div>
     </article>
   );

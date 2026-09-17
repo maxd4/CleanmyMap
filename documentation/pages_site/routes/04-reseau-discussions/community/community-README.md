@@ -12,7 +12,14 @@
 
 ## Objectif utilisateur
 
-Faire circuler l'information, faciliter les échanges entre acteurs et accéder au réseau de partenaires.
+Consulter les missions communautaires, participer par RSVP, retrouver ses
+inscriptions authentifiées, organiser une mission via un parcours compact et
+accéder au réseau de partenaires.
+
+La page ne duplique pas les capacités canoniques des surfaces Actions,
+Messagerie, Annuaire ou Gouvernance des partenariats. Les suivis opérationnels,
+KPI, exports, guides et ressources génériques restent sur leurs surfaces
+canoniques ; une donnée ou une promesse non sourcée n'est pas affichée ici.
 
 ## Accès
 
@@ -65,6 +72,28 @@ Cibles :
 /sections/community
 /sections/community?tab=partners
 ```
+
+L'onglet `Partenaires` reste la surface intégrée pour consulter le réseau et
+conserver les alias historiques. Les parcours protégés de création ou de
+gouvernance partenaire restent `/partners/onboarding` et
+`/partners/dashboard`.
+
+## Périmètre fonctionnel actuel
+
+L'onglet `Communauté` expose uniquement :
+
+- les missions à venir et passées publiées par le contrat `community_events` ;
+- le RSVP (`yes`, `maybe`, `no`) avec authentification demandée par la
+  mutation ;
+- `Mes inscriptions`, dérivé du statut RSVP retourné pour le compte courant ;
+- l'organisation d'une mission dans un parcours replié, sans modification du
+  payload ou des permissions de création.
+
+La surface canonique `/sections/rejoindre-une-action` reste responsable des
+inscriptions aux actions de groupe et de leur suivi ; `/missions/[id]` reste
+responsable de la lecture protégée d'une mission terrain et de ses données
+enregistrées. Communauté ne transforme pas un RSVP en participation terrain et
+ne déplace aucun résultat ou KPI vers cette page.
 
 ## États
 

@@ -26,14 +26,8 @@ const CommunityEventsTabsCard = memo(function CommunityEventsTabsCard(props: Com
     upcomingEvents,
     myEvents,
     pastEvents,
-    conversionByEventId,
-    remindersByEventId,
     rsvpLoadingEventId,
     onRsvp,
-    getOpsDraft,
-    updateOpsDraft,
-    onSaveEventOps,
-    isUpdatingEventOpsId,
   } = props;
 
   const showContent = !eventsLoading && !eventsLoadError;
@@ -59,7 +53,6 @@ const CommunityEventsTabsCard = memo(function CommunityEventsTabsCard(props: Com
               <EventArticleUpcoming
                 key={event.id}
                 event={event}
-                reminder={remindersByEventId.get(event.id)}
                 locale={locale}
                 onRsvp={onRsvp}
                 rsvpLoading={rsvpLoadingEventId === event.id}
@@ -96,11 +89,6 @@ const CommunityEventsTabsCard = memo(function CommunityEventsTabsCard(props: Com
             <EventArticlePast
               key={event.id}
               event={event}
-              conversion={conversionByEventId.get(event.id)}
-              opsDraft={getOpsDraft(event)}
-              updateOpsDraft={updateOpsDraft}
-              onSaveEventOps={onSaveEventOps}
-              isUpdating={isUpdatingEventOpsId === event.id}
             />
           ))}
           {pastEvents.length === 0 && (
