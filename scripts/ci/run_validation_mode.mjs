@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { execFileSync } from "node:child_process";
-import path from "node:path";
 import process from "node:process";
 import {
   cleanupValidationEvidence,
@@ -16,11 +15,10 @@ import {
   getBudgetDecision,
   VALIDATION_MODE_BUDGETS,
 } from "./validation-modes.mjs";
-import { runCommandWithTimeout } from "./validation-process.mjs";
-
-const windowsNpmBin = process.platform === "win32"
-  ? path.join(path.dirname(process.execPath), "node_modules", "npm", "bin")
-  : null;
+import {
+  resolveValidationCommand,
+  runCommandWithTimeout,
+} from "./validation-process.mjs";
 
 function parseArgs(argv) {
   const options = { mode: "FAST", candidateScope: "WORKTREE", changedFiles: [] };
@@ -70,22 +68,7 @@ export function getCandidateFiles(scope, cwd = process.cwd()) {
 }
 
 function commandFor(check) {
-  if (windowsNpmBin && check.command.executable === "npm") {
-    return {
-      executable: process.execPath,
-      args: [path.join(windowsNpmBin, "npm-cli.js"), ...check.command.args],
-    };
-  }
-  if (windowsNpmBin && check.command.executable === "npx") {
-    return {
-      executable: process.execPath,
-      args: [path.join(windowsNpmBin, "npx-cli.js"), ...check.command.args],
-    };
-  }
-  return {
-    executable: check.command.executable,
-    args: check.command.args,
-  };
+  return resolveValidationCommand(check.command, process.platform, process.execPath);
 }
 
 export function runCheck(check, remainingSeconds, cwd = process.cwd()) {

@@ -1,4 +1,18 @@
 import { execFileSync, spawn } from "node:child_process";
+import path from "node:path";
+
+export function resolveValidationCommand(command, platform, execPath) {
+  if (platform === "win32" && (command.executable === "npm" || command.executable === "npx")) {
+    const pathApi = path.win32;
+    const cliName = command.executable === "npm" ? "npm-cli.js" : "npx-cli.js";
+    const npmBin = pathApi.join(pathApi.dirname(execPath), "node_modules", "npm", "bin");
+    return {
+      executable: execPath,
+      args: [pathApi.join(npmBin, cliName), ...(command.args ?? [])],
+    };
+  }
+  return command;
+}
 
 export function terminateProcessTree(pid) {
   if (!pid) return;

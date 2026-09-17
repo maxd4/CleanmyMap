@@ -8,7 +8,74 @@ import { runValidationMode } from "./run_validation_mode.mjs";
 import {
   VALIDATION_EVIDENCE_RELATIVE_ROOT,
 } from "./validation-evidence.mjs";
-import { runCommandWithTimeout } from "./validation-process.mjs";
+import {
+  resolveValidationCommand,
+  runCommandWithTimeout,
+} from "./validation-process.mjs";
+
+test("resolves npm through Node and npm-cli.js on Windows", () => {
+  const command = resolveValidationCommand(
+    { executable: "npm", args: ["run", "test"] },
+    "win32",
+    "C:\\Program Files\\nodejs\\node.exe",
+  );
+
+  assert.deepEqual(command, {
+    executable: "C:\\Program Files\\nodejs\\node.exe",
+    args: [
+      "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+      "run",
+      "test",
+    ],
+  });
+});
+
+test("resolves npx through Node and npx-cli.js on Windows", () => {
+  const command = resolveValidationCommand(
+    { executable: "npx", args: ["eslint", "apps/web"] },
+    "win32",
+    "C:\\Program Files\\nodejs\\node.exe",
+  );
+
+  assert.deepEqual(command, {
+    executable: "C:\\Program Files\\nodejs\\node.exe",
+    args: [
+      "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npx-cli.js",
+      "eslint",
+      "apps/web",
+    ],
+  });
+});
+
+test("keeps npm unchanged on non-Windows platforms", () => {
+  const original = { executable: "npm", args: ["run", "test"] };
+
+  assert.equal(resolveValidationCommand(original, "linux", "/usr/bin/node"), original);
+});
+
+test("keeps executables other than npm and npx unchanged", () => {
+  const original = { executable: "node", args: ["scripts/check.mjs"] };
+
+  assert.equal(
+    resolveValidationCommand(original, "win32", "C:\\Program Files\\nodejs\\node.exe"),
+    original,
+  );
+});
+
+test("keeps arguments containing spaces as separate arguments", () => {
+  const command = resolveValidationCommand(
+    { executable: "npm", args: ["run", "check", "path with spaces/file.mjs"] },
+    "win32",
+    "C:\\Program Files\\nodejs\\node.exe",
+  );
+
+  assert.deepEqual(command.args, [
+    "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+    "run",
+    "check",
+    "path with spaces/file.mjs",
+  ]);
+});
 
 function makeRepository() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "cleanmymap-validation-mode-"));
