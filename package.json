@@ -180,7 +180,9 @@
     "rpc-websockets": {
       "uuid": "14.0.2"
     },
-    "stream-json": "3.6.0",
+    "jayson@4.3.0": {
+      "stream-json": "file:apps/mobile/vendor/stream-json"
+    },
     "@expo/plist@0.8.1": {
       "@xmldom/xmldom": "0.8.15"
     },
