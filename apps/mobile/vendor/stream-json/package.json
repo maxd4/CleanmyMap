@@ -1,0 +1,7 @@
+{
+  "name": "stream-json",
+  "version": "1.9.1",
+  "description": "CleanMyMap compatibility backport for jayson@4.3.0; not the upstream stream-json distribution.",
+  "main": "index.js",
+  "license": "BSD-3-Clause"
+}

@@ -2,14 +2,15 @@
 
 ## Périmètre
 
-Cette gouvernance couvre les deux advisories `image-size` présentes dans le
-graphe de `apps/mobile`. Elle ne constitue pas une exception globale de
+Cette gouvernance couvre les advisories de dépendance explicitement traitées
+dans le graphe de `apps/mobile`. Elle ne constitue pas une exception globale de
 package, de niveau de sévérité ou de scanner.
 
 | Advisory | CVE | Package utilisé dans `apps/mobile` | Chemin transitif | Correctif couvert |
 | --- | --- | --- | --- | --- |
 | [GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) | CVE-2025-71330 | `apps/mobile/vendor/image-size` `2.0.3` | `@expo/metro` → `metro` → `image-size` | Rejet des entrées ICNS trop courtes, hors limites ou non progressives |
 | [GHSA-5p2g-fcmc-qvqq](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq) | CVE-2025-71329 | `apps/mobile/vendor/image-size` `2.0.3` | `react-native` → `@react-native/community-cli-plugin` → `metro` → `image-size` | Conservation de la garde de progression des boîtes JXL/HEIF de taille nulle |
+| [GHSA-528h-pc64-c93x](https://github.com/advisories/GHSA-528h-pc64-c93x) | CVE-2026-71429 | `apps/mobile/vendor/stream-json` `1.9.1` | `@clerk/expo` → `@clerk/clerk-js` → `@solana/wallet-adapter-base` → `@solana/web3.js@1.99.0` → `jayson@4.3.0` → `stream-json` | Backport CommonJS borné à `StreamValues` et `Verifier`, sans surface de filtres JSON |
 
 ## Mitigation effectivement versionnée
 
@@ -38,6 +39,67 @@ La mitigation ne rend pas fiable un asset spécialement forgé par lui-même :
 Aucun asset non fiable ne doit entrer dans un build Metro. Les assets d'un
 build doivent provenir du dépôt contrôlé ou d'une source vérifiée avant
 exécution de Metro.
+
+## Compatibilité `jayson` et CVE-2026-71429
+
+Le graphe mobile réel est :
+
+```text
+@clerk/expo
+→ @clerk/clerk-js
+→ @solana/wallet-adapter-base
+→ @solana/web3.js@1.99.0
+→ jayson@4.3.0
+→ stream-json ^1.9.1
+```
+
+`jayson@4.3.0` utilise les chemins CommonJS historiques
+`stream-json/streamers/StreamValues` et `stream-json/utils/Verifier`, puis
+appelle `StreamValues.withParser()` pour lire un flux JSON-RPC. Le
+`stream-json@3.6.0` upstream n'est pas un remplacement compatible : son
+entrée est ESM et ses chemins publics sont différents. L'override global
+`stream-json` a donc été supprimé.
+
+`apps/mobile/vendor/stream-json` est un backport CleanMyMap versionné sous le
+nom `stream-json` et la version de contrat `1.9.1` afin de satisfaire la plage
+`^1.9.1` de `jayson`. Il ne prétend pas être le code upstream
+`stream-json@3.6.0`. Il conserve seulement le parseur JSON nécessaire à
+`StreamValues`, l'assemblage de valeurs et `Verifier` du contrat historique.
+Le package local ne réintroduit pas `stream-chain` comme dépendance autonome :
+son pont interne conserve uniquement le comportement de pipeline nécessaire à
+`StreamValues.withParser()`. Les modules de filtres `pick`,
+`ignore`, `filter` et `replace` ne sont pas présents dans le package local.
+
+La redirection est strictement scoped à `jayson@4.3.0` dans `package.json` :
+
+```json
+"jayson@4.3.0": {
+  "stream-json": "file:apps/mobile/vendor/stream-json"
+}
+```
+
+La compatibilité est vérifiée par
+`apps/mobile/security/stream-json-jayson-security.test.mjs`, qui couvre le
+chargement de `jayson`, les deux imports profonds, un échange JSON-RPC minimal
+via `jayson.Utils.parseStream()` et l'absence des modules de filtres exclus.
+La chaîne effective doit rester vérifiable avec
+`npm ls jayson stream-json @solana/web3.js`; aucun contrat fonctionnel de
+Clerk, Supabase ou Solana n'est modifié et ce lot ne migre pas vers
+`@solana/kit`.
+
+`npm audit` conserve un signal attendu sur le nom et la version de contrat
+`stream-json@1.9.1` : le scanner ne peut pas inspecter le contenu du package
+local ni déduire que les filtres concernés ont été retirés. Ce signal n'est pas
+ignoré globalement ; il est contrôlé par le test de surface local ci-dessus et
+doit rester visible jusqu'à la suppression de la mitigation ou à la prise en
+charge explicite de ce backport par le scanner.
+
+Cette mitigation ne peut être retirée que si `jayson` cesse d'exiger ces deux
+chemins CommonJS, ou si une release upstream compatible les préserve tout en
+corrigeant l'advisory. Le retrait exige alors une validation de l'arbre exact,
+la régénération du lockfile et le succès du test de compatibilité, de
+`npm audit` et de `npm run check:lockfile-policy`. Si cette preuve n'est pas
+disponible, le package local et son override scoped doivent rester en place.
 
 ## Suivi vers l'upstream
 
