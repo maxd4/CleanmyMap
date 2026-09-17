@@ -17,13 +17,13 @@ import { useReportsWebDocumentModel } from "@/components/reports/web-document/us
 import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
 import {
   DEFAULT_REPORT_MODULES,
+  DEFAULT_REPORT_DETAIL_LEVEL,
+  DEFAULT_REPORT_GENERATION_PERIOD,
   buildCoverageRangeLabel,
-  buildDetailCoverageLabel,
   buildModuleSelectionLabel,
   buildPdfData,
   buildReportTitle,
   buildScopeSelectValue,
-  detailLevelLabel,
   parseScopeSelectValue,
   reportPeriodLabel,
   type DetailLevelId,
@@ -86,22 +86,21 @@ export function ReportsWebDocument({
   const [historyWarning, setHistoryWarning] = useState<string | null>(null);
   const [dailyExportAvailability, setDailyExportAvailability] =
     useState<ReportExportAvailability>(initialDailyExportAvailability);
-  const [period, setPeriod] = useState<SelectedPeriodId>("");
-  const [detailLevel, setDetailLevel] = useState<DetailLevelId>("default");
+  const [period, setPeriod] = useState<SelectedPeriodId>(DEFAULT_REPORT_GENERATION_PERIOD);
+  const detailLevel: DetailLevelId = DEFAULT_REPORT_DETAIL_LEVEL;
   const [modules, setModules] = useState<ModuleState>(DEFAULT_REPORT_MODULES);
-  const effectivePeriod = period || "six_months";
   const reportNow = useMemo(() => new Date(), []);
   const filteredContracts = useMemo(
-    () => filterReportGenerationContracts(contracts, effectivePeriod, reportNow),
-    [contracts, effectivePeriod, reportNow],
+    () => filterReportGenerationContracts(contracts, period, reportNow),
+    [contracts, period, reportNow],
   );
   const coverageRangeLabel = useMemo(
     () => buildCoverageRangeLabel(filteredContracts),
     [filteredContracts],
   );
-  const detailCoverageLabel = useMemo(
-    () => `${buildDetailCoverageLabel(detailLevel)} Modules optionnels inclus: ${buildModuleSelectionLabel(modules)}.`,
-    [detailLevel, modules],
+  const moduleCoverageLabel = useMemo(
+    () => `Modules optionnels inclus: ${buildModuleSelectionLabel(modules)}.`,
+    [modules],
   );
 
   const model = useReportsWebDocumentModel({
@@ -129,13 +128,13 @@ export function ReportsWebDocument({
       buildPdfData({
         reportTitle: defaultTitle,
         scopeLabel: activeScopeLabel,
-        period: effectivePeriod,
+        period,
         detailLevel,
         modules,
         model,
         surfaceProxy,
       }),
-    [activeScopeLabel, defaultTitle, detailLevel, effectivePeriod, model, modules, surfaceProxy],
+    [activeScopeLabel, defaultTitle, detailLevel, model, modules, period, surfaceProxy],
   );
 
   async function generateReportOnServer(payload: PdfReportPayload): Promise<void> {
@@ -241,7 +240,7 @@ export function ReportsWebDocument({
     exportRubriquePdf,
   } = usePdfExport({
     rubrique: "reporting",
-    periode: effectivePeriod,
+    periode: period,
     organizationType: activeScopeLabel,
     defaultTitle,
     data: pdfData,
@@ -358,8 +357,6 @@ export function ReportsWebDocument({
             model.setScopeKind(next.kind);
             model.setScopeValue(next.value);
           }}
-          detailLevel={detailLevel}
-          onDetailLevelChange={setDetailLevel}
           modules={modules}
           onModuleToggle={toggleModule}
         />
@@ -371,10 +368,7 @@ export function ReportsWebDocument({
             showPreview={showPreview}
             previewRef={previewRef}
             onTogglePreview={handlePreview}
-            periodDisplayLabel={
-              reportPeriodLabel(effectivePeriod, false)
-            }
-            detailDisplayLabel={detailLevelLabel(detailLevel)}
+            periodDisplayLabel={reportPeriodLabel(period, false)}
             modules={modules}
             historyCoverageLabel={
               `Historique: ${filteredContracts.length} actions`
@@ -383,7 +377,7 @@ export function ReportsWebDocument({
               "Historique: couverture conforme à la fenêtre sélectionnée."
             }
             coverageRangeLabel={coverageRangeLabel}
-            detailCoverageLabel={detailCoverageLabel}
+            moduleCoverageLabel={moduleCoverageLabel}
             exportStatus={exportStatus}
           />
 

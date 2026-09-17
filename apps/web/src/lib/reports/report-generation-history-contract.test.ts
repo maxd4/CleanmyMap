@@ -21,7 +21,7 @@ describe("report generation history contract", () => {
       report: "Rapport d'impact - Paris - Par défaut",
       period: "Six mois",
       perimeter: "Paris",
-      detail: "Par défaut (12 à 16 pages)",
+      detail: "Par défaut",
       generatedAt: expect.any(String),
     });
   });

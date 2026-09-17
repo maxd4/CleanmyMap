@@ -67,7 +67,7 @@ describe("report generation history store", () => {
         id: "generation-1",
         period: "Six mois",
         perimeter: "Paris",
-        detail: "Par défaut (12 à 16 pages)",
+        detail: "Par défaut",
       },
     ]);
     expect(select).toHaveBeenCalledWith(

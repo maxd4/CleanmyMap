@@ -59,11 +59,9 @@ const preparationProps: ReportsWebDocumentPreparationProps = {
   period: "six_months",
   onPeriodChange: vi.fn(),
   historyCompletenessWarning: true,
-  selectedScopeValue: "",
+  selectedScopeValue: "global",
   scopeOptions,
   onScopeChange: vi.fn(),
-  detailLevel: "default",
-  onDetailLevelChange: vi.fn(),
   modules: {
     dataAndCartography: true,
     transparencyAndMethods: true,
@@ -146,12 +144,11 @@ describe("ReportsWebDocumentPreparation", () => {
     vi.clearAllMocks();
   });
 
-  it("relays period, scope, detail and module callbacks without owning state", () => {
+  it("relays period, scope and module callbacks without owning state", () => {
     const props = {
       ...preparationProps,
       onPeriodChange: vi.fn(),
       onScopeChange: vi.fn(),
-      onDetailLevelChange: vi.fn(),
       onModuleToggle: vi.fn(),
     };
     const elements = collectDomElements(
@@ -164,12 +161,11 @@ describe("ReportsWebDocumentPreparation", () => {
 
     selects[0]?.props.onChange?.({ target: { value: "current_year" } });
     selects[1]?.props.onChange?.({ target: { value: "account:account-1" } });
-    selects[2]?.props.onChange?.({ target: { value: "exhaustif" } });
     moduleInputs.forEach((input) => input.props.onChange?.());
 
     expect(props.onPeriodChange).toHaveBeenCalledWith("current_year");
     expect(props.onScopeChange).toHaveBeenCalledWith("account:account-1");
-    expect(props.onDetailLevelChange).toHaveBeenCalledWith("exhaustif");
+    expect(selects).toHaveLength(2);
     expect(props.onModuleToggle).toHaveBeenCalledTimes(4);
     expect(props.onModuleToggle.mock.calls.map(([key]) => key)).toEqual([
       "dataAndCartography",
@@ -187,7 +183,9 @@ describe("ReportsWebDocumentPreparation", () => {
     expect(markup).toContain("Préparer le rapport");
     expect(markup).not.toContain("plafonné à");
     expect(markup).not.toContain("1000 actions approuvées");
-    expect(markup).toContain("Périmètre géographique");
+    expect(markup).toContain("Périmètre du rapport");
+    expect(markup).not.toContain("Niveau de détail");
+    expect(markup).not.toMatch(/6 à 8 pages|12 à 16 pages|20 à 28 pages/);
     expect(markup).toContain("Modules optionnels");
     expect(markup).toContain("Le rapport est généré à partir des données");
   });
@@ -239,7 +237,7 @@ describe("ReportsWebDocumentPreparation", () => {
     );
     expect(exportOptions.data.title).toBe("Rapport d'impact - Global - Par défaut");
     expect(exportOptions.data.chapters[0].lines).toContain(
-      "Période: Six mois · Par défaut (12 à 16 pages).",
+      "Période: Six mois · Par défaut.",
     );
     expect(exportOptions.data.summary).toContain(
       "Modules optionnels inclus: Données & cartographie, Transparence & méthodes, Fichiers détaillés.",
