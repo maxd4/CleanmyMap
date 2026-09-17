@@ -42,7 +42,6 @@ function createProps(
     previewRef: { current: null },
     onTogglePreview: vi.fn(),
     periodDisplayLabel: "Six mois",
-    detailDisplayLabel: "Par défaut (12 à 16 pages)",
     modules: {
       dataAndCartography: true,
       transparencyAndMethods: true,
@@ -52,7 +51,7 @@ function createProps(
     historyCoverageLabel: "Historique: 4 actions",
     historyGuaranteeLabel: "Historique: couverture conforme à la fenêtre sélectionnée.",
     coverageRangeLabel: "01/01/2026 → 23/08/2026",
-    detailCoverageLabel: "Synthèse, détails principaux et preuves disponibles.",
+    moduleCoverageLabel: "Modules optionnels inclus: Données & cartographie.",
     exportStatus,
     ...overrides,
   };
@@ -74,7 +73,8 @@ describe("ReportsWebDocumentPreview", () => {
     expect(closedMarkup).toContain("Voir l&#x27;aperçu");
     expect(closedMarkup).toContain("Historique: 4 actions");
     expect(closedMarkup).toContain("Six mois");
-    expect(closedMarkup).toContain("Par défaut (12 à 16 pages)");
+    expect(closedMarkup).toContain("Modules optionnels inclus: Données &amp; cartographie.");
+    expect(closedMarkup).not.toMatch(/6 à 8 pages|12 à 16 pages|20 à 28 pages/);
     expect(closedMarkup).not.toContain("synthese-executive");
 
     const openMarkup = renderToStaticMarkup(
@@ -134,6 +134,7 @@ describe("ReportsWebDocumentPreview", () => {
             rawData: false,
             detailedFiles: false,
           },
+          moduleCoverageLabel: "Modules optionnels inclus: Transparence & méthodes.",
         }),
       ),
     );

@@ -4,13 +4,10 @@ import {
   CalendarDays,
   MapPin,
   ShieldCheck,
-  SlidersHorizontal,
 } from "lucide-react";
 import {
-  DETAIL_LEVEL_OPTIONS,
   GenerationStageCard,
   REPORT_MODULE_DEFINITIONS,
-  type DetailLevelId,
   type ModuleState,
   type SelectedPeriodId,
 } from "./reports-web-document.shared";
@@ -31,8 +28,6 @@ export type ReportsWebDocumentPreparationProps = {
     arrondissements: ScopeChoice[];
   };
   onScopeChange: (value: string) => void;
-  detailLevel: DetailLevelId;
-  onDetailLevelChange: (detailLevel: DetailLevelId) => void;
   modules: ModuleState;
   onModuleToggle: (key: keyof ModuleState) => void;
 };
@@ -43,8 +38,6 @@ export function ReportsWebDocumentPreparation({
   selectedScopeValue,
   scopeOptions,
   onScopeChange,
-  detailLevel,
-  onDetailLevelChange,
   modules,
   onModuleToggle,
 }: ReportsWebDocumentPreparationProps) {
@@ -53,7 +46,7 @@ export function ReportsWebDocumentPreparation({
       tone="prepare"
       step="1"
       title="Préparer le rapport"
-      description="Choisissez la période, le périmètre et le niveau de détail avant de lancer la génération."
+      description="Choisissez la période, le périmètre et les modules à inclure avant de lancer la génération."
     >
       <div className="space-y-3">
         <div className="space-y-3">
@@ -77,7 +70,7 @@ export function ReportsWebDocumentPreparation({
         </div>
 
         <div className="space-y-3">
-          <label className="block text-sm font-black text-slate-900">Périmètre géographique</label>
+          <label className="block text-sm font-black text-slate-900">Périmètre du rapport</label>
           <div className="relative">
             <MapPin
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -115,30 +108,6 @@ export function ReportsWebDocumentPreparation({
               </optgroup>
             </select>
           </div>
-        </div>
-
-        <div className="space-y-3">
-          <label className="block text-sm font-black text-slate-900">Niveau de détail</label>
-          <div className="relative">
-            <SlidersHorizontal
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-              size={18}
-            />
-            <select
-              value={detailLevel}
-              onChange={(event) => onDetailLevelChange(event.target.value as DetailLevelId)}
-              className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-600 shadow-[inset_0_1px_4px_rgba(15,23,42,0.04)] outline-none transition focus:border-red-300"
-            >
-              {DETAIL_LEVEL_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label} ({option.pages})
-                </option>
-              ))}
-            </select>
-          </div>
-          <p className="text-xs leading-5 text-slate-500">
-            Le nombre de pages est indicatif et varie légèrement selon le volume de données.
-          </p>
         </div>
 
         <div className="space-y-3">

@@ -11,14 +11,17 @@ import {
 } from "@/lib/reports/data-availability";
 
 export const DETAIL_LEVEL_OPTIONS = [
-  { id: "concis", label: "Concis", pages: "6 à 8 pages" },
-  { id: "default", label: "Par défaut", pages: "12 à 16 pages" },
-  { id: "exhaustif", label: "Exhaustif", pages: "20 à 28 pages" },
+  { id: "concis", label: "Concis" },
+  { id: "default", label: "Par défaut" },
+  { id: "exhaustif", label: "Exhaustif" },
 ] as const;
 
 export type DetailLevelId = (typeof DETAIL_LEVEL_OPTIONS)[number]["id"];
 export type PeriodId = "six_months" | "current_year" | "full_history";
-export type SelectedPeriodId = PeriodId | "";
+export type SelectedPeriodId = PeriodId;
+
+export const DEFAULT_REPORT_GENERATION_PERIOD: SelectedPeriodId = "six_months";
+export const DEFAULT_REPORT_DETAIL_LEVEL: DetailLevelId = "default";
 export type ReportModuleId =
   | "dataAndCartography"
   | "transparencyAndMethods"
@@ -243,10 +246,6 @@ export function buildCoverageRangeLabel(contracts: ActionDataContract[]): string
   return `${formatDateLabel(minDate)} → ${formatDateLabel(maxDate)}`;
 }
 
-export function buildDetailCoverageLabel(detailLevel: DetailLevelId): string {
-  return `Niveau de détail sélectionné: ${detailLevelLabel(detailLevel)}. La composition du rapport est définie séparément par les modules optionnels.`;
-}
-
 export function periodLabel(period: PeriodId): string {
   switch (period) {
     case "six_months":
@@ -265,7 +264,7 @@ export function reportPeriodLabel(period: PeriodId, _isTruncated = false): strin
 
 export function detailLevelLabel(id: DetailLevelId): string {
   const option = DETAIL_LEVEL_OPTIONS.find((entry) => entry.id === id);
-  return option ? `${option.label} (${option.pages})` : "";
+  return option?.label ?? "";
 }
 
 export function detailLevelShortLabel(id: DetailLevelId): string {
@@ -274,13 +273,13 @@ export function detailLevelShortLabel(id: DetailLevelId): string {
 }
 
 export function buildScopeSelectValue(kind: string, value: string): string {
-  return kind === "global" || !value ? "" : `${kind}:${value}`;
+  return kind === "global" || !value ? "global" : `${kind}:${value}`;
 }
 
 export function parseScopeSelectValue(
   value: string,
 ): { kind: "global"; value: "" } | { kind: "account" | "association" | "arrondissement"; value: string } {
-  if (!value) {
+  if (!value || value === "global") {
     return { kind: "global", value: "" };
   }
   const [kind, ...rest] = value.split(":");

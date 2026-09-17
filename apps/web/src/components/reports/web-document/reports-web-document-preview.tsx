@@ -25,12 +25,11 @@ export type ReportsWebDocumentPreviewProps = {
   previewRef: RefObject<HTMLDivElement | null>;
   onTogglePreview: () => void;
   periodDisplayLabel: string;
-  detailDisplayLabel: string;
   modules: ModuleState;
   historyCoverageLabel: string;
   historyGuaranteeLabel: string;
   coverageRangeLabel: string;
-  detailCoverageLabel: string;
+  moduleCoverageLabel: string;
   exportStatus: Pick<ReportsWebDocumentExportStatus, "label" | "tone">;
 };
 
@@ -41,12 +40,11 @@ export function ReportsWebDocumentPreview({
   previewRef,
   onTogglePreview,
   periodDisplayLabel,
-  detailDisplayLabel,
   modules,
   historyCoverageLabel,
   historyGuaranteeLabel,
   coverageRangeLabel,
-  detailCoverageLabel,
+  moduleCoverageLabel,
   exportStatus,
 }: ReportsWebDocumentPreviewProps) {
   useEffect(() => {
@@ -127,9 +125,6 @@ export function ReportsWebDocumentPreview({
               <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
                 {visibleChapterCount} chapitres
               </span>
-              <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
-                {detailDisplayLabel}
-              </span>
             </div>
 
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -187,9 +182,6 @@ export function ReportsWebDocumentPreview({
               <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
                 {periodDisplayLabel}
               </span>
-              <span className="rounded-full border border-slate-200 bg-white px-3 py-1">
-                {detailDisplayLabel}
-              </span>
             </div>
             <div className="mt-4 space-y-2 rounded-2xl border border-slate-200 bg-white/80 p-3">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
@@ -198,7 +190,7 @@ export function ReportsWebDocumentPreview({
               <div className="space-y-1.5 text-sm leading-6 text-slate-700">
                 <p>{historyGuaranteeLabel}</p>
                 <p>Période réelle: {coverageRangeLabel}.</p>
-                <p>Niveau inclus: {detailCoverageLabel}</p>
+                <p>{moduleCoverageLabel}</p>
               </div>
             </div>
           </div>
@@ -220,9 +212,6 @@ export function ReportsWebDocumentPreview({
                 </p>
               </div>
               <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
-                  {detailDisplayLabel}
-                </span>
                 <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
                   {periodDisplayLabel}
                 </span>

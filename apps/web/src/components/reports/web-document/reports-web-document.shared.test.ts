@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_REPORT_DETAIL_LEVEL,
+  DEFAULT_REPORT_GENERATION_PERIOD,
   DEFAULT_REPORT_MODULES,
   buildPdfData,
   buildScopeSelectValue,
@@ -9,6 +11,7 @@ import {
   periodLabel,
   reportPeriodLabel,
   parseScopeSelectValue,
+  detailLevelLabel,
 } from "./reports-web-document.shared";
 
 const fixtureModel = {
@@ -65,6 +68,15 @@ function buildPdfDataWithModules(modules: ModuleState) {
 
 describe("reports web document shared helpers", () => {
   it("round-trips scope select values", () => {
+    expect(buildScopeSelectValue("global", "")).toBe("global");
+    expect(parseScopeSelectValue("global")).toEqual({
+      kind: "global",
+      value: "",
+    });
+    expect(parseScopeSelectValue("")).toEqual({
+      kind: "global",
+      value: "",
+    });
     expect(buildScopeSelectValue("account", "compte-1")).toBe("account:compte-1");
     expect(parseScopeSelectValue("account:compte-1")).toEqual({
       kind: "account",
@@ -172,10 +184,14 @@ describe("reports web document shared helpers", () => {
   });
 
   it("keeps the supported periods and filter labels stable", () => {
+    expect(DEFAULT_REPORT_GENERATION_PERIOD).toBe("six_months");
+    expect(DEFAULT_REPORT_DETAIL_LEVEL).toBe("default");
     expect(periodLabel("six_months")).toBe("Six mois");
     expect(periodLabel("current_year")).toBe("Année en cours");
     expect(periodLabel("full_history")).toBe("Historique complet");
     expect(reportPeriodLabel("full_history", true)).toBe("Historique complet");
+    expect(detailLevelLabel("default")).toBe("Par défaut");
+    expect(detailLevelLabel("default")).not.toMatch(/pages/i);
   });
 
   it("builds PDF payloads with the selected period and detail level", () => {
@@ -233,7 +249,7 @@ describe("reports web document shared helpers", () => {
     expect(pdf.title).toBe("Rapport d'impact - Paris - Exhaustif");
     expect(pdf.rows).toEqual([{ Date: "2026-06-01", Masse_Kg: 4.5 }]);
     expect(pdf.chapters[0]?.lines).toContain(
-      "Période: Historique complet · Exhaustif (20 à 28 pages).",
+      "Période: Historique complet · Exhaustif.",
     );
     expect(pdf.chapters[1]?.lines).toContain("Période analysée: Historique complet.");
     expect(JSON.stringify(pdf)).not.toMatch(/weather|météo/i);
