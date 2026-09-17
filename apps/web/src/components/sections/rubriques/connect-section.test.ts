@@ -1,5 +1,9 @@
 import { readFileSync } from "node:fs";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { ConnectTabs, CONNECT_TABS } from "./connect-components";
+import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
 
 const connectSectionSource = readFileSync(
   new URL("./connect-section.tsx", import.meta.url),
@@ -51,6 +55,45 @@ describe("Messagerie navigation shell", () => {
     expect(connectSectionSource).toContain("onNavigationChange");
     expect(connectSectionSource).toContain("navigationState={activeTab ===");
     expect(connectSectionSource).toContain("router[historyMode]");
+  });
+
+  it("connects each rendered tab to its tabpanel in both directions", () => {
+    const panels = CONNECT_TABS.map((tab) =>
+      createElement("div", {
+        key: tab.id,
+        id: `connect-panel-${tab.id}`,
+        role: "tabpanel",
+        "aria-labelledby": `connect-tab-${tab.id}`,
+      }),
+    );
+    const tabsAndPanels = createElement(
+      "div",
+      null,
+      createElement(ConnectTabs, {
+        activeTab: "discussions",
+        setActiveTab: () => undefined,
+        fr: true,
+      }),
+      ...panels,
+    );
+    const markup = renderToStaticMarkup(
+      createElement(
+        SitePreferencesProvider,
+        {
+          initialLocale: "fr",
+          initialDisplayMode: "sobre",
+        } as never,
+        tabsAndPanels,
+      )
+    );
+
+    for (const tab of CONNECT_TABS) {
+      expect(markup).toMatch(
+        new RegExp(`id="connect-tab-${tab.id}"[^>]*aria-controls="connect-panel-${tab.id}"`),
+      );
+      expect(markup).toContain(`id="connect-panel-${tab.id}"`);
+      expect(markup).toContain(`aria-labelledby="connect-tab-${tab.id}"`);
+    }
   });
 
   it("keeps the public surface vocabulary aligned with the primary tabs", () => {

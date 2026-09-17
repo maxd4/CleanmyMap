@@ -59,6 +59,19 @@ type ChatComposerProps = {
   canSubmit: boolean;
 };
 
+export function toggleChatComposerTools(isOpen: boolean): boolean {
+  return !isOpen;
+}
+
+export function selectChatComposerMode(
+  mode: ChatComposerMode,
+  onComposerModeChange: ((mode: ChatComposerMode) => void) | undefined,
+  closeTools: () => void,
+): void {
+  onComposerModeChange?.(mode);
+  closeTools();
+}
+
 export const ChatComposer = memo(function ChatComposer({
   activeChannelType,
   composerPlaceholder,
@@ -104,8 +117,7 @@ export const ChatComposer = memo(function ChatComposer({
   const canChooseAnnouncement = showModeTabs && composerModes.includes("announcement");
   const canChoosePoll = showModeTabs && composerModes.includes("poll");
   const selectComposerMode = (mode: ChatComposerMode) => {
-    onComposerModeChange?.(mode);
-    setIsToolsOpen(false);
+    selectChatComposerMode(mode, onComposerModeChange, () => setIsToolsOpen(false));
   };
   const handleFileSelection = (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -365,7 +377,7 @@ export const ChatComposer = memo(function ChatComposer({
           aria-label="Options d’écriture"
           aria-expanded={isToolsOpen}
           aria-controls="chat-composer-options"
-          onClick={() => setIsToolsOpen((open) => !open)}
+          onClick={() => setIsToolsOpen(toggleChatComposerTools)}
           className={`p-3 rounded-2xl transition-[color,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isLight ? "text-slate-400 hover:text-rose-500 hover:bg-rose-50" : "text-slate-400 hover:text-violet-400 hover:bg-white/5"}`}
         >
           <Plus size={20} aria-hidden="true" />
@@ -397,14 +409,13 @@ export const ChatComposer = memo(function ChatComposer({
         {isToolsOpen ? (
           <div
             id="chat-composer-options"
-            role="menu"
+            role="group"
             aria-label="Options d’écriture"
             className={`absolute bottom-full left-0 mb-2 min-w-56 rounded-2xl border p-2 shadow-xl ${isLight ? "border-rose-100 bg-white" : "border-white/10 bg-slate-900"}`}
           >
             {composerMode !== "message" ? (
               <button
                 type="button"
-                role="menuitem"
                 onClick={() => selectComposerMode("message")}
                 className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left cmm-text-small font-semibold ${isLight ? "text-slate-700 hover:bg-rose-50" : "text-slate-200 hover:bg-white/5"}`}
               >
@@ -414,7 +425,6 @@ export const ChatComposer = memo(function ChatComposer({
             {userId ? (
               <button
                 type="button"
-                role="menuitem"
                 disabled={!canAttach}
                 onClick={() => {
                   setIsToolsOpen(false);
@@ -428,7 +438,6 @@ export const ChatComposer = memo(function ChatComposer({
             {canChooseAnnouncement ? (
               <button
                 type="button"
-                role="menuitem"
                 onClick={() => selectComposerMode("announcement")}
                 className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left cmm-text-small font-semibold ${isLight ? "text-slate-700 hover:bg-rose-50" : "text-slate-200 hover:bg-white/5"}`}
               >
@@ -438,7 +447,6 @@ export const ChatComposer = memo(function ChatComposer({
             {canChoosePoll ? (
               <button
                 type="button"
-                role="menuitem"
                 onClick={() => selectComposerMode("poll")}
                 className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left cmm-text-small font-semibold ${isLight ? "text-slate-700 hover:bg-rose-50" : "text-slate-200 hover:bg-white/5"}`}
               >
