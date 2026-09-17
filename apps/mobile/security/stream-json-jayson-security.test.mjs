@@ -251,6 +251,31 @@ test("keeps StreamValues and Verifier incremental on an open stream", async () =
   await parserFinished;
 });
 
+test("propagates invalid JSON through the incremental StreamValues pipeline", async () => {
+  const StreamValues = require("stream-json/streamers/StreamValues");
+  const parser = StreamValues.withParser();
+  const values = [];
+  let parserError;
+
+  parser.on("data", (item) => values.push(item.value));
+  parser.on("error", (error) => {
+    parserError = error;
+  });
+
+  parser.write('{"valid":');
+  await nextTurn();
+  assert.deepEqual(values, []);
+
+  parser.write("]");
+  await waitFor(
+    () => parserError instanceof Error,
+    "invalid JSON did not propagate through the incremental parser",
+  );
+
+  assert.match(parserError.message, /parse|JSON|expected|unexpected/i);
+  assert.deepEqual(values, []);
+});
+
 test("does not ship the excluded vulnerable path-filter modules", () => {
   for (const moduleName of ["pick", "ignore", "filter", "replace"]) {
     assert.equal(
