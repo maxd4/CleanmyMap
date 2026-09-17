@@ -164,6 +164,32 @@ Un résultat `network` est attribué au fournisseur de routage pour les choix de
 tracé et les mesures qu’il fournit. Un résultat `fallback` ou `estimated` est
 présenté comme tel ; il ne doit pas être confondu avec une mesure réseau.
 
+### Géométrie de déplacement et corridor nettoyable
+
+La géométrie de déplacement reste distincte du corridor réellement
+nettoyable. Le contrat `StreetCleaningCorridor` (`street-cleaning-corridor-v1`)
+ne peut publier `left` ou `right` qu’avec une orientation de référence
+explicite, une source géographique versionnée et une preuve latérale. `single`
+requiert lui aussi une preuve dédiée. Un nom de voie, une largeur supposée,
+une intersection, un terre-plein ou une polyline/step OSRM/FOSSGIS ne suffit
+pas ; aucune polyline réseau n’est artificiellement décalée.
+
+Les traversées ne sont acceptées que lorsqu’elles sont prouvées et servent à
+rester sur le même côté. Un changement `right` ↔ `left` n’est jamais introduit
+par défaut. En l’absence d’orientation, de preuve latérale ou de source
+suffisante, le handoff du planner reste `unknown`, avec des traversées
+inconnues et sans appel Overpass live. Le snapshot municipal de serviceabilité
+est préchargé et versionné, mais il n’a pas cette preuve latérale ; il éclaire
+la serviceabilité sans produire un corridor. Le planner dispose néanmoins de
+deux capacités opérationnelles abstraites `A` et `B` par rue routable par
+défaut, afin de distinguer une couverture aller/retour ou multi-groupe. Cette
+hypothèse n’est pas affichée comme un côté géographique : chaque affectation
+porte `geographicSide: "unknown"`, et une exception documentée à un seul
+corridor prévaut. `networkOverlap` décrit le déplacement partagé ou proche ;
+`cleaningCoverageOverlap` décrit uniquement le nettoyage répété du même
+corridor opérationnel. Les changements nécessitant une traversée non prouvée
+ou dangereuse sont bloqués.
+
 La séparation s’applique aussi aux distances utilisées pour admettre une zone
 prédite : distance au corridor, détour estimé et résultat réseau sont des
 informations différentes et sont conservés dans leurs champs respectifs.

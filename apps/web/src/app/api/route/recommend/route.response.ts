@@ -39,6 +39,7 @@ import type { RoutePlanningMode } from "@/lib/route/route-planning-mode";
 import type { RouteEventPressureContext, RouteCandidateData } from "./route.candidates";
 import type { RoutePlanningResult } from "./route.planning";
 import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
+import { buildUnknownStreetCleaningCorridorHandoff } from "@/lib/route/street-cleaning-corridor";
 
 function buildStops(
   plannedStops: RoutePlanningResult["plannedStops"],
@@ -114,6 +115,8 @@ function buildMultiRouteTrace(
       sharedTargetRatio: metrics.sharedTargetRatio,
       sharedDistanceKm: metrics.sharedDistanceKm,
       sharedDistanceRatio: metrics.sharedDistanceRatio,
+      networkOverlap: metrics.networkOverlap,
+      cleaningCoverageOverlap: metrics.cleaningCoverageOverlap,
       balanceDistance: metrics.balanceDistance,
       balanceDuration: metrics.balanceDuration,
       balanceTargetCount: metrics.balanceTargetCount,
@@ -170,6 +173,8 @@ export function buildRouteRecommendationResponse(input: {
     weatherContext,
   } = input;
   const { plannedStops, routeGeometry, plannerResult } = planning;
+  const streetCleaningCorridors =
+    planning.streetCleaningCorridors ?? buildUnknownStreetCleaningCorridorHandoff();
   const generatedAt = new Date().toISOString();
   const durationDependency = input.operationalBudget ?? planning.operationalBudget;
   const calibrationCandidates = plannedStops.map(({ candidate }) => ({
@@ -247,6 +252,8 @@ export function buildRouteRecommendationResponse(input: {
     sharedTargetRatio: planning.groupPartition.metrics.sharedTargetRatio,
     sharedDistanceKm: null,
     sharedDistanceRatio: null,
+    networkOverlap: 0,
+    cleaningCoverageOverlap: 0,
     balanceDistance: planning.groupPartition.metrics.balanceDistance,
     balanceDuration: planning.groupPartition.metrics.balanceDuration,
     balanceTargetCount: planning.groupPartition.metrics.balanceTargetCount,
@@ -256,6 +263,12 @@ export function buildRouteRecommendationResponse(input: {
   };
   const multiRoute: RouteMultiRouteMetrics = {
     ...baseMultiRoute,
+    networkOverlap:
+      planning.streetCleaningCorridors?.operationalPlan?.networkOverlap ??
+      baseMultiRoute.networkOverlap ?? 0,
+    cleaningCoverageOverlap:
+      planning.streetCleaningCorridors?.operationalPlan?.cleaningCoverageOverlap ??
+      baseMultiRoute.cleaningCoverageOverlap ?? 0,
     operationalBudgetAvailable:
       groupRoutes.length > 0 ? operationalGroupsAvailable : operationalBudget.totalMinutes !== null,
     totalOperationalMinutes:
@@ -444,6 +457,7 @@ export function buildRouteRecommendationResponse(input: {
       plannerSnapshot,
       plannerProof,
       ...(weatherContext ? { weatherContext } : {}),
+      streetCleaningCorridors,
       stops: [],
       prediction: predictionSummary,
       trace,
@@ -529,6 +543,7 @@ export function buildRouteRecommendationResponse(input: {
     plannerSnapshot,
     plannerProof,
     ...(weatherContext ? { weatherContext } : {}),
+    streetCleaningCorridors,
     stops,
     prediction: predictionSummary,
     trace,

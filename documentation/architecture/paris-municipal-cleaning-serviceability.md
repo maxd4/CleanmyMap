@@ -100,6 +100,12 @@ type CleaningSurfaceClass =
 Une zone peut avoir plusieurs classes. Elles sont normalisées en parts de
 features, triées par classe, sans double comptage de la zone.
 
+Cette couche ne constitue pas un contrat de corridor latéral. Le snapshot
+municipal ne fournit ni orientation de segment, ni preuve `left`/`right`, ni
+preuve d’un corridor `single`, ni traversée sûre. Ses surfaces,
+accessibilités et proxies restent donc un contexte de serviceabilité ; ils ne
+peuvent pas être transformés en géométrie de trottoir nettoyable.
+
 ## Contrat v2 et formules versionnées
 
 La configuration est centralisée dans
