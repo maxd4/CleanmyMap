@@ -81,19 +81,19 @@ export function getTrustTone(state: PartnerTrustState): string {
 
 export function getKindTone(entry: AnnuaireEntry): string {
   if (isInstitution(entry)) {
-    return "border-sky-200 bg-sky-50 text-sky-700";
+    return "border-slate-200 bg-slate-50 text-slate-700";
   }
 
   switch (entry.kind) {
     case "association":
-      return "border-rose-200 bg-rose-50 text-rose-700";
+      return "border-pink-200 bg-pink-50 text-pink-800";
     case "groupe_parole":
     case "evenement":
-      return "border-amber-200 bg-amber-50 text-amber-700";
+      return "border-rose-200 bg-rose-50 text-rose-800";
     case "commerce":
-      return "border-indigo-200 bg-indigo-50 text-indigo-700";
+      return "border-orange-200 bg-orange-50 text-orange-800";
     case "entreprise":
-      return "border-violet-200 bg-violet-50 text-violet-700";
+      return "border-pink-200 bg-pink-50 text-pink-800";
     default:
       return "border-slate-200 bg-slate-50 text-slate-700";
   }
