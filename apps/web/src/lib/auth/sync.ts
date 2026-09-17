@@ -318,11 +318,12 @@ function resolvePersistedProfileLabel(profile: AppProfile): AppProfile {
 function resolveDisplayNameForUser(
   user: User,
   displayNameMode: DisplayNameMode,
+  handle: string,
 ): string {
   return resolveAccountDisplayName({
     firstName: user.firstName?.trim() ?? "",
     lastName: user.lastName?.trim() ?? "",
-    username: user.username?.trim() || buildFallbackHandle(user.id),
+    username: handle,
     userId: user.id,
     mode: displayNameMode,
   });
@@ -519,7 +520,7 @@ export async function syncClerkUserToSupabase(
     existingProfile?.handle ?? null,
   );
   const displayNameMode = resolveDisplayNameModeForUser(user, existingProfile);
-  const displayName = resolveDisplayNameForUser(user, displayNameMode);
+  const displayName = resolveDisplayNameForUser(user, displayNameMode, handle);
 
   return upsertSyncedProfile(supabase, user.id, {
     displayName,

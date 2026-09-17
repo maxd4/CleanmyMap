@@ -403,12 +403,41 @@ describe("syncClerkUserToSupabase", () => {
       expect.objectContaining({
         handle: "custom_handle",
         display_name_mode: "pseudo",
-        display_name: "handle_mode",
+        display_name: "custom_handle",
       }),
       { onConflict: "id" },
     );
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     expect(consoleWarnSpy).not.toHaveBeenCalled();
+  });
+
+  it("uses the resolved non-sensitive handle for pseudo mode without a username", async () => {
+    const { supabase, upsert } = createSupabaseMock({
+      existingProfile: null,
+    });
+    getSupabaseAdminClientMock.mockReturnValue(supabase);
+
+    await syncClerkUserToSupabase({
+      id: "user_contact_only",
+      username: null,
+      emailAddresses: [{ emailAddress: "private@example.org" }],
+      primaryEmailAddress: { emailAddress: "private@example.org" },
+      primaryPhoneNumber: { phoneNumber: "+33612345678" },
+      imageUrl: "https://example.com/avatar.png",
+      publicMetadata: { display_name_mode: "pseudo" },
+      privateMetadata: {},
+      firstName: "",
+      lastName: "",
+    } as never);
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        handle: "user_t_only",
+        display_name_mode: "pseudo",
+        display_name: "user_t_only",
+      }),
+      { onConflict: "id" },
+    );
   });
 
   it("mirrors Clerk avatars into Supabase Storage when available", async () => {
