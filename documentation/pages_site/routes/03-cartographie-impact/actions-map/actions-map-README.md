@@ -32,11 +32,16 @@ Explorer les actions et hotspots, filtrer la vue, sélectionner une action et li
 - CTA Déclarer ;
 - CTA Méthodologie ;
 - carte immersive ;
-- filtres publics actifs : Zone, Période, Catégories visibles et Réinitialiser ;
+- barre de contrôles directement sur la carte : `Filtrer`, `Affichage`, `Légende` et `Recentrer` ;
+- `Filtrer` regroupe la recherche locale dans les éléments chargés, la période,
+  les catégories réellement filtrables et la réinitialisation ;
+- `Affichage` regroupe la référence `Global`/`Département`, le mode
+  `Observé`/`Projeté`, les calques et le fond clair/contrasté ;
 - sélection d'action ;
 - KPI de résultats terrain (`kg`, mégots, bénévoles) et proxys explicitement qualifiés (`CO₂e`, eau, économie de voirie) ;
-- tour de contrôle avec filtres, compteur visible/chargé et export ;
-- légende compacte avec résumé couleurs/infrastructure et détails/seuils en disclosure ;
+- bloc de contexte avec compteur visible/chargé et export ;
+- légende canonique compacte avec résumé couleurs/infrastructure et détails des
+  seuils, états et géométries en disclosure ;
 - journal / insights ;
 - analyse et journal ;
 - tableau de données ;
@@ -46,6 +51,12 @@ Explorer les actions et hotspots, filtrer la vue, sélectionner une action et li
 La page ne présente pas les diagnostics techniques de qualité géométrique dans
 la vue publique. La carte conserve sa géométrie et ses interactions ; les
 informations utiles à la lecture restent accessibles via la légende compacte.
+
+La recherche exposée sous `Filtrer` est un filtrage textuel local des éléments
+déjà chargés dans la vue. Elle ne géocode pas et n'appelle aucun service
+externe. `impactFilter` et `qualityMin` restent des paramètres internes du feed
+partagé, mais ne font plus partie de l'état utilisateur persistant de cette
+carte : les anciennes clés sont ignorées à la lecture du localStorage.
 
 ## Feed public partagé avec la homepage
 

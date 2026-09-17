@@ -6,12 +6,15 @@ import type {
   ActionStatus,
 } from "@/lib/actions/types";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
-import type { ActionsMapDateScope } from "@/components/actions/map/actions-map-filters.utils";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import type { RefObject } from "react";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
 import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
+import type {
+  ActionsMapDateScope,
+  ActionsMapFilters,
+} from "@/components/actions/map/actions-map-filters.utils";
 
 export type ActionsMapPresentation = "default" | "immersive" | "homepage-preview";
 
@@ -35,6 +38,11 @@ export type ActionsMapCanvasComponent = ComponentType<{
   onScoreScopeChange?: (scope: PollutionScoreScope) => void;
   displayMode?: CurrentPlaceStateMode;
   onDisplayModeChange?: (mode: CurrentPlaceStateMode) => void;
+  filters?: ActionsMapFilters;
+  onZoneQueryChange?: (zoneQuery: string) => void;
+  onDateScopeChange?: (dateScope: ActionsMapDateScope) => void;
+  onCategoryToggle?: (category: MarkerCategory) => void;
+  onResetFilters?: () => void;
 }>;
 
 export type ActionsMapFeedProps = {

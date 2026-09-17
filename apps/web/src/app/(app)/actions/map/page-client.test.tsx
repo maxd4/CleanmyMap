@@ -127,8 +127,6 @@ function configurePageState({
     filters: {
       days: 30,
       dateScope: "current_year",
-      impactFilter: "all",
-      qualityMin: 0,
       zoneQuery: "",
       visibleCategories: {},
     },

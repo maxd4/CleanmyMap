@@ -7,12 +7,16 @@ const controlTowerSource = readFileSync(
   new URL("./_components/map-control-tower.tsx", import.meta.url),
   "utf8",
 );
+const canvasSource = readFileSync(
+  new URL("../../../../components/actions/actions-map-canvas.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("actions map public semantics", () => {
   it("does not label the map as real-time data", () => {
     expect(source).not.toContain("Données en temps réel");
     expect(source).toContain("pollution projetée");
-    expect(source).toContain("ne constituent pas une mesure actuelle du terrain");
+    expect(source).toContain("ne constitue pas une mesure actuelle du terrain");
   });
 
   it("keeps the public feed approved-only without exposing a status control", () => {
@@ -30,7 +34,7 @@ describe("actions map public semantics", () => {
     expect(controlTowerSource).not.toContain("Qualité géo");
     expect(controlTowerSource).not.toContain("Sans coord.");
     expect(controlTowerSource).not.toContain("Fallback");
-    expect(controlTowerSource).toContain("ActionsMapFilterControls");
+    expect(controlTowerSource).not.toContain("ActionsMapFilterControls");
     expect(controlTowerSource).toContain("ActionsMapExportButton");
     expect(controlTowerSource).toContain("visibleCount");
     expect(controlTowerSource).toContain("loadedCount");
@@ -54,5 +58,15 @@ describe("actions map public semantics", () => {
     expect(source).not.toContain("stats.wasteKg");
     expect(source).not.toContain("stats.co2AvoidedKg");
     expect(source).not.toContain("stats.euroSaved");
+  });
+
+  it("keeps the public map controls consolidated on the canvas", () => {
+    expect(canvasSource).toContain("Filtrer");
+    expect(canvasSource).toContain("Affichage");
+    expect(canvasSource).toContain("Légende");
+    expect(canvasSource).toContain('position="right"');
+    expect(canvasSource).not.toContain("LayersControl");
+    expect(source).toContain("filters={filters}");
+    expect(source).toContain("onDateScopeChange={handleDateScopeChange}");
   });
 });

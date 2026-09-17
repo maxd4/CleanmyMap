@@ -39,9 +39,9 @@ export function ActionsMapFilterControls({
 }: ActionsMapFilterControlsProps) {
   return (
     <div className="grid w-full grid-cols-1 gap-3 sm:gap-4">
-      <label className="min-w-0 flex flex-col gap-1 lg:col-span-full">
-        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
-          Zone
+      <label className="min-w-0 flex flex-col gap-2 lg:col-span-full">
+        <span className="text-sm font-semibold text-slate-800">
+          Filtrer les éléments de cette vue
         </span>
         <div className="flex min-w-0 overflow-hidden rounded-2xl border border-sky-200/80 bg-white shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] transition focus-within:border-sky-400 focus-within:ring-4 focus-within:ring-sky-400/12">
           <span className="flex items-center justify-center px-3 text-sky-700">
@@ -52,7 +52,7 @@ export function ActionsMapFilterControls({
             value={filters.zoneQuery}
             onChange={(event) => onZoneQueryChange(event.target.value)}
             placeholder="Commune, quartier, arrondissement, lieu..."
-            aria-label="Rechercher une zone ou un lieu"
+            aria-label="Filtrer les éléments de cette vue"
             className="h-11 min-w-0 flex-1 bg-transparent px-0 text-sm font-bold text-slate-950 outline-none placeholder:text-slate-400"
           />
           {filters.zoneQuery ? (
@@ -60,20 +60,20 @@ export function ActionsMapFilterControls({
               type="button"
               onClick={() => onZoneQueryChange("")}
               aria-label="Effacer la recherche de zone"
-              className="flex items-center justify-center px-3 text-slate-500 transition hover:text-slate-950"
+              className="flex min-h-11 min-w-11 items-center justify-center text-slate-500 transition hover:text-slate-950"
             >
               <X size={15} />
             </button>
           ) : null}
         </div>
-        <p className="text-[11px] font-medium leading-snug text-slate-500">
-          Filtre les actions par libellé, quartier, arrondissement ou zone.
+        <p className="text-sm font-medium leading-snug text-slate-500">
+          Recherche locale dans les éléments déjà chargés de cette vue. Ce champ ne géocode pas et ne recherche pas une adresse externe.
         </p>
       </label>
 
       <div className="min-w-0 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(9rem,1fr)_auto]">
         <label className="min-w-0 flex flex-col gap-1">
-          <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
+          <span className="text-sm font-semibold text-slate-800">
             Période
           </span>
           <select
@@ -91,7 +91,7 @@ export function ActionsMapFilterControls({
         <button
           type="button"
           onClick={onReset}
-          className="mt-1 inline-flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-sky-200/80 bg-sky-100 px-4 text-xs font-black uppercase tracking-[0.16em] text-slate-950 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] transition hover:border-sky-300 hover:bg-sky-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-400/20 lg:mt-auto lg:w-auto"
+          className="mt-1 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-sky-200/80 bg-sky-100 px-4 text-sm font-semibold text-slate-950 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] transition hover:border-sky-300 hover:bg-sky-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-sky-400/20 lg:mt-auto lg:w-auto"
         >
           <RotateCcw size={14} />
           Réinitialiser
@@ -99,7 +99,7 @@ export function ActionsMapFilterControls({
       </div>
 
       <div>
-        <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
+        <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
           <SlidersHorizontal size={13} />
           Catégories visibles
         </div>
@@ -114,7 +114,7 @@ export function ActionsMapFilterControls({
                 aria-label={`${category.label}, ${categoryCounts[category.value] ?? 0} action${(categoryCounts[category.value] ?? 0) > 1 ? "s" : ""}${selected ? ", visible" : ", masquée"}`}
                 onClick={() => onCategoryToggle(category.value)}
                 className={[
-                  "inline-flex shrink-0 items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-black uppercase tracking-[0.12em] transition",
+                  "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-2xl border px-3 py-2 text-sm font-semibold transition",
                   selected
                     ? "border-sky-300 bg-sky-200 text-slate-950 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.18)]"
                     : "border-sky-200 bg-white text-slate-700 hover:border-sky-300 hover:text-slate-950",
@@ -125,7 +125,7 @@ export function ActionsMapFilterControls({
                 <span
                   aria-hidden="true"
                   className={[
-                    "inline-flex min-w-6 items-center justify-center rounded-full px-1.5 py-0.5 text-[9px] font-black leading-none",
+                    "inline-flex min-w-6 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold leading-none",
                     selected
                       ? "bg-sky-50 text-slate-950"
                       : "bg-sky-100 text-slate-700",

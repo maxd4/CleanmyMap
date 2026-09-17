@@ -27,7 +27,8 @@ describe("ActionsMapFilterControls", () => {
       }),
     );
 
-    expect(markup).toContain("Zone");
+    expect(markup).toContain("Filtrer les éléments de cette vue");
+    expect(markup).toContain("ne géocode pas");
     expect(markup).toContain("Période");
     expect(markup).toContain("Catégories visibles");
     expect(markup).toContain("Réinitialiser");
