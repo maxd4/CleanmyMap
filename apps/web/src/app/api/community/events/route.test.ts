@@ -151,7 +151,10 @@ describe("GET /api/community/events", () => {
       },
       rsvpCounts: { yes: 2, maybe: 1, no: 0, total: 3 },
       myRsvpStatus: null,
+      canEditOwnOps: false,
     });
+    expect(body.items[0].organizerClerkId).toBeNull();
+    expect(body.items[0].organizer.userId).toBeNull();
     expect(loadCommunityEventRsvpSummariesMock).toHaveBeenCalledWith(
       expect.anything(),
       { eventIds: ["event-1"], userId: null },
@@ -165,7 +168,7 @@ describe("GET /api/community/events", () => {
     );
   });
 
-  it("keeps the connected user's RSVP status in a user-isolated cache", async () => {
+  it("keeps ownership false for another connected account", async () => {
     getSafeAuthSessionMock.mockResolvedValueOnce({
       userId: "user-1",
       clerkReachable: true,
@@ -177,12 +180,29 @@ describe("GET /api/community/events", () => {
 
     expect(response.status).toBe(200);
     expect(body.items[0].myRsvpStatus).toBe("yes");
+    expect(body.items[0].canEditOwnOps).toBe(false);
     expect(response.headers.get("cache-control")).toContain("private");
     expect(unstableCacheMock).toHaveBeenCalledWith(
       expect.any(Function),
       ["community-events", "user:user-1|limit:120|event:all"],
       expect.objectContaining({ tags: ["community-events:user-1", "community-events"] }),
     );
+  });
+
+  it("derives ownership true only for the current organizer", async () => {
+    getSafeAuthSessionMock.mockResolvedValueOnce({
+      userId: "organizer-1",
+      clerkReachable: true,
+      state: "authenticated",
+    });
+
+    const response = await GET(makeGetRequest());
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.items[0].canEditOwnOps).toBe(true);
+    expect(body.items[0].organizerClerkId).toBeNull();
+    expect(body.items[0].organizer.userId).toBeNull();
   });
 });
 

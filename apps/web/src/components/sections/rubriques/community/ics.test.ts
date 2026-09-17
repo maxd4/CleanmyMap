@@ -7,6 +7,7 @@ function makeEvent(overrides: Partial<CommunityEventItem> = {}): CommunityEventI
  id:"evt-42",
  createdAt:"2026-01-01T00:00:00.000Z",
  organizerClerkId:"user_123",
+ canEditOwnOps:false,
  title:"Nettoyage berges",
  eventDate:"2026-07-10",
  locationLabel:"Canal Saint-Martin",

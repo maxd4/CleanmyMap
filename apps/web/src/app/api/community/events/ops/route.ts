@@ -83,6 +83,7 @@ function toEventResponseItem(
   totalCount: number;
   myRsvpStatus: "yes" | "maybe" | "no" | null;
  } | null,
+ canEditOwnOps: boolean,
 ) {
  const parsedDescription = parseCommunityEventDescription(event.description);
  const ops = parsedDescription.ops ?? defaultCommunityEventOps();
@@ -91,6 +92,7 @@ function toEventResponseItem(
  id: event.id,
  createdAt: event.created_at,
  organizerClerkId: event.organizer_clerk_id,
+ canEditOwnOps,
  title: event.title,
  eventDate: event.event_date,
  locationLabel: event.location_label,
@@ -287,6 +289,7 @@ export async function POST(request: Request) {
  const item = toEventResponseItem(
   updated.data as CommunityEventRow,
   summaries[0] ?? null,
+  isOrganizer,
  );
 
  if (userId) {

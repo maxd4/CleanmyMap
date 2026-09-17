@@ -100,6 +100,7 @@ export async function GET(request: Request) {
  id: event.id,
  createdAt: event.created_at,
  organizerClerkId: event.organizer_clerk_id,
+ canEditOwnOps: false,
  title: event.title,
  eventDate: event.event_date,
  locationLabel: event.location_label,

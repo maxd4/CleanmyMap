@@ -103,6 +103,7 @@ const events = [
     id: "event-1",
     createdAt: "2026-03-01T08:00:00.000Z",
     organizerClerkId: "org-1",
+    canEditOwnOps: false,
     title: "Nettoyage",
     eventDate: "2026-03-20",
     locationLabel: "Canal",
