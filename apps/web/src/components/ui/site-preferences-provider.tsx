@@ -18,6 +18,7 @@ import {
   type Locale,
   type ThemeMode,
 } from "@/lib/ui/preferences";
+import { MotionConfig } from "framer-motion";
 import {
   removeLocalStorageEntry,
 } from "@/lib/storage/local-storage";
@@ -226,7 +227,9 @@ export function SitePreferencesProvider({
 
   return (
     <SitePreferencesContext.Provider value={value}>
-      {children}
+      <MotionConfig reducedMotion={displayMode === "sobre" ? "always" : "user"}>
+        {children}
+      </MotionConfig>
     </SitePreferencesContext.Provider>
   );
 }

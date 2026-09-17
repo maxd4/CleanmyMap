@@ -48,7 +48,7 @@ export function QuizSchoolPicker({
           </button>
         </div>
         <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
+          initial={{ scale: 0.95, opacity: 1 }}
           animate={{ scale: 1, opacity: 1 }}
           className="mx-auto inline-flex items-center gap-3 rounded-full border border-amber-100 bg-amber-50 px-6 py-2"
         >
@@ -116,7 +116,7 @@ export function QuizSchoolPicker({
           <motion.button
             key={level}
             type="button"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 1, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.08 }}
             onClick={() => setSelectedLevel(level)}

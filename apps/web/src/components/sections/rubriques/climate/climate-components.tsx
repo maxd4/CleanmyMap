@@ -189,7 +189,7 @@ export function ClimateDecisionList({ decisions, fr }: { decisions: ClimateDecis
         {decisions.map((decision, i) => (
           <motion.div
             key={i}
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 1, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.1 }}
             className="p-6 rounded-3xl border border-white/5 bg-slate-900/20 hover:bg-white/5 transition-colors group cursor-default"
@@ -249,6 +249,7 @@ export function ClimateMethodology({ methods, limits, version, fr }: { methods: 
       <AnimatePresence>
         {isOpen && (
           <motion.div
+            data-motion-role="conditional"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}

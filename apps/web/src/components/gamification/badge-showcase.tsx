@@ -44,7 +44,7 @@ export function BadgeShowcase({ badges }: { badges: string[] }) {
  return (
  <motion.div
  key={badge}
- initial={{ scale: 0.8, opacity: 0 }}
+ initial={{ scale: 0.8, opacity: 1 }}
  animate={{ scale: 1, opacity: 1 }}
  transition={{ delay: index * 0.1 }}
  className="group flex cursor-help flex-col items-center justify-center p-2"

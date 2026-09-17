@@ -260,7 +260,7 @@ export function QuizSessionPanel({
       <AnimatePresence mode="wait">
         <motion.div
           key={question.id}
-        initial={{ opacity: 0, scale: 0.98 }}
+        initial={{ opacity: 1, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 1.02 }}
           className={cn(
@@ -299,7 +299,7 @@ export function QuizSessionPanel({
 
           {showAnswer ? (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 1, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="relative z-10 mt-10 space-y-6"
               role="status"
@@ -439,7 +439,7 @@ export function QuizSessionPanel({
 
       {score > 0 ? (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 1, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-700 p-8 text-white shadow-2xl md:p-10"
         >

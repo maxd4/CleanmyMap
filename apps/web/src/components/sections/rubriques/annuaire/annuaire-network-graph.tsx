@@ -96,6 +96,7 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
             {links.map((link) => (
               <motion.line
                 key={link.id}
+                data-motion-role="decorative"
                 initial={{ pathLength: 0, opacity: 0 }}
                 animate={{ pathLength: 1, opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -127,6 +128,7 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
           return (
                 <motion.g
                   key={node.id}
+                  data-motion-role="decorative"
                   layout
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}

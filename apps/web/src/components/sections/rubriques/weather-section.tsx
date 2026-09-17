@@ -12,7 +12,7 @@ import { useKitData } from "./use-kit-data";
 import { useWeatherData } from "./use-weather-data";
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 18 },
+  hidden: { opacity: 1, y: 18 },
   visible: { opacity: 1, y: 0 },
 };
 

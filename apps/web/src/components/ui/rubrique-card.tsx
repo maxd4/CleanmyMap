@@ -20,6 +20,27 @@ export interface RubriqueCardProps extends Omit<HTMLMotionProps<"div">, "childre
 }
 
 /**
+ * A RubriqueCard is a content surface, so its first paint must not depend on
+ * Framer Motion mounting successfully. Keep the requested transform/scale but
+ * make an accidental opacity: 0 initial state visible by default.
+ */
+export function normalizeRubriqueCardInitial(
+  initial: HTMLMotionProps<"div">["initial"],
+): HTMLMotionProps<"div">["initial"] {
+  if (
+    !initial ||
+    typeof initial !== "object" ||
+    Array.isArray(initial) ||
+    !("opacity" in initial) ||
+    initial.opacity !== 0
+  ) {
+    return initial;
+  }
+
+  return { ...initial, opacity: 1 };
+}
+
+/**
  * Composant standard pour les grands blocs thématiques (Dashboard, Connect, etc.)
  * Assure une cohérence visuelle sur toute l'application.
  */
@@ -33,6 +54,7 @@ export function RubriqueCard({
   withHover = true,
   withTopBar = true,
   watermarkSize = 120,
+  initial,
   ...props
 }: RubriqueCardProps) {
   return (
@@ -44,6 +66,7 @@ export function RubriqueCard({
         withHover && "cmm-rubrique-card--interactive",
         className,
       )}
+      initial={normalizeRubriqueCardInitial(initial)}
       {...props}
     >
       {/* Barre d'accentuation dynamique */}

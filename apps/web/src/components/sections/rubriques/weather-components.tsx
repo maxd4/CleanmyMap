@@ -207,7 +207,7 @@ export const WeatherRiskAlert = memo(function WeatherRiskAlert({ currentRisk, fr
 
   return (
     <RubriqueCard
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 1, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       themeColor={isDanger ? "rose" : isWarning ? "amber" : "emerald"}
       withTopBar={false}
@@ -312,7 +312,7 @@ export const WeatherForecast = memo(function WeatherForecast({
           .map((point, i) => (
           <RubriqueCard
             key={i}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 1, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
             themeColor={point.temp > 20 ? "amber" : "blue"}
@@ -363,7 +363,7 @@ export const WeatherActionWindows = memo(function WeatherActionWindows({
           {windows.recommended.map((w, i) => (
             <motion.div
               key={`recommended-${i}`}
-              initial={{ opacity: 0, x: 20 }}
+                initial={{ opacity: 1, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               className="p-6 rounded-[2rem] border border-white/5 bg-slate-900/20 hover:bg-white/5 transition-[background-color,border-color] flex items-center justify-between shadow-xl"
             >
@@ -406,7 +406,7 @@ export const WeatherActionWindows = memo(function WeatherActionWindows({
           {windows.avoid.map((w, i) => (
             <motion.div
               key={`avoid-${i}`}
-              initial={{ opacity: 0, x: 20 }}
+                initial={{ opacity: 1, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               className="p-6 rounded-[2rem] border border-white/5 bg-slate-900/20 hover:bg-white/5 transition-[background-color,border-color] flex items-center justify-between shadow-xl opacity-80"
             >
@@ -492,7 +492,7 @@ export const KitConfiguration = memo(function KitConfiguration({
             {packItems.map((item, i) => (
               <motion.div
                 key={item}
-                initial={{ opacity: 0, x: -10 }}
+                initial={{ opacity: 1, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
                 className="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 group hover:border-amber-500/20 transition-[border-color,background-color]"

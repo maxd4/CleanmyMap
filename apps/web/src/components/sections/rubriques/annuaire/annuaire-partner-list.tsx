@@ -28,7 +28,7 @@ export function AnnuairePartnerList({
         initial="hidden"
         animate="visible"
         variants={{
-          hidden: { opacity: 0 },
+          hidden: { opacity: 1 },
           visible: {
             opacity: 1,
             transition: { staggerChildren: 0.1 }
@@ -39,7 +39,7 @@ export function AnnuairePartnerList({
           <motion.div 
             key={actor.id} 
             variants={{
-              hidden: { opacity: 0, x: -30, filter: "blur(10px)" },
+              hidden: { opacity: 1, x: -30, filter: "blur(10px)" },
               visible: { 
                 opacity: 1, 
                 x: 0, 

@@ -41,7 +41,7 @@ function CommunityRemindersCard(props: CommunityRemindersCardProps) {
           {reminders.map((reminder, i) => (
             <motion.li
               key={reminder.eventId}
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 1, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.1 }}
               className="group/item relative rounded-3xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] p-6 transition-all duration-300"
@@ -91,7 +91,7 @@ function CommunityRemindersCard(props: CommunityRemindersCardProps) {
 
           {reminders.length === 0 ? (
             <motion.li 
-              initial={{ opacity: 0 }}
+              initial={{ opacity: 1 }}
               animate={{ opacity: 1 }}
               className="py-12 text-center rounded-3xl border border-dashed border-white/10"
             >

@@ -25,7 +25,7 @@ export function SustainableGoalsInteractive() {
  return (
  <motion.button
  key={goal.id}
- initial={{ opacity: 0, scale: 0.8 }}
+ initial={{ opacity: 1, scale: 0.8 }}
  animate={{ opacity: 1, scale: 1 }}
  transition={{ delay: index * 0.05 }}
  onClick={() => setSelectedGoal(goal)}
@@ -72,7 +72,7 @@ export function SustainableGoalsInteractive() {
  <AnimatePresence>
  {hoveredGoal?.id === goal.id && selectedGoal?.id !== goal.id && (
  <motion.div
- initial={{ opacity: 0, y: 10 }}
+ initial={{ opacity: 1, y: 10 }}
  animate={{ opacity: 1, y: 0 }}
  exit={{ opacity: 0, y: 10 }}
  className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-slate-900 text-white cmm-text-caption px-3 py-2 rounded-lg whitespace-nowrap z-20"
@@ -91,14 +91,14 @@ export function SustainableGoalsInteractive() {
  <AnimatePresence>
  {selectedGoal && (
  <motion.div
- initial={{ opacity: 0 }}
+ initial={{ opacity: 1 }}
  animate={{ opacity: 1 }}
  exit={{ opacity: 0 }}
  className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
  onClick={() => setSelectedGoal(null)}
  >
  <motion.div
- initial={{ scale: 0.9, opacity: 0 }}
+ initial={{ scale: 0.9, opacity: 1 }}
  animate={{ scale: 1, opacity: 1 }}
  exit={{ scale: 0.9, opacity: 0 }}
  className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"

@@ -111,7 +111,7 @@ export function RgpdRequestForm() {
   if (status === "success") {
     return (
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 1, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="relative overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white/88 p-8 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.35)] backdrop-blur-2xl"
       >
@@ -152,7 +152,7 @@ export function RgpdRequestForm() {
   if (status === "draft") {
     return (
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 1, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="relative overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white/88 p-8 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.35)] backdrop-blur-2xl"
       >
@@ -191,7 +191,7 @@ export function RgpdRequestForm() {
 
   return (
     <motion.form 
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 1, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       onSubmit={handleSubmit} 
       className="group relative space-y-6 rounded-[3rem] border border-slate-200/70 bg-white/88 p-10 shadow-[0_24px_80px_-55px_rgba(15,23,42,0.38)] backdrop-blur-2xl"
@@ -320,7 +320,7 @@ export function RgpdRequestForm() {
       <AnimatePresence>
         {errorMessage && (
           <motion.div 
-            initial={{ opacity: 0, y: -10 }} 
+          initial={{ opacity: 1, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700"
           >

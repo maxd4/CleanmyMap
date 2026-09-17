@@ -10,6 +10,38 @@ L’invariant de toute animation progressive est `visible par défaut / fail-ope
 le contenu métier ne dépend jamais du démarrage d’un runtime d’animation pour
 être consultable.
 
+Une animation ne doit jamais être nécessaire pour rendre visible un contenu
+essentiel.
+
+### Exemples de visibilité
+
+Un état initial canonique conserve l’information visible et n’anime que son
+déplacement ou sa mise en forme :
+
+```tsx
+<motion.article
+  initial={{ opacity: 1, y: 20 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  viewport={{ once: true }}
+>
+  Contenu essentiel
+</motion.article>
+```
+
+Le contrat interdit notamment :
+
+```tsx
+<motion.article initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1 }}>
+  Contenu essentiel dépendant de Motion
+</motion.article>
+```
+
+Les `opacity: 0` initiaux restent réservés aux éléments identifiés par
+`data-motion-role="overlay"`, `"conditional"`, `"transient"` ou
+`"decorative"` : backdrop/dialogue conditionnel, toast, animation de sortie
+ou décoration qui ne porte pas l’information. `exit={{ opacity: 0 }}` reste
+autorisé lorsqu’il ne masque pas un contenu initial nécessaire.
+
 ## Modes d’affichage
 
 - `exhaustif` conserve une motion complète mais bornée lorsque le mouvement

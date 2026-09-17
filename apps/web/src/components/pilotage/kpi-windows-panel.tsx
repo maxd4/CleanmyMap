@@ -70,7 +70,7 @@ export function KpiWindowsPanel({
 
   return (
     <motion.section 
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 1, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="rounded-[3.5rem] border border-white/10 bg-slate-900/40 p-12 shadow-2xl backdrop-blur-3xl"
     >
@@ -95,7 +95,7 @@ export function KpiWindowsPanel({
           return (
             <motion.article
               key={windowKey}
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 1, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.1 }}
               className="group flex flex-col rounded-[2.5rem] border border-white/5 bg-white/[0.02] p-8 transition-[background-color,border-color] hover:bg-white/[0.05] hover:border-white/10 shadow-inner"

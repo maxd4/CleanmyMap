@@ -147,7 +147,7 @@ export function RecyclingQuestionAssistant() {
         <AnimatePresence mode="wait">
           <motion.div
             key={question ? answer.title : "empty"}
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 1, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             className={`flex flex-col rounded-[2rem] border p-8 shadow-inner transition-colors duration-500 ${classes.shell}`}
@@ -174,7 +174,7 @@ export function RecyclingQuestionAssistant() {
               {answer.bullets.map((bullet, i) => (
                 <motion.li 
                   key={bullet} 
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 1, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.1 + i * 0.05 }}
                   className="flex gap-3 text-sm cmm-text-secondary"

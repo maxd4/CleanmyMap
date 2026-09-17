@@ -79,7 +79,7 @@ export function RadialProgressGauge({
         {/* Center Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           <motion.span 
-            initial={{ opacity: 0, scale: 0.5 }}
+            initial={{ opacity: 1, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5, duration: 0.5 }}
             className="text-4xl font-black cmm-text-primary tracking-tighter"

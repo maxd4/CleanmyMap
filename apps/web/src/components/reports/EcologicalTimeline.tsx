@@ -46,7 +46,7 @@ export function EcologicalTimeline({ actions }: EcologicalTimelineProps) {
       {sortedActions.map((action, idx) => (
         <motion.div
           key={action.id}
-          initial={{ opacity: 0, x: idx % 2 === 0 ? -20 : 20 }}
+          initial={{ opacity: 1, x: idx % 2 === 0 ? -20 : 20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: idx * 0.1 }}

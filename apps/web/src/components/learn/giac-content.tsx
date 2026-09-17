@@ -48,7 +48,7 @@ export function GIECContent() {
  {GIEC_REPORTS.map((report, index) => (
  <motion.button
  key={report.id}
- initial={{ opacity: 0, y: 20 }}
+ initial={{ opacity: 1, y: 20 }}
  animate={{ opacity: 1, y: 0 }}
  transition={{ delay: index * 0.1 }}
  onClick={() => setSelectedReport(report)}
@@ -105,14 +105,14 @@ export function GIECContent() {
  <AnimatePresence>
  {selectedReport && (
  <motion.div
- initial={{ opacity: 0 }}
+ initial={{ opacity: 1 }}
  animate={{ opacity: 1 }}
  exit={{ opacity: 0 }}
  className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
  onClick={() => setSelectedReport(null)}
  >
  <motion.div
- initial={{ scale: 0.9, opacity: 0 }}
+ initial={{ scale: 0.9, opacity: 1 }}
  animate={{ scale: 1, opacity: 1 }}
  exit={{ scale: 0.9, opacity: 0 }}
  className="bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto"
@@ -157,7 +157,7 @@ export function GIECContent() {
  return (
  <motion.div
  key={index}
- initial={{ opacity: 0, x: -20 }}
+ initial={{ opacity: 1, x: -20 }}
  animate={{ opacity: 1, x: 0 }}
  transition={{ delay: index * 0.1 }}
  className="p-6 rounded-2xl bg-slate-50 border border-slate-200"

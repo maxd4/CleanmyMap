@@ -35,6 +35,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
         <>
           {/* Backdrop with progressive blur */}
           <motion.div
+            data-motion-role="overlay"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -44,6 +45,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
 
           {/* Slide-over Panel - Premium Glass Architecture */}
           <motion.div
+            data-motion-role="overlay"
             initial={{ x: "110%", opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "110%", opacity: 0 }}
@@ -265,6 +267,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                   {entry.contributionTypes.map((type, idx) => (
                     <motion.div 
                       key={type}
+                      data-motion-role="overlay"
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.1 + idx * 0.05 }}

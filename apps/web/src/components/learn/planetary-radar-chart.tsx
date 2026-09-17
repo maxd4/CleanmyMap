@@ -107,6 +107,7 @@ export function PlanetaryRadarChart({ boundaries, selectedId, onSelect }: Planet
               <motion.path
                 d={pathData}
                 fill={boundary.color}
+                data-motion-role="decorative"
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ 
                   scale: 1, 
@@ -125,7 +126,7 @@ export function PlanetaryRadarChart({ boundaries, selectedId, onSelect }: Planet
                 y={iconY - 22}
                 width="44"
                 height="44"
-                initial={{ opacity: 0 }}
+                initial={{ opacity: 1 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 + i * 0.05 }}
               >

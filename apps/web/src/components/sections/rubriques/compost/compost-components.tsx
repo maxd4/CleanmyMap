@@ -41,7 +41,7 @@ export const CompostReflexGrid = memo(function CompostReflexGrid({
         return (
           <motion.div
             key={idx}
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 1, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: idx * 0.1, duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
@@ -89,7 +89,7 @@ export const CompostRulesList = memo(function CompostRulesList({
       {rules.map((rule, idx) => (
         <RubriqueCard 
           key={idx} 
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 1, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ delay: idx * 0.1 }}
@@ -108,7 +108,7 @@ export const CompostRulesList = memo(function CompostRulesList({
             {rule.items.map((item, i) => (
               <motion.li 
                 key={i} 
-                initial={{ opacity: 0, x: -10 }}
+                initial={{ opacity: 1, x: -10 }}
                 whileInView={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 + (i * 0.05) }}
                 className="flex items-start gap-4 text-slate-300 group/item"
@@ -141,7 +141,7 @@ export const CompostStepCards = memo(function CompostStepCards({
       {steps.map((step, idx) => (
         <motion.div 
           key={idx} 
-          initial={{ opacity: 0, x: -20 }}
+        initial={{ opacity: 1, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ delay: idx * 0.1 }}
@@ -177,7 +177,7 @@ export const OfficialMapsList = memo(function OfficialMapsList({
           href={link.href}
           target="_blank"
           rel="noreferrer"
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 1, y: 10 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: idx * 0.05 }}
@@ -220,7 +220,7 @@ export const SelectedPointsGrid = memo(function SelectedPointsGrid({
       {points.map((point, idx) => (
         <RubriqueCard 
           key={point.id} 
-          initial={{ opacity: 0, scale: 0.98 }}
+          initial={{ opacity: 1, scale: 0.98 }}
           whileInView={{ opacity: 1, scale: 1 }}
           transition={{ delay: idx * 0.05 }}
           themeColor="emerald"

@@ -148,7 +148,7 @@ export function PromotionRequestForm({ currentRole, onSubmitted }: PromotionRequ
   if (options.length === 0) {
     return (
       <motion.section 
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 1, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         className="relative overflow-hidden rounded-[2.5rem] border border-amber-500/20 bg-amber-500/5 backdrop-blur-3xl p-8"
       >
@@ -181,7 +181,7 @@ export function PromotionRequestForm({ currentRole, onSubmitted }: PromotionRequ
 
   return (
     <motion.section 
-      initial={{ opacity: 0, scale: 0.98 }}
+      initial={{ opacity: 1, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       className="relative overflow-hidden rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl group"
     >
@@ -276,7 +276,7 @@ export function PromotionRequestForm({ currentRole, onSubmitted }: PromotionRequ
             />
             <AnimatePresence>
                {motivationError && (
-                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                 <motion.div initial={{ opacity: 1, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                     <InlineFieldError message={motivationError} />
                  </motion.div>
                )}
@@ -330,7 +330,7 @@ export function PromotionRequestForm({ currentRole, onSubmitted }: PromotionRequ
           <AnimatePresence>
             {submitState === "success" && (
               <motion.div 
-                initial={{ opacity: 0, y: 10 }} 
+                initial={{ opacity: 1, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-4"
               >
@@ -346,7 +346,7 @@ export function PromotionRequestForm({ currentRole, onSubmitted }: PromotionRequ
             )}
 
             {error && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+              <motion.div initial={{ opacity: 1, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                 {error.kind === "permission" ? (
                   <PermissionErrorState
                     className="mt-2"
