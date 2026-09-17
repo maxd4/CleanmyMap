@@ -9,8 +9,6 @@ import {
   FileText,
   MapPin,
   Megaphone,
-  MessageSquare,
-  Zap,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -64,8 +62,6 @@ export function ChatMessageItem({
 }: ChatMessageItemProps) {
   const isLight = tone === "light";
   const isMe = message.sender_id === userId;
-  const isActionRelated = /collecte|nettoyage|ramassage|déchets|pollution|bravo/i.test(message.content);
-  const isQuestionRelated = /\?|comment|pourquoi|où/i.test(message.content);
   const safeAttachmentUrl = isSafeChatAttachmentUrl(message.attachment_url)
     ? message.attachment_url
     : null;
@@ -83,6 +79,9 @@ export function ChatMessageItem({
   const topic = getDiscussionTopic(message.channel_type, message.topic_id);
   const isAnnouncement = message.message_kind === "announcement";
   const isPoll = message.message_kind === "poll";
+  const hasActionReference = Boolean(message.action_id);
+  const hasStructuredCard = isAnnouncement || isPoll || hasActionReference;
+  const hasStructuredMetadata = Boolean(topic || isAnnouncement || isPoll || hasActionReference);
   const pollOptions = message.poll_options ?? [];
 
   return (
@@ -96,19 +95,26 @@ export function ChatMessageItem({
     >
       <div 
         className={cn(
-          "w-full rounded-[1.5rem] border p-4 transition-all duration-300",
+          "w-full transition-all duration-300",
+          hasStructuredCard
+            ? "rounded-[1.5rem] border p-4 shadow-sm"
+            : "border-b pb-4",
           isHighlighted ? "ring-2 ring-pink-400 ring-offset-2 ring-offset-rose-50" : "",
-          isAnnouncement || isPoll
+          hasStructuredCard
             ? isLight
               ? isPoll
                 ? "border-pink-200 bg-pink-50/30 shadow-sm"
-                : "border-rose-200 bg-rose-50/30 shadow-sm"
+                : hasActionReference
+                  ? "border-sky-200 bg-sky-50/40"
+                  : "border-rose-200 bg-rose-50/30"
               : isPoll
                 ? "border-pink-400/20 bg-pink-500/5 shadow-sm"
-                : "border-rose-400/20 bg-rose-500/5 shadow-sm"
+                : hasActionReference
+                  ? "border-sky-400/20 bg-sky-500/5"
+                  : "border-rose-400/20 bg-rose-500/5"
             : isLight
-              ? "bg-white border-indigo-100 shadow-sm"
-              : "bg-slate-800/80 border-slate-700 shadow-sm",
+              ? "border-slate-200/80"
+              : "border-slate-700/80",
         )}
       >
         {/* Header */}
@@ -149,34 +155,30 @@ export function ChatMessageItem({
             <ChatActionReferenceCard actionId={message.action_id} tone={tone} />
           ) : null}
 
-          {/* Tags */}
-          <div className="flex flex-wrap gap-2 mb-3">
-            {isAnnouncement && (
-              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-black uppercase tracking-wider ${isLight ? "bg-rose-100 text-rose-700" : "bg-rose-500/20 text-rose-300"}`}>
-                <Megaphone size={10} /> Annonce / Relai
-              </span>
-            )}
-            {isPoll && (
-              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-black uppercase tracking-wider ${isLight ? "bg-pink-100 text-pink-700" : "bg-pink-500/20 text-pink-300"}`}>
-                <BarChart3 size={10} /> Sondage
-              </span>
-            )}
-            {topic && (
-              <span className={`inline-flex items-center rounded-md px-2 py-1 cmm-text-caption font-bold ${isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300"}`}>
-                {topic.label}
-              </span>
-            )}
-            {isActionRelated && (
-              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-bold ${isLight ? "bg-rose-50 text-rose-600" : "bg-rose-500/20 text-rose-300"}`}>
-                <Zap size={10} /> Nettoyage
-              </span>
-            )}
-            {isQuestionRelated && (
-              <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-bold ${isLight ? "bg-sky-50 text-sky-600" : "bg-sky-500/20 text-sky-300"}`}>
-                <MessageSquare size={10} /> Question
-              </span>
-            )}
-          </div>
+          {hasStructuredMetadata ? (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {isAnnouncement ? (
+                <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-black uppercase tracking-wider ${isLight ? "bg-rose-100 text-rose-700" : "bg-rose-500/20 text-rose-300"}`}>
+                  <Megaphone size={10} aria-hidden="true" /> Annonce / Relai
+                </span>
+              ) : null}
+              {isPoll ? (
+                <span className={`inline-flex items-center gap-1 rounded-md px-2 py-1 cmm-text-caption font-black uppercase tracking-wider ${isLight ? "bg-pink-100 text-pink-700" : "bg-pink-500/20 text-pink-300"}`}>
+                  <BarChart3 size={10} aria-hidden="true" /> Sondage
+                </span>
+              ) : null}
+              {topic ? (
+                <span className={`inline-flex items-center rounded-md px-2 py-1 cmm-text-caption font-bold ${isLight ? "bg-indigo-50 text-indigo-600" : "bg-indigo-500/20 text-indigo-300"}`}>
+                  {topic.label}
+                </span>
+              ) : null}
+              {hasActionReference ? (
+                <span className={`inline-flex items-center rounded-md px-2 py-1 cmm-text-caption font-bold ${isLight ? "bg-sky-50 text-sky-700" : "bg-sky-500/20 text-sky-300"}`}>
+                  Action
+                </span>
+              ) : null}
+            </div>
+          ) : null}
 
           {isAnnouncement && message.related_event ? (
             <div className={`mb-3 rounded-xl border p-3 ${isLight ? "border-rose-100 bg-rose-50/60" : "border-rose-400/20 bg-rose-500/10"}`}>

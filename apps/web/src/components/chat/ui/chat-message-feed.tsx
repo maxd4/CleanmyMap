@@ -1,5 +1,4 @@
 import type { RefObject } from "react";
-import type { PostgrestError } from "@supabase/supabase-js";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatFeedState } from "../chat-feed-state";
@@ -26,7 +25,7 @@ export type ChatMessageFeedProps = {
   targetMessageId: string | null;
   targetStatus: "found" | "unavailable" | undefined;
   feedState: ChatFeedState;
-  messagesError: Error | PostgrestError | null;
+  onRetryMessages: () => void;
   messages: ChatMessage[];
   userId?: string;
   tone: "light" | "dark";
@@ -34,7 +33,6 @@ export type ChatMessageFeedProps = {
   pollVoteStates: Record<string, PollVoteState>;
   highlightedMessageId: string | null;
   emptyState: ChatEmptyStateCopy;
-  locale: "fr" | "en";
   activeChannelType: ChatChannelType;
   selectedRecipientId?: string | null;
   onStarterPrompt: (prompt: string) => void;
@@ -50,7 +48,7 @@ export function ChatMessageFeed({
   targetMessageId,
   targetStatus,
   feedState,
-  messagesError,
+  onRetryMessages,
   messages,
   userId,
   tone,
@@ -58,7 +56,6 @@ export function ChatMessageFeed({
   pollVoteStates,
   highlightedMessageId,
   emptyState,
-  locale,
   activeChannelType,
   selectedRecipientId,
   onStarterPrompt,
@@ -87,7 +84,7 @@ export function ChatMessageFeed({
           </button>
           {loadPreviousError ? (
             <p className="text-center text-xs text-rose-700" role="alert">
-              {loadPreviousError}
+              Impossible de charger les messages précédents.
             </p>
           ) : null}
         </div>
@@ -102,12 +99,11 @@ export function ChatMessageFeed({
       ) : null}
       {feedState === "loading" && <ChatLoadingState tone={tone} />}
       {feedState === "degraded" && (
-        <ChatDegradedState error={messagesError} tone={tone} />
+        <ChatDegradedState onRetry={onRetryMessages} tone={tone} />
       )}
       {feedState === "empty" && (
         <ChatEmptyState
           emptyState={emptyState}
-          locale={locale}
           activeChannelType={activeChannelType}
           selectedRecipientId={selectedRecipientId}
           onStarterPrompt={onStarterPrompt}

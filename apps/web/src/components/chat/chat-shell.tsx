@@ -246,7 +246,6 @@ export function ChatShell({
 
   const {
     messages,
-    messagesError,
     hasMoreMessages,
     isLoadingPrevious,
     loadPreviousError,
@@ -877,7 +876,7 @@ export function ChatShell({
                 targetMessageId={targetMessageId}
                 targetStatus={targetStatus}
                 feedState={feedState}
-                messagesError={messagesError}
+                onRetryMessages={() => void mutateMessages()}
                 messages={messages}
                 userId={userId}
                 tone={isLight ? "light" : "dark"}
@@ -885,7 +884,6 @@ export function ChatShell({
                 pollVoteStates={pollVoteStates}
                 highlightedMessageId={highlightedMessageId}
                 emptyState={discussionGuidance}
-                locale={locale}
                 activeChannelType={activeChannelType}
                 selectedRecipientId={selectedRecipient?.id}
                 onStarterPrompt={handleStarterPrompt}

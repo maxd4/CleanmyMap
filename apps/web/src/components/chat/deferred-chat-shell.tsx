@@ -1,22 +1,32 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { MessageSquare } from "lucide-react";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import type { ChatShellProps } from "@/components/chat/chat-shell";
+
+function ChatDeferredState({ fullHeight }: { fullHeight: boolean }) {
+  return (
+    <div className={`flex items-center justify-center rounded-[3rem] border border-rose-100/70 bg-rose-50/40 ${fullHeight ? "h-full min-h-0" : "h-[750px]"}`} role="status" aria-live="polite">
+      <div className="space-y-3 p-6 text-center">
+        <MessageSquare size={28} className="mx-auto text-rose-400" aria-hidden="true" />
+        <p className="text-sm font-bold text-slate-700">
+          La conversation se prépare…
+        </p>
+        <p className="cmm-text-caption text-slate-500">
+          Elle sera disponible dans un instant.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 const DeferredChatShellComponent = dynamic(
   () => import("@/components/chat/chat-shell").then((module) => module.ChatShell),
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full min-h-0 items-center justify-center rounded-[3rem] border border-white/10 bg-slate-950/30">
-        <div className="space-y-3 text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-pink-500/20 border-t-pink-500" />
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-            Chargement du chat...
-          </p>
-        </div>
-      </div>
+      <ChatDeferredState fullHeight />
     ),
   },
 );
@@ -31,14 +41,7 @@ export function DeferredChatShell(props: ChatShellProps) {
       {isInView ? (
         <DeferredChatShellComponent {...props} />
       ) : (
-        <div className={`flex items-center justify-center rounded-[3rem] border border-white/10 bg-slate-950/30 ${props.fullHeight ? "h-full min-h-0" : "h-[750px]"}`}>
-          <div className="space-y-3 text-center">
-            <div className="mx-auto h-12 w-12 animate-pulse rounded-full border-2 border-pink-500/20" />
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
-              Le chat se charge à l&apos;approche de la section.
-            </p>
-          </div>
-        </div>
+        <ChatDeferredState fullHeight={props.fullHeight ?? false} />
       )}
     </div>
   );

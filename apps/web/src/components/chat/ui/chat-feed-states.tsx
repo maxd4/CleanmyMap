@@ -1,7 +1,6 @@
 import { MessageSquare } from "lucide-react";
 import type { ChatEmptyStateCopy } from "../chat-shell.utils";
 import type { ChatChannelType } from "@/lib/chat/channels";
-import type { PostgrestError } from "@supabase/supabase-js";
 
 type ChatLoadingStateProps = {
   count?: number;
@@ -14,7 +13,7 @@ export function ChatLoadingState({ count = 3, tone = "dark" }: ChatLoadingStateP
     <div className="space-y-8 p-4">
       {[...Array(count)].map((_, i) => (
         <div key={i} className="flex items-start gap-4 animate-pulse">
-          <div className={`w-10 h-10 rounded-2xl ${isLight ? "bg-rose-100" : "bg-pink-100 dark:bg-slate-800"}`} />
+          <div className={`h-10 w-10 rounded-2xl ${isLight ? "bg-rose-100" : "bg-pink-100 dark:bg-slate-800"}`} />
           <div className="flex-1 space-y-3">
             <div className={`h-3 w-32 rounded-full ${isLight ? "bg-rose-100" : "bg-pink-100 dark:bg-slate-800"}`} />
             <div className={`h-12 w-full rounded-[1.5rem] ${isLight ? "bg-white border border-rose-100" : "bg-pink-50 dark:bg-slate-900"}`} />
@@ -26,26 +25,28 @@ export function ChatLoadingState({ count = 3, tone = "dark" }: ChatLoadingStateP
 }
 
 type ChatDegradedStateProps = {
-  error: Error | PostgrestError | null;
+  onRetry: () => void;
   tone?: "light" | "dark";
 };
 
-export function ChatDegradedState({ error, tone = "dark" }: ChatDegradedStateProps) {
+export function ChatDegradedState({ onRetry, tone = "dark" }: ChatDegradedStateProps) {
   const isLight = tone === "light";
   return (
-    <div className="h-full flex items-center p-8">
-      <div className={`w-full rounded-[2rem] border p-6 text-center ${isLight ? "border-rose-200 bg-rose-50" : "border-rose-200 bg-rose-50 dark:bg-rose-950/20"}`}>
-        <p className={`text-sm font-black uppercase tracking-widest mb-2 ${isLight ? "text-rose-700" : "text-rose-900 dark:text-rose-400"}`}>
-          Erreur de Flux
+    <div className="flex h-full items-center justify-center p-8" role="alert">
+      <div className={`w-full max-w-md rounded-2xl border p-6 text-center ${isLight ? "border-rose-200 bg-rose-50" : "border-rose-200 bg-rose-50 dark:bg-rose-950/20"}`}>
+        <p className={`text-sm font-black ${isLight ? "text-rose-700" : "text-rose-900 dark:text-rose-400"}`}>
+          Impossible de charger les messages.
         </p>
-        <p className={`text-xs font-bold mb-1 ${isLight ? "text-rose-700" : "text-rose-700 dark:text-rose-500"}`}>
-          {error?.message || "Erreur inconnue"}
+        <p className={`mt-2 cmm-text-small ${isLight ? "text-rose-600" : "text-rose-600 dark:text-rose-400"}`}>
+          Réessayez pour actualiser cette conversation.
         </p>
-        <p className={`cmm-text-caption opacity-80 ${isLight ? "text-rose-600" : "text-rose-600 dark:text-rose-400"}`}>
-          {error?.message?.includes("profiles")
-            ? "Vérifiez que la migration des profils et de la messagerie a bien été appliquée."
-            : "Vérifiez votre console (F12) et assurez-vous que votre profil est synchronisé."}
-        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className={`mt-4 inline-flex items-center rounded-full px-4 py-2 cmm-text-small font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 ${isLight ? "bg-rose-600 hover:bg-rose-700" : "bg-rose-700 hover:bg-rose-800"}`}
+        >
+          Réessayer
+        </button>
       </div>
     </div>
   );
@@ -53,7 +54,6 @@ export function ChatDegradedState({ error, tone = "dark" }: ChatDegradedStatePro
 
 type ChatEmptyStateProps = {
   emptyState: ChatEmptyStateCopy;
-  locale: "fr" | "en";
   activeChannelType: ChatChannelType;
   selectedRecipientId?: string | null;
   onStarterPrompt: (prompt: string) => void;
@@ -63,7 +63,6 @@ type ChatEmptyStateProps = {
 
 export function ChatEmptyState({
   emptyState,
-  locale,
   activeChannelType,
   selectedRecipientId,
   onStarterPrompt,
@@ -72,76 +71,39 @@ export function ChatEmptyState({
 }: ChatEmptyStateProps) {
   const isLight = tone === "light";
   return (
-    <div className="h-full flex items-center justify-center p-8">
-      <div className={`w-full max-w-lg rounded-[2rem] border p-6 text-center ${isLight ? "border-rose-100/70 bg-white/90" : "border-pink-100/40 bg-pink-50/80 dark:border-slate-800 dark:bg-slate-900/60"}`}>
+    <div className="flex h-full items-center justify-center p-8">
+      <div className={`w-full max-w-md text-center ${isLight ? "text-slate-900" : "cmm-text-primary"}`}>
         <MessageSquare
-          size={48}
+          size={36}
           className={`mx-auto ${isLight ? "text-rose-400" : "text-pink-400 dark:text-slate-500"}`}
         />
-        <h4 className={`mt-4 text-lg font-black ${isLight ? "text-slate-900" : "cmm-text-primary"}`}>
+        <h4 className="mt-4 text-lg font-black">
           {emptyState.title}
         </h4>
         <p className={`mt-2 text-sm ${isLight ? "text-slate-500" : "cmm-text-secondary"}`}>
           {emptyState.description}
         </p>
-        <div className={`mt-4 rounded-2xl border p-4 text-left shadow-sm ${isLight ? "border-rose-100/70 bg-rose-50/50" : "border-pink-100/40 bg-[rgba(255,248,251,0.96)] dark:border-slate-800 dark:bg-slate-950/80"}`}>
-          <p className={`cmm-text-caption font-black uppercase tracking-[0.18em] ${isLight ? "text-rose-600" : "text-pink-600"}`}>
-            {emptyState.starterTitle}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {emptyState.starterPrompts.map((prompt: string) => (
-              <button
-                key={prompt}
-                type="button"
-                onClick={() => onStarterPrompt(prompt)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${isLight ? "border-rose-200 bg-white text-rose-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-800" : "border-pink-200/30 bg-pink-50 text-pink-700 hover:border-pink-300 hover:bg-pink-100 hover:text-pink-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-pink-900/60 dark:hover:bg-pink-950/30 dark:hover:text-pink-300"}`}
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
-          <div className={`mt-4 rounded-2xl border p-4 text-left ${isLight ? "border-rose-100/70 bg-white/90" : "border-pink-100/40 bg-pink-50/80 dark:border-slate-800 dark:bg-slate-950/70"}`}>
-            <p className={`cmm-text-caption font-black uppercase tracking-[0.18em] ${isLight ? "text-rose-600" : "text-pink-600"}`}>
-              {locale === "fr" ? "Format recommandé" : "Recommended format"}
-            </p>
-            <p className={`mt-2 text-sm font-semibold ${isLight ? "text-slate-800" : "cmm-text-primary"}`}>
-              {emptyState.messagePattern}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {emptyState.purposeTags.map((tag: string) => (
-                <span
-                  key={tag}
-                  className={`inline-flex rounded-full border px-2.5 py-1 cmm-text-caption font-bold uppercase tracking-[0.14em] ${isLight ? "border-rose-200 bg-white text-rose-700" : "border-pink-200/30 bg-pink-50 text-pink-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"}`}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-          <p className={`mt-3 text-xs ${isLight ? "text-slate-500" : "cmm-text-secondary"}`}>
-            {emptyState.composerHint}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className={`rounded-full px-3 py-1 cmm-text-caption font-bold uppercase tracking-[0.16em] ${isLight ? "bg-rose-100 text-rose-700" : "bg-pink-100 text-pink-700 dark:bg-slate-900 dark:text-slate-300"}`}>
-              {emptyState.audienceLabel}
-            </span>
-            <span className={`rounded-full px-3 py-1 cmm-text-caption font-bold uppercase tracking-[0.16em] ${isLight ? "bg-rose-100 text-rose-700" : "bg-pink-100 text-pink-700 dark:bg-slate-900 dark:text-slate-300"}`}>
-              {emptyState.visibilityLabel}
-            </span>
-            <span className={`rounded-full px-3 py-1 cmm-text-caption font-bold uppercase tracking-[0.16em] ${isLight ? "bg-rose-100 text-rose-700" : "bg-pink-100 text-pink-700 dark:bg-slate-900 dark:text-slate-300"}`}>
-              {emptyState.channelGoal}
-            </span>
-          </div>
-          {activeChannelType === "dm" && !selectedRecipientId ? (
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
+          {emptyState.starterPrompts.slice(0, 3).map((prompt: string) => (
             <button
+              key={prompt}
               type="button"
-              onClick={onOpenRecipientPicker}
-              className={`mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-lg ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-pink-600 shadow-pink-500/20"}`}
+              onClick={() => onStarterPrompt(prompt)}
+              className={`rounded-full border px-3 py-2 cmm-text-small font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 ${isLight ? "border-rose-200 bg-white text-rose-700 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-800" : "border-pink-200/30 bg-pink-50 text-pink-700 hover:border-pink-300 hover:bg-pink-100 hover:text-pink-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-pink-900/60 dark:hover:bg-pink-950/30 dark:hover:text-pink-300"}`}
             >
-              Choisir un membre
+              {prompt}
             </button>
-          ) : null}
+          ))}
         </div>
+        {activeChannelType === "dm" && !selectedRecipientId ? (
+          <button
+            type="button"
+            onClick={onOpenRecipientPicker}
+            className={`mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 cmm-text-small font-black text-white shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-pink-600 shadow-pink-500/20"}`}
+          >
+            Choisir un membre
+          </button>
+        ) : null}
       </div>
     </div>
   );
