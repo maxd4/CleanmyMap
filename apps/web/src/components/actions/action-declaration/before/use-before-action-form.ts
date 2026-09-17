@@ -31,6 +31,14 @@ import {
 import { ENTREPRISE_ASSOCIATION_OPTION } from "@/lib/actions/association-options";
 import { getTimeContractValidationMessage } from "@/lib/actions/time-contract";
 
+type BeforeValidationField =
+  | "actionTitle"
+  | "actionDate"
+  | "associationName"
+  | "organizerType"
+  | "departureLocationLabel"
+  | "eventStartTime";
+
 function buildPrefillForm(
   actorNameOptions: string[],
   defaultActorName: string,
@@ -122,6 +130,7 @@ export function useBeforeActionForm({
   const [publicationConfirmationOpen, setPublicationConfirmationOpen] = useState(false);
   const [isHydratingAction, setIsHydratingAction] = useState(Boolean(initialActionId));
   const [validationIssues, setValidationIssues] = useState<string[]>([]);
+  const [validationIssueFields, setValidationIssueFields] = useState<BeforeValidationField[]>([]);
   const [showGroupJoinHelp, setShowGroupJoinHelp] = useState(false);
   const hasTrackedStartRef = useRef(false);
 
@@ -250,6 +259,7 @@ export function useBeforeActionForm({
       setSubmissionState("idle");
       setErrorMessage(null);
       setValidationIssues([]);
+      setValidationIssueFields([]);
     }
   };
 
@@ -259,21 +269,21 @@ export function useBeforeActionForm({
       return;
     }
 
-    const issues: string[] = [];
+    const issues: Array<{ field: BeforeValidationField; message: string }> = [];
     if (!form.actionTitle.trim()) {
-      issues.push("Indiquez un titre pour enregistrer le pré-formulaire.");
+      issues.push({ field: "actionTitle", message: "Indiquez un titre pour enregistrer le pré-formulaire." });
     }
     if (!form.actionDate.trim()) {
-      issues.push("Indiquez la date prévue avant d'enregistrer le pré-formulaire.");
+      issues.push({ field: "actionDate", message: "Indiquez la date prévue avant d'enregistrer le pré-formulaire." });
     }
     if (!form.associationName.trim()) {
-      issues.push("Sélectionnez une structure ou un cadre d'engagement.");
+      issues.push({ field: "associationName", message: "Sélectionnez une structure ou un cadre d'engagement." });
     }
     if (!form.organizerType) {
-      issues.push("Sélectionnez un type de structure avant d'enregistrer le pré-formulaire.");
+      issues.push({ field: "organizerType", message: "Sélectionnez un type de structure avant d'enregistrer le pré-formulaire." });
     }
     if (!form.departureLocationLabel.trim()) {
-      issues.push("Indiquez le point de rendez-vous avant d'enregistrer.");
+      issues.push({ field: "departureLocationLabel", message: "Indiquez le point de rendez-vous avant d'enregistrer." });
     }
     const timeMessage = getTimeContractValidationMessage({
       actionDurationMinutes: Number(form.durationMinutes),
@@ -281,12 +291,13 @@ export function useBeforeActionForm({
       endTime: form.eventEndTime,
     });
     if (timeMessage) {
-      issues.push(timeMessage);
+      issues.push({ field: "eventStartTime", message: timeMessage });
     }
 
     if (issues.length > 0) {
-      setValidationIssues(issues);
-      setErrorMessage(issues[0] ?? "Complétez les informations connues avant de continuer.");
+      setValidationIssues(issues.map((issue) => issue.message));
+      setValidationIssueFields(issues.map((issue) => issue.field));
+      setErrorMessage(issues[0]?.message ?? "Complétez les informations connues avant de continuer.");
       setSubmissionState("error");
       return;
     }
@@ -308,6 +319,7 @@ export function useBeforeActionForm({
     setSubmissionState("pending");
     setErrorMessage(null);
     setValidationIssues([]);
+    setValidationIssueFields([]);
 
     try {
       const result = await persistBeforeAction(initialActionId, payload);
@@ -396,6 +408,7 @@ export function useBeforeActionForm({
     publicationConfirmationOpen,
     isHydratingAction,
     validationIssues,
+    validationIssueFields,
     showGroupJoinHelp,
     setShowGroupJoinHelp,
     shareLink,

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmDialog } from "@/components/ui/cmm-dialog";
+import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { CmmPill } from "@/components/ui/cmm-pill";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
@@ -20,6 +21,16 @@ import { OperationalRouteEditor } from "../operational-route-editor";
 import { ChatActionShareDialog } from "@/components/chat/chat-action-share-dialog";
 import { buildJoinActionHref } from "@/lib/sections/join-action-routes";
 import { AdministrativeRequirementsStatus } from "../../administrative-requirements-status";
+import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
+
+const BEFORE_VALIDATION_FIELD_IDS: Record<string, string> = {
+  actionTitle: "before-action-title",
+  actionDate: "before-action-date",
+  associationName: "before-organizer-structure",
+  organizerType: "before-organizer-type",
+  departureLocationLabel: "before-departure-location",
+  eventStartTime: "before-action-event-start",
+};
 
 export function ActionBeforeDeclarationForm({
   actorNameOptions,
@@ -49,6 +60,7 @@ export function ActionBeforeDeclarationForm({
     publicationConfirmationOpen,
     isHydratingAction,
     validationIssues,
+    validationIssueFields = [],
     showGroupJoinHelp,
     setShowGroupJoinHelp,
     updateField,
@@ -70,6 +82,15 @@ export function ActionBeforeDeclarationForm({
     onActionPersisted,
   });
   const actClasses = getBlockClasses("act");
+
+  useEffect(() => {
+    if (validationIssueFields.length === 0) return;
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById(BEFORE_VALIDATION_FIELD_IDS[validationIssueFields[0]] ?? "");
+      if (target instanceof HTMLElement) target.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [validationIssueFields]);
 
   useEffect(() => {
     if (!publishedAt || !createdId || initialActionId) return;
@@ -272,18 +293,34 @@ export function ActionBeforeDeclarationForm({
               userMetadata={userMetadata}
               showGroupJoinHelp={showGroupJoinHelp}
               onToggleGroupJoinHelp={() => setShowGroupJoinHelp((current) => !current)}
+              hasAttemptedSubmit={validationIssueFields.length > 0}
+              validationIssueFields={validationIssueFields}
             />
-            <PlannedActionSection form={form} updateField={updateField} />
+            <PlannedActionSection
+              form={form}
+              updateField={updateField}
+              hasAttemptedSubmit={validationIssueFields.length > 0}
+              validationIssueFields={validationIssueFields}
+            />
             <PreparationAndSafetySection form={form} updateField={updateField} />
           </div>
 
           {form.operationalRoute ? (
-            <CmmCard tone="emerald" variant="glass" size="lg">
+            <CmmDisclosure
+              summary={
+                <ActionFormDisclosureSummary
+                  label="Parcours et géométrie"
+                  detail="parcours calculé"
+                />
+              }
+              tone="emerald"
+              size="md"
+            >
               <OperationalRouteEditor
                 operationalRoute={form.operationalRoute}
                 onChange={(operationalRoute) => updateField("operationalRoute", operationalRoute)}
               />
-            </CmmCard>
+            </CmmDisclosure>
           ) : null}
 
           {validationIssues.length > 0 || errorMessage ? (
@@ -299,7 +336,7 @@ export function ActionBeforeDeclarationForm({
                   ))}
                 </ul>
               ) : null}
-              {errorMessage ? <p className="mt-2 text-xs text-rose-800/80">{errorMessage}</p> : null}
+              {errorMessage && validationIssues.length === 0 ? <p className="mt-2 text-xs text-rose-800/80">{errorMessage}</p> : null}
               {!isAuthenticated ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   {signInHref ? (

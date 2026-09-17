@@ -51,6 +51,13 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Début du créneau global");
     expect(html).toContain("Fin du créneau global");
     expect(html).toContain("Membres de l&#x27;action");
+    expect(html).toContain("Participants associés");
+    expect(html).toContain("Coordonnées avancées");
+    expect(html).toContain('class="cmm-disclosure"');
+    expect(html).toContain("Obligatoire");
+    expect(html).toContain('id="before-action-title"');
+    expect(html).toContain('id="before-action-date"');
+    expect(html).toContain('id="before-departure-location"');
     expect(html).toContain("Publier en tant que formulaire de groupe");
     expect(html).not.toContain("Déchets collectés");
     expect(html).not.toContain("Photos de preuve");

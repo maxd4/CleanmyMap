@@ -79,6 +79,14 @@ pas une permission de mutation et ne modifie pas les règles métier existantes.
 - **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
 - **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
 
+## Hiérarchie visible et détails optionnels
+
+- Les deux onglets conservent la même hiérarchie : les informations nécessaires au parcours restent visibles, puis les précisions complémentaires sont regroupées dans des `CmmDisclosure` fermés par défaut.
+- Dans `Pré-formulaire`, les participants associés, les coordonnées avancées, les déchets attendus et un parcours opérationnel existant sont accessibles à la demande avec un résumé compact lorsque des données sont déjà présentes. Aucun `details`/accordion local parallèle ne doit être réintroduit.
+- Dans `Formulaire`, les cinq disclosures secondaires restent exactement : `Détails de l’organisation`, `Détails de la collecte`, `Photos et estimation`, `Parcours et géométrie` et `Détails temporels`. Le résumé peut indiquer par exemple le nombre de participants, les catégories de déchets, `GPX importé`, les photos ou le créneau renseigné, sans exposer de données sensibles inutiles.
+- La présence de données n’ouvre pas automatiquement un disclosure. Une erreur de validation, une incohérence existante nécessitant une correction ou un état/deep-link explicite peut l’ouvrir ; après échec d’envoi, le premier champ invalide reçoit le focus lorsque son disclosure a été ouvert.
+- Les libellés `Obligatoire` sont réservés aux valeurs effectivement nécessaires à la soumission du parcours. Les aides restent courtes et les erreurs sont rendues près du champ ainsi que dans le résumé avant le CTA.
+
 ### Reprise d'une action existante
 
 Le lien `/actions/new?from=before&actionId=...` ne reprend une action comme
