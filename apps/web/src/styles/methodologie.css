@@ -1,0 +1,110 @@
+@layer components {
+  .methodology-page {
+    min-height: 100%;
+    color: #172033;
+    background:
+      linear-gradient(180deg, #fff5f6 0%, #fffafb 48%, #fff7f8 100%);
+  }
+
+  .methodology-page__ambient {
+    background:
+      radial-gradient(circle at 13% 13%, rgba(244, 63, 94, 0.14) 0 9.5rem, transparent 9.8rem),
+      radial-gradient(circle at 91% 16%, rgba(244, 63, 94, 0.1) 0 11rem, transparent 11.3rem),
+      radial-gradient(ellipse at 50% 0%, rgba(251, 113, 133, 0.2) 0%, rgba(255, 255, 255, 0.72) 48%, transparent 78%);
+  }
+
+  .methodology-page__shell {
+    width: min(100%, 88rem);
+    max-width: 88rem;
+  }
+
+  .methodology-page__header {
+    max-width: none;
+    gap: 0.75rem;
+    padding-top: 0.75rem;
+  }
+
+  .methodology-page__title {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+  }
+
+  .methodology-page__title-accent {
+    display: block;
+    width: 3.1rem;
+    height: 0.2rem;
+    border-radius: 999px;
+    background: #fb7185;
+  }
+
+  .methodology-page__navigation {
+    width: 100%;
+  }
+
+  .methodology-page__space {
+    border: 1px solid rgba(244, 63, 94, 0.13);
+    color: #172033;
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: 0 24px 55px -38px rgba(136, 19, 55, 0.28);
+    backdrop-filter: blur(12px);
+  }
+
+  .methodology-page__space-heading {
+    min-height: 2.75rem;
+  }
+
+  .methodology-page__space-icon {
+    line-height: 1;
+  }
+
+  .methodology-page__space-title {
+    color: #172033;
+  }
+
+  .methodology-page__disclosure {
+    --cmm-disclosure-background: rgba(255, 249, 250, 0.9);
+    --cmm-disclosure-border: rgba(244, 63, 94, 0.24);
+    --cmm-disclosure-border-open: rgba(225, 29, 72, 0.42);
+    --cmm-disclosure-content-background: rgba(255, 255, 255, 0.78);
+    --cmm-disclosure-shadow: 0 7px 18px -16px rgba(136, 19, 55, 0.45);
+    --cmm-disclosure-radius: 0.9rem;
+  }
+
+  .methodology-page__disclosure .cmm-disclosure__summary {
+    min-height: 3.25rem;
+    color: #172033;
+  }
+
+  .methodology-page__disclosure .cmm-disclosure__icon {
+    color: #e11d48;
+  }
+
+  @media (max-width: 640px) {
+    .methodology-page__shell {
+      padding-inline: 1rem;
+    }
+
+    .methodology-page__space {
+      border-radius: 1.5rem;
+      padding: 1.25rem;
+    }
+
+    .methodology-page__space-heading {
+      align-items: flex-start;
+    }
+
+    .methodology-page__space-title {
+      font-size: 1.45rem;
+      line-height: 1.15;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .methodology-page__space,
+    .methodology-page__disclosure {
+      transition: none;
+    }
+  }
+}
