@@ -9,6 +9,8 @@ import {
   resolveDynamicColor,
 } from "@/components/actions/map-marker-categories";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
+import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
+import { POLLUTION_SCORE_UNAVAILABLE_COLOR } from "@/components/actions/map/pollution-score-scope";
 
 type LegendItem = {
   label: string;
@@ -48,6 +50,18 @@ const colorItems: LegendItem[] = ACTION_POLLUTION_COLOR_STOPS.map((stop, index) 
 });
 
 const otherStateItems: LegendItem[] = [
+  {
+    label: "Gris",
+    threshold: "score absent",
+    description: "Score indisponible · non classé",
+    icon: (
+      <span
+        aria-hidden="true"
+        className="h-2.5 w-2.5 rounded-full"
+        style={{ backgroundColor: POLLUTION_SCORE_UNAVAILABLE_COLOR }}
+      />
+    ),
+  },
   {
     label: "Vert",
     threshold: "clean_place",
@@ -130,8 +144,24 @@ function LegendGroup({
   );
 }
 
-export function MapLegend({ scoreScope = "global" }: { scoreScope?: PollutionScoreScope }) {
+export function MapLegend({
+  scoreScope = "global",
+  displayMode = "projected_today",
+}: {
+  scoreScope?: PollutionScoreScope;
+  displayMode?: CurrentPlaceStateMode;
+}) {
   const isDepartmentScope = scoreScope === "department";
+  const readingLabel = isDepartmentScope
+    ? "Score relatif départemental"
+    : displayMode === "observed"
+      ? "Pollution observée"
+      : "Pollution projetée";
+  const readingIntro = isDepartmentScope
+    ? "Les couleurs comparent le score réel de chaque action à la référence de son département. Ce score n'est pas projeté dans le temps."
+    : displayMode === "observed"
+      ? "Les couleurs indiquent la pollution observée ou mesurée pour chaque action. Aucune projection temporelle n'est utilisée."
+      : "Les couleurs indiquent la pollution projetée à partir de la dernière action. Cette estimation ne constitue pas une mesure actuelle du terrain.";
 
   return (
     <section className="rounded-3xl border border-sky-200/80 bg-sky-50/85 p-4 shadow-[0_16px_40px_-30px_rgba(14,165,233,0.24)] sm:p-5">
@@ -142,9 +172,7 @@ export function MapLegend({ scoreScope = "global" }: { scoreScope?: PollutionSco
             Légende
           </p>
           <p className="text-sm font-medium leading-snug text-slate-600">
-            {isDepartmentScope
-              ? "Les couleurs comparent les actions à la référence de leur département. Les résultats terrain restent distincts."
-              : "Les couleurs indiquent la pollution projetée. Les résultats terrain restent distincts."}
+            {readingIntro}
           </p>
         </div>
 
@@ -155,7 +183,7 @@ export function MapLegend({ scoreScope = "global" }: { scoreScope?: PollutionSco
               className="h-2.5 w-2.5 shrink-0 rounded-full"
               style={{ backgroundImage: pollutionGradient }}
             />
-            <span className="min-w-0">Bleu → noir <span className="font-medium text-slate-600">{isDepartmentScope ? "Comparaison départementale" : "Pollution projetée"}</span></span>
+            <span className="min-w-0">Bleu → noir <span className="font-medium text-slate-600">{readingLabel}</span></span>
           </div>
           <div className="flex min-w-0 items-center gap-2.5 py-0.5 text-xs font-semibold text-slate-800 sm:text-sm">
             <span
@@ -186,11 +214,13 @@ export function MapLegend({ scoreScope = "global" }: { scoreScope?: PollutionSco
           <div className="mt-3 space-y-4">
             <LegendGroup
               id="map-legend-pollution"
-              title={isDepartmentScope ? "Comparaison départementale" : "Pollution projetée"}
+              title={readingLabel}
               intro={
                 isDepartmentScope
                   ? "100 % correspond à l'intensité de collecte de référence la plus élevée du département, normalisée par bénévole. Score relatif : ne comparez directement que les actions d'un même département."
-                  : "Référence globale : les cinq seuils indiquent la pollution projetée, après la projection temporelle éventuelle."
+                  : displayMode === "observed"
+                    ? "Référence globale : les cinq seuils indiquent la pollution observée ou mesurée, sans projection temporelle."
+                    : "Référence globale : les cinq seuils indiquent la pollution projetée après la projection temporelle éventuelle."
               }
               items={colorItems}
             />

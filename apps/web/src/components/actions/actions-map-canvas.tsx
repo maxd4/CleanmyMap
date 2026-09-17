@@ -67,6 +67,8 @@ type ActionsMapCanvasProps = {
   sourceCompleteness?: RepollutionDatasetCompleteness;
   scoreScope?: PollutionScoreScope;
   onScoreScopeChange?: (scope: PollutionScoreScope) => void;
+  displayMode?: CurrentPlaceStateMode;
+  onDisplayModeChange?: (mode: CurrentPlaceStateMode) => void;
 };
 
 function MapViewportReporter({
@@ -166,6 +168,8 @@ export function ActionsMapCanvas({
   sourceCompleteness = "partial",
   scoreScope: controlledScoreScope,
   onScoreScopeChange,
+  displayMode: controlledDisplayMode,
+  onDisplayModeChange,
 }: ActionsMapCanvasProps) {
   const isHomepagePreview = presentation === "homepage-preview";
   const isMinimalPreview = compact || isHomepagePreview;
@@ -178,12 +182,19 @@ export function ActionsMapCanvas({
     createActionsMapViewport(center, compact ? 11 : 12);
   const [visibleLayers, setVisibleLayers] = useState(DEFAULT_VISIBLE_MAP_LAYERS);
   const [basemapMode, setBasemapMode] = useState<ShapeBasemapMode>("light");
-  const [displayMode, setDisplayMode] = useState<CurrentPlaceStateMode>(
+  const [internalDisplayMode, setInternalDisplayMode] = useState<CurrentPlaceStateMode>(
     "projected_today",
   );
   const [internalScoreScope, setInternalScoreScope] =
     useState<PollutionScoreScope>("global");
   const scoreScope = controlledScoreScope ?? internalScoreScope;
+  const displayMode = controlledDisplayMode ?? internalDisplayMode;
+  const handleDisplayModeChange = (mode: CurrentPlaceStateMode) => {
+    if (controlledDisplayMode === undefined) {
+      setInternalDisplayMode(mode);
+    }
+    onDisplayModeChange?.(mode);
+  };
   const handleScoreScopeChange = (scope: PollutionScoreScope) => {
     if (controlledScoreScope === undefined) {
       setInternalScoreScope(scope);
@@ -293,7 +304,7 @@ export function ActionsMapCanvas({
                         : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
                     ].join(" ")}
                     aria-pressed={displayMode === option.value}
-                    onClick={() => setDisplayMode(option.value)}
+                    onClick={() => handleDisplayModeChange(option.value)}
                   >
                     {option.label}
                   </button>
@@ -305,7 +316,7 @@ export function ActionsMapCanvas({
       )}
       {isMinimalPreview ? null : (
         <div className="pointer-events-none absolute left-3 top-40 z-[1000] md:top-44">
-          <MapGeometryLegend scoreScope={scoreScope} />
+          <MapGeometryLegend scoreScope={scoreScope} displayMode={displayMode} />
         </div>
       )}
 

@@ -7,6 +7,7 @@ import { MapLoadingState } from "./map-loading-state";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import type { RepollutionDatasetCompleteness } from "@/lib/actions/pollution/local-repollution-calibration";
 import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
+import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
 
 const ActionStoriesCarousel = dynamic(
   () => import("@/components/map/ActionStoriesCarousel").then((mod) => mod.ActionStoriesCarousel),
@@ -49,6 +50,8 @@ type ImmersiveLayoutProps = {
   sourceCompleteness?: RepollutionDatasetCompleteness;
   scoreScope?: PollutionScoreScope;
   onScoreScopeChange?: (scope: PollutionScoreScope) => void;
+  displayMode?: CurrentPlaceStateMode;
+  onDisplayModeChange?: (mode: CurrentPlaceStateMode) => void;
 };
 
 export function ImmersiveLayout({
@@ -82,6 +85,8 @@ export function ImmersiveLayout({
   sourceCompleteness = "partial",
   scoreScope = "global",
   onScoreScopeChange,
+  displayMode = "projected_today",
+  onDisplayModeChange,
 }: ImmersiveLayoutProps) {
   const isEmerald = tone === "emerald";
   const hasItems = items.length > 0;
@@ -172,6 +177,8 @@ export function ImmersiveLayout({
                 recenterViewport={recenterViewport}
                 scoreScope={scoreScope}
                 onScoreScopeChange={onScoreScopeChange}
+                displayMode={displayMode}
+                onDisplayModeChange={onDisplayModeChange}
               />
             )}
           </div>

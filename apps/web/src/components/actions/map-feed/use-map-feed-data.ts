@@ -21,6 +21,8 @@ import {
 } from "@/components/actions/map/actions-map-filters.utils";
 import type { MapViewportState } from "@/lib/geo/map-viewport";
 import { useActionPollutionScoreReferences } from "@/components/actions/map/action-pollution-score-references-context";
+import type { PollutionScoreScope } from "@/lib/actions/pollution/pollution-score";
+import type { CurrentPlaceStateMode } from "@/lib/actions/pollution/current-place-state";
 
 type UseMapFeedDataParams = {
   types: ActionRecordType[] | "all";
@@ -34,6 +36,8 @@ type UseMapFeedDataParams = {
   limit?: number;
   viewport?: MapViewportState | null;
   enabled?: boolean;
+  scoreScope?: PollutionScoreScope;
+  displayMode?: CurrentPlaceStateMode;
 };
 
 export function useMapFeedData({
@@ -48,6 +52,8 @@ export function useMapFeedData({
   limit = 120,
   viewport = null,
   enabled = true,
+  scoreScope = "global",
+  displayMode = "projected_today",
 }: UseMapFeedDataParams) {
   const { references: pollutionScoreReferences } = useActionPollutionScoreReferences();
   const normalizedZoneQuery = useMemo(
@@ -126,9 +132,17 @@ export function useMapFeedData({
             item,
             visibleCategories,
             pollutionScoreReferences,
+            { scoreScope, displayMode },
           ) && matchesZoneQuery(item, normalizedZoneQuery),
       ),
-    [allItems, normalizedZoneQuery, pollutionScoreReferences, visibleCategories],
+    [
+      allItems,
+      displayMode,
+      normalizedZoneQuery,
+      pollutionScoreReferences,
+      scoreScope,
+      visibleCategories,
+    ],
   );
 
   const summary = useMemo(() => {

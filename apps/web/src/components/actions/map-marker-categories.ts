@@ -1,17 +1,16 @@
 import type { ActionMapItem } from"@/lib/actions/types";
+import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
 import {
  mapItemCigaretteButts,
- mapItemObservedAt,
- mapItemPostActionPollutionScore,
  mapItemType,
- mapItemVolunteersCount,
  mapItemWasteKg,
 } from"../../lib/actions/data-contract";
-import {
-  computePollutionScoresRelativeToReferences,
- type PollutionScoreReferences,
-} from"@/lib/actions/pollution/pollution-score";
-import { presentActionPollutionProjection } from "@/lib/actions/pollution/revisit-priority";
+import type { PollutionScoreReferences, PollutionScoreScope } from"@/lib/actions/pollution/pollution-score";
+import type {
+ CurrentPlaceState,
+ CurrentPlaceStateMode,
+} from "@/lib/actions/pollution/current-place-state";
+import { resolveActionPollutionScore } from "./map/pollution-score-scope";
 
 export type MarkerCategory =
  |"orange"
@@ -20,6 +19,7 @@ export type MarkerCategory =
  |"black"
  |"green"
  |"blue"
+ |"unavailable"
  |"ashtray"
  |"bin"
  |"combo";
@@ -65,6 +65,7 @@ export const DEFAULT_VISIBLE_CATEGORIES: Record<MarkerCategory, boolean> = {
  black: true,
  green: true,
  blue: true,
+ unavailable: true,
  ashtray: true,
  bin: true,
  combo: true,
@@ -78,24 +79,15 @@ export function resolveItemPollutionScores(
  buttsScore: number | null;
  severityScore: number | null;
 } {
- if (!references) {
-   return { wasteScore: null, buttsScore: null, severityScore: null };
- }
+ const score = resolveActionPollutionScore(item, references, {
+   scope: "global",
+ });
 
- const pollutionScores = computePollutionScoresRelativeToReferences(
- {
- wasteKg: mapItemWasteKg(item),
- cigaretteButts: mapItemCigaretteButts(item),
-      volunteersCount: mapItemVolunteersCount(item),
- durationMinutes: item.contract?.metadata.durationMinutes ?? item.duration_minutes,
- actionType: mapItemType(item),
- status: item.status,
- actionPhase: item.contract?.metadata.actionPhase,
- },
- references.global,
- );
-
- return pollutionScores;
+ return {
+   wasteScore: score.wasteScore,
+   buttsScore: score.buttsScore,
+   severityScore: score.score,
+ };
 }
 
 export function resolveDynamicColor(score: number): string {
@@ -117,36 +109,50 @@ export function resolveDynamicColor(score: number): string {
 export const CLEAN_PLACE_COLOR = `hsl(${COLOR_TOKENS.GREEN.h}, ${COLOR_TOKENS.GREEN.s}%, ${COLOR_TOKENS.GREEN.l}%)`;
 export const TRASH_SPOTTER_NEUTRAL_COLOR = "#64748b";
 
+export type MarkerCategoryResolutionOptions = {
+ displayMode?: CurrentPlaceStateMode;
+ scoreScope?: PollutionScoreScope;
+ now?: string | Date | number;
+ currentPlaceState?: CurrentPlaceState | null;
+};
+
 function resolveCategoryScore(
  item: ActionMapItem,
  references?: PollutionScoreReferences | null,
- now: string | Date | number = new Date(),
+ options: MarkerCategoryResolutionOptions = {},
 ): number | null {
- const observedScore = resolveItemPollutionScores(item, references).severityScore;
- if (observedScore === null) {
-  return null;
+ const itemType = mapItemType(item);
+ if (itemType === "clean_place") {
+   return null;
  }
- return mapItemType(item) === "action"
-  ? presentActionPollutionProjection(
-      observedScore,
-      mapItemObservedAt(item),
-      now,
-      { postActionScore: mapItemPostActionPollutionScore(item) },
-    ).projectedPollutionScore
-  : observedScore;
+
+ if (itemType === "spot") {
+   const contractScore = (item.contract as unknown as ActionDataContract | undefined)
+     ?.metadata.observedPollutionScore;
+   return typeof contractScore === "number" && Number.isFinite(contractScore)
+     ? contractScore
+     : null;
+ }
+
+ return resolveActionPollutionScore(item, references, {
+   scope: options.scoreScope ?? "global",
+   now: options.now ?? new Date(),
+   displayMode: options.displayMode ?? "projected_today",
+   currentPlaceState: options.currentPlaceState ?? null,
+ }).score;
 }
 
 export function classifyPollutionColor(
  item: ActionMapItem,
  references?: PollutionScoreReferences | null,
- now: string | Date | number = new Date(),
-): Exclude<MarkerCategory,"ashtray" |"bin"> {
+ options: MarkerCategoryResolutionOptions = {},
+): Exclude<MarkerCategory,"ashtray" |"bin" | "combo"> {
  const wasteKg = mapItemWasteKg(item);
  const butts = mapItemCigaretteButts(item);
- const score = resolveCategoryScore(item, references, now);
+ const score = resolveCategoryScore(item, references, options);
 
  if (mapItemType(item) === "clean_place") return"green";
- if (score === null) return"blue";
+ if (score === null) return"unavailable";
  if (score >= ACTION_POLLUTION_COLOR_THRESHOLDS.BLACK) return"black";
  if (score >= ACTION_POLLUTION_COLOR_THRESHOLDS.VIOLET) return"violet";
  if (score >= ACTION_POLLUTION_COLOR_THRESHOLDS.RED) return"red";
@@ -158,8 +164,9 @@ export function classifyPollutionColor(
 export function deriveMarkerCategories(
  item: ActionMapItem,
  references?: PollutionScoreReferences | null,
+ options: MarkerCategoryResolutionOptions = {},
 ): MarkerCategory[] {
- const categories: MarkerCategory[] = [classifyPollutionColor(item, references)];
+ const categories: MarkerCategory[] = [classifyPollutionColor(item, references, options)];
  const infrastructureNeed = resolveInfrastructureNeed(item, references);
 
  if (infrastructureNeed) {
@@ -212,7 +219,8 @@ export function isVisibleWithCategoryFilter(
  item: ActionMapItem,
  visibleCategories: Record<MarkerCategory, boolean>,
  references?: PollutionScoreReferences | null,
+ options: MarkerCategoryResolutionOptions = {},
 ): boolean {
- const categories = deriveMarkerCategories(item, references);
+ const categories = deriveMarkerCategories(item, references, options);
  return categories.some((category) => visibleCategories[category]);
 }
