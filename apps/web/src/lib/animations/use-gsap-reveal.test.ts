@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   activeCleanup: undefined as (() => void) | undefined,
+  displayMode: "exhaustif" as "exhaustif" | "minimaliste" | "sobre",
   fromTo: vi.fn(),
   context: vi.fn((callback: () => void) => {
     callback();
@@ -17,6 +18,10 @@ vi.mock("react", () => ({
   useEffect: (effect: () => (() => void) | undefined) => {
     mocks.activeCleanup = effect();
   },
+}));
+
+vi.mock("@/components/ui/site-preferences-provider", () => ({
+  useSitePreferences: () => ({ displayMode: mocks.displayMode }),
 }));
 
 vi.mock("gsap", () => ({
@@ -71,6 +76,7 @@ function installWindow({ reducedMotion = false, runTimeouts = false } = {}) {
 function resetMocks() {
   vi.clearAllMocks();
   mocks.activeCleanup = undefined;
+  mocks.displayMode = "exhaustif";
   mocks.fromTo.mockImplementation(() => undefined);
 }
 
@@ -92,7 +98,23 @@ describe("useGsapReveal visibility contract", () => {
     const target = makeTarget();
     target.style.opacity = "0";
 
-    useGsapReveal({ current: makeRoot(target) }, { x: 12, y: 20 });
+    useGsapReveal(
+      { current: makeRoot(target) },
+      { x: 12, y: 20, stagger: 0.3, duration: 0.65, delay: 0.1, ease: "power2.out" },
+    );
+
+    expect(target.style.opacity).toBe("");
+    expect(mocks.fromTo).not.toHaveBeenCalled();
+  });
+
+  it("keeps sobre mode static and never starts GSAP", () => {
+    resetMocks();
+    mocks.displayMode = "sobre";
+    installWindow();
+    const target = makeTarget();
+    target.style.opacity = "0";
+
+    useGsapReveal({ current: makeRoot(target) }, { x: 12, y: 20, stagger: 0.2 });
 
     expect(target.style.opacity).toBe("");
     expect(mocks.fromTo).not.toHaveBeenCalled();
@@ -113,7 +135,10 @@ describe("useGsapReveal visibility contract", () => {
     installWindow();
     const target = makeTarget();
 
-    useGsapReveal({ current: makeRoot(target) }, { x: 12, y: 20 });
+    useGsapReveal(
+      { current: makeRoot(target) },
+      { x: 12, y: 20, stagger: 0.3, duration: 0.65, delay: 0.1, ease: "power2.out" },
+    );
 
     expect(mocks.fromTo).toHaveBeenCalledTimes(1);
     const [targets, fromVars, toVars] = mocks.fromTo.mock.calls[0];
@@ -123,6 +148,10 @@ describe("useGsapReveal visibility contract", () => {
       opacity: 1,
       x: 0,
       y: 0,
+      duration: 0.65,
+      delay: 0.1,
+      ease: "power2.out",
+      stagger: 0.3,
       clearProps: "opacity,transform",
       immediateRender: false,
     });
@@ -130,6 +159,29 @@ describe("useGsapReveal visibility contract", () => {
     toVars.onComplete();
     expect(target.style.opacity).toBe("");
     expect(mocks.refresh).toHaveBeenCalledWith(true);
+  });
+
+  it("keeps minimaliste motion short without displacement or decorative stagger", () => {
+    resetMocks();
+    mocks.displayMode = "minimaliste";
+    installWindow();
+    const target = makeTarget();
+
+    useGsapReveal(
+      { current: makeRoot(target) },
+      { x: 120, y: 80, stagger: 0.4, duration: 0.65, delay: 0.3 },
+    );
+
+    const [, fromVars, toVars] = mocks.fromTo.mock.calls[0];
+    expect(fromVars).toEqual({ opacity: 0 });
+    expect(toVars).toMatchObject({
+      opacity: 1,
+      duration: 0.2,
+      delay: 0,
+      stagger: 0,
+    });
+    expect(toVars).not.toHaveProperty("x");
+    expect(toVars).not.toHaveProperty("y");
   });
 
   it("restores visibility during cleanup and on remount", () => {
@@ -148,6 +200,24 @@ describe("useGsapReveal visibility contract", () => {
     useGsapReveal({ current: root });
     expect(target.style.opacity).toBe("");
     expect(mocks.fromTo).toHaveBeenCalledTimes(2);
+  });
+
+  it("cleans the previous reveal before a display mode change", () => {
+    resetMocks();
+    installWindow();
+    const target = makeTarget();
+    const root = makeRoot(target);
+
+    useGsapReveal({ current: root }, { x: 18, y: 18 });
+    target.style.opacity = "0";
+    mocks.activeCleanup?.();
+    expect(target.style.opacity).toBe("");
+
+    mocks.displayMode = "sobre";
+    useGsapReveal({ current: root }, { x: 18, y: 18 });
+
+    expect(target.style.opacity).toBe("");
+    expect(mocks.fromTo).toHaveBeenCalledTimes(1);
   });
 
   it("fails open when GSAP initialization throws", () => {

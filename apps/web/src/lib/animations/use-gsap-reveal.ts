@@ -4,6 +4,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import type { RefObject } from "react";
 import { useEffect } from "react";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -22,6 +23,7 @@ type UseGsapRevealOptions = {
 
 const LAYOUT_REFRESH_DELAY_FRAMES = 2;
 const REVEAL_FAILSAFE_DELAY_MS = 1800;
+const MINIMAL_REVEAL_MAX_DURATION = 0.2;
 
 function clearRevealStyles(targets: HTMLElement[]): void {
   for (const target of targets) {
@@ -34,6 +36,7 @@ export function useGsapReveal(
   scopeRef: RefObject<HTMLElement | null>,
   options: UseGsapRevealOptions = {},
 ) {
+  const { displayMode } = useSitePreferences();
   const {
     selector = "[data-gsap-reveal]",
     start = "top 80%",
@@ -46,6 +49,16 @@ export function useGsapReveal(
     ease = "power3.out",
     once = true,
   } = options;
+
+  const isMinimalDisplayMode = displayMode === "minimaliste";
+  const isStaticDisplayMode = displayMode === "sobre";
+  const revealDuration = isMinimalDisplayMode
+    ? Math.min(Math.max(duration, 0), MINIMAL_REVEAL_MAX_DURATION)
+    : duration;
+  const revealDelay = isMinimalDisplayMode ? 0 : delay;
+  const revealStagger = isMinimalDisplayMode ? 0 : stagger;
+  const revealX = isMinimalDisplayMode ? undefined : x;
+  const revealY = isMinimalDisplayMode ? undefined : y;
 
   useEffect(() => {
     const root = scopeRef.current;
@@ -62,7 +75,10 @@ export function useGsapReveal(
     // stale inline state left by a previous mount before starting a new one.
     clearRevealStyles(targets);
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (
+      isStaticDisplayMode ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
       return;
     }
 
@@ -128,17 +144,17 @@ export function useGsapReveal(
             targets,
             {
               opacity: 0,
-              ...(x === undefined ? {} : { x }),
-              ...(y === undefined ? {} : { y }),
+              ...(revealX === undefined ? {} : { x: revealX }),
+              ...(revealY === undefined ? {} : { y: revealY }),
             },
             {
               opacity: 1,
-              ...(x === undefined ? {} : { x: 0 }),
-              ...(y === undefined ? {} : { y: 0 }),
-              duration,
-              delay,
+              ...(revealX === undefined ? {} : { x: 0 }),
+              ...(revealY === undefined ? {} : { y: 0 }),
+              duration: revealDuration,
+              delay: revealDelay,
               ease,
-              stagger,
+              stagger: revealStagger,
               clearProps: "opacity,transform",
               immediateRender: false,
               onComplete: finishVisible,
@@ -171,5 +187,19 @@ export function useGsapReveal(
       }
       restoreVisible();
     };
-  }, [delay, duration, ease, end, once, scopeRef, selector, stagger, start, x, y]);
+  }, [
+    displayMode,
+    ease,
+    end,
+    isStaticDisplayMode,
+    once,
+    revealDelay,
+    revealDuration,
+    revealStagger,
+    revealX,
+    revealY,
+    scopeRef,
+    selector,
+    start,
+  ]);
 }
