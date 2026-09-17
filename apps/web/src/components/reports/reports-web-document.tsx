@@ -14,7 +14,6 @@ import {
 import { ReportsWebDocumentPreparation } from "@/components/reports/web-document/reports-web-document-preparation";
 import { ReportsWebDocumentPreview } from "@/components/reports/web-document/reports-web-document-preview";
 import { useReportsWebDocumentModel } from "@/components/reports/web-document/use-reports-web-document-model";
-import { CmmGrid, CmmGridItem } from "@/components/ui/cmm-grid";
 import {
   DEFAULT_REPORT_MODULES,
   DEFAULT_REPORT_DETAIL_LEVEL,
@@ -98,11 +97,6 @@ export function ReportsWebDocument({
     () => buildCoverageRangeLabel(filteredContracts),
     [filteredContracts],
   );
-  const moduleCoverageLabel = useMemo(
-    () => `Modules optionnels inclus: ${buildModuleSelectionLabel(modules)}.`,
-    [modules],
-  );
-
   const model = useReportsWebDocumentModel({
     initialContracts: filteredContracts,
     initialIsTruncated: isTruncated,
@@ -273,8 +267,8 @@ export function ReportsWebDocument({
           icon: Loader2,
           label: "Génération en cours",
           description: "Le livrable est en cours de préparation.",
-          tone: "border-cyan-200 bg-cyan-50 text-cyan-900",
-          iconTone: "text-cyan-600",
+          tone: "border-red-200 bg-red-50 text-red-900",
+          iconTone: "text-red-600",
         }
       : state === "success"
           ? {
@@ -305,51 +299,39 @@ export function ReportsWebDocument({
                 label: "Export indisponible",
                 description: "Aucune donnée exploitable n'est disponible pour cette configuration.",
                 tone: "border-slate-200 bg-slate-50 text-slate-900",
-                iconTone: "text-slate-400",
+              iconTone: "text-slate-400",
               };
+  const dataStatusLabel = model.isLoading
+    ? "Chargement en cours"
+    : model.hasError
+      ? "Erreur de chargement"
+      : dataAvailabilityNotices.length > 0
+        ? "Données partielles"
+        : "Données disponibles";
+
   return (
-    <CmmGrid
-      as="section"
-      className="rounded-[2.25rem] border border-slate-200 bg-white p-4 shadow-[0_18px_55px_-30px_rgba(15,23,42,0.25)] sm:p-6"
-      contentClassName="gap-6"
-    >
-      <CmmGridItem span={{ mobile: 4, tablet: 6, desktop: 12 }}>
-        <header className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.4rem] bg-red-600 text-white shadow-[0_18px_42px_-24px_rgba(220,38,38,0.55)]">
-            <FileText size={28} />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-[clamp(1.8rem,3vw,2.4rem)] font-black leading-tight tracking-[-0.04em] text-slate-950">
-              Générer un rapport d&apos;impact
-            </h2>
-            <p className="mt-1 max-w-3xl text-sm font-medium leading-6 text-slate-600 sm:text-base">
-              {dataAvailabilityNotices.length > 0
-                ? "Créez un rapport avec les données disponibles et les limites signalées."
-                : "Créez un rapport complet avec les données et la méthodologie CleanMyMap."}
-            </p>
-          </div>
-        </header>
-      </CmmGridItem>
+    <section data-testid="reports-generation" className="space-y-5">
+      <header>
+        <h2 className="text-xl font-bold tracking-tight text-slate-950">
+          Générer un rapport d&apos;impact
+        </h2>
+      </header>
 
       {dataAvailabilityNotices.length > 0 ? (
-        <CmmGridItem span={{ mobile: 4, tablet: 6, desktop: 12 }}>
-          <div
-            role="status"
-            aria-live="polite"
-            className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-900"
-          >
-            <TriangleAlert size={16} className="mt-1 shrink-0 text-amber-600" />
-            <p>{dataAvailabilityNotices.join(" ")}</p>
-          </div>
-        </CmmGridItem>
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm leading-6 text-amber-900"
+        >
+          <TriangleAlert size={16} className="mt-1 shrink-0 text-amber-600" />
+          <p>{dataAvailabilityNotices.join(" ")}</p>
+        </div>
       ) : null}
 
-      <CmmGridItem span={{ mobile: 4, tablet: 6, desktop: 12 }}>
-        <div className="grid gap-4 xl:grid-cols-[1.14fr_0.86fr] xl:items-start">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
         <ReportsWebDocumentPreparation
           period={period}
           onPeriodChange={setPeriod}
-          historyCompletenessWarning={false}
           selectedScopeValue={selectedScopeValue}
           scopeOptions={model.scopeOptions}
           onScopeChange={(value) => {
@@ -361,7 +343,10 @@ export function ReportsWebDocument({
           onModuleToggle={toggleModule}
         />
 
-        <div className="grid gap-4">
+        <section
+          aria-labelledby="reports-summary-title"
+          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_-24px_rgba(15,23,42,0.24)] sm:p-6"
+        >
           <ReportsWebDocumentPreview
             report={report}
             activeScopeLabel={activeScopeLabel}
@@ -369,16 +354,9 @@ export function ReportsWebDocument({
             previewRef={previewRef}
             onTogglePreview={handlePreview}
             periodDisplayLabel={reportPeriodLabel(period, false)}
-            modules={modules}
-            historyCoverageLabel={
-              `Historique: ${filteredContracts.length} actions`
-            }
-            historyGuaranteeLabel={
-              "Historique: couverture conforme à la fenêtre sélectionnée."
-            }
             coverageRangeLabel={coverageRangeLabel}
-            moduleCoverageLabel={moduleCoverageLabel}
-            exportStatus={exportStatus}
+            modulesLabel={buildModuleSelectionLabel(modules)}
+            dataStatusLabel={dataStatusLabel}
           />
 
           <ReportsWebDocumentDelivery
@@ -391,19 +369,16 @@ export function ReportsWebDocument({
             dailyExportAvailability={dailyExportAvailability}
             onGenerate={handleGenerate}
           />
-        </div>
+        </section>
       </div>
-      </CmmGridItem>
 
-      <CmmGridItem span={{ mobile: 4, tablet: 6, desktop: 12 }}>
-        <ReportsWebDocumentDeliveryHistory
-          recentRows={recentRows}
-          historyAvailability={historyAvailability}
-          actionStateById={historyActionStateById}
-          onView={(id) => void handleHistoricalAction(id, "view")}
-          onReexport={(id) => void handleHistoricalAction(id, "reexport")}
-        />
-      </CmmGridItem>
-    </CmmGrid>
+      <ReportsWebDocumentDeliveryHistory
+        recentRows={recentRows}
+        historyAvailability={historyAvailability}
+        actionStateById={historyActionStateById}
+        onView={(id) => void handleHistoricalAction(id, "view")}
+        onReexport={(id) => void handleHistoricalAction(id, "reexport")}
+      />
+    </section>
   );
 }

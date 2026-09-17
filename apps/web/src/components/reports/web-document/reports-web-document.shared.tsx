@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import { toFrOptionalNumber } from "@/lib/reports/report-model/formatters";
 import type { ReportModel } from "@/lib/reports/report-model/types";
@@ -112,54 +111,6 @@ export function buildModuleSelectionLabel(modules: ModuleState): string {
   return labels.length > 0 ? labels.join(", ") : "aucun module optionnel";
 }
 
-type GenerationStageTone = "prepare" | "preview" | "export";
-
-type GenerationStageCardProps = {
-  tone: GenerationStageTone;
-  step: string;
-  title: string;
-  description: string;
-  action?: ReactNode;
-  children: ReactNode;
-};
-
-const GENERATION_STAGE_STYLES: Record<
-  GenerationStageTone,
-  {
-    stripe: string;
-    step: string;
-    eyebrow: string;
-    title: string;
-    border: string;
-    surface: string;
-  }
-> = {
-  prepare: {
-    stripe: "from-red-600 via-red-500 to-orange-500",
-    step: "border-red-200 bg-red-50 text-red-700",
-    eyebrow: "text-red-600",
-    title: "text-red-700",
-    border: "border-red-100",
-    surface: "bg-white",
-  },
-  preview: {
-    stripe: "from-cyan-600 via-cyan-500 to-sky-500",
-    step: "border-cyan-200 bg-cyan-50 text-cyan-700",
-    eyebrow: "text-cyan-700",
-    title: "text-cyan-950",
-    border: "border-cyan-100",
-    surface: "bg-white",
-  },
-  export: {
-    stripe: "from-slate-700 via-red-600 to-red-500",
-    step: "border-slate-200 bg-slate-50 text-slate-700",
-    eyebrow: "text-slate-500",
-    title: "text-slate-950",
-    border: "border-slate-200",
-    surface: "bg-slate-50/50",
-  },
-};
-
 type ReportsWebDocumentModelLike = {
   report: ReportModel;
   wasteProfile: {
@@ -178,47 +129,6 @@ type ReportsWebDocumentModelLike = {
   exportRows: Array<Record<string, string | number | null>>;
   dataAvailability?: ReportDataAvailability;
 };
-
-export function GenerationStageCard({
-  tone,
-  step,
-  title,
-  description,
-  action,
-  children,
-}: GenerationStageCardProps) {
-  const styles = GENERATION_STAGE_STYLES[tone];
-
-  return (
-    <section
-      className={`overflow-hidden rounded-[1.75rem] border ${styles.border} ${styles.surface} shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]`}
-    >
-      <div className={`h-1.5 bg-gradient-to-r ${styles.stripe}`} />
-      <div className="p-5 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 items-start gap-3">
-            <span
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border text-sm font-black ${styles.step}`}
-            >
-              {step}
-            </span>
-            <div className="min-w-0">
-              <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${styles.eyebrow}`}>
-                Étape {step}
-              </p>
-              <h3 className={`mt-1 text-xl font-black tracking-tight ${styles.title}`}>{title}</h3>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">{description}</p>
-            </div>
-          </div>
-
-          {action ? <div className="shrink-0">{action}</div> : null}
-        </div>
-
-        <div className="mt-4">{children}</div>
-      </div>
-    </section>
-  );
-}
 
 export function formatDateLabel(value: Date): string {
   return new Intl.DateTimeFormat("fr-FR", {
