@@ -76,7 +76,7 @@ export function resolveIdentityDisplayName(
     resolveAccountDisplayName({
       firstName,
       lastName,
-      username: displayNameMode === "pseudo" ? handle : username ?? handle,
+      username: handle,
       userId,
       mode: displayNameMode,
     }) || storedProfile?.display_name?.trim() || handle

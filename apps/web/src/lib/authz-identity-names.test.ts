@@ -131,4 +131,27 @@ describe("identity username and application handle semantics", () => {
     expect(parts.username).toBe("old_clerk_username");
     expect(handle).toBe("legacy_handle");
   });
+
+  it("uses the historical application handle when full_name has no name parts", () => {
+    const parts = resolveIdentityNameParts(
+      clerkUser({ username: "new_clerk_username" }),
+    );
+    const handle = resolveIdentityHandle(
+      parts.username,
+      "user_historical",
+      storedProfile({ handle: "legacy_handle" }),
+    );
+
+    expect(
+      resolveIdentityDisplayName(
+        parts.firstName,
+        parts.lastName,
+        parts.username,
+        handle,
+        "user_historical",
+        "full_name",
+        storedProfile({ handle: "legacy_handle" }),
+      ),
+    ).toBe("legacy_handle");
+  });
 });
