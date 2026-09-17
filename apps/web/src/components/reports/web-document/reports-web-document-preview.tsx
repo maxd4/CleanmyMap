@@ -45,9 +45,14 @@ export function ReportsWebDocumentPreview({
       return;
     }
 
-    window.setTimeout(() => {
-      previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const timeoutId = window.setTimeout(() => {
+      const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth";
+      previewRef.current?.scrollIntoView({ behavior, block: "start" });
     }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [previewRef, showPreview]);
 
   const actionCount = report.totals.actions;

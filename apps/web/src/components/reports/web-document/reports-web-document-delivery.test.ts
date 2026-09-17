@@ -145,7 +145,7 @@ describe("ReportsWebDocumentDelivery", () => {
       }),
     );
 
-    expect(markup).toContain("Rapports récents");
+    expect(markup).toContain("Mes rapports récents");
     expect(markup).toContain("Derniers rapports générés.");
     expect(markup).toContain("Rapport d&#x27;impact");
     expect(markup).toContain("Six mois");
@@ -154,8 +154,9 @@ describe("ReportsWebDocumentDelivery", () => {
     expect(markup).toContain("01/08/2026 12:00");
     expect(markup).toContain("Actions");
     expect(markup).toContain("Voir");
-    expect(markup).toContain("Réexporter");
-    expect(markup).not.toContain("Télécharger");
+    expect(markup).toContain("Télécharger à nouveau");
+    expect(markup).not.toContain("Réexporter");
+    expect(markup).toContain('min-h-11');
   });
 
   it("renders the real empty state without synthetic rows", () => {

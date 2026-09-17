@@ -45,6 +45,70 @@ export type ReportGenerationHistoryActionState = {
   message: string;
 };
 
+function HistoryActionButtons({
+  rowId,
+  actionState,
+  onView,
+  onReexport,
+}: {
+  rowId: string;
+  actionState?: ReportGenerationHistoryActionState;
+  onView: (id: string) => void;
+  onReexport: (id: string) => void;
+}) {
+  const isPending = actionState?.state === "pending";
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <CmmButton
+        disabled={isPending}
+        onClick={() => onView(rowId)}
+        tone="tertiary"
+        variant="ghost"
+        size="md"
+        className="min-h-11"
+      >
+        Voir
+      </CmmButton>
+      <CmmButton
+        disabled={isPending}
+        onClick={() => onReexport(rowId)}
+        tone="tertiary"
+        variant="ghost"
+        size="md"
+        className="min-h-11"
+      >
+        Télécharger à nouveau
+      </CmmButton>
+    </div>
+  );
+}
+
+function HistoryActionFeedback({
+  actionState,
+}: {
+  actionState?: ReportGenerationHistoryActionState;
+}) {
+  if (!actionState) {
+    return null;
+  }
+
+  return (
+    <CmmFeedback
+      tone={
+        actionState.state === "error"
+          ? "error"
+          : actionState.state === "pending"
+            ? "info"
+            : "success"
+      }
+      className="mt-2"
+    >
+      {actionState.message}
+    </CmmFeedback>
+  );
+}
+
 export function ReportsWebDocumentDelivery({
   state,
   message,
@@ -61,8 +125,8 @@ export function ReportsWebDocumentDelivery({
 
   return (
     <div className="space-y-4 border-t border-slate-200 pt-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0 flex-1">
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="min-w-0">
           <p className="text-xs font-semibold text-slate-500">État de l&apos;export</p>
           <CmmFeedback tone={feedbackTone} title={exportStatus.label} className="mt-2">
             <span className="inline-flex items-start gap-2">
@@ -112,10 +176,16 @@ export function ReportsWebDocumentDeliveryHistory({
   onReexport,
 }: ReportsWebDocumentDeliveryHistoryProps) {
   return (
-    <section id="reports-history" className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]">
+    <section
+      id="reports-history"
+      aria-labelledby="reports-history-title"
+      className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-base font-black text-red-600">Rapports récents</p>
+          <h3 id="reports-history-title" className="text-lg font-semibold text-slate-950">
+            Mes rapports récents
+          </h3>
           <p className="mt-1 text-sm text-slate-500">Derniers rapports générés.</p>
         </div>
       </div>
@@ -129,80 +199,87 @@ export function ReportsWebDocumentDeliveryHistory({
           <SystemStateTitle variant="empty">Aucun rapport généré</SystemStateTitle>
         </SystemStateLayout>
       ) : (
-        <div className="cmm-data-table-wrap mt-4">
-          <table className="cmm-data-table">
-            <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.18em] text-slate-500">
-              <tr>
-                {["Rapport", "Période", "Périmètre", "Détail", "Généré le", "Actions"].map((header) => (
-                  <th key={header} scope="col" className="font-black">
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recentRows.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600">
-                        <FileText size={16} />
-                      </div>
-                      <p className="text-sm font-semibold text-slate-900">{row.report}</p>
-                    </div>
-                  </td>
-                  <td className="text-sm text-slate-600">
-                    {row.period}
-                  </td>
-                  <td className="text-sm text-slate-600">
-                    {row.perimeter}
-                  </td>
-                  <td className="text-sm text-slate-600">
-                    {row.detail}
-                  </td>
-                  <td className="text-sm text-slate-600">
-                    {row.generatedAt}
-                  </td>
-                  <td>
-                    <div className="flex flex-wrap gap-2">
-                      <CmmButton
-                        disabled={actionStateById[row.id]?.state === "pending"}
-                        onClick={() => onView(row.id)}
-                        tone="tertiary"
-                        variant="ghost"
-                        size="sm"
-                      >
-                        Voir
-                      </CmmButton>
-                      <CmmButton
-                        disabled={actionStateById[row.id]?.state === "pending"}
-                        onClick={() => onReexport(row.id)}
-                        tone="tertiary"
-                        variant="ghost"
-                        size="sm"
-                      >
-                        Réexporter
-                      </CmmButton>
-                    </div>
-                    {actionStateById[row.id] ? (
-                      <CmmFeedback
-                        tone={
-                          actionStateById[row.id].state === "error"
-                            ? "error"
-                            : actionStateById[row.id].state === "pending"
-                              ? "info"
-                              : "success"
-                        }
-                        className="mt-2"
-                      >
-                        {actionStateById[row.id].message}
-                      </CmmFeedback>
-                    ) : null}
-                  </td>
+        <div className="mt-4">
+          <div className="hidden overflow-x-auto rounded-xl border border-slate-200 md:block">
+            <table className="cmm-data-table">
+              <caption className="sr-only">Historique de mes rapports générés</caption>
+              <thead className="bg-slate-50 text-xs normal-case tracking-normal text-slate-500">
+                <tr>
+                  {["Rapport", "Période", "Périmètre", "Détail", "Généré le", "Actions"].map((header) => (
+                    <th key={header} scope="col" className="font-semibold normal-case tracking-normal">
+                      {header}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentRows.map((row) => (
+                  <tr key={row.id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                          <FileText size={16} aria-hidden="true" />
+                        </div>
+                        <p className="break-words text-sm font-semibold text-slate-900">{row.report}</p>
+                      </div>
+                    </td>
+                    <td className="break-words text-sm text-slate-600">{row.period}</td>
+                    <td className="break-words text-sm text-slate-600">{row.perimeter}</td>
+                    <td className="break-words text-sm text-slate-600">{row.detail}</td>
+                    <td className="break-words text-sm text-slate-600">{row.generatedAt}</td>
+                    <td>
+                      <HistoryActionButtons
+                        rowId={row.id}
+                        actionState={actionStateById[row.id]}
+                        onView={onView}
+                        onReexport={onReexport}
+                      />
+                      <HistoryActionFeedback actionState={actionStateById[row.id]} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="grid gap-3 md:hidden">
+            {recentRows.map((row) => (
+              <article key={row.id} className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50 text-red-600">
+                    <FileText size={18} aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="break-words text-base font-semibold text-slate-950">{row.report}</h4>
+                    <p className="mt-1 break-words text-sm text-slate-600">{row.generatedAt}</p>
+                  </div>
+                </div>
+                <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                  <div>
+                    <dt className="text-slate-500">Période</dt>
+                    <dd className="mt-1 break-words font-medium text-slate-900">{row.period}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-500">Périmètre</dt>
+                    <dd className="mt-1 break-words font-medium text-slate-900">{row.perimeter}</dd>
+                  </div>
+                  <div className="col-span-2">
+                    <dt className="text-slate-500">Détail</dt>
+                    <dd className="mt-1 break-words font-medium text-slate-900">{row.detail}</dd>
+                  </div>
+                </dl>
+                <div className="mt-4">
+                  <HistoryActionButtons
+                    rowId={row.id}
+                    actionState={actionStateById[row.id]}
+                    onView={onView}
+                    onReexport={onReexport}
+                  />
+                  <HistoryActionFeedback actionState={actionStateById[row.id]} />
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       )}
     </section>
