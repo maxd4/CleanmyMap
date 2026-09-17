@@ -38,8 +38,8 @@ Explorer les actions et hotspots, filtrer la vue, sélectionner une action et li
 - `Affichage` regroupe la référence `Global`/`Département`, le mode
   `Observé`/`Projeté`, les calques et le fond clair/contrasté ;
 - sélection d'action ;
-- KPI de résultats terrain (`kg`, mégots, bénévoles) et proxys explicitement qualifiés (`CO₂e`, eau, économie de voirie) ;
-- bloc de contexte avec compteur visible/chargé et export ;
+- KPI compacts et secondaires : résultats terrain (`kg`, mégots, bénévoles) et
+  proxys explicitement qualifiés (`CO₂e`, eau, économie de voirie) ;
 - légende canonique compacte avec résumé couleurs/infrastructure et détails des
   seuils, états et géométries en disclosure ;
 - contexte de la vue avec les compteurs visibles/chargés ;
@@ -123,18 +123,26 @@ le contrôle de la carte.
 
 ## KPI publics et statistiques contextuelles
 
-Les six KPI affichés dans le ruban (`wasteKg`, `butts`, `volunteers`, `co2`,
-`water`, `euro`) sont les indicateurs publics consolidés CleanMyMap. Ils
-proviennent du même `PublicImpactSnapshot` et du même contrat
-`PublicImpactMetric[]` que les KPI de la page d'accueil. Ils ne dépendent ni du
-viewport, ni des catégories visibles, ni de la recherche, ni de la période
-locale de la carte. Les pré-actions peuvent rester visibles sur la carte, mais
-ne contribuent pas à ces six KPI.
+Les six KPI affichés dans le ruban compact (`wasteKg`, `butts`, `volunteers`,
+`co2`, `water`, `euro`) sont les indicateurs publics consolidés CleanMyMap. Ils
+portent le libellé explicite « Bilan global CleanMyMap — indépendant des filtres
+de cette carte » et proviennent du même `PublicImpactSnapshot` et du même
+contrat `PublicImpactMetric[]` que les KPI de la page d'accueil. Ils ne
+dépendent ni du viewport, ni des catégories visibles, ni de la recherche, ni de
+la période locale de la carte. Les pré-actions peuvent rester visibles sur la
+carte, mais ne contribuent pas à ces six KPI.
 
 Les statistiques de carte sont d'un autre niveau : `visibleCount` et
 `loadedCount` décrivent respectivement les objets cartographiques actuellement
 affichés et chargés dans le flux courant. Elles peuvent varier avec les filtres,
 la recherche ou le viewport sans modifier les KPI publics consolidés.
+
+Le journal public reste une table native. Il expose les date, lieu, type,
+tracé, lecture de pollution, impact/qualité et une action explicite ; les
+coordonnées et le statut technique restent secondaires ou exportables. Une
+absence d'`impact_level` est rendue « Indisponible » et une absence de
+`quality_grade` « Non évalué » : aucune valeur par défaut ne simule une
+évaluation.
 
 Le ruban rend directement les champs du contrat partagé (`label`, `value` et
 `classification`) ; il ne redéfinit ni les libellés, ni l'ordre, ni les unités,

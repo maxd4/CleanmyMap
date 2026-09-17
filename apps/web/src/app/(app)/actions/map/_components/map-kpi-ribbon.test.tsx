@@ -19,8 +19,8 @@ describe("MapKpiRibbon", () => {
   it("separates measured field results from explicitly labelled proxies", () => {
     const markup = renderToStaticMarkup(<MapKpiRibbon metrics={metrics} />);
 
-    expect(markup).toContain("Indicateurs publics consolidés");
-    expect(markup).toContain("identiques à ceux de la page");
+    expect(markup).toContain("Bilan global CleanMyMap — indépendant des filtres de cette carte");
+    expect(markup).toContain("distincts du viewport courant");
     expect(markup).toContain("Déchets récoltés");
     expect(markup).toContain("Mégots retirés");
     expect(markup).toContain("Bénévoles mobilisés");
@@ -35,6 +35,8 @@ describe("MapKpiRibbon", () => {
     expect(source).toContain("metric.label");
     expect(source).toContain("metric.value");
     expect(source).toContain("metric.classification");
+    expect(source).toContain("Bilan global CleanMyMap");
+    expect(source).not.toContain("transition-transform");
     expect(source).not.toContain("CO₂e évité (proxy)");
     expect(source).not.toContain("Eau préservée (proxy)");
     expect(source).not.toContain("Économie de voirie (proxy)");
