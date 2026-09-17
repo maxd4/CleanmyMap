@@ -65,7 +65,7 @@ describe("Messagerie navigation shell", () => {
     expect(chatSidebarSource).toContain('compact={isMessagerie}');
     expect(chatSidebarSource).not.toContain("overflow-x-auto");
     expect(chatSidebarSource.indexOf('label: "Communauté globale"')).toBeLessThan(
-      chatSidebarSource.indexOf('label: currentChannelType === "territory"'),
+      chatSidebarSource.indexOf('label: "Territoire"'),
     );
     expect(chatSidebarSource.indexOf("<ChatActionSurface")).toBeLessThan(
       chatSidebarSource.indexOf('label: "Admin & élus"'),
@@ -89,6 +89,8 @@ describe("Messagerie navigation shell", () => {
 
   it("uses the canonical page header, fluid shell height, and real tab semantics", () => {
     expect(connectSectionSource).toContain("<PageHeader");
+    expect(connectSectionSource).not.toContain("action={<ConnectTabs");
+    expect(connectSectionSource).toContain("<ConnectTabs activeTab={activeTab}");
     expect(connectSectionSource).not.toContain("h-[calc(100dvh-8.5rem)]");
     expect(connectSectionSource).toContain('role="tabpanel"');
     expect(connectSectionSource).toContain("useReducedMotion");
@@ -101,7 +103,8 @@ describe("Messagerie navigation shell", () => {
   it("keeps the light network palette and motion state discreet", () => {
     expect(connectComponentsSource).not.toContain("bg-fuchsia-500");
     expect(chatHeaderSource).not.toContain("animate-pulse");
-    expect(chatHeaderSource).toContain("Actualisation");
+    expect(chatHeaderSource).not.toContain("Actualisation");
+    expect(chatHeaderSource).toContain('{isLive ? (');
     expect(chatMessageItemSource).toContain("useReducedMotion");
     expect(chatMessageItemSource).toContain('displayMode !== "sobre"');
     expect(topicGraphSource).toContain("useReducedMotion");

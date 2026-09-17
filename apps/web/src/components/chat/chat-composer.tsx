@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { BarChart3, Calendar, MapPin, Megaphone, Paperclip, Plus, Send, Trash2, X } from "lucide-react";
 import { memo, useState } from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent, RefObject } from "react";
@@ -161,12 +162,6 @@ export const ChatComposer = memo(function ChatComposer({
         <div className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-400 animate-in fade-in zoom-in-95">
           {sendError}
         </div>
-      ) : null}
-
-      {activeChannelType === "dm" && !selectedRecipient ? (
-        <p className={`mb-3 cmm-text-small ${isLight ? "text-slate-500" : "text-slate-400"}`}>
-          Choisissez un membre depuis Conversations pour ouvrir ce fil.
-        </p>
       ) : null}
 
       {showMentions && mentionSuggestions.length > 0 ? (
@@ -382,7 +377,13 @@ export const ChatComposer = memo(function ChatComposer({
           onKeyDown={handleComposerKeyDown}
           disabled={!userId || isSending || isUploading || (activeChannelType === "dm" && !selectedRecipient)}
           className={`flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium py-3 px-1 max-h-40 resize-none ${isLight ? "text-slate-900 placeholder:text-slate-400" : "text-white placeholder:text-slate-500"}`}
-          placeholder={!userId ? "Connectez-vous pour participer" : activeChannelType === "dm" && !selectedRecipient ? "Choisissez un membre dans Conversations" : placeholder}
+          placeholder={!userId
+            ? activeChannelType === "dm"
+              ? "Connectez-vous pour envoyer un message"
+              : "Connectez-vous pour participer à la discussion"
+            : activeChannelType === "dm" && !selectedRecipient
+              ? "Sélectionnez une conversation"
+              : placeholder}
         />
         <CmmButton
           disabled={!canSubmit}
@@ -447,6 +448,17 @@ export const ChatComposer = memo(function ChatComposer({
           </div>
         ) : null}
       </div>
+      {!userId ? (
+        <p className={`mt-2 px-1 text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+          {activeChannelType === "dm"
+            ? "Vous consultez vos messages en mode invité. "
+            : "Vous consultez cette discussion en mode invité. "}
+          <Link href="/sign-in" className={isLight ? "font-semibold text-rose-600 underline underline-offset-2" : "font-semibold text-pink-300 underline underline-offset-2"}>
+            Connectez-vous
+          </Link>{" "}
+          {activeChannelType === "dm" ? "pour envoyer un message." : "pour participer à la discussion."}
+        </p>
+      ) : null}
     </form>
   );
 });

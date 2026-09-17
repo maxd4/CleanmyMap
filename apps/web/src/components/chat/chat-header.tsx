@@ -104,9 +104,11 @@ export const ChatHeader = memo(function ChatHeader({
               <h2 className={`break-words font-bold text-base sm:text-lg ${isLight ? "text-slate-900" : "cmm-text-primary"}`}>
                 {activeChannelLabel}
               </h2>
-              <div className={`rounded-full px-2 py-0.5 cmm-text-caption font-semibold ${isLive ? isLight ? "bg-pink-50 text-pink-700" : "bg-pink-950/40 text-pink-300" : isLight ? "bg-slate-100 text-slate-600" : "bg-slate-800 text-slate-300"}`}>
-                {isLive ? "Direct" : "Actualisation"}
-              </div>
+              {isLive ? (
+                <div className={`rounded-full px-2 py-0.5 cmm-text-caption font-semibold ${isLight ? "bg-pink-50 text-pink-700" : "bg-pink-950/40 text-pink-300"}`}>
+                  Direct
+                </div>
+              ) : null}
             </div>
             <div className="flex items-center gap-2">
               <p className={`cmm-text-caption font-medium flex items-center gap-1 ${isPrivateChannel ? "text-indigo-600" : "text-pink-700"}`}>

@@ -17,7 +17,7 @@ test.describe("Messagerie — architecture d'information", () => {
     await expect(page.getByRole("heading", { name: "Messagerie", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Communauté globale", exact: true })).toBeVisible();
     const sidebar = page.locator('[data-connect-panel="discussions"] aside').first();
-    await expect(sidebar.getByRole("button", { name: /Coordination de secteur|Territoire global/ }).last()).toBeVisible();
+    await expect(sidebar.getByRole("button", { name: "Territoire", exact: true })).toBeVisible();
     await expect(sidebar.getByText("Actions", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Admin & élus", exact: true })).toHaveCount(0);
 
