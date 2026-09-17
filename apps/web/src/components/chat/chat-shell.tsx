@@ -822,7 +822,6 @@ export function ChatShell({
               ? `${activeAction.location_label} · ${activeAction.action_date} · ${activeAction.association_name || activeAction.actor_name || "Organisateur non renseigné"}`
               : discussionGuidance.cardSummary || activeChannelDefinition.description}
             activeChannelIcon={ActiveChannelIcon}
-            activeChannelAccentClass={activeChannelVisual.accentClass}
             metaItems={metaItems}
             viewMode={viewMode}
             isBugReportChannel={isBugReportChannel}

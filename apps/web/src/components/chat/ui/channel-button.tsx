@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Lock, type LucideIcon } from "lucide-react";
 
 type ChannelButtonProps = {
@@ -43,7 +42,7 @@ export function ChannelButton({
         active
           ? isLight
             ? "border-rose-200 bg-rose-500 text-white shadow-2xl shadow-rose-500/20"
-            : "border-violet-200 bg-violet-600 text-white shadow-2xl shadow-violet-600/30 dark:border-violet-500/40"
+            : "border-pink-200 bg-pink-600 text-white shadow-2xl shadow-pink-600/30 dark:border-pink-500/40"
           : isLight
             ? "border-transparent bg-white/80 text-slate-700 hover:border-rose-200 hover:bg-white hover:shadow-lg"
             : "border-transparent bg-white/60 text-slate-600 hover:border-slate-200 hover:bg-white hover:shadow-lg dark:bg-slate-950/60 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-900"
@@ -59,7 +58,7 @@ export function ChannelButton({
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
-            <span className={`block ${compact ? "cmm-text-small" : "cmm-text-caption"} font-black uppercase tracking-widest leading-none ${isLight ? "tracking-[0.18em]" : ""}`}>
+            <span className={`block ${compact ? "cmm-text-small" : "cmm-text-caption"} font-semibold leading-tight`}>
               {label}
             </span>
             <span
@@ -76,7 +75,7 @@ export function ChannelButton({
           </div>
           {count !== undefined ? (
             <span
-              className={`rounded-full px-2 py-0.5 cmm-text-caption font-black uppercase tracking-widest ${
+              className={`rounded-full px-2 py-0.5 cmm-text-caption font-semibold ${
                 active
                   ? "bg-white/15 text-white"
                   : isLight
@@ -90,8 +89,7 @@ export function ChannelButton({
         </div>
       </div>
       {active ? (
-        <motion.div
-          layoutId="active-channel"
+        <div
           className="absolute right-3 top-3 h-2 w-2 rounded-full bg-white"
         />
       ) : null}

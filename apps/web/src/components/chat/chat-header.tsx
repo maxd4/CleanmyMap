@@ -13,7 +13,6 @@ type ChatHeaderProps = {
   activeChannelLabel: string;
   activeChannelDescription: string;
   activeChannelIcon: LucideIcon;
-  activeChannelAccentClass: string;
   metaItems: Array<{ label: string; value: string }>;
   viewMode: "messages" | "graph";
   isBugReportChannel: boolean;
@@ -50,7 +49,6 @@ export const ChatHeader = memo(function ChatHeader({
   activeChannelLabel,
   activeChannelDescription,
   activeChannelIcon: ActiveChannelIcon,
-  activeChannelAccentClass,
   metaItems,
   viewMode,
   isBugReportChannel,
@@ -82,6 +80,7 @@ export const ChatHeader = memo(function ChatHeader({
   onLoadMoreSearch,
 }: ChatHeaderProps) {
   const isLight = tone === "light";
+  const isPrivateChannel = activeChannelType === "dm";
   const [showMeta, setShowMeta] = useState(false);
   return (
     <>
@@ -97,21 +96,21 @@ export const ChatHeader = memo(function ChatHeader({
               <ArrowLeft size={18} aria-hidden="true" />
             </button>
           ) : null}
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-inner sm:h-12 sm:w-12 ${isLight ? "bg-rose-50 text-rose-500" : `bg-pink-50 dark:bg-slate-900 ${activeChannelAccentClass}`}`}>
+          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-inner sm:h-12 sm:w-12 ${isPrivateChannel ? "bg-indigo-50 text-indigo-600" : "bg-pink-50 text-pink-600"}`}>
             <ActiveChannelIcon size={22} />
           </div>
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className={`break-words font-black text-base uppercase tracking-tighter sm:text-lg ${isLight ? "text-slate-900" : "cmm-text-primary"}`}>
+              <h2 className={`break-words font-bold text-base sm:text-lg ${isLight ? "text-slate-900" : "cmm-text-primary"}`}>
                 {activeChannelLabel}
-              </h3>
-              <div className={`px-2 py-0.5 rounded-full cmm-text-caption font-black uppercase tracking-widest animate-pulse ${isLight ? "bg-rose-100 text-rose-600" : "bg-pink-100 dark:bg-pink-950/40 text-pink-700 dark:text-pink-300"}`}>
+              </h2>
+              <div className={`rounded-full px-2 py-0.5 cmm-text-caption font-semibold ${isLive ? isLight ? "bg-pink-50 text-pink-700" : "bg-pink-950/40 text-pink-300" : isLight ? "bg-slate-100 text-slate-600" : "bg-slate-800 text-slate-300"}`}>
                 {isLive ? "Direct" : "Actualisation"}
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <p className={`cmm-text-caption font-black uppercase tracking-widest flex items-center gap-1 ${isLight ? "text-indigo-500" : "text-indigo-500"}`}>
-                <Sparkles size={10} className={activeChannelAccentClass} />
+              <p className={`cmm-text-caption font-medium flex items-center gap-1 ${isPrivateChannel ? "text-indigo-600" : "text-pink-700"}`}>
+                <Sparkles size={10} className={isPrivateChannel ? "text-indigo-500" : "text-pink-500"} aria-hidden="true" />
                 {activeChannelDescription}
               </p>
             </div>
@@ -223,7 +222,7 @@ export const ChatHeader = memo(function ChatHeader({
           {metaItems.map((item) => (
             <span
               key={item.label}
-              className={`inline-flex items-center gap-2 rounded-full px-3 py-1 cmm-text-caption font-black uppercase tracking-widest ${isLight ? "bg-slate-100 text-slate-600" : "bg-slate-800 text-slate-300"}`}
+              className={`inline-flex items-center gap-2 rounded-full px-3 py-1 cmm-text-caption font-semibold ${isLight ? "bg-slate-100 text-slate-600" : "bg-slate-800 text-slate-300"}`}
             >
               <span className="opacity-70">{item.label}</span>
               <span className={isLight ? "text-slate-900" : "text-white"}>{item.value}</span>
@@ -235,8 +234,8 @@ export const ChatHeader = memo(function ChatHeader({
       {isEditingHandle ? (
         <div className={`p-5 border-b flex items-center gap-4 animate-in slide-in-from-top-4 relative z-20 ${isLight ? "bg-rose-50/80 border-rose-100" : "bg-pink-50 dark:bg-pink-950/20 border-pink-100 dark:border-pink-900/50"}`}>
           <div className="flex-1">
-            <p className={`cmm-text-caption font-black uppercase mb-2 tracking-widest ${isLight ? "text-rose-700" : "text-pink-700 dark:text-pink-400"}`}>
-              Identité Numérique
+            <p className={`cmm-text-caption font-semibold mb-2 ${isLight ? "text-rose-700" : "text-pink-700 dark:text-pink-400"}`}>
+              Identité numérique
             </p>
             <input
               aria-label="Votre pseudo unique"
@@ -249,7 +248,7 @@ export const ChatHeader = memo(function ChatHeader({
           <button
             type="button"
             onClick={() => void onConfirmHandle()}
-            className={`mt-6 rounded-xl px-6 py-2 cmm-text-caption font-black uppercase tracking-widest text-white shadow-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-pink-600 shadow-pink-500/20"}`}
+            className={`mt-6 rounded-xl px-6 py-2 cmm-text-caption font-semibold text-white shadow-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isLight ? "bg-rose-500 shadow-rose-500/20" : "bg-pink-600 shadow-pink-500/20"}`}
           >
             Confirmer
           </button>

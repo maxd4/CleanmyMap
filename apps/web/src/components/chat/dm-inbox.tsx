@@ -85,7 +85,7 @@ export const DmInbox = memo(function DmInbox({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className={`cmm-text-caption font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+          <p className={`cmm-text-caption font-semibold ${isLight ? "text-slate-500" : "text-slate-500"}`}>
             Messages privés
           </p>
           <div className="mt-1 flex items-center gap-2">
@@ -102,7 +102,7 @@ export const DmInbox = memo(function DmInbox({
         <button
           type="button"
           onClick={onStartConversation}
-          className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 cmm-text-caption font-black uppercase tracking-widest transition ${isLight ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/20 hover:bg-indigo-700" : "bg-indigo-500 text-white hover:bg-indigo-400"}`}
+          className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 cmm-text-caption font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${isLight ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/20 hover:bg-indigo-700" : "bg-indigo-500 text-white hover:bg-indigo-400"}`}
         >
           <MessageCirclePlus size={15} aria-hidden="true" />
           <span className="hidden sm:inline">Nouveau message</span>
@@ -140,10 +140,10 @@ export const DmInbox = memo(function DmInbox({
                     className={isLight ? "bg-indigo-50 text-indigo-700" : "bg-white/10 text-white"}
                   />
                   <span className="min-w-0">
-                    <span className={`block truncate cmm-text-small font-bold ${isLight ? "text-slate-900" : "text-white"}`}>
+                    <span className={`block break-words cmm-text-small font-bold ${isLight ? "text-slate-900" : "text-white"}`}>
                       {candidate.display_name}
                     </span>
-                    <span className="block truncate cmm-text-caption text-slate-500">@{candidate.handle}</span>
+                    <span className="block break-words cmm-text-caption text-slate-500">@{candidate.handle}</span>
                   </span>
                 </button>
               ))
@@ -178,10 +178,10 @@ export const DmInbox = memo(function DmInbox({
                   <article key={request.id} className="rounded-lg border border-indigo-100 bg-white p-2">
                     <div className="flex items-center gap-2">
                       <ChatAvatar src={request.sender.avatar_url} name={request.sender.display_name} size="sm" tone="light" />
-                      <p className="min-w-0 truncate cmm-text-small font-bold text-slate-900">{request.sender.display_name}</p>
+                      <p className="min-w-0 break-words cmm-text-small font-bold text-slate-900">{request.sender.display_name}</p>
                     </div>
-                    <p className="mt-1 truncate cmm-text-caption text-slate-600">{request.message}</p>
-                    <p className="mt-1 truncate cmm-text-caption font-semibold text-indigo-700">
+                    <p className="mt-1 break-words cmm-text-caption text-slate-600">{request.message}</p>
+                    <p className="mt-1 break-words cmm-text-caption font-semibold text-indigo-700">
                       {request.action.title} · {request.action.locationLabel}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -210,7 +210,7 @@ export const DmInbox = memo(function DmInbox({
             <button
               type="button"
               onClick={onRetry}
-              className={`mt-3 inline-flex items-center gap-2 rounded-lg px-2 py-1 cmm-text-caption font-black uppercase tracking-widest ${isLight ? "bg-rose-50 text-rose-700 hover:bg-rose-100" : "bg-white/10 text-white hover:bg-white/15"}`}
+              className={`mt-3 inline-flex items-center gap-2 rounded-lg px-2 py-1 cmm-text-caption font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 ${isLight ? "bg-rose-50 text-rose-700 hover:bg-rose-100" : "bg-white/10 text-white hover:bg-white/15"}`}
             >
               <RefreshCw size={13} aria-hidden="true" /> Réessayer
             </button>
@@ -254,7 +254,7 @@ export const DmInbox = memo(function DmInbox({
                       </span>
                     </span>
                     <span className="mt-1 flex items-center justify-between gap-2">
-                      <span className={`truncate text-xs ${hasUnread ? "font-bold" : "font-medium"} ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                      <span className={`break-words text-xs ${hasUnread ? "font-bold" : "font-medium"} ${isLight ? "text-slate-500" : "text-slate-400"}`}>
                         {conversation.lastMessage.direction === "sent" ? "Vous : " : ""}
                         {conversation.lastMessage.content}
                       </span>

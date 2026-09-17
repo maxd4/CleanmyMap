@@ -1,7 +1,7 @@
 "use client";
 
 import Link from"next/link";
-import type { MouseEvent, ReactElement, ReactNode, Ref } from"react";
+import type { KeyboardEventHandler, MouseEvent, ReactElement, ReactNode, Ref } from"react";
 import { isValidElement, cloneElement } from"react";
 import { cn } from"@/lib/utils";
 
@@ -33,6 +33,11 @@ export interface CmmButtonProps {
  title?: string;
  type?:"button" |"submit" |"reset";
  asChild?: boolean;
+ role?: string;
+ tabIndex?: number;
+ ariaControls?: string;
+ ariaSelected?: boolean;
+ onKeyDown?: KeyboardEventHandler<HTMLButtonElement>;
  ref?: Ref<HTMLButtonElement>;
 }
 
@@ -62,6 +67,11 @@ export function CmmButton({
  title,
  type ="button",
  asChild = false,
+ role,
+ tabIndex,
+ ariaControls,
+ ariaSelected,
+ onKeyDown,
  loading = false,
  ref,
 }: CmmButtonProps) {
@@ -139,9 +149,14 @@ export function CmmButton({
   ref={ref}
   type={type}
   onClick={handleClick}
+  onKeyDown={onKeyDown}
   disabled={blocked}
   className={classes}
   aria-label={ariaLabel}
+  aria-controls={ariaControls}
+  aria-selected={ariaSelected}
+  role={role}
+  tabIndex={blocked ? -1 : tabIndex}
   title={title}
   {...stateProps}
  >

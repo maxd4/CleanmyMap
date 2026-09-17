@@ -83,7 +83,7 @@ export const ChatSidebar = memo(function ChatSidebar({
       {currentChannelType === "admin_elu" && (topicSectionTitle || topicSectionDescription) ? (
         <div className="px-2 pb-1 pt-2">
           {topicSectionTitle ? (
-            <p className={`cmm-text-caption font-black uppercase tracking-[0.14em] ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+            <p className={`cmm-text-caption font-semibold ${isLight ? "text-slate-500" : "text-slate-400"}`}>
               {topicSectionTitle}
             </p>
           ) : null}
@@ -109,21 +109,21 @@ export const ChatSidebar = memo(function ChatSidebar({
             className={`group flex w-full items-center gap-3 rounded-[1.25rem] border p-2 pl-3 text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 ${
               topicIsActive
                 ? isLight
-                  ? "border-transparent bg-indigo-50/50 text-indigo-700"
-                  : "border-transparent bg-indigo-900/20 text-indigo-300"
+                  ? "border-transparent bg-pink-50 text-pink-800"
+                  : "border-transparent bg-pink-900/20 text-pink-300"
                 : isLight
                   ? "border-transparent bg-transparent text-slate-600 hover:bg-white"
                   : "border-transparent bg-transparent text-slate-400 hover:bg-slate-800/50"
             }`}
           >
-            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${topicIsActive ? "bg-indigo-100 text-indigo-600" : "bg-transparent text-slate-400 group-hover:bg-slate-100 dark:group-hover:bg-slate-800"}`}>
+            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${topicIsActive ? "bg-pink-100 text-pink-700" : "bg-transparent text-slate-400 group-hover:bg-slate-100 dark:group-hover:bg-slate-800"}`}>
               <TopicIcon size={16} />
             </div>
             <div className="min-w-0 flex-1">
-              <span className={`block text-xs font-bold leading-tight ${topicIsActive ? "text-indigo-900 dark:text-indigo-100" : ""}`}>
+              <span className={`block text-xs font-bold leading-tight ${topicIsActive ? "text-pink-900 dark:text-pink-100" : ""}`}>
                 {topic.label}
               </span>
-              <span className={`block cmm-text-caption leading-tight ${topicIsActive ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}`}>
+              <span className={`block cmm-text-caption leading-tight ${topicIsActive ? "text-pink-700 dark:text-pink-300" : "text-slate-400"}`}>
                 {topic.description}
               </span>
             </div>
@@ -154,8 +154,8 @@ export const ChatSidebar = memo(function ChatSidebar({
         label={overrides.label ?? channel.label}
         description={overrides.description ?? channel.description}
         count={isMessagerie ? channel.unreadCount : overrides.count ?? channel.count}
-        accentClass={channel.accentClass.replace(/rose|pink/g, "indigo")}
-        chipClass={channel.chipClass.replace(/rose|pink/g, "indigo")}
+        accentClass={channel.accentClass}
+        chipClass={channel.chipClass}
         isLocked={channel.isLocked}
         tone={tone}
         compact={isMessagerie}
@@ -168,7 +168,7 @@ export const ChatSidebar = memo(function ChatSidebar({
       
       {/* DISCUSSIONS */}
       <section className={isMessagerie ? "w-full space-y-2" : "space-y-2"}>
-        <p className={`px-2 cmm-text-caption font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+        <p className={`px-2 cmm-text-caption font-semibold ${isLight ? "text-slate-500" : "text-slate-500"}`}>
           Discussions
         </p>
         <div className="space-y-1">
@@ -222,7 +222,7 @@ export const ChatSidebar = memo(function ChatSidebar({
       {!isMessagerie ? (
         <section className="space-y-2">
           <div className="flex items-center justify-between px-2">
-            <p className={`cmm-text-caption font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+            <p className={`cmm-text-caption font-semibold ${isLight ? "text-slate-400" : "text-slate-500"}`}>
               Messages privés
             </p>
             <span className="text-lg leading-none text-slate-400">+</span>
