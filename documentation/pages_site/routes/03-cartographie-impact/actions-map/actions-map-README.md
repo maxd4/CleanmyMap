@@ -42,11 +42,16 @@ Explorer les actions et hotspots, filtrer la vue, sélectionner une action et li
 - bloc de contexte avec compteur visible/chargé et export ;
 - légende canonique compacte avec résumé couleurs/infrastructure et détails des
   seuils, états et géométries en disclosure ;
-- journal / insights ;
-- analyse et journal ;
-- tableau de données ;
-- stories ;
-- export de la vue.
+- contexte de la vue avec les compteurs visibles/chargés ;
+- export de la vue ;
+- journal des actions filtrées ;
+- passerelle facultative vers `/reports` pour l'analyse approfondie.
+
+La page ne présente pas de carrousel « Dernières actions », de badge d'urgence
+ou d'illustration photographique générique. Les analyses temporelles, profils
+d'impact et regroupements par arrondissement ne sont pas recopiés sous la
+carte : `/reports` reste la destination canonique lorsqu'un équivalent valide
+est disponible.
 
 La page ne présente pas les diagnostics techniques de qualité géométrique dans
 la vue publique. La carte conserve sa géométrie et ses interactions ; les
@@ -334,7 +339,7 @@ La page demande une vigilance particulière :
 
 - carte plein écran ;
 - jusqu'à 300 éléments chargés dans le flux courant ;
-- composants cartographiques et carrousel chargés dynamiquement ;
+- composants cartographiques chargés dynamiquement ;
 - références de score partagées ;
 - éviter les fetchs supplémentaires à l'ouverture d'un détail.
 - Les preuves photo Trash Spotter ne sont pas chargées avec la carte ni à
