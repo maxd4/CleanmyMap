@@ -2,11 +2,11 @@
 
 import { UserButton, useUser } from "@clerk/nextjs";
 import { LogIn, UserPlus } from "lucide-react";
-import Link from "next/link";
 
 import type { UserIdentity } from "@/lib/authz";
 import { AccountIdentityChip } from "@/components/account/account-identity-chip";
 import { NotificationBell } from "@/components/navigation/notification-bell";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { ActivityStatus } from "@/lib/account/activity-status";
 import type { Locale } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
@@ -123,30 +123,34 @@ export function RibbonAccountActions({
     <div className="flex min-w-0 items-center gap-2 lg:gap-3">
             {!isAuthenticated ? (
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <Link
+                <CmmButton
                   href="/sign-in"
                   prefetch={false}
-                  aria-label={locale === "fr" ? "Se connecter à CleanMyMap" : "Sign in to CleanMyMap"}
+                  ariaLabel={locale === "fr" ? "Se connecter à CleanMyMap" : "Sign in to CleanMyMap"}
                   onClick={() => onTrackNavigation("/sign-in", locale === "fr" ? "Se connecter" : "Sign in", null)}
-                  className="cmm-ribbon-text inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full px-0 font-bold text-white transition hover:text-white xl:w-auto xl:px-3 xl:h-10 xl:min-h-0"
+                  tone="critical"
+                  variant="pill"
+                  className="cmm-ribbon-text h-11 min-h-11 w-11 shrink-0 px-0 font-bold xl:h-10 xl:min-h-0 xl:w-auto xl:px-3"
                 >
                   <LogIn className="h-4 w-4 xl:hidden" aria-hidden="true" />
                   <span className="hidden xl:inline">
                     {locale === "fr" ? "Se connecter" : "Sign in"}
                   </span>
-                </Link>
-                <Link
+                </CmmButton>
+                <CmmButton
                   href="/sign-up"
                   prefetch={false}
-                  aria-label={locale === "fr" ? "Créer un compte CleanMyMap" : "Sign up for CleanMyMap"}
+                  ariaLabel={locale === "fr" ? "Créer un compte CleanMyMap" : "Sign up for CleanMyMap"}
                   onClick={() => onTrackNavigation("/sign-up", locale === "fr" ? "S'inscrire" : "Sign up", null)}
-                  className="cmm-ribbon-text inline-flex h-11 min-h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-r from-[#27C3D9] to-[#18B68F] px-0 font-bold text-[#16313b] shadow-lg shadow-cyan-900/15 transition hover:from-[#2F80C3] hover:to-[#27C3D9] xl:w-auto xl:px-4 xl:h-10 xl:min-h-0"
+                  tone="primary"
+                  variant="pill"
+                  className="cmm-ribbon-text h-11 min-h-11 w-11 shrink-0 px-0 font-bold xl:h-10 xl:min-h-0 xl:w-auto xl:px-4"
                 >
                   <UserPlus className="h-4 w-4 xl:hidden" aria-hidden="true" />
                   <span className="hidden xl:inline">
                     {locale === "fr" ? "S'inscrire" : "Sign up"}
                   </span>
-                </Link>
+                </CmmButton>
               </div>
             ) : null}
 
