@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback, useState } from "react";
+import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { FeedbackSection } from "@/components/sections/rubriques/feedback-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -52,6 +52,10 @@ import {
 } from "./chat-shell.utils";
 import { useChatSearch } from "./hooks/use-chat-search";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
+import {
+  getChatShellNavigationKey,
+  type ChatShellNavigationState,
+} from "./chat-navigation";
 
 export type ChatShellProps = {
   initialChannelType?: ChatChannelType;
@@ -64,6 +68,8 @@ export type ChatShellProps = {
   initialTopicId?: ChatTopicId | null;
   initialComposerMode?: "message" | "announcement" | "poll";
   initialAnnouncementTemplate?: CommunityAnnouncementTemplateKey | null;
+  initialEventId?: string | null;
+  initialContactRequestId?: string | null;
   initialRelatedEvent?: ChatRelatedEvent | null;
   announcementEventRequested?: boolean;
   announcementEventLoading?: boolean;
@@ -72,6 +78,8 @@ export type ChatShellProps = {
   tone?: "light" | "dark";
   fullHeight?: boolean;
   messagerieMode?: boolean;
+  navigationState?: ChatShellNavigationState | null;
+  onNavigationChange?: (state: ChatShellNavigationState) => void;
 };
 
 function consumeFeedbackIdFromUrl(): void {
@@ -99,6 +107,8 @@ export function ChatShell({
   initialTopicId,
   initialComposerMode = "message",
   initialAnnouncementTemplate = null,
+  initialEventId = null,
+  initialContactRequestId = null,
   initialRelatedEvent = null,
   announcementEventRequested = false,
   announcementEventLoading = false,
@@ -107,6 +117,8 @@ export function ChatShell({
   tone = "dark",
   fullHeight = false,
   messagerieMode = false,
+  navigationState = null,
+  onNavigationChange,
 }: ChatShellProps) {
   const isLight = tone === "light";
   const { locale } = useSitePreferences();
@@ -353,6 +365,96 @@ export function ChatShell({
     setMessage,
     setSendError,
   });
+
+  const navigationStateKey = navigationState
+    ? getChatShellNavigationKey(navigationState)
+    : null;
+  const appliedNavigationStateKeyRef = useRef<string | null>(null);
+  const restoringNavigationRef = useRef(false);
+  useEffect(() => {
+    if (
+      !navigationState ||
+      !navigationStateKey ||
+      appliedNavigationStateKeyRef.current === navigationStateKey
+    ) {
+      return;
+    }
+
+    if (appliedNavigationStateKeyRef.current !== null) {
+      restoringNavigationRef.current = true;
+    }
+    appliedNavigationStateKeyRef.current = navigationStateKey;
+    setActiveChannelType(navigationState.activeChannelType);
+    setSelectedActionId(
+      navigationState.activeChannelType === "action"
+        ? navigationState.selectedActionId
+        : null,
+    );
+    setActiveTopicId(navigationState.activeTopicId);
+    setSelectedRecipient(navigationState.selectedRecipient);
+    setSelectedZone(navigationState.selectedZone);
+    setActiveFeedbackId(navigationState.feedbackId);
+    if (navigationState.announcementTemplate) {
+      handleAnnouncementTemplateChange(navigationState.announcementTemplate);
+    } else if (announcementTemplate) {
+      handleComposerModeChange("message");
+    }
+  }, [
+    announcementTemplate,
+    handleAnnouncementTemplateChange,
+    handleComposerModeChange,
+    navigationState,
+    navigationStateKey,
+    setActiveChannelType,
+    setActiveTopicId,
+    setSelectedActionId,
+    setSelectedRecipient,
+    setSelectedZone,
+  ]);
+
+  const navigationChangeRef = useRef(onNavigationChange);
+  useEffect(() => {
+    navigationChangeRef.current = onNavigationChange;
+  }, [onNavigationChange]);
+  useEffect(() => {
+    if (restoringNavigationRef.current) {
+      restoringNavigationRef.current = false;
+      return;
+    }
+    navigationChangeRef.current?.({
+      activeChannelType,
+      activeTopicId,
+      selectedActionId,
+      selectedRecipient,
+      selectedZone,
+      territoryFocus,
+      messageId: targetMessageIdForScope,
+      feedbackId: activeFeedbackId,
+      contactRequestId:
+        selectedRecipient?.id === initialRecipient?.id
+          ? initialContactRequestId
+          : null,
+      announcementTemplate,
+      eventId:
+        announcementTemplate && announcementTemplate === initialAnnouncementTemplate
+          ? initialEventId
+          : null,
+    });
+  }, [
+    activeChannelType,
+    activeFeedbackId,
+    activeTopicId,
+    announcementTemplate,
+    initialAnnouncementTemplate,
+    initialContactRequestId,
+    initialEventId,
+    initialRecipient?.id,
+    selectedActionId,
+    selectedRecipient,
+    selectedZone,
+    targetMessageIdForScope,
+    territoryFocus,
+  ]);
 
   const { handlePollVote, pollVoteStates } = useChatShellPollVoting({
     messages,

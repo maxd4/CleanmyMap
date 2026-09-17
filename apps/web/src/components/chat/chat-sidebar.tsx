@@ -163,10 +163,10 @@ export const ChatSidebar = memo(function ChatSidebar({
   return (
     <aside className={`custom-scrollbar ${isMessagerie ? "flex w-full shrink-0 flex-row gap-3 overflow-x-auto overflow-y-hidden border-b p-3 md:w-64 md:flex-col md:gap-6 md:overflow-x-hidden md:overflow-y-auto md:border-b-0 md:border-r md:p-4" : "flex w-24 flex-col space-y-6 overflow-y-auto border-r p-4 md:w-80"} ${isLight ? "border-rose-100/80 bg-rose-50/30" : "border-slate-100 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50"}`}>
       
-      {/* CANAUX PUBLICS */}
+      {/* DISCUSSIONS */}
       <section className={isMessagerie ? "w-[17rem] shrink-0 space-y-2 md:w-auto md:shrink" : "space-y-2"}>
         <p className={`px-2 cmm-text-caption font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
-          Canaux Publics
+          Discussions
         </p>
         <div className="space-y-1">
           {renderButton(communityChannel, {
@@ -214,12 +214,12 @@ export const ChatSidebar = memo(function ChatSidebar({
         <section className="space-y-2">
           <div className="flex items-center justify-between px-2">
             <p className={`cmm-text-caption font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
-              Discussions Privées
+              Messages privés
             </p>
             <span className="text-lg leading-none text-slate-400">+</span>
           </div>
           {renderButton(channels.find((channel) => channel.channelType === "dm"), {
-            label: "Discussions privées",
+            label: "Messages privés",
             description: "Échanges confidentiels en tête-à-tête",
           })}
         </section>
