@@ -269,7 +269,10 @@ export function ActionCreationShell({
         ) : null}
 
         <div className="space-y-4" data-testid="action-creation-panels">
-          {panels.map((panel) => {
+          {(initialTab === "before"
+            ? panels
+            : panels.filter((panel) => panel.id === "pre-formulaire")
+          ).map((panel) => {
             const panelView = (
               <ActionCreationPanelView
                 key={panel.id}

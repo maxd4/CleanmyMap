@@ -65,6 +65,7 @@ export default async function NewActionPage({
     actionId,
     from,
     actionPhase: resumedAction?.action_phase,
+    panel,
   });
   const returnUrl = buildActionReturnUrl({ fromEventId, actionId, from, panel, tab });
   const { userId } = await getSafeAuthSession();
