@@ -51,11 +51,11 @@ export function IdentityAndSharingSection({
               <div className="space-y-6">
                 <SectionLabel
                   icon={ClipboardList}
-                  title="Identité et partage"
+                  title="Identité et organisation"
                   subtitle="Qui porte le formulaire, dans quel cadre, et si le groupe peut rejoindre l'action."
                 />
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   <FieldShell label="Référent ou créateur">
                     <select
                       value={form.actorName}
@@ -126,7 +126,7 @@ export function IdentityAndSharingSection({
                   />
 
                   <SelectShell
-                    label="Statut du formulaire"
+                    label="État de préparation"
                     value={form.preparationState}
                     onChange={(value) =>
                       updateField("preparationState", value as FormState["preparationState"])
@@ -139,7 +139,7 @@ export function IdentityAndSharingSection({
                   currentUserId={userMetadata.userId}
                   value={form.participantAccounts}
                   onChange={(next) => updateField("participantAccounts", next)}
-                  description="Ajoutez des membres connus avant de publier le pré-formulaire ou de passer au formulaire complet."
+                  description="Ajoutez des membres connus avant de publier l'action ou de passer au formulaire complet."
                 />
 
                 <GroupJoinPublishCard
@@ -197,7 +197,7 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                     />
                   </FieldShell>
 
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-4 lg:grid-cols-2">
                     <FieldShell label="Commune ou zone concernée" hint="Ville, quartier ou secteur principal.">
                       <input
                         type="text"
@@ -222,7 +222,7 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                     </FieldShell>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <FieldShell
                       label="Zone cible prévue"
                       hint="Périmètre visé en quelques mots."
@@ -236,7 +236,7 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                       />
                     </FieldShell>
 
-                    <div className="space-y-2 md:col-span-2">
+                    <div className="space-y-2 md:col-span-2 lg:col-span-2">
                       <p className="text-sm font-semibold text-emerald-950">Bénévoles attendus par catégorie</p>
                       <div className="grid gap-3 sm:grid-cols-3">
                         {([
@@ -261,12 +261,12 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                     </div>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-4">
                     <FieldShell
                       label="Localisation du rendez-vous"
                       hint="Facultatif si l'adresse suffit."
                     >
-                      <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="grid max-w-2xl gap-3 sm:grid-cols-2">
                         <input
                           type="number"
                           step="any"
@@ -299,7 +299,9 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                     </FieldShell>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <fieldset className="rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] p-4 md:p-5">
+                    <legend className="px-2 text-base font-black text-emerald-950">Date et horaires</legend>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <FieldShell label="Date prévue">
                       <input
                         type="date"
@@ -328,7 +330,7 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                     </FieldShell>
 
                     <FieldShell
-                      label="Temps d’action"
+                      label="Durée de l’action"
                       hint="Marche + ramassage + tri + pesée, sans séparer ces étapes."
                     >
                       <div className="relative">
@@ -346,11 +348,11 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                         Stockage précis ; affichage métier : {formatBusinessDurationMinutes(Number(form.durationMinutes))}.
                       </p>
                     </FieldShell>
-                  </div>
+                    </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
                     <FieldShell
-                      label="Début de l’événement"
+                      label="Début du créneau global"
                       hint="Heure réelle ou actuellement convenue, le même jour que l’action."
                     >
                       <input
@@ -361,7 +363,7 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                       />
                     </FieldShell>
                     <FieldShell
-                      label="Fin de l’événement"
+                      label="Fin du créneau global"
                       hint="Laissez vide si l’horaire n’est pas encore connu."
                     >
                       <input
@@ -374,7 +376,7 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                   </div>
 
                   {event.status === "available" ? (
-                    <p className="text-xs leading-5 text-emerald-900/65">
+                    <p className="mt-4 text-xs leading-5 text-emerald-900/65">
                       Créneau total : {formatBusinessDurationMinutes(event.eventDurationMinutes)}
                       {organization.status === "available"
                         ? ` · Organisation : ${formatBusinessDurationMinutes(organization.organizationMinutes)}`
@@ -383,16 +385,17 @@ export function PlannedActionSection({ form, updateField }: BaseSectionProps) {
                           : ""}
                     </p>
                   ) : event.status === "inconsistent" ? (
-                    <p className="text-xs font-medium leading-5 text-rose-700">
+                    <p className="mt-4 text-xs font-medium leading-5 text-rose-700">
                       Incohérence : la fin de l’événement est antérieure au début le même jour.
                     </p>
                   ) : event.status === "invalid" ? (
-                    <p className="text-xs font-medium leading-5 text-rose-700">
+                    <p className="mt-4 text-xs font-medium leading-5 text-rose-700">
                       Les horaires doivent respecter le format HH:MM.
                     </p>
                   ) : null}
+                  </fieldset>
 
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     <SelectShell
                       label="Type d'action prévue"
                       value={form.plannedObjective}
@@ -451,7 +454,7 @@ export function PreparationAndSafetySection({ form, updateField }: BaseSectionPr
                 subtitle="Consignes, matériel et accessibilité avant publication."
               />
 
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="space-y-4">
                 <FieldShell label="Accessibilité">
                   <textarea
                     value={form.accessibility}

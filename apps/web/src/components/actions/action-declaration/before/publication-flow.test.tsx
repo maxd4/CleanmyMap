@@ -124,7 +124,6 @@ describe("ActionBeforeDeclarationForm publication flow", () => {
       React.createElement(ActionBeforeDeclarationForm, props),
     );
 
-    expect(html).toContain("Étape 5");
     expect(html).toContain("Confirmer la publication");
     expect(html).toContain("Confirmer et publier");
     expect(html).toContain("Annuler");

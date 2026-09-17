@@ -23,15 +23,13 @@ describe("ActionBeforeDeclarationForm", () => {
       } as ComponentProps<typeof ActionBeforeDeclarationForm>),
     );
 
-    expect(html).toContain("Déclarer avant l&#x27;action");
-    expect(html).toContain('data-testid="before-action-stepper"');
-    expect(html).toContain('aria-label="Progression Créer une action"');
-    expect(html).not.toContain(["Progression", "Organiser une action"].join(" "));
-    expect(html).toContain("Publication");
-    expect(html).toContain("Préparer le formulaire de groupe");
-    expect(html).toContain("Enregistrer le pré-formulaire");
+    expect(html).toContain("Préparer une action future");
+    expect(html).not.toContain('data-testid="before-action-stepper"');
+    expect(html).not.toContain("Déclarer avant l&#x27;action");
+    expect(html).not.toContain("Préparer le formulaire de groupe");
+    expect(html).toContain("Enregistrer la préparation");
     expect(html).toContain("publication sera déclenchée explicitement");
-    expect(html).toContain("Identité et partage");
+    expect(html).toContain("Identité et organisation");
     expect(html).toContain("Type de structure");
     expect(html).toContain("Sélectionnez un type de structure");
     expect(html).toContain("Action prévue");
@@ -48,7 +46,10 @@ describe("ActionBeforeDeclarationForm", () => {
     expect(html).toContain("Commentaire logistique");
     expect(html).toContain("Checklist avant départ");
     expect(html).toContain("Localisation du rendez-vous");
-    expect(html).toContain("Statut du formulaire");
+    expect(html).toContain("État de préparation");
+    expect(html).toContain("Date et horaires");
+    expect(html).toContain("Début du créneau global");
+    expect(html).toContain("Fin du créneau global");
     expect(html).toContain("Membres de l&#x27;action");
     expect(html).toContain("Publier en tant que formulaire de groupe");
     expect(html).not.toContain("Déchets collectés");

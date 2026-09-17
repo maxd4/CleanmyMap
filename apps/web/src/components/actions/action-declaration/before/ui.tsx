@@ -12,19 +12,13 @@ export function SectionLabel({
   subtitle: string;
 }) {
   return (
-    <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-[#ECF8EF] px-3 py-1.5 shadow-sm">
-          <Icon size={14} className="text-emerald-700" />
-          <span className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-950/75">
-            Pré-action
-          </span>
-        </div>
-        <span className="h-px flex-1 bg-gradient-to-r from-emerald-200/80 to-transparent" />
+    <div className="flex items-start gap-3 border-b border-emerald-100/80 pb-4">
+      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-emerald-200/70 bg-[#ECF8EF] text-emerald-700">
+        <Icon size={16} aria-hidden="true" />
       </div>
       <div>
-        <h3 className="text-lg font-black tracking-tight text-emerald-950">{title}</h3>
-        <p className="mt-1 max-w-2xl text-sm leading-6 text-emerald-900/68">{subtitle}</p>
+        <h3 className="text-xl font-black tracking-tight text-emerald-950">{title}</h3>
+        <p className="cmm-text-body cmm-text-primary mt-1 max-w-3xl">{subtitle}</p>
       </div>
     </div>
   );
@@ -118,7 +112,7 @@ export function GroupJoinPublishCard({
       </label>
       {showHelp ? (
         <p className="mt-3 rounded-2xl border border-emerald-200/70 bg-white/90 px-3 py-2 text-xs leading-5 text-emerald-900/72">
-          Cette option ne publie pas les champs de récolte finale. Elle rend seulement le pré-formulaire visible dans
+          Cette option ne publie pas les champs de récolte finale. Elle rend seulement la préparation visible dans
           la page Rejoindre une action.
         </p>
       ) : null}
