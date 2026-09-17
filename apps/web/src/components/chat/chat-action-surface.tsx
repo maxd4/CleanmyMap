@@ -1,26 +1,11 @@
 "use client";
 
-import { CalendarDays, MapPin, MessageCircle, Route, Users2 } from "lucide-react";
+import { CalendarDays, MapPin, MessageCircle } from "lucide-react";
 import type { ActionListItem } from "@/lib/actions/types";
 import { isActionStartInFuture } from "@/lib/actions/temporal";
-import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
-import { extractEventRefFromNotes } from "@/lib/actions/event-link";
 
 function titleFor(item: ActionListItem): string {
   return item.contract?.metadata.preparationData?.actionTitle?.trim() || item.location_label;
-}
-
-function plannedParticipants(item: ActionListItem): number {
-  const planned = item.contract?.metadata.preparationData?.volunteerParticipation?.participantsCount;
-  return typeof planned === "number" && Number.isFinite(planned)
-    ? Math.max(0, Math.trunc(planned))
-    : Math.max(0, Math.trunc(item.volunteers_count));
-}
-
-function timeWindowFor(item: ActionListItem): string | null {
-  const start = item.contract?.dates.eventStartTime ?? null;
-  const end = item.contract?.dates.eventEndTime ?? null;
-  return start || end ? [start, end].filter(Boolean).join(" – ") : null;
 }
 
 function stateLabel(item: ActionListItem): string {
@@ -55,7 +40,7 @@ export function ChatActionSurface({
   const isLight = tone === "light";
   return (
     <section className="space-y-2">
-      <p className={`px-2 text-[10px] font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
+      <p className={`px-2 cmm-text-caption font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
         Actions
       </p>
       {loading ? <p className="px-2 text-xs text-slate-500">Chargement des actions...</p> : null}
@@ -64,15 +49,13 @@ export function ChatActionSurface({
       <div className="space-y-1">
         {items.map((item) => {
           const active = item.id === activeActionId;
-          const timeWindow = timeWindowFor(item);
-          const eventRef = extractEventRefFromNotes(item.notes ?? item.contract?.metadata.notes);
           return (
             <button
               key={item.id}
               type="button"
               onClick={() => onSelectAction(item.id)}
               aria-pressed={active}
-              className={`w-full rounded-2xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${
+              className={`w-full rounded-xl border p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 ${
                 active
                   ? isLight ? "border-sky-200 bg-sky-50 text-sky-950" : "border-sky-500/40 bg-sky-500/10 text-sky-100"
                   : isLight ? "border-transparent hover:bg-white" : "border-transparent hover:bg-slate-800/50"
@@ -81,14 +64,14 @@ export function ChatActionSurface({
               <span className="flex items-start gap-2">
                 <MessageCircle size={15} className="mt-0.5 shrink-0 text-sky-500" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-xs font-black">{titleFor(item)}</span>
-                  <span className="mt-1 block text-[10px] text-slate-500">{stateLabel(item)}</span>
-                  <span className="mt-1 block space-y-0.5 text-[10px] text-slate-500">
-                    <span className="flex items-center gap-1"><CalendarDays size={11} />{item.action_date}{timeWindow ? ` · ${timeWindow}` : ""}</span>
-                    <span className="flex items-center gap-1"><MapPin size={11} />{item.location_label}</span>
-                    <span className="flex items-center gap-1"><Users2 size={11} />{plannedParticipants(item)} participants prévus · {formatBusinessDurationMinutes(item.duration_minutes)} estimés</span>
-                    <span className="flex items-center gap-1"><Route size={11} />{item.geometry_kind ? "Itinéraire prévu" : "Lieu uniquement"}</span>
-                    {eventRef ? <span className="block">Événement : {eventRef}</span> : null}
+                  <span className="block truncate cmm-text-small font-black">{titleFor(item)}</span>
+                  <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 cmm-text-caption text-slate-500">
+                    <span className="inline-flex items-center gap-1"><CalendarDays size={11} aria-hidden="true" />{item.action_date}</span>
+                    <span>{stateLabel(item)}</span>
+                  </span>
+                  <span className="mt-0.5 flex items-center gap-1 cmm-text-caption text-slate-500">
+                    <MapPin size={11} aria-hidden="true" />
+                    <span className="truncate">{item.location_label}</span>
                   </span>
                 </span>
               </span>

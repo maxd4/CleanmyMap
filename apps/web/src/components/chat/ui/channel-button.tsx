@@ -15,6 +15,7 @@ type ChannelButtonProps = {
   chipClass: string;
   isLocked: boolean;
   tone?: "light" | "dark";
+  compact?: boolean;
 };
 
 export function ChannelButton({
@@ -29,6 +30,7 @@ export function ChannelButton({
   chipClass,
   isLocked,
   tone = "dark",
+  compact = false,
 }: ChannelButtonProps) {
   const isLight = tone === "light";
   return (
@@ -37,7 +39,7 @@ export function ChannelButton({
       disabled={disabled}
       aria-label={label}
       aria-pressed={active}
-      className={`group relative flex w-full items-start gap-3 rounded-[1.5rem] border p-3 text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 ${
+      className={`group relative flex w-full items-start gap-3 border text-left transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-2 ${compact ? "rounded-xl p-2" : "rounded-[1.5rem] p-3"} ${
         active
           ? isLight
             ? "border-rose-200 bg-rose-500 text-white shadow-2xl shadow-rose-500/20"
@@ -48,7 +50,7 @@ export function ChannelButton({
       } ${disabled ? "cursor-not-allowed opacity-70" : ""}`}
     >
       <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-colors ${
+        className={`flex shrink-0 items-center justify-center rounded-2xl transition-colors ${compact ? "h-8 w-8 rounded-xl" : "h-10 w-10"} ${
           active ? (isLight ? "bg-white/15 text-white" : "bg-white/15 text-white") : chipClass
         }`}
       >
@@ -57,7 +59,7 @@ export function ChannelButton({
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
-            <span className={`block cmm-text-caption font-black uppercase tracking-widest leading-none ${isLight ? "tracking-[0.18em]" : ""}`}>
+            <span className={`block ${compact ? "cmm-text-small" : "cmm-text-caption"} font-black uppercase tracking-widest leading-none ${isLight ? "tracking-[0.18em]" : ""}`}>
               {label}
             </span>
             <span

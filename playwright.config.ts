@@ -48,6 +48,15 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      name: "messagerie authenticated",
+      testMatch: /messagerie-information-architecture\.spec\.ts/,
+      dependencies: ["global setup"],
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: "artifacts/playwright/clerk/user.json",
+      },
+    },
+    {
       name: "action sharing",
       testMatch: /action-sharing\.spec\.ts/,
       dependencies: ["global setup"],

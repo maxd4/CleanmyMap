@@ -28,6 +28,7 @@ type ChatHeaderProps = {
   showControls?: boolean;
   isLive?: boolean;
   onBackToDmInbox?: () => void;
+  onBackToContextList?: () => void;
   showSearch?: boolean;
   isSearchOpen?: boolean;
   searchQuery?: string;
@@ -64,6 +65,7 @@ export const ChatHeader = memo(function ChatHeader({
   showControls = true,
   isLive = false,
   onBackToDmInbox,
+  onBackToContextList,
   showSearch = false,
   isSearchOpen = false,
   searchQuery = "",
@@ -85,11 +87,11 @@ export const ChatHeader = memo(function ChatHeader({
     <>
       <div className={`flex items-center justify-between gap-3 border-b px-3 py-3 backdrop-blur-xl relative z-30 sm:px-5 sm:py-4 ${isLight ? "border-rose-100/60 bg-white/70" : "border-pink-100/70 dark:border-slate-800 bg-[rgba(255,248,251,0.9)] dark:bg-slate-900/50"}`}>
         <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
-          {onBackToDmInbox ? (
+          {onBackToDmInbox || onBackToContextList ? (
             <button
               type="button"
-              onClick={onBackToDmInbox}
-              aria-label="Retour aux conversations"
+              onClick={onBackToContextList ?? onBackToDmInbox}
+              aria-label={onBackToContextList ? "Retour aux contextes" : "Retour aux conversations"}
               className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl md:hidden ${isLight ? "bg-white text-slate-500 shadow-sm hover:text-rose-600" : "bg-white/10 text-slate-300 hover:bg-white/15 hover:text-white"}`}
             >
               <ArrowLeft size={18} aria-hidden="true" />

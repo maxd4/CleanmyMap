@@ -49,6 +49,7 @@ type ChatSidebarProps = {
   currentZone?: string;
   profileDefaultZone?: string;
   onSelectZone?: (zoneName: string) => void;
+  className?: string;
 };
 
 export const ChatSidebar = memo(function ChatSidebar({
@@ -69,6 +70,7 @@ export const ChatSidebar = memo(function ChatSidebar({
   currentZone = "",
   profileDefaultZone = "",
   onSelectZone,
+  className = "",
 }: ChatSidebarProps) {
   const isLight = tone === "light";
   const isMessagerie = presentation === "messagerie";
@@ -156,15 +158,16 @@ export const ChatSidebar = memo(function ChatSidebar({
         chipClass={channel.chipClass.replace(/rose|pink/g, "indigo")}
         isLocked={channel.isLocked}
         tone={tone}
+        compact={isMessagerie}
       />
     );
   };
 
   return (
-    <aside className={`custom-scrollbar ${isMessagerie ? "flex w-full shrink-0 flex-row gap-3 overflow-x-auto overflow-y-hidden border-b p-3 md:w-64 md:flex-col md:gap-6 md:overflow-x-hidden md:overflow-y-auto md:border-b-0 md:border-r md:p-4" : "flex w-24 flex-col space-y-6 overflow-y-auto border-r p-4 md:w-80"} ${isLight ? "border-rose-100/80 bg-rose-50/30" : "border-slate-100 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50"}`}>
+    <aside className={`${className || "flex"} custom-scrollbar ${isMessagerie ? "w-full shrink-0 flex-col gap-3 overflow-y-auto border-b p-3 md:w-60 md:gap-4 md:border-b-0 md:border-r md:p-3" : "w-24 flex-col space-y-6 overflow-y-auto border-r p-4 md:w-80"} ${isLight ? "border-rose-100/80 bg-rose-50/30" : "border-slate-100 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50"}`}>
       
       {/* DISCUSSIONS */}
-      <section className={isMessagerie ? "w-[17rem] shrink-0 space-y-2 md:w-auto md:shrink" : "space-y-2"}>
+      <section className={isMessagerie ? "w-full space-y-2" : "space-y-2"}>
         <p className={`px-2 cmm-text-caption font-black uppercase tracking-[0.18em] ${isLight ? "text-slate-400" : "text-slate-500"}`}>
           Discussions
         </p>
@@ -187,15 +190,11 @@ export const ChatSidebar = memo(function ChatSidebar({
               profileDefaultZone={profileDefaultZone}
               onChange={onSelectZone}
               tone={tone}
+              compact={isMessagerie}
             />
           ) : null}
           {currentChannelType === "territory" ? renderTopics() : null}
 
-          {renderButton(adminEluChannel, {
-            label: "Admin & élus",
-            description: "Pilotage, arbitrages et coordination",
-          })}
-          {currentChannelType === "admin_elu" ? renderTopics() : null}
         </div>
       </section>
 
@@ -208,6 +207,16 @@ export const ChatSidebar = memo(function ChatSidebar({
           error={actionError}
           tone={tone}
         />
+      ) : null}
+
+      {adminEluChannel && !adminEluChannel.disabled ? (
+        <section className="space-y-2">
+          {renderButton(adminEluChannel, {
+            label: "Admin & élus",
+            description: "Pilotage, arbitrages et coordination",
+          })}
+          {currentChannelType === "admin_elu" ? renderTopics() : null}
+        </section>
       ) : null}
 
       {!isMessagerie ? (
