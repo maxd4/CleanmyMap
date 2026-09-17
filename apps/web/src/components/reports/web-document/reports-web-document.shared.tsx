@@ -8,6 +8,7 @@ import {
   buildReportDataAvailabilityNotices,
   type ReportDataAvailability,
 } from "@/lib/reports/data-availability";
+import type { ReportExportAvailability } from "@/lib/reports/report-export-quota-contract";
 
 export const DETAIL_LEVEL_OPTIONS = [
   { id: "concis", label: "Concis" },
@@ -21,6 +22,101 @@ export type SelectedPeriodId = PeriodId;
 
 export const DEFAULT_REPORT_GENERATION_PERIOD: SelectedPeriodId = "six_months";
 export const DEFAULT_REPORT_DETAIL_LEVEL: DetailLevelId = "default";
+
+export type ReportGenerationUiState = "idle" | "pending" | "success" | "error";
+
+export type ReportExportStatusKind =
+  | "loading"
+  | "success"
+  | "error"
+  | "quota-used"
+  | "quota-unavailable"
+  | "no-data"
+  | "ready";
+
+export type ReportExportStatusSummary = {
+  kind: ReportExportStatusKind;
+  label: string;
+  description: string;
+};
+
+export function resolveReportExportStatus({
+  state,
+  hasData,
+  isLoading,
+  hasError,
+  dailyExportAvailability,
+  message,
+}: {
+  state: ReportGenerationUiState;
+  hasData: boolean;
+  isLoading: boolean;
+  hasError: boolean;
+  dailyExportAvailability: ReportExportAvailability;
+  message?: string | null;
+}): ReportExportStatusSummary {
+  if (state === "pending" || isLoading) {
+    return {
+      kind: "loading",
+      label: "Génération en cours",
+      description: "Préparation du PDF en cours.",
+    };
+  }
+
+  if (state === "success") {
+    return {
+      kind: "success",
+      label: "Rapport généré",
+      description: "PDF ouvert.",
+    };
+  }
+
+  if (state === "error") {
+    return {
+      kind: "error",
+      label: "Erreur d’export",
+      description: message ?? "Une erreur empêche l’export.",
+    };
+  }
+
+  if (hasError) {
+    return {
+      kind: "error",
+      label: "Données indisponibles",
+      description: "Impossible de charger les données du rapport.",
+    };
+  }
+
+  if (dailyExportAvailability === "used") {
+    return {
+      kind: "quota-used",
+      label: "Quota quotidien atteint",
+      description: "Le prochain export sera disponible le jour civil suivant.",
+    };
+  }
+
+  if (dailyExportAvailability === "unavailable") {
+    return {
+      kind: "quota-unavailable",
+      label: "Quota indisponible",
+      description: "La disponibilité du quota ne peut pas être confirmée.",
+    };
+  }
+
+  if (!hasData) {
+    return {
+      kind: "no-data",
+      label: "Aucune donnée exploitable",
+      description: "Aucune donnée ne permet de générer ce rapport.",
+    };
+  }
+
+  return {
+    kind: "ready",
+    label: "Prêt à générer",
+    description: "La configuration actuelle permet de lancer l’export.",
+  };
+}
 export type ReportModuleId =
   | "dataAndCartography"
   | "transparencyAndMethods"

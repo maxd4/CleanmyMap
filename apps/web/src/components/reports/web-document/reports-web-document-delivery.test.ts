@@ -50,7 +50,7 @@ function createStatus(
     return {
       icon: Loader2,
       label: "Génération en cours",
-      description: "Le livrable est en cours de préparation.",
+      description: "Préparation du PDF en cours.",
       tone: "pending-tone",
       iconTone: "pending-icon-tone",
     };
@@ -59,8 +59,8 @@ function createStatus(
   if (state === "success") {
     return {
       icon: FileText,
-      label: "Prêt à exporter",
-      description: "Le PDF officiel est ouvert et prêt à être enregistré.",
+      label: "Rapport généré",
+      description: "PDF ouvert.",
       tone: "success-tone",
       iconTone: "success-icon-tone",
     };
@@ -69,8 +69,8 @@ function createStatus(
   if (state === "error") {
     return {
       icon: TriangleAlert,
-      label: "Export à vérifier",
-      description: "Une action est nécessaire avant de relancer l'export.",
+      label: "Erreur d’export",
+      description: "Une erreur empêche l’export.",
       tone: "error-tone",
       iconTone: "error-icon-tone",
     };
@@ -89,8 +89,8 @@ describe("ReportsWebDocumentDelivery", () => {
   it.each([
     ["idle", "Export indisponible"],
     ["pending", "Génération en cours"],
-    ["success", "Prêt à exporter"],
-    ["error", "Export à vérifier"],
+    ["success", "Rapport généré"],
+    ["error", "Erreur d’export"],
   ] as const)("preserves the %s export state", (state, label) => {
     const markup = renderToStaticMarkup(
       React.createElement(ReportsWebDocumentDelivery, {
@@ -113,6 +113,7 @@ describe("ReportsWebDocumentDelivery", () => {
       expect(markup).toContain("Erreur de génération.");
       expect(markup).toContain('role="alert"');
     }
+    expect(markup).toContain("1 export détaillé par jour civil · Europe/Paris");
   });
 
   it("keeps the generation callback on the export action", () => {
