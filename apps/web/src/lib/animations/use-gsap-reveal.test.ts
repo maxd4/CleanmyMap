@@ -45,13 +45,13 @@ function makeTarget() {
   } as unknown as HTMLElement;
 }
 
-function makeRoot(target: HTMLElement) {
+function makeRoot(target?: HTMLElement) {
   return {
-    querySelectorAll: vi.fn(() => [target]),
+    querySelectorAll: vi.fn(() => (target ? [target] : [])),
   } as unknown as HTMLElement;
 }
 
-function installWindow({ reducedMotion = false } = {}) {
+function installWindow({ reducedMotion = false, runTimeouts = false } = {}) {
   let nextFrameId = 0;
   vi.stubGlobal("window", {
     matchMedia: vi.fn(() => ({ matches: reducedMotion })),
@@ -60,7 +60,10 @@ function installWindow({ reducedMotion = false } = {}) {
       return ++nextFrameId;
     }),
     cancelAnimationFrame: vi.fn(),
-    setTimeout: vi.fn(() => 1),
+    setTimeout: vi.fn((callback: TimerHandler) => {
+      if (runTimeouts && typeof callback === "function") callback();
+      return 1;
+    }),
     clearTimeout: vi.fn(),
   });
 }
@@ -93,6 +96,16 @@ describe("useGsapReveal visibility contract", () => {
 
     expect(target.style.opacity).toBe("");
     expect(mocks.fromTo).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when the reveal scope has no target", () => {
+    resetMocks();
+    installWindow();
+
+    useGsapReveal({ current: makeRoot() });
+
+    expect(mocks.fromTo).not.toHaveBeenCalled();
+    expect(mocks.refresh).not.toHaveBeenCalled();
   });
 
   it("takes possession only through GSAP and animates x/y back to visible", () => {
@@ -149,5 +162,19 @@ describe("useGsapReveal visibility contract", () => {
     useGsapReveal({ current: makeRoot(target) });
 
     expect(target.style.opacity).toBe("");
+  });
+
+  it("uses the failsafe when an animation leaves opacity at zero", () => {
+    resetMocks();
+    installWindow({ runTimeouts: true });
+    const target = makeTarget();
+    mocks.fromTo.mockImplementationOnce(() => {
+      target.style.opacity = "0";
+    });
+
+    useGsapReveal({ current: makeRoot(target) });
+
+    expect(target.style.opacity).not.toBe("0");
+    expect(target.style.removeProperty).toHaveBeenCalledWith("opacity");
   });
 });

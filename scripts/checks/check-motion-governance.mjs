@@ -3,6 +3,7 @@ import path from "node:path";
 
 export const MOTION_PATHS = {
   motionCss: "apps/web/src/styles/motion.css",
+  baseCss: "apps/web/src/styles/base.css",
   displayModesCss: "apps/web/src/styles/display-modes.css",
   pageTransition: "apps/web/src/components/ui/page-transition.tsx",
   punchySlogan: "apps/web/src/components/ui/punchy-slogan.tsx",
@@ -66,6 +67,24 @@ export function auditDisplayModesCss(source, filePath = MOTION_PATHS.displayMode
   ]) {
     requireText(source, filePath, marker, violations);
   }
+  return violations;
+}
+
+export function auditRevealVisibilityCss(source, filePath = MOTION_PATHS.baseCss) {
+  const violations = [];
+  const blockPattern = /([^{}]+)\{([^{}]*)\}/g;
+  const hiddenDeclaration = /(?:opacity\s*:\s*0\b|visibility\s*:\s*hidden\b|display\s*:\s*none\b|content-visibility\s*:\s*hidden\b)/i;
+
+  for (const match of source.matchAll(blockPattern)) {
+    const selectors = match[1].trim();
+    const declarations = match[2];
+    if (selectors.includes("[data-gsap-reveal]") && hiddenDeclaration.test(declarations)) {
+      violations.push(
+        `${filePath}: data-gsap-reveal must remain visible without JavaScript/GSAP`,
+      );
+    }
+  }
+
   return violations;
 }
 
@@ -138,6 +157,7 @@ export function auditMotionRepository(repositoryRoot) {
   );
 
   violations.push(...auditMotionCss(sources.motionCss));
+  violations.push(...auditRevealVisibilityCss(sources.baseCss));
   violations.push(...auditDisplayModesCss(sources.displayModesCss));
   violations.push(...auditPageTransition(sources.pageTransition));
   violations.push(...auditPunchySlogan(sources.punchySlogan));
@@ -146,7 +166,19 @@ export function auditMotionRepository(repositoryRoot) {
   for (const marker of ["MOTION_TRANSITIONS.md", "CmmIcon", "check:motion"]) {
     requireText(sources.readme, MOTION_PATHS.readme, marker, violations);
   }
-  for (const marker of ["**Statut : `CURRENT`**", "prefers-reduced-motion", "useReducedMotion", "motion.css", "display-modes.css", "Maps", "legacy Motion"]) {
+  for (const marker of [
+    "**Statut : `CURRENT`**",
+    "prefers-reduced-motion",
+    "useReducedMotion",
+    "motion.css",
+    "display-modes.css",
+    "Maps",
+    "legacy Motion",
+    "visible par défaut / fail-open",
+    "progressive enhancement fail-open",
+    "requestAnimationFrame",
+    "remount",
+  ]) {
     requireText(sources.documentation, MOTION_PATHS.documentation, marker, violations);
   }
   requireText(sources.package, MOTION_PATHS.package, '"check:motion": "node scripts/checks/check-motion-governance.mjs"', violations);

@@ -68,6 +68,7 @@ export function useGsapReveal(
 
     let ctx: gsap.Context | null = null;
     let disposed = false;
+    let restoring = false;
     let refreshFrameId: number | null = null;
     let refreshFramesRemaining = LAYOUT_REFRESH_DELAY_FRAMES;
     let failsafeTimeoutId: number | null = null;
@@ -80,12 +81,19 @@ export function useGsapReveal(
     };
 
     const restoreVisible = () => {
+      if (restoring) {
+        clearRevealStyles(targets);
+        return;
+      }
+
+      restoring = true;
       clearFailsafe();
       try {
         ctx?.revert();
       } finally {
         ctx = null;
         clearRevealStyles(targets);
+        restoring = false;
       }
     };
 

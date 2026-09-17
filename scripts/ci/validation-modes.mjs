@@ -40,6 +40,21 @@ function isWebSourceFile(file) {
   return normalizePath(file).startsWith("apps/web/src/");
 }
 
+function isMotionRelevantFile(file) {
+  const normalized = normalizePath(file);
+  return (
+    normalized === "apps/web/src/styles/base.css" ||
+    normalized.startsWith("apps/web/src/styles/motion") ||
+    normalized.startsWith("apps/web/src/styles/display-modes") ||
+    normalized.startsWith("apps/web/src/lib/animations/") ||
+    normalized.startsWith("apps/web/src/components/accueil/") ||
+    normalized.startsWith("apps/web/src/components/dashboard/") ||
+    normalized === "apps/web/src/app/(app)/dashboard/page.tsx" ||
+    normalized === "e2e/homepage-reveal.spec.ts" ||
+    normalized === "playwright.config.ts"
+  );
+}
+
 function isScriptRelevantFile(file) {
   const normalized = normalizePath(file);
   return normalized.startsWith("scripts/") && !isDocumentationFile(normalized);
@@ -136,6 +151,7 @@ export function createModeValidationPlan({
   const webRelevant = files.some(isWebRelevantFile);
   const webRuntimeRelevant = files.some(isWebRuntimeRelevantFile);
   const webSourceRelevant = files.some(isWebSourceFile);
+  const motionRelevant = files.some(isMotionRelevantFile);
   const buildRelevant = files.some(isBuildRelevantFile);
   const scriptsRelevant = files.some(isScriptRelevantFile);
   const pythonRelevant = files.some(isPythonRelevantFile);
@@ -297,6 +313,15 @@ export function createModeValidationPlan({
   }
 
   if (webRuntimeRelevant) {
+    if (motionRelevant) {
+      addCheck(checks, {
+        id: "check:motion",
+        label: "Gouvernance Motion/reveal",
+        estimatedSeconds: 5,
+        critical: true,
+        command: npmCommand("check:motion"),
+      });
+    }
     if (full) {
       addCheck(checks, {
         id: "vercel-ci-audit",
@@ -428,6 +453,7 @@ export function createModeValidationPlan({
       webRelevant,
       webRuntimeRelevant,
       webSourceRelevant,
+      motionRelevant,
       buildRelevant,
       scriptsRelevant,
       pythonRelevant,
