@@ -680,6 +680,26 @@ Si le push est temporairement interdit, plusieurs lots peuvent être commités
 séquentiellement sur le même `main` local ; chaque nouveau lot part du HEAD
 précédent. Aucun nouveau writer parallèle n'est créé.
 
+### Publication non prérequise pour les lots successifs
+
+Ne jamais poser comme prérequis que le lot précédent ait été poussé.
+
+1. Ne jamais bloquer un prompt parce que `HEAD != origin/main` ou parce que des
+   commits locaux précédents ne sont pas encore publiés.
+2. La source opérationnelle pour Codex est **l’état local réel du dépôt**, après
+   vérification du working tree, de `HEAD`, de l’index et des éventuels
+   commits locaux.
+3. Les lots successifs peuvent donc s’enchaîner localement avant publication,
+   tant qu’ils respectent `MAIN-ONLY / SINGLE-WRITER` et que l’état local est
+   cohérent.
+4. À la fin de tout prompt qui modifie des fichiers, **demander explicitement
+   à Codex de commit puis push les fichiers/modifications du lot**, après
+   validations requises.
+5. Le push est une étape de publication finale du lot, **pas un prérequis pour
+   commencer le lot suivant**.
+6. Ne jamais utiliser l’absence de push du lot précédent comme `STOP CONDITION`
+   à elle seule.
+
 Un moratoire Vercel est un moratoire de deployment, pas un gel Git. Pendant ce
 moratoire, ne pas demander par défaut à Codex de conserver les commits
 localement si l'auto-déploiement Vercel et les autres déclencheurs automatiques
