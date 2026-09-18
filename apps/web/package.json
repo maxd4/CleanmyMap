@@ -7,7 +7,7 @@
     "build": "next build && node scripts/ensure-deterministic-routes-manifest.mjs --finalize && node scripts/upload-sentry-sourcemaps.mjs",
     "build:clean": "node ../../scripts/dev/clean-dev-cache.mjs && npm run build",
     "start": "next start",
-    "lint": "eslint src",
+    "lint": "eslint src --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit --pretty false",
     "test": "vitest run",
     "test:security": "node ../../scripts/checks/validation-policy.mjs --run-vitest --groups security",
