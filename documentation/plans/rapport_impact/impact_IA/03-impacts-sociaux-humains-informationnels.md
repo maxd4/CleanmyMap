@@ -158,6 +158,66 @@ Cette concentration peut produire plusieurs effets sociaux et économiques :
 
 Pour les organisations européennes, cette question se combine avec le RGPD, le règlement européen sur l'IA, les règles de concurrence, la politique industrielle des semi-conducteurs et la localisation des services. La dépendance à une infrastructure étrangère constitue un risque de gouvernance, mais pas nécessairement un incident ou un préjudice déjà réalisé.
 
+### Biais de données et reproduction des inégalités
+
+Les grands modèles de langage sont entraînés sur des corpus massifs composés de textes, de code, d'images, de pages web, de forums, de livres numérisés, de documentation technique et de contenus produits par des utilisateurs. Ces corpus ne représentent pas le monde de manière neutre. Ils sont souvent marqués par une surreprésentation des contenus anglophones, occidentaux, numériquement visibles, issus de milieux éduqués ou de pays fortement connectés. À l'inverse, les langues minoritaires, les savoirs locaux, les récits du Sud global, les expériences populaires ou les formes de connaissance peu présentes en ligne peuvent être sous-représentés.
+
+Cette composition influence les réponses des modèles. Un modèle ne comprend pas le monde directement : il apprend des régularités statistiques à partir des données disponibles. Si ces données contiennent des stéréotypes, des rapports de domination, des associations implicites entre certains groupes et certaines situations sociales, le modèle peut les reproduire ou les renforcer. C'est l'un des enjeux soulignés par Bender et al. dans _Stochastic Parrots_ : un modèle peut produire un langage fluide et crédible tout en reflétant les biais, angles morts et rapports de pouvoir présents dans ses corpus d'entraînement.
+
+Ces biais ne sont pas seulement théoriques. Les travaux de Buolamwini et Gebru dans _Gender Shades_ ont montré que des systèmes de classification faciale présentaient des taux d'erreur très différents selon le genre et la couleur de peau, avec des performances nettement moins bonnes pour les femmes à la peau foncée que pour les hommes à la peau claire [@buolamwini_j_et]. Même si cette étude porte sur la vision par ordinateur plutôt que sur les modèles de langage, elle illustre un principe général : lorsqu'un système d'IA est entraîné sur des données déséquilibrées, il peut produire des erreurs systématiques dans des applications réelles.
+
+Pour CleanMyMap, les biais les plus pertinents concernent la description des déchets, des lieux et des territoires. Un modèle pourrait interpréter différemment une photo, un signalement ou une description selon le contexte implicite : quartier populaire ou touristique, zone urbaine dense ou rurale, langage formel ou familier, français standard ou expressions locales. Il pourrait aussi associer abusivement certains territoires à la saleté, à l'incivilité ou au manque de civisme, alors que la présence de déchets dépend souvent de facteurs structurels : densité de passage, organisation de la collecte, manque d'équipements publics, événements locaux, activité commerciale, tourisme ou politiques municipales.
+
+Le risque serait donc de transformer un outil environnemental en outil de stigmatisation. Une carte des déchets peut être utile pour agir, mais elle peut aussi produire une image injuste d'un quartier si les données sont incomplètes, mal modérées ou interprétées sans contexte. De même, une IA de classification pourrait simplifier abusivement une situation : confondre un dépôt sauvage avec un point de collecte saturé, interpréter une photo hors contexte, ou attribuer implicitement une responsabilité sociale à des habitants plutôt qu'à un défaut d'infrastructure.
+
+Cette prudence vaut aussi pour les contenus créatifs ou visuels utilisés autour du projet. Un résultat généré peut être séduisant sans pour autant porter la même intention qu'une création humaine ; il peut même reproduire des styles reconnaissables sans consentement explicite, ce qui fragilise à la fois l'éthique et la confiance. Si CleanMyMap utilise des images, des illustrations ou des supports éditoriaux produits avec assistance IA, la provenance doit rester claire et la validation humaine explicite.
+
+Pour cette raison, CleanMyMap ne doit pas utiliser l'IA pour produire des jugements automatiques sur les territoires, les habitants ou les comportements. Les modèles peuvent aider à reformuler un signalement, repérer une incohérence ou assister une modération, mais ils ne doivent pas décider seuls de la gravité d'une situation, de la responsabilité d'un acteur ou de la valeur d'un quartier. Les données doivent rester contextualisées, vérifiables et relues humainement.
+
+La recommandation opérationnelle est donc la suivante : limiter l'IA aux tâches d'assistance, éviter les scores opaques, documenter les limites des données, permettre la correction humaine, et ne jamais présenter une sortie de modèle comme une vérité sociale ou territoriale. Pour CleanMyMap, un signalement doit rester une information à vérifier et à replacer dans son contexte, pas une preuve automatique de comportement collectif.
+
+### Autorité implicite et normative des réponses générées
+
+La forme fluide, structurée et encyclopédique des réponses produites par un grand modèle de langage crée une **autorité implicite**. Le modèle ne se contente pas de répondre : il hiérarchise, reformule, conseille, parfois filtre ou contourne certaines formulations, et oriente subtilement la perception de ce qui semble vrai, normal ou souhaitable. Il donne ainsi l'impression d'avoir vérifié l'information, alors qu'il ne fonctionne pas comme une source documentaire classique. Il génère une réponse probable à partir de ses données d'entraînement, du contexte fourni et des instructions reçues.
+
+La différence avec un moteur de recherche est importante. Un moteur de recherche affiche généralement une liste de pages que l'utilisateur peut comparer, hiérarchiser et vérifier. Un modèle de langage, lui, **synthétise directement** une réponse et lui donne une forme normative implicite : certains mots deviennent plus plausibles, certaines hypothèses plus naturelles, certains arbitrages plus raisonnables. Cette synthèse peut donner l'impression que le travail critique a déjà été fait, alors qu'il reste à contrôler. Le risque est donc de confondre une réponse bien formulée avec une réponse fiable. Plus le texte est clair, professionnel et convaincant, plus l'utilisateur peut être tenté de lui accorder une confiance excessive [@bender_e_m_1; @nist_artificial_intelligence_1].
+
+Cette autorité implicite est particulièrement problématique dans un contexte académique, institutionnel ou décisionnel. Une estimation chiffrée, une référence scientifique, une recommandation technique ou une conclusion environnementale produite avec l'aide d'un modèle peut être reprise trop vite dans un rapport, une soutenance ou une décision de projet. Le danger n'est pas seulement l'hallucination évidente, mais aussi l'**erreur plausible** : une source réelle mais mal interprétée, un chiffre sorti de son contexte, une généralisation abusive ou une formulation trop catégorique [@openai_gpt_4; @nist_artificial_intelligence_1].
+
+Pour CleanMyMap, ce risque concerne directement les estimations environnementales, les comparaisons énergétiques, les hypothèses de consommation d'eau, les références à l'ACV, les analyses sociales, les recommandations de cybersécurité et les choix techniques. Une phrase produite par IA ne doit pas être considérée comme vérifiée parce qu'elle est bien écrite. Chaque affirmation chiffrée, datée, scientifique, juridique, technique ou institutionnelle doit être croisée avec une source primaire ou une source fiable avant diffusion [@nist_artificial_intelligence_1].
+
+La règle de gouvernance est donc simple : l'IA peut aider à formuler, structurer, résumer ou repérer des incohérences, mais elle ne doit pas être traitée comme une autorité finale. Les chiffres doivent être vérifiés, les sources ouvertes, les liens testés, les citations replacées dans leur contexte et les recommandations techniques relues par un humain. Lorsqu'une information reste incertaine, le rapport doit le dire explicitement au lieu de transformer une hypothèse en certitude.
+
+Dans CleanMyMap, cette exigence se traduit par une méthode de validation : distinguer les faits mesurés, les hypothèses déclaratives et les ordres de grandeur ; indiquer les sources à la fin de chaque section ; signaler les affirmations non vérifiées ; éviter les formulations trop absolues ; et conserver une responsabilité humaine sur toute conclusion publiée. L'objectif n'est pas d'interdire l'assistance IA, mais d'empêcher qu'une réponse générée devienne une preuve sans contrôle.
+
+### Inégalités d'accès aux outils, modèles et capacités de calcul
+
+L'accès à l'IA est profondément inégal. Les meilleurs modèles, les abonnements les plus complets, les GPU, les outils de productivité et les environnements de développement avancés sont plus facilement accessibles aux personnes, entreprises et pays déjà favorisés. À l'inverse, les utilisateurs moins dotés doivent souvent se contenter de versions bridées, de quotas plus faibles ou d'outils moins performants.
+
+Ces écarts d'accès ne sont pas neutres. Ils accentuent les différences de productivité, de vitesse d'apprentissage et de capacité à tester des idées ou à automatiser des tâches. Pour CleanMyMap, cela rappelle qu'un projet assisté par IA doit rester lisible et réversible, afin de ne pas dépendre d'un niveau d'outillage que tous les contributeurs ne pourraient pas reproduire.
+
+### Risque de délégation excessive du jugement humain
+
+La facilité d'usage des modèles de langage peut conduire progressivement à leur déléguer des décisions qui relèvent normalement du **jugement humain** : choix d'architecture, arbitrage éditorial, interprétation de données, évaluation de risques, hiérarchisation des priorités ou formulation d'une position institutionnelle. Ce glissement est souvent discret. Au départ, le modèle sert à gagner du temps ; ensuite, il propose des options ; puis ses propositions deviennent la base principale de la décision. Le risque n'est donc pas seulement l'erreur ponctuelle, mais la transformation progressive de l'IA en autorité de fait.
+
+Dans un projet de développement, ce mécanisme peut affaiblir la maîtrise technique. Un développeur qui accepte systématiquement les propositions d'un modèle sans les comprendre peut produire rapidement du code, mais perdre en capacité d'analyse, de diagnostic et d'architecture. Il devient alors dépendant de l'outil pour corriger les erreurs que l'outil lui-même peut avoir introduites. De la même manière, un rédacteur qui sous-traite toutes ses formulations peut obtenir un texte fluide, mais perdre progressivement sa voix propre, son sens critique et sa responsabilité sur ce qui est affirmé.
+
+Ce risque est renforcé par la **sycophancy**, c'est-à-dire la tendance d'un modèle à conforter l'utilisateur dans ses croyances, ses hypothèses ou ses formulations plutôt qu'à les contredire franchement. Anthropic a documenté ce comportement dans ses travaux sur la complaisance des modèles, et OpenAI a également reconnu qu'une mise à jour de ChatGPT avait pu rendre le modèle trop flatteur ou trop aligné sur les attentes immédiates de l'utilisateur. Dans un rapport, ce phénomène est dangereux : un modèle peut rendre une idée plus élégante sans vérifier qu'elle est juste, ou renforcer une hypothèse déjà fragile au lieu de la remettre en question.
+
+Pour CleanMyMap, cette délégation excessive serait contradictoire avec l'objectif de responsabilité. Le projet traite de sujets environnementaux, sociaux, techniques et institutionnels qui nécessitent des arbitrages humains explicites. L'IA peut aider à formuler, résumer, structurer, comparer ou repérer des incohérences, mais elle ne doit pas décider de l'orientation du produit, du niveau de risque acceptable, du choix d'une dépendance critique, de la stratégie de communication ou de l'interprétation finale des impacts.
+
+La règle de gouvernance retenue est donc simple : **l'IA propose, l'humain décide**. Toute décision importante doit rester compréhensible, justifiable et assumée par une personne identifiable. Cela vaut pour l'architecture technique, les choix de dépendances, la sécurité, les données personnelles, les chiffres environnementaux, les messages publics, les conclusions institutionnelles et les recommandations adressées au jury ou aux partenaires.
+
+Concrètement, aucune décision d'architecture, de communication publique ou d'orientation produit ne doit être déléguée à un modèle sans relecture et validation humaine documentée. Une proposition IA doit pouvoir être refusée, corrigée ou simplifiée. Si le modèle produit une réponse séduisante mais invérifiable, elle doit être traitée comme une hypothèse de travail, non comme une preuve. Si une décision engage la sécurité, les données, l'image publique ou la cohérence écologique du projet, elle doit être relue humainement avant intégration.
+
+Cette discipline protège à la fois la qualité du projet et la compétence de l'équipe. L'objectif n'est pas d'interdire l'assistance IA, mais d'éviter qu'elle remplace le raisonnement. CleanMyMap peut utiliser l'IA comme accélérateur de travail, mais pas comme substitut au jugement, à la responsabilité ou à l'apprentissage humain.
+
+### Dépendance cognitive et baisse de l'effort critique
+
+Un autre risque, plus discret, est la **dépendance cognitive**. Quand l'IA devient le premier réflexe avant toute réflexion, l'utilisateur peut commencer à lui demander quoi faire avant même d'avoir formulé son propre diagnostic. Le problème n'est pas seulement de gagner du temps, mais de perdre l'habitude d'examiner un problème par soi-même, de comparer plusieurs options ou d'assumer une part d'effort critique.
+
+Cette dépendance peut se traduire par une baisse de vigilance : une formulation proposée est acceptée plus vite, les vérifications deviennent moins nombreuses, les tests sont moins fréquents et les alternatives sont moins comparées. Dans un projet technique, cela peut conduire à une dégradation lente du jugement professionnel et à une confusion entre assistance et décision. Pour CleanMyMap, la règle doit rester simple : l'IA peut accélérer l'analyse, mais elle ne doit pas devenir un réflexe automatique avant toute pensée.
+
 ## Vie privée, données personnelles et surveillance
 
 ### Données utilisées pour développer les modèles
@@ -231,6 +291,58 @@ La réponse responsable n'est pas d'imposer une vérification identique à toute
 ### Autorité finale et responsabilité
 
 Un modèle peut proposer, comparer, signaler ou générer. Il ne peut pas assumer juridiquement ou moralement la responsabilité d'une décision à la place de la personne ou de l'organisation qui l'utilise. La responsabilité doit donc rester attribuable à un acteur humain ou institutionnel identifiable.
+
+## Imaginaires sociotechniques et non-neutralité culturelle
+
+### Les modèles ne sont pas culturellement neutres
+
+L'impact social et humanitaire de l'IA est plus difficile à mesurer que son impact carbone, mais il peut être plus profond.
+Il ne tient pas seulement aux usages visibles ou aux incidents documentés.
+Il tient aussi au fait que les modèles ne sont **pas neutres**.
+Leurs réponses dépendent de leur entraînement, de leur alignement, du contexte conversationnel, de la langue utilisée et des imaginaires culturels présents dans les corpus qui les ont nourris.
+
+Le concept d'**imaginaire sociotechnique**, notamment développé par Sheila Jasanoff et les travaux de science and technology studies, désigne de manière simple les récits collectifs, les représentations culturelles et les visions du futur qui orientent la façon dont une société conçoit une technologie et ce qu'elle attend d'elle.
+Un modèle entraîné sur des corpus humains peut donc absorber, recombiner et restituer des conceptions du monde, des hiérarchies de valeurs, des récits de puissance, de prudence, de compétition, de coopération ou de catastrophe.
+
+Il absorbe aussi des récits culturels plus précis : domination technologique, solutionnisme, peur de l'IA, promesse d'un progrès automatique, récits militaires ou récits écologiques qui présentent la technique comme réponse principale. Ces imaginaires ne sont pas toujours visibles dans les réponses, mais ils orientent la manière dont un modèle présente ce qui paraît possible, souhaitable ou inévitable.
+
+Cela ne signifie pas qu'un modèle reflète mécaniquement une culture nationale donnée.
+En revanche, cela signifie qu'il peut répondre différemment selon la langue, le cadrage du instruction, le corpus dominant et les garde-fous appliqués.
+Des différences de formulation, d'intensité, de prudence ou de seuil d'escalade peuvent ainsi apparaître entre modèles et entre contextes.
+Lorsqu'une vidéo ou une expérimentation rapporte que certaines réponses semblent varier selon les langues ou selon des références culturelles mobilisées, il faut donc traiter cela comme un **indice à interpréter prudemment**, non comme une loi générale sur un pays ou une population.
+
+Des références culturelles comme **Hiroshima** et **Nagasaki**, le **Manhattan Project**, _Frankenstein_, _1984_, _Akira_ ou _Le Tombeau des Lucioles_ n'agissent pas directement comme des instructions.
+Mais elles participent à l'environnement symbolique dans lequel les sociétés parlent du risque, de la technique, de la destruction, de la responsabilité et du contrôle.
+À ce titre, elles peuvent influencer indirectement les corpus qui, eux-mêmes, influencent les modèles.
+
+Cela donne une importance particulière aux **contre-récits**.
+Si les modèles absorbent aussi des récits humains, alors les récits de prudence, de coopération, de sobriété, de soin, de refus de l'escalade, de limites techniques et de responsabilité humaine ne sont pas secondaires.
+Ils participent eux aussi à l'environnement culturel qui structure les usages, les évaluations et la gouvernance des systèmes d'IA.
+
+Dans CleanMyMap, cette idée a une conséquence concrète.
+Le projet produit lui-même un imaginaire technologique particulier : une IA **locale, sobre, citoyenne et encadrée**, qui n'est ni une puissance autonome ni une promesse de toute-puissance.
+L'IA n'y est acceptable que comme outil borné, au service d'actions environnementales concrètes, relues humainement et soumises à un arbitrage d'utilité nette via l'IUR.
+
+La question artistique éclaire ce point.
+Les résumés vidéo sur l'IA et les artistes soulignent que la valeur d'une production humaine ne tient pas seulement à son résultat visuel, mais aussi à l'intention, au parcours, au consentement, au style et à la relation entre l'auteur, l'œuvre et le public.
+Cette analyse n'est pas centrale pour CleanMyMap, mais elle rappelle que l'IA ne doit pas être évaluée seulement par le critère "résultat rapide et moins cher".
+Dans un projet institutionnel, une image, un texte, un logo ou une campagne générés par IA doivent être assumés comme tels, relus et justifiés par leur utilité, plutôt que présentés comme une création humaine équivalente.
+
+### IA et langues minoritaires
+
+L'IA fonctionne généralement mieux dans les langues dominantes, parce que ses corpus d'entraînement y sont plus riches, plus abondants et mieux standardisés. À l'inverse, les langues minoritaires, les variantes locales et certaines cultures peu représentées dans les corpus risquent d'être moins bien comprises, mal reformulées ou lissées dans une langue trop générique.
+
+Ce déséquilibre ne pose pas seulement un problème de traduction. Il peut conduire à un effacement progressif des nuances culturelles, à des contresens sur les pratiques locales ou à une standardisation des récits qui avantage les langues les plus visibles en ligne. Pour CleanMyMap, cela implique de vérifier que l'IA ne remplace pas les termes, catégories ou formulations utiles au territoire par une langue artificiellement homogène.
+
+L'IA tend à renforcer les récits dominants présents dans ses données d'entraînement. En matière d'écologie, cela peut se traduire par une focalisation sur des solutions technologiques occidentales au détriment des savoirs locaux ou des approches de sobriété moins documentées en ligne. La prédominance de l'anglais dans les corpus d'entraînement marginalise également les nuances culturelles liées à la gestion des déchets et à la protection de l'environnement dans les pays non anglophones.
+
+CleanMyMap veille donc à intégrer des terminologies et des contextes locaux, en s'assurant que l'IA n'impose pas une vision standardisée de la propreté ou de la gestion environnementale qui serait déconnectée des réalités territoriales spécifiques.
+
+### Contre-récits, écologie et responsabilité culturelle
+
+Face à l'uniformisation, il est crucial de promouvoir des contre-récits qui remettent l'humain et la nature au centre, plutôt que la technologie. L'IA peut être un outil puissant si elle est mise au service de la biodiversité et de la préservation des territoires, mais elle ne doit pas devenir le seul prisme à travers lequel la société perçoit les crises écologiques.
+
+La responsabilité culturelle de CleanMyMap est d'utiliser la technologie pour rendre visible le "sale" et l'abandonné, afin de déclencher une action humaine régénératrice. L'IA n'est ici qu'un révélateur, et le véritable récit est celui de la reprise en main de l'environnement par les citoyens et les collectivités.
 
 ## Interactions anthropomorphiques et risques psychologiques
 

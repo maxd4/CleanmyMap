@@ -2,6 +2,26 @@
 
 Cette partie évite de réduire l'IA à ses seuls coûts ou risques. Elle présente ce que l'IA peut apporter lorsqu'elle est utilisée de manière encadrée, puis relie ces apports aux enseignements du DU et aux choix de conception de CleanMyMap.
 
+## Gouvernance humaine et pilotage du projet
+
+Dans le cas de CleanMyMap, l'IA n'est pertinente que si elle renforce la capacité à agir sur la propreté urbaine sans dégrader la rigueur du produit ni la responsabilité environnementale.
+
+### Apports concrets de l'IA pour le développement du site
+
+- Rapidité d'exécution : l'IA accélère les tâches de cadrage, de rédaction technique, de structuration et de prototypage.
+
+- Productivité technique : génération de premiers jets de code, aide au refactor, proposition de tests, accélération du débogage.
+
+- Idéation et structuration : transformation de notes brutes en plans exploitables, décomposition en lots, priorisation des dépendances.
+
+- Accessibilité technique : réduction du seuil d'entrée sur des sujets complexes (architecture, tests, instrumentation, documentation).
+
+- Support éditorial : reformulation de contenus, clarté des messages, harmonisation de la tonalité entre pages.
+
+- Appui opérationnel : accélération de la production de docs, checklists, runbooks et synthèses pour coordination équipe/jury.
+
+Appliqués à CleanMyMap, ces apports sont pertinents lorsque l'IA sert des objectifs concrets : meilleure lisibilité des parcours, meilleure qualité des livrables, meilleure capacité de pilotage et réduction du temps perdu sur des tâches répétitives.
+
 ## Apports positifs de l'IA
 
 ### Apports scientifiques et techniques généraux de l'IA
@@ -15,6 +35,21 @@ L'IA est retenue ici pour quatre raisons simples :
 
 Cette justification cesse dès que l'IA ajoute surtout du volume, de la dépendance, du bruit numérique ou des fonctionnalités peu utiles.
 Elle cesse aussi si l'équipe n'est plus capable de relire, mesurer, désactiver ou documenter correctement ses usages.
+
+L'IA a déjà des intérêts concrets dans plusieurs champs de recherche : découverte de matériaux, biologie structurale, antibiotiques, cartographie du cerveau, météorologie, mathématiques, astronomie et conception de protéines. Elle accélère l'exploration scientifique en réduisant le temps nécessaire pour tester des hypothèses et en élargissant l'espace des possibles.
+
+| Corpus étudié                              |         Estimation d'usage IA | Prudence d'interprétation                           |
+| ------------------------------------------ | ----------------------------: | --------------------------------------------------- |
+| PubMed biomédical 2024                     | au moins 13,5 % des abstracts | borne basse, méthode par vocabulaire                |
+| Certains sous-corpus biomédicaux           |                  jusqu'à 40 % | ne vaut pas pour toute la science                   |
+| Computer science dans certains corpus 2024 |                jusqu'à 17,5 % | selon Liang et al., corpus arXiv, bioRxiv et Nature |
+| Mathématiques / Nature portfolio           |                 jusqu'à 6,3 % | usage plus faible dans ce corpus                    |
+
+Sources : [@kobak_excess_vocabulary_2025; @liang_increasing_use_llms_scientific_papers_2024]
+
+Ces résultats sont réels, mais ils restent des avancées de recherche. Ils ne remplacent ni la validation humaine ni les preuves expérimentales, et ils ne transforment pas encore l'IA en science autonome. Le détail de ces cas est déplacé en Annexe, afin de garder ici seulement la synthèse des apports majeurs.
+
+Le point décisif est double : l'IA peut produire des gains réels de découverte et de calcul, mais ces gains restent concentrés entre les mains de quelques grands acteurs privés. Cela pose une question de souveraineté scientifique, d'accès aux infrastructures et de gouvernance des connaissances.
 
 ### Apports concrets de l'IA au développement de CleanMyMap
 
