@@ -176,7 +176,7 @@ export type RouteMultiRouteMetrics = {
   sharedDistanceKm: number | null;
   sharedDistanceRatio: number | null;
   /** Shared/proximate movement; independent from cleaning duplication. */
-  networkOverlap?: number;
+  networkOverlap?: number | null;
   /** Repeated cleaning of the same operational corridor. */
   cleaningCoverageOverlap?: number;
   balanceDistance: number;

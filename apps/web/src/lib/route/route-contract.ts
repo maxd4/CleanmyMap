@@ -14,6 +14,10 @@ export type RouteGeometryStep = {
   distanceKm: number;
   durationMinutes: number;
   maneuver: string | null;
+  /** Provider-supplied opaque reference when one exists; never inferred as an OSM id. */
+  segmentReference?: string | null;
+  /** The network step geometry, when the provider returns it. */
+  geometry?: [number, number][];
 };
 
 export type RouteGeometryLeg = {
