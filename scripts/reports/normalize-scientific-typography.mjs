@@ -1,11 +1,5 @@
 import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, '../..');
-const reportFile = path.join(rootDir, 'documentation', 'plans', 'rapport_impact', 'impact_IA.md');
+import { readImpactReportDocuments } from './impact-report-files.mjs';
 
 function formatThousands(value) {
   return value.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -91,17 +85,16 @@ function normalizeMarkdownSection(section) {
     .join('\n');
 }
 
-const original = fs.readFileSync(reportFile, 'utf8');
-const bibliographyToken = '\n# Bibliographie';
-const splitIndex = original.indexOf(bibliographyToken);
+for (const document of readImpactReportDocuments()) {
+  const bibliographyToken = '\n# Bibliographie';
+  const splitIndex = document.text.indexOf(bibliographyToken);
+  const prefix = splitIndex === -1 ? document.text : document.text.slice(0, splitIndex);
+  const suffix = splitIndex === -1 ? '' : document.text.slice(splitIndex);
+  const updated = normalizeMarkdownSection(prefix) + suffix;
 
-if (splitIndex === -1) {
-  throw new Error('Bibliography section not found in report.');
+  if (updated !== document.text) {
+    fs.writeFileSync(document.absolutePath, updated, 'utf8');
+  }
 }
 
-const prefix = original.slice(0, splitIndex);
-const suffix = original.slice(splitIndex);
-const updated = normalizeMarkdownSection(prefix) + suffix;
-
-fs.writeFileSync(reportFile, updated, 'utf8');
 console.log('Scientific typography normalized.');

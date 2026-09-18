@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { readImpactReportDocuments } from '../reports/impact-report-files.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -115,8 +116,19 @@ function writeTextAtomic(filePath, contents) {
   }
 }
 
+const reportDocuments = readImpactReportDocuments();
+const bodyText = reportDocuments
+  .filter(({ key }) => !key.startsWith('annex-'))
+  .map(({ key, text }) => {
+    if (key !== 'master') {
+      return text;
+    }
+    const bibliographyIndex = text.indexOf('\n# Bibliographie');
+    return bibliographyIndex === -1 ? text : text.slice(0, bibliographyIndex);
+  })
+  .join('\n\n');
+const bodyKeys = extractCitationKeys(bodyText);
 const reportText = fs.readFileSync(reportFile, 'utf8');
-const bodyKeys = extractCitationKeys(reportText);
 const annexExists = fs.existsSync(annexBibFile);
 const annexText = annexExists ? fs.readFileSync(annexBibFile, 'utf8') : '';
 
