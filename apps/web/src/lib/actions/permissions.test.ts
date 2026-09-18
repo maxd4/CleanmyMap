@@ -119,6 +119,32 @@ describe("action permissions", () => {
     ).toBe(true);
   });
 
+  it("normalizes relational identifiers and rejects blank identities", () => {
+    const action = { createdByClerkId: " creator-1 " };
+
+    expect(
+      canReviewActionParticipants(
+        { userId: "creator-1", role: "benevole", activeRole: "benevole" },
+        action,
+        [],
+      ),
+    ).toBe(true);
+    expect(
+      canReviewActionParticipants(
+        { userId: "organizer-1", role: "benevole", activeRole: "benevole" },
+        { createdByClerkId: "creator-1" },
+        [" organizer-1 "],
+      ),
+    ).toBe(true);
+    expect(
+      canReviewActionParticipants(
+        { userId: " ", role: "benevole", activeRole: "benevole" },
+        action,
+        [],
+      ),
+    ).toBe(false);
+  });
+
   it("rejects outside users from action participant review", () => {
     expect(
       canReviewActionParticipants(

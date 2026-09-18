@@ -29,7 +29,7 @@ describe("resolveNextActionStatus", () => {
   it("keeps a completed action pending for every creator", () => {
     expect(
       resolveNextActionStatus({
-        currentStatus: "pending",
+        currentStatus: "approved",
         actionPhase: "post_action_complete",
       }),
     ).toBe("pending");

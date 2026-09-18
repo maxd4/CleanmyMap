@@ -260,6 +260,42 @@ malformée ou obsolète échoue.
 pas `quality:top-heavy`, qui reste la source canonique du ratchet de taille des
 fichiers et de ses seuils `REVIEW_REQUIRED`/`HARD`.
 
+## Mutation ciblée des tests
+
+La qualité des tests de quelques fonctions pures critiques est mesurée avec
+Stryker `10.0.0` et son runner Vitest `10.0.0`. Le périmètre est explicitement
+borné dans `apps/web/stryker.config.mjs` aux qualifications de formalités, aux
+permissions, aux calculs d'impact et aux transitions de statut des actions ; il
+ne mute pas tout `apps/web`. `formalities-workflow.ts` et
+`route-operational-budget.ts` restent `NOT_MEASURED_YET` dans ce lot, car le
+runner Babel de Stryker ne produit pas de code instrumenté fiable pour leur
+syntaxe générique TypeScript 7. Cette incompatibilité est signalée, non
+convertie en couverture nulle et ne justifie aucune modification métier.
+
+La commande spécialisée est :
+
+```bash
+npm run quality:mutation
+```
+
+Son rapport distingue `Killed`, `Survived`, `NoCoverage`, `Timeout` et
+`error`. Le baseline ratcheté est
+`scripts/checks/mutation-baseline.json` : il a été mesuré sur le SHA
+`6b7d0cb804e907e52b1836531f3b6bc5e3971cf6` avec 329 mutants, 270 killed,
+52 survived, 7 no coverage, 0 timeout/error et un score de `83.85 %` sur les
+mutants exécutables. Une baisse du score, une augmentation de `NoCoverage`, un
+timeout, une erreur d'exécution ou une baseline stale sont bloquants. Le score
+n'est pas un objectif arbitraire de 100 % ; chaque survivant reste un élément
+d'audit. Une assertion n'est ajoutée que lorsqu'elle protège un comportement
+métier réel, jamais pour tuer artificiellement un mutant statique.
+
+La mutation reste hors `checks:fast`, hors de la CI push quotidienne et hors du
+FULL courant : sa mesure réelle n'est sélectionnée que lorsque le budget de
+600 secondes est démontré sur l'environnement concerné. Tant que le FULL
+incluant les contrôles existants ne laisse pas cette marge, elle reste une
+validation manuelle/pré-release explicite ; elle ne doit pas être rendue
+silencieusement non bloquante pour entrer dans un mode quotidien.
+
 ## Duplication et cycles
 
 La duplication est mesurée par `jscpd` 5.3.0 avec des baselines séparées pour

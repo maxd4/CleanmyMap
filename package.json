@@ -65,6 +65,7 @@
     "quality:complexity": "node scripts/checks/check-complexity-policy.mjs",
     "quality:duplication": "node scripts/checks/check-duplication.mjs",
     "quality:cycles": "node scripts/checks/check-cycles.mjs",
+    "quality:mutation": "node scripts/checks/check-mutation.mjs",
     "check:root-files": "node scripts/checks/check-root-file-hygiene.mjs",
     "check:white-text": "node scripts/checks/check-white-text-variants.mjs",
     "check:text-colors": "node scripts/checks/check-white-text-variants.mjs",
@@ -147,6 +148,8 @@
   "devDependencies": {
     "@clerk/testing": "^2.2.31",
     "@playwright/test": "^1.62.1",
+    "@stryker-mutator/core": "10.0.0",
+    "@stryker-mutator/vitest-runner": "10.0.0",
     "jscpd": "^5.3.0",
     "knip": "6.37.0",
     "playwright": "^1.59.1",
