@@ -4,6 +4,7 @@ import process from "node:process";
 import { pathToFileURL } from "node:url";
 
 const repositoryRoot = path.resolve(import.meta.dirname, "../..");
+const MAX_DIFF_BUFFER_BYTES = 16 * 1024 * 1024;
 
 // Exceptions are deliberately narrow: previews and technical/export surfaces
 // may stay compact, but ordinary labels and instructions may not.
@@ -152,7 +153,11 @@ export function analyzeDiff(diff) {
 function readDiff({ staged }) {
   const args = ["diff", "--unified=0"];
   if (staged) args.push("--cached");
-  return execFileSync("git", args, { cwd: repositoryRoot, encoding: "utf8" });
+  return execFileSync("git", args, {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+    maxBuffer: MAX_DIFF_BUFFER_BYTES,
+  });
 }
 
 function main() {
