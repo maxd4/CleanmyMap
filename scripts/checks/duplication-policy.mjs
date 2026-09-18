@@ -51,17 +51,25 @@ export const DUPLICATION_SCOPES = Object.freeze({
   }),
 });
 
-export const DUPLICATION_POLICY_FINGERPRINT = crypto
-  .createHash("sha256")
-  .update(JSON.stringify({
-    version: DUPLICATION_POLICY_VERSION,
-    tool: DUPLICATION_TOOL,
-    toolVersion: DUPLICATION_TOOL_VERSION,
-    minLines: DUPLICATION_MIN_LINES,
-    minTokens: DUPLICATION_MIN_TOKENS,
-    scopes: DUPLICATION_SCOPES,
-  }))
-  .digest("hex");
+export function computeDuplicationPolicyFingerprint(policyDescriptor) {
+  return crypto
+    .createHash("sha256")
+    .update(JSON.stringify(policyDescriptor))
+    .digest("hex");
+}
+
+const DUPLICATION_POLICY_DESCRIPTOR = {
+  version: DUPLICATION_POLICY_VERSION,
+  tool: DUPLICATION_TOOL,
+  toolVersion: DUPLICATION_TOOL_VERSION,
+  minLines: DUPLICATION_MIN_LINES,
+  minTokens: DUPLICATION_MIN_TOKENS,
+  scopes: DUPLICATION_SCOPES,
+};
+
+export const DUPLICATION_POLICY_FINGERPRINT = computeDuplicationPolicyFingerprint(DUPLICATION_POLICY_DESCRIPTOR);
+
+export const DUPLICATION_METRICS_BASELINE_SCHEMA_VERSION = 2;
 
 export function buildJscpdArguments(scopeName, baselinePath, outputDirectory) {
   const scope = DUPLICATION_SCOPES[scopeName];
@@ -83,8 +91,8 @@ export function buildJscpdArguments(scopeName, baselinePath, outputDirectory) {
 }
 
 export function validateDuplicationMetricsBaseline(baseline) {
-  if (!baseline || baseline.schemaVersion !== DUPLICATION_POLICY_VERSION) {
-    throw new Error("duplication metrics baseline malformed: schemaVersion 1 required.");
+  if (!baseline || baseline.schemaVersion !== DUPLICATION_METRICS_BASELINE_SCHEMA_VERSION) {
+    throw new Error("duplication metrics baseline malformed: schemaVersion 2 required.");
   }
   if (typeof baseline.sourceCommit !== "string" || !/^[0-9a-f]{40}$/i.test(baseline.sourceCommit)) {
     throw new Error("duplication metrics baseline malformed: full sourceCommit required.");
@@ -94,6 +102,12 @@ export function validateDuplicationMetricsBaseline(baseline) {
   }
   if (baseline.minLines !== DUPLICATION_MIN_LINES || baseline.minTokens !== DUPLICATION_MIN_TOKENS) {
     throw new Error("duplication metrics baseline stale: detector thresholds mismatch.");
+  }
+  if (typeof baseline.policyFingerprint !== "string" || !/^[0-9a-f]{64}$/i.test(baseline.policyFingerprint)) {
+    throw new Error("duplication metrics baseline malformed: policy fingerprint must be a SHA-256 hex string.");
+  }
+  if (baseline.policyFingerprint !== DUPLICATION_POLICY_FINGERPRINT) {
+    throw new Error("duplication metrics baseline stale: policy fingerprint mismatch.");
   }
   for (const scopeName of Object.keys(DUPLICATION_SCOPES)) {
     const scope = baseline.scopes?.[scopeName];

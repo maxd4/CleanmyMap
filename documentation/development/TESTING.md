@@ -308,19 +308,27 @@ silencieusement non bloquante pour entrer dans un mode quotidien.
 
 ## Duplication et cycles
 
-La duplication est mesurée par `jscpd` 5.3.0 avec des baselines séparées pour
-le runtime, les tests et les data/fixtures. Les snapshots, fichiers générés,
-vendors et duplications de fixtures volontairement répétitives ne sont pas
-traités comme de la dette runtime. La commande :
+La duplication est mesurée par `jscpd` 5.3.0 avec des baselines natives
+séparées pour le runtime, les tests et les data/fixtures, ainsi qu'une baseline
+métrique dans `scripts/checks/duplication-metrics-baseline.json`. Cette dernière
+contient le fingerprint SHA-256 de la politique courante. Toute modification de
+l'outil, de sa version, des seuils, des scopes, des patterns ou des exclusions
+rend la baseline métrique stale ; son évolution doit être ratifiée explicitement.
+Les snapshots, fichiers générés, vendors et duplications de fixtures
+volontairement répétitives ne sont pas traités comme de la dette runtime. La
+commande :
 
 ```bash
 npm run quality:duplication
 ```
 
 réutilise les fingerprints natifs jscpd et compare aussi les blocs, les lignes
-et les tokens dupliqués à la baseline. Un nouveau clone significatif ou une
-hausse de métrique échoue ; une duplication historique reste tolérée jusqu'à
-une mutualisation fondée sur une abstraction métier réelle.
+et les tokens dupliqués à la baseline métrique. Les fichiers natifs jscpd
+servent à suivre les clones et la baseline métrique sert à ratifier la
+politique, les métriques et leur ratchet : ces deux rôles restent distincts.
+Un nouveau clone significatif ou une hausse de métrique échoue ; une
+duplication historique reste tolérée jusqu'à une mutualisation fondée sur une
+abstraction métier réelle.
 
 Le contrôle de cycles réutilise l'analyseur GitNexus existant. La CI installe
 explicitement la version épinglée `1.6.12` puis initialise son index en mode
