@@ -1,10 +1,11 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sourceCommit": "0edc4931d06764998018372b4df7a2b0ca2349ce",
   "tool": "jscpd",
   "toolVersion": "5.3.0",
   "minLines": 5,
   "minTokens": 50,
+  "policyFingerprint": "8b177c0758eb3cac72dff2293a365cd97050f0d22d616b5be32152c0b5256a11",
   "scopes": {
     "runtime": {
       "files": 1488,
