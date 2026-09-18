@@ -237,6 +237,29 @@ silencieusement.
 seul. `checks:fast` ne relance pas cette suite complète instrumentée afin de
 respecter son budget et d'éviter une seconde exécution inutile des tests.
 
+## Complexité, longueur et ratchet legacy
+
+La politique déterministe est centralisée dans
+`scripts/checks/complexity-policy.mjs`, avec son ratchet versionné dans
+`scripts/checks/complexity-baseline.json`. La preuve exhaustive se lance avec :
+
+```bash
+npm run quality:complexity
+```
+
+Le contrôle bloque les nouveaux dépassements de complexité et de longueur
+définis par catégorie, ainsi que les nouveaux fichiers runtime de plus de 600
+lignes ou de test de plus de 1000 lignes. Les fichiers data/config restent des
+signaux `REVIEW_REQUIRED` sans split automatique. Les dépassements historiques
+utilisent un plafond individuel : une croissance échoue, une baisse est
+signalée comme amélioration à ratifier explicitement, et une baseline absente,
+malformée ou obsolète échoue.
+
+`checks:fast` exécute la variante `--changed-only` pour les changements Web ;
+`checks:full` et la CI exécutent la mesure exhaustive. Ce contrôle ne remplace
+pas `quality:top-heavy`, qui reste la source canonique du ratchet de taille des
+fichiers et de ses seuils `REVIEW_REQUIRED`/`HARD`.
+
 ## Regression gates
 
 La commande canonique est :

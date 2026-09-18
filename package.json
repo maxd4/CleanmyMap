@@ -62,6 +62,7 @@
     "audit:repository-tree": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/audits/audit-repository-tree.ps1",
     "audit:repository-tree:self-test": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/audits/audit-repository-tree.ps1 -SelfTestOnly",
     "quality:top-heavy": "node scripts/checks/check-top-heavy-files.mjs --enforce",
+    "quality:complexity": "node scripts/checks/check-complexity-policy.mjs",
     "check:root-files": "node scripts/checks/check-root-file-hygiene.mjs",
     "check:white-text": "node scripts/checks/check-white-text-variants.mjs",
     "check:text-colors": "node scripts/checks/check-white-text-variants.mjs",

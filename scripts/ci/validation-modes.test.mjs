@@ -33,6 +33,10 @@ test("RAPIDE TypeScript uses targeted evidence without a full suite", () => {
   assert.ok(ids(plan).includes("typecheck"));
   assert.ok(ids(plan).includes("lint-targeted"));
   assert.ok(ids(plan).includes("vitest-targeted"));
+  assert.deepEqual(
+    plan.checks.find((check) => check.id === "quality-complexity").command,
+    { executable: "npm", args: ["run", "quality:complexity", "--changed-only"] },
+  );
   assert.ok(!ids(plan).includes("vitest-full"));
   assert.ok(!ids(plan).includes("build"));
   const lint = plan.checks.find((check) => check.id === "lint-targeted");
@@ -149,6 +153,10 @@ test("COMPLET Web plus Supabase includes affected consumers without mobile fan-o
     ],
   });
   assert.ok(ids(plan).includes("vitest-full"));
+  assert.deepEqual(
+    plan.checks.find((check) => check.id === "quality-complexity").command,
+    { executable: "npm", args: ["run", "quality:complexity"] },
+  );
   assert.deepEqual(
     plan.checks.find((check) => check.id === "vitest-full").command,
     { executable: "npm", args: ["run", "quality:coverage"] },
