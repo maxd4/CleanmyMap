@@ -272,13 +272,13 @@ function buildPoliceFormality(
   };
 }
 
-function buildOtherManagerFormality(
+function buildOtherManagerRecommendation(
   managerLabel: string | null,
 ): ActionFormality {
   return {
     id: "non-municipal-public-domain-manager-authorization",
-    requirementStatus: "required",
-    procedureKind: "other_manager",
+    requirementStatus: "recommended",
+    procedureKind: "information_only",
     competentAuthority: {
       kind: "other_manager",
       label: managerLabel
@@ -291,7 +291,7 @@ function buildOtherManagerFormality(
     scope:
       "Domaine ou espace ouvert au public exclu du domaine municipal parisien, avec occupation ou installation.",
     justification:
-      "La Ville de Paris précise que les domaines de l'État, de la SNCF, d'HAROPA et d'autres propriétaires ou gestionnaires sont exclus et que la demande doit être adressée directement au gestionnaire concerné.",
+      "La Ville de Paris précise que les domaines de l'État, de la SNCF, d'HAROPA et d'autres propriétaires ou gestionnaires sont exclus de son dispositif. Aucune règle spécifique au gestionnaire n'est intégrée ici : il faut confirmer directement ses formalités, son délai et son canal.",
     deadline: null,
     officialChannel: UNKNOWN_CHANNEL,
     requestedInformation: [
@@ -379,7 +379,7 @@ function qualifyParisFormalities(
     );
   }
   if (hasOtherManagerOccupation) {
-    formalities.push(buildOtherManagerFormality(facts.manager.label));
+    formalities.push(buildOtherManagerRecommendation(facts.manager.label));
   }
 
   if (
