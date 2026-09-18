@@ -290,8 +290,8 @@ npm run quality:mutation
 
 Son rapport distingue `Killed`, `Survived`, `NoCoverage`, `Timeout` et
 `error`. Le baseline ratcheté est
-`scripts/checks/mutation-baseline.json` : il a été mesuré sur le SHA
-`6b7d0cb804e907e52b1836531f3b6bc5e3971cf6` avec 329 mutants, 270 killed,
+`scripts/checks/mutation-baseline.json` : il a été mesuré sur l'état introduit
+par le commit `6a0a420bf7313535788f3e0dcb297f0aaa13dd2c`, avec 329 mutants, 270 killed,
 52 survived, 7 no coverage, 0 timeout/error et un score de `83.85 %` sur les
 mutants exécutables. Une baisse du score, une augmentation de `NoCoverage`, un
 timeout, une erreur d'exécution ou une baseline stale sont bloquants. Le score
