@@ -116,8 +116,8 @@ export function auditFramerMotionVisibility(source, filePath = "apps/web/src") {
     }
   }
 
-  const hiddenVariantPattern = /hidden\s*:\s*\{[^{}]*opacity\s*:\s*0\b[^{}]*\}/g;
-  for (const match of source.matchAll(hiddenVariantPattern)) {
+  const hiddenVariantPattern = /hidden\s*:\s*\{[^{}]*opacity\s*:\s*0\b[^{}]*\}/;
+  if (hiddenVariantPattern.test(source)) {
     violations.push(
       `${filePath}: hidden variants with opacity: 0 are fail-closed for initial content`,
     );
