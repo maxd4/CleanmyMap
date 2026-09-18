@@ -2,12 +2,11 @@ import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
+import { readImpactReportDocuments } from './impact-report-files.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '../..');
-const reportFile = path.join(rootDir, 'documentation', 'plans', 'rapport_impact', 'impact_IA.md');
-
 const EXCLUDE_DIRS = new Set([
   'node_modules',
   '.git',
@@ -257,7 +256,6 @@ function replaceOrFail(input, pattern, replacement, label) {
   }
 
   if (!pattern.test(input)) {
-    console.warn(`Warning: no match for ${label}`);
     return input;
   }
 
@@ -282,7 +280,8 @@ const litersPerWeek = (100 / weeks).toFixed(1).replace('.', ',');
 const publicImageCountText = `${rasterStats.byExt.get('.png') || 0} PNG publics et ${rasterStats.byExt.get('.webp') || 0} WebP public`;
 const maxRasterKo = Math.round(rasterStats.maxSize / 1024);
 
-let report = fs.readFileSync(reportFile, 'utf8');
+for (const document of readImpactReportDocuments()) {
+let report = document.text;
 
 report = replaceOrFail(
   report,
@@ -417,7 +416,10 @@ report = replaceOrFail(
   'public assets sentence',
 );
 
-fs.writeFileSync(reportFile, report, 'utf8');
+if (report !== document.text) {
+  fs.writeFileSync(document.absolutePath, report, 'utf8');
+}
+}
 
 console.log(
   JSON.stringify(
