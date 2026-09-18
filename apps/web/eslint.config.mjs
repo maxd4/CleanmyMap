@@ -1,7 +1,19 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import fs from "node:fs";
 import { LEGACY_EXCEPTION_CEILINGS } from "../../scripts/checks/complexity-policy.mjs";
+
+const heavyFilesBaseline = JSON.parse(
+  fs.readFileSync(new URL("../../scripts/checks/heavy-files-baseline.json", import.meta.url), "utf8"),
+);
+const heavyFileMaxLines = (sourcePath) => {
+  const path = `apps/web/${sourcePath}`;
+  const entry = [...heavyFilesBaseline.allowed, ...heavyFilesBaseline.review]
+    .find((candidate) => candidate.path === path);
+  if (!entry) throw new Error(`Missing top-heavy ceiling for ${path}`);
+  return entry.maxLines;
+};
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -66,7 +78,7 @@ const eslintConfig = defineConfig([
     rules: {
       "max-lines": [
         "warn",
-        { max: LEGACY_EXCEPTION_CEILINGS.apiAuthorizationContractLines, skipBlankLines: true, skipComments: true },
+        { max: heavyFileMaxLines("src/lib/auth/api-authorization-contract.ts"), skipBlankLines: true, skipComments: true },
       ],
     },
   },
@@ -75,7 +87,7 @@ const eslintConfig = defineConfig([
     rules: {
       "max-lines": [
         "warn",
-        { max: LEGACY_EXCEPTION_CEILINGS.routeCalibrationLines, skipBlankLines: true, skipComments: true },
+        { max: heavyFileMaxLines("src/lib/route/route-calibration.ts"), skipBlankLines: true, skipComments: true },
       ],
     },
   },

@@ -160,7 +160,7 @@ test("une exception COHESIVE ratifiée reste plafonnée", () => {
   });
 });
 
-test("une exception qui dépasse maxLines échoue", () => {
+test("TOP_HEAVY_FAILURE_PATH_TEST: une exception qui dépasse maxLines échoue sans ReferenceError", () => {
   withFixture({
     source: makeContent(1002),
     baseline: {
@@ -179,6 +179,7 @@ test("une exception qui dépasse maxLines échoue", () => {
     const result = runChecker(root, ["--enforce"]);
     assert.equal(result.status, 1, result.output);
     assert.match(result.output, /plafonds ratifiés/);
+    assert.doesNotMatch(result.output, /ReferenceError/);
   });
 });
 

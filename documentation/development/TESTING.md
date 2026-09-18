@@ -247,13 +247,23 @@ La politique déterministe est centralisée dans
 npm run quality:complexity
 ```
 
-Le contrôle bloque les nouveaux dépassements de complexité et de longueur
-définis par catégorie, ainsi que les nouveaux fichiers runtime de plus de 600
-lignes ou de test de plus de 1000 lignes. Les fichiers data/config restent des
-signaux `REVIEW_REQUIRED` sans split automatique. Les dépassements historiques
-utilisent un plafond individuel : une croissance échoue, une baisse est
-signalée comme amélioration à ratifier explicitement, et une baseline absente,
-malformée ou obsolète échoue.
+Le contrôle bloque les nouveaux dépassements de complexité et de longueur de
+fonction définis par catégorie. `quality:complexity` ne mesure ni ne ratifie la
+taille des fichiers : les seuils runtime/test/data-config, les entrées REVIEW et
+les plafonds de taille sont exclusivement gouvernés par
+`scripts/checks/check-top-heavy-files.mjs`, `scripts/checks/top-heavy-policy.mjs`
+et `scripts/checks/heavy-files-baseline.json`. Les dépassements historiques de
+complexité ou de longueur utilisent un plafond individuel : une croissance
+échoue, une baisse est signalée comme amélioration à ratifier explicitement, et
+une baseline absente, malformée ou obsolète échoue.
+
+L'identité fonctionnelle ratchetée suit exactement
+`FUNCTION_IDENTITY_SCHEME` (`scripts/checks/complexity-policy.mjs`) : chemin
+relatif à `apps/web/src`, rôle sémantique (`named`, `constructor`, variable ou
+propriété, callback avec callee/index/titre), puis occurrence déterministe du
+même rôle dans le fichier. Le numéro de ligne reste une information de
+diagnostic uniquement ; déplacer une fonction sans modifier son contenu ne
+change donc pas son identité ni son plafond.
 
 `checks:fast` exécute la variante `--changed-only` pour les changements Web ;
 `checks:full` et la CI exécutent la mesure exhaustive. Ce contrôle ne remplace

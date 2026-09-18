@@ -1,13 +1,20 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import test from "node:test";
 
 import {
   acquireImprovement,
+  baselineKey,
+  classifyComplexityCategory,
+  classifyFileKind,
   compareLegacyValue,
-  evaluateNewFileLength,
+  deriveFunctionIdentity,
   evaluateNewMetric,
+  FUNCTION_IDENTITY_SCHEME,
+  LEGACY_EXCEPTION_CEILINGS,
   validateBaselineShape,
 } from "./complexity-policy.mjs";
+import { classifyFileKind as classifyTopHeavyFileKind } from "./top-heavy-measurement.mjs";
 
 test("complexity blocks domain above 20 and accepts 20", () => {
   assert.equal(evaluateNewMetric("complexity", "métier/domain pur", 20).status, "PASS");
@@ -44,18 +51,56 @@ test("function length blocks at the category limits", () => {
   assert.equal(evaluateNewMetric("functionLength", "React/JSX", 251).status, "FAIL");
 });
 
-test("file length distinguishes pass, review, block, and data/config signal", () => {
-  assert.equal(evaluateNewFileLength("runtime", 400).status, "PASS");
-  assert.equal(evaluateNewFileLength("runtime", 401).status, "REVIEW");
-  assert.equal(evaluateNewFileLength("runtime", 600).status, "REVIEW");
-  assert.equal(evaluateNewFileLength("runtime", 601).status, "FAIL");
-  assert.equal(evaluateNewFileLength("test", 700).status, "PASS");
-  assert.equal(evaluateNewFileLength("test", 701).status, "REVIEW");
-  assert.equal(evaluateNewFileLength("test", 1001).status, "FAIL");
-  assert.equal(evaluateNewFileLength("data/config", 1001).status, "REVIEW");
+test("test filename forms are classified as tests by both quality owners", () => {
+  const files = [
+    "src/lib/route.test.ts",
+    "src/lib/route.test.tsx",
+    "src/lib/route.spec.ts",
+    "src/lib/route.spec.tsx",
+    "src/lib/route.test.helpers.ts",
+    "src/lib/route.test.harness.ts",
+    "src/lib/route.test.cleanup-scenario.ts",
+  ];
+  for (const file of files) {
+    assert.equal(classifyFileKind(file), "test", file);
+    assert.equal(classifyTopHeavyFileKind(file), "test", file);
+    assert.equal(classifyComplexityCategory(file), "tests", file);
+  }
+});
+
+test("complexity baseline metrics never own file length", () => {
+  const baseline = JSON.parse(fs.readFileSync("scripts/checks/complexity-baseline.json", "utf8"));
+  assert.ok(baseline.entries.length > 0);
+  const metricCounts = baseline.entries.reduce((counts, entry) => ({ ...counts, [entry.metric]: (counts[entry.metric] ?? 0) + 1 }), {});
+  assert.deepEqual(metricCounts, {
+    complexity: 278,
+    functionLength: 393,
+  });
+  assert.ok(baseline.entries.every((entry) => ["complexity", "functionLength"].includes(entry.metric)));
+  assert.ok(baseline.entries.every((entry) => typeof entry.functionIdentity === "string"));
+});
+
+test("legacy file ceilings are owned by top-heavy, not complexity", () => {
+  assert.deepEqual(Object.keys(LEGACY_EXCEPTION_CEILINGS).sort(), [
+    "actionUpdatePersistenceComplexity",
+    "routeCalibrationTestFunctionLines",
+  ]);
+  const heavy = JSON.parse(fs.readFileSync("scripts/checks/heavy-files-baseline.json", "utf8"));
+  const maxLines = new Map([...heavy.allowed, ...heavy.review].map((entry) => [entry.path, entry.maxLines]));
+  assert.equal(maxLines.get("apps/web/src/lib/auth/api-authorization-contract.ts"), 911);
+  assert.equal(maxLines.get("apps/web/src/lib/route/route-calibration.ts"), 928);
+});
+
+test("LINE_SHIFT_TEST: function identity is stable when lines are inserted before a legacy function", () => {
+  const functionSource = "function legacyRoute(input) {\n  return input;\n}";
+  const original = deriveFunctionIdentity("fixture.ts", functionSource, 1, "Function 'legacyRoute'");
+  const shifted = deriveFunctionIdentity("fixture.ts", `\n\n${functionSource}`, 3, "Function 'legacyRoute'");
+  assert.equal(original, shifted);
+  assert.equal(baselineKey("complexity", "fixture.ts", original), baselineKey("complexity", "fixture.ts", shifted));
+  assert.match(FUNCTION_IDENTITY_SCHEME, /line is diagnostic metadata only/);
 });
 
 test("malformed or stale baseline is rejected", () => {
-  assert.throws(() => validateBaselineShape({ schemaVersion: 1, sourceCommit: "not-a-sha", entries: [] }), /sourceCommit/);
-  assert.throws(() => validateBaselineShape({ schemaVersion: 1, sourceCommit: "a".repeat(40), policyFingerprint: "wrong", entries: [] }), /fingerprint/);
+  assert.throws(() => validateBaselineShape({ schemaVersion: 2, sourceCommit: "not-a-sha", entries: [] }), /sourceCommit/);
+  assert.throws(() => validateBaselineShape({ schemaVersion: 2, sourceCommit: "a".repeat(40), policyFingerprint: "wrong", entries: [] }), /fingerprint/);
 });
