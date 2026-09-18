@@ -20,7 +20,7 @@
     Aucune suppression, migration, restauration, stash, checkout ou clean.
 
 .EXAMPLE
-    pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\audit-repository-tree.ps1
+    pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\audits\audit-repository-tree.ps1
 #>
 
 [CmdletBinding()]
@@ -483,9 +483,17 @@ function Add-GitLinesToSet {
     )
     foreach ($line in $Lines) {
         if ($null -eq $line) { continue }
-        $text = ($line.ToString() -replace "\\", "/").Trim()
+        $text = Normalize-GitRelativePath -Path $line.ToString()
         if ($text.Length -gt 0) { [void]$Set.Add($text) }
     }
+}
+
+function Normalize-GitRelativePath {
+    param(
+        [Parameter(Mandatory)][AllowEmptyString()][string]$Path
+    )
+    $normalized = (($Path -replace "\\", "/").Trim())
+    return $normalized.Normalize([System.Text.NormalizationForm]::FormC)
 }
 
 function Get-FileGitStatus {
@@ -495,9 +503,10 @@ function Get-FileGitStatus {
         [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.HashSet[string]]$Untracked,
         [Parameter(Mandatory)][AllowEmptyCollection()][System.Collections.Generic.HashSet[string]]$Ignored
     )
-    if ($Tracked.Contains($RelativePath)) { return "tracked" }
-    if ($Ignored.Contains($RelativePath)) { return "ignored" }
-    if ($Untracked.Contains($RelativePath)) { return "untracked" }
+    $normalizedRelativePath = Normalize-GitRelativePath -Path $RelativePath
+    if ($Tracked.Contains($normalizedRelativePath)) { return "tracked" }
+    if ($Ignored.Contains($normalizedRelativePath)) { return "ignored" }
+    if ($Untracked.Contains($normalizedRelativePath)) { return "untracked" }
     return "other"
 }
 
@@ -554,6 +563,24 @@ function Invoke-EndToEndSelfTest {
         -Ignored $bindingProbe
     if ($probeStatus -ne "other") {
         throw "self-test: empty HashSet parameter binding regression"
+    }
+
+    # Regression guard: Git may expose NFC while the filesystem-relative path
+    # queried by the inventory is NFD (or the reverse). Both must classify the
+    # same path identically.
+    $unicodeProbe = [System.Collections.Generic.HashSet[string]]::new(
+        [System.StringComparer]::OrdinalIgnoreCase
+    )
+    $nfcPath = "src/caf$([char]0x00E9).txt"
+    $nfdPath = "src/cafe$([char]0x0301).txt"
+    Add-GitLinesToSet -Set $unicodeProbe -Lines @("  $nfcPath  ")
+    $unicodeStatus = Get-FileGitStatus `
+        -RelativePath " $nfdPath " `
+        -Tracked $unicodeProbe `
+        -Untracked ([System.Collections.Generic.HashSet[string]]::new()) `
+        -Ignored ([System.Collections.Generic.HashSet[string]]::new())
+    if ($unicodeStatus -ne "tracked") {
+        throw "self-test: NFC/NFD Git path normalization regression"
     }
 
     # Regression guard: the root tree renderer intentionally starts with Prefix="".
@@ -1313,7 +1340,7 @@ try {
     $readme.WriteLine("## Reproduction")
     $readme.WriteLine("")
     $readme.WriteLine('```powershell')
-    $readme.WriteLine('pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\audit-repository-tree.ps1')
+    $readme.WriteLine('npm run audit:repository-tree')
     $readme.WriteLine('```')
 }
 finally { $readme.Dispose() }
