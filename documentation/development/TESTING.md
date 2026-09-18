@@ -260,6 +260,35 @@ malformée ou obsolète échoue.
 pas `quality:top-heavy`, qui reste la source canonique du ratchet de taille des
 fichiers et de ses seuils `REVIEW_REQUIRED`/`HARD`.
 
+## Duplication et cycles
+
+La duplication est mesurée par `jscpd` 5.3.0 avec des baselines séparées pour
+le runtime, les tests et les data/fixtures. Les snapshots, fichiers générés,
+vendors et duplications de fixtures volontairement répétitives ne sont pas
+traités comme de la dette runtime. La commande :
+
+```bash
+npm run quality:duplication
+```
+
+réutilise les fingerprints natifs jscpd et compare aussi les blocs, les lignes
+et les tokens dupliqués à la baseline. Un nouveau clone significatif ou une
+hausse de métrique échoue ; une duplication historique reste tolérée jusqu'à
+une mutualisation fondée sur une abstraction métier réelle.
+
+Le contrôle de cycles réutilise l'analyseur GitNexus existant. La CI installe
+explicitement la version épinglée `1.6.12` puis initialise son index en mode
+`--index-only`, car `.gitnexus/` reste un état local ignoré :
+
+```bash
+npm run quality:cycles
+```
+
+Il exige un rapport complet et stable, plafonne les cycles historiques
+identifiés et échoue sur tout nouveau cycle ou baseline obsolète. Les deux
+gates sont exécutés en `COMPLET` et dans la CI ; ils ne sont pas ajoutés à
+`RAPIDE` pour éviter une analyse globale à chaque changement ciblé.
+
 ## Regression gates
 
 La commande canonique est :

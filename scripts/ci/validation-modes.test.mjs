@@ -158,6 +158,14 @@ test("COMPLET Web plus Supabase includes affected consumers without mobile fan-o
     { executable: "npm", args: ["run", "quality:complexity"] },
   );
   assert.deepEqual(
+    plan.checks.find((check) => check.id === "quality-duplication").command,
+    { executable: "npm", args: ["run", "quality:duplication"] },
+  );
+  assert.deepEqual(
+    plan.checks.find((check) => check.id === "quality-cycles").command,
+    { executable: "npm", args: ["run", "quality:cycles"] },
+  );
+  assert.deepEqual(
     plan.checks.find((check) => check.id === "vitest-full").command,
     { executable: "npm", args: ["run", "quality:coverage"] },
   );

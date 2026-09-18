@@ -323,6 +323,22 @@ export function createModeValidationPlan({
       });
     }
     if (full) {
+      if (webSourceRelevant || scriptsRelevant) {
+        addCheck(checks, {
+          id: "quality-duplication",
+          label: "Ratchet duplication jscpd",
+          estimatedSeconds: 5,
+          critical: true,
+          command: npmCommand("quality:duplication"),
+        });
+        addCheck(checks, {
+          id: "quality-cycles",
+          label: "Ratchet cycles GitNexus",
+          estimatedSeconds: 35,
+          critical: true,
+          command: npmCommand("quality:cycles"),
+        });
+      }
       addCheck(checks, {
         id: "vercel-ci-audit",
         label: "Audit Vercel CI",

@@ -187,6 +187,17 @@ jobs:
       - name: Complexity and function-length policy
         run: npm run quality:complexity
 
+      - name: Duplication ratchet
+        run: npm run quality:duplication
+
+      - name: Set up GitNexus cycle audit
+        run: |
+          npm install --global gitnexus@1.6.12
+          gitnexus analyze --index-only
+
+      - name: GitNexus cycle ratchet
+        run: npm run quality:cycles
+
       - name: Web lint
         run: npm run lint
 
