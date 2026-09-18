@@ -35,8 +35,26 @@ export const COMPLEXITY_POLICY_FINGERPRINT = createHash("sha256")
   }))
   .digest("hex");
 
+export const FUNCTION_IDENTITY_SCHEME_VERSION = 2;
 export const FUNCTION_IDENTITY_SCHEME =
-  "v1: path + semantic role + deterministic occurrence; line is diagnostic metadata only.";
+  "v2: path + semantic role with canonical syntax tokens + deterministic occurrence; line is diagnostic metadata only.";
+
+function canonicalSyntaxText(node, sourceFile) {
+  const scanner = ts.createScanner(
+    ts.ScriptTarget.Latest,
+    true,
+    sourceFile.languageVariant,
+    sourceFile.text,
+  );
+  scanner.setTextPos(node.getStart(sourceFile));
+  const tokens = [];
+  let token = scanner.scan();
+  while (token !== ts.SyntaxKind.EndOfFileToken && scanner.getTokenPos() < node.end) {
+    tokens.push(scanner.getTokenText());
+    token = scanner.scan();
+  }
+  return tokens.join(" ");
+}
 
 function isFunctionLike(node) {
   return ts.isFunctionDeclaration(node)
@@ -50,11 +68,11 @@ function isFunctionLike(node) {
 
 function nodeName(node, sourceFile) {
   if (ts.isConstructorDeclaration(node)) return "constructor";
-  if ("name" in node && node.name) return node.name.getText(sourceFile);
+  if ("name" in node && node.name) return canonicalSyntaxText(node.name, sourceFile);
   if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
     const parent = node.parent;
-    if (parent && ts.isVariableDeclaration(parent)) return parent.name.getText(sourceFile);
-    if (parent && ts.isPropertyAssignment(parent)) return parent.name.getText(sourceFile);
+    if (parent && ts.isVariableDeclaration(parent)) return canonicalSyntaxText(parent.name, sourceFile);
+    if (parent && ts.isPropertyAssignment(parent)) return canonicalSyntaxText(parent.name, sourceFile);
   }
   return null;
 }
@@ -63,9 +81,9 @@ function callRole(node, sourceFile) {
   const parent = node.parent;
   if (!parent || !ts.isCallExpression(parent)) return null;
   const argumentIndex = parent.arguments.indexOf(node);
-  const callee = parent.expression.getText(sourceFile);
+  const callee = canonicalSyntaxText(parent.expression, sourceFile);
   const title = parent.arguments[0] && ts.isStringLiteralLike(parent.arguments[0])
-    ? parent.arguments[0].getText(sourceFile)
+    ? canonicalSyntaxText(parent.arguments[0], sourceFile)
     : "";
   return `callback:${callee}:${argumentIndex}:${title}`;
 }
@@ -153,6 +171,7 @@ export function acquireImprovement(entry, current) {
 export function validateBaselineShape(baseline) {
   if (!baseline || baseline.schemaVersion !== 2) throw new Error("complexity baseline malformed: schemaVersion 2 required.");
   if (typeof baseline.sourceCommit !== "string" || !/^[0-9a-f]{40}$/i.test(baseline.sourceCommit)) throw new Error("complexity baseline malformed: full sourceCommit required.");
+  if (baseline.functionIdentitySchemeVersion !== FUNCTION_IDENTITY_SCHEME_VERSION) throw new Error("complexity baseline stale: function identity scheme mismatch.");
   if (baseline.policyFingerprint !== COMPLEXITY_POLICY_FINGERPRINT) throw new Error("complexity baseline stale: policy fingerprint mismatch.");
   if (!Array.isArray(baseline.entries)) throw new Error("complexity baseline malformed: entries[] required.");
 
