@@ -1,6 +1,7 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import { LEGACY_EXCEPTION_CEILINGS } from "../../scripts/checks/complexity-policy.mjs";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -59,27 +60,38 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    // Ces modules portent chacun un contrat cohésif déjà audité. Leur taille
-    // est un signal de revue, pas une erreur de lint à corriger par découpage
-    // artificiel dans ce lot de stabilisation CI.
-    files: [
-      "src/lib/auth/api-authorization-contract.ts",
-      "src/lib/route/route-calibration.ts",
-    ],
+    // Ces plafonds remplacent les anciens `off` par la mesure ratifiée ; le
+    // checker de complexité conserve en parallèle le ratchet par fonction.
+    files: ["src/lib/auth/api-authorization-contract.ts"],
     rules: {
-      "max-lines": "off",
+      "max-lines": [
+        "warn",
+        { max: LEGACY_EXCEPTION_CEILINGS.apiAuthorizationContractLines, skipBlankLines: true, skipComments: true },
+      ],
+    },
+  },
+  {
+    files: ["src/lib/route/route-calibration.ts"],
+    rules: {
+      "max-lines": [
+        "warn",
+        { max: LEGACY_EXCEPTION_CEILINGS.routeCalibrationLines, skipBlankLines: true, skipComments: true },
+      ],
     },
   },
   {
     files: ["src/lib/actions/action-update-persistence.ts"],
     rules: {
-      complexity: "off",
+      complexity: ["warn", LEGACY_EXCEPTION_CEILINGS.actionUpdatePersistenceComplexity],
     },
   },
   {
     files: ["src/lib/route/route-calibration.test.ts"],
     rules: {
-      "max-lines-per-function": "off",
+      "max-lines-per-function": [
+        "warn",
+        { max: LEGACY_EXCEPTION_CEILINGS.routeCalibrationTestFunctionLines, skipBlankLines: true, skipComments: true },
+      ],
     },
   },
   // Override default ignores of eslint-config-next.

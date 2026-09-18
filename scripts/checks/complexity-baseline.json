@@ -1,0 +1,6552 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "3bad4d30ffd07751644724fb06276d6e9accb4d7",
+  "measuredAt": "2026-09-18T17:39:26.914Z",
+  "policyFingerprint": "ea2f9b558c29844cccf617fdd6c137854d88ce0dd3b721669d548ac29825a79d",
+  "entries": [
+    {
+      "metric": "complexity",
+      "path": "src/app/(app)/actions/new/page.tsx",
+      "line": 50,
+      "category": "React/JSX",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/(app)/admin/page.tsx",
+      "line": 49,
+      "category": "React/JSX",
+      "ceiling": 28,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/(app)/dashboard/page.tsx",
+      "line": 46,
+      "category": "React/JSX",
+      "ceiling": 28,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/(app)/dashboard/page.tsx",
+      "line": 165,
+      "category": "React/JSX",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/(app)/sponsor-portal/page.tsx",
+      "line": 40,
+      "category": "React/JSX",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/actions/[actionId]/cancel/route.ts",
+      "line": 26,
+      "category": "routes API",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/actions/[actionId]/group-join/route.review.ts",
+      "line": 23,
+      "category": "routes API",
+      "ceiling": 53,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/actions/[actionId]/group-join/route.toggle.ts",
+      "line": 25,
+      "category": "routes API",
+      "ceiling": 26,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/actions/[actionId]/route.ts",
+      "line": 109,
+      "category": "routes API",
+      "ceiling": 31,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/actions/import/route.ts",
+      "line": 187,
+      "category": "routes API",
+      "ceiling": 23,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/actions/prefill/route.ts",
+      "line": 79,
+      "category": "routes API",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/admin/legal-content-reports/decision/route.ts",
+      "line": 190,
+      "category": "routes API",
+      "ceiling": 74,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/admin/moderation/route.action.ts",
+      "line": 381,
+      "category": "routes API",
+      "ceiling": 35,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/chat/route.get.ts",
+      "line": 38,
+      "category": "routes API",
+      "ceiling": 71,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/chat/route.post.ts",
+      "line": 50,
+      "category": "routes API",
+      "ceiling": 137,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/chat/search/route.ts",
+      "line": 107,
+      "category": "routes API",
+      "ceiling": 47,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/community/bug-reports/route.ts",
+      "line": 74,
+      "category": "routes API",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/community/events/ops/route.ts",
+      "line": 124,
+      "category": "routes API",
+      "ceiling": 35,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/community/events/route.ts",
+      "line": 264,
+      "category": "routes API",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/gamification/badges/[userId]/increment/route.ts",
+      "line": 40,
+      "category": "routes API",
+      "ceiling": 30,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/legal-content-reports/route.ts",
+      "line": 88,
+      "category": "routes API",
+      "ceiling": 23,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/reports/elus-dossier/route.ts",
+      "line": 316,
+      "category": "routes API",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/route/recommend/route.planning.ts",
+      "line": 85,
+      "category": "routes API",
+      "ceiling": 37,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/route/recommend/route.response.ts",
+      "line": 144,
+      "category": "routes API",
+      "ceiling": 46,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/send/route.ts",
+      "line": 44,
+      "category": "routes API",
+      "ceiling": 34,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/api/services/route.ts",
+      "line": 19,
+      "category": "routes API",
+      "ceiling": 33,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/docs/[...segments]/route.ts",
+      "line": 101,
+      "category": "routes API",
+      "ceiling": 48,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/learn/comprendre/page.tsx",
+      "line": 40,
+      "category": "React/JSX",
+      "ceiling": 30,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/app/reglages/page.tsx",
+      "line": 25,
+      "category": "React/JSX",
+      "ceiling": 41,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/account/account-evolution-panel.tsx",
+      "line": 69,
+      "category": "React/JSX",
+      "ceiling": 30,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/account/use-account-setup-controller.ts",
+      "line": 85,
+      "category": "hooks",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/account/user-location-onboarding-form.tsx",
+      "line": 37,
+      "category": "React/JSX",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/before/form.tsx",
+      "line": 35,
+      "category": "React/JSX",
+      "ceiling": 35,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/before/sections.tsx",
+      "line": 197,
+      "category": "React/JSX",
+      "ceiling": 29,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/draft-storage.ts",
+      "line": 253,
+      "category": "React/JSX",
+      "ceiling": 23,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/form/action-declaration-export-picker.view.tsx",
+      "line": 38,
+      "category": "React/JSX",
+      "ceiling": 28,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/form/action-declaration-form-confirmation.tsx",
+      "line": 32,
+      "category": "React/JSX",
+      "ceiling": 34,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/form/action-declaration-form.feedback.tsx",
+      "line": 35,
+      "category": "React/JSX",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/form/action-declaration-form.quality.ts",
+      "line": 22,
+      "category": "React/JSX",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/form/action-declaration-form.tsx",
+      "line": 83,
+      "category": "React/JSX",
+      "ceiling": 53,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
+      "line": 202,
+      "category": "hooks",
+      "ceiling": 49,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
+      "line": 476,
+      "category": "hooks",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
+      "line": 617,
+      "category": "hooks",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/payload.ts",
+      "line": 143,
+      "category": "React/JSX",
+      "ceiling": 41,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/payload.ts",
+      "line": 229,
+      "category": "React/JSX",
+      "ceiling": 46,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/payload.ts",
+      "line": 388,
+      "category": "React/JSX",
+      "ceiling": 58,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/steps/ActionStepIdentity.tsx",
+      "line": 128,
+      "category": "React/JSX",
+      "ceiling": 92,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/steps/ActionStepLocation.tsx",
+      "line": 404,
+      "category": "React/JSX",
+      "ceiling": 53,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/steps/ActionStepReview.tsx",
+      "line": 103,
+      "category": "React/JSX",
+      "ceiling": 26,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/action-formalities-workflow-panel.tsx",
+      "line": 128,
+      "category": "React/JSX",
+      "ceiling": 26,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/actions-history-list-details.tsx",
+      "line": 65,
+      "category": "React/JSX",
+      "ceiling": 33,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/actions-history-list.tsx",
+      "line": 51,
+      "category": "React/JSX",
+      "ceiling": 41,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/actions-map-canvas.tsx",
+      "line": 148,
+      "category": "React/JSX",
+      "ceiling": 58,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/actions-map-table.tsx",
+      "line": 48,
+      "category": "React/JSX",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/map-feed/_layouts/default-layout.tsx",
+      "line": 53,
+      "category": "React/JSX",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/map-feed/_layouts/immersive-layout.tsx",
+      "line": 68,
+      "category": "React/JSX",
+      "ceiling": 30,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/map-feed/actions-map-feed.tsx",
+      "line": 63,
+      "category": "React/JSX",
+      "ceiling": 38,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/map/action-popup-content-body.tsx",
+      "line": 41,
+      "category": "React/JSX",
+      "ceiling": 43,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/map/action-popup-content-header.tsx",
+      "line": 111,
+      "category": "React/JSX",
+      "ceiling": 113,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/map/action-popup-content-header.tsx",
+      "line": 612,
+      "category": "React/JSX",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/map/action-popup-content.tsx",
+      "line": 98,
+      "category": "React/JSX",
+      "ceiling": 60,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/map/actions-map-export-button.tsx",
+      "line": 79,
+      "category": "React/JSX",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/map/actions-map-export.utils.ts",
+      "line": 153,
+      "category": "React/JSX",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/map/actions-map-export.utils.ts",
+      "line": 181,
+      "category": "React/JSX",
+      "ceiling": 47,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/map/corridor-popup-content.tsx",
+      "line": 32,
+      "category": "React/JSX",
+      "ceiling": 25,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/map/map-geometry-tooltip-content.tsx",
+      "line": 37,
+      "category": "React/JSX",
+      "ceiling": 34,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/map/map-layers-shape-layers.tsx",
+      "line": 162,
+      "category": "React/JSX",
+      "ceiling": 87,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/map/use-action-popup-scores.ts",
+      "line": 46,
+      "category": "hooks",
+      "ceiling": 44,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/actions/quick-signalement-form.tsx",
+      "line": 37,
+      "category": "React/JSX",
+      "ceiling": 34,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/admin/codex-usage-panel.tsx",
+      "line": 101,
+      "category": "React/JSX",
+      "ceiling": 37,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/admin/creator-inbox/inbox-item-card.tsx",
+      "line": 47,
+      "category": "React/JSX",
+      "ceiling": 52,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/admin/environmental-impact-capture-panel.tsx",
+      "line": 118,
+      "category": "React/JSX",
+      "ceiling": 32,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/admin/feedback-requests-panel.tsx",
+      "line": 237,
+      "category": "React/JSX",
+      "ceiling": 26,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/admin/free-plan-services-panel.tsx",
+      "line": 42,
+      "category": "React/JSX",
+      "ceiling": 23,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/admin/free-plan-services-visual.model.ts",
+      "line": 130,
+      "category": "React/JSX",
+      "ceiling": 76,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/admin/free-plan-services-visual.view.tsx",
+      "line": 131,
+      "category": "React/JSX",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/admin/promotion-requests-panel.tsx",
+      "line": 190,
+      "category": "React/JSX",
+      "ceiling": 31,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/admin/role-management-panel.tsx",
+      "line": 55,
+      "category": "React/JSX",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/admin/role-management-panel.tsx",
+      "line": 92,
+      "category": "React/JSX",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/admin/role-management-panel.tsx",
+      "line": 191,
+      "category": "React/JSX",
+      "ceiling": 37,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/chat/chat-action-share-dialog.tsx",
+      "line": 15,
+      "category": "React/JSX",
+      "ceiling": 26,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/chat/chat-composer.tsx",
+      "line": 75,
+      "category": "React/JSX",
+      "ceiling": 79,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/chat/chat-context-sidebar.tsx",
+      "line": 22,
+      "category": "React/JSX",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/chat/chat-header.tsx",
+      "line": 47,
+      "category": "React/JSX",
+      "ceiling": 59,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/chat/chat-shell.tsx",
+      "line": 99,
+      "category": "React/JSX",
+      "ceiling": 93,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/chat/chat-shell.tsx",
+      "line": 478,
+      "category": "React/JSX",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/chat/chat-sidebar.tsx",
+      "line": 55,
+      "category": "React/JSX",
+      "ceiling": 30,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/chat/discussion-guidance.ts",
+      "line": 454,
+      "category": "React/JSX",
+      "ceiling": 23,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/chat/dm-inbox.tsx",
+      "line": 44,
+      "category": "React/JSX",
+      "ceiling": 34,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/chat/hooks/use-chat-shell-composer.ts",
+      "line": 44,
+      "category": "hooks",
+      "ceiling": 26,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/chat/hooks/use-chat-submit.ts",
+      "line": 140,
+      "category": "hooks",
+      "ceiling": 58,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/chat/ui/chat-message-item.tsx",
+      "line": 55,
+      "category": "React/JSX",
+      "ceiling": 82,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/dashboard/storage-business-contribution-donut.tsx",
+      "line": 144,
+      "category": "React/JSX",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/dashboard/storage-usage-panel.tsx",
+      "line": 106,
+      "category": "React/JSX",
+      "ceiling": 38,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/dashboard/system-status-panel.tsx",
+      "line": 20,
+      "category": "React/JSX",
+      "ceiling": 47,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/dashboard/vision-training-panel.tsx",
+      "line": 14,
+      "category": "React/JSX",
+      "ceiling": 28,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx",
+      "line": 90,
+      "category": "React/JSX",
+      "ceiling": 43,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx",
+      "line": 183,
+      "category": "React/JSX",
+      "ceiling": 32,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/gamification/CleanZonesBadge.tsx",
+      "line": 18,
+      "category": "React/JSX",
+      "ceiling": 25,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/gamification/FormsBadge.tsx",
+      "line": 16,
+      "category": "React/JSX",
+      "ceiling": 26,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/learn/learn-numerique-theme-panel.tsx",
+      "line": 50,
+      "category": "React/JSX",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/learn/learn-rubric-shell.tsx",
+      "line": 35,
+      "category": "React/JSX",
+      "ceiling": 40,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/learn/quiz/environmental-quiz.tsx",
+      "line": 76,
+      "category": "React/JSX",
+      "ceiling": 56,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/learn/quiz/quiz-personal-progress-overview.tsx",
+      "line": 26,
+      "category": "React/JSX",
+      "ceiling": 59,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/learn/quiz/quiz-session-feedback.tsx",
+      "line": 35,
+      "category": "React/JSX",
+      "ceiling": 33,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/learn/quiz/quiz-session-panel-summary.tsx",
+      "line": 34,
+      "category": "React/JSX",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/learn/quiz/quiz-session-panel.tsx",
+      "line": 68,
+      "category": "React/JSX",
+      "ceiling": 30,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/learn/quiz/quiz-session-question.tsx",
+      "line": 45,
+      "category": "React/JSX",
+      "ceiling": 57,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/learn/quiz/school/quiz-school-workshop-session.tsx",
+      "line": 57,
+      "category": "React/JSX",
+      "ceiling": 51,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/notifications/notification-list-item.tsx",
+      "line": 31,
+      "category": "React/JSX",
+      "ceiling": 25,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/pilotage/access-screen/views/pilotage-locked-page.tsx",
+      "line": 12,
+      "category": "React/JSX",
+      "ceiling": 35,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/pilotage/access-screen/views/pilotage-overview-content.tsx",
+      "line": 43,
+      "category": "React/JSX",
+      "ceiling": 28,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/profil/impact-profile-page.tsx",
+      "line": 51,
+      "category": "React/JSX",
+      "ceiling": 34,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/reports/admin-workflow/step-confirm.tsx",
+      "line": 43,
+      "category": "React/JSX",
+      "ceiling": 30,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/reports/admin-workflow/step-filter.tsx",
+      "line": 11,
+      "category": "React/JSX",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/reports/admin-workflow/use-admin-workflow.ts",
+      "line": 161,
+      "category": "hooks",
+      "ceiling": 66,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/reports/web-document/sections.tsx",
+      "line": 55,
+      "category": "React/JSX",
+      "ceiling": 33,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/reports/web-document/use-reports-web-document-model.ts",
+      "line": 41,
+      "category": "hooks",
+      "ceiling": 26,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/action-map-methodology-section.tsx",
+      "line": 79,
+      "category": "React/JSX",
+      "ceiling": 39,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/annuaire/annuaire-actor-card.tsx",
+      "line": 29,
+      "category": "React/JSX",
+      "ceiling": 42,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/annuaire/annuaire-partner-drawer.tsx",
+      "line": 26,
+      "category": "React/JSX",
+      "ceiling": 28,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/community/create-event-card.tsx",
+      "line": 38,
+      "category": "React/JSX",
+      "ceiling": 26,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/community/use-community-actions.ts",
+      "line": 69,
+      "category": "hooks",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/discussion-bug-report-form.tsx",
+      "line": 20,
+      "category": "React/JSX",
+      "ceiling": 42,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/discussion-bug-report-form.tsx",
+      "line": 52,
+      "category": "React/JSX",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/elus-section.tsx",
+      "line": 122,
+      "category": "React/JSX",
+      "ceiling": 30,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/feedback-section-dashboard.tsx",
+      "line": 55,
+      "category": "React/JSX",
+      "ceiling": 49,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx",
+      "line": 52,
+      "category": "React/JSX",
+      "ceiling": 66,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/free-plan-services-methodology-visual.logic.ts",
+      "line": 371,
+      "category": "React/JSX",
+      "ceiling": 43,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/free-plan-services-methodology-visual.quotas.tsx",
+      "line": 32,
+      "category": "React/JSX",
+      "ceiling": 52,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/funding-section.tsx",
+      "line": 9,
+      "category": "React/JSX",
+      "ceiling": 25,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/gamification/collections-panel.tsx",
+      "line": 73,
+      "category": "React/JSX",
+      "ceiling": 23,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/gamification/gamification-engagement.tsx",
+      "line": 24,
+      "category": "React/JSX",
+      "ceiling": 34,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/gamification/gamification-recognition.tsx",
+      "line": 7,
+      "category": "React/JSX",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/gamification/impact-feedback-panel.tsx",
+      "line": 33,
+      "category": "React/JSX",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/gamification/personal-progress.tsx",
+      "line": 25,
+      "category": "React/JSX",
+      "ceiling": 32,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/gamification/progression-visible-panel.tsx",
+      "line": 19,
+      "category": "React/JSX",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/impact-terrain-2026-methodology-section.tsx",
+      "line": 52,
+      "category": "React/JSX",
+      "ceiling": 56,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/methodologie-page-client.tsx",
+      "line": 219,
+      "category": "React/JSX",
+      "ceiling": 54,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/partners-network-section.tsx",
+      "line": 100,
+      "category": "React/JSX",
+      "ceiling": 48,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/promotion-request-form.tsx",
+      "line": 34,
+      "category": "React/JSX",
+      "ceiling": 33,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/promotion-request-form.tsx",
+      "line": 64,
+      "category": "React/JSX",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts",
+      "line": 109,
+      "category": "React/JSX",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/rejoindre-un-formulaire-section-dialog.tsx",
+      "line": 17,
+      "category": "React/JSX",
+      "ceiling": 30,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/rejoindre-un-formulaire-section-public-queue.tsx",
+      "line": 29,
+      "category": "React/JSX",
+      "ceiling": 31,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/rejoindre-un-formulaire-section.cards.tsx",
+      "line": 109,
+      "category": "React/JSX",
+      "ceiling": 48,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/rejoindre-un-formulaire-section.controller.actions.ts",
+      "line": 203,
+      "category": "React/JSX",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/rejoindre-un-formulaire-section.explorer.tsx",
+      "line": 33,
+      "category": "React/JSX",
+      "ceiling": 69,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/rejoindre-un-formulaire-section.future-actions.tsx",
+      "line": 75,
+      "category": "React/JSX",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/rejoindre-une-action.past-actions.tsx",
+      "line": 132,
+      "category": "React/JSX",
+      "ceiling": 42,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/route/components/route-constraints-form.tsx",
+      "line": 17,
+      "category": "React/JSX",
+      "ceiling": 30,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/route/components/route-event-selector.tsx",
+      "line": 27,
+      "category": "React/JSX",
+      "ceiling": 23,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/route/components/route-explanation-stop.tsx",
+      "line": 12,
+      "category": "React/JSX",
+      "ceiling": 35,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/route/components/route-explanation.tsx",
+      "line": 19,
+      "category": "React/JSX",
+      "ceiling": 48,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/route/components/route-map.tsx",
+      "line": 101,
+      "category": "React/JSX",
+      "ceiling": 45,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/route/route-section.tsx",
+      "line": 72,
+      "category": "React/JSX",
+      "ceiling": 104,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/trash-spotter-section.tsx",
+      "line": 44,
+      "category": "React/JSX",
+      "ceiling": 38,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/weather-section.conditions.tsx",
+      "line": 37,
+      "category": "React/JSX",
+      "ceiling": 91,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/sections/rubriques/weather-section.helpers.ts",
+      "line": 123,
+      "category": "React/JSX",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/ui/cmm-block-accent.tsx",
+      "line": 57,
+      "category": "React/JSX",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/ui/cmm-button.tsx",
+      "line": 56,
+      "category": "React/JSX",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/ui/cmm-dropdown.tsx",
+      "line": 57,
+      "category": "React/JSX",
+      "ceiling": 33,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/ui/site-preferences-controls.tsx",
+      "line": 18,
+      "category": "React/JSX",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/components/ui/site-tooltips.tsx",
+      "line": 149,
+      "category": "React/JSX",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/action-update-audit.ts",
+      "line": 87,
+      "category": "métier/domain pur",
+      "ceiling": 43,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/action-update-persistence.ts",
+      "line": 49,
+      "category": "runtime/services/orchestration",
+      "ceiling": 122,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/contracts/contract-builders.ts",
+      "line": 198,
+      "category": "métier/domain pur",
+      "ceiling": 37,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/contracts/contract-builders.ts",
+      "line": 270,
+      "category": "métier/domain pur",
+      "ceiling": 17,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/create-submission.ts",
+      "line": 67,
+      "category": "métier/domain pur",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/exports/export-form-media.ts",
+      "line": 280,
+      "category": "métier/domain pur",
+      "ceiling": 28,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/formalities-qualification.ts",
+      "line": 349,
+      "category": "métier/domain pur",
+      "ceiling": 29,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/geometry/final-geometry.ts",
+      "line": 84,
+      "category": "métier/domain pur",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/geometry/final-geometry.ts",
+      "line": 155,
+      "category": "métier/domain pur",
+      "ceiling": 20,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/geometry/gpx.ts",
+      "line": 105,
+      "category": "métier/domain pur",
+      "ceiling": 28,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/geometry/route-reconstruction.ts",
+      "line": 167,
+      "category": "métier/domain pur",
+      "ceiling": 31,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/metadata.ts",
+      "line": 294,
+      "category": "métier/domain pur",
+      "ceiling": 25,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/participation/group-participation-membership.ts",
+      "line": 82,
+      "category": "métier/domain pur",
+      "ceiling": 18,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/participation/group-participation-review.ts",
+      "line": 386,
+      "category": "métier/domain pur",
+      "ceiling": 17,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/participation/participant-summaries.ts",
+      "line": 70,
+      "category": "métier/domain pur",
+      "ceiling": 16,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/participation/post-action-claims.ts",
+      "line": 65,
+      "category": "métier/domain pur",
+      "ceiling": 20,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/pollution/corridor-history.ts",
+      "line": 450,
+      "category": "métier/domain pur",
+      "ceiling": 20,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/pollution/local-repollution-calibration.ts",
+      "line": 263,
+      "category": "métier/domain pur",
+      "ceiling": 18,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/pollution/projection-confidence.ts",
+      "line": 88,
+      "category": "métier/domain pur",
+      "ceiling": 17,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/pollution/repollution-prediction-evaluation.ts",
+      "line": 132,
+      "category": "métier/domain pur",
+      "ceiling": 20,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/pollution/repollution-prediction-evaluation.ts",
+      "line": 267,
+      "category": "métier/domain pur",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/signalement/create-signalement.ts",
+      "line": 58,
+      "category": "métier/domain pur",
+      "ceiling": 16,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/signalement/my-observations-contract.ts",
+      "line": 19,
+      "category": "métier/domain pur",
+      "ceiling": 17,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/signalement/signalement-media.ts",
+      "line": 90,
+      "category": "métier/domain pur",
+      "ceiling": 19,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/signalement/signalement-media.ts",
+      "line": 210,
+      "category": "métier/domain pur",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/store-create-contract.ts",
+      "line": 77,
+      "category": "runtime/services/orchestration",
+      "ceiling": 32,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/store-create.ts",
+      "line": 51,
+      "category": "runtime/services/orchestration",
+      "ceiling": 23,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/store-create.ts",
+      "line": 157,
+      "category": "runtime/services/orchestration",
+      "ceiling": 23,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/store-selects.ts",
+      "line": 77,
+      "category": "runtime/services/orchestration",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/submission-validation.ts",
+      "line": 27,
+      "category": "métier/domain pur",
+      "ceiling": 20,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/unified-source/load.ts",
+      "line": 59,
+      "category": "métier/domain pur",
+      "ceiling": 29,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/admin/admin-dashboard-contract.ts",
+      "line": 301,
+      "category": "métier/domain pur",
+      "ceiling": 29,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/admin/moderation/action-moderation-edits.ts",
+      "line": 251,
+      "category": "métier/domain pur",
+      "ceiling": 47,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/admin/moderation/action-moderation-edits.ts",
+      "line": 355,
+      "category": "métier/domain pur",
+      "ceiling": 16,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/admin/moderation/action-moderation-measurements.ts",
+      "line": 30,
+      "category": "métier/domain pur",
+      "ceiling": 16,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/admin/promotion-requests-store.ts",
+      "line": 58,
+      "category": "runtime/services/orchestration",
+      "ceiling": 41,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/analytics/compare-zones.ts",
+      "line": 102,
+      "category": "métier/domain pur",
+      "ceiling": 19,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/auth/sync.ts",
+      "line": 206,
+      "category": "runtime/services/orchestration",
+      "ceiling": 42,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/chat/action-conversations.ts",
+      "line": 48,
+      "category": "métier/domain pur",
+      "ceiling": 16,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/chat/action-sharing.ts",
+      "line": 138,
+      "category": "métier/domain pur",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/chat/chat-notification-targets.ts",
+      "line": 127,
+      "category": "métier/domain pur",
+      "ceiling": 16,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/chat/chat-notification-unreads.ts",
+      "line": 38,
+      "category": "métier/domain pur",
+      "ceiling": 17,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/content/content-validation.ts",
+      "line": 110,
+      "category": "métier/domain pur",
+      "ceiling": 20,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/environmental-impact-estimator/project-signals-orchestration.ts",
+      "line": 10,
+      "category": "métier/domain pur",
+      "ceiling": 16,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/environmental-impact-estimator/project-signals-scope.ts",
+      "line": 143,
+      "category": "métier/domain pur",
+      "ceiling": 28,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/environmental-impact-estimator/services/infrastructure.ts",
+      "line": 111,
+      "category": "runtime/services/orchestration",
+      "ceiling": 30,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/environmental-impact-estimator/services/infrastructure.ts",
+      "line": 292,
+      "category": "runtime/services/orchestration",
+      "ceiling": 23,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/environmental-impact-estimator/services/infrastructure.ts",
+      "line": 549,
+      "category": "runtime/services/orchestration",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/environmental-impact-estimator/services/lifecycle.ts",
+      "line": 21,
+      "category": "runtime/services/orchestration",
+      "ceiling": 25,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/errors/app-errors.ts",
+      "line": 63,
+      "category": "métier/domain pur",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/errors/app-errors.ts",
+      "line": 237,
+      "category": "métier/domain pur",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/geo/action-department-resolver.ts",
+      "line": 131,
+      "category": "métier/domain pur",
+      "ceiling": 18,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/geo/greater-paris-select.tsx",
+      "line": 366,
+      "category": "React/JSX",
+      "ceiling": 65,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/geo/greater-paris.ts",
+      "line": 229,
+      "category": "métier/domain pur",
+      "ceiling": 17,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/geo/municipal-cleaning-serviceability.ts",
+      "line": 363,
+      "category": "métier/domain pur",
+      "ceiling": 40,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/geo/osrm-routing.ts",
+      "line": 188,
+      "category": "métier/domain pur",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/geo/paris-pressure-lookup.ts",
+      "line": 29,
+      "category": "métier/domain pur",
+      "ceiling": 17,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/geo/paris-pressure-normalization.ts",
+      "line": 128,
+      "category": "métier/domain pur",
+      "ceiling": 17,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/geo/volunteer-additionality.ts",
+      "line": 258,
+      "category": "métier/domain pur",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/governance/governance-monthly-report-store.ts",
+      "line": 145,
+      "category": "runtime/services/orchestration",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/governance/governance-monthly-report-store.ts",
+      "line": 210,
+      "category": "runtime/services/orchestration",
+      "ceiling": 37,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/governance/governance-monthly-report.model.ts",
+      "line": 184,
+      "category": "métier/domain pur",
+      "ceiling": 32,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/governance/governance-monthly-report.model.ts",
+      "line": 239,
+      "category": "métier/domain pur",
+      "ceiling": 53,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/governance/governance-monthly-report.render.ts",
+      "line": 122,
+      "category": "métier/domain pur",
+      "ceiling": 17,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/impact/public-impact-snapshot.ts",
+      "line": 127,
+      "category": "métier/domain pur",
+      "ceiling": 23,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/learning/quiz/quiz-bank-admin.ts",
+      "line": 332,
+      "category": "métier/domain pur",
+      "ceiling": 19,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/learning/quiz/quiz-entry-state.ts",
+      "line": 56,
+      "category": "métier/domain pur",
+      "ceiling": 17,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/learning/quiz/quiz-error-grid.ts",
+      "line": 232,
+      "category": "métier/domain pur",
+      "ceiling": 18,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/learning/quiz/quiz-personal-progress.ts",
+      "line": 193,
+      "category": "métier/domain pur",
+      "ceiling": 49,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/learning/quiz/quiz-personal-progress.ts",
+      "line": 635,
+      "category": "métier/domain pur",
+      "ceiling": 17,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/learning/quiz/quiz-quality-audit.ts",
+      "line": 396,
+      "category": "métier/domain pur",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/learning/quiz/quiz-quality-audit.ts",
+      "line": 469,
+      "category": "métier/domain pur",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/learning/quiz/quiz-session-summary.ts",
+      "line": 29,
+      "category": "métier/domain pur",
+      "ceiling": 19,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/learning/quiz/quiz-source-metadata.ts",
+      "line": 278,
+      "category": "métier/domain pur",
+      "ceiling": 23,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/pdf-export/generate-pdf-html.chapters.ts",
+      "line": 14,
+      "category": "métier/domain pur",
+      "ceiling": 25,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/pdf-export/official-report-html.ts",
+      "line": 71,
+      "category": "métier/domain pur",
+      "ceiling": 28,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/pdf-export/official-report-html.ts",
+      "line": 197,
+      "category": "métier/domain pur",
+      "ceiling": 19,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/pdf-export/official-report-html.ts",
+      "line": 312,
+      "category": "métier/domain pur",
+      "ceiling": 25,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/pdf-export/simple-pdf.ts",
+      "line": 73,
+      "category": "métier/domain pur",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/pdf-export/simple-pdf.ts",
+      "line": 115,
+      "category": "métier/domain pur",
+      "ceiling": 16,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/pdf-export/simple-pdf.ts",
+      "line": 285,
+      "category": "métier/domain pur",
+      "ceiling": 28,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/pdf-export/simple-pdf.ts",
+      "line": 484,
+      "category": "métier/domain pur",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/pilotage/business-alerts.ts",
+      "line": 108,
+      "category": "métier/domain pur",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/pilotage/overview.summary.ts",
+      "line": 71,
+      "category": "métier/domain pur",
+      "ceiling": 16,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/pilotage/overview.zones.ts",
+      "line": 14,
+      "category": "métier/domain pur",
+      "ceiling": 24,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/pilotage/overview.zones.ts",
+      "line": 125,
+      "category": "métier/domain pur",
+      "ceiling": 29,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-action-handoff.ts",
+      "line": 25,
+      "category": "métier/domain pur",
+      "ceiling": 25,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-action-handoff.ts",
+      "line": 78,
+      "category": "métier/domain pur",
+      "ceiling": 19,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-calibration-validation.ts",
+      "line": 16,
+      "category": "métier/domain pur",
+      "ceiling": 25,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-calibration-validation.ts",
+      "line": 195,
+      "category": "métier/domain pur",
+      "ceiling": 17,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-calibration.ts",
+      "line": 487,
+      "category": "métier/domain pur",
+      "ceiling": 51,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-calibration.ts",
+      "line": 655,
+      "category": "métier/domain pur",
+      "ceiling": 16,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-geometry-validation.ts",
+      "line": 8,
+      "category": "métier/domain pur",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-group-partition.ts",
+      "line": 329,
+      "category": "métier/domain pur",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-group-partition.ts",
+      "line": 437,
+      "category": "métier/domain pur",
+      "ceiling": 19,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-multi-route.ts",
+      "line": 161,
+      "category": "métier/domain pur",
+      "ceiling": 16,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-operational-budget-contract.ts",
+      "line": 19,
+      "category": "métier/domain pur",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-operational-budget-contract.ts",
+      "line": 50,
+      "category": "métier/domain pur",
+      "ceiling": 22,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-operational-budget.ts",
+      "line": 69,
+      "category": "métier/domain pur",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-planner-proof.ts",
+      "line": 55,
+      "category": "métier/domain pur",
+      "ceiling": 16,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-planner-snapshot-validation.ts",
+      "line": 101,
+      "category": "métier/domain pur",
+      "ceiling": 21,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-predicted-targets.ts",
+      "line": 353,
+      "category": "métier/domain pur",
+      "ceiling": 38,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-trace.ts",
+      "line": 366,
+      "category": "métier/domain pur",
+      "ceiling": 18,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/route-trace.ts",
+      "line": 427,
+      "category": "métier/domain pur",
+      "ceiling": 40,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/route/street-cleaning-operational.ts",
+      "line": 104,
+      "category": "métier/domain pur",
+      "ceiling": 30,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/supabase/storage-business-contribution-history.ts",
+      "line": 96,
+      "category": "runtime/services/orchestration",
+      "ceiling": 41,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/supabase/storage-business-contribution.ts",
+      "line": 383,
+      "category": "runtime/services/orchestration",
+      "ceiling": 37,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/supabase/storage-business-contribution.ts",
+      "line": 618,
+      "category": "runtime/services/orchestration",
+      "ceiling": 27,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/ui/page-families/resolve-page-family.ts",
+      "line": 59,
+      "category": "métier/domain pur",
+      "ceiling": 46,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/user-location-preference.ts",
+      "line": 178,
+      "category": "métier/domain pur",
+      "ceiling": 16,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/weather/open-meteo-client.ts",
+      "line": 96,
+      "category": "runtime/services/orchestration",
+      "ceiling": 23,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/weather/planner-weather.ts",
+      "line": 245,
+      "category": "métier/domain pur",
+      "ceiling": 18,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/weather/planner-weather.ts",
+      "line": 305,
+      "category": "métier/domain pur",
+      "ceiling": 19,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/weather/planner-weather.ts",
+      "line": 321,
+      "category": "métier/domain pur",
+      "ceiling": 17,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/(app)/actions/map/page-client.tsx",
+      "line": 45,
+      "category": "React/JSX",
+      "ceiling": 226,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/(app)/admin/page.tsx",
+      "line": 49,
+      "category": "React/JSX",
+      "ceiling": 184,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/(app)/admin/services/page.tsx",
+      "line": 15,
+      "category": "React/JSX",
+      "ceiling": 213,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/(app)/dashboard/page.tsx",
+      "line": 165,
+      "category": "React/JSX",
+      "ceiling": 289,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/(app)/prints/report/page.tsx",
+      "line": 47,
+      "category": "React/JSX",
+      "ceiling": 303,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/(app)/profil/[profile]/page.tsx",
+      "line": 32,
+      "category": "React/JSX",
+      "ceiling": 180,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/(app)/reports/page.tsx",
+      "line": 108,
+      "category": "React/JSX",
+      "ceiling": 187,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/(app)/sponsor-portal/page.tsx",
+      "line": 40,
+      "category": "React/JSX",
+      "ceiling": 199,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/actions/[actionId]/cancel/route.ts",
+      "line": 26,
+      "category": "routes API",
+      "ceiling": 128,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/actions/[actionId]/group-join/route.queue.ts",
+      "line": 15,
+      "category": "routes API",
+      "ceiling": 101,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/actions/[actionId]/group-join/route.review.ts",
+      "line": 23,
+      "category": "routes API",
+      "ceiling": 288,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/actions/[actionId]/group-join/route.test.helpers.ts",
+      "line": 314,
+      "category": "routes API",
+      "ceiling": 256,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/actions/[actionId]/group-join/route.test.helpers.ts",
+      "line": 580,
+      "category": "routes API",
+      "ceiling": 101,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/actions/[actionId]/group-join/route.toggle.ts",
+      "line": 25,
+      "category": "routes API",
+      "ceiling": 189,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/actions/[actionId]/route.ts",
+      "line": 109,
+      "category": "routes API",
+      "ceiling": 205,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/actions/group-join/route.test.helpers.ts",
+      "line": 109,
+      "category": "routes API",
+      "ceiling": 104,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/actions/group-join/route.test.helpers.ts",
+      "line": 215,
+      "category": "routes API",
+      "ceiling": 187,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/actions/import/route.ts",
+      "line": 187,
+      "category": "routes API",
+      "ceiling": 256,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/actions/route.ts",
+      "line": 350,
+      "category": "routes API",
+      "ceiling": 105,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/creator-inbox/route.feedback.ts",
+      "line": 19,
+      "category": "routes API",
+      "ceiling": 259,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/creator-inbox/route.partner.ts",
+      "line": 18,
+      "category": "routes API",
+      "ceiling": 198,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/creator-inbox/route.promotion.ts",
+      "line": 14,
+      "category": "routes API",
+      "ceiling": 128,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/legal-content-reports/decision/route.ts",
+      "line": 190,
+      "category": "routes API",
+      "ceiling": 394,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/moderation/route.action.ts",
+      "line": 381,
+      "category": "routes API",
+      "ceiling": 192,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/moderation/route.clean-place.ts",
+      "line": 31,
+      "category": "routes API",
+      "ceiling": 135,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/moderation/route.test.action-form-scenario.ts",
+      "line": 5,
+      "category": "routes API",
+      "ceiling": 178,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/moderation/route.test.action-form-scenario.ts",
+      "line": 19,
+      "category": "routes API",
+      "ceiling": 164,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/moderation/route.test.action-lifecycle-scenarios.ts",
+      "line": 6,
+      "category": "routes API",
+      "ceiling": 175,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/moderation/route.test.action-visibility-scenarios.ts",
+      "line": 6,
+      "category": "routes API",
+      "ceiling": 388,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/moderation/route.test.action-visibility-scenarios.ts",
+      "line": 18,
+      "category": "routes API",
+      "ceiling": 115,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/moderation/route.test.action-visibility-scenarios.ts",
+      "line": 206,
+      "category": "routes API",
+      "ceiling": 121,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/moderation/route.test.clean-place-scenarios.ts",
+      "line": 5,
+      "category": "routes API",
+      "ceiling": 235,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/moderation/route.ts",
+      "line": 21,
+      "category": "routes API",
+      "ceiling": 160,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/partners/published-directory/route.ts",
+      "line": 75,
+      "category": "routes API",
+      "ceiling": 243,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/promotion-requests/route.ts",
+      "line": 57,
+      "category": "routes API",
+      "ceiling": 258,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/admin/role-accounts/route.ts",
+      "line": 65,
+      "category": "routes API",
+      "ceiling": 120,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/chat/route.get.ts",
+      "line": 38,
+      "category": "routes API",
+      "ceiling": 323,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/chat/route.post.ts",
+      "line": 50,
+      "category": "routes API",
+      "ceiling": 473,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/chat/route.test.helpers.ts",
+      "line": 40,
+      "category": "routes API",
+      "ceiling": 195,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/chat/search/route.ts",
+      "line": 107,
+      "category": "routes API",
+      "ceiling": 200,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/community/bug-reports/route.ts",
+      "line": 74,
+      "category": "routes API",
+      "ceiling": 102,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/community/bug-reports/route.ts",
+      "line": 186,
+      "category": "routes API",
+      "ceiling": 134,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/community/events/ops/route.ts",
+      "line": 124,
+      "category": "routes API",
+      "ceiling": 177,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/community/events/route.ts",
+      "line": 264,
+      "category": "routes API",
+      "ceiling": 136,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/community/funnel.csv/route.ts",
+      "line": 44,
+      "category": "routes API",
+      "ceiling": 169,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/community/promotion-requests/route.ts",
+      "line": 28,
+      "category": "routes API",
+      "ceiling": 116,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/gamification/badges/[userId]/increment/route.ts",
+      "line": 40,
+      "category": "routes API",
+      "ceiling": 128,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/reports/actions.csv/route.ts",
+      "line": 73,
+      "category": "routes API",
+      "ceiling": 132,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/reports/actions.json/route.ts",
+      "line": 71,
+      "category": "routes API",
+      "ceiling": 133,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/reports/elus-dossier/route.ts",
+      "line": 163,
+      "category": "routes API",
+      "ceiling": 101,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/reports/elus-dossier/route.ts",
+      "line": 316,
+      "category": "routes API",
+      "ceiling": 202,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/reports/generations/route.ts",
+      "line": 39,
+      "category": "routes API",
+      "ceiling": 140,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/route/recommend/route.planning.ts",
+      "line": 85,
+      "category": "routes API",
+      "ceiling": 342,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/route/recommend/route.response.ts",
+      "line": 144,
+      "category": "routes API",
+      "ceiling": 424,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/route/recommend/route.test.harness.ts",
+      "line": 196,
+      "category": "routes API",
+      "ceiling": 124,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/route/recommend/route.ts",
+      "line": 30,
+      "category": "routes API",
+      "ceiling": 122,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/sandbox/runbook-checks/route.ts",
+      "line": 69,
+      "category": "routes API",
+      "ceiling": 139,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/api/send/route.ts",
+      "line": 44,
+      "category": "routes API",
+      "ceiling": 127,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/docs/[...segments]/route.ts",
+      "line": 101,
+      "category": "routes API",
+      "ceiling": 141,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/docs/[...segments]/route.ts",
+      "line": 273,
+      "category": "routes API",
+      "ceiling": 279,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/learn/comprendre/page.tsx",
+      "line": 40,
+      "category": "React/JSX",
+      "ceiling": 196,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/mentions-legales/page.tsx",
+      "line": 26,
+      "category": "React/JSX",
+      "ceiling": 163,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/politique-confidentialite/page.tsx",
+      "line": 47,
+      "category": "React/JSX",
+      "ceiling": 274,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/politique-cookies/page.tsx",
+      "line": 49,
+      "category": "React/JSX",
+      "ceiling": 152,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/app/reglages/page.tsx",
+      "line": 25,
+      "category": "React/JSX",
+      "ceiling": 227,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/account/account-evolution-panel.tsx",
+      "line": 69,
+      "category": "React/JSX",
+      "ceiling": 161,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/account/account-identity-chip.tsx",
+      "line": 31,
+      "category": "React/JSX",
+      "ceiling": 304,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/account/use-account-setup-controller.ts",
+      "line": 85,
+      "category": "hooks",
+      "ceiling": 312,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/account/user-location-onboarding-form.tsx",
+      "line": 37,
+      "category": "React/JSX",
+      "ceiling": 213,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/accueil/accueil-community-credibility.tsx",
+      "line": 300,
+      "category": "React/JSX",
+      "ceiling": 318,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/accueil/accueil-impact-summary.tsx",
+      "line": 127,
+      "category": "React/JSX",
+      "ceiling": 314,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-creation-shell.tsx",
+      "line": 110,
+      "category": "React/JSX",
+      "ceiling": 187,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/before/form.tsx",
+      "line": 35,
+      "category": "React/JSX",
+      "ceiling": 339,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/before/sections.tsx",
+      "line": 197,
+      "category": "React/JSX",
+      "ceiling": 300,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/before/use-before-action-form.ts",
+      "line": 102,
+      "category": "hooks",
+      "ceiling": 298,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/form/action-declaration-export-picker.controller.ts",
+      "line": 99,
+      "category": "React/JSX",
+      "ceiling": 280,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/form/action-declaration-export-picker.view.tsx",
+      "line": 38,
+      "category": "React/JSX",
+      "ceiling": 420,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/form/action-declaration-form-confirmation.tsx",
+      "line": 32,
+      "category": "React/JSX",
+      "ceiling": 275,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/form/action-declaration-form.feedback.tsx",
+      "line": 35,
+      "category": "React/JSX",
+      "ceiling": 315,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/form/action-declaration-form.location-section.tsx",
+      "line": 40,
+      "category": "React/JSX",
+      "ceiling": 175,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/form/action-declaration-form.main-fields.tsx",
+      "line": 40,
+      "category": "React/JSX",
+      "ceiling": 171,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/form/action-declaration-form.tsx",
+      "line": 83,
+      "category": "React/JSX",
+      "ceiling": 622,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
+      "line": 85,
+      "category": "hooks",
+      "ceiling": 651,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
+      "line": 194,
+      "category": "hooks",
+      "ceiling": 157,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
+      "line": 202,
+      "category": "hooks",
+      "ceiling": 136,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/payload.ts",
+      "line": 388,
+      "category": "React/JSX",
+      "ceiling": 162,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/sections/harvest-megots-section.tsx",
+      "line": 34,
+      "category": "React/JSX",
+      "ceiling": 172,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/sections/harvest-waste-section.tsx",
+      "line": 47,
+      "category": "React/JSX",
+      "ceiling": 205,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/steps/ActionStepHarvest.tsx",
+      "line": 35,
+      "category": "React/JSX",
+      "ceiling": 190,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/steps/ActionStepIdentity.tsx",
+      "line": 128,
+      "category": "React/JSX",
+      "ceiling": 643,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/steps/ActionStepLocation.tsx",
+      "line": 132,
+      "category": "React/JSX",
+      "ceiling": 243,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/steps/ActionStepLocation.tsx",
+      "line": 404,
+      "category": "React/JSX",
+      "ceiling": 403,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-declaration/steps/ActionStepReview.tsx",
+      "line": 103,
+      "category": "React/JSX",
+      "ceiling": 205,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-drawing-map.tsx",
+      "line": 75,
+      "category": "React/JSX",
+      "ceiling": 171,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-formalities-workflow-panel.tsx",
+      "line": 199,
+      "category": "React/JSX",
+      "ceiling": 227,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/action-participant-picker.tsx",
+      "line": 30,
+      "category": "React/JSX",
+      "ceiling": 272,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/actions-history-list-details.tsx",
+      "line": 65,
+      "category": "React/JSX",
+      "ceiling": 224,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/actions-history-list-table.tsx",
+      "line": 42,
+      "category": "React/JSX",
+      "ceiling": 229,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/actions-history-list.tsx",
+      "line": 51,
+      "category": "React/JSX",
+      "ceiling": 515,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/actions-map-canvas.tsx",
+      "line": 148,
+      "category": "React/JSX",
+      "ceiling": 375,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/actions-map-table.tsx",
+      "line": 48,
+      "category": "React/JSX",
+      "ceiling": 232,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/map-feed/_layouts/map-empty-state.tsx",
+      "line": 18,
+      "category": "React/JSX",
+      "ceiling": 163,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/map-feed/actions-map-feed.tsx",
+      "line": 63,
+      "category": "React/JSX",
+      "ceiling": 203,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/map-feed/use-actions-map-viewport.ts",
+      "line": 90,
+      "category": "hooks",
+      "ceiling": 266,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/map/action-popup-content-body.tsx",
+      "line": 41,
+      "category": "React/JSX",
+      "ceiling": 250,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/map/action-popup-content-header.tsx",
+      "line": 111,
+      "category": "React/JSX",
+      "ceiling": 460,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/map/action-popup-content-header.tsx",
+      "line": 612,
+      "category": "React/JSX",
+      "ceiling": 165,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/map/action-popup-content.tsx",
+      "line": 98,
+      "category": "React/JSX",
+      "ceiling": 184,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/map/corridor-popup-content.tsx",
+      "line": 32,
+      "category": "React/JSX",
+      "ceiling": 178,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/map/map-layers-shape-layers.tsx",
+      "line": 100,
+      "category": "React/JSX",
+      "ceiling": 519,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/map/map-layers-shape-layers.tsx",
+      "line": 162,
+      "category": "React/JSX",
+      "ceiling": 461,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/actions/quick-signalement-form.tsx",
+      "line": 37,
+      "category": "React/JSX",
+      "ceiling": 390,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/admin-creator-console.tsx",
+      "line": 23,
+      "category": "React/JSX",
+      "ceiling": 186,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/codex-usage-panel.tsx",
+      "line": 101,
+      "category": "React/JSX",
+      "ceiling": 334,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/creator-inbox/inbox-item-card.tsx",
+      "line": 47,
+      "category": "React/JSX",
+      "ceiling": 421,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/creator-inbox/use-creator-inbox.ts",
+      "line": 32,
+      "category": "hooks",
+      "ceiling": 329,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/environmental-impact-capture-panel.tsx",
+      "line": 118,
+      "category": "React/JSX",
+      "ceiling": 346,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/environmental-impact-capture-panel.tsx",
+      "line": 309,
+      "category": "React/JSX",
+      "ceiling": 155,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/feedback-requests-panel.tsx",
+      "line": 42,
+      "category": "React/JSX",
+      "ceiling": 278,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/free-plan-services-panel.tsx",
+      "line": 42,
+      "category": "React/JSX",
+      "ceiling": 404,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/free-plan-services-risk-cards.tsx",
+      "line": 16,
+      "category": "React/JSX",
+      "ceiling": 164,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/free-plan-services-risk-cards.tsx",
+      "line": 19,
+      "category": "React/JSX",
+      "ceiling": 158,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/free-plan-services-visual.model.ts",
+      "line": 130,
+      "category": "React/JSX",
+      "ceiling": 225,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/free-plan-services-visual.view.tsx",
+      "line": 131,
+      "category": "React/JSX",
+      "ceiling": 323,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/partner-onboarding-requests-panel.tsx",
+      "line": 31,
+      "category": "React/JSX",
+      "ceiling": 195,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/promotion-requests-panel.tsx",
+      "line": 34,
+      "category": "React/JSX",
+      "ceiling": 282,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/quiz-bank-admin-view.filters.tsx",
+      "line": 24,
+      "category": "React/JSX",
+      "ceiling": 229,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/quiz-bank-admin-view.question-card.tsx",
+      "line": 15,
+      "category": "React/JSX",
+      "ceiling": 152,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/quiz-pedagogical-metrics-panel.tsx",
+      "line": 65,
+      "category": "React/JSX",
+      "ceiling": 231,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/admin/role-management-panel.tsx",
+      "line": 55,
+      "category": "React/JSX",
+      "ceiling": 386,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/chat/chat-action-share-dialog.tsx",
+      "line": 15,
+      "category": "React/JSX",
+      "ceiling": 255,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/chat/chat-composer.tsx",
+      "line": 75,
+      "category": "React/JSX",
+      "ceiling": 388,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/chat/chat-header.tsx",
+      "line": 47,
+      "category": "React/JSX",
+      "ceiling": 210,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/chat/chat-shell.tsx",
+      "line": 99,
+      "category": "React/JSX",
+      "ceiling": 748,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/chat/chat-sidebar.tsx",
+      "line": 55,
+      "category": "React/JSX",
+      "ceiling": 186,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/chat/dm-inbox.tsx",
+      "line": 44,
+      "category": "React/JSX",
+      "ceiling": 230,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/chat/hooks/use-chat-search.ts",
+      "line": 94,
+      "category": "hooks",
+      "ceiling": 129,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/chat/hooks/use-chat-shell-composer.ts",
+      "line": 110,
+      "category": "hooks",
+      "ceiling": 143,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/chat/hooks/use-chat-shell-notification-effects.ts",
+      "line": 25,
+      "category": "hooks",
+      "ceiling": 125,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/chat/hooks/use-chat-shell-sidebar.ts",
+      "line": 34,
+      "category": "hooks",
+      "ceiling": 163,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/chat/hooks/use-chat-state.ts",
+      "line": 70,
+      "category": "hooks",
+      "ceiling": 134,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/chat/hooks/use-chat-submit.ts",
+      "line": 104,
+      "category": "hooks",
+      "ceiling": 270,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/chat/hooks/use-chat-submit.ts",
+      "line": 140,
+      "category": "hooks",
+      "ceiling": 186,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/chat/ui/chat-message-item.tsx",
+      "line": 55,
+      "category": "React/JSX",
+      "ceiling": 276,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/dashboard/dashboard-notifications-section.tsx",
+      "line": 29,
+      "category": "React/JSX",
+      "ceiling": 223,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/dashboard/storage-business-contribution-donut.tsx",
+      "line": 144,
+      "category": "React/JSX",
+      "ceiling": 219,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/dashboard/storage-business-contribution-panel.tsx",
+      "line": 109,
+      "category": "React/JSX",
+      "ceiling": 254,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/dashboard/storage-business-contribution-panel.tsx",
+      "line": 184,
+      "category": "React/JSX",
+      "ceiling": 179,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/dashboard/storage-usage-panel.tsx",
+      "line": 106,
+      "category": "React/JSX",
+      "ceiling": 445,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/dashboard/system-status-panel.tsx",
+      "line": 20,
+      "category": "React/JSX",
+      "ceiling": 255,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx",
+      "line": 183,
+      "category": "React/JSX",
+      "ceiling": 477,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/environmental-impact-estimator/environmental-impact-estimator-panel-details.tsx",
+      "line": 51,
+      "category": "React/JSX",
+      "ceiling": 489,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/environmental-impact-estimator/environmental-impact-estimator-panel-overview.tsx",
+      "line": 37,
+      "category": "React/JSX",
+      "ceiling": 434,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/environmental-impact-estimator/environmental-impact-project-signals-panel.tsx",
+      "line": 16,
+      "category": "React/JSX",
+      "ceiling": 156,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/gamification/infinite-badges/InfiniteBadgesPanel.tsx",
+      "line": 13,
+      "category": "React/JSX",
+      "ceiling": 166,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/gamification/referral-admin-tabs.tsx",
+      "line": 22,
+      "category": "React/JSX",
+      "ceiling": 218,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/gamification/referral-invite-badge.tsx",
+      "line": 27,
+      "category": "React/JSX",
+      "ceiling": 222,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/gamification/referral-lineage-panel.tsx",
+      "line": 64,
+      "category": "React/JSX",
+      "ceiling": 220,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/giac-content.tsx",
+      "line": 28,
+      "category": "React/JSX",
+      "ceiling": 192,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/impact-order-of-magnitude.tsx",
+      "line": 38,
+      "category": "React/JSX",
+      "ceiling": 254,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/learn-numerique-theme-panel.tsx",
+      "line": 50,
+      "category": "React/JSX",
+      "ceiling": 211,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/learn-practice-theme-tabs.tsx",
+      "line": 26,
+      "category": "React/JSX",
+      "ceiling": 217,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/learn-practice-theme-tabs.visuals.tsx",
+      "line": 17,
+      "category": "React/JSX",
+      "ceiling": 191,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/learn-rubric-shell.tsx",
+      "line": 35,
+      "category": "React/JSX",
+      "ceiling": 275,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/learn-vulgarisation-magnitude-comparator.tsx",
+      "line": 72,
+      "category": "React/JSX",
+      "ceiling": 186,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/quiz/environmental-quiz.tsx",
+      "line": 76,
+      "category": "React/JSX",
+      "ceiling": 488,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/quiz/quiz-access-picker.tsx",
+      "line": 87,
+      "category": "React/JSX",
+      "ceiling": 206,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/quiz/quiz-personal-progress-overview.tsx",
+      "line": 26,
+      "category": "React/JSX",
+      "ceiling": 365,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/quiz/quiz-session-feedback.tsx",
+      "line": 35,
+      "category": "React/JSX",
+      "ceiling": 176,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/quiz/quiz-session-panel-summary.tsx",
+      "line": 34,
+      "category": "React/JSX",
+      "ceiling": 428,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/quiz/quiz-session-panel.tsx",
+      "line": 68,
+      "category": "React/JSX",
+      "ceiling": 393,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/quiz/quiz-session-question.tsx",
+      "line": 45,
+      "category": "React/JSX",
+      "ceiling": 237,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/quiz/session/use-quiz-session-controller.ts",
+      "line": 24,
+      "category": "hooks",
+      "ceiling": 135,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/learn/sustainable-goals.tsx",
+      "line": 7,
+      "category": "React/JSX",
+      "ceiling": 161,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/navigation/app-navigation-ribbon-shell.tsx",
+      "line": 43,
+      "category": "React/JSX",
+      "ceiling": 165,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/navigation/app-navigation-tree-menu.tsx",
+      "line": 46,
+      "category": "React/JSX",
+      "ceiling": 176,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/navigation/app-navigation.tsx",
+      "line": 37,
+      "category": "React/JSX",
+      "ceiling": 318,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/navigation/global-search.tsx",
+      "line": 38,
+      "category": "React/JSX",
+      "ceiling": 224,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/navigation/notification-bell.tsx",
+      "line": 39,
+      "category": "React/JSX",
+      "ceiling": 265,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/newsletter/newsletter-signup.tsx",
+      "line": 10,
+      "category": "React/JSX",
+      "ceiling": 183,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/partners/onboarding/use-partner-onboarding.ts",
+      "line": 19,
+      "category": "hooks",
+      "ceiling": 242,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/partners/partner-onboarding-form.tsx",
+      "line": 18,
+      "category": "React/JSX",
+      "ceiling": 156,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/partners/published-annuaire-review-panel.tsx",
+      "line": 53,
+      "category": "React/JSX",
+      "ceiling": 175,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/pilotage/access-screen/views/pilotage-locked-page.tsx",
+      "line": 12,
+      "category": "React/JSX",
+      "ceiling": 197,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/pilotage/access-screen/views/pilotage-overview-content.tsx",
+      "line": 43,
+      "category": "React/JSX",
+      "ceiling": 392,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/pilotage/thirty-seconds-summary.tsx",
+      "line": 78,
+      "category": "React/JSX",
+      "ceiling": 170,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/profil/impact-profile-page.tsx",
+      "line": 51,
+      "category": "React/JSX",
+      "ceiling": 300,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/reports/admin-workflow/state.ts",
+      "line": 58,
+      "category": "React/JSX",
+      "ceiling": 158,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/reports/admin-workflow/step-confirm.tsx",
+      "line": 43,
+      "category": "React/JSX",
+      "ceiling": 440,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/reports/admin-workflow/use-admin-workflow.ts",
+      "line": 40,
+      "category": "hooks",
+      "ceiling": 305,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/reports/reports-kpi-summary.tsx",
+      "line": 29,
+      "category": "React/JSX",
+      "ceiling": 165,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/reports/reports-web-document.tsx",
+      "line": 69,
+      "category": "React/JSX",
+      "ceiling": 288,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/reports/web-document/report-cover.tsx",
+      "line": 16,
+      "category": "React/JSX",
+      "ceiling": 170,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/reports/web-document/reports-web-document.shared.tsx",
+      "line": 306,
+      "category": "React/JSX",
+      "ceiling": 307,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/reports/web-document/sections.tsx",
+      "line": 55,
+      "category": "React/JSX",
+      "ceiling": 603,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/reports/web-document/use-reports-web-document-model.ts",
+      "line": 41,
+      "category": "hooks",
+      "ceiling": 241,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/action-map-methodology-section.tsx",
+      "line": 79,
+      "category": "React/JSX",
+      "ceiling": 267,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/actors-section.tsx",
+      "line": 23,
+      "category": "React/JSX",
+      "ceiling": 165,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/annuaire/annuaire-actor-card.tsx",
+      "line": 29,
+      "category": "React/JSX",
+      "ceiling": 274,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/annuaire/annuaire-exploration-view.tsx",
+      "line": 32,
+      "category": "React/JSX",
+      "ceiling": 214,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/annuaire/annuaire-filters-card.tsx",
+      "line": 29,
+      "category": "React/JSX",
+      "ceiling": 179,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/annuaire/annuaire-network-graph.tsx",
+      "line": 17,
+      "category": "React/JSX",
+      "ceiling": 175,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/annuaire/annuaire-partner-drawer.tsx",
+      "line": 26,
+      "category": "React/JSX",
+      "ceiling": 307,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/climate/climate-section.tsx",
+      "line": 37,
+      "category": "React/JSX",
+      "ceiling": 187,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/community/create-event-card.tsx",
+      "line": 38,
+      "category": "React/JSX",
+      "ceiling": 157,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/community/use-community-actions.ts",
+      "line": 35,
+      "category": "hooks",
+      "ceiling": 248,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/compare-section.tsx",
+      "line": 42,
+      "category": "React/JSX",
+      "ceiling": 262,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/compost/compost-section.tsx",
+      "line": 66,
+      "category": "React/JSX",
+      "ceiling": 152,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/connect-section.tsx",
+      "line": 19,
+      "category": "React/JSX",
+      "ceiling": 240,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/discussion-bug-report-form.tsx",
+      "line": 20,
+      "category": "React/JSX",
+      "ceiling": 288,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/elus-section.tsx",
+      "line": 122,
+      "category": "React/JSX",
+      "ceiling": 373,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/feedback-section-dashboard.tsx",
+      "line": 55,
+      "category": "React/JSX",
+      "ceiling": 537,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/feedback-section-discussion.tsx",
+      "line": 17,
+      "category": "React/JSX",
+      "ceiling": 162,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/feedback/questionnaire-card.tsx",
+      "line": 39,
+      "category": "React/JSX",
+      "ceiling": 254,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx",
+      "line": 52,
+      "category": "React/JSX",
+      "ceiling": 619,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/free-plan-services-methodology-visual.quotas.tsx",
+      "line": 32,
+      "category": "React/JSX",
+      "ceiling": 284,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/gamification/collections-panel.tsx",
+      "line": 73,
+      "category": "React/JSX",
+      "ceiling": 158,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/gamification/contributor-recognition-panel.tsx",
+      "line": 16,
+      "category": "React/JSX",
+      "ceiling": 152,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/gamification/gamification-engagement.tsx",
+      "line": 24,
+      "category": "React/JSX",
+      "ceiling": 194,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/gamification/leaderboard-table.tsx",
+      "line": 12,
+      "category": "React/JSX",
+      "ceiling": 185,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/gamification/personal-progress.tsx",
+      "line": 25,
+      "category": "React/JSX",
+      "ceiling": 332,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/gamification/progression-visible-panel.tsx",
+      "line": 19,
+      "category": "React/JSX",
+      "ceiling": 207,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/guide-section.tsx",
+      "line": 54,
+      "category": "React/JSX",
+      "ceiling": 216,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/impact-terrain-2026-methodology-section.tsx",
+      "line": 52,
+      "category": "React/JSX",
+      "ceiling": 222,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/methodologie-page-client.tsx",
+      "line": 219,
+      "category": "React/JSX",
+      "ceiling": 435,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/monthly-impact-history-chart.tsx",
+      "line": 212,
+      "category": "React/JSX",
+      "ceiling": 297,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/national-stats-section.tsx",
+      "line": 152,
+      "category": "React/JSX",
+      "ceiling": 163,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/partners-network-section.tsx",
+      "line": 100,
+      "category": "React/JSX",
+      "ceiling": 386,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/promotion-request-form.tsx",
+      "line": 34,
+      "category": "React/JSX",
+      "ceiling": 330,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/recycling-question-assistant.tsx",
+      "line": 44,
+      "category": "React/JSX",
+      "ceiling": 168,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts",
+      "line": 109,
+      "category": "React/JSX",
+      "ceiling": 485,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/rejoindre-un-formulaire-section-public-queue.tsx",
+      "line": 29,
+      "category": "React/JSX",
+      "ceiling": 224,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/rejoindre-un-formulaire-section.cards.tsx",
+      "line": 109,
+      "category": "React/JSX",
+      "ceiling": 196,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/rejoindre-un-formulaire-section.controller.actions.ts",
+      "line": 39,
+      "category": "React/JSX",
+      "ceiling": 274,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/rejoindre-un-formulaire-section.controller.queue.ts",
+      "line": 21,
+      "category": "React/JSX",
+      "ceiling": 224,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/rejoindre-un-formulaire-section.controller.ts",
+      "line": 45,
+      "category": "React/JSX",
+      "ceiling": 191,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/rejoindre-un-formulaire-section.explorer.tsx",
+      "line": 33,
+      "category": "React/JSX",
+      "ceiling": 305,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/rejoindre-une-action.past-actions.tsx",
+      "line": 36,
+      "category": "React/JSX",
+      "ceiling": 177,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/rgpd-request-form.tsx",
+      "line": 15,
+      "category": "React/JSX",
+      "ceiling": 317,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/route/components/route-constraints-form.tsx",
+      "line": 17,
+      "category": "React/JSX",
+      "ceiling": 281,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/route/components/route-explanation.tsx",
+      "line": 19,
+      "category": "React/JSX",
+      "ceiling": 316,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/route/components/route-map.tsx",
+      "line": 101,
+      "category": "React/JSX",
+      "ceiling": 223,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/route/route-section.tsx",
+      "line": 72,
+      "category": "React/JSX",
+      "ceiling": 543,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/trash-spotter-section.tsx",
+      "line": 44,
+      "category": "React/JSX",
+      "ceiling": 280,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/weather-location-picker.tsx",
+      "line": 23,
+      "category": "React/JSX",
+      "ceiling": 195,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/weather-section.conditions.tsx",
+      "line": 37,
+      "category": "React/JSX",
+      "ceiling": 454,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/sections/rubriques/weather-section.preparation-guide.tsx",
+      "line": 16,
+      "category": "React/JSX",
+      "ceiling": 219,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/ui/cmm-dropdown.tsx",
+      "line": 57,
+      "category": "React/JSX",
+      "ceiling": 269,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/components/ui/site-tooltips.tsx",
+      "line": 149,
+      "category": "React/JSX",
+      "ceiling": 251,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/action-editor-payload.ts",
+      "line": 9,
+      "category": "métier/domain pur",
+      "ceiling": 68,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/action-update-audit.ts",
+      "line": 87,
+      "category": "métier/domain pur",
+      "ceiling": 115,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/action-update-persistence.ts",
+      "line": 49,
+      "category": "runtime/services/orchestration",
+      "ceiling": 340,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/action-update-post-processing.ts",
+      "line": 24,
+      "category": "métier/domain pur",
+      "ceiling": 80,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/contracts/contract-builders.ts",
+      "line": 89,
+      "category": "métier/domain pur",
+      "ceiling": 66,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/contracts/contract-builders.ts",
+      "line": 198,
+      "category": "métier/domain pur",
+      "ceiling": 71,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/create-submission.ts",
+      "line": 67,
+      "category": "métier/domain pur",
+      "ceiling": 143,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/exports/export-form-media.ts",
+      "line": 280,
+      "category": "métier/domain pur",
+      "ceiling": 139,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/exports/export-form-pdf.ts",
+      "line": 31,
+      "category": "métier/domain pur",
+      "ceiling": 67,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/formalities-qualification.ts",
+      "line": 349,
+      "category": "métier/domain pur",
+      "ceiling": 76,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/geometry/gpx.ts",
+      "line": 105,
+      "category": "métier/domain pur",
+      "ceiling": 74,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/geometry/route-reconstruction.ts",
+      "line": 167,
+      "category": "métier/domain pur",
+      "ceiling": 98,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/map/map-route.ts",
+      "line": 224,
+      "category": "métier/domain pur",
+      "ceiling": 72,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/metadata.ts",
+      "line": 294,
+      "category": "métier/domain pur",
+      "ceiling": 69,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/metadata.ts",
+      "line": 424,
+      "category": "métier/domain pur",
+      "ceiling": 89,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/participation/group-participation-membership.ts",
+      "line": 82,
+      "category": "métier/domain pur",
+      "ceiling": 145,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/participation/group-participation-read.ts",
+      "line": 74,
+      "category": "métier/domain pur",
+      "ceiling": 63,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/participation/group-participation-read.ts",
+      "line": 145,
+      "category": "métier/domain pur",
+      "ceiling": 121,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/participation/group-participation-review.ts",
+      "line": 59,
+      "category": "métier/domain pur",
+      "ceiling": 89,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/participation/group-participation-review.ts",
+      "line": 218,
+      "category": "métier/domain pur",
+      "ceiling": 162,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/participation/group-participation-review.ts",
+      "line": 386,
+      "category": "métier/domain pur",
+      "ceiling": 238,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/participation/organizers.ts",
+      "line": 373,
+      "category": "métier/domain pur",
+      "ceiling": 70,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/participation/post-action-claims.ts",
+      "line": 65,
+      "category": "métier/domain pur",
+      "ceiling": 117,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/pollution/corridor-history.ts",
+      "line": 450,
+      "category": "métier/domain pur",
+      "ceiling": 106,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/pollution/current-place-state.ts",
+      "line": 339,
+      "category": "métier/domain pur",
+      "ceiling": 62,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/pollution/current-place-state.ts",
+      "line": 451,
+      "category": "métier/domain pur",
+      "ceiling": 105,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/pollution/local-repollution-calibration.ts",
+      "line": 263,
+      "category": "métier/domain pur",
+      "ceiling": 82,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/pollution/local-repollution-calibration.ts",
+      "line": 371,
+      "category": "métier/domain pur",
+      "ceiling": 86,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/pollution/repollution-prediction-evaluation.ts",
+      "line": 267,
+      "category": "métier/domain pur",
+      "ceiling": 179,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/post-action-summary.ts",
+      "line": 71,
+      "category": "métier/domain pur",
+      "ceiling": 66,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/signalement/create-signalement.ts",
+      "line": 58,
+      "category": "métier/domain pur",
+      "ceiling": 89,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/signalement/signalement-media.ts",
+      "line": 210,
+      "category": "métier/domain pur",
+      "ceiling": 116,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/store-create-contract.ts",
+      "line": 77,
+      "category": "runtime/services/orchestration",
+      "ceiling": 124,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/store-create.ts",
+      "line": 157,
+      "category": "runtime/services/orchestration",
+      "ceiling": 109,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/unified-source/contracts.ts",
+      "line": 94,
+      "category": "métier/domain pur",
+      "ceiling": 76,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/actions/unified-source/load.ts",
+      "line": 59,
+      "category": "métier/domain pur",
+      "ceiling": 77,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/admin/admin-dashboard-contract.ts",
+      "line": 301,
+      "category": "métier/domain pur",
+      "ceiling": 147,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/admin/moderation/action-moderation-edits.ts",
+      "line": 251,
+      "category": "métier/domain pur",
+      "ceiling": 102,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/admin/moderation/action-moderation-edits.ts",
+      "line": 355,
+      "category": "métier/domain pur",
+      "ceiling": 79,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/admin/moderation/legal-content-moderation.ts",
+      "line": 28,
+      "category": "métier/domain pur",
+      "ceiling": 82,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/analytics/climate-context.ts",
+      "line": 133,
+      "category": "métier/domain pur",
+      "ceiling": 62,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/analytics/climate-context.ts",
+      "line": 298,
+      "category": "métier/domain pur",
+      "ceiling": 107,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/analytics/compare-zones.ts",
+      "line": 102,
+      "category": "métier/domain pur",
+      "ceiling": 225,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/analytics/funnel-metrics.ts",
+      "line": 150,
+      "category": "métier/domain pur",
+      "ceiling": 83,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/analytics/territorial-benchmark.ts",
+      "line": 78,
+      "category": "métier/domain pur",
+      "ceiling": 106,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/animations/use-gsap-reveal.ts",
+      "line": 35,
+      "category": "hooks",
+      "ceiling": 152,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/community/engagement.quality.ts",
+      "line": 11,
+      "category": "métier/domain pur",
+      "ceiling": 69,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/community/engagement/conversions.ts",
+      "line": 6,
+      "category": "métier/domain pur",
+      "ceiling": 72,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/community/engagement/leaderboard.ts",
+      "line": 23,
+      "category": "métier/domain pur",
+      "ceiling": 69,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/dashboard/today.ts",
+      "line": 170,
+      "category": "métier/domain pur",
+      "ceiling": 61,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/environmental-impact-estimator/codex-usage-store.ts",
+      "line": 364,
+      "category": "runtime/services/orchestration",
+      "ceiling": 117,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/environmental-impact-estimator/project-signals-loader.ts",
+      "line": 69,
+      "category": "métier/domain pur",
+      "ceiling": 161,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/environmental-impact-estimator/project-signals-orchestration.ts",
+      "line": 10,
+      "category": "métier/domain pur",
+      "ceiling": 95,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/environmental-impact-estimator/project-signals-scope.ts",
+      "line": 143,
+      "category": "métier/domain pur",
+      "ceiling": 130,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/environmental-impact-estimator/project-signals-usage.ts",
+      "line": 55,
+      "category": "métier/domain pur",
+      "ceiling": 115,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/environmental-impact-estimator/project-signals.calculations.ts",
+      "line": 315,
+      "category": "métier/domain pur",
+      "ceiling": 131,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/environmental-impact-estimator/project-signals.calculations.ts",
+      "line": 452,
+      "category": "métier/domain pur",
+      "ceiling": 111,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/environmental-impact-estimator/project-signals.calculations.ts",
+      "line": 603,
+      "category": "métier/domain pur",
+      "ceiling": 97,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/environmental-impact-estimator/services/infrastructure.ts",
+      "line": 357,
+      "category": "runtime/services/orchestration",
+      "ceiling": 114,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/environmental-impact-estimator/services/infrastructure.ts",
+      "line": 549,
+      "category": "runtime/services/orchestration",
+      "ceiling": 135,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/environmental-impact-estimator/services/lifecycle.ts",
+      "line": 21,
+      "category": "runtime/services/orchestration",
+      "ceiling": 137,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/environmental-impact-estimator/services/lifecycle.ts",
+      "line": 160,
+      "category": "runtime/services/orchestration",
+      "ceiling": 144,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/action-balance.ts",
+      "line": 279,
+      "category": "métier/domain pur",
+      "ceiling": 68,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/annual-reset.ts",
+      "line": 16,
+      "category": "métier/domain pur",
+      "ceiling": 82,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/badges/listing.ts",
+      "line": 60,
+      "category": "métier/domain pur",
+      "ceiling": 70,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/progression-impact.ts",
+      "line": 72,
+      "category": "métier/domain pur",
+      "ceiling": 65,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/progression-leaderboard.ts",
+      "line": 107,
+      "category": "métier/domain pur",
+      "ceiling": 74,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/progression-leaderboard.ts",
+      "line": 186,
+      "category": "métier/domain pur",
+      "ceiling": 99,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/progression-leaderboard.ts",
+      "line": 292,
+      "category": "métier/domain pur",
+      "ceiling": 101,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/progression-leaderboard.ts",
+      "line": 399,
+      "category": "métier/domain pur",
+      "ceiling": 63,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/progression-tracking.ts",
+      "line": 23,
+      "category": "métier/domain pur",
+      "ceiling": 85,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/progression-tracking.ts",
+      "line": 372,
+      "category": "métier/domain pur",
+      "ceiling": 66,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/quiz-balance-progress.ts",
+      "line": 81,
+      "category": "métier/domain pur",
+      "ceiling": 88,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/quiz-progress.ts",
+      "line": 88,
+      "category": "métier/domain pur",
+      "ceiling": 92,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/referrals.ts",
+      "line": 62,
+      "category": "métier/domain pur",
+      "ceiling": 69,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/referrals.ts",
+      "line": 211,
+      "category": "métier/domain pur",
+      "ceiling": 85,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/gamification/referrals.ts",
+      "line": 309,
+      "category": "métier/domain pur",
+      "ceiling": 63,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/geo/greater-paris-select.tsx",
+      "line": 366,
+      "category": "React/JSX",
+      "ceiling": 358,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/geo/municipal-cleaning-serviceability.ts",
+      "line": 363,
+      "category": "métier/domain pur",
+      "ceiling": 109,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/geo/osrm-routing.ts",
+      "line": 188,
+      "category": "métier/domain pur",
+      "ceiling": 95,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/geo/paris-pressure-lookup.ts",
+      "line": 29,
+      "category": "métier/domain pur",
+      "ceiling": 66,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/geo/paris-pressure-normalization.ts",
+      "line": 91,
+      "category": "métier/domain pur",
+      "ceiling": 124,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/geo/paris-pressure-normalization.ts",
+      "line": 128,
+      "category": "métier/domain pur",
+      "ceiling": 65,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/geo/paris-pressure-risk.ts",
+      "line": 132,
+      "category": "métier/domain pur",
+      "ceiling": 61,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/geo/urban-morphology-prior.ts",
+      "line": 173,
+      "category": "métier/domain pur",
+      "ceiling": 127,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/geo/volunteer-additionality.ts",
+      "line": 258,
+      "category": "métier/domain pur",
+      "ceiling": 63,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/geo/volunteer-additionality.ts",
+      "line": 356,
+      "category": "métier/domain pur",
+      "ceiling": 72,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/governance/governance-monthly-report-store.ts",
+      "line": 210,
+      "category": "runtime/services/orchestration",
+      "ceiling": 103,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/governance/governance-monthly-report.model.ts",
+      "line": 239,
+      "category": "métier/domain pur",
+      "ceiling": 135,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/governance/governance-monthly-report.render.ts",
+      "line": 122,
+      "category": "métier/domain pur",
+      "ceiling": 182,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/impact/impact-terrain-2026.ts",
+      "line": 215,
+      "category": "métier/domain pur",
+      "ceiling": 305,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/impact/public-impact-snapshot.ts",
+      "line": 206,
+      "category": "métier/domain pur",
+      "ceiling": 61,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/learning/quiz/quiz-bank-admin.ts",
+      "line": 320,
+      "category": "métier/domain pur",
+      "ceiling": 147,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/learning/quiz/quiz-bank-admin.ts",
+      "line": 332,
+      "category": "métier/domain pur",
+      "ceiling": 93,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/learning/quiz/quiz-pedagogical-metrics.ts",
+      "line": 206,
+      "category": "métier/domain pur",
+      "ceiling": 107,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/learning/quiz/quiz-pedagogical-metrics.ts",
+      "line": 349,
+      "category": "métier/domain pur",
+      "ceiling": 75,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/learning/quiz/quiz-personal-progress.ts",
+      "line": 193,
+      "category": "métier/domain pur",
+      "ceiling": 89,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/learning/quiz/quiz-personal-progress.ts",
+      "line": 635,
+      "category": "métier/domain pur",
+      "ceiling": 75,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/learning/quiz/quiz-quality-audit.ts",
+      "line": 469,
+      "category": "métier/domain pur",
+      "ceiling": 83,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/learning/quiz/quiz-session-summary.ts",
+      "line": 29,
+      "category": "métier/domain pur",
+      "ceiling": 119,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/learning/quiz/quiz-source-metadata.ts",
+      "line": 278,
+      "category": "métier/domain pur",
+      "ceiling": 73,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/partners/published-annuaire-entries-store.ts",
+      "line": 332,
+      "category": "runtime/services/orchestration",
+      "ceiling": 119,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pdf-export/generate-pdf-html.chapters.ts",
+      "line": 14,
+      "category": "métier/domain pur",
+      "ceiling": 339,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pdf-export/official-report-html.ts",
+      "line": 197,
+      "category": "métier/domain pur",
+      "ceiling": 68,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pdf-export/official-report-html.ts",
+      "line": 312,
+      "category": "métier/domain pur",
+      "ceiling": 205,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pdf-export/report-pdf-theme.ts",
+      "line": 43,
+      "category": "métier/domain pur",
+      "ceiling": 438,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pdf-export/simple-pdf.ts",
+      "line": 73,
+      "category": "métier/domain pur",
+      "ceiling": 77,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pdf-export/simple-pdf.ts",
+      "line": 285,
+      "category": "métier/domain pur",
+      "ceiling": 61,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pdf-export/simple-pdf.ts",
+      "line": 355,
+      "category": "métier/domain pur",
+      "ceiling": 102,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pdf-export/simple-pdf.ts",
+      "line": 484,
+      "category": "métier/domain pur",
+      "ceiling": 156,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/photo-upload.ts",
+      "line": 38,
+      "category": "métier/domain pur",
+      "ceiling": 75,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pilotage/business-alerts.ts",
+      "line": 108,
+      "category": "métier/domain pur",
+      "ceiling": 131,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pilotage/business-alerts.ts",
+      "line": 248,
+      "category": "métier/domain pur",
+      "ceiling": 101,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pilotage/metrics.ts",
+      "line": 183,
+      "category": "métier/domain pur",
+      "ceiling": 85,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pilotage/metrics.ts",
+      "line": 313,
+      "category": "métier/domain pur",
+      "ceiling": 79,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pilotage/overview.methods.ts",
+      "line": 7,
+      "category": "métier/domain pur",
+      "ceiling": 73,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pilotage/overview.zones.ts",
+      "line": 14,
+      "category": "métier/domain pur",
+      "ceiling": 225,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/pilotage/overview.zones.ts",
+      "line": 125,
+      "category": "métier/domain pur",
+      "ceiling": 118,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/recycling/breakdown.ts",
+      "line": 33,
+      "category": "métier/domain pur",
+      "ceiling": 68,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/reports/report-model/compute-report-model.ts",
+      "line": 278,
+      "category": "métier/domain pur",
+      "ceiling": 160,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/recommendation-assistant.ts",
+      "line": 78,
+      "category": "métier/domain pur",
+      "ceiling": 90,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/recommendation-assistant.ts",
+      "line": 194,
+      "category": "métier/domain pur",
+      "ceiling": 83,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/route-calibration.ts",
+      "line": 380,
+      "category": "métier/domain pur",
+      "ceiling": 82,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/route-calibration.ts",
+      "line": 487,
+      "category": "métier/domain pur",
+      "ceiling": 164,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/route-calibration.ts",
+      "line": 655,
+      "category": "métier/domain pur",
+      "ceiling": 100,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/route-group-partition.ts",
+      "line": 329,
+      "category": "métier/domain pur",
+      "ceiling": 85,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/route-group-partition.ts",
+      "line": 437,
+      "category": "métier/domain pur",
+      "ceiling": 153,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/route-multi-route.ts",
+      "line": 161,
+      "category": "métier/domain pur",
+      "ceiling": 123,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/route-multi-route.ts",
+      "line": 341,
+      "category": "métier/domain pur",
+      "ceiling": 125,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/route-operational-budget.ts",
+      "line": 69,
+      "category": "métier/domain pur",
+      "ceiling": 77,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/route-planner.ts",
+      "line": 216,
+      "category": "métier/domain pur",
+      "ceiling": 176,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/route-predicted-targets.ts",
+      "line": 353,
+      "category": "métier/domain pur",
+      "ceiling": 274,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/route-trace.ts",
+      "line": 281,
+      "category": "métier/domain pur",
+      "ceiling": 78,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/route-trace.ts",
+      "line": 427,
+      "category": "métier/domain pur",
+      "ceiling": 174,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/route/street-cleaning-operational.ts",
+      "line": 104,
+      "category": "métier/domain pur",
+      "ceiling": 131,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/supabase/storage-business-contribution-history.ts",
+      "line": 96,
+      "category": "runtime/services/orchestration",
+      "ceiling": 181,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/supabase/storage-business-contribution.ts",
+      "line": 383,
+      "category": "runtime/services/orchestration",
+      "ceiling": 189,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/supabase/storage-business-contribution.ts",
+      "line": 600,
+      "category": "runtime/services/orchestration",
+      "ceiling": 113,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/supabase/storage-usage-service.ts",
+      "line": 130,
+      "category": "runtime/services/orchestration",
+      "ceiling": 113,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/ui/page-families/resolve-page-family.ts",
+      "line": 59,
+      "category": "métier/domain pur",
+      "ceiling": 95,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/validation/action.ts",
+      "line": 409,
+      "category": "métier/domain pur",
+      "ceiling": 76,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/waste/measurement.ts",
+      "line": 64,
+      "category": "métier/domain pur",
+      "ceiling": 64,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/weather/ops-weather.ts",
+      "line": 107,
+      "category": "métier/domain pur",
+      "ceiling": 81,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "functionLength",
+      "path": "src/lib/weather/planner-weather.ts",
+      "line": 345,
+      "category": "métier/domain pur",
+      "ceiling": 65,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/(app)/dashboard/page.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 472,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/actions/[actionId]/group-join/route.post.test.ts",
+      "line": null,
+      "category": "tests",
+      "ceiling": 734,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/actions/[actionId]/group-join/route.test.helpers.ts",
+      "line": null,
+      "category": "routes API",
+      "ceiling": 684,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/actions/[actionId]/route.test.ts",
+      "line": null,
+      "category": "tests",
+      "ceiling": 984,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/actions/group-join/route.test.helpers.ts",
+      "line": null,
+      "category": "routes API",
+      "ceiling": 444,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/actions/import/route.ts",
+      "line": null,
+      "category": "routes API",
+      "ceiling": 458,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/actions/route.submit.test.ts",
+      "line": null,
+      "category": "tests",
+      "ceiling": 968,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/actions/route.ts",
+      "line": null,
+      "category": "routes API",
+      "ceiling": 462,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/admin/legal-content-reports/decision/route.ts",
+      "line": null,
+      "category": "routes API",
+      "ceiling": 603,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/admin/moderation/route.action.ts",
+      "line": null,
+      "category": "routes API",
+      "ceiling": 586,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/admin/moderation/route.test.action-visibility-scenarios.ts",
+      "line": null,
+      "category": "routes API",
+      "ceiling": 410,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/chat/route.post.ts",
+      "line": null,
+      "category": "routes API",
+      "ceiling": 556,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/chat/route.test.ts",
+      "line": null,
+      "category": "tests",
+      "ceiling": 824,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/community/events/route.ts",
+      "line": null,
+      "category": "routes API",
+      "ceiling": 416,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/reports/elus-dossier/route.ts",
+      "line": null,
+      "category": "routes API",
+      "ceiling": 535,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/route/recommend/route.planning.ts",
+      "line": null,
+      "category": "routes API",
+      "ceiling": 433,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/route/recommend/route.response.test.ts",
+      "line": null,
+      "category": "tests",
+      "ceiling": 720,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/api/route/recommend/route.response.ts",
+      "line": null,
+      "category": "routes API",
+      "ceiling": 573,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/app/docs/[...segments]/route.ts",
+      "line": null,
+      "category": "routes API",
+      "ceiling": 690,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/account/use-account-setup-controller.ts",
+      "line": null,
+      "category": "hooks",
+      "ceiling": 423,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/accueil/accueil-community-credibility.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 636,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/accueil/accueil-impact-summary.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 456,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/action-declaration/before/sections.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 596,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/action-declaration/before/use-before-action-form.ts",
+      "line": null,
+      "category": "hooks",
+      "ceiling": 424,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/action-declaration/form/action-declaration-export-picker.controller.ts",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 411,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/action-declaration/form/action-declaration-export-picker.view.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 477,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 733,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/action-declaration/form/use-action-declaration-form.ts",
+      "line": null,
+      "category": "hooks",
+      "ceiling": 846,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/action-declaration/payload.test.ts",
+      "line": null,
+      "category": "tests",
+      "ceiling": 742,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/action-declaration/payload.ts",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 606,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepIdentity.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 794,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepLocation.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 832,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/action-formalities-workflow-panel.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 439,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/actions-history-list.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 601,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/actions-map-canvas.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 529,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/map/action-popup-content-header.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 792,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/map/actions-map-geometry.utils.ts",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 634,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/map/map-layers-shape-layers.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 631,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/actions/quick-signalement-form.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 451,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/admin/admin-dashboard-ui.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 578,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/admin/codex-usage-panel.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 453,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/admin/creator-inbox/inbox-item-card.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 476,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/admin/environmental-impact-capture-panel.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 483,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/admin/free-plan-services-panel.model.ts",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 407,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/admin/free-plan-services-panel.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 469,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/admin/free-plan-services-visual.view.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 470,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/admin/role-management-panel.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 460,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/chat/chat-composer.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 473,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/chat/chat-shell.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 881,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/chat/discussion-guidance.ts",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 522,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/chat/hooks/use-chat-submit.ts",
+      "line": null,
+      "category": "hooks",
+      "ceiling": 404,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/dashboard/storage-usage-panel.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 577,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 679,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-details.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 563,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-overview.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 489,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/learn/quiz/environmental-quiz.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 606,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/learn/quiz/quiz-personal-progress-overview.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 405,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/learn/quiz/quiz-session-panel-summary.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 477,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/learn/quiz/quiz-session-panel.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 473,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/pilotage/access-screen/views/pilotage-overview-content.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 452,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/reports/admin-workflow/actions.ts",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 420,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/reports/admin-workflow/step-confirm.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 488,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/reports/web-document/reports-web-document.shared.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 615,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/reports/web-document/sections.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 674,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/sections/rubriques/annuaire/annuaire-helpers.ts",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 458,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/sections/rubriques/community/community-events-components.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 408,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/sections/rubriques/elus-section.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 513,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 631,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/sections/rubriques/feedback-section.shared.ts",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 447,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 695,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.logic.ts",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 489,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/sections/rubriques/methodologie-page-client.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 685,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/sections/rubriques/monthly-impact-history-chart.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 529,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/sections/rubriques/partners-network-section.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 511,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 640,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/sections/rubriques/route/route-section.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 631,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/sections/rubriques/weather-components.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 564,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/sections/rubriques/weather-section.conditions.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 510,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/components/ui/site-tooltips.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 440,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/action-update-persistence.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 401,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/contracts/contract-model.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 402,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/exports/export-form-media.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 516,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/formalities-qualification.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 459,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/formalities-workflow.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 471,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/http.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 642,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/map/map-http.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 560,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/metadata.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 565,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/organizer-directory-catalog-national.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 404,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/organizer-directory-catalog.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 464,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/participation/group-participation-review.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 637,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/participation/organizers.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 541,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/pollution/corridor-history.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 559,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/pollution/current-place-state.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 647,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/pollution/local-repollution-calibration.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 632,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/pollution/repollution-prediction-evaluation.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 493,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/actions/signalement/signalement-media.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 468,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/admin/admin-dashboard-contract.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 449,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/admin/moderation/action-moderation-edits.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 439,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/admin/promotion-requests-store.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 470,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/analytics/climate-context.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 413,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/auth/api-authorization-contract.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 911,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/auth/sync.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 536,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/authz-identity.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 444,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/community/bug-reports-store.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 443,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/community/http.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 410,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/environmental-impact-estimator/codex-usage-store.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 514,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/environmental-impact-estimator/project-signals.calculations.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 703,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/environmental-impact-estimator/service-risk.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 415,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 685,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/errors/app-errors.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 432,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/gamification/announcements.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 421,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/gamification/badges/listing.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 437,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/gamification/progression-leaderboard.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 519,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/gamification/progression-tracking.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 454,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/geo/greater-paris-select.tsx",
+      "line": null,
+      "category": "React/JSX",
+      "ceiling": 768,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/geo/greater-paris.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 660,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/geo/municipal-cleaning-serviceability.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 542,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/geo/volunteer-additionality.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 428,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/governance/governance-monthly-report-store.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 537,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/impact/impact-terrain-2026.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 521,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/learning/gestes-propres/gestes-propres-barometer.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 479,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/learning/practice/numerique.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 406,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/learning/quiz/quiz-bank-admin.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 476,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/learning/quiz/quiz-pedagogical-metrics.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 448,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/learning/quiz/quiz-personal-progress.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 759,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/learning/quiz/quiz-quality-audit.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 593,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/learning/quiz/quiz-selection-engine.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 469,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/legal-content-report/legal-content-report-decisions-store.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 450,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/navigation.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 447,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/partners/onboarding-requests-store.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 488,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/partners/published-annuaire-entries-store.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 512,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/pdf-export/official-report-html.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 527,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/pdf-export/report-pdf-theme.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 482,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/pdf-export/simple-pdf.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 668,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/reports/report-model/compute-report-model.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 451,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/route/route-calibration.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 928,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/route/route-group-partition.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 596,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/route/route-multi-route.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 485,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/route/route-planner.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 422,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/route/route-predicted-targets.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 635,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/route/route-trace.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 605,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/supabase/storage-business-contribution.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 718,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/supabase/storage-usage.ts",
+      "line": null,
+      "category": "runtime/services/orchestration",
+      "ceiling": 635,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/ui/button-theme.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 603,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/user-location-preference.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 470,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/validation/action.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 664,
+      "status": "LEGACY"
+    },
+    {
+      "metric": "fileLength",
+      "path": "apps/web/src/lib/weather/planner-weather.ts",
+      "line": null,
+      "category": "métier/domain pur",
+      "ceiling": 412,
+      "status": "LEGACY"
+    }
+  ]
+}

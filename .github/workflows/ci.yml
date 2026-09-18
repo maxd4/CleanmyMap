@@ -184,6 +184,9 @@ jobs:
       - name: Heavy files policy
         run: npm run quality:top-heavy
 
+      - name: Complexity and function-length policy
+        run: npm run quality:complexity
+
       - name: Web lint
         run: npm run lint
 
