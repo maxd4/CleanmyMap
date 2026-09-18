@@ -28,6 +28,103 @@ Cette lecture ne sert pas de label automatique. Elle permet simplement de relier
 
 La cohérence du projet dépend donc autant de sa gouvernance, de sa sobriété et de sa réversibilité que de sa finalité affichée.
 
+## Lecture par Objectifs de développement durable (ODD)
+
+L'intelligence artificielle transforme profondément la recherche scientifique moderne. Elle accélère les découvertes, explore des espaces immenses de possibilités et ouvre de nouveaux champs d'innovation dans presque toutes les disciplines scientifiques.
+
+L'IA ne constitue pas une "science autonome" remplaçant l'humain, mais un outil de recherche d'une puissance inédite capable d'augmenter considérablement les capacités scientifiques humaines.
+
+Cependant, cette révolution technologique s'accompagne de nouveaux défis majeurs : souveraineté scientifique, accès aux infrastructures de calcul, contrôle des données, dépendance industrielle et gouvernance des connaissances.
+
+L'avenir dépendra donc autant des progrès techniques de l'IA que des choix politiques, éthiques et économiques qui encadreront son développement et son utilisation.
+
+L'IA peut être utile à presque tous les Objectifs de développement durable, mais elle devient néfaste quand elle augmente les inégalités, automatise des décisions sensibles, consomme beaucoup de ressources pour des usages peu utiles, ou renforce la dépendance aux grandes plateformes. Les 17 ODD constituent le cadre officiel adopté par l'ONU en 2015; l'ONU estime que l'IA peut aider à accélérer une grande partie des ODD, mais seulement si elle est encadrée.
+
+Voici le classement le plus pertinent.
+
+| ODD                 | IA plutôt utile quand…                  | IA plutôt néfaste quand…                                                   |
+| ------------------- | --------------------------------------- | -------------------------------------------------------------------------- |
+| **ODD 1 — Pas**     | Elle aide à cibler les aides, repérer   | Elle automatise l'exclusion, note les personnes pauvres, refuse des        |
+| **de pauvreté**     | les besoins, simplifier les             | aides sans recours humain.                                                 |
+|                     | démarches sociales.                     |                                                                            |
+| **ODD 2 — Faim**    | Elle optimise l'agriculture, prédit les | Elle favorise une agriculture industrielle dépendante de plateformes,      |
+| **"zéro"**          | rendements, détecte les maladies        | capteurs et données privées.                                               |
+|                     | des cultures.                           |                                                                            |
+| **ODD 3 — Santé**   | Elle aide au diagnostic, au tri         | Elle discrimine des patients, exploite des données de santé ou remplace    |
+| **et bien-être**    | médical, à la recherche, à la           | abusivement le jugement médical.                                           |
+|                     | prévention.                             |                                                                            |
+| **ODD 4 —**         | Elle personnalise l'apprentissage,      | Elle favorise la triche, l'illusion de compétence, la dépendance, ou       |
+| **Éducation de**    | aide les élèves, traduit, rend le       | creuse l'écart entre élèves équipés et non équipés.                        |
+| **qualité**         | savoir plus accessible.                 |                                                                            |
+| **ODD 5 —**         | Elle détecte des discriminations,       | Elle reproduit les biais sexistes des données, discrimine à l'embauche     |
+| **Égalité femmes-** | facilite l'accès à l'information et à   | ou amplifie les violences numériques.                                      |
+| **hommes**          | certains services.                      |                                                                            |
+| **ODD 6 — Eau**     | Elle détecte les fuites, optimise les   | Elle aggrave les conflits locaux d'usage de l'eau autour des data centers. |
+| **propre**          | réseaux, surveille la qualité de        |                                                                            |
+|                     | l'eau.                                  |                                                                            |
+| **ODD 7 —**         | Elle optimise les réseaux               | Elle augmente fortement la demande électrique si les usages explosent      |
+| **Énergie propre**  | électriques, prédit la production       | sans sobriété.                                                             |
+|                     | renouvelable, réduit les pertes.        |                                                                            |
+| **ODD 8 —**         | Elle automatise des tâches              | Elle précarise certains métiers, intensifie le travail, invisibilise les   |
+| **Travail décent**  | pénibles, aide les petites structures,  | travailleurs de l'annotation et de la modération.                          |
+|                     | augmente les capacités de               |                                                                            |
+|                     | production.                             |                                                                            |
+| **ODD 9 —**         | Elle accélère la recherche, la          | Elle concentre l'innovation chez quelques acteurs qui contrôlent           |
+| **Industrie,**      | maintenance, la logistique, la          | modèles, cloud et puces.                                                   |
+| **innovation,**     | conception technique.                   |                                                                            |
+| **infrastructures** |                                         |                                                                            |
+| **ODD 10 —**        | Elle peut rendre des outils             | Elle creuse l'écart entre ceux qui ont données, calcul, argent et          |
+| **Inégalités**      | puissants accessibles à des petites     | compétences, et ceux qui n'y ont pas accès.                                |
+| **réduites**        | équipes ou pays moins dotés.            |                                                                            |
+| **ODD 11 — Villes** | Elle optimise transports, énergie,      | Elle devient un outil de surveillance urbaine ou de contrôle social.       |
+| **durables**        | déchets, voirie, cartographie des       |                                                                            |
+|                     | besoins.                                |                                                                            |
+
+| ODD                | IA plutôt utile quand…                | IA plutôt néfaste quand…                                                                         |
+| ------------------ | ------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **ODD 12 —**       | Elle aide à réduire le gaspillage,    | Elle stimule la surproduction de contenus, la publicité ciblée,                                  |
+| **Consommation**   | prévoir les stocks, analyser les      | l'obsolescence et la consommation numérique inutile.                                             |
+| **responsable**    | cycles de vie.                        |                                                                                                  |
+| **ODD 13 —**       | Elle améliore les prévisions,         | Elle consomme beaucoup d'énergie pour des usages à faible utilité                                |
+| **Climat**         | optimise l'énergie, modélise les      | sociale. L'ITU [@itu_artificial_intelligence] indique que l'IA peut aider les ODD, mais souligne |
+|                    | risques, aide à réduire les           | aussi la nécessité de gouvernance pour éviter les effets négatifs.                               |
+|                    | émissions.                            |                                                                                                  |
+| **ODD 14 — Vie**   | Elle surveille pollution, pêche       | Elle contribue indirectement à la pression énergétique, minière et                               |
+| **aquatique**      | illégale, qualité de l'eau,           | matérielle du numérique.                                                                         |
+|                    | biodiversité marine.                  |                                                                                                  |
+| **ODD 15 — Vie**   | Elle aide à suivre la déforestation,  | Elle dépend de matériel numérique dont l'extraction peut abîmer des                              |
+| **terrestre**      | les espèces, les incendies, les sols. | milieux naturels.                                                                                |
+| **ODD 16 — Paix,** | Elle aide à analyser des données      | Elle produit deepfakes, surveillance, manipulation politique, décisions                          |
+| **justice,**       | publiques, détecter corruption ou     | opaques. L'ONU[45]et l'ITU[46] [47]alertent notamment sur les                                    |
+| **institutions**   | désinformation.                       | risques de deepfakes et de désinformation.                                                       |
+| **ODD 17 —**       | Elle facilite la coopération, la      | Elle renforce la dépendance aux grandes entreprises privées et aux                               |
+| **Partenariats**   | traduction, le partage de données     | pays qui contrôlent l'infrastructure IA.                                                         |
+|                    | et la coordination.                   |                                                                                                  |
+
+L'IA est particulièrement utile pour les ODD où l'analyse de données, la prédiction, l'optimisation ou l'accessibilité jouent un rôle important : santé, éducation, énergie, climat, villes durables, agriculture, biodiversité et gestion de l'eau. Elle peut aider à mieux mesurer, prévoir et coordonner l'action humaine. En revanche, elle devient problématique lorsqu'elle touche aux droits humains, à l'accès aux services essentiels, à la surveillance, au travail ou aux inégalités; les ODD les plus sensibles sont donc ceux liés à la pauvreté, au travail décent, aux inégalités, à la justice et aux institutions.
+
+Dans le cas de CleanMyMap, le projet d'engagement bénévole peut être relié positivement à :
+
+| ODD     |        |                                | Lien avec CleanMyMap                                         |
+| ------- | ------ | ------------------------------ | ------------------------------------------------------------ |
+| **ODD** | **11** | **— Villes durables**          | actions locales de propreté, amélioration de l'espace public |
+| **ODD** | **12** | **— Consommation responsable** | sensibilisation aux déchets, mégots, pollution urbaine       |
+| **ODD** | **13** | **— Climat**                   | réflexion sur l'impact numérique et sobriété des usages      |
+| **ODD** | **14** | **— Vie aquatique**            | réduction des mégots pouvant contaminer l'eau                |
+| **ODD** | **15** | **— Vie terrestre**            | retrait de déchets de l'environnement urbain                 |
+| **ODD** | **17** | **— Partenariats**             | mobilisation de bénévoles, associations, citoyens            |
+
+Mais tu peux aussi reconnaître les risques :
+
+| Risque IA                                                          | ODD concerné  |
+| ------------------------------------------------------------------ | ------------- |
+| Dépendance à Codex, OpenAI, Claude, Vercel, Supabase, Stripe, etc. | ODD 9, 10, 17 |
+| Consommation électrique et eau des data centers                    | ODD 6, 7, 13  |
+| Travail invisible de l'annotation/modération                       | ODD 8, 10     |
+| Inégalités d'accès aux outils IA                                   | ODD 4, 10     |
+| Données utilisateurs et surveillance potentielle                   | ODD 16        |
+| Production excessive de code, churn, complexité technique          | ODD 12, 13    |
+
 ## Services rendus par le site
 
 ### Cartographier les zones polluées
