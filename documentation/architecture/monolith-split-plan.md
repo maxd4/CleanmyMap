@@ -14,11 +14,16 @@ Le radar utilise le même moteur de mesure que `check-top-heavy-files.mjs` :
 fichiers `.ts` et `.tsx` suivis sous `apps/web/src`, octets des blobs Git et
 nombre de lignes mesuré sur le contenu exact de la ref.
 
-- `REVIEW_THRESHOLD`: `>500` lignes ou `>40 KiB` — signal d’audit uniquement.
+- `REVIEW_THRESHOLD`: `>500` lignes ou `>40 KiB` — signal d’audit sans split
+  automatique ; `quality:top-heavy --enforce` empêche tout nouveau REVIEW et
+  toute croissance au-delà du plafond numérique ratifié.
 - `HARD_THRESHOLD`: `>1000` lignes ou `>50 KiB` — nouveau dépassement bloquant.
-- Baseline: `scripts/checks/heavy-files-baseline.json`, version `1`, actuellement
-  vide (`allowed: []`). Il n’existe donc aucune exception ratifiée sur cette
-  ref.
+- Baseline courante: `scripts/checks/heavy-files-baseline.json`, version `2`.
+  `allowed[]` reste réservé aux exceptions HARD portant une décision
+  architecturale explicite ; `review[]` conserve les plafonds numériques des
+  fichiers REVIEW et ses entrées ne portent aucune décision d’architecture.
+  Un état `IMPROVED` conserve un plafond abaissé lorsqu’un fichier repasse sous
+  REVIEW.
 
 Commande de mesure utilisée :
 
@@ -95,7 +100,9 @@ prescription de découpage.
 | `apps/web/src/app/api/actions/[actionId]/group-join/route.test.helpers.ts` | 684 | 23334 | runtime | `REVIEW_REQUIRED` |
 
 Le top 25 est un extrait traçable du radar. Les autres fichiers qui dépassent
-`REVIEW_THRESHOLD` restent à auditer sans statut architectural implicite.
+`REVIEW_THRESHOLD` restent à auditer sans statut architectural implicite ; leur
+présence dans `review[]` est uniquement un ratchet numérique et ne vaut jamais
+`COHESIVE_SINGLE_FILE`.
 
 ## Grille d’audit future
 

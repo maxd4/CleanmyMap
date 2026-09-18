@@ -63,7 +63,9 @@ La source spécialisée est
 - Traiter une cible principale à la fois.
 - Conserver props, exports, routes et contrats publics sauf décision distincte.
 - `REVIEW_THRESHOLD` est `>500` lignes ou `>40 KiB` et produit
-  `REVIEW_REQUIRED`, un signal d'audit sans split automatique.
+  `REVIEW_REQUIRED`, un signal d'audit sans split automatique ; en mode
+  `--enforce`, le ratchet numérique bloque tout nouveau REVIEW et toute
+  croissance au-delà du plafond mesuré.
 - `HARD_THRESHOLD` est `>1000` lignes ou `>50 KiB`; un nouveau dépassement est
   bloquant en mode `--enforce`.
 - Utiliser la taille comme signal, jamais comme décision d'extraction isolée.
@@ -71,8 +73,10 @@ La source spécialisée est
   `COHESIVE_SINGLE_FILE`, `ALREADY_MODULARIZED` et `DEFERRED_SPLIT`.
 - `DEFERRED_SPLIT` exige une raison et un déclencheur de reprise.
 - Ajouter ou conserver les tests avant de supprimer une implémentation legacy.
-- Ne jamais ajouter une exception au baseline sans justification, ref de revue,
-  plafonds `maxLines`/`maxBytes` et décision architecturale explicite.
+- Ne jamais ajouter une exception HARD au baseline sans justification, ref de
+  revue, plafonds `maxLines`/`maxBytes` et décision architecturale explicite.
+  Les entrées `review[]` portent seulement un plafond numérique et ne valent
+  jamais `COHESIVE_SINGLE_FILE`.
 - Régénérer ou revalider le radar avant de choisir le lot suivant.
 
 ## 6. Performance, dépendances et sobriété

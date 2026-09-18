@@ -137,19 +137,23 @@ modes de validation. Les anciens alias (`checks:changed`, `checks`,
 
 La politique commune des fichiers volumineux est portée par
 `scripts/checks/check-top-heavy-files.mjs` : `REVIEW_THRESHOLD` est
-`>500` lignes ou `>40 KiB` et signale un audit sans bloquer ; `HARD_THRESHOLD`
-est `>1000` lignes ou `>50 KiB` et bloque tout nouveau dépassement en mode
-`--enforce`. Le checker lit la baseline canonique
-`scripts/checks/heavy-files-baseline.json`.
+`>500` lignes ou `>40 KiB` et reste un signal d'audit sans split automatique ;
+`HARD_THRESHOLD` est `>1000` lignes ou `>50 KiB` et bloque tout nouveau
+dépassement en mode `--enforce`. Le même mode bloque désormais aussi tout
+nouveau REVIEW et toute croissance au-delà du plafond REVIEW mesuré. Le checker
+lit la baseline canonique `scripts/checks/heavy-files-baseline.json`.
 
-La baseline versionnée est un inventaire d'exceptions explicitement ratifiées,
-pas une autorisation permanente de dépasser les seuils. Chaque entrée doit
-contenir `path`, `decision`, `reason`, `reviewedRef`, `maxLines` et `maxBytes`;
-seuls `COHESIVE_SINGLE_FILE` et `DEFERRED_SPLIT` sont autorisés. Les plafonds
-ratifiés sont un ratchet : une croissance au-delà de l'un d'eux, une baseline
-stale lorsque le fichier repasse sous HARD, ou une baseline malformée bloque
-`--enforce`. `DEFERRED_SPLIT` exige une raison et un déclencheur de reprise.
-Ne pas ajouter d'exception pour contourner un garde-fou.
+La baseline versionnée v2 sépare les responsabilités : `allowed[]` reste un
+inventaire d'exceptions HARD explicitement ratifiées, avec `path`, `decision`,
+`reason`, `reviewedRef`, `maxLines` et `maxBytes`; seuls
+`COHESIVE_SINGLE_FILE` et `DEFERRED_SPLIT` sont autorisés. `review[]` contient
+uniquement des plafonds numériques REVIEW (`path`, `status`, `reviewedRef`,
+`maxLines`, `maxBytes`) et ne constitue aucune décision architecturale. Un
+`status: IMPROVED` conserve le plafond abaissé après le retour sous REVIEW et
+bloque tout retour au-dessus de ce plafond. Les entrées disparues des fichiers
+mesurés ou des roots restent stale ; un fichier seulement repassé sous REVIEW
+reste dans la baseline pour conserver le ratchet. Ne pas ajouter d'exception
+pour contourner un garde-fou.
 
 ## Nettoyage et mutations
 

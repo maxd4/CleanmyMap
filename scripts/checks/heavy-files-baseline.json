@@ -1,4 +1,692 @@
 {
-  "version": 1,
-  "allowed": []
+  "version": 2,
+  "allowed": [],
+  "review": [
+    {
+      "path": "apps/web/src/app/api/actions/[actionId]/group-join/route.post.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 734,
+      "maxBytes": 24299
+    },
+    {
+      "path": "apps/web/src/app/api/actions/[actionId]/group-join/route.test.helpers.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 684,
+      "maxBytes": 23334
+    },
+    {
+      "path": "apps/web/src/app/api/actions/[actionId]/route.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 984,
+      "maxBytes": 32700
+    },
+    {
+      "path": "apps/web/src/app/api/actions/route.submit.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 968,
+      "maxBytes": 30497
+    },
+    {
+      "path": "apps/web/src/app/api/admin/creator-inbox/route.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 688,
+      "maxBytes": 23251
+    },
+    {
+      "path": "apps/web/src/app/api/admin/legal-content-reports/decision/route.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 603,
+      "maxBytes": 20230
+    },
+    {
+      "path": "apps/web/src/app/api/admin/moderation/route.action.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 586,
+      "maxBytes": 16950
+    },
+    {
+      "path": "apps/web/src/app/api/chat/route.post.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 556,
+      "maxBytes": 19717
+    },
+    {
+      "path": "apps/web/src/app/api/chat/route.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 824,
+      "maxBytes": 26342
+    },
+    {
+      "path": "apps/web/src/app/api/reports/elus-dossier/route.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 535,
+      "maxBytes": 16956
+    },
+    {
+      "path": "apps/web/src/app/api/route/recommend/route.response.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 720,
+      "maxBytes": 24339
+    },
+    {
+      "path": "apps/web/src/app/api/route/recommend/route.response.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 573,
+      "maxBytes": 20969
+    },
+    {
+      "path": "apps/web/src/app/api/route/recommend/route.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 548,
+      "maxBytes": 22263
+    },
+    {
+      "path": "apps/web/src/app/docs/[...segments]/route.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 690,
+      "maxBytes": 19146
+    },
+    {
+      "path": "apps/web/src/app/learn/ressources/learn-ressources-client.data.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 677,
+      "maxBytes": 27122
+    },
+    {
+      "path": "apps/web/src/components/accueil/accueil-community-credibility.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 636,
+      "maxBytes": 23152
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/before/sections.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 596,
+      "maxBytes": 32895
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 733,
+      "maxBytes": 32321
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/form/use-action-declaration-form.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 846,
+      "maxBytes": 30491
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/payload.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 742,
+      "maxBytes": 23446
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/payload.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 606,
+      "maxBytes": 22250
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepIdentity.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 794,
+      "maxBytes": 35880
+    },
+    {
+      "path": "apps/web/src/components/actions/action-declaration/steps/ActionStepLocation.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 832,
+      "maxBytes": 33146
+    },
+    {
+      "path": "apps/web/src/components/actions/actions-history-list.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 601,
+      "maxBytes": 18959
+    },
+    {
+      "path": "apps/web/src/components/actions/actions-map-canvas.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 529,
+      "maxBytes": 23043
+    },
+    {
+      "path": "apps/web/src/components/actions/map-feed/actions-map-initial-viewport.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 511,
+      "maxBytes": 17557
+    },
+    {
+      "path": "apps/web/src/components/actions/map/action-popup-content-header.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 792,
+      "maxBytes": 33740
+    },
+    {
+      "path": "apps/web/src/components/actions/map/action-popup-content.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 517,
+      "maxBytes": 17496
+    },
+    {
+      "path": "apps/web/src/components/actions/map/actions-map-geometry.utils.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 634,
+      "maxBytes": 16787
+    },
+    {
+      "path": "apps/web/src/components/actions/map/map-layers-shape-layers.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 631,
+      "maxBytes": 24032
+    },
+    {
+      "path": "apps/web/src/components/actions/map/map-layers.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 649,
+      "maxBytes": 19314
+    },
+    {
+      "path": "apps/web/src/components/admin/admin-dashboard-ui.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 578,
+      "maxBytes": 15714
+    },
+    {
+      "path": "apps/web/src/components/chat/chat-shell.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 881,
+      "maxBytes": 29058
+    },
+    {
+      "path": "apps/web/src/components/chat/discussion-guidance.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 522,
+      "maxBytes": 20700
+    },
+    {
+      "path": "apps/web/src/components/chat/hooks/use-chat-data.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 599,
+      "maxBytes": 17997
+    },
+    {
+      "path": "apps/web/src/components/dashboard/storage-usage-panel.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 577,
+      "maxBytes": 23980
+    },
+    {
+      "path": "apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 679,
+      "maxBytes": 25408
+    },
+    {
+      "path": "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-details.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 563,
+      "maxBytes": 25327
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/environmental-quiz.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 606,
+      "maxBytes": 22265
+    },
+    {
+      "path": "apps/web/src/components/learn/quiz/quiz-session-panel.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 559,
+      "maxBytes": 21047
+    },
+    {
+      "path": "apps/web/src/components/reports/web-document/reports-web-document.shared.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 615,
+      "maxBytes": 21754
+    },
+    {
+      "path": "apps/web/src/components/reports/web-document/sections.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 674,
+      "maxBytes": 26318
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/elus-section.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 513,
+      "maxBytes": 28325
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 631,
+      "maxBytes": 27107
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 695,
+      "maxBytes": 34077
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 569,
+      "maxBytes": 19411
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/methodologie-page-client.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 685,
+      "maxBytes": 29508
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/monthly-impact-history-chart.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 529,
+      "maxBytes": 19042
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/partners-network-section.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 511,
+      "maxBytes": 22275
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 640,
+      "maxBytes": 25549
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/route/route-section.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 631,
+      "maxBytes": 32504
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/use-weather-data.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 568,
+      "maxBytes": 17392
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/weather-components.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 564,
+      "maxBytes": 22620
+    },
+    {
+      "path": "apps/web/src/components/sections/rubriques/weather-section.conditions.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 510,
+      "maxBytes": 23918
+    },
+    {
+      "path": "apps/web/src/lib/accueil/data.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 602,
+      "maxBytes": 16134
+    },
+    {
+      "path": "apps/web/src/lib/actions/exports/export-form-media.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 516,
+      "maxBytes": 18578
+    },
+    {
+      "path": "apps/web/src/lib/actions/http.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 642,
+      "maxBytes": 18515
+    },
+    {
+      "path": "apps/web/src/lib/actions/map/map-http.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 560,
+      "maxBytes": 16293
+    },
+    {
+      "path": "apps/web/src/lib/actions/metadata.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 565,
+      "maxBytes": 17827
+    },
+    {
+      "path": "apps/web/src/lib/actions/participation/group-participation-review.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 637,
+      "maxBytes": 21448
+    },
+    {
+      "path": "apps/web/src/lib/actions/participation/organizers.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 541,
+      "maxBytes": 14213
+    },
+    {
+      "path": "apps/web/src/lib/actions/pollution/corridor-history.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 559,
+      "maxBytes": 16514
+    },
+    {
+      "path": "apps/web/src/lib/actions/pollution/current-place-state.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 647,
+      "maxBytes": 20180
+    },
+    {
+      "path": "apps/web/src/lib/actions/pollution/local-repollution-calibration.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 632,
+      "maxBytes": 19017
+    },
+    {
+      "path": "apps/web/src/lib/actions/store.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 673,
+      "maxBytes": 19796
+    },
+    {
+      "path": "apps/web/src/lib/auth/api-authorization-contract.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 911,
+      "maxBytes": 37859
+    },
+    {
+      "path": "apps/web/src/lib/auth/sync.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 536,
+      "maxBytes": 16060
+    },
+    {
+      "path": "apps/web/src/lib/environmental-impact-estimator/codex-usage-store.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 514,
+      "maxBytes": 18072
+    },
+    {
+      "path": "apps/web/src/lib/environmental-impact-estimator/constants.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 721,
+      "maxBytes": 26819
+    },
+    {
+      "path": "apps/web/src/lib/environmental-impact-estimator/project-signals.calculations.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 703,
+      "maxBytes": 22671
+    },
+    {
+      "path": "apps/web/src/lib/environmental-impact-estimator/project-signals.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 550,
+      "maxBytes": 17172
+    },
+    {
+      "path": "apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 685,
+      "maxBytes": 25306
+    },
+    {
+      "path": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 652,
+      "maxBytes": 18798
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression-data.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 712,
+      "maxBytes": 21079
+    },
+    {
+      "path": "apps/web/src/lib/gamification/progression-leaderboard.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 519,
+      "maxBytes": 16587
+    },
+    {
+      "path": "apps/web/src/lib/geo/greater-paris-select.tsx",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 768,
+      "maxBytes": 27711
+    },
+    {
+      "path": "apps/web/src/lib/geo/greater-paris.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 660,
+      "maxBytes": 16393
+    },
+    {
+      "path": "apps/web/src/lib/geo/municipal-cleaning-serviceability.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 542,
+      "maxBytes": 20233
+    },
+    {
+      "path": "apps/web/src/lib/geo/paris-pressure-risk.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 508,
+      "maxBytes": 21712
+    },
+    {
+      "path": "apps/web/src/lib/governance/governance-monthly-report-store.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 537,
+      "maxBytes": 17363
+    },
+    {
+      "path": "apps/web/src/lib/impact/impact-terrain-2026.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 521,
+      "maxBytes": 26778
+    },
+    {
+      "path": "apps/web/src/lib/learning/quiz/quiz-personal-progress.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 759,
+      "maxBytes": 25419
+    },
+    {
+      "path": "apps/web/src/lib/learning/quiz/quiz-quality-audit.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 593,
+      "maxBytes": 16918
+    },
+    {
+      "path": "apps/web/src/lib/learning/quiz/quiz-selection-engine.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 548,
+      "maxBytes": 19386
+    },
+    {
+      "path": "apps/web/src/lib/partners/published-annuaire-entries-store.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 512,
+      "maxBytes": 16419
+    },
+    {
+      "path": "apps/web/src/lib/pdf-export/official-report-html.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 527,
+      "maxBytes": 19914
+    },
+    {
+      "path": "apps/web/src/lib/pdf-export/simple-pdf.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 668,
+      "maxBytes": 19095
+    },
+    {
+      "path": "apps/web/src/lib/route/route-calibration.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 676,
+      "maxBytes": 22507
+    },
+    {
+      "path": "apps/web/src/lib/route/route-calibration.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 928,
+      "maxBytes": 32238
+    },
+    {
+      "path": "apps/web/src/lib/route/route-group-partition.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 596,
+      "maxBytes": 22372
+    },
+    {
+      "path": "apps/web/src/lib/route/route-planner.test.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 567,
+      "maxBytes": 19053
+    },
+    {
+      "path": "apps/web/src/lib/route/route-predicted-targets.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 635,
+      "maxBytes": 21960
+    },
+    {
+      "path": "apps/web/src/lib/route/route-trace.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 605,
+      "maxBytes": 20041
+    },
+    {
+      "path": "apps/web/src/lib/sections-registry/config.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 535,
+      "maxBytes": 15816
+    },
+    {
+      "path": "apps/web/src/lib/supabase/storage-business-contribution.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 718,
+      "maxBytes": 24975
+    },
+    {
+      "path": "apps/web/src/lib/supabase/storage-usage.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 635,
+      "maxBytes": 18204
+    },
+    {
+      "path": "apps/web/src/lib/ui/button-theme.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 603,
+      "maxBytes": 17967
+    },
+    {
+      "path": "apps/web/src/lib/validation/action.ts",
+      "status": "REVIEW",
+      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
+      "maxLines": 664,
+      "maxBytes": 24932
+    }
+  ]
 }
