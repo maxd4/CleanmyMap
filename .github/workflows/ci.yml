@@ -190,8 +190,8 @@ jobs:
       - name: Web test policy
         run: node scripts/checks/validation-policy.mjs --assert-full-suite
 
-      - name: Web Vitest tests
-        run: npm run test
+      - name: Web Vitest tests and coverage ratchet
+        run: npm run quality:coverage
 
       - name: Vercel audit
         run: npm run audit:vercel:ci

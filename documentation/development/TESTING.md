@@ -121,6 +121,8 @@ npm run typecheck
 npm run lint
 npm run test:scripts
 npm run test
+npm run test:coverage
+npm run quality:coverage
 npm run build
 ```
 
@@ -190,6 +192,50 @@ npm run build
 
 npm run typecheck -w apps/mobile
 ```
+
+## Couverture runtime et ratchet
+
+La couverture est mesurée par le provider officiel V8 correspondant à la
+version de Vitest installée (`@vitest/coverage-v8@4.1.11`). La commande :
+
+```bash
+npm run test:coverage
+```
+
+exécute la suite Vitest Web complète et produit le résumé JSON ignoré par Git
+dans `apps/web/coverage/coverage-summary.json`. Le périmètre instrumenté est
+le runtime testable sous `apps/web/src`. Les tests, déclarations `.d.ts`,
+fichiers générés, les fichiers de types purs explicitement référencés dans la
+configuration Vitest et les conventions d'entrée App Router Next (`page`,
+`layout`, `loading`, `error`, `not-found`, `robots`, `sitemap`, `template`,
+`default`, etc.) sont exclus. Les routes API et les modules métier restent
+inclus ; aucune exclusion n'est motivée par une couverture faible.
+
+La commande de contrôle est :
+
+```bash
+npm run quality:coverage
+```
+
+Elle compare les quatre métriques globales — statements, branches, functions
+et lines — au baseline réel de `main` dans
+`scripts/checks/coverage-baseline.json`. La baseline a été mesurée sur le SHA
+`a900d227041b1dcd39cf9a971b4fa31d8eb1e643`, le 18 septembre 2026, sans seuil
+arbitraire : statements `56.86 %`, branches `47.22 %`, functions `57.19 %` et
+lines `57.39 %`. Toute baisse exacte, y compris masquée par l'arrondi,
+échoue ; une baseline malformée, obsolète ou dont le périmètre ne correspond
+plus à la politique échoue explicitement.
+
+Le même ratchet est calculé pour les domaines mesurables `auth-authz`,
+`actions`, `formalities`, `route-calculs` et `persistence`. Leurs valeurs de
+départ et leurs chemins sont dans la baseline ; elles ne constituent pas des
+objectifs historiques inventés. Une amélioration de la baseline doit être
+ratifiée par une modification explicite de ce fichier et ne peut pas régresser
+silencieusement.
+
+`checks:full` et la CI exécutent `quality:coverage` à la place du test Vitest
+seul. `checks:fast` ne relance pas cette suite complète instrumentée afin de
+respecter son budget et d'éviter une seconde exécution inutile des tests.
 
 ## Regression gates
 

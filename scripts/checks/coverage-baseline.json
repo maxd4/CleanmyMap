@@ -1,0 +1,213 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "a900d227041b1dcd39cf9a971b4fa31d8eb1e643",
+  "measuredAt": "2026-09-18",
+  "tool": {
+    "vitest": "4.1.11",
+    "provider": "@vitest/coverage-v8@4.1.11"
+  },
+  "scope": {
+    "root": "apps/web/src",
+    "include": [
+      "src/**/*.{js,jsx,ts,tsx}"
+    ],
+    "exclude": [
+      "src/**/*.test.{js,jsx,ts,tsx}",
+      "src/**/__tests__/**",
+      "src/**/*.d.ts",
+      "src/**/generated/**",
+      "src/app/**/{page,layout,loading,error,global-error,not-found,robots,sitemap,template,default}.{js,jsx,ts,tsx}",
+      "src/components/actions/action-declaration/types.ts",
+      "src/components/actions/map-feed/map-feed.types.ts",
+      "src/components/reports/admin-workflow/types.ts",
+      "src/components/sections/rubriques/community/types.ts",
+      "src/lib/actions/unified-source/types.ts",
+      "src/lib/community/engagement.types.ts",
+      "src/lib/community/engagement/types.ts",
+      "src/lib/environmental-impact-estimator/types.ts",
+      "src/lib/events/types.ts",
+      "src/lib/gamification/types.ts",
+      "src/lib/pilotage/overview.types.ts",
+      "src/lib/reports/report-model/types.ts",
+      "src/lib/sections-registry/types.ts",
+      "src/lib/ui/page-families/types.ts",
+      "src/lib/waste/types.ts"
+    ]
+  },
+  "scopeFingerprint": "f39357edc99c09ae1903eac2ca0cf8aacb64d390d82656b3f3f18135f37412b1",
+  "metrics": {
+    "statements": {
+      "total": 46819,
+      "covered": 26619,
+      "pct": 56.86
+    },
+    "branches": {
+      "total": 51450,
+      "covered": 24294,
+      "pct": 47.22
+    },
+    "functions": {
+      "total": 12231,
+      "covered": 6995,
+      "pct": 57.19
+    },
+    "lines": {
+      "total": 44604,
+      "covered": 25600,
+      "pct": 57.39
+    }
+  },
+  "domains": {
+    "auth-authz": {
+      "files": 26,
+      "metrics": {
+        "statements": {
+          "total": 695,
+          "covered": 484,
+          "pct": 69.64
+        },
+        "branches": {
+          "total": 588,
+          "covered": 358,
+          "pct": 60.88
+        },
+        "functions": {
+          "total": 158,
+          "covered": 120,
+          "pct": 75.95
+        },
+        "lines": {
+          "total": 688,
+          "covered": 481,
+          "pct": 69.91
+        }
+      },
+      "patterns": [
+        "src/lib/auth/",
+        "src/lib/authz",
+        "src/proxy",
+        "src/app/api/account/"
+      ]
+    },
+    "actions": {
+      "files": 268,
+      "metrics": {
+        "statements": {
+          "total": 10224,
+          "covered": 6348,
+          "pct": 62.09
+        },
+        "branches": {
+          "total": 12023,
+          "covered": 6838,
+          "pct": 56.87
+        },
+        "functions": {
+          "total": 2416,
+          "covered": 1474,
+          "pct": 61.01
+        },
+        "lines": {
+          "total": 9857,
+          "covered": 6173,
+          "pct": 62.63
+        }
+      },
+      "patterns": [
+        "src/lib/actions/",
+        "src/app/api/actions/",
+        "src/components/actions/"
+      ]
+    },
+    "formalities": {
+      "files": 2,
+      "metrics": {
+        "statements": {
+          "total": 178,
+          "covered": 75,
+          "pct": 42.13
+        },
+        "branches": {
+          "total": 156,
+          "covered": 45,
+          "pct": 28.85
+        },
+        "functions": {
+          "total": 44,
+          "covered": 15,
+          "pct": 34.09
+        },
+        "lines": {
+          "total": 168,
+          "covered": 74,
+          "pct": 44.05
+        }
+      },
+      "patterns": [
+        "src/app/api/actions/[actionId]/formalities/",
+        "src/components/actions/action-formalities"
+      ]
+    },
+    "route-calculs": {
+      "files": 49,
+      "metrics": {
+        "statements": {
+          "total": 2212,
+          "covered": 1900,
+          "pct": 85.9
+        },
+        "branches": {
+          "total": 2271,
+          "covered": 1798,
+          "pct": 79.17
+        },
+        "functions": {
+          "total": 646,
+          "covered": 580,
+          "pct": 89.78
+        },
+        "lines": {
+          "total": 1965,
+          "covered": 1731,
+          "pct": 88.09
+        }
+      },
+      "patterns": [
+        "src/lib/route/",
+        "src/app/api/route/",
+        "src/components/actions/action-declaration/operational-route",
+        "src/components/actions/action-drawing-map.geometry"
+      ]
+    },
+    "persistence": {
+      "files": 148,
+      "metrics": {
+        "statements": {
+          "total": 6538,
+          "covered": 4806,
+          "pct": 73.51
+        },
+        "branches": {
+          "total": 5110,
+          "covered": 3205,
+          "pct": 62.72
+        },
+        "functions": {
+          "total": 1038,
+          "covered": 834,
+          "pct": 80.35
+        },
+        "lines": {
+          "total": 6275,
+          "covered": 4642,
+          "pct": 73.98
+        }
+      },
+      "patterns": [
+        "src/lib/supabase/",
+        "src/lib/storage/",
+        "src/app/api/"
+      ]
+    }
+  }
+}
