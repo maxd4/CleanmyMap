@@ -1,219 +1,644 @@
-## Mise en perspective : IA et data centers
+# Partie II-B — IA, data centers, matériel et analyse de cycle de vie {#partie-ii-b-ia-data-centers-materiel-acv}
 
-### Consommation actuelle des data centers
+Cette sous-partie décrit l'**infrastructure physique et les impacts environnementaux généraux de l'intelligence artificielle** : électricité, émissions, eau, centres de données, semi-conducteurs, matériaux, stockage, réseaux et fin de vie.
 
-Avant l'essor massif de l'IA générative, les data centers représentaient déjà un poste énergétique significatif. Il est possible de retenir un ordre de grandeur d'environ **300 TWh/an** avant l'explosion des usages génératifs, même si cette valeur dépend du périmètre retenu : cloud, stockage, calcul scientifique, services web, streaming, réseaux internes et infrastructures associées.
+Elle ne calcule pas l'empreinte propre à CleanMyMap. Cette attribution appartient à la **Partie II-A**, qui doit s'appuyer sur les usages réellement observés ou, lorsque ce n'est pas possible, sur des hypothèses explicitement qualifiées.
 
-L'AIE estime qu'en **2024**, les data centers ont consommé environ **415 TWh**, soit environ **1,5 % de l'électricité mondiale** [@aie_iea_2024]. Cette valeur montre que les data centers ne sont pas encore comparables aux grands secteurs historiques comme le transport ou l'élevage, mais qu'ils constituent déjà une infrastructure énergétique majeure. À titre d'ordre de grandeur, **415 TWh/an** correspondent presque à la consommation électrique annuelle de la France, qui s'établit autour de **449 TWh** en 2024 selon RTE [@rte_annual_review_2024_keyfindings].
+La distinction est essentielle :
 
-La hausse récente ne vient pas uniquement de l'IA. Les usages numériques classiques continuent aussi de croître : cloud, stockage, vidéo, applications web, services logiciel en tant que service, calcul scientifique, cryptoactifs selon les périodes et infrastructures réseau. L'IA générative constitue toutefois un accélérateur très visible, car elle demande des serveurs spécialisés, des GPU, beaucoup de mémoire, du refroidissement et une alimentation électrique stable.
+```text
+II-A
+→ combien d'usage peut raisonnablement être attribué à CleanMyMap ?
 
-### Part estimée de l'IA dans cette consommation
-
-La part exacte de l'IA dans la consommation électrique mondiale des data centers reste difficile à isoler. Les grands opérateurs ne publient pas toujours une séparation claire entre calcul IA, cloud classique, stockage, bases de données, streaming, services internes et autres charges numériques. Il faut donc raisonner par **ordre de grandeur** plutôt que par chiffre exact [@aie_iea_2024_1].
-
-Une hypothèse prudente situe aujourd'hui l'IA autour de **10 à 15 %** de la consommation électrique mondiale des data centers. En retenant une consommation totale proche de **500 TWh/an** en 2025, cela correspondrait à environ **50 à 75 TWh/an** attribuables à l'IA.
-
-Ce chiffre doit être compris comme une estimation méthodologique, non comme une mesure certifiée. Il est suffisamment faible pour rappeler que l'IA n'est pas encore le principal poste énergétique mondial, mais suffisamment élevé pour justifier une vigilance immédiate. **50 à 75 TWh/an**, c'est déjà l'ordre de grandeur de plusieurs fois la consommation énergétique annuelle totale de Paris, ou encore l'équivalent de la production annuelle de plusieurs réacteurs nucléaires.
-
-### Scénarios de croissance à l'horizon 2030
-
-Selon l'AIE, à l'horizon **2030**, la consommation électrique mondiale des data centers pourrait atteindre environ **1 000 TWh/an**, soit autour de **3 % de la demande électrique mondiale**. Cette trajectoire représenterait plus qu'un doublement par rapport au niveau de 2024.
-
-Dans un scénario haut, l'IA pourrait représenter une part très importante de ce volume, par exemple autour de **50 %** de la consommation totale des data centers. Cela correspondrait à environ **500 TWh/an** attribuables à l'IA. Cette valeur serait donc comparable à la consommation électrique actuelle de l'ensemble des data centers autour de 2025.
-
-Il serait cependant trop affirmatif de parler d'un plateau stable dès **2030**. La consommation liée à l'IA pourrait encore continuer à croître après cette date, notamment si les agents IA, la vidéo générative, l'automatisation du code, la bureautique augmentée, la recherche scientifique assistée et les usages industriels se généralisent. Une stabilisation semble plus plausible entre **2035 et 2045**, selon les contraintes économiques, énergétiques, matérielles et réglementaires.
-
-À titre d'hypothèse prudente, il est possible d'envisager un plateau mondial de l'IA autour de **1 000 TWh/an** à plus long terme. Ce plateau ne serait pas seulement technique : il dépendrait du prix de l'électricité, des limites de raccordement au réseau, de la disponibilité des GPU, de l'efficacité des modèles, de la rentabilité réelle des usages, des règles imposées aux data centers et de la capacité des États à encadrer les infrastructures les plus énergivores.
-
-### Tensions électriques locales et arbitrages d'infrastructure
-
-L'implantation d'un data center dédié à l'intelligence artificielle ne soulève pas uniquement un enjeu de consommation énergétique globale annuelle. Elle génère également une demande de puissance électrique localisée très forte, souvent de l'ordre de plusieurs centaines de mégawatts pour les infrastructures géantes. Cette concentration géographique impose des défis techniques et politiques majeurs aux gestionnaires de réseau : création de nouvelles lignes à très haute tension, gestion des pics de charge, maintien de la stabilité de la fréquence, et renforcement général des infrastructures électriques [@rte_bilan_pr].
-
-Par conséquent, même lorsque ces centres de données sont alimentés par une électricité fortement décarbonée (comme en France grâce au nucléaire et aux renouvelables), le problème se déplace sur le terrain de l'aménagement territorial et de la souveraineté. La disponibilité de la puissance électrique devenant une ressource rare, un arbitrage s'impose : la capacité électrique disponible doit-elle être allouée en priorité à la réindustrialisation du pays, à la décarbonation des transports, ou à l'hébergement de capacités de calcul pour l'IA ? [@aie_agence_internationale].
-
-### Localisation climatique des data centers
-
-Un même service numérique n'a pas le même impact selon que son data center est situé dans une région froide, tempérée, chaude, humide ou en stress hydrique. Le refroidissement, la consommation d'eau et les indicateurs de performance comme le PUE ou le WUE dépendent du climat local, du type d'installation et du niveau de densité de calcul. La géographie compte donc autant que le modèle utilisé.
-
-Pour CleanMyMap, cela rappelle qu'un coût numérique ne peut pas être évalué uniquement à partir du code ou du volume de requêtes. Il faut aussi tenir compte du lieu d'hébergement, des conditions de refroidissement, de la pression sur l'eau et de la stabilité énergétique locale. Une même fonctionnalité peut donc avoir un impact très différent selon qu'elle s'appuie sur des infrastructures sobres ou sur des infrastructures situées dans des zones plus contraintes.
-
-### Conflit d'usage du foncier
-
-Les data centers occupent aussi du terrain, parfois à proximité de métropoles ou de zones industrielles stratégiques. Ce foncier pourrait être affecté à d'autres usages : logements, activités productives locales, renaturation, agriculture urbaine ou équipements publics. L'enjeu n'est pas toujours massif en surface, mais il devient réel dès qu'une implantation mobilise un sol rare ou bien situé.
-
-Pour CleanMyMap, cela signifie qu'un data center ne doit pas être évalué seulement comme un objet technique, mais aussi comme un choix d'aménagement. Le coût spatial d'une infrastructure numérique entre alors en concurrence avec d'autres priorités territoriales, ce qui renforce l'idée d'un arbitrage entre utilité réelle et occupation de ressources rares.
-
-### Chaleur fatale et valorisation locale
-
-Les data centers rejettent une quantité importante de chaleur. Si cette chaleur n'est pas récupérée pour chauffer des bâtiments, des piscines, des serres ou des réseaux urbains, une partie de l'énergie consommée devient une chaleur perdue. L'impact réel dépend donc aussi de la capacité à valoriser cette chaleur localement.
-
-Cette récupération n'efface pas la consommation initiale, mais elle peut en réduire le bilan net lorsque l'infrastructure est intégrée à un territoire capable de réutiliser l'énergie thermique. À l'inverse, un data center isolé, difficile à raccorder à un réseau de chaleur ou mal intégré à son environnement reste plus proche d'une dépense énergétique pure.
-
-### Centres de données sous-marins : une piste de réduction énergétique encore expérimentale
-
-Une piste explorée par certains acteurs consiste à modifier directement les conditions de refroidissement des centres de données. Microsoft a par exemple testé **Project Natick**, un prototype de datacenter sous-marin alimenté par des énergies renouvelables offshore, précisément pour étudier la faisabilité de ce type d'infrastructure dans un cadre réel. [Microsoft Research - Natick](https://www.microsoft.com/en-us/research/project/natick/?lang=fr-ca) ; [Microsoft Source](https://news.microsoft.com/source/features/sustainability/project-natick-underwater-datacenter/).
-
-L'intérêt de ce type d'approche est simple : dans un centre de données, l'électricité ne sert pas seulement aux serveurs. Elle alimente aussi le refroidissement, la ventilation, les pompes, la conversion électrique, la sécurité et les systèmes de redondance. Le Département américain de l'Énergie rappelle d'ailleurs que le **PUE** compare l'énergie totale d'un site à l'énergie strictement informatique, ce qui montre bien que le "coût" d'un data center ne se limite pas aux machines de calcul [@doe_data_centers_servers].
-
-Les centres sous-marins peuvent donc améliorer l'efficacité du refroidissement et réduire certains besoins en eau douce ou en climatisation classique. Mais ils restent expérimentaux et ne suppriment ni la chaleur rejetée dans l'environnement marin, ni les impacts de fabrication du matériel, ni la dépendance aux semi-conducteurs, ni la complexité de maintenance. Autrement dit, ils peuvent améliorer un poste de coût, pas abolir le coût global.
-
-Pour CleanMyMap, l'enseignement est prudent : oui, l'industrie cherche à réduire l'empreinte de ses infrastructures, mais cette amélioration reste marginale si l'usage logiciel continue de croître sans discipline. Les gains les plus fiables restent donc la sobriété applicative, la limitation des fonctionnalités inutiles, la réduction du stockage et l'optimisation des parcours les plus coûteux.
-
-### Compétition entre usages numériques utiles et inutiles
-
-L'IA consomme une partie des capacités électriques, matérielles et cloud qui pourraient être utilisées pour d'autres services numériques : santé, recherche, transition énergétique, services publics, éducation. L'impact environnemental n'est donc pas seulement absolu, mais aussi lié à la question : à quels usages sont allouées les ressources rares ?
-
-Dans un projet comme CleanMyMap, cette logique impose une discipline claire : l'IA ne se justifie que lorsqu'elle améliore réellement la coordination terrain, la qualité des données, la sécurité ou la sobriété du site. Une fonctionnalité séduisante mais peu utile peut détourner des ressources précieuses sans bénéfice social ou environnemental mesurable.
-
-### Incertitude des crédits carbone et green cloud
-
-Le fait qu'un fournisseur compense ses émissions ou achète de l'électricité renouvelable ne signifie pas toujours que l'électricité consommée à chaque instant est réellement bas carbone. Il faut distinguer l'énergie effectivement consommée localement, les contrats d'achat renouvelables, les certificats, les mécanismes de compensation et la réalité physique du réseau au moment de l'usage.
-
-Autrement dit, un discours de type "green cloud" ne doit pas être lu comme une preuve automatique de sobriété. Pour CleanMyMap, la bonne lecture consiste à rester prudente sur les annonces de neutralité carbone et à privilégier les indicateurs concrets : localisation, PUE/WUE, consommation réelle, usages évités et utilité de la fonctionnalité.
-
-### Comparaison avec d'autres secteurs
-
-À l'échelle mondiale, le numérique représente environ **2 à 4 %** des émissions de CO₂e selon les études et les périmètres retenus. Certaines estimations récentes situent même les émissions incorporées des industries numériques autour de **4 %** des émissions mondiales lorsque les chaînes d'approvisionnement sont largement intégrées.
-
-Par comparaison, le **transport routier** représente environ **15 %** des émissions mondiales de CO₂, puisque le transport représente environ un cinquième des émissions mondiales et que la route en constitue environ les trois quarts. L'**élevage** représente quant à lui environ **14,5 %** des émissions anthropiques mondiales de gaz à effet de serre selon l'estimation classique de la FAO.
-
-L'IA n'est donc pas encore un poste comparable aux secteurs historiques comme le transport routier ou l'élevage. Son impact direct reste plus faible en part mondiale. Le véritable enjeu est sa **dynamique de croissance** : la consommation liée aux data centers et aux charges IA augmente beaucoup plus vite que celle de nombreux autres secteurs. Il faut donc surveiller l'IA non parce qu'elle serait déjà le principal problème climatique mondial, mais parce que sa trajectoire peut devenir significative si les usages se généralisent sans sobriété, sans efficacité énergétique et sans gouvernance claire.
-
-La conclusion à retenir est donc nuancée : l'IA n'est pas encore un secteur énergétique dominant à l'échelle mondiale, mais elle devient un poste structurant de la croissance électrique future. Dans un projet comme CleanMyMap, cette analyse justifie une règle de proportion : utiliser l'IA seulement lorsqu'elle apporte un gain réel de qualité, de coordination ou d'utilité terrain, et refuser les usages décoratifs, redondants ou trop coûteux.
-
-### Tableau récapitulatif des ordres de grandeur
-
-| Repère                                                     | Consommation électrique | Comparaison simple                                           |
-| ---------------------------------------------------------- | ----------------------: | ------------------------------------------------------------ |
-| Data centers avant l'essor massif de l'IA générative       |          **300 TWh/an** | **2/3** de la consommation électrique française              |
-| Data centers mondiaux autour de 2025                       |          **500 TWh/an** | **1 année** de consommation électrique française             |
-| Part estimée de l'IA aujourd'hui                           |      **50 à 75 TWh/an** | Plusieurs fois la consommation énergétique annuelle de Paris |
-| Data centers mondiaux vers 2030                            |        **1 000 TWh/an** | Environ **2 fois** la consommation électrique française      |
-| Part IA possible dans un scénario haut vers 2030           |          **500 TWh/an** | Comparable à la consommation électrique française actuelle   |
-| Plateau IA possible à long terme                           |        **1 000 TWh/an** | Environ **2 fois** la consommation électrique française      |
-| Production annuelle d'un réacteur nucléaire d'environ 1 GW |        **7 à 8 TWh/an** | **500 TWh/an** = plusieurs dizaines de réacteurs nucléaires  |
-
-Ces comparaisons ne signifient pas que l'IA "consomme une France" aujourd'hui. Elles servent à donner une échelle. En 2025, la part propre à l'IA reste probablement inférieure à la consommation totale des data centers. En revanche, dans un scénario haut à l'horizon 2030, l'IA pourrait atteindre un volume électrique comparable à celui d'un grand pays industrialisé.
-
-Il faut aussi distinguer puissance et énergie. Dire qu'un data center atteint **1 GW** de puissance signifie qu'il appelle une puissance instantanée comparable à un gros réacteur nucléaire. Mais si cette puissance est utilisée toute l'année, elle représente environ **8,8 TWh/an** avant prise en compte du facteur de charge. C'est pourquoi quelques grands sites industriels peuvent avoir un impact local très fort sur le réseau électrique, même si leur poids mondial reste limité en pourcentage.
-
-## Empreinte matérielle de l'IA
-
-### GPU, serveurs, semi-conducteurs et stockage
-
-L'IA accentue la demande en matériel spécialisé (GPU NVIDIA, TPU Google), serveurs haute densité et stockage rapide, augmentant la pression sur la fabrication des semi-conducteurs.
-
-### Métaux critiques et chaînes d'approvisionnement
-
-La fabrication dépend de chaînes complexes : la Chine raffine par exemple **95 % du gallium** mondial. La demande des data centers pourrait peser 10 % de l'offre de certains métaux critiques d'ici 2030.
-
-### Obsolescence accélérée du matériel IA
-
-La course à la puissance de calcul propre à l'intelligence artificielle entraîne une réduction significative de la durée de vie utile des équipements en centre de données. Afin d'intégrer les dernières générations d'accélérateurs et de puces IA, les serveurs sont fréquemment renouvelés sur des cycles très courts (3 à 5 ans), ce qui alourdit considérablement l'impact environnemental lié à leur phase de fabrication rapporté à leur durée d'usage effective [@iea_electricity_2024].
-
-Par ailleurs, l'écosystème de l'IA générative pousse à un renouvellement matériel mondial pour supporter des architectures toujours plus denses, exigeant des innovations constantes (nouvelles générations de GPU, mémoire HBM, refroidissement liquide, racks de haute densité). Même si l'usage marginal d'un projet individuel comme CleanMyMap apparaît faible, il s'inscrit dans cette demande collective qui stimule un cycle industriel d'obsolescence prématurée. L'empreinte matérielle du projet ne se limite donc pas à l'énergie consommée pour « utiliser un serveur » ponctuellement, mais inclut sa part contributive à cette accélération du renouvellement matériel global [@google_measuring_the].
-
-### Déchets électroniques et fin de vie
-
-Le monde a produit **62 millions de tonnes** de déchets électroniques en 2022. Seulement **22,3 %** sont collectés et recyclés correctement, posant des risques sanitaires et environnementaux majeurs.
-
-## Analyse de cycle de vie et scopes carbone
-
-### Différence entre scopes 1, 2, 3 et ACV
-
-L'ACV mesure l'impact du berceau à la tombe. Les **Scopes 1 et 2** couvrent les émissions directes et l'électricité, tandis que le **Scope 3** (souvent majoritaire) inclut la fabrication des serveurs, le transport et la fin de vie.
-
-### Fabrication, transport, maintenance et fin de vie
-
-Pour l'IA, la phase de fabrication est critique car elle mobilise des processus industriels énergivores et gourmands en eau ultra-pure.
-
-### Redondance cloud, sauvegardes, réplication et stockage
-
-La haute disponibilité (Multi-AZ) et la redondance des données multiplient l'empreinte matérielle. Pour CleanMyMap, l'usage de Supabase (PostgreSQL) et Vercel implique :
-
-- **Réplication** : La duplication des données sur plusieurs zones de disponibilité peut doubler la consommation électrique liée au stockage et au calcul de synchronisation.
-- **Sauvegardes (Backups)** : Les snapshots réguliers créent une accumulation de données "froides" qui, bien que moins énergivores à la lecture, pèsent sur l'impact matériel à long terme du data center.
-- **Data Transfer** : La réplication inter-régionale (si activée) ajoute un coût réseau significatif en raison des transferts de données permanents.
-
-Cette redondance ne se limite pas aux copies visibles dans l'application. Le cloud repose aussi sur des environnements aperçu, staging, logs, CDN et mécanismes de haute disponibilité qui maintiennent plusieurs versions d'un même contenu ou d'un même état technique. Ton site peut n'afficher qu'un seul fichier, mais l'infrastructure peut en conserver plusieurs copies synchronisées. L'empreinte réelle est donc souvent supérieure au poids apparent des données.
-
-### Limites d'une ACV simplifiée appliquée à CleanMyMap
-
-Les estimations fondées uniquement sur l'électricité sont incomplètes. L'ACV peut fortement augmenter le bilan, mais manque souvent de données fournisseurs transparentes sur le matériel spécifique à l'IA.
-
-```mermaid
-graph TD
-    A["ACV complète d'un data center"] --> B["Carbone"]
-    A --> C["Eau"]
-    A --> D["Matériaux"]
-    A --> E["Fin de vie"]
-    B --> B1["Scope 1 : direct"]
-    B --> B2["Scope 2 : élec"]
-    B --> B3["Scope 3 : amont/aval"]
-    D --> D1["Semi-conducteurs"]
-    D --> D2["Métaux critiques"]
-    E --> E1["Déchets info"]
+II-B
+→ quels mécanismes physiques transforment cet usage numérique en impacts ?
 ```
 
-## Impacts environnementaux indirects ou sous-estimés
+Une statistique mondiale sur les data centers ne doit jamais être multipliée directement par un nombre de requêtes CleanMyMap sans méthode d'allocation démontrée.
 
-### CI/CD, compilations, aperçus et déploiements
+## Chaîne physique d'un service d'IA
 
-Chaque push déclenche des jobs GitHub (lint, tests, compilations) consommant du calcul serveur. CleanMyMap utilise des filtrages de chemins pour limiter ces coûts inutiles.
+Un service génératif apparemment immatériel dépend d'une chaîne industrielle complète :
 
-Le coût environnemental des environnements de développement est souvent sous-estimé. Les compilations, les tests, les aperçus Vercel, GitHub Actions, le lint, le typecheck, les déploiements ratés, les branches temporaires et les agents IA qui relancent des commandes peuvent devenir un poste réel dès qu'une petite modification déclenche une chaîne complète. Dans un projet en développement rapide, il faut donc éviter de transformer chaque micro-changement en cycle CI/CD lourd.
+```{mermaid}
+%%| fig-cap: "Chaîne physique simplifiée d'un service d'IA"
+%%| fig-width: 10
+flowchart LR
+  A["Extraction et matériaux"] --> B["Semi-conducteurs"]
+  B --> C["GPU / accélérateurs<br/>serveurs et mémoire"]
+  C --> D["Data center"]
+  D --> E["Électricité<br/>refroidissement<br/>réseau"]
+  E --> F["Entraînement / inférence"]
+  F --> G["API / application"]
+  G --> H["Terminal utilisateur"]
 
-### Données dormantes, logs, caches et backups
+  D --> I["Chaleur"]
+  D --> J["Eau"]
+  B --> K["Eau + chimie + énergie"]
+  C --> L["Fin de vie / e-déchets"]
+```
 
-Le stockage durable des photos terrain sur Supabase et les logs mesure d'audience (PostHog/Sentry) créent une empreinte persistante même en l'absence de trafic utilisateur.
+Cette chaîne montre pourquoi une mesure limitée aux watt-heures consommés pendant une requête reste incomplète : une analyse de cycle de vie doit également considérer la fabrication du matériel, l'infrastructure, les transports, la maintenance et la fin de vie.
 
-Cette persistance ne concerne pas seulement les photos ou les fichiers visibles. Elle inclut aussi les logs, les embeddings, les caches, les snapshots, les mesures d'audience, les versions de modèles, les métriques et les traces de débogage. Une grande partie de ces données est conservée "au cas où", ce qui crée un stock numérique qui s'accumule dans le temps même lorsqu'il n'apporte plus de valeur directe au projet.
+## Électricité des data centers
 
-Le coût réel vient souvent de la répétition des copies et des durées de rétention. Une donnée peu utile peut être dupliquée dans plusieurs services, archivée dans des backups, recopiée dans des systèmes d'observabilité puis conservée plusieurs années. Pour CleanMyMap, cela signifie qu'une politique de rétention stricte est aussi importante que la limitation du volume initial.
+### État mondial actuel
 
-### Terminaux utilisateurs
+Les données les plus récentes de l'Agence internationale de l'énergie indiquent une croissance rapide de la consommation électrique des centres de données.
 
-L'impact ne s'arrête pas au serveur. La consultation des cartes interactives (Leaflet) sur les terminaux utilisateurs (smartphones, ordinateurs) consomme de l'énergie :
+En **2024**, les data centers ont consommé environ **415 TWh**, soit autour de **1,5 % de la consommation électrique mondiale** [@iea_energy_ai_2025].
 
-- **Rendu client** : L'affichage et le déplacement sur la carte sollicitent le CPU et le GPU du terminal pour le rendu des tuiles et des éléments vectoriels.
-- **Consommation** : Un smartphone en navigation web active consomme environ 1 à 3 Watts. L'usage intensif de cartes interactives peut augmenter cette consommation de 20 à 30 % par rapport à une page statique.
-- **Obsolescence logicielle** : Des interfaces trop lourdes peuvent ralentir les anciens terminaux, incitant indirectement à leur renouvellement prématuré.
+L'AIE estime ensuite la consommation à environ **485 TWh en 2025**, soit une hausse annuelle d'environ **17 %**. La consommation des data centers spécifiquement orientés IA a augmenté plus rapidement encore, d'environ **50 % en 2025** [@iea_key_questions_energy_ai_2026].
 
-Le site peut donc rester sobre côté serveur tout en étant lourd côté utilisateur. Vieux téléphones qui chauffent, batterie consommée, données mobiles mobilisées, JavaScript important, rendu de carte et animations créent une empreinte diffusée chez les utilisateurs, donc moins visible dans le bilan cloud. Dans un rapport honnête, il faut considérer cette dépense côté terminal comme une partie réelle du coût numérique.
+Cette progression ne signifie pas que toute l'électricité des data centers est consommée par l'IA. Les mêmes infrastructures hébergent notamment :
 
-### Usage mobile : GPS, photos, réseau 4G/5G
+- cloud généraliste ;
+- bases de données ;
+- stockage ;
+- streaming ;
+- logiciels en ligne ;
+- calcul scientifique ;
+- services internes ;
+- charges IA.
 
-Lors d'un signalement sur le terrain, plusieurs composants physiques sont sollicités :
+La part exacte attribuable à l'IA reste donc dépendante du périmètre et des données opérateurs.
 
-- **GPS (GNSS)** : La puce de géolocalisation est très énergivore (~50-150 mW en mode actif) car elle nécessite un verrouillage satellitaire constant. Le rafraîchissement continu de la position pour le suivi de trajet aggrave cet impact par rapport à une géolocalisation ponctuelle.
-- **Traitement d'images** : Le capteur optique et l'ISP (Image Signal Processor) sollicitent une puissance de calcul importante pour la mise au point, l'exposition et la compression (HEIF/JPEG). Plus la résolution augmente, plus le traitement en temps réel par le processeur neuronal du smartphone est intensif.
-- **Réseau mobile** : L'envoi de photos haute résolution via 4G ou 5G consomme environ 0,1 à 0,2 kWh par Go de données transférées. La 5G est plus efficace par bit, mais l'effet rebond lié à l'augmentation de la taille des fichiers photos peut annuler ce gain en énergie totale consommée par session de transfert.
+### Horizon 2030
 
-La consultation sur réseau mobile, surtout avec cartes et images, peut aussi être plus énergivore qu'une consultation via fibre ou Wi-Fi. Pour des bénévoles en extérieur, l'usage terrain se fait justement souvent en 4G ou 5G, avec GPS, appareil photo et carte interactive. L'impact n'est donc pas seulement côté serveur ou cloud : il est aussi distribué dans les conditions réelles d'usage.
+Dans sa mise à jour 2026, l'AIE projette une consommation mondiale des data centers d'environ **950 TWh en 2030**, soit près du double de 2025 et environ **3 % de la demande électrique mondiale**. La consommation des data centers orientés IA progresserait plus vite et **triplerait approximativement entre 2025 et 2030** dans la trajectoire centrale [@iea_key_questions_energy_ai_2026].
 
-Une application de cleanwalk ne mobilise pas seulement du cloud. Elle sollicite aussi les capteurs du téléphone, l'écran lumineux en extérieur, la localisation continue éventuelle et l'upload de photos. Sur mobile, ces usages peuvent être plus significatifs qu'une simple page web textuelle. Pour CleanMyMap, cela justifie de limiter les parcours superflus, de compresser les médias, d'éviter les rechargements inutiles et de ne pas supposer que l'usage terrain sera "gratuit" parce qu'il se déroule hors bureau.
+Cette projection est un scénario, pas une prédiction certaine. Elle dépend notamment :
 
-### Surproduction fonctionnelle facilitée par l'IA
+- du rythme d'adoption de l'IA ;
+- de l'efficacité des modèles et accélérateurs ;
+- de la taille des contextes ;
+- de la diffusion de la génération vidéo et des agents ;
+- des coûts ;
+- des capacités de fabrication ;
+- des raccordements électriques ;
+- des contraintes financières et réglementaires.
 
-L'IA permet de coder plus vite, ce qui incite à multiplier les routes API (57 actuellement) et les composants client (237), augmentant le poids du bundle et la surface de maintenance.
+L'AIE souligne d'ailleurs que les gains d'efficacité par tâche sont rapides mais peuvent être dépassés par la croissance du nombre d'utilisateurs et par l'apparition de tâches beaucoup plus coûteuses, telles que certains raisonnements longs, agents et usages vidéo [@iea_key_questions_energy_ai_2026].
 
-Cet effet crée un véritable **prototype permanent** : il devient facile de produire beaucoup de fonctionnalités avant même de savoir si elles seront réellement utilisées. Le résultat est une dette environnementale par surproduction logicielle, avec plus de pages, plus de composants, plus de dépendances, plus de maintenance et plus de surface à héberger.
+Il faut donc éviter deux conclusions opposées :
 
-Le problème n'est pas seulement l'ajout de fonctionnalités. C'est la complexité inutile qu'elles créent lorsqu'elles ne sont pas reliées à un usage concret. Dans CleanMyMap, l'IA doit donc être évaluée comme un accélérateur sous contrainte : si elle permet de livrer plus vite sans alourdir le périmètre, elle peut être utile ; si elle favorise l'empilement de modules non utilisés, elle augmente une dette écologique purement liée à la complexité.
+- l'amélioration de l'efficacité ne garantit pas une baisse de la consommation totale ;
+- la croissance actuelle ne permet pas non plus d'extrapoler indéfiniment un taux constant.
 
-L'effet rebond est ici spécifique : la baisse du coût de production logicielle augmente la production logicielle. Plus le développement devient accessible, plus il devient tentant de lancer des prototypes, des variantes et des fonctionnalités qui s'additionnent sans toujours être retenues. À l'échelle du web, cette accessibilité technique peut donc augmenter le nombre total de projets numériques créés, même si chaque projet pris isolément paraît modeste.
+## Puissance locale, réseau et géographie
 
-## Synthèse environnementale
+### Un impact mondial limité peut être localement très important
 
-### Impact faible en ordre de grandeur, mais non nul
+À l'échelle mondiale, les data centers restent une fraction minoritaire de la demande électrique. Leur effet peut néanmoins être beaucoup plus important localement car les nouvelles capacités sont fortement concentrées.
 
-Avec environ 10 à 20 kgCO₂e pour le développement, l'impact est comparable à **200 km de voiture**. Ce coût est "acceptable" si le projet déclenche une dépollution réelle supérieure.
+L'AIE souligne que les data centers orientés IA peuvent présenter des puissances comparables à celles d'installations industrielles très énergivores et que les capacités sont regroupées dans quelques grands clusters [@iea_energy_ai_2025].
 
-### Risque principal : trajectoire de croissance, accumulation des usages et dette environnementale
+Cette concentration peut provoquer :
 
-Le risque majeur n'est pas le coût d'une requête, mais l'accumulation de services logiciel en tant que service (Vercel, Supabase, Clerk, Stripe, etc.) et de fonctionnalités secondaires qui finissent par créer une dette écologique structurelle.
+- files d'attente de raccordement ;
+- besoin de nouveaux transformateurs ;
+- renforcement des réseaux ;
+- nouvelles capacités de production ;
+- arbitrages locaux entre usages électriques.
 
-### Conditions de soutenabilité
+Le problème énergétique doit donc être analysé à deux échelles :
 
-Pour rester soutenable, CleanMyMap doit garder une ligne simple : sobriété technique, limitation des fonctionnalités inutiles, choix de modèles efficaces, suivi des usages et arbitrage systématique selon l'utilité réelle. L'IA n'est justifiable que si elle améliore concrètement le service, la coordination ou la qualité du projet plus qu'elle n'augmente sa complexité, sa dépendance et son impact global.
+```text
+énergie annuelle mondiale
++
+puissance et contrainte du réseau local
+```
+
+Un chiffre global faible en pourcentage n'exclut pas une contrainte forte sur un territoire particulier.
+
+### Localisation et mix électrique
+
+Une même quantité d'électricité peut produire des émissions très différentes selon :
+
+- le pays et la région ;
+- l'heure de consommation ;
+- le mix du réseau ;
+- les capacités locales de production ;
+- les contrats d'approvisionnement ;
+- la présence éventuelle de production sur site.
+
+L'AIE distingue explicitement le **mix électrique physiquement consommé** du mix contractuel annoncé par un opérateur [@iea_energy_ai_2025].
+
+Cette distinction est importante : acheter des certificats ou signer un contrat renouvelable n'implique pas que chaque kilowattheure consommé au moment du calcul provienne physiquement d'une source bas carbone.
+
+## Émissions de gaz à effet de serre
+
+### Émissions de l'électricité
+
+Selon l'AIE, l'électricité consommée par l'ensemble des data centers représentait environ **180 Mt de CO₂ indirect en 2024**, soit environ **0,5 % des émissions mondiales de CO₂ liées à la combustion**. Ce chiffre couvre tous les usages des data centers ; l'IA n'en constitue qu'une partie [@iea_energy_ai_2025].
+
+Dans le scénario central publié en 2025, les émissions liées à leur électricité augmentent encore jusqu'à environ 2030 avant de se stabiliser ou diminuer légèrement, malgré la croissance du calcul, sous l'effet de l'évolution du mix électrique [@iea_energy_ai_2025].
+
+Ce résultat rappelle qu'il faut distinguer :
+
+```text
+croissance du calcul
+≠
+croissance strictement proportionnelle des émissions
+```
+
+Le résultat carbone dépend à la fois de l'énergie consommée et de son intensité carbone.
+
+### Les émissions opérationnelles ne sont pas l'ACV complète
+
+Les émissions associées à l'électricité ne couvrent pas :
+
+- extraction des matériaux ;
+- fabrication des puces ;
+- fabrication des serveurs ;
+- construction du bâtiment ;
+- équipements électriques ;
+- refroidissement ;
+- transport ;
+- remplacement du matériel ;
+- fin de vie.
+
+Une ACV complète doit donc distinguer **émissions opérationnelles** et **émissions incorporées**.
+
+## Refroidissement, PUE et efficacité énergétique
+
+### Le calcul n'est qu'une partie de l'énergie d'un data center
+
+L'énergie totale d'un centre de données comprend les serveurs mais aussi :
+
+- refroidissement ;
+- pompes et ventilateurs ;
+- alimentation électrique ;
+- conversion ;
+- stockage ;
+- réseau ;
+- éclairage et auxiliaires.
+
+Le **Power Usage Effectiveness (PUE)** est défini comme :
+
+\[
+PUE = \frac{E_{\text{total data center}}}{E_{\text{équipements IT}}}
+\]
+
+Un PUE de 1 serait théoriquement parfait : toute l'énergie entrerait dans les équipements informatiques. En pratique, il reste toujours des auxiliaires. Le PUE est donc utile pour mesurer l'efficacité de l'infrastructure, mais il ne mesure ni la pertinence du calcul ni l'empreinte de fabrication [@doe_data_centers_servers].
+
+### La densité de puissance augmente
+
+L'IA accélère l'adoption de serveurs fortement accélérés et de racks très denses. L'AIE rapporte qu'entre **2020 et 2025**, la densité de puissance des serveurs IA a été multipliée par environ **11**, et qu'elle pourrait encore être multipliée par quatre d'ici 2027 [@iea_key_questions_energy_ai_2026].
+
+Cette évolution renforce les contraintes sur :
+
+- distribution électrique ;
+- transformateurs ;
+- refroidissement ;
+- pompage ;
+- conception des racks ;
+- infrastructures de secours.
+
+Elle contribue au développement du refroidissement liquide, sans qu'une technologie unique soit optimale dans tous les contextes.
+
+## Eau : distinguer plusieurs empreintes
+
+### Eau directe du data center
+
+Certains centres utilisent de l'eau pour le refroidissement évaporatif ou l'humidification.
+
+Le **Water Usage Effectiveness (WUE)** mesure classiquement :
+
+\[
+WUE = \frac{\text{eau utilisée sur site}}{\text{énergie des équipements IT}}
+\]
+
+et s'exprime généralement en litres par kWh [@doe_data_centers_servers].
+
+Le WUE dépend fortement :
+
+- du climat ;
+- de la technologie de refroidissement ;
+- de la charge ;
+- des températures d'exploitation ;
+- de la saison ;
+- de la qualité et du type d'eau utilisés.
+
+Une moyenne mondiale ne doit donc pas être appliquée automatiquement à un service dont la région d'exécution est inconnue.
+
+### Eau indirecte liée à l'électricité
+
+L'électricité possède elle-même une empreinte hydrique, notamment lorsque les technologies de production utilisent de l'eau pour le refroidissement ou le cycle thermodynamique.
+
+L'empreinte hydrique d'un service numérique peut donc comprendre :
+
+```text
+eau directe du data center
++
+eau liée à la production d'électricité
++
+eau incorporée dans le matériel
+```
+
+Ne mesurer que l'eau consommée sur site sous-estime potentiellement l'empreinte complète.
+
+### Eau de fabrication des semi-conducteurs
+
+La fabrication de semi-conducteurs utilise de grandes quantités d'eau de très haute pureté pour les opérations de nettoyage des wafers, ainsi que de l'énergie et différents produits chimiques.
+
+Une étude de données environnementales portant sur 28 entreprises du secteur des semi-conducteurs confirme l'importance combinée de l'eau, de l'électricité et des émissions de la fabrication [@semiconductor_environmental_data_2023].
+
+Il faut toutefois éviter d'attribuer toute l'empreinte de l'industrie des semi-conducteurs à l'IA : les mêmes usines produisent des composants destinés à de nombreux secteurs.
+
+### Les facteurs « par prompt » ne sont pas universels
+
+Les mesures publiées par les fournisseurs peuvent être utiles pour comprendre une architecture précise. Google a par exemple publié en 2025 une méthodologie attribuant à un **prompt texte médian de Gemini Apps**, dans son infrastructure mesurée, environ **0,24 Wh**, **0,03 gCO₂e** et **0,26 mL d'eau** [@google_measuring_the_1].
+
+Ces valeurs ne constituent pas un facteur générique applicable à :
+
+- tous les modèles ;
+- toutes les longueurs de contexte ;
+- toutes les générations ;
+- toutes les régions ;
+- tous les fournisseurs ;
+- les images ou vidéos ;
+- les agents ;
+- l'entraînement.
+
+Elles illustrent précisément pourquoi le calcul environnemental doit rester **spécifique au système mesuré**.
+
+### Incertitude élevée des estimations globales d'eau IA
+
+Des études de scénarios montrent que l'empreinte hydrique de l'IA peut devenir importante, mais leurs résultats dépendent fortement du nombre de serveurs, de leur localisation, de leur durée de vie, du mix électrique et des technologies de refroidissement.
+
+Une étude publiée dans _Nature Sustainability_ en 2025 estime, pour des scénarios de déploiement de serveurs IA aux États-Unis entre 2024 et 2030, une empreinte hydrique annuelle de plusieurs centaines de millions de mètres cubes selon les hypothèses [@nature_ai_servers_environment_2025].
+
+Ce résultat est **un scénario américain**, pas une mesure mondiale directement transposable à CleanMyMap.
+
+## Chaleur fatale
+
+Toute énergie électrique utilisée par le calcul finit presque entièrement sous forme de chaleur à dissiper.
+
+Cette chaleur peut parfois être valorisée dans :
+
+- réseaux de chaleur ;
+- bâtiments ;
+- équipements publics ;
+- procédés industriels.
+
+La valorisation dépend de la température disponible, de la proximité d'un besoin de chaleur, de la saison et des coûts de raccordement.
+
+Dans l'Union européenne, la directive sur l'efficacité énergétique impose notamment, pour les data centers au-dessus du seuil réglementaire concerné, l'utilisation de chaleur fatale ou l'évaluation de sa faisabilité lorsqu'elle n'est pas techniquement ou économiquement possible [@eu_energy_efficiency_directive_2023].
+
+La récupération de chaleur ne supprime pas l'énergie initialement consommée. Elle permet d'en **réutiliser une partie** et éventuellement d'éviter une autre production de chaleur.
+
+## Matériel spécialisé et semi-conducteurs
+
+### GPU, accélérateurs, mémoire et serveurs
+
+L'essor de l'IA génère une demande accrue pour :
+
+- GPU et autres accélérateurs ;
+- mémoire à haute bande passante ;
+- équipements réseau rapides ;
+- alimentation électrique ;
+- racks haute densité ;
+- systèmes de refroidissement.
+
+Cette demande matérielle constitue une empreinte indépendante de l'électricité d'inférence.
+
+Un modèle plus efficace peut réduire l'énergie nécessaire par tâche tout en nécessitant du matériel récent dont la fabrication possède elle-même une empreinte. L'évaluation doit donc éviter de regarder uniquement la phase d'usage.
+
+### Matières critiques
+
+L'AIE identifie parmi les matériaux nécessaires à l'expansion des data centers :
+
+- cuivre ;
+- aluminium ;
+- silicium ;
+- gallium ;
+- terres rares ;
+- matériaux de batteries.
+
+Elle estime que la demande de gallium liée aux data centers pourrait, en **2030**, dépasser **10 % de l'offre mondiale actuelle**, alors que la production raffinée est extrêmement concentrée géographiquement [@iea_energy_ai_2025].
+
+Ce chiffre décrit un **risque de chaîne d'approvisionnement**. Il ne signifie pas que 10 % du gallium mondial serait exclusivement consommé par les modèles génératifs eux-mêmes.
+
+### Fabrication et empreinte incorporée
+
+Les étapes de fabrication avancée comprennent notamment :
+
+- purification des matériaux ;
+- production des wafers ;
+- photolithographie ;
+- gravure ;
+- dépôts ;
+- nettoyage ;
+- packaging ;
+- mémoire ;
+- assemblage du serveur.
+
+Elles consomment énergie, eau et produits chimiques.
+
+Les études ACV récentes sur les infrastructures informatiques montrent généralement que l'électricité d'usage reste un poste majeur, mais que le carbone incorporé dans les serveurs et leur renouvellement doit être comptabilisé lorsqu'on veut comparer des architectures ou des cycles de vie [@nature_cool_clouds_lca_2025].
+
+## Durée de vie, renouvellement et obsolescence
+
+Les accélérateurs progressent rapidement. Une nouvelle génération peut offrir davantage de calcul par watt et rendre économiquement intéressant le remplacement de matériel encore fonctionnel.
+
+Deux effets opposés apparaissent :
+
+```text
+nouveau matériel plus efficace
+→ moins d'énergie par unité de calcul
+
+renouvellement plus rapide
+→ davantage de fabrication et de matériel retiré
+```
+
+La meilleure décision environnementale dépend donc :
+
+- du gain réel d'efficacité ;
+- du niveau d'utilisation de l'ancien équipement ;
+- de la durée de vie restante ;
+- du réemploi possible ;
+- de l'intensité carbone du réseau ;
+- de l'empreinte de fabrication.
+
+Il n'existe pas de durée optimale universelle.
+
+## Déchets électroniques et circularité
+
+Le _Global E-waste Monitor 2024_ estime que le monde a produit **62 millions de tonnes de déchets électroniques en 2022**. Seulement **22,3 %** de cette masse a été documentée comme formellement collectée et recyclée de manière appropriée [@unitar__itu_2024].
+
+Ces chiffres concernent **l'ensemble des déchets électroniques**, pas l'IA.
+
+Ils sont néanmoins pertinents pour comprendre la fin de vie de l'infrastructure numérique : accélérateurs, serveurs, stockage, équipements réseau et alimentation finissent par rejoindre une chaîne de réemploi, démontage ou traitement des déchets.
+
+L'empreinte matérielle de l'IA ne doit donc pas être assimilée à la totalité des e-déchets mondiaux ; elle contribue à un flux beaucoup plus large.
+
+## Analyse de cycle de vie : éviter la confusion avec les scopes carbone
+
+### ACV
+
+Une **analyse de cycle de vie** suit les impacts d'un produit ou service à travers plusieurs étapes :
+
+```text
+matières premières
+→ fabrication
+→ transport
+→ installation
+→ usage
+→ maintenance
+→ remplacement
+→ fin de vie
+```
+
+Selon la méthode choisie, elle peut mesurer plusieurs catégories :
+
+- changement climatique ;
+- consommation d'eau ;
+- ressources ;
+- toxicité ;
+- occupation des sols ;
+- déchets.
+
+### Scopes 1, 2 et 3
+
+Les **scopes carbone** répondent à une autre logique : ils répartissent les émissions d'une organisation selon leur relation à celle-ci.
+
+| Catégorie | Exemple dans une infrastructure numérique |
+| --- | --- |
+| Scope 1 | émissions directes d'un groupe électrogène ou autre combustion contrôlée par l'opérateur |
+| Scope 2 | émissions associées à l'électricité achetée |
+| Scope 3 | fabrication du matériel, chaîne d'approvisionnement, transport, services achetés, fin de vie selon le périmètre |
+
+`ACV` et `Scope 1/2/3` ne sont donc pas synonymes.
+
+Une analyse de projet peut utiliser des données de scopes fournisseurs comme **entrée**, mais elle doit définir sa propre frontière d'attribution.
+
+## Stockage, réseau, réplication et sauvegardes
+
+Le calcul IA n'est qu'une partie de l'infrastructure numérique.
+
+Un service peut aussi consommer des ressources pour :
+
+- stockage des modèles ;
+- caches ;
+- logs ;
+- sauvegardes ;
+- réplication ;
+- transferts ;
+- CDN ;
+- observabilité ;
+- environnements temporaires.
+
+La redondance améliore disponibilité et résilience mais n'est pas gratuite. À l'inverse, supprimer toute redondance au nom de la sobriété peut accroître le risque de perte de données.
+
+La question environnementale correcte est donc :
+
+> **quel niveau de réplication et de rétention est réellement nécessaire au niveau de service attendu ?**
+
+Il ne faut pas supposer qu'un service managé duplique systématiquement toutes les données de la même manière. L'architecture réelle du fournisseur doit être connue avant d'attribuer un multiplicateur énergétique.
+
+## Terminaux et réseaux utilisateurs
+
+Une analyse complète d'un service numérique peut également considérer :
+
+- terminal ;
+- écran ;
+- CPU/GPU local ;
+- batterie ;
+- Wi-Fi ou réseau mobile ;
+- transfert de médias ;
+- géolocalisation ;
+- caméra.
+
+Ces postes ne sont pas spécifiques à l'IA. Une carte interactive ou une photo peut produire un coût côté terminal même sans modèle génératif.
+
+Cette distinction est importante pour CleanMyMap : les consommations liées aux cartes, photos, GPS ou navigation web appartiennent au **bilan numérique du projet**, mais pas automatiquement à l'empreinte de l'IA.
+
+Les facteurs génériques du type « un smartphone consomme X watts » ou « 1 Go mobile vaut Y kWh » varient trop selon l'appareil, le réseau et la méthode pour être utilisés comme constantes universelles sans source et périmètre explicites.
+
+## Effet rebond
+
+### Efficacité par tâche et consommation totale
+
+Les progrès matériels et logiciels réduisent rapidement l'énergie nécessaire pour certaines tâches.
+
+Mais :
+
+\[
+\text{impact total}
+=
+\text{impact par tâche}
+\times
+\text{nombre de tâches}
+\]
+
+Une baisse de l'impact unitaire peut donc être compensée par :
+
+- plus d'utilisateurs ;
+- plus de requêtes ;
+- contextes plus longs ;
+- génération multimodale ;
+- agents lançant plusieurs appels ;
+- nouvelles applications devenues économiquement possibles.
+
+La mise à jour 2026 de l'AIE illustre précisément cette tension : l'efficacité énergétique par tâche progresse rapidement tandis que la consommation totale des data centers continue d'augmenter [@iea_key_questions_energy_ai_2026].
+
+### Le rebond n'est pas automatique
+
+Il serait cependant incorrect de supposer qu'un gain d'efficacité est toujours entièrement annulé.
+
+L'ampleur du rebond dépend :
+
+- du prix ;
+- de la demande ;
+- des usages créés ;
+- des limites de capacité ;
+- des politiques ;
+- des comportements.
+
+Le rebond doit être traité comme un **mécanisme possible à mesurer**, pas comme une loi imposant nécessairement une hausse infinie.
+
+## Transparence des fournisseurs et limites des métriques
+
+### PUE, WUE et carbone ne mesurent pas la même chose
+
+| Indicateur | Ce qu'il mesure | Ce qu'il ne mesure pas |
+| --- | --- | --- |
+| PUE | énergie totale / énergie IT | utilité, carbone du mix, fabrication |
+| WUE | eau du site / énergie IT | eau complète du cycle de vie |
+| facteur carbone | émissions par unité d'énergie | matériaux, eau, utilité |
+| ACV | impacts sur un cycle défini | aucune valeur sans frontière et hypothèses explicites |
+| énergie par requête | coût d'un workload mesuré | entraînement, matériel complet, autres workloads |
+
+Une infrastructure peut avoir un excellent PUE mais fonctionner sur une électricité carbonée. Une infrastructure refroidie sans eau sur site peut déplacer une partie de son impact vers une consommation électrique plus élevée. Une requête très efficace peut être répétée des milliards de fois.
+
+Il n'existe donc pas **un indicateur environnemental unique de l'IA**.
+
+### Données fournisseur
+
+Les mesures publiées par un fournisseur sont utiles lorsqu'elles documentent :
+
+- modèle ;
+- hardware ;
+- région ;
+- période ;
+- charge ;
+- frontières du calcul ;
+- méthode d'allocation.
+
+Elles deviennent fragiles lorsqu'elles sont appliquées à un autre modèle ou à un autre fournisseur sans justification.
+
+La transparence doit donc être préférée à une précision artificielle.
+
+## Règles d'attribution à CleanMyMap
+
+La Partie II-A peut utiliser les connaissances de cette fiche, mais selon une hiérarchie stricte.
+
+### 1. Mesure directe
+
+À privilégier lorsque disponible :
+
+```text
+kWh réellement mesurés
+usage fournisseur observé
+durée de calcul observée
+volume de données observé
+région réellement utilisée
+```
+
+Statut : `OBSERVED`.
+
+### 2. Dérivation
+
+Une donnée observée peut être convertie avec un facteur suffisamment documenté :
+
+```text
+usage observé
+×
+facteur documenté
+=
+impact dérivé
+```
+
+Statut : `DERIVED`.
+
+### 3. Proxy
+
+Lorsque le facteur réel n'est pas disponible, une littérature comparable peut fournir un ordre de grandeur.
+
+Il faut alors documenter :
+
+- source ;
+- population ou infrastructure ;
+- différences avec CleanMyMap ;
+- scénario bas/central/haut lorsque nécessaire.
+
+Statut : `PROXY`.
+
+### 4. Donnée indisponible
+
+Si l'allocation n'est pas défendable :
+
+```text
+NA
+```
+
+est préférable à un faux zéro ou à une estimation trop précise.
+
+### Ce qu'il ne faut pas faire
+
+Ne pas :
+
+- attribuer à CleanMyMap une fraction arbitraire des 485 TWh mondiaux ;
+- utiliser un facteur Google Gemini comme facteur OpenAI universel ;
+- considérer toute consommation d'un data center comme de l'IA ;
+- assimiler 62 Mt d'e-déchets mondiaux à l'empreinte matérielle de l'IA ;
+- supposer une réplication ou un PUE sans données ;
+- additionner consommation électrique et ACV lorsqu'elles se chevauchent ;
+- présenter une compensation carbone comme une annulation physique des émissions.
+
+## Repères actuels
+
+| Indicateur | Valeur / constat | Statut |
+| --- | --- | --- |
+| Data centers mondiaux, 2024 | ~415 TWh ; ~1,5 % de l'électricité mondiale | estimation institutionnelle [@iea_energy_ai_2025] |
+| Data centers mondiaux, 2025 | ~485 TWh | estimation institutionnelle [@iea_key_questions_energy_ai_2026] |
+| Croissance 2025 | +17 % pour l'ensemble des data centers | estimation institutionnelle [@iea_key_questions_energy_ai_2026] |
+| Data centers orientés IA, croissance 2025 | ~+50 % | estimation institutionnelle [@iea_key_questions_energy_ai_2026] |
+| Projection data centers, 2030 | ~950 TWh ; ~3 % de l'électricité mondiale | scénario central [@iea_key_questions_energy_ai_2026] |
+| Trajectoire data centers IA, 2025→2030 | environ ×3 | scénario central [@iea_key_questions_energy_ai_2026] |
+| Émissions indirectes électricité data centers, 2024 | ~180 Mt CO₂ ; tous workloads confondus | estimation institutionnelle [@iea_energy_ai_2025] |
+| E-déchets mondiaux, 2022 | 62 Mt | observation statistique globale [@unitar__itu_2024] |
+| E-déchets formellement collectés/recyclés, 2022 | 22,3 % | observation statistique globale [@unitar__itu_2024] |
+| Gallium : demande data centers 2030 | >10 % de l'offre mondiale actuelle selon scénario AIE | projection [@iea_energy_ai_2025] |
+| Énergie/eau d'un prompt | dépend du modèle et de l'infrastructure ; pas de constante universelle | limite méthodologique |
+
+Ces ordres de grandeur servent à contextualiser l'infrastructure. Ils ne remplacent pas le calcul d'attribution de la Partie II-A.
+
+## Synthèse
+
+L'empreinte environnementale de l'IA ne peut pas être réduite au nombre de prompts. Elle résulte d'un système physique associant **électricité, réseaux, refroidissement, eau, semi-conducteurs, serveurs, matériaux et renouvellement du matériel**.
+
+Les données disponibles montrent une accélération nette : la consommation mondiale des data centers est estimée à environ **485 TWh en 2025** et l'AIE projette environ **950 TWh en 2030**, tandis que les infrastructures orientées IA croissent encore plus rapidement [@iea_key_questions_energy_ai_2026].
+
+Cette hausse s'accompagne de progrès rapides d'efficacité. L'enjeu n'est donc pas de présenter l'IA comme intrinsèquement « sobre » ou « insoutenable », mais d'observer simultanément :
+
+```text
+efficacité unitaire
++
+volume total d'usage
++
+mix énergétique
++
+localisation
++
+eau
++
+matériel
++
+durée de vie
++
+utilité
+```
+
+Pour CleanMyMap, cette partie n'est pas un calcul d'empreinte. Elle fournit le **cadre physique** nécessaire à l'interprétation de la Partie II-A. Toute valeur propre au projet doit y rester classée `OBSERVED`, `DERIVED`, `PROXY` ou `NA`, sans transformer une statistique mondiale ou une mesure fournisseur en facteur universel.
