@@ -1,4 +1,3 @@
-import React from "react";
 import type { ExportHistoryEntry } from "./use-pdf-export";
 
 export function PdfExportHistory({ history }: { history: ExportHistoryEntry[] }) {

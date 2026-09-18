@@ -1,5 +1,3 @@
-import React from "react";
-
 // Échelle Mohs héritée : 10 minéraux = 10 grades
 const MOHS_GRADES = [
   { grade: 1, name: "Talc",      emoji: "🪨" },

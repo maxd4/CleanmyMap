@@ -1,4 +1,3 @@
-import React from "react";
 import { WEEKDAY_OPTIONS, type PartnerAvailabilitySlot } from "@/lib/partners/onboarding-types";
 
 export function AvailabilitySection({

@@ -1,4 +1,3 @@
-import React from "react";
 import { BadgeShowcase } from "@/components/gamification/badge-showcase";
 import { IdentityBadge } from "@/components/ui/identity-badge";
 import { getGamificationBadgeIconName } from "@/components/gamification/badge-icon";

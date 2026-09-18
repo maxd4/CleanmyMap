@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { FileText } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { type PdfReportData, type PdfReportPayload } from "@/lib/pdf-export/simple-pdf";

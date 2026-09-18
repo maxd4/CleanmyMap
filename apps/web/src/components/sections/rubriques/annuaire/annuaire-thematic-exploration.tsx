@@ -1,4 +1,3 @@
-import React from "react";
 import { Leaf, Heart, Users, Trash2, Wind, Info } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
