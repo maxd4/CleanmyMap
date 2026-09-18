@@ -8,16 +8,13 @@ import { pathToFileURL } from "node:url";
 import {
   baselineKey,
   classifyComplexityCategory,
-  classifyFileKind,
   compareLegacyValue,
   COMPLEXITY_THRESHOLDS,
+  createFunctionIdentityResolver,
   evaluateNewMetric,
-  evaluateNewFileLength,
-  FILE_LENGTH_THRESHOLDS,
   FUNCTION_LENGTH_THRESHOLDS,
   validateBaselineShape,
 } from "./complexity-policy.mjs";
-import { measureContent } from "./top-heavy-measurement.mjs";
 
 const repositoryRoot = process.cwd();
 const webRoot = path.join(repositoryRoot, "apps", "web");
@@ -46,18 +43,6 @@ function assertBaselineFresh(baseline) {
   } catch {
     throw new Error(`complexity baseline stale: ${baseline.sourceCommit} is not an ancestor of ${head}.`);
   }
-}
-
-function walkSourceFiles(directory, result = []) {
-  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-    const absolute = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      if (!new Set([".next", "generated", "vendor", "node_modules"]).has(entry.name)) walkSourceFiles(absolute, result);
-      continue;
-    }
-    if (/\.(ts|tsx)$/.test(entry.name)) result.push(absolute);
-  }
-  return result;
 }
 
 function sourcePath(absolute) {
@@ -104,41 +89,34 @@ function parseFunctionMessages(results) {
   const metrics = [];
   for (const result of results) {
     const file = sourcePath(result.filePath);
+    const source = fs.readFileSync(result.filePath, "utf8");
+    const resolveFunctionIdentity = createFunctionIdentityResolver(file, source);
     for (const message of result.messages) {
       const complexity = message.ruleId === "complexity" && message.message.match(/complexity of (\d+)/i);
       const functionLength = message.ruleId === "max-lines-per-function" && message.message.match(/too many lines \((\d+)\)/i);
       if (!complexity && !functionLength) continue;
       const metric = complexity ? "complexity" : "functionLength";
+      const functionIdentity = resolveFunctionIdentity(message.line, message.message);
       metrics.push({
         metric,
         path: file,
+        functionIdentity,
         line: message.line,
         endLine: message.endLine ?? message.line,
         value: Number((complexity ?? functionLength)[1]),
         category: classifyComplexityCategory(file),
-        key: baselineKey(metric, file, message.line),
+        key: baselineKey(metric, file, functionIdentity),
       });
     }
   }
   return metrics;
 }
 
-function measureFiles() {
-  return walkSourceFiles(path.join(webRoot, "src"))
-    .map((absolute) => {
-      const file = `apps/web/${sourcePath(absolute)}`;
-      const kind = classifyFileKind(sourcePath(absolute));
-      const measured = measureContent(fs.readFileSync(absolute));
-      return { path: file, kind, lines: measured.lines, bytes: measured.bytes };
-    })
-    .filter((row) => row.kind !== "generated");
-}
-
 function baselineEntriesByKey(baseline) {
-  return new Map(baseline.entries.map((entry) => [baselineKey(entry.metric, entry.path, entry.line ?? null), entry]));
+  return new Map(baseline.entries.map((entry) => [baselineKey(entry.metric, entry.path, entry.functionIdentity), entry]));
 }
 
-function evaluateMetrics({ metrics, files, baseline, changedRanges }) {
+function evaluateMetrics({ metrics, baseline, changedRanges }) {
   const baselineByKey = baselineEntriesByKey(baseline);
   const currentByKey = new Map();
   const failures = [];
@@ -164,38 +142,9 @@ function evaluateMetrics({ metrics, files, baseline, changedRanges }) {
     if (result.status === "REVIEW") reviews.push({ ...metric, reason: "above target but below blocking threshold" });
   }
 
-  for (const row of files) {
-    const entry = baselineByKey.get(baselineKey("fileLength", row.path));
-    const changed = (changedRanges.get(row.path.replace(/^apps\/web\//, "")) ?? []).length > 0;
-    const threshold = FILE_LENGTH_THRESHOLDS[row.kind];
-    if (!threshold || threshold.excluded) continue;
-    if (row.kind === "data/config") {
-      const fileResult = evaluateNewFileLength(row.kind, row.lines);
-      if (fileResult.status === "REVIEW") reviews.push({ ...row, metric: "fileLength", reason: "data/config review signal" });
-      continue;
-    }
-    if (entry && !changed) {
-      const result = compareLegacyValue(row.lines, entry.ceiling);
-      if (result.status === "FAIL") failures.push({ ...row, metric: "fileLength", reason: result.reason, ceiling: entry.ceiling });
-      if (result.status === "IMPROVEMENT") improvements.push({ ...row, metric: "fileLength", ceiling: entry.ceiling });
-      continue;
-    }
-    if (entry && changed && row.lines > entry.ceiling) {
-      failures.push({ ...row, metric: "fileLength", reason: "legacy file ceiling increased", ceiling: entry.ceiling });
-      continue;
-    }
-    if (!entry && row.lines > threshold.reviewAbove && !changed) {
-      failures.push({ ...row, metric: "fileLength", reason: "baseline missing for an existing historical file review" });
-      continue;
-    }
-    const fileResult = evaluateNewFileLength(row.kind, row.lines);
-    if (fileResult.status === "FAIL") failures.push({ ...row, metric: "fileLength", reason: "new file exceeds blocking threshold", limit: fileResult.limit });
-    else if (fileResult.status === "REVIEW") reviews.push({ ...row, metric: "fileLength", reason: "file review signal" });
-  }
-
   const stale = [];
   for (const entry of baseline.entries) {
-    const current = entry.metric === "fileLength" ? files.find((row) => row.path === entry.path)?.lines : currentByKey.get(baselineKey(entry.metric, entry.path, entry.line ?? null));
+    const current = currentByKey.get(baselineKey(entry.metric, entry.path, entry.functionIdentity));
     if (current === undefined) stale.push(entry);
   }
   return { failures, reviews, improvements, stale };
@@ -246,14 +195,13 @@ async function main() {
     : ["src/**/*.{ts,tsx}"];
   const lintResults = await eslint.lintFiles(lintTargets);
   const metrics = parseFunctionMessages(lintResults);
-  const files = measureFiles();
-  const result = evaluateMetrics({ metrics, files, baseline, changedRanges });
+  const result = evaluateMetrics({ metrics, baseline, changedRanges });
 
-  console.log(`Complexity policy: ${metrics.length} function metrics, ${files.length} files measured.`);
+  console.log(`Complexity policy: ${metrics.length} function metrics measured.`);
   if (result.reviews.length > 0) console.log(`REVIEW_REQUIRED: ${result.reviews.length} review signals.`);
   if (result.improvements.length > 0) console.log(`IMPROVEMENT_AVAILABLE: ${result.improvements.length} lower measurements; update the baseline explicitly to acquire them.`);
   if (result.stale.length > 0) {
-    console.error(`BASELINE_STALE: ${result.stale.length} entries no longer match measured functions/files.`);
+    console.error(`BASELINE_STALE: ${result.stale.length} entries no longer match measured functions.`);
     for (const entry of result.stale.slice(0, 20)) console.error(` - ${entry.metric}:${entry.path}:${entry.line ?? ""}`);
   }
   if (result.failures.length > 0) {

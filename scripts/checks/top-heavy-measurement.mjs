@@ -34,7 +34,7 @@ export function classifyFileKind(file) {
   if (/(?:^|\/)(?:generated|__generated__)(?:\/|$)|(?:^|\/)next-env\.d\.ts$|\.generated\./i.test(normalized)) {
     return "generated";
   }
-  if (/(?:^|\/)(?:__tests__|tests?)(?:\/|$)|\.(?:test|spec)\.(?:ts|tsx)$/i.test(normalized)) {
+  if (/(?:^|\/)(?:__tests__|tests?)(?:\/|$)|\.(?:test|spec)(?:\.[^.]+)*\.(?:ts|tsx)$/i.test(normalized)) {
     return "test";
   }
   if (

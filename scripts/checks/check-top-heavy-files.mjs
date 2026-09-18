@@ -146,7 +146,7 @@ function main() {
   if (ratchetViolations.length > 0) {
     console.log(`Dépassements des plafonds ratifiés (${ratchetViolations.length}):`);
     for (const row of ratchetViolations) {
-      const exception = baseline.get(row.file);
+      const exception = allowedBaseline.get(row.file);
       console.log(` - ${row.file} (${row.lines} lignes/${row.bytes} octets; plafond ${exception.maxLines} lignes/${exception.maxBytes} octets)`);
     }
   }

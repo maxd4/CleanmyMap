@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
+import ts from "typescript";
 
-export const COMPLEXITY_POLICY_VERSION = 1;
+export const COMPLEXITY_POLICY_VERSION = 2;
 
 export const COMPLEXITY_THRESHOLDS = Object.freeze({
   "métier/domain pur": Object.freeze({ target: 15, blockAbove: 20 }),
@@ -19,21 +20,9 @@ export const FUNCTION_LENGTH_THRESHOLDS = Object.freeze({
   "routes API": Object.freeze({ target: 100, blockAbove: 150 }),
 });
 
-export const FILE_LENGTH_THRESHOLDS = Object.freeze({
-  runtime: Object.freeze({ reviewAbove: 400, blockNewAbove: 600 }),
-  test: Object.freeze({ reviewAbove: 700, blockNewAbove: 1000 }),
-  "data/config": Object.freeze({ reviewAbove: 400, signalOnly: true }),
-  generated: Object.freeze({ excluded: true }),
-  vendor: Object.freeze({ excluded: true }),
-});
-
-// These are the four measured ESLint exceptions audited in lot 6A. Keeping
-// their ceilings here lets the editor configuration and the ratchet consume
-// one source of truth; the versioned baseline still records the per-function
-// locations that must not grow.
+// These are the two non-file ESLint exception ceilings audited in lot 6A.
+// File-size ceilings remain owned exclusively by top-heavy.
 export const LEGACY_EXCEPTION_CEILINGS = Object.freeze({
-  apiAuthorizationContractLines: 911,
-  routeCalibrationLines: 928,
   actionUpdatePersistenceComplexity: 122,
   routeCalibrationTestFunctionLines: 570,
 });
@@ -43,12 +32,93 @@ export const COMPLEXITY_POLICY_FINGERPRINT = createHash("sha256")
     version: COMPLEXITY_POLICY_VERSION,
     complexity: COMPLEXITY_THRESHOLDS,
     functionLength: FUNCTION_LENGTH_THRESHOLDS,
-    fileLength: FILE_LENGTH_THRESHOLDS,
   }))
   .digest("hex");
 
-export function baselineKey(metric, path, line = null) {
-  return line === null ? `${metric}:${path}` : `${metric}:${path}:${line}`;
+export const FUNCTION_IDENTITY_SCHEME =
+  "v1: path + semantic role + deterministic occurrence; line is diagnostic metadata only.";
+
+function isFunctionLike(node) {
+  return ts.isFunctionDeclaration(node)
+    || ts.isFunctionExpression(node)
+    || ts.isArrowFunction(node)
+    || ts.isMethodDeclaration(node)
+    || ts.isConstructorDeclaration(node)
+    || ts.isGetAccessorDeclaration(node)
+    || ts.isSetAccessorDeclaration(node);
+}
+
+function nodeName(node, sourceFile) {
+  if (ts.isConstructorDeclaration(node)) return "constructor";
+  if ("name" in node && node.name) return node.name.getText(sourceFile);
+  if (ts.isArrowFunction(node) || ts.isFunctionExpression(node)) {
+    const parent = node.parent;
+    if (parent && ts.isVariableDeclaration(parent)) return parent.name.getText(sourceFile);
+    if (parent && ts.isPropertyAssignment(parent)) return parent.name.getText(sourceFile);
+  }
+  return null;
+}
+
+function callRole(node, sourceFile) {
+  const parent = node.parent;
+  if (!parent || !ts.isCallExpression(parent)) return null;
+  const argumentIndex = parent.arguments.indexOf(node);
+  const callee = parent.expression.getText(sourceFile);
+  const title = parent.arguments[0] && ts.isStringLiteralLike(parent.arguments[0])
+    ? parent.arguments[0].getText(sourceFile)
+    : "";
+  return `callback:${callee}:${argumentIndex}:${title}`;
+}
+
+function functionRole(node, sourceFile) {
+  const name = nodeName(node, sourceFile);
+  if (name) return `${ts.isConstructorDeclaration(node) ? "constructor" : "named"}:${name}`;
+  return callRole(node, sourceFile) ?? `anonymous:${node.kind}`;
+}
+
+function collectFunctionNodes(sourceFile) {
+  const nodes = [];
+  const visit = (node) => {
+    if (isFunctionLike(node)) nodes.push(node);
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return nodes;
+}
+
+export function createFunctionIdentityResolver(file, source) {
+  const scriptKind = file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+  const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, scriptKind);
+  const nodes = collectFunctionNodes(sourceFile);
+  const identityByNode = new Map();
+  const occurrenceByRole = new Map();
+  const nodesByLine = new Map();
+  for (const node of nodes) {
+    const role = functionRole(node, sourceFile);
+    const occurrence = (occurrenceByRole.get(role) ?? 0) + 1;
+    occurrenceByRole.set(role, occurrence);
+    identityByNode.set(node, `${role}#${occurrence}`);
+    const line = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+    if (!nodesByLine.has(line)) nodesByLine.set(line, []);
+    nodesByLine.get(line).push(node);
+  }
+
+  return (line, message = "") => {
+    const candidates = nodesByLine.get(line) ?? [];
+    const namedMessage = message.match(/(?:function|method) '([^']+)'/i)?.[1];
+    const node = (namedMessage
+      ? candidates.find((candidate) => nodeName(candidate, sourceFile) === namedMessage)
+      : candidates[0]) ?? candidates[0];
+    return node ? identityByNode.get(node) : `unresolved:${message || "function"}`;
+  };
+}
+
+export function deriveFunctionIdentity(file, source, line, message = "") {
+  return createFunctionIdentityResolver(file, source)(line, message);
+}
+
+export function baselineKey(metric, path, functionIdentity) {
+  return `${metric}:${path}:${functionIdentity}`;
 }
 
 export function evaluateNewMetric(metric, category, value, { parserJustified = false } = {}) {
@@ -80,25 +150,18 @@ export function acquireImprovement(entry, current) {
   return { ...entry, ceiling: current, status: "IMPROVED" };
 }
 
-export function evaluateNewFileLength(kind, lines) {
-  const thresholds = FILE_LENGTH_THRESHOLDS[kind];
-  if (!thresholds || thresholds.excluded) return { status: "NOT_APPLICABLE", kind, lines };
-  if (kind === "data/config") return { status: lines > thresholds.reviewAbove ? "REVIEW" : "PASS", kind, lines, limit: thresholds.reviewAbove };
-  if (lines > thresholds.blockNewAbove) return { status: "FAIL", kind, lines, limit: thresholds.blockNewAbove };
-  return { status: lines > thresholds.reviewAbove ? "REVIEW" : "PASS", kind, lines, limit: thresholds.blockNewAbove };
-}
-
 export function validateBaselineShape(baseline) {
-  if (!baseline || baseline.schemaVersion !== 1) throw new Error("complexity baseline malformed: schemaVersion 1 required.");
+  if (!baseline || baseline.schemaVersion !== 2) throw new Error("complexity baseline malformed: schemaVersion 2 required.");
   if (typeof baseline.sourceCommit !== "string" || !/^[0-9a-f]{40}$/i.test(baseline.sourceCommit)) throw new Error("complexity baseline malformed: full sourceCommit required.");
   if (baseline.policyFingerprint !== COMPLEXITY_POLICY_FINGERPRINT) throw new Error("complexity baseline stale: policy fingerprint mismatch.");
   if (!Array.isArray(baseline.entries)) throw new Error("complexity baseline malformed: entries[] required.");
 
   const keys = new Set();
   for (const [index, entry] of baseline.entries.entries()) {
-    if (!entry || typeof entry !== "object" || typeof entry.metric !== "string" || typeof entry.path !== "string") throw new Error(`complexity baseline malformed: entry ${index} is incomplete.`);
+    if (!entry || typeof entry !== "object" || typeof entry.metric !== "string" || typeof entry.path !== "string" || typeof entry.functionIdentity !== "string") throw new Error(`complexity baseline malformed: entry ${index} is incomplete.`);
+    if (!["complexity", "functionLength"].includes(entry.metric)) throw new Error(`complexity baseline malformed: entry ${index} has an unsupported metric.`);
     if (!Number.isInteger(entry.ceiling) || entry.ceiling < 0) throw new Error(`complexity baseline malformed: entry ${index} has an invalid ceiling.`);
-    const key = baselineKey(entry.metric, entry.path, entry.line ?? null);
+    const key = baselineKey(entry.metric, entry.path, entry.functionIdentity);
     if (keys.has(key)) throw new Error(`complexity baseline malformed: duplicate ${key}.`);
     keys.add(key);
   }
@@ -111,7 +174,6 @@ export function policySnapshot() {
     fingerprint: COMPLEXITY_POLICY_FINGERPRINT,
     complexity: COMPLEXITY_THRESHOLDS,
     functionLength: FUNCTION_LENGTH_THRESHOLDS,
-    fileLength: FILE_LENGTH_THRESHOLDS,
   };
 }
 
@@ -119,7 +181,7 @@ export function classifyFileKind(file) {
   const normalized = file.replaceAll("\\", "/");
   const base = normalized.slice(normalized.lastIndexOf("/") + 1);
   if (/(^|\/)(generated|__generated__)(\/|$)|(^|\/)next-env\.d\.ts$|\.generated\./i.test(normalized)) return "generated";
-  if (/(^|\/)(__tests__|tests?)(\/|$)|\.(test|spec)\.(ts|tsx)$/i.test(normalized)) return "test";
+  if (/(^|\/)(__tests__|tests?)(\/|$)|\.(?:test|spec)(?:\.[^.]+)*\.(?:ts|tsx)$/i.test(normalized)) return "test";
   if (/(^|\/)(data|config|constants|types)(\/|$)|(^|[-_.])(data|config|constants|types)([-_.]|$)/i.test(base) || /(^|\/)(data|config|constants|types)(\/|$)/i.test(normalized)) return "data/config";
   return "runtime";
 }
