@@ -1,7 +1,8 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "3bad4d30ffd07751644724fb06276d6e9accb4d7",
+  "sourceCommit": "4410cda3e9e717cf52328d25ae04350b072657e6",
   "policyFingerprint": "1457b502ac06ff596956b4cb3db1da7a3ae6a7c6134e83b07dae34c310aaaceb",
+  "functionIdentitySchemeVersion": 2,
   "entries": [
     {
       "metric": "complexity",
@@ -370,7 +371,7 @@
       "category": "hooks",
       "ceiling": 49,
       "status": "LEGACY",
-      "functionIdentity": "callback:fetchActionById(initialActionId)\n      .then:0:#1"
+      "functionIdentity": "callback:fetchActionById ( initialActionId ) . then:0:#1"
     },
     {
       "metric": "complexity",
@@ -451,7 +452,7 @@
       "category": "React/JSX",
       "ceiling": 26,
       "status": "LEGACY",
-      "functionIdentity": "callback:qualification.formalities.map:0:#1"
+      "functionIdentity": "callback:qualification . formalities . map:0:#1"
     },
     {
       "metric": "complexity",
@@ -577,7 +578,7 @@
       "category": "React/JSX",
       "ceiling": 47,
       "status": "LEGACY",
-      "functionIdentity": "callback:items.map:0:#1"
+      "functionIdentity": "callback:items . map:0:#1"
     },
     {
       "metric": "complexity",
@@ -604,7 +605,7 @@
       "category": "React/JSX",
       "ceiling": 87,
       "status": "LEGACY",
-      "functionIdentity": "callback:items.map:0:#1"
+      "functionIdentity": "callback:items . map:0:#1"
     },
     {
       "metric": "complexity",
@@ -658,7 +659,7 @@
       "category": "React/JSX",
       "ceiling": 26,
       "status": "LEGACY",
-      "functionIdentity": "callback:filteredItems.map:0:#1"
+      "functionIdentity": "callback:filteredItems . map:0:#1"
     },
     {
       "metric": "complexity",
@@ -694,7 +695,7 @@
       "category": "React/JSX",
       "ceiling": 31,
       "status": "LEGACY",
-      "functionIdentity": "callback:filteredItems.map:0:#1"
+      "functionIdentity": "callback:filteredItems . map:0:#1"
     },
     {
       "metric": "complexity",
@@ -1162,7 +1163,7 @@
       "category": "React/JSX",
       "ceiling": 43,
       "status": "LEGACY",
-      "functionIdentity": "callback:DISPLAY_ORDER.map:0:#1"
+      "functionIdentity": "callback:DISPLAY_ORDER . map:0:#1"
     },
     {
       "metric": "complexity",
@@ -1342,7 +1343,7 @@
       "category": "React/JSX",
       "ceiling": 21,
       "status": "LEGACY",
-      "functionIdentity": "callback:items.map:0:#1"
+      "functionIdentity": "callback:items . map:0:#1"
     },
     {
       "metric": "complexity",
@@ -1351,7 +1352,7 @@
       "category": "React/JSX",
       "ceiling": 42,
       "status": "LEGACY",
-      "functionIdentity": "callback:items.map:0:#1"
+      "functionIdentity": "callback:items . map:0:#1"
     },
     {
       "metric": "complexity",
@@ -1999,7 +2000,7 @@
       "category": "métier/domain pur",
       "ceiling": 17,
       "status": "LEGACY",
-      "functionIdentity": "callback:input.zones\r\n    .map:0:#1"
+      "functionIdentity": "callback:input . zones . map:0:#5"
     },
     {
       "metric": "complexity",
@@ -2071,7 +2072,7 @@
       "category": "métier/domain pur",
       "ceiling": 19,
       "status": "LEGACY",
-      "functionIdentity": "callback:questions\n    .map:0:#1"
+      "functionIdentity": "callback:questions . map:0:#1"
     },
     {
       "metric": "complexity",
@@ -2197,7 +2198,7 @@
       "category": "métier/domain pur",
       "ceiling": 16,
       "status": "LEGACY",
-      "functionIdentity": "callback:payload.data.chapters.forEach:0:#1"
+      "functionIdentity": "callback:payload . data . chapters . forEach:0:#1"
     },
     {
       "metric": "complexity",
@@ -2251,7 +2252,7 @@
       "category": "métier/domain pur",
       "ceiling": 29,
       "status": "LEGACY",
-      "functionIdentity": "callback:[...allAreas]\n    .map:0:#1"
+      "functionIdentity": "callback:[ ... allAreas ] . map:0:#1"
     },
     {
       "metric": "complexity",
@@ -2449,7 +2450,7 @@
       "category": "runtime/services/orchestration",
       "ceiling": 27,
       "status": "LEGACY",
-      "functionIdentity": "callback:listStorageBusinessDomains()\n    .map:0:#1"
+      "functionIdentity": "callback:listStorageBusinessDomains ( ) . map:0:#1"
     },
     {
       "metric": "complexity",
@@ -2608,7 +2609,7 @@
       "metric": "functionLength",
       "path": "src/app/api/actions/[actionId]/group-join/route.test.helpers.ts",
       "line": 314,
-      "category": "routes API",
+      "category": "tests",
       "ceiling": 256,
       "status": "LEGACY",
       "functionIdentity": "named:createParticipantsChain#1"
@@ -2617,7 +2618,7 @@
       "metric": "functionLength",
       "path": "src/app/api/actions/[actionId]/group-join/route.test.helpers.ts",
       "line": 580,
-      "category": "routes API",
+      "category": "tests",
       "ceiling": 101,
       "status": "LEGACY",
       "functionIdentity": "named:createProfilesChain#1"
@@ -2644,7 +2645,7 @@
       "metric": "functionLength",
       "path": "src/app/api/actions/group-join/route.test.helpers.ts",
       "line": 109,
-      "category": "routes API",
+      "category": "tests",
       "ceiling": 104,
       "status": "LEGACY",
       "functionIdentity": "named:createActionsChain#1"
@@ -2653,7 +2654,7 @@
       "metric": "functionLength",
       "path": "src/app/api/actions/group-join/route.test.helpers.ts",
       "line": 215,
-      "category": "routes API",
+      "category": "tests",
       "ceiling": 187,
       "status": "LEGACY",
       "functionIdentity": "named:createParticipantsChain#1"
@@ -2734,7 +2735,7 @@
       "metric": "functionLength",
       "path": "src/app/api/admin/moderation/route.test.action-form-scenario.ts",
       "line": 5,
-      "category": "routes API",
+      "category": "tests",
       "ceiling": 178,
       "status": "LEGACY",
       "functionIdentity": "named:registerActionFormScenario#1"
@@ -2743,7 +2744,7 @@
       "metric": "functionLength",
       "path": "src/app/api/admin/moderation/route.test.action-form-scenario.ts",
       "line": 19,
-      "category": "routes API",
+      "category": "tests",
       "ceiling": 164,
       "status": "LEGACY",
       "functionIdentity": "callback:it:1:\"updates action form fields and status in one admin operation\"#1"
@@ -2752,7 +2753,7 @@
       "metric": "functionLength",
       "path": "src/app/api/admin/moderation/route.test.action-lifecycle-scenarios.ts",
       "line": 6,
-      "category": "routes API",
+      "category": "tests",
       "ceiling": 175,
       "status": "LEGACY",
       "functionIdentity": "named:registerActionLifecycleScenarios#1"
@@ -2761,7 +2762,7 @@
       "metric": "functionLength",
       "path": "src/app/api/admin/moderation/route.test.action-visibility-scenarios.ts",
       "line": 6,
-      "category": "routes API",
+      "category": "tests",
       "ceiling": 388,
       "status": "LEGACY",
       "functionIdentity": "named:registerActionVisibilityScenarios#1"
@@ -2770,7 +2771,7 @@
       "metric": "functionLength",
       "path": "src/app/api/admin/moderation/route.test.action-visibility-scenarios.ts",
       "line": 18,
-      "category": "routes API",
+      "category": "tests",
       "ceiling": 115,
       "status": "LEGACY",
       "functionIdentity": "callback:it:1:\"hides an action through moderation visibility with reason and audit\"#1"
@@ -2779,7 +2780,7 @@
       "metric": "functionLength",
       "path": "src/app/api/admin/moderation/route.test.action-visibility-scenarios.ts",
       "line": 206,
-      "category": "routes API",
+      "category": "tests",
       "ceiling": 121,
       "status": "LEGACY",
       "functionIdentity": "callback:it:1:\"restores moderation visibility without bypassing the action status\"#1"
@@ -2788,7 +2789,7 @@
       "metric": "functionLength",
       "path": "src/app/api/admin/moderation/route.test.clean-place-scenarios.ts",
       "line": 5,
-      "category": "routes API",
+      "category": "tests",
       "ceiling": 235,
       "status": "LEGACY",
       "functionIdentity": "named:registerCleanPlaceScenarios#1"
@@ -2851,7 +2852,7 @@
       "metric": "functionLength",
       "path": "src/app/api/chat/route.test.helpers.ts",
       "line": 40,
-      "category": "routes API",
+      "category": "tests",
       "ceiling": 195,
       "status": "LEGACY",
       "functionIdentity": "named:buildSupabaseMock#1"
@@ -2995,7 +2996,7 @@
       "metric": "functionLength",
       "path": "src/app/api/route/recommend/route.test.harness.ts",
       "line": 196,
-      "category": "routes API",
+      "category": "tests",
       "ceiling": 124,
       "status": "LEGACY",
       "functionIdentity": "named:resetRouteRecommendMocks#1"
@@ -3268,7 +3269,7 @@
       "category": "hooks",
       "ceiling": 136,
       "status": "LEGACY",
-      "functionIdentity": "callback:fetchActionById(initialActionId)\n      .then:0:#1"
+      "functionIdentity": "callback:fetchActionById ( initialActionId ) . then:0:#1"
     },
     {
       "metric": "functionLength",
@@ -3502,7 +3503,7 @@
       "category": "React/JSX",
       "ceiling": 461,
       "status": "LEGACY",
-      "functionIdentity": "callback:items.map:0:#1"
+      "functionIdentity": "callback:items . map:0:#1"
     },
     {
       "metric": "functionLength",
@@ -3565,7 +3566,7 @@
       "category": "React/JSX",
       "ceiling": 155,
       "status": "LEGACY",
-      "functionIdentity": "callback:serviceRiskRows.map:0:#1"
+      "functionIdentity": "callback:serviceRiskRows . map:0:#1"
     },
     {
       "metric": "functionLength",
@@ -3601,7 +3602,7 @@
       "category": "React/JSX",
       "ceiling": 158,
       "status": "LEGACY",
-      "functionIdentity": "callback:cards.map:0:#1"
+      "functionIdentity": "callback:cards . map:0:#1"
     },
     {
       "metric": "functionLength",
@@ -3835,7 +3836,7 @@
       "category": "React/JSX",
       "ceiling": 179,
       "status": "LEGACY",
-      "functionIdentity": "callback:report.items.map:0:#1"
+      "functionIdentity": "callback:report . items . map:0:#1"
     },
     {
       "metric": "functionLength",
@@ -5491,7 +5492,7 @@
       "category": "métier/domain pur",
       "ceiling": 65,
       "status": "LEGACY",
-      "functionIdentity": "callback:input.zones\r\n    .map:0:#1"
+      "functionIdentity": "callback:input . zones . map:0:#5"
     },
     {
       "metric": "functionLength",
@@ -5590,7 +5591,7 @@
       "category": "métier/domain pur",
       "ceiling": 93,
       "status": "LEGACY",
-      "functionIdentity": "callback:questions\n    .map:0:#1"
+      "functionIdentity": "callback:questions . map:0:#1"
     },
     {
       "metric": "functionLength",
@@ -5806,7 +5807,7 @@
       "category": "métier/domain pur",
       "ceiling": 118,
       "status": "LEGACY",
-      "functionIdentity": "callback:[...allAreas]\n    .map:0:#1"
+      "functionIdentity": "callback:[ ... allAreas ] . map:0:#1"
     },
     {
       "metric": "functionLength",

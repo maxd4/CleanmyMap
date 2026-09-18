@@ -11,6 +11,7 @@ import {
   deriveFunctionIdentity,
   evaluateNewMetric,
   FUNCTION_IDENTITY_SCHEME,
+  FUNCTION_IDENTITY_SCHEME_VERSION,
   LEGACY_EXCEPTION_CEILINGS,
   validateBaselineShape,
 } from "./complexity-policy.mjs";
@@ -100,7 +101,57 @@ test("LINE_SHIFT_TEST: function identity is stable when lines are inserted befor
   assert.match(FUNCTION_IDENTITY_SCHEME, /line is diagnostic metadata only/);
 });
 
+test("LF_CRLF_IDENTITY_TEST: input.zones.map callback identity is cross-platform stable", () => {
+  const lf = [
+    "const result = input.zones",
+    "  .map((zone) => zone.id);",
+  ].join("\n");
+  const crlf = lf.replaceAll("\n", "\r\n");
+  assert.equal(
+    deriveFunctionIdentity("fixture.ts", lf, 2),
+    deriveFunctionIdentity("fixture.ts", crlf, 2),
+  );
+});
+
+test("WHITESPACE_IDENTITY_TEST: syntax-only whitespace does not change a multiline callee identity", () => {
+  const compact = [
+    "const result = input.zones",
+    "  .map((zone) => zone.id);",
+  ].join("\n");
+  const spaced = [
+    "const result = input.zones",
+    "          . map ( (zone) => zone.id );",
+  ].join("\n");
+  assert.equal(
+    deriveFunctionIdentity("fixture.ts", compact, 2),
+    deriveFunctionIdentity("fixture.ts", spaced, 2),
+  );
+});
+
+test("DISTINCT_CALLBACK_TEST: distinct callbacks in the same call context remain distinct", () => {
+  const source = [
+    "const result = input.zones.map(",
+    "  (zone) => zone.id,",
+    "  (zone) => zone.label,",
+    ");",
+  ].join("\n");
+  const first = deriveFunctionIdentity("fixture.ts", source, 2);
+  const second = deriveFunctionIdentity("fixture.ts", source, 3);
+  assert.notEqual(first, second);
+  assert.match(first, /:0:#1$/);
+  assert.match(second, /:1:#1$/);
+});
+
+test("BASELINE_CURRENT_MAIN_TEST: baseline declares the current identity scheme and all measured entries", () => {
+  const baseline = JSON.parse(fs.readFileSync("scripts/checks/complexity-baseline.json", "utf8"));
+  assert.equal(FUNCTION_IDENTITY_SCHEME_VERSION, 2);
+  assert.equal(baseline.functionIdentitySchemeVersion, FUNCTION_IDENTITY_SCHEME_VERSION);
+  assert.equal(baseline.entries.length, 671);
+  assert.doesNotThrow(() => validateBaselineShape(baseline));
+});
+
 test("malformed or stale baseline is rejected", () => {
   assert.throws(() => validateBaselineShape({ schemaVersion: 2, sourceCommit: "not-a-sha", entries: [] }), /sourceCommit/);
-  assert.throws(() => validateBaselineShape({ schemaVersion: 2, sourceCommit: "a".repeat(40), policyFingerprint: "wrong", entries: [] }), /fingerprint/);
+  assert.throws(() => validateBaselineShape({ schemaVersion: 2, sourceCommit: "a".repeat(40), functionIdentitySchemeVersion: 1, policyFingerprint: "wrong", entries: [] }), /identity scheme/);
+  assert.throws(() => validateBaselineShape({ schemaVersion: 2, sourceCommit: "a".repeat(40), functionIdentitySchemeVersion: 2, policyFingerprint: "wrong", entries: [] }), /fingerprint/);
 });

@@ -257,13 +257,15 @@ complexité ou de longueur utilisent un plafond individuel : une croissance
 échoue, une baisse est signalée comme amélioration à ratifier explicitement, et
 une baseline absente, malformée ou obsolète échoue.
 
-L'identité fonctionnelle ratchetée suit exactement
+L'identité fonctionnelle ratchetée suit exactement la version `v2` de
 `FUNCTION_IDENTITY_SCHEME` (`scripts/checks/complexity-policy.mjs`) : chemin
 relatif à `apps/web/src`, rôle sémantique (`named`, `constructor`, variable ou
 propriété, callback avec callee/index/titre), puis occurrence déterministe du
-même rôle dans le fichier. Le numéro de ligne reste une information de
-diagnostic uniquement ; déplacer une fonction sans modifier son contenu ne
-change donc pas son identité ni son plafond.
+même rôle dans le fichier. Les fragments syntaxiques sont représentés par des
+tokens AST canoniques, sans trivia ni fin de ligne, tandis que les littéraux
+restent discriminants. Le numéro de ligne reste une information de diagnostic
+uniquement ; déplacer une fonction sans modifier son contenu ne change donc
+pas son identité ni son plafond.
 
 `checks:fast` exécute la variante `--changed-only` pour les changements Web ;
 `checks:full` et la CI exécutent la mesure exhaustive. Ce contrôle ne remplace
