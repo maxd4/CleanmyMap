@@ -375,6 +375,7 @@ export function createModeValidationPlan({
             executable: "npx",
             args: [
               "eslint",
+              "--max-warnings=0",
               "--config",
               "apps/web/eslint.config.mjs",
               ...(lintFiles.length > 0 ? lintFiles.map((file) => `apps/web/${file}`) : ["apps/web/src"]),

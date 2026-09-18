@@ -36,7 +36,7 @@ test("RAPIDE TypeScript uses targeted evidence without a full suite", () => {
   assert.ok(!ids(plan).includes("vitest-full"));
   assert.ok(!ids(plan).includes("build"));
   const lint = plan.checks.find((check) => check.id === "lint-targeted");
-  assert.deepEqual(lint.command.args, ["eslint", "--config", "apps/web/eslint.config.mjs", "apps/web/src/lib/chat/polls.ts"]);
+  assert.deepEqual(lint.command.args, ["eslint", "--max-warnings=0", "--config", "apps/web/eslint.config.mjs", "apps/web/src/lib/chat/polls.ts"]);
 });
 
 test("RAPIDE Motion/reveal changes run the canonical Motion governance check", () => {
@@ -71,7 +71,7 @@ test("RAPIDE excludes deleted Web files from ESLint targets", () => {
     ],
   });
   const lint = plan.checks.find((check) => check.id === "lint-targeted");
-  assert.deepEqual(lint.command.args, ["eslint", "--config", "apps/web/eslint.config.mjs", "apps/web/src/lib/chat/polls.ts"]);
+  assert.deepEqual(lint.command.args, ["eslint", "--max-warnings=0", "--config", "apps/web/eslint.config.mjs", "apps/web/src/lib/chat/polls.ts"]);
 });
 
 test("a source without a sibling test does not invent one", () => {

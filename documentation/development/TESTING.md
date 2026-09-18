@@ -124,6 +124,11 @@ npm run test
 npm run build
 ```
 
+La commande canonique `npm run lint` utilise le seuil natif ESLint
+`--max-warnings=0` : tout nouveau warning est bloquant, comme toute erreur.
+Les modes `RAPIDE` et `COMPLET`, ainsi que la CI qui appellent ce lint,
+conservent ce même contrat.
+
 Les scopes Git `WORKTREE`, `STAGED`, `PUSH_CANDIDATE` et
 `DYNAMIC_CANDIDATE` décrivent le candidat contrôlé ; ils ne constituent pas de
 nouveaux modes.
