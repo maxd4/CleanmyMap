@@ -166,6 +166,10 @@ test("COMPLET Web plus Supabase includes affected consumers without mobile fan-o
     { executable: "npm", args: ["run", "quality:cycles"] },
   );
   assert.deepEqual(
+    plan.checks.find((check) => check.id === "quality-dead-code").command,
+    { executable: "npm", args: ["run", "quality:dead-code"] },
+  );
+  assert.deepEqual(
     plan.checks.find((check) => check.id === "vitest-full").command,
     { executable: "npm", args: ["run", "quality:coverage"] },
   );
@@ -196,6 +200,15 @@ test("COMPLET stays blast-radius aware and strengthens the affected Web domain",
     "ALREADY_PROVEN",
   ]);
   assert.ok(plan.plannedSeconds <= VALIDATION_MODE_BUDGETS.FULL);
+});
+
+test("COMPLET script-only changes include the dead-code ratchet", () => {
+  const plan = createModeValidationPlan({
+    mode: "FULL",
+    changedFiles: ["scripts/checks/dead-code-policy.mjs"],
+  });
+  assert.ok(ids(plan).includes("quality-dead-code"));
+  assert.equal(plan.domains.deadCodeRelevant, true);
 });
 
 test("COMPLET docs-only does not fan out to Web, mobile, or build", () => {

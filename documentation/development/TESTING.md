@@ -92,7 +92,7 @@ Clôture complète d'un changement transversal ou sensible :
 npm run checks:full
 ```
 
-Le mode `COMPLET` est borné à 600 secondes et réutilise la même détection des
+Le mode `COMPLET` est borné à 720 secondes et réutilise la même détection des
 domaines concernés que `RAPIDE` : il ne rend pas automatiquement tous les
 domaines pertinents. Il renforce les preuves à l'intérieur du scope détecté
 (gouvernance, sécurité, typecheck, lint, Vitest Web, quality, migrations, tests
@@ -124,6 +124,7 @@ npm run test
 npm run test:coverage
 npm run quality:coverage
 npm run build
+npm run quality:dead-code
 ```
 
 La commande canonique `npm run lint` utilise le seuil natif ESLint
@@ -272,6 +273,36 @@ pas son identité ni son plafond.
 pas `quality:top-heavy`, qui reste la source canonique du ratchet de taille des
 fichiers et de ses seuils `REVIEW_REQUIRED`/`HARD`.
 
+## Dead code et ratchet Knip
+
+La commande informative historique reste disponible :
+
+```bash
+npm run audit:dead-code
+```
+
+Le garde bloquant est :
+
+```bash
+npm run quality:dead-code
+```
+
+Il réutilise la configuration explicite de `scripts/knip.json` : entrées
+Next.js et App Router détectées par le plugin, scripts lancés par les contrats
+du dépôt, points d'entrée E2E et fichiers de sécurité mobile. Le vendor mobile
+est explicitement exclu ; aucun wildcard global ne transforme les exports,
+fixtures ou fichiers générés en dette invisible. Les exports publics et les
+modules non référencés restent donc signalés tant qu'ils ne sont pas couverts
+par une entrée ou une qualification vérifiable.
+
+La dette constatée par l'audit de référence est versionnée dans
+`scripts/checks/dead-code-baseline.json` avec son commit source, la version
+Knip et l'identité stable de chaque finding. Les positions de ligne ne font
+pas partie de l'identité. Un finding nouveau ou une aggravation échoue ; un
+finding historique résolu est rapporté comme amélioration et devient un
+nouveau plafond uniquement après ratification explicite de la baseline. La
+commande est intégrée au FULL et à la CI Web, sans dupliquer la logique Knip.
+
 ## Mutation ciblée des tests
 
 La qualité des tests de quelques fonctions pures critiques est mesurée avec
@@ -303,10 +334,11 @@ métier réel, jamais pour tuer artificiellement un mutant statique.
 
 La mutation reste hors `checks:fast`, hors de la CI push quotidienne et hors du
 FULL courant : sa mesure réelle n'est sélectionnée que lorsque le budget de
-600 secondes est démontré sur l'environnement concerné. Tant que le FULL
+720 secondes est démontré sur l'environnement concerné. Tant que le FULL
 incluant les contrôles existants ne laisse pas cette marge, elle reste une
 validation manuelle/pré-release explicite ; elle ne doit pas être rendue
-silencieusement non bloquante pour entrer dans un mode quotidien.
+silencieusement non bloquante pour entrer dans un mode quotidien. Le budget
+FULL de référence est désormais de 720 secondes.
 
 ## Duplication et cycles
 

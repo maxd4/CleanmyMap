@@ -62,6 +62,7 @@
     "audit:repository-tree": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/audits/audit-repository-tree.ps1",
     "audit:repository-tree:self-test": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/audits/audit-repository-tree.ps1 -SelfTestOnly",
     "quality:top-heavy": "node scripts/checks/check-top-heavy-files.mjs --enforce",
+    "quality:dead-code": "node scripts/checks/dead-code-policy.mjs",
     "quality:complexity": "node scripts/checks/check-complexity-policy.mjs",
     "quality:duplication": "node scripts/checks/check-duplication.mjs",
     "quality:cycles": "node scripts/checks/check-cycles.mjs",
