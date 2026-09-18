@@ -13,7 +13,7 @@ import fs from "node:fs";
 
 export const VALIDATION_MODE_BUDGETS = Object.freeze({
   FAST: 180,
-  FULL: 600,
+  FULL: 720,
 });
 
 const SECURITY_GROUP_FILES = new Set(getVitestFiles({ groups: ["security"] }));
@@ -162,6 +162,13 @@ export function createModeValidationPlan({
   const githubRelevant = files.some((file) => normalizePath(file).startsWith(".github/"));
   const mobileRelevant = files.some((file) => normalizePath(file).startsWith("apps/mobile/"));
   const lockfileRelevant = files.some(isLockfileRelevantFile);
+  const deadCodeRelevant =
+    webRuntimeRelevant ||
+    scriptsRelevant ||
+    mobileRelevant ||
+    lockfileRelevant ||
+    files.includes("package.json") ||
+    files.includes("scripts/knip.json");
   const checks = [];
   const deduplicated = [];
   const migrationContracts = resolveMigrationContracts(files);
@@ -446,6 +453,16 @@ export function createModeValidationPlan({
     }
   }
 
+  if (full && deadCodeRelevant) {
+    addCheck(checks, {
+      id: "quality-dead-code",
+      label: "Ratchet dead-code Knip",
+      estimatedSeconds: 30,
+      critical: true,
+      command: npmCommand("quality:dead-code"),
+    });
+  }
+
   if (securityRelevant && (!webRuntimeRelevant || normalizedMode === "FAST")) {
     addCheck(checks, {
       id: "test:security",
@@ -488,6 +505,7 @@ export function createModeValidationPlan({
       githubRelevant,
       mobileRelevant,
       lockfileRelevant,
+      deadCodeRelevant,
     }),
     budgetSeconds,
     plannedSeconds,

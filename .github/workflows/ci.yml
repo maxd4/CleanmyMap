@@ -184,6 +184,9 @@ jobs:
       - name: Heavy files policy
         run: npm run quality:top-heavy
 
+      - name: Dead-code ratchet
+        run: npm run quality:dead-code
+
       - name: Complexity and function-length policy
         run: npm run quality:complexity
 

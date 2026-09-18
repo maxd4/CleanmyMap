@@ -557,7 +557,7 @@ npm run checks:full
 
 Le workflow Codex possède exactement deux modes canoniques :
 `npm run checks:fast` (`RAPIDE`, budget dur 180 secondes) et
-`npm run checks:full` (`COMPLET`, budget dur 600 secondes). Les commandes
+`npm run checks:full` (`COMPLET`, budget dur 720 secondes). Les commandes
 spécialisées sont des briques sélectionnées selon le blast radius ;
 `WORKTREE`, `STAGED`, `PUSH_CANDIDATE` et `DYNAMIC_CANDIDATE` sont des scopes,
 pas des modes. Les contrôles déjà couverts ne sont pas relancés sans raison et

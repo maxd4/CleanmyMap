@@ -117,7 +117,7 @@ guards CURRENT.
 Le workflow CURRENT destiné à Codex possède exactement deux modes :
 
 - `npm run checks:fast` — mode `RAPIDE`, budget dur de 180 secondes ;
-- `npm run checks:full` — mode `COMPLET`, budget dur de 600 secondes.
+- `npm run checks:full` — mode `COMPLET`, budget dur de 720 secondes.
 
 Le planificateur sélectionne les contrôles selon le blast radius du candidat.
 Le rapport doit indiquer `VALIDATION_MODE`, `CANDIDATE_SCOPE`,
