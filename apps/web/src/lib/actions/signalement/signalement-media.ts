@@ -190,7 +190,6 @@ async function getParent(
 }
 
 async function assertOwnerOrAdmin(
-  supabase: SupabaseClient,
   userId: string,
   parent: SignalementParent,
 ): Promise<void> {
@@ -224,7 +223,7 @@ export async function createSignalementMediaUploadIntent(
 ): Promise<SignalementMediaUploadIntent | { mediaId: string; uploadState: "ready" }> {
   validateSignalementMediaInput(params);
   const parent = await getParent(supabase, params.signalementId);
-  await assertOwnerOrAdmin(supabase, params.userId, parent);
+  await assertOwnerOrAdmin(params.userId, parent);
 
   const existingResult = await supabase
     .from("signalement_media")
@@ -335,7 +334,7 @@ export async function finalizeSignalementMedia(
   params: { userId: string; signalementId: string; mediaId: string },
 ): Promise<SignalementMediaReadyResult> {
   const parent = await getParent(supabase, params.signalementId);
-  await assertOwnerOrAdmin(supabase, params.userId, parent);
+  await assertOwnerOrAdmin(params.userId, parent);
   const result = await supabase
     .from("signalement_media")
     .select("*")

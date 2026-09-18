@@ -66,7 +66,7 @@ export function resolveIdentityDisplayNameMode(
 export function resolveIdentityDisplayName(
   firstName: string,
   lastName: string,
-  username: string | null,
+  _username: string | null,
   handle: string,
   userId: string,
   displayNameMode: DisplayNameMode,

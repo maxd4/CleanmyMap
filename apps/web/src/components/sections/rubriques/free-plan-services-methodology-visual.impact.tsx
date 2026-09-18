@@ -689,4 +689,6 @@ export function FreePlanServicesMethodologyVisualImpact({
       </section>
     );
   }
+
+  return null;
 }

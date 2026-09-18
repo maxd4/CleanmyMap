@@ -172,7 +172,6 @@ export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
 }
 
 function resolveExceptionFamily(
-  pathname: string,
   exceptionId: string,
 ): ResolvedPageFamily | null {
   if (exceptionId === "explorer-sommaire") {
@@ -234,7 +233,7 @@ export function resolvePageFamily(
   );
 
   if (exception) {
-    const resolved = resolveExceptionFamily(path, exception.id);
+    const resolved = resolveExceptionFamily(exception.id);
     if (resolved) {
       return applyImplicitRouteOverrides(path, resolved);
     }

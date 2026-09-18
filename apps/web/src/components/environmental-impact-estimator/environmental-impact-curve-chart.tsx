@@ -223,8 +223,8 @@ export function EnvironmentalImpactCurveChart({
   });
   const selectedLinePoint =
     selectedScopeKey === "user"
-      ? userPoints.find((point, index) => index === selectedPointIndex) ?? null
-      : sitePoints.find((point, index) => index === selectedPointIndex) ?? null;
+      ? userPoints.find((_point, index) => index === selectedPointIndex) ?? null
+      : sitePoints.find((_point, index) => index === selectedPointIndex) ?? null;
   const midIndex = Math.floor((maxPointCount - 1) / 2);
   const axisLabels =
     maxPointCount > 2

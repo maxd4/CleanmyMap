@@ -1,4 +1,3 @@
-import React from "react";
 import { PARTNER_SCOPES, formatPartnerScopeLabel, type OrganizationType, type PartnerScope } from "@/lib/partners/onboarding-types";
 
 export const TYPE_OPTIONS = [

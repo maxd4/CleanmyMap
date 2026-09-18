@@ -1,4 +1,3 @@
-import React from "react";
 import type { IndividualItem, CollectiveItem } from "./gamification-types";
 import { cn } from "@/lib/utils";
 import { Trophy, Users, ShieldCheck, Zap, Sparkles } from "lucide-react";

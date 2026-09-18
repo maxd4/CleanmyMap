@@ -192,7 +192,7 @@ export function deriveMetricQuantityFromUsage(
 }
 
 export function getServiceMonthlyTotal(
-  service: EnvironmentalImpactInfrastructureServiceDefinition,
+  _service: EnvironmentalImpactInfrastructureServiceDefinition,
   metricEstimates: EnvironmentalImpactInfrastructureMetricEstimate[],
 ): number {
   const total = metricEstimates.reduce(

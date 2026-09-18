@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import dynamic from "next/dynamic";
 import { ShieldCheck, Info, Compass } from "lucide-react";
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
