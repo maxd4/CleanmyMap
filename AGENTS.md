@@ -72,6 +72,10 @@ intermédiaires ne doivent pas commencer par ce canari.
 - avant chaque chantier, faire `git fetch origin main`, vérifier que le
   checkout est `main` et partir de l'état Git courant. Aucun nouveau worktree,
   clone ou branche `codex/*`/`publish/*` ne fait partie du workflow normal ;
+- ne jamais bloquer une exécution s'il manque un push GitHub : l'état local
+  réel du dépôt est prioritaire, quels que soient les prérequis demandés par le
+  prompt ; l'absence de publication d'un lot précédent ne constitue jamais une
+  `STOP CONDITION` à elle seule ;
 - le lifecycle canonique est : `origin/main → main → working tree/index →
   validation de l'allowlist → commit local isolé`. Chaque lot d'écriture est
   clôturé par ce commit local après validation de son allowlist. La signature
@@ -221,8 +225,9 @@ intermédiaires ne doivent pas commencer par ce canari.
   divergence automatiquement par merge, rebase, reset destructif, stash ou
   clean lorsqu'il existe des changements parallèles. Pour la seule validation
   d'une candidate avant le push, ne pas exiger l'égalité littérale
-  `HEAD == origin/main` ; l'exigence de convergence s'applique au démarrage
-  d'un nouveau chantier et à la clôture après publication ;
+  `HEAD == origin/main` ; la convergence est une preuve de publication après
+  push, pas un prérequis qui bloque le démarrage ou l'enchaînement d'un lot
+  local ;
 - si le push échoue, conserver le commit local et signaler explicitement le
   blocage ; ne jamais contourner les protections par un force push ;
 - lorsqu'une vérification effective du site web est demandée, comparer le
