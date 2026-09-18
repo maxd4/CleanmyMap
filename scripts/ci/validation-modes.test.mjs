@@ -149,6 +149,10 @@ test("COMPLET Web plus Supabase includes affected consumers without mobile fan-o
     ],
   });
   assert.ok(ids(plan).includes("vitest-full"));
+  assert.deepEqual(
+    plan.checks.find((check) => check.id === "vitest-full").command,
+    { executable: "npm", args: ["run", "quality:coverage"] },
+  );
   assert.ok(ids(plan).includes("supabase-migration-tree"));
   assert.ok(!ids(plan).includes("mobile-typecheck"));
   assert.ok(!ids(plan).includes("test:security"));
@@ -160,6 +164,10 @@ test("COMPLET stays blast-radius aware and strengthens the affected Web domain",
     changedFiles: ["apps/web/src/app/example/page.tsx"],
   });
   assert.ok(ids(plan).includes("vitest-full"));
+  assert.deepEqual(
+    plan.checks.find((check) => check.id === "vitest-full").command,
+    { executable: "npm", args: ["run", "quality:coverage"] },
+  );
   assert.ok(ids(plan).includes("lint"));
   assert.ok(ids(plan).includes("build"));
   assert.ok(ids(plan).includes("root-file-hygiene"));

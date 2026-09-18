@@ -304,7 +304,7 @@ export function createModeValidationPlan({
         deduplicated.push({
           id: `migration-contract:${testFile}`,
           status: "ALREADY_PROVEN",
-          reason: "couvert par vitest-full",
+          reason: "couvert par vitest-full + quality:coverage",
         });
       }
     } else {
@@ -396,10 +396,10 @@ export function createModeValidationPlan({
     if (full) {
       addCheck(checks, {
         id: "vitest-full",
-        label: "Vitest Web complet",
-        estimatedSeconds: 120,
+        label: "Vitest Web complet + couverture",
+        estimatedSeconds: 190,
         critical: true,
-        command: npmCommand("test"),
+        command: npmCommand("quality:coverage"),
       });
       if (buildRelevant) {
         addCheck(checks, {
@@ -411,8 +411,8 @@ export function createModeValidationPlan({
         });
       }
       deduplicated.push(
-        { id: "test:security", status: "ALREADY_PROVEN", reason: "couvert par vitest-full" },
-        { id: "test:regression-gates", status: "ALREADY_PROVEN", reason: "couvert par vitest-full" },
+        { id: "test:security", status: "ALREADY_PROVEN", reason: "couvert par vitest-full + quality:coverage" },
+        { id: "test:regression-gates", status: "ALREADY_PROVEN", reason: "couvert par vitest-full + quality:coverage" },
       );
     } else {
       const changedTests = resolveAssociatedWebTestFiles(files);

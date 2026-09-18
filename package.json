@@ -92,6 +92,8 @@
     "metrics:jsonl": "node scripts/data/summarize-jsonl.mjs",
     "modularize:report": "node scripts/reports/generate-modularization-report.mjs",
     "test": "npm run test -w apps/web",
+    "test:coverage": "npm run test:coverage -w apps/web",
+    "quality:coverage": "npm run test:coverage && node scripts/checks/check-coverage.mjs",
     "test:scripts": "node --test scripts/**/*.test.mjs scripts/**/*.test.js",
     "test:security": "npm run test:security -w apps/web",
     "test:regression-gates": "npm run test:regression-gates -w apps/web",
