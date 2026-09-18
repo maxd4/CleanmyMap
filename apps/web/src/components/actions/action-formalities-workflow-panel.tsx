@@ -10,7 +10,11 @@ import {
   updateActionFormalities,
   type ActionFormalitiesResponse,
 } from "@/lib/actions/http";
-import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
+import type {
+  ActionFormalitiesFacts,
+  ActionFormalitiesQualification,
+} from "@/lib/actions/formalities-qualification";
+import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities-workflow";
 
 type TernaryFact = boolean | "unknown";
 
@@ -61,6 +65,10 @@ function userStatusLabel(status: "not_started" | "prepared" | "sent"): string {
   }
 }
 
+function deadlineUnitLabel(unit: "days" | "months"): string {
+  return unit === "months" ? "mois" : "jours";
+}
+
 function SelectField({
   label,
   value,
@@ -95,6 +103,98 @@ const TERNARY_OPTIONS = [
   { value: "true", label: "Oui" },
   { value: "false", label: "Non" },
 ];
+
+export function ActionFormalitiesQualificationView({
+  qualification,
+  workflow,
+  isSaving,
+  onTransition,
+}: {
+  qualification: ActionFormalitiesQualification;
+  workflow: ActionFormalitiesWorkflowState;
+  isSaving: boolean;
+  onTransition: (
+    formalityId: string,
+    kind: "mark_prepared" | "declare_sent",
+  ) => void;
+}) {
+  const progressById = new Map(
+    workflow.progress.map((progress) => [progress.formalityId, progress]),
+  );
+
+  return (
+    <div className="space-y-3" aria-live="polite" data-testid="action-formalities-qualification">
+      <h3 className="text-lg font-black text-emerald-950">Formalités applicables</h3>
+      {qualification.formalities.map((formality) => {
+        const progress = progressById.get(formality.id);
+        const status = progress?.userStatus ?? "not_started";
+        return (
+          <CmmCard key={formality.id} tone="emerald" variant="glass" size="md">
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CmmPill tone={requirementTone(formality.requirementStatus)} size="sm">
+                  {requirementLabel(formality.requirementStatus)}
+                </CmmPill>
+                <CmmPill tone={status === "sent" ? "emerald" : "slate"} size="sm">
+                  {userStatusLabel(status)}
+                </CmmPill>
+              </div>
+              <h4 className="text-base font-bold text-emerald-950">{formality.competentAuthority.label}</h4>
+              <dl className="grid gap-2 text-sm text-emerald-900/75 sm:grid-cols-2">
+                <div><dt className="font-semibold">Procédure</dt><dd>{formality.procedureKind}</dd></div>
+                <div><dt className="font-semibold">Destinataire</dt><dd>{formality.recipient ?? "À identifier"}</dd></div>
+                <div className="sm:col-span-2"><dt className="font-semibold">Pourquoi</dt><dd>{formality.justification}</dd></div>
+                {formality.deadline ? (
+                  <div><dt className="font-semibold">Délai indicatif</dt><dd>{formality.deadline.minimumValue} {deadlineUnitLabel(formality.deadline.unit)}</dd></div>
+                ) : null}
+                <div className="sm:col-span-2"><dt className="font-semibold">Périmètre de la règle</dt><dd>{formality.scope}</dd></div>
+                <div><dt className="font-semibold">État de votre démarche</dt><dd>{userStatusLabel(status)}</dd></div>
+              </dl>
+              {formality.officialChannel ? (
+                <p className="text-xs text-emerald-900/70">
+                  Canal : {formality.officialChannel.url ? (
+                    <a className="font-semibold underline" href={formality.officialChannel.url} target="_blank" rel="noreferrer">
+                      {formality.officialChannel.label}
+                    </a>
+                  ) : formality.officialChannel.label}
+                </p>
+              ) : null}
+              {formality.requestedInformation.length || formality.requestedDocuments.length ? (
+                <div className="grid gap-3 text-xs text-emerald-900/75 sm:grid-cols-2">
+                  {formality.requestedInformation.length ? <div><p className="font-semibold">Informations demandées</p><ul className="mt-1 list-disc space-y-1 pl-4">{formality.requestedInformation.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
+                  {formality.requestedDocuments.length ? <div><p className="font-semibold">Pièces demandées</p><ul className="mt-1 list-disc space-y-1 pl-4">{formality.requestedDocuments.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
+                </div>
+              ) : null}
+              <p className="text-xs text-emerald-900/65">
+                Source : {formality.source?.url ? (
+                  <a className="font-semibold underline" href={formality.source.url} target="_blank" rel="noreferrer">
+                    {formality.source.title}
+                  </a>
+                ) : (formality.source?.title ?? "Aucune source officielle suffisante")}
+                {formality.source?.verifiedOn ? ` · vérifiée le ${formality.source.verifiedOn}` : ""}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {status === "not_started" || !progress?.validForQualification ? (
+                  <CmmButton tone="secondary" variant="pill" size="sm" onClick={() => onTransition(formality.id, "mark_prepared")} disabled={isSaving}>
+                    {progress?.validForQualification === false ? "Requalifier cette démarche" : "Marquer comme préparée"}
+                  </CmmButton>
+                ) : null}
+                {status === "prepared" ? (
+                  <CmmButton tone="tertiary" variant="pill" size="sm" onClick={() => onTransition(formality.id, "declare_sent")} disabled={isSaving}>
+                    Je déclare l&apos;avoir envoyée
+                  </CmmButton>
+                ) : null}
+              </div>
+              {!progress?.validForQualification ? (
+                <p className="text-xs font-semibold text-amber-800">Les faits ont changé : cette démarche doit être revue. La preuve existante est conservée.</p>
+              ) : null}
+            </div>
+          </CmmCard>
+        );
+      })}
+    </div>
+  );
+}
 
 export function ActionFormalitiesWorkflowPanel({
   actionId,
@@ -144,6 +244,8 @@ export function ActionFormalitiesWorkflowPanel({
             facts.isClaiming,
             facts.hasInstallations,
             facts.requiresPhysicalOccupation,
+            facts.localCustomaryUse,
+            facts.largeCrowdOrComplexInstallations,
           ].some((value) => value === "unknown")
       : false,
     [facts],
@@ -208,9 +310,6 @@ export function ActionFormalitiesWorkflowPanel({
   }
   if (!data || !facts) return null;
 
-  const progressById = new Map(
-    data.workflow.progress.map((progress) => [progress.formalityId, progress]),
-  );
   const managerNeedsLabel = facts.manager.kind === "other_public";
 
   return (
@@ -328,76 +427,12 @@ export function ActionFormalitiesWorkflowPanel({
 
       {error ? <p className="text-sm text-rose-700" role="alert">{error}</p> : null}
 
-      <div className="space-y-3" aria-live="polite">
-        <h3 className="text-lg font-black text-emerald-950">Formalités applicables</h3>
-        {data.qualification.formalities.map((formality) => {
-          const progress = progressById.get(formality.id);
-          const status = progress?.userStatus ?? "not_started";
-          return (
-            <CmmCard key={formality.id} tone="emerald" variant="glass" size="md">
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <CmmPill tone={requirementTone(formality.requirementStatus)} size="sm">
-                    {requirementLabel(formality.requirementStatus)}
-                  </CmmPill>
-                  <CmmPill tone={status === "sent" ? "emerald" : "slate"} size="sm">
-                    {userStatusLabel(status)}
-                  </CmmPill>
-                </div>
-                <h4 className="text-base font-bold text-emerald-950">{formality.competentAuthority.label}</h4>
-                <dl className="grid gap-2 text-sm text-emerald-900/75 sm:grid-cols-2">
-                  <div><dt className="font-semibold">Procédure</dt><dd>{formality.procedureKind}</dd></div>
-                  <div><dt className="font-semibold">Destinataire</dt><dd>{formality.recipient ?? "À identifier"}</dd></div>
-                  <div className="sm:col-span-2"><dt className="font-semibold">Pourquoi</dt><dd>{formality.justification}</dd></div>
-                  {formality.deadline ? (
-                    <div><dt className="font-semibold">Délai indicatif</dt><dd>{formality.deadline.minimumValue} {formality.deadline.unit}</dd></div>
-                  ) : null}
-                  <div className="sm:col-span-2"><dt className="font-semibold">Périmètre de la règle</dt><dd>{formality.scope}</dd></div>
-                  <div><dt className="font-semibold">État de votre démarche</dt><dd>{userStatusLabel(status)}</dd></div>
-                </dl>
-                {formality.officialChannel ? (
-                  <p className="text-xs text-emerald-900/70">
-                    Canal : {formality.officialChannel.url ? (
-                      <a className="font-semibold underline" href={formality.officialChannel.url} target="_blank" rel="noreferrer">
-                        {formality.officialChannel.label}
-                      </a>
-                    ) : formality.officialChannel.label}
-                  </p>
-                ) : null}
-                {formality.requestedInformation.length || formality.requestedDocuments.length ? (
-                  <div className="grid gap-3 text-xs text-emerald-900/75 sm:grid-cols-2">
-                    {formality.requestedInformation.length ? <div><p className="font-semibold">Informations demandées</p><ul className="mt-1 list-disc space-y-1 pl-4">{formality.requestedInformation.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
-                    {formality.requestedDocuments.length ? <div><p className="font-semibold">Pièces demandées</p><ul className="mt-1 list-disc space-y-1 pl-4">{formality.requestedDocuments.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
-                  </div>
-                ) : null}
-                <p className="text-xs text-emerald-900/65">
-                  Source : {formality.source?.url ? (
-                    <a className="font-semibold underline" href={formality.source.url} target="_blank" rel="noreferrer">
-                      {formality.source.title}
-                    </a>
-                  ) : (formality.source?.title ?? "Aucune source officielle suffisante")}
-                  {formality.source?.verifiedOn ? ` · vérifiée le ${formality.source.verifiedOn}` : ""}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {status === "not_started" || !progress?.validForQualification ? (
-                    <CmmButton tone="secondary" variant="pill" size="sm" onClick={() => void applyTransition(formality.id, "mark_prepared")} disabled={isSaving}>
-                      {progress?.validForQualification === false ? "Requalifier cette démarche" : "Marquer comme préparée"}
-                    </CmmButton>
-                  ) : null}
-                  {status === "prepared" ? (
-                    <CmmButton tone="tertiary" variant="pill" size="sm" onClick={() => void applyTransition(formality.id, "declare_sent")} disabled={isSaving}>
-                      Je déclare l&apos;avoir envoyée
-                    </CmmButton>
-                  ) : null}
-                </div>
-                {!progress?.validForQualification ? (
-                  <p className="text-xs font-semibold text-amber-800">Les faits ont changé : cette démarche doit être revue. La preuve existante est conservée.</p>
-                ) : null}
-              </div>
-            </CmmCard>
-          );
-        })}
-      </div>
+      <ActionFormalitiesQualificationView
+        qualification={data.qualification}
+        workflow={data.workflow}
+        isSaving={isSaving}
+        onTransition={(formalityId, kind) => void applyTransition(formalityId, kind)}
+      />
     </div>
   );
 }

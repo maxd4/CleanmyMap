@@ -86,10 +86,48 @@ describe("action formalities qualification", () => {
     });
     const manager = result.formalities[0];
 
-    expect(manager.requirementStatus).toBe("required");
-    expect(manager.procedureKind).toBe("other_manager");
+    expect(manager.requirementStatus).toBe("recommended");
+    expect(manager.procedureKind).toBe("information_only");
     expect(manager.competentAuthority.kind).toBe("other_manager");
     expect(manager.recipient).toBe("Gestionnaire de la gare");
+    expect(manager.officialChannel?.kind).toBe("manager_to_confirm");
+    expect(manager.deadline).toBeNull();
+  });
+
+  it.each(["state", "sncf", "haropa", "other_public", "private"] as const)(
+    "does not invent a required procedure for a non-municipal manager (%s)",
+    (managerKind) => {
+      const result = qualifyActionFormalities({
+        ...parisFacts,
+        manager: { kind: managerKind, label: "Gestionnaire à confirmer" },
+        hasInstallations: true,
+        isPublicRoadwayActivity: false,
+      });
+
+      expect(result.formalities).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            requirementStatus: "recommended",
+            procedureKind: "information_only",
+          }),
+        ]),
+      );
+      expect(result.formalities.some((item) => item.requirementStatus === "required")).toBe(false);
+    },
+  );
+
+  it("keeps a simple insufficiently qualified cleanwalk unknown", () => {
+    const result = qualifyActionFormalities({
+      ...parisFacts,
+      publicSpace: "unknown",
+      manager: { kind: "unknown", label: null },
+      isItinerant: "unknown",
+      hasInstallations: "unknown",
+      requiresPhysicalOccupation: "unknown",
+    });
+
+    expect(result.formalities.some((item) => item.requirementStatus === "required")).toBe(false);
+    expect(result.formalities.some((item) => item.requirementStatus === "unknown")).toBe(true);
   });
 
   it("keeps the official local-customary-use exception as not required", () => {
