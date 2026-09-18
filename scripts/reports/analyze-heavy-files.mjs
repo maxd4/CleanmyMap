@@ -80,19 +80,31 @@ function formatRow(row) {
 function getRatchetFindings(rows, baseline) {
   if (baseline instanceof Error) return [`INVALID: ${baseline.message}`];
 
+  const { allowed, review } = baseline;
   const hardRows = rows.filter((row) => isAboveThreshold(row, HARD_THRESHOLD));
   const hardPaths = new Set(hardRows.map((row) => row.file));
   const findings = [];
   for (const row of hardRows) {
-    const exception = baseline.get(row.file);
+    const exception = allowed.get(row.file);
     if (!exception) {
       findings.push(`NEW_HARD ${formatRow(row)}`);
     } else if (row.lines > exception.maxLines || row.bytes > exception.maxBytes) {
       findings.push(`GROWTH ${formatRow(row)} — plafond ${exception.maxLines} lignes / ${formatBytes(exception.maxBytes)}`);
     }
   }
-  for (const entry of baseline.values()) {
+  for (const entry of allowed.values()) {
     if (!hardPaths.has(entry.path)) findings.push(`STALE ${entry.path}`);
+  }
+  const reviewPaths = new Set(rows.filter((row) => isAboveThreshold(row, REVIEW_THRESHOLD)).map((row) => row.file));
+  for (const row of rows.filter((candidate) => isAboveThreshold(candidate, REVIEW_THRESHOLD))) {
+    const entry = review.get(row.file);
+    if (!entry && !allowed.has(row.file)) findings.push(`NEW_REVIEW ${formatRow(row)}`);
+    if (entry && (row.lines > entry.maxLines || row.bytes > entry.maxBytes)) {
+      findings.push(`REVIEW_GROWTH ${formatRow(row)} — plafond ${entry.maxLines} lignes / ${formatBytes(entry.maxBytes)}`);
+    }
+  }
+  for (const entry of review.values()) {
+    if (!reviewPaths.has(entry.path)) findings.push(`STALE_REVIEW ${entry.path}`);
   }
   return findings;
 }

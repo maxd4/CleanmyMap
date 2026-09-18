@@ -4,6 +4,7 @@ const ALLOWED_BASELINE_DECISIONS = new Set([
   "COHESIVE_SINGLE_FILE",
   "DEFERRED_SPLIT",
 ]);
+const REVIEW_BASELINE_STATUSES = new Set(["REVIEW", "IMPROVED"]);
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -39,11 +40,18 @@ export function loadHeavyFilesBaseline(view, baselinePath, scanRoots) {
     throw new Error(`baseline JSON invalide (${baselinePath}): ${error.message}`);
   }
 
-  if (!isPlainObject(parsed) || parsed.version !== 1 || !Array.isArray(parsed.allowed)) {
-    throw new Error(`baseline malformée (${baselinePath}): version 1 et allowed[] sont requis.`);
+  if (
+    !isPlainObject(parsed) ||
+    parsed.version !== 2 ||
+    !Array.isArray(parsed.allowed) ||
+    !Array.isArray(parsed.review)
+  ) {
+    throw new Error(
+      `baseline malformée (${baselinePath}): version 2, allowed[] et review[] sont requis (migration explicite depuis la version 1).`,
+    );
   }
 
-  const entries = new Map();
+  const allowed = new Map();
   parsed.allowed.forEach((rawEntry, index) => {
     if (!isPlainObject(rawEntry)) {
       throw new Error(`entrée ${index}: objet requis.`);
@@ -69,11 +77,42 @@ export function loadHeavyFilesBaseline(view, baselinePath, scanRoots) {
       maxLines: requirePositiveInteger(rawEntry.maxLines, "maxLines", index),
       maxBytes: requirePositiveInteger(rawEntry.maxBytes, "maxBytes", index),
     };
-    if (entries.has(file)) {
+    if (allowed.has(file)) {
       throw new Error(`entrée ${index}: path dupliqué (${file}).`);
     }
-    entries.set(file, entry);
+    allowed.set(file, entry);
   });
 
-  return entries;
+  const review = new Map();
+  parsed.review.forEach((rawEntry, index) => {
+    if (!isPlainObject(rawEntry)) {
+      throw new Error(`entrée review ${index}: objet requis.`);
+    }
+
+    const rawPath = requireNonEmptyString(rawEntry.path, "path", index);
+    const file = normalizeRepositoryPath(rawPath);
+    if (file !== rawPath || !view.isFile(file)) {
+      throw new Error(`entrée review ${index}: path absent ou non canonique (${rawPath}).`);
+    }
+    if (!scanRoots.some((root) => isCoveredByScanRoot(file, root))) {
+      throw new Error(`entrée review ${index}: path hors des roots scannés (${file}).`);
+    }
+    if (!REVIEW_BASELINE_STATUSES.has(rawEntry.status)) {
+      throw new Error(`entrée review ${index}: status non autorisé (${String(rawEntry.status)}).`);
+    }
+
+    const entry = {
+      path: file,
+      status: rawEntry.status,
+      reviewedRef: requireNonEmptyString(rawEntry.reviewedRef, "reviewedRef", index),
+      maxLines: requirePositiveInteger(rawEntry.maxLines, "maxLines", index),
+      maxBytes: requirePositiveInteger(rawEntry.maxBytes, "maxBytes", index),
+    };
+    if (allowed.has(file) || review.has(file)) {
+      throw new Error(`entrée review ${index}: path dupliqué (${file}).`);
+    }
+    review.set(file, entry);
+  });
+
+  return { allowed, review };
 }

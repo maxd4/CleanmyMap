@@ -64,17 +64,43 @@ function main() {
 
   const reviewThreshold = { lines: warnLines, bytes: Math.round(warnKb * 1024) };
   const hardThreshold = { lines: maxLines, bytes: Math.round(maxKb * 1024) };
-  const baseline = loadHeavyFilesBaseline(view, baselinePath, scanRoots);
+  const { allowed: allowedBaseline, review: reviewBaseline } = loadHeavyFilesBaseline(
+    view,
+    baselinePath,
+    scanRoots,
+  );
   const hardOffenders = rows.filter((row) => isAboveThreshold(row, hardThreshold));
   const reviewWarnings = rows.filter((row) => isAboveThreshold(row, reviewThreshold));
   const hardOffenderPaths = new Set(hardOffenders.map((row) => row.file));
-  const newHardOffenders = hardOffenders.filter((row) => !baseline.has(row.file));
+  const newHardOffenders = hardOffenders.filter((row) => !allowedBaseline.has(row.file));
   const ratchetViolations = hardOffenders.filter((row) => {
-    const exception = baseline.get(row.file);
+    const exception = allowedBaseline.get(row.file);
     return exception && (row.lines > exception.maxLines || row.bytes > exception.maxBytes);
   });
-  const staleBaselineEntries = [...baseline.values()].filter(
+  const staleBaselineEntries = [...allowedBaseline.values()].filter(
     (entry) => !hardOffenderPaths.has(entry.path),
+  );
+  const newReviewOffenders = reviewWarnings.filter(
+    (row) => !reviewBaseline.has(row.file) && !allowedBaseline.has(row.file),
+  );
+  const reviewRatchetViolations = reviewWarnings.filter((row) => {
+    const entry = reviewBaseline.get(row.file);
+    return entry && (row.lines > entry.maxLines || row.bytes > entry.maxBytes);
+  });
+  const improvedReviewRegressions = reviewWarnings.filter((row) => {
+    const entry = reviewBaseline.get(row.file);
+    return entry?.status === "IMPROVED";
+  });
+  const reviewImprovements = [...reviewBaseline.values()].filter((entry) => {
+    const row = rows.find((candidate) => candidate.file === entry.path);
+    return row && !isAboveThreshold(row, reviewThreshold) && entry.status === "REVIEW";
+  });
+  const acquiredReviewImprovements = [...reviewBaseline.values()].filter((entry) => {
+    const row = rows.find((candidate) => candidate.file === entry.path);
+    return row && !isAboveThreshold(row, reviewThreshold) && entry.status === "IMPROVED";
+  });
+  const staleReviewBaselineEntries = [...reviewBaseline.values()].filter(
+    (entry) => !rows.some((row) => row.file === entry.path),
   );
 
   console.log(
@@ -89,6 +115,29 @@ function main() {
 
   if (reviewWarnings.length > 0) {
     console.log(`\nREVIEW_REQUIRED: ${reviewWarnings.length} fichier(s) dépassent le seuil d'audit; aucun split automatique.`);
+  }
+  if (newReviewOffenders.length > 0) {
+    console.log(`Nouveaux dépassements REVIEW hors baseline (${newReviewOffenders.length}):`);
+    for (const row of newReviewOffenders) console.log(` - ${row.file} (${row.lines} lignes, ${(row.bytes / 1024).toFixed(1)} KB)`);
+  }
+  if (reviewRatchetViolations.length > 0) {
+    console.log(`Dépassements des plafonds REVIEW ratifiés (${reviewRatchetViolations.length}):`);
+    for (const row of reviewRatchetViolations) {
+      const entry = reviewBaseline.get(row.file);
+      console.log(` - ${row.file} (${row.lines} lignes/${row.bytes} octets; plafond ${entry.maxLines} lignes/${entry.maxBytes} octets)`);
+    }
+  }
+  if (improvedReviewRegressions.length > 0) {
+    console.log(`Retours au-dessus du seuil REVIEW après amélioration (${improvedReviewRegressions.length}):`);
+    for (const row of improvedReviewRegressions) console.log(` - ${row.file} (${row.lines} lignes, ${(row.bytes / 1024).toFixed(1)} KB)`);
+  }
+  if (reviewImprovements.length > 0) {
+    console.log(`Améliorations REVIEW détectées; mise à jour explicite de la baseline possible (${reviewImprovements.length}):`);
+    for (const entry of reviewImprovements) console.log(` - ${entry.path}`);
+  }
+  if (acquiredReviewImprovements.length > 0) {
+    console.log(`Améliorations REVIEW acquises (${acquiredReviewImprovements.length}):`);
+    for (const entry of acquiredReviewImprovements) console.log(` - ${entry.path}`);
   }
   if (newHardOffenders.length > 0) {
     console.log(`Nouveaux dépassements HARD hors baseline (${newHardOffenders.length}):`);
@@ -105,11 +154,19 @@ function main() {
     console.log(`Entrées baseline stale à retirer (${staleBaselineEntries.length}):`);
     for (const entry of staleBaselineEntries) console.log(` - ${entry.path}`);
   }
+  if (staleReviewBaselineEntries.length > 0) {
+    console.log(`Entrées baseline REVIEW stale à retirer (${staleReviewBaselineEntries.length}):`);
+    for (const entry of staleReviewBaselineEntries) console.log(` - ${entry.path}`);
+  }
 
   const blockingFindings = [
     ...(newHardOffenders.length > 0 ? ["nouveau dépassement HARD"] : []),
     ...(ratchetViolations.length > 0 ? ["croissance au-delà d'un plafond ratifié"] : []),
+    ...(newReviewOffenders.length > 0 ? ["nouveau dépassement REVIEW"] : []),
+    ...(reviewRatchetViolations.length > 0 ? ["croissance au-delà d'un plafond REVIEW ratifié"] : []),
+    ...(improvedReviewRegressions.length > 0 ? ["retour au-dessus du seuil REVIEW après amélioration"] : []),
     ...(staleBaselineEntries.length > 0 ? ["baseline stale"] : []),
+    ...(staleReviewBaselineEntries.length > 0 ? ["baseline REVIEW stale"] : []),
   ];
   if (enforce && blockingFindings.length > 0) {
     console.error(`FAIL --enforce: ${blockingFindings.join(", ")}.`);
@@ -118,7 +175,7 @@ function main() {
   }
 
   console.log(
-    `PASS: ${hardOffenders.length} fichier(s) HARD, ${reviewWarnings.length} fichier(s) REVIEW_REQUIRED; warnings non bloquants.`,
+    `PASS: ${hardOffenders.length} fichier(s) HARD, ${reviewWarnings.length} fichier(s) REVIEW_REQUIRED; ratchets HARD/REVIEW respectés.`,
   );
 }
 

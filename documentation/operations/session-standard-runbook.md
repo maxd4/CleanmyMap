@@ -23,13 +23,17 @@ Critere de succes:
 - aucun echec bloquant avant de poursuivre.
 - `quality:top-heavy` exécute exactement deux seuils :
   - `REVIEW_THRESHOLD` : > `500` lignes ou > `40 KiB` = `REVIEW_REQUIRED`,
-    signal d'audit non bloquant ;
+    signal d'audit sans split automatique ; le mode `--enforce` bloque un
+    nouveau REVIEW ou une croissance au-delà du plafond numérique ratifié ;
   - `HARD_THRESHOLD` : > `1000` lignes ou > `50 KiB` = nouveau dépassement
     bloquant en mode `--enforce`.
   - la baseline canonique est `scripts/checks/heavy-files-baseline.json`;
-    elle ne reçoit une exception que si celle-ci est explicitement ratifiée,
-    justifiée, référencée (`reviewedRef`) et bornée par `maxLines`/`maxBytes`.
-    Une exception n'autorise aucune croissance silencieuse.
+    `allowed[]` ne reçoit une exception que si celle-ci est explicitement
+    ratifiée, justifiée, référencée (`reviewedRef`) et bornée par
+    `maxLines`/`maxBytes`; `review[]` contient uniquement les plafonds
+    numériques REVIEW et ne porte aucune décision architecturale. Une entrée
+    `IMPROVED` conserve un plafond abaissé et aucun état n'autorise une
+    croissance silencieuse.
 
 ## Partie 2 - Qualite applicative
 Depuis la racine:

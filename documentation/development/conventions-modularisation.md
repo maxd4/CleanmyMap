@@ -32,13 +32,18 @@ couplé peut justifier une extraction plus tôt.
 Deux seuils communs sont utilisés par les contrôles du dépôt :
 
 - `REVIEW_THRESHOLD` : `>500` lignes ou `>40 KiB`, signal d'audit
-  `REVIEW_REQUIRED` uniquement ;
+  `REVIEW_REQUIRED` sans split automatique ; le mode `--enforce` interdit
+  toutefois tout nouveau REVIEW et toute croissance au-delà de son plafond
+  numérique ratifié ;
 - `HARD_THRESHOLD` : `>1000` lignes ou `>50 KiB`, nouveau dépassement bloquant.
 
 Le seuil ne déclenche jamais un split automatique. La décision repose sur la
 cohésion, les responsabilités, le couplage, la testabilité et les contrats.
-Une exception de baseline doit être explicitement ratifiée, justifiée et
+Une exception HARD de baseline doit être explicitement ratifiée, justifiée et
 bornée par `maxLines` et `maxBytes`; elle ne peut pas croître silencieusement.
+Les entrées numériques `review[]` de la baseline ne sont pas des décisions
+architecturales : un état `IMPROVED` conserve le plafond abaissé après une
+amélioration mesurée.
 
 Les statuts architecturaux sont `REVIEW_REQUIRED`, `PROACTIVE_SPLIT`,
 `COHESIVE_SINGLE_FILE`, `ALREADY_MODULARIZED` et `DEFERRED_SPLIT`.
