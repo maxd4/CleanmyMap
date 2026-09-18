@@ -52,7 +52,6 @@ class StreamBase extends Transform {
       if (result) {
         if (this._assembler.depth === this._level) {
           this._push();
-          this._transform = this._filter;
         }
         this._transform = this._accept;
         return callback(null);
@@ -63,7 +62,6 @@ class StreamBase extends Transform {
         this._saved_assembler.dropToLevel(this._level);
         if (this._assembler.depth === this._level) {
           this._assembler = this._saved_assembler;
-          this._transform = this._filter;
         }
         this._transform = this._reject;
         return callback(null);
