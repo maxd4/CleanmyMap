@@ -13,6 +13,9 @@ const eslintConfig = defineConfig([
         { max: 1800, skipBlankLines: true, skipComments: true },
       ],
       "@typescript-eslint/no-explicit-any": "warn",
+      // Le dépôt utilise exclusivement l'App Router ; il n'existe donc pas
+      // de répertoire pages à contrôler par cette règle historique.
+      "@next/next/no-html-link-for-pages": "off",
       "react/display-name": "off",
       "react/no-unescaped-entities": "warn",
       "react-hooks/purity": "warn",
