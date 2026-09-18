@@ -37,8 +37,11 @@ refonte. Les contrats détaillés restent documentés dans leur source canonique
   `apps/web/src/proxy.ts`.
 - PostHog fournit l'analytics client et serveur ; Vercel Analytics et Speed
   Insights sont intégrés au layout web.
-- Sentry assure le monitoring via `apps/web/sentry.server.config.ts`,
-  `apps/web/sentry.edge.config.ts` et la configuration Next.js.
+- Sentry assure le monitoring via `apps/web/instrumentation.ts`,
+  `apps/web/instrumentation-client.ts`, les adaptateurs
+  `apps/web/src/lib/observability/sentry.ts` et
+  `apps/web/src/lib/observability/sentry-client.ts`, ainsi que la configuration
+  `apps/web/next.config.ts`.
 - Resend gère les emails transactionnels via
   `apps/web/src/lib/services/resend.ts` et la couche unifiée
   `apps/web/src/lib/services/email.ts`.
@@ -52,9 +55,9 @@ refonte. Les contrats détaillés restent documentés dans leur source canonique
 - `apps/web/scripts` regroupe les scripts d'import, de synchronisation,
   d'export, de diagnostic et de bootstrap propres à l'application web.
 - `scripts/` contient les checks et outils de maintenance du monorepo.
-- `legacy/` contient l'ancien outillage Python archivé.
-- `backups/` et `artifacts/` sont des sorties historiques ou de validation et
-  ne constituent pas les sources de vérité du produit.
+- `artifacts/` contient les sorties historiques, d'audit et de validation,
+  notamment sous `artifacts/backups/`, et ne constitue pas la source de vérité
+  du produit.
 
 ## Validation et captures
 

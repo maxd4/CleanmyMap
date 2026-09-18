@@ -18,11 +18,6 @@ flowchart TD
   AUTH --> APIC
   AUTH --> APIR
 ```
-Fallback statique:
-```md
-![Modules cles fallback](../archive/fallback-modules-cles.png)
-```
-
 ## Dependances externes critiques
 ```mermaid
 flowchart LR
@@ -31,11 +26,6 @@ flowchart LR
   WEB --> SUPA[Supabase]
   WEB --> VERCEL[Vercel runtime]
 ```
-Fallback statique:
-```md
-![Dependances fallback](../archive/fallback-dependances.png)
-```
-
 ## Arbre de decision: ou intervenir
 ```mermaid
 flowchart TD
@@ -47,11 +37,6 @@ flowchart TD
   F -- Oui --> G[authz.ts + proxy.ts + api-authorization-contract.ts]
   F -- Non --> H[pilotage/reports + docs backlog]
 ```
-Fallback statique:
-```md
-![Decision intervention fallback](../archive/fallback-decision-intervention.png)
-```
-
 ## Couplages a surveiller
 - Registry sections <-> navigation <-> renderer.
 - Contrat actions <-> exports <-> rapports.
