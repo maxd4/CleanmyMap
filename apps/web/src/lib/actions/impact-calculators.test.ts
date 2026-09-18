@@ -5,6 +5,8 @@ import {
   BUTTS_PER_KG_REFERENCE,
   buildActionImpactMethodology,
   computeActionImpactKpis,
+  estimateActionWasteKg,
+  resolveActionWasteKgSource,
   sumActionImpactKpis,
 } from "./impact-calculators";
 
@@ -55,11 +57,26 @@ describe("canonical action impact calculation", () => {
       makeContract({ cigaretteButts: 3750 }),
     );
 
-    expect(impact.wasteKg).toBe(0);
-    expect(impact.wasteKnown).toBe(false);
-    expect(impact.wasteKgSource).toBe("none");
-    expect(impact.co2AvoidedKg).toBe(0);
-    expect(impact.euroSaved).toBe(0);
+    expect(impact).toMatchObject({
+      wasteKg: 0,
+      wasteKnown: false,
+      wasteKgSource: "none",
+      co2AvoidedKg: 0,
+      euroSaved: 0,
+    });
+  });
+
+  it("does not qualify invalid declared waste as a measured value", () => {
+    expect(
+      [-1, Number.NaN, Number.POSITIVE_INFINITY].map((wasteKg) => {
+        const contract = { metadata: { wasteKg } };
+        return [estimateActionWasteKg(contract), resolveActionWasteKgSource(contract)];
+      }),
+    ).toEqual([
+      [null, "none"],
+      [null, "none"],
+      [null, "none"],
+    ]);
   });
 
   it("does not turn qualified cigarette-butt mass into waste", () => {
@@ -82,11 +99,13 @@ describe("canonical action impact calculation", () => {
       }),
     );
 
-    expect(impact.wasteKg).toBe(0);
-    expect(impact.wasteKnown).toBe(false);
-    expect(impact.wasteKgSource).toBe("none");
-    expect(impact.co2AvoidedKg).toBe(0);
-    expect(impact.euroSaved).toBe(0);
+    expect(impact).toMatchObject({
+      wasteKg: 0,
+      wasteKnown: false,
+      wasteKgSource: "none",
+      co2AvoidedKg: 0,
+      euroSaved: 0,
+    });
   });
 
   it("does not invent collection impact for a spot without metrics", () => {

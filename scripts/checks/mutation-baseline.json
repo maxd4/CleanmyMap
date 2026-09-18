@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "6b7d0cb804e907e52b1836531f3b6bc5e3971cf6",
+  "tool": "stryker",
+  "toolVersion": "10.0.0",
+  "runnerVersion": "10.0.0",
+  "scopeFingerprint": "908a0aea1677debbc490026df3afc063ea0b4baf39578ba28c38cf15eb67fc60",
+  "summary": {
+    "total": 329,
+    "counts": {
+      "Killed": 270,
+      "Survived": 52,
+      "NoCoverage": 7,
+      "Timeout": 0,
+      "error": 0
+    },
+    "score": 83.85093167701864
+  },
+  "files": {
+    "src/lib/actions/formalities-qualification.ts": {
+      "total": 147,
+      "counts": { "Killed": 117, "Survived": 25, "NoCoverage": 5, "Timeout": 0, "error": 0 },
+      "score": 82.3943661971831
+    },
+    "src/lib/actions/impact-calculators.ts": {
+      "total": 88,
+      "counts": { "Killed": 75, "Survived": 12, "NoCoverage": 1, "Timeout": 0, "error": 0 },
+      "score": 86.20689655172414
+    },
+    "src/lib/actions/permissions.ts": {
+      "total": 81,
+      "counts": { "Killed": 65, "Survived": 15, "NoCoverage": 1, "Timeout": 0, "error": 0 },
+      "score": 81.25
+    },
+    "src/lib/actions/action-update-status.ts": {
+      "total": 13,
+      "counts": { "Killed": 13, "Survived": 0, "NoCoverage": 0, "Timeout": 0, "error": 0 },
+      "score": 100
+    }
+  }
+}

@@ -78,6 +78,19 @@ describe("action formalities qualification", () => {
     ]);
   });
 
+  it("keeps unresolved facts visible when a qualified formalities path still has unknown inputs", () => {
+    const result = qualifyActionFormalities({
+      ...parisFacts,
+      hasInstallations: true,
+      isPublicRoadwayActivity: "unknown",
+    });
+
+    expect(result.formalities.some((item) => item.requirementStatus === "required")).toBe(true);
+    expect(result.unresolvedQuestions).toContain(
+      "faits manquants sur le lieu, l'installation ou la manifestation",
+    );
+  });
+
   it("qualifies an explicitly non-municipal managed site separately", () => {
     const result = qualifyActionFormalities({
       ...parisFacts,
@@ -190,6 +203,7 @@ describe("action formalities qualification", () => {
       requirementStatus: "unknown",
       procedureKind: "unknown",
       source: null,
+      justification: expect.stringContaining("ne généralise pas"),
     });
   });
 });
