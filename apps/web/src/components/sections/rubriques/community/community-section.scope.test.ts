@@ -1,8 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const communityRoot = dirname(new URL(import.meta.url).pathname).replace(/^\//, "");
+const communityRoot = dirname(fileURLToPath(import.meta.url));
 const sectionSource = readFileSync(join(communityRoot, "community-section.tsx"), "utf8");
 const viewSource = readFileSync(join(communityRoot, "community-section-components.tsx"), "utf8");
 const sectionHookSource = readFileSync(join(communityRoot, "use-community-section.ts"), "utf8");

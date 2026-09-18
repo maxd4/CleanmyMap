@@ -132,14 +132,25 @@ describe("POST /api/route/recommend — routage réseau et budget", () => {
     }));
 
     expect(response.status).toBe(200);
-    expect(planRouteMock).toHaveBeenCalledWith({
+    expect(planRouteMock).toHaveBeenCalledWith(expect.objectContaining({
       origin: explicitOrigin,
       candidates: [candidate],
       travelBudgetMinutes: 42,
       maxStops: 1,
       priorityVsTravel: 25,
       effectiveRiskFocus: "all",
-    });
+      volunteersExpected: 1,
+      groupCount: 1,
+      operationalBudget: undefined,
+      weatherContext: expect.objectContaining({
+        status: "unavailable",
+        unavailableReason: "missing_window",
+        operationalRisk: expect.objectContaining({
+          status: "fallback",
+          operationalLimitMinutes: null,
+        }),
+      }),
+    }));
     expect((await response.json()).origin).toEqual(explicitOrigin);
   });
 

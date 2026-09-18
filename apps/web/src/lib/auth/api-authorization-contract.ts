@@ -305,6 +305,32 @@ export const API_AUTHORIZATION_CONTRACT = {
       ],
     },
   },
+  "actions/[actionId]/formalities": {
+    GET: {
+      expected: "Authenticated owner/organizer or admin/max action-management read of the local-formalities workflow",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + loadActionById + canonical organizer resolution + canManageAction; only pre-action formalities state is returned",
+      evidence: [
+        "requireAuthenticatedAccess",
+        "loadActionById",
+        "loadCanonicalActionOrganizerIdsForAction",
+        "canManageAction",
+      ],
+      evidenceScope: "module",
+    },
+    PATCH: {
+      expected: "Authenticated owner/organizer or admin/max action-management update of facts and user formalities state",
+      dimensions: ["authentication", "business permission", "ownership"],
+      actual: "requireAuthenticatedAccess + loadActionById + canonical organizer resolution + canManageAction before persisted qualification/workflow update",
+      evidence: [
+        "requireAuthenticatedAccess",
+        "loadActionById",
+        "loadCanonicalActionOrganizerIdsForAction",
+        "canManageAction",
+      ],
+      evidenceScope: "module",
+    },
+  },
   "actions/[actionId]/publish": {
     POST: {
       expected: "Authenticated owner/organizer or explicit admin/max pre-action publication",
@@ -488,6 +514,7 @@ export const API_AUTHORIZATION_CONTRACT = {
       dimensions: ["public-safe", "ownership"],
       actual: "getSafeAuthSession() with nullable userId; public counts remain available and personal RSVP/ownership context is optional",
       evidence: ["getSafeAuthSession", "loadCachedCommunityEvents", "userId", "myRsvpStatus", "canEditOwnOps"],
+      evidenceScope: "module",
     },
     POST: {
       expected: "Authenticated user creates an event owned by current user",

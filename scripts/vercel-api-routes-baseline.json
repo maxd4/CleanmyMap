@@ -10,6 +10,7 @@
     "apps/web/src/app/api/actions/[actionId]/administrative-requirements/route.ts",
     "apps/web/src/app/api/actions/[actionId]/audit/route.ts",
     "apps/web/src/app/api/actions/[actionId]/cancel/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/formalities/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
     "apps/web/src/app/api/actions/[actionId]/participation-claim/route.ts",
     "apps/web/src/app/api/actions/[actionId]/public/route.ts",

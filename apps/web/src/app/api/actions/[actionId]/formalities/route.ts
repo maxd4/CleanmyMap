@@ -19,6 +19,7 @@ import {
 import type { ActionFormalitiesFacts } from "@/lib/actions/formalities-qualification";
 
 export const runtime = "nodejs";
+// Justification : cette route dynamique dépend de l'autorisation, des faits de qualification et de l'état persisté de l'action.
 export const dynamic = "force-dynamic";
 
 const formalitiesTransitionSchema = z

@@ -1,3 +1,5 @@
+"use client";
+
 import { motion, useReducedMotion } from "framer-motion";
 import { Sparkles, TrendingUp, Hash } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";

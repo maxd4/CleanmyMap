@@ -21,7 +21,7 @@ const COPY_FILES = [
   "src/components/sections/rubriques/discussion-badges-panel.tsx",
   "src/components/sections/rubriques/discussion-bug-report-form.tsx",
   "src/components/sections/rubriques/annuaire/seed-index.ts",
-  "src/components/sections/rubriques/community/kpis.ts",
+  "src/components/sections/rubriques/community/community-section.tsx",
   "src/components/sections/rubriques/gamification/index.tsx",
   "src/components/sections/rubriques/shared.tsx",
   "src/app/(app)/actions/history/page.tsx",
