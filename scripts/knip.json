@@ -1,0 +1,43 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "playwright.config.ts",
+        "e2e/**/*.spec.ts",
+        "e2e/global.setup.ts",
+        "e2e/global.teardown.ts",
+        "e2e/run-*.mjs",
+        "scripts/ci/run-static-candidate-check.mjs",
+        "scripts/ci/run-dynamic-candidate-check.mjs",
+        "scripts/checks/check-canonical-workspaces.mjs",
+        "scripts/cleanup/run-backup.js",
+        "scripts/cleanup/backup.ts",
+        "scripts/media/resize_homepage.js",
+        "documentation/pages_site/screen/capture-canonical-pages.mjs"
+      ],
+      "project": [
+        "playwright.config.ts",
+        "e2e/**/*.{js,mjs,ts,tsx}",
+        "scripts/**/*.{js,mjs,cjs,ts,tsx}",
+        "documentation/pages_site/screen/**/*.mjs"
+      ]
+    },
+    "apps/mobile": {
+      "entry": [
+        "index.ts",
+        "App.tsx",
+        "tasks/**/*.ts",
+        "security/**/*.test.mjs",
+        "app.json"
+      ],
+      "project": [
+        "**/*.{js,mjs,ts,tsx,json}",
+        "!vendor/**"
+      ],
+      "ignoreIssues": {
+        "app.json": ["unlisted"]
+      }
+    }
+  }
+}
