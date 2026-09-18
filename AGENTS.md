@@ -15,7 +15,8 @@ root
 ├── scripts
 ├── .github
 ├── maintenance/python
-└── documentation
+├── documentation
+└── e2e
 ```
 
 L'héritage se lit du root vers l'application puis vers la frontière
@@ -36,6 +37,7 @@ scripts/AGENTS.md
 .github/AGENTS.md
 maintenance/python/AGENTS.md
 documentation/AGENTS.md
+e2e/AGENTS.md
 ```
 
 Ordre de priorité :

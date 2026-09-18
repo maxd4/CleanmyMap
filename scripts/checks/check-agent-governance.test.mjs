@@ -21,6 +21,7 @@ function createValidFixture() {
     ".github/AGENTS.md": "permissions CodeQL check:github-actions",
     "maintenance/python/AGENTS.md": "hors du requirements pytest",
     "documentation/AGENTS.md": "état actuel historique public",
+    "e2e/AGENTS.md": "TESTING.md PUBLIC PROTECTED_SERVER_ONLY PROTECTED_CLERK_CLIENT Clerk Development Supabase storageState fixtures",
   };
 
   for (const relativePath of canonicalAgentFiles) {
@@ -42,14 +43,14 @@ function runCheck(script, cwd) {
 }
 
 describe("AGENTS hierarchy governance", () => {
-  it("accepts the canonical ten-file hierarchy", () => {
+  it("accepts the canonical eleven-file hierarchy", () => {
     const fixture = createValidFixture();
     try {
       assert.deepEqual(validateAgentGovernance(fixture), []);
       const script = path.join(process.cwd(), "scripts", "checks", "check-agent-governance.mjs");
       const result = runCheck(script, fixture);
       assert.equal(result.status, 0);
-      assert.match(result.output, /10 canonical files/);
+      assert.match(result.output, /11 canonical files/);
     } finally {
       fs.rmSync(fixture, { recursive: true, force: true });
     }

@@ -14,6 +14,7 @@ export const canonicalAgentFiles = Object.freeze([
   ".github/AGENTS.md",
   "maintenance/python/AGENTS.md",
   "documentation/AGENTS.md",
+  "e2e/AGENTS.md",
 ]);
 
 const forbiddenAgentFiles = new Set([
@@ -45,6 +46,7 @@ const requiredMarkers = new Map([
   [".github/AGENTS.md", ["permissions", "CodeQL", "check:github-actions"]],
   ["maintenance/python/AGENTS.md", ["hors du", "requirements", "pytest"]],
   ["documentation/AGENTS.md", ["état actuel", "historique", "public"]],
+  ["e2e/AGENTS.md", ["TESTING.md", "PUBLIC", "PROTECTED_SERVER_ONLY", "PROTECTED_CLERK_CLIENT", "Clerk Development", "Supabase", "storageState", "fixtures"]],
 ]);
 
 const rootForbiddenHeadings = [
