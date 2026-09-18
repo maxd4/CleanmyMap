@@ -127,7 +127,7 @@ export type RouteMultiRouteTrace = {
     sharedTargetRatio: number;
     sharedDistanceKm: number | null;
     sharedDistanceRatio: number | null;
-    networkOverlap?: number;
+    networkOverlap?: number | null;
     cleaningCoverageOverlap?: number;
     balanceDistance: number;
     balanceDuration: number;

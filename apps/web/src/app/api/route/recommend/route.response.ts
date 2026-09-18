@@ -252,7 +252,7 @@ export function buildRouteRecommendationResponse(input: {
     sharedTargetRatio: planning.groupPartition.metrics.sharedTargetRatio,
     sharedDistanceKm: null,
     sharedDistanceRatio: null,
-    networkOverlap: 0,
+    networkOverlap: null,
     cleaningCoverageOverlap: 0,
     balanceDistance: planning.groupPartition.metrics.balanceDistance,
     balanceDuration: planning.groupPartition.metrics.balanceDuration,
@@ -261,11 +261,14 @@ export function buildRouteRecommendationResponse(input: {
     fallbackGroupCount: routeGeometry.mode === "fallback" ? 1 : 0,
     networkDistanceMeasured: false,
   };
+  const operationalNetworkOverlap =
+    planning.streetCleaningCorridors?.operationalPlan?.networkOverlap;
   const multiRoute: RouteMultiRouteMetrics = {
     ...baseMultiRoute,
     networkOverlap:
-      planning.streetCleaningCorridors?.operationalPlan?.networkOverlap ??
-      baseMultiRoute.networkOverlap ?? 0,
+      operationalNetworkOverlap !== undefined
+        ? operationalNetworkOverlap
+        : baseMultiRoute.networkOverlap ?? null,
     cleaningCoverageOverlap:
       planning.streetCleaningCorridors?.operationalPlan?.cleaningCoverageOverlap ??
       baseMultiRoute.cleaningCoverageOverlap ?? 0,

@@ -125,8 +125,11 @@ export type StreetCleaningCorridorHandoff = {
 export type StreetCleaningOperationalCorridorId = "A" | "B";
 
 export type StreetCleaningOperationalStreet = {
+  /** Normalized street name kept as a display/group label, not a spatial identity. */
   streetKey: string;
   label: string | null;
+  /** Stable provider/reference or derived geometry identity; null means unknown. */
+  segmentKey: string | null;
   corridorCount: 1 | 2;
   basis: "default_two_corridors" | "documented_exception";
   sourceId: string;
@@ -147,6 +150,8 @@ export type StreetCleaningStreetPass = {
   passOrder: number;
   streetKey: string;
   label: string | null;
+  /** Network/geometric identity only; absent means no spatial overlap proof. */
+  segmentKey?: string | null;
   lengthMeters: number | null;
   direction: "outbound" | "return" | "other";
   requiresCrossing?: boolean;
@@ -158,6 +163,7 @@ export type StreetCleaningOperationalAssignment = {
   routeId: string;
   streetKey: string;
   label: string | null;
+  segmentKey: string | null;
   corridorId: StreetCleaningOperationalCorridorId;
   /** A/B is operational only; it is not a proven geographic side. */
   geographicSide: "unknown";
@@ -173,7 +179,7 @@ export type StreetCleaningOperationalPlan = {
   streets: StreetCleaningOperationalStreet[];
   assignments: StreetCleaningOperationalAssignment[];
   /** Shared/proximate street movement, independent from cleaning duplication. */
-  networkOverlap: number;
+  networkOverlap: number | null;
   /** Repeated cleaning of the same operational corridor. */
   cleaningCoverageOverlap: number;
   warnings: string[];

@@ -51,9 +51,11 @@ ajoutée au hot path. Le planner peut toutefois répartir l’hypothèse
 opérationnelle en deux identifiants abstraits `A` et `B` pour une rue routable
 (aller/retour ou groupes distincts). `A`/`B` restent `geographicSide:
 "unknown"` tant qu’aucune preuve n’est disponible. `networkOverlap` mesure le
-passage réseau commun ou proche, tandis que `cleaningCoverageOverlap` ne
-compte que la répétition du même corridor opérationnel ; une exception
-versionnée à un seul corridor prévaut sur le défaut.
+passage réseau commun ou proche uniquement lorsqu’une référence de segment ou
+une géométrie de step permet de l’identifier ; sinon il vaut `null` (inconnu),
+et non zéro. Le nom de rue reste un label. `cleaningCoverageOverlap` ne compte
+que la répétition du même corridor opérationnel ; une exception versionnée à un
+seul corridor prévaut sur le défaut.
 
 La frontière suit le flux `API → domaine route → UI` : l’API valide et orchestre,
 le domaine calcule et trace, l’UI affiche sans recalculer la géographie ni le

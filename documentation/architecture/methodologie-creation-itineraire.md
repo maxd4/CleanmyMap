@@ -185,10 +185,13 @@ deux capacités opérationnelles abstraites `A` et `B` par rue routable par
 défaut, afin de distinguer une couverture aller/retour ou multi-groupe. Cette
 hypothèse n’est pas affichée comme un côté géographique : chaque affectation
 porte `geographicSide: "unknown"`, et une exception documentée à un seul
-corridor prévaut. `networkOverlap` décrit le déplacement partagé ou proche ;
-`cleaningCoverageOverlap` décrit uniquement le nettoyage répété du même
-corridor opérationnel. Les changements nécessitant une traversée non prouvée
-ou dangereuse sont bloqués.
+corridor prévaut. `networkOverlap` décrit le déplacement partagé ou proche
+seulement lorsqu’une référence de segment ou une géométrie de step permet de
+l’identifier ; à défaut, sa valeur reste `null` (inconnue) plutôt que de
+fabriquer un overlap nul ou positif. Le nom de voie reste un label et ne
+constitue pas une identité spatiale. `cleaningCoverageOverlap` décrit
+uniquement le nettoyage répété du même corridor opérationnel. Les changements
+nécessitant une traversée non prouvée ou dangereuse sont bloqués.
 
 La séparation s’applique aussi aux distances utilisées pour admettre une zone
 prédite : distance au corridor, détour estimé et résultat réseau sont des

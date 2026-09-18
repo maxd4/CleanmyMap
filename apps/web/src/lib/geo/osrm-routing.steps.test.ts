@@ -22,6 +22,7 @@ describe("OSRM geometry steps", () => {
               distance: 1000,
               duration: 300,
               maneuver: { type: "depart" },
+              geometry: { coordinates: [[2.3522, 48.8566], [2.3532, 48.8576]] },
             }],
           }],
         }],
@@ -34,6 +35,7 @@ describe("OSRM geometry steps", () => {
       distanceKm: 1,
       durationMinutes: 5,
       maneuver: "depart",
+      geometry: [[48.8566, 2.3522], [48.8576, 2.3532]],
     }]);
 
     const fallback = await routePolylineThroughStreetNetwork(stops, {

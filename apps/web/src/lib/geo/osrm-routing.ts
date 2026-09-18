@@ -37,6 +37,9 @@ type OsrmStep = {
   distance?: unknown;
   duration?: unknown;
   maneuver?: { type?: unknown; modifier?: unknown };
+  geometry?: {
+    coordinates?: unknown;
+  };
 };
 
 type OsrmRoute = {
@@ -249,6 +252,7 @@ function parseNetworkRoute(
           const duration = step.duration as number;
           const maneuverType = typeof step.maneuver?.type === "string" ? step.maneuver.type : null;
           const maneuverModifier = typeof step.maneuver?.modifier === "string" ? step.maneuver.modifier : null;
+          const geometry = normalizeCoordinates(step.geometry?.coordinates);
           return {
             name: typeof step.name === "string" && step.name.length > 0 ? step.name : null,
             distanceKm: Number((distance / 1000).toFixed(2)),
@@ -256,6 +260,7 @@ function parseNetworkRoute(
             maneuver: maneuverType && maneuverModifier
               ? `${maneuverType} ${maneuverModifier}`
               : maneuverType ?? maneuverModifier,
+            ...(geometry ? { geometry } : {}),
           };
         });
       parsedLegs.push({
