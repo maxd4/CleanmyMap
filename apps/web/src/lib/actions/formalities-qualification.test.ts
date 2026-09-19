@@ -34,6 +34,51 @@ describe("action formalities qualification", () => {
     expect(city?.deadline).toMatchObject({ minimumValue: 2, unit: "months" });
     expect(city?.source?.verifiedOn).toBe(FORMALITIES_RULE_VERIFIED_ON);
     expect(city?.officialChannel?.url).toContain("paris.fr");
+    expect(result.unresolvedQuestions).toEqual([]);
+  });
+
+  it("requires a municipal AOT for physical occupation even without an installation", () => {
+    const result = qualifyActionFormalities({
+      ...parisFacts,
+      requiresPhysicalOccupation: true,
+    });
+
+    expect(result.formalities[0]).toMatchObject({
+      requirementStatus: "required",
+      procedureKind: "city_aot",
+    });
+  });
+
+  it("requires a police declaration for a public-roadway activity on its own", () => {
+    const result = qualifyActionFormalities({
+      ...parisFacts,
+      isPublicRoadwayActivity: true,
+    });
+
+    expect(result.formalities[0]).toMatchObject({
+      requirementStatus: "required",
+      procedureKind: "police_declaration",
+    });
+  });
+
+  it("requires a police declaration for a claiming activity on its own", () => {
+    const result = qualifyActionFormalities({
+      ...parisFacts,
+      isClaiming: true,
+    });
+
+    expect(result.formalities[0].procedureKind).toBe("police_declaration");
+  });
+
+  it("does not infer a police manifestation from itinerancy when an installation is present", () => {
+    const result = qualifyActionFormalities({
+      ...parisFacts,
+      isItinerant: true,
+      hasInstallations: true,
+    });
+
+    expect(result.formalities.some((item) => item.procedureKind === "city_aot")).toBe(true);
+    expect(result.formalities.some((item) => item.procedureKind === "police_declaration")).toBe(false);
   });
 
   it("qualifies an itinerant cleanwalk without installation for police declaration, not AOT", () => {
@@ -91,6 +136,19 @@ describe("action formalities qualification", () => {
     );
   });
 
+  it("keeps installation uncertainty visible when the police path is otherwise qualified", () => {
+    const result = qualifyActionFormalities({
+      ...parisFacts,
+      isPublicRoadwayActivity: true,
+      hasInstallations: "unknown",
+    });
+
+    expect(result.formalities[0].procedureKind).toBe("police_declaration");
+    expect(result.unresolvedQuestions).toEqual([
+      "faits manquants sur le lieu, l'installation ou la manifestation",
+    ]);
+  });
+
   it("qualifies an explicitly non-municipal managed site separately", () => {
     const result = qualifyActionFormalities({
       ...parisFacts,
@@ -105,6 +163,43 @@ describe("action formalities qualification", () => {
     expect(manager.recipient).toBe("Gestionnaire de la gare");
     expect(manager.officialChannel?.kind).toBe("manager_to_confirm");
     expect(manager.deadline).toBeNull();
+  });
+
+  it("qualifies physical occupation for a non-municipal manager without requiring an installation", () => {
+    const result = qualifyActionFormalities({
+      ...parisFacts,
+      manager: { kind: "sncf", label: "Gestionnaire de la gare" },
+      requiresPhysicalOccupation: true,
+    });
+
+    expect(result.formalities[0]).toMatchObject({
+      requirementStatus: "recommended",
+      procedureKind: "information_only",
+    });
+  });
+
+  it("does not recommend a non-municipal manager when no occupation fact is present", () => {
+    const result = qualifyActionFormalities({
+      ...parisFacts,
+      manager: { kind: "sncf", label: "Gestionnaire de la gare" },
+    });
+
+    expect(result.formalities.some((item) => item.procedureKind === "other_manager")).toBe(false);
+    expect(result.formalities[0].procedureKind).toBe("unknown");
+  });
+
+  it("does not classify an unknown manager as a known non-municipal manager", () => {
+    const result = qualifyActionFormalities({
+      ...parisFacts,
+      manager: { kind: "unknown", label: null },
+      hasInstallations: true,
+    });
+
+    expect(result.formalities.some((item) => item.procedureKind === "other_manager")).toBe(false);
+    expect(result.formalities.map((item) => item.procedureKind)).toEqual([
+      "information_only",
+      "unknown",
+    ]);
   });
 
   it.each(["state", "sncf", "haropa", "other_public", "private"] as const)(
@@ -179,6 +274,7 @@ describe("action formalities qualification", () => {
     expect(result.formalities[0].requirementStatus).toBe("unknown");
     expect(result.formalities[0].procedureKind).toBe("unknown");
     expect(result.formalities[0].source?.verifiedOn).toBe(FORMALITIES_RULE_VERIFIED_ON);
+    expect(result.unresolvedQuestions).toEqual(["forme et occupation exacte de l'action"]);
   });
 
   it("does not extend the public-space exemption to an insufficiently scoped private site", () => {
@@ -190,6 +286,27 @@ describe("action formalities qualification", () => {
 
     expect(result.formalities[0].requirementStatus).toBe("unknown");
     expect(result.formalities[0].procedureKind).toBe("unknown");
+    expect(result.formalities[0]).toMatchObject({
+      id: "paris-formality-scope-undetermined",
+      source: null,
+      scope: "Cleanwalk parisienne sans installation dont la forme juridique et l'occupation effective ne sont pas suffisamment caractérisées.",
+      justification: "Les sources officielles consultées ne créent pas une AOT automatique pour une simple cleanwalk et ne suffisent pas, sans autres faits, à conclure à une exemption ou à une déclaration précise.",
+    });
+  });
+
+  it("uses the generic unknown explanation for a non-cleanwalk outside the covered scope", () => {
+    const result = qualifyActionFormalities({
+      ...parisFacts,
+      publicSpace: "private_domain",
+      isCleanwalk: false,
+    });
+
+    expect(result.formalities[0]).toMatchObject({
+      id: "paris-formality-scope-undetermined",
+      source: null,
+      scope: "Action parisienne dont les faits ne permettent pas encore de sélectionner une formalité.",
+      justification: "Aucune règle officielle suffisamment précise n'est applicable aux faits fournis.",
+    });
   });
 
   it("does not generalize Paris rules to another territory", () => {
@@ -200,10 +317,15 @@ describe("action formalities qualification", () => {
 
     expect(result.rulesetVersion).toBeNull();
     expect(result.formalities[0]).toMatchObject({
+      id: "territory-formality-ruleset-unavailable",
       requirementStatus: "unknown",
       procedureKind: "unknown",
       source: null,
       justification: expect.stringContaining("ne généralise pas"),
     });
+    expect(result.formalities[0].scope).toBe(
+      "Territoire non couvert par un jeu de règles officiel intégré.",
+    );
+    expect(result.unresolvedQuestions).toEqual(["règles officielles du territoire"]);
   });
 });
