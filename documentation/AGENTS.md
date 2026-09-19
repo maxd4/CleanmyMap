@@ -104,6 +104,37 @@ Documenter uniquement une connaissance durable pertinente :
 Modifier la source spécialisée réellement concernée. Préférer un lien à une
 copie.
 
+## Règle spéciale — `impact_IA` : hypothèses et ordres de grandeur
+
+Pour tout chantier portant sur `documentation/plans/rapport_impact/impact_IA/`
+ou sur ses scripts consommateurs, l'absence d'un chiffre exact publiquement ou
+techniquement accessible ne doit pas conduire à classer automatiquement le
+poste `unproved` puis à l'abandonner. L'objectif du rapport est de connaître
+des ordres de grandeur défendables, pas de fabriquer une précision inexistante.
+
+La méthode doit, dans cet ordre :
+
+1. rechercher et conserver toute mesure ou donnée fournisseur réellement
+   accessible ;
+2. formuler une hypothèse explicite lorsque la mesure exacte manque ;
+3. produire une fourchette basse/centrale/haute ou un scénario documenté, avec
+   unité, période, périmètre, facteurs utilisés et source ;
+4. indiquer la sensibilité et la confiance, ainsi que les éléments restant
+   réellement inconnus.
+
+Une hypothèse n'est jamais présentée comme une mesure prouvée : utiliser les
+statuts `OBSERVED/MEASURED`, `DERIVED`, `HYPOTHESIS/PROXY` et `NA/UNKNOWN` de
+manière explicite. `unproved` est réservé à une affirmation qui exige une
+preuve pour être retenue comme fait, non à une estimation prudente clairement
+étiquetée comme telle. Si aucun ordre de grandeur défendable ne peut être
+construit sans inventer une source, conserver `NA` et expliquer le blocage.
+
+Cette règle ne justifie ni l'invention de chiffres, ni la mise à jour
+silencieuse des données environnementales, ni la transformation d'une
+hypothèse en fait. Toute modification d'une hypothèse centrale, d'un facteur,
+d'une période ou d'une fourchette doit rester traçable dans la source canonique
+concernée.
+
 Les README servent d'orientation et d'index. Ils ne doivent pas recopier les
 documents canoniques.
 
