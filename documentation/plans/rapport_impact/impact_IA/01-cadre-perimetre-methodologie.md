@@ -1,180 +1,416 @@
 # Partie I — Cadre, périmètre et méthodologie {#partie-i-cadre-perimetre-et-methode}
 
-Cette partie fixe le cadre de preuve du bilan : ce qui est directement mesuré dans le dépôt, ce qui relève d'une hypothèse déclarative, les ordres de grandeur retenus et les limites de validité de l'exercice. Elle est structurée en deux temps : d'abord la genèse, les objectifs et le périmètre du projet ; ensuite la méthodologie qui sert à interpréter les impacts.
+Cette partie fixe le **cadre de preuve** du rapport : ce qui est directement observé dans le dépôt ou dans une télémétrie, ce qui est déclaré par le porteur du projet, ce qui est dérivé par calcul, ce qui relève d'une hypothèse de scénario, ce qui constitue un proxy et ce qui doit rester indisponible (`NA`).
+
+L'objectif n'est pas de transformer des données incomplètes en précision artificielle. CleanMyMap est un projet développé sur plusieurs mois, avec plusieurs outils d'IA, plusieurs comptes, des services cloud externes et une infrastructure qui a fortement évolué. Le rapport privilégie donc des **ordres de grandeur auditables**, une séparation explicite des niveaux de preuve et des scénarios reproductibles.
+
+La [Partie II-A](./02a-empreinte-environnementale-cleanmymap.md) applique ce cadre à l'empreinte attribuable au développement de CleanMyMap. La [Partie II-B](./02b-ia-data-centers-materiel-acv.md) décrit les mécanismes physiques généraux — data centers, énergie, eau, semi-conducteurs, réseaux et matériel. L'[Annexe B](./annexes/B-methodologie-calcul-incertitudes.md) documente les équations, facteurs, conventions d'arrondi, hypothèses et règles anti-double-comptage.
 
 ## Genèse, objectifs et périmètre du projet
 
 ### Genèse du projet et contexte universitaire
 
-CleanMyMap a été initié dans le cadre du Diplôme Universitaire « Engagement » de Sorbonne Université. Les ateliers suivis ont accompagné un passage d'un prototype centré sur la cartographie vers un outil plus large d'action citoyenne, de coordination et de transmission. Le développement a commencé dans un fichier Python sur Google Colab avec un objectif initial limité : récupérer des bilans d'action depuis un fichier Excel partagé, puis afficher ces bilans et les tracés associés sur une carte Leaflet.
+CleanMyMap a été initié dans le cadre du Diplôme Universitaire « Engagement » de Sorbonne Université. Le projet est parti d'un besoin simple : mieux structurer et visualiser des informations issues d'actions de dépollution, puis progressivement relier signalement, cartographie, coordination, preuve d'impact et transmission.
 
-Le cadre du DU a structuré la démarche autant que le sujet. Cette formation évalue un engagement étudiant à travers des ateliers d'accompagnement, un dossier réflexif et un oral de validation. Dans le cas de CleanMyMap, les fichiers de type `journal_DU` et `atelier_DU` constituent des traces de travail qui documentent la progression du projet, ses arbitrages successifs et la formalisation progressive de ses objectifs.
+Le développement a commencé **à la mi-février 2026**, avant la formalisation complète de l'historique Git. Les premières expérimentations ont été réalisées dans un environnement Python / Google Colab, à partir de données tabulaires et d'une carte Leaflet. Le projet a ensuite évolué vers une application web structurée, puis vers une plateforme plus large intégrant gouvernance des données, authentification, sécurité, rapports, méthodologie, coordination et outils de pilotage.
 
-À cette phase, le modèle de langage chinois DeepSeek a servi à générer les premières lignes de code, mais la faible fenêtre de contexte du modèle a entraîné des boucles d'erreurs. La découverte progressive de Codex, GitHub et du vibe coding a ensuite transformé la méthode de travail. Le projet est passé d'une expérimentation locale à un projet web source ouverte déployé gratuitement sur Streamlit, puis stabilisé par l'achat d'un nom de domaine sur LWS.
+Le cadre du DU a structuré la démarche autant que le produit. Les journaux et ateliers du DU conservent des traces des arbitrages, des difficultés, des évolutions du projet et de la réflexion sur la sobriété, l'utilité réelle et la gouvernance.
 
-Cette trajectoire montre une construction progressive, liée à l'apprentissage du développement assisté par IA autant qu'au sujet du projet lui-même. Les ateliers du DU ont aussi nourri la suite du travail d'évaluation et la réflexion sur les arbitrages de sobriété, d'utilité et de gouvernance.
+### Chronologie synthétique
 
-### Chronologie du projet
+- **Mi-février 2026** : premiers prototypes, expérimentation Python / Colab, traitement de données et cartographie.
+- **Fin février – mars** : passage vers un projet web, découverte progressive de GitHub, des agents de code et d'un développement assisté par IA plus structuré.
+- **Avril – mai** : extension du périmètre fonctionnel, stabilisation progressive des pages principales, des formulaires, de la donnée, de l'authentification, du reporting et de la documentation.
+- **Juin** : consolidation de l'UI, travail sur la méthodologie, partenariats, carte, formulaires de groupe et réduction de certains appels Vercel / Supabase afin de rester compatible avec des plans peu coûteux.
+- **Été 2026** : approfondissement des audits de sécurité, de performance, de données, de qualité, de documentation et de gouvernance ; développement de mécanismes d'export, de suivi et de contrôle.
+- **Septembre 2026** : stabilisation de l'architecture documentaire du rapport d'impact, audit plus fin de l'usage Codex, révision de la méthodologie environnementale et séparation plus nette entre empreinte propre à CleanMyMap et impacts généraux de l'infrastructure IA.
 
-- Fin février : prototype de cartographie et rapport d'impact sur Google Colab relié à un fichier Excel.
-- Mars : structuration du projet vers un site web et découverte de l'écosystème du « vibe coding ».
-- Avril : stabilisation de toutes les pages du site web et correction des bugs.
-- Mai : finalisation et mise en fonctionnement des rubriques importantes, dont la homepage, le formulaire, le mail, la centralisation UI couleur et texte, le rapport d'impact, le ruban de navigation et la partie juridique.
-- Juin : visioconférences avec des partenaires, application de l'UI de plusieurs pages très belles générées par ChatGPT LLM 5.5, travail de fond sur la page méthodologie, Trash Spotter, la météo et le rapport d'impact, création du formulaire de groupe et optimisation des appels Vercel et Supabase pour économiser les quotas gratuits avant une utilisation grand public.
+Cette chronologie décrit des **phases de travail**. Elle ne doit pas être utilisée pour déduire automatiquement un nombre d'heures de calcul ou une consommation énergétique.
 
 ### Objectifs fonctionnels de CleanMyMap
 
-CleanMyMap n'a pas pour seul but d'afficher une carte. Le site doit organiser des données utiles à l'action de terrain, faciliter la coordination entre bénévoles et associations, et fournir des outils de pilotage proportionnés à un usage réel. Le projet s'articule autour de rubriques complémentaires :
+CleanMyMap n'a pas pour seul but d'afficher une carte. Le site vise à organiser des données utiles à l'action de terrain, faciliter la coordination entre bénévoles et associations et produire des informations réutilisables par les acteurs concernés.
 
-- Accueil : tableau de bord, navigation générale, badges et informations clés.
-- Agir : déclaration d'action, itinéraire, signalement, météo de terrain et priorisation.
-- Visualiser : carte communautaire et environnement sécurisé de test.
-- Impact : génération de rapports par compte, association, territoire ou ville.
-- Réseau : cartographie partenariale, communauté et observatoire public.
-- Échanges : discussion et messages privés.
-- Apprendre : ressources pédagogiques, quiz et contenus de vulgarisation.
-- Piloter : décision, gouvernance et configuration pour les administrateurs.
+Le produit s'organise autour de plusieurs familles fonctionnelles :
 
-Cette organisation relie l'usage opérationnel à une logique de gouvernance responsable. Elle sert aussi à distinguer les fonctionnalités qui créent une utilité terrain de celles qui relèvent surtout de l'agrément d'usage ou du confort d'interface.
+- **Accueil et pilotage** : vue d'ensemble, navigation et informations principales ;
+- **Agir** : déclaration d'action, itinéraire, signalement, préparation et suivi ;
+- **Visualiser** : carte, historique et représentation des actions ou zones concernées ;
+- **Impact** : indicateurs, preuves, rapports et exports ;
+- **Réseau** : acteurs, partenaires, communauté et observatoire ;
+- **Échanges** : coordination et communication ;
+- **Apprendre** : contenus pédagogiques, quiz et méthodologie ;
+- **Piloter** : gouvernance, contrôle, paramétrage et surfaces administratives.
 
-Le rapport distingue aussi deux plans d'usage de l'IA. Le premier concerne l'IA utilisée pour développer CleanMyMap : génération ou refactorisation de code, documentation, tests, rédaction, analyse technique et assistance à la conception. Le second concerne l'IA intégrée au site lui-même : par exemple un itinéraire IA, une recommandation automatique, un résumé d'action ou une aide conversationnelle exposée aux utilisateurs. Le premier plan relève du coût de production du projet ; le second relève du coût d'usage et de la valeur fonctionnelle du produit.
+La valeur du projet ne dépend donc pas du volume de code produit mais de la capacité de ces fonctions à réduire des frictions réelles : informations dispersées, doublons, perte de preuves, difficulté de coordination ou manque de continuité entre signalement et action.
 
-Ces usages ne sont pas théoriques : ils correspondent déjà à des routes et composants du dépôt, par exemple `apps/web/src/app/(app)/actions/new/page.tsx`, `apps/web/src/app/(app)/actions/map/page.tsx`, `apps/web/src/app/(app)/actions/history/page.tsx`, `apps/web/src/app/reports/page.tsx` et `apps/web/src/app/learn/hub/page.tsx`.
+## Deux plans d'usage de l'IA
 
-### Périmètre technique observé
+Le rapport distingue strictement deux plans.
 
-- interface client : Next.js 16, React 19, Tailwind, Leaflet, Recharts, Framer Motion
-- serveur/API : routes API Next.js
-- Auth : Clerk côté web et côté application mobile, Supabase comme plan de données partagé
-- Base de données : Supabase, migrations SQL, scripts d'import/sync
-- mesure d'audience : PostHog, Vercel mesure d'audience, Speed Insights
-- Observabilité : Sentry
-- Email : Resend
-- Paiement/dons : Stripe
-- Infra complémentaire : Upstash Redis/QStash, Pinecone déclaré, Vercel
-- Mobile : app Expo/React Native connectée à Supabase
-- héritage : Python, SQLite, scripts, tests historiques et fichiers textes du développeur
+### IA utilisée pour développer CleanMyMap — `CURRENT`
 
-Le périmètre étudié couvre le développement principal jusqu'au 13 mai 2026, puis la rédaction et la consolidation du rapport jusqu'au 16 mai 2026. Cette seconde phase est distincte du produit lui-même, mais utile pour documenter les arbitrages, les limites et les choix de méthode. Les chiffres retenus ici servent de repères de cadrage, pas de mesure exhaustive de toute l'activité du projet.
+L'IA est effectivement utilisée comme outil de développement et de conception :
+
+- génération et refactorisation de code ;
+- analyse du dépôt ;
+- rédaction et restructuration documentaire ;
+- préparation de tests ;
+- débogage ;
+- recherche et synthèse ;
+- réflexion UX / UI ;
+- contrôle de cohérence ;
+- préparation de lots d'intégration.
+
+Ce poste appartient au **coût de production du projet**.
+
+### IA intégrée au produit — `PROSPECTIVE` sauf preuve contraire
+
+Une fonctionnalité applicative reposant sur un LLM, un agent ou une API d'IA doit être distinguée de l'IA ayant servi au développement.
+
+À l'état actuel du dépôt, l'existence de routes, de cartes, de recommandations, de recherche, d'itinéraires ou de fonctions automatisées ne prouve pas qu'un LLM est appelé en production. Une capacité IA applicative ne doit donc être classée `CURRENT` que lorsqu'un appel, un SDK, une configuration ou une télémétrie réelle le démontre.
+
+Cette séparation évite d'attribuer au fonctionnement quotidien du site un coût IA qui appartient en réalité à la phase de développement.
+
+## Périmètre technique observé
+
+Le dépôt courant décrit notamment :
+
+- application web : **Next.js 16**, **React 19**, **TypeScript 7** ;
+- rendu et interface : Tailwind CSS, Leaflet, Recharts, Framer Motion et autres composants UI ;
+- serveur : routes et handlers Next.js ;
+- authentification : **Clerk** ;
+- données : **Supabase / PostgreSQL**, Storage, migrations et scripts de synchronisation ;
+- hébergement / runtime : **Vercel** ;
+- observabilité : **Sentry** ;
+- mesure d'audience : **PostHog**, Vercel Analytics et Speed Insights selon configuration ;
+- email : **Resend** ;
+- services complémentaires déclarés : Upstash Redis / QStash, Pinecone, Stripe et autres intégrations présentes dans le code ;
+- domaine et certains services de messagerie : **LWS** ;
+- application mobile : Expo / React Native, avec périmètre produit distinct ;
+- historique : scripts Python, SQLite, outils de maintenance, tests et artefacts de migration.
+
+Cette liste indique la **présence technique** des dépendances. Elle ne constitue pas une mesure de leur consommation réelle.
+
+## Période étudiée
+
+La période historique retenue pour le développement assisté par IA est :
+
+```text
+mi-février 2026
+→
+septembre 2026
+```
+
+Les premières expérimentations peuvent précéder la première trace Git exploitable. Inversement, une trace Git ne démontre pas à elle seule qu'une activité IA a été utilisée sur chaque modification.
+
+Le rapport distingue donc :
+
+```text
+historique du projet
+≠
+historique Git
+≠
+historique des comptes IA
+≠
+télémétrie locale
+```
 
 ## Méthodologie d'évaluation
 
-Cette sous-partie précise comment le rapport construit ses indicateurs et quelles limites il s'impose. L'objectif est de mesurer ce qui peut l'être, d'estimer ce qui ne peut pas l'être directement, et de signaler clairement ce qui reste hypothétique.
+### Hiérarchie des niveaux de preuve
 
-### Principes méthodologiques
+Le rapport utilise les statuts suivants :
 
-Le bilan repose sur une distinction stricte entre ce qui est mesuré directement dans le dépôt, ce qui est reconstruit par hypothèse et ce qui reste incertain. Les mesures directes concernent surtout la structure du dépôt, les fichiers, les lignes, les routes, les dépendances et les services déclarés. Les estimations concernent le temps de travail assisté par IA, la part des usages, les consommations et les effets indirects. Les incertitudes couvrent notamment le nombre réel de requêtes, les modèles effectivement utilisés, la durée cumulée des sessions et les régions de calcul mobilisées.
+| Statut | Définition |
+| --- | --- |
+| `OBSERVED` | Valeur directement observée dans une source technique ou une télémétrie disponible. |
+| `DERIVED` | Valeur calculée à partir d'une observation avec une formule explicite. |
+| `DECLARED` | Valeur déclarée par le porteur du projet mais non reconstruite exhaustivement. |
+| `ASSUMPTION` | Hypothèse de scénario utilisée pour raisonner. |
+| `PROXY` | Facteur ou indicateur comparable utilisé faute de mesure directe. |
+| `NA` | Donnée indisponible ou non attribuable proprement. |
 
-### Périmètre d'impact retenu
+La logique générale est :
 
-Le périmètre d'impact retenu inclut le développement assisté par IA, l'hébergement, le stockage, les appels API, les services tiers, les compilations, les usages visibles et les usages futurs plausibles lorsqu'ils restent attribuables au projet. Il exclut en revanche les effets trop éloignés du système étudié, les hypothèses non documentables et les scénarios qui ne reposent sur aucun signal technique ou organisationnel. Cette délimitation est nécessaire pour éviter de confondre un audit avec une extrapolation générale sur tout le numérique.
+```text
+OBSERVED
+→ DERIVED
+→ DECLARED / ASSUMPTION
+→ PROXY
+→ NA lorsque l'allocation n'est pas défendable
+```
 
-L'approche retenue ne réduit pas l'impact à l'électricité ou au carbone. Elle prend aussi en compte l'eau, le matériel, les dépendances, la maintenance et les effets de cycle de vie lorsqu'ils peuvent être discutés de façon prudente. Le but n'est pas de produire une somme pseudo-exacte, mais d'obtenir un cadre d'évaluation défendable.
+`NA` est préférable à un faux zéro.
 
-### Construction des indicateurs
+Cette méthode reprend le principe du [protocole scientifique CleanMyMap](../../../product/SCIENTIFIC_PROTOCOL.md) : toute formule doit être explicite, toute hypothèse doit être signalée et un indicateur ne doit pas donner l'illusion d'une mesure absolue.
 
-L'indicateur central du rapport est l'IUR, pour Indice d'Utilité Réelle. Il se formule simplement ainsi : **IUR = Impact terrain / Coût numérique global**. Le numérateur regroupe les effets utiles observables sur le terrain, comme les déchets localisés ou retirés, les actions réalisées, les zones nettoyées, les participants mobilisés et les rapports effectivement transmis. Le dénominateur regroupe les coûts numériques et matériels estimés, notamment l'énergie, le CO₂e, l'eau, le stockage, les transferts et les services tiers.
+### Périmètre d'impact
 
-L'IUR sert à comparer des versions du projet plutôt qu'à produire une vérité absolue. Une fonctionnalité devient plus défendable si elle augmente l'utilité terrain sans alourdir inutilement le coût numérique. À l'inverse, une fonctionnalité qui multiplie les scripts, les pages, les images, les requêtes ou les services sans effet terrain mesurable dégrade l'arbitrage global. Cette logique est complétée par des indicateurs auxiliaires de productivité, de sobriété et de bénéfice terrain, qui permettent d'évaluer si le développement assisté par IA crée une capacité utile ou seulement un volume de production.
+Le bilan cherche à couvrir, lorsque les données existent :
 
-### Scénarios d'évaluation
+- assistance IA au développement ;
+- calcul et infrastructure cloud ;
+- runtime et services applicatifs ;
+- stockage et transferts ;
+- électricité ;
+- carbone ;
+- eau ;
+- matériel ;
+- terminaux ;
+- impressions ;
+- déplacements attribuables au projet ;
+- maintenance et effets rebond.
 
-Les évaluations sont lues selon trois scénarios : bas, médian et haut. Le scénario bas sert de borne prudente pour éviter de surestimer l'impact ou le gain. Le scénario médian sert de base de travail et porte la conclusion principale du rapport. Le scénario haut sert de test de robustesse : il vérifie que la conclusion reste valable même lorsque les hypothèses sont défavorables.
+Il exclut du total propre à CleanMyMap toute allocation qui ne peut pas être défendue, notamment une fraction arbitraire de la consommation mondiale des data centers ou de l'entraînement d'un modèle propriétaire.
 
-Les calculs s'appuient sur des données observables dans le dépôt, sur des hypothèses d'usage de l'IA et sur des fourchettes d'intensité énergétique, carbone, hydrique et matérielle issues de la littérature. Le rapport retient volontairement des ordres de grandeur plutôt que des valeurs trop précises, afin de rester prudent sur un sujet où la mesure directe reste partielle.
+### ACV et comptabilité carbone
 
-## Données observées et hypothèses
+Une **analyse de cycle de vie** et une comptabilité carbone ne sont pas synonymes.
 
-### Données observées du dépôt
+La comptabilité carbone peut distinguer les émissions opérationnelles et les émissions de chaîne de valeur. Une ACV cherche plus largement à suivre les impacts à travers la fabrication, l'usage, la maintenance et la fin de vie, et peut couvrir plusieurs catégories : climat, eau, ressources ou déchets.
 
-Le dépôt fournit une photographie du projet à l'instant du relevé. Il contient **1 226 fichiers source** et **212 520 lignes source** hors dépendances, compilations, documentation, fichiers publics et lockfiles. Cette photographie inclut principalement le code applicatif, les scripts, la configuration et les fichiers de travail utiles à l'audit.
+Dans ce rapport :
 
-| Métrique                       | Valeur (Photographie du dépôt) |
-| ------------------------------ | ------------------------------ |
-| **Fichiers source (filtrés)**  | **1 226**                      |
-| **Lignes source totales**      | **212 520**                    |
-| TypeScript / React (.ts, .tsx) | 146 708                        |
-| SQL / Supabase (.sql)          | 2 189                          |
-| Python / Scripts (.py, .mjs)   | 17 953                         |
-| Style / CSS (.css)             | 1 383                          |
-| Autres (Markdown, JSON, etc.)  | 44 287                         |
+```text
+électricité d'usage
+→ composante opérationnelle
 
-| Historique Git                            | Valeur         |
-| ----------------------------------------- | -------------- |
-| Validations Git depuis le début du projet | 202            |
-| Insertions totales                        | 478 544 lignes |
-| Suppressions totales                      | 276 107 lignes |
+fabrication + infrastructures + renouvellement
+→ composante incorporée / cycle de vie
 
-Le dépôt a donc connu un churn important : de nombreuses lignes ont été ajoutées, supprimées, réécrites ou déplacées avant d'arriver à l'état observé. Ce volume de remaniement est cohérent avec un développement itératif assisté par IA, fondé sur des essais, des corrections successives et des refactorisations progressives.
+somme partielle de postes documentés
+→ ACV partielle
 
-Le projet a été créé le 20 février 2026 et la période active retenue s'étend jusqu'au 16 mai 2026, soit environ **12,1 semaines**. Sur cette base, l'hypothèse de travail retient environ **100 h** de développement assisté par IA, auxquelles s'ajoutent environ **20 h** de rédaction, restructuration et intégration documentaire. Cela correspond à environ **8,2 h/semaine** pour la seule partie assistée par IA et à un impact total estimé de **100 kWh**, **20 kgCO₂e** et **100 L d'eau**, soit environ **8,2 kWh**, **1,6 kgCO₂e** et **8,2 L par semaine** sur l'intervalle retenu. Ces chiffres ne décrivent pas une productivité universelle : ils servent à cadrer la suite du raisonnement.
+ACV complète
+→ NA tant que les postes nécessaires ne sont pas attribuables
+```
 
-### Estimation de l'assistance IA
+## Construction des indicateurs
 
-L'assistance IA n'est pas mesurée comme un temps machine exact. Le rapport repose sur des ordres de grandeur, des journaux partiels, des traces de travail et une reconstruction prudente des usages. Il faut donc distinguer trois modes d'utilisation rencontrés dans le projet : l'abonnement, la clé API et l'exécution locale. Ces trois modes donnent accès à des modèles d'IA, mais ils ne produisent ni les mêmes coûts ni les mêmes niveaux de traçabilité.
+### Indice d'utilité réelle
 
-Le développement n'a pas reposé sur un seul modèle ni sur une seule plateforme. Plusieurs terminaux, plusieurs modèles et plusieurs comptes ont été sollicités, ce qui fragmente la vision globale de l'usage et limite la précision des estimations. La répartition horaire retenue reste donc indicative :
+L'IUR — Indice d'Utilité Réelle — sert de cadre d'arbitrage entre l'impact terrain et le coût numérique.
 
-| Outil / mode                                   | Part horaire estimée | Heures sur 100 h | Usage principal                                            |
-| ---------------------------------------------- | -------------------- | ---------------- | ---------------------------------------------------------- |
-| ChatGPT / Codex / modèle de langage équivalent | 50 %                 | 50 h             | cadrage, génération, refactor, documentation, débogage     |
-| Autres modèles de code                         | 20 %                 | 20 h             | UX, plans d'améliorations, modularisation, documentation   |
-| GPT-5.4 mini — développement du site           | 20 %                 | 20 h             | instructions, réflexions, sources, rédaction du rapport IA |
-| Outils non IA mais induits par l'usage IA      | 10 %                 | 10 h             | tests, validation, ajustements après propositions IA       |
+Il ne doit pas être interprété comme un ratio physique direct entre des unités incompatibles. Par exemple, additionner des litres d'eau et des kilogrammes de CO₂e puis diviser une masse de déchets par cette somme n'aurait pas de signification scientifique sans normalisation explicite.
 
-Les ratios de productivité qui en découlent sont des ratios apparents, pas des mesures de performance humaine. Ils agrègent du code utile, du code remplacé, du refactor, de la configuration, du SQL, des scripts, du Markdown et du churn Git. Ils montrent surtout que la quantité produite doit toujours être relue à la lumière de la maintenabilité, de la qualité et du gain réel pour le projet.
+L'IUR doit donc être compris comme :
 
-### Hypothèses environnementales
+- un **tableau de décision multidimensionnel** ;
+- ou un indice normalisé lorsque les règles de normalisation sont versionnées.
 
-La consommation électrique du développement assisté par IA dépend de plusieurs couches : temps d'inférence, nombre de relances, compilations, tests, CI/CD, aperçus, stockage et consultation de documentation. L'estimation ne sépare pas parfaitement ces couches. Elle agrège l'usage IA, le travail de développement induit et les effets techniques associés, ce qui est compatible avec un ordre de grandeur défendable mais pas avec un inventaire exhaustif.
+Son rôle est de répondre à une question simple : **une fonctionnalité augmente-t-elle suffisamment l'utilité réelle pour justifier son coût supplémentaire ?**
 
-Le rapport retient donc une lecture prudente de l'impact environnemental. Il ne faut pas réduire l'IA au seul carbone, ni présenter l'eau comme si elle était mesurée précisément lorsque ce n'est pas le cas. L'évaluation doit aussi intégrer le matériel, les dépendances, la maintenance et les effets de cycle de vie lorsqu'ils sont pertinents. L'approche rejoint ainsi une logique d'ACV, c'est-à-dire d'analyse du cycle de vie, même si le niveau de détail reste volontairement adapté au périmètre du rapport.
+### Scénarios bas, central et haut
 
-Nous verrons que les ordres de grandeur d'impact écologique a retenir sont de l'ordre de **100 à 400 kWh**, **20 à 160 kgCO₂e** et **100 à 1 000L** par trois mois de devellopement du site web. Ces plages sont a titre indicatif au vu de la propagande probable autour de la bulle IA et des approximations de temps de travail et de token utilisés pour le developpement du site web. Ils servent à comparer des choix et à discuter des arbitrages, pas à produire une certification. Ils doivent être réévalués si des logs d'usage, des factures cloud, des métriques de stockage ou des données fournisseurs deviennent disponibles.
+Les évaluations incertaines sont présentées selon trois scénarios.
 
-### Stratégies de réduction déjà appliquées ou prévues
+| Scénario | Fonction |
+| --- | --- |
+| **Bas** | borne favorable mais encore plausible |
+| **Central** | hypothèse de travail utilisée pour les comparaisons principales |
+| **Haut** | stress test prudent, sans chercher un maximum physiquement absurde |
 
-Une partie de la stratégie de réduction consiste à utiliser l'IA de manière plus sobre, plus ciblée et plus contrôlée. Lorsque la tâche ne demande pas le niveau de raisonnement maximal, un modèle d'inférence plus sobre peut être préféré à un modèle plus lourd ; à l'inverse, les modèles plus puissants sont réservés aux tâches réellement complexes. La logique n'est pas de bannir l'IA, mais de limiter son usage aux tâches où elle crée un gain net.
+Une plage de scénarios n'est pas un intervalle statistique de confiance. Elle représente la sensibilité du résultat à des hypothèses structurantes.
 
-Cette stratégie repose aussi sur la discipline des instructions et des outils. Les demandes larges et floues doivent être évitées au profit de lots précis, plus courts et plus faciles à relire. L'usage du CLI ou d'un environnement dédié est préférable pour le code ; le portail de discussion est plus adapté aux questions de conception, de synthèse ou d'explication courte. Chaque patch doit être relu avant acceptation.
+## Données observées du dépôt
 
-- utiliser l'outil le plus sobre suffisant pour la tâche ;
-- réserver les modèles plus lourds aux besoins réellement complexes ;
-- découper les demandes en lots précis ;
-- éviter les instructions trop larges ;
-- relire chaque patch avant acceptation ;
-- réduire les boucles de correction inutiles ;
-- limiter les compilations, aperçus et relances provoqués par de simples changements documentaires.
+Le dépôt fournit une photographie technique du projet. Les métriques suivantes sont des **snapshots** et doivent être rafraîchies par l'outillage du dépôt lors de l'intégration ou avant publication du rapport.
 
-## Limites méthodologiques et contrôles futurs
+| Métrique | Valeur du dernier snapshot fourni |
+| --- | ---: |
+| Fichiers source filtrés | 1 226 |
+| Lignes source totales | 212 520 |
+| TypeScript / React | 146 708 |
+| SQL / Supabase | 2 189 |
+| Python / scripts | 17 953 |
+| Style / CSS | 1 383 |
+| Autres | 44 287 |
+| Commits depuis le début du projet | 202 |
+| Insertions totales | 478 544 |
+| Suppressions totales | 276 107 |
 
-### Incertitudes principales
+Ces nombres ne mesurent ni la qualité, ni la valeur produite, ni la consommation IA. Le churn inclut ajouts, suppressions, refactorisations, migrations, tests, documentation et code remplacé.
 
-Les principales incertitudes concernent le nombre réel de requêtes IA, leur type, la localisation effective des calculs, la part de modèles légers ou lourds, le volume de compilations déclenchés par les itérations, le stockage réel des photos en production, le trafic futur sur les cartes et rapports, ainsi que le nombre d'actions terrain réellement attribuables à CleanMyMap.
+## Reconstruction de l'activité IA
 
-Le rapport reste aussi limité par l'opacité de certains fournisseurs : l'énergie mobilisée, la ventilation fine des sessions et la contribution exacte des services tiers ne sont pas observables directement. Cette limite impose une lecture prudente des chiffres et interdit de confondre estimation et mesure.
+### Compteurs Codex déclarés
 
-### Risques de surestimation ou de sous-estimation
+Deux comptes Codex sont utilisés :
 
-Le risque de surestimation vient surtout du fait qu'un même volume de code peut inclure du contenu utile, du contenu remplacé et du churn, ce qui gonfle les ratios de productivité apparente. Le risque de sous-estimation existe à l'inverse lorsque les coûts indirects sont invisibles : appels API, stockage, services tiers, services cloud, usage futur ou dépendances peu traçables.
+| Compte | Volume déclaré |
+| --- | ---: |
+| Compte principal | **35 milliards de tokens** |
+| Compte secondaire | **15 milliards de tokens** |
+| **Total déclaré** | **50 milliards de tokens** |
 
-Le rapport évite aussi deux biais classiques : confondre la vitesse de production avec la valeur créée, et confondre une baisse apparente du carbone avec une baisse globale de l'impact. Une estimation prudente doit rester sensible aux incertitudes de mesure, à la diversité des outils utilisés et à la variabilité des contextes d'exécution.
+Ces volumes ne sont pas exclusivement liés à CleanMyMap.
 
-### Contrôles futurs à mettre en place
+### Attribution centrale à CleanMyMap
 
-Pour une version plus instrumentée, les contrôles les plus utiles seraient :
+L'hypothèse retenue attribue **50 %** du volume Codex total au projet :
 
-- journal mensuel des usages IA par type de tâche ;
-- export des durées et fréquences de compilations ;
-- mesure du poids des pages principales ;
-- volume mensuel de stockage photo ;
-- nombre d'exports ou rapports réellement téléchargés ;
-- nombre de signalements transformés en actions ;
-- suivi des impressions physiques du rapport ;
-- estimation plus fine par utilisateur ou par type d'usage.
+\[
+50\ \text{Md} \times 50\% = 25\ \text{Md}
+\]
 
-Ces contrôles permettraient de transformer les ordres de grandeur en mesures plus solides sans changer le cadre de raisonnement.
+Des essais temporaires ont aussi été réalisés avec d'autres plateformes — notamment Antigravity, Windsurf, Cursor et Claude Sonnet via AWS. Faute de compteurs homogènes, leur activité est représentée par une convention correspondant à **20 % du total Codex déclaré** :
 
-### Statut du rapport
+\[
+50\ \text{Md} \times 20\% = 10\ \text{Md de token\text{-}équivalents}
+\]
 
-Le rapport doit être lu comme un document évolutif. Les hypothèses retenues à ce stade sont suffisamment robustes pour soutenir un audit, mais elles doivent être affinées à mesure que l'usage réel du site produit de nouvelles données. Les sections quantitatives, les scénarios et les recommandations sont donc appelés à être révisés si des éléments mesurables plus précis deviennent disponibles.
+Le scénario central d'activité devient donc :
+
+\[
+25\ \text{Md} + 10\ \text{Md}
+=
+35\ \text{Md de token\text{-}équivalents}
+\]
+
+Statut :
+
+```text
+AI_ACTIVITY_CENTRAL = 35 Md token-equivalents
+EVIDENCE = DECLARED + ASSUMPTION
+EXACT_TOTAL = NA
+```
+
+Le terme **token-équivalent** n'affirme pas que tous les fournisseurs utilisent la même unité physique ou le même coût d'inférence. Il sert uniquement à construire un scénario d'activité commun.
+
+### Télémétrie locale partielle
+
+Une reconstruction locale récente couvre environ **69,9 jours**, du 11 juillet au 18 septembre 2026. Sur cette fenêtre, 39 sessions uniques ont été identifiées ; 33 disposent de compteurs exploitables, soit une couverture métrique d'environ **84,62 %**.
+
+Le total observé sur cette fenêtre, tous projets confondus, est d'environ **1,875 milliard de tokens**. Les entrées observées sont très majoritairement marquées comme mises en cache.
+
+Cette télémétrie sert de **contrôle de cohérence**, pas de total historique. Elle ne doit ni être ajoutée aux 50 milliards déclarés ni être extrapolée mécaniquement aux mois absents.
+
+## Hypothèse environnementale centrale
+
+La Partie II-A retient désormais une chaîne de lecture volontairement arrondie :
+
+> **35 Md token-équivalents → ≈ 10 MWh → ≈ 3,7 tCO₂e de composante électrique proxy → ≈ 45 m³ d'eau indirecte proxy → ≈ 5 tCO₂e en ACV partielle centrale de sensibilité.**
+
+Ces valeurs n'ont pas toutes le même statut :
+
+| Valeur | Statut |
+| --- | --- |
+| 35 Md token-équivalents | `DECLARED + ASSUMPTION` |
+| ≈ 10 MWh | `PROXY` |
+| ≈ 3,7 tCO₂e | `PROXY` |
+| ≈ 45 m³ d'eau indirecte | `PROXY` |
+| ≈ 5 tCO₂e ACV partielle | `ASSUMPTION + PROXY` |
+
+Les calculs détaillés et les valeurs intermédiaires non arrondies sont conservés en Annexe B.
+
+### Le facteur carbone n'est pas un facteur OpenAI mesuré
+
+Le rapport utilise actuellement **0,35 kgCO₂e/kWh** comme proxy configurable pour une électricité associée à des serveurs majoritairement américains. Ce facteur est issu du cadre méthodologique interne CleanMyMap fondé sur des références EPA eGRID / EIA.
+
+Il ne doit pas être décrit comme :
+
+```text
+facteur d'émission OpenAI
+```
+
+car OpenAI ne publie pas un facteur carbone moyen unique permettant d'attribuer chaque requête à un mix électrique précis.
+
+La localisation et le contrat énergétique peuvent fortement modifier la composante carbone. À titre d'exemple, OpenAI indique que Stargate Norway doit fonctionner entièrement à partir d'électricité renouvelable. Ce cas montre qu'une infrastructure particulière peut avoir une composante électrique beaucoup moins carbonée ; il ne permet pas d'extrapoler ce facteur à l'ensemble des calculs OpenAI.
+
+### Nucléaire et renouvelables
+
+Le mix électrique modifie fortement le **carbone opérationnel**, mais pas le nombre de kWh consommés.
+
+```text
+10 MWh fossiles
+≈ même énergie finale
+
+10 MWh nucléaire / hydraulique / éolien / solaire
+≈ même énergie finale
+
+mais émissions opérationnelles très différentes
+```
+
+Le nucléaire fournit une production bas-carbone pilotable, tandis que l'éolien, le solaire et l'hydraulique peuvent également réduire fortement les émissions opérationnelles. Leur rôle dépend toutefois de la région, du réseau, du moment de consommation, des interconnexions, du stockage et des conventions contractuelles.
+
+Aucune de ces sources ne supprime l'empreinte de fabrication des GPU, serveurs, réseaux et centres de données. Une baisse du Scope 2 ne doit donc pas être confondue avec une disparition de l'ACV.
+
+## Principes de réduction
+
+La stratégie de sobriété repose d'abord sur l'évitement du calcul inutile :
+
+- utiliser le modèle le plus léger capable de réussir correctement la tâche ;
+- réserver les modèles les plus coûteux aux problèmes réellement complexes ;
+- découper les tâches en lots bornés ;
+- éviter de relancer un audit sans nouveau signal ;
+- limiter les agents parallèles ;
+- réduire les contextes inutiles ;
+- préférer SQL, règle déterministe, script classique ou validation humaine lorsqu'ils suffisent ;
+- réutiliser un résultat déjà validé ;
+- arrêter un chantier lorsque sa condition de clôture est atteinte ;
+- éviter de déclencher builds ou déploiements inutiles pour une modification documentaire.
+
+Le plan détaillé de réduction est traité en Partie IX.
+
+## Incertitudes principales
+
+Les incertitudes structurantes sont :
+
+- attribution des deux comptes Codex entre CleanMyMap et les autres projets ;
+- volume exact des usages Antigravity, Windsurf, Cursor et AWS / Claude ;
+- part réelle de cache sur toute la période ;
+- différences entre modèles et générations matérielles ;
+- localisation des calculs ;
+- facteurs carbone heure par heure ;
+- consommation directe d'eau des data centers ;
+- fabrication et renouvellement des accélérateurs ;
+- consommation locale du poste de travail ;
+- consommation des services Vercel, Supabase, GitHub Actions, Clerk et LWS ;
+- impact exact des générations d'images ;
+- effets de réseau, stockage et réplication.
+
+Ces incertitudes sont traitées par scénarios et statuts de preuve, pas par une marge arbitraire unique du type « ± 50 % ».
+
+## Risques de surestimation et de sous-estimation
+
+### Surestimation possible
+
+- compter deux fois une télémétrie déjà incluse dans un compteur de compte ;
+- additionner estimation par temps et estimation par tokens ;
+- appliquer à toutes les requêtes un facteur correspondant à un workload lourd ;
+- inclure une part d'entraînement sans règle d'allocation ;
+- additionner eau directe et eau indirecte lorsqu'une source les agrège déjà.
+
+### Sous-estimation possible
+
+- omettre le matériel ;
+- ignorer les images ;
+- ignorer les services cloud périphériques ;
+- ne compter que l'inférence visible et pas les appels d'agents ou outils ;
+- ignorer les contextes longs, les sorties et le raisonnement ;
+- omettre les terminaux et le réseau ;
+- considérer les données `NA` comme nulles.
+
+## Contrôles futurs
+
+Les contrôles prioritaires sont :
+
+- journal mensuel des usages IA par compte et par projet ;
+- attribution structurelle des sessions lorsqu'elle est démontrable sans lire le contenu sensible ;
+- conservation des compteurs cumulés et de leur provenance ;
+- métriques de déploiement et de CI ;
+- métriques Vercel / Supabase / GitHub Actions lorsqu'elles sont disponibles ;
+- stockage et transfert des photos ;
+- inventaire des générations d'images ;
+- mesure locale au wattmètre sur une période représentative si nécessaire ;
+- suivi des impressions et déplacements lorsqu'ils deviennent non nuls ;
+- versionnement des facteurs environnementaux.
+
+## Statut du rapport
+
+Le rapport est un document évolutif. Ses hypothèses centrales sont utilisables pour comparer des scénarios et guider des choix, mais elles ne constituent ni un audit fournisseur ni une ACV certifiée.
+
+La règle de gouvernance est :
+
+> **mesurer quand c'est possible, dériver lorsque la formule est explicite, déclarer les hypothèses, utiliser des proxys transparents et laisser `NA` ce qui ne peut pas être attribué proprement.**
