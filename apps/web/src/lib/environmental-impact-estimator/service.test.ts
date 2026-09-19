@@ -145,38 +145,27 @@ describe("environmental impact estimator", () => {
     expect(model.infrastructure.mode).toBe("measured");
     expect(model.infrastructure.referencePeriodMonths).toBe(12);
     expect(model.infrastructure.usage.source).toBe("input");
-    expect(model.infrastructure.curve).toHaveLength(53);
-    expect(model.infrastructure.curve[0].cumulativeKgCo2eProxy).toBe(0);
-    expect(model.infrastructure.curve[6].monthlyKgCo2eProxy).toBeGreaterThan(
-      model.infrastructure.curve[1].monthlyKgCo2eProxy,
-    );
-    expect(model.infrastructure.curve[6].weeklyKgCo2eProxy).toBe(
-      model.infrastructure.curve[6].monthlyKgCo2eProxy,
-    );
-    expect(model.infrastructure.curve.at(-1)?.cumulativeKgCo2eProxy).toBe(
-      model.infrastructure.totalKgCo2eProxy,
-    );
+    expect(model.infrastructure.curve).toHaveLength(0);
+    expect(model.infrastructure.totalKgCo2eProxy).toBeNull();
+    expect(model.infrastructure.monthlyKgCo2eProxy).toBeNull();
     expect(model.infrastructure.graph.granularity).toBe("week");
     expect(model.infrastructure.graph.mode).toBe("cumulative");
     expect(model.infrastructure.graph.considerations.length).toBeGreaterThan(0);
     expect(model.infrastructure.graph.confidencePercent).toBeGreaterThan(60);
     expect(model.infrastructure.secondOrder.factorEstimates).toHaveLength(5);
-    expect(model.infrastructure.secondOrder.totalKgCo2eProxy).toBeCloseTo(
-      model.infrastructure.monthlyKgCo2eProxy ?? 0,
-      5,
-    );
+    expect(model.infrastructure.secondOrder.totalKgCo2eProxy).toBeNull();
     expect(
       model.infrastructure.notes.some((note) => note.includes("point cliquable par semaine")),
     ).toBe(true);
     expect(model.infrastructure.usage.provenance.length).toBeGreaterThan(0);
     expect(
       model.infrastructure.usage.provenance.some((item) => item.source === "reference"),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       model.infrastructure.usage.provenance.some(
         (item) => item.key === "monthlyChatgptConversationHours",
       ),
-    ).toBe(true);
+    ).toBe(false);
 
     const vercel = model.infrastructure.services.find(
       (service) => service.key === "vercel",
@@ -189,24 +178,31 @@ describe("environmental impact estimator", () => {
     );
 
     expect(vercel?.status).toBe("partial");
-    expect(vercel?.monthlyKgCo2eProxy).toBeGreaterThan(0);
+    expect(vercel?.monthlyKgCo2eProxy).toBeNull();
     expect(github?.status).toBe("reference");
-    expect(github?.monthlyKgCo2eProxy).toBe(0);
-    expect(domain?.monthlyKgCo2eProxy).toBeGreaterThan(0);
+    expect(github?.monthlyKgCo2eProxy).toBeNull();
+    expect(domain?.monthlyKgCo2eProxy).toBeNull();
     expect(domain?.metricEstimates.find((metric) => metric.key === "lwsDomainYears")?.quantityPerMonth).toBeCloseTo(1 / 12);
     expect(model.infrastructure.hypotheses.length).toBeGreaterThan(0);
     expect(model.methodology.projectAnchors).toHaveLength(3);
-    expect(model.methodology.projectAnchors[0].kgCo2eProxy).toBe(20);
-    expect(model.methodology.projectAnchors[0].kWhEquivalent).toBe(100);
-    expect(model.methodology.projectAnchors[1].comparisonNote).toContain("ordre de grandeur");
+    expect(model.methodology.projectAnchors[0].kgCo2eProxy).toBe(3_675);
+    expect(model.methodology.projectAnchors[0].kWhEquivalent).toBe(10_500);
+    expect(model.methodology.projectAnchors[1].comparisonNote).toContain("4,8 tCO2e");
+    expect(model.methodology.accounting.centralAi.tokenEquivalent).toBe(35_000_000_000);
+    expect(model.methodology.accounting.centralAi.tokenStatus).toEqual([
+      "DECLARED",
+      "ASSUMPTION",
+    ]);
+    expect(model.methodology.accounting.chatgpt.environmentalStatus).toBe("NA");
+    expect(model.methodology.accounting.services.vercel.physicalImpactStatus).toBe("NA");
     expect(
-      model.methodology.projectAnchors.some((anchor) => anchor.label.includes("GPT-5.4 mini")),
+      model.methodology.projectAnchors.some((anchor) => anchor.label.includes("Services audités")),
     ).toBe(true);
     expect(model.lifecycle.totalKgCo2eProxy).toBe(model.infrastructure.totalKgCo2eProxy);
     expect(model.lifecycle.axisEstimates).toHaveLength(5);
     expect(model.lifecycle.componentEstimates).toHaveLength(8);
     expect(model.lifecycle.axisEstimates[0].label).toBe("Équivalent électrique estimé");
-    expect(model.infrastructure.secondOrder.electricity.calculation).toBe("proxy_equivalent");
+    expect(model.infrastructure.secondOrder.electricity.calculation).toBe("missing");
     expect(model.infrastructure.secondOrder.electricity.kWh).toBeNull();
     expect(model.lifecycle.componentEstimates.some((item) => item.label === "Serveurs")).toBe(
       true,
@@ -216,9 +212,9 @@ describe("environmental impact estimator", () => {
       (service) => service.key === "chatgpt",
     );
 
-    expect(chatgpt?.status).toBe("derived");
-    expect(chatgpt?.monthlyKgCo2eProxy).toBeGreaterThan(0);
-    expect(chatgpt?.sourceNote).toContain("Inclus ACV");
+    expect(chatgpt?.status).toBe("reference");
+    expect(chatgpt?.monthlyKgCo2eProxy).toBeNull();
+    expect(chatgpt?.sourceNote).toContain("impact physique NA");
   });
 
   it("keeps electricity conversion directional and explicit", () => {
@@ -374,12 +370,12 @@ describe("environmental impact estimator", () => {
     );
 
     expect(codex?.status).toBe("derived");
-    expect(codex?.monthlyKgCo2eProxy).toBeGreaterThan(0);
+    expect(codex?.monthlyKgCo2eProxy).toBeNull();
     expect(codex?.metricEstimates.every((metric) => metric.source === "derived")).toBe(true);
     expect(codex?.sourceNote).toContain("journal hebdomadaire");
     expect(chatgpt?.status).toBe("derived");
-    expect(chatgpt?.monthlyKgCo2eProxy).toBeGreaterThan(0);
-    expect(chatgpt?.sourceNote).toContain("Inclus ACV");
+    expect(chatgpt?.monthlyKgCo2eProxy).toBeNull();
+    expect(chatgpt?.sourceNote).toContain("impact physique NA");
   });
 
   it("surfaces invalid negative inputs through validation", () => {

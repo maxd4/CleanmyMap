@@ -652,8 +652,8 @@ export function LegacyMethodologieContent({
                   </h3>
                   <p className="cmm-text-body cmm-text-inverse mx-auto max-w-3xl font-medium">
                     {isFrench
-                      ? "La courbe du bas suit l’historique persistant enregistré dans Supabase, tandis que la ligne pointillée estime l’impact du développement par IA depuis le lancement du projet. Aucun chiffre n’est inventé: les données absentes restent en NA."
-                      : "The bottom curve follows the persistent history stored in Supabase, while the dashed line estimates the impact of AI development since project launch. No number is invented: missing data stays NA."}
+                      ? "La courbe du bas suit l’historique persistant enregistré dans Supabase. Aucun impact IA n’est reconstruit par mois : l’usage exact ChatGPT hors Codex et les facteurs physiques non audités restent en NA."
+                      : "The bottom curve follows the persistent history stored in Supabase. No AI impact is reconstructed per month: exact ChatGPT usage and unaudited physical factors stay NA."}
                   </p>
                 </div>
 

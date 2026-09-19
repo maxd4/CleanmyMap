@@ -342,6 +342,49 @@ export type EnvironmentalImpactProjectAnchor = {
   comparisonNote: string;
 };
 
+export type EnvironmentalImpactAccountingStatus =
+  | "OBSERVED"
+  | "DERIVED"
+  | "DECLARED"
+  | "ASSUMPTION"
+  | "PROXY"
+  | "NA";
+
+export type EnvironmentalImpactCanonicalAccounting = {
+  statusVocabulary: readonly EnvironmentalImpactAccountingStatus[];
+  projectPeriod: string;
+  serviceAuditWindow: string;
+  pre18MarchServiceUsage: string;
+  centralAi: {
+    tokenEquivalent: number;
+    tokenStatus: readonly ["DECLARED", "ASSUMPTION"];
+    energyKwhCalculated: number;
+    energyMwhDisplayed: number;
+    electricalCo2eKgCalculated: number;
+    electricalCo2eTDisplayed: number;
+    indirectWaterLitersCalculated: number;
+    indirectWaterM3Displayed: number;
+    partialLcaCo2eKgCalculated: number;
+    partialLcaTDisplayed: number;
+    physicalStatus: "PROXY";
+    partialLcaStatus: readonly ["ASSUMPTION", "PROXY"];
+  };
+  chatgpt: {
+    exactUsageStatus: "NA";
+    environmentalStatus: "NA";
+    note: string;
+  };
+  images: {
+    quantity: number;
+    quantityStatus: "DECLARED";
+    energyStatus: "NA";
+    co2eStatus: "NA";
+    waterStatus: "NA";
+  };
+  services: Record<string, Record<string, string | number>>;
+  materials: Record<string, string | number>;
+};
+
 export type EnvironmentalImpactUsageProfileEstimate = {
   monthlyElectricityKwh?: number | null;
   monthlyDirectWaterConsumptionLiters: number | null;
@@ -354,15 +397,15 @@ export type EnvironmentalImpactUsageProfileEstimate = {
   monthlyPdfExports: number;
   monthlyMapViews: number;
   monthlyAiCalls: number;
-  monthlyChatgptConversationHours: number;
-  monthlyCodexSessions: number;
-  monthlyCodexConversationTurns: number;
-  monthlyCodexToolActions: number;
-  monthlyCodexShellCommands: number;
-  monthlyCodexFilesTouched: number;
-  monthlyCodexTestsRun: number;
-  monthlyCodexChangedLines: number;
-  monthlyCodexActiveMinutes: number;
+  monthlyChatgptConversationHours: number | null;
+  monthlyCodexSessions: number | null;
+  monthlyCodexConversationTurns: number | null;
+  monthlyCodexToolActions: number | null;
+  monthlyCodexShellCommands: number | null;
+  monthlyCodexFilesTouched: number | null;
+  monthlyCodexTestsRun: number | null;
+  monthlyCodexChangedLines: number | null;
+  monthlyCodexActiveMinutes: number | null;
   monthlyStorageGbMonths: number;
   monthlyApiRequests: number;
   monthlyAuthEvents: number;
@@ -488,7 +531,7 @@ export type EnvironmentalImpactCodexUsageWeeklySnapshotRecord = {
   testRunCount: number;
   changedLineCount: number;
   activeMinutes: number;
-  estimatedKgCo2eProxy: number;
+  estimatedKgCo2eProxy: number | null;
   confidencePercent: number;
   uncertaintyPercent: number;
   notes: string[];
@@ -519,9 +562,9 @@ export type EnvironmentalImpactCodexUsageMonthlyEstimate = {
     testRunCount: number;
     changedLineCount: number;
     activeMinutes: number;
-    estimatedKgCo2eProxy: number;
+    estimatedKgCo2eProxy: number | null;
   };
-  estimatedKgCo2eProxy: number;
+  estimatedKgCo2eProxy: number | null;
   confidencePercent: number;
   uncertaintyPercent: number;
   notes: string[];
@@ -549,6 +592,7 @@ export type EnvironmentalImpactEstimatorMethodology = {
   hypotheses: string[];
   limitations: string[];
   projectAnchors: EnvironmentalImpactProjectAnchor[];
+  accounting: EnvironmentalImpactCanonicalAccounting;
   notes: string[];
   electricity: EnvironmentalImpactElectricityEstimate;
   water: EnvironmentalImpactWaterEstimate;

@@ -48,7 +48,7 @@ export function buildLifecycleScoreSignals(
     carbon: round6(
       usageProfile.monthlyAiCalls * 0.28 +
         chatgpt * 0.12 +
-        usageProfile.monthlyCodexActiveMinutes * 0.22 +
+        (usageProfile.monthlyCodexActiveMinutes ?? 0) * 0.22 +
         usageProfile.monthlyDeployments * 0.16 +
         usageProfile.monthlyErrorEvents * 0.08 +
         codex * 0.16 +
@@ -77,7 +77,7 @@ export function buildLifecycleScoreSignals(
     ),
     ewaste: round6(
       usageProfile.monthlyDeployments * 0.26 +
-        usageProfile.monthlyCodexFilesTouched * 0.18 +
+        (usageProfile.monthlyCodexFilesTouched ?? 0) * 0.18 +
         usageProfile.monthlyErrorEvents * 0.14 +
         usageProfile.monthlySessions * 0.1 +
         usageProfile.monthlyEmailsSent * 0.08 +
@@ -96,9 +96,9 @@ export function buildLifecycleScoreSignals(
     gpus: round6(
       usageProfile.monthlyAiCalls * 0.48 +
         chatgpt * 0.18 +
-        usageProfile.monthlyCodexActiveMinutes * 0.24 +
-        usageProfile.monthlyCodexTestsRun * 0.1 +
-        usageProfile.monthlyCodexConversationTurns * 0.08 +
+        (usageProfile.monthlyCodexActiveMinutes ?? 0) * 0.24 +
+        (usageProfile.monthlyCodexTestsRun ?? 0) * 0.1 +
+        (usageProfile.monthlyCodexConversationTurns ?? 0) * 0.08 +
         codex * 0.1,
     ),
     userDevices: round6(
@@ -146,7 +146,7 @@ export function buildLifecycleScoreSignals(
     ),
     endOfLife: round6(
       usageProfile.monthlyDeployments * 0.2 +
-        usageProfile.monthlyCodexFilesTouched * 0.16 +
+        (usageProfile.monthlyCodexFilesTouched ?? 0) * 0.16 +
         usageProfile.monthlyErrorEvents * 0.14 +
         usageProfile.monthlyEmailsSent * 0.08 +
         stripe * 0.08 +
@@ -180,7 +180,7 @@ export function buildLifecycleEstimate(
 
   if (!hasNumericInput(totalKgCo2eProxy) || totalKgCo2eProxy <= 0) {
     return {
-      totalKgCo2eProxy: totalKgCo2eProxy ?? 0,
+        totalKgCo2eProxy: null,
       axisEstimates: ENVIRONMENTAL_IMPACT_LIFECYCLE_AXIS_DEFINITIONS.map((definition) => ({
         ...definition,
         quantity:
@@ -188,22 +188,22 @@ export function buildLifecycleEstimate(
             ? usageProfile.monthlyElectricityKwh ?? null
             : definition.key === "water"
               ? null
-              : 0,
-        estimatedKgCo2eProxy: 0,
+            : null,
+        estimatedKgCo2eProxy: null,
         sharePercent: 0,
         source,
       })),
       componentEstimates: ENVIRONMENTAL_IMPACT_LIFECYCLE_COMPONENT_DEFINITIONS.map(
         (definition) => ({
           ...definition,
-          quantity: 0,
-          estimatedKgCo2eProxy: 0,
+          quantity: null,
+          estimatedKgCo2eProxy: null,
           sharePercent: 0,
           source,
         }),
       ),
       notes: [
-        "La lecture lifecycle reste nulle tant que le total d'infrastructure n'affiche aucune charge environnementale.",
+        "La lecture lifecycle reste NA tant que le total d'infrastructure ne dispose d'aucune mesure ou facteur physique audité.",
       ],
       hypotheses: [...ENVIRONMENTAL_IMPACT_LIFECYCLE_HYPOTHESES],
       source,

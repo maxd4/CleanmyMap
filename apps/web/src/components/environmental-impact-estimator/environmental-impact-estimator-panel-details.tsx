@@ -292,12 +292,11 @@ export function EnvironmentalImpactEstimatorPanelDetails({
               Services d&apos;infrastructure
             </p>
             <h3 className="mt-1 text-xl font-black tracking-tight text-white">
-              Vercel, Supabase, GPT-5.4 mini, Codex et les autres postes visibles
+              Vercel, Supabase, ChatGPT hors Codex, Codex et les autres postes visibles
             </h3>
             <p className="mt-1 max-w-3xl text-xs leading-relaxed text-red-100/45">
-              GPT-5.4 mini — développement du site et les sessions Codex sont suivis comme deux
-              postes distincts ACV, chacun avec ses propres hypothèses et son propre poids dans le
-              calcul.
+              Les activités des services restent distinctes et observables; elles ne sont pas
+              converties en impact physique sans mesure ou facteur audité. ChatGPT hors Codex reste NA.
             </p>
           </div>
           <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-red-100/50">
@@ -344,7 +343,9 @@ export function EnvironmentalImpactEstimatorPanelDetails({
                     Mensuel
                   </p>
                   <p className="mt-1 text-sm font-black text-white">
-                    {formatTwoDecimals(service.monthlyKgCo2eProxy ?? 0)} kg
+                    {service.monthlyKgCo2eProxy === null
+                      ? "NA"
+                      : `${formatTwoDecimals(service.monthlyKgCo2eProxy)} kg`}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/10 p-3">
@@ -352,7 +353,9 @@ export function EnvironmentalImpactEstimatorPanelDetails({
                     Annuel
                   </p>
                   <p className="mt-1 text-sm font-black text-white">
-                    {formatTwoDecimals(service.annualKgCo2eProxy ?? 0)} kg
+                    {service.annualKgCo2eProxy === null
+                      ? "NA"
+                      : `${formatTwoDecimals(service.annualKgCo2eProxy)} kg`}
                   </p>
                 </div>
               </div>

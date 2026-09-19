@@ -52,7 +52,7 @@ export function buildInfrastructureMetricEstimate(
   return {
     ...definition,
     quantityPerMonth: round6(quantityPerMonth),
-    estimatedKgCo2eProxy: round6(quantityPerMonth * definition.proxyKgCo2ePerUnit),
+    estimatedKgCo2eProxy: null,
     source,
   };
 }
@@ -69,9 +69,9 @@ export function buildInfrastructureMissingDataNotes(
       ) {
         return {
           key: "infrastructure.chatgpt",
-          title: "GPT-5.4 mini — développement du site - ancrage de conversation non remplacé",
+          title: "ChatGPT hors Codex - usage exact non audité",
           detail:
-            "Aucun journal IA plus fin n'est branché. L'estimateur conserve l'ancrage CleanMyMap de 2h de conversation par semaine pour le développement du site, distinct du journal Codex, afin d'éviter une moyenne externe générique.",
+            "Aucun journal ChatGPT exact n'est branché. L'usage et l'impact physique restent NA; aucune durée ni aucun token ne sont reconstruits.",
           scope: "infrastructure" as const,
           severity: "info" as const,
         };
@@ -82,7 +82,7 @@ export function buildInfrastructureMissingDataNotes(
           key: "infrastructure.codex",
           title: "Codex — développement du site - journal hebdomadaire non branché",
           detail:
-            "Aucune semaine Codex n'a encore été enregistrée. L'estimateur garde ce poste à zéro tant qu'un journal hebdomadaire CleanMyMap n'est pas saisi, afin d'éviter une moyenne externe générique.",
+            "Aucune semaine Codex n'a encore été enregistrée. Les compteurs d'activité et l'impact physique restent NA tant qu'un journal n'est pas disponible.",
           scope: "infrastructure" as const,
           severity: "info" as const,
         };
@@ -95,13 +95,13 @@ export function buildInfrastructureMissingDataNotes(
         missingMetricLabels.length > 0 ? missingMetricLabels.join(", ") : "aucune métrique";
       const basisText =
         service.referenceMetricCount > 0
-          ? "une charge de référence documentée"
-          : "les signaux d'usage CleanMyMap";
+          ? "une activité de référence documentée, sans conversion physique"
+          : "les signaux d'usage CleanMyMap, sans conversion physique";
 
       return {
         key: `infrastructure.${service.key}`,
         title: `${service.label} - données directes non branchées`,
-        detail: `Les métriques ${missingMetricText} ne sont pas encore lues depuis le fournisseur. L'estimation s'appuie sur ${basisText} pour rester spécifique au projet et éviter un proxy générique.`,
+        detail: `Les métriques ${missingMetricText} ne sont pas encore lues depuis le fournisseur. L'activité s'appuie sur ${basisText}; l'impact environnemental reste NA faute de mesure ou de facteur audité.`,
         scope: "infrastructure",
         severity: service.referenceMetricCount > 0 ? "warn" : "info",
       };
@@ -181,7 +181,7 @@ export function deriveMetricQuantityFromUsage(
     case "stripePaymentOperations":
       return Math.max(0, round6(usage.monthlyActiveUsers * 0.01));
     case "lwsDomainYears":
-      return 1 / 12;
+      return null;
     case "lwsDnsQueries":
       return round6(
         Math.max(0, 20_000 + usage.monthlyPageViews * 0.03 + usage.monthlyEmailsSent * 0.02),
@@ -194,13 +194,11 @@ export function deriveMetricQuantityFromUsage(
 export function getServiceMonthlyTotal(
   _service: EnvironmentalImpactInfrastructureServiceDefinition,
   metricEstimates: EnvironmentalImpactInfrastructureMetricEstimate[],
-): number {
-  const total = metricEstimates.reduce(
-    (acc, metric) => acc + (metric.estimatedKgCo2eProxy ?? 0),
-    0,
-  );
-
-  return round6(total);
+): number | null {
+  const values = metricEstimates
+    .map((metric) => metric.estimatedKgCo2eProxy)
+    .filter((value): value is number => typeof value === "number");
+  return values.length > 0 ? round6(values.reduce((acc, value) => acc + value, 0)) : null;
 }
 
 export function buildInfrastructureServiceEstimate(
@@ -233,11 +231,12 @@ export function buildInfrastructureServiceEstimate(
       return buildInfrastructureMetricEstimate(metricDefinition, derivedValue, "derived");
     }
 
-    return buildInfrastructureMetricEstimate(
-      metricDefinition,
-      metricDefinition.referenceMonthlyQuantity * periodScale,
-      "reference",
-    );
+    return {
+      ...metricDefinition,
+      quantityPerMonth: null,
+      estimatedKgCo2eProxy: null,
+      source: "reference" as const,
+    };
   });
 
   const metricCount = metricEstimates.length;
@@ -260,7 +259,8 @@ export function buildInfrastructureServiceEstimate(
   );
   const uncertaintyPercent = round6(100 - confidencePercent);
   const monthlyKgCo2eProxy = getServiceMonthlyTotal(definition, metricEstimates);
-  const annualKgCo2eProxy = round6(monthlyKgCo2eProxy * 12);
+  const annualKgCo2eProxy =
+    monthlyKgCo2eProxy === null ? null : round6(monthlyKgCo2eProxy * 12);
 
   return {
     key: definition.key,
@@ -327,8 +327,8 @@ export function buildSecondOrderScoreSignals(
     otherGhgs: round6(
       usageProfile.monthlyAiCalls * 0.38 +
         chatgpt * 0.12 +
-        usageProfile.monthlyCodexActiveMinutes * 0.24 +
-        usageProfile.monthlyCodexTestsRun * 0.14 +
+        (usageProfile.monthlyCodexActiveMinutes ?? 0) * 0.24 +
+        (usageProfile.monthlyCodexTestsRun ?? 0) * 0.14 +
         usageProfile.monthlyErrorEvents * 0.08 +
         codex * 0.1 +
         sentry * 0.06,
@@ -336,7 +336,7 @@ export function buildSecondOrderScoreSignals(
     chemicals: round6(
       usageProfile.monthlyStorageGbMonths * 0.28 +
         usageProfile.monthlyPdfExports * 0.26 +
-        usageProfile.monthlyCodexFilesTouched * 0.16 +
+        (usageProfile.monthlyCodexFilesTouched ?? 0) * 0.16 +
         usageProfile.monthlyDeployments * 0.2 +
         resend * 0.05 +
         stripe * 0.05,
@@ -344,7 +344,7 @@ export function buildSecondOrderScoreSignals(
     water: round6(
       usageProfile.monthlyAiCalls * 0.32 +
         chatgpt * 0.14 +
-        usageProfile.monthlyCodexSessions * 0.24 +
+        (usageProfile.monthlyCodexSessions ?? 0) * 0.24 +
         usageProfile.monthlyBandwidthGb * 0.16 +
         usageProfile.monthlyStorageGbMonths * 0.12 +
         posthog * 0.06 +
@@ -358,7 +358,7 @@ export function buildInfrastructureSecondOrderEstimate(
   infrastructureMode: EnvironmentalImpactInfrastructureEstimate["mode"],
   usageProfile: EnvironmentalImpactUsageProfileEstimate,
   services: EnvironmentalImpactInfrastructureServiceEstimate[],
-  monthlyKgCo2eProxy: number,
+  monthlyKgCo2eProxy: number | null,
 ): EnvironmentalImpactSecondOrderEstimate {
   const scoreSignals = buildSecondOrderScoreSignals(usageProfile, services);
   const scoreTotal = round6(
@@ -375,25 +375,25 @@ export function buildInfrastructureSecondOrderEstimate(
   );
   const source: EnvironmentalImpactSecondOrderEstimate["source"] =
     infrastructureMode === "reference" ? "reference" : "mixed";
+  const baseElectricity = buildElectricityEstimate(usageProfile, null);
+  const effectiveTotalKgCo2eProxy = monthlyKgCo2eProxy ?? baseElectricity.kgCo2e;
 
-  if (monthlyKgCo2eProxy <= 0) {
-    const electricity = buildElectricityEstimate(usageProfile, null);
+  if (effectiveTotalKgCo2eProxy === null || effectiveTotalKgCo2eProxy <= 0) {
     return {
-      totalKgCo2eProxy: 0,
+      totalKgCo2eProxy: null,
       factorEstimates: definitionEntries.map(({ definition }) => ({
         ...definition,
-        quantity: definition.key === "electricity" ? electricity.kWh : null,
-        estimatedKgCo2eProxy:
-          definition.key === "electricity" ? electricity.kgCo2e : 0,
+        quantity: definition.key === "electricity" ? baseElectricity.kWh : null,
+        estimatedKgCo2eProxy: null,
         sharePercent: 0,
         source,
       })),
       notes: [
-        "Le deuxième ordre reste à zéro tant que le premier ordre n'affiche aucune charge environnementale.",
+        "Le deuxième ordre reste NA tant que le premier ordre ne dispose d'aucune mesure ou facteur physique audité.",
       ],
       hypotheses: [...ENVIRONMENTAL_IMPACT_SECOND_ORDER_HYPOTHESES],
       source,
-      electricity,
+      electricity: baseElectricity,
     };
   }
 
@@ -405,7 +405,7 @@ export function buildInfrastructureSecondOrderEstimate(
   );
 
   const proxyElectricityKgCo2e = round6(
-    monthlyKgCo2eProxy *
+    effectiveTotalKgCo2eProxy *
       (scoreTotal > 0
         ? scoreSignals.electricity / normalizer
         : ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS.find(
@@ -421,7 +421,7 @@ export function buildInfrastructureSecondOrderEstimate(
   );
   const electricity = buildElectricityEstimate(usageProfile, proxyElectricityKgCo2e);
   const totalForDecomposition = round6(
-    Math.max(monthlyKgCo2eProxy, electricity.kgCo2e ?? 0),
+    Math.max(effectiveTotalKgCo2eProxy, electricity.kgCo2e ?? 0),
   );
   const nonElectricityDefinitions = definitionEntries.filter(
     ({ definition }) => definition.key !== "electricity",
@@ -581,10 +581,15 @@ export function buildInfrastructureEstimate(
         infrastructureInput?.metrics ?? null,
       ),
   );
-  const monthlyKgCo2eProxy = round6(
-    services.reduce((acc, service) => acc + (service.monthlyKgCo2eProxy ?? 0), 0),
-  );
-  const annualKgCo2eProxy = round6(monthlyKgCo2eProxy * 12);
+  const serviceTotals = services
+    .map((service) => service.monthlyKgCo2eProxy)
+    .filter((value): value is number => typeof value === "number");
+  const monthlyKgCo2eProxy =
+    serviceTotals.length > 0
+      ? round6(serviceTotals.reduce((acc, value) => acc + value, 0))
+      : null;
+  const annualKgCo2eProxy =
+    monthlyKgCo2eProxy === null ? null : round6(monthlyKgCo2eProxy * 12);
   const referenceMetricCount = services.reduce(
     (acc, service) => acc + service.referenceMetricCount,
     0,
@@ -609,13 +614,17 @@ export function buildInfrastructureEstimate(
     96,
   );
   const uncertaintyPercent = round6(100 - confidencePercent);
-  const curve = buildInfrastructureCurve(
-    launchedAt,
-    referencePeriodMonths,
-    usageProfile,
-    infrastructureInput?.metrics ?? null,
-  );
-  const totalKgCo2eProxy = curve.at(-1)?.cumulativeKgCo2eProxy ?? null;
+  const curve =
+    monthlyKgCo2eProxy === null
+      ? []
+      : buildInfrastructureCurve(
+          launchedAt,
+          referencePeriodMonths,
+          usageProfile,
+          infrastructureInput?.metrics ?? null,
+        );
+  const totalKgCo2eProxy =
+    monthlyKgCo2eProxy === null ? null : curve.at(-1)?.cumulativeKgCo2eProxy ?? null;
   const mode: EnvironmentalImpactInfrastructureEstimate["mode"] =
     hasUsageInput(infrastructureInput?.usage) ||
     hasScopeSignalInput(siteInput) ||
@@ -624,7 +633,7 @@ export function buildInfrastructureEstimate(
       Object.values(infrastructureInput.metrics).some((value) => hasNumericInput(value)))
       ? "measured"
       : "reference";
-  const totalMonthlyShare = monthlyKgCo2eProxy === 0 ? 0 : monthlyKgCo2eProxy;
+  const totalMonthlyShare = monthlyKgCo2eProxy ?? 0;
 
   const servicesWithShare = services.map((service) => ({
     ...service,

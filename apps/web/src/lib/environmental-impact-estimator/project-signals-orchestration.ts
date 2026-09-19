@@ -70,8 +70,8 @@ export function buildEnvironmentalImpactProjectSignals(
         ? [
             {
               label: "Codex CleanMyMap",
-              value: codexUsage.codexUsage.estimatedKgCo2eProxy,
-              detail: `Journal hebdomadaire sur ${codexUsage.codexUsage.weekCount} semaine${codexUsage.codexUsage.weekCount > 1 ? "s" : ""}.`,
+              value: "NA",
+              detail: `Activité observée dans le journal hebdomadaire sur ${codexUsage.codexUsage.weekCount} semaine${codexUsage.codexUsage.weekCount > 1 ? "s" : ""}; facteur physique absent.`,
               basis: "recent" as const,
             },
           ]

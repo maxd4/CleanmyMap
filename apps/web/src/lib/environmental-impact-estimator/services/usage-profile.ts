@@ -1,4 +1,3 @@
-import { ENVIRONMENTAL_IMPACT_CHATGPT_EXTENDED_MODE_HOURS_PER_WEEK } from "../constants";
 import type {
   EnvironmentalImpactInfrastructureInput,
   EnvironmentalImpactScopeInput,
@@ -132,15 +131,20 @@ function resolveMonthlyAiCallsMetric(
     "derived",
   );
 }
-function resolveMonthlyChatgptConversationHoursMetric(ctx: UsageProfileContext): number {
+function resolveMonthlyChatgptConversationHoursMetric(ctx: UsageProfileContext): number | null {
+  const value = ctx.usageInput?.monthlyChatgptConversationHours;
+  if (value === null || value === undefined) {
+    return null;
+  }
+
   return resolveUsageField(
     ctx,
     "monthlyChatgptConversationHours",
-    "Heures GPT-5.4 mini",
-    ctx.usageInput?.monthlyChatgptConversationHours,
-    ENVIRONMENTAL_IMPACT_CHATGPT_EXTENDED_MODE_HOURS_PER_WEEK * WEEKS_PER_MONTH,
-    "Référence CleanMyMap documentée à 2h hebdomadaires",
-    "reference",
+    "Heures ChatGPT hors Codex",
+    value,
+    value,
+    "Mesure fournie explicitement; sans mesure, l'usage ChatGPT exact reste NA.",
+    "input",
   );
 }
 function resolveUsageField(
@@ -180,79 +184,31 @@ function buildUsageTrafficMetrics(ctx: UsageProfileContext, sitePageViews: numbe
   };
 }
 function buildUsageCodexMetrics(ctx: UsageProfileContext) {
+  const resolveCodexMetric = (key: string, label: string, value: number | null | undefined) => {
+    if (value === null || value === undefined) {
+      return null;
+    }
+
+    return resolveUsageField(
+      ctx,
+      key,
+      label,
+      value,
+      value,
+      "Mesure issue du journal Codex; sans journal, l'activité et l'impact physique restent NA.",
+      "input",
+    );
+  };
+
   return {
-    monthlyCodexSessions: resolveUsageField(
-      ctx,
-      "monthlyCodexSessions",
-      "Sessions Codex",
-      ctx.usageInput?.monthlyCodexSessions,
-      0,
-      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-      "reference",
-    ),
-    monthlyCodexConversationTurns: resolveUsageField(
-      ctx,
-      "monthlyCodexConversationTurns",
-      "Conversations Codex",
-      ctx.usageInput?.monthlyCodexConversationTurns,
-      0,
-      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-      "reference",
-    ),
-    monthlyCodexToolActions: resolveUsageField(
-      ctx,
-      "monthlyCodexToolActions",
-      "Actions outillées Codex",
-      ctx.usageInput?.monthlyCodexToolActions,
-      0,
-      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-      "reference",
-    ),
-    monthlyCodexShellCommands: resolveUsageField(
-      ctx,
-      "monthlyCodexShellCommands",
-      "Commandes shell Codex",
-      ctx.usageInput?.monthlyCodexShellCommands,
-      0,
-      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-      "reference",
-    ),
-    monthlyCodexFilesTouched: resolveUsageField(
-      ctx,
-      "monthlyCodexFilesTouched",
-      "Fichiers touchés Codex",
-      ctx.usageInput?.monthlyCodexFilesTouched,
-      0,
-      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-      "reference",
-    ),
-    monthlyCodexTestsRun: resolveUsageField(
-      ctx,
-      "monthlyCodexTestsRun",
-      "Tests Codex",
-      ctx.usageInput?.monthlyCodexTestsRun,
-      0,
-      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-      "reference",
-    ),
-    monthlyCodexChangedLines: resolveUsageField(
-      ctx,
-      "monthlyCodexChangedLines",
-      "Lignes modifiées Codex",
-      ctx.usageInput?.monthlyCodexChangedLines,
-      0,
-      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-      "reference",
-    ),
-    monthlyCodexActiveMinutes: resolveUsageField(
-      ctx,
-      "monthlyCodexActiveMinutes",
-      "Minutes actives Codex",
-      ctx.usageInput?.monthlyCodexActiveMinutes,
-      0,
-      "Référence zéro tant qu'aucun journal hebdomadaire n'est branché",
-      "reference",
-    ),
+    monthlyCodexSessions: resolveCodexMetric("monthlyCodexSessions", "Sessions Codex", ctx.usageInput?.monthlyCodexSessions),
+    monthlyCodexConversationTurns: resolveCodexMetric("monthlyCodexConversationTurns", "Conversations Codex", ctx.usageInput?.monthlyCodexConversationTurns),
+    monthlyCodexToolActions: resolveCodexMetric("monthlyCodexToolActions", "Actions outillées Codex", ctx.usageInput?.monthlyCodexToolActions),
+    monthlyCodexShellCommands: resolveCodexMetric("monthlyCodexShellCommands", "Commandes shell Codex", ctx.usageInput?.monthlyCodexShellCommands),
+    monthlyCodexFilesTouched: resolveCodexMetric("monthlyCodexFilesTouched", "Fichiers touchés Codex", ctx.usageInput?.monthlyCodexFilesTouched),
+    monthlyCodexTestsRun: resolveCodexMetric("monthlyCodexTestsRun", "Tests Codex", ctx.usageInput?.monthlyCodexTestsRun),
+    monthlyCodexChangedLines: resolveCodexMetric("monthlyCodexChangedLines", "Lignes modifiées Codex", ctx.usageInput?.monthlyCodexChangedLines),
+    monthlyCodexActiveMinutes: resolveCodexMetric("monthlyCodexActiveMinutes", "Minutes actives Codex", ctx.usageInput?.monthlyCodexActiveMinutes),
   };
 }
 export function buildUsageProfileEstimate(
@@ -334,6 +290,8 @@ export function projectUsageProfileAtWeek(
       Math.sin(((weekIndex % 52) / 52) * Math.PI * 2);
   const multiplier = clampUsageMultiplier(growthMultiplier * seasonalMultiplier);
   const weeklyScale = 1 / WEEKS_PER_MONTH;
+  const scaleNullable = (value: number | null): number | null =>
+    value === null ? null : round6(value * weeklyScale * multiplier);
   return {
     ...usage,
     monthlyElectricityKwh:
@@ -356,19 +314,15 @@ export function projectUsageProfileAtWeek(
     monthlyPdfExports: round6(usage.monthlyPdfExports * weeklyScale * multiplier),
     monthlyMapViews: round6(usage.monthlyMapViews * weeklyScale * multiplier),
     monthlyAiCalls: round6(usage.monthlyAiCalls * weeklyScale * multiplier),
-    monthlyChatgptConversationHours: round6(
-      usage.monthlyChatgptConversationHours * weeklyScale * multiplier,
-    ),
-    monthlyCodexSessions: round6(usage.monthlyCodexSessions * weeklyScale * multiplier),
-    monthlyCodexConversationTurns: round6(
-      usage.monthlyCodexConversationTurns * weeklyScale * multiplier,
-    ),
-    monthlyCodexToolActions: round6(usage.monthlyCodexToolActions * weeklyScale * multiplier),
-    monthlyCodexShellCommands: round6(usage.monthlyCodexShellCommands * weeklyScale * multiplier),
-    monthlyCodexFilesTouched: round6(usage.monthlyCodexFilesTouched * weeklyScale * multiplier),
-    monthlyCodexTestsRun: round6(usage.monthlyCodexTestsRun * weeklyScale * multiplier),
-    monthlyCodexChangedLines: round6(usage.monthlyCodexChangedLines * weeklyScale * multiplier),
-    monthlyCodexActiveMinutes: round6(usage.monthlyCodexActiveMinutes * weeklyScale * multiplier),
+    monthlyChatgptConversationHours: scaleNullable(usage.monthlyChatgptConversationHours),
+    monthlyCodexSessions: scaleNullable(usage.monthlyCodexSessions),
+    monthlyCodexConversationTurns: scaleNullable(usage.monthlyCodexConversationTurns),
+    monthlyCodexToolActions: scaleNullable(usage.monthlyCodexToolActions),
+    monthlyCodexShellCommands: scaleNullable(usage.monthlyCodexShellCommands),
+    monthlyCodexFilesTouched: scaleNullable(usage.monthlyCodexFilesTouched),
+    monthlyCodexTestsRun: scaleNullable(usage.monthlyCodexTestsRun),
+    monthlyCodexChangedLines: scaleNullable(usage.monthlyCodexChangedLines),
+    monthlyCodexActiveMinutes: scaleNullable(usage.monthlyCodexActiveMinutes),
     monthlyStorageGbMonths: round6(usage.monthlyStorageGbMonths * weeklyScale * multiplier),
     monthlyApiRequests: round6(usage.monthlyApiRequests * weeklyScale * multiplier),
     monthlyAuthEvents: round6(usage.monthlyAuthEvents * weeklyScale * multiplier),

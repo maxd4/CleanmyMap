@@ -3,6 +3,25 @@
 Ce document definit la methode de calcul des indicateurs utilises par CleanMyMap.
 Les indicateurs sont des proxys de lecture et de pilotage, pas une mesure scientifique absolue.
 
+## Comptabilité environnementale CleanMyMap
+
+Le vocabulaire de statut est strictement limité à `OBSERVED`, `DERIVED`,
+`DECLARED`, `ASSUMPTION`, `PROXY` et `NA`. Une activité observée ou dérivée ne
+devient pas un impact physique sans mesure ou facteur audité : elle est alors
+affichée comme activité + `NA`.
+
+La période projet va de mi-février à septembre 2026. La fenêtre auditée des
+services va du 18 mars au 18 septembre 2026; l'usage des services antérieur au
+18 mars est `UNKNOWN / NOT AUDITED`.
+
+Le modèle central utilise 35 Md token-équivalent (`DECLARED + ASSUMPTION`) et
+retient comme proxys 10,5 MWh, 3,675 tCO2e électrique et 47,5 m³ d'eau
+indirecte (affichés ≈10 MWh, ≈3,7 tCO2e et ≈45 m³). L'ACV partielle est de
+4,8 tCO2e (affichée ≈5 tCO2e, `ASSUMPTION + PROXY`). L'usage exact ChatGPT
+hors Codex, l'énergie/CO2e/eau des quelque 130 images et les impacts physiques
+des services SaaS restent `NA` faute d'audit exploitable. Aucun token n'est
+reconstruit à partir d'heures, et aucune valeur `NA` n'est convertie en zéro.
+
 ## Schema de travail
 
 ```mermaid
