@@ -145,6 +145,67 @@ describe("action permissions", () => {
     ).toBe(false);
   });
 
+  it("rejects missing identities and blank identifiers even when targets are blank", () => {
+    expect(
+      canReviewActionParticipants(undefined, { createdByClerkId: "" }, [""]),
+    ).toBe(false);
+    expect(
+      canReviewActionParticipants(
+        { userId: undefined as never, role: "benevole", activeRole: "benevole" },
+        { createdByClerkId: "" },
+        [""],
+      ),
+    ).toBe(false);
+    expect(
+      canValidateActionAdministrativeRequirements(undefined, {}, []),
+    ).toBe(false);
+    expect(
+      canReviewActionParticipants(
+        { userId: " ", role: "benevole", activeRole: "benevole" },
+        { createdByClerkId: " " },
+        [" "],
+      ),
+    ).toBe(false);
+    expect(
+      canReviewActionParticipants(
+        { userId: "", role: "benevole", activeRole: "benevole" },
+        { createdByClerkId: "creator-1" },
+        [" "],
+      ),
+    ).toBe(false);
+    expect(
+      canValidateActionAdministrativeRequirements(
+        { userId: undefined as never, activeRole: "benevole" },
+        {},
+        [],
+      ),
+    ).toBe(false);
+  });
+
+  it("matches a sole organizer after trimming its identifier", () => {
+    expect(
+      canValidateActionAdministrativeRequirements(
+        { userId: "organizer-1", activeRole: "benevole" },
+        { createdByClerkId: "creator-1" },
+        [" organizer-1 "],
+      ),
+    ).toBe(true);
+    expect(
+      canValidateActionAdministrativeRequirements(
+        { userId: " organizer-1 ", activeRole: "benevole" },
+        { createdByClerkId: "creator-1" },
+        ["organizer-1"],
+      ),
+    ).toBe(true);
+    expect(
+      canValidateActionAdministrativeRequirements(
+        { userId: "outsider-1", activeRole: "benevole" },
+        { createdByClerkId: "creator-1" },
+        ["organizer-1"],
+      ),
+    ).toBe(false);
+  });
+
   it("rejects outside users from action participant review", () => {
     expect(
       canReviewActionParticipants(

@@ -79,6 +79,16 @@ describe("canonical action impact calculation", () => {
     ]);
   });
 
+  it("keeps a missing declared waste value unmeasured", () => {
+    const contract = { metadata: { wasteKg: undefined } };
+    const nullContract = { metadata: { wasteKg: null } };
+
+    expect(estimateActionWasteKg(contract)).toBeNull();
+    expect(resolveActionWasteKgSource(contract)).toBe("none");
+    expect(estimateActionWasteKg(nullContract)).toBeNull();
+    expect(resolveActionWasteKgSource(nullContract)).toBe("none");
+  });
+
   it("does not turn qualified cigarette-butt mass into waste", () => {
     const impact = computeActionImpactKpis(
       makeContract({
@@ -175,6 +185,16 @@ describe("canonical action impact calculation", () => {
     });
   });
 
+  it("keeps an empty action corpus at zero coverage with no known waste", () => {
+    expect(sumActionImpactKpis([])).toMatchObject({
+      wasteKg: 0,
+      wasteKnown: false,
+      wasteKnownActions: 0,
+      wasteActionCount: 0,
+      wasteCoverageRate: 0,
+    });
+  });
+
   it("calculates independent mass/time estimates and bounds without volunteer multiplication", () => {
     const totals = sumActionImpactKpis([
       makeContract({ wasteKg: 10, volunteersCount: 20, durationMinutes: 60 }),
@@ -197,7 +217,12 @@ describe("canonical action impact calculation", () => {
     const methodology = buildActionImpactMethodology();
 
     expect(methodology.version).toBe(IMPACT_PROXY_CONFIG.version);
+    expect(methodology.scope).toBe(
+      "Actions approuvees et filtrees par la surface concernee.",
+    );
     expect(methodology.buttsPerKg).toBe(BUTTS_PER_KG_REFERENCE);
+    expect(methodology.formulas.butts).toBe("butts = max(0, cigaretteButts)");
+    expect(methodology.formulas.volunteers).toBe("volunteers = max(0, volunteersCount)");
     expect(methodology.formulas.wasteKg).toContain("valeur déclarée");
     expect(methodology.formulas.wasteKg).not.toContain("cigaretteButts / 2500");
     expect(methodology.formulas.co2e).toContain(
