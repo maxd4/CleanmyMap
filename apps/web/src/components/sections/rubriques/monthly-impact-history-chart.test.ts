@@ -28,7 +28,7 @@ function snapshot(
 }
 
 describe("MonthlyImpactHistoryChart", () => {
-  it("renders the monthly pollution curve and the dotted AI development curve", () => {
+  it("renders the monthly pollution curve without reconstructing AI usage", () => {
     const markup = renderToStaticMarkup(
       React.createElement(MonthlyImpactHistoryChart, {
         snapshots: [
@@ -46,18 +46,17 @@ describe("MonthlyImpactHistoryChart", () => {
     expect(markup).toContain("Historique mensuel");
     expect(markup).toContain("Courbe de pollution et impact IA de développement");
     expect(markup).toContain("environmental_impact_snapshots");
-    expect(markup).toContain("10 h = 20 kWh");
-    expect(markup).toContain("10 h = 2 kgCO2e");
-    expect(markup).not.toContain("10 h = 20 km voiture thermique");
-    expect(markup).toContain("10 h = 100 L d");
-    expect(markup).toContain('stroke-dasharray="10 8"');
+    expect(markup).toContain("Usage exact ChatGPT hors Codex non audité");
+    expect(markup).toContain("NA — aucune répartition mensuelle auditable");
+    expect(markup).not.toContain("10 h =");
+    expect(markup).not.toContain('stroke-dasharray="10 8"');
     expect(markup).toContain("févr. 2026");
     expect(markup).toContain("mars 2026");
     expect(markup).toContain("avr. 2026");
     expect(markup).toContain("mai 2026");
     expect(markup).toContain("juin 2026");
     expect(markup).not.toContain("Aucun historique mensuel");
-    expect(markup).not.toContain(">NA<");
+    expect(markup).toContain(">NA<");
   });
 
   it("shows NA when no monthly history is available", () => {

@@ -23,11 +23,6 @@ type MonthlyPoint = {
 
 type Point = { x: number; y: number };
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-const AI_KG_PER_10H = 2;
-const AI_KWH_PER_10H = 20;
-const AI_KM_PER_10H = 20;
-const AI_WATER_LITERS_PER_10H = 100;
 
 function formatNumber(value: number, maximumFractionDigits = 1): string {
   return new Intl.NumberFormat("fr-FR", {
@@ -41,30 +36,6 @@ function formatKg(value: number | null | undefined): string {
   }
 
   return `${formatNumber(value, 2)} kgCO2e`;
-}
-
-function formatKwh(value: number | null | undefined): string {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return "NA";
-  }
-
-  return `${formatNumber(value, 1)} kWh`;
-}
-
-function formatKm(value: number | null | undefined): string {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return "NA";
-  }
-
-  return `${formatNumber(value, 1)} km`;
-}
-
-function formatWater(value: number | null | undefined): string {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return "NA";
-  }
-
-  return `${formatNumber(value, 0)} L`;
 }
 
 function formatMonthLabel(date: Date): string {
@@ -109,27 +80,6 @@ function buildMonthRange(start: Date, end: Date): Date[] {
   return months;
 }
 
-function daysBetween(start: Date, end: Date): number {
-  return Math.max(0, (end.getTime() - start.getTime()) / DAY_MS);
-}
-
-function computeAiMonthlyImpact(monthStart: Date, monthEndExclusive: Date, launchedAt: Date, generatedAt: Date) {
-  const effectiveStart = new Date(Math.max(monthStart.getTime(), launchedAt.getTime()));
-  const effectiveEnd = new Date(Math.min(monthEndExclusive.getTime(), generatedAt.getTime()));
-
-  if (effectiveEnd.getTime() <= effectiveStart.getTime()) {
-    return null;
-  }
-
-  const weeks = daysBetween(effectiveStart, effectiveEnd) / 7;
-  return {
-    kg: weeks * AI_KG_PER_10H,
-    kwh: weeks * AI_KWH_PER_10H,
-    km: weeks * AI_KM_PER_10H,
-    waterLiters: weeks * AI_WATER_LITERS_PER_10H,
-  };
-}
-
 function buildPoints(
   snapshots: EnvironmentalImpactSnapshotRecord[],
   launchedAt: string | null,
@@ -155,19 +105,17 @@ function buildPoints(
 
   return months.map((monthDate) => {
     const monthKey = monthDate.toISOString().slice(0, 7);
-    const monthEndExclusive = addUtcMonths(monthDate, 1);
     const snapshot = monthlySnapshotMap.get(monthKey) ?? null;
-    const aiImpact = launchDate ? computeAiMonthlyImpact(monthDate, monthEndExclusive, launchDate, generatedDate) : null;
 
     return {
       monthKey,
       monthLabel: formatMonthLabel(monthDate),
       date: monthDate,
       pollutionKg: snapshot?.monthlyKgCo2eProxy ?? null,
-      aiKg: aiImpact?.kg ?? null,
-      aiKwh: aiImpact?.kwh ?? null,
-      aiKm: aiImpact?.km ?? null,
-      aiWaterLiters: aiImpact?.waterLiters ?? null,
+      aiKg: null,
+      aiKwh: null,
+      aiKm: null,
+      aiWaterLiters: null,
     };
   });
 }
@@ -251,15 +199,9 @@ export function MonthlyImpactHistoryChart({
   const aiSegments = buildSegments(aiPoints);
   const latestPoint = points.at(-1) ?? null;
   const totalAiKg = aiValues.reduce((acc, value) => acc + value, 0);
-  const totalAiKwh = points.reduce((acc, point) => acc + (point.aiKwh ?? 0), 0);
-  const totalAiKm = points.reduce((acc, point) => acc + (point.aiKm ?? 0), 0);
-  const totalAiWater = points.reduce((acc, point) => acc + (point.aiWaterLiters ?? 0), 0);
   const axisTicks = points.length <= 5 ? points : [points[0], points[Math.floor(points.length / 2)], points.at(-1) ?? points[0]];
   const hasAnyData = hasPollutionData || hasAiData;
   const totalAiKgValue = hasAiData ? totalAiKg : null;
-  const totalAiKwhValue = hasAiData ? totalAiKwh : null;
-  const totalAiKmValue = hasAiData ? totalAiKm : null;
-  const totalAiWaterValue = hasAiData ? totalAiWater : null;
 
   return (
     <figure
@@ -280,8 +222,8 @@ export function MonthlyImpactHistoryChart({
           <p className="max-w-3xl text-sm leading-relaxed text-slate-600">
             La courbe pleine suit l&apos;historique mensuel réellement enregistré dans la table Supabase
             <span className="font-semibold text-slate-800"> environmental_impact_snapshots</span>.
-            La courbe pointillée estime l&apos;impact du développement par IA à partir du lancement du
-            projet et d&apos;une charge constante de 10 h / semaine.
+            Aucune courbe IA mensuelle n&apos;est reconstruite : l&apos;usage exact ChatGPT hors Codex est
+            NA et le modèle central n&apos;est pas réparti par mois sans mesure dédiée.
           </p>
         </div>
 
@@ -297,11 +239,11 @@ export function MonthlyImpactHistoryChart({
           </div>
           <div className="rounded-[1.75rem] border border-white/10 bg-white/70 px-4 py-3 shadow-sm">
 <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-slate-500">
-              IA de développement cumulée
+              Impact IA mensuel reconstruit
             </p>
             <p className="mt-1 text-xl font-black text-slate-950">{formatKg(totalAiKgValue)}</p>
             <p className="mt-1 text-xs font-medium text-slate-500">
-              {formatKwh(totalAiKwhValue)} · {formatKm(totalAiKmValue)} · {formatWater(totalAiWaterValue)}
+              Usage exact ChatGPT hors Codex non audité
             </p>
           </div>
         </div>
@@ -501,7 +443,7 @@ className="fill-slate-500 cmm-text-caption font-black uppercase tracking-[0.18em
                 <span className="h-3 w-3 rounded-full border-2 border-[#fb7185] bg-white" />
                 <div>
                   <p className="text-sm font-bold text-slate-950">Impact IA de développement</p>
-                  <p className="text-xs text-slate-500">Courbe pointillée calculée depuis le lancement</p>
+                  <p className="text-xs text-slate-500">NA — aucune répartition mensuelle auditable</p>
                 </div>
               </div>
               <p className="mt-3 text-sm font-black text-slate-950">{formatKg(totalAiKgValue)}</p>
@@ -512,12 +454,11 @@ className="fill-slate-500 cmm-text-caption font-black uppercase tracking-[0.18em
                 Base de calcul IA
               </p>
               <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600">
-                10 h / semaine de ChatGPT 5.4 depuis le lancement du projet.
+                Le modèle central IA est compté sur la période globale; il n&apos;est pas réparti par mois.
               </p>
               <div className="mt-3 space-y-1 text-sm text-slate-700">
-                <p>10 h = 20 kWh</p>
-                <p>10 h = 2 kgCO2e</p>
-                <p>10 h = 100 L d&apos;eau</p>
+                <p>ChatGPT hors Codex : usage exact NA</p>
+                <p>Énergie, CO2e et eau mensuels : NA</p>
               </div>
             </div>
           </div>

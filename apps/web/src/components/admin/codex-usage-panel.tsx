@@ -190,7 +190,9 @@ export function CodexUsagePanel() {
   const latestSnapshot = result?.latest ?? result?.snapshots?.[0] ?? null;
   const aggregate = result?.aggregate ?? null;
   const averageWeeklyKg = aggregate
-    ? aggregate.estimatedKgCo2eProxy / Math.max(1, aggregate.windowWeeks)
+    ? aggregate.estimatedKgCo2eProxy === null
+      ? null
+      : aggregate.estimatedKgCo2eProxy / Math.max(1, aggregate.windowWeeks)
     : null;
 
   return (

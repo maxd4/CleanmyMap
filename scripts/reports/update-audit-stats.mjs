@@ -267,16 +267,6 @@ const webSrcStats = collectWebSrcStats(path.join(rootDir, 'apps', 'web', 'src'))
 const rasterStats = collectRasterStats(path.join(rootDir, 'apps', 'web', 'public'));
 const gitStats = collectGitHistory('2026-02-20');
 
-const projectStart = new Date('2026-02-20T00:00:00+01:00');
-const reportEnd = new Date('2026-05-16T00:00:00+02:00');
-const weeks = (reportEnd - projectStart) / (7 * 24 * 60 * 60 * 1000);
-const weeksRounded = weeks.toFixed(1).replace('.', ',');
-const devHours = 100;
-const writeHours = 20;
-const devHoursPerWeek = (devHours / weeks).toFixed(1).replace('.', ',');
-const kwhPerWeek = (100 / weeks).toFixed(1).replace('.', ',');
-const kgPerWeek = (20 / weeks).toFixed(1).replace('.', ',');
-const litersPerWeek = (100 / weeks).toFixed(1).replace('.', ',');
 const publicImageCountText = `${rasterStats.byExt.get('.png') || 0} PNG publics et ${rasterStats.byExt.get('.webp') || 0} WebP public`;
 const maxRasterKo = Math.round(rasterStats.maxSize / 1024);
 
@@ -369,15 +359,15 @@ report = replaceOrFail(
 
 report = replaceOrFail(
   report,
-  /Le projet a été créé le 20 février 2026 et la période active retenue s'étend(?: jusqu'au 13 mai 2026| jusqu'au 16 mai 2026, soit environ \*\*12,1 semaines\*\*\. Sur cette base, l'hypothèse de travail retient environ \*\*100 h\*\* de développement assisté par IA, auxquelles s'ajoutent environ \*\*20 h\*\* de rédaction, restructuration et intégration documentaire\. Cela correspond à environ \*\*8,2 h\/semaine\*\* pour la seule partie assistée par IA et à un impact total estimé de \*\*100 kWh\*\*, \*\*20 kgCO2e\*\* et \*\*100 L d'eau\*\*, soit environ \*\*8,2 kWh\*\*, \*\*1,6 kgCO2e\*\* et \*\*8,2 L par semaine\*\* sur l'intervalle retenu\.)?[^.]*?servent à cadrer la suite du raisonnement\./,
-  `Le projet a été créé le 20 février 2026 et la période active retenue s'étend jusqu'au 16 mai 2026, soit environ **${weeksRounded} semaines**. Sur cette base, l'hypothèse de travail retient environ **${devHours} h** de développement assisté par IA, auxquelles s'ajoutent environ **${writeHours} h** de rédaction, restructuration et intégration documentaire. Cela correspond à environ **${devHoursPerWeek} h/semaine** pour la seule partie assistée par IA et à un impact total estimé de **100 kWh**, **20 kgCO2e** et **100 L d'eau**, soit environ **${kwhPerWeek} kWh**, **${kgPerWeek} kgCO2e** et **${litersPerWeek} L par semaine** sur l'intervalle retenu. Ces chiffres ne décrivent pas une productivité universelle : ils servent à cadrer la suite du raisonnement.`,
+  /Le projet a été créé le 20 février 2026 et la période active retenue s'étend(?: jusqu'au 13 mai 2026| jusqu'au 16 mai 2026, soit environ \*\*12,1 semaines\*\*\.).*?servent à cadrer la suite du raisonnement\./s,
+  `Le projet est évalué sur la période projet de mi-février à septembre 2026. Le modèle central retient **35 Md token-équivalent** (**DECLARED + ASSUMPTION**) et calcule **10,5 MWh**, **3,675 tCO2e** et **47,5 m³ d'eau indirecte** comme **PROXY**; l'usage exact ChatGPT hors Codex et toute répartition par heures restent **NA**.`,
   'project duration sentence',
 );
 
 report = replaceOrFail(
   report,
-  /Le projet comptabilise à l'heure actuelle(?: \(16 mai 2026\))? environ \*\*100 h estimées de développement assisté par IA\*\* pour environ \*\*[\d\s\u202f]+ lignes de code\*\* applicatif figées, incluant de nombreux refactors et l'usage majoritaire de modèles légers complétés par des modèles plus lourds pour les tâches complexes\./,
-  `Le projet comptabilise à l'heure actuelle environ **${devHours} h estimées de développement assisté par IA** pour environ **${formatFr(webSrcStats.lines)} lignes de code** applicatif figées, incluant de nombreux refactors et l'usage majoritaire de modèles légers complétés par des modèles plus lourds pour les tâches complexes.`,
+  /Le projet comptabilise à l'heure actuelle(?: \([^)]*\))? environ \*\*\d{2,} h estimées de développement assisté par IA\*\* pour environ \*\*[\d\s\u202f]+ lignes de code\*\* applicatif figées, incluant de nombreux refactors et l'usage majoritaire de modèles légers complétés par des modèles plus lourds pour les tâches complexes\./,
+  `Le projet comptabilise à l'heure actuelle environ **${formatFr(webSrcStats.lines)} lignes de code** applicatif figées. Aucun volume horaire ChatGPT n'est extrapolé; l'usage exact hors Codex reste **NA**.`,
   'current development volume sentence',
 );
 

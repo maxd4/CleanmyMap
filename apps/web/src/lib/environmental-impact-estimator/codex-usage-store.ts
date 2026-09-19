@@ -101,30 +101,6 @@ function normalizeWeekRange(input: EnvironmentalImpactCodexUsageWeeklyInput) {
   };
 }
 
-function deriveEstimatedKgCo2eProxy(params: {
-  sessionCount: number;
-  conversationCount: number;
-  turnCount: number;
-  toolCallCount: number;
-  shellCommandCount: number;
-  fileTouchCount: number;
-  testRunCount: number;
-  changedLineCount: number;
-  activeMinutes: number;
-}): number {
-  return round6(
-    params.activeMinutes * 0.00003 +
-      params.sessionCount * 0.00012 +
-      params.conversationCount * 0.00002 +
-      params.turnCount * 0.000018 +
-      params.toolCallCount * 0.000015 +
-      params.shellCommandCount * 0.00001 +
-      params.fileTouchCount * 0.000008 +
-      params.testRunCount * 0.00006 +
-      params.changedLineCount * 0.0000002,
-  );
-}
-
 function deriveConfidencePercent(source: EnvironmentalImpactCodexUsageSource, counts: number[]) {
   const nonZeroCount = counts.filter((value) => value > 0).length;
   const base = source === "manual" ? 86 : source === "imported" ? 92 : 76;
@@ -145,17 +121,6 @@ export function buildCodexUsageWeeklySnapshot(
   const testRunCount = toNonNegativeNumber(input.testRunCount);
   const changedLineCount = toNonNegativeNumber(input.changedLineCount);
   const activeMinutes = toNonNegativeNumber(input.activeMinutes);
-  const estimatedKgCo2eProxy = deriveEstimatedKgCo2eProxy({
-    sessionCount,
-    conversationCount,
-    turnCount,
-    toolCallCount,
-    shellCommandCount,
-    fileTouchCount,
-    testRunCount,
-    changedLineCount,
-    activeMinutes,
-  });
   const confidencePercent = deriveConfidencePercent(source, [
     sessionCount,
     conversationCount,
@@ -185,10 +150,13 @@ export function buildCodexUsageWeeklySnapshot(
     testRunCount,
     changedLineCount,
     activeMinutes: round6(activeMinutes),
-    estimatedKgCo2eProxy,
+    estimatedKgCo2eProxy: null,
     confidencePercent,
     uncertaintyPercent: round6(100 - confidencePercent),
-    notes: Array.isArray(input.notes) ? input.notes.filter((item) => typeof item === "string") : [],
+    notes: [
+      ...(Array.isArray(input.notes) ? input.notes.filter((item) => typeof item === "string") : []),
+      "Activité Codex observée; facteur physique audité absent, impact CO2e = NA.",
+    ],
     meta: (input.meta ?? {}) as Record<string, unknown>,
   };
 }
@@ -273,7 +241,11 @@ function normalizeCodexUsageSnapshotRow(
     testRunCount: Number(row.test_run_count ?? 0),
     changedLineCount: Number(row.changed_line_count ?? 0),
     activeMinutes: Number(row.active_minutes ?? 0),
-    estimatedKgCo2eProxy: Number(row.estimated_kg_co2e_proxy ?? 0),
+    estimatedKgCo2eProxy:
+      typeof row.estimated_kg_co2e_proxy === "number" &&
+      Number.isFinite(row.estimated_kg_co2e_proxy)
+        ? row.estimated_kg_co2e_proxy
+        : null,
     confidencePercent: Number(row.confidence_percent ?? 0),
     uncertaintyPercent: Number(row.uncertainty_percent ?? 0),
     notes: Array.isArray(row.notes)
@@ -396,13 +368,13 @@ export function buildCodexMonthlyUsageEstimate(
         testRunCount: 0,
         changedLineCount: 0,
         activeMinutes: 0,
-        estimatedKgCo2eProxy: 0,
+        estimatedKgCo2eProxy: null,
       },
-      estimatedKgCo2eProxy: 0,
+      estimatedKgCo2eProxy: null,
       confidencePercent: 0,
       uncertaintyPercent: 100,
       notes: [
-        "Aucune semaine Codex n'est encore enregistrée; l'impact reste donc à zéro tant que le journal hebdomadaire n'est pas rempli.",
+        "Aucune semaine Codex n'est encore enregistrée; l'activité et l'impact physique restent NA.",
       ],
       weeklySnapshots: [],
     };
@@ -412,8 +384,6 @@ export function buildCodexMonthlyUsageEstimate(
   const sourceKinds = new Set(recentSnapshots.map((snapshot) => snapshot.source));
   const source: EnvironmentalImpactCodexUsageMonthlyEstimate["source"] =
     sourceKinds.size > 1 ? "mixed" : recentSnapshots[0].source;
-  const weeklyKgTotal = sumSnapshots(recentSnapshots, (snapshot) => snapshot.estimatedKgCo2eProxy);
-  const monthlyEquivalentKg = round6(weeklyKgTotal * averageMultiplier);
   const sessionCount = sumSnapshots(recentSnapshots, (snapshot) => snapshot.sessionCount);
   const conversationCount = sumSnapshots(recentSnapshots, (snapshot) => snapshot.conversationCount);
   const turnCount = sumSnapshots(recentSnapshots, (snapshot) => snapshot.turnCount);
@@ -449,6 +419,10 @@ export function buildCodexMonthlyUsageEstimate(
     );
   }
 
+  notes.push(
+    "Les compteurs Codex sont observés ou dérivés du journal; aucun facteur physique audité n'est disponible, impact CO2e = NA.",
+  );
+
   return {
     generatedAt,
     windowWeeks: 4,
@@ -473,9 +447,9 @@ export function buildCodexMonthlyUsageEstimate(
       testRunCount: round6(testRunCount * averageMultiplier),
       changedLineCount: round6(changedLineCount * averageMultiplier),
       activeMinutes: round6(activeMinutes * averageMultiplier),
-      estimatedKgCo2eProxy: monthlyEquivalentKg,
+      estimatedKgCo2eProxy: null,
     },
-    estimatedKgCo2eProxy: monthlyEquivalentKg,
+    estimatedKgCo2eProxy: null,
     confidencePercent,
     uncertaintyPercent: round6(100 - confidencePercent),
     notes,

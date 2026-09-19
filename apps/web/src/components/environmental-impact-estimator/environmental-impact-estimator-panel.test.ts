@@ -24,7 +24,6 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
     expect(markup).toContain("Documents à télécharger");
     expect(markup).toContain("Fonctionnement du graphique");
     expect(markup).toContain("Prochaines actions à plus fort impact");
-    expect(markup).toContain("Réduire la charge Vercel");
     expect(markup).toContain("Deuxième ordre");
     expect(markup).toContain("Proxy de carbone CO₂e");
     expect(markup).toContain("Eau estimée");
@@ -34,12 +33,12 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
     expect(markup).toContain("Empreinte matérielle et cycle de vie");
     expect(markup).toContain("Équivalent électrique estimé");
     expect(markup).toContain("À compléter — kWh réel non branché");
-    expect(markup).toContain("Équivalent électrique estimé : pas une consommation mesurée.");
+    expect(markup).toContain("La lecture lifecycle reste NA");
     expect(markup).toContain("Repère : 10 kgCO₂e ≈ 70 km en voiture thermique moyenne.");
     expect(markup).toContain("Serveurs");
     expect(markup).toContain("Vercel");
     expect(markup).toContain("Supabase");
-    expect(markup).toContain("GPT-5.4 mini");
+    expect(markup).toContain("ChatGPT hors Codex");
     expect(markup).toContain("Resend");
     expect(markup).toContain("Nom de domaine LWS");
     expect(markup).toContain("Notes de données manquantes");
@@ -90,9 +89,9 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
               testRunCount: 0,
               changedLineCount: 0,
               activeMinutes: 0,
-              estimatedKgCo2eProxy: 0,
+              estimatedKgCo2eProxy: null,
             },
-            estimatedKgCo2eProxy: 0,
+            estimatedKgCo2eProxy: null,
             confidencePercent: 0,
             uncertaintyPercent: 100,
             notes: [],
@@ -211,9 +210,9 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
                   testRunCount: 0,
                   changedLineCount: 0,
                   activeMinutes: 0,
-                  estimatedKgCo2eProxy: 0,
+                  estimatedKgCo2eProxy: null,
                 },
-                estimatedKgCo2eProxy: 0,
+                estimatedKgCo2eProxy: null,
                 confidencePercent: 0,
                 uncertaintyPercent: 100,
                 notes: [],

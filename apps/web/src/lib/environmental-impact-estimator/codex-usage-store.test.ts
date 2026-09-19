@@ -5,7 +5,7 @@ import {
 } from "./codex-usage-store";
 
 describe("codex usage store", () => {
-  it("builds a weekly snapshot with a transparent CO2e proxy", () => {
+  it("keeps weekly activity separate from the unavailable physical factor", () => {
     const snapshot = buildCodexUsageWeeklySnapshot({
       weekStart: "2026-05-19",
       weekEnd: "2026-05-25",
@@ -24,7 +24,8 @@ describe("codex usage store", () => {
 
     expect(snapshot.weekStart).toBe("2026-05-19");
     expect(snapshot.weekEnd).toBe("2026-05-25");
-    expect(snapshot.estimatedKgCo2eProxy).toBeGreaterThan(0);
+    expect(snapshot.estimatedKgCo2eProxy).toBeNull();
+    expect(snapshot.notes.join(" ")).toContain("facteur physique audité absent");
     expect(snapshot.confidencePercent).toBeGreaterThan(80);
   });
 
@@ -62,7 +63,7 @@ describe("codex usage store", () => {
 
     expect(aggregate.weekCount).toBe(2);
     expect(aggregate.source).toBe("manual");
-    expect(aggregate.estimatedKgCo2eProxy).toBeGreaterThan(0);
+    expect(aggregate.estimatedKgCo2eProxy).toBeNull();
     expect(aggregate.monthlyEquivalent.sessionCount).toBeGreaterThan(0);
     expect(aggregate.notes.length).toBeGreaterThan(0);
   });

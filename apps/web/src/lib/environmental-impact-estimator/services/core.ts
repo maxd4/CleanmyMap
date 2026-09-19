@@ -7,13 +7,14 @@ import {
   ENVIRONMENTAL_IMPACT_LIFECYCLE_HYPOTHESES,
   ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS,
 } from "../constants";
+import { ENVIRONMENTAL_IMPACT_CANONICAL_ACCOUNTING } from "../canonical-accounting";
 import type {
   EnvironmentalImpactEstimateInput,
   EnvironmentalImpactEstimateModel,
   EnvironmentalImpactEstimatorMethodology,
   EnvironmentalImpactUsageProfileEstimate,
 } from "../types";
-import { buildElectricityEstimate } from "./electricity";
+import { buildElectricityEstimate, calculateElectricityCo2e } from "./electricity";
 import { buildWaterEstimate } from "./water";
 import { normalizeEnvironmentalImpactEstimateInput } from "../validation";
 import { buildInfrastructureEstimate, buildInfrastructureMissingDataNotes } from "./infrastructure";
@@ -46,13 +47,17 @@ export function buildEnvironmentalImpactEstimatorMethodology(
     ],
     limitations: [...ENVIRONMENTAL_IMPACT_ESTIMATOR_LIMITATIONS],
     projectAnchors: [...ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS],
+    accounting: ENVIRONMENTAL_IMPACT_CANONICAL_ACCOUNTING,
     notes: [
       "Le moteur expose chaque poste de consommation et son facteur plutôt que de masquer l'approximation dans un score unique.",
       "Les totaux ne sont calculés que sur les postes branchés, afin de ne jamais confondre absence de données et valeur nulle.",
       "Le graphique présente deux courbes cumulées distinctes: le total du site et le total attribué à l'utilisateur, chacune recalculée semaine par semaine.",
-      "La courbe temporelle est un cumul mensuel proxy pour les services d'infrastructure et le domaine.",
-      "GPT-5.4 mini — développement du site est distingué des sessions Codex et peut être ancré à 2h hebdomadaires tant qu'aucun journal plus fin n'est branché.",
-      "Le poste Codex — développement du site repose sur un journal hebdomadaire spécifique au projet; sans semaine enregistrée, il reste explicitement à zéro et signalé comme non branché.",
+      "La courbe temporelle ne présente un total physique que lorsqu'un facteur ou une mesure audité est disponible; les activités SaaS observées restent séparées et NA physiquement.",
+      "Le modèle central retient 35 Md token-équivalent (DECLARED + ASSUMPTION), 10,5 MWh, 3,675 tCO2e électrique, 47,5 m³ d'eau indirecte et 4,8 tCO2e d'ACV partielle; les valeurs physiques sont des PROXY.",
+      "L'usage exact ChatGPT hors Codex est NA: aucune durée ni aucun token ne sont reconstruits.",
+      "Le journal Codex expose une activité observée ou dérivée; son impact physique est NA sans facteur audité.",
+      "Environ 130 générations ou modifications d'images sont DECLARED; énergie, CO2e et eau restent NA.",
+      "Fenêtre projet: mi-février → septembre 2026; fenêtre des services: 18 mars → 18 septembre 2026; avant le 18 mars: UNKNOWN / NOT AUDITED.",
       "Le deuxième ordre détaille la composition interne de l'impact en familles environnementales lisibles.",
       ENVIRONMENTAL_IMPACT_CO2E_COMPOSITION_NOTE,
       "L'eau estimée distingue la consommation directe du site et l'eau indirecte liée à l'électricité. Ces valeurs restent des ordres de grandeur.",
@@ -109,7 +114,8 @@ export function computeEnvironmentalImpactEstimate(
   const lifecycle = buildLifecycleEstimate(
     infrastructure.usage,
     infrastructure.services,
-    infrastructure.totalKgCo2eProxy,
+    infrastructure.totalKgCo2eProxy ??
+      calculateElectricityCo2e(infrastructure.usage.monthlyElectricityKwh),
   );
 
   return {

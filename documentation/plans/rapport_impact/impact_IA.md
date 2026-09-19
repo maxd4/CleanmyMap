@@ -55,8 +55,8 @@ CleanMyMap doit être évalué comme un système technique et opérationnel, pas
 
 ## Résultats principaux
 
-- L'ordre de grandeur retenu pour l'assistance IA et le développement associé est d'environ **100 kWh**, **20 kgCO₂e** et **100 L d'eau** pour **100 h** de travail assisté, avec une forte dépendance au mix électrique, aux services cloud et au volume réel de requêtes.
-- Ces valeurs doivent être lues comme des ordres de grandeur, non comme une mesure instrumentée, et elles s'ajoutent aux coûts d'usage du site, des images, des compilations, du stockage et des services tiers.
+- Le modèle central retient **35 Md token-équivalent** (**DECLARED + ASSUMPTION**) et calcule **10,5 MWh**, **3,675 tCO₂e électrique** et **47,5 m³ d'eau indirecte** comme **PROXY**; l'affichage arrondi est ≈ **10 MWh**, ≈ **3,7 tCO₂e** et ≈ **45 m³**.
+- L'ACV partielle est de **4,8 tCO₂e** (≈ **5 tCO₂e** affichées), sous statuts **ASSUMPTION + PROXY**. L'usage exact ChatGPT hors Codex, les facteurs physiques des images et les impacts physiques des services restent **NA** lorsqu'ils ne sont pas audités.
 - L'IA peut améliorer la productivité de développement sur des tâches ciblées comme la génération de code, la documentation, la correction d'erreurs ou la simplification de parcours, mais ce gain n'est pertinent que s'il ne provoque pas d'inflation technique.
 - Les bénéfices potentiels du projet restent réels si l'outil transforme des signalements dispersés en données localisées, modérées, exportables et utiles à l'action de terrain.
 - Les limites restent structurantes : dépendance à des plateformes privées, exposition aux choix d'architecture, difficulté à auditer certains coûts et risque de faire croître l'empreinte logicielle sans gain terrain mesurable.

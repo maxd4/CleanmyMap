@@ -56,13 +56,13 @@ export const ENVIRONMENTAL_IMPACT_ESTIMATOR_LIMITATIONS = [
 
 export const ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_HYPOTHESES = [
   "Chaque fournisseur est estimé à partir de sa charge principale pour éviter les chevauchements entre services.",
-  "Les métriques absentes utilisent une charge de référence mensuelle documentée plutôt qu'une valeur nulle implicite.",
-  "Le coût du domaine LWS est amorti sur la période pour matérialiser sa contribution dans la courbe temporelle.",
-  "Les impacts de Vercel, Supabase et Resend sont modélisés à partir de leurs facteurs de charge dominants: pages, fonctions, requêtes, stockage, emails et bande passante.",
-  "Les modèles IA de développement restent séparés des services web: GPT-5.4 mini couvre l'assistance de codage et Codex couvre les sessions de développement assisté.",
-  "L'impact de Codex est calculé à partir d'un journal hebdomadaire CleanMyMap: sessions, conversations, actions outillées, tests et temps actif.",
+  "Les métriques d'activité observées ou dérivées ne sont pas converties en impact physique sans facteur ou mesure auditée.",
+  "Le rôle DNS LWS est conservé comme observation; aucun impact physique d'hébergement n'est imputé sans preuve d'hébergement web.",
+  "Vercel, Supabase, GitHub Actions, Clerk et LWS conservent leurs observations d'audit; leur impact physique reste NA faute de mesure fournisseur exploitable.",
+  "ChatGPT hors Codex conserve un statut NA: aucune durée, aucun token et aucun facteur physique ne sont reconstruits.",
+  "Le journal Codex conserve les compteurs d'activité du projet; il ne produit pas de CO2e sans facteur physique audité.",
   "Les services transverses comme Clerk, PostHog, Sentry, Upstash, Pinecone et Stripe restent séparés pour garder le calcul auditable.",
-  "Les valeurs mensuelles évoluent à partir des signaux d'usage du site et d'un taux de croissance explicite lorsque les mesures réelles ne sont pas encore branchées.",
+  "Les valeurs mensuelles d'activité peuvent évoluer à partir des signaux du site; elles ne constituent pas une consommation environnementale mesurée.",
 ] as const;
 
 export const ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_NOTES = [
@@ -70,8 +70,8 @@ export const ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_NOTES = [
   "Chaque point est calculé sur la charge mensuelle courante et non sur un score global opaque.",
   "Les facteurs peuvent être remplacés plus tard par des mesures réelles sans casser le contrat de rendu.",
   "Les courbes dynamiques privilégient les derniers signaux CleanMyMap pour rester spécifiques au projet.",
-  "Les usages GPT-5.4 mini et Codex ne sont jamais fusionnés: ils restent deux postes distincts du moteur ACV.",
-  "Le journal Codex hebdomadaire sert de source spécifique au projet; sans journal, le poste Codex reste explicitement signalé comme non branché plutôt que remplacé par une moyenne externe.",
+  "L'usage ChatGPT exact et l'activité Codex restent séparés; aucun des deux ne reçoit un impact physique inventé.",
+  "Le journal Codex hebdomadaire sert de source spécifique au projet; sans journal, les compteurs et l'impact physique restent NA.",
 ] as const;
 
 export const ENVIRONMENTAL_IMPACT_GRAPH_CONSIDERATIONS = [
@@ -80,7 +80,7 @@ export const ENVIRONMENTAL_IMPACT_GRAPH_CONSIDERATIONS = [
   "Les points successifs sont recalculés à partir d'un profil d'usage mensuel qui peut grandir avec le trafic.",
   "La confiance baisse quand davantage de métriques reposent sur des valeurs de référence.",
   "Les bornes basses et hautes matérialisent l'incertitude des facteurs proxy, pas un intervalle statistique certifié.",
-  "Le domaine LWS est amorti et doit être visible comme un coût fixe, pas noyé dans l'hébergement.",
+  "Le rôle DNS LWS est distingué de l'hébergement web, qui n'est pas démontré dans l'audit.",
   "Les services sont séparés pour éviter les doubles comptages et garder le détail auditable.",
 ] as const;
 
@@ -99,8 +99,6 @@ export const ENVIRONMENTAL_IMPACT_LIFECYCLE_HYPOTHESES = [
   "Les axes énergie, carbone, eau, matière et e-waste sont normalisés à partir des mêmes signaux CleanMyMap pour rester comparables dans le temps.",
   "La décomposition lifecycle doit aider à prioriser les leviers de réduction sans créer de double comptage avec le premier ordre.",
 ] as const;
-
-export const ENVIRONMENTAL_IMPACT_CHATGPT_EXTENDED_MODE_HOURS_PER_WEEK = 2;
 
 export const ENVIRONMENTAL_IMPACT_LIFECYCLE_AXIS_DEFINITIONS = [
   {
@@ -235,37 +233,37 @@ export const ENVIRONMENTAL_IMPACT_LIFECYCLE_COMPONENT_DEFINITIONS = [
 
 export const ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS = [
   {
-    key: "ai-assisted-development-half-site",
-    label: "Assistance IA et développement de la première moitié du site",
+    key: "central-ai-accounting",
+    label: "Comptabilité IA centrale CleanMyMap",
     description:
-      "Ancrage donné pour le développement assisté et l'usage numérique associé à la première moitié du site CleanMyMap.",
-    kWhEquivalent: 100,
-    kgCo2eProxy: 20,
-    waterLitersEquivalent: null,
+      "35 Md token-équivalent, déclaré et associé à une hypothèse; les valeurs physiques sont des proxys auditables, pas des mesures fournisseur.",
+    kWhEquivalent: 10_500,
+    kgCo2eProxy: 3_675,
+    waterLitersEquivalent: 47_500,
     comparisonNote:
-      "Ordre de grandeur comparable à 200 km de voiture et une semaine de vie d'un français moyen en énergie; aucune eau n'est estimée sans signal dédié.",
+      "Calcul central: 10,5 MWh, 3,675 tCO2e électrique et 47,5 m³ d'eau indirecte; affichage arrondi à 10 MWh, 3,7 t et 45 m³.",
   },
   {
-    key: "annual-volunteer-usage-paris",
-    label: "Usage annuel du site par les bénévoles à l'échelle de Paris",
+    key: "partial-lca",
+    label: "ACV partielle centrale",
     description:
-      "Ancrage donné pour le volume annuel d'usage des bénévoles; l'ordre de grandeur reste comparable au développement du site lui-même.",
+      "Complément partiel de cycle de vie conservé comme hypothèse et proxy, sans double comptage avec l'électricité.",
     kWhEquivalent: null,
-    kgCo2eProxy: 20,
+    kgCo2eProxy: 5_000,
     waterLitersEquivalent: null,
     comparisonNote:
-      "Le signal annuel d'usage utilisateur doit être lu comme un ordre de grandeur voisin du développement, pas comme une mesure certifiée.",
+      "Valeur centrale calculée: 4,8 tCO2e, affichée ≈5 tCO2e; aucune compensation ou soustraction avec un autre poste.",
   },
   {
-    key: "chatgpt-llm-extended-conversations",
-    label: "Conversation LLM GPT-5.4 mini en mode développement",
+    key: "audited-services",
+    label: "Services audités — activité sans facteur physique",
     description:
-      "Ancrage de travail pour environ 2 heures de conversation LLM par semaine, distinct du journal Codex.",
-    kWhEquivalent: 1,
+      "Vercel, Supabase, GitHub Actions, Clerk et LWS exposent leurs observations d'audit; l'impact physique reste NA.",
+    kWhEquivalent: null,
     kgCo2eProxy: null,
     waterLitersEquivalent: null,
     comparisonNote:
-      "L'ordre de grandeur énergétique est d'environ 1 kWh par semaine, avec un carbone dépendant du mix électrique et du contexte cloud; il ne doit pas être confondu avec Codex.",
+      "Usage observé + facteur physique absent = OBSERVED/DERIVED + NA; aucune conversion arbitraire n'est appliquée.",
   },
 ] as const satisfies readonly import("./types").EnvironmentalImpactProjectAnchor[];
 
@@ -399,7 +397,7 @@ export const ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_METRIC_DEFINITIONS = [
   },
   {
     key: "chatgptConversationHours",
-    label: "GPT-5.4 mini - conversations LLM",
+    label: "ChatGPT hors Codex — usage exact non audité",
     unitLabel: "heures / mois",
     proxyKgCo2ePerUnit: 0.12,
     referenceMonthlyQuantity: 8.6666666667,
@@ -571,10 +569,10 @@ export const ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_SERVICE_DEFINITIONS = [
   },
   {
     key: "chatgpt",
-    label: "GPT-5.4 mini — développement du site",
-    description: "Modèle IA utilisé pendant le développement CleanMyMap, séparé des services web de production.",
+    label: "ChatGPT hors Codex — développement du site",
+    description: "Usage ChatGPT hors Codex dont la quantité exacte et l'impact physique ne sont pas audités.",
     sourceNote:
-      "Inclus ACV, hors production et hors quotas web tant qu'aucune utilisation IA de production n'est documentée.",
+      "Usage exact et impact physique NA; aucune durée ni aucun token ne sont reconstruits.",
     basis: "monthly",
     metricKeys: ["chatgptConversationHours"],
   },
