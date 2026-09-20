@@ -88,7 +88,7 @@ test("legacy file ceilings are owned by top-heavy, not complexity", () => {
   ]);
   const heavy = JSON.parse(fs.readFileSync("scripts/checks/heavy-files-baseline.json", "utf8"));
   const maxLines = new Map([...heavy.allowed, ...heavy.review].map((entry) => [entry.path, entry.maxLines]));
-  assert.equal(maxLines.get("apps/web/src/lib/auth/api-authorization-contract.ts"), 911);
+  assert.equal(maxLines.has("apps/web/src/lib/auth/api-authorization-contract.ts"), false);
   assert.equal(maxLines.get("apps/web/src/lib/route/route-calibration.ts"), 928);
 });
 

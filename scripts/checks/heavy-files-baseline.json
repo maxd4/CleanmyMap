@@ -458,13 +458,6 @@
       "maxBytes": 19796
     },
     {
-      "path": "apps/web/src/lib/auth/api-authorization-contract.ts",
-      "status": "REVIEW",
-      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
-      "maxLines": 911,
-      "maxBytes": 37859
-    },
-    {
       "path": "apps/web/src/lib/auth/sync.ts",
       "status": "REVIEW",
       "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",

@@ -7,6 +7,8 @@ import {
   type ApiAuthorizationContractEntry,
   type ApiHttpMethod,
 } from "@/lib/auth/api-authorization-contract";
+import { assertNoApiAuthorizationContractKeyCollisions } from "@/lib/auth/api-authorization-contract.assembly";
+import type { ApiAuthorizationContract } from "@/lib/auth/api-authorization-contract.types";
 
 // This is an inventory scope, not an access decision. Every discovered method
 // in these API domains must have an entry in API_AUTHORIZATION_CONTRACT.
@@ -111,6 +113,18 @@ describe("API security boundaries", () => {
 
     expect(new Set(declared)).toEqual(new Set(discovered));
     expect(declared).toHaveLength(discovered.length);
+  });
+
+  it("rejects duplicate route keys before fragment assembly", () => {
+    const fragment = (routeKey: string) =>
+      ({ [routeKey]: {} }) as ApiAuthorizationContract;
+
+    expect(() =>
+      assertNoApiAuthorizationContractKeyCollisions([
+        { name: "first", contract: fragment("actions") },
+        { name: "second", contract: fragment("actions") },
+      ]),
+    ).toThrow('Duplicate API authorization contract key "actions"');
   });
 
   it("keeps public-safe and authenticated/AuthZ decisions explicit per method", () => {

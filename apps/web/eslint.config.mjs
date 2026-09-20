@@ -72,17 +72,6 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    // Ces plafonds remplacent les anciens `off` par la mesure ratifiée ; le
-    // checker de complexité conserve en parallèle le ratchet par fonction.
-    files: ["src/lib/auth/api-authorization-contract.ts"],
-    rules: {
-      "max-lines": [
-        "warn",
-        { max: heavyFileMaxLines("src/lib/auth/api-authorization-contract.ts"), skipBlankLines: true, skipComments: true },
-      ],
-    },
-  },
-  {
     files: ["src/lib/route/route-calibration.ts"],
     rules: {
       "max-lines": [
