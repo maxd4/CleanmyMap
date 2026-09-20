@@ -72,14 +72,14 @@ export function deriveMetricQuantityFromUsage(
   return METRIC_USAGE_RESOLVERS[metricKey as EnvironmentalImpactInfrastructureMetricKey]?.(usage) ?? null;
 }
 
-function getServiceMonthlyProxy(
+export function getServiceMonthlyProxy(
   serviceByKey: ReadonlyMap<string, EnvironmentalImpactInfrastructureServiceEstimate>,
   key: string,
 ): number {
   return serviceByKey.get(key)?.monthlyKgCo2eProxy ?? 0;
 }
 
-function getNullableUsageValue(value: number | null): number {
+export function getNullableUsageValue(value: number | null): number {
   return value ?? 0;
 }
 
