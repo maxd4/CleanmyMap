@@ -1,34 +1,18 @@
-import { buildPersistedNotes } from "./store-notes";
-import { preserveHistoricalRouteCalibrationContext } from "@/lib/route/route-calibration";
-import { normalizeActionPreparationData } from "@/lib/route/route-operational";
-import { resolveActionDepartmentForPersistence } from "@/lib/geo/action-department-resolver";
-import {
-  getTimeContractValidationMessage,
-} from "./time-contract";
-import {
-  normalizeCigaretteButtsMeasurementsFromUserInput,
-} from "@/lib/waste/cigarette-butts";
-import {
-  normalizeVolunteerParticipation,
-  resolveParticipantsCount,
-} from "./volunteer-participation";
-import { extractActionMetadataFromNotes } from "./metadata";
-import { parseDrawingFromNotes } from "./geometry/drawing";
 import type { ActionRow } from "@/types/database";
 import type { ActionMetadata, ActionUpdateInput } from "./action-update-audit";
-import { resolveNextActionStatus } from "./action-update-status";
+import { extractActionMetadataFromNotes } from "./metadata";
+import { getTimeContractValidationMessage } from "./time-contract";
 import {
-  normalizeAdministrativeRequirements,
-  preserveCanonicalAdministrativeRequirements,
-} from "./administrative-requirements";
+  hasPendingAdministrativeRequirements,
+  prepareActionUpdateBody,
+} from "./action-update-preparation";
+import { buildActionUpdateFields } from "./action-update-fields";
+import { buildActionUpdateMeasurements } from "./action-update-measurements";
 import {
-  preserveCanonicalFormalitiesWorkflow,
-  preserveFormalitiesContextWhenOmitted,
-} from "./formalities-workflow";
-import {
-  persistResolvedRouteTargetDistance,
-  resolveRouteTargetDistance,
-} from "@/lib/actions/route-target-distance";
+  buildActionUpdateNotes,
+  preserveManualDrawing,
+} from "./action-update-notes";
+import { preserveGpxObservation } from "./action-update-geometry";
 
 export class ActionUpdateValidationError extends Error {
   constructor(
@@ -51,50 +35,20 @@ export async function prepareActionUpdate(params: {
   parsedBody: ActionUpdateInput;
 }): Promise<PreparedActionUpdate> {
   const { current, parsedBody } = params;
-  const updateData: Record<string, unknown> = {};
-  let body = parsedBody;
-
-  if (parsedBody.preparationData !== undefined) {
-    let preservedPreparationData: typeof parsedBody.preparationData;
-    try {
-      const preservedAdministrativeRequirements = preserveCanonicalAdministrativeRequirements(
-        current.preparation_data,
-        preserveHistoricalRouteCalibrationContext(
-          current.preparation_data,
-          parsedBody.preparationData,
-        ),
-      );
-      const withFormalitiesWorkflow = preserveCanonicalFormalitiesWorkflow(
-        current.preparation_data,
-        preservedAdministrativeRequirements as Record<string, unknown>,
-      );
-      preservedPreparationData = preserveFormalitiesContextWhenOmitted(
-        current.preparation_data,
-        withFormalitiesWorkflow,
-      ) as typeof parsedBody.preparationData;
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message === "Le contexte historique de calibration ne peut pas être réécrit."
-      ) {
-        throw new ActionUpdateValidationError("preparationData", error.message);
-      }
-      throw error;
+  let body: ActionUpdateInput;
+  try {
+    body = prepareActionUpdateBody(current, parsedBody);
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "Le contexte historique de calibration ne peut pas être réécrit."
+    ) {
+      throw new ActionUpdateValidationError("preparationData", error.message);
     }
-    body = { ...parsedBody, preparationData: preservedPreparationData };
+    throw error;
   }
 
-  const nextActionPhase = body.actionPhase ?? current.action_phase;
-  const nextPreparationState =
-    body.preparationData?.preparationState ??
-    current.preparation_data?.preparationState;
-  if (
-    nextActionPhase === "pre_action" &&
-    nextPreparationState === "action_en_cours" &&
-    normalizeAdministrativeRequirements(
-      current.preparation_data?.administrativeRequirements,
-    ).status === "pending"
-  ) {
+  if (hasPendingAdministrativeRequirements(current, body)) {
     throw new ActionUpdateValidationError(
       "preparationData",
       "Les démarches administratives doivent être validées avant le démarrage de l'action.",
@@ -112,289 +66,31 @@ export async function prepareActionUpdate(params: {
         ? body.eventStartTime
         : current.event_start_time,
     endTime:
-      body.eventEndTime !== undefined
-        ? body.eventEndTime
-        : current.event_end_time,
+      body.eventEndTime !== undefined ? body.eventEndTime : current.event_end_time,
   });
   if (temporalMessage) {
     throw new ActionUpdateValidationError("eventStartTime", temporalMessage);
   }
 
-  if (body.actionPhase) {
-    updateData["action_phase"] = body.actionPhase;
-    const nextStatus = resolveNextActionStatus({
-      currentStatus: current.status,
-      actionPhase: body.actionPhase,
-    });
-    if (body.actionPhase !== "post_action_draft") {
-      updateData["status"] = nextStatus;
-    }
-  }
-  if (body.preparationData !== undefined) {
-    const nextPreparationData = normalizeActionPreparationData(body.preparationData ?? {});
-    const resolvedTarget = resolveRouteTargetDistance({
-      durationMinutes: body.durationMinutes ?? current.duration_minutes,
-      routeTargetDistanceKm: nextPreparationData.routeTargetDistanceKm,
-      routeTargetDistanceSource: nextPreparationData.routeTargetDistanceSource,
-    });
-    updateData["preparation_data"] = persistResolvedRouteTargetDistance(
-      nextPreparationData,
-      resolvedTarget,
-    );
-  }
-  if (body.actorName !== undefined) {
-    updateData["actor_name"] = body.actorName.trim() || null;
-  }
-  if (body.actionDate !== undefined) {
-    updateData["action_date"] = body.actionDate;
-  }
-  if (body.locationLabel !== undefined) {
-    updateData["location_label"] = body.locationLabel.trim();
-  }
-  if (body.latitude !== undefined) {
-    updateData["latitude"] = body.latitude;
-  }
-  if (body.longitude !== undefined) {
-    updateData["longitude"] = body.longitude;
-  }
-
-  const coordinatesChanged =
-    (body.latitude !== undefined && body.latitude !== current.latitude) ||
-    (body.longitude !== undefined && body.longitude !== current.longitude);
-  const department = await resolveActionDepartmentForPersistence({
-    latitude: body.latitude ?? current.latitude,
-    longitude: body.longitude ?? current.longitude,
-    geometry: coordinatesChanged
-      ? null
-      : {
-          kind: current.derived_geometry_kind,
-          geojson: current.derived_geometry_geojson,
-        },
-    existingDepartmentCode: current.department_code,
-    existingDepartmentName: current.department_name,
-    spatiallyChanged: coordinatesChanged,
-  });
-  updateData["department_code"] = department.departmentCode;
-  updateData["department_name"] = department.departmentName;
-
-  if (body.wasteKg !== undefined) {
-    updateData["waste_kg"] = body.wasteKg;
-  }
-
-  const hasButtsMeasurementUpdate = [
-    "cigaretteButtsMeasurements",
-    "cigaretteButtsCount",
-    "cigaretteButtsMassKg",
-    "cigaretteButtsVolumeLiters",
-    "cigaretteButtsCondition",
-    "cigaretteButtsKg",
-    "cigaretteButts",
-  ].some((key) => Object.prototype.hasOwnProperty.call(body, key));
-  let nextCigaretteButtsMeasurements =
-    currentMetadata.cigaretteButtsMeasurements ?? null;
-  if (hasButtsMeasurementUpdate) {
-    const currentMeasurements = currentMetadata.cigaretteButtsMeasurements;
-    nextCigaretteButtsMeasurements = normalizeCigaretteButtsMeasurementsFromUserInput(
-      body.cigaretteButtsMeasurements !== undefined
-        ? body.cigaretteButtsMeasurements === null
-          ? {}
-          : body.cigaretteButtsMeasurements
-        : {
-            cigaretteButtsCount:
-              body.cigaretteButtsCount !== undefined
-                ? body.cigaretteButtsCount
-                : body.cigaretteButts !== undefined
-                  ? body.cigaretteButts
-                  : currentMeasurements?.cigaretteButtsCount ??
-                    current.cigarette_butts,
-            cigaretteButtsMassKg:
-              body.cigaretteButtsMassKg !== undefined
-                ? body.cigaretteButtsMassKg
-                : body.cigaretteButtsKg !== undefined
-                  ? body.cigaretteButtsKg
-                  : currentMeasurements?.cigaretteButtsMassKg ??
-                    currentMetadata.cigaretteButtsKg,
-            cigaretteButtsVolumeLiters:
-              body.cigaretteButtsVolumeLiters !== undefined
-                ? body.cigaretteButtsVolumeLiters
-                : currentMeasurements?.cigaretteButtsVolumeLiters ?? null,
-            cigaretteButtsCondition:
-              body.cigaretteButtsCondition !== undefined
-                ? body.cigaretteButtsCondition
-                : currentMeasurements?.cigaretteButtsCondition ?? null,
-          },
-      body.cigaretteButtsMeasurements !== undefined
-        ? { preserveExplicitNulls: true }
-        : {
-            explicitNullFields: [
-              ...(body.cigaretteButtsCount === null || body.cigaretteButts === null
-                ? ["cigaretteButtsCount" as const]
-                : []),
-              ...(body.cigaretteButtsMassKg === null || body.cigaretteButtsKg === null
-                ? ["cigaretteButtsMassKg" as const]
-                : []),
-              ...(body.cigaretteButtsVolumeLiters === null
-                ? ["cigaretteButtsVolumeLiters" as const]
-                : []),
-            ],
-          },
-    );
-    updateData["cigarette_butts"] =
-      nextCigaretteButtsMeasurements.cigaretteButtsCount;
-  }
-
-  const hasVolunteerParticipationUpdate = Object.prototype.hasOwnProperty.call(
+  const updateData = await buildActionUpdateFields({ current, body });
+  const measurements = buildActionUpdateMeasurements({
+    current,
     body,
-    "volunteerParticipation",
-  );
-  const nextVolunteerParticipation = hasVolunteerParticipationUpdate
-    ? body.volunteerParticipation === null || body.volunteerParticipation === undefined
-      ? null
-      : normalizeVolunteerParticipation(body.volunteerParticipation)
-    : currentMetadata.volunteerParticipation;
-  if (hasVolunteerParticipationUpdate || body.volunteersCount !== undefined) {
-    updateData["volunteers_count"] = resolveParticipantsCount({
-      volunteerParticipation: nextVolunteerParticipation,
-      legacyVolunteersCount:
-        body.volunteersCount ?? current.volunteers_count,
-    });
-  }
-  if (body.durationMinutes !== undefined) {
-    updateData["duration_minutes"] = body.durationMinutes;
-    if (body.preparationData === undefined) {
-      const currentPreparationData = normalizeActionPreparationData(
-        current.preparation_data ?? {},
-      );
-      const resolvedTarget = resolveRouteTargetDistance({
-        durationMinutes: body.durationMinutes,
-        routeTargetDistanceKm: currentPreparationData.routeTargetDistanceKm,
-        routeTargetDistanceSource: currentPreparationData.routeTargetDistanceSource,
-      });
-      updateData["preparation_data"] = persistResolvedRouteTargetDistance(
-        currentPreparationData,
-        resolvedTarget,
-      );
-    }
-  }
-  if (body.eventStartTime !== undefined) {
-    updateData["event_start_time"] = body.eventStartTime;
-  }
-  if (body.eventEndTime !== undefined) {
-    updateData["event_end_time"] = body.eventEndTime;
-  }
-  if (body.organizerType !== undefined) {
-    updateData["organizer_type"] = body.organizerType;
+    currentMetadata,
+  });
+  Object.assign(updateData, measurements.updateData);
+
+  const notes = buildActionUpdateNotes({
+    body,
+    currentMetadata,
+    hasButtsMeasurementUpdate: measurements.hasButtsMeasurementUpdate,
+    nextCigaretteButtsMeasurements: measurements.nextCigaretteButtsMeasurements,
+    nextVolunteerParticipation: measurements.nextVolunteerParticipation,
+  });
+  if (notes !== undefined) {
+    updateData["notes"] = preserveManualDrawing(current.notes, notes);
   }
 
-  const shouldRefreshNotes = Object.entries(body).some(
-    ([key, value]) =>
-      key !== "actionPhase" &&
-      key !== "preparationData" &&
-      key !== "organizerType" &&
-      key !== "departmentCode" &&
-      key !== "departmentName" &&
-      key !== "eventStartTime" &&
-      key !== "eventEndTime" &&
-      value !== undefined,
-  );
-  if (shouldRefreshNotes) {
-    const persistedPayload = {
-      associationName:
-        body.associationName ?? currentMetadata.associationName ?? undefined,
-      groupJoinEnabled:
-        body.groupJoinEnabled ?? currentMetadata.groupJoinEnabled,
-      departureLocationLabel:
-        body.departureLocationLabel ??
-        currentMetadata.departureLocationLabel ??
-        undefined,
-      arrivalLocationLabel:
-        body.arrivalLocationLabel ??
-        currentMetadata.arrivalLocationLabel ??
-        undefined,
-      routeStyle: body.routeStyle ?? currentMetadata.routeStyle ?? undefined,
-      routeAdjustmentMessage:
-        body.routeAdjustmentMessage ??
-        currentMetadata.routeAdjustmentMessage ??
-        undefined,
-      notes: body.notes ?? currentMetadata.cleanNotes ?? undefined,
-      placeType: body.placeType ?? currentMetadata.placeType ?? undefined,
-      submissionMode:
-        body.submissionMode ?? currentMetadata.submissionMode ?? undefined,
-      wasteBreakdown:
-        body.wasteBreakdown ?? currentMetadata.wasteBreakdown ?? undefined,
-      wasteMeasurementMethod:
-        body.wasteMeasurementMethod ??
-        currentMetadata.wasteMeasurementMethod ??
-        undefined,
-      cigaretteButtsKg:
-        hasButtsMeasurementUpdate
-          ? nextCigaretteButtsMeasurements?.cigaretteButtsMassKg
-          : body.cigaretteButtsKg !== undefined
-            ? body.cigaretteButtsKg
-            : currentMetadata.cigaretteButtsKg,
-      cigaretteButtsMeasurements:
-        hasButtsMeasurementUpdate
-          ? nextCigaretteButtsMeasurements
-          : currentMetadata.cigaretteButtsMeasurements,
-      volunteerParticipation: nextVolunteerParticipation,
-      cigaretteButtsMassKg:
-        hasButtsMeasurementUpdate
-          ? nextCigaretteButtsMeasurements?.cigaretteButtsMassKg
-          : currentMetadata.cigaretteButtsMeasurements?.cigaretteButtsMassKg,
-      cigaretteButtsVolumeLiters:
-        hasButtsMeasurementUpdate
-          ? nextCigaretteButtsMeasurements?.cigaretteButtsVolumeLiters
-          : currentMetadata.cigaretteButtsMeasurements?.cigaretteButtsVolumeLiters,
-      cigaretteButtsCondition:
-        hasButtsMeasurementUpdate
-          ? nextCigaretteButtsMeasurements?.cigaretteButtsCondition
-          : currentMetadata.cigaretteButtsMeasurements?.cigaretteButtsCondition,
-      photos:
-        body.photos?.map((photo) => ({
-          id: photo.id,
-          name: photo.name,
-          mimeType: photo.mimeType,
-          size: photo.size,
-          width: photo.width ?? null,
-          height: photo.height ?? null,
-        })) ?? currentMetadata.photos ?? undefined,
-      visionEstimate:
-        body.visionEstimate ?? currentMetadata.visionEstimate ?? undefined,
-    } satisfies Parameters<typeof buildPersistedNotes>[0];
-    updateData["notes"] = buildPersistedNotes(persistedPayload, {
-      resolvedCigaretteButtsMeasurements:
-        hasButtsMeasurementUpdate || currentMetadata.cigaretteButtsMeasurements
-          ? nextCigaretteButtsMeasurements
-          : undefined,
-    });
-  }
-
-  const currentDrawing = parseDrawingFromNotes(current.notes).manualDrawing;
-  if (currentDrawing && typeof updateData["notes"] === "string") {
-    updateData["notes"] = buildPersistedNotes({
-      notes: updateData["notes"] as string,
-      manualDrawing: currentDrawing,
-    });
-  }
-
-  const currentPreparationData = normalizeActionPreparationData(
-    current.preparation_data ?? {},
-  );
-  const hasGpxObservation =
-    current.geometry_source === "gpx_import" ||
-    currentPreparationData.gpxImport?.source === "gpx_import";
-  if (hasGpxObservation && updateData["preparation_data"]) {
-    const nextPreparationData = updateData["preparation_data"] as ActionRow["preparation_data"];
-    updateData["preparation_data"] = {
-      ...nextPreparationData,
-      ...(currentPreparationData.routeObservedDistanceKm !== undefined
-        ? { routeObservedDistanceKm: currentPreparationData.routeObservedDistanceKm }
-        : {}),
-      ...(currentPreparationData.gpxImport
-        ? { gpxImport: structuredClone(currentPreparationData.gpxImport) }
-        : {}),
-    };
-  }
-
+  preserveGpxObservation(current, updateData);
   return { body, currentMetadata, updateData };
 }
