@@ -53,6 +53,43 @@ Ajouter les tests de contrat SQL/RPC directement concernés. Toute application
 distante d'une migration reste une opération explicitement autorisée et
 distincte de la validation locale.
 
+## Workflow distant lié et diagnostic d'accès
+
+Le workflow local supporté utilise `npx supabase` contre le projet distant
+explicitement lié. Depuis `apps/web`, les contrôles read-only de base sont :
+
+```bash
+npx supabase projects list
+npx supabase branches list --project-ref <project-ref> --output json
+npx supabase migration list --linked
+npx supabase db advisors --linked
+```
+
+`npx supabase link --project-ref <project-ref>` enregistre la cible locale ;
+il ne prouve pas qu'une migration est appliquée sur le projet distant. La
+preuve d'alignement de l'historique repose sur
+`npx supabase migration list --linked`, après vérification de la paire
+`local`/`remote`.
+
+En cas de `403`, diagnostiquer l'accès dans cet ordre :
+
+1. vérifier la présence, la fraîcheur et le périmètre de
+   `SUPABASE_ACCESS_TOKEN` sans afficher sa valeur ;
+2. vérifier l'identité utilisée par le CLI avec `npx supabase projects list` ;
+3. confirmer que le projet et son organisation sont visibles par cette
+   identité, puis relancer le contrôle concerné.
+
+Si le projet n'est pas visible, classer l'incident comme un mauvais compte,
+une mauvaise organisation, un rôle insuffisant ou un token sans le scope
+requis. Pour les advisors liés, le token doit également disposer de la
+permission `advisors_read`. Ne pas conclure à une anomalie Supabase avant ces
+vérifications.
+
+`npx supabase db push`, `npx supabase migration repair` et
+`npx supabase db reset` ne sont pas des remèdes à un problème d'authentification
+ou de scope. Ils sont soit mutatifs, soit réservés au replay CI explicitement
+autorisé, et ne doivent pas être utilisés pour contourner un `403`.
+
 ## Runtime local non supporté
 
 - Docker, WSL, Supabase local et les autres runtimes de conteneurs ne font plus
