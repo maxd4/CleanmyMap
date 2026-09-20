@@ -1,0 +1,7 @@
+.next/
+.next-sourcemap-test/
+artifacts/
+node_modules/
+.vercel/
+coverage/
+test-results/
