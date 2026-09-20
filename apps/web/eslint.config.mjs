@@ -2,7 +2,6 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 import fs from "node:fs";
-import { LEGACY_EXCEPTION_CEILINGS } from "../../scripts/checks/complexity-policy.mjs";
 
 const heavyFilesBaseline = JSON.parse(
   fs.readFileSync(new URL("../../scripts/checks/heavy-files-baseline.json", import.meta.url), "utf8"),
@@ -69,15 +68,6 @@ const eslintConfig = defineConfig([
         },
       ],
       complexity: ["warn", 55],
-    },
-  },
-  {
-    files: ["src/lib/route/route-calibration.test.ts"],
-    rules: {
-      "max-lines-per-function": [
-        "warn",
-        { max: LEGACY_EXCEPTION_CEILINGS.routeCalibrationTestFunctionLines, skipBlankLines: true, skipComments: true },
-      ],
     },
   },
   // Override default ignores of eslint-config-next.

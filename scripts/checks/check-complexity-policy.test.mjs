@@ -12,7 +12,6 @@ import {
   evaluateNewMetric,
   FUNCTION_IDENTITY_SCHEME,
   FUNCTION_IDENTITY_SCHEME_VERSION,
-  LEGACY_EXCEPTION_CEILINGS,
   validateBaselineShape,
 } from "./complexity-policy.mjs";
 import { classifyFileKind as classifyTopHeavyFileKind } from "./top-heavy-measurement.mjs";
@@ -81,10 +80,12 @@ test("complexity baseline metrics never own file length", () => {
   assert.ok(baseline.entries.every((entry) => typeof entry.functionIdentity === "string"));
 });
 
-test("legacy file ceilings are owned by top-heavy, not complexity", () => {
-  assert.deepEqual(Object.keys(LEGACY_EXCEPTION_CEILINGS).sort(), [
-    "routeCalibrationTestFunctionLines",
-  ]);
+test("no legacy ESLint exception ceilings remain", () => {
+  const policy = fs.readFileSync("scripts/checks/complexity-policy.mjs", "utf8");
+  const eslintConfig = fs.readFileSync("apps/web/eslint.config.mjs", "utf8");
+  assert.doesNotMatch(policy, /LEGACY_EXCEPTION_CEILINGS/);
+  assert.doesNotMatch(policy, /routeCalibrationTestFunctionLines/);
+  assert.doesNotMatch(eslintConfig, /routeCalibrationTestFunctionLines/);
   const heavy = JSON.parse(fs.readFileSync("scripts/checks/heavy-files-baseline.json", "utf8"));
   const maxLines = new Map([...heavy.allowed, ...heavy.review].map((entry) => [entry.path, entry.maxLines]));
   assert.equal(maxLines.has("apps/web/src/lib/auth/api-authorization-contract.ts"), false);

@@ -20,12 +20,6 @@ export const FUNCTION_LENGTH_THRESHOLDS = Object.freeze({
   "routes API": Object.freeze({ target: 100, blockAbove: 150 }),
 });
 
-// This is the remaining non-file ESLint exception ceiling audited in lot 6A.
-// File-size ceilings remain owned exclusively by top-heavy.
-export const LEGACY_EXCEPTION_CEILINGS = Object.freeze({
-  routeCalibrationTestFunctionLines: 570,
-});
-
 export const COMPLEXITY_POLICY_FINGERPRINT = createHash("sha256")
   .update(JSON.stringify({
     version: COMPLEXITY_POLICY_VERSION,
