@@ -8,7 +8,7 @@ import type {
   RouteCalibrationContext,
   RouteCalibrationContextCandidate,
   RoutePlannerSnapshot,
-} from "./route-calibration";
+} from "./route-calibration-types";
 import { isRoutePlannerSnapshot as validateRoutePlannerSnapshot } from "./route-planner-snapshot-validation";
 import { hashRoutePlannerSnapshot } from "./route-planner-snapshot-hash";
 import { ROUTE_PLANNER_PROOF_VERSION } from "./route-planner-proof-contract";

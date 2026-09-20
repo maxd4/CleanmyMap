@@ -5830,15 +5830,6 @@
     {
       "metric": "functionLength",
       "path": "src/lib/route/route-calibration.ts",
-      "line": 380,
-      "category": "métier/domain pur",
-      "ceiling": 82,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildRoutePlannerSnapshot#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "src/lib/route/route-calibration.ts",
       "line": 487,
       "category": "métier/domain pur",
       "ceiling": 164,

@@ -75,7 +75,7 @@ test("complexity baseline metrics never own file length", () => {
   const metricCounts = baseline.entries.reduce((counts, entry) => ({ ...counts, [entry.metric]: (counts[entry.metric] ?? 0) + 1 }), {});
   assert.deepEqual(metricCounts, {
     complexity: 277,
-    functionLength: 392,
+    functionLength: 391,
   });
   assert.ok(baseline.entries.every((entry) => ["complexity", "functionLength"].includes(entry.metric)));
   assert.ok(baseline.entries.every((entry) => typeof entry.functionIdentity === "string"));
@@ -89,7 +89,7 @@ test("legacy file ceilings are owned by top-heavy, not complexity", () => {
   const heavy = JSON.parse(fs.readFileSync("scripts/checks/heavy-files-baseline.json", "utf8"));
   const maxLines = new Map([...heavy.allowed, ...heavy.review].map((entry) => [entry.path, entry.maxLines]));
   assert.equal(maxLines.has("apps/web/src/lib/auth/api-authorization-contract.ts"), false);
-  assert.equal(maxLines.get("apps/web/src/lib/route/route-calibration.ts"), 928);
+  assert.equal(maxLines.has("apps/web/src/lib/route/route-calibration.ts"), false);
 });
 
 test("LINE_SHIFT_TEST: function identity is stable when lines are inserted before a legacy function", () => {
@@ -146,7 +146,7 @@ test("BASELINE_CURRENT_MAIN_TEST: baseline declares the current identity scheme 
   const baseline = JSON.parse(fs.readFileSync("scripts/checks/complexity-baseline.json", "utf8"));
   assert.equal(FUNCTION_IDENTITY_SCHEME_VERSION, 2);
   assert.equal(baseline.functionIdentitySchemeVersion, FUNCTION_IDENTITY_SCHEME_VERSION);
-  assert.equal(baseline.entries.length, 669);
+  assert.equal(baseline.entries.length, 668);
   assert.doesNotThrow(() => validateBaselineShape(baseline));
 });
 
