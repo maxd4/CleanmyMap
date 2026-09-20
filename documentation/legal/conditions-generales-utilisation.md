@@ -1,6 +1,6 @@
 # Conditions générales d'utilisation
 
-**Dernière mise à jour : 27 août 2026**
+**Dernière mise à jour : 20 septembre 2026**
 
 Les présentes conditions générales d'utilisation (CGU) encadrent l'accès au
 site [cleanmymap.fr](https://cleanmymap.fr), ses fonctionnalités et les
@@ -89,7 +89,28 @@ Les informations publiées doivent rester exactes et respectueuses des règles
 du lieu concerné. Chaque participant vérifie les conditions communiquées par
 l'organisateur et décide librement de participer.
 
-## 6. Signalement et modération
+## 6. Contributions financières via Stripe
+
+CleanMyMap propose une possibilité de soutien volontaire au projet. La
+contribution peut être orientée vers la catégorie choisie sur la page de
+financement : le matériel et la logistique des actions terrain, ou le
+développement et le fonctionnement du service. Elle ne donne aucun pouvoir sur
+la modération, les décisions éditoriales ou les règles de la plateforme.
+
+Le paiement est réalisé sur une page Checkout hébergée par Stripe. Les données
+de carte sont saisies et traitées par Stripe ; elles ne sont pas stockées par
+CleanMyMap. Le reçu ou la confirmation délivré par Stripe, lorsqu'il est
+disponible, atteste le traitement du paiement mais ne constitue pas un reçu
+fiscal. CleanMyMap n'annonce aucune réduction fiscale et ne présente pas ces
+versements comme du mécénat fiscal.
+
+Le runtime ne propose pas de bouton de remboursement automatisé. Une demande
+peut être adressée au contact indiqué dans ces CGU ; elle est examinée selon
+les circonstances et les possibilités applicables. Lorsqu'un remboursement est
+effectivement réalisé dans Stripe, sa prise en compte technique met à jour le
+montant net publié après réception du webhook correspondant.
+
+## 7. Signalement et modération
 
 Une notification électronique circonstanciée peut être adressée depuis la
 page [Signaler un contenu potentiellement illicite](https://cleanmymap.fr/signaler-contenu-illicite).
@@ -111,7 +132,7 @@ délai déterminé. Les possibilités de réexamen communiquées se limitent aux
 moyens de contact effectivement disponibles ; aucun organisme ou mécanisme
 particulier n'est promis ici.
 
-## 7. Sécurité et responsabilité
+## 8. Sécurité et responsabilité
 
 Les actions de terrain doivent être préparées avec prudence, dans un lieu
 accessible et conformément aux règles locales. Les informations de la
@@ -131,7 +152,7 @@ de sa participation à une action.
 Ces règles s'appliquent dans les limites permises par la loi et ne privent
 personne des droits impératifs dont elle dispose.
 
-## 8. Données, licences et propriété du site
+## 9. Données, licences et propriété du site
 
 Les traitements de données personnelles sont décrits dans la [Politique de
 confidentialité](https://cleanmymap.fr/politique-confidentialite). Les cookies
@@ -154,7 +175,7 @@ le logo et l'identité visuelle restent réservés et la licence du logiciel
 n'autorise pas à présenter un fork ou un service tiers comme la version
 officielle de CleanMyMap.
 
-## 9. Modification et droit applicable
+## 10. Modification et droit applicable
 
 Les CGU peuvent être mises à jour pour tenir compte de l'évolution du service,
 de la sécurité ou des exigences légales. La version publiée indique sa date de

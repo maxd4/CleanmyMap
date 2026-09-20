@@ -12,7 +12,7 @@
 - **Objectif utilisateur principal** : Informer sur les règles, les droits et la conformité, sans esthétique marketing.
 - **Action principale attendue** : Lire un document ou contacter l'équipe.
 - **Palette attendue** : slate / gris clair
-- **Scope** : CGU alignées sur le produit réel, les contributions utilisateurs et les dispositifs DSA-01/02 de notification électronique et de décision tracée
+- **Scope** : CGU alignées sur le produit réel, les contributions utilisateurs et financières via Stripe, et les dispositifs DSA-01/02 de notification électronique et de décision tracée
 - **Terminée** : oui
 - **Couleurs actuellement détectées** : legal — canvas #f8fafc, halo rgba(148, 163, 184, 0.18)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
@@ -53,6 +53,8 @@
 - Le dispositif ne demande pas au déclarant de qualifier juridiquement parfaitement les faits et ne présente pas CleanMyMap comme un fournisseur d'hébergement au sens du DSA.
 - Les CGU distinguent une action créée par un utilisateur ou un organisateur tiers d'une action éventuellement organisée par CleanMyMap ; aucune assurance, matériel ou encadrement n'est promis par défaut.
 - Les contributions restent la propriété de leurs auteurs et font seulement l'objet d'une licence technique non exclusive nécessaire au service.
+- Les contributions financières sont volontaires, orientées vers l'une des deux catégories affichées par la page funding et traitées par Checkout Stripe ; aucun avantage fiscal ni reçu fiscal n'est annoncé.
+- Le reçu ou la confirmation Stripe est distingué d'un reçu fiscal. Le runtime ne propose pas de bouton de remboursement automatisé ; les demandes passent par le contact et un remboursement effectivement réalisé dans Stripe est répercuté par le webhook.
 - Les liens vers la confidentialité, les cookies, le contact et le signalement de contenu illicite sont accessibles depuis la page.
 
 ## Notes d'audit

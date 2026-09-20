@@ -73,7 +73,7 @@ describe("mentions légales contract", () => {
     expect(publicPage).not.toContain("Hébergement et services techniques");
     expect(publicPage).not.toMatch(/\b\d{10}\b/u);
 
-    for (const service of ["Supabase", "Clerk", "Resend", "PostHog", "Sentry"]) {
+    for (const service of ["Supabase", "Clerk", "Resend", "Stripe", "PostHog", "Sentry"]) {
       expect(publicPage).toContain(service);
     }
   });

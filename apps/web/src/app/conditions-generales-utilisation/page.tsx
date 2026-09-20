@@ -133,6 +133,38 @@ const legalSections: LegalSection[] = [
   },
   {
     number: 6,
+    title: "Contributions financières via Stripe",
+    content: (
+      <div className="cmm-text-body space-y-4">
+        <p>
+          CleanMyMap propose un soutien volontaire au projet. La contribution
+          peut être orientée vers la catégorie choisie sur la page de financement :
+          matériel et logistique des actions terrain, ou développement et
+          fonctionnement du service. Elle ne donne aucun pouvoir sur la modération,
+          les décisions éditoriales ou les règles de la plateforme.
+        </p>
+        <p>
+          Le paiement est réalisé sur une page Checkout hébergée par Stripe. Les
+          données de carte sont saisies et traitées par Stripe ; elles ne sont pas
+          stockées par CleanMyMap. Le reçu ou la confirmation délivré par Stripe,
+          lorsqu&apos;il est disponible, atteste le traitement du paiement mais ne
+          constitue pas un reçu fiscal. CleanMyMap n&apos;annonce aucune réduction
+          fiscale et ne présente pas ces versements comme du mécénat fiscal.
+        </p>
+        <p>
+          Le runtime ne propose pas de bouton de remboursement automatisé. Une
+          demande peut être adressée via le{" "}
+          <Link href="/contact" className={legalLinkClass}>formulaire de contact</Link>.
+          Elle est examinée selon les circonstances et les possibilités applicables.
+          Lorsqu&apos;un remboursement est effectivement réalisé dans Stripe, sa
+          prise en compte technique met à jour le montant net publié après réception
+          du webhook correspondant.
+        </p>
+      </div>
+    ),
+  },
+  {
+    number: 7,
     title: "Notification et modération",
     content: (
       <div className="cmm-text-body space-y-4">
@@ -159,7 +191,7 @@ const legalSections: LegalSection[] = [
     ),
   },
   {
-    number: 7,
+    number: 8,
     title: "Terrain et sécurité",
     content: (
       <div className="cmm-text-body space-y-4">
@@ -180,7 +212,7 @@ const legalSections: LegalSection[] = [
     ),
   },
   {
-    number: 8,
+    number: 9,
     title: "Responsabilité et disponibilité",
     content: (
       <div className="cmm-text-body space-y-4">
@@ -199,7 +231,7 @@ const legalSections: LegalSection[] = [
     ),
   },
   {
-    number: 9,
+    number: 10,
     title: "Données, licences et cookies",
     content: (
       <div className="cmm-text-body space-y-4">
@@ -238,7 +270,7 @@ const legalSections: LegalSection[] = [
     ),
   },
   {
-    number: 10,
+    number: 11,
     title: "Modification et droit applicable",
     content: (
       <p className="cmm-text-body">
@@ -266,7 +298,7 @@ export default function ConditionsGeneralesUtilisationPage() {
           action={
             <span className="inline-flex items-center gap-2 text-sm font-medium text-slate-500">
               <CalendarDays className="h-4 w-4 text-slate-600" aria-hidden="true" />
-              Dernière mise à jour : 27 août 2026
+              Dernière mise à jour : 20 septembre 2026
             </span>
           }
         />

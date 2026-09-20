@@ -33,6 +33,8 @@
 - **Architecture commune** : `SectionShell`/`PageHeader`, `CmmCard` et `CmmButton` ; famille Réseau & Discussions.
 - **Variantes** : français/anglais, mobile/desktop, deux catégories `equipment` et `development`.
 - **Règle** : le financement n'accorde aucun pouvoir de modération ; les montants publics proviennent des paiements Stripe confirmés moins les remboursements enregistrés, sans PII.
+- **Information juridique** : la page parle de contribution et de soutien volontaire. La confirmation ou le reçu Stripe confirme le traitement du paiement mais n'est pas un reçu fiscal ; aucun avantage fiscal ni mécénat fiscal n'est annoncé.
+- **Remboursement** : le runtime ne propose pas de bouton automatisé. Une demande passe par le contact ; seul un remboursement effectivement réalisé dans Stripe modifie ensuite l'agrégat via webhook.
 
 ## Références legacy
 

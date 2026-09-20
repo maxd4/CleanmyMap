@@ -1,6 +1,6 @@
 # Politique de confidentialité
 
-**Dernière mise à jour : 27 août 2026**
+**Dernière mise à jour : 20 septembre 2026**
 
 Cette politique décrit les traitements de données personnelles mis en œuvre
 par CleanMyMap au regard du code et de la configuration du service web. Les
@@ -45,6 +45,13 @@ Selon les parcours utilisés, CleanMyMap traite notamment :
 - **Notifications, progression et audit** : identifiant utilisateur, contenu
   et statut de notification, événements de progression, identifiant
   d'opération, acteur administratif, résultat et détails techniques bornés ;
+- **Contributions financières via Stripe** : identifiant de session Checkout,
+  identifiant de PaymentIntent, catégorie choisie, montant total en centimes,
+  montant remboursé en centimes, devise, statut, dates de paiement et de mise
+  à jour ; identifiant d'événement webhook, type, identifiant d'objet et date
+  de traitement ; agrégats publics par catégorie. CleanMyMap ne stocke pas le
+  numéro de carte, sa date d'expiration, son cryptogramme, ni les coordonnées
+  de carte saisies sur Checkout Stripe ;
 - **Analytics** : après consentement, identifiant de session, étape ou mode de
   parcours, identifiant Clerk éventuel et métadonnées nécessaires à la mesure.
 
@@ -64,6 +71,7 @@ parrainage ou un contenu.
 | Analytics et mesure d'audience | Mesurer les parcours après accord | Consentement |
 | Sentry | Détecter, diagnostiquer et prévenir les erreurs, abus et incidents | Intérêt légitime de sécurité et de fonctionnement |
 | Parrainage et progression | Relier une invitation et fournir les éléments de progression | Exécution du service ; intérêt légitime d'animation |
+| Contributions financières via Stripe | Créer la session Checkout demandée, confirmer le paiement, prévenir la fraude, traiter le suivi des remboursements et conserver la traçabilité nécessaire | Étapes demandées pour le paiement ; intérêt légitime de sécurité et de prévention de la fraude ; obligation légale lorsqu'elle s'applique |
 
 Les champs nécessaires à la fonction choisie sont obligatoires lorsqu'ils sont
 signalés comme tels dans le parcours. Les champs complémentaires sont
@@ -98,6 +106,10 @@ spécifique supplémentaire n'est déclaré comme configuré par ce dépôt.
   cet envoi est utilisé ;
 - **PostHog** : analytics et mesure d'audience seulement après consentement ;
 - **Sentry** : observabilité et sécurité lorsque la DSN est configurée ;
+- **Stripe** : page Checkout et traitement du paiement, confirmation, prévention
+  de la fraude et gestion technique des remboursements liés aux contributions.
+  Les données de carte sont saisies et traitées sur l'environnement Stripe et
+  ne sont pas stockées par CleanMyMap ;
 - **autorités compétentes** lorsque la loi l'exige ou l'autorise.
 
 Ces prestataires sont distincts les uns des autres et ne sont pas tous
@@ -133,6 +145,11 @@ runtime :
   audits suivent le besoin du service, les paramètres de publication et les
   nécessités de sécurité ou de preuve. Aucune durée générique non vérifiée
   n'est annoncée ;
+- les faits de paiement et événements Stripe persistés dans les tables serveur
+  suivent les besoins de confirmation, de remboursement, de prévention de la
+  fraude et de traçabilité applicable. Aucun mécanisme de purge ni durée fixe
+  propre à ces tables n'est démontré par le dépôt ; les agrégats publics sont
+  des projections de montants sans données de carte ni PII ;
 - la newsletter reste active jusqu'au retrait ou à la mise à jour de
   l'inscription. Le retrait peut être demandé via le contact ;
 - les durées de conservation appliquées directement par Clerk, Supabase,

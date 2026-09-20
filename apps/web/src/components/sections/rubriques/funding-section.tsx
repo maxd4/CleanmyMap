@@ -273,6 +273,11 @@ export function FundingSection() {
             <Heart size={18} className="mt-0.5 shrink-0 text-pink-600" aria-hidden="true" />
             <p>{fr ? "La contribution soutient le projet mais ne donne aucun pouvoir sur la modération, les décisions éditoriales ou les règles de la plateforme." : "A contribution supports the project but gives no power over moderation, editorial decisions or platform rules."}</p>
           </div>
+          <p className="text-sm leading-6 text-slate-800">
+            {fr
+              ? "La confirmation ou le reçu Stripe, lorsqu’il est disponible, confirme le traitement du paiement mais n’est pas un reçu fiscal. CleanMyMap n’annonce ni réduction fiscale ni mécénat fiscal."
+              : "A Stripe confirmation or receipt, when available, confirms payment processing but is not a tax receipt. CleanMyMap does not advertise tax relief or tax-deductible sponsorship."}
+          </p>
         </CmmCard>
       </div>
     </SectionShell>
