@@ -36,6 +36,12 @@ import {
   parseDateOrNull,
   round6,
 } from "./utils";
+import {
+  buildSecondOrderScoreSignals,
+  deriveMetricQuantityFromUsage,
+} from "./infrastructure-signals";
+
+export { buildSecondOrderScoreSignals, deriveMetricQuantityFromUsage } from "./infrastructure-signals";
 
 const METRIC_DEFINITION_BY_KEY = new Map(
   ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_METRIC_DEFINITIONS.map((definition) => [
@@ -106,89 +112,6 @@ export function buildInfrastructureMissingDataNotes(
         severity: service.referenceMetricCount > 0 ? "warn" : "info",
       };
     });
-}
-
-export function deriveMetricQuantityFromUsage(
-  metricKey: string,
-  usage: EnvironmentalImpactUsageProfileEstimate,
-): number | null {
-  switch (metricKey) {
-    case "vercelPageViews":
-      return usage.monthlyPageViews;
-    case "vercelFunctionInvocations":
-      return round6(
-        usage.monthlyApiRequests * 0.78 +
-          usage.monthlyPdfExports * 2.8 +
-          usage.monthlyAiCalls * 1.9 +
-          usage.monthlyMapViews * 0.12,
-      );
-    case "vercelDeployments":
-      return usage.monthlyDeployments;
-    case "vercelBandwidthGb":
-      return usage.monthlyBandwidthGb;
-    case "supabaseDbRequests":
-      return round6(usage.monthlyApiRequests * 1.18 + usage.monthlyPageViews * 0.04);
-    case "supabaseAuthEvents":
-      return usage.monthlyAuthEvents;
-    case "supabaseStorageGbMonths":
-      return usage.monthlyStorageGbMonths;
-    case "supabaseRealtimeEvents":
-      return usage.monthlyRealtimeEvents;
-    case "supabaseEgressGb":
-      return usage.monthlyEgressGb;
-    case "resendEmailsSent":
-      return usage.monthlyEmailsSent;
-    case "resendBatchRequests":
-      return Math.max(0, round6(usage.monthlyEmailsSent / 20));
-    case "chatgptConversationHours":
-      return usage.monthlyChatgptConversationHours;
-    case "codexSessions":
-      return usage.monthlyCodexSessions;
-    case "codexConversationTurns":
-      return usage.monthlyCodexConversationTurns;
-    case "codexToolActions":
-      return usage.monthlyCodexToolActions;
-    case "codexShellCommands":
-      return usage.monthlyCodexShellCommands;
-    case "codexFilesTouched":
-      return usage.monthlyCodexFilesTouched;
-    case "codexTestsRun":
-      return usage.monthlyCodexTestsRun;
-    case "codexChangedLines":
-      return usage.monthlyCodexChangedLines;
-    case "codexActiveMinutes":
-      return usage.monthlyCodexActiveMinutes;
-    case "clerkAuthEvents":
-      return usage.monthlyAuthEvents;
-    case "clerkSessionRefreshes":
-      return round6(usage.monthlySessions * 0.85);
-    case "posthogEvents":
-      return round6(
-        usage.monthlyPageViews * 1.1 +
-          usage.monthlySessions * 0.4 +
-          usage.monthlyMapViews * 0.2,
-      );
-    case "sentryErrorEvents":
-      return usage.monthlyErrorEvents;
-    case "upstashOperations":
-      return round6(
-        usage.monthlyApiRequests * 0.42 +
-          usage.monthlyRealtimeEvents * 0.08 +
-          usage.monthlyEmailsSent * 0.05,
-      );
-    case "pineconeQueries":
-      return round6(usage.monthlyAiCalls * 3.2 + usage.monthlyPageViews * 0.015);
-    case "stripePaymentOperations":
-      return Math.max(0, round6(usage.monthlyActiveUsers * 0.01));
-    case "lwsDomainYears":
-      return null;
-    case "lwsDnsQueries":
-      return round6(
-        Math.max(0, 20_000 + usage.monthlyPageViews * 0.03 + usage.monthlyEmailsSent * 0.02),
-      );
-    default:
-      return null;
-  }
 }
 
 export function getServiceMonthlyTotal(
@@ -286,71 +209,6 @@ export function buildInfrastructureServiceEstimate(
     metricCount,
     referenceMetricCount,
     metricEstimates,
-  };
-}
-
-export function buildSecondOrderScoreSignals(
-  usageProfile: EnvironmentalImpactUsageProfileEstimate,
-  services: EnvironmentalImpactInfrastructureServiceEstimate[],
-): Record<"grossCo2" | "electricity" | "otherGhgs" | "chemicals" | "water", number> {
-  const serviceByKey = new Map(services.map((service) => [service.key, service]));
-  const vercel = serviceByKey.get("vercel")?.monthlyKgCo2eProxy ?? 0;
-  const supabase = serviceByKey.get("supabase")?.monthlyKgCo2eProxy ?? 0;
-  const resend = serviceByKey.get("resend")?.monthlyKgCo2eProxy ?? 0;
-  const chatgpt = serviceByKey.get("chatgpt")?.monthlyKgCo2eProxy ?? 0;
-  const codex = serviceByKey.get("codex")?.monthlyKgCo2eProxy ?? 0;
-  const posthog = serviceByKey.get("posthog")?.monthlyKgCo2eProxy ?? 0;
-  const sentry = serviceByKey.get("sentry")?.monthlyKgCo2eProxy ?? 0;
-  const upstash = serviceByKey.get("upstash")?.monthlyKgCo2eProxy ?? 0;
-  const pinecone = serviceByKey.get("pinecone")?.monthlyKgCo2eProxy ?? 0;
-  const stripe = serviceByKey.get("stripe")?.monthlyKgCo2eProxy ?? 0;
-  const lws = serviceByKey.get("lwsDomain")?.monthlyKgCo2eProxy ?? 0;
-
-  return {
-    grossCo2: round6(
-      usageProfile.monthlyPageViews * 0.28 +
-        usageProfile.monthlyApiRequests * 0.22 +
-        usageProfile.monthlyEmailsSent * 0.14 +
-        usageProfile.monthlyDeployments * 0.18 +
-        vercel * 0.12 +
-        lws * 0.06,
-    ),
-    electricity: round6(
-      usageProfile.monthlyBandwidthGb * 0.26 +
-        usageProfile.monthlyStorageGbMonths * 0.22 +
-        usageProfile.monthlySessions * 0.12 +
-        usageProfile.monthlyRealtimeEvents * 0.2 +
-        chatgpt * 0.08 +
-        vercel * 0.1 +
-        supabase * 0.1,
-    ),
-    otherGhgs: round6(
-      usageProfile.monthlyAiCalls * 0.38 +
-        chatgpt * 0.12 +
-        (usageProfile.monthlyCodexActiveMinutes ?? 0) * 0.24 +
-        (usageProfile.monthlyCodexTestsRun ?? 0) * 0.14 +
-        usageProfile.monthlyErrorEvents * 0.08 +
-        codex * 0.1 +
-        sentry * 0.06,
-    ),
-    chemicals: round6(
-      usageProfile.monthlyStorageGbMonths * 0.28 +
-        usageProfile.monthlyPdfExports * 0.26 +
-        (usageProfile.monthlyCodexFilesTouched ?? 0) * 0.16 +
-        usageProfile.monthlyDeployments * 0.2 +
-        resend * 0.05 +
-        stripe * 0.05,
-    ),
-    water: round6(
-      usageProfile.monthlyAiCalls * 0.32 +
-        chatgpt * 0.14 +
-        (usageProfile.monthlyCodexSessions ?? 0) * 0.24 +
-        usageProfile.monthlyBandwidthGb * 0.16 +
-        usageProfile.monthlyStorageGbMonths * 0.12 +
-        posthog * 0.06 +
-        upstash * 0.04 +
-        pinecone * 0.06,
-    ),
   };
 }
 

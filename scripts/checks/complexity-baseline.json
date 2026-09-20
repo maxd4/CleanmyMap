@@ -1861,24 +1861,6 @@
     {
       "metric": "complexity",
       "path": "src/lib/environmental-impact-estimator/services/infrastructure.ts",
-      "line": 111,
-      "category": "runtime/services/orchestration",
-      "ceiling": 30,
-      "status": "LEGACY",
-      "functionIdentity": "named:deriveMetricQuantityFromUsage#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "src/lib/environmental-impact-estimator/services/infrastructure.ts",
-      "line": 292,
-      "category": "runtime/services/orchestration",
-      "ceiling": 23,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildSecondOrderScoreSignals#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "src/lib/environmental-impact-estimator/services/infrastructure.ts",
       "line": 549,
       "category": "runtime/services/orchestration",
       "ceiling": 21,
