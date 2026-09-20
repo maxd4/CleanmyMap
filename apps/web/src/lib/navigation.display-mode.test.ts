@@ -34,6 +34,7 @@ const EXPECTED_NETWORK_ROUTE_IDS = [
   "messagerie",
   "open-data",
   "annuaire",
+  "funding",
 ] as const;
 
 function collectRouteIds(
@@ -246,12 +247,13 @@ describe("navigation display modes", () => {
       expect(networkSpace?.items.map((item) => item.routeId)).toEqual(
         EXPECTED_NETWORK_ROUTE_IDS,
       );
-      expect(networkSpace?.items.map((item) => item.href)).toEqual([
+    expect(networkSpace?.items.map((item) => item.href)).toEqual([
         "/sections/community",
         "/sections/feedback",
         "/sections/messagerie",
         "/sections/open-data",
         "/sections/annuaire",
+        "/sections/funding",
       ]);
     }
   });

@@ -1,4 +1,4 @@
-# Soutenir le Projet
+# Soutenir CleanMyMap
 
 ## Fiche canonique
 
@@ -7,25 +7,32 @@
   - `apps/web/src/lib/sections-registry/config.ts`
   - `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
   - `apps/web/src/components/sections/rubriques/funding-section.tsx`
+  - `apps/web/src/app/api/funding/checkout/route.ts`
+  - `apps/web/src/app/api/funding/aggregate/route.ts`
+  - `apps/web/src/app/api/funding/checkout-status/route.ts`
+  - `apps/web/src/app/api/stripe/webhook/route.ts`
 - **Type fonctionnel** : section de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Accès runtime** : `public-visible` ; la présentation du modèle économique est consultable sans compte. Les éventuels parcours partenaire ou de financement restent séparés et conservent leurs propres contrôles.
-- **Objectif utilisateur principal** : Comprendre les voies de soutien du projet et la séparation entre financement, transparence et indépendance de la modération.
-- **Action principale attendue** : Consulter les volets sponsoring de zones, mécénat écologique, dons et traçabilité des financements.
+- **Objectif utilisateur principal** : Comprendre les deux affectations de soutien du projet et la séparation entre contributions, transparence et indépendance de la modération.
+- **Action principale attendue** : Choisir une catégorie et un montant puis rejoindre Checkout Stripe.
 - **Palette attendue** : rose / pink / fuchsia sur fond réseau sombre
-- **Scope** : présentation statique du modèle économique, de trois voies de financement et des garanties d'indépendance ; aucun parcours de paiement n'est déclenché par cette section.
-- **Terminée** : non
+- **Scope** : page publique de soutien avec deux catégories, agrégats nets confirmés par webhook Stripe, Checkout et garanties d'indépendance ; aucun objectif n'est affiché sans source canonique.
+- **Terminée** : oui
 - **Captures attendues** : desktop, mobile
-- **Priorité de correction** : faible — la page est une présentation statique sans paiement runtime.
+- **Priorité de correction** : maintenance courante — la page dépend de Stripe et de la migration funding service-only.
 
 ## États à documenter
 
-- **loading** : non applicable ; le contenu est statique et ne charge pas de données métier.
-- **empty state** : non applicable ; les cartes de présentation sont rendues avec la page.
+- **loading** : les totaux affichent `Chargement…` pendant la lecture de l'agrégat public.
+- **error** : les totaux indiquent leur indisponibilité et proposent une nouvelle tentative ; les CTA sont désactivés pendant cette erreur.
+- **redirecting** : le CTA affiche `Redirection vers Stripe…` jusqu'à la navigation Checkout.
+- **cancelled** : retour Stripe affiché comme paiement annulé, sans montant confirmé.
+- **success** : retour affiché comme `Paiement reçu par Stripe · confirmation en cours` jusqu'à confirmation backend du webhook.
 - **access refused** : non applicable à cette présentation publique.
-- **Architecture commune** : `SectionShell`, cartes `motion` et `CmmButton` de présentation.
-- **Variantes** : français/anglais ; les trois cartes sponsoring, mécénat et don sont toujours présentées.
-- **Règle** : le financement n'accorde aucun pouvoir de modération et le bouton `Ouvrir le dossier` reste informatif tant qu'aucune destination runtime n'est reliée.
+- **Architecture commune** : `SectionShell`/`PageHeader`, `CmmCard` et `CmmButton` ; famille Réseau & Discussions.
+- **Variantes** : français/anglais, mobile/desktop, deux catégories `equipment` et `development`.
+- **Règle** : le financement n'accorde aucun pouvoir de modération ; les montants publics proviennent des paiements Stripe confirmés moins les remboursements enregistrés, sans PII.
 
 ## Références legacy
 

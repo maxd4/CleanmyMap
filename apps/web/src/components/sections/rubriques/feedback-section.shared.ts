@@ -4,6 +4,7 @@ import {
   Database,
   Flag,
   HelpCircle,
+  Heart,
   Lightbulb,
   Mail,
   MessageSquare,
@@ -343,6 +344,15 @@ export const FEEDBACK_SUPPORT_LINKS: SupportLink[] = [
     },
     href: "/learn/bonnes-pratiques#guides-courts",
     icon: HelpCircle,
+  },
+  {
+    title: { fr: "Soutenir le projet", en: "Support the project" },
+    description: {
+      fr: "Contribuer aux actions et au développement",
+      en: "Support field actions and development",
+    },
+    href: "/sections/funding",
+    icon: Heart,
   },
 ];
 

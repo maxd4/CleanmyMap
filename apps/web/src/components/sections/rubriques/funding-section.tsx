@@ -1,160 +1,279 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { HandCoins, Heart, Laptop, PackageCheck, ShieldCheck } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmCard } from "@/components/ui/cmm-card";
 import { SectionShell } from "@/components/sections/rubriques/shared";
-import { Banknote, Landmark, Heart, ShieldCheck, ArrowRight, Sparkles, Target, Coins } from "lucide-react";
-import { motion } from "framer-motion";
+import {
+  DEFAULT_FUNDING_AMOUNT_CENTS,
+  FUNDING_CATEGORY_DESCRIPTIONS,
+  FUNDING_CATEGORY_LABELS,
+  FUNDING_PRESET_AMOUNTS_CENTS,
+  formatFundingAmount,
+  type FundingCategory,
+} from "@/lib/funding/config";
+
+type FundingAggregate = { netAmountCents: number; currency: string };
+type AggregateResponse = { categories: Record<FundingCategory, FundingAggregate> };
+type CheckoutStatus = "idle" | FundingCategory;
+
+const CATEGORY_ICONS = {
+  equipment: PackageCheck,
+  development: Laptop,
+} satisfies Record<FundingCategory, typeof PackageCheck>;
+
+const CATEGORY_BULLETS: Record<FundingCategory, { fr: string[]; en: string[] }> = {
+  equipment: {
+    fr: ["Équipement partagé et durable", "Logistique des actions terrain", "Prototypes et essais FabLab"],
+    en: ["Shared and durable equipment", "Field action logistics", "FabLab prototypes and trials"],
+  },
+  development: {
+    fr: ["Hébergement et domaine", "Services numériques et outils", "Maintenance et développement bénévole"],
+    en: ["Hosting and domain", "Digital services and tools", "Maintenance and volunteer development"],
+  },
+};
+
+function amountLabel(amountCents: number, locale: "fr" | "en") {
+  return formatFundingAmount(amountCents, locale);
+}
 
 export function FundingSection() {
   const { locale } = useSitePreferences();
+  const searchParams = useSearchParams();
   const fr = locale === "fr";
+  const [aggregates, setAggregates] = useState<AggregateResponse | null>(null);
+  const [aggregateState, setAggregateState] = useState<"loading" | "ready" | "error">("loading");
+  const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>("idle");
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [amounts, setAmounts] = useState<Record<FundingCategory, number>>({
+    equipment: DEFAULT_FUNDING_AMOUNT_CENTS,
+    development: DEFAULT_FUNDING_AMOUNT_CENTS,
+  });
+  const [confirmation, setConfirmation] = useState<"pending" | "confirmed" | null>(null);
+
+  const status = searchParams.get("status");
+  const sessionId = searchParams.get("session_id");
+
+  async function loadAggregates() {
+    setAggregateState("loading");
+    try {
+      const response = await fetch("/api/funding/aggregate", { cache: "no-store" });
+      if (!response.ok) throw new Error("aggregate_unavailable");
+      setAggregates((await response.json()) as AggregateResponse);
+      setAggregateState("ready");
+    } catch {
+      setAggregateState("error");
+    }
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/funding/aggregate", { cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error("aggregate_unavailable");
+        return response.json() as Promise<AggregateResponse>;
+      })
+      .then((payload) => {
+        if (!cancelled) {
+          setAggregates(payload);
+          setAggregateState("ready");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setAggregateState("error");
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (status !== "success") {
+      return;
+    }
+
+    let cancelled = false;
+    if (!sessionId) return () => { cancelled = true; };
+
+    void fetch(`/api/funding/checkout-status?session_id=${encodeURIComponent(sessionId)}`, { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload: { confirmed?: boolean } | null) => {
+        if (!cancelled && payload?.confirmed) {
+          setConfirmation("confirmed");
+          void loadAggregates();
+        }
+      })
+      .catch(() => undefined);
+
+    return () => { cancelled = true; };
+  }, [sessionId, status]);
+
+  async function startCheckout(category: FundingCategory) {
+    setCheckoutStatus(category);
+    setCheckoutError(null);
+    try {
+      const response = await fetch("/api/funding/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category, amountCents: amounts[category] }),
+      });
+      const payload = (await response.json().catch(() => null)) as { url?: string; error?: string } | null;
+      if (!response.ok || !payload?.url) {
+        throw new Error(payload?.error ?? "Le paiement Stripe est temporairement indisponible.");
+      }
+      const checkoutUrl = new URL(payload.url);
+      if (checkoutUrl.protocol !== "https:" || checkoutUrl.hostname !== "checkout.stripe.com") {
+        throw new Error("La redirection Stripe est invalide.");
+      }
+      window.location.assign(checkoutUrl.toString());
+    } catch (error) {
+      setCheckoutError(error instanceof Error ? error.message : "Le paiement Stripe est temporairement indisponible.");
+      setCheckoutStatus("idle");
+    }
+  }
+
+  const notice = useMemo(() => {
+    if (status === "cancelled") {
+      return { text: fr ? "Paiement annulé. Aucun montant n’a été confirmé." : "Payment cancelled. No amount was confirmed." };
+    }
+    if (status === "success" && confirmation === "confirmed") {
+      return { text: fr ? "Contribution confirmée par CleanMyMap." : "Contribution confirmed by CleanMyMap." };
+    }
+    if (status === "success") {
+      return { text: fr ? "Paiement reçu par Stripe · confirmation en cours." : "Payment received by Stripe · confirmation in progress." };
+    }
+    return null;
+  }, [confirmation, fr, status]);
 
   return (
     <SectionShell
       id="funding"
-      title={fr ? "Modèle Économique" : "Economic Model"}
-      subtitle={fr 
-        ? "Transparence, sponsoring de zones et mécénat pour une action environnementale pérenne."
-        : "Transparency, zone sponsorship and patronage for sustainable environmental action."}
-      icon={Banknote}
-      gradient="from-rose-500/20 via-pink-500/10 to-transparent"
+      title={fr ? "Soutenir CleanMyMap" : "Support CleanMyMap"}
+      subtitle={fr
+        ? "Des contributions volontaires pour les actions terrain et le développement d’un outil indépendant."
+        : "Voluntary contributions for field actions and the development of an independent tool."}
+      icon={HandCoins}
+      gradient="from-pink-500/20 via-indigo-500/10 to-transparent"
     >
-      <div className="space-y-12 pt-8">
-        {/* Impact Message */}
-        <div className="p-8 rounded-[3rem] border border-white/5 bg-slate-950/20 backdrop-blur-3xl shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 group">
-           <div className="flex items-center gap-6">
-              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
-                 <ShieldCheck size={24} />
-              </div>
-              <div className="space-y-1">
-                 <h4 className="text-sm font-black text-white uppercase tracking-widest">{fr ? "Action Indépendante" : "Independent Action"}</h4>
-                 <p className="cmm-text-caption font-bold text-slate-500 uppercase tracking-widest">{fr ? "Zéro influence sur la modération" : "Zero influence on moderation"}</p>
-              </div>
-           </div>
-           <p className="cmm-text-body cmm-text-inverse font-bold leading-relaxed max-w-md md:text-right">
-              {fr
-                ?"Rubrique dédiée au modèle économique local: sponsoring de zones, mécénat écologique et appel au don pour renforcer les actions concrètes sur le terrain."
-                :"Section dedicated to the local funding model: zone sponsorship, ecological patronage and donations to strengthen field actions."}
-           </p>
+      <div className="space-y-8" data-funding-page>
+        {notice ? (
+          <div className="rounded-2xl border border-pink-200/70 bg-white/80 px-5 py-4 text-sm font-semibold text-slate-800 shadow-sm" role="status" data-funding-return={status}>
+            {notice.text}
+          </div>
+        ) : null}
+
+        {checkoutError ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-900" role="alert">
+            {checkoutError}
+          </div>
+        ) : null}
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          {(Object.keys(FUNDING_CATEGORY_LABELS) as FundingCategory[]).map((category) => {
+            const Icon = CATEGORY_ICONS[category];
+            const aggregate = aggregates?.categories?.[category];
+            const isLoading = checkoutStatus === category;
+            return (
+              <CmmCard key={category} as="article" tone={category === "equipment" ? "pink" : "indigo"} variant="elevated" size="lg" className="flex h-full flex-col gap-6" data-funding-card={category}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="rounded-2xl border border-pink-200/70 bg-white/80 p-3 text-pink-700">
+                    <Icon size={24} aria-hidden="true" />
+                  </div>
+                  <div className="text-right">
+                    <p className="cmm-text-caption font-semibold uppercase tracking-[0.18em] text-slate-500">{fr ? "Total collecté" : "Collected total"}</p>
+                    {aggregateState === "loading" ? (
+                      <p className="mt-2 text-sm font-semibold text-slate-500" aria-live="polite">{fr ? "Chargement…" : "Loading…"}</p>
+                    ) : aggregateState === "error" ? (
+                      <p className="mt-2 text-sm font-semibold text-red-700">{fr ? "Indisponible" : "Unavailable"}</p>
+                    ) : (
+                      <p className="mt-2 text-2xl font-black text-slate-950" data-funding-total={category}>
+                        {formatFundingAmount(aggregate?.netAmountCents ?? 0, locale)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h2 className="text-2xl font-black tracking-tight text-slate-950">{FUNDING_CATEGORY_LABELS[category][locale]}</h2>
+                  <p className="text-sm leading-6 text-slate-800">{FUNDING_CATEGORY_DESCRIPTIONS[category][locale]}</p>
+                </div>
+
+                <ul className="space-y-2 text-sm font-medium text-slate-700">
+                  {CATEGORY_BULLETS[category][locale].map((bullet) => (
+                    <li key={bullet} className="flex items-start gap-2">
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-pink-500" aria-hidden="true" />
+                      <span>{bullet}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-auto space-y-4 border-t border-slate-200 pt-5">
+                  <fieldset>
+                    <legend className="cmm-text-caption font-semibold uppercase tracking-[0.18em] text-slate-500">{fr ? "Choisir un montant" : "Choose an amount"}</legend>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {FUNDING_PRESET_AMOUNTS_CENTS.map((amountCents) => (
+                        <CmmButton
+                          key={amountCents}
+                          type="button"
+                          tone={amounts[category] === amountCents ? "important" : "secondary"}
+                          variant="pill"
+                          size="sm"
+                          ariaLabel={`${amountLabel(amountCents, locale)} — ${FUNDING_CATEGORY_LABELS[category][locale]}`}
+                          ariaSelected={amounts[category] === amountCents}
+                          onClick={() => setAmounts((current) => ({ ...current, [category]: amountCents }))}
+                        >
+                          {amountLabel(amountCents, locale)}
+                        </CmmButton>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <CmmButton
+                    type="button"
+                    tone="primary"
+                    variant="pill"
+                    width="wide"
+                    loading={isLoading}
+                    disabled={aggregateState === "error"}
+                    onClick={() => void startCheckout(category)}
+                    ariaLabel={fr ? `Soutenir ${FUNDING_CATEGORY_LABELS[category].fr}` : `Support ${FUNDING_CATEGORY_LABELS[category].en}`}
+                  >
+                    {isLoading
+                      ? (fr ? "Redirection vers Stripe…" : "Redirecting to Stripe…")
+                      : category === "equipment"
+                        ? (fr ? "Soutenir le matériel" : "Support equipment")
+                        : (fr ? "Soutenir le développement" : "Support development")}
+                  </CmmButton>
+                  {aggregateState === "error" ? (
+                    <CmmButton type="button" tone="secondary" variant="ghost" width="wide" onClick={() => void loadAggregates()}>
+                      {fr ? "Réessayer le chargement" : "Retry loading"}
+                    </CmmButton>
+                  ) : null}
+                </div>
+              </CmmCard>
+            );
+          })}
         </div>
 
-        {/* Funding Tracks Grid */}
-        <div className="grid gap-6 md:grid-cols-3">
-           {/* Section 1: Business Sponsoring */}
-           <motion.div 
-             initial={{ opacity: 1, y: 20 }}
-             whileInView={{ opacity: 1, y: 0 }}
-             className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"
-           >
-              <div className="p-4 rounded-2xl w-fit bg-rose-500/10 border border-rose-500/20 text-rose-400 group-hover:scale-110 transition-transform">
-                 <Landmark size={24} />
-              </div>
-              <div className="space-y-4">
-                 <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Sponsoring de Zones" : "Zone Sponsorship"}</h3>
-                 <p className="text-xs font-bold text-slate-500 leading-relaxed">
-                    {fr ? "Engagement des entreprises locales pour soutenir des périmètres géographiques spécifiques." : "Engagement of local businesses to support specific geographic perimeters."}
-                 </p>
-                 <ul className="space-y-3 pt-2">
-                    {[
-                      fr ? "Budget annuel transparent" : "Transparent annual budget",
-                      fr ? "Évidence cartographique" : "Map-based evidence",
-                      fr ? "Gouvernance indépendante" : "Independent governance"
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3">
-                         <div className="h-1.5 w-1.5 rounded-full bg-rose-500/40" />
-                         <span className="cmm-text-caption font-black text-slate-400 uppercase tracking-widest">{item}</span>
-                      </li>
-                    ))}
-                 </ul>
-              </div>
-           </motion.div>
-
-           {/* Section 2: Mécénat */}
-           <motion.div 
-             initial={{ opacity: 1, y: 20 }}
-             whileInView={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.1 }}
-             className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"
-           >
-              <div className="p-4 rounded-2xl w-fit bg-pink-500/10 border border-pink-500/20 text-pink-400 group-hover:scale-110 transition-transform">
-                 <Target size={24} />
-              </div>
-              <div className="space-y-4">
-                 <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Mécénat Écologique" : "Ecological Patronage"}</h3>
-                 <p className="text-xs font-bold text-slate-500 leading-relaxed">
-                    {fr ? "Financement de matériel, logistique et formation pour les acteurs de terrain." : "Funding of equipment, logistics and training for field actors."}
-                 </p>
-                 <ul className="space-y-3 pt-2">
-                    {[
-                      fr ? "Capacité d'intervention" : "Intervention capacity",
-                      fr ? "Logistique mutualisée" : "Shared logistics",
-                      fr ? "Zéro sur-compétition" : "Zero over-competition"
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3">
-                         <div className="h-1.5 w-1.5 rounded-full bg-pink-500/40" />
-                         <span className="cmm-text-caption font-black text-slate-400 uppercase tracking-widest">{item}</span>
-                      </li>
-                    ))}
-                 </ul>
-              </div>
-           </motion.div>
-
-           {/* Section 3: Donations */}
-           <motion.div 
-             initial={{ opacity: 1, y: 20 }}
-             whileInView={{ opacity: 1, y: 0 }}
-             transition={{ delay: 0.2 }}
-             className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"
-           >
-              <div className="p-4 rounded-2xl w-fit bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-400 group-hover:scale-110 transition-transform">
-                 <Heart size={24} />
-              </div>
-              <div className="space-y-4">
-                 <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Appel au Don" : "Donation Appeal"}</h3>
-                 <p className="text-xs font-bold text-slate-500 leading-relaxed">
-                    {fr ? "Collecte citoyenne orientée vers l'impact local et le suivi communautaire." : "Civic fundraising oriented towards local impact and community monitoring."}
-                 </p>
-                 <ul className="space-y-3 pt-2">
-                    {[
-                      fr ? "Rapports d'impact publics" : "Public impact reports",
-                      fr ? "Priorisation des urgences" : "Urgency prioritization",
-                      fr ? "Traçabilité des fonds" : "Fund traceability"
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3">
-                         <div className="h-1.5 w-1.5 rounded-full bg-fuchsia-500/40" />
-                         <span className="cmm-text-caption font-black text-slate-400 uppercase tracking-widest">{item}</span>
-                      </li>
-                    ))}
-                 </ul>
-              </div>
-           </motion.div>
-        </div>
-
-        {/* Partner CTA */}
-        <div className="p-10 rounded-[3.5rem] border border-white/10 bg-gradient-to-br from-rose-600 to-pink-700 text-white shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-12 group overflow-hidden relative">
-           <div className="absolute top-0 right-0 p-20 opacity-10 pointer-events-none rotate-12">
-              <Coins size={300} />
-           </div>
-
-           <div className="relative z-10 space-y-4 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 cmm-text-caption font-black uppercase tracking-widest">
-                 <Sparkles size={12} className="text-rose-300" />
-                 {fr ? "Rejoindre l'Action" : "Join the Action"}
-              </div>
-              <h3 className="text-4xl font-black tracking-tighter">{fr ? "Devenez Partenaire" : "Become a Partner"}</h3>
-              <p className="text-lg font-bold text-white max-w-xl leading-relaxed">
-                 {fr 
-                   ? "Engagez votre organisation dans une démarche de propreté urbaine et de préservation environnementale mesurable."
-                   : "Commit your organization to a measurable urban cleanliness and environmental preservation approach."}
+        <CmmCard as="section" tone="slate" variant="outlined" size="lg" className="space-y-5" data-funding-allocation>
+          <div className="flex items-start gap-4">
+            <div className="rounded-2xl border border-slate-200 bg-white p-3 text-slate-700">
+              <ShieldCheck size={22} aria-hidden="true" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-950">{fr ? "Où va l’argent ?" : "Where does the money go?"}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-800">
+                {fr
+                  ? "Les contributions sont affectées à la catégorie choisie : matériel et logistique pour les actions terrain, ou hébergement, outils et dépenses nécessaires au fonctionnement et au développement. Les totaux publiés proviennent des paiements confirmés par Stripe, diminués des remboursements enregistrés."
+                  : "Contributions are allocated to the selected category: equipment and logistics for field actions, or hosting, tools and expenses needed for operations and development. Published totals come from Stripe-confirmed payments, less recorded refunds."}
               </p>
-           </div>
-           
-           <CmmButton type="button" tone="secondary" variant="pill" className="relative z-10 flex items-center gap-4 px-10 py-5 text-xs font-black uppercase tracking-[0.3em] shadow-2xl transition-all">
-              {fr ? "Ouvrir le dossier" : "Open the file"}
-              <ArrowRight size={18} />
-           </CmmButton>
-        </div>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 rounded-2xl bg-pink-50 px-4 py-3 text-sm font-semibold text-slate-800">
+            <Heart size={18} className="mt-0.5 shrink-0 text-pink-600" aria-hidden="true" />
+            <p>{fr ? "La contribution soutient le projet mais ne donne aucun pouvoir sur la modération, les décisions éditoriales ou les règles de la plateforme." : "A contribution supports the project but gives no power over moderation, editorial decisions or platform rules."}</p>
+          </div>
+        </CmmCard>
       </div>
     </SectionShell>
   );
