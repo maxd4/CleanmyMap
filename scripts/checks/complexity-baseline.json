@@ -1869,15 +1869,6 @@
     },
     {
       "metric": "complexity",
-      "path": "src/lib/environmental-impact-estimator/services/lifecycle.ts",
-      "line": 21,
-      "category": "runtime/services/orchestration",
-      "ceiling": 25,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildLifecycleScoreSignals#1"
-    },
-    {
-      "metric": "complexity",
       "path": "src/lib/errors/app-errors.ts",
       "line": 63,
       "category": "métier/domain pur",
@@ -5214,24 +5205,6 @@
       "ceiling": 135,
       "status": "LEGACY",
       "functionIdentity": "named:buildInfrastructureEstimate#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "src/lib/environmental-impact-estimator/services/lifecycle.ts",
-      "line": 21,
-      "category": "runtime/services/orchestration",
-      "ceiling": 137,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildLifecycleScoreSignals#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "src/lib/environmental-impact-estimator/services/lifecycle.ts",
-      "line": 160,
-      "category": "runtime/services/orchestration",
-      "ceiling": 144,
-      "status": "LEGACY",
-      "functionIdentity": "named:buildLifecycleEstimate#1"
     },
     {
       "metric": "functionLength",
