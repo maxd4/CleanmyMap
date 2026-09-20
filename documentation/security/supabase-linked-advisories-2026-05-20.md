@@ -13,18 +13,22 @@ nommé `supabase-vercel-codex`. Le `project ref` doit être confirmé dans
 `apps/web/supabase/config.toml` et dans le Dashboard avant de lancer un audit
 lié. Cette information ne remplace pas une authentification CLI valide.
 
-## État courant — preuve finale du 1er septembre 2026
+## État courant — ré-audit linked-only du 20 septembre 2026
 
 Cette section est la référence courante. Les sections datées plus bas sont
 conservées comme historique et ne doivent pas être interprétées comme l'état
-du projet au 1er septembre 2026.
+du projet au 20 septembre 2026.
 
 Le projet linked `supabase-vercel-codex` (`trktzkgujgpgsgkoyndn`) est à jour
-sur l'arbre canonique : **128 migrations linked**, dont les lots
-`profiles`, `actions`, `chat-attachments` et
-`20260901012605_harden_action_rpc_execute_privileges`.
+sur l'arbre canonique : **170 migrations linked**, la dernière étant
+`20260916000000_allow_gpx_action_geometry_source`.
 
-Les contrôles runtime linked/prod et les catalogues PostgreSQL confirment :
+La branche Supabase distante restante est `main`, en état
+`FUNCTIONS_DEPLOYED`. Les deux previews Dependabot orphelines ne sont plus
+présentes. Aucun schéma distant n'a été modifié pendant ce ré-audit.
+
+Les contrôles runtime linked/prod et les catalogues PostgreSQL déjà documentés
+restent inchangés ; ce ré-audit n'a pas rejoué ces contrôles catalogue :
 
 - `profiles` : les colonnes d'identité de rôle et de referral restent en
   écriture serveur ; les colonnes self-service accordées restent disponibles
@@ -49,22 +53,38 @@ que `service_role` l'a ; les fonctions restent `SECURITY INVOKER` avec
 `search_path=pg_catalog`. Les RLS et les privilèges de table `actions` n'ont
 pas été modifiés par ce dernier lot.
 
-### Advisors linked finaux
+### Advisors sécurité linked actuels
 
-- **Sécurité : 0 WARN, 0 ERROR, 2 INFO acceptés et documentés** :
-  `rls_enabled_no_policy` sur `public.legal_content_reports` et
-  `public.legal_content_report_decisions` uniquement ;
-- **Performance : 78 INFO, 0 WARN, 0 ERROR**.
+- **Sécurité : 3 WARN, 0 ERROR, 4 INFO acceptés et documentés**.
+- Les trois WARN concernent `SECURITY DEFINER` sur
+  `can_insert_action_message_reference(uuid)`,
+  `can_post_action_conversation(uuid)` et
+  `can_view_action_conversation(uuid)`.
+- Ces trois fonctions sont appelées par les policies RLS des messages et des
+  conversations d'action ; aucun appel RPC applicatif direct n'a été trouvé.
+  Leur élévation est nécessaire pour évaluer les actions/conversations et la
+  table d'exclusions server-only sans récursion RLS. Les corps vérifient la
+  visibilité, le statut, l'identité `authenticated`, le `sub` JWT et les
+  exclusions actives ; `can_post` délègue à `can_view` et refuse les actions
+  annulées.
+- Les migrations révoquent `EXECUTE` pour `public` et `anon` et ne le
+  conservent que pour `authenticated` et `service_role`, ce qui correspond au
+  besoin des policies RLS et au chemin serveur.
 
-Les deux INFO sécurité sont intentionnels : ces tables server-only ont RLS
-activée sans policy publique et ne sont pas lisibles par `anon` ou
-`authenticated`. Ils ne constituent pas une dérive à corriger.
+- Les quatre INFO `rls_enabled_no_policy` sont intentionnels :
+  `public.action_conversation_exclusions`,
+  `public.action_share_contact_requests`,
+  `public.legal_content_reports` et
+  `public.legal_content_report_decisions` sont des tables server-only, sans
+  policy publique et sans accès de lecture attendu pour `anon` ou
+  `authenticated`. Aucune policy permissive ne doit être ajoutée.
 
-La preuve linked/prod est **PROUVÉE** par l'historique des migrations, les
-requêtes de privilèges PostgreSQL, les contrôles RLS/Storage et les Advisors
-rejoués le 1er septembre 2026. Le runtime local Docker est **NON REQUIS / NON
-PROUVÉ** pour cette clôture ; aucune conclusion de panne locale ne doit être
-déduite de ce document.
+La vérification directe du catalogue par `npx supabase db query --linked` est
+restée indisponible pour l'identité CLI réauthentifiée (`403` sur le rôle de
+connexion). La démonstration de sûreté repose donc sur l'historique linked
+aligné, les migrations RLS/grants, les tests de contrat et les Advisors
+rejoués ; elle ne prétend pas fournir une nouvelle preuve catalogue directe.
+Le runtime local Docker est **NON REQUIS / NON PROUVÉ** pour cette clôture.
 
 ## Historique — verdict final du chantier Security Advisor du 29 août 2026
 

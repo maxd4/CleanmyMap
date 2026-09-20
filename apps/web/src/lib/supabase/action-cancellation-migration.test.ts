@@ -33,6 +33,18 @@ describe("action cancellation SQL contract", () => {
     expect(discussionMigration).toContain("public.can_post_action_conversation(conversation_id)");
   });
 
+  it("keeps the post predicate non-public while retaining the RLS caller role", () => {
+    expect(discussionMigration).toMatch(
+      /create or replace function public\.can_post_action_conversation[\s\S]+?security definer/i,
+    );
+    expect(discussionMigration).toContain(
+      "revoke all on function public.can_post_action_conversation(uuid) from public, anon;",
+    );
+    expect(discussionMigration).toContain(
+      "grant execute on function public.can_post_action_conversation(uuid) to authenticated, service_role;",
+    );
+  });
+
   it("blocks every changed column on an existing cancelled tombstone", () => {
     expect(tombstoneMigration).toContain("old.status = 'cancelled'");
     expect(tombstoneMigration).toContain("to_jsonb(old) is distinct from to_jsonb(new)");

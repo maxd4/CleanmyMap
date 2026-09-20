@@ -21,6 +21,8 @@ const RLS_ADVISOR_NAMES = new Set([
 ]);
 
 const ALLOWED_SERVER_ONLY_RLS_INFO_TABLES = new Set([
+  "action_conversation_exclusions",
+  "action_share_contact_requests",
   "legal_content_reports",
   "legal_content_report_decisions",
 ]);
