@@ -12,6 +12,27 @@ const discussionMigration = readFileSync(
 );
 
 describe("action sharing and discussion SQL contracts", () => {
+  it("keeps RLS definer predicates bounded to the required roles", () => {
+    expect(shareMigration).toMatch(
+      /create or replace function public\.can_insert_action_message_reference[\s\S]+?security definer/i,
+    );
+    expect(shareMigration).toContain(
+      "revoke all on function public.can_insert_action_message_reference(uuid) from public, anon;",
+    );
+    expect(shareMigration).toContain(
+      "grant execute on function public.can_insert_action_message_reference(uuid) to authenticated, service_role;",
+    );
+    expect(discussionMigration).toMatch(
+      /create or replace function public\.can_view_action_conversation[\s\S]+?security definer/i,
+    );
+    expect(discussionMigration).toContain(
+      "revoke all on function public.can_view_action_conversation(uuid) from public, anon;",
+    );
+    expect(discussionMigration).toContain(
+      "grant execute on function public.can_view_action_conversation(uuid) to authenticated, service_role;",
+    );
+  });
+
   it("keeps the share reference predicate on the message-reference capability", () => {
     const messageReference = shareMigration.slice(
       shareMigration.indexOf("create or replace function public.can_insert_action_message_reference"),

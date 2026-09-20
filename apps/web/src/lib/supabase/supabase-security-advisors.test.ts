@@ -22,7 +22,7 @@ describe("Supabase security advisor guard", () => {
     expect(script).not.toContain("Docker Desktop");
   });
 
-  it("allows only the two documented server-only INFO findings", () => {
+  it("allows only the four documented server-only INFO findings", () => {
     expect(SECURITY_ADVISOR_COMMAND_OPTIONS).toEqual([
       "--type",
       "security",
@@ -35,6 +35,20 @@ describe("Supabase security advisor guard", () => {
     ]);
 
     const allowedFindings = [
+      {
+        name: "rls_enabled_no_policy",
+        level: "INFO",
+        detail:
+          "Table `public.action_conversation_exclusions` has RLS enabled, but no policies exist",
+        metadata: { name: "action_conversation_exclusions", type: "table" },
+      },
+      {
+        name: "rls_enabled_no_policy",
+        level: "INFO",
+        detail:
+          "Table `public.action_share_contact_requests` has RLS enabled, but no policies exist",
+        metadata: { name: "action_share_contact_requests", type: "table" },
+      },
       {
         name: "rls_enabled_no_policy",
         level: "INFO",
