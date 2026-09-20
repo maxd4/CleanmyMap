@@ -72,15 +72,6 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["src/lib/route/route-calibration.ts"],
-    rules: {
-      "max-lines": [
-        "warn",
-        { max: heavyFileMaxLines("src/lib/route/route-calibration.ts"), skipBlankLines: true, skipComments: true },
-      ],
-    },
-  },
-  {
     files: ["src/lib/actions/action-update-persistence.ts"],
     rules: {
       complexity: ["warn", LEGACY_EXCEPTION_CEILINGS.actionUpdatePersistenceComplexity],

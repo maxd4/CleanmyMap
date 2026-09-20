@@ -7,7 +7,7 @@ import type { RoutePredictionSummary } from "./route-predicted-targets";
 import type {
   RoutePlannerSnapshot,
   RoutePlannerSnapshotGroup,
-} from "./route-calibration";
+} from "./route-calibration-types";
 import { isCoordinate, isRouteGeometry } from "./route-geometry-validation";
 import { isRouteOperationalBudget } from "./route-operational-budget-contract";
 import { isPlannerWeatherContext } from "@/lib/weather/planner-weather";
