@@ -68,6 +68,15 @@ describe("Supabase security advisor guard", () => {
       findRlsContractFindings(JSON.stringify(allowedFindings)),
     ).toEqual([]);
 
+    const cliEscapedAllowedFindings = allowedFindings.map((finding) => ({
+      ...finding,
+      detail: finding.detail.replaceAll("`", "\\`"),
+    }));
+
+    expect(
+      findRlsContractFindings(JSON.stringify(cliEscapedAllowedFindings)),
+    ).toEqual([]);
+
     expect(
       findRlsContractFindings(
         JSON.stringify([
