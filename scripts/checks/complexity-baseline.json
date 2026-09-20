@@ -618,15 +618,6 @@
     },
     {
       "metric": "complexity",
-      "path": "src/components/admin/codex-usage-panel.tsx",
-      "line": 101,
-      "category": "React/JSX",
-      "ceiling": 37,
-      "status": "LEGACY",
-      "functionIdentity": "named:CodexUsagePanel#1"
-    },
-    {
-      "metric": "complexity",
       "path": "src/components/admin/creator-inbox/inbox-item-card.tsx",
       "line": 47,
       "category": "React/JSX",
@@ -3495,15 +3486,6 @@
       "ceiling": 186,
       "status": "LEGACY",
       "functionIdentity": "named:AdminCreatorConsole#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "src/components/admin/codex-usage-panel.tsx",
-      "line": 101,
-      "category": "React/JSX",
-      "ceiling": 334,
-      "status": "LEGACY",
-      "functionIdentity": "named:CodexUsagePanel#1"
     },
     {
       "metric": "functionLength",
