@@ -56,7 +56,7 @@ export default function PolitiqueConfidentialitePage() {
           tone="slate"
           title="Politique de confidentialité"
           subtitle="Cette page décrit les données réellement traitées par CleanMyMap, les finalités, les destinataires, les critères de conservation et les droits des personnes."
-          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 27 août 2026</p>}
+          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 20 septembre 2026</p>}
         />
 
         <section className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 lg:grid-cols-2">
@@ -138,6 +138,7 @@ export default function PolitiqueConfidentialitePage() {
               "Notifications de contenu potentiellement illicite : URL exacte, motif circonstancié, type ou identifiant technique facultatif, identité et email lorsqu'ils sont fournis, exception d'identité lorsqu'elle est invoquée, date, état de traitement et identifiant de suivi.",
               "Décisions administratives relatives à ces notifications : acteur admin canonique, date, action, origine, motif, moyens automatisés, fondement légal ou CGU lorsque pertinent, URL/identifiant du contenu et états avant/après bornés. L'audit n'inclut pas l'identité du déclarant ni le contenu tiers.",
               "Notifications, progression, événements de service et journaux d'opérations d'administration nécessaires au fonctionnement et à la sécurité.",
+              "Contributions financières via Stripe : identifiant de session Checkout, identifiant de PaymentIntent, catégorie choisie, montants total et remboursé en centimes, devise, statut, dates de paiement et de mise à jour, identifiants d'événements webhook, type, identifiant d'objet, date de traitement et agrégats publics par catégorie. CleanMyMap ne stocke pas le numéro de carte, sa date d'expiration, son cryptogramme ni les coordonnées de carte saisies sur Checkout Stripe.",
             ]}
           />
           <p className="cmm-text-body">
@@ -189,6 +190,7 @@ export default function PolitiqueConfidentialitePage() {
                   ["Analytics et mesure d'audience", "Mesurer les parcours et la performance après accord", "Consentement"],
                   ["Sentry et sécurité", "Détecter, diagnostiquer et prévenir les erreurs, abus et incidents", "Intérêt légitime"],
                   ["Parrainage et progression", "Relier les invitations et afficher les éléments de progression du service", "Exécution du service ; intérêt légitime d'animation de la communauté"],
+                  ["Contributions financières via Stripe", "Créer la session Checkout demandée, confirmer le paiement, prévenir la fraude, suivre les remboursements et conserver la traçabilité applicable", "Étapes demandées pour le paiement ; intérêt légitime de sécurité et de prévention de la fraude ; obligation légale lorsqu'elle s'applique"],
                 ].map(([treatment, purpose, basis]) => (
                   <tr key={treatment}>
                     <td className="font-medium text-slate-900">{treatment}</td>
@@ -214,6 +216,7 @@ export default function PolitiqueConfidentialitePage() {
               "Resend : envoi des emails transactionnels, de support et de notification.",
               "PostHog : mesure d'audience et analytics seulement avec consentement.",
               "Sentry : observabilité et sécurité uniquement si la DSN est configurée.",
+              "Stripe : page Checkout et traitement du paiement, confirmation, prévention de la fraude et gestion technique des remboursements liés aux contributions. Les données de carte sont saisies et traitées sur l'environnement Stripe et ne sont pas stockées par CleanMyMap.",
               "Autorités compétentes ou autres destinataires : uniquement lorsque la loi ou le traitement concerné le justifie.",
             ]}
           />
@@ -250,6 +253,7 @@ export default function PolitiqueConfidentialitePage() {
               "legal_content_reports : aucun nettoyage automatique spécifique n'est identifié dans ce dépôt ; les signalements sont conservés selon le suivi nécessaire de la notification, les obligations applicables et l'examen d'une demande de droits. Ils ne sont pas supprimés par le nettoyage générique actuel.",
               "legal_content_report_decisions : l'historique des décisions et de l'audit est conservé avec le signalement pour la traçabilité. Les états d'envoi sont enrichis de manière bornée pour distinguer un envoi réussi d'un échec ; aucune durée fixe supplémentaire n'est configurée. Une demande d'effacement ou de limitation est examinée au regard des obligations de preuve, des droits des tiers et de la nécessité du suivi.",
               "Profils, actions, lieux, médias de signalement, rapports, notifications, progression et audit : aucun mécanisme générique de suppression périodique n'est identifié dans ce dépôt ; conservation selon le fonctionnement du service et examen au cas par cas lors d'une demande de droits.",
+              "Faits de paiement et événements Stripe : conservation selon les besoins de confirmation, de remboursement, de prévention de la fraude et de traçabilité applicable. Aucun mécanisme de purge ni durée fixe propre à ces tables n'est démontré par le dépôt ; les agrégats publics sont des projections de montants sans données de carte ni PII.",
               "Newsletter : l'inscription reste active jusqu'à son retrait ou sa mise à jour ; le code actuel ne fournit pas de parcours public de désinscription dédié, le retrait peut être demandé via le contact RGPD.",
               "PostHog, Vercel et Sentry : la durée de conservation des données chez ces fournisseurs n'est pas configurée par ce dépôt ; elle dépend de leurs paramètres et conditions applicables et n'est pas présentée comme une durée CleanMyMap.",
             ]}

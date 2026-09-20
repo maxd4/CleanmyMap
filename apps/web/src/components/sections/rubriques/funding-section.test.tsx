@@ -24,8 +24,10 @@ describe("FundingSection", () => {
     expect(markup).toContain("Soutenir le développement");
     expect(markup).toContain("Où va l’argent ?");
     expect(markup).toContain("Chargement…");
-    expect(markup).not.toContain("mécénat");
-    expect(markup).not.toContain("réduction fiscale");
+    expect(markup).toContain("n’est pas un reçu fiscal");
+    expect(markup).toContain("n’annonce ni réduction fiscale ni mécénat fiscal");
+    expect(markup).not.toContain("constitue un mécénat fiscal");
+    expect(markup).not.toContain("promesse de réduction fiscale");
   });
 
   it("presents the cancelled return without claiming a payment", () => {

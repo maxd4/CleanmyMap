@@ -20,9 +20,22 @@ son téléphone personnel.
 
 L'hébergeur du site est distingué des prestataires techniques : Supabase pour
 la base de données et le stockage, Clerk pour l'identité et l'authentification,
-Resend pour l'envoi d'emails, PostHog pour les analytics soumis au consentement
-et Sentry pour l'observabilité et la sécurité lorsqu'il est configuré. Ces
-services ne sont pas présentés comme l'hébergeur du site.
+Resend pour l'envoi d'emails, Stripe comme prestataire de paiement pour les
+contributions, PostHog pour les analytics soumis au consentement et Sentry pour
+l'observabilité et la sécurité lorsqu'il est configuré. Ces services ne sont
+pas présentés comme l'hébergeur du site.
+
+Pour le financement, le runtime utilise Checkout hébergé par Stripe et
+persiste uniquement des identifiants de session et de paiement, la catégorie,
+les montants, la devise, les statuts et dates nécessaires au suivi du paiement,
+des remboursements et des agrégats publics, ainsi que les identifiants
+d'événements webhook. Les données de carte saisies sur Checkout sont traitées
+par Stripe et ne sont pas stockées par CleanMyMap.
+
+`LEGAL_REVIEW_REQUIRED` — la qualification fiscale et comptable exacte des
+contributions, de leur affectation et de leur conservation n'est pas déduite
+du seul code. CleanMyMap ne présente pas ces versements comme du mécénat
+fiscal, n'annonce aucune réduction fiscale et ne délivre pas de reçu fiscal.
 
 ## Documents spécialisés
 
@@ -43,6 +56,13 @@ l'hébergeur et les prestataires, sont publiées sur la page
 Le point de contact juridique et RGPD actuellement configuré est
 <contact@cleanmymap.fr>. Il peut être utilisé pour les questions juridiques,
 l'exercice des droits et les demandes concernant le service.
+
+## Sources de référence utilisées
+
+- [CNIL — Le paiement à distance par carte bancaire](https://www.cnil.fr/fr/le-paiement-distance-par-carte-bancaire) : minimisation et conservation des données de carte ;
+- [CNIL — Conformité RGPD : information et transparence](https://www.cnil.fr/fr/conformite-rgpd-information-des-personnes-et-transparence) : finalités, bases légales, destinataires et critères de conservation ;
+- [Stripe — Politique de confidentialité](https://stripe.com/fr/privacy) : traitement des données de transaction par Stripe et distinction des rôles selon le service ;
+- [Service-Public.fr — Dons aux associations et organismes d'intérêt général](https://www.service-public.fr/particuliers/vosdroits/F426) : conditions générales d'un avantage fiscal, sans en déduire une éligibilité pour CleanMyMap.
 
 ## Politique de licence
 

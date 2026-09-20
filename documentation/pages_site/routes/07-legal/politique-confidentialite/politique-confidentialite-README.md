@@ -12,7 +12,7 @@
 - **Objectif utilisateur principal** : Informer sur les règles, les droits et la conformité, sans esthétique marketing.
 - **Action principale attendue** : Lire un document ou contacter l'équipe.
 - **Palette attendue** : slate / gris clair
-- **Scope** : politique RGPD et réconciliation avec les traitements runtime — LEGAL-03 ; identité juridique alignée sur le régime LEGAL-02
+- **Scope** : politique RGPD et réconciliation avec les traitements runtime — LEGAL-03 ; identité juridique alignée sur le régime LEGAL-02 ; ajout du prestataire de paiement Stripe
 - **Terminée** : oui
 - **Couleurs actuellement détectées** : legal — canvas #f8fafc, halo rgba(148, 163, 184, 0.18)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
@@ -49,6 +49,8 @@
 - Le retrait désactive le rendu Vercel Analytics / Speed Insights et arrête une instance PostHog déjà initialisée avant de réautoriser une nouvelle capture.
 - **Gérer mes cookies** est accessible en permanence depuis le footer et rouvre la bannière de choix.
 - La politique décrit les catégories réellement traitées, les bases légales, les destinataires, les transferts non vérifiés comme tels, les critères de rétention et le délai d'exercice des droits.
+- Stripe est documenté comme prestataire de paiement. CleanMyMap ne conserve que les identifiants, montants, catégorie, devise, statuts et dates des faits de paiement et des événements webhook réellement persistés ; les données de carte sont saisies et traitées sur Checkout Stripe.
+- La conservation des faits de paiement est décrite par finalité et critères, sans durée fixe inventée par le dépôt ; les agrégats publics ne contiennent pas de PII.
 - Sentry est documenté comme observabilité/sécurité hors analytics ; aucun masquage ou anonymisation spécifique non configuré n'est promis.
 - Les demandes RGPD sont persistées dans `contact_requests`, couvertes par le nettoyage générique lorsqu'il est exécuté ; ses archives ne recopient pas les données personnelles.
 - Les notifications de contenu sont persistées dans `legal_content_reports` avec l'URL, le motif et les identifiants facultatifs. L'historique des décisions est conservé dans `legal_content_report_decisions`, avec audit, snapshots bornés et état borné des notifications ; les décisions sont visibles uniquement dans le creator inbox et ne copient pas le contenu tiers.

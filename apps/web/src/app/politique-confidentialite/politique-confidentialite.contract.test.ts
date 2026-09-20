@@ -57,6 +57,9 @@ describe("privacy policy contract", () => {
       expect(source).toContain("un mois");
       expect(source).toContain("deux mois");
       expect(source).toContain("automatisée");
+      expect(source).toContain("Stripe");
+      expect(source).toContain("identifiant de session Checkout");
+      expect(source).toMatch(/ne stocke pas le\s+numéro de carte/iu);
     }
   });
 

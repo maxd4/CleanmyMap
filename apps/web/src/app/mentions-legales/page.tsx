@@ -44,7 +44,7 @@ export default function MentionsLegalesPage() {
           tone="slate"
           title="Mentions légales"
           subtitle="Point d'entrée unique vers les documents juridiques de CleanMyMap. Les pages détaillées restent séparées pour garder la conformité lisible."
-          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 27 août 2026</p>}
+          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 20 septembre 2026</p>}
         />
 
         <section className="grid gap-4 md:grid-cols-2">
@@ -172,10 +172,10 @@ export default function MentionsLegalesPage() {
           <h2 className="text-xl font-bold text-slate-950">Services techniques</h2>
           <p className="cmm-text-body">
             Supabase (base de données et stockage), Clerk (identité et
-            authentification), Resend (emails), PostHog (analytics avec
-            consentement) et Sentry (observabilité et sécurité lorsqu&apos;activé)
-            sont des prestataires techniques distincts. Ils ne sont pas présentés
-            comme l&apos;hébergeur du site.
+            authentification), Resend (emails), Stripe (prestataire de paiement),
+            PostHog (analytics avec consentement) et Sentry (observabilité et
+            sécurité lorsqu&apos;activé) sont des prestataires techniques distincts.
+            Ils ne sont pas présentés comme l&apos;hébergeur du site.
           </p>
         </section>
 
