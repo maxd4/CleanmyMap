@@ -60,10 +60,39 @@ overlays, éléments conditionnels, toasts et décorations explicitement
 identifiés.
 
 Les validations Supabase courantes utilisent `npx supabase` contre le projet
-distant explicitement lié. Les advisors se lancent avec
-`npm run backend:supabase:advisors` depuis `apps/web` ; cette commande est
-linked-only. Une opération qui exige un runtime conteneurisé local est
-`UNSUPPORTED_CONTAINER_RUNTIME` sur le poste utilisateur.
+distant explicitement lié. Depuis `apps/web`, vérifier d'abord l'accès puis
+utiliser les contrôles read-only suivants :
+
+```bash
+npx supabase projects list
+npx supabase branches list --project-ref <project-ref> --output json
+npx supabase migration list --linked
+npx supabase db advisors --linked
+```
+
+Le garde applicatif des advisors s'exécute avec
+`npm run backend:supabase:advisors:linked` depuis `apps/web` ;
+`npm run backend:supabase:advisors` reste son alias compatible. Un retour non
+nul avec des constats RLS `INFO` est un résultat de contrôle de sécurité, pas
+un `403` d'authentification ; distinguer les deux diagnostics.
+
+Pour diagnostiquer un `403`, vérifier dans cet ordre `SUPABASE_ACCESS_TOKEN`
+(présence, fraîcheur et scopes, sans afficher sa valeur), l'identité CLI via
+`npx supabase projects list`, puis la visibilité du projet et de son
+organisation. Si le projet n'est pas visible, conclure à un mauvais compte,
+une mauvaise organisation, un rôle insuffisant ou un token sans scope requis.
+Les advisors liés requièrent en outre `advisors_read`.
+
+`npx supabase link --project-ref <project-ref>` configure la cible locale mais
+ne prouve pas qu'une migration est appliquée. Seule la comparaison
+`npx supabase migration list --linked` des identifiants `local` et `remote`
+établit l'alignement de l'historique.
+
+`npx supabase db push`, `npx supabase migration repair` et
+`npx supabase db reset` ne corrigent pas un problème d'authentification ou de
+scope ; ne pas les utiliser comme remèdes à un `403`. Une opération qui exige
+un runtime conteneurisé local est `UNSUPPORTED_CONTAINER_RUNTIME` sur le poste
+utilisateur.
 
 Un runner CI hébergé et éphémère peut toutefois utiliser ce runtime uniquement
 dans une CI explicitement dédiée au replay Supabase.
