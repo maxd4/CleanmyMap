@@ -35,20 +35,11 @@ describe("GET /api/gamification/badges/:userId", () => {
     expect(res.status).toBe(403);
   }, 10000);
 
-  it("returns totals and creates row when missing", async () => {
+  it("returns zero totals without creating a row when missing", async () => {
     authMock.mockResolvedValue({ userId: "user-1" });
 
-    const maybeSingle = vi
-      .fn()
-      .mockResolvedValueOnce({ data: null, error: null })
-      .mockResolvedValueOnce({
-        data: { user_id: "user-1", waste_kg: 0, butts: 0 },
-        error: null,
-      });
-    const insertSingle = vi.fn().mockResolvedValue({
-      data: { user_id: "user-1", waste_kg: 0, butts: 0 },
-      error: null,
-    });
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
+    const insert = vi.fn();
     const supabaseMock = {
       from: vi.fn(() => ({
         select: vi.fn(() => ({
@@ -56,11 +47,7 @@ describe("GET /api/gamification/badges/:userId", () => {
             maybeSingle,
           })),
         })),
-        insert: vi.fn(() => ({
-          select: vi.fn(() => ({
-            single: insertSingle,
-          })),
-        })),
+        insert,
       })),
     };
     getSupabaseServerClientMock.mockReturnValue(supabaseMock);
@@ -77,5 +64,7 @@ describe("GET /api/gamification/badges/:userId", () => {
     expect(res.status).toBe(200);
     expect(body.status).toBe("ok");
     expect(body.totals).toEqual({ wasteKg: 0, butts: 0 });
+    expect(insert).not.toHaveBeenCalled();
+    expect(getSupabaseServerClientMock).toHaveBeenCalledWith(true);
   }, 10000);
 });

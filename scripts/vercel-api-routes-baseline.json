@@ -1,6 +1,6 @@
 {
   "generatedAt": "2026-09-14T23:30:46.968Z",
-  "apiRouteCount": 100,
+  "apiRouteCount": 98,
   "apiRoutes": [
     "apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts",
     "apps/web/src/app/api/account/active-profile/route.ts",
@@ -60,12 +60,10 @@
     "apps/web/src/app/api/environmental-impact/route.ts",
     "apps/web/src/app/api/gamification/analytics/funnel/route.ts",
     "apps/web/src/app/api/gamification/analytics/points/route.ts",
-    "apps/web/src/app/api/gamification/badges/[userId]/increment/route.ts",
     "apps/web/src/app/api/gamification/badges/[userId]/route.ts",
     "apps/web/src/app/api/gamification/badges/list/route.ts",
     "apps/web/src/app/api/gamification/leaderboard/route.ts",
     "apps/web/src/app/api/gamification/me/route.ts",
-    "apps/web/src/app/api/gamification/points/add/route.ts",
     "apps/web/src/app/api/gamification/quiz/pedagogical-metrics/route.ts",
     "apps/web/src/app/api/gamification/quiz/progress/route.ts",
     "apps/web/src/app/api/gamification/referrals/route.ts",

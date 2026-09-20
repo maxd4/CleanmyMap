@@ -24,6 +24,7 @@ export const VITEST_GROUPS = Object.freeze({
     "src/proxy.app-shell.test.ts",
     "src/app/api/public-form-security.test.ts",
     "src/app/api/api-boundary.test.ts",
+    "src/app/api/gamification/gamification-security-boundary.test.ts",
     "src/app/api/actions/route.submit.test.ts",
     "src/app/api/account/profile-role/route.test.ts",
     "src/lib/botid/protected-routes.test.ts",
