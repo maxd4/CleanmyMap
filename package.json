@@ -44,6 +44,8 @@
     "audit:quiz-quality": "node --experimental-strip-types scripts/audits/audit-quiz-quality.mjs",
     "audit:quiz-sources": "node --experimental-strip-types scripts/audits/audit-quiz-sources.mjs",
     "audit:vercel:ci": "node scripts/audits/audit-vercel-ci.mjs",
+    "vercel:deploy:preflight": "npm run vercel:deploy:preflight -w apps/web",
+    "test:vercel-deploy-preflight": "npm run test:vercel-deploy-preflight -w apps/web",
     "typecheck": "npm run typecheck -w apps/web",
     "check:doc-visuals": "node scripts/checks/check-doc-visuals.mjs",
     "check:doc-governance": "node scripts/checks/check-documentation-governance.mjs && node scripts/checks/check-agent-governance.mjs && npm run check:agent-skills",

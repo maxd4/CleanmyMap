@@ -168,6 +168,33 @@ Si Turbopack bloque :
 Ne pas imposer Webpack ou une autre chaîne uniquement parce qu'une première
 tentative échoue.
 
+### Monorepo, artefacts prebuilt et quotas
+
+Le projet Vercel a `apps/web` comme `rootDirectory`. Pour ce dépôt, le flux
+nominal est le déploiement Git de `main`. Un `vercel deploy` lancé depuis la
+racine peut inclure le monorepo entier et dépasser la limite d'upload ;
+`--cwd apps/web` n'est pas un correctif lorsque le `rootDirectory` distant est
+déjà configuré.
+
+Avant toute publication, exécuter :
+
+```powershell
+npm run vercel:deploy:preflight -w apps/web -- --mode=source
+```
+
+Un prebuilt généré sous Windows peut contenir des liens symboliques dans
+`.vercel/output`, que l'upload distant ne sait pas toujours transporter. Le
+préflight les signale ; préférer l'intégration Git ou un runner Linux plutôt
+que de modifier l'artefact généré. Il vérifie également le nombre de fonctions
+et échoue explicitement pour un plan Hobby au-delà de 12 fonctions, au lieu de
+laisser Vercel refuser le déploiement après upload. Voir les [limites Vercel](https://vercel.com/docs/limits).
+
+Enfin, `vercel pull` remplace les secrets par `[SENSITIVE]`. Une valeur
+redacted ne doit pas être utilisée comme vraie configuration de build et ne
+doit jamais être commitée. Le build Vercel distant doit recevoir ses variables
+depuis l'environnement du projet ; un prebuild local nécessite une injection
+temporaire de valeurs de développement appropriées.
+
 ## Anti-patterns
 
 Éviter :
