@@ -52,6 +52,53 @@ function context(overrides: Partial<RouteCalibrationContext> = {}): RouteCalibra
   });
 }
 
+const plannerSnapshotInput = {
+  generatedAt: "2026-09-01T09:00:00.000Z",
+  engineVersion: "route-planner-v2",
+  selectedCandidates: [],
+  selectedStops: [],
+  origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
+  planningMode: { type: "free" },
+  travelBudgetMinutes: 60,
+  maxStops: 3,
+  priorityVsTravel: 65,
+  pickupPreference: "balanced",
+  effectiveRiskFocus: "all",
+  volunteers: 3,
+  groupCount: 1,
+  routeGeometry: routeGeometry(1.5),
+  travelDistanceKm: 1.5,
+  travelMinutes: 20,
+  returnDistanceKm: 0,
+  returnMinutes: 0,
+  groups: [{
+    groupIndex: 1,
+    volunteerCount: 3,
+    candidateIds: [],
+    reservedCandidateIds: [],
+    targetCount: 0,
+    travelDistanceKm: 1.5,
+    travelMinutes: 20,
+    travelBudgetMinutes: 60,
+    withinBudget: true,
+    routeGeometry: routeGeometry(1.5),
+    operationalBudget: null,
+  }],
+  dataStatus: "empty",
+  dataLayers: { observed: "empty", prediction: "unavailable", recommendation: "empty" },
+  sourceHealth: {
+    partial: false,
+    failedSources: [],
+    availableSources: ["spots"],
+    warnings: [],
+  },
+  prediction: null,
+} satisfies Parameters<typeof buildRoutePlannerSnapshot>[0];
+
+function buildTestPlannerSnapshot() {
+  return buildRoutePlannerSnapshot(plannerSnapshotInput);
+}
+
 describe("route calibration context and validation", () => {
   it("serializes the versioned context without aggregating target pressures", () => {
     const original = context();
@@ -163,43 +210,7 @@ describe("route calibration context and validation", () => {
   });
 
   it("requires verified v3 provenance by default and keeps an explicit diagnostic opt-out", () => {
-    const plannerSnapshot = buildRoutePlannerSnapshot({
-      generatedAt: "2026-09-01T09:00:00.000Z",
-      engineVersion: "route-planner-v2",
-      selectedCandidates: [],
-      selectedStops: [],
-      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
-      planningMode: { type: "free" },
-      travelBudgetMinutes: 60,
-      maxStops: 3,
-      priorityVsTravel: 65,
-      pickupPreference: "balanced",
-      effectiveRiskFocus: "all",
-      volunteers: 3,
-      groupCount: 1,
-      routeGeometry: routeGeometry(1.5),
-      travelDistanceKm: 1.5,
-      travelMinutes: 20,
-      returnDistanceKm: 0,
-      returnMinutes: 0,
-      groups: [{
-        groupIndex: 1,
-        volunteerCount: 3,
-        candidateIds: [],
-        reservedCandidateIds: [],
-        targetCount: 0,
-        travelDistanceKm: 1.5,
-        travelMinutes: 20,
-        travelBudgetMinutes: 60,
-        withinBudget: true,
-        routeGeometry: routeGeometry(1.5),
-        operationalBudget: null,
-      }],
-      dataStatus: "empty",
-      dataLayers: { observed: "empty", prediction: "unavailable", recommendation: "empty" },
-      sourceHealth: { partial: false, failedSources: [], availableSources: ["spots"], warnings: [] },
-      prediction: null,
-    });
+    const plannerSnapshot = buildTestPlannerSnapshot();
     const legacy = context({ candidates: [], volunteersExpected: 3, plannerSnapshot });
     const verified = buildVerifiedRouteCalibrationContext({
       generatedAt: plannerSnapshot.generatedAt,
@@ -483,48 +494,7 @@ describe("route calibration dataset and measurements", () => {
   });
 
   it("relates planner, operational route and contract provenance without rebuilding history", () => {
-    const plannerSnapshot = buildRoutePlannerSnapshot({
-      generatedAt: "2026-09-01T09:00:00.000Z",
-      engineVersion: "route-planner-v2",
-      selectedCandidates: [],
-      selectedStops: [],
-      origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
-      planningMode: { type: "free" },
-      travelBudgetMinutes: 60,
-      maxStops: 3,
-      priorityVsTravel: 65,
-      pickupPreference: "balanced",
-      effectiveRiskFocus: "all",
-      volunteers: 3,
-      groupCount: 1,
-      routeGeometry: routeGeometry(1.5),
-      travelDistanceKm: 1.5,
-      travelMinutes: 20,
-      returnDistanceKm: 0,
-      returnMinutes: 0,
-      groups: [{
-        groupIndex: 1,
-        volunteerCount: 3,
-        candidateIds: [],
-        reservedCandidateIds: [],
-        targetCount: 0,
-        travelDistanceKm: 1.5,
-        travelMinutes: 20,
-        travelBudgetMinutes: 60,
-        withinBudget: true,
-        routeGeometry: routeGeometry(1.5),
-        operationalBudget: null,
-      }],
-      dataStatus: "empty",
-      dataLayers: { observed: "empty", prediction: "unavailable", recommendation: "empty" },
-      sourceHealth: {
-        partial: false,
-        failedSources: [],
-        availableSources: ["spots"],
-        warnings: [],
-      },
-      prediction: null,
-    });
+    const plannerSnapshot = buildTestPlannerSnapshot();
     const legacyActualRoute: NonNullable<ActionPreparationData["actualRoute"]> = {
       version: "actual-route-v1",
       initializedAt: "2026-09-01T09:00:00.000Z",
