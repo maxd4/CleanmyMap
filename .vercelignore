@@ -12,3 +12,6 @@ scratch/
 apps/web/.next-sourcemap-test/
 apps/web/.next/
 apps/web/artifacts/
+.next-sourcemap-test/
+.next/
+artifacts/
