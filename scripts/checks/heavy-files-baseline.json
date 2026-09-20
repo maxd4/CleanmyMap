@@ -500,13 +500,6 @@
       "maxBytes": 25306
     },
     {
-      "path": "apps/web/src/lib/environmental-impact-estimator/types.ts",
-      "status": "REVIEW",
-      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
-      "maxLines": 652,
-      "maxBytes": 18798
-    },
-    {
       "path": "apps/web/src/lib/gamification/progression-data.ts",
       "status": "REVIEW",
       "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
