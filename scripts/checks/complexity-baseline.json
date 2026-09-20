@@ -177,15 +177,6 @@
     },
     {
       "metric": "complexity",
-      "path": "src/app/api/gamification/badges/[userId]/increment/route.ts",
-      "line": 40,
-      "category": "routes API",
-      "ceiling": 30,
-      "status": "LEGACY",
-      "functionIdentity": "named:POST#1"
-    },
-    {
-      "metric": "complexity",
       "path": "src/app/api/legal-content-reports/route.ts",
       "line": 88,
       "category": "routes API",
@@ -2917,15 +2908,6 @@
       "line": 28,
       "category": "routes API",
       "ceiling": 116,
-      "status": "LEGACY",
-      "functionIdentity": "named:POST#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "src/app/api/gamification/badges/[userId]/increment/route.ts",
-      "line": 40,
-      "category": "routes API",
-      "ceiling": 128,
       "status": "LEGACY",
       "functionIdentity": "named:POST#1"
     },

@@ -11,25 +11,6 @@ type BadgeTotals = {
   butts: number;
 };
 
-async function ensureRow(supabase: ReturnType<typeof getSupabaseServerClient>, userId: string) {
-  const { data, error } = await supabase
-    .from("user_badge_totals")
-    .select("user_id, waste_kg, butts")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (error) throw error;
-  if (data) return data;
-
-  const insert = await supabase
-    .from("user_badge_totals")
-    .insert({ user_id: userId })
-    .select("user_id, waste_kg, butts")
-    .single();
-  if (insert.error) throw insert.error;
-  return insert.data;
-}
-
 export async function GET(
   _request: Request,
   ctx: { params: Promise<{ userId: string }> },
@@ -43,14 +24,19 @@ export async function GET(
   }
 
   try {
-    // We intentionally use service role here because the current RLS policy for
-    // `user_badge_totals` may not allow inserts/updates; the API enforces ownership.
+    // The API enforces ownership; this endpoint must remain read-only.
     const supabase = getSupabaseServerClient(true);
-    const row = await ensureRow(supabase, userId);
+    const { data: row, error } = await supabase
+      .from("user_badge_totals")
+      .select("user_id, waste_kg, butts")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) throw error;
 
     const payload: BadgeTotals = {
-      wasteKg: Number(row.waste_kg ?? 0),
-      butts: Number(row.butts ?? 0),
+      wasteKg: Number(row?.waste_kg ?? 0),
+      butts: Number(row?.butts ?? 0),
     };
 
     return NextResponse.json({ status: "ok", totals: payload });
@@ -58,4 +44,3 @@ export async function GET(
     return handleApiError(error, "GET /api/gamification/badges/:userId");
   }
 }
-
