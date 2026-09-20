@@ -44,6 +44,7 @@ describe("FeedbackSection", () => {
 
     expect(markup).toContain("Besoin d&#x27;un contact direct ?");
     expect(markup).toContain("Centre d&#x27;aide");
+    expect(markup).toContain("Soutenir le projet");
     expect(markup).toContain("Connecte-toi pour envoyer ce questionnaire.");
   });
 });

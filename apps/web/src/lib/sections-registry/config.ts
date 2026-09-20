@@ -432,10 +432,10 @@ export const RUBRIQUE_REGISTRY = [
     kind: "section",
     anonymousPresentation: "visible",
     route: "/sections/funding",
-    label: { fr: "Soutenir le Projet", en: "Support Us" },
+    label: { fr: "Soutenir CleanMyMap", en: "Support CleanMyMap" },
     description: {
-      fr: "Soutenir le projet et parrainer une zone",
-      en: "Eco-patronage and zone sponsorship",
+      fr: "Contribuer aux actions terrain et au développement",
+      en: "Support field actions and development",
     },
     availability: "available",
     implementation: "finalized",
