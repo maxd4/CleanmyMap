@@ -8,6 +8,14 @@ la gouvernance racine du dépôt ; ce runbook ne les duplique pas.
 
 Le projet Vercel utilise `apps/web` comme `rootDirectory`.
 
+Le chemin canonique pour ce monorepo est l'intégration Git Vercel sur `main`.
+Un `vercel deploy` lancé depuis la racine peut tenter d'envoyer tout le
+monorepo et dépasser la limite d'upload des fichiers statiques ; un lancement
+avec `--cwd apps/web` réapplique alors le `rootDirectory` distant et peut
+résoudre `apps/web/apps/web`. Ne pas utiliser ces variantes comme
+contournement. Vérifier l'intégration Git et laisser Vercel construire le
+commit publié.
+
 ## Publication Git et deployment Vercel
 
 La publication Git et le déploiement Vercel sont deux opérations distinctes.
@@ -23,15 +31,44 @@ déploiement n'est autorisé pendant cette période.
 
 ## Flux normal
 
-1. Effectuer la publication Git conformément à la gouvernance racine.
-2. Lorsque l'intégration Git Vercel est active et qu'aucun moratoire ne
+1. Exécuter le préflight local :
+
+   ```powershell
+   npm run vercel:deploy:preflight -w apps/web -- --mode=source
+   ```
+
+2. Effectuer la publication Git conformément à la gouvernance racine.
+3. Lorsque l'intégration Git Vercel est active et qu'aucun moratoire ne
    l'interdit, laisser Vercel construire et déployer automatiquement le commit
    publié.
-3. Inspecter le deployment, son état, son projet, son environnement et ses
+4. Inspecter le deployment, son état, son projet, son environnement et ses
    alias.
-4. Vérifier `/api/health` et `/api/uptime` sur le domaine actif.
-5. Exécuter un smoke ciblé des parcours concernés si le changement le justifie
+5. Vérifier `/api/health` et `/api/uptime` sur le domaine actif.
+6. Exécuter un smoke ciblé des parcours concernés si le changement le justifie
    (authentification, action, administration ou API métier).
+
+## Préflight du prebuilt
+
+Le prebuilt n'est pas le chemin nominal sur le poste Windows. Après un
+`vercel build --prod`, le CLI peut produire des liens symboliques dans
+`.vercel/output`; l'upload distant peut alors échouer avec `ENOENT`. Le
+préflight les détecte sans les matérialiser ni modifier les sources :
+
+```powershell
+npm run vercel:deploy:preflight -w apps/web -- --mode=prebuilt --plan=hobby
+```
+
+Un résultat rouge doit arrêter la publication. Utiliser l'intégration Git ou
+un runner Linux pour un prebuilt ; ne pas committer `.vercel/output` et ne pas
+transformer manuellement ses liens en fichiers comme procédure normale.
+
+Le préflight compte aussi les fonctions produites. Le déploiement actuel
+génère plus de 12 fonctions ; le plan Hobby ne peut donc pas accepter ce
+prebuilt. Les limites officielles sont décrites par [Vercel](https://vercel.com/docs/limits)
+et [les runtimes Vercel](https://vercel.com/docs/functions/runtimes). Les
+choix humains sont soit de conserver le déploiement Git compatible avec le
+plan actuel, soit de passer l'équipe en Pro, soit de réduire explicitement la
+surface serveur dans un chantier séparé.
 
 ## Préflight applicatif et environnement
 
@@ -41,9 +78,15 @@ déploiement n'est autorisé pendant cette période.
   sans afficher leurs valeurs.
 - Si le changement touche le build ou les routes Vercel, exécuter d'abord
   `npm run build -w apps/web` et `npm run audit:vercel-quota` selon le périmètre.
-- Si `vercel build` échoue sur Windows avec
-  `EPERM: operation not permitted, symlink`, arrêter les retries et corriger
-  l'environnement Windows (shell élevé ou Developer Mode) avant de relancer.
+- `vercel pull --environment=production` peut écrire `[SENSITIVE]` à la place
+  des valeurs secrètes. Ce fichier est un modèle redacted, pas un
+  environnement utilisable pour un prebuilt local. Ne jamais remplacer les
+  secrets par des valeurs inventées ni committer ce fichier ; pour un build
+  local ponctuel, injecter des valeurs de développement dans l'environnement
+  du processus ou utiliser le build Vercel distant.
+- Le préflight est disponible via `apps/web/scripts/vercel-deploy-preflight.mjs`
+  et échoue volontairement lorsqu'un risque de packaging ou de quota est
+  détecté.
 
 ## Incident et récupération
 
