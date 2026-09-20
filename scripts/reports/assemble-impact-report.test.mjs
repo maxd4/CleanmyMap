@@ -31,6 +31,10 @@ const mainPartKeys = [
 const mainPartOrder = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII'];
 const placeholder = '<!-- SYNTHÈSE À COMPLÉTER MANUELLEMENT -->';
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function readMaster() {
   const masterPath = absoluteReportPath(impactReportMaster);
   assert.equal(fs.existsSync(masterPath), true, 'MASTER file is missing');
@@ -56,6 +60,7 @@ test('assembles the current modular report in the canonical reading order', () =
 
   assert.equal(result.status, 0, result.stderr);
   const output = result.stdout;
+  assert.match(output, /^---\s*\ntitle:/m);
   assert.match(output, /# Résumé exécutif/);
   assert.match(output, /# Partie I — Cadre/);
   assert.match(output, /# Foire aux questions/);
@@ -65,6 +70,8 @@ test('assembles the current modular report in the canonical reading order', () =
   assert.match(output, /# Annexe A|## Annexe A/);
   assert.match(output, /# Bibliographie/);
   assert.doesNotMatch(output, /SYNTHÈSE À COMPLÉTER MANUELLEMENT/);
+  assert.equal((output.match(/^# Bibliographie(?: \{[^}]+\})?$/gm) ?? []).length, 1);
+  assert.equal((output.match(/^## Annexe [A-D] —/gm) ?? []).length, 4);
 
   const markers = [
     '# Partie I —',
@@ -99,7 +106,17 @@ test('assembles the current modular report in the canonical reading order', () =
   for (const entry of readImpactReportAssemblyEntries()) {
     const firstHeading = entry.text.match(/^#{1,2} .+$/m)?.[0];
     assert.ok(firstHeading, `Missing heading for ${entry.key}`);
-    assert.ok(output.includes(firstHeading), `Missing fragment ${entry.relativePath}`);
+    const expectedHeading =
+      entry.key === 'part-ii-a'
+        ? firstHeading.replace(
+            /^# Partie II — Empreinte environnementale et matérielle \{#partie-ii-empreinte-environnementale-et-materielle\}$/,
+            '## Partie II-A — Empreinte environnementale de CleanMyMap {#partie-ii-a-empreinte-environnementale-cleanmymap}',
+          )
+        : entry.key === 'part-ii-b'
+          ? firstHeading.replace(/^# /, '## ')
+          : firstHeading;
+    const occurrences = output.match(new RegExp(`^${escapeRegExp(expectedHeading)}$`, 'gm')) ?? [];
+    assert.equal(occurrences.length, 1, `Expected exactly one assembled occurrence for ${entry.relativePath}`);
   }
 });
 
