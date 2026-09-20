@@ -90,7 +90,10 @@ function isAllowedServerOnlyRlsInfo(finding) {
   const level = typeof finding?.level === "string" ? finding.level.trim().toUpperCase() : "";
   const metadata = finding?.metadata;
   const tableName = typeof metadata?.name === "string" ? metadata.name : "";
-  const detail = typeof finding?.detail === "string" ? finding.detail : "";
+  const detail =
+    typeof finding?.detail === "string"
+      ? finding.detail.replaceAll("\\`", "`")
+      : "";
 
   return (
     name === "rls_enabled_no_policy" &&
