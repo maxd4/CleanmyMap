@@ -172,22 +172,19 @@ Services hors périmètre gratuit documenté:
 
 - `Stripe`: paiement à l'usage, pas de quota gratuit public fixe;
 - `LWS / domaine`: coût fixe, pas de quota gratuit à piloter;
-- `GPT-5.4 mini / Codex`: outils IA de développement, pas de quota gratuit public exploitable dans cette fiche de quotas web.
+- Outils IA de développement hors Codex: l'usage exact de ChatGPT hors Codex et son impact physique restent `NA`, sans reconstruction par heures ou tokens.
+- `Codex`: activité de développement distincte, sans quota gratuit web documenté dans cette fiche.
 
 Pour le pilotage interne, les services `NA` doivent rester visibles comme "non documentés" plutôt que remplacés par une moyenne.
 
 ## IA de développement et ACV
 
-Les modèles utilisés pour coder le site ne doivent pas être mélangés avec les services web de quotas.
+Les outils utilisés pour coder le site ne doivent pas être mélangés avec les services web de quotas.
 
-Si CleanMyMap n'appelle pas directement un modèle GPT en production, alors ce poste doit rester dans l'onglet `Impact carbone / ACV` et hors de l'onglet `Plans et quotas`.
+Pour ChatGPT hors Codex, l'usage exact et l'impact physique restent `NA`, sans reconstruction par heures ou tokens. Codex reste suivi séparément comme activité de développement selon le contrat canonique.
 
-Références de badge à afficher dans l'ACV:
+Référence de badge à afficher dans l'ACV:
 
-- `GPT-5.4 mini — développement du site`:
-  - `Inclus ACV`
-  - `Hors production`
-  - `Hors quotas web`
 - `Codex — développement du site`:
   - `Inclus ACV`
   - `Hors production`
@@ -196,7 +193,7 @@ Références de badge à afficher dans l'ACV:
 Règle de pilotage:
 
 - les quotas web concernent seulement les services de production réellement exposés au site;
-- les modèles IA de développement restent dans l'analyse de cycle de vie et les coûts projet;
+- les activités de développement restent distinctes des services runtime; Codex suit le contrat d'ACV canonique, tandis que ChatGPT hors Codex reste `NA` sans reconstruction;
 - aucune moyenne externe ne doit remplacer ce découpage.
 
 ## Chaîne de fonctionnement
