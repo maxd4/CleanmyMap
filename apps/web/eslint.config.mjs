@@ -72,12 +72,6 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["src/lib/actions/action-update-persistence.ts"],
-    rules: {
-      complexity: ["warn", LEGACY_EXCEPTION_CEILINGS.actionUpdatePersistenceComplexity],
-    },
-  },
-  {
     files: ["src/lib/route/route-calibration.test.ts"],
     rules: {
       "max-lines-per-function": [

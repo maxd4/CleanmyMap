@@ -1482,15 +1482,6 @@
     },
     {
       "metric": "complexity",
-      "path": "src/lib/actions/action-update-persistence.ts",
-      "line": 49,
-      "category": "runtime/services/orchestration",
-      "ceiling": 122,
-      "status": "LEGACY",
-      "functionIdentity": "named:prepareActionUpdate#1"
-    },
-    {
-      "metric": "complexity",
       "path": "src/lib/actions/contracts/contract-builders.ts",
       "line": 198,
       "category": "métier/domain pur",
@@ -4746,15 +4737,6 @@
       "ceiling": 115,
       "status": "LEGACY",
       "functionIdentity": "named:buildActionAuditSnapshots#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "src/lib/actions/action-update-persistence.ts",
-      "line": 49,
-      "category": "runtime/services/orchestration",
-      "ceiling": 340,
-      "status": "LEGACY",
-      "functionIdentity": "named:prepareActionUpdate#1"
     },
     {
       "metric": "functionLength",
