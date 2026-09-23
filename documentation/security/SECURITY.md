@@ -208,6 +208,27 @@ par le même script afin d'éviter les faux positifs. Le plan de validation ne
 sélectionne ce contrôle que pour les surfaces web/mobile ou les fichiers du
 garde-fou ; une modification documentaire seule ne le déclenche pas.
 
+## Politique CURRENT des scanners
+
+La sélection des scanners suit les runtimes et les contrats réellement présents
+dans le dépôt. Elle ne justifie pas l'ajout d'un outil uniquement parce qu'il
+existe sur le marché.
+
+| Scanner | État | Périmètre et règle d'usage |
+|---|---|---|
+| CodeQL | `CURRENT / PRINCIPAL` | SAST JavaScript/TypeScript, Python de `maintenance/python` et GitHub Actions. Le workflow versionné [`codeql.yml`](../../.github/workflows/codeql.yml) utilise actuellement la matrice `javascript-typescript`, `python`, `actions` avec `security-extended,security-and-quality`. L'autobuild reste limité à JavaScript/TypeScript. |
+| Semgrep | `CURRENT / CIBLÉ` | Garde-fou des invariants propres à CleanMyMap (`service_role`, identité Clerk, frontières client/serveur, redirections et HTML injecté). Il complète CodeQL sans le remplacer ni devenir un scanner générique. |
+| Bandit | `NON RETENU CURRENT` | Aucun gain Python distinct de CodeQL n'est démontré pour `maintenance/python`. Bandit reste volontairement absent des dépendances, scripts et workflows ; une réévaluation exige une comparaison locale bornée et reproductible montrant des findings utiles non couverts par CodeQL. |
+| MobSF | `TARGET / DÉGEL MOBILE` | Non activé tant que `apps/mobile` reste `CURRENT / FROZEN`. Lors d'un dégel explicite ou d'une pré-release mobile, un scan MobSF devra porter sur un artefact Android/iOS réel produit pour la release (`.apk`, `.aab` ou `.ipa`), avec le rapport conservé et les findings bloquants traités avant publication. |
+| SonarQube | `NON RETENU CURRENT` | Couverture largement redondante avec ESLint, CodeQL, coverage, Knip, jscpd, complexité, cycles et mutation testing déjà présents. Aucun serveur, package ou workflow SonarQube n'est requis. |
+| gosec | `NON APPLICABLE` | Aucun runtime Go n'existe dans le dépôt ; aucun scanner Go n'est ajouté. |
+| Brakeman | `NON APPLICABLE` | Aucun runtime Ruby/Rails n'existe dans le dépôt ; aucun scanner Ruby n'est ajouté. |
+
+Cette matrice ne crée pas une seconde source de vérité : les contrats restent
+dans le code et les fiches `CURRENT` spécialisées. Toute évolution d'un runtime
+ou un dégel mobile doit d'abord mettre à jour la décision et son périmètre,
+puis seulement les outils nécessaires.
+
 ## CI
 
 La CI doit distinguer :

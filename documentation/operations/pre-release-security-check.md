@@ -108,6 +108,21 @@ Regle de lecture :
 - `npm run backend:supabase:push` doit être accompagné d'une revue des policies, fonctions SQL et advisors Supabase.
 - Les helpers SQL exposés doivent être relus avec la règle: pas de `SECURITY DEFINER` public sans justification et sans `REVOKE/GRANT` explicites.
 
+### 5. Dégel et pré-release mobile
+
+`apps/mobile` est actuellement `CURRENT / FROZEN`. Aucun scan MobSF n'est donc
+activé dans la CI ou le workflow de développement courant.
+
+Lorsqu'un dégel mobile est explicitement décidé, toute pré-release Android ou
+iOS doit ajouter une étape MobSF sur l'artefact réel destiné à la distribution
+(`.apk`, `.aab` ou `.ipa`). Un scan du seul dépôt source, d'un mock ou d'un
+bundle de développement ne constitue pas cette preuve. Le rapport associé à
+l'artefact doit être archivé selon la procédure de release ; les findings
+bloquants doivent être traités ou acceptés explicitement avant publication.
+
+Cette exigence est conditionnelle au dégel : elle ne justifie aujourd'hui
+l'installation d'aucun package, service ou workflow MobSF.
+
 ## Limites
 
 - le scan repose sur des mots-cles et ne remplace pas un audit de flux complet ;
