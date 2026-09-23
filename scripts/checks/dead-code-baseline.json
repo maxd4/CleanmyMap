@@ -10318,12 +10318,12 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/auth/api-authorization-contract.ts",
+      "file": "apps/web/src/lib/auth/api-authorization-contract.types.ts",
       "name": "ApiAuthorizationDimension",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "e296a4026199232debca7dc2",
+      "id": "8eca763e9d95fa21e7146879",
       "classification": "historical-debt"
     },
     {
@@ -11118,32 +11118,32 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-scope.ts",
       "name": "EnvironmentalImpactCurveDriverBreakdown",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "78a3d34b2b0d8c31e00a5380",
+      "id": "05646161e3808458729dcd24",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-scope.ts",
       "name": "EnvironmentalImpactCurveDriverKey",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "7d000fec339f3f30b0a13da6",
+      "id": "7d0da85abb495e209e5ae4ef",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-infrastructure.ts",
       "name": "EnvironmentalImpactElectricityCalculation",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "1727f7044bdf0d1f8ec941c6",
+      "id": "07d0b4b6650ba7b2c5fefc20",
       "classification": "historical-debt"
     },
     {
@@ -11158,162 +11158,162 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-scope.ts",
       "name": "EnvironmentalImpactGraphGranularity",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "74f8557f001366a53aa85f3b",
+      "id": "4e272c0467402105ef19fd13",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-lifecycle.ts",
       "name": "EnvironmentalImpactLifecycleAxisDefinition",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "ac77d96406549ee1524c68d2",
+      "id": "81f55fb727f684151bde715a",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-lifecycle.ts",
       "name": "EnvironmentalImpactLifecycleAxisEstimate",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "91150e1c420b8a7423843eb9",
+      "id": "9a4e212fd433029b31d90d90",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-lifecycle.ts",
       "name": "EnvironmentalImpactLifecycleComponentDefinition",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "a6e2fc6dd1828b18fcdb5dc9",
+      "id": "6d96eac801c483736321be13",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-lifecycle.ts",
       "name": "EnvironmentalImpactLifecycleComponentEstimate",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "35d08f07a01cca69e2f1e4d6",
+      "id": "11c9e52a0e1799e565737b43",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-scope.ts",
       "name": "EnvironmentalImpactPostKey",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "dd1585d65a1ce198e18e9691",
+      "id": "fdee958a3799a9f548e216db",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-project.ts",
       "name": "EnvironmentalImpactProjectAnchor",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "c378e1ccb4384aac6fa0e7e6",
+      "id": "83ea2ed22cd395b738a7bd42",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-project.ts",
       "name": "EnvironmentalImpactProjectCommunicationSignalBreakdown",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "b946c398b18fa2b5fd2c7ec2",
+      "id": "88389f2963db52e2b048453a",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-project.ts",
       "name": "EnvironmentalImpactProjectCommunitySignalBreakdown",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "e5ede9c77a17aa37aa0ad38c",
+      "id": "3f1bb7f08536947241b594ca",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-project.ts",
       "name": "EnvironmentalImpactProjectSignalBreakdown",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "2437b7d098e2774e47d476f8",
+      "id": "bcf0fe39731ee23346fc3d69",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-project.ts",
       "name": "EnvironmentalImpactProjectTrafficSignalBreakdown",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "0cc04c428c73cea0a9503d7f",
+      "id": "9d89f6fd5188c55e6a5e4ad3",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-scope.ts",
       "name": "EnvironmentalImpactScopeStatus",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "2f6c5f8093d4506288fc4c7a",
+      "id": "dbc2b22e43f24ee0b73e3cbc",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-infrastructure.ts",
       "name": "EnvironmentalImpactSecondOrderFactorDefinition",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "53cbc5f1d1b1510c9ef3470c",
+      "id": "f7f2a4240391fa2dcc3b9f07",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-infrastructure.ts",
       "name": "EnvironmentalImpactSecondOrderFactorEstimate",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "be3fc679db82e05d3b1c01c9",
+      "id": "fdce7cf740dd587d810825f2",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-infrastructure.ts",
       "name": "EnvironmentalImpactSecondOrderFactorKey",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "4f4789126065093e29a1186d",
+      "id": "d049bb7afcda29db4075039e",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/environmental-impact-estimator/types.ts",
+      "file": "apps/web/src/lib/environmental-impact-estimator/types-infrastructure.ts",
       "name": "EnvironmentalImpactWaterAvailability",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "d6f8b752b2a1d1a84297dc9c",
+      "id": "98ee70c1fe0da187ae012c40",
       "classification": "historical-debt"
     },
     {
@@ -12868,22 +12868,22 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/route/route-calibration.ts",
+      "file": "apps/web/src/lib/route/route-calibration-types.ts",
       "name": "RouteCalibrationCigaretteButts",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "0f3b6c8b49ca08943df46315",
+      "id": "879b9794e5233bb292058e2c",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/route/route-calibration.ts",
+      "file": "apps/web/src/lib/route/route-calibration-types.ts",
       "name": "RouteCalibrationContractVersions",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "0715a9ded3b2a0310989855e",
+      "id": "c3c94c22edac69169572fe05",
       "classification": "historical-debt"
     },
     {
@@ -12898,12 +12898,12 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/route/route-calibration.ts",
+      "file": "apps/web/src/lib/route/route-calibration-types.ts",
       "name": "RouteCalibrationDuration",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "6865f1e55af1f859e12d1ba7",
+      "id": "16bdcce727e16bc23a65533f",
       "classification": "historical-debt"
     },
     {
@@ -12918,22 +12918,22 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/route/route-calibration.ts",
+      "file": "apps/web/src/lib/route/route-calibration-types.ts",
       "name": "RouteCalibrationOrdinaryWaste",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "7281469d69aba39c408a969e",
+      "id": "ed95fbfece90c1eaf6a61b97",
       "classification": "historical-debt"
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/route/route-calibration.ts",
+      "file": "apps/web/src/lib/route/route-calibration-types.ts",
       "name": "RouteCalibrationQuality",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "09bf633700dc1132b6d3f236",
+      "id": "45a4424738fd015323e74f02",
       "classification": "historical-debt"
     },
     {
@@ -12968,12 +12968,12 @@
     },
     {
       "type": "types",
-      "file": "apps/web/src/lib/route/route-calibration.ts",
+      "file": "apps/web/src/lib/route/route-calibration-types.ts",
       "name": "RouteCalibrationVolunteerData",
       "namespace": null,
       "kind": null,
       "specifier": null,
-      "id": "718a737d93db828ee32a93a3",
+      "id": "f388ebfdf6d9f1b325e40e5a",
       "classification": "historical-debt"
     },
     {
@@ -14104,6 +14104,76 @@
       "kind": null,
       "specifier": null,
       "id": "e1d53fcda0c35730cb61f378",
+      "classification": "historical-debt"
+    },
+    {
+      "type": "types",
+      "file": "apps/web/src/lib/auth/api-authorization-contract.ts",
+      "name": "ApiAuthorizationDimension",
+      "namespace": null,
+      "kind": null,
+      "specifier": null,
+      "id": "e296a4026199232debca7dc2",
+      "classification": "historical-debt"
+    },
+    {
+      "type": "types",
+      "file": "apps/web/src/lib/route/route-calibration.ts",
+      "name": "RouteCalibrationCigaretteButts",
+      "namespace": null,
+      "kind": null,
+      "specifier": null,
+      "id": "0f3b6c8b49ca08943df46315",
+      "classification": "historical-debt"
+    },
+    {
+      "type": "types",
+      "file": "apps/web/src/lib/route/route-calibration.ts",
+      "name": "RouteCalibrationContractVersions",
+      "namespace": null,
+      "kind": null,
+      "specifier": null,
+      "id": "0715a9ded3b2a0310989855e",
+      "classification": "historical-debt"
+    },
+    {
+      "type": "types",
+      "file": "apps/web/src/lib/route/route-calibration.ts",
+      "name": "RouteCalibrationDuration",
+      "namespace": null,
+      "kind": null,
+      "specifier": null,
+      "id": "6865f1e55af1f859e12d1ba7",
+      "classification": "historical-debt"
+    },
+    {
+      "type": "types",
+      "file": "apps/web/src/lib/route/route-calibration.ts",
+      "name": "RouteCalibrationOrdinaryWaste",
+      "namespace": null,
+      "kind": null,
+      "specifier": null,
+      "id": "7281469d69aba39c408a969e",
+      "classification": "historical-debt"
+    },
+    {
+      "type": "types",
+      "file": "apps/web/src/lib/route/route-calibration.ts",
+      "name": "RouteCalibrationQuality",
+      "namespace": null,
+      "kind": null,
+      "specifier": null,
+      "id": "09bf633700dc1132b6d3f236",
+      "classification": "historical-debt"
+    },
+    {
+      "type": "types",
+      "file": "apps/web/src/lib/route/route-calibration.ts",
+      "name": "RouteCalibrationVolunteerData",
+      "namespace": null,
+      "kind": null,
+      "specifier": null,
+      "id": "718a737d93db828ee32a93a3",
       "classification": "historical-debt"
     }
   ]

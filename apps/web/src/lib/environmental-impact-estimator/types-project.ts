@@ -34,7 +34,7 @@ export type EnvironmentalImpactProjectAnchor = {
   comparisonNote: string;
 };
 
-export type EnvironmentalImpactAccountingStatus =
+type EnvironmentalImpactAccountingStatus =
   | "OBSERVED"
   | "DERIVED"
   | "DECLARED"

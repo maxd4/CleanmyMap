@@ -51,7 +51,7 @@ function toIsoDate(value: Date): string {
   return value.toISOString().slice(0, 10);
 }
 
-export function getCurrentWeekRange(now = new Date()) {
+function getCurrentWeekRange(now = new Date()) {
   const day = now.getDay();
   const mondayOffset = day === 0 ? -6 : 1 - day;
   const weekStart = new Date(now);
@@ -86,7 +86,7 @@ export function createInitialCodexUsageForm(now = new Date()): CodexUsageFormSta
   };
 }
 
-export function parseNonNegativeNumber(value: string): number {
+function parseNonNegativeNumber(value: string): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 }

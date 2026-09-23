@@ -3,8 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-export const SEMGREP_CONFIG = path.join(REPOSITORY_ROOT, "scripts", "security", "semgrep", "cleanmymap.yml");
-export const REQUIRED_SEMGREP_VERSION = "1.177.0";
+const SEMGREP_CONFIG = path.join(REPOSITORY_ROOT, "scripts", "security", "semgrep", "cleanmymap.yml");
+const REQUIRED_SEMGREP_VERSION = "1.177.0";
 
 function findOnPath() {
   const lookup = process.platform === "win32" ? "where.exe" : "which";
@@ -18,7 +18,7 @@ function findOnPath() {
   return null;
 }
 
-export function resolveSemgrep() {
+function resolveSemgrep() {
   const configured = process.env.SEMGREP_BIN?.trim();
   return configured || findOnPath();
 }
