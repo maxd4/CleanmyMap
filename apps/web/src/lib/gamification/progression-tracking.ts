@@ -16,6 +16,7 @@ import {
 } from "./progression-utils";
 import { broadcastGamificationAnnouncement } from "@/lib/gamification/announcements";
 import { logFailure } from "@/lib/logging/failure-log";
+import { rebuildUserGamificationBadges } from "./badges/rebuild";
 
 export { syncUserActionProgression } from "./progression-data";
 
@@ -136,6 +137,7 @@ export async function trackActionCreated(
   await Promise.all(
     organizerIds.map(async (organizerId) => {
       await syncUserActionProgression(supabase, organizerId);
+      await rebuildUserGamificationBadges(supabase, organizerId);
       await refreshProgressionProfile(supabase, organizerId);
     }),
   );
@@ -158,6 +160,7 @@ export async function trackActionValidationBonus(
   await Promise.all(
     organizerIds.map(async (organizerId) => {
       await syncUserActionProgression(supabase, organizerId);
+      await rebuildUserGamificationBadges(supabase, organizerId);
       await refreshProgressionProfile(supabase, organizerId);
     }),
   );
@@ -181,6 +184,7 @@ export async function trackActionRejection(
   await Promise.all(
     organizerIds.map(async (organizerId) => {
       await syncUserActionProgression(supabase, organizerId);
+      await rebuildUserGamificationBadges(supabase, organizerId);
       await refreshProgressionProfile(supabase, organizerId);
     }),
   );
@@ -237,6 +241,7 @@ export async function trackSpotValidationBonus(
   });
 
   if (inserted) {
+    await rebuildUserGamificationBadges(supabase, spot.created_by_clerk_id);
     await refreshProgressionProfile(supabase, spot.created_by_clerk_id);
   }
 }
@@ -260,6 +265,7 @@ export async function trackCommunityRsvpYes(
   });
 
   if (inserted) {
+    await rebuildUserGamificationBadges(supabase, params.userId);
     await refreshProgressionProfile(supabase, params.userId);
   }
 }
@@ -421,6 +427,7 @@ export async function trackNewPlaceVisited(
       });
     }
 
+    await rebuildUserGamificationBadges(supabase, params.userId);
     await refreshProgressionProfile(supabase, params.userId);
   }
 }

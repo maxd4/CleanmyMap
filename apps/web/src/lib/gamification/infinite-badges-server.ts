@@ -5,7 +5,6 @@ import {
   loadActionRowsForUser,
   loadValidatedActionIdsForUser,
 } from "./progression-data";
-import { refreshProgressionProfile, syncUserActionProgression } from "./progression-tracking";
 import {
   createFallbackSensitiveZoneApaisementSummary,
   loadSensitiveZoneApaisementSummary,
@@ -57,8 +56,6 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
 }> {
   const supabase = getSupabaseServerClient(true);
 
-  const actionsCreated = await syncUserActionProgression(supabase, userId).catch(() => 0);
-  await refreshProgressionProfile(supabase, userId).catch(() => undefined);
   const actionRows = await loadActionRowsForUser(supabase, userId).catch(() => []);
   const validatedActionIds = await loadValidatedActionIdsForUser(supabase, userId, {
     actionRows,
@@ -76,6 +73,7 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
       validatedActionIds,
     },
   ).catch(() => createFallbackSensitiveZoneApaisementSummary());
+  const actionsCreated = validatedActionIds.size;
 
   const row = await supabase
     .from("user_badge_totals")

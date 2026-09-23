@@ -42,7 +42,6 @@ export {
 } from "./progression-tracking";
 
 export {
-  backfillUserProgression,
   backfillAllProgression,
 } from "./progression-backfill";
 
