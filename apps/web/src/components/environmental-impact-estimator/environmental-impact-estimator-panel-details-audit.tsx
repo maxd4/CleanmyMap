@@ -36,14 +36,14 @@ export function ScopePostDetails({ model }: AuditSectionProps) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-white">
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/40">
             Détail des postes
           </p>
           <h3 className="mt-1 text-xl font-black tracking-tight text-white">
             Lecture auditable, ligne par ligne
           </h3>
         </div>
-        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-white">
+        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-red-100/50">
           Hypothèses versionnées
         </div>
       </div>
@@ -65,35 +65,35 @@ export function ScopePostDetails({ model }: AuditSectionProps) {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-black text-white">{definition.label}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-white">
+                  <p className="mt-1 text-xs leading-relaxed text-red-100/45">
                     {definition.description}
                   </p>
-                  <p className="mt-2 text-xs font-black uppercase tracking-[0.2em] text-white">
+                  <p className="mt-2 text-[10px] font-black uppercase tracking-[0.2em] text-red-100/35">
                     {definition.proxyRationale}
                   </p>
                 </div>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-white">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-100/35">
                   Site
                 </p>
                 <p className="mt-2 text-sm font-black text-white">
                   {formatQuantity(sitePost?.quantity ?? null, definition.unitLabel)}
                 </p>
-                <p className="mt-1 text-xs text-white">
+                <p className="mt-1 text-xs text-red-100/45">
                   {formatProxyMass(sitePost?.estimatedKgCo2eProxy ?? null)}
                 </p>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-black/10 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-white">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-100/35">
                   Utilisateur
                 </p>
                 <p className="mt-2 text-sm font-black text-white">
                   {formatQuantity(userPost?.quantity ?? null, definition.unitLabel)}
                 </p>
-                <p className="mt-1 text-xs text-white">
+                <p className="mt-1 text-xs text-red-100/45">
                   {formatProxyMass(userPost?.estimatedKgCo2eProxy ?? null)}
                 </p>
               </div>
@@ -110,10 +110,10 @@ export function MethodologyAndLimitations({ model }: AuditSectionProps) {
     <>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
         <article className="rounded-[1.5rem] border border-white/10 bg-black/10 p-5">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-white">
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/40">
             Hypothèses retenues
           </p>
-          <ul className="mt-4 space-y-2 text-sm leading-relaxed text-white">
+          <ul className="mt-4 space-y-2 text-sm leading-relaxed text-red-100/55">
             {model.methodology.hypotheses.map((item) => (
               <li key={item} className="flex gap-2">
                 <span className="mt-1 h-1.5 w-1.5 rounded-full bg-red-400" />
@@ -124,10 +124,10 @@ export function MethodologyAndLimitations({ model }: AuditSectionProps) {
         </article>
 
         <article className="rounded-[1.5rem] border border-white/10 bg-black/10 p-5">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-white">
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/40">
             Limites et garde-fous
           </p>
-          <ul className="mt-4 space-y-2 text-sm leading-relaxed text-white">
+          <ul className="mt-4 space-y-2 text-sm leading-relaxed text-red-100/55">
             {model.methodology.limitations.map((item) => (
               <li key={item} className="flex gap-2">
                 <span className="mt-1 h-1.5 w-1.5 rounded-full bg-amber-300" />
@@ -145,7 +145,7 @@ export function MethodologyAndLimitations({ model }: AuditSectionProps) {
             <p className="text-sm font-black text-white">
               Structure prête pour le rapport d&apos;impact IA
             </p>
-            <p className="text-xs leading-relaxed text-white">
+            <p className="text-xs leading-relaxed text-red-100/45">
               Les postes sont déjà modélisés pour accueillir des flux réels sans casser le
               contrat de calcul ni la lisibilité du rapport.
             </p>
@@ -165,14 +165,14 @@ export function SnapshotHistory({ snapshots }: AuditSectionProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-white">
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/40">
             Historique Supabase
           </p>
           <h3 className="mt-1 text-xl font-black tracking-tight text-white">
             Snapshots enregistrés du calculateur
           </h3>
         </div>
-        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-white">
+        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-red-100/50">
           {snapshots.length} snapshot{snapshots.length > 1 ? "s" : ""}
         </div>
       </div>
@@ -183,13 +183,13 @@ export function SnapshotHistory({ snapshots }: AuditSectionProps) {
             key={`${snapshot.snapshotKey}-${snapshot.snapshotDate}`}
             className="rounded-[1.35rem] border border-white/10 bg-white/5 p-4"
           >
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-white">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
               {snapshot.snapshotDate}
             </p>
             <p className="mt-2 text-sm font-black text-white">
               {formatProxyMass(snapshot.totalKgCo2eProxy)}
             </p>
-            <p className="mt-2 text-xs leading-relaxed text-white">
+            <p className="mt-2 text-xs leading-relaxed text-red-100/45">
               Confiance {formatCount(snapshot.confidencePercent)}%, généré le{" "}
               {formatShortDate(snapshot.generatedAt)}.
             </p>

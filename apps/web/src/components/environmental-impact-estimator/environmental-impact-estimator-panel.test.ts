@@ -25,6 +25,15 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
     expect(markup).toContain("Fonctionnement du graphique");
     expect(markup).toContain("Prochaines actions à plus fort impact");
     expect(markup).toContain("Deuxième ordre");
+    expect(markup).toContain(
+      "text-[10px] font-black uppercase tracking-[0.22em] text-red-100/35",
+    );
+    expect(markup).toContain("text-xs leading-relaxed text-red-100/40");
+    expect(markup).toContain("text-xs leading-relaxed text-red-100/45");
+    expect(markup).toContain("text-sm leading-relaxed text-red-100/55");
+    expect(markup).not.toContain(
+      "text-xs font-black uppercase tracking-[0.22em] text-white",
+    );
     expect(markup).toContain("Proxy de carbone CO₂e");
     expect(markup).toContain("Eau estimée");
     expect(markup).toContain("Eau totale estimée");
