@@ -8,17 +8,14 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import {
-  DEFAULT_FUNDING_AMOUNT_CENTS,
   FUNDING_CATEGORY_DESCRIPTIONS,
   FUNDING_CATEGORY_LABELS,
-  FUNDING_PRESET_AMOUNTS_CENTS,
   formatFundingAmount,
   type FundingCategory,
 } from "@/lib/funding/config";
 
 type FundingAggregate = { netAmountCents: number; currency: string };
 type AggregateResponse = { categories: Record<FundingCategory, FundingAggregate> };
-type CheckoutStatus = "idle" | FundingCategory;
 
 const CATEGORY_ICONS = {
   equipment: PackageCheck,
@@ -36,22 +33,12 @@ const CATEGORY_BULLETS: Record<FundingCategory, { fr: string[]; en: string[] }> 
   },
 };
 
-function amountLabel(amountCents: number, locale: "fr" | "en") {
-  return formatFundingAmount(amountCents, locale);
-}
-
 export function FundingSection() {
   const { locale } = useSitePreferences();
   const searchParams = useSearchParams();
   const fr = locale === "fr";
   const [aggregates, setAggregates] = useState<AggregateResponse | null>(null);
   const [aggregateState, setAggregateState] = useState<"loading" | "ready" | "error">("loading");
-  const [checkoutStatus, setCheckoutStatus] = useState<CheckoutStatus>("idle");
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [amounts, setAmounts] = useState<Record<FundingCategory, number>>({
-    equipment: DEFAULT_FUNDING_AMOUNT_CENTS,
-    development: DEFAULT_FUNDING_AMOUNT_CENTS,
-  });
   const [confirmation, setConfirmation] = useState<"pending" | "confirmed" | null>(null);
 
   const status = searchParams.get("status");
@@ -109,30 +96,6 @@ export function FundingSection() {
     return () => { cancelled = true; };
   }, [sessionId, status]);
 
-  async function startCheckout(category: FundingCategory) {
-    setCheckoutStatus(category);
-    setCheckoutError(null);
-    try {
-      const response = await fetch("/api/funding/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category, amountCents: amounts[category] }),
-      });
-      const payload = (await response.json().catch(() => null)) as { url?: string; error?: string } | null;
-      if (!response.ok || !payload?.url) {
-        throw new Error(payload?.error ?? "Le paiement Stripe est temporairement indisponible.");
-      }
-      const checkoutUrl = new URL(payload.url);
-      if (checkoutUrl.protocol !== "https:" || checkoutUrl.hostname !== "checkout.stripe.com") {
-        throw new Error("La redirection Stripe est invalide.");
-      }
-      window.location.assign(checkoutUrl.toString());
-    } catch (error) {
-      setCheckoutError(error instanceof Error ? error.message : "Le paiement Stripe est temporairement indisponible.");
-      setCheckoutStatus("idle");
-    }
-  }
-
   const notice = useMemo(() => {
     if (status === "cancelled") {
       return { text: fr ? "Paiement annulé. Aucun montant n’a été confirmé." : "Payment cancelled. No amount was confirmed." };
@@ -163,17 +126,10 @@ export function FundingSection() {
           </div>
         ) : null}
 
-        {checkoutError ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-900" role="alert">
-            {checkoutError}
-          </div>
-        ) : null}
-
         <div className="grid gap-6 lg:grid-cols-2">
           {(Object.keys(FUNDING_CATEGORY_LABELS) as FundingCategory[]).map((category) => {
             const Icon = CATEGORY_ICONS[category];
             const aggregate = aggregates?.categories?.[category];
-            const isLoading = checkoutStatus === category;
             return (
               <CmmCard key={category} as="article" tone={category === "equipment" ? "pink" : "indigo"} variant="elevated" size="lg" className="flex h-full flex-col gap-6" data-funding-card={category}>
                 <div className="flex items-start justify-between gap-4">
@@ -209,40 +165,14 @@ export function FundingSection() {
                 </ul>
 
                 <div className="mt-auto space-y-4 border-t border-slate-200 pt-5">
-                  <fieldset>
-                    <legend className="cmm-text-caption font-semibold uppercase tracking-[0.18em] text-slate-500">{fr ? "Choisir un montant" : "Choose an amount"}</legend>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {FUNDING_PRESET_AMOUNTS_CENTS.map((amountCents) => (
-                        <CmmButton
-                          key={amountCents}
-                          type="button"
-                          tone={amounts[category] === amountCents ? "important" : "secondary"}
-                          variant="pill"
-                          size="sm"
-                          ariaLabel={`${amountLabel(amountCents, locale)} — ${FUNDING_CATEGORY_LABELS[category][locale]}`}
-                          ariaSelected={amounts[category] === amountCents}
-                          onClick={() => setAmounts((current) => ({ ...current, [category]: amountCents }))}
-                        >
-                          {amountLabel(amountCents, locale)}
-                        </CmmButton>
-                      ))}
-                    </div>
-                  </fieldset>
                   <CmmButton
                     type="button"
                     tone="primary"
                     variant="pill"
                     width="wide"
-                    loading={isLoading}
-                    disabled={aggregateState === "error"}
-                    onClick={() => void startCheckout(category)}
-                    ariaLabel={fr ? `Soutenir ${FUNDING_CATEGORY_LABELS[category].fr}` : `Support ${FUNDING_CATEGORY_LABELS[category].en}`}
+                    disabled
                   >
-                    {isLoading
-                      ? (fr ? "Redirection vers Stripe…" : "Redirecting to Stripe…")
-                      : category === "equipment"
-                        ? (fr ? "Soutenir le matériel" : "Support equipment")
-                        : (fr ? "Soutenir le développement" : "Support development")}
+                    {fr ? "Non disponible" : "Unavailable"}
                   </CmmButton>
                   {aggregateState === "error" ? (
                     <CmmButton type="button" tone="secondary" variant="ghost" width="wide" onClick={() => void loadAggregates()}>

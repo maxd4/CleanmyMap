@@ -22,7 +22,7 @@ L'intégration Stripe existante est conservée techniquement. Une composante fix
 
 Aucun tarif n'est figé dans cette décision : les frais dépendent de l'offre, du pays, du moyen de paiement et des conditions du fournisseur. Ils doivent être vérifiés auprès de Stripe au moment d'une décision opérationnelle.
 
-Le code actuel de `/sections/funding` expose déjà deux CTA Stripe et crée des sessions Checkout via ses routes existantes. Cette présence est un état technique constaté, pas un choix de canal canonique pour les micro-contributions. La présente décision n'ajoute ni ne modifie ce parcours. La fiche route signale explicitement que ce runtime contredit l'objectif d'une présentation statique sans paiement ; aucun changement UI n'est inclus ici.
+Le backend Stripe demeure implémenté, mais l'interface publique `/sections/funding` ne propose plus Stripe comme voie de contribution et n'appelle plus `/api/funding/checkout`. Les routes Checkout et de statut, l'agrégat, le webhook, les tables/RPC et la migration restent conservés pour les traitements historiques ou une activation future décidée séparément. La collecte Stripe n'est pas déclarée active. Les anciens retours success/cancelled peuvent rester affichés pour des sessions initiées avant le débranchement.
 
 ### Virement bancaire — possibilité manuelle
 
