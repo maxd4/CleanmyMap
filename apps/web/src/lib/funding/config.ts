@@ -45,8 +45,6 @@ export const FUNDING_CATEGORY_DESCRIPTIONS: Record<FundingCategory, { fr: string
   },
 };
 
-export const FUNDING_PRESET_AMOUNTS_CENTS = [1000, 2500, 5000, 10000] as const;
-export const DEFAULT_FUNDING_AMOUNT_CENTS = 2500;
 export const MIN_FUNDING_AMOUNT_CENTS = 100;
 export const MAX_FUNDING_AMOUNT_CENTS = 1_000_000;
 

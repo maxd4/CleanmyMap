@@ -35,8 +35,11 @@ describe("FundingSection", () => {
     expect(markup).not.toContain("Redirection vers Stripe");
     expect(markup).not.toContain("Redirecting to Stripe");
     expect(markup).toContain("Où va l’argent ?");
+    expect(markup).toContain("La cagnotte OnParticipe est commune");
+    expect(markup).toContain("le bouton utilisé ne sélectionne pas une affectation particulière");
+    expect(markup).not.toContain("Les contributions sont affectées à la catégorie choisie");
     expect(markup).toContain("Total net confirmé par Stripe");
-    expect(markup).toContain("n’incluent pas d’éventuelles contributions OnParticipe");
+    expect(markup).toContain("ils n’incluent pas les contributions OnParticipe");
     expect(markup).toContain("Chargement…");
     expect(markup).toContain("n’est pas un reçu fiscal");
     expect(markup).toContain("n’annonce ni réduction fiscale ni mécénat fiscal");
@@ -59,11 +62,18 @@ describe("FundingSection", () => {
       <FundingSection onParticipeUrl={ONPARTICIPE_URL} />,
     );
 
+    const destinations = [...markup.matchAll(/href="([^"]+)"/g)]
+      .map((match) => match[1])
+      .filter((href) => href.includes("onparticipe.fr"));
+    expect(destinations).toEqual([ONPARTICIPE_URL, ONPARTICIPE_URL]);
     expect(markup.split(`href="${ONPARTICIPE_URL}"`)).toHaveLength(3);
     expect(markup.match(/>Soutenir via OnParticipe<\/a>/g)).toHaveLength(2);
+    expect(markup).toContain("CleanMyMap ne garantit aucune affectation par catégorie");
     expect(markup).not.toContain("href=\"https://www.onparticipe.fr/c/PUI9aOsy?");
     expect(markup).not.toContain("amountCents");
     expect(markup).not.toContain("category=equipment");
+    expect(markup).not.toContain("category=development");
+    expect(markup).not.toContain("amount=");
     expect(markup).not.toContain("checkout.stripe.com");
     expect(markup).not.toContain("/api/funding/checkout\"");
   });

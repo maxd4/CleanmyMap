@@ -14,7 +14,7 @@ Stripe reste `IMPLEMENTED / NOT CURRENTLY EXPOSED` : son backend Checkout, le we
 
 ### OnParticipe — CURRENT privilégiée pour les micro-contributions
 
-OnParticipe est la solution privilégiée pour proposer des micro-contributions dans la situation actuelle de CleanMyMap. La collecte est hébergée par le fournisseur : aucun paiement n'est traité dans CleanMyMap et aucune intégration API n'est supposée. Le lien direct est configuré par `FUNDING_ONPARTICIPE_URL`, optionnelle et limitée à la vraie URL HTTPS de la cagnotte. Tant qu'elle est absente, les boutons restent désactivés ; lorsqu'elle est définie, ils ouvrent directement la collecte hébergée, sans transmettre montant, catégorie ou donnée de contributeur. Aucun montant OnParticipe n'est importé. Le parcours OnParticipe n'a aucun fallback vers Stripe.
+OnParticipe est la solution privilégiée pour proposer des micro-contributions dans la situation actuelle de CleanMyMap. La collecte est hébergée par le fournisseur : aucun paiement n'est traité dans CleanMyMap et aucune intégration API n'est supposée. Le lien direct est configuré par `FUNDING_ONPARTICIPE_URL`, optionnelle et limitée à la vraie URL HTTPS de la cagnotte. Tant qu'elle est absente, les boutons restent désactivés ; lorsqu'elle est définie, les deux boutons ouvrent la même cagnotte commune, sans transmettre montant, catégorie ou donnée de contributeur. Leur emplacement sous deux familles de besoins ne sélectionne pas une affectation ; CleanMyMap ne garantit pas d'affectation des contributions par catégorie. Aucun montant OnParticipe n'est importé. Le parcours OnParticipe n'a aucun fallback vers Stripe.
 
 ## TARGET — HelloAsso via une association partenaire
 
