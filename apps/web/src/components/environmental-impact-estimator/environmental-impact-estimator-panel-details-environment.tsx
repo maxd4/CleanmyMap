@@ -16,14 +16,14 @@ export function SecondOrderSection({ model }: EnvironmentSectionProps) {
     <section className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-white">
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/35">
             Deuxième ordre
           </p>
           <h4 className="mt-1 text-lg font-black tracking-tight text-white">
             Décomposition environnementale détaillée
           </h4>
         </div>
-        <p className="text-xs leading-relaxed text-white">
+        <p className="text-xs leading-relaxed text-red-100/40">
           Les familles CO₂e sont des proxys de lecture, pas un inventaire physique séparé.
         </p>
       </div>
@@ -37,19 +37,19 @@ export function SecondOrderSection({ model }: EnvironmentSectionProps) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-black text-white">{factor.label}</p>
-                <p className="mt-1 text-xs font-black uppercase tracking-[0.18em] text-white">
+                <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
                   {formatSharePercent(factor.sharePercent)}
                 </p>
               </div>
-              <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">
+              <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/45">
                 {factor.source}
               </span>
             </div>
-            <p className="mt-3 text-xs leading-relaxed text-white">
+            <p className="mt-3 text-xs leading-relaxed text-red-100/45">
               {formatSecondOrderQuantity(factor.quantity, factor.unitLabel)}
             </p>
             {factor.key === "electricity" ? (
-              <p className="mt-2 cmm-text-small leading-relaxed text-white">
+              <p className="mt-2 cmm-text-small leading-relaxed text-red-100/55">
                 {model.infrastructure.secondOrder.electricity.calculation ===
                 "measured_kwh_to_co2e"
                   ? "Calcul : kWh réel × facteur électrique."
@@ -62,7 +62,7 @@ export function SecondOrderSection({ model }: EnvironmentSectionProps) {
             <p className="mt-2 text-sm font-black text-white">
               {formatProxyMass(factor.estimatedKgCo2eProxy)}
             </p>
-            <p className="mt-2 cmm-text-small leading-relaxed text-white">
+            <p className="mt-2 cmm-text-small leading-relaxed text-red-100/40">
               {factor.rationale}
             </p>
           </article>
@@ -72,19 +72,19 @@ export function SecondOrderSection({ model }: EnvironmentSectionProps) {
       <div className="mt-4 rounded-2xl border border-white/10 bg-black/10 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-white">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
               Total deuxième ordre
             </p>
             <p className="mt-1 text-lg font-black text-white">
               {formatProxyMass(model.infrastructure.secondOrder.totalKgCo2eProxy)}
             </p>
           </div>
-          <p className="text-xs leading-relaxed text-white">
+          <p className="text-xs leading-relaxed text-red-100/40">
             Ce total doit rester cohérent avec le premier ordre et servir
             seulement à décomposer le signal.
           </p>
         </div>
-        <p className="mt-3 text-xs leading-relaxed text-white">
+        <p className="mt-3 text-xs leading-relaxed text-red-100/45">
           {model.infrastructure.secondOrder.notes.join(" ")}
         </p>
       </div>
@@ -109,18 +109,18 @@ export function WaterSection({ model }: EnvironmentSectionProps) {
     <section className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-white">
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/35">
             Eau estimée
           </p>
           <h4 className="mt-1 text-lg font-black tracking-tight text-white">
             Eau directe et eau indirecte
           </h4>
         </div>
-        <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">
+        <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/45">
           {availabilityLabel}
         </span>
       </div>
-      <p className="mt-3 text-xs leading-relaxed text-white">
+      <p className="mt-3 text-xs leading-relaxed text-red-100/45">
         L’eau estimée distingue la consommation directe du site et l’eau indirecte liée à l’électricité. Ces valeurs restent des ordres de grandeur.
       </p>
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -131,7 +131,7 @@ export function WaterSection({ model }: EnvironmentSectionProps) {
         <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
           <p className="text-sm font-black text-white">Eau indirecte liée à l’électricité</p>
           <p className="mt-3 text-lg font-black text-white">{formatLiters(water.indirectElectricityWaterLiters)}</p>
-          <p className="mt-2 cmm-text-small leading-relaxed text-white">Proxy configuré : {water.factorLitersPerKwh} L/kWh — {water.factorSourceLabel}.</p>
+          <p className="mt-2 cmm-text-small leading-relaxed text-red-100/40">Proxy configuré : {water.factorLitersPerKwh} L/kWh — {water.factorSourceLabel}.</p>
         </article>
         {water.evaporatedWaterLiters !== null ? (
           <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -144,7 +144,7 @@ export function WaterSection({ model }: EnvironmentSectionProps) {
           <p className="mt-3 text-lg font-black text-white">{formatLiters(water.totalWaterConsumptionLiters)}</p>
         </article>
       </div>
-      <p className="mt-4 text-xs leading-relaxed text-white">
+      <p className="mt-4 text-xs leading-relaxed text-red-100/40">
         {water.provenance.join(" ")}
       </p>
     </section>
@@ -156,14 +156,14 @@ export function LifecycleSection({ model }: EnvironmentSectionProps) {
     <section className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-white">
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/35">
             Empreinte matérielle et cycle de vie
           </p>
           <h4 className="mt-1 text-lg font-black tracking-tight text-white">
             Énergie, carbone, eau, matière et fin de vie
           </h4>
         </div>
-        <p className="text-xs leading-relaxed text-white">
+        <p className="text-xs leading-relaxed text-red-100/40">
           Cette couche décrit l&apos;empreinte lifecycle du projet sans la
           confondre avec le CO2e opérationnel.
         </p>
@@ -172,14 +172,14 @@ export function LifecycleSection({ model }: EnvironmentSectionProps) {
       <div className="mt-4 rounded-2xl border border-white/10 bg-black/10 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-white">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
               Total lifecycle
             </p>
             <p className="mt-1 text-lg font-black text-white">
               {formatProxyMass(model.lifecycle.totalKgCo2eProxy)}
             </p>
           </div>
-          <p className="max-w-xl text-xs leading-relaxed text-white">
+          <p className="max-w-xl text-xs leading-relaxed text-red-100/40">
             {model.lifecycle.notes.join(" ")}
           </p>
         </div>
@@ -194,21 +194,21 @@ export function LifecycleSection({ model }: EnvironmentSectionProps) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-black text-white">{axis.label}</p>
-                <p className="mt-1 text-xs font-black uppercase tracking-[0.18em] text-white">
+                <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
                   {formatSharePercent(axis.sharePercent)}
                 </p>
               </div>
-              <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">
+              <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/45">
                 {axis.source}
               </span>
             </div>
-            <p className="mt-3 text-xs leading-relaxed text-white">
+            <p className="mt-3 text-xs leading-relaxed text-red-100/45">
               {formatLifecycleQuantity(axis.quantity, axis.unitLabel)}
             </p>
             <p className="mt-2 text-sm font-black text-white">
               {formatProxyMass(axis.estimatedKgCo2eProxy)}
             </p>
-            <p className="mt-2 cmm-text-small leading-relaxed text-white">
+            <p className="mt-2 cmm-text-small leading-relaxed text-red-100/40">
               {axis.rationale}
             </p>
           </article>
@@ -224,21 +224,21 @@ export function LifecycleSection({ model }: EnvironmentSectionProps) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-black text-white">{component.label}</p>
-                <p className="mt-1 text-xs leading-relaxed text-white">
+                <p className="mt-1 text-xs leading-relaxed text-red-100/45">
                   {component.description}
                 </p>
               </div>
-              <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">
+              <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/45">
                 {formatSharePercent(component.sharePercent)}
               </span>
             </div>
-            <p className="mt-3 text-xs leading-relaxed text-white">
+            <p className="mt-3 text-xs leading-relaxed text-red-100/45">
               {formatLifecycleQuantity(component.quantity, component.unitLabel)}
             </p>
             <p className="mt-2 text-sm font-black text-white">
               {formatProxyMass(component.estimatedKgCo2eProxy)}
             </p>
-            <p className="mt-2 cmm-text-small leading-relaxed text-white">
+            <p className="mt-2 cmm-text-small leading-relaxed text-red-100/40">
               {component.rationale}
             </p>
           </article>

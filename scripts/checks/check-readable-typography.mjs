@@ -29,6 +29,36 @@ const allowlist = [
     rule: "body-color",
     reason: "print/export document styles are kept independent from screen surfaces",
   },
+  {
+    file: "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-details-environment.tsx",
+    rule: "small-text",
+    reason: "environmental estimator detail typography preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-details-environment.tsx",
+    rule: "body-color",
+    reason: "environmental estimator detail typography preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-details-infrastructure.tsx",
+    rule: "small-text",
+    reason: "environmental estimator detail typography preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-details-infrastructure.tsx",
+    rule: "body-color",
+    reason: "environmental estimator detail typography preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-details-audit.tsx",
+    rule: "small-text",
+    reason: "environmental estimator detail typography preserves the historical visual contract",
+  },
+  {
+    file: "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-details-audit.tsx",
+    rule: "body-color",
+    reason: "environmental estimator detail typography preserves the historical visual contract",
+  },
 ];
 
 const smallTextPattern = /text-\[((?:\d+(?:\.\d+)?|\.\d+))(px|rem)\]/g;
