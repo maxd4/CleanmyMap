@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it, vi } from "vitest";
 import { insertProgressionEvent } from "./progression-data";
@@ -29,5 +30,23 @@ describe("insertProgressionEvent", () => {
 
     expect(inserted).toBe(false);
     expect(insert).toHaveBeenCalledTimes(1);
+    expect(supabase.from).toHaveBeenCalledWith("progression_events");
+    expect(supabase.from).not.toHaveBeenCalledWith("points_ledger");
+  });
+
+  it("keeps CURRENT XP writers off the compatibility points ledger", () => {
+    const currentWriters = [
+      "progression-data.ts",
+      "progression-tracking.ts",
+      "quiz-progress.ts",
+      "quiz-balance-progress.ts",
+      "badges/listing.ts",
+    ];
+
+    for (const fileName of currentWriters) {
+      const source = readFileSync(new URL(`./${fileName}`, import.meta.url), "utf8");
+      expect(source, fileName).not.toContain("points_ledger");
+      expect(source, fileName).not.toContain("awardPoints");
+    }
   });
 });

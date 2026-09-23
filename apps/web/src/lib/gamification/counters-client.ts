@@ -8,7 +8,6 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 export type GamificationCountersClientResponse = {
   status?: "ok";
   counters?: {
-    totalPoints?: number;
     approvedActionsCount?: number;
     completeActionsCount?: number;
     visitedPlacesCount?: number;
@@ -40,7 +39,6 @@ function toResponse(counters: Awaited<ReturnType<typeof loadGamificationUserCoun
   return {
     status: "ok",
     counters: {
-      totalPoints: counters.totalPoints,
       approvedActionsCount: counters.approvedActionsCount,
       completeActionsCount: counters.completeActionsCount,
       visitedPlacesCount: counters.visitedPlacesCount,

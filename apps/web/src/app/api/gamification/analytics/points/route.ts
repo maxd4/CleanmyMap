@@ -13,6 +13,9 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadGamificationPointsAnalytics } from "@/lib/gamification/points/analytics";
 
 export const runtime = "nodejs";
+// COMPATIBILITY/LEGACY: the CURRENT progression surface is XP-backed
+// progression_events/progression_profiles. Keep this route for historical
+// clients until its public contract is retired explicitly.
 const GAMIFICATION_POINTS_ANALYTICS_CACHE_HEADERS = {
   "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
 };

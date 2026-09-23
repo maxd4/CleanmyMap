@@ -25,7 +25,6 @@ import {
   toInt,
   toIsoDate,
 } from "./progression-utils";
-import { awardPointsOnce } from "./points/system";
 import { computeMonthlyRegularityAwards } from "./monthly-regularity";
 import { loadGamificationUserCounters } from "./counters";
 import { logFailure } from "@/lib/logging/failure-log";
@@ -651,16 +650,6 @@ export async function syncUserActionProgression(
         organizerShare: validatedAward.xpAwarded,
       },
     });
-
-    if (organizerCount === 1) {
-      await awardPointsOnce(supabase, {
-        userId,
-        xpEarned: validatedAward.xpAwarded,
-        sourceEvent: "action_validated_form",
-        sourceId: action.id,
-        reason: "Action validée avec formulaire",
-      });
-    }
 
     try {
       const { auditXpAttribution } = await import("./notifications");

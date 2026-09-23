@@ -74,7 +74,6 @@ describe("gamification badges listing", () => {
           return {
             data: [
               {
-                total_points: 0,
                 approved_actions_count: 0,
                 complete_actions_count: 0,
                 visited_places_count: 0,
@@ -105,7 +104,7 @@ describe("gamification badges listing", () => {
 
     const payload = await loadGamificationBadgesList(supabase, "user-1");
 
-    expect(payload.totalPoints).toBe(0);
+    expect(payload).not.toHaveProperty("totalPoints");
     expect(payload.totalBadges).toBeGreaterThanOrEqual(0);
     expect(payload.quizProgressions).toHaveLength(2);
     expect(supabase.rpc).toHaveBeenCalledWith(
@@ -136,7 +135,6 @@ describe("gamification badges listing", () => {
         if (name === "load_gamification_user_counters") {
           return {
             data: [{
-              total_points: 0,
               approved_actions_count: 0,
               complete_actions_count: 0,
               visited_places_count: 0,

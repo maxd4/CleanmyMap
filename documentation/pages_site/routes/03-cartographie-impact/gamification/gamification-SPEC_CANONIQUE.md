@@ -12,6 +12,17 @@ Il centralise:
 
 Les autres documents de gamification restent utiles, mais ils sont désormais secondaires par rapport à cette spec.
 
+## Unité de progression CURRENT
+
+- l'XP est l'unique unité de progression CURRENT ; elle n'est jamais dépensable
+  et aucune monnaie consommable ne la remplace ;
+- `progression_events` est l'unique ledger XP CURRENT et
+  `progression_profiles` sa projection persistante ;
+- `points_ledger` et `user_points` restent des surfaces
+  `COMPATIBILITY/LEGACY` pour les données et routes historiques. Aucun flux
+  CURRENT ne doit les utiliser pour attribuer, afficher ou dépenser la
+  progression.
+
 ## Périmètre
 
 La section canonique concernée est `/sections/gamification`, vue dans le bloc Cartographie & Impact.
@@ -22,7 +33,7 @@ Le système couvre:
 - les badges exposés par l API;
 - les compteurs infinis visibles dans le profil;
 - les badges one-shot d entrée;
-- les badges hérités encore affichés pour compatibilité;
+- les badges d'action historiques encore affichés pour compatibilité;
 - les notifications et l audit XP associés.
 
 ## Hiérarchie des sources

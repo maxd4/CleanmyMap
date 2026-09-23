@@ -19,7 +19,7 @@ import {
   EXPLORER_TIERS,
   FORM_SUBMISSION_TIERS,
   buildFormsBadges,
-  buildLegacyBadges,
+  buildActionBadges,
   buildQuizBalanceProgression,
   buildQuizTypeProgression,
   PARTICIPANT_TIERS,
@@ -32,7 +32,6 @@ import {
 const CLEAN_ZONE_SOURCE_LIMIT = 1000;
 
 export type GamificationBadgesListPayload = {
-  totalPoints: number;
   badges: GamificationBadgeEntry[];
   quizProgressions: QuizProgressionFamily[];
   unlockedCount: number;
@@ -374,7 +373,6 @@ export async function loadGamificationBadgesList(
   ]);
 
   const {
-    totalPoints,
     approvedActionsCount: actionsCount,
     completeActionsCount,
     visitedPlacesCount: placesCount,
@@ -397,7 +395,7 @@ export async function loadGamificationBadgesList(
   const participantBadges = buildParticipantBadges(participationCount);
   appendBadges(badges, participantBadges);
 
-  const legacyBadges = buildLegacyBadges(totalPoints, actionsCount, completeActionsCount);
+  const legacyBadges = buildActionBadges(actionsCount, completeActionsCount);
   appendBadges(badges, legacyBadges);
 
   await awardFormProgressionEvents(supabase, userId, eligibleFormsCount, formsBadges);
@@ -408,7 +406,6 @@ export async function loadGamificationBadgesList(
   const unlockedCount = badges.filter((badge) => badge.unlocked).length;
 
   return {
-    totalPoints,
     badges,
     quizProgressions,
     unlockedCount,

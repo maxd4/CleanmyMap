@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildExplorerFamily,
   buildFormsBadges,
-  buildLegacyBadges,
+  buildActionBadges,
   buildQuizBalanceProgression,
   buildQuizTypeProgression,
   buildParticipantBadges,
@@ -49,7 +49,7 @@ describe("gamification badge families", () => {
   });
 
   it("keeps first trace and legacy badges aligned with the complete action count", () => {
-    const badges = buildLegacyBadges(0, 0, 1);
+    const badges = buildActionBadges(0, 1);
 
     expect(badges.find((badge) => badge.id === "first_trace_utile")).toMatchObject({
       unlocked: true,

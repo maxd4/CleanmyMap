@@ -63,7 +63,6 @@ describe("loadUserProgressionStats", () => {
           return {
             data: [
               {
-                total_points: 0,
                 approved_actions_count: 0,
                 complete_actions_count: 0,
                 visited_places_count: 0,
@@ -104,7 +103,6 @@ describe("loadUserProgressionStats", () => {
           return {
             data: [
               {
-                total_points: 0,
                 approved_actions_count: 0,
                 complete_actions_count: 0,
                 visited_places_count: 0,

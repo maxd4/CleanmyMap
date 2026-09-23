@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { listQuizQuestionFormatIds } from "@/lib/learning/quiz/quiz-question-formats";
-import { awardPointsOnce } from "./points/system";
 import { insertProgressionEvent } from "./progression-data";
 import { refreshProgressionProfile } from "./progression-tracking";
 import { broadcastGamificationAnnouncement } from "./announcements";
@@ -135,13 +134,6 @@ export async function syncQuizQuestionTypeBalanceProgress(
       },
     });
 
-    await awardPointsOnce(supabase, {
-      userId: params.userId,
-      xpEarned: award.xp,
-      sourceEvent: "quiz_question_type_balance_milestone",
-      sourceId: award.sourceId,
-      reason: `Quiz équilibré - ${award.milestone} bonnes réponses sur chaque type`,
-    });
   }
 
   if (awards.length > 0) {

@@ -203,7 +203,7 @@ Une recompense doit toujours repondre a la question:
 - les co-organisateurs saisis dans le formulaire sont rattaches a la meme action et constituent la source de verite pour l attribution;
 - le total de recompense de creation est de **+1 XP par action validee**, puis il est **divise a parts egales** entre tous les organisateurs reconnus;
 - tant qu aucun formulaire valide n est rattache a l action, **aucun XP** n est attribue aux organisateurs.
-- la repartition fine est portee par la **progression XP**; le ledger historique de points reste entier et ne sert pas de source de verite pour les parts fractionnaires.
+- la repartition fine est portee par la **progression XP**; `points_ledger` et `user_points` restent des surfaces historiques de compatibilite et ne servent pas de source de verite pour les parts fractionnaires.
 - une action en attente peut compter provisoirement pour la regularite mensuelle, mais elle doit etre retiree retroactivement si elle finit rejetee et etait la seule action valide du mois.
 - pour les objectifs infinis a rythme croissant, le palier repart a zéro apres validation et l XP du palier correspond au rang courant du cycle (1, puis 2, puis 3, etc.).
 - pour les objectifs infinis de type équilibre, l interface doit afficher clairement les types d actions encore manquants et leur quantité restante avant le prochain palier.
