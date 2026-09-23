@@ -1,6 +1,5 @@
 import sqlite3
 import uuid
-from datetime import datetime
 
 def add_message(get_connection, author, content, image_url=None):
     conn = get_connection()

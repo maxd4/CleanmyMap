@@ -1,5 +1,3 @@
-import pandas as pd
-
 def normalize_bool_flag(value) -> bool:
     """Normalize bool-ish values coming from forms, sheets or DB."""
     if value is None:

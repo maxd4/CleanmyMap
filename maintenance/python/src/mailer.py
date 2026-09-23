@@ -1,6 +1,5 @@
 import os
 import sys
-from datetime import datetime
 import pandas as pd
 
 # Ajout du path pour importer database

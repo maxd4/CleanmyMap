@@ -11,7 +11,6 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import (
     HRFlowable,
-    KeepTogether,
     ListFlowable,
     ListItem,
     PageBreak,

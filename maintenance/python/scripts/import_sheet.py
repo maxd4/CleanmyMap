@@ -1,7 +1,6 @@
 import pandas as pd
 import requests
 import json
-import uuid
 import os
 import re
 import time
@@ -42,8 +41,8 @@ def extract_coords(text):
     if match:
         try:
             return float(match.group(1)), float(match.group(2))
-        except:
-            pass
+        except (TypeError, ValueError):
+            return None, None
     return None, None
 
 def geocode_location(text):
@@ -98,7 +97,7 @@ def run():
                 date_str = action_date.strftime("%Y-%m-%d")
             elif is_propre or pd.isna(date_val):
                 date_str = datetime.now().strftime("%Y-%m-%d")
-        except:
+        except (TypeError, ValueError):
             if is_propre:
                 date_str = datetime.now().strftime("%Y-%m-%d")
             else:
@@ -124,7 +123,9 @@ def run():
                 if val:
                     kg = float(val)
                     provided_fields.append("waste_kg")
-            except: pass
+            except (TypeError, ValueError):
+                # Keep the default zero when an optional weight is malformed.
+                pass
             
         # Mégots
         butts = 0
@@ -140,15 +141,17 @@ def run():
                     if "mouill" in qualite: factor = 0.4
                     elif "humid" in qualite: factor = 0.65
                     butts = int(megots_kg_val * 4400 * factor)
-            except: pass
+            except (TypeError, ValueError):
+                # Keep the optional cigarette count absent when parsing fails.
+                pass
 
         try:
             vols = int(row[cols['benevoles']]) if cols['benevoles'] and pd.notna(row[cols['benevoles']]) else 1
-        except: vols = 1
+        except (TypeError, ValueError): vols = 1
 
         try:
             mins = int(row[cols['temps']]) if cols['temps'] and pd.notna(row[cols['temps']]) else 60
-        except: mins = 60
+        except (TypeError, ValueError): mins = 60
 
         asso = str(row[cols['association']]) if cols['association'] and pd.notna(row[cols['association']]) else ""
         type_lieu = str(row[cols['type']]) if cols['type'] and pd.notna(row[cols['type']]) else ""

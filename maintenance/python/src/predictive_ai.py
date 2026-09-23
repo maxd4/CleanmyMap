@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
 
 def calculate_pollution_risk(city_df, weather_data=None):

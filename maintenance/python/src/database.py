@@ -1,14 +1,10 @@
 import os
 import sqlite3
-import pandas as pd
 from datetime import datetime
 from pathlib import Path
 
 # --- CORE DATABASE SETUP & CONFIGURATION ---
 DB_FILENAME = "cleanmymap.db"
-_LOGGED_DB_PATH: str | None = None
-
-
 def resolve_db_path(
     env: dict[str, str] | None = None,
     *,
@@ -51,8 +47,8 @@ def get_connection():
     conn = sqlite3.connect(str(db_path))
     conn.execute("PRAGMA foreign_keys = ON")
 
-    global _LOGGED_DB_PATH
-    if _LOGGED_DB_PATH != str(db_path):
+    logged_db_path = getattr(get_connection, "_logged_db_path", None)
+    if logged_db_path != str(db_path):
         try:
             from src.logging_utils import log_event
             log_event(
@@ -62,8 +58,9 @@ def get_connection():
                 context={"path": str(db_path)},
             )
         except Exception:
+            # Logging must not prevent callers from receiving a usable connection.
             pass
-        _LOGGED_DB_PATH = str(db_path)
+        get_connection._logged_db_path = str(db_path)
 
     return conn
 

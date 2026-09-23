@@ -2,7 +2,6 @@ import unittest
 import os
 import pandas as pd
 import json
-from src.text_utils import repair_mojibake_text
 
 class TestEncodingSafeguards(unittest.TestCase):
     def test_csv_utf8_roundtrip(self):
