@@ -8,6 +8,10 @@ import { auditXpAttribution } from "@/lib/gamification/notifications";
 import { broadcastGamificationAnnouncement } from "@/lib/gamification/announcements";
 import { logFailure } from "@/lib/logging/failure-log";
 import { writeProgressionEventWithPolicy } from "@/lib/gamification/progression-event-write-policy";
+import type {
+  ProgressionEventType,
+  ProgressionStatusPhase,
+} from "@/lib/gamification/progression-types";
 import { loadGamificationUserCounters } from "../counters";
 import {
   buildCleanZonesBadges,
@@ -40,8 +44,8 @@ type AwardProgressionEventInput = {
   userId: string;
   sourceTable: string;
   sourceId: string;
-  eventType: string;
-  statusPhase: string;
+  eventType: ProgressionEventType;
+  statusPhase: ProgressionStatusPhase;
   xp: number;
   occurredOn?: string;
   metadata?: Record<string, unknown>;
