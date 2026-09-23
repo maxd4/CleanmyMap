@@ -160,7 +160,6 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
       gradient="from-blue-500/20 via-indigo-500/10 to-transparent"
     >
       <div className="grid gap-10 xl:grid-cols-[1fr_1.5fr] pt-12 pb-20">
-        {/* Sidebar Controls */}
         <aside className="space-y-8">
           <div className="p-8 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-8">
              <div className="flex items-center gap-4">
@@ -281,7 +280,6 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
           </div>
         </aside>
 
-        {/* Main Content Area */}
         <div className="space-y-8">
           {originMode === "map" && !hasRoute && (
             <RouteMap
@@ -365,7 +363,6 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-8"
               >
-                {/* Route Overview Header */}
                 <div className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl group overflow-hidden relative">
                    <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
                       <RouteIcon size={120} className="text-blue-400" />
@@ -566,7 +563,6 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
                   </section>
                 ) : null}
 
-                {/* Tradeoffs & Logic */}
                 {hasData && (
                    <div className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-8">
                       <div className="flex items-center gap-4">
@@ -594,7 +590,6 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
                    </div>
                 )}
 
-                {/* Stops List */}
                 <RouteMap
                   stops={visibleStops}
                   routeGeometry={visibleGeometry}
