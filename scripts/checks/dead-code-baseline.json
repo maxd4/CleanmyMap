@@ -4348,7 +4348,7 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/lib/gamification/progression.ts",
+      "file": "apps/web/src/lib/gamification/progression-backfill.ts",
       "name": "backfillUserProgression",
       "namespace": null,
       "kind": null,

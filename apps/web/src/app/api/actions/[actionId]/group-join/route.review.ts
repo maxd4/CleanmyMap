@@ -10,6 +10,7 @@ import {
 } from "@/lib/actions/participation/group-participation";
 import { POST_ACTION_CLAIM_PARTICIPATION_SOURCE } from "@/lib/actions/participation/group-participation.helpers";
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
+import { rebuildUserGamificationBadges } from "@/lib/gamification/badges/rebuild";
 import type { UserIdentity } from "@/lib/authz";
 import {
   type GroupJoinAuditErrorStage,
@@ -220,6 +221,10 @@ export async function handleGroupJoinReview(
     if (
       "participantUserId" in parsed.data || parsed.data.decision === "accept"
     ) {
+      await rebuildUserGamificationBadges(
+        supabase,
+        result.participantUserId,
+      ).catch(() => null);
       await refreshProgressionProfile(
         supabase,
         result.participantUserId,

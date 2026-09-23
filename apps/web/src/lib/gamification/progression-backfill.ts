@@ -7,6 +7,7 @@ import {
   refreshProgressionProfile,
 } from "./progression-tracking";
 import { runActionQuery } from "@/lib/actions/query";
+import { rebuildUserGamificationBadges } from "./badges/rebuild";
 
 type ClerkIdRow = {
   created_by_clerk_id?: string | null;
@@ -182,6 +183,7 @@ export async function backfillUserProgression(
   await backfillUserSpots(supabase, userId);
   await backfillUserRsvps(supabase, userId);
   await backfillUserCommunityOps(supabase, userId);
+  await rebuildUserGamificationBadges(supabase, userId);
   await refreshProgressionProfile(supabase, userId);
 }
 

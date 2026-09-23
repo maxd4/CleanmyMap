@@ -111,9 +111,10 @@ describe("gamification badges listing", () => {
       "load_gamification_user_counters",
       { p_user_id: "user-1" },
     );
+    expect(supabase.from).not.toHaveBeenCalledWith("xp_audit");
   });
 
-  it("writes at most one progression event for a canonical place duplicated in the legacy table", async () => {
+  it("does not repair progression while reading a canonical place", async () => {
     const progressionInserts: Array<Record<string, unknown>> = [];
     const canonicalRow = {
       id: "canonical-id",
@@ -168,11 +169,6 @@ describe("gamification badges listing", () => {
 
     await loadGamificationBadgesList(supabase, "user-1");
 
-    expect(progressionInserts).toHaveLength(1);
-    expect(progressionInserts[0]).toMatchObject({
-      event_type: "clean_zone_task",
-      source_table: "clean_zones",
-      source_id: "clean-zone:coordinates:48.85000:2.35000",
-    });
+    expect(progressionInserts).toHaveLength(0);
   });
 });

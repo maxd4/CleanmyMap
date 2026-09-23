@@ -9,7 +9,7 @@ const RUNTIME_PROGRESSION_WRITERS = [
   "quiz-progress.ts",
   "quiz-balance-progress.ts",
   "referrals.ts",
-  "badges/listing.ts",
+  "badges/rebuild.ts",
 ] as const;
 
 function readRuntimeWriter(path: string): string {
@@ -64,8 +64,8 @@ describe("progression event registry", () => {
     }
   });
 
-  it("does not leave the badges writer with an untyped eventType escape hatch", () => {
-    const listing = readRuntimeWriter("badges/listing.ts");
-    expect(listing).not.toMatch(/eventType:\s*string/);
+  it("does not leave the explicit badge rebuild with an untyped eventType escape hatch", () => {
+    const rebuild = readRuntimeWriter("badges/rebuild.ts");
+    expect(rebuild).not.toMatch(/eventType:\s*string/);
   });
 });

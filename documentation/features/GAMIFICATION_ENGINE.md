@@ -37,6 +37,11 @@ Le code et les tests priment si une divergence apparaît.
   CURRENT ne les appelle ; leur retrait relève d'une décision de compatibilité
   séparée et le script reste un outil de réparation historique.
 - les sources métier restent propriétaires de leurs données ; le journal XP ne remplace jamais la source métier.
+- les GET, loaders de page et lectures de profil sont read-only ; les
+  attributions de progression sont déclenchées par une mutation métier ou par
+  le rebuild serveur explicite `rebuildUserGamificationBadges`.
+- le rebuild/backfill est idempotent et ne doit jamais être appelé par une
+  lecture publique ou un rendu de page.
 - les écritures d'audit et notifications sont des effets secondaires et ne doivent pas devenir la preuve métier.
 - les lectures Clean Zones courantes utilisent `trash_spotter_spots`.
 - les anciennes identités d'événement liées à `spots` peuvent être reconnues uniquement pour préserver l'historique et empêcher une réattribution d'XP ; la table legacy n'est pas une source courante de candidats.

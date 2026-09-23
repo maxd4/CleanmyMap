@@ -10,6 +10,7 @@ import {
   refreshProgressionProfile,
   syncUserActionProgression,
 } from "@/lib/gamification/progression-tracking";
+import { rebuildUserGamificationBadges } from "@/lib/gamification/badges/rebuild";
 import {
   adminErrorResponse,
   adminSuccessResponse,
@@ -257,6 +258,7 @@ async function refreshImpactDependents(
   await Promise.all(
     affectedUserIds.map(async (userId) => {
       await syncUserActionProgression(supabase, userId);
+      await rebuildUserGamificationBadges(supabase, userId);
       await refreshProgressionProfile(supabase, userId);
     }),
   );

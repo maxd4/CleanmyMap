@@ -13,6 +13,7 @@ import {
   requireAuthenticatedAccess,
 } from "@/lib/authz";
 import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
+import { rebuildUserGamificationBadges } from "@/lib/gamification/badges/rebuild";
 
 export const runtime = "nodejs";
 // Justification Vercel: l'adhesion a un groupe depend de la requete courante et du contexte Clerk.
@@ -110,6 +111,7 @@ export async function POST(request: Request) {
     });
 
     if (joined.participationStatus === "confirmed") {
+      await rebuildUserGamificationBadges(supabase, userId).catch(() => null);
       await refreshProgressionProfile(supabase, userId).catch(() => null);
     }
 

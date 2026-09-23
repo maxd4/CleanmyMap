@@ -5,7 +5,6 @@ import {
   deriveBadges,
   xpRequired,
 } from "./progression-formulas";
-import { backfillUserProgression } from "./progression-backfill";
 import { buildContributorRecognitionIndex } from "./contributor-recognition";
 import {
   buildPersonalImpactMethodology,
@@ -293,8 +292,6 @@ export async function getUserProgression(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<UserProgressionResponse> {
-  await backfillUserProgression(supabase, userId);
-
   const yearToDateStartDate = getYearToDateStartDate();
   const [profileResult, stats, rows, annualRows, individualItems, annualImpact] = await Promise.all([
     supabase
