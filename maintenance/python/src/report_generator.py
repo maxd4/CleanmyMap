@@ -577,7 +577,6 @@ class PDFReport(FPDF):
         total_volunteers = int(city_df['nb_benevoles'].sum())
         
         total_co2 = total_m * IMPACT_CONSTANTS.get('CO2_PER_MEGOT_KG', 0.014)
-        economie_v_eur = (total_kg / 1000) * IMPACT_CONSTANTS.get('COUT_TRAITEMENT_TONNE_EUR', 150)
         ipc_score = total_m / total_h if total_h > 0 else 0.0
         
         metrics = [
@@ -795,7 +794,7 @@ class PDFReport(FPDF):
             plt.style.use('seaborn-v0_8-muted')
             fig, ax1 = plt.subplots(figsize=(10, 5))
             
-            bars = ax1.bar(monthly.index, monthly['megots'], color='#10b981', alpha=0.3, label='Mégots collectes')
+            ax1.bar(monthly.index, monthly['megots'], color='#10b981', alpha=0.3, label='Mégots collectes')
             ax1.set_ylabel('Mégots', color='#059669', fontsize=10, fontweight='bold')
             ax1.tick_params(axis='y', colors='#059669')
             
