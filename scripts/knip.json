@@ -21,7 +21,8 @@
         "e2e/**/*.{js,mjs,ts,tsx}",
         "scripts/**/*.{js,mjs,cjs,ts,tsx}",
         "documentation/pages_site/screen/**/*.mjs"
-      ]
+      ],
+      "ignore": ["scripts/security/semgrep/fixtures/**"]
     },
     "apps/mobile": {
       "entry": [
@@ -37,7 +38,8 @@
       ],
       "ignoreIssues": {
         "app.json": ["unlisted"]
-      }
+      },
+      "ignoreDependencies": ["stream-json"]
     }
   }
 }

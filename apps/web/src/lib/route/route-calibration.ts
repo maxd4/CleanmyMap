@@ -39,7 +39,6 @@ export {
 } from "./route-calibration-contract";
 export type {
   RouteCalibrationStatus,
-  RoutePlannerSnapshotIntegrity,
 } from "./route-calibration-contract";
 export {
   isRouteCalibrationContext,
@@ -53,10 +52,8 @@ export {
 export { estimateRouteCleanupDuration } from "./route-calibration-duration";
 export { preserveHistoricalRouteCalibrationContext } from "./route-calibration-history";
 export type {
-  ActiveRouteDurationArtifact,
   ApprovedActionForCalibration,
   RouteCalibrationContext,
-  RouteCalibrationContextCandidate,
   RouteCalibrationContractVersions,
   RouteCalibrationCigaretteButts,
   RouteCalibrationDataset,
@@ -70,7 +67,6 @@ export type {
   RouteCalibrationSample,
   RouteCalibrationVolunteerData,
   RoutePlannerSnapshot,
-  RoutePlannerSnapshotGroup,
   RouteCleanupDurationEstimate,
 } from "./route-calibration-types";
 
