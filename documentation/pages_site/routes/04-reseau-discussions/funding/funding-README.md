@@ -20,20 +20,21 @@
 - **Scope réel** : présentation publique des deux catégories et des agrégats nets Stripe confirmés, avec garanties d'indépendance. OnParticipe est un lien direct vers une collecte hébergée séparée ; ses montants ne sont ni importés ni fusionnés avec les agrégats Stripe.
 - **Terminée** : oui
 - **Captures attendues** : desktop, mobile
-- **État du backend Stripe** : `IMPLEMENTED / NOT EXPOSED` — les routes, le webhook, les tables/RPC et la migration sont conservés ; la page ne les appelle pas pour initier un paiement. Le statut et les limites des fournisseurs sont détaillés dans [la stratégie de financement](./funding-presentation-detaillee.md).
+- **État du backend Stripe** : `IMPLEMENTED / NOT CURRENTLY EXPOSED` — Checkout, les routes, le webhook, les tables/RPC, les agrégats et les tests backend sont conservés ; la page ne l'appelle pas pour initier un paiement. Le statut et les limites des fournisseurs sont détaillés dans [la stratégie de financement](./funding-presentation-detaillee.md).
 
-## Stratégie de financement — CURRENT
+## Stratégie de financement — CURRENT et TARGET
 
-- **OnParticipe** est la solution externe hébergée privilégiée pour les micro-contributions tant que CleanMyMap est porté par une personne physique. Aucune intégration API n'est supposée ni à créer.
+- **CURRENT — portage par une personne physique** : CleanMyMap est actuellement porté par une personne physique. OnParticipe est la voie de collecte externe prévue : [cagnotte CleanMyMap](https://www.onparticipe.fr/c/PUI9aOsy). Le parcours s'active uniquement si `FUNDING_ONPARTICIPE_URL` contient l'URL HTTPS réelle. Aucune intégration API n'est supposée ni à créer.
 - L'URL applicative optionnelle `FUNDING_ONPARTICIPE_URL` active les CTA seulement lorsqu'elle contient l'URL HTTPS réelle de la cagnotte. Absente ou vide, chaque carte conserve un bouton désactivé `Non disponible` / `Unavailable`.
 - Le lien OnParticipe navigue directement vers le fournisseur, sans montant, catégorie ni donnée de contributeur transmis depuis CleanMyMap. Aucun total OnParticipe n'est affiché.
-- **Stripe** reste une intégration technique existante à conserver. Sa part fixe de frais pèse proportionnellement davantage sur un paiement de 1 € ; Stripe n'est donc pas le choix privilégié pour ces micro-contributions. Il reste utilisable pour d'autres paiements ou des montants plus élevés. Les conditions tarifaires évoluent et doivent être vérifiées auprès du fournisseur avant toute décision opérationnelle.
-- **HelloAsso** est une cible conditionnelle à la création d'une structure associative éligible. La disponibilité de son API/Checkout ne justifie aucun runtime CleanMyMap avant cette condition.
+- **Stripe — `IMPLEMENTED / NOT CURRENTLY EXPOSED`** : conserver Checkout backend, webhook, RPC/tables, agrégats et tests backend. Stripe n'est pas proposé par l'UI funding et le parcours OnParticipe ne bascule jamais vers Stripe. Sa part fixe pèse davantage sur 1 € ; Stripe peut convenir à d'autres paiements ou montants plus élevés. Les tarifs dépendent du fournisseur et doivent être vérifiés au moment d'une décision opérationnelle.
+- **TARGET — HelloAsso via association partenaire** : aucune association porteuse n'est actuellement configurée. L'activation exige une association réelle et consentante, une campagne créée sous son compte, sa vérification par HelloAsso, un RIB au nom de l'association et un accord explicite d'affectation des fonds au projet CleanMyMap. L'association peut ajouter un administrateur de campagne CleanMyMap avec les droits adaptés. Les fonds restent versés à l'association. Aucun runtime HelloAsso ne doit être créé avant réunion des conditions et décision distincte.
+- Les états conceptuels HelloAsso `not_available_no_associative_host` et `available_via_associative_host` restent documentaires tant qu'aucun consommateur runtime ne les exige. Une future intégration séparera le nom public de l'association, l'URL réelle de campagne et le statut d'activation ; aucune de ces valeurs n'est inventée ou configurée maintenant.
 - Le virement bancaire peut rester une possibilité manuelle à très faible coût ; aucun IBAN ni renseignement bancaire ne doit être versionné dans le dépôt.
 - PayPal et Leetchi ne sont pas retenus comme solutions canoniques actuelles.
 - **Collecte Stripe** : inactive comme parcours proposé aux utilisateurs ; le backend `IMPLEMENTED / NOT EXPOSED` n'implique pas que la collecte soit active.
 
-Cette stratégie n'ajoute aucune API fournisseur, aucun proxy ni nouveau parcours de paiement CleanMyMap ; le lien OnParticipe est direct et uniquement activé par la configuration facultative de son URL réelle. Elle ne promet aucun reçu fiscal ni avantage fiscal. Stripe n'est actuellement pas une voie de contribution proposée aux utilisateurs depuis cette page.
+Le lien OnParticipe est direct et uniquement activé par la configuration facultative de son URL réelle. Aucun avantage ou traitement fiscal particulier n'est annoncé. Stripe n'est actuellement pas une voie de contribution proposée aux utilisateurs depuis cette page.
 
 ## États à documenter
 
@@ -46,7 +47,7 @@ Cette stratégie n'ajoute aucune API fournisseur, aucun proxy ni nouveau parcour
 - **Architecture commune** : `SectionShell`/`PageHeader`, `CmmCard` et `CmmButton` ; famille Réseau & Discussions.
 - **Variantes** : français/anglais, mobile/desktop, deux catégories `equipment` et `development`.
 - **Règle** : le financement n'accorde aucun pouvoir de modération ; les totaux affichés sont explicitement des totaux nets Stripe confirmés moins les remboursements enregistrés. Ils ne sont pas le total global si des contributions OnParticipe existent et ne contiennent aucune PII.
-- **Information juridique** : la page parle de contribution et de soutien volontaire. La confirmation ou le reçu Stripe confirme le traitement du paiement mais n'est pas un reçu fiscal ; aucun avantage fiscal ni mécénat fiscal n'est annoncé.
+- **Information juridique** : la page parle de contribution et de soutien volontaire. Les confirmations de paiement attestent uniquement du traitement technique de la transaction ; aucune qualification ou promesse fiscale n'est formulée.
 - **Remboursement** : le runtime public ne propose pas de collecte ni de bouton de paiement. Le backend conserve son traitement des remboursements Stripe pour les contributions historiques ; seuls les remboursements effectivement réalisés modifient ensuite l'agrégat via webhook.
 
 ## Références legacy
