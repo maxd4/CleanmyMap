@@ -3795,15 +3795,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "src/components/environmental-impact-estimator/environmental-impact-estimator-panel-details.tsx",
-      "line": 51,
-      "category": "React/JSX",
-      "ceiling": 489,
-      "status": "LEGACY",
-      "functionIdentity": "named:EnvironmentalImpactEstimatorPanelDetails#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "src/components/environmental-impact-estimator/environmental-impact-estimator-panel-overview.tsx",
       "line": 37,
       "category": "React/JSX",

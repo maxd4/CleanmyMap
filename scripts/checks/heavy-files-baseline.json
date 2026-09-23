@@ -262,13 +262,6 @@
       "maxBytes": 25408
     },
     {
-      "path": "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel-details.tsx",
-      "status": "REVIEW",
-      "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",
-      "maxLines": 563,
-      "maxBytes": 25327
-    },
-    {
       "path": "apps/web/src/components/learn/quiz/environmental-quiz.tsx",
       "status": "REVIEW",
       "reviewedRef": "cdba4f5323205240414ea480c5abf54ca7e53af6",

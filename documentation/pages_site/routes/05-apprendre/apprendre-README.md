@@ -8,6 +8,11 @@ L’inventaire exhaustif des routes canoniques, alias et fiches est tenu dans
 [`INDEX.md`](../../INDEX.md). Le contrat de famille runtime est décrit dans
 [`PAGE_FAMILIES.md`](../../PAGE_FAMILIES.md).
 
+## Décisions produit et backlog
+
+- [`apprendre-liste-propositions-a-traiter.md`](./apprendre-liste-propositions-a-traiter.md) porte le backlog fonctionnel retenu pour le bloc.
+- [`apprendre-objectifs-non-pertinents.md`](./apprendre-objectifs-non-pertinents.md) conserve les propositions explicitement écartées afin qu'elles ne soient pas reproposées sans nouvelle décision produit.
+
 ## Surfaces intégrées
 
 | Surface | Statut | Rôle |
@@ -52,7 +57,8 @@ yellow / amber
 - distinguer fait, estimation et conseil ;
 - conserver les détails lourds à la demande ;
 - respecter la promesse « sans compte élève » tant qu'elle est affichée ;
-- garder les quatre routes publiques alignées entre code, documentation et sitemap.
+- garder les quatre routes publiques alignées entre code, documentation et sitemap ;
+- ne pas reproposer un objectif classé `NON_PERTINENT` sans nouvelle décision produit explicite.
 
 ## Snapshots
 
