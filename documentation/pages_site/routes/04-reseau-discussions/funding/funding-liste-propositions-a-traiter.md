@@ -1,8 +1,10 @@
 # Soutenir le Projet - Liste des propositions à traiter
 
-## À traiter dans un lot distinct
+## Propositions restantes
 
-- **Alignement du runtime funding** : la stratégie CURRENT privilégie une collecte OnParticipe hébergée pour les micro-contributions, tandis que `/sections/funding` expose aujourd'hui les CTA et Checkout Stripe existants. Décider séparément si et quand faire évoluer cette interface pour qu'elle corresponde au périmètre d'une présentation statique. Cette proposition ne modifie ni l'interface ni le parcours existant.
+- Aucune action immédiate.
+- Réévaluer HelloAsso seulement si CleanMyMap est porté par une structure associative éligible.
+- Toute réexposition de Stripe dans l'interface publique nécessite une décision ultérieure distincte ; le backend reste conservé mais non exposé depuis `/sections/funding`.
 
 ## Référence
 
