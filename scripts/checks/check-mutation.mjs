@@ -2,7 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import strykerConfig from "../../apps/web/stryker.config.mjs";
 import {
@@ -18,10 +18,6 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const baselinePath = path.join(repositoryRoot, "scripts", "checks", "mutation-baseline.json");
 const reportPath = path.join(repositoryRoot, "artifacts", "quality-hardening", "mutation", "stryker-report.json");
 const runnerPath = path.join(repositoryRoot, "node_modules", "@stryker-mutator", "core", "bin", "stryker.js");
-
-function git(args) {
-  return execFileSync("git", args, { cwd: repositoryRoot, encoding: "utf8" }).trim();
-}
 
 function runMutation() {
   if (!fs.existsSync(runnerPath)) throw new Error("HOST_ENVIRONMENT: Stryker 10.0.0 is not installed.");

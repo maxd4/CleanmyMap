@@ -15,7 +15,6 @@ const TOKEN_FIELDS = [
   "reasoning_output_tokens",
   "total_tokens",
 ];
-const DATE_FIELDS = ["start", "end"];
 const REFERENCE_WINDOW = {
   start: "2026-03-18T00:00:00.000Z",
   end: "2026-09-18T23:59:59.999Z",
@@ -163,23 +162,6 @@ function tokenValues(session) {
 function metricStatus(available, sessionCount) {
   if (available === 0) return NA;
   return available === sessionCount ? "COMPLETE" : "PARTIAL";
-}
-
-function aggregateSessions(sessions) {
-  const fields = {};
-  for (const field of TOKEN_FIELDS) {
-    const values = sessions.map((session) => tokenValues(session)[field]).filter(isNumber);
-    fields[field] = {
-      value: values.length ? values.reduce((sum, value) => sum + value, 0) : NA,
-      availableSessionCount: values.length,
-      missingSessionCount: sessions.length - values.length,
-      status: metricStatus(values.length, sessions.length),
-    };
-  }
-  return {
-    sessionCount: sessions.length,
-    fields,
-  };
 }
 
 function toTimestamp(value) {
@@ -381,10 +363,6 @@ function cacheShare(aggregate) {
   };
 }
 
-function allModels(sessions) {
-  return [...new Set(sessions.flatMap((session) => session.models || []))].sort();
-}
-
 function csvEscape(value) {
   const text = value === null || value === undefined ? "" : String(value);
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
@@ -435,8 +413,6 @@ function independentCrossCheck(args) {
 }
 
 function renderMarkdown(report, crossCheck) {
-  const full = report.periods.FULL_LOCAL_HISTORY;
-  const six = report.periods.REFERENCE_6_MONTH_WINDOW;
   const clean = report.cleanmymap;
   const lines = [
     "# CleanMyMap Codex usage attribution",
@@ -506,7 +482,7 @@ function writeArtifacts(report, outputDir) {
   }));
   fs.writeFileSync(path.join(outputDir, "project-breakdown.csv"), toCsv(projectRows, [
     "classification", "projectPath", "gitRoot", "gitOrigin", "sessionCount", "input_tokens", "cached_input_tokens", "uncached_input_tokens", "cache_write_input_tokens", "output_tokens", "reasoning_output_tokens", "total_tokens", "firstSeen", "lastSeen", "models",
-  ]).replaceAll(",", ","));
+  ]));
   const monthly = report.monthlyBreakdown.map((row) => ({ ...row, models: undefined }));
   fs.writeFileSync(path.join(outputDir, "monthly-breakdown.csv"), toCsv(monthly, [
     "scope", "classification", "month", "sessions", "input", "cachedInput", "uncachedInput", "cacheWriteInput", "output", "reasoningOutput", "total",

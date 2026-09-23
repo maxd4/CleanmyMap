@@ -12,8 +12,6 @@ SAFE_REPLACEMENTS = {
     "\u00a0": " ",
 }
 
-_PATCHED = False
-
 def _contains_mojibake(text: str) -> bool:
     return any(marker in text for marker in MOJIBAKE_MARKERS)
 
@@ -65,8 +63,7 @@ def _clean_streamlit_arg(value):
     return value
 
 def patch_streamlit_text_api(st_module) -> None:
-    global _PATCHED
-    if _PATCHED: return
+    if getattr(st_module, "__cmm_text_api_patched__", False): return
     targets = ("title", "header", "subheader", "caption", "text", "markdown", "write", "success", "warning", "error", "info", "toast", "button", "download_button", "text_input", "text_area", "selectbox", "multiselect", "radio", "checkbox", "toggle")
     for name in targets:
         original = getattr(st_module, name, None)
@@ -83,4 +80,4 @@ def patch_streamlit_text_api(st_module) -> None:
             return __original(*args, **kwargs)
         wrapper.__cm_text_patched__ = True
         setattr(st_module, name, wrapper)
-    _PATCHED = True
+    st_module.__cmm_text_api_patched__ = True

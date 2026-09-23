@@ -1288,10 +1288,8 @@ class PDFReport(FPDF):
             now_date = datetime.now()
             age_days = (now_date - date_series).dt.days
             freshness_days = float(age_days.median()) if age_days.notna().any() else None
-            fresh_30_count = int((age_days <= 30).sum())
         else:
             freshness_days = None
-            fresh_30_count = 0
 
         by_area = records.assign(__area=area_series).groupby("__area").agg(
             actions=("__area", "size"),
@@ -2326,4 +2324,3 @@ class PDFReport(FPDF):
         output_path = os.path.join(OUTPUT_DIR, filename)
         self.output(output_path)
         return output_path
-

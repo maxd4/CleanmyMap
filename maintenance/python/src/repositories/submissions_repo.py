@@ -1,8 +1,6 @@
 from __future__ import annotations
 import sqlite3
 from datetime import datetime
-import pandas as pd
-from typing import Mapping, Any
 
 def insert_submission(get_connection, data, status='pending'):
     conn = get_connection()

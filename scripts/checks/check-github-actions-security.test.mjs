@@ -55,6 +55,7 @@ assert.match(e2eWorkflow, /path:\s*artifacts\/ci-public-evidence\b/);
 assert.match(codeqlWorkflow, /language:\s*\["javascript-typescript",\s*"python",\s*"actions"\]/);
 assert.match(codeqlWorkflow, /queries:\s*security-extended,security-and-quality/);
 assert.match(codeqlWorkflow, /if:\s*matrix\.language\s*==\s*'javascript-typescript'/);
+assert.match(codeqlWorkflow, /runs-on:\s*"ubuntu-24\.04"/);
 assert.deepEqual(auditWorkflowContent(codeqlWorkflow, ".github/workflows/codeql.yml"), []);
 
 assert.match(ciWorkflow, /jobs:\n  scope:/);
