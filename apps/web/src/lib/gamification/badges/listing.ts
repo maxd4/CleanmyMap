@@ -61,28 +61,6 @@ async function awardProgressionEventIfMissing(
   supabase: SupabaseClient,
   input: AwardProgressionEventInput,
 ): Promise<boolean> {
-  let existing;
-  try {
-    existing = await supabase
-      .from("progression_events")
-      .select("id")
-      .eq("user_id", input.userId)
-      .eq("source_table", input.sourceTable)
-      .eq("source_id", input.sourceId)
-      .maybeSingle();
-  } catch (error) {
-    logFailure("Gamification/Badges", "Progression event existence check failed", error, {
-      userId: input.userId,
-      sourceTable: input.sourceTable,
-      sourceId: input.sourceId,
-    });
-    return false;
-  }
-
-  if (existing.data) {
-    return false;
-  }
-
   const occurredOn = input.occurredOn ?? new Date().toISOString().slice(0, 10);
 
   const writeResult = await writeProgressionEventWithPolicy(

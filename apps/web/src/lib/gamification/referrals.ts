@@ -71,8 +71,10 @@ async function ensureReferralInviteAward(
     .from("progression_events")
     .select("id")
     .eq("user_id", params.userId)
+    .eq("event_type", REFERRAL_BADGE_EVENT_TYPE)
     .eq("source_table", REFERRAL_BADGE_SOURCE_TABLE)
     .eq("source_id", sourceId)
+    .eq("status_phase", "validated")
     .maybeSingle();
 
   if (existing.error) {

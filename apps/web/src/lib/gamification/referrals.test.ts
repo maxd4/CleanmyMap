@@ -165,18 +165,14 @@ it("creates a referral code once and awards xp once", async () => {
         };
       }
       if (table === "progression_events") {
+        const progressionLookupChain = {
+          eq: vi.fn(() => progressionLookupChain),
+          maybeSingle: vi
+            .fn()
+            .mockResolvedValue({ data: null, error: null }),
+        };
         return {
-          select: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                eq: vi.fn(() => ({
-                  maybeSingle: vi
-                    .fn()
-                    .mockResolvedValue({ data: null, error: null }),
-                })),
-              })),
-            })),
-          })),
+          select: vi.fn(() => progressionLookupChain),
           insert: vi.fn(async (payload: Record<string, unknown>) => {
             inserts.push(payload);
             return { error: null };

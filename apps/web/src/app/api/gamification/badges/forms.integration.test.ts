@@ -38,7 +38,19 @@ describe('Forms badge family - eligibility and XP awards', () => {
       from: vi.fn((table: string) => {
         if (table === 'progression_events') {
           return {
-            select: vi.fn(() => ({ eq: vi.fn(() => ({ eq: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }) })) })) })) })),
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({
+                  eq: vi.fn(() => ({
+                    eq: vi.fn(() => ({
+                      eq: vi.fn(() => ({
+                        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+                      })),
+                    })),
+                  })),
+                })),
+              })),
+            })),
             insert: vi.fn(async (payload: { source_table?: string })=>{ if (payload.source_table === 'forms_bonus') insertedBonuses++; return { data: null, error: null }; }),
           };
         }
@@ -51,9 +63,24 @@ describe('Forms badge family - eligibility and XP awards', () => {
     const bonusCount = Math.floor(eligibleFormsCount / 10);
     for (let i=1;i<=bonusCount;i++){
       const bonusKey = `forms:bonus:${i*10}`;
-      const existingBonus = await supabaseMock.from('progression_events').select('id').eq('user_id','u1').eq('source_table','forms_bonus').eq('source_id',bonusKey).maybeSingle();
+      const existingBonus = await supabaseMock
+        .from('progression_events')
+        .select('id')
+        .eq('user_id', 'u1')
+        .eq('event_type', 'form_bonus')
+        .eq('source_table', 'forms_bonus')
+        .eq('source_id', bonusKey)
+        .eq('status_phase', 'validated')
+        .maybeSingle();
       if (!existingBonus || !existingBonus.data) {
-        await supabaseMock.from('progression_events').insert({ source_table:'forms_bonus', source_id: bonusKey, xp_awarded:2 });
+        await supabaseMock.from('progression_events').insert({
+          user_id: 'u1',
+          event_type: 'form_bonus',
+          source_table: 'forms_bonus',
+          source_id: bonusKey,
+          status_phase: 'validated',
+          xp_awarded: 2,
+        });
       }
     }
 
