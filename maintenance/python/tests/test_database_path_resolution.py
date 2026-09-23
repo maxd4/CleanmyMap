@@ -19,7 +19,7 @@ def test_resolve_db_path_fallback_posix(tmp_path: Path) -> None:
 def test_get_connection_creates_parent_directory(tmp_path: Path, monkeypatch) -> None:
     db_file = tmp_path / "nested" / "runtime" / "cleanmymap.db"
     monkeypatch.setattr(db, "DB_PATH", str(db_file))
-    monkeypatch.setattr(db, "_LOGGED_DB_PATH", None)
+    monkeypatch.setattr(db.get_connection, "_logged_db_path", None, raising=False)
 
     conn = db.get_connection()
     conn.close()
