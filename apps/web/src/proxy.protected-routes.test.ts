@@ -22,6 +22,7 @@ import {
   PROTECTED_APP_PAGE_ROUTE_PREFIXES,
   PROXY_MATCHER_PATTERNS,
 } from "./proxy";
+import { RUBRIQUE_REGISTRY } from "@/lib/sections-registry";
 
 describe("proxy route context", () => {
   it("keeps key page access semantics explicit", () => {
@@ -62,6 +63,25 @@ describe("proxy route context", () => {
     }
 
     expect(isClerkContextOnlyRoute("/api/reports/actions.json")).toBe(false);
+  });
+
+  it("covers Clerk context and the literal matcher for every soft-gated section without protecting it", () => {
+    const softGatedSections = RUBRIQUE_REGISTRY.filter(
+      (item) =>
+        item.kind === "section" &&
+        (item.anonymousPresentation === "blur" ||
+          item.anonymousPresentation === "disabled"),
+    );
+
+    expect(softGatedSections.length).toBeGreaterThan(0);
+
+    for (const section of softGatedSections) {
+      const matcher = `${section.route}(.*)`;
+
+      expect(isClerkContextOnlyRoute(section.route), section.route).toBe(true);
+      expect(config.matcher, section.route).toContain(matcher);
+      expect(isProtectedAppPage(section.route), section.route).toBe(false);
+    }
   });
 
   it("keeps the public legal report API in the Clerk-context matcher scope", () => {
