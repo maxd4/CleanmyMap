@@ -22,6 +22,7 @@ test("RAPIDE docs-only avoids Vitest and build", () => {
   assert.ok(!ids(plan).includes("vitest-full"));
   assert.ok(!ids(plan).includes("vitest-targeted"));
   assert.ok(!ids(plan).includes("build"));
+  assert.ok(!ids(plan).includes("semgrep-architecture"));
   assert.ok(plan.plannedSeconds <= VALIDATION_MODE_BUDGETS.FAST);
 });
 
@@ -31,6 +32,7 @@ test("RAPIDE TypeScript uses targeted evidence without a full suite", () => {
     changedFiles: ["apps/web/src/lib/chat/polls.ts"],
   });
   assert.ok(ids(plan).includes("typecheck"));
+  assert.ok(ids(plan).includes("semgrep-architecture"));
   assert.ok(ids(plan).includes("lint-targeted"));
   assert.ok(ids(plan).includes("vitest-targeted"));
   assert.deepEqual(
@@ -106,6 +108,7 @@ test("RAPIDE security and Supabase changes select their contracts", () => {
     ],
   });
   assert.ok(ids(plan).includes("test:security"));
+  assert.ok(ids(plan).includes("semgrep-architecture"));
   assert.ok(ids(plan).includes("supabase-migration-tree"));
   assert.equal(new Set(ids(plan)).size, ids(plan).length);
 });
@@ -219,6 +222,7 @@ test("COMPLET docs-only does not fan out to Web, mobile, or build", () => {
   assert.ok(ids(plan).includes("documentation-governance"));
   assert.ok(ids(plan).includes("root-file-hygiene"));
   assert.ok(!ids(plan).some((id) => ["vitest-full", "typecheck", "build", "mobile-typecheck"].includes(id)));
+  assert.ok(!ids(plan).includes("semgrep-architecture"));
 });
 
 test("COMPLET mobile-only does not add Web checks", () => {
@@ -227,6 +231,7 @@ test("COMPLET mobile-only does not add Web checks", () => {
     changedFiles: ["apps/mobile/src/App.tsx"],
   });
   assert.ok(ids(plan).includes("mobile-typecheck"));
+  assert.ok(ids(plan).includes("semgrep-architecture"));
   assert.ok(!ids(plan).some((id) => ["vitest-full", "typecheck", "lint", "build"].includes(id)));
 });
 

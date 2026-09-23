@@ -1,0 +1,73 @@
+rules:
+  - id: cleanmymap-no-service-role-in-client-component
+    languages: [typescript]
+    message: "SUPABASE_SERVICE_ROLE_KEY est réservé au serveur et ne doit pas apparaître dans un composant client."
+    severity: ERROR
+    patterns:
+      - pattern-inside: |
+          "use client";
+          ...
+      - pattern-either:
+          - pattern: process.env.SUPABASE_SERVICE_ROLE_KEY
+          - pattern: process.env["SUPABASE_SERVICE_ROLE_KEY"]
+          - pattern: $ENV.SUPABASE_SERVICE_ROLE_KEY
+          - pattern: $ENV["SUPABASE_SERVICE_ROLE_KEY"]
+
+  - id: cleanmymap-no-service-role-in-mobile
+    languages: [typescript]
+    message: "SUPABASE_SERVICE_ROLE_KEY est interdit dans l'application mobile."
+    severity: ERROR
+    paths:
+      include:
+        - /apps/mobile/**
+      exclude:
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/__tests__/**"
+    pattern-either:
+      - pattern: process.env.SUPABASE_SERVICE_ROLE_KEY
+      - pattern: process.env["SUPABASE_SERVICE_ROLE_KEY"]
+      - pattern: $ENV.SUPABASE_SERVICE_ROLE_KEY
+      - pattern: $ENV["SUPABASE_SERVICE_ROLE_KEY"]
+
+  - id: cleanmymap-no-supabase-auth-identity
+    languages: [typescript]
+    message: "Clerk est l'identité canonique : ne pas réintroduire Supabase Auth pour identifier un utilisateur."
+    severity: ERROR
+    pattern-either:
+      - pattern: $SUPABASE.auth.$METHOD(...)
+      - pattern: $SUPABASE.auth.signInAnonymously(...)
+      - pattern: $SUPABASE.auth.signInWithPassword(...)
+      - pattern: $SUPABASE.auth.signUp(...)
+      - pattern: $SUPABASE.auth.getUser(...)
+      - pattern: $SUPABASE.auth.getSession(...)
+      - pattern: $SUPABASE.auth.onAuthStateChange(...)
+      - pattern: $SUPABASE.auth.setSession(...)
+      - pattern: $SUPABASE.auth.refreshSession(...)
+
+  - id: cleanmymap-no-unauthorized-dangerously-set-inner-html
+    languages: [generic]
+    message: "dangerouslySetInnerHTML doit rester limité aux usages contrôlés documentés."
+    severity: ERROR
+    paths:
+      exclude:
+        - /apps/web/src/app/(app)/prints/report/page.tsx
+        - /apps/web/src/components/ui/capture-mode-initializer.tsx
+        - /apps/web/src/components/ui/display-mode-initializer.tsx
+        - /apps/web/src/components/seo/structured-data/json-ld-wrapper.tsx
+        - "**/*.test.*"
+        - "**/*.spec.*"
+        - "**/__tests__/**"
+    pattern-regex: "\\bdangerouslySetInnerHTML\\s*="
+
+  - id: cleanmymap-no-direct-user-controlled-redirect
+    languages: [generic]
+    message: "Une redirection issue directement de searchParams doit passer par le helper de validation canonique."
+    severity: ERROR
+    pattern-regex: "\\bredirect\\s*\\(\\s*[A-Za-z_$][A-Za-z0-9_$]*\\.(?:nextUrl\\.)?searchParams\\.get\\s*\\("
+
+  - id: cleanmymap-no-client-server-only-import
+    languages: [generic]
+    message: "Un composant client ne doit pas importer un module réservé au serveur."
+    severity: ERROR
+    pattern-regex: "(?s)[\"']use client[\"'][ \\t]*;[\\s\\S]*?\\bimport\\s*(?:[^;\\n]*\\bfrom\\s*)?[\"'](?:@/lib/supabase/server|@/lib/supabase/clerk-rls|@clerk/nextjs/server|next/headers|server-only|node:(?:fs|fs/promises|path|crypto))[\"']"
