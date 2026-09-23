@@ -404,6 +404,77 @@ export function buildInfrastructureCurve(
   return curve;
 }
 
+type InfrastructureServiceSummary = {
+  monthlyKgCo2eProxy: number | null;
+  annualKgCo2eProxy: number | null;
+  referenceMetricCount: number;
+  derivedMetricCount: number;
+  inputMetricCount: number;
+  metricCount: number;
+  confidencePercent: number;
+  uncertaintyPercent: number;
+};
+
+function summarizeInfrastructureServices(
+  services: EnvironmentalImpactInfrastructureServiceEstimate[],
+): InfrastructureServiceSummary {
+  const serviceTotals = services
+    .map((service) => service.monthlyKgCo2eProxy)
+    .filter((value): value is number => typeof value === "number");
+  const monthlyKgCo2eProxy =
+    serviceTotals.length > 0
+      ? round6(serviceTotals.reduce((acc, value) => acc + value, 0))
+      : null;
+  const counts = services.reduce(
+    (totals, service) => ({
+      referenceMetricCount: totals.referenceMetricCount + service.referenceMetricCount,
+      derivedMetricCount:
+        totals.derivedMetricCount +
+        service.metricEstimates.filter((metric) => metric.source === "derived").length,
+      inputMetricCount:
+        totals.inputMetricCount +
+        service.metricEstimates.filter((metric) => metric.source === "input").length,
+      metricCount: totals.metricCount + service.metricCount,
+    }),
+    { referenceMetricCount: 0, derivedMetricCount: 0, inputMetricCount: 0, metricCount: 0 },
+  );
+  const confidencePercent = clamp(
+    round6(
+      70 +
+        (counts.inputMetricCount / Math.max(1, counts.metricCount)) * 18 +
+        (counts.derivedMetricCount / Math.max(1, counts.metricCount)) * 10 -
+        (counts.referenceMetricCount / Math.max(1, counts.metricCount)) * 8,
+    ),
+    55,
+    96,
+  );
+
+  return {
+    ...counts,
+    monthlyKgCo2eProxy,
+    annualKgCo2eProxy:
+      monthlyKgCo2eProxy === null ? null : round6(monthlyKgCo2eProxy * 12),
+    confidencePercent,
+    uncertaintyPercent: round6(100 - confidencePercent),
+  };
+}
+
+function resolveInfrastructureMode(
+  infrastructureInput: EnvironmentalImpactInfrastructureInput | null | undefined,
+  siteInput: EnvironmentalImpactScopeInput | null | undefined,
+  userInput: EnvironmentalImpactScopeInput | null | undefined,
+): EnvironmentalImpactInfrastructureEstimate["mode"] {
+  const hasMeasuredInput =
+    hasUsageInput(infrastructureInput?.usage) ||
+    hasScopeSignalInput(siteInput) ||
+    hasScopeSignalInput(userInput) ||
+    Boolean(
+      infrastructureInput?.metrics &&
+        Object.values(infrastructureInput.metrics).some((value) => hasNumericInput(value)),
+    );
+  return hasMeasuredInput ? "measured" : "reference";
+}
+
 export function buildInfrastructureEstimate(
   infrastructureInput: EnvironmentalImpactInfrastructureInput | null | undefined,
   generatedAtIso: string,
@@ -439,41 +510,9 @@ export function buildInfrastructureEstimate(
         infrastructureInput?.metrics ?? null,
       ),
   );
-  const serviceTotals = services
-    .map((service) => service.monthlyKgCo2eProxy)
-    .filter((value): value is number => typeof value === "number");
-  const monthlyKgCo2eProxy =
-    serviceTotals.length > 0
-      ? round6(serviceTotals.reduce((acc, value) => acc + value, 0))
-      : null;
-  const annualKgCo2eProxy =
-    monthlyKgCo2eProxy === null ? null : round6(monthlyKgCo2eProxy * 12);
-  const referenceMetricCount = services.reduce(
-    (acc, service) => acc + service.referenceMetricCount,
-    0,
-  );
-  const derivedMetricCount = services.reduce(
-    (acc, service) => acc + service.metricEstimates.filter((metric) => metric.source === "derived").length,
-    0,
-  );
-  const inputMetricCount = services.reduce(
-    (acc, service) => acc + service.metricEstimates.filter((metric) => metric.source === "input").length,
-    0,
-  );
-  const metricCount = services.reduce((acc, service) => acc + service.metricCount, 0);
-  const confidencePercent = clamp(
-    round6(
-      70 +
-        (inputMetricCount / Math.max(1, metricCount)) * 18 +
-        (derivedMetricCount / Math.max(1, metricCount)) * 10 -
-        (referenceMetricCount / Math.max(1, metricCount)) * 8,
-    ),
-    55,
-    96,
-  );
-  const uncertaintyPercent = round6(100 - confidencePercent);
+  const serviceSummary = summarizeInfrastructureServices(services);
   const curve =
-    monthlyKgCo2eProxy === null
+    serviceSummary.monthlyKgCo2eProxy === null
       ? []
       : buildInfrastructureCurve(
           launchedAt,
@@ -482,16 +521,11 @@ export function buildInfrastructureEstimate(
           infrastructureInput?.metrics ?? null,
         );
   const totalKgCo2eProxy =
-    monthlyKgCo2eProxy === null ? null : curve.at(-1)?.cumulativeKgCo2eProxy ?? null;
-  const mode: EnvironmentalImpactInfrastructureEstimate["mode"] =
-    hasUsageInput(infrastructureInput?.usage) ||
-    hasScopeSignalInput(siteInput) ||
-    hasScopeSignalInput(userInput) ||
-    (infrastructureInput?.metrics &&
-      Object.values(infrastructureInput.metrics).some((value) => hasNumericInput(value)))
-      ? "measured"
-      : "reference";
-  const totalMonthlyShare = monthlyKgCo2eProxy ?? 0;
+    serviceSummary.monthlyKgCo2eProxy === null
+      ? null
+      : curve.at(-1)?.cumulativeKgCo2eProxy ?? null;
+  const mode = resolveInfrastructureMode(infrastructureInput, siteInput, userInput);
+  const totalMonthlyShare = serviceSummary.monthlyKgCo2eProxy ?? 0;
 
   const servicesWithShare = services.map((service) => ({
     ...service,
@@ -501,13 +535,15 @@ export function buildInfrastructureEstimate(
         : round6((service.monthlyKgCo2eProxy ?? 0) / totalMonthlyShare * 100),
   }));
   const graphCoveragePercent = round6(
-    ((inputMetricCount + derivedMetricCount) / Math.max(1, metricCount)) * 100,
+    ((serviceSummary.inputMetricCount + serviceSummary.derivedMetricCount) /
+      Math.max(1, serviceSummary.metricCount)) *
+      100,
   );
   const secondOrder = buildInfrastructureSecondOrderEstimate(
     mode,
     usageProfile,
     servicesWithShare,
-    monthlyKgCo2eProxy,
+    serviceSummary.monthlyKgCo2eProxy,
   );
   const water = buildWaterEstimate(usageProfile);
   return {
@@ -516,10 +552,10 @@ export function buildInfrastructureEstimate(
     launchedAt: launchedAt.toISOString(),
     referencePeriodMonths,
     totalKgCo2eProxy,
-    monthlyKgCo2eProxy,
-    annualKgCo2eProxy,
-    confidencePercent,
-    uncertaintyPercent,
+    monthlyKgCo2eProxy: serviceSummary.monthlyKgCo2eProxy,
+    annualKgCo2eProxy: serviceSummary.annualKgCo2eProxy,
+    confidencePercent: serviceSummary.confidencePercent,
+    uncertaintyPercent: serviceSummary.uncertaintyPercent,
     usage: usageProfile,
     water,
     services: servicesWithShare,
@@ -530,8 +566,8 @@ export function buildInfrastructureEstimate(
       granularity: "week",
       xAxisLabel: "Temps",
       yAxisLabel: "kg CO2e proxy cumulés",
-      confidencePercent,
-      uncertaintyPercent,
+      confidencePercent: serviceSummary.confidencePercent,
+      uncertaintyPercent: serviceSummary.uncertaintyPercent,
       coveragePercent: graphCoveragePercent,
       considerations: [...ENVIRONMENTAL_IMPACT_GRAPH_CONSIDERATIONS],
     },
