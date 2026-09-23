@@ -21,6 +21,11 @@ const EVENT_FAMILY_MAP: Record<ProgressionEventType, string> = {
   new_place_milestone: "exploration",
   quiz_question_type_milestone: "apprentissage",
   quiz_question_type_balance_milestone: "apprentissage",
+  clean_zone_task: "spotter",
+  form_tier_unlock: "forms",
+  form_bonus: "forms",
+  participant_tier_unlock: "collectif",
+  explorer_tier_unlock: "exploration",
 };
 
 export function eventFamilyMap(): Readonly<Record<ProgressionEventType, string>> {

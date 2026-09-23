@@ -22,7 +22,12 @@ export type ProgressionEventType =
   | "new_place_discovered"
   | "new_place_milestone"
   | "quiz_question_type_milestone"
-  | "quiz_question_type_balance_milestone";
+  | "quiz_question_type_balance_milestone"
+  | "clean_zone_task"
+  | "form_tier_unlock"
+  | "form_bonus"
+  | "participant_tier_unlock"
+  | "explorer_tier_unlock";
 
 export type ActionRow = {
   id: string;
