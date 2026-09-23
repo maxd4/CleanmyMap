@@ -7,6 +7,14 @@ GitHub lus à distance. Il décrit le contrat courant sans exposer de secret.
 
 - `ci.yml` et `codeql.yml` ne se déclenchent que pour `main` et les pull requests
   ciblant `main`.
+- Le workflow CodeQL versionné analyse `javascript-typescript`, le Python de
+  maintenance (les fichiers suivis sous `maintenance/python`) et les workflows
+  et métadonnées GitHub Actions (`actions`), avec les suites
+  `security-extended,security-and-quality`. L’autobuild reste limité à la lane
+  JavaScript/TypeScript ; Python et Actions sont analysés sans étape de build.
+- CodeQL conserve son périmètre de fichiers suivis par les extracteurs ; aucune
+  inclusion volontaire de caches, artefacts générés ou dépendances vendorisées
+  n’est ajoutée.
 - Les références `uses:` sont contrôlées par `npm run check:github-actions` et
   doivent être épinglées sur un commit SHA complet.
 - `pull_request_target` et les permissions globales `read-all`/`write-all` sont

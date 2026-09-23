@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ["javascript-typescript"]
+        language: ["javascript-typescript", "python", "actions"]
 
     steps:
       - name: Checkout repository
@@ -45,9 +45,10 @@ jobs:
           queries: security-extended,security-and-quality
 
       - name: Autobuild
+        if: matrix.language == 'javascript-typescript'
         uses: github/codeql-action/autobuild@b96794f015dfd88f77b49b1c93e0fa7110f94c63
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63
         with:
-          category: "/language:${{matrix.language}}"
+          category: "/language:${{ matrix.language }}"
