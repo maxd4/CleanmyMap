@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+// COMPATIBILITY/LEGACY only. CURRENT gamification reads progression_events.
+
 export type GamificationPointsAnalytics = {
   totalPoints: number;
   transactionCount: number;

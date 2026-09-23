@@ -22,14 +22,14 @@ export async function GET() {
       buildPayload: async () => {
         const stages = [
           { name: "total_users", label: "Utilisateurs totaux" },
-          { name: "has_points", label: "Avec points gagnés" },
+          { name: "has_xp", label: "Avec XP validée" },
           { name: "first_badge", label: "Avec badge débloqué" },
-          { name: "high_activity", label: "Activité soutenue (500+ pts)" },
+          { name: "high_activity", label: "Activité soutenue (500+ XP)" },
         ];
         const counts = await loadGamificationFunnelCounts(supabase);
         const stageCounts = [
           counts.totalUsers,
-          counts.usersWithPoints,
+          counts.usersWithXp,
           counts.usersWithBadges,
           counts.usersHighActivity,
         ];

@@ -52,8 +52,8 @@ bon réflexe est de borner les lectures, pas de masquer leur usage.
 | `actions` | carte, création, import, modération, analytics | période, statut, zone ou type avant lecture large |
 | `progression_profiles` | progression persistante | utilisateur ou RPC dédié |
 | `progression_events` | journal de progression/audit | ne pas recalculer tout le système depuis ce journal |
-| `user_points` | solde courant | résumé ou agrégat |
-| `points_ledger` | historique des points | pagination ou agrégat |
+| `user_points` | COMPATIBILITY/LEGACY — ancien solde de points | aucune nouvelle lecture CURRENT |
+| `points_ledger` | COMPATIBILITY/LEGACY — ancien historique de points | aucune nouvelle écriture CURRENT |
 | `community_events` | événements | date, statut ou géographie |
 | `event_rsvps` | RSVP | événement ou utilisateur |
 | `action_participants` | participations | action, utilisateur ou période |

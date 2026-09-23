@@ -23,7 +23,19 @@ Le code et les tests priment si une divergence apparaît.
 
 ## Frontières techniques
 
+- `progression_events` est l'unique journal CURRENT de progression XP et
+  `progression_profiles` sa projection persistante. L'XP est une unité de
+  progression non dépensable : aucune fonctionnalité CURRENT ne doit lire ou
+  écrire un sol de points pour attribuer, afficher ou consommer la progression.
 - `progression_events` journalise les événements de progression avec une identité logique stable `(user_id, event_type, source_table, source_id, status_phase)` et une écriture idempotente. `occurred_on` décrit la date métier ; il ne déduplique pas à lui seul des sources distinctes.
+- `points_ledger` et `user_points` sont conservées uniquement comme surfaces
+  COMPATIBILITY/LEGACY pour les données et routes historiques. Elles ne sont
+  plus une source de vérité ni une dépendance des flux CURRENT.
+- La route historique `/api/gamification/analytics/points` et son loader,
+  ainsi que le script `apps/web/scripts/backfill-action-gamification.mjs`,
+  restent les derniers consommateurs explicites de ces tables. Aucun écran
+  CURRENT ne les appelle ; leur retrait relève d'une décision de compatibilité
+  séparée et le script reste un outil de réparation historique.
 - les sources métier restent propriétaires de leurs données ; le journal XP ne remplace jamais la source métier.
 - les écritures d'audit et notifications sont des effets secondaires et ne doivent pas devenir la preuve métier.
 - les lectures Clean Zones courantes utilisent `trash_spotter_spots`.

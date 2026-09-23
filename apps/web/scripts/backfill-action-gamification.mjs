@@ -6,6 +6,9 @@ import { createClient } from "@supabase/supabase-js";
 import { refreshProgressionProfile } from "../src/lib/gamification/progression-tracking.ts";
 import { syncUserActionProgression } from "../src/lib/gamification/progression-data.ts";
 
+// LEGACY/COMPATIBILITY backfill only. CURRENT XP attribution writes
+// progression_events and never mirrors into points_ledger.
+
 const APP_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 const ENV_LOCAL_PATH = join(APP_DIR, ".env.local");
 const LEGACY_SOURCE_EVENTS = new Set(["action_created", "action_validated"]);

@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getQuizPedagogicalTypeLabel } from "@/lib/learning/quiz/quiz-taxonomy";
-import { awardPointsOnce } from "./points/system";
 import { insertProgressionEvent } from "./progression-data";
 import { refreshProgressionProfile } from "./progression-tracking";
 import { broadcastGamificationAnnouncement } from "./announcements";
@@ -133,13 +132,6 @@ export async function syncQuizQuestionTypeProgress(
       },
     });
 
-    await awardPointsOnce(supabase, {
-      userId: params.userId,
-      xpEarned: award.xp,
-      sourceEvent: "quiz_question_type_milestone",
-      sourceId: award.sourceId,
-      reason: `${questionTypeLabel} - ${award.milestone} bonnes réponses`,
-    });
   }
 
   if (awards.length > 0) {

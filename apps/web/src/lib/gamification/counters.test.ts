@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
@@ -6,6 +7,17 @@ import {
 } from "./counters";
 
 describe("gamification counters", () => {
+  it("keeps the CURRENT counter RPCs on progression profiles, not point tables", () => {
+    const migration = readFileSync(
+      new URL("../../../supabase/migrations/20260924000001_xp_only_gamification_rpc_contracts.sql", import.meta.url),
+      "utf8",
+    );
+
+    expect(migration).toContain("public.progression_profiles");
+    expect(migration).not.toContain("public.user_points");
+    expect(migration).not.toContain("total_points");
+  });
+
   it("loads funnel counts from Supabase RPC", async () => {
     const supabase = {
       rpc: vi.fn(async (name: string) => {
@@ -14,7 +26,7 @@ describe("gamification counters", () => {
           data: [
             {
               total_users: 12,
-              users_with_points: 8,
+              users_with_xp: 8,
               users_with_badges: 5,
               users_high_activity: 2,
             },
@@ -26,7 +38,7 @@ describe("gamification counters", () => {
 
     await expect(loadGamificationFunnelCounts(supabase)).resolves.toEqual({
       totalUsers: 12,
-      usersWithPoints: 8,
+      usersWithXp: 8,
       usersWithBadges: 5,
       usersHighActivity: 2,
     });
@@ -40,7 +52,6 @@ describe("gamification counters", () => {
         return {
           data: [
             {
-              total_points: 14.5,
               approved_actions_count: 4,
               complete_actions_count: 2,
               visited_places_count: 6,
@@ -54,7 +65,6 @@ describe("gamification counters", () => {
     } as unknown as SupabaseClient;
 
     await expect(loadGamificationUserCounters(supabase, "user-1")).resolves.toEqual({
-      totalPoints: 14.5,
       approvedActionsCount: 4,
       completeActionsCount: 2,
       visitedPlacesCount: 6,

@@ -14,7 +14,6 @@ import {
   toFloat,
   toIsoDate,
 } from "./progression-utils";
-import { awardPoints } from "./points/system";
 import { broadcastGamificationAnnouncement } from "@/lib/gamification/announcements";
 import { logFailure } from "@/lib/logging/failure-log";
 
@@ -224,15 +223,6 @@ export async function trackSpotValidationBonus(
     return;
   }
 
-  // Award points for spot validation
-  await awardPoints(supabase, {
-    userId: spot.created_by_clerk_id,
-    xpEarned: 30,
-    sourceEvent: "spot_validated",
-    sourceId: spot.id,
-    reason: `Lieu propre validé: ${spot.label}`,
-  });
-
   const inserted = await insertProgressionEvent(supabase, {
     userId: spot.created_by_clerk_id,
     eventType: "spot_validation_bonus",
@@ -401,15 +391,6 @@ export async function trackNewPlaceVisited(
 
     const placesCount = count ?? 1;
 
-    // +5 points for every new place
-    await awardPoints(supabase, {
-      userId: params.userId,
-      xpEarned: 5,
-      sourceEvent: "new_place_discovered",
-      sourceId: `${params.userId}:${normalizedLabel}`,
-      reason: `Nouveau lieu découvert: ${params.locationLabel}`,
-    });
-
     // +1 XP for every new place
     await insertProgressionEvent(supabase, {
       userId: params.userId,
@@ -426,14 +407,6 @@ export async function trackNewPlaceVisited(
 
     // Bonus for milestone (every 5 places)
     if (placesCount > 0 && placesCount % 5 === 0) {
-      await awardPoints(supabase, {
-        userId: params.userId,
-        xpEarned: 20,
-        sourceEvent: "new_place_milestone",
-        sourceId: `${params.userId}:milestone:${placesCount}`,
-        reason: `Jalon: ${placesCount} lieux découverts!`,
-      });
-
       await insertProgressionEvent(supabase, {
         userId: params.userId,
         eventType: "new_place_milestone",

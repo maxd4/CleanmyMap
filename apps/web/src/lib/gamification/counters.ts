@@ -2,13 +2,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type GamificationFunnelCounts = {
   totalUsers: number;
-  usersWithPoints: number;
+  usersWithXp: number;
   usersWithBadges: number;
   usersHighActivity: number;
 };
 
 export type GamificationUserCounters = {
-  totalPoints: number;
   approvedActionsCount: number;
   completeActionsCount: number;
   visitedPlacesCount: number;
@@ -18,13 +17,12 @@ export type GamificationUserCounters = {
 
 type GamificationFunnelCountsRow = {
   total_users: number | null;
-  users_with_points: number | null;
+  users_with_xp: number | null;
   users_with_badges: number | null;
   users_high_activity: number | null;
 };
 
 type GamificationUserCountersRow = {
-  total_points: number | null;
   approved_actions_count: number | null;
   complete_actions_count: number | null;
   visited_places_count: number | null;
@@ -44,11 +42,6 @@ function toNonNegativeInteger(value: number | null | undefined): number {
   return Number.isFinite(next) && next >= 0 ? Math.floor(next) : 0;
 }
 
-function toNonNegativeNumber(value: number | null | undefined): number {
-  const next = Number(value ?? 0);
-  return Number.isFinite(next) && next >= 0 ? next : 0;
-}
-
 export async function loadGamificationFunnelCounts(
   supabase: SupabaseClient,
 ): Promise<GamificationFunnelCounts> {
@@ -61,7 +54,7 @@ export async function loadGamificationFunnelCounts(
 
   return {
     totalUsers: toNonNegativeInteger(row?.total_users),
-    usersWithPoints: toNonNegativeInteger(row?.users_with_points),
+    usersWithXp: toNonNegativeInteger(row?.users_with_xp),
     usersWithBadges: toNonNegativeInteger(row?.users_with_badges),
     usersHighActivity: toNonNegativeInteger(row?.users_high_activity),
   };
@@ -81,7 +74,6 @@ export async function loadGamificationUserCounters(
   const row = toSingleRow(result.data as GamificationUserCountersRow[] | GamificationUserCountersRow | null);
 
   return {
-    totalPoints: toNonNegativeNumber(row?.total_points),
     approvedActionsCount: toNonNegativeInteger(row?.approved_actions_count),
     completeActionsCount: toNonNegativeInteger(row?.complete_actions_count),
     visitedPlacesCount: toNonNegativeInteger(row?.visited_places_count),

@@ -4,7 +4,6 @@ export type GamificationBadgeEntry = {
   description: string;
   icon: string;
   unlocked: boolean;
-  minPoints: number | null;
   progress: { current: number; target: number | null };
   visualVariant?: string;
   tooltip?: string;
@@ -54,7 +53,6 @@ type LegacyBadgeDefinition = {
   id: string;
   name: string;
   description: string;
-  minPoints: number;
   icon: string;
   special?: "first_trace_utile" | "trace_fondatrice" | "actions_validated";
 };
@@ -167,15 +165,10 @@ export function buildQuizBalanceProgression(): QuizProgressionFamily {
   };
 }
 
-const LEGACY_POINT_BADGES: readonly LegacyBadgeDefinition[] = [
-  { id: "first_step", name: "Premier pas", description: "Gagner 10 points", minPoints: 10, icon: "👣" },
-  { id: "contributor", name: "Contributeur", description: "Accumuler 100 points", minPoints: 100, icon: "🌱" },
-  { id: "active", name: "Actif", description: "Accumuler 500 points", minPoints: 500, icon: "🔥" },
-  { id: "champion", name: "Champion", description: "Accumuler 1000 points", minPoints: 1000, icon: "⭐" },
-  { id: "legend", name: "Légende", description: "Accumuler 5000 points", minPoints: 5000, icon: "👑" },
-  { id: "first_trace_utile", name: "Première trace utile", description: "Valider une première action avec des données complètes", minPoints: 0, special: "first_trace_utile", icon: "badge-check" },
-  { id: "trace_fondatrice", name: "Trace fondatrice", description: "Première action validée avec dossier complet", minPoints: 0, special: "trace_fondatrice", icon: "sparkles" },
-  { id: "cleaner", name: "Nettoyeur", description: "Valider 5 actions", minPoints: 0, special: "actions_validated", icon: "🧹" },
+const ACTION_BADGES: readonly LegacyBadgeDefinition[] = [
+  { id: "first_trace_utile", name: "Première trace utile", description: "Valider une première action avec des données complètes", special: "first_trace_utile", icon: "badge-check" },
+  { id: "trace_fondatrice", name: "Trace fondatrice", description: "Première action validée avec dossier complet", special: "trace_fondatrice", icon: "sparkles" },
+  { id: "cleaner", name: "Nettoyeur", description: "Valider 5 actions", special: "actions_validated", icon: "🧹" },
 ] as const;
 
 function buildTierBadge(
@@ -190,7 +183,6 @@ function buildTierBadge(
     visualVariant: tier.visualVariant,
     tooltip: tier.tooltip,
     unlocked: current >= tier.threshold,
-    minPoints: null,
     progress: { current, target: tier.threshold },
   };
 }
@@ -225,7 +217,6 @@ export function buildExplorerFamily(currentPlaces: number): {
       description: `Visiter des lieux pour révéler la carte — niveau ${tier.title}`,
       icon: tier.icon,
       unlocked,
-      minPoints: null,
       progress: { current: tierCurrent, target: tierTarget },
     } satisfies GamificationBadgeEntry;
   });
@@ -255,18 +246,16 @@ export function buildParticipantBadges(participationCount: number): Gamification
   return PARTICIPANT_TIERS.map((tier) => buildTierBadge(tier, current));
 }
 
-export function buildLegacyBadges(
-  totalPoints: number,
+export function buildActionBadges(
   actionsCount: number,
   completeActionsCount: number,
 ): GamificationBadgeEntry[] {
-  const points = Math.max(0, Math.trunc(totalPoints));
   const actions = Math.max(0, Math.trunc(actionsCount));
   const completeActions = Math.max(0, Math.trunc(completeActionsCount));
 
-  return LEGACY_POINT_BADGES.map((badge) => {
+  return ACTION_BADGES.map((badge) => {
     let isUnlocked = false;
-    let progress: GamificationBadgeEntry["progress"];
+    let progress: GamificationBadgeEntry["progress"] = { current: 0, target: null };
 
     if (badge.special === "actions_validated") {
       isUnlocked = actions >= 5;
@@ -274,9 +263,6 @@ export function buildLegacyBadges(
     } else if (badge.special === "first_trace_utile" || badge.special === "trace_fondatrice") {
       isUnlocked = completeActions >= 1;
       progress = { current: completeActions, target: 1 };
-    } else {
-      isUnlocked = points >= (badge.minPoints ?? 0);
-      progress = { current: points, target: badge.minPoints };
     }
 
     return {
@@ -285,7 +271,6 @@ export function buildLegacyBadges(
       description: badge.description,
       icon: badge.icon,
       unlocked: isUnlocked,
-      minPoints: badge.minPoints || null,
       progress,
     } satisfies GamificationBadgeEntry;
   });

@@ -24,7 +24,6 @@ describe("loadGamificationCountersClient", () => {
   it("dedupes concurrent counter loads", async () => {
     getSupabaseBrowserClientMock.mockReturnValue({} as never);
     loadGamificationUserCountersMock.mockResolvedValue({
-      totalPoints: 42,
       approvedActionsCount: 4,
       completeActionsCount: 2,
       visitedPlacesCount: 5,

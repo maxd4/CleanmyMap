@@ -4278,56 +4278,6 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/lib/gamification/points/system.ts",
-      "name": "getPointsHistory",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "76078e30cb9dfb9540fd53f1",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/gamification/points/system.ts",
-      "name": "getUserPoints",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "5d283b336eb030e2a286088d",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/gamification/points/system.ts",
-      "name": "POINTS_MILESTONES",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "ba6a9dc244ce9c675b7a69f0",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/gamification/points/system.ts",
-      "name": "spendPoints",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "c3b0c1a7557b735ccafb94ce",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
-      "file": "apps/web/src/lib/gamification/points/system.ts",
-      "name": "XP_TO_POINTS_RATIO",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "75e7fc492988e4db301bfc32",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
       "file": "apps/web/src/lib/gamification/progression-backfill.ts",
       "name": "backfillAllProgression",
       "namespace": null,
@@ -11384,16 +11334,6 @@
       "kind": null,
       "specifier": null,
       "id": "cb65ffcb9925ef2dab012d38",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/gamification/points/system.ts",
-      "name": "PointsTransaction",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "2bce0edbbe64996b57dbdad6",
       "classification": "historical-debt"
     },
     {
