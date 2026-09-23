@@ -650,6 +650,20 @@ port libre ; reprendre l'URL annoncée. Le harness Clerk doit libérer l'ancien
 serveur et rester strict sur `3000`. Ne jamais lancer Playwright Clerk contre
 un serveur bypass, ni supposer `localhost:3000` après un fallback.
 
+La configuration Playwright utilise `http://127.0.0.1:3000` par défaut. Si la
+configuration Clerk Development locale impose explicitement
+`http://localhost:3000`, aligner les deux côtés sans fallback de port :
+
+```powershell
+$env:PLAYWRIGHT_BASE_URL = "http://localhost:3000"
+$env:DEV_HOST = "localhost"
+$env:CMM_DISABLE_DEV_AUTH_BYPASS = "1"
+npx playwright test --project="soft-gate authentication"
+```
+
+`PLAYWRIGHT_BASE_URL` est refusée pour toute origine distante, tout protocole
+autre que HTTP ou tout port différent de `3000`.
+
 Annoncer avant le test :
 
 ```text

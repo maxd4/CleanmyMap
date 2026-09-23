@@ -14,8 +14,8 @@ describe("browser validation contract", () => {
   it("keeps the official Clerk Playwright lane strict and bypass-free", () => {
     const config = read("playwright.config.ts");
 
-    assert.match(config, /const baseURL = "http:\/\/127\.0\.0\.1:3000"/);
-    assert.doesNotMatch(config, /PLAYWRIGHT_BASE_URL/);
+    assert.match(config, /PLAYWRIGHT_BASE_URL\?\.trim\(\) \|\| "http:\/\/127\.0\.0\.1:3000"/);
+    assert.match(config, /PLAYWRIGHT_BASE_URL must be a local http origin/);
     assert.match(config, /DEV_STRICT_PORT: process\.env\.DEV_STRICT_PORT \?\? "1"/);
     assert.match(config, /CMM_DISABLE_DEV_AUTH_BYPASS: "1"/);
     const globalSetup = read("e2e/global.setup.ts");

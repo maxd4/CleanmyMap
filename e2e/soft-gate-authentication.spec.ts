@@ -1,18 +1,9 @@
 import { clerk } from "@clerk/testing/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-const baseUrl = "http://127.0.0.1:3000";
 const gamificationRoute = "/sections/gamification";
 const gamificationSignInHref =
   "/sign-in?redirect_url=%2Fsections%2Fgamification";
-
-async function keepLocalClerkRedirectsOnLoopback(page: Page): Promise<void> {
-  await page.route("http://localhost:3000/**", async (route) => {
-    const url = new URL(route.request().url());
-    url.hostname = "127.0.0.1";
-    await route.continue({ url: url.toString() });
-  });
-}
 
 async function dismissCookies(page: Page): Promise<void> {
   const refuse = page.getByRole("button", { name: "Tout refuser" });
@@ -55,14 +46,18 @@ test.setTimeout(120_000);
 test("gamification soft-gate returns to the canonical route after Clerk sign-in", async ({
   page,
 }) => {
-  await keepLocalClerkRedirectsOnLoopback(page);
   await openAnonymousGamification(page);
 
   await page
     .getByRole("link", { name: "Se connecter", exact: true })
     .first()
     .click();
-  await expect(page).toHaveURL(`${baseUrl}${gamificationSignInHref}`);
+  await expect
+    .poll(() => {
+      const url = new URL(page.url());
+      return `${url.pathname}${url.search}`;
+    })
+    .toBe(gamificationSignInHref);
 
   const email = process.env.E2E_CLERK_USER_EMAIL?.trim();
   if (!email) {
@@ -103,7 +98,6 @@ test("gamification soft-gate returns to the canonical route after Clerk sign-in"
 test("gamification soft-gate remains usable on a representative mobile viewport", async ({
   page,
 }) => {
-  await keepLocalClerkRedirectsOnLoopback(page);
   await page.setViewportSize({ width: 390, height: 844 });
   await openAnonymousGamification(page);
 

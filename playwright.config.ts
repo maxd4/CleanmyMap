@@ -1,6 +1,18 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const baseURL = "http://127.0.0.1:3000";
+const baseURL = process.env.PLAYWRIGHT_BASE_URL?.trim() || "http://127.0.0.1:3000";
+const parsedBaseURL = new URL(baseURL);
+if (
+  parsedBaseURL.protocol !== "http:" ||
+  !["127.0.0.1", "localhost"].includes(parsedBaseURL.hostname) ||
+  (parsedBaseURL.port && parsedBaseURL.port !== "3000") ||
+  parsedBaseURL.pathname !== "/"
+) {
+  throw new Error(
+    "PLAYWRIGHT_BASE_URL must be a local http origin on port 3000 (127.0.0.1 or localhost).",
+  );
+}
+const baseHost = parsedBaseURL.hostname;
 
 export default defineConfig({
   testDir: "./e2e",
@@ -126,8 +138,10 @@ export default defineConfig({
           timeout: 120_000,
           env: {
             ...process.env,
-            DEV_HOST: process.env.DEV_HOST ?? "127.0.0.1",
+            DEV_HOST: process.env.DEV_HOST ?? baseHost,
             DEV_STRICT_PORT: process.env.DEV_STRICT_PORT ?? "1",
+            NEXT_PUBLIC_APP_URL: baseURL,
+            PLAYWRIGHT_BASE_URL: baseURL,
             CMM_DISABLE_DEV_AUTH_BYPASS: "1",
           },
         },
