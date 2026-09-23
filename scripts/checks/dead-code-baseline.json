@@ -4208,16 +4208,6 @@
     },
     {
       "type": "exports",
-      "file": "apps/web/src/lib/gamification/api.ts",
-      "name": "incrementBadge",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "c9ed400baec098864462e76a",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "exports",
       "file": "apps/web/src/lib/gamification/badges/families.ts",
       "name": "CLEAN_ZONES_TIERS",
       "namespace": null,
@@ -11344,16 +11334,6 @@
       "kind": null,
       "specifier": null,
       "id": "27a2fbf5b9c86181f8127b7e",
-      "classification": "historical-debt"
-    },
-    {
-      "type": "types",
-      "file": "apps/web/src/lib/gamification/api.ts",
-      "name": "BadgeIncrementType",
-      "namespace": null,
-      "kind": null,
-      "specifier": null,
-      "id": "e622ccca449c37521a214e5b",
       "classification": "historical-debt"
     },
     {
