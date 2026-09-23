@@ -24,6 +24,7 @@ declare namespace NodeJS {
     CONTACT_EMAIL?: string;
     CREATOR_INBOX_EMAIL?: string;
     EMAIL_FROM?: string;
+    FUNDING_ONPARTICIPE_URL?: string;
     GH_TOKEN?: string;
     GITHUB_API_TOKEN?: string;
     GITHUB_TOKEN?: string;

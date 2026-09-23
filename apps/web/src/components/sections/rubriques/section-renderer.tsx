@@ -12,6 +12,7 @@ import type { FeedbackSectionProps } from "./feedback-section.shared";
 
 type SectionRendererProps = {
   section: SectionRubriqueDefinition;
+  fundingOnParticipeUrl?: string;
 };
 
 const CommunitySection = dynamic(() =>
@@ -69,13 +70,15 @@ export const FINALIZED_SECTION_RENDERERS = {
   gamification: () => <GamificationSection />,
   actors: () => <ActorsSection />,
   annuaire: () => <AnnuaireSection />,
-  "open-data": () => (
+  "open-data": (fundingOnParticipeUrl?: string) => (
     <div className="space-y-12">
       <OpenDataSection />
-      <FundingSection />
+      <FundingSection onParticipeUrl={fundingOnParticipeUrl} />
     </div>
   ),
-  funding: () => <FundingSection />,
+  funding: (fundingOnParticipeUrl?: string) => (
+    <FundingSection onParticipeUrl={fundingOnParticipeUrl} />
+  ),
   "trash-spotter": () => <TrashSpotterSection />,
   route: () => <RouteSection />,
   "rejoindre-une-action": () => <JoinFormSection />,
@@ -95,9 +98,9 @@ export const FINALIZED_SECTION_RENDERERS = {
   weather: () => <WeatherSection />,
   messagerie: () => <ConnectSection defaultTab="discussions" />,
   elus: () => <ElusSection />,
-} satisfies Record<VisibleFinalizedSectionId, () => ReactNode>;
+} satisfies Record<VisibleFinalizedSectionId, (fundingOnParticipeUrl?: string) => ReactNode>;
 
-export function SectionRenderer({ section }: SectionRendererProps) {
+export function SectionRenderer({ section, fundingOnParticipeUrl }: SectionRendererProps) {
   if (section.implementation === "pending") {
     return (
       <PendingSection
@@ -111,5 +114,10 @@ export function SectionRenderer({ section }: SectionRendererProps) {
   const renderSection =
     FINALIZED_SECTION_RENDERERS[section.id as VisibleFinalizedSectionId];
 
-  return <>{renderSection()}</>;
+  const exposeFundingUrl =
+    section.id === "funding" || section.id === "open-data"
+      ? fundingOnParticipeUrl
+      : undefined;
+
+  return <>{renderSection(exposeFundingUrl)}</>;
 }

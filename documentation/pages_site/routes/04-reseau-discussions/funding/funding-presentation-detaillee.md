@@ -10,7 +10,7 @@ Tant que le projet est porté par une personne physique, la priorité est une co
 
 ### OnParticipe — CURRENT privilégiée pour les micro-contributions
 
-OnParticipe est la solution privilégiée pour proposer des micro-contributions dans la situation actuelle de CleanMyMap. La collecte est hébergée par le fournisseur : aucun paiement n'est traité dans CleanMyMap et aucune intégration API n'est supposée. La page funding peut expliquer cette stratégie sans ajouter de lien ou de CTA dans le cadre de cette décision documentaire.
+OnParticipe est la solution privilégiée pour proposer des micro-contributions dans la situation actuelle de CleanMyMap. La collecte est hébergée par le fournisseur : aucun paiement n'est traité dans CleanMyMap et aucune intégration API n'est supposée. Le lien direct est configuré par `FUNDING_ONPARTICIPE_URL`, optionnelle et limitée à la vraie URL HTTPS de la cagnotte. Tant qu'elle est absente, les boutons restent désactivés ; lorsqu'elle est définie, ils ouvrent directement la collecte hébergée, sans transmettre montant, catégorie ou donnée de contributeur. Aucun montant OnParticipe n'est importé.
 
 ### HelloAsso — TARGET conditionnelle
 
@@ -22,7 +22,7 @@ L'intégration Stripe existante est conservée techniquement. Une composante fix
 
 Aucun tarif n'est figé dans cette décision : les frais dépendent de l'offre, du pays, du moyen de paiement et des conditions du fournisseur. Ils doivent être vérifiés auprès de Stripe au moment d'une décision opérationnelle.
 
-Le backend Stripe demeure implémenté, mais l'interface publique `/sections/funding` ne propose plus Stripe comme voie de contribution et n'appelle plus `/api/funding/checkout`. Les routes Checkout et de statut, l'agrégat, le webhook, les tables/RPC et la migration restent conservés pour les traitements historiques ou une activation future décidée séparément. La collecte Stripe n'est pas déclarée active. Les anciens retours success/cancelled peuvent rester affichés pour des sessions initiées avant le débranchement.
+Le backend Stripe demeure implémenté, mais l'interface publique `/sections/funding` ne propose plus Stripe comme voie de contribution et n'appelle plus `/api/funding/checkout`. Les routes Checkout et de statut, l'agrégat, le webhook, les tables/RPC et la migration restent conservés pour les traitements historiques ou une activation future décidée séparément. La collecte Stripe n'est pas déclarée active. Les agrégats publics qui restent affichés sont libellés comme nets Stripe et ne représentent pas un total global lorsqu'il existe des contributions OnParticipe. Les anciens retours success/cancelled peuvent rester affichés pour des sessions initiées avant le débranchement.
 
 ### Virement bancaire — possibilité manuelle
 

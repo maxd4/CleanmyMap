@@ -128,6 +128,7 @@ rester vide lorsque la fonctionnalité correspondante n’est pas activée.
 | `CREATOR_INBOX_EMAIL` | Email | CONFIG | O | O | O | O | Vercel / template local | inbox créateur |
 | `STRIPE_SECRET_KEY` | Stripe | SECRET | O | O | O | R si Stripe | Stripe / Vercel | paiements serveur |
 | `STRIPE_WEBHOOK_SECRET` | Stripe | SECRET | O | O | O | R si webhook | Stripe / Vercel | validation webhook |
+| `FUNDING_ONPARTICIPE_URL` | OnParticipe | PUBLIC | O | O | O | O | URL réelle de la cagnotte / opérateur | lien direct depuis l'UI funding |
 | `NEXT_PUBLIC_SENTRY_DSN` | Sentry | PUBLIC | O | O | O | O | Sentry / Vercel | SDK navigateur |
 | `NEXT_PUBLIC_SENTRY_RELEASE` | Sentry | PUBLIC | O | O | O | O | CI/Vercel | release frontend |
 | `NEXT_PUBLIC_SENTRY_ENVIRONMENT` | Sentry | PUBLIC | O | O | R | R | Vercel | contexte frontend |
@@ -234,6 +235,22 @@ Les clés Resend et Stripe restent côté serveur. Les webhooks Stripe valident
 `STRIPE_WEBHOOK_SECRET`; aucune clé secrète ne doit être copiée dans une
 variable `NEXT_PUBLIC_*`. Les valeurs de test sont réservées à Development,
 Preview et aux tests isolés.
+
+### OnParticipe
+
+`FUNDING_ONPARTICIPE_URL` est une configuration applicative facultative et
+publique, sans secret. Lorsqu'elle est absente ou vide, l'UI funding n'active
+aucun parcours OnParticipe. Lorsqu'elle contient l'URL HTTPS réelle de la
+cagnotte CleanMyMap, l'UI ouvre directement cette collecte hébergée. Le
+contributeur saisit ses données sur OnParticipe ; CleanMyMap ne transmet ni
+donnée de contributeur ni montant, n'importe pas les totaux de la cagnotte et
+ne fournit aucun SDK, proxy ou route API OnParticipe.
+
+Ne renseigner cette variable qu'après création et vérification de la cagnotte
+réelle. Aucun identifiant de campagne fictif ne doit être ajouté au template.
+L'URL est validée comme URL HTTPS au démarrage. HelloAsso reste une cible
+conditionnelle à l'existence d'une association porteuse éligible ; aucune
+variable, URL ou intégration HelloAsso n'est prévue actuellement.
 
 ### Sentry et PostHog
 
