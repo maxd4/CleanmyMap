@@ -37,6 +37,12 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
     {
+      name: "soft-gate authentication",
+      testMatch: /soft-gate-authentication\.spec\.ts/,
+      dependencies: ["global setup"],
+      use: { ...devices["Desktop Chrome"] },
+    },
+    {
       name: "chromium",
       testMatch: /public-first-campaign\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
