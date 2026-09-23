@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { useEffectiveAuthState } from "@/lib/auth/use-effective-auth-state";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { useRouteData } from "./hooks/use-route-data";
 import { RouteSummaryCards } from "./components/route-summary-cards";
 import { RouteOptionsForm } from "./components/route-constraints-form";
@@ -269,7 +270,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
                  </button>
                ) : (
                  <Link
-                   href="/sign-in?redirect_url=%2Fsections%2Froute"
+                   href={buildSignInRedirectHref("/sections/route")}
                    className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-center text-sm font-black uppercase tracking-widest text-slate-950 transition hover:bg-emerald-400"
                  >
                    {fr ? "Se connecter pour calculer" : "Sign in to calculate"}

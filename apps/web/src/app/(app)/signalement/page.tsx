@@ -4,6 +4,7 @@ import { AccountCompletionGate } from "@/components/account/account-completion-g
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { resolveSignalementCoordinate } from "./signalement-page.utils";
@@ -47,7 +48,7 @@ export default async function SignalementPage({
             <TrashSpotterOwnerLoop
               initialLocation={initialLocation}
               isAuthenticated={Boolean(userId)}
-              signInHref={`/sign-in?redirect_url=${encodeURIComponent("/signalement")}`}
+              signInHref={buildSignInRedirectHref("/signalement")}
               signUpHref={`/sign-up?redirect_url=${encodeURIComponent("/signalement")}`}
             />
             </FamilyRubriqueCard>

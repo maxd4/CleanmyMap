@@ -1,3 +1,5 @@
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
+
 export const DASHBOARD_ROUTE = "/dashboard";
 export const EXPLORER_ROUTE = "/explorer";
 export const PARCOURS_ROUTE = "/parcours";
@@ -23,7 +25,7 @@ export function buildParcoursRoute(profile: string): string {
 }
 
 export function buildPilotageSignInHref(): string {
-  return `${SIGN_IN_ROUTE}?redirect_url=${encodeURIComponent(PILOTAGE_ROUTE)}`;
+  return buildSignInRedirectHref(PILOTAGE_ROUTE);
 }
 
 export function buildOnboardingLocalisationHref(nextPath: string = PROFIL_ROUTE): string {

@@ -5,6 +5,7 @@ import {
   normalizeActionCreationTab,
 } from "@/lib/actions/action-creation-routes";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { getLocalDevAuthState } from "@/lib/auth/local-dev-auth-state.server";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
@@ -104,8 +105,8 @@ export default async function NewActionPage({
           tabSearchParams={params}
           localDevAuth={localDevAuth}
           isAuthenticated={isAuthenticated}
-          signInHref={buildAuthRedirectHref("/sign-in", returnUrl)}
-          signUpHref={buildAuthRedirectHref("/sign-up", returnUrl)}
+          signInHref={buildSignInRedirectHref(returnUrl)}
+          signUpHref={buildSignUpRedirectHref(returnUrl)}
         />
       </div>
     );
@@ -124,8 +125,8 @@ export default async function NewActionPage({
         tabSearchParams={params}
         localDevAuth={localDevAuth}
         isAuthenticated={isAuthenticated}
-        signInHref={buildAuthRedirectHref("/sign-in", returnUrl)}
-        signUpHref={buildAuthRedirectHref("/sign-up", returnUrl)}
+        signInHref={buildSignInRedirectHref(returnUrl)}
+        signUpHref={buildSignUpRedirectHref(returnUrl)}
       />
     </div>
   );
@@ -154,6 +155,6 @@ function buildActionReturnUrl({
   return query ? `/actions/new?${query}` : "/actions/new";
 }
 
-function buildAuthRedirectHref(route: "/sign-in" | "/sign-up", returnUrl: string): string {
-  return `${route}?redirect_url=${encodeURIComponent(returnUrl)}`;
+function buildSignUpRedirectHref(returnUrl: string): string {
+  return `/sign-up?redirect_url=${encodeURIComponent(returnUrl)}`;
 }

@@ -9,6 +9,7 @@ import {
   getSectionRouteParams,
 } from "@/lib/sections-registry";
 import { getServerLocale } from "@/lib/server-preferences";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import {
   buildLegacyJoinActionRedirect,
   CANONICAL_JOIN_ACTION_SECTION_ID,
@@ -96,6 +97,17 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
   }
 
   const accessMode = section.anonymousPresentation;
+  const sectionSearchParams = await searchParams;
+  const returnQuery = new URLSearchParams();
+  for (const [key, value] of Object.entries(sectionSearchParams)) {
+    if (Array.isArray(value)) {
+      for (const item of value) returnQuery.append(key, item);
+    } else if (value !== undefined) {
+      returnQuery.set(key, value);
+    }
+  }
+  const sectionReturnRoute = `/sections/${section.id}${returnQuery.size ? `?${returnQuery}` : ""}`;
+  const signInHref = buildSignInRedirectHref(sectionReturnRoute);
   const fundingOnParticipeUrl =
     section.id === "funding" || section.id === "open-data"
       ? env.FUNDING_ONPARTICIPE_URL
@@ -107,6 +119,7 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="blur"
+        signInHref={signInHref}
         lockedPreview={<SectionRenderer section={section} fundingOnParticipeUrl={fundingOnParticipeUrl} />}
       >
         <SectionRenderer section={section} fundingOnParticipeUrl={fundingOnParticipeUrl} />
@@ -119,6 +132,7 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="disabled"
+        signInHref={signInHref}
       >
         <SectionRenderer section={section} fundingOnParticipeUrl={fundingOnParticipeUrl} />
       </ClerkRequiredGate>
