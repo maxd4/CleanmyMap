@@ -30,8 +30,7 @@ export const RUBRIQUE_REGISTRY = [
     route: PROFIL_ROUTE,
     label: { fr: "Profil", en: "Profile" },
     description: { fr: "Gérer votre profil", en: "Personal dashboard alias" },
-    availability: "hidden",
-    implementation: "finalized",
+    availability: "hidden", implementation: "finalized",
   },
   {
     id: "explorer",
@@ -46,8 +45,7 @@ export const RUBRIQUE_REGISTRY = [
       en: "Site map and direct access to all sections",
     },
     searchKeywords: { fr: ["plan du site"] },
-    availability: "available",
-    implementation: "finalized",
+    availability: "available", implementation: "finalized",
   },
   {
     id: "dashboard",
@@ -59,8 +57,7 @@ export const RUBRIQUE_REGISTRY = [
     label: { fr: "Mon espace", en: "Dashboard" },
     description: { fr: "Votre profil, vos actions et votre impact", en: "Overview, profile and monitoring" },
     searchKeywords: { fr: ["pilotage"] },
-    availability: "available",
-    implementation: "finalized",
+    availability: "available", implementation: "finalized",
   },
   {
     id: "reports",
@@ -74,8 +71,7 @@ export const RUBRIQUE_REGISTRY = [
       fr: "Consulter vos résultats et exporter vos données",
       en: "Analyze your results and export your data",
     },
-    availability: "available",
-    implementation: "finalized",
+    availability: "available", implementation: "finalized",
   },
   {
     id: "methodologie",
@@ -89,8 +85,7 @@ export const RUBRIQUE_REGISTRY = [
       fr: "Comprendre les calculs et les règles d'impact",
       en: "Understand the calculations and impact rules",
     },
-    availability: "available",
-    implementation: "finalized",
+    availability: "available", implementation: "finalized",
   },
   {
     id: "admin",
@@ -105,8 +100,7 @@ export const RUBRIQUE_REGISTRY = [
       en: "Technical back office, moderation and supervision",
     },
     searchKeywords: { fr: ["back-office"] },
-    availability: "available",
-    implementation: "finalized",
+    availability: "available", implementation: "finalized",
   },
   {
     id: "pilotage",
