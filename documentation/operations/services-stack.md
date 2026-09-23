@@ -218,8 +218,9 @@ Statut observé au moment de cette passe:
 
 Rôle:
 
-- paiements;
-- webhooks.
+- intégration technique existante pour paiements et webhooks ;
+- sa présence dans le stack ne fait pas de Stripe la solution privilégiée pour les micro-contributions de 1 €. La stratégie CURRENT privilégie une collecte OnParticipe hébergée tant que CleanMyMap est porté par une personne physique ; voir la [stratégie de financement](../pages_site/routes/04-reseau-discussions/funding/funding-presentation-detaillee.md).
+- Stripe peut rester utile pour d'autres paiements ou des montants plus élevés. Les frais dépendent des conditions du fournisseur et doivent être vérifiés au moment d'une décision opérationnelle.
 
 Activation:
 
