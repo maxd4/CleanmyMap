@@ -2,19 +2,34 @@
 
 ## Statut et portée
 
-Cette page détaille la décision CURRENT de financement. La fiche canonique de la route [`/sections/funding`](./funding-README.md) décrit séparément le runtime réellement présent. Cette décision n'ajoute aucun lien fournisseur, bouton, CTA, API, parcours de paiement ni route à CleanMyMap.
+Cette page détaille la décision CURRENT et le contrat TARGET de financement. La fiche canonique de la route [`/sections/funding`](./funding-README.md) décrit séparément le runtime réellement présent.
 
-Tant que le projet est porté par une personne physique, la priorité est une collecte externe hébergée, distincte du runtime applicatif. Aucune promesse de reçu fiscal ou de défiscalisation ne doit être faite.
+## CURRENT — portage par une personne physique
+
+CleanMyMap est actuellement porté par une personne physique. OnParticipe est la voie de collecte externe prévue dans cette situation : [cagnotte CleanMyMap](https://www.onparticipe.fr/c/PUI9aOsy). Elle devient disponible dans l'interface uniquement lorsque `FUNDING_ONPARTICIPE_URL` contient l'URL HTTPS réelle. La collecte reste hébergée par OnParticipe ; CleanMyMap ne traite pas le paiement, ne transmet aucun montant ni donnée de contributeur et n'importe pas les totaux OnParticipe.
+
+Stripe reste `IMPLEMENTED / NOT CURRENTLY EXPOSED` : son backend Checkout, le webhook, les RPC/tables, les agrégats et les tests backend sont conservés. Le clic OnParticipe ne redirige jamais vers Stripe. Stripe peut servir à d'autres paiements ou à des montants plus élevés, mais n'est pas la voie actuelle proposée pour les micro-contributions.
 
 ## Solutions retenues ou écartées
 
 ### OnParticipe — CURRENT privilégiée pour les micro-contributions
 
-OnParticipe est la solution privilégiée pour proposer des micro-contributions dans la situation actuelle de CleanMyMap. La collecte est hébergée par le fournisseur : aucun paiement n'est traité dans CleanMyMap et aucune intégration API n'est supposée. Le lien direct est configuré par `FUNDING_ONPARTICIPE_URL`, optionnelle et limitée à la vraie URL HTTPS de la cagnotte. Tant qu'elle est absente, les boutons restent désactivés ; lorsqu'elle est définie, ils ouvrent directement la collecte hébergée, sans transmettre montant, catégorie ou donnée de contributeur. Aucun montant OnParticipe n'est importé.
+OnParticipe est la solution privilégiée pour proposer des micro-contributions dans la situation actuelle de CleanMyMap. La collecte est hébergée par le fournisseur : aucun paiement n'est traité dans CleanMyMap et aucune intégration API n'est supposée. Le lien direct est configuré par `FUNDING_ONPARTICIPE_URL`, optionnelle et limitée à la vraie URL HTTPS de la cagnotte. Tant qu'elle est absente, les boutons restent désactivés ; lorsqu'elle est définie, ils ouvrent directement la collecte hébergée, sans transmettre montant, catégorie ou donnée de contributeur. Aucun montant OnParticipe n'est importé. Le parcours OnParticipe n'a aucun fallback vers Stripe.
 
-### HelloAsso — TARGET conditionnelle
+## TARGET — HelloAsso via une association partenaire
 
-HelloAsso pourra être réévalué si CleanMyMap est porté par une future structure associative éligible. La disponibilité d'une API et d'un Checkout ne justifie pas la création d'un runtime CleanMyMap aujourd'hui. L'éligibilité, les conditions et les fonctionnalités devront être vérifiées au moment où cette condition se réalisera.
+HelloAsso est une cible conditionnelle, uniquement via une association partenaire réelle et consentante. CleanMyMap n'a actuellement aucune association partenaire configurée. L'activation nécessitera que toutes les conditions suivantes soient réunies :
+
+- l'association porteuse réelle accepte explicitement ce rôle ;
+- la campagne HelloAsso est créée sous le compte de cette association ;
+- HelloAsso a vérifié l'association ;
+- le RIB de versement est au nom de l'association ;
+- l'association et CleanMyMap s'accordent explicitement sur l'affectation des fonds au projet CleanMyMap ;
+- l'association peut, si elle le souhaite, ajouter une personne administratrice de campagne côté CleanMyMap avec les droits adaptés.
+
+Les fonds restent versés à l'association porteuse. CleanMyMap peut gérer la campagne uniquement si l'association lui accorde les droits adaptés. Aucune collecte, campagne, association ou URL HelloAsso n'est configurée maintenant ; aucun client API, Checkout, route, variable d'environnement ni autre runtime HelloAsso ne doit être créé avant satisfaction de ces conditions et décision distincte.
+
+Les états métier `not_available_no_associative_host` et `available_via_associative_host` sont conceptuels et documentaires uniquement. Aucun état runtime n'est nécessaire tant qu'aucun consommateur réel ne le requiert. Une future intégration devra conserver séparément le nom public de l'association porteuse, l'URL réelle de sa campagne HelloAsso et le statut d'activation. Aucune de ces trois valeurs n'est configurée ou inventée aujourd'hui.
 
 ### Stripe — intégration existante conservée, usage non privilégié pour 1 €
 
@@ -39,4 +54,4 @@ PayPal et Leetchi ne sont pas retenus comme solutions canoniques actuelles. Une 
 - Ne créer aucun runtime HelloAsso avant qu'une structure éligible existe et qu'une décision distincte l'autorise.
 - Ne pas présenter des frais fournisseur comme des constantes durables ; dater et sourcer toute donnée chiffrée si elle est ajoutée ultérieurement.
 - Ne jamais versionner de secret, d'identifiant de compte, d'IBAN ou de donnée bancaire.
-- Ne promettre ni reçu fiscal, ni réduction fiscale, ni défiscalisation.
+- Ne pas annoncer d'avantage ou de traitement fiscal particulier sans validation juridique et confirmation de l'éligibilité réelle.
