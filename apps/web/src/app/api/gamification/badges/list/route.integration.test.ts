@@ -99,8 +99,10 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
         const existing = await progressionEvents
           .select('id')
           .eq('user_id', userId)
+          .eq('event_type', 'participant_tier_unlock')
           .eq('source_table', 'action_participants')
           .eq('source_id', `participant:${tier.id}`)
+          .eq('status_phase', 'pending')
           .maybeSingle();
 
         if (!existing?.data) {
@@ -146,8 +148,10 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
     const existing = await progressionEvents
       .select('id')
       .eq('user_id', 'user-1')
+      .eq('event_type', 'participant_tier_unlock')
       .eq('source_table', 'action_participants')
       .eq('source_id', `participant:${tier.id}`)
+      .eq('status_phase', 'pending')
       .maybeSingle();
 
     // This time existing.data is truthy, so we should skip insert

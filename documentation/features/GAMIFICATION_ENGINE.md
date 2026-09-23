@@ -23,7 +23,7 @@ Le code et les tests priment si une divergence apparaît.
 
 ## Frontières techniques
 
-- `progression_events` journalise les événements de progression avec une identité logique stable et une écriture idempotente.
+- `progression_events` journalise les événements de progression avec une identité logique stable `(user_id, event_type, source_table, source_id, status_phase)` et une écriture idempotente. `occurred_on` décrit la date métier ; il ne déduplique pas à lui seul des sources distinctes.
 - les sources métier restent propriétaires de leurs données ; le journal XP ne remplace jamais la source métier.
 - les écritures d'audit et notifications sont des effets secondaires et ne doivent pas devenir la preuve métier.
 - les lectures Clean Zones courantes utilisent `trash_spotter_spots`.
