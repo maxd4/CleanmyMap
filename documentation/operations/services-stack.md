@@ -219,7 +219,7 @@ Statut observé au moment de cette passe:
 Rôle:
 
 - intégration technique existante pour paiements et webhooks ;
-- backend funding `IMPLEMENTED / NOT EXPOSED` : l'interface publique funding n'appelle pas Checkout et ne propose aucun paiement Stripe ; les routes de backend, webhook et projections restent conservées ;
+- backend funding `IMPLEMENTED / NOT EXPOSED` : l'interface publique funding ne propose pas de paiement Stripe ; les routes de backend, webhook et projections restent conservées ;
 - Stripe n'est pas privilégié pour les micro-contributions de 1 €. La stratégie CURRENT privilégie une collecte OnParticipe hébergée tant que CleanMyMap est porté par une personne physique ; voir la [stratégie de financement](../pages_site/routes/04-reseau-discussions/funding/funding-presentation-detaillee.md).
 - Stripe peut rester utile pour d'autres paiements ou des montants plus élevés. Les frais dépendent des conditions du fournisseur et doivent être vérifiés au moment d'une décision opérationnelle.
 

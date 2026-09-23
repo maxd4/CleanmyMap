@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { SectionRenderer } from "@/components/sections/rubriques/section-renderer";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { env } from "@/lib/env";
 import {
   getSectionRubriqueById,
   getSectionRouteParams,
@@ -95,6 +96,10 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
   }
 
   const accessMode = section.anonymousPresentation;
+  const fundingOnParticipeUrl =
+    section.id === "funding" || section.id === "open-data"
+      ? env.FUNDING_ONPARTICIPE_URL
+      : undefined;
   const { userId } = await getSafeAuthSession();
 
   if (!userId && accessMode === "blur") {
@@ -102,9 +107,9 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="blur"
-        lockedPreview={<SectionRenderer section={section} />}
+        lockedPreview={<SectionRenderer section={section} fundingOnParticipeUrl={fundingOnParticipeUrl} />}
       >
-        <SectionRenderer section={section} />
+        <SectionRenderer section={section} fundingOnParticipeUrl={fundingOnParticipeUrl} />
       </ClerkRequiredGate>
     );
   }
@@ -115,10 +120,10 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
         isAuthenticated={false}
         mode="disabled"
       >
-        <SectionRenderer section={section} />
+        <SectionRenderer section={section} fundingOnParticipeUrl={fundingOnParticipeUrl} />
       </ClerkRequiredGate>
     );
   }
 
-  return <SectionRenderer section={section} />;
+  return <SectionRenderer section={section} fundingOnParticipeUrl={fundingOnParticipeUrl} />;
 }

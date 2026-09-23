@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isHttpsUrl } from "@/lib/funding/config";
 
 const emptyToUndefined = (value: unknown) => {
   if (typeof value === "string" && value.trim().length === 0) {
@@ -35,6 +36,11 @@ const optionalUrl = z.preprocess((value) => {
   }
   return normalizeUrlCandidate(normalized);
 }, z.string().url().optional());
+
+const optionalHttpsUrl = z.preprocess(
+  emptyToUndefined,
+  z.string().trim().url().refine(isHttpsUrl, "URL must use HTTPS").optional(),
+);
 
 const optionalBoolean = z.preprocess((value) => {
   const normalized = emptyToUndefined(value);
@@ -73,6 +79,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_CONTACT_EMAIL: z.string().email().optional(),
   NEXT_PUBLIC_ENABLE_SUPABASE_CHAT_REALTIME: optionalBoolean,
   NEXT_PUBLIC_GAMIFICATION_WS: z.string().optional(),
+  FUNDING_ONPARTICIPE_URL: optionalHttpsUrl,
 
   CLERK_SECRET_KEY: z.string().optional(),
   CLERK_ADMIN_USER_IDS: z.string().optional(),

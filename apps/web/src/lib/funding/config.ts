@@ -2,6 +2,27 @@ export const FUNDING_CATEGORIES = ["equipment", "development"] as const;
 
 export type FundingCategory = (typeof FUNDING_CATEGORIES)[number];
 
+export type OnParticipeFundingDestination =
+  | { configured: false; url: null }
+  | { configured: true; url: string };
+
+export function isHttpsUrl(value: string): boolean {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+export function resolveOnParticipeFundingDestination(
+  value: string | undefined,
+): OnParticipeFundingDestination {
+  const url = value?.trim();
+  return url && isHttpsUrl(url)
+    ? { configured: true, url }
+    : { configured: false, url: null };
+}
+
 export const FUNDING_CATEGORY_LABELS: Record<FundingCategory, { fr: string; en: string }> = {
   equipment: {
     fr: "Matériel pour les actions terrain",

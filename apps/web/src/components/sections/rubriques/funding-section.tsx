@@ -11,6 +11,7 @@ import {
   FUNDING_CATEGORY_DESCRIPTIONS,
   FUNDING_CATEGORY_LABELS,
   formatFundingAmount,
+  resolveOnParticipeFundingDestination,
   type FundingCategory,
 } from "@/lib/funding/config";
 
@@ -33,10 +34,15 @@ const CATEGORY_BULLETS: Record<FundingCategory, { fr: string[]; en: string[] }> 
   },
 };
 
-export function FundingSection() {
+type FundingSectionProps = {
+  onParticipeUrl?: string;
+};
+
+export function FundingSection({ onParticipeUrl }: FundingSectionProps) {
   const { locale } = useSitePreferences();
   const searchParams = useSearchParams();
   const fr = locale === "fr";
+  const onParticipe = resolveOnParticipeFundingDestination(onParticipeUrl);
   const [aggregates, setAggregates] = useState<AggregateResponse | null>(null);
   const [aggregateState, setAggregateState] = useState<"loading" | "ready" | "error">("loading");
   const [confirmation, setConfirmation] = useState<"pending" | "confirmed" | null>(null);
@@ -137,7 +143,7 @@ export function FundingSection() {
                     <Icon size={24} aria-hidden="true" />
                   </div>
                   <div className="text-right">
-                    <p className="cmm-text-caption font-semibold uppercase tracking-[0.18em] text-slate-500">{fr ? "Total collecté" : "Collected total"}</p>
+                    <p className="cmm-text-caption font-semibold uppercase tracking-[0.18em] text-slate-500">{fr ? "Total net confirmé par Stripe" : "Net total confirmed by Stripe"}</p>
                     {aggregateState === "loading" ? (
                       <p className="mt-2 text-sm font-semibold text-slate-500" aria-live="polite">{fr ? "Chargement…" : "Loading…"}</p>
                     ) : aggregateState === "error" ? (
@@ -170,9 +176,12 @@ export function FundingSection() {
                     tone="primary"
                     variant="pill"
                     width="wide"
-                    disabled
+                    href={onParticipe.configured ? onParticipe.url : undefined}
+                    disabled={!onParticipe.configured}
                   >
-                    {fr ? "Non disponible" : "Unavailable"}
+                    {onParticipe.configured
+                      ? fr ? "Soutenir via OnParticipe" : "Support via OnParticipe"
+                      : fr ? "Non disponible" : "Unavailable"}
                   </CmmButton>
                   {aggregateState === "error" ? (
                     <CmmButton type="button" tone="secondary" variant="ghost" width="wide" onClick={() => void loadAggregates()}>
@@ -194,8 +203,8 @@ export function FundingSection() {
               <h2 className="text-xl font-black text-slate-950">{fr ? "Où va l’argent ?" : "Where does the money go?"}</h2>
               <p className="mt-2 text-sm leading-6 text-slate-800">
                 {fr
-                  ? "Les contributions sont affectées à la catégorie choisie : matériel et logistique pour les actions terrain, ou hébergement, outils et dépenses nécessaires au fonctionnement et au développement. Les totaux publiés proviennent des paiements confirmés par Stripe, diminués des remboursements enregistrés."
-                  : "Contributions are allocated to the selected category: equipment and logistics for field actions, or hosting, tools and expenses needed for operations and development. Published totals come from Stripe-confirmed payments, less recorded refunds."}
+                  ? "Les contributions sont affectées à la catégorie choisie : matériel et logistique pour les actions terrain, ou hébergement, outils et dépenses nécessaires au fonctionnement et au développement. Les totaux nets affichés correspondent uniquement aux paiements Stripe confirmés, diminués des remboursements enregistrés ; ils n’incluent pas d’éventuelles contributions OnParticipe et ne représentent pas le total global du financement."
+                  : "Contributions are allocated to the selected category: equipment and logistics for field actions, or hosting, tools and expenses needed for operations and development. The net totals shown include only Stripe-confirmed payments, less recorded refunds; they exclude any OnParticipe contributions and are not the global funding total."}
               </p>
             </div>
           </div>
