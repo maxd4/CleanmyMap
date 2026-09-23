@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, MapPin, Route, Users2 } from "lucide-react";
 import type { ActionListItem } from "@/lib/actions/types";
 import type { JoinableActionHistoryItem } from "@/lib/actions/participation/group-participation";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
 import { derivePersonalAttribution } from "@/lib/actions/personal-attribution";
@@ -197,7 +198,7 @@ export function PastActionsPanel({
                     </CmmButton>
                   ) : (
                     <CmmButton
-                      href={`/sign-in?redirect_url=${encodeURIComponent("/sections/rejoindre-une-action?tab=past")}`}
+                      href={buildSignInRedirectHref("/sections/rejoindre-une-action?tab=past")}
                       tone="primary"
                       variant="pill"
                       className="w-full justify-center text-xs"

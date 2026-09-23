@@ -6,6 +6,7 @@ import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { readAuthorizedMission } from "@/lib/missions/mission-access";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import {
   formatMissionDistance,
   formatMissionDuration,
@@ -25,7 +26,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
   const access = await readAuthorizedMission(id);
 
   if (access.kind === "unauthenticated") {
-    redirect(`/sign-in?redirect_url=${encodeURIComponent(`/missions/${id}`)}`);
+    redirect(buildSignInRedirectHref(`/missions/${id}`));
   }
 
   if (access.kind === "not_found" || access.kind === "forbidden") {
