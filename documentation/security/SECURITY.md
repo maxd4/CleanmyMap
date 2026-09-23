@@ -175,6 +175,39 @@ Maintenir :
 
 Ne pas lancer un grand nettoyage aveugle. Prioriser les flux réellement exploitables et les frontières de confiance.
 
+## Garde-fou architectural Semgrep
+
+Semgrep complète CodeQL avec un petit contrat architectural local, sans devenir
+une seconde source de vérité ni un scanner générique. La configuration
+versionnée est [`scripts/security/semgrep/cleanmymap.yml`](../../scripts/security/semgrep/cleanmymap.yml)
+et s'exécute sans service SaaS avec :
+
+```bash
+npm run check:semgrep
+```
+
+Le garde-fou exige Semgrep `1.177.0` et couvre uniquement les invariants
+actuels suivants :
+
+- `SUPABASE_SERVICE_ROLE_KEY` reste absent des composants client web et du
+  runtime mobile ;
+- Clerk reste l'identité utilisateur : les appels Supabase Auth interdits ne
+  sont pas réintroduits ;
+- `dangerouslySetInnerHTML` reste limité aux usages contrôlés déjà documentés
+  dans [`dom-xss-prevention.md`](./dom-xss-prevention.md) ;
+- une redirection provenant directement de `searchParams` passe par les
+  helpers de validation d'URL ;
+- un composant client n'importe pas les modules réservés au serveur définis par
+  la frontière web canonique.
+
+Les quatre occurrences contrôlées actuellement présentes (initialiseurs,
+JSON-LD et style d'impression) sont explicitement conservées dans la
+configuration ; toute nouvelle occurrence doit être revue selon le contrat
+XSS avant d'être autorisée. Les fixtures positives et négatives sont exécutées
+par le même script afin d'éviter les faux positifs. Le plan de validation ne
+sélectionne ce contrôle que pour les surfaces web/mobile ou les fichiers du
+garde-fou ; une modification documentaire seule ne le déclenche pas.
+
 ## CI
 
 La CI doit distinguer :

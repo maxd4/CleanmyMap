@@ -172,6 +172,12 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Install architectural Semgrep
+        run: python -m pip install --disable-pip-version-check --no-input semgrep==1.177.0
+
+      - name: Architectural Semgrep
+        run: npm run check:semgrep
+
       - name: Lockfile policy
         run: npm run check:lockfile-policy
 

@@ -21,6 +21,8 @@
     "lint:audit": "node scripts/checks/lint-audit-direct.js",
     "audit:dead-code": "knip --config scripts/knip.json --no-progress --reporter compact",
     "security:secrets": "node scripts/checks/secret-audit.mjs",
+    "check:semgrep": "node scripts/checks/check-semgrep-architecture.mjs && npm run test:semgrep",
+    "test:semgrep": "node scripts/security/run-semgrep-fixtures.mjs",
     "check:public-e2e-artifact": "node scripts/checks/check-public-e2e-artifact.mjs",
     "check:devcontainer": "node scripts/checks/check-devcontainer.mjs",
     "check:candidate-lifecycle": "node scripts/checks/check-candidate-lifecycle.mjs",

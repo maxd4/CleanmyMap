@@ -84,6 +84,17 @@ function isSecurityRelevantFile(file) {
   );
 }
 
+function isSemgrepRelevantFile(file) {
+  const normalized = normalizePath(file);
+  return (
+    normalized.startsWith("apps/web/src/") ||
+    normalized.startsWith("apps/mobile/") ||
+    normalized.startsWith("scripts/security/semgrep/") ||
+    normalized === "scripts/security/run-semgrep-fixtures.mjs" ||
+    normalized === "scripts/checks/check-semgrep-architecture.mjs"
+  );
+}
+
 function isRegressionRelevantFile(file) {
   const normalized = normalizePath(file);
   return (
@@ -158,6 +169,7 @@ export function createModeValidationPlan({
   const supabaseRelevant = files.some(isSupabaseRelevantFile);
   const migrationRelevant = files.some(isMigrationRelevantFile);
   const securityRelevant = files.some(isSecurityRelevantFile);
+  const semgrepRelevant = files.some(isSemgrepRelevantFile);
   const regressionRelevant = files.some(isRegressionRelevantFile);
   const githubRelevant = files.some((file) => normalizePath(file).startsWith(".github/"));
   const mobileRelevant = files.some((file) => normalizePath(file).startsWith("apps/mobile/"));
@@ -184,6 +196,16 @@ export function createModeValidationPlan({
     },
     candidateScope: normalizedScope,
   });
+
+  if (semgrepRelevant) {
+    addCheck(checks, {
+      id: "semgrep-architecture",
+      label: "Garde-fou architectural Semgrep",
+      estimatedSeconds: 45,
+      critical: true,
+      command: npmCommand("check:semgrep"),
+    });
+  }
   if (normalizedScope === "WORKTREE") {
     addCheck(checks, {
       id: "diff-check-staged",
@@ -501,6 +523,7 @@ export function createModeValidationPlan({
       supabaseRelevant,
       migrationRelevant,
       securityRelevant,
+      semgrepRelevant,
       regressionRelevant,
       githubRelevant,
       mobileRelevant,
