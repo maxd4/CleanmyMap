@@ -6,7 +6,7 @@ from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any
 
-from src.maintenance._common import IGNORED_DIRS, iter_text_files
+from src.maintenance._common import iter_text_files
 UTF8_BOM = b"\xef\xbb\xbf"
 
 
