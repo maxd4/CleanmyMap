@@ -58,21 +58,19 @@ test("gamification soft-gate returns to the canonical route after Clerk sign-in"
       return `${url.pathname}${url.search}`;
     })
     .toBe(gamificationSignInHref);
+  await clerk.loaded({ page });
 
   const email = process.env.E2E_CLERK_USER_EMAIL?.trim();
   if (!email) {
     throw new Error("E2E_CLERK_USER_EMAIL is required for the Clerk E2E harness.");
   }
 
-  await clerk.signIn({ page, emailAddress: email });
-  await page.waitForFunction(
-    () => Boolean(window.Clerk?.user && window.Clerk?.session),
-    undefined,
-    { timeout: 30_000 },
+  const authenticationRedirect = page.waitForURL(
+    (url) => `${url.pathname}${url.search}` === gamificationRoute,
+    { waitUntil: "domcontentloaded", timeout: 30_000 },
   );
-  // The official Clerk Playwright helper activates the session in place. The
-  // application contract then uses this exact forceRedirectUrl target.
-  await gotoGamification(page);
+  await clerk.signIn({ page, emailAddress: email });
+  await authenticationRedirect;
   await expect
     .poll(() => {
       const url = new URL(page.url());
