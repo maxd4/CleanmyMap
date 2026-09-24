@@ -26,38 +26,33 @@ const SITEMAP_PATH_PRIORITY: Record<string, number> = {
   "/politique-cookies": 0.3,
 };
 
-function toSitemapEntry(
-  url: string,
-  now: Date,
-): MetadataRoute.Sitemap[number] {
+function toSitemapEntry(url: string): MetadataRoute.Sitemap[number] {
+  const pathname = new URL(url, appUrl).pathname;
+
   return {
     url,
-    lastModified: now,
     changeFrequency:
-      url === "/" ||
-      url === "/en" ||
-      url === EXPLORER_ROUTE ||
-      url === "/actions/map"
+      pathname === "/" ||
+      pathname === "/en" ||
+      pathname === EXPLORER_ROUTE ||
+      pathname === "/actions/map"
         ? "daily"
-        : url.startsWith("/learn/")
+        : pathname.startsWith("/learn/")
           ? "monthly"
-          : url === "/reports"
+          : pathname === "/reports"
             ? "weekly"
             : "monthly",
-    priority:
-      SITEMAP_PATH_PRIORITY[new URL(url, appUrl).pathname] ?? 0.5,
+    priority: SITEMAP_PATH_PRIORITY[pathname] ?? 0.5,
   };
 }
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-
   const staticEntries = PUBLIC_APP_SITEMAP_PATHS.map((pathname) =>
-    toSitemapEntry(`${appUrl}${pathname}`, now),
+    toSitemapEntry(`${appUrl}${pathname}`),
   );
 
   const sectionEntries = getPublicSectionSitemapPaths().map((pathname) =>
-    toSitemapEntry(`${appUrl}${pathname}`, now),
+    toSitemapEntry(`${appUrl}${pathname}`),
   );
 
   return [...staticEntries, ...sectionEntries];
