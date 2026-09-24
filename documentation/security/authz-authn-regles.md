@@ -435,6 +435,13 @@ approuvées visibles ainsi que les pré-actions futures explicitement publiées
 interdit également la lecture directe des lignes `new` aux rôles anon et
 authenticated.
 
+Les projections publiques de `GET /api/actions`, `GET /api/actions/map` et
+`GET /api/actions/map/initial-nearest` ne contiennent aucun identifiant interne
+de propriétaire ou d'utilisateur, y compris dans un contrat imbriqué. Les
+contrats internes conservent ces identités pour l'ownership, la modération et
+les traitements serveur ; la frontière DTO publique les retire avant la réponse
+HTTP.
+
 La vue publique `GET /api/actions?view=future` réutilise la même projection
 Actions et ne renvoie que les pré-actions publiées dont le début est futur.
 Les champs `volunteers_count`, `duration_minutes`, l'itinéraire et les objectifs

@@ -49,7 +49,6 @@ function buildMapItem(
     record_type: recordType,
     source: "trash_spotter_spots",
     source_status: row.status,
-    created_by_clerk_id: null,
     notes_plain: row.notes,
   };
 }

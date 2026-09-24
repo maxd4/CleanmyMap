@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionDataContract } from "@/lib/actions/contracts/contract-model";
-import type { ActionMapItem } from "@/lib/actions/types";
+import {
+  projectPublicActionMapItem,
+  type PublicActionMapItem,
+  type PublicActionMapResponse,
+} from "../public-dto";
 import type {
   ActionMapViewportQuery,
   ActionImpactLevel,
@@ -108,7 +112,7 @@ export type MapActionsRouteDependencies = {
   toActionMapItem: (
     contract: ActionDataContract,
     insights?: ActionInsightsLike,
-  ) => ActionMapItem;
+  ) => PublicActionMapItem;
   filterActionContractsByScope: (
     items: ActionDataContract[],
     scope: ReportScope,
@@ -212,8 +216,12 @@ export function parseMapActionsParams(url: URL, parseEntityTypesParam: MapAction
   };
 }
 
-export function filterPublicMapResponse(response: ActionMapResponse): ActionMapResponse {
-  const items = response.items.filter((item) => item.status === "approved");
+export function filterPublicMapResponse(
+  response: ActionMapResponse,
+): PublicActionMapResponse {
+  const items = response.items
+    .filter((item) => item.status === "approved")
+    .map(projectPublicActionMapItem);
   return {
     ...response,
     count: items.length,

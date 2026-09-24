@@ -15,7 +15,6 @@ import {
 } from "@/lib/reports/scope";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { AppError } from "@/lib/errors/app-errors";
-import { buildActionInsights } from "../insights";
 import { parseDrawingFromNotes } from "../geometry/drawing";
 import { extractActionMetadataFromNotes } from "../metadata";
 import { fetchActionPollutionScoreReferences } from "../pollution/pollution-score-references";
@@ -25,7 +24,8 @@ import {
 import type { ActionDataContract, ActionEntityType } from "../contracts/contract-model";
 import { buildActionDataContract } from "../contracts/contract-model";
 import { parseWasteCategoriesFromNotes } from "@/lib/waste";
-import { mapItemCoordinates, toActionMapItem } from "../contracts/contract-mappers";
+import { mapItemCoordinates } from "../contracts/contract-mappers";
+import { buildPublicMapItems } from "./public-map-items";
 import {
   clampInteger,
   normalizeQualityMin,
@@ -310,32 +310,6 @@ function buildMapContracts(
   ).sort(compareMapContracts);
 }
 
-function buildMapItems(
-  contracts: ActionDataContract[],
-  pollutionScoreReferences: PollutionScoreReferences | null,
-  impact: ActionImpactLevel | null,
-  qualityMin: number | null,
-  limit: number,
-) {
-  const now = new Date();
-
-  return contracts
-    .map((contract) => {
-      const insights = buildActionInsights(contract, now);
-      return toActionMapItem(contract, insights, pollutionScoreReferences);
-    })
-    .filter((item) => {
-      if (impact && item.impact_level !== impact) {
-        return false;
-      }
-      if (qualityMin === null) {
-        return true;
-      }
-      return Number(item.quality_score ?? 0) >= qualityMin;
-    })
-    .slice(0, limit);
-}
-
 function filterMapItemsByViewport(
   items: ActionMapItem[],
   viewport: MapViewportState | null | undefined,
@@ -540,7 +514,7 @@ export async function fetchMapActions(
     config.scope,
     config.types,
   );
-  const items = buildMapItems(
+  const items = buildPublicMapItems(
     mergedContracts,
     pollutionScoreReferences,
     config.impact,

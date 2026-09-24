@@ -5,6 +5,8 @@ const fetchUnifiedActionContractsMock = vi.hoisted(() => vi.fn());
 const parseEntityTypesParamMock = vi.hoisted(() => vi.fn());
 const buildActionInsightsMock = vi.hoisted(() => vi.fn());
 const toActionListItemMock = vi.hoisted(() => vi.fn());
+const toPublicActionListItemMock = vi.hoisted(() => vi.fn());
+const toPublicActionListResponseMock = vi.hoisted(() => vi.fn());
 const filterActionContractsByScopeMock = vi.hoisted(() => vi.fn());
 const resolveReportQueryMock = vi.hoisted(() => vi.fn());
 const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
@@ -39,6 +41,8 @@ vi.mock("@/lib/actions/insights", () => ({
 
 vi.mock("@/lib/actions/data-contract", () => ({
   toActionListItem: toActionListItemMock,
+  toPublicActionListItem: toPublicActionListItemMock,
+  toPublicActionListResponse: toPublicActionListResponseMock,
 }));
 
 vi.mock("@/lib/reports/scope", () => ({
@@ -172,10 +176,23 @@ describe("GET /api/actions", () => {
     toActionListItemMock.mockImplementation((contract: { id: string; status: string }) => ({
       id: contract.id,
       status: contract.status,
+      created_by_clerk_id: "internal-owner",
+      contract: { createdByClerkId: "internal-owner" },
       quality_grade: "B",
       impact_level: "critique",
       to_fix_priority: false,
     }));
+    toPublicActionListItemMock.mockImplementation(
+      (contract: { id: string; status: string }) => ({
+        id: contract.id,
+        status: contract.status,
+        actor_name: "Déclarant public",
+        quality_grade: "B",
+        impact_level: "critique",
+        to_fix_priority: false,
+      }),
+    );
+    toPublicActionListResponseMock.mockImplementation((payload: unknown) => payload);
     filterActionContractsByScopeMock.mockImplementation((items) => items);
     resolveReportQueryMock.mockReturnValue({
       scopeKind: "global",
@@ -241,7 +258,10 @@ describe("GET /api/actions", () => {
       status: "approved",
     });
     expect(snapshotRequest.meta).toMatchObject({ status: "approved" });
+    expect(snapshotRequest.version).toBe("public-actions-v2");
     expect(requireAuthenticatedAccessMock).not.toHaveBeenCalled();
+    expect(toActionListItemMock).not.toHaveBeenCalled();
+    expect(toPublicActionListItemMock).toHaveBeenCalled();
   });
 
   it("keeps approved validated and cleaned Trash Spotter records public", async () => {
@@ -403,6 +423,12 @@ describe("GET /api/actions", () => {
           expect.objectContaining({ id: "spot-new", status: "pending" }),
         ]),
       );
+      expect(payload.items[0]).toHaveProperty("created_by_clerk_id", "internal-owner");
+      expect(payload.items[0].contract).toHaveProperty(
+        "createdByClerkId",
+        "internal-owner",
+      );
+      expect(toActionListItemMock).toHaveBeenCalled();
       expect(loadOrRefreshPublicSurfaceSnapshotMock).not.toHaveBeenCalled();
     },
   );

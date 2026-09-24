@@ -12,7 +12,11 @@ import {
   pickTraceableActorName,
   requireAuthenticatedAccess,
 } from "@/lib/authz";
-import { toActionListItem } from "@/lib/actions/data-contract";
+import {
+  toActionListItem,
+  toPublicActionListItem,
+  toPublicActionListResponse,
+} from "@/lib/actions/data-contract";
 import {
   fetchUnifiedActionContracts,
   parseEntityTypesParam,
@@ -41,7 +45,7 @@ export const dynamic = "force-dynamic";
 const QUALITY_GRADES = ["A", "B", "C"] as const;
 const IMPACT_LEVELS = ["faible", "moyen", "fort", "critique"] as const;
 const ACTIONS_SNAPSHOT_TTL_MINUTES = 30;
-const ACTIONS_SNAPSHOT_VERSION = "public-actions-v1";
+const ACTIONS_SNAPSHOT_VERSION = "public-actions-v2";
 
 function parseStatusParam(raw: string | null): ActionStatus | null {
   if (!raw) {
@@ -144,6 +148,7 @@ function buildActionsSnapshotKey(params: {
 async function buildActionsRoutePayload(
   url: URL,
   statusOverride: ActionStatus | null,
+  toListItem: typeof toActionListItem | typeof toPublicActionListItem,
 ) {
   const futureOnly = url.searchParams.get("view") === "future";
   const reportQuery = resolveReportQuery(url);
@@ -196,7 +201,7 @@ async function buildActionsRoutePayload(
     })
     .map((contract) => {
       const insights = buildActionInsights(contract, now);
-      return toActionListItem(contract, insights);
+      return toListItem(contract, insights);
     })
     .filter((item) => {
       if (qualityGrade && item.quality_grade !== qualityGrade) {
@@ -301,7 +306,11 @@ export async function GET(request: Request) {
           : forbiddenJsonResponse({ hint: access.error });
       }
 
-      const payload = await buildActionsRoutePayload(url, readPolicy.status);
+      const payload = await buildActionsRoutePayload(
+        url,
+        readPolicy.status,
+        toActionListItem,
+      );
       return NextResponse.json(
         payload,
         payload.partialSource
@@ -319,7 +328,8 @@ export async function GET(request: Request) {
       title: "Actions publiques",
       version: ACTIONS_SNAPSHOT_VERSION,
       ttlMinutes: ACTIONS_SNAPSHOT_TTL_MINUTES,
-      buildPayload: async () => buildActionsRoutePayload(url, readPolicy.status),
+      buildPayload: async () =>
+        buildActionsRoutePayload(url, readPolicy.status, toPublicActionListItem),
       meta: {
         route: "api/actions",
         limit,
@@ -332,9 +342,10 @@ export async function GET(request: Request) {
       },
     });
 
+    const payload = toPublicActionListResponse(snapshot.payload);
     return NextResponse.json(
-      snapshot.payload,
-      snapshot.payload.partialSource
+      payload,
+      payload.partialSource
         ? {
             headers: {
               "X-Data-Warning": "Partial source data",
