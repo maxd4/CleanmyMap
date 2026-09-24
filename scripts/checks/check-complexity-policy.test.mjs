@@ -13,11 +13,12 @@ import {
   evaluateNewMetric,
   intersectsChangedFunction,
   evaluateBaselinedMetric,
+  isSubstantiallyChanged,
   FUNCTION_IDENTITY_SCHEME,
   FUNCTION_IDENTITY_SCHEME_VERSION,
   validateBaselineShape,
 } from "./complexity-policy.mjs";
-import { evaluateMetrics } from "./check-complexity-policy.mjs";
+import { evaluateMetrics, parseChangedDiffText } from "./check-complexity-policy.mjs";
 import { classifyFileKind as classifyTopHeavyFileKind } from "./top-heavy-measurement.mjs";
 
 test("complexity target blocks new code at 15 for domain and 20 for runtime", () => {
@@ -65,7 +66,7 @@ function measuredMetric(value, functionIdentity = "named:fixture#1") {
     path: "src/fixture.ts",
     functionIdentity,
     functionStartLine: 1,
-    functionEndLine: 5,
+    functionEndLine: 20,
     value,
     key: baselineKey("complexity", "src/fixture.ts", functionIdentity),
   };
@@ -75,30 +76,98 @@ function changedBodyRange(line = 3) {
   return new Map([["src/fixture.ts", [{ start: line, end: line }]]]);
 }
 
-test("A: existing complexity 19 fails when a body edit raises it to 21", () => {
-  const result = evaluateMetrics({ metrics: [measuredMetric(21)], baseline: { entries: [{ metric: "complexity", path: "src/fixture.ts", functionIdentity: "named:fixture#1", ceiling: 19 }] }, changedRanges: changedBodyRange() });
-  assert.equal(result.failures.length, 1);
-});
+function changedBodyHunks({ newStart = 3, newCount = 1, added = 1, deleted = 0 } = {}) {
+  return new Map([[
+    "src/fixture.ts",
+    [{ newStart, newEnd: newStart + Math.max(newCount, 1) - 1, added, deleted }],
+  ]]);
+}
 
-test("B: a new function above target fails without a baseline entry", () => {
-  const result = evaluateMetrics({ metrics: [measuredMetric(21, "named:newFunction#1")], baseline: { entries: [] }, changedRanges: changedBodyRange() });
-  assert.equal(result.failures.length, 1);
-});
+function legacyFixture(value, { changedRanges = new Map(), changedHunks = new Map() } = {}) {
+  return evaluateMetrics({
+    metrics: [measuredMetric(value)],
+    baseline: { entries: [{ metric: "complexity", path: "src/fixture.ts", functionIdentity: "named:fixture#1", ceiling: 23 }] },
+    changedRanges,
+    changedHunks,
+  });
+}
 
-test("C: an untouched historical function above target remains within its baseline", () => {
-  const result = evaluateMetrics({ metrics: [measuredMetric(23)], baseline: { entries: [{ metric: "complexity", path: "src/fixture.ts", functionIdentity: "named:fixture#1", ceiling: 23 }] }, changedRanges: new Map() });
+test("A: legacy 23 untouched remains within its historical ceiling", () => {
+  const result = legacyFixture(23);
   assert.equal(result.failures.length, 0);
 });
 
-test("D: touching a historical function without worsening does not invent a baseline", () => {
-  const baseline = { entries: [{ metric: "complexity", path: "src/fixture.ts", functionIdentity: "named:fixture#1", ceiling: 23 }] };
-  const result = evaluateMetrics({ metrics: [measuredMetric(23)], baseline, changedRanges: changedBodyRange() });
+test("B: legacy 23 with a light correction remains within its historical ceiling", () => {
+  const result = legacyFixture(23, {
+    changedRanges: changedBodyRange(),
+    changedHunks: changedBodyHunks(),
+  });
   assert.equal(result.failures.length, 0);
-  assert.deepEqual(result.stale, []);
-  assert.equal(baseline.entries.length, 1);
 });
 
-test("E: a body-only changed line intersects the full AST function range", () => {
+test("C: a light correction that raises legacy 23 to 24 fails the historical ceiling", () => {
+  const result = legacyFixture(24, {
+    changedRanges: changedBodyRange(),
+    changedHunks: changedBodyHunks(),
+  });
+  assert.equal(result.failures.length, 1);
+  assert.match(result.failures[0].reason, /legacy ceiling/);
+});
+
+test("D: a substantial rewrite that remains at legacy 23 fails the React target 20", () => {
+  const result = legacyFixture(23, {
+    changedRanges: new Map([["src/fixture.ts", [{ start: 8, end: 11 }]]]),
+    changedHunks: changedBodyHunks({ newStart: 8, newCount: 4, added: 6, deleted: 4 }),
+  });
+  assert.equal(result.failures.length, 1);
+  assert.match(result.failures[0].reason, /substantially modified/);
+});
+
+test("E: a substantial rewrite that descends to target 20 passes", () => {
+  const result = legacyFixture(20, {
+    changedRanges: new Map([["src/fixture.ts", [{ start: 8, end: 11 }]]]),
+    changedHunks: changedBodyHunks({ newStart: 8, newCount: 4, added: 6, deleted: 4 }),
+  });
+  assert.equal(result.failures.length, 0);
+});
+
+test("F: a substantial middle-body modification is detected", () => {
+  const result = legacyFixture(23, {
+    changedRanges: new Map([["src/fixture.ts", [{ start: 8, end: 11 }]]]),
+    changedHunks: changedBodyHunks({ newStart: 8, newCount: 4, added: 4 }),
+  });
+  assert.equal(isSubstantiallyChanged({ changedLines: 4, functionStartLine: 1, functionEndLine: 20 }), true);
+  assert.equal(result.failures.length, 1);
+});
+
+test("G: an important deletion in the body is counted and detected", () => {
+  const parsed = parseChangedDiffText([
+    "diff --git a/apps/web/src/fixture.ts b/apps/web/src/fixture.ts",
+    "--- a/apps/web/src/fixture.ts",
+    "+++ b/apps/web/src/fixture.ts",
+    "@@ -8,5 +8,0 @@ function fixture()",
+    "-  const removedA = 1;",
+    "-  const removedB = 2;",
+    "-  const removedC = 3;",
+    "-  const removedD = 4;",
+    "-  const removedE = 5;",
+  ].join("\n"));
+  assert.equal(parsed.hunks.get("src/fixture.ts")[0].added, 0);
+  assert.equal(parsed.hunks.get("src/fixture.ts")[0].deleted, 5);
+  const result = legacyFixture(23, { changedRanges: parsed.ranges, changedHunks: parsed.hunks });
+  assert.equal(result.failures.length, 1);
+});
+
+test("H: a new React function above target still fails", () => {
+  const result = evaluateMetrics({
+    metrics: [measuredMetric(21, "named:newFunction#1")],
+    baseline: { entries: [] },
+    changedRanges: changedBodyRange(),
+  });
+  assert.equal(result.failures.length, 1);
+});
+
+test("body-only changed line intersects the full AST function range", () => {
   const source = "function fixture() {\n  const first = 1;\n  return first;\n}";
   const metadata = createFunctionMetadataResolver("fixture.ts", source)(1, "Function 'fixture'");
   assert.deepEqual(metadata, { functionIdentity: "named:fixture#1", startLine: 1, endLine: 4 });

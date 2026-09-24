@@ -83,8 +83,9 @@ test("keeps the existing compact badge metadata in the extracted InfiniteBadge v
     "diff --git a/apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx b/apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
     "--- a/apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
     "+++ b/apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
-    "@@ -1,0 +2 @@",
-    "+<p className=\"text-[10px]\">Rang existant</p>",
+    "@@ -1,0 +2,2 @@",
+    "+<p className={`text-[10px] font-black ${model.styles.text}`}>{model.displayRank}</p>",
+    "+<div className=\"flex items-center justify-between text-[11px] font-bold\">Progression</div>",
   ].join("\n"));
   const otherSurface = analyzeDiff([
     "diff --git a/apps/web/src/components/gamification/other.tsx b/apps/web/src/components/gamification/other.tsx",
@@ -95,8 +96,22 @@ test("keeps the existing compact badge metadata in the extracted InfiniteBadge v
   ].join("\n"));
 
   assert.equal(badge.violations.length, 0);
-  assert.equal(badge.allowlisted.length, 1);
+  assert.equal(badge.allowlisted.length, 2);
   assert.equal(otherSurface.violations.length, 1);
+});
+
+test("rejects arbitrary new small text elsewhere in InfiniteBadgeView", () => {
+  const result = analyzeDiff([
+    "diff --git a/apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx b/apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
+    "--- a/apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
+    "+++ b/apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
+    "@@ -1,0 +2,2 @@",
+    "+<p className=\"text-[10px]\">Nouveau texte</p>",
+    "+<p className=\"text-[11px]\">Autre nouveau texte</p>",
+  ].join("\n"));
+
+  assert.equal(result.violations.length, 2);
+  assert.equal(result.allowlisted.length, 0);
 });
 
 test("rejects new navigation truncation", () => {

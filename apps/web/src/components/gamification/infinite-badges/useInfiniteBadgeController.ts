@@ -11,6 +11,10 @@ type Milestone = {
   family?: BadgeFamily;
 };
 
+export function shouldEmitMilestone(previousLevel: number | null, level: number) {
+  return previousLevel !== null && level > previousLevel;
+}
+
 export function useInfiniteBadgeController(
   level: number,
   title: string,
@@ -26,7 +30,7 @@ export function useInfiniteBadgeController(
     const previousLevel = previousLevelRef.current;
     previousLevelRef.current = level;
 
-    if (previousLevel !== null && level > previousLevel) {
+    if (shouldEmitMilestone(previousLevel, level)) {
       onMilestoneReached?.({ level, title, icon, rank, family });
     }
   }, [family, icon, level, onMilestoneReached, rank, title]);
