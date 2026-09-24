@@ -98,17 +98,33 @@ const PRIVATE_SECTION_IDS: ReadonlySet<string> = new Set([
 
 export type SeoRedirectSource = keyof typeof SEO_REDIRECT_TARGETS;
 
+export const SEO_HTTP_REDIRECT_SOURCES = Object.keys(
+  SEO_REDIRECT_TARGETS,
+).filter((source): source is SeoRedirectSource => source !== "/onboarding/localisation");
+
+type SeoRedirectSearchParams =
+  | URLSearchParams
+  | Record<string, string | string[] | undefined>;
+
 function appendPreservedSearchParams(
   target: string,
-  searchParams: Record<string, string | string[] | undefined>,
+  searchParams: SeoRedirectSearchParams,
 ): string {
   const [pathname, query = ""] = target.split("?", 2);
   const params = new URLSearchParams(query);
-  for (const [key, value] of Object.entries(searchParams)) {
-    if (value === undefined) continue;
-    if (params.has(key)) continue;
-    for (const item of Array.isArray(value) ? value : [value]) {
-      params.append(key, item);
+
+  if (searchParams instanceof URLSearchParams) {
+    for (const [key, value] of searchParams) {
+      if (!params.has(key)) {
+        params.append(key, value);
+      }
+    }
+  } else {
+    for (const [key, value] of Object.entries(searchParams)) {
+      if (value === undefined || params.has(key)) continue;
+      for (const item of Array.isArray(value) ? value : [value]) {
+        params.append(key, item);
+      }
     }
   }
   const serialized = params.toString();
@@ -117,7 +133,7 @@ function appendPreservedSearchParams(
 
 export function buildSeoRedirectTarget(
   source: SeoRedirectSource,
-  searchParams: Record<string, string | string[] | undefined>,
+  searchParams: SeoRedirectSearchParams,
 ): string {
   return appendPreservedSearchParams(SEO_REDIRECT_TARGETS[source], searchParams);
 }

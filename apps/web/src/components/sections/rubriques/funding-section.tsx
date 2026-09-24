@@ -36,9 +36,10 @@ const CATEGORY_BULLETS: Record<FundingCategory, { fr: string[]; en: string[] }> 
 
 type FundingSectionProps = {
   onParticipeUrl?: string;
+  headingLevel?: "h1" | "h2";
 };
 
-export function FundingSection({ onParticipeUrl }: FundingSectionProps) {
+export function FundingSection({ onParticipeUrl, headingLevel = "h1" }: FundingSectionProps) {
   const { locale } = useSitePreferences();
   const searchParams = useSearchParams();
   const fr = locale === "fr";
@@ -123,6 +124,7 @@ export function FundingSection({ onParticipeUrl }: FundingSectionProps) {
         ? "Des contributions volontaires pour les actions terrain et le développement d’un outil indépendant."
         : "Voluntary contributions for field actions and the development of an independent tool."}
       icon={HandCoins}
+      headingLevel={headingLevel}
       gradient="from-pink-500/20 via-indigo-500/10 to-transparent"
     >
       <div className="space-y-8" data-funding-page>

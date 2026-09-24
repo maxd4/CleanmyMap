@@ -23,6 +23,7 @@ describe("ReportsPageV2Layout", () => {
       markup.indexOf('data-testid="reports-tab-content"'),
     );
     expect(markup).toContain("Rapports d’impact");
+    expect(markup.match(/<h1\b/g)).toHaveLength(1);
     expect(markup).toContain('id="reports-tabpanel-analysis"');
   });
 });

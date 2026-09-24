@@ -180,7 +180,7 @@ function ActionsMapPageContent({
 
           <PageHeader
             family={pageFamily}
-            title="Cartographie des actions"
+            title={null}
             subtitle={
               scoreScope === "department"
                 ? "Les couleurs montrent le score relatif réel de chaque action par rapport à la référence de son département. Ce score n'est pas projeté dans le temps."

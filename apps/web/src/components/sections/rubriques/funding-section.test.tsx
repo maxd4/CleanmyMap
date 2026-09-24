@@ -20,6 +20,7 @@ describe("FundingSection", () => {
   it("renders both public categories without exposing payment selection or Checkout", () => {
     const markup = renderToStaticMarkup(<FundingSection />);
 
+    expect(markup.match(/<h1\b/g)).toHaveLength(1);
     expect(markup).toContain("Soutenir CleanMyMap");
     expect(markup).toContain("Matériel pour les actions terrain");
     expect(markup).toContain("Développement et fonctionnement");
