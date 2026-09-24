@@ -26,6 +26,13 @@ export {
   mapItemShouldRenderPoint,
 } from "./contracts/contract-mappers";
 
+export {
+  toPublicActionListItem,
+  toPublicActionListResponse,
+  toPublicActionMapItem,
+  toPublicActionMapResponse,
+} from "./public-dto";
+
 export type { ActionContractCreatePayload } from "./contracts/contract-builders";
 export {
   toContractCreatePayload,

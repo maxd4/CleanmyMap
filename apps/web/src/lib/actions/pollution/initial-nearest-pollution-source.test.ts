@@ -45,5 +45,6 @@ describe("initial nearest pollution source", () => {
       source: "trash_spotter_spots",
       record_type: "other",
     });
+    expect(items[0]).not.toHaveProperty("created_by_clerk_id");
   });
 });

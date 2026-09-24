@@ -5,7 +5,7 @@ import {
   parseMapActionsParams,
 } from "@/lib/actions/map/map-route";
 import { buildActionInsights } from "@/lib/actions/insights";
-import { toActionMapItem } from "@/lib/actions/data-contract";
+import { toPublicActionMapItem, toPublicActionMapResponse } from "@/lib/actions/data-contract";
 import { fetchUnifiedActionContracts, parseEntityTypesParam } from "@/lib/actions/unified-source";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { filterActionContractsByScope } from "@/lib/reports/scope";
@@ -17,7 +17,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAP_ACTIONS_SNAPSHOT_TTL_MINUTES = 15;
-const MAP_ACTIONS_SNAPSHOT_VERSION = "public-map-actions-v2";
+const MAP_ACTIONS_SNAPSHOT_VERSION = "public-map-actions-v3";
 
 function buildMapActionsSnapshotKey(url: URL): string {
   const parsed = parseMapActionsParams(url, parseEntityTypesParam);
@@ -49,7 +49,7 @@ async function buildMapActionsPayload(url: URL) {
     fetchUnifiedActionContracts,
     parseEntityTypesParam,
     buildActionInsights,
-    toActionMapItem,
+    toActionMapItem: toPublicActionMapItem,
     filterActionContractsByScope,
   });
 
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     // send this response through the persistent public snapshot stores.
     if (isGeolocatedMapRequest(url)) {
       const result = await buildMapActionsPayload(url);
-      const payload = filterPublicMapResponse(result.body);
+      const payload = toPublicActionMapResponse(filterPublicMapResponse(result.body));
       return NextResponse.json(
         payload,
         payload.partialSource
@@ -87,7 +87,7 @@ export async function GET(request: Request) {
       },
     });
 
-    const payload = filterPublicMapResponse(snapshot.payload);
+    const payload = toPublicActionMapResponse(filterPublicMapResponse(snapshot.payload));
     return NextResponse.json(
       payload,
       payload.partialSource

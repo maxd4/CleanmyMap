@@ -12,7 +12,11 @@ vi.mock("@/lib/actions/unified-source", () => ({
   parseEntityTypesParam: vi.fn(),
 }));
 vi.mock("@/lib/actions/insights", () => ({ buildActionInsights: vi.fn() }));
-vi.mock("@/lib/actions/data-contract", () => ({ toActionMapItem: vi.fn() }));
+vi.mock("@/lib/actions/data-contract", () => ({
+  toActionMapItem: vi.fn(),
+  toPublicActionMapItem: vi.fn(),
+  toPublicActionMapResponse: (payload: unknown) => payload,
+}));
 vi.mock("@/lib/reports/scope", () => ({ filterActionContractsByScope: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: vi.fn() }));
 vi.mock("@/lib/http/api-errors", () => ({
@@ -36,7 +40,12 @@ describe("GET /api/actions/map persistence boundary", () => {
         count: 2,
         daysWindow: 30,
         items: [
-          { id: "approved", status: "approved" },
+          {
+            id: "approved",
+            status: "approved",
+            created_by_clerk_id: "internal-owner",
+            contract: { createdByClerkId: "internal-owner" },
+          },
           { id: "pending", status: "pending" },
         ],
         partialSource: false,
@@ -84,10 +93,23 @@ describe("GET /api/actions/map persistence boundary", () => {
       );
 
       expect(response.status).toBe(200);
-      expect(await response.json()).toMatchObject({
+      const payload = await response.json();
+      expect(payload).toMatchObject({
         count: 1,
         items: [{ id: "approved", status: "approved" }],
       });
+      expect(payload.items[0]).not.toHaveProperty("created_by_clerk_id");
+      expect(payload.items[0].contract).not.toHaveProperty("createdByClerkId");
     },
   );
+
+  it("bumps the public map snapshot contract version", async () => {
+    const { GET } = await import("./route");
+
+    await GET(new Request("http://localhost/api/actions/map?days=30"));
+
+    expect(loadOrRefreshPublicSurfaceSnapshotMock.mock.calls[0][0].version).toBe(
+      "public-map-actions-v3",
+    );
+  });
 });
