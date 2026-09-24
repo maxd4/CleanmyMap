@@ -11,6 +11,7 @@ export function WebSiteJsonLd() {
     "@type": "WebSite",
     url: appUrl,
     name: "CleanMyMap",
+    alternateName: ["cleanmymap.fr", "CMM"],
     description:
       "La carte citoyenne de dépollution urbaine partout en France. CleanMyMap centralise les signalements, les cleanwalks et les actions de terrain.",
     potentialAction: {
