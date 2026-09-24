@@ -8,6 +8,7 @@
 - **Type fonctionnel** : erreur
 - **Famille / bloc fonctionnel** : Système & Utilitaires (hors bloc)
 - **Statut** : erreur
+- **Contrat SEO** : `ACCESS=PUBLIC`, `SEARCH=NOINDEX`, `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Une erreur ou un quota ne constitue pas une page éditoriale indexable.
 - **Contexte nécessaire** : Contexte d'erreur ou de quota déclenché par le système
 - **Objectif utilisateur principal** : Exposer des outils de support, de contrôle ou de prévisualisation.
 - **Action principale attendue** : Configurer, comparer ou vérifier un état technique.

@@ -14,6 +14,10 @@ La présentation détaillée décrit la section `/sections/gamification`. L URL 
 
 La route canonique reste publique et affiche un soft-gate aux visiteurs anonymes. Le lien « Se connecter » ouvre `/sign-in?redirect_url=%2Fsections%2Fgamification`; après une authentification Clerk reconnue, le retour s'effectue sur `/sections/gamification` et le contenu authentifié est rendu.
 
+**Contrat SEO** : `ACCESS=PRIVATE`, `SEARCH=NOINDEX`,
+`DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Le soft-gate décrit la
+présentation anonyme ; il ne rend pas la progression personnelle indexable.
+
 ## Arborescence canonique
 
 La rubrique suit la convention globale de `pages_site`.

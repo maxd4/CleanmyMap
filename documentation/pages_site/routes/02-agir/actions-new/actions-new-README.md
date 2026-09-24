@@ -8,6 +8,7 @@
 - **Type fonctionnel** : page d'action
 - **Famille / bloc fonctionnel** : Agir (bloc)
 - **Accès runtime** : `clerk-context` ; l'entrée et la préparation des parcours sont accessibles au visiteur sans compte. La route fournit le contexte Clerk sans hard gate de page ; le compte est demandé lorsque l'identité est nécessaire pour créer, compléter ou envoyer une action.
+- **Contrat SEO** : `ACCESS=HYBRID`, `SEARCH=INDEX`, `DISCOVERY=SITEMAP`, `CANONICAL=SELF`. La préparation est lisible sans compte ; les mutations, la persistance et les données personnelles restent protégées.
 - **Objectif utilisateur principal** : Préparer une action avant terrain ou compléter ses résultats après réalisation.
 - **Action principale attendue** : Utiliser le shell unique de création : le `Pré-formulaire` expose la préparation et les panneaux optionnels itinéraire, météo & conditions terrain et formalités & autorisations locales ; le `Formulaire` expose directement le formulaire complet.
 - **Règle de séparation** : le parcours avant action prépare seulement l'organisation; les champs de récolte, d'impact et de validation scientifique restent réservés au formulaire complet après action.

@@ -47,6 +47,140 @@ lui seul la conformité sémantique du contenu des fiches.
 | `dynamic` | route paramétrée |
 | `redirect` | redirection ou alias technique |
 
+## Contrat ACCESS / SEARCH / DISCOVERY / CANONICAL
+
+La taxonomie d'accès ci-dessus décrit le rendu et le contrôle d'accès runtime.
+Elle ne décide pas à elle seule de l'indexabilité. Le contrat SEO durable
+distingue donc quatre axes indépendants :
+
+| Axe | Valeurs | Question traitée |
+| --- |---|---|
+| ACCESS | `PUBLIC`, `HYBRID`, `PRIVATE` | Qui peut lire la surface et quelles capacités restent protégées ? |
+| SEARCH | `INDEX`, `NOINDEX` | La page peut-elle être proposée dans les résultats de recherche ? |
+| DISCOVERY | `SITEMAP`, `INTERNAL_ONLY`, `REDIRECT` | Comment la route doit-elle être découverte ? |
+| CANONICAL | `SELF`, `TARGET`, `NONE` | Quelle URL porte le signal canonique ? |
+
+`PUBLIC` signifie qu'aucune session n'est nécessaire pour lire la surface.
+`HYBRID` signifie qu'une lecture ou une préparation publique coexiste avec des
+mutations, des exports, des données personnelles ou des capacités soumises à
+AuthN/AuthZ. `PRIVATE` désigne une surface personnelle, métier, partenaire,
+administrative ou autrement protégée. Ces valeurs ne remplacent pas les
+contrôles runtime : elles les décrivent avec le contrat de recherche.
+
+Les lignes ci-dessous décrivent l'arbitrage documentaire cible. Le code du
+sitemap, des métadonnées et des redirects sera aligné dans un lot technique
+ultérieur ; cette matrice ne prétend pas avoir déjà modifié le runtime.
+
+### Pages publiques et hybrides indexables
+
+| Route | ACCESS | SEARCH | DISCOVERY | CANONICAL |
+| --- |---|---|---|---|
+| / | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /actions/map | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /actions/new | `HYBRID` | `INDEX` | `SITEMAP` | `SELF` |
+| /signalement | `HYBRID` | `INDEX` | `SITEMAP` | `SELF` |
+| /reports | `HYBRID` | `INDEX` | `SITEMAP` | `SELF` |
+| /methodologie | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /explorer | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /learn/bonnes-pratiques | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /learn/comprendre | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /learn/ecole | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /learn/sentrainer | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /sections/actors | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /sections/annuaire | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /sections/climate | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /sections/compost | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /sections/community | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /sections/funding | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /sections/open-data | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /sections/recycling | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /sections/rejoindre-une-action | `HYBRID` | `INDEX` | `SITEMAP` | `SELF` |
+| /conditions-generales-utilisation | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /mentions-legales | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /politique-confidentialite | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /politique-cookies | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /contact | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /signaler-contenu-illicite | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+
+Les capacités d'envoi, de modification, d'export et de consultation des
+données personnelles restent protégées sur les pages `HYBRID`. Une page
+hybride indexable ne rend donc pas ses données privées anonymement accessibles.
+
+### Pages accessibles sans session mais volontairement non indexées
+
+| Route ou motif | ACCESS | SEARCH | DISCOVERY | CANONICAL |
+| --- |---|---|---|---|
+| /sections/feedback | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /sign-in | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /sign-up | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /error/429 | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /declaration-simple | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /preview/actions/new | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /docs/* | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+
+Ces routes peuvent être atteintes par un lien direct ou un workflow interne,
+mais ne constituent pas des pages de recherche autonomes.
+
+### Surfaces privées
+
+| Route ou motif | ACCESS | SEARCH | DISCOVERY | CANONICAL |
+| --- |---|---|---|---|
+| /dashboard | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /compte/evolution | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /parcours et /parcours/* | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /profil et /profil/* | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /actions/history | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /missions/* | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /onboarding | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /reglages | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /admin et /admin/* | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /pilotage | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /sponsor-portal | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /partners/dashboard et /partners/onboarding | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /prints/report | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /sections/elus | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /sections/gamification | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+| /sections/messagerie | `PRIVATE` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
+
+### Cas provisoire : Trash Spotter
+
+`/sections/trash-spotter` reste provisoirement `HYBRID`, `NOINDEX`,
+`INTERNAL_ONLY`, `NONE`. L'aperçu et l'exposition actuelle ne sont pas modifiés
+par ce lot. La dette explicite est
+`PUBLICATION_RIGHTS_DECISION_REQUIRED` : une décision produit doit confirmer
+les droits de publication avant toute ouverture SEO ou modification de données.
+
+### Redirects et alias
+
+Les routes suivantes sont des compatibilités techniques, pas des pages SEO
+autonomes. Leur canonical est la cible réelle et leur découverte relève de la
+redirection :
+
+| Route | Cible | ACCESS | SEARCH | DISCOVERY | CANONICAL |
+| --- |---|---|---|---|---|
+| /en | `/explorer` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /conditions-utilisation | `/conditions-generales-utilisation` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /declaration | `/actions/new` | `HYBRID` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /community | `/sections/community` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /open-data | `/sections/open-data` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /messagerie | `/sections/messagerie` | `PRIVATE` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /gamification | `/sections/gamification` | `PRIVATE` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /sections/dm | `/sections/messagerie?tab=dm` | `PRIVATE` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /sections/guide | `/actions/new?panel=meteo` | `HYBRID` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /sections/route | `/actions/new?panel=itineraire` | `HYBRID` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /sections/weather | `/actions/new?panel=meteo` | `HYBRID` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /sections/rejoindre-un-formulaire | `/sections/rejoindre-une-action` | `HYBRID` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /partners/network | `/sections/community?tab=partners` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /partners/network/pepite | `/sections/community?tab=partners` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /onboarding/localisation | `/onboarding` | `PRIVATE` | `NOINDEX` | `REDIRECT` | `TARGET` |
+
+`/en` n'est pas une version anglaise : aucune page anglaise autonome n'existe
+actuellement et cette route ne doit pas être annoncée comme une version
+`hreflang` `en-US`.
+
+Il n'existe actuellement aucune page canonique `/learn`. Les pages
+`/learn/*` portent chacune leur canonical propre.
+
 ## Homepage
 
 | Route | Fiche | Accès | Famille | Source |

@@ -45,8 +45,10 @@ Ce document définit la stratégie de visibilité web pour CleanMyMap, la diffé
 - `apps/web/src/app/**/page.tsx` - Métadonnées par page
 
 ### Sitemap et robots
-- `apps/web/src/app/sitemap.ts` - Liste canonique des pages publiques (27 URLs
-  actuellement, dont les sections publiques du registre)
+- `apps/web/src/app/sitemap.ts` - Projection technique du périmètre `SITEMAP`
+  défini dans l'index maître des pages ; les anciens repères de 16 ou 27 URLs
+  ne sont pas un contrat durable et ne doivent plus être cités comme état
+  cible.
 - `apps/web/src/app/robots.ts` - Directives crawl + AI bots
 
 Le sitemap n'expose `lastModified` que lorsqu'une date réelle de modification
@@ -64,9 +66,31 @@ rendus par le runtime et ne constituent pas une preuve de contenus publiés.
 Un schema FAQ, avis, événement, article, vidéo ou guide doit être relié à une
 source réelle et décrire le contenu effectivement visible sur la page.
 
+## Contrat route-first
+
+La matrice durable `ACCESS / SEARCH / DISCOVERY / CANONICAL` se trouve dans
+[`documentation/pages_site/INDEX.md`](../pages_site/INDEX.md). Elle est la
+référence pour arbitrer une page avant toute modification du sitemap, des
+robots, des metadata ou des redirects. Les valeurs runtime
+`public-visible`, `clerk-context`, `blur`, `disabled` et `protected` décrivent
+l'accès ou la présentation ; elles ne suffisent pas à conclure à
+l'indexabilité.
+
+Les routes hybrides `/actions/new`, `/signalement`, `/reports` et
+`/sections/rejoindre-une-action` sont indexables selon cette matrice, tout en
+conservant leurs mutations et données personnelles derrière AuthN/AuthZ. Les
+routes privées et utilitaires non indexables restent hors sitemap. `/en` est un
+alias vers `/explorer` et ne correspond à aucune version anglaise `en-US` ;
+aucune page canonique `/learn` n'existe actuellement.
+
 ## Maintenance SEO
 
 ### SEARCH_CONSOLE_MONTHLY
+
+Google Search Console est **ACTIVE et validée** pour
+`https://cleanmymap.fr/`. La homepage est indexée et Google reconnaît la
+canonical `https://cleanmymap.fr/`. Cette information est un état externe
+observé ; le dépôt ne simule aucune action Search Console.
 
 - [ ] Ouvrir Google Search Console pour `https://cleanmymap.fr/`
 - [ ] Vérifier `Pages / Indexation`
@@ -116,8 +140,10 @@ modification majeure de contenu ou un changement d'identité SEO.
 | /learn/comprendre | ✅ | - |
 | /learn/bonnes-pratiques | ✅ | - |
 | /mentions-legales | ✅ | - |
-| /en | Alias | Redirection vers `/explorer`, pas une page canonique |
-| /actions/new | Privée / noindex | Hors périmètre SEO public |
+| /en | Alias | Redirection vers `/explorer`, pas une page canonique ni un `hreflang` `en-US` |
+| /actions/new | Hybride indexable | La préparation est publique ; les mutations et données personnelles restent protégées |
+| /signalement | Hybride indexable | La préparation est publique ; la transmission, les preuves et la boucle propriétaire restent protégées |
+| /sections/rejoindre-une-action | Hybride indexable | La lecture est publique ; rejoindre et traiter une demande restent protégés |
 | /dashboard | Privée / noindex | Hors périmètre SEO public |
 | /profil | Privée / noindex | Hors périmètre SEO public |
 

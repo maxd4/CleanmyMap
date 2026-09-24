@@ -9,6 +9,7 @@
 - **Type fonctionnel** : rubrique cliquable — feedback
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Statut** : public
+- **Contrat SEO** : `ACCESS=PUBLIC`, `SEARCH=NOINDEX`, `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Le feedback reste accessible par les parcours du produit, sans devenir une page de recherche autonome.
 - **Contexte nécessaire** : Aucun
 - **Objectif utilisateur principal** : Partager un bug, une amélioration ou une proposition de collaboration.
 - **Action principale attendue** : Ouvrir la rubrique, choisir le bon questionnaire puis envoyer le retour.

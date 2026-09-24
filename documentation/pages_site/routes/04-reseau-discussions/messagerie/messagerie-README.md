@@ -26,6 +26,7 @@
 - **Type fonctionnel** : page de réseau
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Accès runtime** : `auth-blur-gate` ; la surface est floutée avant connexion et l'accès conversationnel reste contrôlé par le contrat Chat.
+- **Contrat SEO** : `ACCESS=PRIVATE`, `SEARCH=NOINDEX`, `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Le flou est une présentation ; l'accès réel aux conversations reste privé.
 - **Objectif utilisateur principal** : Retrouver rapidement un échange privé et poursuivre le fil actif.
 - **Action principale attendue** : Sélectionner une conversation, lire les messages réellement visibles et répondre.
 - **Palette attendue** : pink

@@ -18,10 +18,32 @@ validée**. La homepage est indexée et Google reconnaît la canonical
 actions dans Search Console : les inspections et demandes d’indexation restent
 humaines.
 
+## Contrat de route SEO
+
+Le contrat canonique est défini dans
+[`documentation/pages_site/INDEX.md`](../pages_site/INDEX.md), sous
+`Contrat ACCESS / SEARCH / DISCOVERY / CANONICAL`. Il sépare explicitement :
+
+- `ACCESS` : `PUBLIC`, `HYBRID` ou `PRIVATE` ;
+- `SEARCH` : `INDEX` ou `NOINDEX` ;
+- `DISCOVERY` : `SITEMAP`, `INTERNAL_ONLY` ou `REDIRECT` ;
+- `CANONICAL` : `SELF`, `TARGET` ou `NONE`.
+
+Les libellés runtime `public-visible`, `clerk-context`, `blur`, `disabled` et
+`protected` décrivent l'accès ou la présentation. Ils ne constituent pas à eux
+seuls une décision SEO. Les pages hybrides peuvent être indexables tout en
+conservant leurs mutations, exports et données personnelles derrière
+AuthN/AuthZ. Les routes privées, utilitaires non indexables et alias ne sont
+pas des pages SEO autonomes.
+
+La matrice documentaire fixe la cible produit/SEO. Le sitemap, les metadata,
+les robots et les redirects seront alignés dans les lots techniques dédiés ;
+aucune action Search Console n'est simulée par cette documentation.
+
 ### Ajouter une nouvelle page avec SEO
 
-1. **Décision d’indexabilité** - Décider explicitement si la page est publique,
-   indexable et destinée à être découverte par Google.
+1. **Contrat de route** - Définir explicitement les quatre axes `ACCESS`,
+   `SEARCH`, `DISCOVERY` et `CANONICAL` dans l'index maître des pages.
 2. **Source d’indexabilité** - Pour une page publique indexable, l’ajouter à
    `apps/web/src/lib/seo/indexability.ts` et au sitemap si son URL doit être
    découverte. Une page privée, inachevée ou noindex reste hors sitemap.
@@ -63,6 +85,12 @@ export const metadata: Metadata = {
 
 Pour une page privée ou inachevée, ne pas l’ajouter au sitemap et conserver les
 protections/noindex prévues par le contrat existant.
+
+Pour une route de compatibilité, documenter la cible dans l'index maître et ne
+pas la présenter comme une page canonique autonome. `/en` est actuellement un
+alias vers `/explorer` ; aucune version anglaise canonique ni déclaration
+`hreflang` `en-US` ne doit être inventée. Aucune page canonique `/learn` n'existe
+actuellement.
 
 ### Ajouter un nouveau HowTo
 
