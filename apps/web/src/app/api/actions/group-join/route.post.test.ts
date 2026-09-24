@@ -7,6 +7,7 @@ import {
   getSupabaseServerClientMock,
   makeVisibleGroupAction,
   ParticipantRow,
+  rebuildUserGamificationBadgesMock,
   refreshProgressionProfileMock,
   requireAuthenticatedAccessMock,
 } from "./route.test.helpers";
@@ -88,6 +89,7 @@ describe("POST /api/actions/group-join", () => {
     expect(body.alreadyJoined).toBe(false);
     expect(body.participationStatus).toBe("pending");
     expect(body.participantsCount).toBe(0);
+    expect(rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
     expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
   });
 
@@ -127,6 +129,7 @@ describe("POST /api/actions/group-join", () => {
     expect(body.alreadyJoined).toBe(false);
     expect(body.participationStatus).toBe("pending");
     expect(body.participantsCount).toBe(0);
+    expect(rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
     expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
   });
 
@@ -227,6 +230,7 @@ describe("POST /api/actions/group-join", () => {
     expect(body.participantsCount).toBe(0);
     expect(participants[0]?.participation_status).toBe("pending");
       expect(participants[0]?.participation_source).toBe("group_form");
+    expect(rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
     expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
     },
   );

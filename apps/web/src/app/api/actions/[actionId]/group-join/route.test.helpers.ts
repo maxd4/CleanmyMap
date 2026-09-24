@@ -1,35 +1,30 @@
 import { vi } from "vitest";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
-
-const authMock = vi.hoisted(() => vi.fn());
-const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
-const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
-const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
-const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
-const refreshProgressionProfileMock = vi.hoisted(() => vi.fn());
-const appendActionModerationAuditMock = vi.hoisted(() => vi.fn());
-
+const authMock=vi.hoisted(()=>vi.fn());
+const requireAuthenticatedAccessMock=vi.hoisted(()=>vi.fn());
+const getCurrentUserIdentityMock=vi.hoisted(()=>vi.fn());
+const getSupabaseServerClientMock=vi.hoisted(()=>vi.fn());
+const loadActionOrganizerIdsForActionMock=vi.hoisted(()=>vi.fn());
+const rebuildUserGamificationBadgesMock = vi.hoisted(()=>vi.fn(async()=>({inserted:0})));
+const refreshProgressionProfileMock=vi.hoisted(()=>vi.fn());
+const appendActionModerationAuditMock=vi.hoisted(()=>vi.fn());
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
 }));
-
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
   requireAuthenticatedAccess: requireAuthenticatedAccessMock,
 }));
-
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
 }));
-
 vi.mock("@/lib/actions/participation/organizers", () => ({
   loadActionOrganizerIdsForAction: loadActionOrganizerIdsForActionMock,
 }));
-
 vi.mock("@/lib/gamification/progression-tracking", () => ({
   refreshProgressionProfile: refreshProgressionProfileMock,
 }));
-
+vi.mock("@/lib/gamification/badges/rebuild", () => ({ rebuildUserGamificationBadges: rebuildUserGamificationBadgesMock }));
 vi.mock("@/lib/actions/moderation-audit", () => ({
   appendActionModerationAudit: appendActionModerationAuditMock,
   normalizeModerationReason: (value: unknown, options?: { required?: boolean }) => {
@@ -43,77 +38,14 @@ vi.mock("@/lib/actions/moderation-audit", () => ({
     return normalized;
   },
 }));
-
-export type GroupJoinActionRow = {
-  id: string;
-  created_by_clerk_id: string | null;
-  status: "pending" | "approved" | "rejected";
-  notes: string | null;
-  action_phase?: "pre_action" | "post_action_draft" | "post_action_complete";
-  published_at?: string | null;
-  moderation_visibility?: "visible" | "hidden" | null;
-  action_date?: string;
-  event_start_time?: string | null;
-};
-
-export type GroupJoinParticipantRow = {
-  id: string;
-  created_at: string;
-  updated_at?: string;
-  action_id: string;
-  user_id: string;
-  joined_at?: string;
-  participation_status?: "pending" | "confirmed" | "cancelled";
-  participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim";
-  registered_at?: string;
-  registration_status?: "pending" | "confirmed" | "cancelled";
-  registration_source?: "group_form" | "admin" | "admin_override" | "import";
-};
-
-export type GroupJoinProfileRow = {
-  id: string;
-  display_name: string | null;
-  handle: string | null;
-};
-
-export type GroupJoinSupabaseErrors = {
-  actionLookup?: string;
-  actionUpdate?: string;
-  participantLookup?: string;
-  participantUpdate?: string;
-  participantInsert?: string;
-  participantCount?: string;
-};
-
+export type GroupJoinActionRow = { id: string; created_by_clerk_id: string | null; status: "pending" | "approved" | "rejected"; notes: string | null; action_phase?: "pre_action" | "post_action_draft" | "post_action_complete"; published_at?: string | null; moderation_visibility?: "visible" | "hidden" | null; action_date?: string; event_start_time?: string | null };
+export type GroupJoinParticipantRow = { id: string; created_at: string; updated_at?: string; action_id: string; user_id: string; joined_at?: string; participation_status?: "pending" | "confirmed" | "cancelled"; participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim"; registered_at?: string; registration_status?: "pending" | "confirmed" | "cancelled"; registration_source?: "group_form" | "admin" | "admin_override" | "import" };
+export type GroupJoinProfileRow = { id: string; display_name: string | null; handle: string | null };
+export type GroupJoinSupabaseErrors = { actionLookup?: string; actionUpdate?: string; participantLookup?: string; participantUpdate?: string; participantInsert?: string; participantCount?: string };
 type GroupJoinRegistrationSource = "group_form" | "admin" | "admin_override" | "import";
-
-function toRegistrationSource(
-  source: GroupJoinParticipantRow["participation_source"] | GroupJoinRegistrationSource | undefined,
-): GroupJoinRegistrationSource {
-  return source === "post_action_claim" || !source ? "group_form" : source;
-}
-
-export const groupJoinMocks = {
-  authMock,
-  requireAuthenticatedAccessMock,
-  getCurrentUserIdentityMock,
-  getSupabaseServerClientMock,
-  loadActionOrganizerIdsForActionMock,
-  refreshProgressionProfileMock,
-  appendActionModerationAuditMock,
-};
-
-export function createGroupJoinAction(params: {
-  id?: string;
-  createdByClerkId?: string | null;
-  status?: GroupJoinActionRow["status"];
-  notes?: string | null;
-  groupJoinEnabled?: boolean;
-  actionPhase?: GroupJoinActionRow["action_phase"];
-  actionDate?: string;
-  eventStartTime?: string | null;
-  moderationVisibility?: GroupJoinActionRow["moderation_visibility"];
-}): GroupJoinActionRow {
+function toRegistrationSource(source: GroupJoinParticipantRow["participation_source"] | GroupJoinRegistrationSource | undefined): GroupJoinRegistrationSource { return source === "post_action_claim" || !source ? "group_form" : source; }
+export const groupJoinMocks = { authMock,requireAuthenticatedAccessMock,getCurrentUserIdentityMock,getSupabaseServerClientMock,loadActionOrganizerIdsForActionMock,rebuildUserGamificationBadgesMock,refreshProgressionProfileMock,appendActionModerationAuditMock };
+export function createGroupJoinAction(params: { id?: string; createdByClerkId?: string | null; status?: GroupJoinActionRow["status"]; notes?: string | null; groupJoinEnabled?: boolean; actionPhase?: GroupJoinActionRow["action_phase"]; actionDate?: string; eventStartTime?: string | null; moderationVisibility?: GroupJoinActionRow["moderation_visibility"] }): GroupJoinActionRow {
   return {
     id: params.id ?? "action-1",
     created_by_clerk_id: params.createdByClerkId ?? "user-1",
@@ -130,20 +62,7 @@ export function createGroupJoinAction(params: {
       }),
   };
 }
-
-export function createGroupJoinParticipant(params: {
-  id?: string;
-  created_at: string;
-  updated_at?: string;
-  action_id: string;
-  user_id: string;
-  joined_at?: string;
-  participation_status?: "pending" | "confirmed" | "cancelled";
-  participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim";
-  registered_at?: string;
-  registration_status?: "pending" | "confirmed" | "cancelled";
-  registration_source?: "group_form" | "admin" | "admin_override" | "import";
-}): GroupJoinParticipantRow {
+export function createGroupJoinParticipant(params: { id?: string; created_at: string; updated_at?: string; action_id: string; user_id: string; joined_at?: string; participation_status?: "pending" | "confirmed" | "cancelled"; participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim"; registered_at?: string; registration_status?: "pending" | "confirmed" | "cancelled"; registration_source?: "group_form" | "admin" | "admin_override" | "import" }): GroupJoinParticipantRow {
   return {
     id: params.id ?? `participant-${params.user_id}`,
     created_at: params.created_at,
@@ -158,26 +77,10 @@ export function createGroupJoinParticipant(params: {
     registration_source: toRegistrationSource(params.registration_source ?? params.participation_source),
   };
 }
-
-export function createGroupJoinProfile(params: {
-  id: string;
-  display_name: string | null;
-  handle: string | null;
-}): GroupJoinProfileRow {
-  return {
-    id: params.id,
-    display_name: params.display_name,
-    handle: params.handle,
-  };
+export function createGroupJoinProfile(params: { id: string; display_name: string | null; handle: string | null }): GroupJoinProfileRow {
+  return { id: params.id,display_name: params.display_name,handle: params.handle };
 }
-
-export function createGroupJoinSupabaseMock(params: {
-  action: GroupJoinActionRow;
-  participants?: GroupJoinParticipantRow[];
-  registrations?: GroupJoinParticipantRow[];
-  profiles?: GroupJoinProfileRow[];
-  errors?: GroupJoinSupabaseErrors;
-}) {
+export function createGroupJoinSupabaseMock(params: { action: GroupJoinActionRow; participants?: GroupJoinParticipantRow[]; registrations?: GroupJoinParticipantRow[]; profiles?: GroupJoinProfileRow[]; errors?: GroupJoinSupabaseErrors }) {
   return {
     rpc: vi.fn(async () => ({ data: "conversation-test", error: null })),
     from: vi.fn((table: string) => {
@@ -201,7 +104,6 @@ export function createGroupJoinSupabaseMock(params: {
     }),
   };
 }
-
 export function seedGroupJoinTestDefaults() {
   vi.resetModules();
   vi.clearAllMocks();
@@ -220,7 +122,6 @@ export function seedGroupJoinTestDefaults() {
   loadActionOrganizerIdsForActionMock.mockResolvedValue(["user-1"]);
   refreshProgressionProfileMock.mockResolvedValue(undefined);
 }
-
 function createActionsChain(
   action: GroupJoinActionRow,
   errors?: GroupJoinSupabaseErrors,
@@ -230,12 +131,7 @@ function createActionsChain(
     pendingNotes: undefined as string | null | undefined,
     requestedId: null as string | null,
   };
-
-  type SingleResult<T> = {
-    data: T | null;
-    error: { message: string } | null;
-  };
-
+  type SingleResult<T> = { data: T | null; error: { message: string } | null };
   type ActionChain = {
     select: (columns: string) => ActionChain;
     eq: (field: string, value: string) => ActionChain;
@@ -256,7 +152,6 @@ function createActionsChain(
       notes: string | null;
     }>>;
   };
-
   const chain: ActionChain = {
     select: vi.fn(() => chain),
     eq: vi.fn((field: string, value: string) => {
@@ -307,10 +202,8 @@ function createActionsChain(
       };
     }),
   };
-
   return chain;
 }
-
 function createParticipantsChain(
   participants: GroupJoinParticipantRow[],
   errors?: GroupJoinSupabaseErrors,
@@ -330,7 +223,6 @@ function createParticipantsChain(
     countRequested: false,
     limitValue: null,
   };
-
   const normalizeRow = (row: GroupJoinParticipantRow) => ({
     ...row,
     joined_at: row.joined_at ?? row.created_at,
@@ -341,7 +233,6 @@ function createParticipantsChain(
     registration_source: toRegistrationSource(row.registration_source ?? row.participation_source),
   });
   const statusField = table === "registrations" ? "registration_status" : "participation_status";
-
   const buildFiltered = () =>
     participants.filter((row) => {
       const normalized = normalizeRow(row);
@@ -374,17 +265,11 @@ function createParticipantsChain(
       }
       return true;
     });
-
-  type ManyResult<T> = {
-    data: T[];
-    error: null;
-  };
-
+  type ManyResult<T> = { data: T[]; error: null };
   type SingleResult<T> = {
     data: T | null;
     error: { message: string } | null;
   };
-
   type ParticipantChain = {
     select: (columns: string, options?: { count?: string; head?: boolean }) => ParticipantChain;
     eq: (field: string, value: string) => ParticipantChain;
@@ -413,7 +298,6 @@ function createParticipantsChain(
       reject: (reason: unknown) => void,
     ) => Promise<void>;
   };
-
   const chain: ParticipantChain = {
     select: vi.fn((_: string, options?: { count?: string; head?: boolean }) => {
       state.countRequested = Boolean(options?.count || options?.head);
@@ -497,7 +381,6 @@ function createParticipantsChain(
           error: null,
         };
       }
-
       if (state.pendingInsert) {
         const inserting = state.pendingInsert;
         state.pendingInsert = undefined;
@@ -510,7 +393,6 @@ function createParticipantsChain(
           error: null,
         };
       }
-
       const filtered = buildFiltered();
       return {
         data: filtered[0] ? normalizeRow(filtered[0]) : null,
@@ -573,10 +455,8 @@ function createParticipantsChain(
             },
       ).then(resolve, reject),
   };
-
   return chain;
 }
-
 function createProfilesChain(profiles: GroupJoinProfileRow[]) {
   const state: {
     eqFilters: Record<string, string>;
@@ -587,7 +467,6 @@ function createProfilesChain(profiles: GroupJoinProfileRow[]) {
     inFilters: {},
     orExpression: null,
   };
-
   type ProfilesChain = {
     select: (columns: string) => ProfilesChain;
     eq: (field: string, value: string) => ProfilesChain;
@@ -605,7 +484,6 @@ function createProfilesChain(profiles: GroupJoinProfileRow[]) {
       reject: (reason: unknown) => void,
     ) => Promise<void>;
   };
-
   const chain = {
     select: vi.fn(() => chain),
     eq: vi.fn((field: string, value: string) => {
@@ -678,6 +556,5 @@ function createProfilesChain(profiles: GroupJoinProfileRow[]) {
         error: null,
       }).then(resolve, reject),
   } as ProfilesChain;
-
   return chain;
 }

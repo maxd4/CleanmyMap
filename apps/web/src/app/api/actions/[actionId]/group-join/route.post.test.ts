@@ -1,21 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import {
-  createGroupJoinAction,
-  createGroupJoinParticipant,
-  createGroupJoinProfile,
-  createGroupJoinSupabaseMock,
-  groupJoinMocks,
-  seedGroupJoinTestDefaults,
-} from "./route.test.helpers";
-
-const {
-  authMock,
-  getCurrentUserIdentityMock,
-  getSupabaseServerClientMock,
-  appendActionModerationAuditMock,
-  refreshProgressionProfileMock,
-} = groupJoinMocks;
-
+import { createGroupJoinAction, createGroupJoinParticipant, createGroupJoinProfile, createGroupJoinSupabaseMock, groupJoinMocks, seedGroupJoinTestDefaults, type GroupJoinParticipantRow } from "./route.test.helpers";
+const { authMock, getCurrentUserIdentityMock, getSupabaseServerClientMock, appendActionModerationAuditMock, rebuildUserGamificationBadgesMock, refreshProgressionProfileMock } = groupJoinMocks;
 describe("POST /api/actions/:actionId/group-join admin moderation", () => {
   beforeEach(() => {
     seedGroupJoinTestDefaults();
@@ -26,16 +11,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
   });
 
   it("adds a participant directly from search", async () => {
-    const participants: Array<{
-      id: string;
-      created_at: string;
-      updated_at?: string;
-      action_id: string;
-      user_id: string;
-      joined_at?: string;
-      participation_status?: "pending" | "confirmed" | "cancelled";
-      participation_source?: "group_form" | "admin" | "admin_override" | "import";
-    }> = [];
+    const participants: GroupJoinParticipantRow[] = [];
     getSupabaseServerClientMock.mockReturnValue(
       createGroupJoinSupabaseMock({
         action: createGroupJoinAction({
@@ -100,14 +76,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
       role: "elu",
       activeRole: "elu",
     });
-    const participants: Array<{
-      id: string;
-      created_at: string;
-      action_id: string;
-      user_id: string;
-      participation_status?: "pending" | "confirmed" | "cancelled";
-      participation_source?: "group_form" | "admin" | "admin_override" | "import";
-    }> = [];
+    const participants: GroupJoinParticipantRow[] = [];
     getSupabaseServerClientMock.mockReturnValue(
       createGroupJoinSupabaseMock({
         action: createGroupJoinAction({
@@ -144,14 +113,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
       role: "elu",
       activeRole: "admin",
     });
-    const participants: Array<{
-      id: string;
-      created_at: string;
-      action_id: string;
-      user_id: string;
-      participation_status?: "pending" | "confirmed" | "cancelled";
-      participation_source?: "group_form" | "admin" | "admin_override" | "import";
-    }> = [];
+    const participants: GroupJoinParticipantRow[] = [];
     getSupabaseServerClientMock.mockReturnValue(
       createGroupJoinSupabaseMock({
         action: createGroupJoinAction({
@@ -359,14 +321,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
   }, 15000);
 
   it("marks an admin add as partial when the post-update count fails", async () => {
-    const participants: Array<{
-      id: string;
-      created_at: string;
-      action_id: string;
-      user_id: string;
-      participation_status?: "pending" | "confirmed" | "cancelled";
-      participation_source?: "group_form" | "admin" | "admin_override" | "import";
-    }> = [];
+    const participants: GroupJoinParticipantRow[] = [];
     getSupabaseServerClientMock.mockReturnValue(
       createGroupJoinSupabaseMock({
         action: createGroupJoinAction({
@@ -437,7 +392,6 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
     );
   }, 15000);
 });
-
 describe("POST /api/actions/:actionId/group-join", () => {
   beforeEach(() => {
     seedGroupJoinTestDefaults();
@@ -446,7 +400,6 @@ describe("POST /api/actions/:actionId/group-join", () => {
     refreshProgressionProfileMock.mockResolvedValue(undefined);
     appendActionModerationAuditMock.mockResolvedValue(undefined);
   });
-
   it("accepts a pending request", async () => {
     const participants = [
       createGroupJoinParticipant({
@@ -500,6 +453,7 @@ describe("POST /api/actions/:actionId/group-join", () => {
     expect(body.participationStatus).toBe("confirmed");
     expect(body.participationSource).toBe("group_form");
     expect(participants[0]?.participation_status).toBe("confirmed");
+    expect(rebuildUserGamificationBadgesMock).toHaveBeenCalledWith(expect.anything(), "user-2");
     expect(refreshProgressionProfileMock).toHaveBeenCalledWith(expect.anything(), "user-2");
     expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -575,16 +529,7 @@ describe("POST /api/actions/:actionId/group-join", () => {
     groupJoinMocks.loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([
       "organizer-1",
     ]);
-    const participants: Array<{
-      id: string;
-      created_at: string;
-      updated_at?: string;
-      action_id: string;
-      user_id: string;
-      joined_at?: string;
-      participation_status?: "pending" | "confirmed" | "cancelled";
-      participation_source?: "group_form" | "admin" | "admin_override" | "import";
-    }> = [];
+    const participants: GroupJoinParticipantRow[] = [];
     getSupabaseServerClientMock.mockReturnValue(
       createGroupJoinSupabaseMock({
         action: createGroupJoinAction({
@@ -717,8 +662,10 @@ describe("POST /api/actions/:actionId/group-join post-action claims", () => {
     });
     expect(supabase.rpc).not.toHaveBeenCalled();
     if (decision === "accept") {
+      expect(rebuildUserGamificationBadgesMock).toHaveBeenCalledWith(expect.anything(), "user-2");
       expect(refreshProgressionProfileMock).toHaveBeenCalledWith(expect.anything(), "user-2");
     } else {
+      expect(rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
       expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
     }
     expect(appendActionModerationAuditMock).toHaveBeenCalledWith(

@@ -5,12 +5,14 @@ const mocks = vi.hoisted(() => ({
   requireAuthenticatedAccessMock: vi.fn(),
   getCurrentUserIdentityMock: vi.fn(),
   getSupabaseServerClientMock: vi.fn(),
+  rebuildUserGamificationBadgesMock: vi.fn(),
   refreshProgressionProfileMock: vi.fn(),
 }));
 
 export const requireAuthenticatedAccessMock = mocks.requireAuthenticatedAccessMock;
 export const getCurrentUserIdentityMock = mocks.getCurrentUserIdentityMock;
 export const getSupabaseServerClientMock = mocks.getSupabaseServerClientMock;
+export const rebuildUserGamificationBadgesMock = mocks.rebuildUserGamificationBadgesMock;
 export const refreshProgressionProfileMock = mocks.refreshProgressionProfileMock;
 
 beforeEach(() => vi.useFakeTimers({ now: new Date("2026-05-01T09:00:00.000Z") }));
@@ -27,6 +29,10 @@ vi.mock("@/lib/supabase/server", () => ({
 
 vi.mock("@/lib/gamification/progression-tracking", () => ({
   refreshProgressionProfile: mocks.refreshProgressionProfileMock,
+}));
+
+vi.mock("@/lib/gamification/badges/rebuild", () => ({
+  rebuildUserGamificationBadges: mocks.rebuildUserGamificationBadgesMock,
 }));
 
 export type ActionRow = {

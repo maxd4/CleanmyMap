@@ -73,6 +73,7 @@ describe("POST /api/actions/:actionId/participation-claim", () => {
       participation_status: "pending",
       participation_source: "post_action_claim",
     });
+    expect(groupJoinMocks.rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
 
     const secondResponse = await POST(
       new Request("http://localhost/api/actions/action-1/participation-claim", {
