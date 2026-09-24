@@ -9,6 +9,7 @@
 - **Type fonctionnel** : authentification
 - **Famille / bloc fonctionnel** : Auth & Onboarding (hors bloc)
 - **Statut** : auth
+- **Contrat SEO** : `ACCESS=PUBLIC`, `SEARCH=NOINDEX`, `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. La page est accessible anonymement uniquement comme entrée d'inscription.
 - **Contexte nécessaire** : Page d'entrée d'authentification ou de configuration initiale
 - **Objectif utilisateur principal** : Créer un compte CleanMyMap puis accéder à sa configuration initiale.
 - **Action principale attendue** : S'inscrire via Clerk ou basculer vers `/sign-in` pour reprendre un compte existant.

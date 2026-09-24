@@ -5,6 +5,7 @@
 - **Route** : `/sections/rejoindre-une-action`
 - **Famille** : Agir
 - **Accès lecture** : `public-visible`
+- **Contrat SEO** : `ACCESS=HYBRID`, `SEARCH=INDEX`, `DISCOVERY=SITEMAP`, `CANONICAL=SELF`. La lecture des actions publiées est publique ; rejoindre, annuler et traiter une demande restent protégés.
 - **Compte requis** : oui pour rejoindre, annuler ou traiter une demande
 - **Palette runtime** : agir / emerald
 - **Exception page-family** : `join-action`

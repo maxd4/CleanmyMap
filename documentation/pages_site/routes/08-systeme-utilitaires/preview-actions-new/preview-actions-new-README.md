@@ -8,6 +8,7 @@
 - **Type fonctionnel** : outil
 - **Famille / bloc fonctionnel** : Système & Utilitaires (hors bloc)
 - **Statut** : standalone
+- **Contrat SEO** : `ACCESS=PUBLIC`, `SEARCH=NOINDEX`, `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. La prévisualisation est publique pour la revue du formulaire, mais n'est pas une page métier indexable.
 - **Contexte nécessaire** : Accès direct à une route de revue publique ; la page est explicitement sans protection Clerk et non indexable.
 - **Objectif utilisateur principal** : Prévisualiser le formulaire public de déclaration dans un contexte local isolé.
 - **Action principale attendue** : Parcourir le formulaire de prévisualisation sans présenter cette surface comme une création persistée.

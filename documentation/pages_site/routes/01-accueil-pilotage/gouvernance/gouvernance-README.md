@@ -8,6 +8,7 @@
 - **Type fonctionnel** : surface secondaire — gouvernance
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Accès runtime** : `auth-disabled-gate` ; le contenu est verrouillé avant connexion et l'accès aux données de pilotage reste soumis aux habilitations du contrat concerné.
+- **Contrat SEO** : `ACCESS=PRIVATE`, `SEARCH=NOINDEX`, `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Les données institutionnelles et arbitrages restent protégés.
 - **Objectif utilisateur principal** : Donner un accès direct à la lecture territoriale, aux arbitrages et aux repères de gouvernance.
 - **Action principale attendue** : Consulter les priorités et arbitrages de gouvernance.
 - **Palette attendue** : bleu / slate, variante gouvernance

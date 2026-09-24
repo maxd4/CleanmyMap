@@ -8,6 +8,7 @@
 - **Type fonctionnel** : outil
 - **Famille / bloc fonctionnel** : Système & Utilitaires (hors bloc)
 - **Statut** : standalone
+- **Contrat SEO** : `ACCESS=PUBLIC`, `SEARCH=NOINDEX`, `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Cet outil de contrôle reste une surface de support, pas une page de recherche.
 - **Contexte nécessaire** : Accès direct à une surface de support publique, sans session métier requise.
 - **Objectif utilisateur principal** : Vérifier la présentation et le parcours d'un formulaire de déclaration simplifié sans le confondre avec le formulaire complet.
 - **Action principale attendue** : Examiner la version simplifiée puis ouvrir la comparaison ou la prévisualisation du formulaire public.

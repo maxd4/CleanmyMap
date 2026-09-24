@@ -11,6 +11,8 @@
 - **Type fonctionnel** : surface secondaire de consultation et de monitoring
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Accès runtime** : `auth-blur-gate` ; un aperçu de la surface de consultation est présenté avant connexion.
+- **Contrat SEO provisoire** : `ACCESS=HYBRID`, `SEARCH=NOINDEX`, `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`.
+- **Dette explicite** : `PUBLICATION_RIGHTS_DECISION_REQUIRED`. Ne pas modifier l'exposition actuelle des données Trash Spotter dans ce lot.
 - **Objectif utilisateur principal** : Consulter l'état courant des signalements Trash Spotter et leur répartition sur la carte.
 - **Action principale attendue** : Lire les signalements `spot` approuvés sur la carte et dans la liste récente.
 - **Création** : aucune création n'est proposée ici. Pour saisir une observation et retrouver la boucle propriétaire « Mes observations », utiliser exclusivement [`/signalement`](/signalement).

@@ -1,5 +1,10 @@
 # Checklist Maintenance SEO CleanMyMap
 
+La propriété Google Search Console `https://cleanmymap.fr/` est ACTIVE et
+validée. La homepage est indexée et sa canonical est reconnue. Les contrôles
+ci-dessous sont des actions humaines récurrentes ; aucune ouverture de
+Search Console ne doit être simulée par la CI ou par le code.
+
 ## SEARCH_CONSOLE_MONTHLY
 
 - [ ] Ouvrir Google Search Console pour `https://cleanmymap.fr/`
@@ -91,6 +96,17 @@ la revue Search Console. Le dépôt conserve donc ce rappel documentaire léger,
 non bloquant, dans cette checklist et dans `SEO_STRATEGY.md`. Il pointe vers une
 action humaine et ne stocke aucun identifiant Google, ne simule aucun clic et ne
 fait jamais échouer la CI.
+
+## Contrat de route à vérifier lors d'une évolution
+
+- [ ] Vérifier la matrice `ACCESS / SEARCH / DISCOVERY / CANONICAL` dans
+      `documentation/pages_site/INDEX.md`.
+- [ ] Pour une nouvelle page publique, confirmer la présence du contrat dans la
+      source canonique d'indexabilité et dans le sitemap si `DISCOVERY=SITEMAP`.
+- [ ] Pour une page privée, utilitaire ou alias, confirmer `NOINDEX` et
+      l'absence du sitemap selon la matrice.
+- [ ] Vérifier qu'aucune canonical `/learn` ni version anglaise `en-US` n'est
+      inventée.
 
 ---
 

@@ -8,6 +8,7 @@
 - **Type fonctionnel** : page d'action
 - **Famille / bloc fonctionnel** : Agir (bloc)
 - **Accès runtime** : `clerk-context` ; l'entrée, le choix du type d'observation et la préparation du formulaire sont accessibles au visiteur sans compte. La page affiche sa surface sans hard gate ; un compte est demandé pour transmettre l'observation, gérer ses preuves et consulter la boucle propriétaire.
+- **Contrat SEO** : `ACCESS=HYBRID`, `SEARCH=INDEX`, `DISCOVERY=SITEMAP`, `CANONICAL=SELF`. La préparation est publique ; la transmission, les preuves et la boucle propriétaire restent authentifiées.
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; les contrôles d'identité propres à la transmission, aux preuves et aux observations restent appliqués au moment de l'opération.
 - **Objectif utilisateur principal** : Préparer et transmettre une observation de terrain, puis suivre les observations récentes créées par le compte.
 - **Entrée Agir canonique** : unique entrée utilisateur visible « Signaler un déchet » ; `/sections/trash-spotter` est réservé à la consultation/au monitoring secondaire.

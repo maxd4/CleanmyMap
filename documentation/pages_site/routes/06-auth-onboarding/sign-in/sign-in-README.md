@@ -9,6 +9,7 @@
 - **Type fonctionnel** : authentification
 - **Famille / bloc fonctionnel** : Auth & Onboarding (hors bloc)
 - **Statut** : auth
+- **Contrat SEO** : `ACCESS=PUBLIC`, `SEARCH=NOINDEX`, `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. La page est accessible anonymement uniquement comme entrée d'authentification.
 - **Contexte nécessaire** : Page d'entrée d'authentification ou de configuration initiale
 - **Objectif utilisateur principal** : Authentifier un compte existant et retrouver son espace d'action.
 - **Action principale attendue** : Se connecter via Clerk ou basculer vers `/sign-up` pour créer un compte.
