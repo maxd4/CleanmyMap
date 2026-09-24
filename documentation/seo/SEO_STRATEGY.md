@@ -45,7 +45,8 @@ Ce document définit la stratégie de visibilité web pour CleanMyMap, la diffé
 - `apps/web/src/app/**/page.tsx` - Métadonnées par page
 
 ### Sitemap et robots
-- `apps/web/src/app/sitemap.ts` - Liste des pages (16 actuellement)
+- `apps/web/src/app/sitemap.ts` - Liste canonique des pages publiques (27 URLs
+  actuellement, dont les sections publiques du registre)
 - `apps/web/src/app/robots.ts` - Directives crawl + AI bots
 
 Le sitemap n'expose `lastModified` que lorsqu'une date réelle de modification
@@ -65,11 +66,31 @@ source réelle et décrire le contenu effectivement visible sur la page.
 
 ## Maintenance SEO
 
-### Checklist mensuelle
-- [ ] Vérifier le sitemap
-- [ ] Tester les meta descriptions
-- [ ] Valider les schemas JSON-LD
-- [ ] Vérifier les redirections de domaine et l'URL canonique
+### SEARCH_CONSOLE_MONTHLY
+
+- [ ] Ouvrir Google Search Console pour `https://cleanmymap.fr/`
+- [ ] Vérifier `Pages / Indexation`
+- [ ] Comparer les pages découvertes, indexées et exclues
+- [ ] Examiner les motifs d'exclusion nouveaux
+- [ ] Vérifier les erreurs d'exploration
+- [ ] Vérifier `Sitemaps`
+- [ ] Vérifier que `sitemap.xml` est lisible et sans erreur persistante
+- [ ] Inspecter les nouvelles pages stratégiques publiées durant le mois
+- [ ] Demander une indexation uniquement lorsqu'elle est utile, pas pour chaque commit
+- [ ] Vérifier `Performances`
+- [ ] Relever les principales requêtes Google
+- [ ] Surveiller `CleanMyMap`, les requêtes métier et les confusions éventuelles avec `CleanMyMac`
+- [ ] Relever impressions, clics, CTR et positions sans en faire des objectifs artificiels
+- [ ] Vérifier Core Web Vitals
+- [ ] Vérifier les liens externes significatifs
+- [ ] Consigner les anomalies nécessitant un chantier technique
+
+Google recrawl normalement les pages automatiquement. Les changements mineurs
+n'exigent pas une demande manuelle d'indexation et Search Console ne doit pas
+être « mise à jour » à chaque déploiement. La revue de routine est mensuelle ;
+une inspection ad hoc est pertinente après une nouvelle page stratégique, un
+changement de canonical, une migration, une correction d'indexabilité, une
+modification majeure de contenu ou un changement d'identité SEO.
 
 ### Trimestriel
 - [ ] Audit backlinks
@@ -91,21 +112,21 @@ source réelle et décrire le contenu effectivement visible sur la page.
 | /explorer | ✅ | - |
 | /reports | ✅ | - |
 | /methodologie | ✅ | - |
-| /learn | ✅ | - |
+| /learn | Pas de page canonique | Ne pas utiliser comme canonical cible |
 | /learn/comprendre | ✅ | - |
 | /learn/bonnes-pratiques | ✅ | - |
 | /mentions-legales | ✅ | - |
-| /en | ✅ | - |
-| /actions/new | ✅ | - |
-| /dashboard | ✅ | - |
-| /profil | ✅ | - |
+| /en | Alias | Redirection vers `/explorer`, pas une page canonique |
+| /actions/new | Privée / noindex | Hors périmètre SEO public |
+| /dashboard | Privée / noindex | Hors périmètre SEO public |
+| /profil | Privée / noindex | Hors périmètre SEO public |
 
-## Prochaines améliorations suggérées
+## Règle pour les futures améliorations
 
-1. Relier un schema **Article** uniquement à une ressource publiée et visible.
-2. Relier un schema **Event** aux événements réels publiés.
-3. Relier un schema **VideoObject** à une vidéo publiée avec ses métadonnées réelles.
-4. Ajouter un schema **FAQ** seulement si une FAQ visible est publiée.
+Les schemas Article, Event, VideoObject, Review, HowTo et FAQ restent
+conditionnels à une source publiée et à un contenu visible correspondant. Leur
+présence dans le code ne constitue pas une tâche à activer : aucune donnée
+structurée ne doit être ajoutée pour remplir un objectif SEO abstrait.
 
 ## Ce qui reste manuel
 
@@ -126,28 +147,12 @@ Voir [ACTIONS_MANUELLES_RESTANTES.md](./ACTIONS_MANUELLES_RESTANTES.md) pour Sea
 - Prioriser le contenu de qualité sur la quantité
 - Garder `arrondissement` comme terme de compatibilité ou de précision locale, pas comme cadre principal de positionnement
 
-## Roadmap 2026
+## Suivi récurrent
 
-### Mi-Mai (15-31 Mai)
-- [ ] Audit pages sitemap
-- [ ] Test Rich Results complet
-- [ ] Vérification indexation
-- [ ] Ajouter schema Event
-- [ ] FAQ +2 questions
-
-### Début Juin (1-15 Juin)
-- [ ] Analyse positions mots-clés
-- [ ] Audit liens internes
-- [ ] Schema Article
-- [ ] Core Web Vitals mobile
-- [ ] Metadata /actions/new, /dashboard, /profil
-
-### Mi-Juin (15-30 Juin)
-- [ ] Rapport trimestriel
-- [ ] Schema VideoObject
-- [ ] Audit backlinks
-- [ ] Mise à jour mots-clés été
-- [ ] Vérification redirections .com → .fr
+La revue Search Console mensuelle est la cadence opérationnelle canonique.
+Les audits de liens, Core Web Vitals, requêtes, indexation et redirections sont
+à déclencher selon cette checklist et les changements réels du produit ; ils ne
+constituent pas une roadmap de schemas ou de contenu artificiel.
 
 ## Cadre éditorial cible
 
@@ -158,5 +163,5 @@ Voir [ACTIONS_MANUELLES_RESTANTES.md](./ACTIONS_MANUELLES_RESTANTES.md) pour Sea
 
 ---
 
-*Dernière mise à jour: Mai 2026*
-*Prochaine revue: Mi-Mai 2026*
+*Dernière mise à jour: Septembre 2026*
+*Prochaine revue: revue Search Console mensuelle*

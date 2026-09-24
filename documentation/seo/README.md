@@ -10,27 +10,59 @@
 
 ## Démarrage rapide
 
+## État Search Console
+
+La propriété Google Search Console `https://cleanmymap.fr/` est **ACTIVE et
+validée**. La homepage est indexée et Google reconnaît la canonical
+`https://cleanmymap.fr/`. Cette documentation ne prétend pas exécuter des
+actions dans Search Console : les inspections et demandes d’indexation restent
+humaines.
+
 ### Ajouter une nouvelle page avec SEO
 
-1. **Métadonnées** - Ajouter `export const metadata` dans le fichier `page.tsx`:
+1. **Décision d’indexabilité** - Décider explicitement si la page est publique,
+   indexable et destinée à être découverte par Google.
+2. **Source d’indexabilité** - Pour une page publique indexable, l’ajouter à
+   `apps/web/src/lib/seo/indexability.ts` et au sitemap si son URL doit être
+   découverte. Une page privée, inachevée ou noindex reste hors sitemap.
+3. **Métadonnées** - Ajouter `export const metadata` dans le fichier `page.tsx`
+   uniquement lorsqu’une metadata spécifique est nécessaire:
 ```typescript
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Titre - CleanMyMap",
-  description: "Description avec mots-clés stratégiques",
-  keywords: ["mot-clé1", "mot-clé2", "écologie", "développement durable"],
+  description: "Description fidèle au contenu réellement visible de la page",
 };
 ```
 
-2. **Schema JSON-LD** - N'en rendre un que si la page expose réellement le même
+4. **Robots, canonical et contenu** - Vérifier que robots autorise la page,
+   que la canonical est cohérente, qu’un titre principal descriptif et un
+   contenu utile existent dans le HTML rendu, et qu’un lien interne permet sa
+   découverte lorsque c’est pertinent.
+5. **Schema JSON-LD** - N’en rendre un que si la page expose réellement le même
    contenu. Les schemas globaux actuellement rendus sont `OrganizationJsonLd`
    et `WebSiteJsonLd`; une FAQ JSON-LD nécessite une FAQ visible avec les mêmes
    questions et réponses.
 
-3. **Sitemap** - Vérifier que la page est dans `apps/web/src/app/sitemap.ts`
+6. **Tests et publication** - Ajouter ou adapter les tests d’indexabilité,
+   sitemap et metadata, puis après publication d’une page stratégique prévoir
+   une inspection manuelle Search Console.
 
-4. **Test** - Valider avec Google Rich Results Test
+## NEW_PUBLIC_PAGE_SEO_CHECK
+
+1. décider explicitement si la page doit être indexable ;
+2. si oui, l’ajouter à la source canonique d’indexabilité/sitemap ;
+3. fournir metadata/canonical adaptées si nécessaire ;
+4. vérifier robots ;
+5. vérifier le contenu HTML et le titre principal ;
+6. ajouter JSON-LD uniquement si justifié par le contenu publié ;
+7. ajouter ou adapter les tests ;
+8. après publication d’une page stratégique, documenter l’inspection Search
+   Console comme action manuelle recommandée.
+
+Pour une page privée ou inachevée, ne pas l’ajouter au sitemap et conserver les
+protections/noindex prévues par le contrat existant.
 
 ### Ajouter un nouveau HowTo
 
@@ -54,9 +86,11 @@ export function HowToMonActionJsonLd() {
 
 2. Importer et utiliser dans la page concernée
 
-## Mots-clés autorisés
+## Lexique de marque et de contenu
 
-Voir `SEO_STRATEGY.md` pour la liste complète.
+Voir `SEO_STRATEGY.md` pour le lexique utile. Il guide les titres, descriptions
+et contenus réels ; il ne justifie ni keyword stuffing ni l'augmentation
+automatique de `metadata.keywords`.
 
 ### Base
 - CleanMyMap, CMM, cleanwalk, dépollution, propreté, carte, France, territoire, impact

@@ -5,7 +5,9 @@ import {
   PRIVATE_APP_ROUTE_PREFIXES,
   PUBLIC_APP_SITEMAP_PATHS,
   getPrivateSectionRoutes,
+  getPublicSectionSitemapPaths,
 } from "@/lib/seo/indexability";
+import robots from "@/app/robots";
 
 function readSource(relativePath: string): string {
   return readFileSync(resolve(process.cwd(), relativePath), "utf8");
@@ -39,6 +41,33 @@ describe("security indexation invariants", () => {
 
     for (const route of privateSectionRoutes) {
       expect(publicSitemapPaths).not.toContain(route);
+    }
+  });
+
+  it("keeps every sitemap route allowed by the global robots rule", () => {
+    const publicSitemapPaths = [
+      ...PUBLIC_APP_SITEMAP_PATHS,
+      ...getPublicSectionSitemapPaths(),
+    ];
+    const rules = (Array.isArray(robots().rules)
+      ? robots().rules
+      : [robots().rules]) as Array<{
+      userAgent?: string | string[];
+      disallow?: string | string[];
+    }>;
+    const globalRule = rules.find(
+      (rule) => !Array.isArray(rule.userAgent) && rule.userAgent === "*",
+    );
+    const disallowed = new Set(
+      Array.isArray(globalRule?.disallow)
+        ? globalRule.disallow
+        : globalRule?.disallow
+          ? [globalRule.disallow]
+          : [],
+    );
+
+    for (const route of publicSitemapPaths) {
+      expect(disallowed).not.toContain(route);
     }
   });
 });
