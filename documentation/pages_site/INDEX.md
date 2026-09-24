@@ -81,7 +81,7 @@ ultérieur ; cette matrice ne prétend pas avoir déjà modifié le runtime.
 | /signalement | `HYBRID` | `INDEX` | `SITEMAP` | `SELF` |
 | /reports | `HYBRID` | `INDEX` | `SITEMAP` | `SELF` |
 | /methodologie | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
-| /explorer | `PUBLIC` | `INDEX` | `INTERNAL_ONLY` | `SELF` |
+| /explorer | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /learn/bonnes-pratiques | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
 | /learn/comprendre | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
 | /learn/ecole | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |

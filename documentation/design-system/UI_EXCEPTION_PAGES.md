@@ -53,7 +53,7 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 |---|---|---|---|
 | Homepage autonome | `/`, `/accueil` | `home` | Identité de page indépendante |
 | Auth & Onboarding | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | `auth` | Fond lavande clair vers vert menthe clair; carte Clerk violet nuit / indigo foncé; accents verts uniquement pour validation; boutons inchangés |
-| Institutionnel & Légal | `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en` | `legal` | Pages juridiques et institutionnelles, palette slate / gris clair / blanc, sans esthétique marketing blocks |
+| Institutionnel & Légal | `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*` | `legal` | Pages juridiques et institutionnelles, palette slate / gris clair / blanc, sans esthétique marketing blocks |
 | Système & Utilitaires | `/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429` | `system` | Pages outillage / support / prévisualisation, avec mood layer autonome par usage; les états système suivent une charte commune `SystemStateLayout` |
 | Admin & Super-admin | `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode` | `admin` | Console et supervision restreinte |
 | Print & Export | `/prints/report` | `print` | Rapport imprimable et export visuel, ambiance documentaire autonome |
@@ -179,7 +179,6 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | `/mentions-legales` | Canonique | Institutionnel & Légal | non | Page juridique |
 | `/politique-confidentialite` | Canonique | Institutionnel & Légal | non | Page juridique |
 | `/politique-cookies` | Canonique | Institutionnel & Légal | non | Page juridique |
-| `/en` | Canonique | Institutionnel & Légal | non | Variante linguistique |
 
 ## Exceptions de structure (hors header de page classique)
 
