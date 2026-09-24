@@ -10,7 +10,7 @@ import { ActionsHistoryList } from "@/components/actions/actions-history-list";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 
 export const metadata: Metadata = {
- title: "Historique terrain - CleanMyMap",
+ title: "Historique terrain",
  description:
   "Consulter les enregistrements accessibles, leur qualité et les corrections à effectuer.",
  robots: {

@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
 import { buildActionCreationPanelHref } from "@/lib/actions/action-creation-routes";
 
 type RoutePageProps = {
@@ -6,7 +6,7 @@ type RoutePageProps = {
 };
 
 export default async function RoutePage({ searchParams }: RoutePageProps) {
-  redirect(
+  permanentRedirect(
     buildActionCreationPanelHref(
       "itineraire",
       searchParams ? await searchParams : undefined,

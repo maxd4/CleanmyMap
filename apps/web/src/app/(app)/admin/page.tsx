@@ -41,7 +41,7 @@ import {
 } from "@/components/reports/admin-workflow/helpers";
 
 export const metadata: Metadata = {
-  title: "Administration - CleanMyMap",
+  title: "Administration",
   description:
     "Back-office du site pour gérer les utilisateurs, la modération et les demandes.",
 };

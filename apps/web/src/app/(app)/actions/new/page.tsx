@@ -12,7 +12,7 @@ import { isFeatureEnabled } from "@/lib/feature-flags";
 import { resolveActionResumePhase } from "@/lib/actions/action-resume";
 
 export const metadata: Metadata = {
-  title: "Créer une action - CleanMyMap",
+  title: "Créer une action",
   description:
     "Préparer une action avant terrain ou compléter ses résultats après réalisation. Consultez ensuite les estimations d’impact sur le CO₂ évité et l’eau préservée.",
   keywords: [
@@ -30,8 +30,8 @@ export const metadata: Metadata = {
     canonical: "/actions/new",
   },
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
   },
 };
 

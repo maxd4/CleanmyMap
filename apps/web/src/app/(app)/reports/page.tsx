@@ -100,9 +100,11 @@ function buildReportsAnalysisContent({
 }
 
 export const metadata: Metadata = {
-  title: "Rapports d'impact - CleanMyMap",
+  title: "Rapports d'impact",
   description:
     "Analysez les données de nettoyage participatif, les indicateurs d'impact calculés par proxy et la qualité des données.",
+  alternates: { canonical: "/reports" },
+  robots: { index: true, follow: true },
 };
 
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {

@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 
 export const metadata: Metadata = {
-  title: "Politique cookies - CleanMyMap",
+  title: "Politique cookies",
   description:
     "Politique cookies de CleanMyMap : cookies essentiels, préférences locales, consentement, analytics et gestion du choix utilisateur.",
   keywords: [

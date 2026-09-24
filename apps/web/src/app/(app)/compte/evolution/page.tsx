@@ -7,7 +7,7 @@ import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { listPromotionRequestsForUser } from "@/lib/admin/promotion-requests-store";
 
 export const metadata: Metadata = {
-  title: "Évolution du compte - CleanMyMap",
+  title: "Évolution du compte",
   description: "Consultez votre niveau de compte et gérez vos demandes d’évolution.",
   robots: { index: false, follow: false },
 };

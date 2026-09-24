@@ -69,13 +69,6 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  alternates: {
-    canonical: appUrl,
-    languages: {
-      "fr-FR": appUrl,
-      "en-US": `${appUrl}/en`,
-    },
-  },
   openGraph: {
     type: "website",
     locale: "fr_FR",

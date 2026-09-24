@@ -69,7 +69,7 @@ describe("actions history route contract", () => {
   });
 
   it("uses the canonical title, description and action CTA in both page templates", () => {
-    expect(pageSource).toContain('title: "Historique terrain - CleanMyMap"');
+    expect(pageSource).toContain('title: "Historique terrain"');
     expect(pageSource).toContain('title="Historique terrain"');
     expect(pageSource).toContain(
       "Consulter les enregistrements accessibles, leur qualité et les corrections à effectuer.",

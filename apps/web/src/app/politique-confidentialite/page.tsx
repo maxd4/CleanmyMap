@@ -7,7 +7,7 @@ import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export const metadata: Metadata = {
-  title: "Politique de confidentialité - CleanMyMap",
+  title: "Politique de confidentialité",
   description:
     "Politique de confidentialité CleanMyMap : données traitées, finalités, bases légales, droits RGPD, sous-traitants, rétention et sécurité.",
   keywords: [

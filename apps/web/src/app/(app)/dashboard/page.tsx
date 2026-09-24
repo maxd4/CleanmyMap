@@ -36,7 +36,7 @@ import { resolvePageFamily } from "@/lib/ui/page-families";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export const metadata: Metadata = {
-  title: "Mon espace - CleanMyMap",
+  title: "Mon espace",
   description:
     "Suivez votre impact, consultez vos statistiques et gérez votre compte depuis un espace centralisé.",
 };

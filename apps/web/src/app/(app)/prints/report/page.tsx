@@ -13,7 +13,7 @@ import { resolvePageFamily } from "@/lib/ui/page-families";
 import { BrandLogo } from "@/components/brand/brand-logo";
 
 export const metadata: Metadata = {
-  title: "Rapport d'impact imprimable - CleanMyMap",
+  title: "Rapport d'impact imprimable",
   description: "Rapport d'impact imprimable et synthèse documentaire réservés aux comptes connectés.",
   robots: {
     index: false,

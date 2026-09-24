@@ -21,7 +21,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   ...appMetadata,
-  title: "CleanMyMap - Carte de dépollution citoyenne & actions écologiques",
+  title: "Carte de dépollution citoyenne & actions écologiques",
   description:
     "CleanMyMap est la carte citoyenne de dépollution urbaine en France. Signalez les pollutions, organisez des cleanwalks et déclarez vos actions de nettoyage. Développement durable, bénévolat, impact terrain, valorisation des déchets.",
   keywords: [
@@ -95,6 +95,7 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  alternates: { canonical: "/" },
 };
 
 export default async function HomePage() {

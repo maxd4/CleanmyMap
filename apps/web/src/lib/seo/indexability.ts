@@ -3,7 +3,6 @@ import {
   ADMIN_ROUTE,
   ACCOUNT_EVOLUTION_ROUTE,
   DASHBOARD_ROUTE,
-  EXPLORER_ROUTE,
   PARCOURS_ROUTE,
   PILOTAGE_ROUTE,
   PROFIL_ROUTE,
@@ -13,10 +12,9 @@ import {
 export const PUBLIC_APP_SITEMAP_PATHS = [
   "/",
   "/actions/map",
+  "/actions/new",
+  "/contact",
   "/conditions-generales-utilisation",
-  "/conditions-utilisation",
-  "/en",
-  EXPLORER_ROUTE,
   "/learn/bonnes-pratiques",
   "/learn/comprendre",
   "/learn/ecole",
@@ -26,12 +24,13 @@ export const PUBLIC_APP_SITEMAP_PATHS = [
   "/politique-confidentialite",
   "/politique-cookies",
   "/reports",
+  "/signalement",
+  "/signaler-contenu-illicite",
 ] as const;
 
 export const PRIVATE_APP_ROUTE_PREFIXES = [
   ADMIN_ROUTE,
   "/actions/history",
-  "/actions/new",
   "/declaration",
   "/form-comparison",
   "/onboarding",
@@ -45,11 +44,67 @@ export const PRIVATE_APP_ROUTE_PREFIXES = [
   "/prints/report",
   PROFIL_ROUTE,
   "/reglages",
-  "/signalement",
-  "/sign-in",
-  "/sign-up",
   SPONSOR_PORTAL_ROUTE,
 ] as const;
+
+export const PUBLIC_NOINDEX_ROUTE_PREFIXES = [
+  "/declaration-simple",
+  "/docs",
+  "/error/429",
+  "/preview/actions/new",
+  "/sign-in",
+  "/sign-up",
+] as const;
+
+export const SEO_REDIRECT_TARGETS = {
+  "/en": "/",
+  "/conditions-utilisation": "/conditions-generales-utilisation",
+  "/declaration": "/actions/new",
+  "/community": "/sections/community",
+  "/open-data": "/sections/open-data",
+  "/messagerie": "/sections/messagerie",
+  "/gamification": "/sections/gamification",
+  "/sections/dm": "/sections/messagerie?tab=dm",
+  "/sections/guide": "/actions/new?panel=meteo",
+  "/sections/route": "/actions/new?panel=itineraire",
+  "/sections/weather": "/actions/new?panel=meteo",
+  "/sections/rejoindre-un-formulaire": "/sections/rejoindre-une-action",
+  "/partners/network": "/sections/community?tab=partners",
+  "/partners/network/pepite": "/sections/community?tab=partners",
+  "/onboarding/localisation": "/onboarding",
+} as const;
+
+export const PUBLIC_INDEXABLE_SECTION_IDS: ReadonlySet<string> = new Set([
+  "actors",
+  "annuaire",
+  "climate",
+  "compost",
+  "community",
+  "funding",
+  "open-data",
+  "recycling",
+  "rejoindre-une-action",
+] as const);
+
+export const PUBLIC_NOINDEX_SECTION_IDS: ReadonlySet<string> = new Set([
+  "feedback",
+] as const);
+
+export function appendPreservedSearchParams(
+  target: string,
+  searchParams: Record<string, string | string[] | undefined>,
+): string {
+  const [pathname, query = ""] = target.split("?", 2);
+  const params = new URLSearchParams(query);
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (value === undefined) continue;
+    for (const item of Array.isArray(value) ? value : [value]) {
+      params.append(key, item);
+    }
+  }
+  const serialized = params.toString();
+  return serialized ? `${pathname}?${serialized}` : pathname;
+}
 
 export const ROBOTS_NOINDEX_VALUE = "noindex, nofollow, noarchive";
 
@@ -63,13 +118,19 @@ export function isPrivateAppPath(pathname: string): boolean {
   );
 }
 
+export function isPublicNoindexPath(pathname: string): boolean {
+  return PUBLIC_NOINDEX_ROUTE_PREFIXES.some((prefix) =>
+    matchesPathPrefix(pathname, prefix),
+  );
+}
+
 export function getPublicSectionSitemapPaths(): string[] {
   return RUBRIQUE_REGISTRY.filter(
     (rubrique) =>
       rubrique.kind === "section" &&
+      PUBLIC_INDEXABLE_SECTION_IDS.has(rubrique.id) &&
       rubrique.availability === "available" &&
-      rubrique.implementation === "finalized" &&
-      rubrique.anonymousPresentation === "visible",
+      rubrique.implementation === "finalized",
   )
     .map((rubrique) => rubrique.route)
     .sort((a, b) => a.localeCompare(b, "fr"));
@@ -79,7 +140,7 @@ export function getPrivateSectionRoutes(): string[] {
   return RUBRIQUE_REGISTRY.filter(
     (rubrique) =>
       rubrique.kind === "section" &&
-      (rubrique.anonymousPresentation !== "visible" ||
+      (!PUBLIC_INDEXABLE_SECTION_IDS.has(rubrique.id) ||
         rubrique.availability !== "available" ||
         rubrique.implementation !== "finalized"),
   )

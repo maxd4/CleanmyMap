@@ -14,7 +14,7 @@ describe("legacy action creation surfaces", () => {
   it("redirects the old route page to the route panel", () => {
     expect(routePage).toContain("buildActionCreationPanelHref");
     expect(routePage).toContain('"itineraire"');
-    expect(routePage).toContain("redirect(");
+    expect(routePage).toContain("permanentRedirect(");
     expect(routePage).not.toContain("RouteSection");
   });
 

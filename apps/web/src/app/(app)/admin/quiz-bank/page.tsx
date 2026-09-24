@@ -15,7 +15,7 @@ import { QuizPedagogicalMetricsPanel } from "@/components/admin/quiz-pedagogical
 import { QuizBankAdminView } from "@/components/admin/quiz-bank-admin-view";
 
 export const metadata: Metadata = {
-  title: "Banque de quiz - Admin - CleanMyMap",
+  title: "Banque de quiz - Admin",
   description: "Vue interne pour filtrer, relire et corriger la banque de questions du quiz CleanMyMap.",
 };
 

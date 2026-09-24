@@ -20,8 +20,23 @@ describe("security indexation invariants", () => {
     expect(readSource("src/app/form-comparison/page.tsx")).toContain("index: false");
 
     const sectionPage = readSource("src/app/(app)/sections/[sectionId]/page.tsx");
-    expect(sectionPage).toContain("index: isIndexable");
-    expect(sectionPage).toContain("follow: isIndexable");
+    expect(sectionPage).toContain("PUBLIC_INDEXABLE_SECTION_IDS");
+    expect(sectionPage).toContain("alternates: { canonical: `/sections/${section.id}` }");
+  });
+
+  it("keeps public hybrids indexable while their auth surfaces stay protected", () => {
+    expect(readSource("src/app/(app)/actions/new/page.tsx")).toContain("index: true");
+    expect(readSource("src/app/(app)/reports/page.tsx")).toContain("index: true");
+    expect(readSource("src/app/(app)/signalement/page.tsx")).toContain("index: true");
+    expect(readSource("src/app/sign-in/[[...sign-in]]/page.tsx")).toContain("index: false");
+    expect(readSource("src/app/sign-up/[[...sign-up]]/page.tsx")).toContain("index: false");
+    expect(readSource("src/app/error/429/page.tsx")).toContain("index: false");
+    expect(readSource("src/app/docs/[...segments]/route.ts")).toContain(
+      "markDocumentationNoindex",
+    );
+    expect(readSource("src/app/docs/[...segments]/route-seo.ts")).toContain(
+      'response.headers.set("X-Robots-Tag", ROBOTS_NOINDEX_VALUE)',
+    );
   });
 
   it("keeps private routes outside the sitemap", () => {

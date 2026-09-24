@@ -4,12 +4,10 @@ import { AuthPageShell } from "@/components/auth/auth-page-shell";
 import { ClerkHydrationGate } from "@/components/auth/clerk-hydration-gate";
 
 export const metadata: Metadata = {
-  title: "Créer un compte - CleanMyMap",
+  title: "Créer un compte",
   description: "Rejoignez CleanMyMap pour déclarer vos actions de nettoyage, signaler les pollutions et agir pour l'environnement dans votre quartier.",
   keywords: ["inscription", "register", "sign up", "bénévolat", "écologie", "CleanMyMap"],
-  alternates: {
-    canonical: "/sign-up",
-  },
+  robots: { index: false, follow: false },
 };
 
 function SignUpLoadingState() {

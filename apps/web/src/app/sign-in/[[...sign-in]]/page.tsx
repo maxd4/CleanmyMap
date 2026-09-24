@@ -6,12 +6,10 @@ import { resolveSafeAuthRedirect } from "@/lib/auth/redirect-url";
 import { HOME_ROUTE } from "@/lib/home-routes";
 
 export const metadata: Metadata = {
-  title: "Connexion - CleanMyMap",
+  title: "Connexion",
   description: "Connectez-vous à CleanMyMap pour déclarer vos actions de nettoyage, signaler les pollutions et rejoindre la communauté de bénévoles écologistes.",
   keywords: ["connexion", "login", "sign in", "bénévolat", "écologie", "CleanMyMap"],
-  alternates: {
-    canonical: "/sign-in",
-  },
+  robots: { index: false, follow: false },
 };
 
 function SignInLoadingState() {

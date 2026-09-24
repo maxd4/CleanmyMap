@@ -9,7 +9,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { claimReferralInviteForUser } from "@/lib/gamification/referrals";
 
 export const metadata: Metadata = {
-  title: "Bienvenue sur CleanMyMap - Configuration initiale",
+  title: "Configuration initiale",
   description:
     "Configurez votre profil CleanMyMap : identité, profil, zones principales et mode d’affichage.",
   keywords: ["onboarding", "configuration", "profil", "écologie", "CleanMyMap"],

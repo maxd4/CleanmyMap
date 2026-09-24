@@ -1,5 +1,10 @@
-import { redirect } from "next/navigation";
+import { permanentRedirect } from "next/navigation";
+import { appendPreservedSearchParams } from "@/lib/seo/indexability";
 
-export default function CommunityAliasPage() {
-  redirect("/sections/community");
+export default async function CommunityAliasPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  permanentRedirect(appendPreservedSearchParams("/sections/community", await searchParams));
 }

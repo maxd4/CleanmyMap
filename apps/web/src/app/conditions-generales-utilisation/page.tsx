@@ -12,7 +12,7 @@ import { resolvePublicContactEmail } from "@/lib/email-config";
 import { LegalAccordion } from "./legal-accordion";
 
 export const metadata: Metadata = {
-  title: "Conditions d'utilisation - CleanMyMap",
+  title: "Conditions d'utilisation",
   description:
     "Conditions d'utilisation de CleanMyMap : accès au service, contributions, modération, données personnelles et responsabilité.",
   keywords: [

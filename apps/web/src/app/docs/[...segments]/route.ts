@@ -2,9 +2,9 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { NextResponse } from "next/server";
 import { findPublicDocumentationByDocsPath } from "@/lib/documentation/public-documentation-registry";
+import { getDocumentationContentType, markDocumentationNoindex } from "./route-seo";
 
 export const runtime = "nodejs";
-
 const DOCUMENTATION_ROOT = path.resolve(process.cwd(), "..", "..", "documentation");
 
 function resolveDocumentationPath(canonicalPath: string) {
@@ -31,19 +31,6 @@ function cleanTitle(title: string) {
     .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-}
-
-function getContentType(filePath: string) {
-  const ext = path.extname(filePath).toLowerCase();
-  if (ext === ".webp") return "image/webp";
-  if (ext === ".png") return "image/png";
-  if (ext === ".jpg" || ext === ".jpeg") return "image/jpeg";
-  if (ext === ".gif") return "image/gif";
-  if (ext === ".svg") return "image/svg+xml";
-  if (ext === ".pdf") return "application/pdf";
-  if (ext === ".json") return "application/json; charset=utf-8";
-  if (ext === ".md") return "text/html; charset=utf-8";
-  return "text/plain; charset=utf-8";
 }
 
 function renderInlineMarkdown(value: string): string {
@@ -595,7 +582,7 @@ async function buildResponseForFile(filePath: string, filename: string) {
 
   if (ext === ".webp" || ext === ".png" || ext === ".jpg" || ext === ".jpeg" || ext === ".gif" || ext === ".svg") {
     const content = await readFile(filePath);
-    const mimeType = getContentType(filePath).split(";")[0] ?? "application/octet-stream";
+    const mimeType = getDocumentationContentType(filePath).split(";")[0] ?? "application/octet-stream";
     const dataUrl = `data:${mimeType};base64,${content.toString("base64")}`;
     const html = buildViewerHtml({
       title: cleanTitle(filename),
@@ -679,7 +666,7 @@ export async function GET(
   }
 
   try {
-    return await buildResponseForFile(resolvedPath, entry.filename);
+    return markDocumentationNoindex(await buildResponseForFile(resolvedPath, entry.filename));
   } catch {
     return NextResponse.json(
       { status: "error", error: "Document introuvable." },

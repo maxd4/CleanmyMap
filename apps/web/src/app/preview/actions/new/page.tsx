@@ -3,7 +3,7 @@ import { ActionDeclarationForm } from "@/components/actions/action-declaration/f
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 
 export const metadata: Metadata = {
-  title: "Aperçu du formulaire bénévole - CleanMyMap",
+  title: "Aperçu du formulaire bénévole",
   description:
     "Version publique de prévisualisation du formulaire bénévole, sans protection Clerk.",
   robots: {
