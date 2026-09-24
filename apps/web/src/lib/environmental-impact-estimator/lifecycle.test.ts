@@ -1,86 +1,16 @@
 import { describe, expect, it } from "vitest";
-import type {
-  EnvironmentalImpactInfrastructureServiceEstimate,
-  EnvironmentalImpactInfrastructureServiceKey,
-  EnvironmentalImpactUsageProfileEstimate,
-} from "./types";
+import {
+  createEnvironmentalImpactServices,
+  createEnvironmentalImpactUsage,
+} from "./environmental-impact-test-fixtures";
 import {
   buildLifecycleEstimate,
   buildLifecycleScoreSignals,
 } from "./services/lifecycle";
 
-const usage: EnvironmentalImpactUsageProfileEstimate = {
-  monthlyDirectWaterConsumptionLiters: null,
-  monthlyEvaporatedWaterLiters: null,
-  monthlyPageViews: 101,
-  monthlyActiveUsers: 24,
-  monthlySessions: 22,
-  monthlyEmailsSent: 12,
-  monthlyDeployments: 6,
-  monthlyPdfExports: 3,
-  monthlyMapViews: 5,
-  monthlyAiCalls: 4,
-  monthlyChatgptConversationHours: 13,
-  monthlyCodexSessions: 14,
-  monthlyCodexConversationTurns: 15,
-  monthlyCodexToolActions: 16,
-  monthlyCodexShellCommands: 17,
-  monthlyCodexFilesTouched: 18,
-  monthlyCodexTestsRun: 19,
-  monthlyCodexChangedLines: 20,
-  monthlyCodexActiveMinutes: 21,
-  monthlyStorageGbMonths: 9,
-  monthlyApiRequests: 202,
-  monthlyAuthEvents: 8,
-  monthlyRealtimeEvents: 10,
-  monthlyEgressGb: 11,
-  monthlyBandwidthGb: 7,
-  monthlyErrorEvents: 23,
-  monthlyElectricityKwh: 10,
-  growthRateMonthly: 0,
-  seasonalityAmplitude: 0,
-  horizonMonths: 12,
-  source: "input",
-  derivedFrom: [],
-  provenance: [],
-};
+const usage = createEnvironmentalImpactUsage();
 
-function service(
-  key: EnvironmentalImpactInfrastructureServiceKey,
-  monthlyKgCo2eProxy: number | null,
-): EnvironmentalImpactInfrastructureServiceEstimate {
-  return {
-    key,
-    label: key,
-    description: "",
-    sourceNote: "",
-    basis: "monthly",
-    status: "ready",
-    monthlyKgCo2eProxy,
-    annualKgCo2eProxy: monthlyKgCo2eProxy === null ? null : monthlyKgCo2eProxy * 12,
-    sharePercent: 0,
-    confidencePercent: 100,
-    uncertaintyPercent: 0,
-    metricCount: 0,
-    referenceMetricCount: 0,
-    metricEstimates: [],
-  };
-}
-
-const services = [
-  service("vercel", 10),
-  service("supabase", 20),
-  service("resend", 30),
-  service("chatgpt", 40),
-  service("codex", 50),
-  service("clerk", 60),
-  service("posthog", 70),
-  service("sentry", 80),
-  service("upstash", 90),
-  service("pinecone", 100),
-  service("stripe", 110),
-  service("lwsDomain", 120),
-];
+const services = createEnvironmentalImpactServices("lifecycle");
 
 describe("lifecycle signal and estimate parity", () => {
   it("preserves the complete axis and component signal object", () => {

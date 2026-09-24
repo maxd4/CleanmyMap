@@ -1,8 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
+import { handleApiError, parseAuthenticatedJsonRequest, validationErrorResponse } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { syncQuizQuestionTypeProgress } from "@/lib/gamification/quiz-progress";
 import { syncQuizQuestionTypeBalanceProgress } from "@/lib/gamification/quiz-balance-progress";
@@ -16,19 +15,14 @@ const BodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const { userId } = await auth();
-  if (!userId) {
-    return unauthorizedJsonResponse();
+  const authenticate = () => auth();
+  const payload = await parseAuthenticatedJsonRequest(request, authenticate);
+  if (!payload.ok) {
+    return payload.response;
   }
+  const { userId } = payload;
 
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
-  }
-
-  const parsed = BodySchema.safeParse(payload);
+  const parsed = BodySchema.safeParse(payload.data);
   if (!parsed.success) {
     return validationErrorResponse(parsed.error.flatten().fieldErrors);
   }

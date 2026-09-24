@@ -40,42 +40,41 @@ function createQueryChain<T>(result: T[]): QueryChain<T> {
   return chain;
 }
 
+function createProgressionStatsSupabase(
+  progressionEvents: unknown[],
+  participationCount: number,
+): SupabaseClient {
+  return {
+    from: vi.fn((table: string) => {
+      if (table === "progression_events") {
+        return createQueryChain(progressionEvents);
+      }
+      if (["actions", "action_organizers", "forms"].includes(table)) {
+        return createQueryChain([]);
+      }
+      throw new Error(`Unexpected table: ${table}`);
+    }),
+    rpc: vi.fn(async (name: string) => {
+      if (name === "load_gamification_user_counters") {
+        return {
+          data: [{
+            approved_actions_count: 0,
+            complete_actions_count: 0,
+            visited_places_count: 0,
+            eligible_forms_count: 0,
+            participation_count: participationCount,
+          }],
+          error: null,
+        };
+      }
+      throw new Error(`Unexpected rpc: ${name}`);
+    }),
+  } as unknown as SupabaseClient;
+}
+
 describe("loadUserProgressionStats", () => {
   it("uses the Supabase aggregate for participation counts", async () => {
-    const supabase = {
-      from: vi.fn((table: string) => {
-        if (table === "progression_events") {
-          return createQueryChain([]);
-        }
-        if (table === "actions") {
-          return createQueryChain([]);
-        }
-        if (table === "action_organizers") {
-          return createQueryChain([]);
-        }
-        if (table === "forms") {
-          return createQueryChain([]);
-        }
-        throw new Error(`Unexpected table: ${table}`);
-      }),
-      rpc: vi.fn(async (name: string) => {
-        if (name === "load_gamification_user_counters") {
-          return {
-            data: [
-              {
-                approved_actions_count: 0,
-                complete_actions_count: 0,
-                visited_places_count: 0,
-                eligible_forms_count: 0,
-                participation_count: 3,
-              },
-            ],
-            error: null,
-          };
-        }
-        throw new Error(`Unexpected rpc: ${name}`);
-      }),
-    } as unknown as SupabaseClient;
+    const supabase = createProgressionStatsSupabase([], 3);
 
     const stats = await loadUserProgressionStats(supabase, "user-1");
 
@@ -88,34 +87,7 @@ describe("loadUserProgressionStats", () => {
       { event_type: "clean_zone_task", status_phase: "validated", xp_awarded: 1 },
       { event_type: "technical_replay_marker", status_phase: "validated", xp_awarded: 0 },
     ];
-    const supabase = {
-      from: vi.fn((table: string) => {
-        if (table === "progression_events") {
-          return createQueryChain(progressionEvents);
-        }
-        if (table === "actions" || table === "action_organizers" || table === "forms") {
-          return createQueryChain([]);
-        }
-        throw new Error(`Unexpected table: ${table}`);
-      }),
-      rpc: vi.fn(async (name: string) => {
-        if (name === "load_gamification_user_counters") {
-          return {
-            data: [
-              {
-                approved_actions_count: 0,
-                complete_actions_count: 0,
-                visited_places_count: 0,
-                eligible_forms_count: 0,
-                participation_count: 0,
-              },
-            ],
-            error: null,
-          };
-        }
-        throw new Error(`Unexpected rpc: ${name}`);
-      }),
-    } as unknown as SupabaseClient;
+    const supabase = createProgressionStatsSupabase(progressionEvents, 0);
 
     const stats = await loadUserProgressionStats(supabase, "user-1");
 

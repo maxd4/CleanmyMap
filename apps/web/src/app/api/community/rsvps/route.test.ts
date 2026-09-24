@@ -4,13 +4,13 @@ const authMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const trackCommunityRsvpYesMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@clerk/nextjs/server", () => ({
-  auth: authMock,
-}));
+vi.mock("@clerk/nextjs/server", async () =>
+  (await import("@/app/api/test-helpers")).createClerkAuthModule(authMock),
+);
 
-vi.mock("@/lib/supabase/server", () => ({
-  getSupabaseServerClient: getSupabaseServerClientMock,
-}));
+vi.mock("@/lib/supabase/server", async () =>
+  (await import("@/app/api/test-helpers")).createSupabaseServerModule(getSupabaseServerClientMock),
+);
 
 vi.mock("@/lib/gamification/progression", () => ({
   trackCommunityRsvpYes: trackCommunityRsvpYesMock,

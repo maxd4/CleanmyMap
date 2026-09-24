@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toNonNegativeInteger, toSingleRow } from "./normalizers";
 
 export type GamificationFunnelCounts = {
   totalUsers: number;
@@ -29,18 +30,6 @@ type GamificationUserCountersRow = {
   eligible_forms_count: number | null;
   participation_count: number | null;
 };
-
-function toSingleRow<T>(data: T[] | T | null | undefined): T | null {
-  if (Array.isArray(data)) {
-    return data[0] ?? null;
-  }
-  return data ?? null;
-}
-
-function toNonNegativeInteger(value: number | null | undefined): number {
-  const next = Number(value ?? 0);
-  return Number.isFinite(next) && next >= 0 ? Math.floor(next) : 0;
-}
 
 export async function loadGamificationFunnelCounts(
   supabase: SupabaseClient,

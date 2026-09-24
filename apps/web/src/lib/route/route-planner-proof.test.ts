@@ -8,63 +8,14 @@ import {
   verifyRoutePlannerProof,
 } from "./route-planner-proof";
 import { isRoutePlannerSnapshot } from "./route-planner-snapshot-validation";
-
-const geometry = {
-  isLoop: true as const,
-  origin: [48.85, 2.35] as [number, number],
-  returnLeg: null,
-  coordinates: [],
-  distanceKm: 0,
-  durationMinutes: 0,
-  legs: [],
-  provider: "none" as const,
-  profile: null,
-  mode: "fallback" as const,
-  estimated: true,
-};
+import { createRoutePlannerSnapshotInput } from "./route-calibration-test-fixtures";
 
 function snapshot(): RoutePlannerSnapshot {
+  const input = createRoutePlannerSnapshotInput();
   return buildRoutePlannerSnapshot({
-    generatedAt: "2026-09-14T10:00:00.000Z",
-    engineVersion: "route-planner-v2",
-    selectedCandidates: [],
-    selectedStops: [],
-    origin: { latitude: 48.85, longitude: 2.35, source: "browser" },
-    planningMode: { type: "free" },
-    travelBudgetMinutes: 60,
-    maxStops: 3,
-    priorityVsTravel: 65,
-    pickupPreference: "balanced",
-    effectiveRiskFocus: "all",
+    ...input,
     volunteers: 2,
-    groupCount: 1,
-    routeGeometry: geometry,
-    travelDistanceKm: 0,
-    travelMinutes: 0,
-    returnDistanceKm: 0,
-    returnMinutes: 0,
-    groups: [{
-      groupIndex: 1,
-      volunteerCount: 2,
-      candidateIds: [],
-      reservedCandidateIds: [],
-      targetCount: 0,
-      travelDistanceKm: 0,
-      travelMinutes: 0,
-      travelBudgetMinutes: 60,
-      withinBudget: true,
-      routeGeometry: geometry,
-      operationalBudget: null,
-    }],
-    dataStatus: "empty",
-    dataLayers: { observed: "empty", prediction: "unavailable", recommendation: "empty" },
-    sourceHealth: {
-      partial: false,
-      failedSources: [],
-      availableSources: ["spots"],
-      warnings: [],
-    },
-    prediction: null,
+    groups: input.groups.map((group) => ({ ...group, volunteerCount: 2 })),
   });
 }
 

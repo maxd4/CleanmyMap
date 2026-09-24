@@ -20,6 +20,19 @@ import { rebuildUserGamificationBadges } from "./badges/rebuild";
 
 export { syncUserActionProgression } from "./progression-data";
 
+async function syncOrganizersProgression(
+  supabase: SupabaseClient,
+  organizerIds: readonly string[],
+): Promise<void> {
+  await Promise.all(
+    organizerIds.map(async (organizerId) => {
+      await syncUserActionProgression(supabase, organizerId);
+      await rebuildUserGamificationBadges(supabase, organizerId);
+      await refreshProgressionProfile(supabase, organizerId);
+    }),
+  );
+}
+
 export async function refreshProgressionProfile(
   supabase: SupabaseClient,
   userId: string,
@@ -134,13 +147,7 @@ export async function trackActionCreated(
     action.id,
     params.userId,
   );
-  await Promise.all(
-    organizerIds.map(async (organizerId) => {
-      await syncUserActionProgression(supabase, organizerId);
-      await rebuildUserGamificationBadges(supabase, organizerId);
-      await refreshProgressionProfile(supabase, organizerId);
-    }),
-  );
+  await syncOrganizersProgression(supabase, organizerIds);
 }
 
 export async function trackActionValidationBonus(
@@ -157,13 +164,7 @@ export async function trackActionValidationBonus(
     action.id,
     action.created_by_clerk_id,
   );
-  await Promise.all(
-    organizerIds.map(async (organizerId) => {
-      await syncUserActionProgression(supabase, organizerId);
-      await rebuildUserGamificationBadges(supabase, organizerId);
-      await refreshProgressionProfile(supabase, organizerId);
-    }),
-  );
+  await syncOrganizersProgression(supabase, organizerIds);
 }
 
 export async function trackActionRejection(
@@ -181,13 +182,7 @@ export async function trackActionRejection(
     action.created_by_clerk_id,
   );
 
-  await Promise.all(
-    organizerIds.map(async (organizerId) => {
-      await syncUserActionProgression(supabase, organizerId);
-      await rebuildUserGamificationBadges(supabase, organizerId);
-      await refreshProgressionProfile(supabase, organizerId);
-    }),
-  );
+  await syncOrganizersProgression(supabase, organizerIds);
 }
 
 export async function trackSpotCreated(

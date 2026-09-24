@@ -12,6 +12,61 @@ import {
   requireAuthenticatedAccessMock,
 } from "./route.test.helpers";
 
+async function postGroupJoin(actionId: string) {
+  const { POST } = await import("./route");
+  return POST(
+    new Request("http://localhost/api/actions/group-join", {
+      method: "POST",
+      body: JSON.stringify({ actionId }),
+    }),
+  );
+}
+
+async function expectPendingGroupJoin(response: Response) {
+  const body = (await response.json()) as {
+    alreadyJoined?: boolean;
+    participationStatus?: string;
+    participantsCount?: number;
+    joinedAt?: string;
+  };
+
+  expect(response.status).toBe(200);
+  expect(body.alreadyJoined).toBe(false);
+  expect(body.participationStatus).toBe("pending");
+  expect(body.participantsCount).toBe(0);
+  expect(rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
+  expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
+}
+
+function seedGroupJoinAction({
+  actionId,
+  locationLabel,
+  status,
+  participants,
+}: {
+  actionId: string;
+  locationLabel: string;
+  status: "approved" | "pending";
+  participants: ParticipantRow[];
+}) {
+  getSupabaseServerClientMock.mockReturnValue(
+    createSupabaseMock({
+      actions: [
+        makeVisibleGroupAction({
+          id: actionId,
+          created_at: "2026-05-01T10:00:00Z",
+          action_date: "2026-05-10",
+          location_label: locationLabel,
+          volunteers_count: 12,
+          duration_minutes: 45,
+          status,
+        }),
+      ],
+      participants,
+    }),
+  );
+}
+
 describe("POST /api/actions/group-join", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -55,82 +110,18 @@ describe("POST /api/actions/group-join", () => {
 
   it("creates a pending request for an approved action form", async () => {
     const participants: ParticipantRow[] = [];
-    const supabase = createSupabaseMock({
-      actions: [
-        makeVisibleGroupAction({
-          id: "action-1",
-          created_at: "2026-05-01T10:00:00Z",
-          action_date: "2026-05-10",
-          location_label: "Parc Nord",
-          volunteers_count: 12,
-          duration_minutes: 45,
-          status: "approved",
-        }),
-      ],
-      participants,
-    });
-    getSupabaseServerClientMock.mockReturnValue(supabase);
+    seedGroupJoinAction({ actionId: "action-1", locationLabel: "Parc Nord", status: "approved", participants });
 
-    const { POST } = await import("./route");
-    const response = await POST(
-      new Request("http://localhost/api/actions/group-join", {
-        method: "POST",
-        body: JSON.stringify({ actionId: "action-1" }),
-      }),
-    );
-    const body = (await response.json()) as {
-      alreadyJoined?: boolean;
-      participationStatus?: string;
-      participantsCount?: number;
-      joinedAt?: string;
-    };
-
-    expect(response.status).toBe(200);
-    expect(body.alreadyJoined).toBe(false);
-    expect(body.participationStatus).toBe("pending");
-    expect(body.participantsCount).toBe(0);
-    expect(rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
-    expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
+    const response = await postGroupJoin("action-1");
+    await expectPendingGroupJoin(response);
   });
 
   it("creates a pending request for a pre-action form", async () => {
     const participants: ParticipantRow[] = [];
-    const supabase = createSupabaseMock({
-      actions: [
-        makeVisibleGroupAction({
-          id: "action-pre",
-          created_at: "2026-05-01T10:00:00Z",
-          action_date: "2026-05-10",
-          location_label: "Parc Préparation",
-          volunteers_count: 12,
-          duration_minutes: 45,
-          status: "pending",
-        }),
-      ],
-      participants,
-    });
-    getSupabaseServerClientMock.mockReturnValue(supabase);
+    seedGroupJoinAction({ actionId: "action-pre", locationLabel: "Parc Préparation", status: "pending", participants });
 
-    const { POST } = await import("./route");
-    const response = await POST(
-      new Request("http://localhost/api/actions/group-join", {
-        method: "POST",
-        body: JSON.stringify({ actionId: "action-pre" }),
-      }),
-    );
-    const body = (await response.json()) as {
-      alreadyJoined?: boolean;
-      participationStatus?: string;
-      participantsCount?: number;
-      joinedAt?: string;
-    };
-
-    expect(response.status).toBe(200);
-    expect(body.alreadyJoined).toBe(false);
-    expect(body.participationStatus).toBe("pending");
-    expect(body.participantsCount).toBe(0);
-    expect(rebuildUserGamificationBadgesMock).not.toHaveBeenCalled();
-    expect(refreshProgressionProfileMock).not.toHaveBeenCalled();
+    const response = await postGroupJoin("action-pre");
+    await expectPendingGroupJoin(response);
   });
 
   it("re-enters a cancelled participation into the waitlist", async () => {
@@ -146,21 +137,7 @@ describe("POST /api/actions/group-join", () => {
         user_id: "user-1",
       },
     ];
-    const supabase = createSupabaseMock({
-      actions: [
-        makeVisibleGroupAction({
-          id: "action-1",
-          created_at: "2026-05-01T10:00:00Z",
-          action_date: "2026-05-10",
-          location_label: "Parc Nord",
-          volunteers_count: 12,
-          duration_minutes: 45,
-          status: "approved",
-        }),
-      ],
-      participants,
-    });
-    getSupabaseServerClientMock.mockReturnValue(supabase);
+    seedGroupJoinAction({ actionId: "action-1", locationLabel: "Parc Nord", status: "approved", participants });
 
     const { POST } = await import("./route");
     const response = await POST(

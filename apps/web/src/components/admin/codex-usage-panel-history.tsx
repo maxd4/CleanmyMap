@@ -1,14 +1,5 @@
 import type { EnvironmentalImpactCodexUsageWeeklySnapshotRecord } from "@/lib/environmental-impact-estimator";
-
-function formatKg(value: number | null | undefined) {
-  if (typeof value !== "number" || Number.isNaN(value)) return "—";
-  return `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value)} kg CO2e proxy`;
-}
-
-function formatNumber(value: number | null | undefined) {
-  if (typeof value !== "number" || Number.isNaN(value)) return "—";
-  return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value);
-}
+import { formatKg, formatNumber } from "./codex-usage-panel.utils";
 
 type CodexUsagePanelHistoryProps = {
   snapshots: EnvironmentalImpactCodexUsageWeeklySnapshotRecord[] | undefined;

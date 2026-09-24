@@ -37,16 +37,13 @@ vi.mock("next/navigation", () => ({
   }),
 }));
 
-vi.mock("@/components/ui/site-preferences-provider", () => ({
-  useSitePreferences: () => ({
-    locale: "fr",
-  }),
-}));
+vi.mock("@/components/ui/site-preferences-provider", async () =>
+  (await import("@/app/learn/test-helpers")).createLearnSitePreferencesModule(),
+);
 
-vi.mock("@/components/learn/learn-rubric-shell", () => ({
-  LearnRubricShell: ({ children, staticIntro }: { children: React.ReactNode; staticIntro?: React.ReactNode }) =>
-    React.createElement("div", { "data-testid": "shell" }, staticIntro, children),
-}));
+vi.mock("@/components/learn/learn-rubric-shell", async () =>
+  (await import("@/app/learn/test-helpers")).createLearnRubricShellModule(),
+);
 
 vi.mock("@/lib/server-preferences", () => serverLocaleMock);
 

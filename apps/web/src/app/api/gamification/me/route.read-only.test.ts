@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { expectNoSupabaseWrites } from "@/app/api/test-helpers";
 
 describe("GET /api/gamification/me boundary", () => {
   it("does not invoke a rebuild or perform DML while reading progression", () => {
@@ -17,11 +18,6 @@ describe("GET /api/gamification/me boundary", () => {
     expect(route).not.toContain("rebuild");
     expect(progression).not.toContain("backfillUserProgression");
 
-    for (const source of [route, progression, profileBadges]) {
-      expect(source).not.toMatch(/\.insert\s*\(/);
-      expect(source).not.toMatch(/\.update\s*\(/);
-      expect(source).not.toMatch(/\.delete\s*\(/);
-      expect(source).not.toMatch(/\.upsert\s*\(/);
-    }
+    expectNoSupabaseWrites([route, progression, profileBadges]);
   });
 });

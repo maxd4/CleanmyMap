@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { expectNoSupabaseWrites } from "@/app/api/test-helpers";
 
 describe("GET /api/gamification/badges/list boundary", () => {
   it("keeps the page loader and route read-only", () => {
@@ -9,12 +10,7 @@ describe("GET /api/gamification/badges/list boundary", () => {
     );
     const route = readFileSync(new URL("./route.ts", import.meta.url), "utf8");
 
-    for (const source of [listing, route]) {
-      expect(source).not.toMatch(/\.insert\s*\(/);
-      expect(source).not.toMatch(/\.update\s*\(/);
-      expect(source).not.toMatch(/\.delete\s*\(/);
-      expect(source).not.toMatch(/\.upsert\s*\(/);
-    }
+    expectNoSupabaseWrites([listing, route]);
 
     expect(listing).not.toContain("auditXpAttribution");
     expect(listing).not.toContain("broadcastGamificationAnnouncement");

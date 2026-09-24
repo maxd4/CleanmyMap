@@ -1,4 +1,4 @@
-export const CANONICAL_JOIN_ACTION_SECTION_ID = "rejoindre-une-action" as const;
+const CANONICAL_JOIN_ACTION_SECTION_ID = "rejoindre-une-action" as const;
 export const CANONICAL_JOIN_ACTION_ROUTE = `/sections/${CANONICAL_JOIN_ACTION_SECTION_ID}` as const;
 export const LEGACY_JOIN_FORM_ROUTE = "/sections/rejoindre-un-formulaire" as const;
 

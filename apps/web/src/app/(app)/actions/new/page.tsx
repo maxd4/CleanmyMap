@@ -91,43 +91,34 @@ export default async function NewActionPage({
     email: undefined,
   };
 
+  const actionCreationShell = (
+    <ActionCreationShell
+      actorNameOptions={actorNameOptions}
+      defaultActorName={defaultActorName}
+      userMetadata={userMetadata}
+      linkedEventId={fromEventId}
+      initialActionId={actionId ?? null}
+      initialPanel={panel}
+      initialTab={tab}
+      tabSearchParams={params}
+      localDevAuth={localDevAuth}
+      isAuthenticated={isAuthenticated}
+      signInHref={buildSignInRedirectHref(returnUrl)}
+      signUpHref={buildSignUpRedirectHref(returnUrl)}
+    />
+  );
+
   if (pageTemplateV2Enabled) {
     return (
       <div className="space-y-8">
-        <ActionCreationShell
-          actorNameOptions={actorNameOptions}
-          defaultActorName={defaultActorName}
-          userMetadata={userMetadata}
-          linkedEventId={fromEventId}
-          initialActionId={actionId ?? null}
-          initialPanel={panel}
-          initialTab={tab}
-          tabSearchParams={params}
-          localDevAuth={localDevAuth}
-          isAuthenticated={isAuthenticated}
-          signInHref={buildSignInRedirectHref(returnUrl)}
-          signUpHref={buildSignUpRedirectHref(returnUrl)}
-        />
+        {actionCreationShell}
       </div>
     );
   }
 
   return (
     <div data-rubrique-report-root className="space-y-4">
-      <ActionCreationShell
-        actorNameOptions={actorNameOptions}
-        defaultActorName={defaultActorName}
-        userMetadata={userMetadata}
-        linkedEventId={fromEventId}
-        initialActionId={actionId ?? null}
-        initialPanel={panel}
-        initialTab={tab}
-        tabSearchParams={params}
-        localDevAuth={localDevAuth}
-        isAuthenticated={isAuthenticated}
-        signInHref={buildSignInRedirectHref(returnUrl)}
-        signUpHref={buildSignUpRedirectHref(returnUrl)}
-      />
+      {actionCreationShell}
     </div>
   );
 }

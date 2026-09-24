@@ -1,6 +1,32 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { createGroupJoinAction, createGroupJoinParticipant, createGroupJoinProfile, createGroupJoinSupabaseMock, groupJoinMocks, seedGroupJoinTestDefaults, type GroupJoinParticipantRow } from "./route.test.helpers";
 const { authMock, getCurrentUserIdentityMock, getSupabaseServerClientMock, appendActionModerationAuditMock, rebuildUserGamificationBadgesMock, refreshProgressionProfileMock } = groupJoinMocks;
+
+async function postActionGroupJoin(payload: Record<string, unknown>) {
+  const { POST } = await import("./route");
+  return POST(
+    new Request("http://localhost/api/actions/action-1/group-join", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+    { params: Promise.resolve({ actionId: "action-1" }) },
+  );
+}
+
+function seedApprovedActionParticipants(): GroupJoinParticipantRow[] {
+  const participants: GroupJoinParticipantRow[] = [];
+  getSupabaseServerClientMock.mockReturnValue(
+    createGroupJoinSupabaseMock({
+      action: createGroupJoinAction({
+        createdByClerkId: "user-owner",
+        status: "approved",
+        groupJoinEnabled: true,
+      }),
+      participants,
+    }),
+  );
+  return participants;
+}
 describe("POST /api/actions/:actionId/group-join admin moderation", () => {
   beforeEach(() => {
     seedGroupJoinTestDefaults();
@@ -76,17 +102,7 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
       role: "elu",
       activeRole: "elu",
     });
-    const participants: GroupJoinParticipantRow[] = [];
-    getSupabaseServerClientMock.mockReturnValue(
-      createGroupJoinSupabaseMock({
-        action: createGroupJoinAction({
-          createdByClerkId: "user-owner",
-          status: "approved",
-          groupJoinEnabled: true,
-        }),
-        participants,
-      }),
-    );
+    const participants = seedApprovedActionParticipants();
     groupJoinMocks.loadActionOrganizerIdsForActionMock.mockResolvedValueOnce([]);
 
     const { POST } = await import("./route");
@@ -113,29 +129,12 @@ describe("POST /api/actions/:actionId/group-join admin moderation", () => {
       role: "elu",
       activeRole: "admin",
     });
-    const participants: GroupJoinParticipantRow[] = [];
-    getSupabaseServerClientMock.mockReturnValue(
-      createGroupJoinSupabaseMock({
-        action: createGroupJoinAction({
-          createdByClerkId: "user-owner",
-          status: "approved",
-          groupJoinEnabled: true,
-        }),
-        participants,
-      }),
-    );
+    seedApprovedActionParticipants();
 
-    const { POST } = await import("./route");
-    const response = await POST(
-      new Request("http://localhost/api/actions/action-1/group-join", {
-        method: "POST",
-        body: JSON.stringify({
-          participantUserId: "user-2",
-          reason: "Ajout administratif justifié.",
-        }),
-      }),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await postActionGroupJoin({
+      participantUserId: "user-2",
+      reason: "Ajout administratif justifié.",
+    });
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -541,16 +540,7 @@ describe("POST /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { POST } = await import("./route");
-    const response = await POST(
-      new Request("http://localhost/api/actions/action-1/group-join", {
-        method: "POST",
-        body: JSON.stringify({
-          participantUserId: "user-2",
-        }),
-      }),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await postActionGroupJoin({ participantUserId: "user-2" });
 
     const body = (await response.json()) as {
       participantUserId?: string;

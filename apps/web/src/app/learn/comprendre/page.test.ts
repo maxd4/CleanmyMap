@@ -19,16 +19,15 @@ type JourneyProps = {
 const introCalls: IntroProps[] = [];
 const journeyCalls: JourneyProps[] = [];
 
-vi.mock("@/components/ui/site-preferences-provider", () => ({
-  useSitePreferences: () => ({
-    locale: "fr",
-  }),
-}));
+vi.mock("@/components/ui/site-preferences-provider", async () => {
+  const helpers = await import("@/app/learn/test-helpers");
+  return helpers.createLearnSitePreferencesModule();
+});
 
-vi.mock("@/components/learn/learn-rubric-shell", () => ({
-  LearnRubricShell: ({ children }: { children: React.ReactNode }) =>
-    React.createElement("div", { "data-testid": "shell" }, children),
-}));
+vi.mock("@/components/learn/learn-rubric-shell", async () => {
+  const helpers = await import("@/app/learn/test-helpers");
+  return helpers.createLearnRubricShellModule();
+});
 
 vi.mock("@/components/learn/learn-comprendre-visual-intro", () => ({
   LearnComprendreVisualIntro: (props: IntroProps) => {
