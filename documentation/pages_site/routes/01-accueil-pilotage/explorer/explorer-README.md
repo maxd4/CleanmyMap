@@ -8,7 +8,7 @@
 - **Type fonctionnel** : exception UI — sommaire
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Statut** : public
-- **Contrat SEO** : `ACCESS=PUBLIC`, `SEARCH=INDEX`, `DISCOVERY=SITEMAP`, `CANONICAL=SELF`. Cette surface est une page publique de découverte et de maillage interne.
+- **Contrat SEO** : `ACCESS=PUBLIC`, `SEARCH=NOINDEX`, `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. Cette surface reste publique pour la découverte interne, sans constituer une page de recherche autonome.
 - **Contexte nécessaire** : Aucun
 - **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
 - **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.

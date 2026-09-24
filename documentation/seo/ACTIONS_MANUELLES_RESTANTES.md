@@ -51,7 +51,8 @@ d'identité SEO.
 - Métadonnées globales et par page.
 - `robots.ts` et `sitemap.ts`.
 - Données structurées JSON-LD.
-- Canonicalisation des URLs dans les métadonnées.
+- Génération des canonicales dans les métadonnées ; leur cohérence avec les
+  redirects et l'alignement runtime restent à vérifier opérationnellement.
 
 Le contrat cible des routes et de leurs axes `ACCESS / SEARCH / DISCOVERY /
 CANONICAL` est documenté dans
