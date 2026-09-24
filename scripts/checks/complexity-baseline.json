@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "sourceCommit": "4410cda3e9e717cf52328d25ae04350b072657e6",
-  "policyFingerprint": "1457b502ac06ff596956b4cb3db1da7a3ae6a7c6134e83b07dae34c310aaaceb",
+  "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
     {
@@ -5214,15 +5214,6 @@
       "ceiling": 82,
       "status": "LEGACY",
       "functionIdentity": "named:loadUserAnnualImpactStats#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "src/lib/gamification/badges/listing.ts",
-      "line": 60,
-      "category": "métier/domain pur",
-      "ceiling": 70,
-      "status": "LEGACY",
-      "functionIdentity": "named:awardProgressionEventIfMissing#1"
     },
     {
       "metric": "functionLength",

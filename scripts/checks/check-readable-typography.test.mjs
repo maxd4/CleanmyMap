@@ -78,6 +78,27 @@ test("allows documented print metadata while keeping the rule strict elsewhere",
   assert.equal(result.allowlisted.length, 1);
 });
 
+test("keeps the existing compact badge metadata in the extracted InfiniteBadge view", () => {
+  const badge = analyzeDiff([
+    "diff --git a/apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx b/apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
+    "--- a/apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
+    "+++ b/apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
+    "@@ -1,0 +2 @@",
+    "+<p className=\"text-[10px]\">Rang existant</p>",
+  ].join("\n"));
+  const otherSurface = analyzeDiff([
+    "diff --git a/apps/web/src/components/gamification/other.tsx b/apps/web/src/components/gamification/other.tsx",
+    "--- a/apps/web/src/components/gamification/other.tsx",
+    "+++ b/apps/web/src/components/gamification/other.tsx",
+    "@@ -1,0 +2 @@",
+    "+<p className=\"text-[10px]\">Nouveau libellé</p>",
+  ].join("\n"));
+
+  assert.equal(badge.violations.length, 0);
+  assert.equal(badge.allowlisted.length, 1);
+  assert.equal(otherSurface.violations.length, 1);
+});
+
 test("rejects new navigation truncation", () => {
   const result = analyzeDiff(
     [

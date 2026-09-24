@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import ts from "typescript";
 
-export const COMPLEXITY_POLICY_VERSION = 2;
+export const COMPLEXITY_POLICY_VERSION = 3;
 
-export const COMPLEXITY_THRESHOLDS = Object.freeze({
+const COMPLEXITY_THRESHOLDS = Object.freeze({
   "métier/domain pur": Object.freeze({ target: 15, blockAbove: 20 }),
   "runtime/services/orchestration": Object.freeze({ target: 20, blockAbove: 25 }),
   hooks: Object.freeze({ target: 20, blockAbove: 25 }),
@@ -12,7 +12,7 @@ export const COMPLEXITY_THRESHOLDS = Object.freeze({
   "parser/adaptateur exceptionnel": Object.freeze({ reviewAbove: 25, maximum: 30 }),
 });
 
-export const FUNCTION_LENGTH_THRESHOLDS = Object.freeze({
+const FUNCTION_LENGTH_THRESHOLDS = Object.freeze({
   "métier/domain pur": Object.freeze({ target: 60, blockAbove: 100 }),
   "runtime/services/orchestration": Object.freeze({ target: 100, blockAbove: 150 }),
   hooks: Object.freeze({ target: 120, blockAbove: 200 }),
@@ -97,7 +97,7 @@ function collectFunctionNodes(sourceFile) {
   return nodes;
 }
 
-export function createFunctionIdentityResolver(file, source) {
+export function createFunctionMetadataResolver(file, source) {
   const scriptKind = file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
   const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, scriptKind);
   const nodes = collectFunctionNodes(sourceFile);
@@ -120,8 +120,24 @@ export function createFunctionIdentityResolver(file, source) {
     const node = (namedMessage
       ? candidates.find((candidate) => nodeName(candidate, sourceFile) === namedMessage)
       : candidates[0]) ?? candidates[0];
-    return node ? identityByNode.get(node) : `unresolved:${message || "function"}`;
-  };
+    if (!node) return null;
+    return {
+      functionIdentity: identityByNode.get(node),
+      startLine: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+      endLine: sourceFile.getLineAndCharacterOfPosition(node.end).line + 1,
+    };
+  }
+}
+
+function createFunctionIdentityResolver(file, source) {
+  const resolveMetadata = createFunctionMetadataResolver(file, source);
+  return (line, message = "") => resolveMetadata(line, message)?.functionIdentity ?? `unresolved:${message || "function"}`;
+}
+
+export function intersectsChangedFunction(changedRanges, path, startLine, endLine) {
+  return (changedRanges.get(path) ?? []).some(
+    (range) => range.start <= endLine && range.end >= startLine,
+  );
 }
 
 export function deriveFunctionIdentity(file, source, line, message = "") {
@@ -144,10 +160,18 @@ export function evaluateNewMetric(metric, category, value, { parserJustified = f
     return { status: value > thresholds.reviewAbove ? "REVIEW" : "PASS", metric, category, value, limit: thresholds.maximum };
   }
 
-  if (value > thresholds.blockAbove) return { status: "FAIL", reason: "new code exceeds blocking threshold", metric, category, value, limit: thresholds.blockAbove };
-  // The target is an architectural quality objective, not a blocking gate.
-  // The lot 6B contract blocks only values strictly above blockAbove.
-  return { status: "PASS", metric, category, value, limit: thresholds.blockAbove };
+  if (value > thresholds.target) return { status: "FAIL", reason: "new or materially modified code exceeds target", metric, category, value, limit: thresholds.target };
+  return { status: "PASS", metric, category, value, limit: thresholds.target };
+}
+
+export function evaluateBaselinedMetric(metric, category, value, ceiling, changed) {
+  const target = metric === "complexity"
+    ? COMPLEXITY_THRESHOLDS[category]?.target
+    : FUNCTION_LENGTH_THRESHOLDS[category]?.target;
+  if (changed && target !== undefined && ceiling <= target && value > target) {
+    return { status: "FAIL", reason: "changed code exceeds target", current: value, ceiling: target };
+  }
+  return compareLegacyValue(value, ceiling);
 }
 
 export function compareLegacyValue(current, ceiling) {
