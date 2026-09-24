@@ -48,6 +48,10 @@ Ce document définit la stratégie de visibilité web pour CleanMyMap, la diffé
 - `apps/web/src/app/sitemap.ts` - Liste des pages (16 actuellement)
 - `apps/web/src/app/robots.ts` - Directives crawl + AI bots
 
+Le sitemap n'expose `lastModified` que lorsqu'une date réelle de modification
+par page est disponible ; aucune date de génération ne doit servir de date de
+modification.
+
 ### Schemas JSON-LD
 - `apps/web/src/components/seo/structured-data/` - Tous les schemas
 
