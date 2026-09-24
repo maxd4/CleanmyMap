@@ -631,7 +631,7 @@ Avant toute validation navigateur, classifier la surface :
 - `PROTECTED_CLERK_CLIENT` : si la route consomme `useUser`, `useAuth`, l'UI
   Clerk, `SignedIn`/`SignedOut` ou une vraie session navigateur, le bypass
   serveur est insuffisant. Utiliser le harness Playwright Clerk Development,
-  `127.0.0.1:3000` strict, `CMM_DISABLE_DEV_AUTH_BYPASS=1` et le
+  `localhost:3000` strict, `CMM_DISABLE_DEV_AUTH_BYPASS=1` et le
   `storageState`/la session du global setup. `/onboarding` est un exemple ;
 - `PROD_SMOKE` : session Clerk Production réelle selon le playbook, sans
   bypass ;
@@ -650,9 +650,9 @@ port libre ; reprendre l'URL annoncée. Le harness Clerk doit libérer l'ancien
 serveur et rester strict sur `3000`. Ne jamais lancer Playwright Clerk contre
 un serveur bypass, ni supposer `localhost:3000` après un fallback.
 
-La configuration Playwright utilise `http://127.0.0.1:3000` par défaut. Si la
-configuration Clerk Development locale impose explicitement
-`http://localhost:3000`, aligner les deux côtés sans fallback de port :
+La configuration Playwright utilise `http://localhost:3000` par défaut, en
+cohérence avec la configuration Clerk Development locale. Pour lancer
+explicitement le scénario sans fallback de port :
 
 ```powershell
 $env:PLAYWRIGHT_BASE_URL = "http://localhost:3000"

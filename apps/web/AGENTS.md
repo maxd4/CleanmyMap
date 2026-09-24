@@ -52,7 +52,7 @@ protocole choisi :
 - `PROTECTED_CLERK_CLIENT` : la surface consomme `useUser`, `useAuth`, les UI
   Clerk, `SignedIn`/`SignedOut` ou exige une session navigateur réelle. Le
   bypass serveur est insuffisant : utiliser le harness Playwright Clerk
-  Development, `127.0.0.1:3000` strict, `CMM_DISABLE_DEV_AUTH_BYPASS=1` et
+  Development, `localhost:3000` strict, `CMM_DISABLE_DEV_AUTH_BYPASS=1` et
   l'état de session produit par le global setup. `/onboarding` est un exemple
   explicite.
 - `PROD_SMOKE` : utiliser uniquement une vraie session Clerk Production selon

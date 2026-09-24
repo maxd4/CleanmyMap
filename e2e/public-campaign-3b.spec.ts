@@ -13,7 +13,7 @@ type MutationGuard = {
 
 function installMutationGuard(page: Page): MutationGuard {
   const guard: MutationGuard = { observed: [], unexpected: [] };
-  const origin = new URL("http://127.0.0.1:3000").origin;
+  const origin = new URL("http://localhost:3000").origin;
 
   page.on("request", (request) => {
     const url = new URL(request.url());
