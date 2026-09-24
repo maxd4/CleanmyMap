@@ -68,6 +68,8 @@ describe("indexability helpers", () => {
     expect(isPrivateAppPath("/learn/ecole")).toBe(false);
     expect(isPublicNoindexPath("/sign-in")).toBe(true);
     expect(isPublicNoindexPath("/docs/seo/README.md")).toBe(true);
+    expect(isPublicNoindexPath("/explorer")).toBe(true);
+    expect(isPrivateAppPath("/explorer")).toBe(false);
   });
 
   it("keeps legacy aliases explicit and out of the page sitemap contract", () => {

@@ -49,6 +49,7 @@ const PUBLIC_NOINDEX_ROUTE_PREFIXES = [
   "/declaration-simple",
   "/docs",
   "/error/429",
+  "/explorer",
   "/preview/actions/new",
   "/sign-in",
   "/sign-up",

@@ -4,6 +4,11 @@ import { describe, expect, it } from "vitest";
 const source = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
 
 describe("explorer summary presentation contract", () => {
+  it("keeps the public summary noindex without a canonical URL", () => {
+    expect(source).toContain("robots: { index: false, follow: true }");
+    expect(source).not.toContain("alternates: { canonical:");
+  });
+
   it("uses the concise bilingual subtitle without a generic card CTA", () => {
     expect(source).toContain("CleanMyMap en un coup d'œil");
     expect(source).toContain("CleanMyMap at a glance");
