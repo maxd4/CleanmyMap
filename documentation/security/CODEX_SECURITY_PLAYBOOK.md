@@ -54,7 +54,7 @@ Avant de démarrer, classifier la surface :
 - `PROTECTED_CLERK_CLIENT` : la route ou son consommateur utilise `useUser`,
   `useAuth`, l'UI Clerk, `SignedIn`/`SignedOut`, ou nécessite une vraie session
   navigateur. Le bypass serveur ne suffit pas : utiliser le harness officiel
-  Playwright Clerk Development sur `127.0.0.1:3000` strict, avec
+  Playwright Clerk Development sur `localhost:3000` strict, avec
   `CMM_DISABLE_DEV_AUTH_BYPASS=1` et le `storageState`/la session préparé(e)
   par le global setup. `/onboarding` est un exemple.
 - `PROD_SMOKE` : vraie session Clerk Production selon le playbook, sans bypass

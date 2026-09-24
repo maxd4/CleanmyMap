@@ -60,7 +60,7 @@ test.describe("campaign 3a1 — locale and Explorer", () => {
       localStorage.setItem("cleanmymap.locale", "en");
     });
     await page.context().addCookies([
-      { name: "cleanmymap.locale", value: "fr", url: "http://127.0.0.1:3000" },
+      { name: "cleanmymap.locale", value: "fr", url: "http://localhost:3000" },
     ]);
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect.poll(

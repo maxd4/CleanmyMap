@@ -46,7 +46,7 @@ test.describe("homepage community credibility reveal", () => {
 
   test("keeps public SSR content visible with JavaScript disabled", async ({ browser }) => {
     const context = await browser.newContext({
-      baseURL: "http://127.0.0.1:3000",
+      baseURL: "http://localhost:3000",
       javaScriptEnabled: false,
       viewport: { width: 1440, height: 900 },
     });

@@ -1,4 +1,4 @@
-import { clerk } from "@clerk/testing/playwright";
+import { clerk, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
 const gamificationRoute = "/sections/gamification";
@@ -46,6 +46,7 @@ test.setTimeout(120_000);
 test("gamification soft-gate returns to the canonical route after Clerk sign-in", async ({
   page,
 }) => {
+  await setupClerkTestingToken({ page });
   await openAnonymousGamification(page);
 
   await page
@@ -60,16 +61,50 @@ test("gamification soft-gate returns to the canonical route after Clerk sign-in"
     .toBe(gamificationSignInHref);
   await clerk.loaded({ page });
 
+  const signInRoot = page.locator(".cl-signIn-root");
+  await signInRoot.waitFor({ state: "visible" });
+
   const email = process.env.E2E_CLERK_USER_EMAIL?.trim();
   if (!email) {
     throw new Error("E2E_CLERK_USER_EMAIL is required for the Clerk E2E harness.");
   }
 
+  await signInRoot.locator('input[name="identifier"]').fill(email);
+  await signInRoot.getByRole("button", { name: "Continuer", exact: true }).click();
+
+  const codeInput = signInRoot
+    .locator('input[autocomplete="one-time-code"], input[name="code"]')
+    .first();
+  await codeInput.waitFor({ state: "visible" });
+
   const authenticationRedirect = page.waitForURL(
     (url) => `${url.pathname}${url.search}` === gamificationRoute,
     { waitUntil: "domcontentloaded", timeout: 30_000 },
   );
-  await clerk.signIn({ page, emailAddress: email });
+  const firstFactorResponse = page.waitForResponse(
+    (response) => {
+      const url = new URL(response.url());
+      return (
+        response.request().method() === "POST" &&
+        url.pathname.includes("/v1/client/sign_ins/") &&
+        url.pathname.endsWith("/attempt_first_factor")
+      );
+    },
+  );
+  await codeInput.pressSequentially("424242");
+  const response = await firstFactorResponse;
+  expect(response.status()).toBe(200);
+  const responseBody = (await response.json()) as {
+    response?: { status?: string };
+  };
+  expect(responseBody.response?.status).toBe("complete");
+
+  await expect
+    .poll(() =>
+      page.evaluate(() => Boolean(window.Clerk?.session && window.Clerk?.user)),
+    )
+    .toBe(true);
+
   await authenticationRedirect;
   await expect
     .poll(() => {
