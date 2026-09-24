@@ -125,3 +125,6 @@ apps/web/data/local-db/*.json
 .cursor/mcp.json
 .vscode/mcp.json
 .agents/mcp_config.json
+
+# Codex-local environment actions
+.codex/environments/environment.toml
