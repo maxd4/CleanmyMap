@@ -47,10 +47,11 @@ describe("map marker categories", () => {
   it("uses the global V2 reference and the maximum component score", () => {
     expect(
       classifyPollutionColor(
-        buildItem({ waste_kg: 40, cigarette_butts: 3_000 }),
+        buildItem({ waste_kg: 16, cigarette_butts: 1_500 }),
         references,
+        { displayMode: "observed" },
       ),
-    ).toBe("red");
+    ).toBe("violet");
     expect(
       resolveInfrastructureNeed(
         buildItem({ waste_kg: 16, cigarette_butts: 0 }),
@@ -115,6 +116,25 @@ describe("map marker categories", () => {
     }
   });
 
+  it("keeps the observed RED/VIOLET boundary explicit", () => {
+    expect(
+      classifyPollutionColor(
+        buildItem({ waste_kg: 12, cigarette_butts: 0 }),
+        references,
+        { displayMode: "observed" },
+      ),
+    ).toBe("red");
+    expect(
+      classifyPollutionColor(
+        buildItem({ waste_kg: 16, cigarette_butts: 0 }),
+        references,
+        { displayMode: "observed" },
+      ),
+    ).toBe("violet");
+    expect(ACTION_POLLUTION_COLOR_THRESHOLDS.RED).toBe(60);
+    expect(ACTION_POLLUTION_COLOR_THRESHOLDS.VIOLET).toBe(80);
+  });
+
   it("applies visibility filters to derived pollution categories", () => {
     const item = buildItem({ waste_kg: 16, cigarette_butts: 0 });
     expect(isVisibleWithCategoryFilter(item, DEFAULT_VISIBLE_CATEGORIES, references)).toBe(true);
@@ -153,7 +173,8 @@ describe("map marker categories", () => {
       deriveMarkerCategories(
         buildItem({ duration_minutes: 0, waste_kg: 20 }),
         references,
+        { displayMode: "observed" },
       ),
-    ).toEqual(["red", "bin"]);
+    ).toEqual(["black", "bin"]);
   });
 });

@@ -71,6 +71,8 @@ const EXECUTION_ENV_KEYS = new Set([
   "VERCEL_ENV",
   "VERCEL_GIT_COMMIT_SHA",
   "VERCEL_GIT_PREVIOUS_SHA",
+  // Read only by the Vercel deployment preflight; it is not application runtime configuration.
+  "VERCEL_PLAN",
 ]);
 
 describe("env configuration", () => {

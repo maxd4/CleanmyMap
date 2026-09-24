@@ -15,8 +15,7 @@ import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 export const metadata: Metadata = {
   title: "Sommaire - Plan du site et navigation",
   description: "Explorez toutes les sections de CleanMyMap : carte interactive, actions de nettoyage, signalements de pollution, communauté de bénévoles écologistes.",
-  robots: { index: true, follow: true },
-  alternates: { canonical: "/explorer" },
+  robots: { index: false, follow: true },
 };
 
 // Charte couleur officielle — même esprit que les blocs de navigation visibles

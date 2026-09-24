@@ -38,7 +38,8 @@ function calculateProgress(
   step: number,
   total: number,
 ) {
-  if (actionProgression) return actionProgression.progressPercent / 100;
+  // The badge ring consumes a 0–1 fraction; progressPercent is an internal 0–100 value.
+  if (actionProgression) return actionProgression.progressPercent * 0.01;
   const base = level * step;
   if (next <= base) return 0;
   return Math.max(0, Math.min(1, (Math.max(0, total) - base) / (next - base)));

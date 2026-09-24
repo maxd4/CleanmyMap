@@ -31,8 +31,8 @@ export const COMPLEXITY_POLICY_FINGERPRINT = createHash("sha256")
 export const FUNCTION_IDENTITY_SCHEME_VERSION = 2;
 export const FUNCTION_IDENTITY_SCHEME =
   "v2: path + semantic role with canonical syntax tokens + deterministic occurrence; line is diagnostic metadata only.";
-export const SUBSTANTIAL_CHANGE_MIN_LINES = 10;
-export const SUBSTANTIAL_CHANGE_RATIO = 0.2;
+const SUBSTANTIAL_CHANGE_MIN_LINES = 10;
+const SUBSTANTIAL_CHANGE_RATIO = 0.2;
 
 function canonicalSyntaxText(node, sourceFile) {
   const scanner = ts.createScanner(

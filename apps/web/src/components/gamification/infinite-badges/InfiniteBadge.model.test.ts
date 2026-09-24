@@ -24,6 +24,14 @@ describe("InfiniteBadge view model", () => {
     expect(model.rank.grade).toBe("Topaze");
   });
 
+  it("converts the canonical action percentage to the badge ring fraction", () => {
+    const model = buildInfiniteBadgeModel({ icon: "star", title: "Actions", total: 4, step: 100, family: "actions" });
+
+    expect(model.progress).toBe(0.5);
+    expect(model.progress).toBeGreaterThanOrEqual(0);
+    expect(model.progress).toBeLessThanOrEqual(1);
+  });
+
   it("preserves place-specific rank display", () => {
     const model = buildInfiniteBadgeModel({ icon: "star", title: "Lieux", total: 50, step: 5, family: "lieux" });
 
