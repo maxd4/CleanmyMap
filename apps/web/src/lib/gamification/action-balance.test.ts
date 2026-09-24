@@ -136,8 +136,8 @@ it("awards XP by completed cycles, resets the cycle, and increases the next requ
     association: 3,
     enterprise: 3,
   });
-  expect(summary.currentGrade.label).toBe("Topaze");
-  expect(summary.nextGrade?.label).toBe("Saphir");
+  expect(summary.currentGrade.label).toBe("Quartz");
+  expect(summary.nextGrade?.label).toBe("Topaze");
   expect(summary.progressPercent).toBe(0);
   expect(summary.awards.map((award) => award.xpAwarded)).toEqual([1, 2]);
 });
@@ -233,6 +233,6 @@ it("continues as pilier grades after the last gem grade", () => {
 
   expect(summary.balancedCycles).toBe(25);
   expect(summary.totalXpAwarded).toBe(325);
-  expect(summary.currentGrade.label).toBe("Pilier III");
-  expect(summary.nextGrade?.label).toBe("Pilier IV");
+  expect(summary.currentGrade.label).toBe("Pilier II");
+  expect(summary.nextGrade?.label).toBe("Pilier III");
 });

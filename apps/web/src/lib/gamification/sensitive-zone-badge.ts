@@ -4,6 +4,11 @@ import { buildDateFloor, areaFromLabel } from "@/lib/pilotage/overview.utils";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionRow } from "./progression-types";
 import type { GemGrade } from "./types";
+import {
+  buildGemGradeCatalog,
+  computeGemProgression,
+  type GemGradeDefinition,
+} from "./gem-progression";
 import { loadActionRowsForUser, loadValidatedActionIdsForUser } from "./progression-data";
 
 export type SensitiveZoneApaisementSummary = {
@@ -17,192 +22,24 @@ export type SensitiveZoneApaisementSummary = {
   nextLabel: string | null;
 };
 
-const SENSITIVE_ZONE_GEM_GRADES: GemGrade[] = [
-  {
-    id: "sensitive-zone-observateur",
-    label: "Observateur",
-    threshold: 0,
-    iconVariant: "shield-check",
-    visualVariant: "stone",
-    tooltip: "Aucune zone sensible apaisée pour le moment",
-    xp: 0,
-  },
-  {
-    id: "sensitive-zone-quartz",
-    label: "Quartz",
-    threshold: 1,
-    iconVariant: "shield-check",
-    visualVariant: "stone",
-    tooltip: "1 action validée dans une zone sensible",
-    xp: 1,
-  },
-  {
-    id: "sensitive-zone-topaze",
-    label: "Topaze",
-    threshold: 3,
-    iconVariant: "shield-check",
-    visualVariant: "stone",
-    tooltip: "3 actions validées dans des zones sensibles",
-    xp: 1,
-  },
-  {
-    id: "sensitive-zone-saphir",
-    label: "Saphir",
-    threshold: 5,
-    iconVariant: "shield-check",
-    visualVariant: "precious",
-    tooltip: "5 actions validées dans des zones sensibles",
-    xp: 1,
-  },
-  {
-    id: "sensitive-zone-rubis",
-    label: "Rubis",
-    threshold: 8,
-    iconVariant: "shield-check",
-    visualVariant: "precious",
-    tooltip: "8 actions validées dans des zones sensibles",
-    xp: 1,
-  },
-  {
-    id: "sensitive-zone-emeraude",
-    label: "Émeraude",
-    threshold: 10,
-    iconVariant: "shield-check",
-    visualVariant: "precious",
-    tooltip: "10 actions validées dans des zones sensibles",
-    xp: 1,
-  },
-  {
-    id: "sensitive-zone-diamant",
-    label: "Diamant",
-    threshold: 15,
-    iconVariant: "shield-check",
-    visualVariant: "precious",
-    tooltip: "15 actions validées dans des zones sensibles",
-    xp: 1,
-  },
-  {
-    id: "sensitive-zone-opale",
-    label: "Opale",
-    threshold: 20,
-    iconVariant: "shield-check",
-    visualVariant: "precious",
-    tooltip: "20 actions validées dans des zones sensibles",
-    xp: 1,
-  },
-] as const;
+const SENSITIVE_ZONE_GEM_CONFIG = {
+  idPrefix: "sensitive-zone",
+  iconVariant: "shield-check",
+  tooltip: (definition: GemGradeDefinition) =>
+    definition.key.startsWith("pilier-")
+      ? "Progression infinie des zones sensibles apaisées"
+      : definition.threshold === 0
+        ? "Aucune zone sensible apaisée pour le moment"
+        : `${definition.threshold} actions validées dans des zones sensibles`,
+  visualVariant: (definition: GemGradeDefinition) =>
+    definition.threshold < 5 ? "stone" : "precious",
+  xp: (definition: GemGradeDefinition) =>
+    definition.threshold === 0 ? 0 : 1,
+};
 
-function toRomanNumeral(value: number): string {
-  if (!Number.isFinite(value) || value < 1) {
-    return "I";
-  }
-
-  const numerals: Array<[number, string]> = [
-    [1000, "M"],
-    [900, "CM"],
-    [500, "D"],
-    [400, "CD"],
-    [100, "C"],
-    [90, "XC"],
-    [50, "L"],
-    [40, "XL"],
-    [10, "X"],
-    [9, "IX"],
-    [5, "V"],
-    [4, "IV"],
-    [1, "I"],
-  ];
-
-  let remaining = Math.max(1, Math.trunc(value));
-  let result = "";
-  for (const [threshold, glyph] of numerals) {
-    while (remaining >= threshold) {
-      result += glyph;
-      remaining -= threshold;
-    }
-  }
-  return result || "I";
-}
-
-function buildPilierGrade(index: number, threshold: number): GemGrade {
-  const safeIndex = Math.max(2, Math.trunc(index));
-  return {
-    id: `sensitive-zone-pilier-${safeIndex}`,
-    label: `Pilier ${toRomanNumeral(safeIndex)}`,
-    threshold,
-    iconVariant: "shield-check",
-    visualVariant: "precious",
-    tooltip: "Progression infinie des zones sensibles apaisées",
-    xp: 1,
-  };
-}
-
-function computeGradeState(current: number): {
-  currentGrade: GemGrade;
-  nextGrade: GemGrade | null;
-  progressPercent: number;
-  currentLabel: string;
-  nextLabel: string | null;
-} {
-  const safeCurrent = Math.max(0, Math.trunc(current));
-  const baseGrades = [...SENSITIVE_ZONE_GEM_GRADES];
-
-  if (safeCurrent < baseGrades[1].threshold) {
-    return {
-      currentGrade: baseGrades[0],
-      nextGrade: baseGrades[1],
-      progressPercent: 0,
-      currentLabel: baseGrades[0].label,
-      nextLabel: baseGrades[1].label,
-    };
-  }
-
-  const lastGemGrade = baseGrades[baseGrades.length - 1];
-  const firstPilierThreshold = lastGemGrade.threshold + 5;
-
-  if (safeCurrent < firstPilierThreshold) {
-    const currentGrade =
-      [...baseGrades].reverse().find((grade) => safeCurrent >= grade.threshold) ??
-      baseGrades[0];
-    const nextGrade =
-      baseGrades.find((grade) => grade.threshold > currentGrade.threshold) ??
-      buildPilierGrade(2, firstPilierThreshold);
-    const progressStart = currentGrade.threshold;
-    const progressEnd = nextGrade.threshold;
-    const progressSpan = Math.max(1, progressEnd - progressStart);
-    const progressCurrent = Math.max(
-      0,
-      Math.min(safeCurrent - progressStart, progressSpan),
-    );
-
-    return {
-      currentGrade,
-      nextGrade,
-      progressPercent: Math.round((progressCurrent / progressSpan) * 100),
-      currentLabel: currentGrade.label,
-      nextLabel: nextGrade.label,
-    };
-  }
-
-  const pilierIndex = Math.floor((safeCurrent - firstPilierThreshold) / 5) + 2;
-  const currentThreshold = firstPilierThreshold + (pilierIndex - 2) * 5;
-  const nextThreshold = currentThreshold + 5;
-  const currentGrade = buildPilierGrade(pilierIndex, currentThreshold);
-  const nextGrade = buildPilierGrade(pilierIndex + 1, nextThreshold);
-  const progressSpan = Math.max(1, nextThreshold - currentThreshold);
-  const progressCurrent = Math.max(
-    0,
-    Math.min(safeCurrent - currentThreshold, progressSpan),
-  );
-
-  return {
-    currentGrade,
-    nextGrade,
-    progressPercent: Math.round((progressCurrent / progressSpan) * 100),
-    currentLabel: currentGrade.label,
-    nextLabel: nextGrade.label,
-  };
-}
+export const SENSITIVE_ZONE_GEM_GRADES = buildGemGradeCatalog(
+  SENSITIVE_ZONE_GEM_CONFIG,
+);
 
 export function deriveSensitiveAreasFromContracts(
   contracts: ActionDataContract[],
@@ -236,7 +73,10 @@ export function computeSensitiveZoneApaisementSummary(params: {
     return sensitiveAreaSet.has(areaFromLabel(row.location_label || ""));
   });
 
-  const gradeState = computeGradeState(eligibleValidatedActions.length);
+  const gradeState = computeGemProgression(
+    eligibleValidatedActions.length,
+    SENSITIVE_ZONE_GEM_CONFIG,
+  );
 
   return {
     eligibleValidatedActions: eligibleValidatedActions.length,
@@ -325,5 +165,3 @@ export function createFallbackSensitiveZoneApaisementSummary(): SensitiveZoneApa
     sensitiveAreas: [],
   });
 }
-
-export { SENSITIVE_ZONE_GEM_GRADES };

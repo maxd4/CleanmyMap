@@ -1,4 +1,8 @@
 import { BADGE_MAX_COUNTER } from "@/config/gamification.config";
+import {
+  computeGemProgression,
+  type GemGradeDefinition,
+} from "@/lib/gamification/gem-progression";
 
 export type BadgeFamily = "dechets" | "megots" | "lieux" | "actions";
 
@@ -116,68 +120,44 @@ export function computePlacesRank(level: number): PlacesBadgeRank {
 
 export type ActionCreationBadgeRank = BadgeRank & { icon: string; title: string };
 
-const ACTION_CREATION_RANKS: ActionCreationBadgeRank[] = [
-  { grade: "Observateur", subGrade: "", tier: "wood", icon: "users", title: "Observateur" },
-  { grade: "Promeneur", subGrade: "Local", tier: "wood", icon: "users", title: "Promeneur Local" },
-  { grade: "Arpenteur", subGrade: "", tier: "bronze", icon: "users", title: "Arpenteur" },
-  { grade: "Éclaireur", subGrade: "", tier: "bronze", icon: "users", title: "Éclaireur" },
-  { grade: "Patrouilleur", subGrade: "", tier: "bronze", icon: "users", title: "Patrouilleur" },
-  { grade: "Repéreur", subGrade: "", tier: "silver", icon: "users", title: "Repéreur" },
-  { grade: "Cartographe", subGrade: "", tier: "gold", icon: "users", title: "Cartographe" },
-  { grade: "Coordinateur", subGrade: "", tier: "gold", icon: "users", title: "Coordinateur" },
-  { grade: "Sentinelle", subGrade: "", tier: "diamond", icon: "users", title: "Sentinelle" },
-  { grade: "Régulateur", subGrade: "", tier: "diamond", icon: "users", title: "Régulateur" },
-  { grade: "Conservateur", subGrade: "", tier: "diamond", icon: "users", title: "Conservateur" },
-  { grade: "Gardien", subGrade: "", tier: "cosmic", icon: "users", title: "Gardien" },
-  { grade: "Maître des Cartes", subGrade: "", tier: "cosmic", icon: "users", title: "Maître des Cartes" },
-];
+const ACTION_CREATION_GEM_CONFIG = {
+  idPrefix: "action-creation",
+  iconVariant: "users",
+  tooltip: (definition: GemGradeDefinition) =>
+    definition.key.startsWith("pilier-")
+      ? "Progression infinie des actions créées"
+      : definition.threshold === 0
+        ? "Aucune action créée"
+        : `${definition.threshold} actions créées`,
+  visualVariant: (definition: GemGradeDefinition) =>
+    definition.threshold < 5 ? "stone" : "precious",
+  xp: (definition: GemGradeDefinition) =>
+    definition.threshold === 0 ? 0 : 1,
+};
 
-function toRomanNumeral(value: number): string {
-  if (!Number.isFinite(value) || value < 1) {
-    return "II";
-  }
-
-  const numerals: Array<[number, string]> = [
-    [1000, "M"],
-    [900, "CM"],
-    [500, "D"],
-    [400, "CD"],
-    [100, "C"],
-    [90, "XC"],
-    [50, "L"],
-    [40, "XL"],
-    [10, "X"],
-    [9, "IX"],
-    [5, "V"],
-    [4, "IV"],
-    [1, "I"],
-  ];
-
-  let remaining = Math.max(1, Math.trunc(value));
-  let result = "";
-  for (const [threshold, glyph] of numerals) {
-    while (remaining >= threshold) {
-      result += glyph;
-      remaining -= threshold;
-    }
-  }
-  return result || "I";
+export function computeActionCreationProgress(total: number) {
+  return computeGemProgression(total, ACTION_CREATION_GEM_CONFIG);
 }
 
-export function computeActionCreationRank(level: number): ActionCreationBadgeRank {
-  if (level <= 0) return ACTION_CREATION_RANKS[0];
-  if (level < ACTION_CREATION_RANKS.length) {
-    return ACTION_CREATION_RANKS[level];
-  }
+function actionCreationTier(threshold: number): BadgeTier {
+  if (threshold >= 25) return "cosmic";
+  if (threshold >= 15) return "diamond";
+  if (threshold >= 10) return "gold";
+  if (threshold >= 5) return "silver";
+  if (threshold >= 3) return "bronze";
+  return "wood";
+}
 
-  const infiniteIndex = level - ACTION_CREATION_RANKS.length + 2;
-  const numeral = toRomanNumeral(infiniteIndex);
+export function computeActionCreationRank(total: number): ActionCreationBadgeRank {
+  const grade = computeActionCreationProgress(total).currentGrade;
+  const isPilier = grade.label.startsWith("Pilier ");
+
   return {
-    grade: "Pilier",
-    subGrade: numeral,
-    tier: "cosmic",
+    grade: isPilier ? "Pilier" : grade.label,
+    subGrade: isPilier ? grade.label.slice("Pilier ".length) : "",
+    tier: actionCreationTier(grade.threshold),
     icon: "users",
-    title: `Pilier ${numeral}`,
+    title: grade.label,
   };
 }
 

@@ -7,11 +7,14 @@ describe("infinite badges ranks", () => {
     expect(computePlacesRank(10).title).toBe("Maître des Cartes");
   });
 
-  it("reuses exploration grades for actions created and continues with Pilier tiers", () => {
+  it("uses the canonical gem scale for actions created", () => {
     expect(computeActionCreationRank(0).title).toBe("Observateur");
-    expect(computeActionCreationRank(1).title).toBe("Promeneur Local");
-    expect(computeActionCreationRank(12).title).toBe("Maître des Cartes");
-    expect(computeActionCreationRank(13).title).toBe("Pilier II");
-    expect(computeActionCreationRank(14).title).toBe("Pilier III");
+    expect(computeActionCreationRank(1).title).toBe("Quartz");
+    expect(computeActionCreationRank(2).title).toBe("Quartz");
+    expect(computeActionCreationRank(3).title).toBe("Topaze");
+    expect(computeActionCreationRank(8).title).toBe("Rubis");
+    expect(computeActionCreationRank(20).title).toBe("Opale");
+    expect(computeActionCreationRank(25).title).toBe("Pilier II");
+    expect(computeActionCreationRank(30).title).toBe("Pilier III");
   });
 });

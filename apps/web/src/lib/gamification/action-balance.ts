@@ -3,6 +3,10 @@ import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import type { ActionRow } from "./progression-types";
 import type { GemGrade } from "./types";
 import {
+  computeGemProgression,
+  type GemGradeDefinition,
+} from "./gem-progression";
+import {
   loadActionRowsForUser,
   loadValidatedActionIdsForUser,
 } from "./progression-data";
@@ -48,80 +52,20 @@ export type ActionBalanceSummary = {
   awards: ActionBalanceCycleAward[];
 };
 
-const ACTION_BALANCE_GEM_GRADES: GemGrade[] = [
-  {
-    id: "action-balance-observateur",
-    label: "Observateur",
-    threshold: 0,
-    iconVariant: "sliders-horizontal",
-    visualVariant: "stone",
-    tooltip: "Aucun cycle équilibré encore",
-    xp: 0,
-  },
-  {
-    id: "action-balance-quartz",
-    label: "Quartz",
-    threshold: 1,
-    iconVariant: "sliders-horizontal",
-    visualVariant: "stone",
-    tooltip: "1 cycle équilibré complet",
-    xp: 1,
-  },
-  {
-    id: "action-balance-topaze",
-    label: "Topaze",
-    threshold: 2,
-    iconVariant: "sliders-horizontal",
-    visualVariant: "stone",
-    tooltip: "2 cycles équilibrés complets",
-    xp: 1,
-  },
-  {
-    id: "action-balance-saphir",
-    label: "Saphir",
-    threshold: 3,
-    iconVariant: "sliders-horizontal",
-    visualVariant: "precious",
-    tooltip: "3 cycles équilibrés complets",
-    xp: 1,
-  },
-  {
-    id: "action-balance-rubis",
-    label: "Rubis",
-    threshold: 5,
-    iconVariant: "sliders-horizontal",
-    visualVariant: "precious",
-    tooltip: "5 cycles équilibrés complets",
-    xp: 1,
-  },
-  {
-    id: "action-balance-emeraude",
-    label: "Émeraude",
-    threshold: 8,
-    iconVariant: "sliders-horizontal",
-    visualVariant: "precious",
-    tooltip: "8 cycles équilibrés complets",
-    xp: 1,
-  },
-  {
-    id: "action-balance-diamant",
-    label: "Diamant",
-    threshold: 10,
-    iconVariant: "sliders-horizontal",
-    visualVariant: "precious",
-    tooltip: "10 cycles équilibrés complets",
-    xp: 1,
-  },
-  {
-    id: "action-balance-opale",
-    label: "Opale",
-    threshold: 15,
-    iconVariant: "sliders-horizontal",
-    visualVariant: "precious",
-    tooltip: "15 cycles équilibrés complets",
-    xp: 1,
-  },
-] as const;
+const ACTION_BALANCE_GEM_CONFIG = {
+  idPrefix: "action-balance",
+  iconVariant: "sliders-horizontal",
+  tooltip: (definition: GemGradeDefinition) =>
+    definition.key.startsWith("pilier-")
+      ? "Progression infinie de l équilibre des contextes"
+      : definition.threshold === 0
+        ? "Aucun cycle équilibré encore"
+        : `${definition.threshold} cycles équilibrés complets`,
+  visualVariant: (definition: GemGradeDefinition) =>
+    definition.threshold < 5 ? "stone" : "precious",
+  xp: (definition: GemGradeDefinition) =>
+    definition.threshold === 0 ? 0 : 1,
+};
 
 const SPONTANEOUS_ASSOCIATION_KEY = "action spontanee";
 
@@ -131,118 +75,6 @@ function normalizeAssociationName(raw: string | null | undefined): string {
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase();
-}
-
-function toRomanNumeral(value: number): string {
-  if (!Number.isFinite(value) || value < 1) {
-    return "I";
-  }
-
-  const numerals: Array<[number, string]> = [
-    [1000, "M"],
-    [900, "CM"],
-    [500, "D"],
-    [400, "CD"],
-    [100, "C"],
-    [90, "XC"],
-    [50, "L"],
-    [40, "XL"],
-    [10, "X"],
-    [9, "IX"],
-    [5, "V"],
-    [4, "IV"],
-    [1, "I"],
-  ];
-
-  let remaining = Math.max(1, Math.trunc(value));
-  let result = "";
-  for (const [threshold, glyph] of numerals) {
-    while (remaining >= threshold) {
-      result += glyph;
-      remaining -= threshold;
-    }
-  }
-  return result || "I";
-}
-
-function buildPilierGrade(index: number, threshold: number): GemGrade {
-  const safeIndex = Math.max(2, Math.trunc(index));
-  return {
-    id: `action-balance-pilier-${safeIndex}`,
-    label: `Pilier ${toRomanNumeral(safeIndex)}`,
-    threshold,
-    iconVariant: "sliders-horizontal",
-    visualVariant: "precious",
-    tooltip: "Progression infinie de l équilibre des contextes",
-    xp: 1,
-  };
-}
-
-function computeGradeState(completedCycles: number): {
-  currentGrade: GemGrade;
-  nextGrade: GemGrade | null;
-  progressPercent: number;
-  currentLabel: string;
-  nextLabel: string | null;
-} {
-  const safeCurrent = Math.max(0, Math.trunc(completedCycles));
-  const baseGrades = [...ACTION_BALANCE_GEM_GRADES];
-
-  if (safeCurrent < baseGrades[1].threshold) {
-    return {
-      currentGrade: baseGrades[0],
-      nextGrade: baseGrades[1],
-      progressPercent: 0,
-      currentLabel: baseGrades[0].label,
-      nextLabel: baseGrades[1].label,
-    };
-  }
-
-  const lastGemGrade = baseGrades[baseGrades.length - 1];
-  const firstPilierThreshold = lastGemGrade.threshold + 5;
-
-  if (safeCurrent < firstPilierThreshold) {
-    const currentGrade =
-      [...baseGrades].reverse().find((grade) => safeCurrent >= grade.threshold) ??
-      baseGrades[0];
-    const nextGrade =
-      baseGrades.find((grade) => grade.threshold > currentGrade.threshold) ??
-      buildPilierGrade(2, firstPilierThreshold);
-    const progressStart = currentGrade.threshold;
-    const progressEnd = nextGrade.threshold;
-    const progressSpan = Math.max(1, progressEnd - progressStart);
-    const progressCurrent = Math.max(
-      0,
-      Math.min(safeCurrent - progressStart, progressSpan),
-    );
-
-    return {
-      currentGrade,
-      nextGrade,
-      progressPercent: Math.round((progressCurrent / progressSpan) * 100),
-      currentLabel: currentGrade.label,
-      nextLabel: nextGrade.label,
-    };
-  }
-
-  const pilierIndex = Math.floor((safeCurrent - firstPilierThreshold) / 5) + 2;
-  const currentThreshold = firstPilierThreshold + (pilierIndex - 2) * 5;
-  const nextThreshold = currentThreshold + 5;
-  const currentGrade = buildPilierGrade(pilierIndex, currentThreshold);
-  const nextGrade = buildPilierGrade(pilierIndex + 1, nextThreshold);
-  const progressSpan = Math.max(1, nextThreshold - currentThreshold);
-  const progressCurrent = Math.max(
-    0,
-    Math.min(safeCurrent - currentThreshold, progressSpan),
-  );
-
-  return {
-    currentGrade,
-    nextGrade,
-    progressPercent: Math.round((progressCurrent / progressSpan) * 100),
-    currentLabel: currentGrade.label,
-    nextLabel: nextGrade.label,
-  };
 }
 
 function compareActionRows(left: ActionBalanceRow, right: ActionBalanceRow): number {
@@ -322,7 +154,10 @@ export function computeActionBalanceSummary(
     enterprise = 0;
   }
 
-  const gradeState = computeGradeState(completedCycles);
+  const gradeState = computeGemProgression(
+    completedCycles,
+    ACTION_BALANCE_GEM_CONFIG,
+  );
 
   return {
     spontaneous,

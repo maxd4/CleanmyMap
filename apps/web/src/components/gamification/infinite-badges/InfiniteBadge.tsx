@@ -12,6 +12,7 @@ import {
   computeLevel,
   computeBadgeRank,
   computePlacesRank,
+  computeActionCreationProgress,
   computeActionCreationRank,
   BADGE_TIER_STYLES,
   formatCompactNumber,
@@ -50,23 +51,31 @@ export function InfiniteBadge({
   const { locale } = useSitePreferences();
   const [open, setOpen] = useState(false);
   const previousLevelRef = useRef<number | null>(null);
+  const isPlaces = family === "lieux";
+  const isActions = family === "actions";
+  const actionProgression = useMemo(
+    () => (isActions ? computeActionCreationProgress(total) : null),
+    [isActions, total],
+  );
 
-  const level = useMemo(() => computeLevel(total, step), [step, total]);
+  const genericLevel = useMemo(() => computeLevel(total, step), [step, total]);
+  const level = actionProgression?.currentGrade.threshold ?? genericLevel;
   const rank = useMemo(
     () =>
-      family === "lieux"
+      isPlaces
         ? computePlacesRank(level)
-        : family === "actions"
-          ? computeActionCreationRank(level)
+        : isActions
+          ? computeActionCreationRank(total)
           : computeBadgeRank(level),
-    [family, level],
+    [isActions, isPlaces, level, total],
   );
   const tier = rank.tier;
   const styles = BADGE_TIER_STYLES[tier];
-  const state = getGamificationBadgeState(total, level * step);
+  const state = getGamificationBadgeState(
+    total,
+    actionProgression?.currentGrade.threshold ?? level * step,
+  );
 
-  const isPlaces = family === "lieux";
-  const isActions = family === "actions";
   const placesRank = isPlaces ? (rank as ReturnType<typeof computePlacesRank>) : null;
   const actionsRank = isActions ? (rank as ReturnType<typeof computeActionCreationRank>) : null;
   const displayTitle =
@@ -83,13 +92,17 @@ export function InfiniteBadge({
         : icon;
   const displayRank = `${rank.grade}${rank.subGrade ? ` ${rank.subGrade}` : ""}`.trim();
 
-  const next = useMemo(() => nextThreshold(level, step), [level, step]);
+  const next = actionProgression?.nextGrade?.threshold ?? nextThreshold(level, step);
   const progress = useMemo(() => {
+    if (actionProgression) {
+      return actionProgression.progressPercent / 100;
+    }
+
     const base = level * step;
     if (next <= base) return 0;
     const ratio = (Math.max(0, total) - base) / (next - base);
     return Math.max(0, Math.min(1, ratio));
-  }, [level, next, step, total]);
+  }, [actionProgression, level, next, step, total]);
 
   useEffect(() => {
     const previousLevel = previousLevelRef.current;
