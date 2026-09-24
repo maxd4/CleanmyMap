@@ -1,5 +1,4 @@
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
-import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { runSingleActionQuery } from "@/lib/actions/query";
 import {
   buildAdminActionUpdates,
@@ -7,15 +6,9 @@ import {
 import { copyValidatedActionToLocalStore } from "@/lib/data/local-sync";
 import { emitActionRejected, emitActionValidated } from "@/lib/events/emit";
 import {
-  refreshProgressionProfile,
-  syncUserActionProgression,
-} from "@/lib/gamification/progression-tracking";
-import { rebuildUserGamificationBadges } from "@/lib/gamification/badges/rebuild";
-import {
   adminErrorResponse,
   adminSuccessResponse,
 } from "@/lib/admin/response";
-import { invalidatePublicSurfaceSnapshotsByRoute } from "@/lib/public-surface-snapshots";
 import {
   type ActionEdits,
   type ActionModerationOperation,
@@ -26,6 +19,7 @@ import {
   canonicalTargetUserId,
   hasSensitiveImpactEdit,
 } from "./route.shared";
+import { refreshActionImpactProgressionDependents } from "./route.action-progression";
 
 type ActionImpactValues = {
   createdByClerkId: string | null;
@@ -239,37 +233,6 @@ async function loadActionImpactValues(
   return row ? normalizeImpactValues(row) : null;
 }
 
-async function refreshImpactDependents(
-  supabase: ModerationSupabaseClient,
-  params: {
-    actionId: string;
-    creatorUserId: string | null;
-  },
-): Promise<string[]> {
-  const organizerIds = await loadActionOrganizerIdsForAction(
-    supabase,
-    params.actionId,
-    params.creatorUserId,
-  );
-  const affectedUserIds = Array.from(
-    new Set(organizerIds.map((value) => value.trim()).filter(Boolean)),
-  );
-
-  await Promise.all(
-    affectedUserIds.map(async (userId) => {
-      await syncUserActionProgression(supabase, userId);
-      await rebuildUserGamificationBadges(supabase, userId);
-      await refreshProgressionProfile(supabase, userId);
-    }),
-  );
-  await invalidatePublicSurfaceSnapshotsByRoute([
-    "api/actions",
-    "api/actions/map",
-  ]);
-
-  return affectedUserIds;
-}
-
 async function updateActionModerationVisibility(
   supabase: ModerationSupabaseClient,
   params: {
@@ -481,7 +444,7 @@ export async function moderateAction({
   let refreshedProgressionUserIds: string[] = [];
   if (shouldRefreshImpact) {
     newImpactValue = await loadActionImpactValues(supabase, payload.id);
-    refreshedProgressionUserIds = await refreshImpactDependents(supabase, {
+    refreshedProgressionUserIds = await refreshActionImpactProgressionDependents(supabase, {
       actionId: payload.id,
       creatorUserId:
         newImpactValue?.createdByClerkId ??

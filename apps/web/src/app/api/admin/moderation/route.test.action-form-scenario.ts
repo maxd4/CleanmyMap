@@ -13,6 +13,7 @@ export function registerActionFormScenario({
     loadActionOrganizerIdsForActionMock,
     refreshProgressionProfileMock,
     syncUserActionProgressionMock,
+    rebuildUserGamificationBadgesMock,
     invalidatePublicSurfaceSnapshotsByRouteMock,
   } = mocks;
 
@@ -176,6 +177,7 @@ export function registerActionFormScenario({
       "creator-1",
     );
     expect(syncUserActionProgressionMock).toHaveBeenCalledTimes(2);
+    expect(rebuildUserGamificationBadgesMock).toHaveBeenCalledTimes(2);
     expect(refreshProgressionProfileMock).toHaveBeenCalledTimes(2);
     expect(invalidatePublicSurfaceSnapshotsByRouteMock).toHaveBeenCalledWith([
       "api/actions",
