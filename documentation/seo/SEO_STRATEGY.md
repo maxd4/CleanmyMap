@@ -51,36 +51,13 @@ Ce document définit la stratégie de visibilité web pour CleanMyMap, la diffé
 ### Schemas JSON-LD
 - `apps/web/src/components/seo/structured-data/` - Tous les schemas
 
-## Schemas JSON-LD disponibles
+## Données structurées rendues
 
-```typescript
-// Organization - Trust signals
-import { OrganizationJsonLd } from "@/components/seo/structured-data/organization-data";
-
-// WebSite - Search action
-import { WebSiteJsonLd } from "@/components/seo/structured-data/navigation-data";
-
-// HowTo - Guides pas à pas
-import {
-  HowToDeclareActionJsonLd,
-  HowToSignalPollutionJsonLd,
-  HowToJoinCleanwalkJsonLd,
-  HowToJoinCommunityJsonLd,
-} from "@/components/seo/structured-data/how-to-data";
-
-// FAQ - Questions fréquentes
-import { FAQJsonLd } from "@/components/seo/structured-data/content-data";
-
-// Trust signals
-import { ReviewJsonLd } from "@/components/seo/structured-data/content-data";
-
-// Navigation
-import {
-  BreadcrumbJsonLd,
-  WebPageJsonLd,
-  SiteNavigationJsonLd,
-} from "@/components/seo/structured-data/navigation-data";
-```
+Le layout racine rend `OrganizationJsonLd` et `WebSiteJsonLd`. Les autres
+helpers du dossier `apps/web/src/components/seo/structured-data/` ne sont pas
+rendus par le runtime et ne constituent pas une preuve de contenus publiés.
+Un schema FAQ, avis, événement, article, vidéo ou guide doit être relié à une
+source réelle et décrire le contenu effectivement visible sur la page.
 
 ## Maintenance SEO
 
@@ -121,11 +98,10 @@ import {
 
 ## Prochaines améliorations suggérées
 
-1. ✅ **Article schema** pour articles du blog/ressources (fait)
-2. ✅ **Event schema** pour cleanwalks organisés (fait)
-3. ✅ **VideoObject** pour tutoriels (fait)
-4. **Schema Q&A** pour pages méthodologiques
-5. **Sitelinks Searchbox** pour Google
+1. Relier un schema **Article** uniquement à une ressource publiée et visible.
+2. Relier un schema **Event** aux événements réels publiés.
+3. Relier un schema **VideoObject** à une vidéo publiée avec ses métadonnées réelles.
+4. Ajouter un schema **FAQ** seulement si une FAQ visible est publiée.
 
 ## Ce qui reste manuel
 

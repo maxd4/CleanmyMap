@@ -23,25 +23,19 @@ export const metadata: Metadata = {
 };
 ```
 
-2. **Schema JSON-LD** - Importer et utiliser un schema depuis son module spécialisé sous `@/components/seo/structured-data/`:
-```typescript
-import { FAQJsonLd } from "@/components/seo/structured-data/content-data";
-
-export default function MaPage() {
-  return (
-    <>
-      <FAQJsonLd />
-      {/* contenu de la page */}
-    </>
-  );
-}
-```
+2. **Schema JSON-LD** - N'en rendre un que si la page expose réellement le même
+   contenu. Les schemas globaux actuellement rendus sont `OrganizationJsonLd`
+   et `WebSiteJsonLd`; une FAQ JSON-LD nécessite une FAQ visible avec les mêmes
+   questions et réponses.
 
 3. **Sitemap** - Vérifier que la page est dans `apps/web/src/app/sitemap.ts`
 
 4. **Test** - Valider avec Google Rich Results Test
 
 ### Ajouter un nouveau HowTo
+
+Créer un HowTo uniquement lorsqu'un guide correspondant est publié. Ses étapes
+doivent reprendre les informations réellement visibles sur cette page.
 
 1. Créer une nouvelle fonction dans `apps/web/src/components/seo/structured-data/`:
 ```typescript
@@ -76,13 +70,13 @@ Voir `SEO_STRATEGY.md` pour la liste complète.
 ### Communauté
 - communauté, entraide, coordination, mutualisation, partenariat
 
-### Schemas disponibles
-- OrganizationJsonLd, LocalBusinessJsonLd, WebSiteJsonLd
-- HowToDeclareActionJsonLd, HowToSignalPollutionJsonLd
-- HowToJoinCleanwalkJsonLd, HowToJoinCommunityJsonLd
-- ReviewJsonLd, BreadcrumbJsonLd, FAQJsonLd
-- WebPageJsonLd, SiteNavigationJsonLd
-- EventCleanwalkJsonLd, ArticleRessourceJsonLd, VideoTutorialJsonLd
+### Schemas rendus actuellement
+
+- `OrganizationJsonLd` et `WebSiteJsonLd` sont rendus dans le layout racine.
+- Les autres helpers présents dans le code ne sont pas rendus actuellement et
+  ne prouvent pas l'existence d'une FAQ, d'un avis, d'un événement, d'un
+  article ou d'une vidéo publiés. Les relier à une page exige une source de
+  contenu réelle et un contenu visible correspondant.
 
 ## Contact
 
