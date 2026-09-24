@@ -3,6 +3,7 @@
 import { useState } from"react";
 import { motion, AnimatePresence } from"framer-motion";
 import { SustainableGoal, SUSTAINABLE_GOALS } from "@/data/content/sustainable-goals";
+import { ModalFrame } from "@/components/ui/modal-frame";
 
 export function SustainableGoalsInteractive() {
  const [selectedGoal, setSelectedGoal] = useState<SustainableGoal | null>(null);
@@ -88,22 +89,16 @@ export function SustainableGoalsInteractive() {
  </div>
 
  {/* Detail Modal */}
- <AnimatePresence>
+ <ModalFrame
+ isOpen={Boolean(selectedGoal)}
+ onClose={() => setSelectedGoal(null)}
+ overlayClassName="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+ panelClassName="pointer-events-auto bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+ panelInitial={{ scale: 0.9, opacity: 1 }}
+ panelAnimate={{ scale: 1, opacity: 1 }}
+ panelExit={{ scale: 0.9, opacity: 0 }}
+ >
  {selectedGoal && (
- <motion.div
- initial={{ opacity: 1 }}
- animate={{ opacity: 1 }}
- exit={{ opacity: 0 }}
- className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
- onClick={() => setSelectedGoal(null)}
- >
- <motion.div
- initial={{ scale: 0.9, opacity: 1 }}
- animate={{ scale: 1, opacity: 1 }}
- exit={{ scale: 0.9, opacity: 0 }}
- className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
- onClick={(e) => e.stopPropagation()}
- >
  <div className="p-8 space-y-6">
  {/* Header */}
  <div className="flex items-center justify-between">
@@ -167,10 +162,8 @@ export function SustainableGoalsInteractive() {
  </p>
  </div>
  </div>
- </motion.div>
- </motion.div>
  )}
- </AnimatePresence>
+ </ModalFrame>
  </div>
  );
 }
