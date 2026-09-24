@@ -68,7 +68,12 @@ test("removing an exception from the allowlist exposes its raw modal", () => {
   reducedAllowlist.delete(legacyPath);
 
   const violations = auditModalSources(
-    [{ path: legacyPath, source: read(legacyPath) }],
+    [{
+      path: legacyPath,
+      // Keep this test focused on the allowlist boundary, independently of
+      // the current implementation state of the migrated legacy component.
+      source: '<div role="dialog" aria-modal="true">Legacy modal</div>',
+    }],
     { allowlist: reducedAllowlist },
   );
 
