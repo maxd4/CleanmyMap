@@ -27,6 +27,11 @@ ne remplace pas un logo dans l'interface.
 - Réutiliser `BrandLogo` pour tout logo affiché dans le runtime web.
 - Réutiliser `BRAND_ASSET_PATHS` pour les métadonnées, les données structurées
   et le manifest afin d'éviter les chemins divergents.
+- Les icônes du navigateur et des appareils utilisent les conventions de
+  fichiers App Router `src/app/favicon.ico`, `src/app/icon.png` et
+  `src/app/apple-icon.png`. Ces dérivés proviennent de
+  `BRAND_ASSET_PATHS.compact`; ils ne remplacent pas l'asset canonique dans le
+  registre.
 - Ne pas reconstruire la marque avec une icône Lucide, du texte ou du CSS.
 - Ne pas placer le logo complet dans le hero de la homepage : le H1 reste un
   contenu éditorial.

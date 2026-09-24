@@ -71,7 +71,7 @@ export function HomeHero({
               </p>
 
               <h1 className="cmm-home-hero-title mt-5 max-w-none font-black leading-[0.88] tracking-[-0.085em] text-white drop-shadow-[0_12px_26px_rgba(0,37,27,0.18)] lg:whitespace-nowrap">
-                Clean My Map
+                CleanMyMap
               </h1>
               <p className="mt-5 max-w-[37rem] text-[clamp(1.05rem,1.55vw,1.38rem)] leading-[1.42] text-white/90">
                 Cultivons l&apos;entraide pour dépolluer, cartographier et transformer chaque action terrain en preuve utile.

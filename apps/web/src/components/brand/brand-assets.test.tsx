@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import {
@@ -32,5 +33,26 @@ describe("CleanMyMap brand assets", () => {
     const markup = renderToStaticMarkup(<BrandLogo variant={variant} />);
 
     expect(markup).toContain(assetName);
+  });
+
+  it("serves Next App Router icons derived at dedicated web sizes", () => {
+    const icon = readFileSync(new URL("../../app/icon.png", import.meta.url));
+    const appleIcon = readFileSync(
+      new URL("../../app/apple-icon.png", import.meta.url),
+    );
+    const favicon = readFileSync(new URL("../../app/favicon.ico", import.meta.url));
+    const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+
+    expect(icon.subarray(0, 8)).toEqual(pngSignature);
+    expect([icon.readUInt32BE(16), icon.readUInt32BE(20)]).toEqual([512, 512]);
+    expect(appleIcon.subarray(0, 8)).toEqual(pngSignature);
+    expect([appleIcon.readUInt32BE(16), appleIcon.readUInt32BE(20)]).toEqual([
+      180, 180,
+    ]);
+    expect(favicon.readUInt16LE(0)).toBe(0);
+    expect(favicon.readUInt16LE(2)).toBe(1);
+    expect(favicon.readUInt16LE(4)).toBe(1);
+    expect(favicon.readUInt8(6)).toBe(48);
+    expect(favicon.subarray(22, 30)).toEqual(pngSignature);
   });
 });

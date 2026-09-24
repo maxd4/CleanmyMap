@@ -111,11 +111,6 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  icons: {
-    icon: BRAND_ASSET_PATHS.compact,
-    apple: BRAND_ASSET_PATHS.compact,
-    shortcut: BRAND_ASSET_PATHS.compact,
-  },
   manifest: "/api/manifest",
   appleWebApp: {
     capable: true,
