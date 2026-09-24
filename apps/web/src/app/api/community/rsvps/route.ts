@@ -3,8 +3,7 @@ import { NextResponse } from"next/server";
 import { z } from"zod";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { trackCommunityRsvpYes } from"@/lib/gamification/progression";
-import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
-import { handleApiError } from"@/lib/http/api-errors";
+import { handleApiError, parseAuthenticatedJsonRequest } from"@/lib/http/api-errors";
 
 export const runtime ="nodejs";
 
@@ -14,22 +13,11 @@ const communityRsvpSchema = z.object({
 });
 
 export async function POST(request: Request) {
- const { userId } = await auth();
- if (!userId) {
- return unauthorizedJsonResponse();
- }
+ const payload = await parseAuthenticatedJsonRequest(request, () => auth());
+ if (!payload.ok) return payload.response;
+ const { userId } = payload;
 
- let payload: unknown;
- try {
- payload = await request.json();
- } catch {
- return NextResponse.json(
- { error:"Invalid JSON payload" },
- { status: 400 },
- );
- }
-
- const parsed = communityRsvpSchema.safeParse(payload);
+ const parsed = communityRsvpSchema.safeParse(payload.data);
  if (!parsed.success) {
  return NextResponse.json(
  {

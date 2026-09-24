@@ -1,10 +1,11 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { useMemo } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { useTranslation } from "@/lib/i18n/use-translation";
+import { ModalFrame } from "@/components/ui/modal-frame";
 import {
   computeBadgeRank,
   computeActionCreationProgress,
@@ -56,29 +57,18 @@ export function BadgeModal({
   );
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            data-motion-role="overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm"
-          />
-          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
-            <motion.div
-              data-motion-role="overlay"
-              initial={{ opacity: 0, scale: 0.9, y: 30 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className={`relative w-full max-w-md overflow-hidden rounded-[2.5rem] border p-6 sm:p-8 pointer-events-auto ${styles.modalContainer}`}
-              role="dialog"
-              aria-modal="true"
-              aria-label={title}
-            >
+    <ModalFrame
+      isOpen={isOpen}
+      onClose={onClose}
+      overlayClassName="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm"
+      panelInitial={{ opacity: 0, scale: 0.9, y: 30 }}
+      panelAnimate={{ opacity: 1, scale: 1, y: 0 }}
+      panelExit={{ opacity: 0, scale: 0.95, y: 20 }}
+      panelTransition={{ type: "spring", damping: 25, stiffness: 300 }}
+      panelClassName={`relative w-full max-w-md overflow-hidden rounded-[2.5rem] border p-6 sm:p-8 pointer-events-auto ${styles.modalContainer}`}
+      panelRole="dialog"
+      panelAriaLabel={title}
+    >
               {/* Ornements modaux géants */}
               <div className={`absolute -right-20 -top-20 h-64 w-64 rounded-full border-[16px] ${styles.ornament} pointer-events-none opacity-20`} />
               <div className={`absolute -bottom-32 -left-32 h-96 w-96 rounded-full border-[2px] ${styles.ornament} pointer-events-none opacity-30`} />
@@ -148,10 +138,6 @@ export function BadgeModal({
                   {family === "actions" ? "Continuer la progression" : "Continuer l'exploration"}
                 </button>
               </div>
-            </motion.div>
-          </div>
-        </>
-      )}
-    </AnimatePresence>
+    </ModalFrame>
   );
 }

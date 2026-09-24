@@ -45,7 +45,7 @@ export const PRIVATE_APP_ROUTE_PREFIXES = [
   SPONSOR_PORTAL_ROUTE,
 ] as const;
 
-export const PUBLIC_NOINDEX_ROUTE_PREFIXES = [
+const PUBLIC_NOINDEX_ROUTE_PREFIXES = [
   "/declaration-simple",
   "/docs",
   "/error/429",
@@ -89,7 +89,7 @@ export const PUBLIC_NOINDEX_SECTION_IDS: ReadonlySet<string> = new Set([
   "trash-spotter",
 ] as const);
 
-export const PRIVATE_SECTION_IDS: ReadonlySet<string> = new Set([
+const PRIVATE_SECTION_IDS: ReadonlySet<string> = new Set([
   "elus",
   "gamification",
   "messagerie",
@@ -97,7 +97,7 @@ export const PRIVATE_SECTION_IDS: ReadonlySet<string> = new Set([
 
 export type SeoRedirectSource = keyof typeof SEO_REDIRECT_TARGETS;
 
-export function appendPreservedSearchParams(
+function appendPreservedSearchParams(
   target: string,
   searchParams: Record<string, string | string[] | undefined>,
 ): string {

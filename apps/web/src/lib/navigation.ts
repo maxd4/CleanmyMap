@@ -169,71 +169,31 @@ const ACT_VISIBLE_ROUTE_IDS: RouteId[] = [
   "signalement",
 ];
 
+const COMMON_PROFILE_SPACE_PAGES: Omit<
+  Record<NavigationBlockId, RouteId[]>,
+  "home"
+> = {
+  act: ACT_VISIBLE_ROUTE_IDS,
+  visualize: ["map", "methodologie", "reports", "gamification"],
+  impact: [],
+  network: ["community", "feedback", "messagerie", "network", "open-data", "annuaire", "funding"],
+  connect: [],
+  learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
+};
+
+function buildProfileSpacePages(home: RouteId[]): Record<NavigationBlockId, RouteId[]> {
+  return { home, ...COMMON_PROFILE_SPACE_PAGES };
+}
+
 // Source de vérité navigation: profil -> espaces -> pages.
 const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
-  benevole: {
-    home: ["dashboard", "explorer"],
-    act: ACT_VISIBLE_ROUTE_IDS,
-    visualize: ["map", "methodologie", "reports", "gamification"],
-    impact: [],
-    network: ["community", "feedback", "messagerie", "network", "open-data", "annuaire", "funding"],
-    connect: [],
-    learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
-  },
-  coordinateur: {
-    home: ["dashboard", "explorer", "pilotage"],
-    act: ACT_VISIBLE_ROUTE_IDS,
-    visualize: ["map", "methodologie", "reports", "gamification"],
-    impact: [],
-    network: ["community", "feedback", "messagerie", "network", "open-data", "annuaire", "funding"],
-    connect: [],
-    learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
-  },
-  scientifique: {
-    home: ["dashboard", "explorer", "pilotage"],
-    act: ACT_VISIBLE_ROUTE_IDS,
-    visualize: ["map", "methodologie", "reports", "gamification"],
-    impact: [],
-    network: ["community", "feedback", "messagerie", "network", "open-data", "annuaire", "funding"],
-    connect: [],
-    learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
-  },
-  entreprise: {
-    home: ["dashboard", "explorer", "sponsor"],
-    act: ACT_VISIBLE_ROUTE_IDS,
-    visualize: ["map", "methodologie", "reports", "gamification"],
-    impact: [],
-    network: ["community", "feedback", "messagerie", "network", "open-data", "annuaire", "funding"],
-    connect: [],
-    learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
-  },
-  elu: {
-    home: ["dashboard", "explorer", "pilotage", "sponsor"],
-    act: ACT_VISIBLE_ROUTE_IDS,
-    visualize: ["map", "methodologie", "reports", "gamification"],
-    impact: [],
-    network: ["community", "feedback", "messagerie", "network", "open-data", "annuaire", "funding"],
-    connect: [],
-    learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
-  },
-  admin: {
-    home: ["dashboard", "explorer", "pilotage", "admin"],
-    act: ACT_VISIBLE_ROUTE_IDS,
-    visualize: ["map", "methodologie", "reports", "gamification"],
-    impact: [],
-    network: ["community", "feedback", "messagerie", "network", "open-data", "annuaire", "funding"],
-    connect: [],
-    learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
-  },
-  max: {
-    home: ["dashboard", "explorer", "pilotage", "admin"],
-    act: ACT_VISIBLE_ROUTE_IDS,
-    visualize: ["map", "methodologie", "reports", "gamification"],
-    impact: [],
-    network: ["community", "feedback", "messagerie", "network", "open-data", "annuaire", "funding"],
-    connect: [],
-    learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
-  },
+  benevole: buildProfileSpacePages(["dashboard", "explorer"]),
+  coordinateur: buildProfileSpacePages(["dashboard", "explorer", "pilotage"]),
+  scientifique: buildProfileSpacePages(["dashboard", "explorer", "pilotage"]),
+  entreprise: buildProfileSpacePages(["dashboard", "explorer", "sponsor"]),
+  elu: buildProfileSpacePages(["dashboard", "explorer", "pilotage", "sponsor"]),
+  admin: buildProfileSpacePages(["dashboard", "explorer", "pilotage", "admin"]),
+  max: buildProfileSpacePages(["dashboard", "explorer", "pilotage", "admin"]),
 };
 
 const RUBRIQUE_BY_ID = new Map<RouteId, Rubrique>(

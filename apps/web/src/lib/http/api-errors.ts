@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { isSentryEnabled } from "@/lib/observability/sentry";
+import { unauthorizedJsonResponse } from "./auth-responses";
 
 /**
  * User-friendly error messages (not exposed to client logs)
@@ -148,6 +149,37 @@ export function validationErrorResponse(details: Record<string, string[]>) {
     },
     { status: 422 }
   );
+}
+
+async function parseJsonRequest(
+  request: Request,
+): Promise<{ ok: true; data: unknown } | { ok: false; response: NextResponse }> {
+  try {
+    return { ok: true, data: await request.json() };
+  } catch {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 }),
+    };
+  }
+}
+
+export async function parseAuthenticatedJsonRequest(
+  request: Request,
+  authenticate: () => Promise<{ userId?: string | null }>,
+): Promise<
+  | { ok: true; userId: string; data: unknown }
+  | { ok: false; response: NextResponse }
+> {
+  const { userId } = await authenticate();
+  if (!userId) {
+    return { ok: false, response: unauthorizedJsonResponse() };
+  }
+
+  const payload = await parseJsonRequest(request);
+  return payload.ok
+    ? { ok: true, userId, data: payload.data }
+    : payload;
 }
 
 /**

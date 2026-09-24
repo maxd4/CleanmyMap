@@ -6,16 +6,12 @@ const queryMock = vi.hoisted(() => ({
   in: vi.fn(),
 }));
 
-vi.mock("@/lib/rate-limit/api-wrapper", () => ({
-  createRateLimitedHandler: (handlers: Record<string, unknown>) => Object.values(handlers)[0],
-}));
-vi.mock("@/lib/supabase/server", () => ({
-  getSupabaseAdminClient: () => ({
-    from: queryMock.from.mockReturnThis(),
-    select: queryMock.select.mockReturnThis(),
-    in: queryMock.in,
-  }),
-}));
+vi.mock("@/lib/rate-limit/api-wrapper", async () =>
+  (await import("@/app/api/test-helpers")).createRateLimitedHandlerModule(),
+);
+vi.mock("@/lib/supabase/server", async () =>
+  (await import("@/app/api/test-helpers")).createSupabaseAdminModule(queryMock, ["from", "select"]),
+);
 
 import { GET } from "./route";
 

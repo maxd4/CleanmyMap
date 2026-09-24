@@ -4,16 +4,7 @@ import type {
   EnvironmentalImpactCodexUsageWeeklySnapshotRecord,
 } from "@/lib/environmental-impact-estimator";
 import type { CodexUsageAdminResponse } from "./codex-usage-panel.model";
-
-function formatKg(value: number | null | undefined) {
-  if (typeof value !== "number" || Number.isNaN(value)) return "—";
-  return `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 3 }).format(value)} kg CO2e proxy`;
-}
-
-function formatNumber(value: number | null | undefined) {
-  if (typeof value !== "number" || Number.isNaN(value)) return "—";
-  return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value);
-}
+import { formatKg, formatNumber } from "./codex-usage-panel.utils";
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "—";

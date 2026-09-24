@@ -8,17 +8,14 @@ const queryMock = vi.hoisted(() => ({
   maybeSingle: vi.fn(),
 }));
 
-vi.mock("@/lib/rate-limit/api-wrapper", () => ({
-  createRateLimitedHandler: (handlers: Record<string, unknown>) => Object.values(handlers)[0],
-}));
-vi.mock("@/lib/supabase/server", () => ({
-  getSupabaseAdminClient: () => ({
-    from: queryMock.from.mockReturnThis(),
-    select: queryMock.select.mockReturnThis(),
-    eq: queryMock.eq.mockReturnThis(),
-    maybeSingle: queryMock.maybeSingle,
-  }),
-}));
+vi.mock("@/lib/rate-limit/api-wrapper", async () => {
+  const helpers = await import("@/app/api/test-helpers");
+  return helpers.createRateLimitedHandlerModule();
+});
+vi.mock("@/lib/supabase/server", async () => {
+  const helpers = await import("@/app/api/test-helpers");
+  return helpers.createSupabaseAdminModule(queryMock, ["from", "select", "eq"]);
+});
 
 import { GET } from "./route";
 

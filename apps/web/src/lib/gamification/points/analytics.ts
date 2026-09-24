@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toNonNegativeInteger, toSingleRow } from "../normalizers";
 
 // COMPATIBILITY/LEGACY only. CURRENT gamification reads progression_events.
 
@@ -15,18 +16,6 @@ type GamificationPointsAnalyticsRow = {
   event_breakdown: Record<string, { count?: number; points?: number }> | null;
   timeline: Array<{ date?: string; points?: number }> | null;
 };
-
-function toSingleRow<T>(data: T[] | T | null | undefined): T | null {
-  if (Array.isArray(data)) {
-    return data[0] ?? null;
-  }
-  return data ?? null;
-}
-
-function toNonNegativeInteger(value: number | null | undefined): number {
-  const next = Number(value ?? 0);
-  return Number.isFinite(next) && next >= 0 ? Math.floor(next) : 0;
-}
 
 function toNonNegativeNumber(value: number | null | undefined): number {
   const next = Number(value ?? 0);

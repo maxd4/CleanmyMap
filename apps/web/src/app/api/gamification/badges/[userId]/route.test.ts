@@ -3,13 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const authMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@clerk/nextjs/server", () => ({
-  auth: authMock,
-}));
+vi.mock("@clerk/nextjs/server", async () => {
+  const helpers = await import("@/app/api/test-helpers");
+  return helpers.createClerkAuthModule(authMock);
+});
 
-vi.mock("@/lib/supabase/server", () => ({
-  getSupabaseServerClient: getSupabaseServerClientMock,
-}));
+vi.mock("@/lib/supabase/server", async () => {
+  const helpers = await import("@/app/api/test-helpers");
+  return helpers.createSupabaseServerModule(getSupabaseServerClientMock);
+});
 
 describe("GET /api/gamification/badges/:userId", () => {
   beforeEach(() => {

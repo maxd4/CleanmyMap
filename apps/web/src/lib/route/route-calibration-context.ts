@@ -12,13 +12,13 @@ import type {
   RoutePlannerSnapshotGroup,
 } from "./route-calibration-types";
 import type { RouteDataLayers, RouteDataStatus } from "./route-data-status";
+import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 import type { RouteGeometry, RouteStop } from "./route-contract";
 import type { RoutePlanningMode } from "./route-planning-mode";
 import type { RoutePlannerOrigin } from "./route-planner";
 import type { RoutePredictionSummary } from "./route-predicted-targets";
 import type { RoutePickupPreference } from "./route-pickup-preference";
 import type { UnifiedSourceHealth } from "@/lib/actions/unified-source/types";
-import type { PlannerWeatherContext } from "@/lib/weather/planner-weather";
 
 export function buildRouteCalibrationContext(input: {
   generatedAt: string;

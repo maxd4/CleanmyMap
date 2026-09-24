@@ -1,5 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+function createProgressionEventLookupChain() {
+  const chain = {
+    eq: vi.fn(),
+    maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+  };
+  chain.eq.mockReturnValue(chain);
+  return chain;
+}
+
 // Tests for Forms badge family: dedup by action+group, ignore drafts, award base XP and decade bonus once
 describe('Forms badge family - eligibility and XP awards', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -38,19 +47,7 @@ describe('Forms badge family - eligibility and XP awards', () => {
       from: vi.fn((table: string) => {
         if (table === 'progression_events') {
           return {
-            select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                eq: vi.fn(() => ({
-                  eq: vi.fn(() => ({
-                    eq: vi.fn(() => ({
-                      eq: vi.fn(() => ({
-                        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-                      })),
-                    })),
-                  })),
-                })),
-              })),
-            })),
+            select: vi.fn(() => createProgressionEventLookupChain()),
             insert: vi.fn(async (payload: { source_table?: string })=>{ if (payload.source_table === 'forms_bonus') insertedBonuses++; return { data: null, error: null }; }),
           };
         }

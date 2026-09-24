@@ -22,16 +22,13 @@ vi.mock("react-big-calendar", () => ({
   dateFnsLocalizer: () => ({}),
 }));
 
-vi.mock("@/components/ui/site-preferences-provider", () => ({
-  useSitePreferences: () => ({
-    locale: "fr",
-  }),
-}));
+vi.mock("@/components/ui/site-preferences-provider", async () =>
+  Promise.resolve((await import("@/app/learn/test-helpers")).createLearnSitePreferencesModule()),
+);
 
-vi.mock("@/components/learn/learn-rubric-shell", () => ({
-  LearnRubricShell: ({ children }: { children: React.ReactNode }) =>
-    React.createElement("div", { "data-testid": "shell" }, children),
-}));
+vi.mock("@/components/learn/learn-rubric-shell", async () =>
+  Promise.resolve((await import("@/app/learn/test-helpers")).createLearnRubricShellModule()),
+);
 
 vi.mock("@/components/learn/learn-page-visit-tracker", () => ({
   LearnPageVisitTracker: (props: TrackerProps) => {

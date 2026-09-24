@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { ModalFrame } from "@/components/ui/modal-frame";
 import { X, Download, Share2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useState } from "react";
@@ -54,25 +54,15 @@ export function QRCodeDialog({ isOpen, onClose, value, title, description }: QRC
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            data-motion-role="overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm"
-          />
-          <div className="fixed inset-0 z-[101] flex items-center justify-center p-4 pointer-events-none">
-            <motion.div
-              data-motion-role="overlay"
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-sm overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-2xl pointer-events-auto sm:p-8"
-            >
+    <ModalFrame
+      isOpen={isOpen}
+      onClose={onClose}
+      overlayClassName="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm"
+      panelInitial={{ opacity: 0, scale: 0.9, y: 20 }}
+      panelAnimate={{ opacity: 1, scale: 1, y: 0 }}
+      panelExit={{ opacity: 0, scale: 0.9, y: 20 }}
+      panelClassName="relative w-full max-w-sm overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-2xl pointer-events-auto sm:p-8"
+    >
               <button
                 onClick={onClose}
                 className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200"
@@ -127,10 +117,6 @@ export function QRCodeDialog({ isOpen, onClose, value, title, description }: QRC
                   CleanMyMap • V1 Launch
                 </p>
               </div>
-            </motion.div>
-          </div>
-        </>
-      )}
-    </AnimatePresence>
+    </ModalFrame>
   );
 }

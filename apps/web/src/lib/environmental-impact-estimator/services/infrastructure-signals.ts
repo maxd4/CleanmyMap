@@ -72,11 +72,18 @@ export function deriveMetricQuantityFromUsage(
   return METRIC_USAGE_RESOLVERS[metricKey as EnvironmentalImpactInfrastructureMetricKey]?.(usage) ?? null;
 }
 
-export function getServiceMonthlyProxy(
+function getServiceMonthlyProxy(
   serviceByKey: ReadonlyMap<string, EnvironmentalImpactInfrastructureServiceEstimate>,
   key: string,
 ): number {
   return serviceByKey.get(key)?.monthlyKgCo2eProxy ?? 0;
+}
+
+export function getServiceMonthlyProxies<const K extends string>(
+  serviceByKey: ReadonlyMap<string, EnvironmentalImpactInfrastructureServiceEstimate>,
+  keys: readonly K[],
+): Record<K, number> {
+  return Object.fromEntries(keys.map((key) => [key, getServiceMonthlyProxy(serviceByKey, key)])) as Record<K, number>;
 }
 
 export function getNullableUsageValue(value: number | null): number {
@@ -88,17 +95,19 @@ export function buildSecondOrderScoreSignals(
   services: EnvironmentalImpactInfrastructureServiceEstimate[],
 ): Record<"grossCo2" | "electricity" | "otherGhgs" | "chemicals" | "water", number> {
   const serviceByKey = new Map(services.map((service) => [service.key, service]));
-  const vercel = getServiceMonthlyProxy(serviceByKey, "vercel");
-  const supabase = getServiceMonthlyProxy(serviceByKey, "supabase");
-  const resend = getServiceMonthlyProxy(serviceByKey, "resend");
-  const chatgpt = getServiceMonthlyProxy(serviceByKey, "chatgpt");
-  const codex = getServiceMonthlyProxy(serviceByKey, "codex");
-  const posthog = getServiceMonthlyProxy(serviceByKey, "posthog");
-  const sentry = getServiceMonthlyProxy(serviceByKey, "sentry");
-  const upstash = getServiceMonthlyProxy(serviceByKey, "upstash");
-  const pinecone = getServiceMonthlyProxy(serviceByKey, "pinecone");
-  const stripe = getServiceMonthlyProxy(serviceByKey, "stripe");
-  const lws = getServiceMonthlyProxy(serviceByKey, "lwsDomain");
+  const serviceProxies = getServiceMonthlyProxies(serviceByKey, [
+    "vercel",
+    "supabase",
+    "resend",
+    "chatgpt",
+    "codex",
+    "posthog",
+    "sentry",
+    "upstash",
+    "pinecone",
+    "stripe",
+    "lwsDomain",
+  ] as const);
 
   return {
     grossCo2: round6(
@@ -106,44 +115,44 @@ export function buildSecondOrderScoreSignals(
         usageProfile.monthlyApiRequests * 0.22 +
         usageProfile.monthlyEmailsSent * 0.14 +
         usageProfile.monthlyDeployments * 0.18 +
-        vercel * 0.12 +
-        lws * 0.06,
+        serviceProxies.vercel * 0.12 +
+        serviceProxies.lwsDomain * 0.06,
     ),
     electricity: round6(
       usageProfile.monthlyBandwidthGb * 0.26 +
         usageProfile.monthlyStorageGbMonths * 0.22 +
         usageProfile.monthlySessions * 0.12 +
         usageProfile.monthlyRealtimeEvents * 0.2 +
-        chatgpt * 0.08 +
-        vercel * 0.1 +
-        supabase * 0.1,
+        serviceProxies.chatgpt * 0.08 +
+        serviceProxies.vercel * 0.1 +
+        serviceProxies.supabase * 0.1,
     ),
     otherGhgs: round6(
       usageProfile.monthlyAiCalls * 0.38 +
-        chatgpt * 0.12 +
+        serviceProxies.chatgpt * 0.12 +
         getNullableUsageValue(usageProfile.monthlyCodexActiveMinutes) * 0.24 +
         getNullableUsageValue(usageProfile.monthlyCodexTestsRun) * 0.14 +
         usageProfile.monthlyErrorEvents * 0.08 +
-        codex * 0.1 +
-        sentry * 0.06,
+        serviceProxies.codex * 0.1 +
+        serviceProxies.sentry * 0.06,
     ),
     chemicals: round6(
       usageProfile.monthlyStorageGbMonths * 0.28 +
         usageProfile.monthlyPdfExports * 0.26 +
         getNullableUsageValue(usageProfile.monthlyCodexFilesTouched) * 0.16 +
         usageProfile.monthlyDeployments * 0.2 +
-        resend * 0.05 +
-        stripe * 0.05,
+        serviceProxies.resend * 0.05 +
+        serviceProxies.stripe * 0.05,
     ),
     water: round6(
       usageProfile.monthlyAiCalls * 0.32 +
-        chatgpt * 0.14 +
+        serviceProxies.chatgpt * 0.14 +
         getNullableUsageValue(usageProfile.monthlyCodexSessions) * 0.24 +
         usageProfile.monthlyBandwidthGb * 0.16 +
         usageProfile.monthlyStorageGbMonths * 0.12 +
-        posthog * 0.06 +
-        upstash * 0.04 +
-        pinecone * 0.06,
+        serviceProxies.posthog * 0.06 +
+        serviceProxies.upstash * 0.04 +
+        serviceProxies.pinecone * 0.06,
     ),
   };
 }
