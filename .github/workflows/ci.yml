@@ -160,6 +160,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Node
+        id: setup-node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version-file: ${{ env.NODE_VERSION_FILE }}
@@ -170,6 +171,7 @@ jobs:
         run: node scripts/checks/check-node-version-contract.mjs
 
       - name: Install Node dependencies
+        id: install-node-dependencies
         run: npm ci
 
       - name: Install architectural Semgrep
@@ -188,23 +190,32 @@ jobs:
         run: npm run check:utf8-fr
 
       - name: Heavy files policy
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run quality:top-heavy
 
       - name: Dead-code ratchet
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run quality:dead-code
 
       - name: Complexity and function-length policy
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
+        env:
+          COMPLEXITY_CHANGED_FROM: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
         run: npm run quality:complexity
 
       - name: Duplication ratchet
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run quality:duplication
 
       - name: Set up GitNexus cycle audit
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
+        id: install-gitnexus
         run: |
           npm install --global gitnexus@1.6.12
           gitnexus analyze --index-only
 
       - name: GitNexus cycle ratchet
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success' && steps.install-gitnexus.outcome == 'success'
         run: npm run quality:cycles
 
       - name: Web lint

@@ -124,6 +124,14 @@ La modularisation utile fait partie de l'implémentation de la fonctionnalité ;
 elle n'est pas un chantier facultatif à reporter après livraison lorsque les
 frontières sont déjà prévisibles.
 
+Lorsqu'un lot a explicitement pour objectif de modulariser un fichier
+top-heavy, la modularisation n'est terminée que si le fichier atteint au plus
+80 % du seuil REVIEW en lignes et en octets (actuellement 400 lignes et
+32 KiB). Une exception est permise seulement si poursuivre le split créerait
+des modules artificiels sans responsabilité autonome ; elle doit être
+explicitement justifiée dans le rapport. Les modules extraits doivent respecter
+les targets de complexité et de longueur applicables au code nouveau.
+
 ## UI web
 
 - appliquer l'invariant global de textes publics en français à l'UI web ;

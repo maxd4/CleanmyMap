@@ -17,6 +17,10 @@ test("pre-commit uses the changed-surface guard and fast global controls", async
   assert.match(packageJson.scripts["precommit:guard"], /pre_commit_guard\.ps1/);
   assert.match(packageJson.scripts["checks:staged:quick"], /check_changed_quick\.ps1 -StagedOnly/);
   assert.match(guard, /npm run checks:staged:quick/);
+  assert.match(guard, /check-complexity-policy\.mjs --staged/);
+  assert.match(guard, /git write-tree/);
+  assert.match(guard, /check-top-heavy-files\.mjs --enforce/);
+  assert.match(guard, /--ref=\$StagedTree/);
   assert.doesNotMatch(guard, /workspace-coordination|CMM_WORKSPACE_RUN_ID|check-staged/);
   assert.match(guard, /npm run security:secrets -- --staged-only/);
   assert.match(guard, /git diff --cached --check/);
@@ -24,6 +28,23 @@ test("pre-commit uses the changed-surface guard and fast global controls", async
   assert.doesNotMatch(guard, /npm run security:secrets\s*\}/);
   assert.doesNotMatch(guard, /git diff --check\s*\}/);
   assert.doesNotMatch(guard, /pre_push_guard\.ps1|npm run build|vercel build|-IncludeBuild/);
+});
+
+test("CI reports independent structural gates after setup and dependency installation", async () => {
+  const workflow = await readRepoFile(".github/workflows/ci.yml");
+  const webValidation = workflow.slice(workflow.indexOf("  web-validation:"), workflow.indexOf("  mobile-validation:"));
+  for (const gate of [
+    "npm run quality:top-heavy",
+    "npm run quality:dead-code",
+    "npm run quality:complexity",
+    "npm run quality:duplication",
+  ]) {
+    const step = webValidation.slice(webValidation.indexOf(gate) - 600, webValidation.indexOf(gate));
+    assert.match(step, /if: always\(\)/, gate);
+    assert.match(step, /steps\.setup-node\.outcome == 'success'/, gate);
+    assert.match(step, /steps\.install-node-dependencies\.outcome == 'success'/, gate);
+  }
+  assert.match(webValidation, /steps\.install-gitnexus\.outcome == 'success'[\s\S]*?npm run quality:cycles/);
 });
 
 test("pre-push derives gates from the Git protocol candidate and keeps manual fallback separate", async () => {

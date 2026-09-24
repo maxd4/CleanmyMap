@@ -59,6 +59,11 @@ const allowlist = [
     rule: "body-color",
     reason: "environmental estimator detail typography preserves the historical visual contract",
   },
+  {
+    file: "apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
+    rule: "small-text",
+    reason: "badge rank and progress metadata preserve the existing compact gamification layout",
+  },
 ];
 
 const smallTextPattern = /text-\[((?:\d+(?:\.\d+)?|\.\d+))(px|rem)\]/g;

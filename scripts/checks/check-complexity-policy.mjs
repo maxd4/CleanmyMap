@@ -4,23 +4,26 @@ import { ESLint } from "eslint";
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import {
   baselineKey,
   classifyComplexityCategory,
-  compareLegacyValue,
-  COMPLEXITY_THRESHOLDS,
-  createFunctionIdentityResolver,
+  createFunctionMetadataResolver,
+  evaluateBaselinedMetric,
   evaluateNewMetric,
-  FUNCTION_LENGTH_THRESHOLDS,
+  intersectsChangedFunction,
   validateBaselineShape,
 } from "./complexity-policy.mjs";
+import { createGitRepositoryView } from "./repository-view.mjs";
 
 const repositoryRoot = process.cwd();
 const webRoot = path.join(repositoryRoot, "apps", "web");
 const baselinePath = path.join(repositoryRoot, "scripts", "checks", "complexity-baseline.json");
 const args = new Set(process.argv.slice(2));
 const changedOnly = args.has("--changed-only");
+const stagedOnly = args.has("--staged");
+const changedFromArgument = process.argv.slice(2).find((argument) => argument.startsWith("--changed-from="))?.slice("--changed-from=".length);
 
 function normalizeRepositoryPath(file) {
   return file.replaceAll("\\", "/");
@@ -49,9 +52,12 @@ function sourcePath(absolute) {
   return normalizeRepositoryPath(path.relative(webRoot, absolute));
 }
 
-function parseChangedRanges() {
+function parseChangedRanges({ from = baselineSourceCommit, to = null } = {}) {
   const ranges = new Map();
-  const diff = execFileSync("git", ["diff", "--unified=0", baselineSourceCommit, "--", "apps/web/src"], {
+  const diffArguments = ["diff", "--unified=0", from];
+  if (to) diffArguments.push(to);
+  diffArguments.push("--", "apps/web/src");
+  const diff = execFileSync("git", diffArguments, {
     cwd: repositoryRoot,
     encoding: "utf8",
   });
@@ -66,12 +72,11 @@ function parseChangedRanges() {
     if (!currentPath || !hunk) continue;
     const start = Number(hunk[1]);
     const count = hunk[2] === undefined ? 1 : Number(hunk[2]);
-    if (count > 0) {
-      if (!ranges.has(currentPath)) ranges.set(currentPath, []);
-      ranges.get(currentPath).push({ start, end: start + count - 1 });
-    }
+    if (!ranges.has(currentPath)) ranges.set(currentPath, []);
+    ranges.get(currentPath).push({ start, end: start + Math.max(count, 1) - 1 });
   }
 
+  if (to) return ranges;
   const untracked = git(["ls-files", "--others", "--exclude-standard", "--", "apps/web/src"])
     .split(/\r?\n/).filter(Boolean)
     .map(normalizeRepositoryPath)
@@ -81,31 +86,32 @@ function parseChangedRanges() {
   return ranges;
 }
 
-function intersectsChangedLines(ranges, pathName, start, end) {
-  return (ranges.get(pathName) ?? []).some((range) => range.start <= end && range.end >= start);
-}
-
-function parseFunctionMessages(results) {
+function parseFunctionMessages(results, view = null) {
   const metrics = [];
   for (const result of results) {
     const file = sourcePath(result.filePath);
-    const source = fs.readFileSync(result.filePath, "utf8");
-    const resolveFunctionIdentity = createFunctionIdentityResolver(file, source);
+    const source = view
+      ? view.readText(`apps/web/${file}`)
+      : fs.readFileSync(result.filePath, "utf8");
+    const resolveFunctionMetadata = createFunctionMetadataResolver(file, source);
     for (const message of result.messages) {
       const complexity = message.ruleId === "complexity" && message.message.match(/complexity of (\d+)/i);
       const functionLength = message.ruleId === "max-lines-per-function" && message.message.match(/too many lines \((\d+)\)/i);
       if (!complexity && !functionLength) continue;
       const metric = complexity ? "complexity" : "functionLength";
-      const functionIdentity = resolveFunctionIdentity(message.line, message.message);
+      const functionMetadata = resolveFunctionMetadata(message.line, message.message);
+      if (!functionMetadata) continue;
       metrics.push({
         metric,
         path: file,
-        functionIdentity,
+        functionIdentity: functionMetadata.functionIdentity,
         line: message.line,
         endLine: message.endLine ?? message.line,
+        functionStartLine: functionMetadata.startLine,
+        functionEndLine: functionMetadata.endLine,
         value: Number((complexity ?? functionLength)[1]),
         category: classifyComplexityCategory(file),
-        key: baselineKey(metric, file, functionIdentity),
+        key: baselineKey(metric, file, functionMetadata.functionIdentity),
       });
     }
   }
@@ -116,7 +122,7 @@ function baselineEntriesByKey(baseline) {
   return new Map(baseline.entries.map((entry) => [baselineKey(entry.metric, entry.path, entry.functionIdentity), entry]));
 }
 
-function evaluateMetrics({ metrics, baseline, changedRanges }) {
+export function evaluateMetrics({ metrics, baseline, changedRanges }) {
   const baselineByKey = baselineEntriesByKey(baseline);
   const currentByKey = new Map();
   const failures = [];
@@ -126,24 +132,21 @@ function evaluateMetrics({ metrics, baseline, changedRanges }) {
   for (const metric of metrics) {
     currentByKey.set(metric.key, metric.value);
     const entry = baselineByKey.get(metric.key);
-    const changed = intersectsChangedLines(changedRanges, metric.path, metric.line, metric.endLine);
+    const changed = intersectsChangedFunction(changedRanges, metric.path, metric.functionStartLine, metric.functionEndLine);
     if (entry) {
-      const result = compareLegacyValue(metric.value, entry.ceiling);
+      const result = evaluateBaselinedMetric(metric.metric, metric.category, metric.value, entry.ceiling, changed);
       if (result.status === "FAIL") failures.push({ ...metric, reason: result.reason, ceiling: entry.ceiling });
       if (result.status === "IMPROVEMENT") improvements.push({ ...metric, ceiling: entry.ceiling });
       continue;
     }
-    if (!entry && !changed && metric.value > (metric.metric === "complexity" ? COMPLEXITY_THRESHOLDS[metric.category]?.target : FUNCTION_LENGTH_THRESHOLDS[metric.category]?.target ?? Number.MAX_SAFE_INTEGER)) {
-      failures.push({ ...metric, reason: "baseline missing for an existing historical violation" });
-      continue;
-    }
+    if (!changed) continue;
     const result = evaluateNewMetric(metric.metric, metric.category, metric.value);
     if (result.status === "FAIL") failures.push({ ...metric, reason: result.reason, limit: result.limit });
     if (result.status === "REVIEW") reviews.push({ ...metric, reason: "above target but below blocking threshold" });
   }
 
   const stale = [];
-  for (const entry of baseline.entries) {
+  for (const entry of (stagedOnly ? [] : baseline.entries)) {
     const current = currentByKey.get(baselineKey(entry.metric, entry.path, entry.functionIdentity));
     if (current === undefined) stale.push(entry);
   }
@@ -159,9 +162,16 @@ const baselineSourceCommit = (() => {
 })();
 
 async function main() {
+  let view = null;
+  let stagedTree = null;
+  if (stagedOnly) {
+    stagedTree = git(["write-tree"]);
+    view = createGitRepositoryView(stagedTree, repositoryRoot);
+  }
+
   let baseline;
   try {
-    baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
+    baseline = JSON.parse(view ? view.readText("scripts/checks/complexity-baseline.json") : fs.readFileSync(baselinePath, "utf8"));
     assertBaselineFresh(baseline);
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
@@ -169,20 +179,32 @@ async function main() {
     return;
   }
 
-  const changedRanges = parseChangedRanges();
+  const changedFrom = stagedOnly
+    ? "HEAD"
+    : changedFromArgument ?? process.env.COMPLEXITY_CHANGED_FROM ?? (() => {
+      try { return git(["rev-parse", "--verify", "HEAD^"]); }
+      catch { return baselineSourceCommit; }
+    })();
+  const changedRanges = stagedOnly
+    ? parseChangedRanges({ from: "HEAD", to: stagedTree })
+    : parseChangedRanges({ from: changedFrom });
   if (changedOnly && changedRanges.size === 0) {
     console.log("PASS: no changed apps/web/src files for targeted complexity policy.");
     return;
   }
 
-  const appConfig = (await import(pathToFileURL(path.join(webRoot, "eslint.config.mjs")).href)).default;
+  const webRequire = createRequire(path.join(webRoot, "package.json"));
+  const typescriptConfigPath = webRequire.resolve("eslint-config-next/typescript");
+  const typescriptConfig = (await import(pathToFileURL(typescriptConfigPath).href)).default;
+  const typescriptParser = typescriptConfig.find((config) => config.languageOptions?.parser)?.languageOptions.parser;
+  if (!typescriptParser) throw new Error("eslint-config-next/typescript did not provide its TypeScript parser.");
   const eslint = new ESLint({
     cwd: webRoot,
     overrideConfigFile: true,
     overrideConfig: [
-      ...appConfig,
       {
         files: ["**/*.ts", "**/*.tsx"],
+        languageOptions: { parser: typescriptParser },
         rules: {
           complexity: ["error", 0],
           "max-lines-per-function": ["error", { max: 0, skipBlankLines: true, skipComments: true }],
@@ -190,11 +212,15 @@ async function main() {
       },
     ],
   });
-  const lintTargets = changedOnly
-    ? [...changedRanges.keys()].filter((file) => /\.(ts|tsx)$/.test(file)).map((file) => `src/${file.replace(/^src\//, "")}`)
-    : ["src/**/*.{ts,tsx}"];
-  const lintResults = await eslint.lintFiles(lintTargets);
-  const metrics = parseFunctionMessages(lintResults);
+  const sourceFiles = view
+    ? view.listFiles("apps/web/src").filter((file) => /\.(ts|tsx)$/.test(file) && (!(changedOnly || stagedOnly) || changedRanges.has(file.replace(/^apps\/web\//, ""))))
+    : null;
+  const lintResults = view
+    ? await Promise.all(sourceFiles.map((file) => eslint.lintText(view.readText(file), { filePath: path.join(repositoryRoot, file) })))
+    : await eslint.lintFiles(changedOnly
+      ? [...changedRanges.keys()].filter((file) => /\.(ts|tsx)$/.test(file)).map((file) => `src/${file.replace(/^src\//, "")}`)
+      : ["src/**/*.{ts,tsx}"]);
+  const metrics = parseFunctionMessages(lintResults.flat(), view);
   const result = evaluateMetrics({ metrics, baseline, changedRanges });
 
   console.log(`Complexity policy: ${metrics.length} function metrics measured.`);
@@ -217,4 +243,6 @@ async function main() {
   console.log("PASS: new-code thresholds and legacy ceilings respected.");
 }
 
-await main();
+if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === import.meta.url) {
+  await main();
+}

@@ -31,6 +31,10 @@ try {
     Write-Host "Repository: $RepoRoot"
 
     Invoke-GuardStep "staged canonical workspace sentinels" { node scripts/checks/check-canonical-workspaces.mjs --staged }
+    Invoke-GuardStep "staged complexity and function-length targets" { node scripts/checks/check-complexity-policy.mjs --staged }
+    $StagedTree = (& git write-tree).Trim()
+    if ($LASTEXITCODE -ne 0 -or -not $StagedTree) { throw "Unable to resolve the staged Git tree." }
+    Invoke-GuardStep "staged top-heavy ratchets" { node scripts/checks/check-top-heavy-files.mjs --enforce "--ref=$StagedTree" }
     Invoke-GuardStep "staged-surface quick checks" { npm run checks:staged:quick }
     Invoke-GuardStep "staged readable typography" { npm run check:readable-typography -- --staged }
     Invoke-GuardStep "staged secret audit" { npm run security:secrets -- --staged-only }
