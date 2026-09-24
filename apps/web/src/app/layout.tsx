@@ -4,7 +4,6 @@ import { ClerkLocalizationProvider } from "@/components/auth/clerk-localization-
 import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
 import { OrganizationJsonLd } from "@/components/seo/structured-data/organization-data";
 import { WebSiteJsonLd } from "@/components/seo/structured-data/navigation-data";
-import { FAQJsonLd } from "@/components/seo/structured-data/content-data";
 import { RootLayoutChrome } from "@/components/layout/root-layout-chrome";
 import { DeferredGlobalFooter } from "@/components/layout/deferred-global-chrome";
 import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
@@ -43,7 +42,6 @@ export default async function RootLayout({
         <CaptureModeInitializer />
         <OrganizationJsonLd />
         <WebSiteJsonLd />
-        <FAQJsonLd />
       </head>
       <body className="relative isolate flex min-h-screen flex-col overflow-x-hidden bg-background font-sans text-foreground">
         <SitePreferencesProvider>

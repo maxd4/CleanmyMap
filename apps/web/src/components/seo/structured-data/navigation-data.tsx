@@ -14,11 +14,6 @@ export function WebSiteJsonLd() {
     alternateName: ["cleanmymap.fr", "CMM"],
     description:
       "La carte citoyenne de dépollution urbaine partout en France. CleanMyMap centralise les signalements, les cleanwalks et les actions de terrain.",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: `${appUrl}/explorer?q={search_term_string}`,
-      "query-input": "required name=search_term_string",
-    },
   };
 
   return <JsonLd id="json-ld-website" data={data} />;
@@ -62,11 +57,6 @@ export function WebPageJsonLd() {
       audienceType: "Citoyens engagés",
     },
     genre: "Web Application",
-    interactionStatistic: {
-      "@type": "InteractionCounter",
-      interactionType: "https://schema.org/CommentAction",
-      userInteractionCount: 1250,
-    },
   };
 
   return <JsonLd id="json-ld-webpage" data={data} />;
