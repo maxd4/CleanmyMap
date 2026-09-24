@@ -11,6 +11,7 @@ const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 const loadActionOrganizerIdsForActionMock = vi.hoisted(() => vi.fn());
 const refreshProgressionProfileMock = vi.hoisted(() => vi.fn());
 const syncUserActionProgressionMock = vi.hoisted(() => vi.fn());
+const rebuildUserGamificationBadgesMock = vi.hoisted(() => vi.fn());
 const invalidatePublicSurfaceSnapshotsByRouteMock = vi.hoisted(() => vi.fn());
 const copyValidatedActionToLocalStoreMock = vi.hoisted(() => vi.fn());
 const copyValidatedSpotToLocalStoreMock = vi.hoisted(() => vi.fn());
@@ -58,6 +59,10 @@ vi.mock("@/lib/gamification/progression-tracking", () => ({
   syncUserActionProgression: syncUserActionProgressionMock,
 }));
 
+vi.mock("@/lib/gamification/badges/rebuild", () => ({
+  rebuildUserGamificationBadges: rebuildUserGamificationBadgesMock,
+}));
+
 vi.mock("@/lib/public-surface-snapshots", () => ({
   invalidatePublicSurfaceSnapshotsByRoute: invalidatePublicSurfaceSnapshotsByRouteMock,
 }));
@@ -78,6 +83,7 @@ describe("POST /api/admin/moderation", () => {
     loadActionOrganizerIdsForActionMock.mockResolvedValue(["creator-1", "organizer-1"]);
     refreshProgressionProfileMock.mockResolvedValue(undefined);
     syncUserActionProgressionMock.mockResolvedValue(1);
+    rebuildUserGamificationBadgesMock.mockResolvedValue({ inserted: 0 });
     recordRepollutionPredictionEvaluationForActionMock.mockResolvedValue(undefined);
     invalidatePublicSurfaceSnapshotsByRouteMock.mockResolvedValue(undefined);
     copyValidatedActionToLocalStoreMock.mockResolvedValue({
@@ -131,6 +137,7 @@ describe("POST /api/admin/moderation", () => {
       loadActionOrganizerIdsForActionMock,
       refreshProgressionProfileMock,
       syncUserActionProgressionMock,
+      rebuildUserGamificationBadgesMock,
       invalidatePublicSurfaceSnapshotsByRouteMock,
       copyValidatedActionToLocalStoreMock,
       copyValidatedSpotToLocalStoreMock,
