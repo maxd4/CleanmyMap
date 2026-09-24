@@ -31,6 +31,8 @@ export const COMPLEXITY_POLICY_FINGERPRINT = createHash("sha256")
 export const FUNCTION_IDENTITY_SCHEME_VERSION = 2;
 export const FUNCTION_IDENTITY_SCHEME =
   "v2: path + semantic role with canonical syntax tokens + deterministic occurrence; line is diagnostic metadata only.";
+export const SUBSTANTIAL_CHANGE_MIN_LINES = 10;
+export const SUBSTANTIAL_CHANGE_RATIO = 0.2;
 
 function canonicalSyntaxText(node, sourceFile) {
   const scanner = ts.createScanner(
@@ -164,12 +166,45 @@ export function evaluateNewMetric(metric, category, value, { parserJustified = f
   return { status: "PASS", metric, category, value, limit: thresholds.target };
 }
 
-export function evaluateBaselinedMetric(metric, category, value, ceiling, changed) {
+export function isSubstantiallyChanged({
+  changedLines = 0,
+  functionStartLine = 1,
+  functionEndLine = functionStartLine,
+} = {}) {
+  const functionSize = Math.max(1, functionEndLine - functionStartLine + 1);
+  return changedLines >= SUBSTANTIAL_CHANGE_MIN_LINES
+    || changedLines / functionSize >= SUBSTANTIAL_CHANGE_RATIO;
+}
+
+export function evaluateBaselinedMetric(
+  metric,
+  category,
+  value,
+  ceiling,
+  changed,
+  { changedLines = 0, functionStartLine = 1, functionEndLine = functionStartLine } = {},
+) {
   const target = metric === "complexity"
     ? COMPLEXITY_THRESHOLDS[category]?.target
     : FUNCTION_LENGTH_THRESHOLDS[category]?.target;
-  if (changed && target !== undefined && ceiling <= target && value > target) {
-    return { status: "FAIL", reason: "changed code exceeds target", current: value, ceiling: target };
+  const substantiallyChanged = isSubstantiallyChanged({
+    changedLines,
+    functionStartLine,
+    functionEndLine,
+  });
+  const targetApplies = changed
+    && target !== undefined
+    && value > target
+    && (ceiling <= target || substantiallyChanged);
+  if (targetApplies) {
+    return {
+      status: "FAIL",
+      reason: substantiallyChanged
+        ? "substantially modified code exceeds target"
+        : "changed code exceeds target",
+      current: value,
+      ceiling: target,
+    };
   }
   return compareLegacyValue(value, ceiling);
 }

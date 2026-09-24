@@ -52,8 +52,47 @@ function sourcePath(absolute) {
   return normalizeRepositoryPath(path.relative(webRoot, absolute));
 }
 
-function parseChangedRanges({ from = baselineSourceCommit, to = null } = {}) {
+export function parseChangedDiffText(diff) {
   const ranges = new Map();
+  const hunks = new Map();
+  let currentPath = null;
+  let currentHunk = null;
+  for (const line of diff.split(/\r?\n/)) {
+    const fileMatch = line.match(/^\+\+\+ b\/(.+)$/);
+    if (fileMatch) {
+      currentPath = normalizeRepositoryPath(fileMatch[1]).replace(/^apps\/web\//, "");
+      currentHunk = null;
+      continue;
+    }
+    const hunk = line.match(/^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
+    if (hunk && currentPath) {
+      const oldStart = Number(hunk[1]);
+      const oldCount = hunk[2] === undefined ? 1 : Number(hunk[2]);
+      const newStart = Number(hunk[3]);
+      const newCount = hunk[4] === undefined ? 1 : Number(hunk[4]);
+      currentHunk = {
+        oldStart,
+        oldEnd: oldStart + Math.max(oldCount, 1) - 1,
+        newStart,
+        newEnd: newStart + Math.max(newCount, 1) - 1,
+        added: 0,
+        deleted: 0,
+      };
+      if (!ranges.has(currentPath)) ranges.set(currentPath, []);
+      ranges.get(currentPath).push({ start: currentHunk.newStart, end: currentHunk.newEnd });
+      if (!hunks.has(currentPath)) hunks.set(currentPath, []);
+      hunks.get(currentPath).push(currentHunk);
+      continue;
+    }
+    if (!currentHunk) continue;
+    if (line.startsWith("+") && !line.startsWith("+++")) currentHunk.added += 1;
+    if (line.startsWith("-") && !line.startsWith("---")) currentHunk.deleted += 1;
+  }
+
+  return { ranges, hunks };
+}
+
+function parseChangedDiff({ from = baselineSourceCommit, to = null } = {}) {
   const diffArguments = ["diff", "--unified=0", from];
   if (to) diffArguments.push(to);
   diffArguments.push("--", "apps/web/src");
@@ -61,29 +100,13 @@ function parseChangedRanges({ from = baselineSourceCommit, to = null } = {}) {
     cwd: repositoryRoot,
     encoding: "utf8",
   });
-  let currentPath = null;
-  for (const line of diff.split(/\r?\n/)) {
-    const fileMatch = line.match(/^\+\+\+ b\/(.+)$/);
-    if (fileMatch) {
-      currentPath = normalizeRepositoryPath(fileMatch[1]).replace(/^apps\/web\//, "");
-      continue;
-    }
-    const hunk = line.match(/^@@ .* \+(\d+)(?:,(\d+))? @@/);
-    if (!currentPath || !hunk) continue;
-    const start = Number(hunk[1]);
-    const count = hunk[2] === undefined ? 1 : Number(hunk[2]);
-    if (!ranges.has(currentPath)) ranges.set(currentPath, []);
-    ranges.get(currentPath).push({ start, end: start + Math.max(count, 1) - 1 });
-  }
+  return parseChangedDiffText(diff);
+}
 
-  if (to) return ranges;
-  const untracked = git(["ls-files", "--others", "--exclude-standard", "--", "apps/web/src"])
-    .split(/\r?\n/).filter(Boolean)
-    .map(normalizeRepositoryPath)
-    .filter((file) => /\.(ts|tsx)$/.test(file))
-    .map((file) => file.replace(/^apps\/web\//, ""));
-  for (const file of untracked) ranges.set(file, [{ start: 1, end: Number.MAX_SAFE_INTEGER }]);
-  return ranges;
+function changedFunctionLines(changedHunks, path, functionStartLine, functionEndLine) {
+  return (changedHunks?.get(path) ?? [])
+    .filter((hunk) => hunk.newStart <= functionEndLine && hunk.newEnd >= functionStartLine)
+    .reduce((total, hunk) => total + hunk.added + hunk.deleted, 0);
 }
 
 function parseFunctionMessages(results, view = null) {
@@ -122,7 +145,7 @@ function baselineEntriesByKey(baseline) {
   return new Map(baseline.entries.map((entry) => [baselineKey(entry.metric, entry.path, entry.functionIdentity), entry]));
 }
 
-export function evaluateMetrics({ metrics, baseline, changedRanges }) {
+export function evaluateMetrics({ metrics, baseline, changedRanges, changedHunks = new Map() }) {
   const baselineByKey = baselineEntriesByKey(baseline);
   const currentByKey = new Map();
   const failures = [];
@@ -134,7 +157,18 @@ export function evaluateMetrics({ metrics, baseline, changedRanges }) {
     const entry = baselineByKey.get(metric.key);
     const changed = intersectsChangedFunction(changedRanges, metric.path, metric.functionStartLine, metric.functionEndLine);
     if (entry) {
-      const result = evaluateBaselinedMetric(metric.metric, metric.category, metric.value, entry.ceiling, changed);
+      const result = evaluateBaselinedMetric(
+        metric.metric,
+        metric.category,
+        metric.value,
+        entry.ceiling,
+        changed,
+        {
+          changedLines: changedFunctionLines(changedHunks, metric.path, metric.functionStartLine, metric.functionEndLine),
+          functionStartLine: metric.functionStartLine,
+          functionEndLine: metric.functionEndLine,
+        },
+      );
       if (result.status === "FAIL") failures.push({ ...metric, reason: result.reason, ceiling: entry.ceiling });
       if (result.status === "IMPROVEMENT") improvements.push({ ...metric, ceiling: entry.ceiling });
       continue;
@@ -185,9 +219,19 @@ async function main() {
       try { return git(["rev-parse", "--verify", "HEAD^"]); }
       catch { return baselineSourceCommit; }
     })();
-  const changedRanges = stagedOnly
-    ? parseChangedRanges({ from: "HEAD", to: stagedTree })
-    : parseChangedRanges({ from: changedFrom });
+  const changedDiff = stagedOnly
+    ? parseChangedDiff({ from: "HEAD", to: stagedTree })
+    : parseChangedDiff({ from: changedFrom });
+  const changedRanges = changedDiff.ranges;
+  const changedHunks = changedDiff.hunks;
+  if (!stagedOnly) {
+    const untracked = git(["ls-files", "--others", "--exclude-standard", "--", "apps/web/src"])
+      .split(/\r?\n/).filter(Boolean)
+      .map(normalizeRepositoryPath)
+      .filter((file) => /\.(ts|tsx)$/.test(file))
+      .map((file) => file.replace(/^apps\/web\//, ""));
+    for (const file of untracked) changedRanges.set(file, [{ start: 1, end: Number.MAX_SAFE_INTEGER }]);
+  }
   if (changedOnly && changedRanges.size === 0) {
     console.log("PASS: no changed apps/web/src files for targeted complexity policy.");
     return;
@@ -221,7 +265,7 @@ async function main() {
       ? [...changedRanges.keys()].filter((file) => /\.(ts|tsx)$/.test(file)).map((file) => `src/${file.replace(/^src\//, "")}`)
       : ["src/**/*.{ts,tsx}"]);
   const metrics = parseFunctionMessages(lintResults.flat(), view);
-  const result = evaluateMetrics({ metrics, baseline, changedRanges });
+  const result = evaluateMetrics({ metrics, baseline, changedRanges, changedHunks });
 
   console.log(`Complexity policy: ${metrics.length} function metrics measured.`);
   if (result.reviews.length > 0) console.log(`REVIEW_REQUIRED: ${result.reviews.length} review signals.`);

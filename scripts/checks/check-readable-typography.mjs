@@ -62,7 +62,14 @@ const allowlist = [
   {
     file: "apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
     rule: "small-text",
-    reason: "badge rank and progress metadata preserve the existing compact gamification layout",
+    match: /text-\[10px\].*model\.displayRank/,
+    reason: "badge rank metadata preserves the existing compact gamification layout",
+  },
+  {
+    file: "apps/web/src/components/gamification/infinite-badges/InfiniteBadgeView.tsx",
+    rule: "small-text",
+    match: /flex items-center justify-between text-\[11px\]/,
+    reason: "badge progress metadata preserves the existing compact gamification layout",
   },
 ];
 
@@ -93,7 +100,8 @@ function isAllowlisted(file, rule, line) {
       entry.rule === rule &&
       (rule === "small-text" ||
         rule === "body-color" ||
-        truncationPattern.test(line)),
+        truncationPattern.test(line)) &&
+      (!entry.match || entry.match.test(line)),
   );
 }
 
