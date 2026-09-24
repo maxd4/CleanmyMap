@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from"react";
-import { motion, AnimatePresence } from"framer-motion";
+import { motion } from"framer-motion";
 import { FileText } from "lucide-react";
 import { GIECReport, GIEC_REPORTS } from "@/data/content/giec-reports";
+import { ModalFrame } from "@/components/ui/modal-frame";
 
 const getImpactColor = (impact: GIECReport['keyFindings'][0]['impact']) => {
  switch (impact) {
@@ -102,22 +103,16 @@ export function GIECContent() {
  </div>
 
  {/* Detail Modal */}
- <AnimatePresence>
+ <ModalFrame
+ isOpen={Boolean(selectedReport)}
+ onClose={() => setSelectedReport(null)}
+ overlayClassName="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+ panelClassName="pointer-events-auto bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto"
+ panelInitial={{ scale: 0.9, opacity: 1 }}
+ panelAnimate={{ scale: 1, opacity: 1 }}
+ panelExit={{ scale: 0.9, opacity: 0 }}
+ >
  {selectedReport && (
- <motion.div
- initial={{ opacity: 1 }}
- animate={{ opacity: 1 }}
- exit={{ opacity: 0 }}
- className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
- onClick={() => setSelectedReport(null)}
- >
- <motion.div
- initial={{ scale: 0.9, opacity: 1 }}
- animate={{ scale: 1, opacity: 1 }}
- exit={{ scale: 0.9, opacity: 0 }}
- className="bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto"
- onClick={(e) => e.stopPropagation()}
- >
  <div className="p-8 space-y-8">
  {/* Header */}
  <div className="flex items-center justify-between">
@@ -220,10 +215,8 @@ export function GIECContent() {
  </button>
  </div>
  </div>
- </motion.div>
- </motion.div>
  )}
- </AnimatePresence>
+ </ModalFrame>
  </div>
  );
 }
