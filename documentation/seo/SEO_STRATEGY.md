@@ -135,7 +135,7 @@ modification majeure de contenu ou un changement d'identité SEO.
 | Page | Status | À améliorer |
 |------|--------|-------------|
 | / | ✅ | - |
-| /explorer | ✅ | - |
+| /explorer | ✅ / NOINDEX | Page publique de découverte interne, hors sitemap |
 | /reports | ✅ | - |
 | /methodologie | ✅ | - |
 | /learn | Pas de page canonique | Ne pas utiliser comme canonical cible |

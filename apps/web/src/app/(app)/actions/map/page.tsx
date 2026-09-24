@@ -39,16 +39,6 @@ export default async function ActionsMapPage() {
   return (
     <ActionsMapPageClient
       impactMetrics={buildPublicImpactMetrics(counters, hasData)}
-      staticIntro={
-        <div className="w-full">
-          <h1 className="text-3xl font-black tracking-tight text-stone-950 md:text-4xl">
-            Cartographie des actions
-          </h1>
-          <p className="mt-2 max-w-3xl text-base leading-relaxed text-stone-800">
-            Explorer les actions de dépollution et les signalements citoyens sur la carte CleanMyMap.
-          </p>
-        </div>
-      }
     />
   );
 }

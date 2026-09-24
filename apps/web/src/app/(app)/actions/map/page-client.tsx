@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import type { PublicImpactMetric } from "@/lib/impact/public-impact-kpis";
@@ -31,23 +30,20 @@ import {
 
 type ActionsMapPageClientProps = {
   impactMetrics: PublicImpactMetric[];
-  staticIntro?: ReactNode;
 };
 
 export function ActionsMapPageClient({
   impactMetrics,
-  staticIntro,
 }: ActionsMapPageClientProps) {
     return (
       <ActionPollutionScoreReferencesProvider>
-      <ActionsMapPageContent impactMetrics={impactMetrics} staticIntro={staticIntro} />
+      <ActionsMapPageContent impactMetrics={impactMetrics} />
     </ActionPollutionScoreReferencesProvider>
   );
 }
 
 function ActionsMapPageContent({
   impactMetrics,
-  staticIntro,
 }: ActionsMapPageClientProps) {
   const pageFamily = resolvePageFamily("/actions/map");
   const searchParams = useSearchParams();
@@ -182,20 +178,18 @@ function ActionsMapPageContent({
         <header className="relative space-y-6 overflow-hidden pt-4 lg:pt-6">
           <div className="absolute -top-24 -left-24 w-[600px] h-[600px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none" />
 
-          {staticIntro ?? (
-            <PageHeader
-              family={pageFamily}
-              title="Cartographie des actions"
-              subtitle={
-                scoreScope === "department"
-                  ? "Les couleurs montrent le score relatif réel de chaque action par rapport à la référence de son département. Ce score n'est pas projeté dans le temps."
-                  : displayMode === "observed"
-                    ? "Les couleurs montrent la pollution observée ou mesurée pour chaque action. Aucune projection temporelle n'est utilisée dans ce mode."
-                    : "Les couleurs montrent une pollution projetée à partir de la dernière action. Cette estimation ne constitue pas une mesure actuelle du terrain."
-              }
-              className="w-full"
-            />
-          )}
+          <PageHeader
+            family={pageFamily}
+            title="Cartographie des actions"
+            subtitle={
+              scoreScope === "department"
+                ? "Les couleurs montrent le score relatif réel de chaque action par rapport à la référence de son département. Ce score n'est pas projeté dans le temps."
+                : displayMode === "observed"
+                  ? "Les couleurs montrent la pollution observée ou mesurée pour chaque action. Aucune projection temporelle n'est utilisée dans ce mode."
+                  : "Les couleurs montrent une pollution projetée à partir de la dernière action. Cette estimation ne constitue pas une mesure actuelle du terrain."
+            }
+            className="w-full"
+          />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <CmmButton href="/actions/new" tone="primary" variant="pill" className="w-full justify-center px-5 py-2.5 cmm-text-small font-black uppercase tracking-[0.2em] gap-3 sm:w-auto">

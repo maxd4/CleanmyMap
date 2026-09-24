@@ -32,6 +32,11 @@ describe("proxy route context", () => {
     expect(isProtectedAppPage("/actions/new")).toBe(false);
     expect(isClerkContextOnlyRoute("/actions/new")).toBe(true);
 
+    for (const alias of ["/declaration", "/partners/network", "/partners/network/pepite"]) {
+      expect(isProtectedAppPage(alias)).toBe(false);
+      expect(isClerkContextOnlyRoute(alias)).toBe(false);
+    }
+
     expect(isProtectedAppPage(DASHBOARD_ROUTE)).toBe(true);
     expect(isProtectedAppPage(`${DASHBOARD_ROUTE}/nested`)).toBe(true);
   });
@@ -52,7 +57,6 @@ describe("proxy route context", () => {
       "/pilotage",
       "/reports/exports",
       "/signalement",
-      "/partners/network",
       "/sections/annuaire",
       "/sections/rejoindre-une-action",
       "/sections/rejoindre-un-formulaire",

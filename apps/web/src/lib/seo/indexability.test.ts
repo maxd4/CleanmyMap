@@ -4,6 +4,8 @@ import {
   PUBLIC_APP_SITEMAP_PATHS,
   getPublicSectionSitemapPaths,
   getPrivateSectionRoutes,
+  getPublicNoindexSectionRoutes,
+  buildSeoRedirectTarget,
   isPrivateAppPath,
   isPublicNoindexPath,
   SEO_REDIRECT_TARGETS,
@@ -61,6 +63,8 @@ describe("indexability helpers", () => {
     expect(isPrivateAppPath(DASHBOARD_ROUTE)).toBe(true);
 
     expect(isPrivateAppPath("/actions/map")).toBe(false);
+    expect(isPrivateAppPath("/declaration")).toBe(false);
+    expect(isPrivateAppPath("/partners/network")).toBe(false);
     expect(isPrivateAppPath("/learn/ecole")).toBe(false);
     expect(isPublicNoindexPath("/sign-in")).toBe(true);
     expect(isPublicNoindexPath("/docs/seo/README.md")).toBe(true);
@@ -70,6 +74,8 @@ describe("indexability helpers", () => {
     expect(SEO_REDIRECT_TARGETS["/en"]).toBe("/");
     expect(SEO_REDIRECT_TARGETS["/sections/route"]).toContain("/actions/new");
     expect(SEO_REDIRECT_TARGETS["/sections/weather"]).toContain("/actions/new");
+    expect(buildSeoRedirectTarget("/partners/network", { tab: "dm", source: "legacy" }))
+      .toBe("/sections/community?tab=partners&source=legacy");
     for (const alias of Object.keys(SEO_REDIRECT_TARGETS)) {
       expect(PUBLIC_APP_SITEMAP_PATHS).not.toContain(alias);
     }
@@ -117,9 +123,7 @@ describe("indexability helpers", () => {
     const expectedPrivateRoutes = RUBRIQUE_REGISTRY.filter(
       (item): item is SectionDefinition =>
         item.kind === "section" &&
-        (!expectedPublicSectionIds.includes(item.id) ||
-          item.availability !== "available" ||
-          item.implementation !== "finalized"),
+        ["elus", "gamification", "messagerie"].includes(item.id),
     )
       .map((item) => item.route)
       .sort((a, b) => a.localeCompare(b, "fr"));
@@ -128,8 +132,13 @@ describe("indexability helpers", () => {
     expect(privateRoutes).toEqual(expectedPrivateRoutes);
     expect(publicVisibleRoutes).toContain("/sections/community");
     expect(publicVisibleRoutes).toContain("/sections/annuaire");
-    expect(privateRoutes).toContain("/sections/feedback");
-    expect(privateRoutes).toContain("/sections/route");
     expect(privateRoutes).toContain("/sections/gamification");
+    expect(privateRoutes).toContain("/sections/messagerie");
+    expect(privateRoutes).not.toContain("/sections/feedback");
+    expect(privateRoutes).not.toContain("/sections/trash-spotter");
+    expect(getPublicNoindexSectionRoutes()).toEqual([
+      "/sections/feedback",
+      "/sections/trash-spotter",
+    ]);
   });
 });

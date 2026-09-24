@@ -36,9 +36,10 @@ conservant leurs mutations, exports et données personnelles derrière
 AuthN/AuthZ. Les routes privées, utilitaires non indexables et alias ne sont
 pas des pages SEO autonomes.
 
-La matrice documentaire fixe la cible produit/SEO. Le sitemap, les metadata,
-les robots et les redirects seront alignés dans les lots techniques dédiés ;
-aucune action Search Console n'est simulée par cette documentation.
+La matrice documentaire et les surfaces runtime sont alignées sur le contrat
+produit/SEO. Le sitemap, les metadata, les robots et les redirects sont
+maintenus ensemble ; aucune action Search Console n'est simulée par cette
+documentation.
 
 ### Ajouter une nouvelle page avec SEO
 

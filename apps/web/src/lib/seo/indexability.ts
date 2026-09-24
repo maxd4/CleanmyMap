@@ -31,14 +31,12 @@ export const PUBLIC_APP_SITEMAP_PATHS = [
 export const PRIVATE_APP_ROUTE_PREFIXES = [
   ADMIN_ROUTE,
   "/actions/history",
-  "/declaration",
   "/form-comparison",
   "/onboarding",
   ACCOUNT_EVOLUTION_ROUTE,
   DASHBOARD_ROUTE,
   PARCOURS_ROUTE,
   "/partners/dashboard",
-  "/partners/network",
   "/partners/onboarding",
   PILOTAGE_ROUTE,
   "/prints/report",
@@ -88,7 +86,16 @@ export const PUBLIC_INDEXABLE_SECTION_IDS: ReadonlySet<string> = new Set([
 
 export const PUBLIC_NOINDEX_SECTION_IDS: ReadonlySet<string> = new Set([
   "feedback",
+  "trash-spotter",
 ] as const);
+
+export const PRIVATE_SECTION_IDS: ReadonlySet<string> = new Set([
+  "elus",
+  "gamification",
+  "messagerie",
+] as const);
+
+export type SeoRedirectSource = keyof typeof SEO_REDIRECT_TARGETS;
 
 export function appendPreservedSearchParams(
   target: string,
@@ -98,6 +105,7 @@ export function appendPreservedSearchParams(
   const params = new URLSearchParams(query);
   for (const [key, value] of Object.entries(searchParams)) {
     if (value === undefined) continue;
+    if (params.has(key)) continue;
     for (const item of Array.isArray(value) ? value : [value]) {
       params.append(key, item);
     }
@@ -106,7 +114,15 @@ export function appendPreservedSearchParams(
   return serialized ? `${pathname}?${serialized}` : pathname;
 }
 
+export function buildSeoRedirectTarget(
+  source: SeoRedirectSource,
+  searchParams: Record<string, string | string[] | undefined>,
+): string {
+  return appendPreservedSearchParams(SEO_REDIRECT_TARGETS[source], searchParams);
+}
+
 export const ROBOTS_NOINDEX_VALUE = "noindex, nofollow, noarchive";
+export const PUBLIC_ROBOTS_NOINDEX_VALUE = "noindex, follow, noarchive";
 
 function matchesPathPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
@@ -139,10 +155,16 @@ export function getPublicSectionSitemapPaths(): string[] {
 export function getPrivateSectionRoutes(): string[] {
   return RUBRIQUE_REGISTRY.filter(
     (rubrique) =>
-      rubrique.kind === "section" &&
-      (!PUBLIC_INDEXABLE_SECTION_IDS.has(rubrique.id) ||
-        rubrique.availability !== "available" ||
-        rubrique.implementation !== "finalized"),
+      rubrique.kind === "section" && PRIVATE_SECTION_IDS.has(rubrique.id),
+  )
+    .map((rubrique) => rubrique.route)
+    .sort((a, b) => a.localeCompare(b, "fr"));
+}
+
+export function getPublicNoindexSectionRoutes(): string[] {
+  return RUBRIQUE_REGISTRY.filter(
+    (rubrique) =>
+      rubrique.kind === "section" && PUBLIC_NOINDEX_SECTION_IDS.has(rubrique.id),
   )
     .map((rubrique) => rubrique.route)
     .sort((a, b) => a.localeCompare(b, "fr"));

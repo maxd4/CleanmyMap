@@ -36,6 +36,13 @@ describe("PageHeader", () => {
     expect(markup).toContain("Sous-titre de page");
   });
 
+  it("supports a secondary heading for composed pages", () => {
+    const markup = renderHeader({ headingLevel: "h2" });
+
+    expect(markup).toContain('<h2 class="cmm-page-header-title');
+    expect(markup).not.toContain("<h1");
+  });
+
   it("limits family, tone and contrast variations to color tokens", () => {
     const defaultMarkup = renderHeader({ tone: "slate" });
     const inverseMarkup = renderHeader({ tone: "slate", contrast: "inverse" });

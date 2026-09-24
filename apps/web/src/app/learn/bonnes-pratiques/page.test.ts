@@ -21,6 +21,9 @@ type TabsProps = {
 const tabsCalls: TabsProps[] = [];
 const behaviorCalls: BehaviorProps[] = [];
 const replaceMock = vi.fn();
+const serverLocaleMock = vi.hoisted(() => ({
+  getServerLocale: vi.fn().mockResolvedValue("fr"),
+}));
 let searchParamsValue = new URLSearchParams("theme=compost");
 
 vi.mock("next/navigation", () => ({
@@ -41,10 +44,11 @@ vi.mock("@/components/ui/site-preferences-provider", () => ({
 }));
 
 vi.mock("@/components/learn/learn-rubric-shell", () => ({
-  LearnRubricShell: ({ children }: { children: React.ReactNode }) => (
-    React.createElement("div", { "data-testid": "shell" }, children)
-  ),
+  LearnRubricShell: ({ children, staticIntro }: { children: React.ReactNode; staticIntro?: React.ReactNode }) =>
+    React.createElement("div", { "data-testid": "shell" }, staticIntro, children),
 }));
+
+vi.mock("@/lib/server-preferences", () => serverLocaleMock);
 
 vi.mock("@/components/learn/learn-practice-theme-tabs", () => ({
   LearnPracticeThemeTabs: (props: TabsProps) => {
@@ -93,12 +97,13 @@ describe("bonnes-pratiques page", () => {
     tabsCalls.length = 0;
     behaviorCalls.length = 0;
     replaceMock.mockClear();
+    serverLocaleMock.getServerLocale.mockResolvedValue("fr");
   });
 
-  it("wires the active theme from the URL and keeps the compact structure", () => {
+  it("wires the active theme from the URL and keeps the compact structure", async () => {
     searchParamsValue = new URLSearchParams("theme=compost&origin=learn");
 
-    const markup = renderToStaticMarkup(React.createElement(Page));
+    const markup = renderToStaticMarkup(await Page());
 
     expect(markup).toContain("data-testid=\"theme-tabs\"");
     expect(markup).toContain("data-testid=\"tri-context\"");
@@ -122,10 +127,10 @@ describe("bonnes-pratiques page", () => {
     });
   });
 
-  it("persists the numerique theme in the URL", () => {
+  it("persists the numerique theme in the URL", async () => {
     searchParamsValue = new URLSearchParams("theme=tri");
 
-    renderToStaticMarkup(React.createElement(Page));
+    renderToStaticMarkup(await Page());
 
     expect(tabsCalls).toHaveLength(1);
     tabsCalls[0].onThemeChange("numerique");
@@ -134,12 +139,21 @@ describe("bonnes-pratiques page", () => {
     });
   });
 
-  it("falls back to tri when the URL theme is unknown", () => {
+  it("falls back to tri when the URL theme is unknown", async () => {
     searchParamsValue = new URLSearchParams("theme=inconnu");
 
-    renderToStaticMarkup(React.createElement(Page));
+    renderToStaticMarkup(await Page());
 
     expect(tabsCalls).toHaveLength(1);
     expect(tabsCalls[0].activeTheme).toBe("tri");
+  });
+
+  it("localizes the server-rendered heading", async () => {
+    serverLocaleMock.getServerLocale.mockResolvedValue("en");
+
+    const markup = renderToStaticMarkup(await Page());
+
+    expect(markup).toContain("Good practices");
+    expect(markup.match(/<h1\b/g)).toHaveLength(1);
   });
 });
