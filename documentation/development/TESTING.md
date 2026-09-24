@@ -664,6 +664,44 @@ npx playwright test --project="soft-gate authentication"
 `PLAYWRIGHT_BASE_URL` est refusée pour toute origine distante, tout protocole
 autre que HTTP ou tout port différent de `3000`.
 
+### Tester le redirect automatique de Clerk
+
+Pour prouver le retour produit par le composant Clerk `<SignIn>`, exercer le
+formulaire UI sur le parcours `PROTECTED_CLERK_CLIENT` : depuis la route
+anonyme, cliquer le CTA, vérifier l'URL `/sign-in?redirect_url=...`, terminer
+une vraie connexion Clerk Development puis attendre le `waitForURL` de la route
+cible. Ne pas appeler `page.goto()` vers la cible après la connexion : cela
+masquerait un redirect cassé. `clerk.signIn()` et un `storageState` servent à
+préparer une session pour tester une route protégée ; ils ne prouvent pas le
+callback de navigation du composant `<SignIn>`.
+
+Pour une connexion par code email en Development, le setup Playwright utilise
+l'adresse `+clerk_test` et le code de test `424242`. Attendre `clerk.loaded`,
+utiliser le formulaire Clerk et attendre la réponse `attempt_first_factor`.
+Dans le widget actuel, la saisie complète du code lance elle-même la
+vérification et désactive le bouton principal pendant le traitement : ne pas
+cliquer une seconde fois. `setupClerkTestingToken({ page })` ne crée pas de
+session et ne remplace pas l'authentification ; il prépare les requêtes Clerk
+au test navigateur.
+
+Après la réponse Clerk, vérifier dans cet ordre : session et utilisateur
+présents sur `window.Clerk`, URL cible exacte, gate anonyme absent, contenu
+authentifié visible. Une réponse HTTP 200 seule ne prouve pas une session. Si la
+réponse FAPI indique `status: "complete"` et un premier facteur `verified`,
+mais que `window.Clerk.session` reste absent, classer d'abord le blocage comme
+`AUTH_SESSION` ; le redirect du composant n'a pas encore été isolé. Éviter de
+modifier `forceRedirectUrl` tant qu'une session active n'est pas observée.
+
+Commande ciblée du scénario de retour :
+
+```bash
+npx playwright test --project="soft-gate authentication" --grep="returns to the canonical route"
+```
+
+Le projet dépend du global setup Clerk et de son teardown qui supprime
+l'utilisateur de développement géré. Exécuter ce parcours seul, sans test
+parallèle utilisant le même harness.
+
 Annoncer avant le test :
 
 ```text
