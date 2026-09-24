@@ -21,8 +21,40 @@ type LearnRubricShellProps = {
     label: { fr: string; en: string };
   };
   showVisualPanel?: boolean;
+  staticIntro?: ReactNode;
   children: ReactNode;
 };
+
+function LearnRubricIntro({
+  staticIntro,
+  family,
+  title,
+  subtitle,
+  description,
+  locale,
+  isLightOrange,
+}: Pick<LearnRubricShellProps, "staticIntro" | "title" | "subtitle" | "description"> & {
+  family: ReturnType<typeof usePageFamily>;
+  locale: "fr" | "en";
+  isLightOrange: boolean;
+}) {
+  if (staticIntro) return staticIntro;
+
+  return (
+    <>
+      <PageHeader family={family} title={title[locale]} subtitle={subtitle[locale]} />
+      <p
+        className={
+          isLightOrange
+            ? "cmm-text-body max-w-3xl"
+            : "max-w-3xl text-base leading-relaxed text-white md:text-lg"
+        }
+      >
+        {description[locale]}
+      </p>
+    </>
+  );
+}
 
 const ACCENT_CLASSES: Record<LearnRubricShellProps["accent"], string> = {
   blue: "from-sky-500 via-cyan-500 to-blue-500",
@@ -42,6 +74,7 @@ export function LearnRubricShell({
   accent,
   cta,
   showVisualPanel = true,
+  staticIntro,
   children,
 }: LearnRubricShellProps) {
   const { locale } = useSitePreferences();
@@ -93,21 +126,15 @@ export function LearnRubricShell({
               ) : null}
             </div>
 
-            <PageHeader
+            <LearnRubricIntro
+              staticIntro={staticIntro}
               family={pageFamily}
-              title={title[locale]}
-              subtitle={subtitle[locale]}
+              title={title}
+              subtitle={subtitle}
+              description={description}
+              locale={locale}
+              isLightOrange={isLightOrange}
             />
-
-            <p
-              className={
-                isLightOrange
-                  ? "cmm-text-body max-w-3xl"
-                  : "max-w-3xl text-base leading-relaxed text-white md:text-lg"
-              }
-              >
-              {description[locale]}
-            </p>
           </div>
 
           {showVisualPanel ? (

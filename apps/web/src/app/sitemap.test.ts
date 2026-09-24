@@ -6,7 +6,6 @@ import {
   getPrivateSectionRoutes,
   getPublicSectionSitemapPaths,
 } from "@/lib/seo/indexability";
-import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 describe("public sitemap metadata", () => {
   it("uses the intended change frequency for each public route", () => {
@@ -15,13 +14,13 @@ describe("public sitemap metadata", () => {
       entries.map((entry) => [new URL(entry.url).pathname, entry]),
     );
 
-    for (const pathname of ["/", "/en", EXPLORER_ROUTE, "/actions/map"]) {
+    for (const pathname of ["/", "/actions/map"]) {
       expect(byPath.get(pathname)?.changeFrequency).toBe("daily");
     }
 
     expect(byPath.get("/reports")?.changeFrequency).toBe("weekly");
 
-    const dailyPaths = new Set(["/", "/en", EXPLORER_ROUTE, "/actions/map"]);
+    const dailyPaths = new Set(["/", "/actions/map"]);
     for (const [pathname, entry] of byPath) {
       if (dailyPaths.has(pathname) || pathname === "/reports") {
         continue;
@@ -33,6 +32,20 @@ describe("public sitemap metadata", () => {
       ...PUBLIC_APP_SITEMAP_PATHS,
       ...getPublicSectionSitemapPaths(),
     ]);
+    expect(byPath.has("/en")).toBe(false);
+    expect(byPath.has("/explorer")).toBe(false);
+    expect(byPath.has("/conditions-utilisation")).toBe(false);
+    for (const excludedPath of [
+      "/explorer",
+      "/sections/feedback",
+      "/sections/route",
+      "/sections/weather",
+      "/sign-in",
+      "/sign-up",
+      "/docs/seo/README.md",
+    ]) {
+      expect(byPath.has(excludedPath)).toBe(false);
+    }
   });
 
   it("omits lastModified when no per-page modification dates are available", () => {

@@ -5,6 +5,7 @@ import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { isDevAuthBypassEnabled } from "@/lib/auth/dev-auth";
 import {
   getPrivateSectionRoutes,
+  isPublicNoindexPath,
   isPrivateAppPath,
   ROBOTS_NOINDEX_VALUE,
 } from "@/lib/seo/indexability";
@@ -91,7 +92,7 @@ export const PROXY_MATCHER_PATTERNS = [
 const PRIVATE_SECTION_ROUTES = getPrivateSectionRoutes();
 
 function shouldNoIndex(pathname: string): boolean {
-  if (isPrivateAppPath(pathname)) {
+  if (isPrivateAppPath(pathname) || isPublicNoindexPath(pathname)) {
     return true;
   }
 

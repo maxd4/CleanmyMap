@@ -6,7 +6,7 @@ import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
-  title: "Comparaison interne des formulaires - CleanMyMap",
+  title: "Comparaison interne des formulaires",
   description:
     "Vue interne de comparaison entre les formulaires de déclaration, réservée aux comptes connectés.",
   robots: {

@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 
 export const metadata: Metadata = {
-  title: "Mentions Légales - CleanMyMap",
+  title: "Mentions Légales",
   description:
     "Mentions légales de CleanMyMap, avec accès direct aux Conditions d'utilisation, à la Politique de confidentialité et à la Politique cookies.",
   keywords: [

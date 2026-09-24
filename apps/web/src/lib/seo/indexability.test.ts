@@ -5,10 +5,11 @@ import {
   getPublicSectionSitemapPaths,
   getPrivateSectionRoutes,
   isPrivateAppPath,
+  isPublicNoindexPath,
+  SEO_REDIRECT_TARGETS,
 } from "./indexability";
 import {
   DASHBOARD_ROUTE,
-  EXPLORER_ROUTE,
   PROFIL_ROUTE,
 } from "@/lib/accueil-pilotage-routes";
 import { RUBRIQUE_REGISTRY } from "@/lib/sections-registry";
@@ -30,8 +31,13 @@ describe("indexability helpers", () => {
     expect(publicSitemapPaths).not.toContain("/sign-up");
 
     expect(publicSitemapPaths).toContain("/actions/map");
-    expect(publicSitemapPaths).toContain(EXPLORER_ROUTE);
+    expect(publicSitemapPaths).toContain("/actions/new");
+    expect(publicSitemapPaths).toContain("/signalement");
+    expect(publicSitemapPaths).toContain("/contact");
     expect(publicSitemapPaths).toContain("/learn/ecole");
+    expect(publicSitemapPaths).not.toContain("/explorer");
+    expect(publicSitemapPaths).not.toContain("/en");
+    expect(publicSitemapPaths).not.toContain("/conditions-utilisation");
 
     // Aucun page.tsx canonique /learn n'existe dans l'état audité.
     expect(publicSitemapPaths).not.toContain("/learn");
@@ -50,12 +56,23 @@ describe("indexability helpers", () => {
     expect(isPrivateAppPath("/form-comparison")).toBe(true);
     expect(isPrivateAppPath("/onboarding")).toBe(true);
     expect(isPrivateAppPath("/reglages")).toBe(true);
-    expect(isPrivateAppPath("/actions/new")).toBe(true);
+    expect(isPrivateAppPath("/actions/new")).toBe(false);
     expect(isPrivateAppPath("/partners/dashboard")).toBe(true);
     expect(isPrivateAppPath(DASHBOARD_ROUTE)).toBe(true);
 
     expect(isPrivateAppPath("/actions/map")).toBe(false);
     expect(isPrivateAppPath("/learn/ecole")).toBe(false);
+    expect(isPublicNoindexPath("/sign-in")).toBe(true);
+    expect(isPublicNoindexPath("/docs/seo/README.md")).toBe(true);
+  });
+
+  it("keeps legacy aliases explicit and out of the page sitemap contract", () => {
+    expect(SEO_REDIRECT_TARGETS["/en"]).toBe("/");
+    expect(SEO_REDIRECT_TARGETS["/sections/route"]).toContain("/actions/new");
+    expect(SEO_REDIRECT_TARGETS["/sections/weather"]).toContain("/actions/new");
+    for (const alias of Object.keys(SEO_REDIRECT_TARGETS)) {
+      expect(PUBLIC_APP_SITEMAP_PATHS).not.toContain(alias);
+    }
   });
 
   it("only emits public visible section routes for the sitemap", () => {
@@ -82,14 +99,25 @@ describe("indexability helpers", () => {
         item.availability === "available" &&
         item.implementation === "finalized",
     );
+    const expectedPublicSectionIds = [
+        "actors",
+        "annuaire",
+        "climate",
+        "community",
+        "compost",
+        "funding",
+        "open-data",
+        "recycling",
+        "rejoindre-une-action",
+      ];
     const expectedPublicRoutes = finalizedSections
-      .filter((item) => item.anonymousPresentation === "visible")
+      .filter((item) => expectedPublicSectionIds.includes(item.id))
       .map((item) => item.route)
       .sort((a, b) => a.localeCompare(b, "fr"));
     const expectedPrivateRoutes = RUBRIQUE_REGISTRY.filter(
       (item): item is SectionDefinition =>
         item.kind === "section" &&
-        (item.anonymousPresentation !== "visible" ||
+        (!expectedPublicSectionIds.includes(item.id) ||
           item.availability !== "available" ||
           item.implementation !== "finalized"),
     )
@@ -100,6 +128,8 @@ describe("indexability helpers", () => {
     expect(privateRoutes).toEqual(expectedPrivateRoutes);
     expect(publicVisibleRoutes).toContain("/sections/community");
     expect(publicVisibleRoutes).toContain("/sections/annuaire");
+    expect(privateRoutes).toContain("/sections/feedback");
+    expect(privateRoutes).toContain("/sections/route");
     expect(privateRoutes).toContain("/sections/gamification");
   });
 });

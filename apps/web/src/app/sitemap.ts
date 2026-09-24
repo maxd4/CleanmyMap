@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next";
 import { env } from "@/lib/env";
-import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 import {
   PUBLIC_APP_SITEMAP_PATHS,
   getPublicSectionSitemapPaths,
@@ -10,20 +9,21 @@ const appUrl = env["NEXT_PUBLIC_APP_URL"] || "https://cleanmymap.fr";
 
 const SITEMAP_PATH_PRIORITY: Record<string, number> = {
   "/": 1,
-  "/en": 0.9,
-  [EXPLORER_ROUTE]: 0.9,
+  "/actions/map": 0.7,
+  "/actions/new": 0.6,
+  "/contact": 0.4,
   "/reports": 0.7,
   "/methodologie": 0.7,
   "/learn/comprendre": 0.55,
   "/learn/bonnes-pratiques": 0.55,
   "/learn/ecole": 0.55,
   "/learn/sentrainer": 0.55,
-  "/actions/map": 0.7,
   "/mentions-legales": 0.3,
   "/conditions-generales-utilisation": 0.3,
-  "/conditions-utilisation": 0.3,
   "/politique-confidentialite": 0.3,
   "/politique-cookies": 0.3,
+  "/signalement": 0.5,
+  "/signaler-contenu-illicite": 0.3,
 };
 
 function toSitemapEntry(url: string): MetadataRoute.Sitemap[number] {
@@ -33,8 +33,6 @@ function toSitemapEntry(url: string): MetadataRoute.Sitemap[number] {
     url,
     changeFrequency:
       pathname === "/" ||
-      pathname === "/en" ||
-      pathname === EXPLORER_ROUTE ||
       pathname === "/actions/map"
         ? "daily"
         : pathname.startsWith("/learn/")

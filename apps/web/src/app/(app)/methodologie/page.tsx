@@ -15,7 +15,7 @@ import { loadLatestPublicImpactSnapshot } from "@/lib/impact/public-impact-snaps
 import { toProfile } from "@/lib/profiles";
 
 export const metadata: Metadata = {
-  title: "Méthodologie - Comment nous calculons l'impact | CleanMyMap",
+  title: "Méthodologie - Comment nous calculons l'impact",
   description:
     "Méthodologie de calcul d'impact environnemental de CleanMyMap. Coefficients CO2, eau, valorisation des déchets. Transparence complète sur les métriques d'action citoyenne.",
   keywords: [

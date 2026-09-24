@@ -13,7 +13,7 @@ import { DASHBOARD_ROUTE, PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export const metadata: Metadata = {
-  title: "Réglages - CleanMyMap",
+  title: "Réglages",
   description: "Configurez vos préférences CleanMyMap : notifications, affichage, localisation et paramètres de compte.",
   keywords: ["réglages", "paramètres", "préférences", "configuration", "CleanMyMap"],
   robots: {

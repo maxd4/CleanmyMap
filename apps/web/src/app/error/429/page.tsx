@@ -13,6 +13,11 @@ import { SystemStateRetryButton } from "@/components/ui/system-state-retry-butto
 import { resolvePublicContactEmail } from "@/lib/email-config";
 import { HOME_ROUTE } from "@/lib/home-routes";
 
+export const metadata: Metadata = {
+  title: "Trop de requêtes",
+  robots: { index: false, follow: false },
+};
+
 export default function RateLimitErrorPage() {
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
@@ -55,3 +60,4 @@ export default function RateLimitErrorPage() {
     </main>
   );
 }
+import type { Metadata } from "next";

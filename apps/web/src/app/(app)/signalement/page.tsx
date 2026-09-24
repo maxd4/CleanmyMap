@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { TrashSpotterOwnerLoop } from "@/components/actions/trash-spotter-owner-loop";
 import { PageHeader } from "@/components/ui/page-header";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
@@ -11,6 +12,14 @@ import { resolveSignalementCoordinate } from "./signalement-page.utils";
 
 type SignalementPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export const metadata: Metadata = {
+  title: "Signaler un déchet",
+  description:
+    "Signaler l’état observé d’un lieu pour alimenter la cartographie citoyenne de CleanMyMap.",
+  alternates: { canonical: "/signalement" },
+  robots: { index: true, follow: true },
 };
 
 export default async function SignalementPage({

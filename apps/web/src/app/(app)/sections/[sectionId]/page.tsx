@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { SectionRenderer } from "@/components/sections/rubriques/section-renderer";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
@@ -12,15 +12,29 @@ import { getServerLocale } from "@/lib/server-preferences";
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import {
   buildLegacyJoinActionRedirect,
-  CANONICAL_JOIN_ACTION_SECTION_ID,
   LEGACY_JOIN_FORM_ROUTE,
 } from "@/lib/sections/join-action-routes";
 import { buildActionCreationPanelHref } from "@/lib/actions/action-creation-routes";
+import {
+  PUBLIC_INDEXABLE_SECTION_IDS,
+  PUBLIC_NOINDEX_SECTION_IDS,
+} from "@/lib/seo/indexability";
 
 type SectionPageProps = {
   params: Promise<{ sectionId: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+function buildDirectMessageRedirect(
+  searchParams: Record<string, string | string[] | undefined>,
+): string {
+  const query = new URLSearchParams({ tab: "dm" });
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (key === "tab" || value === undefined) continue;
+    for (const item of Array.isArray(value) ? value : [value]) query.append(key, item);
+  }
+  return `/sections/messagerie?${query.toString()}`;
+}
 
 export function generateStaticParams() {
   return getSectionRouteParams();
@@ -31,17 +45,22 @@ export async function generateMetadata({
 }: SectionPageProps): Promise<Metadata> {
   const { sectionId } = await params;
   const normalizedSectionId = sectionId.toLowerCase();
-  const metadataSectionId = normalizedSectionId === LEGACY_JOIN_FORM_ROUTE.split("/").at(-1)
-    ? CANONICAL_JOIN_ACTION_SECTION_ID
-    : normalizedSectionId;
-  const section =
-    metadataSectionId === "guide"
-      ? getSectionRubriqueById("weather")
-      : getSectionRubriqueById(metadataSectionId);
+  if (
+    normalizedSectionId === "dm" ||
+    normalizedSectionId === "guide" ||
+    normalizedSectionId === "route" ||
+    normalizedSectionId === "weather" ||
+    normalizedSectionId === LEGACY_JOIN_FORM_ROUTE.split("/").at(-1)
+  ) {
+    return {
+      robots: { index: false, follow: false },
+    };
+  }
+  const section = getSectionRubriqueById(normalizedSectionId);
 
   if (!section) {
     return {
-      title: "Section introuvable - CleanMyMap",
+      title: "Section introuvable",
       robots: {
         index: false,
         follow: false,
@@ -50,22 +69,22 @@ export async function generateMetadata({
   }
 
   const locale = await getServerLocale();
-  const accessMode = section.anonymousPresentation;
   const localizedLabel = locale === "fr" ? section.label.fr : section.label.en;
   const localizedDescription =
     locale === "fr" ? section.description.fr : section.description.en;
-  const isIndexable =
-    accessMode === "visible" &&
-    section.availability === "available" &&
-    section.implementation === "finalized";
+  const isIndexable = PUBLIC_INDEXABLE_SECTION_IDS.has(section.id);
+  const isPublicNoindex = PUBLIC_NOINDEX_SECTION_IDS.has(section.id);
+  const robots = isIndexable
+    ? { index: true, follow: true }
+    : { index: false, follow: false, nocache: true };
 
   return {
-    title: `${localizedLabel} | CleanMyMap`,
+    title: localizedLabel,
     description: localizedDescription,
-    robots: {
-      index: isIndexable,
-      follow: isIndexable,
-    },
+    robots,
+    ...(isIndexable || isPublicNoindex
+      ? { alternates: { canonical: `/sections/${section.id}` } }
+      : {}),
   };
 }
 
@@ -74,15 +93,15 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
   const normalizedSectionId = sectionId.toLowerCase();
 
   if (normalizedSectionId === LEGACY_JOIN_FORM_ROUTE.split("/").at(-1)) {
-    redirect(buildLegacyJoinActionRedirect(await searchParams));
+    permanentRedirect(buildLegacyJoinActionRedirect(await searchParams));
   }
 
-  if (sectionId === "dm") {
-    redirect("/sections/messagerie?tab=dm");
+  if (normalizedSectionId === "dm") {
+    permanentRedirect(buildDirectMessageRedirect(await searchParams));
   }
 
   if (normalizedSectionId === "guide" || normalizedSectionId === "weather") {
-    redirect(
+    permanentRedirect(
       buildActionCreationPanelHref(
         "meteo",
         await searchParams,

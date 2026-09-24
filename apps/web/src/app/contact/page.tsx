@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export const metadata: Metadata = {
-  title: "Contact - CleanMyMap",
+  title: "Contact",
   description:
     "Contactez CleanMyMap pour les demandes générales, juridiques ou RGPD. Adresse officielle et formulaire public de contact.",
   alternates: {

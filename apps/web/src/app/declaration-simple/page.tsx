@@ -6,7 +6,7 @@ import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 
 export const metadata: Metadata = {
-  title: "Déclaration simple - CleanMyMap",
+  title: "Déclaration simple",
   description:
     "Outil système autonome pour vérifier la version simplifiée du parcours de déclaration.",
   robots: {

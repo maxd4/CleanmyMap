@@ -81,7 +81,7 @@ ultérieur ; cette matrice ne prétend pas avoir déjà modifié le runtime.
 | /signalement | `HYBRID` | `INDEX` | `SITEMAP` | `SELF` |
 | /reports | `HYBRID` | `INDEX` | `SITEMAP` | `SELF` |
 | /methodologie | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
-| /explorer | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
+| /explorer | `PUBLIC` | `INDEX` | `INTERNAL_ONLY` | `SELF` |
 | /learn/bonnes-pratiques | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
 | /learn/comprendre | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
 | /learn/ecole | `PUBLIC` | `INDEX` | `SITEMAP` | `SELF` |
@@ -158,7 +158,7 @@ redirection :
 
 | Route | Cible | ACCESS | SEARCH | DISCOVERY | CANONICAL |
 | --- |---|---|---|---|---|
-| /en | `/explorer` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /en | `/` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /conditions-utilisation | `/conditions-generales-utilisation` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /declaration | `/actions/new` | `HYBRID` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /community | `/sections/community` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
@@ -331,7 +331,7 @@ Note : aucune page canonique `/learn` n'est documentée dans l'état actuel. Le 
 | Route | Cible | Statut |
 |---|---|---|
 | `/conditions-utilisation` | `/conditions-generales-utilisation` | `redirect` |
-| `/en` | `/explorer` | `redirect` |
+| `/en` | `/` | `redirect` |
 
 ## Système & Utilitaires
 

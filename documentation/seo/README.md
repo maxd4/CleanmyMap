@@ -88,7 +88,7 @@ protections/noindex prévues par le contrat existant.
 
 Pour une route de compatibilité, documenter la cible dans l'index maître et ne
 pas la présenter comme une page canonique autonome. `/en` est actuellement un
-alias vers `/explorer` ; aucune version anglaise canonique ni déclaration
+alias vers `/` ; aucune version anglaise canonique ni déclaration
 `hreflang` `en-US` ne doit être inventée. Aucune page canonique `/learn` n'existe
 actuellement.
 

@@ -79,8 +79,10 @@ l'indexabilité.
 Les routes hybrides `/actions/new`, `/signalement`, `/reports` et
 `/sections/rejoindre-une-action` sont indexables selon cette matrice, tout en
 conservant leurs mutations et données personnelles derrière AuthN/AuthZ. Les
-routes privées et utilitaires non indexables restent hors sitemap. `/en` est un
-alias vers `/explorer` et ne correspond à aucune version anglaise `en-US` ;
+routes privées et utilitaires non indexables restent hors sitemap. `/explorer`
+reste une page publique indexable découverte par le maillage interne, mais hors
+du sitemap courant. `/en` est un alias vers `/` et ne correspond à aucune
+version anglaise `en-US` ;
 aucune page canonique `/learn` n'existe actuellement.
 
 ## Maintenance SEO
@@ -140,7 +142,7 @@ modification majeure de contenu ou un changement d'identité SEO.
 | /learn/comprendre | ✅ | - |
 | /learn/bonnes-pratiques | ✅ | - |
 | /mentions-legales | ✅ | - |
-| /en | Alias | Redirection vers `/explorer`, pas une page canonique ni un `hreflang` `en-US` |
+| /en | Alias | Redirection vers `/`, pas une page canonique ni un `hreflang` `en-US` |
 | /actions/new | Hybride indexable | La préparation est publique ; les mutations et données personnelles restent protégées |
 | /signalement | Hybride indexable | La préparation est publique ; la transmission, les preuves et la boucle propriétaire restent protégées |
 | /sections/rejoindre-une-action | Hybride indexable | La lecture est publique ; rejoindre et traiter une demande restent protégés |

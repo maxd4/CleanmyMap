@@ -1,13 +1,10 @@
-import type { Metadata } from "next";
-import { redirect } from 'next/navigation'
+import { permanentRedirect } from "next/navigation";
+import { appendPreservedSearchParams } from "@/lib/seo/indexability";
 
-export const metadata: Metadata = {
-  title: "Déclaration - CleanMyMap",
-  description: "Déclarez vos actions de nettoyage urbain et累计 votre impact environnemental.",
-  keywords: ["déclaration", "action", "nettoyage", "impact", "bénévolat"],
-  alternates: { canonical: "/actions/new" },
+type DeclarationRedirectProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default function DeclarationRedirect() {
- redirect('/actions/new')
+export default async function DeclarationRedirect({ searchParams }: DeclarationRedirectProps) {
+ permanentRedirect(appendPreservedSearchParams("/actions/new", await searchParams));
 }

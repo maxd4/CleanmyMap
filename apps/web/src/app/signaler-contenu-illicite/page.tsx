@@ -5,7 +5,7 @@ import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { PageHeader } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
-  title: "Signaler un contenu illicite - CleanMyMap",
+  title: "Signaler un contenu illicite",
   description: "Transmettre une notification électronique circonstanciée concernant un contenu potentiellement illicite.",
   alternates: { canonical: "/signaler-contenu-illicite" },
 };

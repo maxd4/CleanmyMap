@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Apprendre - Vulgarisation, entraînement et tri | CleanMyMap",
+  title: "Apprendre - Vulgarisation, entraînement et tri",
   description:
     "Trois rubriques pédagogiques pour vulgariser les enjeux, s'entraîner et apprendre le tri, le compost et les comportements utiles.",
   keywords: [
@@ -21,9 +21,6 @@ export const metadata: Metadata = {
     "guide bénévolat",
     "coordination action",
   ],
-  alternates: {
-    canonical: "/learn",
-  },
 };
 
 export default function LearnLayout({
