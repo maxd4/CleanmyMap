@@ -9,6 +9,7 @@ import {
   isPrivateAppPath,
   isPublicNoindexPath,
   SEO_REDIRECT_TARGETS,
+  SEO_HTTP_REDIRECT_SOURCES,
 } from "./indexability";
 import {
   DASHBOARD_ROUTE,
@@ -78,6 +79,13 @@ describe("indexability helpers", () => {
     expect(SEO_REDIRECT_TARGETS["/sections/weather"]).toContain("/actions/new");
     expect(buildSeoRedirectTarget("/partners/network", { tab: "dm", source: "legacy" }))
       .toBe("/sections/community?tab=partners&source=legacy");
+    expect(
+      buildSeoRedirectTarget(
+        "/sections/route",
+        new URLSearchParams("panel=legacy&source=legacy"),
+      ),
+    ).toBe("/actions/new?panel=itineraire&source=legacy");
+    expect(SEO_HTTP_REDIRECT_SOURCES).not.toContain("/onboarding/localisation");
     for (const alias of Object.keys(SEO_REDIRECT_TARGETS)) {
       expect(PUBLIC_APP_SITEMAP_PATHS).not.toContain(alias);
     }

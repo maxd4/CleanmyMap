@@ -148,6 +148,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               isAuthenticated={false}
               authUnavailable={!clerkReachable}
               mode="blur"
+              stateHeadingLevel="h2"
               lockedPreview={
                 <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-700">

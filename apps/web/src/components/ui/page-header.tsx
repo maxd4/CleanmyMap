@@ -125,7 +125,7 @@ export type PageHeaderProps = {
   tone?: PageHeaderTone;
   /** Inverse le contraste pour les surfaces sombres. */
   contrast?: PageHeaderContrast;
-  title: ReactNode;
+  title?: ReactNode;
   subtitle?: ReactNode;
   headingLevel?: "h1" | "h2";
   action?: ReactNode;
@@ -174,7 +174,9 @@ export function PageHeader({
             isCenter ? "text-center" : null,
           )}
         >
-          <Heading className={cn("cmm-page-header-title", tokens.titleColor)}>{title}</Heading>
+          {title !== undefined && title !== null ? (
+            <Heading className={cn("cmm-page-header-title", tokens.titleColor)}>{title}</Heading>
+          ) : null}
 
           {subtitle ? (
             <p className={cn("cmm-page-header-subtitle", tokens.subtitleColor)}>

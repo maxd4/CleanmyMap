@@ -14,4 +14,20 @@ describe("composed Climate heading contract", () => {
     expect(renderer).toContain("<CompareSection />");
     expect(compare).toContain('headingLevel="h2"');
   });
+
+  it("keeps Open Data primary and Funding secondary when composed", () => {
+    const renderer = read("./section-renderer.tsx");
+    const openData = read("./open-data-section.tsx");
+    const funding = read("./funding-section.tsx");
+
+    expect(renderer).toContain("<OpenDataSection />");
+    expect(renderer).toContain(
+      '<FundingSection onParticipeUrl={fundingOnParticipeUrl} headingLevel="h2" />',
+    );
+    expect(renderer).toContain(
+      "funding: (fundingOnParticipeUrl?: string) => (\n    <FundingSection onParticipeUrl={fundingOnParticipeUrl} />",
+    );
+    expect(openData).toContain("<PageHeader");
+    expect(funding).toContain("headingLevel={headingLevel}");
+  });
 });

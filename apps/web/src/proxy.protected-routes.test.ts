@@ -16,13 +16,16 @@ import {
   CLERK_CONTEXT_API_ROUTE_PREFIXES,
   CLERK_CONTEXT_ROUTE_PREFIXES,
   config,
+  getSeoHttpRedirectResponse,
   isAnonymousSafeApiRequest,
   isClerkContextOnlyRoute,
   isProtectedAppPage,
   PROTECTED_APP_PAGE_ROUTE_PREFIXES,
   PROXY_MATCHER_PATTERNS,
+  SEO_HTTP_REDIRECT_MATCHER_PATTERNS,
 } from "./proxy";
 import { RUBRIQUE_REGISTRY } from "@/lib/sections-registry";
+import { SEO_HTTP_REDIRECT_SOURCES, SEO_REDIRECT_TARGETS } from "@/lib/seo/indexability";
 
 describe("proxy route context", () => {
   it("keeps key page access semantics explicit", () => {
@@ -43,13 +46,46 @@ describe("proxy route context", () => {
 
   it("keeps the literal Next matcher synchronized with runtime prefix lists", () => {
     const expectedMatcher = [
-      ...PROTECTED_APP_PAGE_ROUTE_PREFIXES,
-      ...CLERK_CONTEXT_ROUTE_PREFIXES,
-      ...CLERK_CONTEXT_API_ROUTE_PREFIXES,
-    ].map((prefix) => `${prefix}(.*)`);
+      ...SEO_HTTP_REDIRECT_MATCHER_PATTERNS,
+      ...PROTECTED_APP_PAGE_ROUTE_PREFIXES.map((prefix) => `${prefix}(.*)`),
+      ...CLERK_CONTEXT_ROUTE_PREFIXES.map((prefix) => `${prefix}(.*)`),
+      ...CLERK_CONTEXT_API_ROUTE_PREFIXES.map((prefix) => `${prefix}(.*)`),
+    ];
 
     expect(PROXY_MATCHER_PATTERNS).toEqual(expectedMatcher);
     expect(config.matcher).toEqual(expectedMatcher);
+  });
+
+  it("serves every SEO alias as a permanent HTTP redirect before rendering", () => {
+    for (const source of SEO_HTTP_REDIRECT_SOURCES) {
+      const request = new NextRequest(
+        `http://localhost${source}?source=legacy&tab=legacy&panel=legacy`,
+      );
+      const response = getSeoHttpRedirectResponse(request);
+
+      expect(response, source).not.toBeNull();
+      expect(response?.status, source).toBe(308);
+
+      const location = new URL(response?.headers.get("location") ?? "http://invalid");
+      expect(location.pathname, source).toBe(
+        new URL(SEO_REDIRECT_TARGETS[source], "http://localhost").pathname,
+      );
+      expect(location.searchParams.get("source"), source).toBe("legacy");
+    }
+  });
+
+  it("gives forced target parameters priority without duplicate keys", () => {
+    const partners = getSeoHttpRedirectResponse(
+      new NextRequest("http://localhost/partners/network?tab=legacy&tab=dm&source=legacy"),
+    );
+    const route = getSeoHttpRedirectResponse(
+      new NextRequest("http://localhost/sections/route?panel=legacy&source=legacy"),
+    );
+
+    expect(new URL(partners?.headers.get("location") ?? "http://invalid").searchParams.getAll("tab"))
+      .toEqual(["partners"]);
+    expect(new URL(route?.headers.get("location") ?? "http://invalid").searchParams.getAll("panel"))
+      .toEqual(["itineraire"]);
   });
 
   it("keeps context-only page semantics explicit", () => {

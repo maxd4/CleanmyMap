@@ -7,8 +7,8 @@ import type { ReportModel } from "@/lib/reports/report-model/types";
 import { ReportsAnalysisDashboard } from "./reports-analysis-dashboard";
 
 vi.mock("@/components/ui/page-header", () => ({
-  PageHeader: ({ title, subtitle, action }: { title: React.ReactNode; subtitle?: React.ReactNode; action?: React.ReactNode }) =>
-    React.createElement("header", null, title, subtitle, action),
+  PageHeader: ({ title, subtitle, action, headingLevel = "h1" }: { title: React.ReactNode; subtitle?: React.ReactNode; action?: React.ReactNode; headingLevel?: "h1" | "h2" }) =>
+    React.createElement("header", null, React.createElement(headingLevel, null, title), subtitle, action),
 }));
 
 vi.mock("@/components/reports/analytics-cockpit", () => ({
@@ -58,21 +58,32 @@ const monthlyData: MonthlyAnalyticsPoint[] = [{
   volunteers: 3,
 }];
 
+function renderAnalysisDashboard() {
+  return renderToStaticMarkup(
+    React.createElement(ReportsAnalysisDashboard, {
+      locale: "fr",
+      roleLabel: "Bénévole",
+      primaryAction: { href: "/actions/new", label: { fr: "Déclarer", en: "Declare" }, description: { fr: "", en: "" } },
+      secondaryAction: null,
+      summaryKpis: [],
+      methods: [method],
+      report,
+      periodDays: 90,
+      monthlyData,
+    }),
+  );
+}
+
 describe("ReportsAnalysisDashboard contract", () => {
+  it("keeps the report submodule heading secondary", () => {
+    const markup = renderAnalysisDashboard();
+
+    expect(markup).toMatch(/<h2>Rapports d(?:&#x27;|’)impact<\/h2>/);
+    expect(markup).not.toMatch(/<h1\b/);
+  });
+
   it("renders ReportModel fields with qualified labels and native units", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(ReportsAnalysisDashboard, {
-        locale: "fr",
-        roleLabel: "Bénévole",
-        primaryAction: { href: "/actions/new", label: { fr: "Déclarer", en: "Declare" }, description: { fr: "", en: "" } },
-        secondaryAction: null,
-        summaryKpis: [],
-        methods: [method],
-        report,
-        periodDays: 90,
-        monthlyData,
-      }),
-    );
+    const markup = renderAnalysisDashboard();
 
     expect(markup).toContain("Émissions évitées (proxy)");
     expect(markup).toContain("14,4");
@@ -98,18 +109,7 @@ describe("ReportsAnalysisDashboard contract", () => {
   });
 
   it("keeps quality metrics distinct from environmental impact claims", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(ReportsAnalysisDashboard, {
-        locale: "fr",
-        roleLabel: "Bénévole",
-        primaryAction: { href: "/actions/new", label: { fr: "Déclarer", en: "Declare" }, description: { fr: "", en: "" } },
-        summaryKpis: [],
-        methods: [method],
-        report,
-        periodDays: 90,
-        monthlyData,
-      }),
-    );
+    const markup = renderAnalysisDashboard();
 
     expect(markup).not.toContain("Pollution de l’air évitée");
     expect(markup).not.toContain("Pollution des sols évitée");
@@ -121,18 +121,7 @@ describe("ReportsAnalysisDashboard contract", () => {
   });
 
   it("exposes keyboard-navigable disclosure markup for the methodology", () => {
-    const markup = renderToStaticMarkup(
-      React.createElement(ReportsAnalysisDashboard, {
-        locale: "fr",
-        roleLabel: "Bénévole",
-        primaryAction: { href: "/actions/new", label: { fr: "Déclarer", en: "Declare" }, description: { fr: "", en: "" } },
-        summaryKpis: [],
-        methods: [method],
-        report,
-        periodDays: 90,
-        monthlyData,
-      }),
-    );
+    const markup = renderAnalysisDashboard();
 
     expect(markup).toContain("<details");
     expect(markup).toContain("<summary");

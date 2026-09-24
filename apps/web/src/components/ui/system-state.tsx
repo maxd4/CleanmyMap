@@ -49,17 +49,25 @@ export function SystemStateIcon({ variant = "warning", className, children }: Sy
 type SystemStateTitleProps = {
   variant?: SystemStateVariant;
   className?: string;
+  headingLevel?: "h1" | "h2";
   children: ReactNode;
 };
 
-export function SystemStateTitle({ variant = "warning", className, children }: SystemStateTitleProps) {
+export function SystemStateTitle({
+  variant = "warning",
+  className,
+  headingLevel = "h1",
+  children,
+}: SystemStateTitleProps) {
+  const Heading = headingLevel;
+
   return (
-    <h1
+    <Heading
       className={cn("cmm-page-header-title cmm-system-state-title text-balance", className)}
       data-state-variant={variant}
     >
       {children}
-    </h1>
+    </Heading>
   );
 }
 

@@ -23,6 +23,7 @@ type ClerkRequiredGateProps = {
   signUpHref?: string;
   signUpLabel?: string;
   badge?: string;
+  stateHeadingLevel?: "h1" | "h2";
   lockedPreview?: ReactNode;
   children: ReactNode;
 };
@@ -38,6 +39,7 @@ export function ClerkRequiredGate({
   signUpHref = "/sign-up",
   signUpLabel = "Créer un compte",
   badge = "Connexion requise",
+  stateHeadingLevel = "h1",
   lockedPreview,
   children,
 }: ClerkRequiredGateProps) {
@@ -55,7 +57,7 @@ export function ClerkRequiredGate({
           <SystemStateMeta variant="offline" label="Authentification indisponible">
             L&apos;état de votre session ne peut pas être vérifié pour le moment.
           </SystemStateMeta>
-          <SystemStateTitle variant="offline">
+          <SystemStateTitle variant="offline" headingLevel={stateHeadingLevel}>
             Authentification temporairement indisponible
           </SystemStateTitle>
           <SystemStateDescription variant="offline">
@@ -111,7 +113,7 @@ export function ClerkRequiredGate({
           <SystemStateMeta variant="forbidden" label={badge}>
             L&apos;accès est réservé aux comptes autorisés.
           </SystemStateMeta>
-          <SystemStateTitle variant="forbidden">{title}</SystemStateTitle>
+          <SystemStateTitle variant="forbidden" headingLevel={stateHeadingLevel}>{title}</SystemStateTitle>
           <SystemStateDescription variant="forbidden">{description}</SystemStateDescription>
           <SystemStateAction>
             <CmmButton href={signInHref} tone="primary">

@@ -13,6 +13,15 @@ const canvasSource = readFileSync(
 );
 
 describe("actions map public semantics", () => {
+  it("keeps the primary heading in the server boundary and the subtitle dynamic in the client boundary", () => {
+    expect(serverSource).toContain('<PageHeader');
+    expect(serverSource).toContain('title="Cartographie des actions"');
+    expect(source).toContain("title={null}");
+    expect(source).toContain("scoreScope === \"department\"");
+    expect(source).toContain('displayMode === "observed"');
+    expect(source).not.toContain('title="Cartographie des actions"');
+  });
+
   it("does not label the map as real-time data", () => {
     expect(source).not.toContain("Données en temps réel");
     expect(source).toContain("pollution projetée");

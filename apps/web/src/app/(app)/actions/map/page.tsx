@@ -4,6 +4,8 @@ import {
   buildPublicImpactMetrics,
   type PublicImpactCounters,
 } from "@/lib/impact/public-impact-kpis";
+import { PageHeader } from "@/components/ui/page-header";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 import { ActionsMapPageClient } from "./page-client";
 
 export const metadata: Metadata = {
@@ -37,8 +39,15 @@ export default async function ActionsMapPage() {
   }
 
   return (
-    <ActionsMapPageClient
-      impactMetrics={buildPublicImpactMetrics(counters, hasData)}
-    />
+    <>
+      <PageHeader
+        family={resolvePageFamily("/actions/map")}
+        title="Cartographie des actions"
+        className="cmm-page-width px-6 pt-6"
+      />
+      <ActionsMapPageClient
+        impactMetrics={buildPublicImpactMetrics(counters, hasData)}
+      />
+    </>
   );
 }

@@ -73,7 +73,7 @@ export const FINALIZED_SECTION_RENDERERS = {
   "open-data": (fundingOnParticipeUrl?: string) => (
     <div className="space-y-12">
       <OpenDataSection />
-      <FundingSection onParticipeUrl={fundingOnParticipeUrl} />
+      <FundingSection onParticipeUrl={fundingOnParticipeUrl} headingLevel="h2" />
     </div>
   ),
   funding: (fundingOnParticipeUrl?: string) => (

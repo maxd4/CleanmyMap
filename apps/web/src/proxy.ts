@@ -4,12 +4,15 @@ import type { NextFetchEvent, NextRequest } from "next/server";
 import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { isDevAuthBypassEnabled } from "@/lib/auth/dev-auth";
 import {
+  buildSeoRedirectTarget,
   getPublicNoindexSectionRoutes,
   getPrivateSectionRoutes,
   isPublicNoindexPath,
   isPrivateAppPath,
   PUBLIC_ROBOTS_NOINDEX_VALUE,
   ROBOTS_NOINDEX_VALUE,
+  SEO_HTTP_REDIRECT_SOURCES,
+  type SeoRedirectSource,
 } from "@/lib/seo/indexability";
 import {
   ADMIN_ROUTE,
@@ -80,10 +83,13 @@ export const CLERK_CONTEXT_API_ROUTE_PREFIXES = [
   "/api/users",
 ] as const;
 
+export const SEO_HTTP_REDIRECT_MATCHER_PATTERNS = SEO_HTTP_REDIRECT_SOURCES;
+
 const toMatcherPatterns = (prefixes: readonly string[]) =>
   prefixes.map((prefix) => `${prefix}(.*)`);
 
 export const PROXY_MATCHER_PATTERNS = [
+  ...SEO_HTTP_REDIRECT_MATCHER_PATTERNS,
   ...toMatcherPatterns(PROTECTED_APP_PAGE_ROUTE_PREFIXES),
   ...toMatcherPatterns(CLERK_CONTEXT_ROUTE_PREFIXES),
   ...toMatcherPatterns(CLERK_CONTEXT_API_ROUTE_PREFIXES),
@@ -123,6 +129,21 @@ function nextWithSeoHeaders(req: NextRequest): NextResponse {
     );
   }
   return response;
+}
+
+export function getSeoHttpRedirectResponse(
+  req: NextRequest,
+): NextResponse | null {
+  const source = req.nextUrl.pathname as SeoRedirectSource;
+  if (!SEO_HTTP_REDIRECT_SOURCES.includes(source)) {
+    return null;
+  }
+
+  const destination = new URL(
+    buildSeoRedirectTarget(source, req.nextUrl.searchParams),
+    req.url,
+  );
+  return NextResponse.redirect(destination, 308);
 }
 
 export function isProtectedAppPage(pathname: string): boolean {
@@ -251,6 +272,11 @@ const clerkProxy = clerkMiddleware(
 );
 
 export async function proxy(req: NextRequest, evt: NextFetchEvent) {
+  const seoRedirect = getSeoHttpRedirectResponse(req);
+  if (seoRedirect) {
+    return seoRedirect;
+  }
+
   if (shouldSkipClerkForAnonymousPublicRequest(req)) {
     return nextWithSeoHeaders(req);
   }
@@ -270,6 +296,20 @@ export async function proxy(req: NextRequest, evt: NextFetchEvent) {
 export const config = {
   // Keep this literal: Next statically analyzes proxy matcher exports at build time.
   matcher: [
+    "/en",
+    "/conditions-utilisation",
+    "/declaration",
+    "/community",
+    "/open-data",
+    "/messagerie",
+    "/gamification",
+    "/sections/dm",
+    "/sections/guide",
+    "/sections/route",
+    "/sections/weather",
+    "/sections/rejoindre-un-formulaire",
+    "/partners/network",
+    "/partners/network/pepite",
     "/admin(.*)",
     "/dashboard(.*)",
     "/compte(.*)",

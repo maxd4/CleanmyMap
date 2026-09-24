@@ -213,6 +213,7 @@ export function ReportsAnalysisDashboard({
     <div className="rounded-[2rem] border border-rose-100/80 bg-white/95 p-4 shadow-[0_26px_70px_-42px_rgba(190,24,93,0.35)] sm:p-6 lg:p-7">
       <PageHeader
         tone="red"
+        headingLevel="h2"
         title="Rapports d&apos;impact"
         subtitle="Analysez la qualité de vos données, suivez vos KPI et comparez vos résultats dans le temps."
         action={
