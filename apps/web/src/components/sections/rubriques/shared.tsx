@@ -27,6 +27,7 @@ interface SectionShellProps {
   traceNote?: ReactNode;
   links?: Array<{ href: string; label: { fr: string; en: string } }>;
   hideHeader?: boolean;
+  headingLevel?: "h1" | "h2";
 }
 
 export function SectionShell({
@@ -40,6 +41,7 @@ export function SectionShell({
   traceNote,
   links,
   hideHeader = false,
+  headingLevel = "h1",
 }: SectionShellProps) {
   const { locale } = useSitePreferences();
   const pathname = usePathname();
@@ -75,6 +77,7 @@ export function SectionShell({
               </span>
             }
             subtitle={subtitle ? t(locale, subtitle) : undefined}
+            headingLevel={headingLevel}
           />
           
           <div className="h-px w-full bg-gradient-to-r from-white/10 via-white/5 to-transparent" />

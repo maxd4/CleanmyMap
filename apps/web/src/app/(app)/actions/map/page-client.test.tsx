@@ -69,8 +69,13 @@ vi.mock("./_components/map-control-tower", () => ({
 }));
 
 vi.mock("@/components/ui/page-header", () => ({
-  PageHeader: ({ title }: { title: React.ReactNode }) =>
-    React.createElement("h1", null, title),
+  PageHeader: ({ title, subtitle }: { title: React.ReactNode; subtitle?: React.ReactNode }) =>
+    React.createElement(
+      React.Fragment,
+      null,
+      React.createElement("h1", null, title),
+      subtitle ? React.createElement("p", null, subtitle) : null,
+    ),
 }));
 
 vi.mock("@/components/ui/cmm-button", () => ({
@@ -240,6 +245,16 @@ describe("ActionsMapPageClient initial viewport contract", () => {
     expect(markup).toContain('data-testid="immersive-layout"');
     expect(markup).not.toContain("Carte indisponible");
     expect(markup).not.toContain("Aucune action");
+  });
+
+  it("keeps the server-rendered heading and the mode-dependent subtitle", () => {
+    configurePageState({ viewport: FALLBACK_VIEWPORT, hasInitialPublicActions: true });
+
+    const markup = renderPage();
+
+    expect(markup.match(/<h1\b/g)).toHaveLength(1);
+    expect(markup).toContain("Cartographie des actions");
+    expect(markup).toContain("pollution projetée");
   });
 
   it("keeps manual viewport interaction as the consumer priority", () => {

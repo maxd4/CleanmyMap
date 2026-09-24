@@ -5,6 +5,7 @@ import {
   PRIVATE_APP_ROUTE_PREFIXES,
   PUBLIC_APP_SITEMAP_PATHS,
   getPrivateSectionRoutes,
+  getPublicNoindexSectionRoutes,
   getPublicSectionSitemapPaths,
 } from "@/lib/seo/indexability";
 import robots from "@/app/robots";
@@ -82,6 +83,10 @@ describe("security indexation invariants", () => {
     );
 
     for (const route of publicSitemapPaths) {
+      expect(disallowed).not.toContain(route);
+    }
+
+    for (const route of getPublicNoindexSectionRoutes()) {
       expect(disallowed).not.toContain(route);
     }
   });

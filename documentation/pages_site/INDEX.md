@@ -67,9 +67,9 @@ AuthN/AuthZ. `PRIVATE` désigne une surface personnelle, métier, partenaire,
 administrative ou autrement protégée. Ces valeurs ne remplacent pas les
 contrôles runtime : elles les décrivent avec le contrat de recherche.
 
-Les lignes ci-dessous décrivent l'arbitrage documentaire cible. Le code du
-sitemap, des métadonnées et des redirects sera aligné dans un lot technique
-ultérieur ; cette matrice ne prétend pas avoir déjà modifié le runtime.
+Les lignes ci-dessous décrivent le contrat actuellement livré. Le code du
+sitemap, des métadonnées et des redirects est aligné sur cette matrice ; les
+tests runtime restent la preuve opérationnelle de cet alignement.
 
 ### Pages publiques et hybrides indexables
 
@@ -160,7 +160,7 @@ redirection :
 | --- |---|---|---|---|---|
 | /en | `/` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /conditions-utilisation | `/conditions-generales-utilisation` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
-| /declaration | `/actions/new` | `HYBRID` | `NOINDEX` | `REDIRECT` | `TARGET` |
+| /declaration | `/actions/new` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /community | `/sections/community` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /open-data | `/sections/open-data` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /messagerie | `/sections/messagerie` | `PRIVATE` | `NOINDEX` | `REDIRECT` | `TARGET` |

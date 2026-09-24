@@ -38,7 +38,31 @@ function LearnRubricIntro({
   locale: "fr" | "en";
   isLightOrange: boolean;
 }) {
-  if (staticIntro) return staticIntro;
+  if (staticIntro) {
+    return (
+      <div className="space-y-2">
+        {staticIntro}
+        <p
+          className={
+            isLightOrange
+              ? "cmm-text-body max-w-3xl"
+              : "max-w-3xl text-base leading-relaxed text-white md:text-lg"
+          }
+        >
+          {subtitle[locale]}
+        </p>
+        <p
+          className={
+            isLightOrange
+              ? "cmm-text-body max-w-3xl"
+              : "max-w-3xl text-base leading-relaxed text-white md:text-lg"
+          }
+        >
+          {description[locale]}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <>

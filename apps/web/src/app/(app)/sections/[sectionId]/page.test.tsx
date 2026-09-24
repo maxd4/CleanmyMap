@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   getSafeAuthSession: vi.fn(),
   getSectionRubriqueById: vi.fn(),
+  getServerLocale: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/safe-session", () => ({
@@ -14,6 +15,10 @@ vi.mock("@/lib/auth/safe-session", () => ({
 vi.mock("@/lib/sections-registry", () => ({
   getSectionRubriqueById: mocks.getSectionRubriqueById,
   getSectionRouteParams: () => [],
+}));
+
+vi.mock("@/lib/server-preferences", () => ({
+  getServerLocale: mocks.getServerLocale,
 }));
 
 vi.mock("@/components/sections/rubriques/section-renderer", () => ({
@@ -38,12 +43,13 @@ vi.mock("@/components/ui/clerk-required-gate", () => ({
     ),
 }));
 
-import SectionPage from "./page";
+import SectionPage, { generateMetadata } from "./page";
 
 describe("section authentication gate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getSafeAuthSession.mockResolvedValue({ userId: null });
+    mocks.getServerLocale.mockResolvedValue("fr");
   });
 
   it.each(["blur", "disabled"] as const)(
@@ -71,4 +77,20 @@ describe("section authentication gate", () => {
       );
     },
   );
+
+  it("keeps Feedback public and noindex without a canonical URL", async () => {
+    mocks.getSectionRubriqueById.mockReturnValue({
+      id: "feedback",
+      label: { fr: "Retour", en: "Feedback" },
+      description: { fr: "Retour", en: "Feedback" },
+    });
+
+    const metadata = await generateMetadata({
+      params: Promise.resolve({ sectionId: "feedback" }),
+      searchParams: Promise.resolve({}),
+    });
+
+    expect(metadata.robots).toEqual({ index: false, follow: true, nocache: true });
+    expect(metadata).not.toHaveProperty("alternates");
+  });
 });

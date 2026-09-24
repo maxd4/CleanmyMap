@@ -37,6 +37,9 @@ describe("public sitemap metadata", () => {
     expect(byPath.has("/conditions-utilisation")).toBe(false);
     for (const excludedPath of [
       "/explorer",
+      "/declaration",
+      "/partners/network",
+      "/partners/network/pepite",
       "/sections/feedback",
       "/sections/route",
       "/sections/weather",

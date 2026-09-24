@@ -4,9 +4,11 @@ import type { NextFetchEvent, NextRequest } from "next/server";
 import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { isDevAuthBypassEnabled } from "@/lib/auth/dev-auth";
 import {
+  getPublicNoindexSectionRoutes,
   getPrivateSectionRoutes,
   isPublicNoindexPath,
   isPrivateAppPath,
+  PUBLIC_ROBOTS_NOINDEX_VALUE,
   ROBOTS_NOINDEX_VALUE,
 } from "@/lib/seo/indexability";
 import {
@@ -24,7 +26,6 @@ export const PROTECTED_APP_PAGE_ROUTE_PREFIXES = [
   "/compte",
   "/missions",
   "/actions/history",
-  "/declaration",
   "/form-comparison",
   "/onboarding",
   "/partners/dashboard",
@@ -41,7 +42,6 @@ export const CLERK_CONTEXT_ROUTE_PREFIXES = [
   "/reports",
   "/actions/new",
   "/signalement",
-  "/partners/network",
   "/sections/annuaire",
   "/sections/rejoindre-une-action",
   "/sections/rejoindre-un-formulaire",
@@ -90,22 +90,37 @@ export const PROXY_MATCHER_PATTERNS = [
 ] as const;
 
 const PRIVATE_SECTION_ROUTES = getPrivateSectionRoutes();
+const PUBLIC_NOINDEX_SECTION_ROUTES = getPublicNoindexSectionRoutes();
+
+function matchesRoute(pathname: string, route: string): boolean {
+  return pathname === route || pathname.startsWith(`${route}/`);
+}
+
+function isPublicNoindexRoute(pathname: string): boolean {
+  return (
+    isPublicNoindexPath(pathname) ||
+    PUBLIC_NOINDEX_SECTION_ROUTES.some((route) => matchesRoute(pathname, route))
+  );
+}
 
 function shouldNoIndex(pathname: string): boolean {
-  if (isPrivateAppPath(pathname) || isPublicNoindexPath(pathname)) {
+  if (isPrivateAppPath(pathname) || isPublicNoindexRoute(pathname)) {
     return true;
   }
 
-  return PRIVATE_SECTION_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
+  return PRIVATE_SECTION_ROUTES.some((route) => matchesRoute(pathname, route));
 }
 
 function nextWithSeoHeaders(req: NextRequest): NextResponse {
   const pathname = req.nextUrl.pathname;
   const response = NextResponse.next();
   if (shouldNoIndex(pathname)) {
-    response.headers.set("X-Robots-Tag", ROBOTS_NOINDEX_VALUE);
+    response.headers.set(
+      "X-Robots-Tag",
+      isPublicNoindexRoute(pathname)
+        ? PUBLIC_ROBOTS_NOINDEX_VALUE
+        : ROBOTS_NOINDEX_VALUE,
+    );
   }
   return response;
 }
@@ -260,7 +275,6 @@ export const config = {
     "/compte(.*)",
     "/missions(.*)",
     "/actions/history(.*)",
-    "/declaration(.*)",
     "/form-comparison(.*)",
     "/onboarding(.*)",
     "/partners/dashboard(.*)",
@@ -274,7 +288,6 @@ export const config = {
     "/reports(.*)",
     "/actions/new(.*)",
     "/signalement(.*)",
-    "/partners/network(.*)",
     "/sections/annuaire(.*)",
     "/sections/rejoindre-une-action(.*)",
     "/sections/rejoindre-un-formulaire(.*)",

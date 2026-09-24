@@ -1,5 +1,5 @@
 import { permanentRedirect } from "next/navigation";
-import { appendPreservedSearchParams } from "@/lib/seo/indexability";
+import { buildSeoRedirectTarget } from "@/lib/seo/indexability";
 
 export default async function ConditionsUtilisationAliasPage({
   searchParams,
@@ -7,6 +7,6 @@ export default async function ConditionsUtilisationAliasPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   permanentRedirect(
-    appendPreservedSearchParams("/conditions-generales-utilisation", await searchParams),
+    buildSeoRedirectTarget("/conditions-utilisation", await searchParams),
   );
 }

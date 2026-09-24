@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getServerLocale } from "@/lib/server-preferences";
 import LearnBonnesPratiquesClient from "./client";
 
 export const metadata: Metadata = {
@@ -9,17 +10,14 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function LearnBonnesPratiquesPage() {
+export default async function LearnBonnesPratiquesPage() {
+  const locale = await getServerLocale();
   return (
     <LearnBonnesPratiquesClient
       staticIntro={
-        <div className="space-y-2">
-          <h1 className="cmm-page-header-title text-slate-950">Bonnes pratiques</h1>
-          <p className="cmm-page-header-subtitle text-slate-700">Lecture progressive</p>
-          <p className="cmm-text-body max-w-3xl">
-            Repères concrets pour trier, composter et réduire les déchets au quotidien.
-          </p>
-        </div>
+        <h1 className="cmm-page-header-title text-slate-950">
+          {locale === "fr" ? "Bonnes pratiques" : "Good practices"}
+        </h1>
       }
     />
   );

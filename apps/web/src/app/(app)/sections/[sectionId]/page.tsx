@@ -76,13 +76,15 @@ export async function generateMetadata({
   const isPublicNoindex = PUBLIC_NOINDEX_SECTION_IDS.has(section.id);
   const robots = isIndexable
     ? { index: true, follow: true }
-    : { index: false, follow: false, nocache: true };
+    : isPublicNoindex
+      ? { index: false, follow: true, nocache: true }
+      : { index: false, follow: false, nocache: true };
 
   return {
     title: localizedLabel,
     description: localizedDescription,
     robots,
-    ...(isIndexable || isPublicNoindex
+    ...(isIndexable
       ? { alternates: { canonical: `/sections/${section.id}` } }
       : {}),
   };

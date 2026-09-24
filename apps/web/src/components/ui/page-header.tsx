@@ -127,6 +127,7 @@ export type PageHeaderProps = {
   contrast?: PageHeaderContrast;
   title: ReactNode;
   subtitle?: ReactNode;
+  headingLevel?: "h1" | "h2";
   action?: ReactNode;
   align?: "left" | "center";
   className?: string;
@@ -138,6 +139,7 @@ export function PageHeader({
   tone,
   title,
   subtitle,
+  headingLevel = "h1",
   action,
   align = "left",
   contrast = "default",
@@ -148,6 +150,7 @@ export function PageHeader({
   const family = familyProp ?? (tone ? undefined : resolvePageFamily(pathname));
   const tokens = resolveTokens({ family, tone, contrast });
   const isCenter = align === "center";
+  const Heading = headingLevel;
 
   return (
     <header
@@ -171,7 +174,7 @@ export function PageHeader({
             isCenter ? "text-center" : null,
           )}
         >
-          <h1 className={cn("cmm-page-header-title", tokens.titleColor)}>{title}</h1>
+          <Heading className={cn("cmm-page-header-title", tokens.titleColor)}>{title}</Heading>
 
           {subtitle ? (
             <p className={cn("cmm-page-header-subtitle", tokens.subtitleColor)}>

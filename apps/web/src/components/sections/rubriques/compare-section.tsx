@@ -71,6 +71,7 @@ export function CompareSection() {
       title="Benchmark Territorial"
       subtitle="Analyse comparative et performance relative des zones d'intervention."
       icon={BarChart3}
+      headingLevel="h2"
       gradient="from-indigo-500/20 via-slate-500/10 to-transparent"
     >
       <div className="space-y-12 pt-8">
