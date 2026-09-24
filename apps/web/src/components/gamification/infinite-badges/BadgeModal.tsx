@@ -5,7 +5,15 @@ import { X } from "lucide-react";
 import { useMemo } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { computeBadgeRank, computeActionCreationRank, BADGE_TIER_STYLES, formatCompactNumber, nextThreshold, type BadgeFamily } from "./utils";
+import {
+  computeBadgeRank,
+  computeActionCreationProgress,
+  computeActionCreationRank,
+  BADGE_TIER_STYLES,
+  formatCompactNumber,
+  nextThreshold,
+  type BadgeFamily,
+} from "./utils";
 
 type BadgeModalProps = {
   isOpen: boolean;
@@ -31,17 +39,21 @@ export function BadgeModal({
   const { locale } = useSitePreferences();
   const { t } = useTranslation("gamification");
 
-  const level = Math.floor(Math.max(0, total) / step);
+  const actionProgression =
+    family === "actions" ? computeActionCreationProgress(total) : null;
+  const level = actionProgression?.currentGrade.threshold ??
+    Math.floor(Math.max(0, total) / step);
   const rank =
     family === "actions"
-      ? computeActionCreationRank(level)
+      ? computeActionCreationRank(total)
       : computeBadgeRank(level);
   const tier = rank.tier;
   const styles = BADGE_TIER_STYLES[tier];
 
-  const next = useMemo(() => {
-    return nextThreshold(level, step);
-  }, [level, step]);
+  const next = useMemo(
+    () => actionProgression?.nextGrade?.threshold ?? nextThreshold(level, step),
+    [actionProgression, level, step],
+  );
 
   return (
     <AnimatePresence>

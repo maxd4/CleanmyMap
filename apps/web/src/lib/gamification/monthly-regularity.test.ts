@@ -48,8 +48,8 @@ describe("computeMonthlyRegularityAwards", () => {
     ]);
     expect(summary.currentStreak).toBe(3);
     expect(summary.currentMonthHasEligibleAction).toBe(true);
-    expect(summary.currentGrade.label).toBe("Saphir");
-    expect(summary.nextLabel).toBe("Rubis");
+    expect(summary.currentGrade.label).toBe("Topaze");
+    expect(summary.nextLabel).toBe("Saphir");
   });
 
   it("resets the streak when the current month has no eligible action", () => {
@@ -85,8 +85,8 @@ describe("computeMonthlyRegularityAwards", () => {
     );
 
     expect(februarySummary.currentStreak).toBe(2);
-    expect(februarySummary.currentGrade.label).toBe("Topaze");
-    expect(februarySummary.nextLabel).toBe("Saphir");
+    expect(februarySummary.currentGrade.label).toBe("Quartz");
+    expect(februarySummary.nextLabel).toBe("Topaze");
 
     expect(marchSummary.currentStreak).toBe(0);
     expect(marchSummary.currentGrade.label).toBe("Observateur");
