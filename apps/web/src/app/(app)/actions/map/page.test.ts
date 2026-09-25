@@ -14,23 +14,27 @@ const canvasSource = readFileSync(
 );
 
 describe("actions map public semantics", () => {
-  it("keeps the primary heading in the server boundary and the subtitle dynamic in the client boundary", () => {
+  it("keeps the primary heading and stable public introduction in the server boundary", () => {
     expect(serverSource).toContain("<h1");
     expect(serverSource).toContain("Cartographie des actions");
+    expect(serverSource).toContain("actions et les données publiques autorisées par le contrat");
+    expect(serverSource).toContain("une projection n&apos;est pas une mesure actuelle du terrain");
+    expect(serverSource).toContain('href="/methodologie"');
     expect(serverSource).toContain("<Suspense");
     expect(serverSource).toContain("async function ActionsMapContent");
     expect(loadingSource).toContain("<h1");
     expect(loadingSource).toContain("Cartographie des actions");
     expect(source).toContain("title={null}");
-    expect(source).toContain("scoreScope === \"department\"");
-    expect(source).toContain('displayMode === "observed"');
+    expect(source).toContain("Comparaison départementale active.");
+    expect(source).toContain("Mode observation actif.");
+    expect(source).toContain("Mode projection actif.");
     expect(source).not.toContain('title="Cartographie des actions"');
   });
 
-  it("does not label the map as real-time data", () => {
+  it("does not duplicate dynamic measurement descriptions in the client shell", () => {
     expect(source).not.toContain("Données en temps réel");
-    expect(source).toContain("pollution projetée");
-    expect(source).toContain("ne constitue pas une mesure actuelle du terrain");
+    expect(source).not.toContain("pollution projetée");
+    expect(source).not.toContain("ne constitue pas une mesure actuelle du terrain");
   });
 
   it("keeps the public feed approved-only without exposing a status control", () => {

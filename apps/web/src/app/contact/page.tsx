@@ -20,7 +20,7 @@ export default function ContactPage() {
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
   return (
-    <main className="relative">
+    <div className="relative">
       <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -left-16 top-10 h-72 w-72 rounded-full bg-slate-300/15 blur-3xl" />
         <div className="absolute right-0 top-24 h-80 w-80 rounded-full bg-sky-300/12 blur-3xl" />
@@ -116,6 +116,6 @@ export default function ContactPage() {
       </CmmSectionGroup>
       </div>
       </CmmPageLayout>
-    </main>
+    </div>
   );
 }
