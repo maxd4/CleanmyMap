@@ -75,7 +75,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
     wasteKg: 0,
     butts: 0,
     newPlaces: 0,
-    actionsCreated: 0,
+    organisationCount: 0,
     actionBalance: {
       spontaneous: 0,
       association: 0,
@@ -159,7 +159,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
         >
           <ProfileGamificationSummary
             currentLevel={identity?.currentLevel ?? null}
-            actionsCreated={infiniteTotals.actionsCreated}
+            organisationCount={infiniteTotals.organisationCount}
             regularityLabel={infiniteTotals.monthlyRegularity.currentLabel}
             actionBalanceLabel={infiniteTotals.actionBalance.currentLabel}
           />

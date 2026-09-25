@@ -3,14 +3,14 @@ import { CmmButton } from "@/components/ui/cmm-button";
 
 export type ProfileGamificationSummaryProps = {
   currentLevel: number | null;
-  actionsCreated: number;
+  organisationCount: number;
   regularityLabel: string;
   actionBalanceLabel: string;
 };
 
 export function ProfileGamificationSummary({
   currentLevel,
-  actionsCreated,
+  organisationCount,
   regularityLabel,
   actionBalanceLabel,
 }: ProfileGamificationSummaryProps) {
@@ -44,9 +44,9 @@ export function ProfileGamificationSummary({
           </div>
           <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
             <dt className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-100/65">
-              Actions créées
+              Organisation
             </dt>
-            <dd className="mt-1 text-xl font-black text-white">{actionsCreated}</dd>
+            <dd className="mt-1 text-xl font-black text-white">{organisationCount}</dd>
           </div>
           <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
             <dt className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-100/65">

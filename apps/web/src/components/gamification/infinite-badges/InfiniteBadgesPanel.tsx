@@ -17,7 +17,7 @@ export function InfiniteBadgesPanel({
     wasteKg: number;
     butts: number;
     newPlaces?: number;
-    actionsCreated?: number;
+    organisationCount?: number;
     actionBalance?: ActionBalanceSummary;
     monthlyRegularity?: {
       currentStreak: number;
@@ -115,15 +115,15 @@ export function InfiniteBadgesPanel({
       {
         key: "actions",
         icon: "users",
-        title: "Actions créées",
-        description: "Actions réelles validées par un formulaire",
-        total: totals.actionsCreated ?? 0,
+        title: "Organisation",
+        description: "Actions réellement organisées et validées",
+        total: totals.organisationCount ?? 0,
         step: 5,
         unitLabel: "actions",
         family: "actions" as const,
       },
     ],
-    [t, totals.actionsCreated, totals.butts, totals.newPlaces, totals.wasteKg],
+    [t, totals.organisationCount, totals.butts, totals.newPlaces, totals.wasteKg],
   );
 
   return (

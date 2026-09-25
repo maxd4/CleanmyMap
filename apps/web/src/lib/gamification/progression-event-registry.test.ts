@@ -45,7 +45,7 @@ describe("progression event registry", () => {
     }
 
     const families = eventFamilyMap();
-    expect(families.action_declare_validation).toBe("versatility");
+    expect(families.action_declare_validation).toBe("organisation");
     expect([...runtimeEventTypes].sort()).toEqual([
       "action_declare_pending",
       "action_declare_validation",
@@ -58,6 +58,7 @@ describe("progression event registry", () => {
       "explorer_tier_unlock",
       "form_bonus",
       "form_tier_unlock",
+      "first_trace_utile",
       "new_place_discovered",
       "new_place_milestone",
       "participant_tier_unlock",
@@ -114,6 +115,7 @@ describe("progression event registry", () => {
       "explorer_tier_unlock",
       "form_bonus",
       "form_tier_unlock",
+      "first_trace_utile",
       "infinite_butts_milestone",
       "infinite_waste_milestone",
       "new_place_discovered",
@@ -131,6 +133,19 @@ describe("progression event registry", () => {
     expect(registry.community_referral_invite).toEqual({
       classification: "milestone",
       milestoneId: "parrainage_utile",
+    });
+    expect(registry.action_declare_validation).toEqual({
+      classification: "progression",
+      progressionId: "organisation",
+    });
+    expect(registry.action_declare_pending.classification).toBe("non_progression");
+    expect(registry.collective_rsvp_yes_pending.classification).toBe("non_progression");
+    expect(registry.collective_attendance_confirmed.classification).toBe("non_progression");
+    expect(registry.spot_create_pending.classification).toBe("non_progression");
+    expect(registry.spot_validation_bonus.classification).toBe("non_progression");
+    expect(registry.first_trace_utile).toEqual({
+      classification: "milestone",
+      milestoneId: "premiere_trace_utile",
     });
     expect(registry.infinite_waste_milestone.classification).toBe("non_progression");
     expect(registry.infinite_butts_milestone.classification).toBe("non_progression");
@@ -152,18 +167,28 @@ describe("progression event registry", () => {
       }
     }
 
-    expect(
-      new Set(
-        Object.values(registry)
-          .filter(
-            (registration): registration is Extract<
-              (typeof registry)[keyof typeof registry],
-              { classification: "progression" }
-            > => registration.classification === "progression",
-          )
-          .map((registration) => registration.progressionId),
-      ),
-    ).toEqual(new Set(CURRENT_INFINITE_PROGRESSION_IDS));
+    const registeredProgressions = new Set(
+      Object.values(registry)
+        .filter(
+          (registration): registration is Extract<
+            (typeof registry)[keyof typeof registry],
+            { classification: "progression" }
+          > => registration.classification === "progression",
+        )
+        .map((registration) => registration.progressionId),
+    );
+    expect(registeredProgressions).toEqual(
+      new Set([
+        "participation",
+        "organisation",
+        "exploration",
+        "clean_zones",
+        "regularity",
+        "learning",
+      ]),
+    );
+    expect(registeredProgressions).not.toContain("versatility");
+    expect(CURRENT_INFINITE_PROGRESSION_IDS).toContain("versatility");
   });
 
   it("does not leave the explicit badge rebuild with an untyped eventType escape hatch", () => {

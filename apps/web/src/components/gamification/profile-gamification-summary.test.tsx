@@ -7,7 +7,7 @@ describe("ProfileGamificationSummary", () => {
     const markup = renderToStaticMarkup(
       <ProfileGamificationSummary
         currentLevel={7}
-        actionsCreated={12}
+        organisationCount={12}
         regularityLabel="Régulier"
         actionBalanceLabel="Équilibré"
       />,
@@ -16,7 +16,7 @@ describe("ProfileGamificationSummary", () => {
     expect(markup).toContain("Résumé de progression");
     expect(markup).toContain("Niveau actuel");
     expect(markup).toContain(">7<");
-    expect(markup).toContain("Actions créées");
+    expect(markup).toContain("Organisation");
     expect(markup).toContain(">12<");
     expect(markup).toContain(">Régulier<");
     expect(markup).toContain(">Équilibré<");
@@ -28,7 +28,7 @@ describe("ProfileGamificationSummary", () => {
     const markup = renderToStaticMarkup(
       <ProfileGamificationSummary
         currentLevel={null}
-        actionsCreated={0}
+        organisationCount={0}
         regularityLabel="Observateur"
         actionBalanceLabel="Observateur"
       />,

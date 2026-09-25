@@ -14,9 +14,9 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
   {
     id: "participation",
     label: "Participation",
-    description: "Contributions et participations métier confirmées.",
+    description: "Participations finales confirmées à des actions.",
     metric: "participation_count",
-    sourceDomain: "actions, participations et signalements utiles",
+    sourceDomain: "action_participants.confirmed",
     badgeFamily: "participant",
     scale: "participant",
     infinite: true,
@@ -24,9 +24,9 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
   {
     id: "organisation",
     label: "Organisation",
-    description: "Organisation d'actions et opérations collectives utiles.",
-    metric: "organised_operations_count",
-    sourceDomain: "organisateurs d'actions et opérations collectives",
+    description: "Actions réellement organisées et validées.",
+    metric: "validated_organized_actions_count",
+    sourceDomain: "actions + action_organizers + formulaires validés",
     badgeFamily: "organisation",
     scale: "gem",
     infinite: true,
@@ -88,36 +88,40 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
   GamificationEventRegistration
 > = {
   action_declare_pending: {
-    classification: "progression",
-    progressionId: "participation",
+    classification: "non_progression",
+    reason: "Une déclaration en attente ne constitue ni une participation confirmée ni une organisation validée.",
   },
   action_declare_validation: {
     classification: "progression",
-    progressionId: "versatility",
+    progressionId: "organisation",
+  },
+  first_trace_utile: {
+    classification: "milestone",
+    milestoneId: "premiere_trace_utile",
   },
   action_monthly_regularity: {
     classification: "progression",
     progressionId: "regularity",
   },
   collective_rsvp_yes_pending: {
-    classification: "progression",
-    progressionId: "participation",
+    classification: "non_progression",
+    reason: "Une inscription future ne constitue pas une participation confirmée.",
   },
   collective_attendance_confirmed: {
-    classification: "progression",
-    progressionId: "participation",
+    classification: "non_progression",
+    reason: "Une présence à un événement communautaire ne compte pas comme participation à une action.",
   },
   spot_create_pending: {
-    classification: "progression",
-    progressionId: "participation",
+    classification: "non_progression",
+    reason: "Un signalement en attente ne constitue pas une participation confirmée.",
   },
   spot_validation_bonus: {
-    classification: "progression",
-    progressionId: "participation",
+    classification: "non_progression",
+    reason: "Le bonus historique de validation de signalement n'est pas la source Clean Zones canonique.",
   },
   community_ops_update: {
-    classification: "progression",
-    progressionId: "organisation",
+    classification: "non_progression",
+    reason: "Les opérations communautaires historiques ne sont pas une action organisée validée.",
   },
   community_referral_invite: {
     classification: "milestone",

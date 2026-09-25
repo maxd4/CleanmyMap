@@ -9,6 +9,12 @@ import {
   createFallbackSensitiveZoneApaisementSummary,
   loadSensitiveZoneApaisementSummary,
 } from "./sensitive-zone-badge";
+import { loadGamificationUserCounters } from "./counters";
+import { loadCleanZoneSourcesForUser } from "./badges/listing";
+import {
+  buildTerrainProgressions,
+  type TerrainProgressionEvent,
+} from "./terrain-progressions";
 
 function createFallbackActionBalanceSummary(): Awaited<ReturnType<typeof loadActionBalanceSummary>> {
   return {
@@ -47,7 +53,10 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
   wasteKg: number;
   butts: number;
   newPlaces: number;
-  actionsCreated: number;
+  participationCount: number;
+  organisationCount: number;
+  cleanZonesCount: number;
+  terrainProgressions: ReturnType<typeof buildTerrainProgressions>;
   actionBalance: Awaited<ReturnType<typeof loadActionBalanceSummary>>;
   monthlyRegularity: Awaited<ReturnType<typeof computeMonthlyRegularitySummary>>;
   sensitiveZoneApaisement: Awaited<
@@ -69,7 +78,29 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
     supabase,
     userId,
   ).catch(() => createFallbackSensitiveZoneApaisementSummary());
-  const actionsCreated = validatedActionIds.size;
+  const [counters, cleanZoneSources, eventsResult] = await Promise.all([
+    loadGamificationUserCounters(supabase, userId),
+    loadCleanZoneSourcesForUser(supabase, userId),
+    supabase
+      .from("progression_events")
+      .select("event_type, status_phase, source_table, source_id, xp_awarded")
+      .eq("user_id", userId)
+      .limit(12000),
+  ]);
+
+  if (eventsResult.error) {
+    throw new Error(eventsResult.error.message);
+  }
+
+  const organisationCount = validatedActionIds.size;
+  const cleanZonesCount = cleanZoneSources.length;
+  const terrainProgressions = buildTerrainProgressions({
+    participationCount: counters.participationCount,
+    organisationCount,
+    explorationCount: counters.visitedPlacesCount,
+    cleanZonesCount,
+    events: (eventsResult.data ?? []) as TerrainProgressionEvent[],
+  });
 
   const row = await supabase
     .from("user_badge_totals")
@@ -83,7 +114,10 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
       wasteKg: 0,
       butts: 0,
       newPlaces: 0,
-      actionsCreated,
+      participationCount: counters.participationCount,
+      organisationCount,
+      cleanZonesCount,
+      terrainProgressions,
       actionBalance,
       monthlyRegularity,
       sensitiveZoneApaisement,
@@ -93,8 +127,11 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
   return {
     wasteKg: Number(row.data.waste_kg ?? 0),
     butts: Number(row.data.butts ?? 0),
-    newPlaces: Number(row.data.places_count ?? 0),
-    actionsCreated,
+    newPlaces: counters.visitedPlacesCount,
+    participationCount: counters.participationCount,
+    organisationCount,
+    cleanZonesCount,
+    terrainProgressions,
     actionBalance,
     monthlyRegularity,
     sensitiveZoneApaisement,

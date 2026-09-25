@@ -33,6 +33,23 @@ export const CANONICAL_GEM_GRADE_DEFINITIONS: readonly GemGradeDefinition[] = [
   { key: "opale", label: "Opale", threshold: 20 },
 ];
 
+export const ORGANISATION_GEM_CONFIG: GemFamilyConfig = {
+  idPrefix: "organisation",
+  iconVariant: "users",
+  tooltip: (definition) =>
+    definition.key.startsWith("pilier-")
+      ? "Progression infinie des actions organisées et validées"
+      : definition.threshold === 0
+        ? "Aucune action organisée et validée"
+        : `${definition.threshold} actions organisées et validées`,
+  visualVariant: (definition) =>
+    definition.threshold < 5 ? "stone" : "precious",
+};
+
+export function computeOrganisationProgress(current: number): GemProgressionState {
+  return computeGemProgression(current, ORGANISATION_GEM_CONFIG);
+}
+
 function toRomanNumeral(value: number): string {
   if (!Number.isFinite(value) || value < 1) {
     return "I";
