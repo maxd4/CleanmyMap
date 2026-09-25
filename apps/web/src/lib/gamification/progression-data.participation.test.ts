@@ -81,16 +81,26 @@ describe("loadUserProgressionStats", () => {
     expect(stats.collectiveEvents).toBe(3);
   });
 
-  it("counts mapped XP event families and ignores zero-XP technical rows", async () => {
-    const progressionEvents = [
-      { event_type: "form_bonus", status_phase: "validated", xp_awarded: 2 },
-      { event_type: "clean_zone_task", status_phase: "validated", xp_awarded: 1 },
-      { event_type: "technical_replay_marker", status_phase: "validated", xp_awarded: 0 },
-    ];
-    const supabase = createProgressionStatsSupabase(progressionEvents, 0);
+  it(
+    "counts only CURRENT progression families with XP and ignores historical non-progression and technical rows",
+    async () => {
+      const progressionEvents = [
+        // Historical XP must not create a CURRENT progression family.
+        { event_type: "form_bonus", status_phase: "validated", xp_awarded: 2 },
+        // CURRENT progression family: clean_zones.
+        { event_type: "clean_zone_task", status_phase: "validated", xp_awarded: 1 },
+        // Technical rows at zero XP do not contribute to diversity.
+        {
+          event_type: "technical_replay_marker",
+          status_phase: "validated",
+          xp_awarded: 0,
+        },
+      ];
+      const supabase = createProgressionStatsSupabase(progressionEvents, 0);
 
-    const stats = await loadUserProgressionStats(supabase, "user-1");
+      const stats = await loadUserProgressionStats(supabase, "user-1");
 
-    expect(stats.diversityTypes).toBe(2);
-  });
+      expect(stats.diversityTypes).toBe(1);
+    },
+  );
 });
