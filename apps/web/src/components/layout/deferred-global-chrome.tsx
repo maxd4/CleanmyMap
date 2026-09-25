@@ -86,9 +86,9 @@ export function DeferredGlobalChrome() {
           <DeferredGamificationCelebrationHost />
           <DeferredVibrantBackground />
           <DeferredSiteTooltips />
+          <DeferredConditionalAnalytics />
         </>
       ) : null}
-      <DeferredConditionalAnalytics />
       <DeferredCookieConsentBanner />
     </>
   );
