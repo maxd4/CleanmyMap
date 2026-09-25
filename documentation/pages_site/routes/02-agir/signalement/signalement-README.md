@@ -11,7 +11,7 @@
 - **Contrat SEO** : `ACCESS=HYBRID`, `SEARCH=INDEX`, `DISCOVERY=SITEMAP`, `CANONICAL=SELF`. La préparation est publique ; la transmission, les preuves et la boucle propriétaire restent authentifiées.
 - **Complétion du compte** : Un profil incomplet affiche un rappel non bloquant ; les contrôles d'identité propres à la transmission, aux preuves et aux observations restent appliqués au moment de l'opération.
 - **Objectif utilisateur principal** : Préparer et transmettre une observation de terrain, puis suivre les observations récentes créées par le compte.
-- **Entrée Agir canonique** : unique entrée utilisateur visible « Signaler un déchet » ; `/sections/trash-spotter` est réservé à la consultation/au monitoring secondaire.
+- **Entrée Agir canonique** : unique entrée de création « Signaler un déchet ». Depuis cette page, le CTA secondaire « Consulter les signalements » mène vers `/sections/trash-spotter`, réservé à la consultation/au monitoring secondaire.
 - **Action principale attendue** : Choisir `spot` ou `clean_place`, renseigner les catégories et la position, joindre éventuellement des photos, transmettre l'observation puis consulter son statut et ses preuves.
 - **Boucle propriétaire** : La section `#mes-observations`, sous le formulaire, lit exclusivement les lignes `trash_spotter_spots` créées par le compte Clerk courant via `GET /api/signalements/me`. Elle affiche uniquement les types `spot` et `clean_place`, avec les statuts `new`, `validated` et `cleaned`, dans l'ordre du plus récent au plus ancien.
 - **Preuves photo** : Aucun média n'est chargé avec la liste. Chaque observation conserve le contrôle explicite `Voir les preuves photo` de `SignalementMediaProofs`; l'auteur peut consulter ses preuves même lorsque le signalement est `new`.

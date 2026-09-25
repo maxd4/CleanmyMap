@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import { resolvePageFamily } from "@/lib/ui/page-families";
@@ -48,6 +49,16 @@ export default async function SignalementPage({
               title="Signaler un déchet ou l’état d’un lieu"
               subtitle="Décrivez l’état observé : pollution constatée ou lieu constaté propre. Votre observation alimente la cartographie citoyenne."
             />
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="cmm-text-small text-slate-700">
+                Vous cherchez les signalements déjà approuvés ? Consultez la
+                carte et le suivi Trash Spotter.
+              </p>
+              <CmmButton href="/sections/trash-spotter" tone="secondary" variant="pill">
+                Consulter les signalements
+              </CmmButton>
+            </div>
 
             <FamilyRubriqueCard
               withTopBar={false}

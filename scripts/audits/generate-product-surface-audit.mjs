@@ -7,7 +7,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -33,6 +33,8 @@ const NAVIGATION_PATH = "apps/web/src/lib/navigation.ts";
 const SEO_INDEXABILITY_PATH = "apps/web/src/lib/seo/indexability.ts";
 const GENERATED_BEGIN = "<!-- PRODUCT_SURFACE_AUDIT:GENERATED:BEGIN -->";
 const GENERATED_END = "<!-- PRODUCT_SURFACE_AUDIT:GENERATED:END -->";
+const HUMAN_BEGIN = "<!-- PRODUCT_SURFACE_AUDIT:HUMAN_DECISIONS:BEGIN -->";
+const HUMAN_END = "<!-- PRODUCT_SURFACE_AUDIT:HUMAN_DECISIONS:END -->";
 
 function git(args, root = REPOSITORY_ROOT) {
   return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
@@ -117,6 +119,13 @@ export function collectRuntimeReferences(files) {
     .filter(([file]) => isSourceFileIncluded(file))
     .flatMap(([source, content]) => collectReferenceMatches(source, String(content)))
     .sort((a, b) => a.target.localeCompare(b.target, "fr") || a.source.localeCompare(b.source, "fr"));
+}
+
+export function isRedirectOnlyRouteSource(source, files) {
+  const content = sourceFilesToMap(files).get(source);
+  if (content === undefined) return false;
+  return /\b(?:permanentRedirect|redirect)\s*\(/.test(String(content))
+    && !/\breturn\s*(?:\(|<)/.test(String(content));
 }
 
 function extractRegistryEntries(content, routeConstants = new Map()) {
@@ -299,6 +308,7 @@ function formatRows({
   references,
   runtimeAccessByRoute,
   navigationIds,
+  runtimeFiles,
 }) {
   const registryByRoute = new Map(registryEntries.map((entry) => [entry.route, entry]));
   const routeKeys = new Set([
@@ -323,7 +333,7 @@ function formatRows({
     const registryShared = !registry && dynamicRoute && registryEntries.some((entry) => routePatternMatches(route, entry.route));
     const registryEntry = registry ?? (registryShared ? { id: "[section]", availability: "available", kind: "section" } : null);
     const inRibbon = registryEntry && registryEntry.availability === "available" && navigationIds.has(registryEntry.id) ? "YES" : "NO";
-    const redirectSource = redirects.some((entry) => entry.source === route) || references.some((entry) => entry.source === source && entry.kind === "redirect");
+    const redirectSource = redirects.some((entry) => entry.source === route) || references.some((entry) => entry.source === source && entry.kind === "redirect" && isRedirectOnlyRouteSource(entry.source, runtimeFiles));
     const canonicalStatus = redirectSource
       ? "REDIRECT_COMPAT"
       : documentation?.isAliasOrRedirect
@@ -444,7 +454,7 @@ function sanitizeGeneratedText(value) {
     .replace(/\/?documentation\/[^\s)`|]+/g, "[chemin documentaire interne]");
 }
 
-export function renderProductSurfaceAudit({ report, generatedAt = new Date().toISOString() }) {
+export function renderProductSurfaceAudit({ report, generatedAt = new Date().toISOString(), humanDecisions = "" }) {
   const { refInfo, rows, unresolvedTargets, invariantViolations } = report;
   const docsOnly = rows.filter((row) => row.canonicalStatus === "DOCUMENTATION_ONLY");
   const runtimeUndocumented = rows.filter((row) => row.canonicalStatus === "RUNTIME_UNDOCUMENTED");
@@ -534,7 +544,17 @@ inexistantes et les incohérences certaines du registre. Une décision
 La génération normale est read-only ; utiliser \`--write\` explicitement pour
 actualiser ce fichier généré.
 ${GENERATED_END}
+${humanDecisions ? `\n\n${humanDecisions.trim()}\n` : ""}
 `;
+}
+
+function readPreservedHumanDecisions(outputPath) {
+  if (!existsSync(outputPath)) return "";
+  const content = readFileSync(outputPath, "utf8");
+  const begin = content.indexOf(HUMAN_BEGIN);
+  const end = content.indexOf(HUMAN_END);
+  if (begin < 0 || end < begin) return "";
+  return content.slice(begin, end + HUMAN_END.length).trim();
 }
 
 export function buildProductSurfaceReport({ root = REPOSITORY_ROOT, ref }) {
@@ -560,7 +580,9 @@ export function buildProductSurfaceReport({ root = REPOSITORY_ROOT, ref }) {
   const redirects = extractSeoRedirects(seoContent);
   for (const reference of references.filter((item) => item.kind === "redirect")) {
     const source = reference.source.startsWith(`${APP_ROOT}/`) ? routeFilePattern(reference.source, root) : "";
-    if (source) redirects.push({ source, target: reference.target, kind: "runtime-redirect" });
+    if (source && isRedirectOnlyRouteSource(reference.source, runtimeFiles)) {
+      redirects.push({ source, target: reference.target, kind: "runtime-redirect" });
+    }
   }
   const sitemapPaths = extractSitemapPaths(seoContent, registryEntries);
   const navigationIds = extractNavigationRouteIds(navigationContent);
@@ -587,6 +609,7 @@ export function buildProductSurfaceReport({ root = REPOSITORY_ROOT, ref }) {
     references,
     runtimeAccessByRoute: runtimeAccess,
     navigationIds,
+    runtimeFiles,
   });
   const knownPatterns = new Set([...runtimeRoutes.keys(), ...handlerRoutes, ...registryEntries.map((entry) => entry.route), ...redirects.map((entry) => entry.source)]);
   const unresolvedTargets = findUnresolvedRuntimeTargets(references, knownPatterns);
@@ -620,8 +643,12 @@ export function main(args = process.argv.slice(2)) {
   try {
     const ref = parseRepositoryRef(args);
     const report = buildProductSurfaceReport({ ref });
-    const markdown = renderProductSurfaceAudit({ report, generatedAt: getOption(args, "generated-at") ?? new Date().toISOString() });
     const outputPath = path.resolve(REPOSITORY_ROOT, getOption(args, "output") ?? OUTPUT_PATH);
+    const markdown = renderProductSurfaceAudit({
+      report,
+      generatedAt: getOption(args, "generated-at") ?? new Date().toISOString(),
+      humanDecisions: readPreservedHumanDecisions(outputPath),
+    });
     process.stdout.write(`${markdown}\n`);
     if (args.includes("--write")) {
       if (report.refInfo.status !== "CURRENT_AT_GENERATION" && !args.includes("--allow-historical")) {
