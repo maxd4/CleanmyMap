@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 import {
@@ -8,6 +9,7 @@ import {
 } from "@/lib/sections-registry";
 import { PendingSection } from "./shared";
 import type { FeedbackSectionProps } from "./feedback-section.shared";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type SectionRendererProps = {
   section: SectionRubriqueDefinition;
@@ -70,16 +72,40 @@ const RouteSection = dynamic<{ actionId?: string | null }>(() =>
   })),
 );
 
+function OpenDataFundingLink() {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
+
+  return (
+    <section className="rounded-[2rem] border border-violet-100 bg-white/90 p-6 shadow-[0_18px_54px_-42px_rgba(79,70,229,0.3)]">
+      <h2 className="text-2xl font-black tracking-tight text-[#2f1a78]">
+        {fr ? "Financement du projet" : "Project funding"}
+      </h2>
+      <p className="cmm-text-body cmm-text-primary mt-2 max-w-3xl">
+        {fr
+          ? "Le détail des besoins, contributions et usages du financement est présenté sur la page dédiée."
+          : "The dedicated page presents the details of funding needs, contributions and use."}
+      </p>
+      <Link
+        href="/sections/funding"
+        className="mt-4 inline-flex min-h-11 items-center rounded-full border border-violet-200 px-5 py-3 text-sm font-black uppercase tracking-[0.16em] text-violet-700 transition hover:border-violet-300 hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300"
+      >
+        {fr ? "Voir le financement" : "View funding"}
+      </Link>
+    </section>
+  );
+}
+
 export const FINALIZED_SECTION_RENDERERS = {
   community: () => <CommunitySection />,
   feedback: () => <FeedbackSection />,
   gamification: () => <GamificationSection />,
   actors: () => <ActorsSection />,
   annuaire: () => <AnnuaireSection />,
-  "open-data": (fundingOnParticipeUrl?: string) => (
+  "open-data": () => (
     <div className="space-y-12">
       <OpenDataSection />
-      <FundingSection onParticipeUrl={fundingOnParticipeUrl} headingLevel="h2" />
+      <OpenDataFundingLink />
     </div>
   ),
   funding: (fundingOnParticipeUrl?: string) => (
@@ -121,7 +147,7 @@ export function SectionRenderer({ section, fundingOnParticipeUrl }: SectionRende
     FINALIZED_SECTION_RENDERERS[section.id as VisibleFinalizedSectionId];
 
   const exposeFundingUrl =
-    section.id === "funding" || section.id === "open-data"
+    section.id === "funding"
       ? fundingOnParticipeUrl
       : undefined;
 

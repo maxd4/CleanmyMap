@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { PostHogProvider } from "@/components/posthog-provider";
 import { ClerkLocalizationProvider } from "@/components/auth/clerk-localization-provider";
 import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
-import { OrganizationJsonLd } from "@/components/seo/structured-data/organization-data";
 import { WebSiteJsonLd } from "@/components/seo/structured-data/navigation-data";
 import { RootLayoutChrome } from "@/components/layout/root-layout-chrome";
 import { DeferredGlobalFooter } from "@/components/layout/deferred-global-chrome";
@@ -40,7 +39,6 @@ export default async function RootLayout({
       <head>
         <DisplayModeInitializer />
         <CaptureModeInitializer />
-        <OrganizationJsonLd />
         <WebSiteJsonLd />
       </head>
       <body className="relative isolate flex min-h-screen flex-col overflow-x-hidden bg-background font-sans text-foreground">

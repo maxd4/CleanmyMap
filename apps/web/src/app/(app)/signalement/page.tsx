@@ -45,7 +45,7 @@ export default async function SignalementPage({
           <div className="space-y-8 pt-8">
             <PageHeader
               family={pageFamily}
-              title="Mettre à jour l’état du lieu"
+              title="Signaler un déchet ou l’état d’un lieu"
               subtitle="Décrivez l’état observé : pollution constatée ou lieu constaté propre. Votre observation alimente la cartographie citoyenne."
             />
 

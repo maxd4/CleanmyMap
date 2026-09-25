@@ -65,6 +65,11 @@ Ces valeurs viennent du code actuel et doivent être mises à jour si le contrat
 /learn/sentrainer?mode=demo
 ```
 
+Le lien de retour du kit utilise `/learn/bonnes-pratiques`, la page publique
+canonique correspondante. Les ressources différées restent des blocs intégrés
+aux pages d’apprentissage ; `/learn/ressources` n’est pas une destination
+autonome du Mode École.
+
 `level` est borné au contrat canonique `QuizSchoolLevel`. Une valeur absente ou
 invalide retombe sur `4e` pour préserver les anciens liens École ; le paramètre
 `track` reste accepté pour compatibilité mais ne constitue plus un choix public.

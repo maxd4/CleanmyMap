@@ -18,19 +18,21 @@ const detailedPageDocumentation = readFileSync(
 );
 
 describe("Open Data public contract", () => {
-  it("describes the exposed JSON API and available formats without inventing OpenAPI docs", () => {
+  it("describes the public approved-action projection without private data promises", () => {
+    expect(sectionSource).toContain("projection des actions approuvées et cartographiées");
     expect(sectionSource).toContain("Réponse JSON de l’API publique");
-    expect(sectionSource).toContain("formats JSON/CSV disponibles");
+    expect(sectionSource).not.toMatch(/CSV|historique utilisateur|user history/i);
     expect(sectionSource).not.toMatch(/Swagger\s*\/\s*OpenAPI/i);
-    expect(pageDocumentation).toContain("formats JSON/CSV réellement disponibles");
+    expect(pageDocumentation).toContain("projection publique des actions approuvées");
+    expect(pageDocumentation).not.toMatch(/CSV|historique utilisateur/i);
     expect(pageDocumentation).not.toMatch(/documentation API\/OpenAPI/i);
   });
 
   it("keeps the detailed presentation aligned with the public runtime", () => {
     expect(detailedPageDocumentation).toContain("page publique de présentation");
     expect(detailedPageDocumentation).toContain("`GET /api/actions/map`");
-    expect(detailedPageDocumentation).toContain("JSON et CSV");
-    expect(detailedPageDocumentation).toContain("surfaces de rapports");
+    expect(detailedPageDocumentation).toContain("actions approuvées et cartographiées");
+    expect(detailedPageDocumentation).not.toMatch(/CSV|historique utilisateur/i);
     expect(detailedPageDocumentation).toContain("violet / blanc");
     expect(detailedPageDocumentation).toContain(
       "n’expose actuellement aucun Swagger ni document OpenAPI public",

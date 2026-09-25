@@ -60,7 +60,9 @@ modification.
 
 ## Données structurées rendues
 
-Le layout racine rend `OrganizationJsonLd` et `WebSiteJsonLd`. Les autres
+Le layout racine rend uniquement `WebSiteJsonLd`. Le projet n'est pas présenté
+comme une organisation juridique dans le balisage global tant que CleanMyMap
+est édité par une personne physique. Les autres
 helpers du dossier `apps/web/src/components/seo/structured-data/` ne sont pas
 rendus par le runtime et ne constituent pas une preuve de contenus publiés.
 Un schema FAQ, avis, événement, article, vidéo ou guide doit être relié à une
@@ -151,7 +153,8 @@ modification majeure de contenu ou un changement d'identité SEO.
 
 ## Règle pour les futures améliorations
 
-Les schemas Article, Event, VideoObject, Review, HowTo et FAQ restent
+Les schemas Organization, Person, LocalBusiness, Article, Event, VideoObject,
+Review, HowTo et FAQ restent
 conditionnels à une source publiée et à un contenu visible correspondant. Leur
 présence dans le code ne constitue pas une tâche à activer : aucune donnée
 structurée ne doit être ajoutée pour remplir un objectif SEO abstrait.

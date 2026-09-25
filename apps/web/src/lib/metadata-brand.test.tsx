@@ -1,25 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { WebSiteJsonLd } from "@/components/seo/structured-data/navigation-data";
-import { OrganizationJsonLd } from "@/components/seo/structured-data/organization-data";
 import { metadata } from "./metadata";
 
 describe("CleanMyMap SEO brand identity", () => {
-  it("keeps organization identity aligned with the public footer", () => {
-    const markup = renderToStaticMarkup(<OrganizationJsonLd />);
-    const json = markup.match(/<script[^>]*>(.*)<\/script>/)?.[1];
-
-    expect(json).toBeDefined();
-    expect(JSON.parse(json!)).toMatchObject({
-      "@type": "Organization",
-      name: "CleanMyMap",
-      sameAs: ["https://instagram.com/cleanmymap.fr"],
-      contactPoint: {
-        email: expect.any(String),
-      },
-    });
-  });
-
   it("keeps the exact brand in global metadata without adding brand variants as keywords", () => {
     expect(metadata.title).toEqual({
       default: "CleanMyMap | Carte citoyenne de dépollution urbaine",

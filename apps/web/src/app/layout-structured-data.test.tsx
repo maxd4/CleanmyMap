@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("global structured data", () => {
-  it("limits root-layout JSON-LD to factual organization and website schemas", () => {
+  it("keeps only the factual website schema in the root layout", () => {
     const layout = readFileSync(new URL("./layout.tsx", import.meta.url), "utf8");
     const navigationData = readFileSync(
       new URL("../components/seo/structured-data/navigation-data.tsx", import.meta.url),
@@ -13,7 +13,8 @@ describe("global structured data", () => {
       ([, component]) => component,
     );
 
-    expect(renderedSchemas).toEqual(["OrganizationJsonLd", "WebSiteJsonLd"]);
+    expect(renderedSchemas).toEqual(["WebSiteJsonLd"]);
+    expect(layout).not.toContain("OrganizationJsonLd");
     expect(layout).not.toContain("FAQJsonLd");
     expect(navigationData).not.toMatch(/interactionStatistic|userInteractionCount/);
   });

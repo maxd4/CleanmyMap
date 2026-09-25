@@ -23,6 +23,7 @@ import type {
   HomeCommunityActivitySummary,
 } from "@/lib/accueil/data";
 import { useGsapReveal } from "@/lib/animations/use-gsap-reveal";
+import { CREDIBILITY_PROOF_CARDS } from "./accueil-credibility-proof-cards";
 
 type HomeCommunityCredibilityProps = {
   activity: HomeCommunityActivitySummary;
@@ -36,24 +37,6 @@ const SECTION_TITLE_STYLE = {
   letterSpacing: "-0.055em",
   fontWeight: 900,
 } as const;
-
-const CREDIBILITY_PROOF_CARDS = [
-  {
-    icon: GraduationCap,
-    title: "Cadre universitaire",
-    text: "DU Engagement\nSorbonne Université",
-  },
-  {
-    icon: MapPin,
-    title: "Ancrage terrain",
-    text: "Actions réelles\net cartographiées",
-  },
-  {
-    icon: FileText,
-    title: "Traçabilité",
-    text: "Projet open-source\nsur GitHub",
-  },
-] as const;
 
 const ECOSYSTEM_STEPS = [
   { title: "Terrain", text: "Observations et actions" },
@@ -524,27 +507,11 @@ export function HomeCommunityCredibility({
             </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              {CREDIBILITY_PROOF_CARDS.map((card) => {
-                const Icon = card.icon;
-
-                return (
-                  <div
-                    key={card.title}
-                    className="min-h-[6.75rem] rounded-[1.15rem] border border-white/30 bg-white/12 p-3.5 shadow-[0_16px_30px_-24px_rgba(4,76,54,0.55)] sm:p-4"
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
-                        <Icon size={18} />
-                      </div>
-                      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-white/90">
-                        {card.title}
-                      </p>
-                    </div>
-                    <p className="mt-2 whitespace-pre-line text-sm leading-snug text-white/95">
-                      {card.text}
-                    </p>
-                  </div>
-                );
+              {CREDIBILITY_PROOF_CARDS.map(({ icon: Icon, title, text, href, external }) => {
+                const cardClassName = "min-h-[6.75rem] rounded-[1.15rem] border border-white/30 bg-white/12 p-3.5 shadow-[0_16px_30px_-24px_rgba(4,76,54,0.55)] transition hover:bg-white/18 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 sm:p-4";
+                const content = <><div className="flex items-center gap-2.5"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-white"><Icon size={18} /></div><p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-white/90">{title}</p></div><p className="mt-2 whitespace-pre-line text-sm leading-snug text-white/95">{text}</p></>;
+                if (!href) return <div key={title} className={cardClassName}>{content}</div>;
+                return external ? <a key={title} href={href} target="_blank" rel="noreferrer" className={cardClassName}>{content}</a> : <Link key={title} href={href} className={cardClassName}>{content}</Link>;
               })}
             </div>
 

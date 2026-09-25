@@ -40,8 +40,8 @@ export function QuizSchoolKitPage() {
       title={{ fr: "Mode École", en: "School mode" }}
       subtitle={{ fr: "Séance publique de la 6e à la 3e", en: "Public session for grades 6 to 9" }}
       description={{ fr: "Une page pour préparer une séance collective, faire voter la classe et garder un cadre simple, lisible et sérieux.", en: "A page to prepare a collective session, get the class voting and keep the frame simple, readable and serious." }}
-      backHref="/learn/ressources"
-      backLabel={{ fr: "Retour aux ressources", en: "Back to resources" }}
+      backHref="/learn/bonnes-pratiques"
+      backLabel={{ fr: "Retour aux bonnes pratiques", en: "Back to good practices" }}
       accent="yellow"
       highlights={[{ fr: "Vidéoprojecteur", en: "Projector" }, { fr: "Débat", en: "Debate" }, { fr: "Sans compte élève", en: "No student account" }]}
       cta={{ href: "#choisir-niveau", label: { fr: "Choisir le niveau", en: "Choose the grade" } }}
@@ -88,7 +88,7 @@ export function QuizSchoolKitPage() {
             <div className="flex flex-wrap gap-3">
               <Link href="#choisir-niveau" className="inline-flex min-h-11 items-center gap-2 rounded-full bg-amber-600 px-5 py-3 text-sm font-black uppercase tracking-widest text-white shadow-lg shadow-amber-600/20 transition hover:bg-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 md:px-6 md:py-3.5 md:text-base">{isFrench ? "Choisir le niveau" : "Choose the grade"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
               <Link href="/learn/sentrainer?mode=demo" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-amber-200 bg-white px-5 py-3 text-sm font-black uppercase tracking-widest text-amber-900 transition hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 md:px-6 md:py-3.5 md:text-base">{isFrench ? "Lancer la démo" : "Launch the demo"}</Link>
-              <Link href="/learn/ressources" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-amber-200 bg-white px-5 py-3 text-sm font-black uppercase tracking-widest text-amber-900 transition hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 md:px-6 md:py-3.5 md:text-base">{isFrench ? "Retour aux ressources" : "Back to resources"}</Link>
+              <Link href="/learn/bonnes-pratiques" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-amber-200 bg-white px-5 py-3 text-sm font-black uppercase tracking-widest text-amber-900 transition hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/70 md:px-6 md:py-3.5 md:text-base">{isFrench ? "Retour aux bonnes pratiques" : "Back to good practices"}</Link>
             </div>
           </div>
         </section>
