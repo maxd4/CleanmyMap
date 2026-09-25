@@ -85,7 +85,6 @@ export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
 
   if (
     base === "form-comparison" ||
-    base === "declaration-simple" ||
     base === "reglages" ||
     isRoute(pathname, "/preview/actions/new")
   ) {

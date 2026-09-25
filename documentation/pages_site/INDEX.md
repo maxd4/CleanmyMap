@@ -114,7 +114,6 @@ hybride indexable ne rend donc pas ses données privées anonymement accessibles
 | /sign-in | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /sign-up | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /error/429 | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
-| /declaration-simple | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /preview/actions/new | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 | /docs/* | `PUBLIC` | `NOINDEX` | `INTERNAL_ONLY` | `NONE` |
 
@@ -337,7 +336,6 @@ Note : aucune page canonique `/learn` n'est documentée dans l'état actuel. Le 
 
 | Route | Fiche | Accès | Source |
 |---|---|---|---|
-| `/declaration-simple` | [Déclaration simple](./routes/08-systeme-utilitaires/declaration-simple/declaration-simple-README.md) | `standalone` | `apps/web/src/app/declaration-simple/page.tsx` |
 | `/error/429` | [Erreur 429](./routes/08-systeme-utilitaires/error-429/error-429-README.md) | `public-visible` | `apps/web/src/app/error/429/page.tsx` |
 | `/form-comparison` | [Comparaison de formulaires](./routes/08-systeme-utilitaires/form-comparison/form-comparison-README.md) | `protected` | `apps/web/src/app/form-comparison/page.tsx` |
 | `/preview/actions/new` | [Preview déclaration](./routes/08-systeme-utilitaires/preview-actions-new/preview-actions-new-README.md) | `standalone` | `apps/web/src/app/preview/actions/new/page.tsx` |
