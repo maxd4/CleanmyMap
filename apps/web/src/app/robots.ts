@@ -44,6 +44,10 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
       {
+        userAgent: "ClaudeBot",
+        disallow: "/",
+      },
+      {
         userAgent: "Google-Extended",
         allow: "/",
         disallow: PRIVATE_ROBOTS_PATHS,
