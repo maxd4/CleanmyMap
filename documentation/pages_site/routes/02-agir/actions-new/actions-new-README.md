@@ -53,8 +53,8 @@
 - écran de choix de parcours
 - **Captures attendues** : desktop, mobile
 - Le snapshot historique nommé `02-agir__declaration__...` est conservé ici
-  comme trace de l'ancien alias `/declaration`, qui redirige vers cette page ;
-  il ne constitue pas une seconde page canonique.
+  comme trace d'un ancien chemin de compatibilité ; il ne constitue pas une
+  seconde page canonique.
 - **Priorité de correction** : faible
 
 

@@ -729,7 +729,7 @@ Une validation est réussie seulement si :
 
 ## Protocole manuel des formulaires Actions
 
-Avant de tester les deux formulaires sur le terrain :
+Avant de tester les formulaires Actions sur le terrain :
 
 1. Verrouiller le scénario de test : une action terrain réelle ou quasi réelle,
    un flux d'action à créer ou modifier, un flux `Rejoindre une action` à

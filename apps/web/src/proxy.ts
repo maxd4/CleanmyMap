@@ -29,7 +29,6 @@ export const PROTECTED_APP_PAGE_ROUTE_PREFIXES = [
   "/compte",
   "/missions",
   "/actions/history",
-  "/form-comparison",
   "/onboarding",
   "/partners/dashboard",
   "/partners/onboarding",
@@ -298,7 +297,6 @@ export const config = {
   matcher: [
     "/en",
     "/conditions-utilisation",
-    "/declaration",
     "/community",
     "/open-data",
     "/messagerie",
@@ -315,7 +313,6 @@ export const config = {
     "/compte(.*)",
     "/missions(.*)",
     "/actions/history(.*)",
-    "/form-comparison(.*)",
     "/onboarding(.*)",
     "/partners/dashboard(.*)",
     "/partners/onboarding(.*)",

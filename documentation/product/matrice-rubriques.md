@@ -45,7 +45,7 @@ flowchart LR
 
 - Auth & Onboarding : `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`
 - Institutionnel & Légal : `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`
-- Système & Utilitaires : `/reglages`, `/form-comparison`, `/preview/actions/new`, `/error/429`
+- Système & Utilitaires : `/reglages`, `/preview/actions/new`, `/error/429`
 - Admin & Super-admin : `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`
 - Print & Export : `/prints/report`
 
@@ -87,7 +87,6 @@ et `/signalement` porte l'unique création d'observation.
 - `/explorer` et `/reports` sont les routes canoniques des pages Sommaire et Rapports.
 - `/sections/feedback`, `/sections/community`, `/sections/messagerie`, `/sections/open-data` et `/sections/actors` sont les routes canoniques des sections publiques correspondantes.
 - `/community`, `/messagerie`, `/open-data`, `/partners/network` et `/partners/network/pepite` restent des alias legacy ou des redirections techniques.
-- `/declaration` redirige vers `/actions/new` et reste un alias legacy.
 - `/sections/route` redirige vers `/actions/new?panel=itineraire`.
 - `/sections/weather` et `/sections/guide` redirigent vers `/actions/new?panel=meteo`.
 - `/learn/hub` et `/learn/ressources` sont des surfaces intégrées, plus des pages autonomes.

@@ -31,7 +31,6 @@ export const PUBLIC_APP_SITEMAP_PATHS = [
 export const PRIVATE_APP_ROUTE_PREFIXES = [
   ADMIN_ROUTE,
   "/actions/history",
-  "/form-comparison",
   "/onboarding",
   ACCOUNT_EVOLUTION_ROUTE,
   DASHBOARD_ROUTE,
@@ -57,7 +56,6 @@ const PUBLIC_NOINDEX_ROUTE_PREFIXES = [
 export const SEO_REDIRECT_TARGETS = {
   "/en": "/",
   "/conditions-utilisation": "/conditions-generales-utilisation",
-  "/declaration": "/actions/new",
   "/community": "/sections/community",
   "/open-data": "/sections/open-data",
   "/messagerie": "/sections/messagerie",

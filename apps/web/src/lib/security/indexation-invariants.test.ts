@@ -19,7 +19,6 @@ describe("security indexation invariants", () => {
   it("keeps internal pages marked noindex", () => {
     expect(readSource("src/app/onboarding/page.tsx")).toContain("index: false");
     expect(readSource("src/app/reglages/page.tsx")).toContain("index: false");
-    expect(readSource("src/app/form-comparison/page.tsx")).toContain("index: false");
 
     const sectionPage = readSource("src/app/(app)/sections/[sectionId]/page.tsx");
     expect(sectionPage).toContain("PUBLIC_INDEXABLE_SECTION_IDS");

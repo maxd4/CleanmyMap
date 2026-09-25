@@ -19,10 +19,10 @@ export default function PreviewActionsNewPage() {
       <section>
         <div className="rounded-[2rem] border border-emerald-300/20 bg-emerald-500/10 px-5 py-4 text-emerald-50 shadow-sm">
           <p className="cmm-text-caption font-black uppercase tracking-[0.18em] text-emerald-100/70">
-            Aperçu public
+            Outil QA
           </p>
           <p className="mt-1 text-sm leading-6 text-emerald-50/80">
-            Route de revue non protégée pour vérifier le formulaire sans connexion Clerk.
+            Revue publique du formulaire canonique, sans second parcours métier ni persistance d&apos;action.
           </p>
         </div>
       </section>

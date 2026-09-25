@@ -1,19 +1,19 @@
-# Preview déclaration
+# Prévisualisation QA du formulaire canonique
 
 ## Fiche canonique
 
 - **Route** : `/preview/actions/new`
 - **Fichier(s) source(s)** :
 - `apps/web/src/app/preview/actions/new/page.tsx`
-- **Type fonctionnel** : outil
+- **Type fonctionnel** : outil QA
 - **Famille / bloc fonctionnel** : Système & Utilitaires (hors bloc)
-- **Statut** : standalone
+- **Statut** : QA uniquement
 - **Contrat SEO** : `ACCESS=PUBLIC`, `SEARCH=NOINDEX`, `DISCOVERY=INTERNAL_ONLY`, `CANONICAL=NONE`. La prévisualisation est publique pour la revue du formulaire, mais n'est pas une page métier indexable.
 - **Contexte nécessaire** : Accès direct à une route de revue publique ; la page est explicitement sans protection Clerk et non indexable.
-- **Objectif utilisateur principal** : Prévisualiser le formulaire public de déclaration dans un contexte local isolé.
-- **Action principale attendue** : Parcourir le formulaire de prévisualisation sans présenter cette surface comme une création persistée.
+- **Objectif utilisateur principal** : Vérifier le rendu et le comportement du formulaire canonique dans un contexte isolé.
+- **Action principale attendue** : Parcourir la revue QA sans présenter cette surface comme un second parcours de création.
 - **Palette attendue** : emerald / slate
-- **Scope** : route de revue du formulaire avec utilisateur de prévisualisation local, sans flux de création métier ni persistance réelle.
+- **Scope** : outil de revue du formulaire canonique avec utilisateur de prévisualisation local, sans flux de création métier ni persistance réelle.
 - **Terminée** : oui pour le périmètre actuellement livré
 - **Couleurs actuellement détectées** : emerald / slate — en-tête et contrôles de la prévisualisation.
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec le rendu runtime actuel.

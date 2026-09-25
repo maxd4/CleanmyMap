@@ -83,11 +83,7 @@ export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
     return "juridique";
   }
 
-  if (
-    base === "form-comparison" ||
-    base === "reglages" ||
-    isRoute(pathname, "/preview/actions/new")
-  ) {
+  if (base === "reglages" || isRoute(pathname, "/preview/actions/new")) {
     return "systeme";
   }
 
