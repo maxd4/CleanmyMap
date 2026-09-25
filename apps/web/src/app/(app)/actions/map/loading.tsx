@@ -10,9 +10,7 @@ export default function Loading() {
 
           <div className="max-w-4xl space-y-4">
             <CmmSkeleton variant="text" className="w-44" />
-            <h1 className="cmm-page-header-title text-sky-900">
-              Cartographie des actions
-            </h1>
+            <CmmSkeleton variant="title" className="w-96" />
             <CmmSkeleton variant="text" className="w-[32rem]" />
           </div>
 
