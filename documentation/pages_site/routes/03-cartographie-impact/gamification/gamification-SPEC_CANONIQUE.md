@@ -177,8 +177,11 @@ Les badges de couverture territoriale conservent une échelle propre, indépenda
 
 Les paliers quiz par type et quiz équilibré sont des événements et des
 indicateurs rattachés à `learning`. Ils ne constituent pas deux progressions
-infinies supplémentaires : leur affichage actuel reste une surface de
-compatibilité jusqu'à la convergence UI dédiée.
+infinies supplémentaires : l'API et la rubrique exposent une seule synthèse
+`Apprentissage`, avec les réponses justes comme métrique principale et la
+diversité des types ainsi que leur équilibre comme sous-indicateurs. Les IDs
+historiques des événements restent conservés pour la compatibilité et
+l'historique XP.
 
 ## Familles de badges en V1
 

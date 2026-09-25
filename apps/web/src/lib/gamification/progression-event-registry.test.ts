@@ -198,6 +198,20 @@ describe("progression event registry", () => {
     expect(CURRENT_INFINITE_PROGRESSION_IDS).toContain("versatility");
   });
 
+  it("routes every active quiz XP event to the single learning progression", () => {
+    const registry = gamificationEventRegistry();
+    const quizEntries = Object.entries(registry).filter(([eventType]) =>
+      eventType.startsWith("quiz_"),
+    );
+
+    expect(quizEntries.length).toBeGreaterThan(0);
+    expect(quizEntries.every(([, registration]) =>
+      registration.classification === "progression" && registration.progressionId === "learning",
+    )).toBe(true);
+    expect(Object.entries(eventFamilyMap()).filter(([eventType]) => eventType.startsWith("quiz_")))
+      .toEqual(quizEntries.map(([eventType]) => [eventType, "learning"]));
+  });
+
   it("does not leave the explicit badge rebuild with an untyped eventType escape hatch", () => {
     const rebuild = readRuntimeWriter("badges/rebuild.ts");
     expect(rebuild).not.toMatch(/eventType:\s*string/);

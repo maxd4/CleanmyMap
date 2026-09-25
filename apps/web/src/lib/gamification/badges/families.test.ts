@@ -79,7 +79,7 @@ describe("quiz badge families", () => {
     expect(pending).toMatchObject({
       id: "quiz-type-progress",
       name: "Progression quiz par type",
-      status: "active",
+      status: "compatibility",
     });
     expect(pending.tiers.map((tier) => tier.label)).toEqual([
       "50 réponses justes",
@@ -102,7 +102,7 @@ describe("quiz badge families", () => {
     expect(pending).toMatchObject({
       id: "quiz-balance-progress",
       name: "Quiz équilibré",
-      status: "active",
+      status: "compatibility",
     });
     expect(pending.tiers.map((tier) => tier.label)).toEqual([
       "10 réponses justes",
