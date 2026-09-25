@@ -1,16 +1,11 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { buildChatUsersCacheKey } from "./user-search";
 
-describe("chat users cache key", () => {
-  it("keeps the key stable for trimmed queries", () => {
-    expect(buildChatUsersCacheKey("user-1", "  Alex  ")).toBe(
-      "user:user-1|query:Alex",
-    );
-  });
+describe("chat users cache boundary", () => {
+  it("does not persist userId plus free-text searches in the Vercel data cache", () => {
+    const source = readFileSync(new URL("./user-search.ts", import.meta.url), "utf8");
 
-  it("uses a dedicated lane for empty queries", () => {
-    expect(buildChatUsersCacheKey("user-1", "   ")).toBe(
-      "user:user-1|query:empty",
-    );
+    expect(source).not.toContain("unstable_cache");
+    expect(source).not.toContain("CHAT_USERS_CACHE_REVALIDATE_SECONDS");
   });
 });

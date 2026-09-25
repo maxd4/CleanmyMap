@@ -447,7 +447,7 @@ export async function loadUserLevelRankingSummary(
       ]);
 
       if (profilesResult.error) {
-        return { topRows: [], currentUserRow: null };
+        return [];
       }
 
       const rows =
@@ -467,19 +467,20 @@ export async function loadUserLevelRankingSummary(
         xpValidated: Math.max(0, Number(row.xp_validated ?? 0)),
       }));
 
-      return {
-        topRows: rankedRows.slice(0, 8),
-        currentUserRow: rankedRows.find((row) => row.userId === userId) ?? null,
-      };
+      return rankedRows;
     },
-    ["gamification-user-level-ranking", `user:${userId}`],
+    ["gamification-user-level-ranking"],
     {
       revalidate: USER_LEVEL_RANKING_CACHE_REVALIDATE_SECONDS,
-      tags: [`${USER_LEVEL_RANKING_CACHE_TAG}:${userId}`],
+      tags: [USER_LEVEL_RANKING_CACHE_TAG],
     },
   );
 
-  return cached();
+  const rankedRows = await cached();
+  return {
+    topRows: rankedRows.slice(0, 8),
+    currentUserRow: rankedRows.find((row) => row.userId === userId) ?? null,
+  };
 }
 
 export async function loadUserImpactStats(

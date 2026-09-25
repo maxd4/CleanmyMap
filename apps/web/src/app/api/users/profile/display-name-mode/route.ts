@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { unstable_cache, revalidateTag } from "next/cache";
+import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
@@ -26,35 +26,7 @@ const updateDisplayNameModeSchema = z.object({
 const DISPLAY_NAME_MODE_CACHE_HEADERS = {
   "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
 };
-const DISPLAY_NAME_MODE_CACHE_REVALIDATE_SECONDS = 120;
-
 type DisplayNameModeResponse = UserIdentity;
-
-function buildDisplayNameModeCacheKey(userId: string): string {
-  return `user:${userId}`;
-}
-
-async function loadCachedDisplayNameMode(
-  userId: string,
-  identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>,
-): Promise<DisplayNameModeResponse | null> {
-  const cached = unstable_cache(
-    async () => {
-      if (!identity || identity.userId !== userId) {
-        return null;
-      }
-
-      return identity satisfies DisplayNameModeResponse;
-    },
-    ["display-name-mode", buildDisplayNameModeCacheKey(userId)],
-    {
-      revalidate: DISPLAY_NAME_MODE_CACHE_REVALIDATE_SECONDS,
-      tags: [`display-name-mode:${userId}`],
-    },
-  );
-
-  return cached();
-}
 
 export async function GET() {
   const devBypass = await getDevAuthBypassSession();
@@ -63,7 +35,10 @@ export async function GET() {
   if (!userId) return unauthorizedJsonResponse();
 
   const identity = await getCurrentUserIdentity({ userId });
-  const payload = await loadCachedDisplayNameMode(userId, identity);
+  const payload =
+    identity && identity.userId === userId
+      ? (identity satisfies DisplayNameModeResponse)
+      : null;
   if (!payload) return unauthorizedJsonResponse();
 
   return NextResponse.json(payload, {
@@ -161,8 +136,6 @@ export async function PATCH(request: Request) {
     }
 
     revalidateTag("admin-referral-lineage-export", "max");
-    revalidateTag(`display-name-mode:${userId}`, "max");
-
     const response = NextResponse.json({
       status: "updated",
       displayNameMode,

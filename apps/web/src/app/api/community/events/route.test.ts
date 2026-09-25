@@ -12,6 +12,7 @@ const unstableCacheMock = vi.hoisted(() =>
 const verifyRateLimitMock = vi.hoisted(() => vi.fn());
 const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 const reserveDiscussionMessageSlotMock = vi.hoisted(() => vi.fn());
+const revalidateCommunityEventCachesMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 
@@ -34,6 +35,8 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 vi.mock("@/lib/community/event-rsvp-summaries", () => ({
+  indexCommunityEventRsvpSummaries: (summaries: Array<{ eventId: string }>) =>
+    new Map(summaries.map((row) => [row.eventId, row])),
   loadCommunityEventRsvpSummaries: loadCommunityEventRsvpSummariesMock,
 }));
 
@@ -59,6 +62,12 @@ vi.mock("@/lib/community/event-notification-targets", () => ({
 
 vi.mock("@/lib/community/creator-inbox-email", () => ({
   sendCreatorInboxEmail: vi.fn(),
+}));
+
+vi.mock("@/lib/community/event-cache-invalidation", () => ({
+  COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS: 900,
+  COMMUNITY_EVENTS_CACHE_TAG: "community-events",
+  revalidateCommunityEventCaches: revalidateCommunityEventCachesMock,
 }));
 
 import { GET, POST } from "./route";
@@ -163,8 +172,8 @@ describe("GET /api/community/events", () => {
     expect(response.headers.get("vary")).toBe("Cookie");
     expect(unstableCacheMock).toHaveBeenCalledWith(
       expect.any(Function),
-      ["community-events", "anonymous|limit:120|event:all"],
-      expect.objectContaining({ tags: ["community-events:anonymous", "community-events"] }),
+      ["community-events", "limit:120"],
+      expect.objectContaining({ tags: ["community-events"] }),
     );
   });
 
@@ -184,9 +193,21 @@ describe("GET /api/community/events", () => {
     expect(response.headers.get("cache-control")).toContain("private");
     expect(unstableCacheMock).toHaveBeenCalledWith(
       expect.any(Function),
-      ["community-events", "user:user-1|limit:120|event:all"],
-      expect.objectContaining({ tags: ["community-events:user-1", "community-events"] }),
+      ["community-events", "limit:120"],
+      expect.objectContaining({ tags: ["community-events"] }),
     );
+  });
+
+  it("keeps event-specific lookups out of the shared Data Cache", async () => {
+    const response = await GET(
+      new Request(
+        "http://localhost/api/community/events?eventId=11111111-1111-4111-8111-111111111111&limit=1",
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).items).toHaveLength(1);
+    expect(unstableCacheMock).not.toHaveBeenCalled();
   });
 
   it("derives ownership true only for the current organizer", async () => {
@@ -271,6 +292,7 @@ describe("POST /api/community/events", () => {
       }),
     );
     expect(single).toHaveBeenCalled();
+    expect(revalidateCommunityEventCachesMock).toHaveBeenCalledOnce();
   });
 
   it("rejects coordinates outside the geographic bounds", async () => {

@@ -3,6 +3,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { parseCommunityEventDescription } from "@/lib/community/event-ops";
 import { distanceToParisArrondissementKm } from "@/lib/geo/paris-arrondissements";
 import type { ParisArrondissement } from "@/lib/geo/paris-arrondissements";
+import {
+  ROUTE_EVENT_PRESSURE_CACHE_REVALIDATE_SECONDS,
+  ROUTE_EVENT_PRESSURE_CACHE_TAG,
+} from "@/lib/community/event-cache-invalidation";
 
 type StopCandidateInput = {
   label: string;
@@ -183,8 +187,8 @@ export async function loadCachedEventPressureByArrondissement(
     async () => loadEventPressureByArrondissement(getSupabaseClient()),
     ["route-recommendation-event-pressure"],
     {
-      revalidate: 300,
-      tags: ["route-recommendation-event-pressure"],
+      revalidate: ROUTE_EVENT_PRESSURE_CACHE_REVALIDATE_SECONDS,
+      tags: [ROUTE_EVENT_PRESSURE_CACHE_TAG],
     },
   );
 

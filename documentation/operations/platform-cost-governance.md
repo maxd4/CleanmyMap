@@ -159,6 +159,48 @@ Préférer :
 Une désactivation volontaire du cache doit être explicable depuis le code et
 protégée par les tests ou contrôles pertinents.
 
+#### Inventaire ISR et Data Cache du runtime
+
+Cet inventaire décrit les caches Vercel/Next.js actuellement conservés. Les
+volumes sont des bornes de contrat (lignes, éléments ou combinaisons de clé),
+pas une mesure d'octets : la taille réelle dépend des données Supabase. Les
+surfaces personnelles ou dépendantes d'un texte, de coordonnées précises ou
+d'un `userId` ne sont pas placées dans le Data Cache ; elles conservent, quand
+nécessaire, un cache HTTP privé.
+
+| Surface | Clé et cardinalité | Taille approximative | TTL | Consommateur / invalidation |
+|---|---|---:|---:|---|
+| Page d'accueil | ISR de page, une clé de route | rendu de la page + activité bornée | 3600 s | accueil ; l'activité API est indépendante |
+| Activité accueil | clé de route | liste d'activité bornée par le loader | 600 s | `/api/homepage/activity` |
+| Méthodologie | ISR de page, une clé de route | snapshot méthodologie + statistiques GitHub bornées | 86400 s | `/methodologie` |
+| GitHub repository stats | URL dépôt/endpoint GitHub, petit nombre de dépôts connus | métadonnées et listes paginées limitées par le loader | 3600 s par défaut, 86400 s pour méthodologie | page Méthodologie ; `fetch` Next `next.revalidate` |
+| Actions unifiées | `limit/status/floor/coords/types`, combinaisons bornées par les callers | jusqu'à 1500 contrats par lecture | 600 s | accueil, rapports, pilotage, impressions/exports ; tag `unified-action-contracts` invalidé après mutation action |
+| Pilotage | `period/limit/types`, combinaisons de dashboard bornées | jusqu'à 1500 contrats dérivés | 600 s | pilotage ; tag `pilotage-overview` |
+| Événements communautaires | `limit` pour la liste ; recherche `eventId` directe hors Data Cache | jusqu'à la limite demandée ; événement ciblé lu directement | 900 s pour les listes | flux communautaire ; invalidation événement/RSVP |
+| Événements pour rapports | `limit` borné de 1 à 120 | au plus 120 événements + compteurs RSVP | 900 s | rapports ; invalidation événement/RSVP |
+| Pression événements pour itinéraire | clé unique de snapshot | au plus 560 événements + 4000 RSVP | 900 s | recommandations d'itinéraire ; invalidation événement/RSVP |
+| Pression par arrondissement | clé unique | au plus 280 événements + 4000 RSVP | 900 s | recommandations d'itinéraire ; invalidation événement/RSVP |
+| Spots | `limit` 1..300 × statut borné, au plus ~1200 lanes théoriques | au plus 300 spots par lecture | 60 s | carte spots authentifiée ; tag `spots-map` invalidé à la création d'un signalement |
+| Leaderboard gamification | 2 scopes × 2 périodes, 4 clés | classement borné par le loader | 120 s | leaderboard authentifié ; tag de classement |
+| Labels progression | clé partagée unique | au plus 10000 lignes d'actions | 120 s | progression/gamification ; tag commun |
+| Export referrals admin | clé unique | export complet borné par le loader | 600 s | export admin ; tag `admin-referral-lineage-export` |
+
+Les invalidations métier utilisent `revalidateTag(..., "max")` : elles
+marquent les entrées périmées sans fabriquer une clé par utilisateur. Les
+événements invalident ensemble le flux communautaire, les rapports et la
+pression d'itinéraire ; les mutations d'actions invalident le cache unifié en
+plus des snapshots persistés. Aucun `revalidatePath` n'est utilisé dans le
+runtime actuel.
+
+Les lectures suivantes restent directes côté serveur, avec leur AuthZ et leur
+projection inchangées : préremplissage d'actions, recherche d'utilisateurs par
+texte, suggestions d'adresse, reverse geocoding, mode de nom d'affichage,
+gamification personnelle, analytics de points, résumé referrals et vue de
+lignage referrals. Ce choix supprime les clés à forte cardinalité
+(`userId`, texte de recherche, coordonnées à quatre décimales ou profil ciblé)
+du Data Cache Vercel ; il ne les transforme pas en `no-store` lorsque le
+contrat HTTP privé reste utile.
+
 ### Routes API
 
 Une route applicative doit apporter au moins une responsabilité réelle :

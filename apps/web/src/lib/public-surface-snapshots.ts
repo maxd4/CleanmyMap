@@ -5,6 +5,7 @@ import {
   canUseSupabaseServerPersistence,
 } from "@/lib/persistence/runtime-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { revalidateUnifiedActionContractsCache } from "@/lib/actions/unified-source/cache-contract";
 
 export type PublicSurfaceSnapshotRecord<TPayload = unknown> = {
   id: string;
@@ -265,6 +266,13 @@ export async function invalidatePublicSurfaceSnapshotsByRoute(
     .filter((route) => route.length > 0);
   if (normalizedRoutes.length === 0) {
     return;
+  }
+
+  if (
+    normalizedRoutes.includes("api/actions") ||
+    normalizedRoutes.includes("api/actions/map")
+  ) {
+    revalidateUnifiedActionContractsCache();
   }
 
   if (canUseSupabaseServerPersistence()) {

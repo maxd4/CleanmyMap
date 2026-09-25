@@ -24,7 +24,10 @@ import {
  loadCommunityEventNotificationProfiles,
  isProfileEligibleForCommunityEvent,
 } from"@/lib/community/event-notification-targets";
-import { loadCommunityEventRsvpSummaries } from"@/lib/community/event-rsvp-summaries";
+import {
+ indexCommunityEventRsvpSummaries,
+ loadCommunityEventRsvpSummaries,
+} from"@/lib/community/event-rsvp-summaries";
 import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
 import { getClerkService, type ClerkUserIdentity as OrganizerIdentity } from"@/lib/services/clerk";
 import { createServerRateLimitResponse, verifyRateLimit } from"@/lib/rate-limit/server";
@@ -34,6 +37,11 @@ import {
  isValidCommunityEventCoordinatePair,
  type CommunityEventLocationInput,
 } from "@/lib/community/event-location";
+import {
+ COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS,
+ COMMUNITY_EVENTS_CACHE_TAG,
+ revalidateCommunityEventCaches,
+} from "@/lib/community/event-cache-invalidation";
 
 const COMMUNITY_EVENTS_ANONYMOUS_CACHE_HEADERS = {
  "Cache-Control": "public, max-age=20, stale-while-revalidate=60",
@@ -43,8 +51,6 @@ const COMMUNITY_EVENTS_USER_CACHE_HEADERS = {
  "Cache-Control": "private, max-age=20, stale-while-revalidate=60",
  "Vary": "Cookie",
 };
-const COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS = 60;
-
 function parsePositiveInteger(
  raw: string | null,
  min: number,
@@ -116,13 +122,25 @@ function toEventResponseItem(
 }
 
 function buildCommunityEventsCacheKey(
- userId: string | null,
  limit: number,
- eventId: string | null,
 ): string {
- const cacheScope = userId ? `user:${userId}` : "anonymous";
- return [cacheScope, `limit:${limit}`, `event:${eventId ?? "all"}`].join("|");
+ return `limit:${limit}`;
 }
+
+type CachedCommunityEventItem = {
+ event: CommunityEventRow;
+ organizer: OrganizerIdentity;
+ rsvpCounts: {
+  yes: number;
+  maybe: number;
+  no: number;
+  total: number;
+ };
+};
+
+type CachedCommunityEventsPayload = {
+ items: CachedCommunityEventItem[];
+};
 
 type CommunityEventsSuccessPayload = {
  status: "ok";
@@ -135,9 +153,7 @@ async function loadCachedCommunityEvents(
  limit: number,
  eventId: string | null,
 ): Promise<CommunityEventsSuccessPayload> {
- const cacheTagScope = userId ?? "anonymous";
- const cached = unstable_cache(
-  async () => {
+ const load = async () => {
    const supabase = getSupabaseServerClient();
 
    let eventsQuery = supabase
@@ -146,12 +162,11 @@ async function loadCachedCommunityEvents(
 "id, created_at, organizer_clerk_id, title, event_date, location_label, latitude, longitude, location_source, description",
     )
     .order("event_date", { ascending: true })
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    .order("created_at", { ascending: false });
    if (eventId) {
     eventsQuery = eventsQuery.eq("id", eventId);
    }
-   const eventsResult = await eventsQuery;
+   const eventsResult = await eventsQuery.limit(limit);
 
    if (eventsResult.error) {
     throw new Error(eventsResult.error.message);
@@ -159,14 +174,14 @@ async function loadCachedCommunityEvents(
 
    const events = (eventsResult.data ?? []) as CommunityEventRow[];
    if (events.length === 0) {
-    return { status: "ok" as const, count: 0, items: [] as Array<ReturnType<typeof toEventResponseItem>> };
+    return { items: [] } satisfies CachedCommunityEventsPayload;
    }
 
    const summaries = await loadCommunityEventRsvpSummaries(supabase, {
     eventIds: events.map((event) => event.id),
-    userId,
+    userId: null,
    });
-   const summaryByEventId = new Map(summaries.map((row) => [row.eventId, row] as const));
+   const summaryByEventId = indexCommunityEventRsvpSummaries(summaries);
 
    const organizerIds = Array.from(
     new Set(
@@ -186,23 +201,61 @@ async function loadCachedCommunityEvents(
       roleBadge: getRoleBadge("benevole"),
       profileBadge: getProfileBadge("benevole"),
      };
-    return toEventResponseItem(
+    const summary = summaryByEventId.get(event.id);
+    return {
      event,
-     summaryByEventId.get(event.id) ?? null,
      organizer,
-     userId,
-    );
+     rsvpCounts: {
+      yes: summary?.yesCount ?? 0,
+      maybe: summary?.maybeCount ?? 0,
+      no: summary?.noCount ?? 0,
+      total: summary?.totalCount ?? 0,
+     },
+    } satisfies CachedCommunityEventItem;
    });
-   return { status: "ok" as const, count: items.length, items };
-  },
-  ["community-events", buildCommunityEventsCacheKey(userId, limit, eventId)],
-  {
-   revalidate: COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS,
-   tags: [`community-events:${cacheTagScope}`, "community-events"],
-  },
- );
+   return { items } satisfies CachedCommunityEventsPayload;
+ };
+ const cached = eventId
+  ? load
+  : unstable_cache(
+    load,
+    ["community-events", buildCommunityEventsCacheKey(limit)],
+    {
+     revalidate: COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS,
+     tags: [COMMUNITY_EVENTS_CACHE_TAG],
+    },
+   );
 
- return cached();
+ const cachedPayload = await cached();
+ const personalStatuses = new Map<string, "yes" | "maybe" | "no" | null>();
+ if (userId && cachedPayload.items.length > 0) {
+  const summaries = await loadCommunityEventRsvpSummaries(
+   getSupabaseServerClient(),
+   {
+    eventIds: cachedPayload.items.map(({ event }) => event.id),
+    userId,
+   },
+  );
+  for (const summary of summaries) {
+   personalStatuses.set(summary.eventId, summary.myRsvpStatus);
+  }
+ }
+
+ const items = cachedPayload.items.map(({ event, organizer, rsvpCounts }) =>
+  toEventResponseItem(
+   event,
+   {
+    yesCount: rsvpCounts.yes,
+    maybeCount: rsvpCounts.maybe,
+    noCount: rsvpCounts.no,
+    totalCount: rsvpCounts.total,
+    myRsvpStatus: personalStatuses.get(event.id) ?? null,
+   },
+   organizer,
+   userId,
+  ),
+ );
+ return { status: "ok", count: items.length, items };
 }
 
 const createCommunityEventSchema = z.object({
@@ -351,6 +404,8 @@ export async function POST(request: Request) {
  { status: 500 },
  );
  }
+
+ revalidateCommunityEventCaches();
 
  try {
  await sendCreatorInboxEmail({

@@ -1,4 +1,3 @@
-import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -318,24 +317,11 @@ export async function loadReferralLineageView(
   );
 }
 
-const REFERRAL_LINEAGE_CACHE_REVALIDATE_SECONDS = 120;
-
 export async function loadCachedReferralLineageView(
   focusProfileId: string,
 ): Promise<ReferralLineageView | null> {
-  const cached = unstable_cache(
-    async () => {
-      const supabase = getSupabaseServerClient();
-      return loadReferralLineageView(supabase, focusProfileId);
-    },
-    ["referral-lineage-view", `profile:${focusProfileId}`],
-    {
-      revalidate: REFERRAL_LINEAGE_CACHE_REVALIDATE_SECONDS,
-      tags: [`referral-lineage:${focusProfileId}`],
-    },
-  );
-
-  return cached();
+  const supabase = getSupabaseServerClient();
+  return loadReferralLineageView(supabase, focusProfileId);
 }
 
 export function buildReferralLineageLeaderboard(

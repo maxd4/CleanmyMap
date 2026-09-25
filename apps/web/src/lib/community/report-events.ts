@@ -4,11 +4,16 @@ import {
   parseCommunityEventDescription,
 } from "./event-ops";
 import {
+  indexCommunityEventRsvpSummaries,
   loadCommunityEventRsvpSummaries,
   type CommunityEventRsvpSummary,
 } from "./event-rsvp-summaries";
 import type { CommunityEventItem } from "./http";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  REPORT_COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS,
+  REPORT_COMMUNITY_EVENTS_CACHE_TAG,
+} from "@/lib/community/event-cache-invalidation";
 
 type ReportCommunityEventRow = {
   id: string;
@@ -22,8 +27,6 @@ type ReportCommunityEventRow = {
   location_source: import("./event-location").CommunityEventLocationSource | null;
   description: string | null;
 };
-
-const REPORT_COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS = 120;
 
 function clampLimit(limit: number): number {
   return Math.min(120, Math.max(1, Math.trunc(limit)));
@@ -102,9 +105,7 @@ export async function loadCachedReportCommunityEvents(
         eventIds: events.map((event) => event.id),
         userId: null,
       });
-      const summaryByEventId = new Map(
-        summaries.map((row) => [row.eventId, row] as const),
-      );
+      const summaryByEventId = indexCommunityEventRsvpSummaries(summaries);
 
       return events.map((event) =>
         toCommunityEventItem(event, summaryByEventId.get(event.id) ?? null),
@@ -113,7 +114,7 @@ export async function loadCachedReportCommunityEvents(
     ["report-community-events", buildReportCommunityEventsCacheKey(normalizedLimit)],
     {
       revalidate: REPORT_COMMUNITY_EVENTS_CACHE_REVALIDATE_SECONDS,
-      tags: ["report-community-events"],
+      tags: [REPORT_COMMUNITY_EVENTS_CACHE_TAG],
     },
   );
 

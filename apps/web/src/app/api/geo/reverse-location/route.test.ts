@@ -1,9 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/cache", () => ({
-  unstable_cache: (fn: unknown) => fn,
-}));
-
 import { GET } from "./route";
 
 describe("/api/geo/reverse-location", () => {
@@ -47,6 +43,7 @@ describe("/api/geo/reverse-location", () => {
     };
 
     expect(body.status).toBe("ok");
+    expect(response.headers.get("cache-control")).toContain("private");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(body.location).toMatchObject({
       label: "Paris",

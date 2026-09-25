@@ -1,5 +1,4 @@
 import { NextResponse } from"next/server";
-import { unstable_cache } from"next/cache";
 import {
  ASSOCIATION_SELECTION_OPTIONS,
  normalizeAssociationSelectionForPrefill,
@@ -19,7 +18,6 @@ export const runtime ="nodejs";
 const ACTIONS_PREFILL_CACHE_HEADERS = {
  "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
 };
-const ACTIONS_PREFILL_CACHE_REVALIDATE_SECONDS = 60;
 
 function median(values: number[], fallback: number): number {
  if (values.length === 0) {
@@ -58,22 +56,11 @@ function pickMostFrequentLabel(counts: Map<string, number>): string | null {
 }
 
 async function loadCachedRecentActionsForPrefill(userId: string) {
- const cached = unstable_cache(
- async () => {
-   const supabase = getSupabaseServerClient();
-   return fetchRecentActionsByUser(supabase, {
-    userId,
-    limit: 25,
-   });
-  },
-  ["actions-prefill", `user:${userId}`],
-  {
-   revalidate: ACTIONS_PREFILL_CACHE_REVALIDATE_SECONDS,
-   tags: [`actions-prefill:${userId}`],
-  },
- );
-
- return cached();
+ const supabase = getSupabaseServerClient();
+ return fetchRecentActionsByUser(supabase, {
+  userId,
+  limit: 25,
+ });
 }
 
 export async function GET() {

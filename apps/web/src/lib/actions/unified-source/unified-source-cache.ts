@@ -8,6 +8,9 @@ import {
   buildUnifiedActionContractsCacheKey,
   type CachedUnifiedActionContractsParams,
 } from "./cache-key";
+import {
+  UNIFIED_ACTION_CONTRACTS_CACHE_TAG,
+} from "./cache-contract";
 
 export { buildUnifiedActionContractsCacheKey } from "./cache-key";
 export type { CachedUnifiedActionContractsParams } from "./cache-key";
@@ -17,6 +20,11 @@ export type UnifiedActionContractsCacheOptions = {
 };
 
 export const UNIFIED_ACTION_CONTRACTS_CACHE_REVALIDATE_SECONDS = 600;
+
+export {
+  revalidateUnifiedActionContractsCache,
+  UNIFIED_ACTION_CONTRACTS_CACHE_TAG,
+} from "./cache-contract";
 
 
 export async function fetchCachedUnifiedActionContracts(
@@ -36,7 +44,7 @@ export async function fetchCachedUnifiedActionContracts(
     {
       revalidate:
         options.revalidateSeconds ?? UNIFIED_ACTION_CONTRACTS_CACHE_REVALIDATE_SECONDS,
-      tags: ["unified-action-contracts"],
+      tags: [UNIFIED_ACTION_CONTRACTS_CACHE_TAG],
     },
   );
 

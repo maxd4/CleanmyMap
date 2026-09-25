@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const authMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const trackCommunityRsvpYesMock = vi.hoisted(() => vi.fn());
+const revalidateCommunityEventCachesMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", async () =>
   (await import("@/app/api/test-helpers")).createClerkAuthModule(authMock),
@@ -14,6 +15,10 @@ vi.mock("@/lib/supabase/server", async () =>
 
 vi.mock("@/lib/gamification/progression", () => ({
   trackCommunityRsvpYes: trackCommunityRsvpYesMock,
+}));
+
+vi.mock("@/lib/community/event-cache-invalidation", () => ({
+  revalidateCommunityEventCaches: revalidateCommunityEventCachesMock,
 }));
 
 describe("POST /api/community/rsvps", () => {

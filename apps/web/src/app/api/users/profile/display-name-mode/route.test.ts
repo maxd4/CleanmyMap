@@ -27,7 +27,6 @@ vi.mock("@/lib/supabase/clerk-rls", () => ({
 }));
 
 vi.mock("next/cache", () => ({
-  unstable_cache: (fn: unknown) => fn,
   revalidateTag: revalidateTagMock,
 }));
 

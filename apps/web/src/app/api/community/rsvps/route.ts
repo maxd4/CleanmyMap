@@ -4,6 +4,7 @@ import { z } from"zod";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { trackCommunityRsvpYes } from"@/lib/gamification/progression";
 import { handleApiError, parseAuthenticatedJsonRequest } from"@/lib/http/api-errors";
+import { revalidateCommunityEventCaches } from"@/lib/community/event-cache-invalidation";
 
 export const runtime ="nodejs";
 
@@ -58,6 +59,8 @@ export async function POST(request: Request) {
  { status: 500 },
  );
  }
+
+ revalidateCommunityEventCaches();
 
  if (parsed.data.status ==="yes") {
  try {

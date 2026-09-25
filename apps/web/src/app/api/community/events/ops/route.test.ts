@@ -13,6 +13,7 @@ const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const handleApiErrorMock = vi.hoisted(
   () => vi.fn(() => new Response("database error", { status: 500 })),
 );
+const revalidateCommunityEventCachesMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 
@@ -46,6 +47,10 @@ vi.mock("@/lib/http/auth-responses", () => ({
 
 vi.mock("@/lib/http/api-errors", () => ({
   handleApiError: handleApiErrorMock,
+}));
+
+vi.mock("@/lib/community/event-cache-invalidation", () => ({
+  revalidateCommunityEventCaches: revalidateCommunityEventCachesMock,
 }));
 
 import { POST } from "./route";
@@ -129,6 +134,7 @@ describe("POST /api/community/events/ops", () => {
 
     expect(response.status).toBe(200);
     expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+    expect(revalidateCommunityEventCachesMock).toHaveBeenCalledOnce();
     expect(trackCommunityOpsUpdateMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ userId: "organizer-1", eventId: "event-1" }),

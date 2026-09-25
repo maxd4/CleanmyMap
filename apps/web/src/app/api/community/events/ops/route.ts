@@ -20,6 +20,7 @@ import {
  isValidCommunityEventCoordinatePair,
  type CommunityEventLocationInput,
 } from "@/lib/community/event-location";
+import { revalidateCommunityEventCaches } from "@/lib/community/event-cache-invalidation";
 
 export const runtime ="nodejs";
 const updateEventOpsSchema = z
@@ -268,6 +269,8 @@ export async function POST(request: Request) {
  }
  return handleApiError(updated.error, "POST /api/community/events/ops (update)");
  }
+
+ revalidateCommunityEventCaches();
 
  if (isAdminOverride && operationId && auditDetails) {
  await appendAdminOperationAudit({

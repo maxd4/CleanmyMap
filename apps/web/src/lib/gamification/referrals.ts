@@ -30,7 +30,6 @@ const REFERRAL_BADGE_SOURCE_TABLE = "referral_invites";
 const REFERRAL_BADGE_SOURCE_ID_PREFIX = "referral-invite:";
 const REFERRAL_XP = 2;
 const REFERRAL_PATH = "/sign-up";
-const REFERRAL_SUMMARY_CACHE_TAG_PREFIX = "referral-summary:";
 const REFERRAL_EXPORT_CACHE_TAG = "admin-referral-lineage-export";
 
 function normalizeReferralCode(code: string | null | undefined): string {
@@ -52,10 +51,7 @@ function createReferralCode(): string {
   return randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase();
 }
 
-function invalidateReferralCaches(userIds: string[]): void {
-  for (const userId of userIds) {
-    revalidateTag(`${REFERRAL_SUMMARY_CACHE_TAG_PREFIX}${userId}`, "max");
-  }
+function invalidateReferralCaches(): void {
   revalidateTag(REFERRAL_EXPORT_CACHE_TAG, "max");
 }
 
@@ -103,7 +99,7 @@ async function ensureReferralInviteAward(
   });
 
   if (inserted) {
-    invalidateReferralCaches([params.userId]);
+    invalidateReferralCaches();
 
     await auditXpAttribution(
       supabase,
@@ -300,7 +296,7 @@ export async function ensureReferralInviteForUser(
     referralCode,
   });
 
-  invalidateReferralCaches([userId]);
+  invalidateReferralCaches();
 
   return {
     summary: await loadReferralSummary(supabase, userId),
@@ -372,7 +368,7 @@ export async function claimReferralInviteForUser(
     throw updateError;
   }
 
-  invalidateReferralCaches([params.userId, inviter.id]);
+  invalidateReferralCaches();
 
   return {
     claimed: true,
