@@ -11,6 +11,8 @@
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
 - **Objectif utilisateur principal** : Consulter sa progression personnelle, ses badges, son rang et sa carte d'impact personnelle.
 - **Action principale attendue** : Télécharger ou partager le PNG de sa carte personnelle, sans exposer l'URL protégée.
+- **Point d’entrée utilisateur** : `/profil/[profile]` → bloc « Progression & badges » → « Voir ma carte d’impact ».
+- **Navigation** : surface secondaire contextualisée, volontairement absente du ruban principal.
 - **Règle de partage** : Le partage porte uniquement sur le fichier image PNG généré depuis la carte personnelle. Il ne crée pas de profil public, ne partage pas l'URL protégée `/profil/impact` et ne produit aucune donnée serveur ou token public.
 - **Palette attendue** : red / rouge impact
 - **Scope** : carte d'impact personnelle, progression et badges issus des actions validées, export PNG et partage fichier uniquement.

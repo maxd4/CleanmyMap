@@ -74,6 +74,11 @@ Le système couvre:
 - les badges d'action historiques encore affichés pour compatibilité;
 - les notifications et l audit XP associés.
 
+Le bloc « Progression & badges » du profil propose aussi un accès contextuel à
+`/profil/impact`, surface protégée de carte d’impact personnelle exportable et
+partageable. Cette carte ne remplace pas `/sections/gamification` et ne
+déplace aucune analyse collective de `/reports`.
+
 ## Hiérarchie des sources
 
 Ordre de confiance:

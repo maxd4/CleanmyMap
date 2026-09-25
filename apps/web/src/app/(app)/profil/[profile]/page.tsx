@@ -14,7 +14,6 @@ import {
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { CmmButton } from "@/components/ui/cmm-button";
-import ImpactProfilePage from "@/components/profil/impact-profile-page";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 import { getInfiniteBadgeTotals } from "@/lib/gamification/infinite-badges-server";
 import { InfiniteBadgesPanel } from "@/components/gamification/infinite-badges/InfiniteBadgesPanel";
@@ -34,10 +33,6 @@ type ProfilPageProps = {
 export default async function ProfilPage({ params }: ProfilPageProps) {
   const { profile } = await params;
   const normalized = profile.trim().toLowerCase();
-
-  if (normalized === "impact") {
-    return <ImpactProfilePage />;
-  }
 
   if (!isAppProfile(normalized)) notFound();
 
