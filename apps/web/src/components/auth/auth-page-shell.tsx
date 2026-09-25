@@ -9,8 +9,41 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { BrandLogo } from "@/components/brand/brand-logo";
+import { PageHeader } from "@/components/ui/page-header";
 
 type AuthPageVariant = "sign-in" | "sign-up";
+
+/**
+ * Shared appearance for the native Clerk surfaces used by sign-in and sign-up.
+ * Keep the auth flow native to Clerk while aligning its visible shell with the
+ * CleanMyMap action hierarchy.
+ */
+export const AUTH_CLERK_APPEARANCE = {
+  variables: {
+    colorPrimary: "#a06c00",
+    colorText: "#0f172a",
+  },
+  elements: {
+    rootBox: "w-full",
+    card: "w-full max-w-none border-0 bg-transparent p-0 shadow-none",
+    headerTitle: "text-2xl font-bold text-emerald-950",
+    headerSubtitle: "hidden",
+    socialButtonsBlockButton:
+      "min-h-11 rounded-xl border border-emerald-200 bg-white text-slate-700 shadow-sm transition-colors hover:border-emerald-500 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
+    socialButtonsBlockButtonText: "font-semibold text-slate-700",
+    dividerLine: "bg-emerald-100",
+    dividerText: "text-slate-500",
+    formFieldLabel: "font-semibold text-emerald-950",
+    formFieldInput:
+      "min-h-11 rounded-xl border-emerald-200 bg-emerald-50/35 text-slate-950 placeholder:text-slate-400 shadow-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20",
+    formFieldInputShowPasswordButton:
+      "min-h-11 min-w-11 text-slate-500 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
+    formButtonPrimary:
+      "min-h-11 rounded-xl border border-[#a06c00] bg-[#a06c00] text-white shadow-sm transition-colors hover:border-[#845400] hover:bg-[#845400] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2",
+    footerAction: "hidden",
+    alert: "rounded-xl border-red-200 bg-red-50 text-red-800",
+  },
+} as const;
 
 type AuthPageShellProps = {
   children: ReactNode;
@@ -91,33 +124,30 @@ export function AuthPageShell({ children, variant }: AuthPageShellProps) {
 
   return (
     <main
-      className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,_rgba(219,234,254,0.72)_0%,_rgba(232,233,255,0.82)_34%,_rgba(206,250,225,0.9)_72%,_rgba(245,247,250,1)_100%)] px-4 py-6 sm:px-6 sm:py-8 lg:px-8"
+      className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_rgba(209,250,229,0.96)_0%,_rgba(236,253,245,0.94)_42%,_rgba(247,252,248,1)_100%)] px-4 py-5 sm:px-6 sm:py-8 lg:px-8"
       data-auth-page={variant}
     >
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-6xl items-center">
-        <div className="grid w-full items-stretch gap-5 lg:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)] lg:gap-7">
-          <section className="hidden min-h-[38rem] flex-col justify-between rounded-3xl border border-slate-700/80 bg-[linear-gradient(145deg,rgba(15,23,42,0.98)_0%,rgba(30,41,59,0.97)_52%,rgba(49,46,129,0.95)_100%)] p-8 text-white shadow-xl shadow-slate-950/20 lg:flex xl:p-10">
-            <div className="space-y-8">
+      <div className="pointer-events-none absolute -left-24 top-0 h-80 w-80 rounded-full bg-emerald-200/50 blur-[110px]" />
+      <div className="pointer-events-none absolute right-0 top-24 h-96 w-96 rounded-full bg-emerald-100/65 blur-[130px]" />
+      <div className="relative mx-auto flex min-h-[calc(100vh-2.5rem)] w-full max-w-5xl items-center">
+        <div className="grid min-w-0 w-full items-stretch gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)] lg:gap-5">
+          <section className="order-2 hidden min-h-[34rem] flex-col justify-between rounded-3xl border border-emerald-200/20 bg-[linear-gradient(145deg,#06261c_0%,#073b29_56%,#0b5139_100%)] p-7 text-white shadow-[0_34px_76px_-34px_rgba(7,44,27,0.72)] lg:order-1 lg:flex xl:p-8">
+            <div className="space-y-7">
               <div className="flex items-center gap-3">
                 <BrandLogo
                   variant="darkSurface"
                   alt="CleanMyMap"
-                  className="h-12 w-auto max-w-[15rem] object-contain object-left"
+                  className="h-11 w-auto max-w-[14rem] object-contain object-left"
                   sizes="15rem"
                 />
               </div>
 
-              <div className="max-w-md space-y-4">
-                <p className="cmm-text-caption text-emerald-200">
-                  Famille autonome Auth &amp; Onboarding
-                </p>
-                <h1 className="text-4xl font-black leading-tight tracking-tight xl:text-5xl">
-                  {copy.editorialTitle}
-                </h1>
-                <p className="cmm-text-body cmm-text-inverse">
-                  {copy.editorialDescription}
-                </p>
-              </div>
+              <PageHeader
+                tone="emerald"
+                contrast="inverse"
+                title={copy.editorialTitle}
+                subtitle={copy.editorialDescription}
+              />
 
               <div className="space-y-3" aria-label="Bénéfices CleanMyMap">
                 {copy.benefits.map((benefit) => {
@@ -126,7 +156,7 @@ export function AuthPageShell({ children, variant }: AuthPageShellProps) {
                   return (
                     <div
                       key={benefit.title}
-                      className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-4"
+                      className="flex items-center gap-3 rounded-2xl border border-emerald-200/20 bg-white/[0.07] p-3.5"
                     >
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-300/30 bg-emerald-300/10 text-emerald-200">
                         <Icon className="h-5 w-5" aria-hidden="true" />
@@ -143,43 +173,43 @@ export function AuthPageShell({ children, variant }: AuthPageShellProps) {
               </div>
             </div>
 
-            <p className="cmm-text-body cmm-text-inverse pt-8">
+            <p className="cmm-text-body cmm-text-inverse pt-6">
               Une entrée simple pour agir localement et durablement.
             </p>
           </section>
 
-          <section className="w-full rounded-3xl border border-slate-700/80 bg-slate-950/95 p-4 shadow-xl shadow-slate-950/20 sm:p-6 lg:p-7">
+          <section className="order-1 min-w-0 w-full rounded-3xl border border-emerald-200/80 bg-white/90 p-3.5 shadow-[0_34px_76px_-34px_rgba(7,44,27,0.32)] backdrop-blur-xl sm:p-5 lg:order-2 lg:p-6">
             <div className="mx-auto flex w-full max-w-xl flex-col">
-              <div className="mb-5 flex items-center justify-between gap-4">
+              <div className="mb-4 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 lg:hidden">
                   <BrandLogo
                     variant="compact"
                     alt="CleanMyMap"
-                    className="h-10 w-10 object-contain"
+                    className="h-9 w-9 object-contain"
                     sizes="2.5rem"
                   />
                 </div>
-                <p className="cmm-text-caption text-emerald-200">
+                <p className="cmm-text-caption text-emerald-800">
                   {copy.eyebrow}
                 </p>
                 <Link
                   href="/"
-                  className="inline-flex shrink-0 items-center gap-1.5 text-sm font-medium text-slate-300 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                  className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl px-2 text-sm font-semibold text-emerald-950 transition-colors hover:bg-emerald-50 hover:text-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                 >
                   <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-                  <span className="sr-only sm:not-sr-only">Accueil</span>
+                  <span>Accueil</span>
                 </Link>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 text-slate-950 shadow-lg shadow-slate-950/20 sm:p-6">
+              <div className="rounded-2xl border border-emerald-100 bg-white p-4 text-slate-950 shadow-sm sm:p-6">
                 {children}
               </div>
 
-              <p className="cmm-text-body cmm-text-inverse mt-5 text-center">
+              <p className="cmm-text-small cmm-text-secondary mt-4 text-center">
                 {copy.switchPrompt}{" "}
                 <Link
                   href={copy.switchHref}
-                  className="font-semibold text-emerald-300 underline-offset-4 transition-colors hover:text-emerald-200 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                  className="font-semibold text-emerald-800 underline-offset-4 transition-colors hover:text-emerald-950 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                 >
                   {copy.switchLabel}
                 </Link>

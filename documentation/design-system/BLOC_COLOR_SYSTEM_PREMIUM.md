@@ -109,10 +109,14 @@ Le garde-fou associé est `npm run check:surfaces`.
 **Familles autonomes hors 5 blocs :**
 - Homepage autonome : `/`, `/accueil`
 - Auth & Onboarding : `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`
-  - fond lavande clair vers vert menthe clair
-  - carte Clerk violet nuit / indigo foncé
-  - accents verts uniquement pour validation
-  - boutons inchangés, régis par la charte bouton existante
+  - `/sign-in` et `/sign-up` restent fonctionnellement autonomes mais
+    reprennent la grammaire visuelle Agir : canvas emerald clair lumineux,
+    halos emerald discrets, surfaces structurées et panneau éditorial emerald
+    sombre
+  - l'onboarding conserve son contrat de surface propre ; il ne devient pas
+    une route métier Agir par cette continuité visuelle
+  - les composants Clerk natifs sont conservés et leur CTA principal reprend
+    le niveau `critical` doré/brun de la hiérarchie globale
 - Institutionnel & Légal : `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`
   - palette slate / gris clair / blanc
   - pas d esthétique marketing blocks
