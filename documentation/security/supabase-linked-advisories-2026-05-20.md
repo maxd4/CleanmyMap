@@ -55,7 +55,7 @@ pas été modifiés par ce dernier lot.
 
 ### Advisors sécurité linked actuels
 
-- **Sécurité : 3 WARN, 0 ERROR, 4 INFO acceptés et documentés**.
+- **Sécurité : 3 WARN, 0 ERROR, 8 INFO acceptés et documentés**.
 - Les trois WARN concernent `SECURITY DEFINER` sur
   `can_insert_action_message_reference(uuid)`,
   `can_post_action_conversation(uuid)` et
@@ -78,6 +78,21 @@ pas été modifiés par ce dernier lot.
   `public.legal_content_report_decisions` sont des tables server-only, sans
   policy publique et sans accès de lecture attendu pour `anon` ou
   `authenticated`. Aucune policy permissive ne doit être ajoutée.
+
+- Les quatre INFO supplémentaires `rls_enabled_no_policy` sont également
+  intentionnels : `public.user_points`, `public.points_ledger`,
+  `public.user_badge_totals` et `public.badge_events` sont des projections et
+  journaux de gamification server-only. La migration
+  `20260925000000_revoke_gamification_projection_grants.sql` révoque tous les
+  privilèges de table pour `public`, `anon` et `authenticated`; elle ne touche
+  pas `public.user_visited_places`, dont la lecture propriétaire authentifiée
+  reste le contrat actuel. Ne pas ajouter de policy permissive pour faire
+  disparaître ces INFO.
+
+Le garde-fou local accepte ces huit seules informations server-only. La
+présence de la migration dans Git ne constitue pas une preuve que la migration
+a déjà été appliquée au projet Supabase distant ; l'audit linked doit être
+rejoué après son application distante.
 
 La vérification directe du catalogue par `npx supabase db query --linked` est
 restée indisponible pour l'identité CLI réauthentifiée (`403` sur le rôle de

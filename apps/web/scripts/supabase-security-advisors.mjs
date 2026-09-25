@@ -25,6 +25,10 @@ const ALLOWED_SERVER_ONLY_RLS_INFO_TABLES = new Set([
   "action_share_contact_requests",
   "legal_content_reports",
   "legal_content_report_decisions",
+  "user_points",
+  "points_ledger",
+  "user_badge_totals",
+  "badge_events",
 ]);
 
 function normalizeAdvisorName(value) {

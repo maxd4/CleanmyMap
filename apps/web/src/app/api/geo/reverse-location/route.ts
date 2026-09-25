@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 
 export const runtime = "nodejs";
 const REVERSE_LOCATION_CACHE_HEADERS = {
   "Cache-Control": "private, max-age=300, stale-while-revalidate=86400",
 };
+const REVERSE_LOCATION_TIMEOUT_MS = 4_000;
 
 type ReverseLocation = {
   label: string;
@@ -32,12 +34,20 @@ type GeoplateformeReverseFeature = {
 };
 
 function parseCoordinate(value: string | null): number | null {
-  const parsed = Number.parseFloat(value ?? "");
+  const parsed = Number(value ?? "");
   if (!Number.isFinite(parsed)) {
     return null;
   }
 
   return parsed;
+}
+
+function isValidLatitude(value: number): boolean {
+  return value >= -90 && value <= 90;
+}
+
+function isValidLongitude(value: number): boolean {
+  return value >= -180 && value <= 180;
 }
 
 function cleanPart(value: string | undefined): string {
@@ -84,21 +94,50 @@ function formatReverseLocation(feature: GeoplateformeReverseFeature): ReverseLoc
 }
 
 export async function GET(request: Request) {
+  const rateLimit = await verifyRateLimit(request, { limit: 60, window: 60 });
+  const rateLimitResponse = createServerRateLimitResponse(
+    rateLimit.allowed,
+    rateLimit.retryAfter,
+    rateLimit,
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const url = new URL(request.url);
-  const lat = parseCoordinate(url.searchParams.get("lat"));
-  const lon = parseCoordinate(url.searchParams.get("lon"));
+  const rawLat = url.searchParams.get("lat");
+  const rawLon = url.searchParams.get("lon");
+  const lat = parseCoordinate(rawLat);
+  const lon = parseCoordinate(rawLon);
 
   if (lat === null || lon === null) {
+    if (rawLat !== null || rawLon !== null) {
+      return NextResponse.json(
+        { error: "Invalid latitude or longitude" },
+        { status: 400 },
+      );
+    }
+
     return NextResponse.json({
       status: "ok",
       location: null,
     });
   }
 
+  if (!isValidLatitude(lat) || !isValidLongitude(lon)) {
+    return NextResponse.json(
+      { error: "Latitude or longitude out of range" },
+      { status: 400 },
+    );
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REVERSE_LOCATION_TIMEOUT_MS);
   try {
     const response = await fetch(buildReverseUrl(lat, lon), {
       method: "GET",
       headers: { Accept: "application/json" },
+      signal: controller.signal,
     });
     const location = response.ok
       ? ((await response.json()) as { features?: GeoplateformeReverseFeature[] })
@@ -118,5 +157,7 @@ export async function GET(request: Request) {
     }, {
       headers: REVERSE_LOCATION_CACHE_HEADERS,
     });
+  } finally {
+    clearTimeout(timeout);
   }
 }

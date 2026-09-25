@@ -8,6 +8,8 @@ import { handleApiError } from "@/lib/http/api-errors";
 import { appendFunnelEvent, listFunnelEvents } from "@/lib/analytics/funnel-store";
 import { computeFunnelMetricsWithBaseline } from "@/lib/analytics/funnel-metrics";
 import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
+import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
+import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 
 export const runtime = "nodejs";
 
@@ -84,6 +86,20 @@ function normalizeEvents(payload: FunnelPayload): Array<{
 }
 
 export async function POST(request: Request) {
+  if (!hasAnalyticsConsentCookie(request.headers.get("cookie"))) {
+    return NextResponse.json({ status: "ignored", count: 0 });
+  }
+
+  const rateLimit = await verifyRateLimit(request, { limit: 60, window: 60 });
+  const rateLimitResponse = createServerRateLimitResponse(
+    rateLimit.allowed,
+    rateLimit.retryAfter,
+    rateLimit,
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   let payload: unknown;
   try {
     payload = await request.json();

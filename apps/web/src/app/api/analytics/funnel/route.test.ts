@@ -5,6 +5,9 @@ const appendFunnelEventMock = vi.hoisted(() => vi.fn());
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const listFunnelEventsMock = vi.hoisted(() => vi.fn());
 const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
+const hasAnalyticsConsentCookieMock = vi.hoisted(() => vi.fn());
+const verifyRateLimitMock = vi.hoisted(() => vi.fn());
+const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -32,6 +35,15 @@ vi.mock("@/lib/public-surface-snapshot-service", () => ({
   loadOrRefreshPublicSurfaceSnapshot: loadOrRefreshPublicSurfaceSnapshotMock,
 }));
 
+vi.mock("@/lib/analytics-consent", () => ({
+  hasAnalyticsConsentCookie: hasAnalyticsConsentCookieMock,
+}));
+
+vi.mock("@/lib/rate-limit/server", () => ({
+  verifyRateLimit: verifyRateLimitMock,
+  createServerRateLimitResponse: createServerRateLimitResponseMock,
+}));
+
 describe("POST /api/analytics/funnel", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -42,6 +54,14 @@ describe("POST /api/analytics/funnel", () => {
     loadOrRefreshPublicSurfaceSnapshotMock.mockResolvedValue({
       payload: { status: "ok" },
     });
+    hasAnalyticsConsentCookieMock.mockReturnValue(true);
+    verifyRateLimitMock.mockResolvedValue({
+      allowed: true,
+      limit: 60,
+      remaining: 59,
+      reset: Date.now() + 60_000,
+    });
+    createServerRateLimitResponseMock.mockReturnValue(null);
   });
 
   afterEach(() => {
@@ -50,8 +70,7 @@ describe("POST /api/analytics/funnel", () => {
 
   it("accepts a batch of funnel events in one request", async () => {
     const { POST } = await import("./route");
-    const response = await POST(
-      new Request("http://localhost/api/analytics/funnel", {
+    const request = new Request("http://localhost/api/analytics/funnel", {
         method: "POST",
         body: JSON.stringify({
           sessionId: "session-123",
@@ -71,8 +90,8 @@ describe("POST /api/analytics/funnel", () => {
           ],
         }),
         headers: { "Content-Type": "application/json" },
-      }),
-    );
+      });
+    const response = await POST(request);
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ status: "ok", count: 2 });
@@ -95,6 +114,63 @@ describe("POST /api/analytics/funnel", () => {
         meta: { pagePath: "/actions" },
       }),
     );
+    expect(verifyRateLimitMock).toHaveBeenCalledWith(request, {
+      limit: 60,
+      window: 60,
+    });
+  });
+
+  it("ignores events without server-side analytics consent", async () => {
+    hasAnalyticsConsentCookieMock.mockReturnValue(false);
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/analytics/funnel", {
+        method: "POST",
+        body: JSON.stringify({
+          sessionId: "session-no-consent",
+          step: "page_view",
+          mode: "complete",
+        }),
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "ignored", count: 0 });
+    expect(appendFunnelEventMock).not.toHaveBeenCalled();
+    expect(verifyRateLimitMock).not.toHaveBeenCalled();
+  });
+
+  it("does not write events when the consented request is rate limited", async () => {
+    const rateLimitResponse = new Response(
+      JSON.stringify({ status: "rate_limited" }),
+      { status: 429 },
+    );
+    verifyRateLimitMock.mockResolvedValueOnce({
+      allowed: false,
+      limit: 60,
+      remaining: 0,
+      reset: Date.now() + 60_000,
+      retryAfter: 60,
+    });
+    createServerRateLimitResponseMock.mockReturnValueOnce(rateLimitResponse);
+    const { POST } = await import("./route");
+
+    const response = await POST(
+      new Request("http://localhost/api/analytics/funnel", {
+        method: "POST",
+        body: JSON.stringify({
+          sessionId: "session-rate-limited",
+          step: "submit_success",
+          mode: "quick",
+        }),
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    expect(appendFunnelEventMock).not.toHaveBeenCalled();
   });
 
   it("still accepts a single funnel event payload", async () => {
