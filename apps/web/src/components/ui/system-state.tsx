@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { AriaAttributes, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export type SystemStateVariant =
@@ -12,16 +12,25 @@ export type SystemStateVariant =
 type SystemStateLayoutProps = {
   variant?: SystemStateVariant;
   className?: string;
+  role?: "alert";
+  ariaLive?: AriaAttributes["aria-live"];
   children: ReactNode;
 };
 
 export function SystemStateLayout({
   variant = "warning",
   className,
+  role,
+  ariaLive,
   children,
 }: SystemStateLayoutProps) {
   return (
-    <div className={cn("cmm-system-state", className)} data-state-variant={variant}>
+    <div
+      className={cn("cmm-system-state", className)}
+      data-state-variant={variant}
+      role={role}
+      aria-live={ariaLive}
+    >
       <div className="cmm-system-state-shell">
         <div className="cmm-system-state-content">{children}</div>
       </div>

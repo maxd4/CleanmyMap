@@ -40,7 +40,12 @@ export function ServerErrorCard({
   const hasContext = Boolean(referenceCode || details);
 
   return (
-    <SystemStateLayout variant="error" className={className}>
+    <SystemStateLayout
+      variant="error"
+      className={className}
+      role="alert"
+      ariaLive="polite"
+    >
       <SystemStateIcon variant="error">
         <CmmIcon icon={AlertTriangle} size="xl" />
       </SystemStateIcon>

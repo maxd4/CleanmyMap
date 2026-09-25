@@ -40,6 +40,8 @@ describe("canonical system states", () => {
     expect(markup).toContain("cmm-page-header-subtitle cmm-system-state-description");
     expect(markup).toContain('class="cmm-system-state-meta"');
     expect(markup).toContain('class="cmm-system-state-action"');
+    expect(markup).not.toContain('role="alert"');
+    expect(markup).not.toContain('aria-live=');
   });
 
   it("centralizes visual variants in CSS instead of variant recipes in TSX", () => {
