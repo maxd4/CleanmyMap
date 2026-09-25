@@ -17,6 +17,36 @@ test.describe("public smoke", () => {
     await expect(page.locator("body")).toBeVisible();
   });
 
+  test("restores global chrome when leaving sign-in before idle", async ({ page }) => {
+    const hydrationErrors: string[] = [];
+    page.on("pageerror", (error) => {
+      if (/hydration|hydration failed|mismatch/i.test(String(error))) {
+        hydrationErrors.push(String(error));
+      }
+    });
+    page.on("console", (message) => {
+      if (message.type() === "error" && /hydration|mismatch/i.test(message.text())) {
+        hydrationErrors.push(message.text());
+      }
+    });
+
+    await page.addInitScript(() => {
+      let nextIdleId = 0;
+      window.requestIdleCallback = (() => ++nextIdleId) as typeof window.requestIdleCallback;
+      window.cancelIdleCallback = () => undefined;
+    });
+
+    await page.goto("/sign-in");
+    await expect(page.locator("body")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Tout refuser" })).toBeVisible();
+
+    await page.goto("/");
+    await expect(
+      page.locator('div[aria-hidden="true"].pointer-events-none').first(),
+    ).toBeVisible();
+    expect(hydrationErrors).toEqual([]);
+  });
+
   test("health endpoint returns a non-server-error response", async ({
     request,
   }) => {
