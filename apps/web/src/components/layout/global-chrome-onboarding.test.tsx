@@ -7,6 +7,10 @@ vi.mock("next/dynamic", () => ({
   },
 }));
 
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/onboarding",
+}));
+
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: vi.fn().mockResolvedValue(null),
 }));
@@ -24,8 +28,9 @@ vi.mock("./deferred-global-chrome", async (importOriginal) => {
   };
 });
 
-import { DeferredGlobalFooter } from "./deferred-global-chrome";
+import { DeferredGlobalFooter, isAuthSurfacePath } from "./deferred-global-chrome";
 import { RootLayoutChrome } from "./root-layout-chrome";
+import { readFileSync } from "node:fs";
 
 describe("global chrome on onboarding", () => {
   it("keeps the global ribbon mounted", async () => {
@@ -38,5 +43,21 @@ describe("global chrome on onboarding", () => {
     const markup = renderToStaticMarkup(<DeferredGlobalFooter />);
 
     expect(markup).toContain('data-testid="global-footer"');
+  });
+
+  it("recognizes auth routes for deferred non-critical chrome", () => {
+    expect(isAuthSurfacePath("/sign-in")).toBe(true);
+    expect(isAuthSurfacePath("/sign-up/[[...sign-up]]")).toBe(true);
+    expect(isAuthSurfacePath("/onboarding")).toBe(false);
+  });
+
+  it("does not request account identity for anonymous navigation", () => {
+    const source = readFileSync(
+      new URL("../navigation/app-navigation-ribbon-shell.tsx", import.meta.url),
+      "utf8",
+    );
+
+    expect(source).toContain("authStateReady && user");
+    expect(source).not.toContain("anonymous-session");
   });
 });
