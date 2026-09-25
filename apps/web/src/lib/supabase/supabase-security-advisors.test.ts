@@ -22,7 +22,7 @@ describe("Supabase security advisor guard", () => {
     expect(script).not.toContain("Docker Desktop");
   });
 
-  it("allows only the four documented server-only INFO findings", () => {
+  it("allows only the eight documented server-only INFO findings", () => {
     expect(SECURITY_ADVISOR_COMMAND_OPTIONS).toEqual([
       "--type",
       "security",
@@ -61,6 +61,31 @@ describe("Supabase security advisor guard", () => {
         detail:
           "Table `public.legal_content_report_decisions` has RLS enabled, but no policies exist",
         metadata: { name: "legal_content_report_decisions", type: "table" },
+      },
+      {
+        name: "rls_enabled_no_policy",
+        level: "INFO",
+        detail: "Table `public.user_points` has RLS enabled, but no policies exist",
+        metadata: { name: "user_points", type: "table" },
+      },
+      {
+        name: "rls_enabled_no_policy",
+        level: "INFO",
+        detail: "Table `public.points_ledger` has RLS enabled, but no policies exist",
+        metadata: { name: "points_ledger", type: "table" },
+      },
+      {
+        name: "rls_enabled_no_policy",
+        level: "INFO",
+        detail:
+          "Table `public.user_badge_totals` has RLS enabled, but no policies exist",
+        metadata: { name: "user_badge_totals", type: "table" },
+      },
+      {
+        name: "rls_enabled_no_policy",
+        level: "INFO",
+        detail: "Table `public.badge_events` has RLS enabled, but no policies exist",
+        metadata: { name: "badge_events", type: "table" },
       },
     ];
 

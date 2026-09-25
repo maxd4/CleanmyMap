@@ -8,6 +8,10 @@ const migrationPath = resolve(
   webRoot,
   "supabase/migrations/20260920000000_harden_gamification_projection_writes.sql",
 );
+const tableGrantsMigrationPath = resolve(
+  webRoot,
+  "supabase/migrations/20260925000000_revoke_gamification_projection_grants.sql",
+);
 const retiredRoutePaths = [
   "src/app/api/gamification/points/add/route.ts",
   "src/app/api/gamification/badges/[userId]/increment/route.ts",
@@ -77,5 +81,19 @@ describe("gamification security boundaries", () => {
     );
     expect(migration).toContain("for select");
     expect(migration).not.toMatch(/create policy[\s\S]+for\s+(?:all|insert|update|delete)/i);
+  });
+
+  it("revokes all client table privileges without changing visited places", () => {
+    const migration = readFileSync(tableGrantsMigrationPath, "utf8");
+
+    for (const table of projectionTables.slice(0, 4)) {
+      expect(migration).toContain(
+        `revoke all on table public.${table} from public, anon, authenticated;`,
+      );
+    }
+
+    expect(migration).not.toMatch(
+      /revoke\s+all\s+on\s+table\s+public\.user_visited_places/i,
+    );
   });
 });
