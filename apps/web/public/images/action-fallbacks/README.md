@@ -4,7 +4,7 @@ Destination prévue dans le dépôt :
 
 `apps/web/public/images/action-fallbacks/`
 
-Ce dossier contient 15 images de fallback et `action-fallback-images.json`.
+Ce dossier contient 15 images WebP de fallback et `action-fallback-images.json`.
 
 ## Invariants d'intégration
 
@@ -15,6 +15,9 @@ Ce dossier contient 15 images de fallback et `action-fallback-images.json`.
 5. Si le contexte est inconnu, préférer les assets `isNeutral: true`.
 6. Ne jamais choisir une plage pour une action explicitement urbaine, une forêt pour un centre-ville, etc.
 7. Ne pas déduire le contexte depuis du texte libre si le modèle fournit déjà une catégorie ou un contexte géographique canonique.
+8. Les assets runtime sont préencodés en WebP à 512 px de large maximum pour
+   conserver une marge Retina raisonnable sur les vignettes de l'accueil sans
+   servir les sources lourdes originales.
 
 Le manifeste JSON contient pour chaque image : chemin public, environnement principal,
 environnements compatibles, type d'action, présence humaine, contexte aquatique,
