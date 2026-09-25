@@ -8,11 +8,11 @@ import { computeClimateContext } from "@/lib/analytics/climate-context";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { SectionShell } from "@/components/sections/rubriques/shared";
-import { 
-  ClimateIndicatorGrid, 
-  ClimateDecisionList, 
-  ClimateMethodology, 
-  ClimateAlertBanner 
+import {
+  ClimateIndicatorGrid,
+  ClimateDecisionList,
+  ClimateMethodology,
+  ClimateProxyNotice,
 } from "./climate-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, RefreshCw, Globe, Wind, ArrowRight, Info } from "lucide-react";
@@ -58,10 +58,6 @@ export function ClimateSection() {
     }));
     return computeClimateContext({ records, periodDays });
   }, [data?.items, periodDays]);
-
-  const priorityIndicator = useMemo(() => {
-    return context.indicators.find((ind) => ind.id === "geocoverage") || context.indicators[0];
-  }, [context.indicators]);
 
   return (
     <SectionShell
@@ -154,29 +150,28 @@ export function ClimateSection() {
               className="space-y-16"
             >
               <motion.div variants={itemVariants}>
-                <ClimateIndicatorGrid 
+                <ClimateProxyNotice version={context.modelVersion} fr={fr} />
+                <ClimateIndicatorGrid
                   indicators={context.indicators}
-                  fr={fr} 
+                  fr={fr}
                 />
               </motion.div>
 
               <div className="grid gap-12 lg:grid-cols-[2.5fr_1fr] items-start">
                 <div className="space-y-12">
-                  <motion.div variants={itemVariants} className="grid gap-8 md:grid-cols-2">
-                    <ClimateAlertBanner indicator={priorityIndicator} fr={fr} />
-                    
+                  <motion.div variants={itemVariants}>
                     <RubriqueCard 
                       themeColor="emerald"
                       withTopBar={false}
                       className="flex items-center gap-8 p-8"
                     >
                       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400 shadow-xl shadow-emerald-500/20">
-                        <RefreshCw className="h-8 w-8 animate-spin-slow" />
+                        <RefreshCw className="h-8 w-8" />
                       </div>
                       <div className="space-y-1">
-                        <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500">Flux Temps Réel</h4>
-                        <p className="text-xl font-black text-white tracking-tight">Sync. active</p>
-                        <p className="text-xs text-slate-400 font-medium">{fr ? "Calculé à l'instant" : "Calculated just now"}</p>
+                        <h4 className="cmm-text-caption font-black uppercase tracking-[0.2em] text-emerald-500">{fr ? "Snapshot d’impact" : "Impact snapshot"}</h4>
+                        <p className="text-xl font-black text-white tracking-tight">{fr ? "Actions approuvées" : "Approved actions"}</p>
+                        <p className="cmm-text-small text-slate-400 font-medium">{fr ? "Recalculé à chaque chargement" : "Recalculated on each load"}</p>
                       </div>
                     </RubriqueCard>
                   </motion.div>
@@ -197,12 +192,12 @@ export function ClimateSection() {
                         <h3 className="text-3xl font-black text-white tracking-tighter">Focus Ocean & Eaux</h3>
                       </div>
                       <p className="text-slate-300 text-xl leading-relaxed max-w-3xl font-medium">
-                        {fr 
-                          ? "80% des déchets abandonnés finissent dans les cours d'eau. Vos actions empêchent cette fuite plastique vers les océans, protégeant directement la biodiversité marine."
-                          : "80% of abandoned waste ends up in waterways. Your actions prevent this plastic leakage to the oceans, directly protecting marine biodiversity."}
+                        {fr
+                          ? "Les actions approuvées sont regroupées pour suivre des proxies liés aux déchets, aux mégots, aux heures citoyennes et à la couverture géographique. Ces indicateurs aident au pilotage, sans mesurer directement les effets sur les écosystèmes."
+                          : "Approved actions are aggregated into proxies related to waste, cigarette butts, citizen hours, and geographic coverage. These indicators support monitoring without directly measuring ecosystem effects."}
                       </p>
                       <div className="pt-4">
-                        <CmmButton tone="secondary" variant="ghost" className="flex items-center gap-3 text-blue-400 font-black text-xs uppercase tracking-[0.3em] hover:text-blue-300 transition-colors group/btn">
+                        <CmmButton href="/methodologie#impact-services" tone="secondary" variant="ghost" className="flex items-center gap-3 cmm-text-caption text-blue-400 font-black uppercase tracking-[0.3em] hover:text-blue-300 transition-colors group/btn">
                           {fr ? "En savoir plus sur l'impact hydrique" : "Learn more about water impact"}
                           <ArrowRight size={14} className="group-hover/btn:translate-x-2 transition-transform" />
                         </CmmButton>

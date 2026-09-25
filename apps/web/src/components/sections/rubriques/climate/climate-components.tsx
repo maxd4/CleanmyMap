@@ -8,7 +8,6 @@ import {
   Droplets, 
   Zap, 
   ShieldCheck, 
-  AlertTriangle, 
   TrendingUp, 
   TrendingDown, 
   Activity,
@@ -139,39 +138,29 @@ export function ClimateIndicatorGrid({ indicators, fr }: { indicators: ClimateIn
   );
 }
 
-export function ClimateAlertBanner({ indicator, fr }: { indicator: ClimateIndicator; fr: boolean }) {
-  if (!indicator) return null;
-
+export function ClimateProxyNotice({ version, fr }: { version: string; fr: boolean }) {
   return (
-    <motion.div className="relative overflow-hidden rounded-[3rem] border border-rose-500/20 bg-rose-500/5 p-8 lg:p-12 backdrop-blur-3xl shadow-2xl flex flex-col md:flex-row items-center gap-8 group">
-      <div className="absolute -left-12 -bottom-12 w-48 h-48 bg-rose-500/10 blur-[80px] rounded-full" />
-      
-      <div className="relative z-10 flex h-20 w-20 shrink-0 items-center justify-center rounded-[1.5rem] bg-rose-500/10 text-rose-500 border border-rose-500/20 shadow-2xl shadow-rose-500/20 group-hover:scale-110 transition-transform">
-        <AlertTriangle className="h-10 w-10 animate-pulse" />
-      </div>
-
-      <div className="relative z-10 space-y-3 text-center md:text-left flex-1">
-        <div className="flex items-center justify-center md:justify-start gap-3">
-<span className="px-3 py-1 rounded-full bg-rose-500/20 cmm-text-caption font-black uppercase tracking-[0.3em] text-rose-500 border border-rose-500/20">
-            Alerte Impact
-          </span>
+    <div
+      role="note"
+      className="flex flex-col gap-4 rounded-[2rem] border border-blue-400/20 bg-blue-500/5 p-6 text-slate-300 shadow-xl shadow-blue-500/5 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div className="flex items-start gap-4">
+        <Info className="mt-0.5 h-5 w-5 shrink-0 text-blue-300" aria-hidden="true" />
+        <div className="space-y-1">
+          <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-blue-300">
+            {fr ? "Lecture des indicateurs" : "Indicator interpretation"}
+          </p>
+          <p className="cmm-text-body text-slate-300">
+            {fr
+              ? "Ces KPI sont des proxies de pilotage : ils ne sont pas des mesures instrumentales et ne constituent pas un bilan carbone complet."
+              : "These KPIs are management proxies: they are not instrumental measurements and do not constitute a complete carbon inventory."}
+          </p>
         </div>
-        <h3 className="text-2xl lg:text-3xl font-black text-white tracking-tighter">
-          {fr ? "Seuil de vigilance biodiversité" : "Biodiversity vigilance threshold"}
-        </h3>
-        <p className="text-slate-400 font-medium leading-relaxed max-w-2xl">
-          {fr 
-            ? "Les volumes de micro-plastiques collectés sur les points d'eau indiquent une pression critique sur les écosystèmes locaux. Une intervention prioritaire est recommandée."
-            : "Micro-plastic volumes collected at water points indicate critical pressure on local ecosystems. Priority intervention is recommended."}
-        </p>
       </div>
-
-      <div className="relative z-10">
-        <CmmButton type="button" tone="primary" variant="pill" className="px-8 py-4 text-white font-black text-sm uppercase tracking-widest shadow-xl shadow-rose-500/40">
-          {fr ? "Détails" : "Details"}
-        </CmmButton>
-      </div>
-    </motion.div>
+      <span className="cmm-text-caption shrink-0 font-black uppercase tracking-[0.18em] text-slate-400">
+        {fr ? `Modèle ${version}` : `Model ${version}`}
+      </span>
+    </div>
   );
 }
 
