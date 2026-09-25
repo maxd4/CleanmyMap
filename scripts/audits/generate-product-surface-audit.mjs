@@ -78,6 +78,8 @@ export function routePatternMatches(pattern, target) {
 
   let targetIndex = 0;
   for (const part of patternParts) {
+    const optionalCatchAll = part.match(/^\[\[\.\.\..+\]\]$/);
+    if (optionalCatchAll) return true;
     const catchAll = part.match(/^\[\.\.\..+\]$/);
     if (catchAll) return targetIndex < targetParts.length;
     if (targetIndex >= targetParts.length) return false;
@@ -151,13 +153,34 @@ function extractRegistryEntries(content, routeConstants = new Map()) {
   return entries;
 }
 
-function extractNavigationRouteIds(content) {
+function extractStringArrayConstants(content) {
+  const arrays = new Map();
+  const declarationPattern = /\bconst\s+([A-Z][A-Z0-9_]*)\s*(?::\s*[^=]+)?=\s*\[([\s\S]*?)\]/g;
+  for (const match of content.matchAll(declarationPattern)) {
+    arrays.set(
+      match[1],
+      [...match[2].matchAll(/["']([a-z0-9-]+)["']/g)].map((item) => item[1]),
+    );
+  }
+  return arrays;
+}
+
+export function extractNavigationRouteIds(content) {
+  const arrays = extractStringArrayConstants(content);
   const bodies = [
-    content.match(/const COMMON_PROFILE_SPACE_PAGES[\s\S]*?=\s*\{([\s\S]*?)\n\};/)?.[1] ?? "",
-    content.match(/const PARCOURS_SPACE_PAGE_MAP[\s\S]*?=\s*\{([\s\S]*?)\n\};/)?.[1] ?? "",
+    content.match(/const COMMON_PROFILE_SPACE_PAGES[\s\S]*?=\s*\{([\s\S]*?)\n\s*\};/)?.[1] ?? "",
+    content.match(/const PARCOURS_SPACE_PAGE_MAP[\s\S]*?=\s*\{([\s\S]*?)\n\s*\};/)?.[1] ?? "",
   ];
-  const body = bodies.join("\n");
-  return new Set([...body.matchAll(/["']([a-z0-9-]+)["']/g)].map((match) => match[1]));
+  const routeIds = new Set();
+  for (const body of bodies) {
+    for (const match of body.matchAll(/["']([a-z0-9-]+)["']/g)) {
+      routeIds.add(match[1]);
+    }
+    for (const match of body.matchAll(/\b([A-Z][A-Z0-9_]*)\b/g)) {
+      for (const routeId of arrays.get(match[1]) ?? []) routeIds.add(routeId);
+    }
+  }
+  return routeIds;
 }
 
 function extractSitemapPaths(content, registryEntries) {
@@ -193,16 +216,16 @@ function extractRouteConstants(content) {
   );
 }
 
-function routeFilePattern(file, root = REPOSITORY_ROOT) {
+export function routeFilePattern(file, root = REPOSITORY_ROOT) {
   const absoluteFile = path.resolve(root, file);
   const appRoot = path.resolve(root, APP_ROOT);
   const relative = path.relative(appRoot, absoluteFile).replaceAll("\\", "/");
   const parts = relative.split("/");
   parts.pop();
   const routeParts = parts.filter((part) => !(part.startsWith("(") && part.endsWith(")"))).map((part) => {
-    if (/^\[\[\.\.\..+\]\]$/.test(part)) return "";
+    if (/^\[\[\.\.\..+\]\]$/.test(part)) return part;
     const catchAll = part.match(/^\[\.\.\.(.+)\]$/);
-    return catchAll ? `[${catchAll[1]}]` : part;
+    return catchAll ? `[...${catchAll[1]}]` : part;
   }).filter(Boolean);
   return normalizeRoute(`/${routeParts.join("/")}`);
 }
@@ -241,7 +264,7 @@ function isQaRoute(route, source = "") {
   return route.startsWith("/preview/") || /(?:qa|fixture|storybook|preview)/i.test(source);
 }
 
-function isProtectedToolRoute(route) {
+function isProtectedRoute(route) {
   return route === "/admin" || route.startsWith("/admin/") || route.startsWith("/prints/") || route === "/actions/history";
 }
 
@@ -256,14 +279,15 @@ export function classifySurfaceRoute({
   inboundRuntimeCount = 0,
   deepLinkCount = 0,
   isQa = false,
-  isProtectedTool = false,
+  protectedRoute = false,
+  protectedEvidence = false,
   isSpecial = false,
   documentationOnly = false,
   authGate = "UNKNOWN",
 }) {
   if (canonicalStatus === "REDIRECT_COMPAT") return "REDIRECT_COMPAT";
   if (isQa) return "QA_TOOL";
-  if (isProtectedTool) return "PROTECTED_TOOL";
+  if (protectedRoute && protectedEvidence) return "PROTECTED_TOOL";
   if (documentationOnly) return "UNKNOWN";
   if (isSpecial) return "UNKNOWN";
   if (inRibbon === "YES") return "PRIMARY_NAV";
@@ -277,6 +301,26 @@ export function findUnresolvedRuntimeTargets(references, knownPatterns) {
   return [...new Set(references
     .map((reference) => reference.target)
     .filter((target) => !routeMatchesAny(target, knownPatterns)))].sort((a, b) => a.localeCompare(b, "fr"));
+}
+
+export function classifyUnresolvedRuntimeReferences(references, knownPatterns) {
+  const grouped = new Map();
+  for (const reference of references) {
+    if (routeMatchesAny(reference.target, knownPatterns)) continue;
+    const current = grouped.get(reference.target) ?? [];
+    current.push(reference);
+    grouped.set(reference.target, current);
+  }
+
+  return [...grouped.entries()]
+    .map(([target, items]) => ({
+      target,
+      severity: items.every((item) => item.kind === "link" || item.kind === "navigation")
+        ? "INVARIANT_ERROR"
+        : "FINDING_REVIEW",
+      items,
+    }))
+    .sort((a, b) => a.target.localeCompare(b.target, "fr"));
 }
 
 function buildDocumentationMap(indexEntries, view) {
@@ -355,7 +399,8 @@ function formatRows({
       : runtimeAccess;
     const isDocumentationOnly = canonicalStatus === "DOCUMENTATION_ONLY";
     const isQa = isQaRoute(route, source);
-    const isProtectedTool = isProtectedToolRoute(route);
+    const protectedRoute = isProtectedRoute(route);
+    const protectedEvidence = protectedRoute && (inRibbon === "YES" || inbound.count > 0 || deepConsumers.length > 0);
     const isSpecial = isSpecialRoute(route);
     const status = classifySurfaceRoute({
       canonicalStatus,
@@ -364,14 +409,17 @@ function formatRows({
       inboundRuntimeCount: inbound.count,
       deepLinkCount: deepConsumers.length,
       isQa,
-      isProtectedTool,
+      protectedRoute,
+      protectedEvidence,
       isSpecial,
       documentationOnly: isDocumentationOnly,
       authGate: runtimeAccess,
     });
     const inRegistry = registry || registryShared ? "YES" : "NO";
     const inSitemap = routeMatchesAny(route, sitemapPaths) || (dynamicRoute && [...sitemapPaths].some((candidate) => routePatternMatches(route, candidate))) ? "YES" : "NO";
-    const rationale = status === "PRIMARY_NAV"
+    const rationale = protectedRoute && !protectedEvidence
+      ? "route protégée sans consumer, navigation ou usage interne démontré"
+      : status === "PRIMARY_NAV"
       ? "entrée visible du registre/navigation"
       : status === "SECONDARY_NAV"
         ? "consumer runtime hors ruban principal"
@@ -403,7 +451,15 @@ function formatRows({
       deepLinkConsumers: deepConsumers,
       authOrRoleGate: authGate,
       dynamicRoute: dynamicRoute ? "YES" : "NO",
-      qaOrInternalUsage: isQa ? "QA_TOOL" : isProtectedTool ? "PROTECTED_TOOL" : isSpecial ? "SPECIAL_ROUTE" : "NONE_DEMONSTRATED",
+      qaOrInternalUsage: isQa
+        ? "QA_TOOL"
+        : protectedEvidence
+          ? "PROTECTED_TOOL"
+          : protectedRoute
+            ? "PROTECTED_REVIEW"
+            : isSpecial
+              ? "SPECIAL_ROUTE"
+              : "NONE_DEMONSTRATED",
       documentationStatus: documentation?.documentationStatus ?? (canonicalStatus === "RUNTIME_UNDOCUMENTED" ? "NOT_IN_INDEX" : "NOT_APPLICABLE"),
       reachabilityStatus: status === "ORPHAN_ROUTE" ? "ORPHAN_CANDIDATE" : status === "DEEP_LINK" ? "DEEP_LINK_ONLY" : status === "REDIRECT_COMPAT" ? "REDIRECT_ONLY" : status === "PROTECTED_TOOL" || status === "QA_TOOL" ? "INTERNAL_OR_QA" : status === "UNKNOWN" ? "UNKNOWN" : "REACHABLE",
       rationale,
@@ -415,15 +471,15 @@ function formatRows({
   });
 }
 
-function renderSummary(rows, unresolvedTargets, invariantViolations) {
+function renderSummary(rows, findingsReview, invariantErrors) {
   const statuses = ["PRIMARY_NAV", "SECONDARY_NAV", "DEEP_LINK", "PROTECTED_TOOL", "QA_TOOL", "REDIRECT_COMPAT", "ORPHAN_ROUTE", "OBSOLETE", "UNKNOWN"];
   return [
     "| STATUS | COUNT |",
     "| --- | ---: |",
     ...statuses.map((status) => `| ${status} | ${rows.filter((row) => row.status === status).length} |`),
     `| ROUTES_RUNTIME | ${rows.filter((row) => row.canonicalStatus !== "DOCUMENTATION_ONLY").length} |`,
-    `| LIENS_RUNTIME_NON_RESOLUS | ${unresolvedTargets.length} |`,
-    `| INVARIANTS_CERTAINS_EN_ERREUR | ${invariantViolations.length} |`,
+    `| FINDING_REVIEW | ${findingsReview.length} |`,
+    `| INVARIANT_ERROR | ${invariantErrors.length} |`,
   ].join("\n");
 }
 
@@ -449,13 +505,16 @@ function renderRowsSection(title, rows) {
 }
 
 function sanitizeGeneratedText(value) {
-  return String(value)
-    .replace(/\/?docs\/[^\s)`|]+/g, "[chemin documentaire interne]")
-    .replace(/\/?documentation\/[^\s)`|]+/g, "[chemin documentaire interne]");
+  return String(value);
+}
+
+function renderRuntimeFindings(findings) {
+  if (findings.length === 0) return "Aucun.";
+  return findings.map((finding) => `- \`${sanitizeGeneratedText(finding.target)}\` — ${finding.severity} — ${compactSources(finding.items)}.`).join("\n");
 }
 
 export function renderProductSurfaceAudit({ report, generatedAt = new Date().toISOString(), humanDecisions = "" }) {
-  const { refInfo, rows, unresolvedTargets, invariantViolations } = report;
+  const { refInfo, rows, findingsReview, invariantErrors } = report;
   const docsOnly = rows.filter((row) => row.canonicalStatus === "DOCUMENTATION_ONLY");
   const runtimeUndocumented = rows.filter((row) => row.canonicalStatus === "RUNTIME_UNDOCUMENTED");
   return `# Audit de surface produit et accessibilité des routes
@@ -478,7 +537,7 @@ décision automatique de suppression.
 
 ## Résumé
 
-${renderSummary(rows, unresolvedTargets, invariantViolations)}
+${renderSummary(rows, findingsReview, invariantErrors)}
 
 ## Table principale
 
@@ -496,6 +555,10 @@ ${renderRowsSection("Compatibilités", rows.filter((row) => row.status === "REDI
 
 ${renderRowsSection("Surfaces internes", rows.filter((row) => row.status === "PROTECTED_TOOL" || row.status === "QA_TOOL"))}
 
+## Routes protégées à revoir
+
+${renderRowsSection("Protection sans entrée démontrée", rows.filter((row) => row.qaOrInternalUsage === "PROTECTED_REVIEW"))}
+
 ## Deep-links légitimes
 
 ${renderRowsSection("Deep-links", rows.filter((row) => row.status === "DEEP_LINK"))}
@@ -506,13 +569,13 @@ ${renderRowsSection("Références documentation-only", docsOnly)}
 
 ${renderRowsSection("Routes runtime absentes de l’index", runtimeUndocumented)}
 
-### Liens runtime vers une route non résolue
+### Findings à revoir
 
-${unresolvedTargets.length === 0 ? "Aucun." : unresolvedTargets.map((target) => `- \`${sanitizeGeneratedText(target)}\``).join("\n")}
+${renderRuntimeFindings(findingsReview)}
 
 ### Invariants certains
 
-${invariantViolations.length === 0 ? "Aucun." : invariantViolations.map((violation) => `- ${sanitizeGeneratedText(violation)}`).join("\n")}
+${renderRuntimeFindings(invariantErrors)}
 
 ## Graphe détaillé
 
@@ -524,11 +587,14 @@ ${renderDetailedTable(rows)}
 - \`SECONDARY_NAV\` : consumer runtime utilisateur démontré hors ruban principal.
 - \`DEEP_LINK\` : consumer de contexte, email, notification ou workflow démontré.
 - \`PROTECTED_TOOL\` : surface interne protégée ; l’absence du ruban n’est pas un finding.
+- \`PROTECTED_REVIEW\` : route protégée sans consumer, navigation ou usage interne démontré ; elle reste à revoir humainement.
 - \`QA_TOOL\` : preview ou outil de contrôle identifié.
 - \`REDIRECT_COMPAT\` : alias/redirect déclaré, dont l’utilité externe reste une décision humaine.
 - \`ORPHAN_ROUTE\` : aucun consumer runtime, redirect, deep-link ou usage interne démontré ; candidat d’audit, jamais suppression automatique.
 - \`OBSOLETE\` : réservé à une décision humaine confirmée ; le générateur ne l’infère pas.
 - \`UNKNOWN\` : preuve insuffisante, notamment pour les routes dynamiques, auth/callback et erreurs.
+- \`FINDING_REVIEW\` : cible non résolue statiquement ou attribution insuffisante ; nécessite un audit, sans preuve de casse.
+- \`INVARIANT_ERROR\` : lien utilisateur statique vers une route inexistante, registry/runtime incohérent, redirect cassé ou fiche CURRENT réellement absente.
 
 Les URLs dynamiques non résolues restent \`UNKNOWN\`. Les tests, les références
 documentaires et les listes de dead-code ne sont pas des consumers runtime.
@@ -612,18 +678,28 @@ export function buildProductSurfaceReport({ root = REPOSITORY_ROOT, ref }) {
     runtimeFiles,
   });
   const knownPatterns = new Set([...runtimeRoutes.keys(), ...handlerRoutes, ...registryEntries.map((entry) => entry.route), ...redirects.map((entry) => entry.source)]);
+  const unresolvedFindings = classifyUnresolvedRuntimeReferences(references, knownPatterns);
   const unresolvedTargets = findUnresolvedRuntimeTargets(references, knownPatterns);
-  const invariantViolations = [
-    ...unresolvedTargets.map((target) => `lien runtime non résolu : ${target}`),
-    ...rows.filter((row) => row.documentationStatus === "INDEX_FICHE_ABSENTE").map((row) => `fiche CURRENT absente : ${row.route}`),
-    ...redirects.filter((redirect) => !routeMatchesAny(redirect.target, knownPatterns)).map((redirect) => `cible de redirect inexistante : ${redirect.source} → ${redirect.target}`),
-    ...registryEntries.filter((entry) => !routeMatchesAny(entry.route, new Set([...runtimeRoutes.keys(), ...handlerRoutes]))).map((entry) => `route du registre sans runtime : ${entry.route}`),
+  const findingsReview = unresolvedFindings.filter((finding) => finding.severity === "FINDING_REVIEW");
+  const invariantErrors = [
+    ...unresolvedFindings.filter((finding) => finding.severity === "INVARIANT_ERROR"),
+    ...rows
+      .filter((row) => row.documentationStatus === "INDEX_FICHE_ABSENTE")
+      .map((row) => ({ target: `fiche CURRENT absente : ${row.route}`, severity: "INVARIANT_ERROR", items: [] })),
+    ...redirects
+      .filter((redirect) => !routeMatchesAny(redirect.target, knownPatterns))
+      .map((redirect) => ({ target: `cible de redirect inexistante : ${redirect.source} → ${redirect.target}`, severity: "INVARIANT_ERROR", items: [] })),
+    ...registryEntries
+      .filter((entry) => !routeMatchesAny(entry.route, new Set([...runtimeRoutes.keys(), ...handlerRoutes])))
+      .map((entry) => ({ target: `route du registre sans runtime : ${entry.route}`, severity: "INVARIANT_ERROR", items: [] })),
   ];
   return {
     refInfo,
     rows,
     unresolvedTargets,
-    invariantViolations: [...new Set(invariantViolations)],
+    findingsReview,
+    invariantErrors,
+    invariantViolations: invariantErrors.map((finding) => finding.target),
     counts: {
       runtimeRoutes: runtimeRoutes.size,
       registryRoutes: registryEntries.length,

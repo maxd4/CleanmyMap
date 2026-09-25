@@ -3,8 +3,8 @@
 <!-- PRODUCT_SURFACE_AUDIT:GENERATED:BEGIN -->
 ## En-tête
 
-`AUDIT_REF=46aa7cb634683dc6b73da35d1e995d576428f65e`
-`AUDIT_GENERATED_AT=2026-09-25T22:56:00.000Z`
+`AUDIT_REF=9155338911e3b4b2f31b68fabf22f2dd5c6f1a4e`
+`AUDIT_GENERATED_AT=2026-09-25T23:20:00.000Z`
 `AUDIT_STATUS=CURRENT_AT_GENERATION`
 
 Commande :
@@ -20,18 +20,18 @@ décision automatique de suppression.
 
 | STATUS | COUNT |
 | --- | ---: |
-| PRIMARY_NAV | 17 |
-| SECONDARY_NAV | 24 |
+| PRIMARY_NAV | 20 |
+| SECONDARY_NAV | 21 |
 | DEEP_LINK | 1 |
-| PROTECTED_TOOL | 8 |
+| PROTECTED_TOOL | 5 |
 | QA_TOOL | 1 |
 | REDIRECT_COMPAT | 14 |
 | ORPHAN_ROUTE | 0 |
 | OBSOLETE | 0 |
-| UNKNOWN | 7 |
+| UNKNOWN | 10 |
 | ROUTES_RUNTIME | 72 |
-| LIENS_RUNTIME_NON_RESOLUS | 10 |
-| INVARIANTS_CERTAINS_EN_ERREUR | 10 |
+| FINDING_REVIEW | 0 |
+| INVARIANT_ERROR | 4 |
 
 ## Table principale
 
@@ -40,11 +40,11 @@ décision automatique de suppression.
 | `/` | SECONDARY_NAV | NO | 4 — apps/web/src/app/contact/page.tsx, apps/web/src/app/mentions-legales/page.tsx, apps/web/src/components/auth/auth-page-shell.tsx (+1) | public-visible | CURRENT | consumer runtime hors ruban principal |
 | `/actions/history` | PROTECTED_TOOL | NO | 12 — apps/web/src/components/accueil/accueil-community-credibility.tsx, apps/web/src/components/accueil/accueil-impact-summary.tsx, apps/web/src/components/actions/action-declaration/form/action-declaration-form.feedback.tsx (+7) | protected | CURRENT | surface interne protégée ; absence du ruban non probante |
 | `/actions/map` | PRIMARY_NAV | YES | 19 — apps/web/src/components/accueil/accueil-community-credibility.tsx, apps/web/src/components/accueil/accueil-hero.tsx, apps/web/src/components/accueil/accueil-navigation-schema.tsx (+12) | public-visible | CURRENT | entrée visible du registre/navigation |
-| `/actions/new` | SECONDARY_NAV | NO | 27 — apps/web/src/app/(app)/actions/history/page.tsx, apps/web/src/app/(app)/actions/map/page-client.tsx, apps/web/src/app/(app)/dashboard/page.tsx (+21) | clerk-context | CURRENT | consumer runtime hors ruban principal |
+| `/actions/new` | PRIMARY_NAV | YES | 27 — apps/web/src/app/(app)/actions/history/page.tsx, apps/web/src/app/(app)/actions/map/page-client.tsx, apps/web/src/app/(app)/dashboard/page.tsx (+21) | clerk-context | CURRENT | entrée visible du registre/navigation |
 | `/admin` | PROTECTED_TOOL | YES | 2 — apps/web/src/components/admin/admin-creator-console.tsx, apps/web/src/components/pilotage/access-screen/views/pilotage-overview-support-sections.tsx | protected | CURRENT | surface interne protégée ; absence du ruban non probante |
-| `/admin/forms` | PROTECTED_TOOL | NO | — | protected | CURRENT | surface interne protégée ; absence du ruban non probante |
-| `/admin/gamification/xp-audit` | PROTECTED_TOOL | NO | — | protected | CURRENT | surface interne protégée ; absence du ruban non probante |
-| `/admin/godmode` | PROTECTED_TOOL | NO | — | protected | CURRENT | surface interne protégée ; absence du ruban non probante |
+| `/admin/forms` | UNKNOWN | NO | — | protected | CURRENT | route protégée sans consumer, navigation ou usage interne démontré |
+| `/admin/gamification/xp-audit` | UNKNOWN | NO | — | protected | CURRENT | route protégée sans consumer, navigation ou usage interne démontré |
+| `/admin/godmode` | UNKNOWN | NO | — | protected | CURRENT | route protégée sans consumer, navigation ou usage interne démontré |
 | `/admin/quiz-bank` | PROTECTED_TOOL | NO | 4 — apps/web/src/app/(app)/admin/page.tsx, apps/web/src/components/admin/quiz-pedagogical-metrics-panel.tsx | protected | CURRENT | surface interne protégée ; absence du ruban non probante |
 | `/admin/services` | PROTECTED_TOOL | NO | 2 — apps/web/src/app/(app)/admin/page.tsx, apps/web/src/lib/admin/admin-dashboard-contract.ts | protected | CURRENT | surface interne protégée ; absence du ruban non probante |
 | `/community` | REDIRECT_COMPAT | NO | 2 — apps/web/src/lib/governance/governance-monthly-report-high-risk.fixtures.ts, apps/web/src/lib/governance/governance-monthly-report.fixtures.ts | UNKNOWN | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
@@ -100,13 +100,13 @@ décision automatique de suppression.
 | `/sections/open-data` | PRIMARY_NAV | YES | 2 — apps/web/src/components/accueil/accueil-navigation-schema.tsx, apps/web/src/lib/profiles-cta.ts | public-visible | CURRENT | entrée visible du registre/navigation |
 | `/sections/recycling` | SECONDARY_NAV | NO | 12 — apps/web/src/app/learn/ressources/learn-ressources-client.data.ts, apps/web/src/components/learn/learn-practice-theme-tabs.data.ts, apps/web/src/components/learn/learn-tri-context-section.tsx (+4) | public-visible | CURRENT | consumer runtime hors ruban principal |
 | `/sections/rejoindre-un-formulaire` | REDIRECT_COMPAT | NO | — | clerk-context | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
-| `/sections/rejoindre-une-action` | SECONDARY_NAV | NO | 5 — apps/web/src/components/accueil/accueil-community-credibility.tsx, apps/web/src/components/accueil/accueil-hero.tsx, apps/web/src/components/accueil/accueil-navigation-schema.tsx (+2) | public-visible | CURRENT | consumer runtime hors ruban principal |
+| `/sections/rejoindre-une-action` | PRIMARY_NAV | YES | 5 — apps/web/src/components/accueil/accueil-community-credibility.tsx, apps/web/src/components/accueil/accueil-hero.tsx, apps/web/src/components/accueil/accueil-navigation-schema.tsx (+2) | public-visible | CURRENT | entrée visible du registre/navigation |
 | `/sections/route` | REDIRECT_COMPAT | NO | 3 — apps/web/src/components/accueil/accueil-navigation-schema.tsx, apps/web/src/components/sections/rubriques/guide-section.tsx, apps/web/src/components/sections/rubriques/route-methodology-section.tsx | public-visible | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
 | `/sections/trash-spotter` | SECONDARY_NAV | NO | 1 — apps/web/src/app/(app)/signalement/page.tsx | auth-blur-gate | CURRENT | consumer runtime hors ruban principal |
 | `/sections/weather` | REDIRECT_COMPAT | NO | 2 — apps/web/src/components/sections/rubriques/guide-section.tsx, apps/web/src/lib/learning/quiz/quiz-personal-progress.ts | public-visible | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
 | `/sign-in` | SECONDARY_NAV | NO | 11 — apps/web/src/app/onboarding/page.tsx, apps/web/src/app/reglages/page.tsx, apps/web/src/app/sign-in/[[...sign-in]]/page.tsx (+7) | public-visible | CURRENT | consumer runtime hors ruban principal |
 | `/sign-up` | SECONDARY_NAV | NO | 2 — apps/web/src/app/sign-up/[[...sign-up]]/page.tsx, apps/web/src/components/navigation/app-navigation-ribbon-account.tsx | public-visible | CURRENT | consumer runtime hors ruban principal |
-| `/signalement` | SECONDARY_NAV | NO | 8 — apps/web/src/components/learn/learn-gestes-propres-collective-action-section.tsx, apps/web/src/components/learn/learn-practice-theme-tabs.data.ts, apps/web/src/components/learn/learn-tri-context-section.tsx (+3) | clerk-context | CURRENT | consumer runtime hors ruban principal |
+| `/signalement` | PRIMARY_NAV | YES | 8 — apps/web/src/components/learn/learn-gestes-propres-collective-action-section.tsx, apps/web/src/components/learn/learn-practice-theme-tabs.data.ts, apps/web/src/components/learn/learn-tri-context-section.tsx (+3) | clerk-context | CURRENT | entrée visible du registre/navigation |
 | `/signaler-contenu-illicite` | SECONDARY_NAV | NO | 4 — apps/web/src/app/conditions-generales-utilisation/page.tsx, apps/web/src/app/mentions-legales/page.tsx, apps/web/src/app/politique-confidentialite/page.tsx (+1) | public-visible | CURRENT | consumer runtime hors ruban principal |
 | `/sponsor-portal` | PRIMARY_NAV | YES | 2 — apps/web/src/components/pilotage/access-screen/views/pilotage-overview-surface-tabs.tsx, apps/web/src/components/pilotage/decision-cluster-section.tsx | protected | CURRENT | entrée visible du registre/navigation |
 
@@ -141,13 +141,18 @@ _Aucune route dans cette catégorie._
 
 - `/actions/history` — PROTECTED_TOOL — surface interne protégée ; absence du ruban non probante.
 - `/admin` — PROTECTED_TOOL — surface interne protégée ; absence du ruban non probante.
-- `/admin/forms` — PROTECTED_TOOL — surface interne protégée ; absence du ruban non probante.
-- `/admin/gamification/xp-audit` — PROTECTED_TOOL — surface interne protégée ; absence du ruban non probante.
-- `/admin/godmode` — PROTECTED_TOOL — surface interne protégée ; absence du ruban non probante.
 - `/admin/quiz-bank` — PROTECTED_TOOL — surface interne protégée ; absence du ruban non probante.
 - `/admin/services` — PROTECTED_TOOL — surface interne protégée ; absence du ruban non probante.
 - `/preview/actions/new` — QA_TOOL — outil QA/support identifié.
 - `/prints/report` — PROTECTED_TOOL — surface interne protégée ; absence du ruban non probante.
+
+## Routes protégées à revoir
+
+### Protection sans entrée démontrée
+
+- `/admin/forms` — UNKNOWN — route protégée sans consumer, navigation ou usage interne démontré.
+- `/admin/gamification/xp-audit` — UNKNOWN — route protégée sans consumer, navigation ou usage interne démontré.
+- `/admin/godmode` — UNKNOWN — route protégée sans consumer, navigation ou usage interne démontré.
 
 ## Deep-links légitimes
 
@@ -165,31 +170,16 @@ _Aucune route dans cette catégorie._
 
 _Aucune route dans cette catégorie._
 
-### Liens runtime vers une route non résolue
+### Findings à revoir
 
-- `/charte`
-- `[chemin documentaire interne]`
-- `[chemin documentaire interne]`
-- `[chemin documentaire interne]`
-- `[chemin documentaire interne]`
-- `[chemin documentaire interne]`
-- `[chemin documentaire interne]`
-- `[chemin documentaire interne]`
-- `[chemin documentaire interne]`
-- `/feedback`
+Aucun.
 
 ### Invariants certains
 
-- lien runtime non résolu : /charte
-- lien runtime non résolu : [chemin documentaire interne]
-- lien runtime non résolu : [chemin documentaire interne]
-- lien runtime non résolu : [chemin documentaire interne]
-- lien runtime non résolu : [chemin documentaire interne]
-- lien runtime non résolu : [chemin documentaire interne]
-- lien runtime non résolu : [chemin documentaire interne]
-- lien runtime non résolu : [chemin documentaire interne]
-- lien runtime non résolu : [chemin documentaire interne]
-- lien runtime non résolu : /feedback
+- `/charte` — INVARIANT_ERROR — apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.explorer.tsx.
+- `/documentation/features/quiz-authoring-guide.md` — INVARIANT_ERROR — apps/web/src/components/admin/quiz-pedagogical-metrics-panel.tsx, apps/web/src/lib/learning/quiz/school/quiz-school-workshop-activities.ts, apps/web/src/lib/learning/quiz/school/quiz-school-workshop-assessment.ts.
+- `/documentation/features/quiz-quality-control.md` — INVARIANT_ERROR — apps/web/src/components/admin/quiz-pedagogical-metrics-panel.tsx.
+- `/feedback` — INVARIANT_ERROR — apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.cards.tsx.
 
 ## Graphe détaillé
 
@@ -200,9 +190,9 @@ _Aucune route dans cette catégorie._
 | `/actions/map` | `apps/web/src/app/(app)/actions/map/page.tsx` | YES | YES | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/actions/new` | `apps/web/src/app/(app)/actions/new/page.tsx` | YES | YES | — | /sections/guide, /sections/route, /sections/weather | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/admin` | `apps/web/src/app/(app)/admin/page.tsx` | YES | NO | — | — | NO | PROTECTED_TOOL | CURRENT_INDEX | INTERNAL_OR_QA |
-| `/admin/forms` | `apps/web/src/app/(app)/admin/forms/page.tsx` | NO | NO | — | — | NO | PROTECTED_TOOL | CURRENT_INDEX | INTERNAL_OR_QA |
-| `/admin/gamification/xp-audit` | `apps/web/src/app/admin/gamification/xp-audit/page.tsx` | NO | NO | — | — | NO | PROTECTED_TOOL | CURRENT_INDEX | INTERNAL_OR_QA |
-| `/admin/godmode` | `apps/web/src/app/(app)/admin/godmode/page.tsx` | YES | NO | — | — | NO | PROTECTED_TOOL | CURRENT_INDEX | INTERNAL_OR_QA |
+| `/admin/forms` | `apps/web/src/app/(app)/admin/forms/page.tsx` | NO | NO | — | — | NO | PROTECTED_REVIEW | CURRENT_INDEX | UNKNOWN |
+| `/admin/gamification/xp-audit` | `apps/web/src/app/admin/gamification/xp-audit/page.tsx` | NO | NO | — | — | NO | PROTECTED_REVIEW | CURRENT_INDEX | UNKNOWN |
+| `/admin/godmode` | `apps/web/src/app/(app)/admin/godmode/page.tsx` | YES | NO | — | — | NO | PROTECTED_REVIEW | CURRENT_INDEX | UNKNOWN |
 | `/admin/quiz-bank` | `apps/web/src/app/(app)/admin/quiz-bank/page.tsx` | NO | NO | — | — | NO | PROTECTED_TOOL | CURRENT_INDEX | INTERNAL_OR_QA |
 | `/admin/services` | `apps/web/src/app/(app)/admin/services/page.tsx` | NO | NO | — | — | NO | PROTECTED_TOOL | CURRENT_INDEX | INTERNAL_OR_QA |
 | `/community` | `apps/web/src/app/(app)/community/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | INDEX_SANS_FICHE | REDIRECT_ONLY |
@@ -274,11 +264,14 @@ _Aucune route dans cette catégorie._
 - `SECONDARY_NAV` : consumer runtime utilisateur démontré hors ruban principal.
 - `DEEP_LINK` : consumer de contexte, email, notification ou workflow démontré.
 - `PROTECTED_TOOL` : surface interne protégée ; l’absence du ruban n’est pas un finding.
+- `PROTECTED_REVIEW` : route protégée sans consumer, navigation ou usage interne démontré ; elle reste à revoir humainement.
 - `QA_TOOL` : preview ou outil de contrôle identifié.
 - `REDIRECT_COMPAT` : alias/redirect déclaré, dont l’utilité externe reste une décision humaine.
 - `ORPHAN_ROUTE` : aucun consumer runtime, redirect, deep-link ou usage interne démontré ; candidat d’audit, jamais suppression automatique.
 - `OBSOLETE` : réservé à une décision humaine confirmée ; le générateur ne l’infère pas.
 - `UNKNOWN` : preuve insuffisante, notamment pour les routes dynamiques, auth/callback et erreurs.
+- `FINDING_REVIEW` : cible non résolue statiquement ou attribution insuffisante ; nécessite un audit, sans preuve de casse.
+- `INVARIANT_ERROR` : lien utilisateur statique vers une route inexistante, registry/runtime incohérent, redirect cassé ou fiche CURRENT réellement absente.
 
 Les URLs dynamiques non résolues restent `UNKNOWN`. Les tests, les références
 documentaires et les listes de dead-code ne sont pas des consumers runtime.
