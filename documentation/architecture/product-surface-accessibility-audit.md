@@ -3,8 +3,8 @@
 <!-- PRODUCT_SURFACE_AUDIT:GENERATED:BEGIN -->
 ## En-tête
 
-`AUDIT_REF=4f9369ef3becae0ed98ef836bf86907fd29eed60`
-`AUDIT_GENERATED_AT=2026-09-25T21:25:36.605Z`
+`AUDIT_REF=c41dde67e4835b923b9c9e75c199605e45fe9679`
+`AUDIT_GENERATED_AT=2026-09-25T21:44:09.874Z`
 `AUDIT_STATUS=CURRENT_AT_GENERATION`
 
 Commande :
@@ -21,14 +21,14 @@ décision automatique de suppression.
 | STATUS | COUNT |
 | --- | ---: |
 | PRIMARY_NAV | 20 |
-| SECONDARY_NAV | 23 |
+| SECONDARY_NAV | 24 |
 | DEEP_LINK | 1 |
 | PROTECTED_TOOL | 5 |
 | QA_TOOL | 1 |
 | REDIRECT_COMPAT | 14 |
 | ORPHAN_ROUTE | 0 |
 | OBSOLETE | 0 |
-| UNKNOWN | 8 |
+| UNKNOWN | 7 |
 | ROUTES_RUNTIME | 72 |
 | REVIEW_FINDING | 0 |
 | INVARIANT_ERROR | 4 |
@@ -82,7 +82,7 @@ décision automatique de suppression.
 | `/profil` | SECONDARY_NAV | NO | 1 — apps/web/src/components/accueil/accueil-community-credibility.tsx | protected | CURRENT | consumer runtime hors ruban principal |
 | `/profil/[profile]` | SECONDARY_NAV | NO | 1 — apps/web/src/components/gamification/profile-gamification-summary.tsx | protected | CURRENT | consumer runtime hors ruban principal |
 | `/profil/impact` | SECONDARY_NAV | NO | 1 — apps/web/src/components/gamification/profile-gamification-summary.tsx | protected | CURRENT | consumer runtime hors ruban principal |
-| `/reglages` | UNKNOWN | NO | — | protected | CURRENT | preuve de reachability insuffisante |
+| `/reglages` | SECONDARY_NAV | NO | 1 — apps/web/src/components/account/account-settings-section.tsx | protected | CURRENT | consumer runtime hors ruban principal |
 | `/reports` | PRIMARY_NAV | YES | 12 — apps/web/src/app/(app)/actions/history/page.tsx, apps/web/src/app/(app)/actions/map/page-client.tsx, apps/web/src/components/accueil/accueil-community-credibility.tsx (+7) | clerk-context | CURRENT | entrée visible du registre/navigation |
 | `/sections/[sectionId]` | DEEP_LINK | NO | 63 — apps/web/src/app/(app)/signalement/page.tsx, apps/web/src/app/learn/ressources/learn-ressources-client.data.ts, apps/web/src/components/accueil/accueil-community-credibility.tsx (+30) | public-visible | CURRENT | consumer de deep-link démontré |
 | `/sections/actors` | SECONDARY_NAV | NO | 1 — apps/web/src/components/accueil/accueil-navigation-schema.tsx | public-visible | CURRENT | consumer runtime hors ruban principal |
@@ -230,7 +230,7 @@ Aucun.
 | `/profil` | `apps/web/src/app/(app)/profil/page.tsx` | YES | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/profil/[profile]` | `apps/web/src/app/(app)/profil/[profile]/page.tsx` | NO | NO | — | — | YES | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/profil/impact` | `apps/web/src/app/(app)/profil/impact/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
-| `/reglages` | `apps/web/src/app/reglages/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | UNKNOWN |
+| `/reglages` | `apps/web/src/app/reglages/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/reports` | `apps/web/src/app/(app)/reports/page.tsx` | YES | YES | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/sections/[sectionId]` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` | YES | YES | apps/web/src/components/sections/rubriques/feedback-section.shared.ts | /community, /gamification, /messagerie (+5) | YES | NONE_DEMONSTRATED | INDEX_SANS_FICHE | DEEP_LINK_ONLY |
 | `/sections/actors` | `apps/web/src/lib/sections-registry/config.ts` | YES | YES | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
@@ -306,7 +306,7 @@ les sources SEO, ni les redirects, ni les baselines des contrôles qualité.
 | /parcours/[profile] | UNKNOWN | KEEP | Variante paramétrée du même workflow ; elle valide le profil actif et redirige vers la surface de profil canonique. | /parcours | Aucun changement de navigation. |
 | /profil/[profile] | UNKNOWN | KEEP | Surface de profil réelle, consommée par les builders de routes et le dashboard ; le pattern dynamique ne doit pas être traité comme orphelin. | Dashboard / sélection de profil | Ajouter une preuve de consumer dynamique au générateur si elle reste nécessaire. |
 | /profil/impact | SECONDARY_NAV | KEEP | Carte d’impact personnelle protégée, distincte des rapports collectifs ; le bloc « Progression & badges » du profil actif expose désormais un CTA contextuel dédié. | /profil/[profile] → « Progression & badges » → « Voir ma carte d’impact » | Conserver le CTA unique et vérifier périodiquement son usage. |
-| /reglages | UNKNOWN | DEFER | Page protégée réelle, documentée et distincte des réglages inline du dashboard/profil ; le seul redirect vers sign-in est un garde d’authentification, pas un alias. L’utilité d’une URL autonome reste à confirmer par usage. | Accès direct / réglages inline | Mesurer les accès puis choisir MOVE_TO_SECONDARY_NAV ou consolidation. |
+| /reglages | SECONDARY_NAV | KEEP | Surface protégée canonique des préférences et paramètres de compte : contrôles de langue/mode d’affichage, nom affiché, localisation, confidentialité et demande de suppression. Les surfaces profil et dashboard exposent désormais un CTA vers cette page ; les notifications restent sur /dashboard#notifications. | /profil/[profile] ou /dashboard → « Ouvrir les réglages » | Conserver les deux CTA secondaires et le workflow de localisation compatible. |
 
 ### Compatibilités conservées sous réserve de preuve externe
 
@@ -344,12 +344,13 @@ les sources SEO, ni les redirects, ni les baselines des contrôles qualité.
   nécessitent une preuve de trafic/backlinks externe, et les quatre deep-links
   ont encore des callers ou une fonction documentée.
 - **Entrées utilisateur améliorées** : /sections/trash-spotter, depuis
-  /signalement, et /profil/impact, depuis le bloc « Progression & badges » du
-  profil actif, par des CTA secondaires contextuels.
+  /signalement, /profil/impact depuis le bloc « Progression & badges », et
+  /reglages depuis la configuration du profil et du dashboard, par des CTA
+  secondaires contextuels.
 - **Routes secondaires/deep-links légitimes** : /missions/[id],
   /sections/dm, /sections/guide, /sections/route et /sections/weather.
 - **Outils internes légitimes** : /preview/actions/new, /actions/history,
   /prints/report et les routes /admin.
-- **Indécis** : /reglages et les compatibilités marquées DEFER ci-dessus.
+- **Indécis** : les compatibilités marquées DEFER ci-dessus.
 
 <!-- PRODUCT_SURFACE_AUDIT:HUMAN_DECISIONS:END -->
