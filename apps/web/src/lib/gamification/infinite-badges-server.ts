@@ -15,6 +15,7 @@ import {
   buildTerrainProgressions,
   type TerrainProgressionEvent,
 } from "./terrain-progressions";
+import { buildCurrentMilestones, type MilestoneEvent } from "./milestones";
 
 function createFallbackActionBalanceSummary(): Awaited<ReturnType<typeof loadActionBalanceSummary>> {
   return {
@@ -57,6 +58,7 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
   organisationCount: number;
   cleanZonesCount: number;
   terrainProgressions: ReturnType<typeof buildTerrainProgressions>;
+  milestones: ReturnType<typeof buildCurrentMilestones>;
   actionBalance: Awaited<ReturnType<typeof loadActionBalanceSummary>>;
   monthlyRegularity: Awaited<ReturnType<typeof computeMonthlyRegularitySummary>>;
   sensitiveZoneApaisement: Awaited<
@@ -101,6 +103,10 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
     cleanZonesCount,
     events: (eventsResult.data ?? []) as TerrainProgressionEvent[],
   });
+  const milestones = buildCurrentMilestones({
+    completeActionsCount: counters.completeActionsCount,
+    events: (eventsResult.data ?? []) as MilestoneEvent[],
+  });
 
   const row = await supabase
     .from("user_badge_totals")
@@ -118,6 +124,7 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
       organisationCount,
       cleanZonesCount,
       terrainProgressions,
+      milestones,
       actionBalance,
       monthlyRegularity,
       sensitiveZoneApaisement,
@@ -132,6 +139,7 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
     organisationCount,
     cleanZonesCount,
     terrainProgressions,
+    milestones,
     actionBalance,
     monthlyRegularity,
     sensitiveZoneApaisement,

@@ -1,3 +1,5 @@
+import { CURRENT_MILESTONES } from "../progression-utils";
+
 export type GamificationBadgeEntry = {
   id: string;
   name: string;
@@ -170,8 +172,20 @@ export function buildQuizBalanceProgression(): LearningMilestoneFamily {
 }
 
 const ACTION_BADGES: readonly LegacyBadgeDefinition[] = [
-  { id: "first_trace_utile", name: "Première trace utile", description: "Valider une première action avec des données complètes", special: "first_trace_utile", icon: "badge-check" },
-  { id: "trace_fondatrice", name: "Trace fondatrice", description: "Première action validée avec dossier complet", special: "trace_fondatrice", icon: "sparkles" },
+  {
+    id: CURRENT_MILESTONES.find((milestone) => milestone.id === "premiere_trace_utile")!.legacyId!,
+    name: CURRENT_MILESTONES.find((milestone) => milestone.id === "premiere_trace_utile")!.label,
+    description: CURRENT_MILESTONES.find((milestone) => milestone.id === "premiere_trace_utile")!.description,
+    special: "first_trace_utile",
+    icon: "badge-check",
+  },
+  {
+    id: CURRENT_MILESTONES.find((milestone) => milestone.id === "trace_fondatrice")!.id,
+    name: CURRENT_MILESTONES.find((milestone) => milestone.id === "trace_fondatrice")!.label,
+    description: CURRENT_MILESTONES.find((milestone) => milestone.id === "trace_fondatrice")!.description,
+    special: "trace_fondatrice",
+    icon: "sparkles",
+  },
   { id: "cleaner", name: "Nettoyeur", description: "Valider 5 actions", special: "actions_validated", icon: "🧹" },
 ] as const;
 

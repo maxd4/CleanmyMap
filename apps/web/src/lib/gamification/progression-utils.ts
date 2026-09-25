@@ -6,6 +6,7 @@ import type {
   ActionRow,
   CurrentInfiniteProgressionId,
   GamificationEventRegistration,
+  MilestoneDefinition,
   GamificationProgressionDefinition,
   ProgressionEventType,
 } from "./progression-types";
@@ -82,6 +83,37 @@ export const CURRENT_INFINITE_PROGRESSIONS = [
     infinite: true,
   },
 ] as const satisfies readonly GamificationProgressionDefinition[];
+
+export const CURRENT_MILESTONES = [
+  {
+    id: "premiere_trace_utile",
+    legacyId: "first_trace_utile",
+    label: "Première trace utile",
+    description: "Première action réellement validée avec des données complètes.",
+    sourceDomain: "actions approuvées + formulaire validé",
+    factKey: "first_complete_action",
+    xpAwarded: 1,
+    oneShot: true,
+  },
+  {
+    id: "trace_fondatrice",
+    label: "Trace fondatrice",
+    description: "Badge compagnon du premier dossier complètement documenté.",
+    sourceDomain: "actions approuvées + formulaire validé",
+    factKey: "first_complete_action",
+    xpAwarded: 0,
+    oneShot: true,
+  },
+  {
+    id: "parrainage_utile",
+    label: "Parrainage utile",
+    description: "Première contribution utile confirmée d’un invité issu d’une filiation valide.",
+    sourceDomain: "filiation + referral_contributions validées",
+    factKey: "first_invitee_contribution",
+    xpAwarded: 2,
+    oneShot: true,
+  },
+] as const satisfies readonly MilestoneDefinition[];
 
 const GAMIFICATION_EVENT_REGISTRY: Record<
   ProgressionEventType,
@@ -185,13 +217,17 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
       "Preuve historique de qualification de zone, sans balance XP indépendante.",
   },
   sensitive_zone_milestone: {
-    classification: "milestone",
-    milestoneId: "zone_sensible_apaisement",
+    classification: "non_progression",
+    reason: "Jalon historique de zone sensible, hors des trois jalons CURRENT.",
   },
 };
 
 export function currentInfiniteProgressions(): readonly GamificationProgressionDefinition[] {
   return CURRENT_INFINITE_PROGRESSIONS;
+}
+
+export function currentMilestones(): readonly MilestoneDefinition[] {
+  return CURRENT_MILESTONES;
 }
 
 export function gamificationEventRegistry(): Readonly<

@@ -24,6 +24,8 @@ import { fetchCachedReferralSummary } from "@/lib/gamification/referrals-cache";
 import { loadCachedReferralLineageView } from "@/lib/gamification/referral-lineage";
 import { ReferralProfileTabs } from "@/components/gamification/referral-profile-tabs";
 import { ProfileGamificationSummary } from "@/components/gamification/profile-gamification-summary";
+import { MilestonesPanel } from "@/components/gamification/milestones-panel";
+import { buildCurrentMilestones } from "@/lib/gamification/milestones";
 
 type ProfilPageProps = {
   params: Promise<{ profile: string }>;
@@ -108,6 +110,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
     },
     monthlyRegularity: computeMonthlyRegularitySummary([]),
     sensitiveZoneApaisement: createFallbackSensitiveZoneApaisementSummary(),
+    milestones: buildCurrentMilestones({ completeActionsCount: 0, events: [] }),
   }));
   const referralSummary = await fetchCachedReferralSummary(userId).catch(
     () => ({
@@ -164,6 +167,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
             actionBalanceLabel={infiniteTotals.actionBalance.currentLabel}
           />
           <InfiniteBadgesPanel totals={infiniteTotals} />
+          <MilestonesPanel milestones={infiniteTotals.milestones} />
         </FamilyRubriqueCard>
 
         <FamilyRubriqueCard

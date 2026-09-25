@@ -25,9 +25,12 @@ Les autres documents de gamification restent utiles, mais ils sont désormais se
 
 ## Taxonomie CURRENT
 
-Le registre typé de `apps/web/src/lib/gamification/progression-utils.ts` est la
-source canonique de classification des événements. Il expose exactement sept
-progressions infinies :
+Les registres typés de `apps/web/src/lib/gamification/progression-utils.ts` sont
+la source canonique de classification des événements. `ProgressionDefinition`
+décrit les sept progressions infinies et `MilestoneDefinition` les trois
+jalons one-shot CURRENT ; leurs IDs et leurs faits sources sont distincts.
+
+Les sept progressions infinies sont :
 
 | ID stable | Libellé | Métrique métier | Domaine source | Famille / échelle |
 | --- | --- | --- | --- | --- |
@@ -48,8 +51,9 @@ progression.
 
 Les autres catégories du registre sont séparées :
 
-- `milestone` : jalons uniques comme `Première trace utile`, `Trace fondatrice`
-  et `Parrainage utile` ;
+- `milestone` : jalons uniques `Première trace utile`, `Trace fondatrice` et
+  `Parrainage utile`, acquis au plus une fois et affichés sans barre de
+  progression infinie ;
 - `non_progression` : métriques d'impact, usage utilitaire et familles de
   compatibilité conservées sans constituer une progression CURRENT.
 
