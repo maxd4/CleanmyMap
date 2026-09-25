@@ -35,6 +35,20 @@ const HUMAN_BEGIN = "<!-- RADAR:HUMAN_DECISIONS:BEGIN -->";
 const HUMAN_END = "<!-- RADAR:HUMAN_DECISIONS:END -->";
 const DEFAULT_TOP = 25;
 const SIGNAL_STATES = new Set(["NONE", "PRESENT", "NOT_APPLICABLE", "NOT_MEASURED"]);
+const HUMAN_FIELDS = Object.freeze([
+  "RESPONSIBILITIES",
+  "PUBLIC_CONTRACTS",
+  "SIDE_EFFECTS",
+  "MAIN_CONSUMERS",
+  "TEST_BOUNDARY",
+  "COUPLING",
+  "NATURAL_EXTRACTION_BOUNDARY",
+  "ARCHITECTURE_DECISION",
+  "RATIONALE",
+  "PRIORITY",
+  "DEPENDENCY_OR_BLOCKER",
+  "NEXT_TRIGGER",
+]);
 
 function git(args, root = REPOSITORY_ROOT) {
   return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
@@ -75,7 +89,7 @@ function countByFile(entries, pathForEntry) {
   return counts;
 }
 
-function loadCorrelationSignals(view) {
+export function loadCorrelationSignals(view) {
   const complexity = parseJson(view, "scripts/checks/complexity-baseline.json");
   const complexityByFile = countByFile(complexity?.entries, (entry) => {
     if (typeof entry?.path !== "string") return null;
@@ -95,13 +109,13 @@ function signalForRow(row, correlations) {
     size: isAboveReview(row)
       ? signal("PRESENT", isAboveHard(row) ? "HARD" : "REVIEW")
       : signal("NONE"),
-    complexity: complexityCount > 0
-      ? signal("PRESENT", `${complexityCount} finding(s) dans complexity-baseline.json`)
-      : signal("NOT_MEASURED", "quality:complexity n'est pas exécuté par la génération normale"),
+    complexity: signal("NOT_MEASURED", complexityCount > 0
+      ? `baseline historique: ${complexityCount} entrée(s); quality:complexity non exécuté sur RADAR_REF`
+      : "quality:complexity non exécuté sur RADAR_REF"),
     cycle: signal("NOT_MEASURED", "quality:cycles/GitNexus non exécuté par la génération normale"),
-    deadCode: deadCodeCount > 0
-      ? signal("PRESENT", `${deadCodeCount} finding(s) dans dead-code-baseline.json`)
-      : signal("NOT_MEASURED", "Knip n'est pas exécuté par la génération normale"),
+    deadCode: signal("NOT_MEASURED", deadCodeCount > 0
+      ? `baseline historique: ${deadCodeCount} entrée(s); Knip non exécuté sur RADAR_REF`
+      : "Knip non exécuté sur RADAR_REF"),
     duplication: signal("NOT_MEASURED", "jscpd expose ici une métrique globale, sans attribution fiable au fichier"),
     testability: signal("NOT_MEASURED", "quality:coverage n'est pas attribuable ici au fichier candidat"),
   };
@@ -133,11 +147,58 @@ export function parseDecisionSummary(humanBlock) {
   for (const line of humanBlock.split(/\r?\n/)) {
     const cells = splitTableRow(line);
     if (cells.length !== 5 || cells[0] === "PATH" || /^-+$/.test(cells[0])) continue;
-    const [file, decision, priority, signals, dependency] = cells;
+    const [file, decision, priority, fourth, fifth] = cells;
     if (!file || !decision || !priority || file.startsWith("_") || file.startsWith("###")) continue;
-    entries.push({ file: file.replaceAll("`", ""), decision, priority, signals, dependency });
+    if (decision === "DECISION" || decision === "ARCHITECTURE_DECISION") continue;
+    const isCanonical = cells[3] === "DEPENDENCY_OR_BLOCKER";
+    entries.push({
+      file: file.replaceAll("`", ""),
+      decision,
+      priority,
+      dependency: isCanonical ? fourth : fifth,
+      nextTrigger: isCanonical ? fifth : "",
+    });
   }
   return entries;
+}
+
+function parseHumanDetailTables(humanBlock) {
+  const details = new Map();
+  const headings = [...humanBlock.matchAll(/^#### `([^`]+)`\s*$/gm)];
+  for (let index = 0; index < headings.length; index += 1) {
+    const file = headings[index][1];
+    const start = headings[index].index + headings[index][0].length;
+    const end = headings[index + 1]?.index ?? humanBlock.length;
+    const fields = {};
+    for (const line of humanBlock.slice(start, end).split(/\r?\n/)) {
+      const cells = splitTableRow(line);
+      if (cells.length !== 2 || cells[0] === "Champ" || /^-+$/.test(cells[0])) continue;
+      const field = cells[0];
+      if (HUMAN_FIELDS.includes(field)) fields[field] = cells[1];
+    }
+    details.set(file, fields);
+  }
+  return details;
+}
+
+export function parseHumanDecisions(humanBlock) {
+  const summaries = parseDecisionSummary(humanBlock);
+  const details = parseHumanDetailTables(humanBlock);
+  const files = new Set([...summaries.map((entry) => entry.file), ...details.keys()]);
+  return [...files].map((file) => {
+    const summary = summaries.find((entry) => entry.file === file) ?? {};
+    const detail = details.get(file) ?? {};
+    return {
+      file,
+      ARCHITECTURE_DECISION: detail.ARCHITECTURE_DECISION ?? summary.decision ?? "REVIEW_REQUIRED",
+      PRIORITY: detail.PRIORITY ?? summary.priority ?? "NONE",
+      DEPENDENCY_OR_BLOCKER: detail.DEPENDENCY_OR_BLOCKER ?? summary.dependency ?? "",
+      NEXT_TRIGGER: detail.NEXT_TRIGGER ?? summary.nextTrigger ?? "",
+      ...Object.fromEntries(HUMAN_FIELDS
+        .filter((field) => !["ARCHITECTURE_DECISION", "PRIORITY", "DEPENDENCY_OR_BLOCKER", "NEXT_TRIGGER"].includes(field))
+        .map((field) => [field, detail[field] ?? ""])),
+    };
+  });
 }
 
 function formatBytes(bytes) {
@@ -155,8 +216,8 @@ function signalText(value) {
   return value.detail ? `${value.state} — ${value.detail}` : value.state;
 }
 
-function compactSignalText(signals) {
-  return [
+export function compactSignalText(signals) {
+  const present = [
     ["complexity", signals.complexity],
     ["cycle", signals.cycle],
     ["dead-code", signals.deadCode],
@@ -164,7 +225,12 @@ function compactSignalText(signals) {
     ["testability", signals.testability],
   ].filter(([, value]) => value.state === "PRESENT")
     .map(([name, value]) => `${name}: ${value.detail}`)
-    .join("<br>") || "aucun finding attribué";
+    .join("<br>");
+  if (present) return present;
+  const complementary = [signals.complexity, signals.cycle, signals.deadCode, signals.duplication, signals.testability];
+  return complementary.some((value) => value.state === "NOT_MEASURED")
+    ? "signaux complémentaires non mesurés"
+    : "aucun signal actuel mesuré";
 }
 
 function renderRawTable(rows, limit, humanByFile) {
@@ -175,18 +241,22 @@ function renderRawTable(rows, limit, humanByFile) {
     "| --- | --- | ---: | ---: | --- | --- | --- | --- |",
   ];
   for (const row of selected) {
-    const decision = humanByFile.get(row.file)?.decision ?? "REVIEW_REQUIRED";
+    const decision = humanByFile.get(row.file)?.ARCHITECTURE_DECISION ?? "REVIEW_REQUIRED";
     lines.push(`| \`${row.file}\` | \`${row.ref}\` | ${row.lines} | ${row.bytes} | ${row.kind} | ${signalText(row.signals.size)} | ${compactSignalText(row.signals)} | ${decision} |`);
   }
   return lines.join("\n");
 }
 
-function renderPriorities(entries) {
+function renderPriorities(entries, radarByFile) {
   if (entries.length === 0) return "_Aucune décision humaine enregistrée._";
   return [
-    "| PATH | DECISION | PRIORITY | SIGNALS | BLOCKER / NEXT_TRIGGER |",
-    "| --- | --- | --- | --- | --- |",
-    ...entries.map((entry) => `| \`${entry.file}\` | ${entry.decision} | ${entry.priority} | ${entry.signals} | ${entry.dependency} |`),
+    "| PATH | DECISION | SIZE_SIGNAL | PRIORITY | SIGNALS | BLOCKER / NEXT_TRIGGER |",
+    "| --- | --- | --- | --- | --- | --- |",
+    ...entries.map((entry) => {
+      const row = radarByFile.get(entry.file);
+      const trigger = [entry.DEPENDENCY_OR_BLOCKER, entry.NEXT_TRIGGER].filter(Boolean).join(" ; ") || "—";
+      return `| \`${entry.file}\` | ${entry.ARCHITECTURE_DECISION} | ${row ? signalText(row.signals.size) : "NOT_MEASURED"} | ${entry.PRIORITY} | ${row ? compactSignalText(row.signals) : "signaux complémentaires non mesurés"} | ${trigger} |`;
+    }),
   ].join("\n");
 }
 
@@ -195,20 +265,36 @@ function countStructuralSignals(row) {
     .filter((item) => item.state === "PRESENT").length;
 }
 
-function renderHumanSection(humanBlock) {
-  return `${HUMAN_BEGIN}\n${humanBlock.trim()}\n${HUMAN_END}`;
+function renderHumanSection(entries) {
+  const summary = [
+    "| PATH | ARCHITECTURE_DECISION | PRIORITY | DEPENDENCY_OR_BLOCKER | NEXT_TRIGGER |",
+    "| --- | --- | --- | --- | --- |",
+    ...entries.map((entry) => `| \`${entry.file}\` | ${entry.ARCHITECTURE_DECISION} | ${entry.PRIORITY} | ${entry.DEPENDENCY_OR_BLOCKER || "—"} | ${entry.NEXT_TRIGGER || "—"} |`),
+  ];
+  const details = entries.flatMap((entry) => [
+    `#### \`${entry.file}\``,
+    "",
+    "| Champ | Valeur |",
+    "| --- | --- |",
+    ...HUMAN_FIELDS
+      .filter((field) => entry[field])
+      .map((field) => `| ${field} | ${entry[field]} |`),
+    "",
+  ]);
+  return `${HUMAN_BEGIN}\n${summary.join("\n")}\n\n### Décisions établies — grille détaillée\n\n${details.join("\n").trim()}\n${HUMAN_END}`;
 }
 
 export function buildRadarMarkdown({ report, refInfo, humanBlock, top = DEFAULT_TOP, generatedAt = new Date().toISOString() }) {
-  const humanEntries = parseDecisionSummary(humanBlock);
+  const humanEntries = parseHumanDecisions(humanBlock);
   const humanByFile = new Map(humanEntries.map((entry) => [entry.file, entry]));
+  const radarByFile = new Map(report.radarRows.map((row) => [row.file, row]));
   const rows = report.rows;
   const architectural = report.architectural.map((row) => report.radarRows.find((candidate) => candidate.file === row.file));
   const tests = report.tests.map((row) => report.radarRows.find((candidate) => candidate.file === row.file));
   const generated = report.generated.map((row) => report.radarRows.find((candidate) => candidate.file === row.file));
   const hard = rows.filter(isAboveHard).filter((row) => !isExcludedGeneratedRow(row)).length;
   const multiSignals = report.radarRows.filter((row) => isAboveReview(row) && countStructuralSignals(row) >= 2).length;
-  const decisionCount = (decision) => humanEntries.filter((entry) => entry.decision === decision).length;
+  const decisionCount = (decision) => humanEntries.filter((entry) => entry.ARCHITECTURE_DECISION === decision).length;
 
   return `# Radar de modularisation et dette structurelle
 
@@ -263,11 +349,11 @@ cohésion de scénarios, jamais un monolithe runtime par défaut.
 
 ## D. Priorités architecturales
 
-${renderPriorities(humanEntries)}
+${renderPriorities(humanEntries, radarByFile)}
 
 ## E. Décisions établies
 
-${renderHumanSection(humanBlock)}
+${renderHumanSection(humanEntries)}
 
 ## F. Radar brut à auditer
 
@@ -301,7 +387,9 @@ factuelles et traçables :
 \`DEPENDENCY_OR_BLOCKER\`, \`NEXT_TRIGGER\`.
 
 Les signaux acceptent uniquement NONE, PRESENT, NOT_APPLICABLE ou
-NOT_MEASURED, avec un détail court. Les priorités sont NOW,
+NOT_MEASURED, avec un détail court. NONE signifie que l'outil concerné a
+réellement été exécuté sans finding ; NOT_MEASURED signifie qu'aucune mesure
+actuelle attribuable à cette ref n'est disponible. Les priorités sont NOW,
 AFTER_ACTIVE_CHANGES, LATER ou NONE ; elles ne sont jamais déduites
 automatiquement de la taille.
 
@@ -310,12 +398,14 @@ automatiquement de la taille.
 - SIZE_SIGNAL vient de quality:top-heavy, de classifyFileKind() et
   de la baseline heavy-files ; ce contrôle reste la source de vérité de la
   taille et de ses plafonds.
-- COMPLEXITY_SIGNAL consomme les entrées attribuées du snapshot de
-  quality:complexity. Il ne modifie pas sa baseline et ne remplace pas le
-  contrôle des fonctions.
-- DEAD_CODE_SIGNAL consomme les findings de la baseline Knip lorsqu'ils
-  portent un chemin de fichier. Knip reste propriétaire de la décision
-  dead-code.
+- COMPLEXITY_SIGNAL et DEAD_CODE_SIGNAL ne déduisent jamais un finding
+  actuel d'une baseline historique. En génération normale, une entrée de
+  baseline produit au plus NOT_MEASURED — baseline historique: N entrée(s) ;
+  quality:complexity ou Knip reste propriétaire de la mesure actuelle.
+- Une génération deep n'est pas activée par défaut : les contrôles existants
+  n'exposent pas tous une mesure attribuable à une ref exacte sans rejouer leur
+  environnement complet. Le radar préfère donc NOT_MEASURED à une attribution
+  locale inventée.
 - cycles/GitNexus, jscpd et coverage sont NOT_MEASURED dans la génération
   normale lorsqu'une sortie actuelle attribuable au fichier n'est pas déjà
   disponible. Le radar ne lance pas ces analyses coûteuses et ne convertit
@@ -331,10 +421,11 @@ apps/web/src, lus depuis la ref exacte affichée en tête. Pour régénérer un
 snapshot courant, utiliser --ref=HEAD ; une ref ancienne est signalée
 HISTORICAL_SNAPSHOT et ne peut pas être présentée comme courante.
 
-Le bloc entre RADAR:HUMAN_DECISIONS:BEGIN/END est préservé par les
-régénérations. Les décisions humaines ne sont donc ni supprimées ni
-recalculées par la taille. refactor-priorities-plan.md renvoie vers ce
-document sans recopier sa liste.
+Le bloc entre RADAR:HUMAN_DECISIONS:BEGIN/END conserve uniquement les
+interprétations humaines et les décisions d'architecture. REF, LINES, BYTES,
+KIND, SIZE_SIGNAL et les signaux automatiques sont toujours régénérés depuis
+RADAR_REF ; ils ne sont jamais lus depuis ce bloc. refactor-priorities-plan.md
+renvoie vers ce document sans recopier sa liste.
 <!-- RADAR:GENERATED:END -->
 `;
 }
