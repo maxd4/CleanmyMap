@@ -3,8 +3,8 @@
 <!-- PRODUCT_SURFACE_AUDIT:GENERATED:BEGIN -->
 ## En-tête
 
-`AUDIT_REF=9155338911e3b4b2f31b68fabf22f2dd5c6f1a4e`
-`AUDIT_GENERATED_AT=2026-09-25T23:20:00.000Z`
+`AUDIT_REF=be452f7383183c4b011364809fb8dedb5b36d353`
+`AUDIT_GENERATED_AT=2026-09-25T21:15:46.955Z`
 `AUDIT_STATUS=CURRENT_AT_GENERATION`
 
 Commande :
@@ -30,7 +30,7 @@ décision automatique de suppression.
 | OBSOLETE | 0 |
 | UNKNOWN | 10 |
 | ROUTES_RUNTIME | 72 |
-| FINDING_REVIEW | 0 |
+| REVIEW_FINDING | 0 |
 | INVARIANT_ERROR | 4 |
 
 ## Table principale
@@ -270,7 +270,7 @@ Aucun.
 - `ORPHAN_ROUTE` : aucun consumer runtime, redirect, deep-link ou usage interne démontré ; candidat d’audit, jamais suppression automatique.
 - `OBSOLETE` : réservé à une décision humaine confirmée ; le générateur ne l’infère pas.
 - `UNKNOWN` : preuve insuffisante, notamment pour les routes dynamiques, auth/callback et erreurs.
-- `FINDING_REVIEW` : cible non résolue statiquement ou attribution insuffisante ; nécessite un audit, sans preuve de casse.
+- `REVIEW_FINDING` : cible non résolue statiquement ou attribution insuffisante ; nécessite un audit, sans preuve de casse.
 - `INVARIANT_ERROR` : lien utilisateur statique vers une route inexistante, registry/runtime incohérent, redirect cassé ou fiche CURRENT réellement absente.
 
 Les URLs dynamiques non résolues restent `UNKNOWN`. Les tests, les références
