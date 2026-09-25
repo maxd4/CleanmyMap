@@ -3,10 +3,13 @@ import assert from "node:assert/strict";
 
 import {
   classifySurfaceRoute,
+  classifyUnresolvedRuntimeReferences,
   collectRuntimeReferences,
+  extractNavigationRouteIds,
   findUnresolvedRuntimeTargets,
   isRedirectOnlyRouteSource,
   normalizeRouteTarget,
+  routeFilePattern,
   routePatternMatches,
 } from "./generate-product-surface-audit.mjs";
 
@@ -15,6 +18,30 @@ test("normalise les liens internes dynamiques et les distingue des URLs externes
   assert.equal(normalizeRouteTarget("https://cleanmymap.fr/actions/new"), "");
   assert.equal(routePatternMatches("/missions/[id]", "/missions/42"), true);
   assert.equal(routePatternMatches("/missions/[id]", "/missions/42/history"), false);
+  assert.equal(routePatternMatches("/docs/[...segments]", "/docs/a.md"), true);
+  assert.equal(routePatternMatches("/docs/[...segments]", "/docs/architecture/foo.md"), true);
+  assert.equal(routePatternMatches("/docs/[...segments]", "/other/a.md"), false);
+  assert.equal(routePatternMatches("/docs/[[...segments]]", "/docs"), true);
+  assert.equal(routePatternMatches("/docs/[[...segments]]", "/docs/a.md"), true);
+  assert.equal(routeFilePattern("apps/web/src/app/docs/[...segments]/route.ts", process.cwd()), "/docs/[...segments]");
+});
+
+test("résout les constantes indirectes du ruban de navigation", () => {
+  const ids = extractNavigationRouteIds(`
+    const ACT_VISIBLE_ROUTE_IDS: RouteId[] = ["rejoindre-une-action", "new", "signalement"];
+    const COMMON_PROFILE_SPACE_PAGES = {
+      act: ACT_VISIBLE_ROUTE_IDS,
+      visualize: ["map"],
+    };
+    const PARCOURS_SPACE_PAGE_MAP = {
+      benevole: buildProfileSpacePages(["dashboard"]),
+    };
+  `);
+
+  assert.equal(ids.has("rejoindre-une-action"), true);
+  assert.equal(ids.has("new"), true);
+  assert.equal(ids.has("signalement"), true);
+  assert.equal(ids.has("map"), true);
 });
 
 test("classe les surfaces selon leurs preuves, sans transformer un manque de lien en suppression", () => {
@@ -22,11 +49,13 @@ test("classe les surfaces selon leurs preuves, sans transformer un manque de lie
   assert.equal(classifySurfaceRoute({ inboundRuntimeCount: 1 }), "SECONDARY_NAV");
   assert.equal(classifySurfaceRoute({ deepLinkCount: 1 }), "DEEP_LINK");
   assert.equal(classifySurfaceRoute({ dynamicRoute: true }), "UNKNOWN");
-  assert.equal(classifySurfaceRoute({ isProtectedTool: true }), "PROTECTED_TOOL");
+  assert.equal(classifySurfaceRoute({ protectedRoute: true, protectedEvidence: true }), "PROTECTED_TOOL");
+  assert.equal(classifySurfaceRoute({ protectedRoute: true, protectedEvidence: false, authGate: "protected" }), "UNKNOWN");
   assert.equal(classifySurfaceRoute({ isQa: true }), "QA_TOOL");
   assert.equal(classifySurfaceRoute({ canonicalStatus: "REDIRECT_COMPAT" }), "REDIRECT_COMPAT");
   assert.equal(classifySurfaceRoute({ documentationOnly: true }), "UNKNOWN");
   assert.equal(classifySurfaceRoute({}), "ORPHAN_ROUTE");
+  assert.equal(classifySurfaceRoute({ authGate: "auth-blur-gate" }), "ORPHAN_ROUTE");
 });
 
 test("collecte un CTA interne et ignore les liens externes", () => {
@@ -55,6 +84,23 @@ test("signale les href internes qui ne correspondent à aucun pattern runtime", 
   assert.deepEqual(
     findUnresolvedRuntimeTargets(references, new Set(["/actions/new", "/missions/[id]"])),
     ["/route-inexistante"],
+  );
+});
+
+test("sépare un lien statique cassé d'un finding à revoir", () => {
+  const findings = classifyUnresolvedRuntimeReferences([
+    { source: "apps/web/src/components/example.tsx", kind: "link", target: "/charte" },
+    { source: "apps/web/src/lib/example.ts", kind: "link", target: "/feedback" },
+    { source: "apps/web/src/lib/example.ts", kind: "path", target: "/dynamic-target" },
+  ], new Set(["/actions/new"]));
+
+  assert.deepEqual(
+    findings.map(({ target, severity }) => ({ target, severity })),
+    [
+      { target: "/charte", severity: "INVARIANT_ERROR" },
+      { target: "/dynamic-target", severity: "FINDING_REVIEW" },
+      { target: "/feedback", severity: "INVARIANT_ERROR" },
+    ],
   );
 });
 
