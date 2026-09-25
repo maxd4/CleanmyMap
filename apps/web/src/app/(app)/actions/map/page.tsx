@@ -4,7 +4,6 @@ import {
   buildPublicImpactMetrics,
   type PublicImpactCounters,
 } from "@/lib/impact/public-impact-kpis";
-import { PageHeader } from "@/components/ui/page-header";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { ActionsMapPageClient } from "./page-client";
 
@@ -40,11 +39,15 @@ export default async function ActionsMapPage() {
 
   return (
     <>
-      <PageHeader
-        family={resolvePageFamily("/actions/map")}
-        title="Cartographie des actions"
-        className="cmm-page-width px-6 pt-6"
-      />
+      <header className="cmm-page-header cmm-page-header--left cmm-page-width px-6 pt-6">
+        <div className="flex w-full flex-col gap-4 items-start">
+          <div className="min-w-0 w-full">
+            <h1 className={`cmm-page-header-title ${resolvePageFamily("/actions/map").hero.titleColor}`}>
+              Cartographie des actions
+            </h1>
+          </div>
+        </div>
+      </header>
       <ActionsMapPageClient
         impactMetrics={buildPublicImpactMetrics(counters, hasData)}
       />
