@@ -17,6 +17,10 @@ import {
 import { broadcastGamificationAnnouncement } from "@/lib/gamification/announcements";
 import { logFailure } from "@/lib/logging/failure-log";
 import { rebuildUserGamificationBadges } from "./badges/rebuild";
+import {
+  awardReferralForUsefulContribution,
+  removeReferralAwardForRejectedContribution,
+} from "./referrals";
 
 export { syncUserActionProgression } from "./progression-data";
 
@@ -165,6 +169,16 @@ export async function trackActionValidationBonus(
     action.created_by_clerk_id,
   );
   await syncOrganizersProgression(supabase, organizerIds);
+  await Promise.all(
+    organizerIds.map((inviteeUserId) =>
+      awardReferralForUsefulContribution(supabase, {
+        inviteeUserId,
+        contributionSourceTable: "actions",
+        contributionSourceId: action.id,
+        occurredOn: action.action_date,
+      }),
+    ),
+  );
 }
 
 export async function trackActionRejection(
@@ -183,6 +197,17 @@ export async function trackActionRejection(
   );
 
   await syncOrganizersProgression(supabase, organizerIds);
+
+  const inviterIds = await Promise.all(
+    organizerIds.map((inviteeUserId) =>
+      removeReferralAwardForRejectedContribution(supabase, inviteeUserId),
+    ),
+  );
+  await Promise.all(
+    [...new Set(inviterIds.filter((userId): userId is string => Boolean(userId)))].map(
+      (inviterUserId) => refreshProgressionProfile(supabase, inviterUserId),
+    ),
+  );
 }
 
 export async function trackSpotCreated(

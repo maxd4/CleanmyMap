@@ -5,7 +5,6 @@ import { env } from "@/lib/env";
 import { broadcastGamificationAnnouncement } from "@/lib/gamification/announcements";
 import { auditXpAttribution } from "./notifications";
 import { insertProgressionEvent } from "./progression-data";
-import { logWarning } from "@/lib/logging/failure-log";
 
 export type ReferralSummary = {
   referralCode: string | null;
@@ -26,8 +25,8 @@ export type ReferralClaimResult = {
 };
 
 const REFERRAL_BADGE_EVENT_TYPE = "community_referral_invite";
-const REFERRAL_BADGE_SOURCE_TABLE = "referral_invites";
-const REFERRAL_BADGE_SOURCE_ID_PREFIX = "referral-invite:";
+const REFERRAL_CONTRIBUTION_SOURCE_TABLE = "referral_contributions";
+const REFERRAL_CONTRIBUTION_SOURCE_ID_PREFIX = "referral-contribution:";
 const REFERRAL_XP = 2;
 const REFERRAL_PATH = "/sign-up";
 const REFERRAL_EXPORT_CACHE_TAG = "admin-referral-lineage-export";
@@ -55,45 +54,47 @@ function invalidateReferralCaches(): void {
   revalidateTag(REFERRAL_EXPORT_CACHE_TAG, "max");
 }
 
-async function ensureReferralInviteAward(
+export async function awardReferralForUsefulContribution(
   supabase: SupabaseClient,
   params: {
-    userId: string;
-    referralCode: string;
+    inviteeUserId: string;
+    contributionSourceTable: string;
+    contributionSourceId: string;
+    occurredOn?: string;
   },
-): Promise<boolean> {
-  const sourceId = `${REFERRAL_BADGE_SOURCE_ID_PREFIX}${params.userId}`;
-  const existing = await supabase
-    .from("progression_events")
-    .select("id")
-    .eq("user_id", params.userId)
-    .eq("event_type", REFERRAL_BADGE_EVENT_TYPE)
-    .eq("source_table", REFERRAL_BADGE_SOURCE_TABLE)
-    .eq("source_id", sourceId)
-    .eq("status_phase", "validated")
-    .maybeSingle();
+): Promise<{
+  awarded: boolean;
+  inviterUserId: string | null;
+  inviteeUserId: string;
+}> {
+  const invitee = await loadReferralProfile(supabase, params.inviteeUserId);
+  const inviterUserId = invitee?.referred_by_profile_id?.trim() || null;
 
-  if (existing.error) {
-    throw existing.error;
-  }
-  if (existing.data) {
-    return false;
+  if (!inviterUserId || inviterUserId === params.inviteeUserId) {
+    return {
+      awarded: false,
+      inviterUserId,
+      inviteeUserId: params.inviteeUserId,
+    };
   }
 
-  const inviteUrl = buildReferralInviteUrl(params.referralCode);
+  // The source is the referral lineage, not the triggering contribution:
+  // later validated contributions by the same invitee must not award again.
+  const sourceId = `${REFERRAL_CONTRIBUTION_SOURCE_ID_PREFIX}${params.inviteeUserId}`;
   const inserted = await insertProgressionEvent(supabase, {
-    userId: params.userId,
+    userId: inviterUserId,
     eventType: REFERRAL_BADGE_EVENT_TYPE,
-    sourceTable: REFERRAL_BADGE_SOURCE_TABLE,
+    sourceTable: REFERRAL_CONTRIBUTION_SOURCE_TABLE,
     sourceId,
     statusPhase: "validated",
     weight: 1,
     xpBase: REFERRAL_XP,
     xpAwarded: REFERRAL_XP,
-    occurredOn: new Date().toISOString().slice(0, 10),
+    occurredOn: (params.occurredOn ?? new Date().toISOString()).slice(0, 10),
     metadata: {
-      referralCode: params.referralCode,
-      inviteUrl,
+      inviteeUserId: params.inviteeUserId,
+      contributionSourceTable: params.contributionSourceTable,
+      contributionSourceId: params.contributionSourceId,
       referralAwardedXp: REFERRAL_XP,
     },
   });
@@ -103,34 +104,66 @@ async function ensureReferralInviteAward(
 
     await auditXpAttribution(
       supabase,
-      params.userId,
+      inviterUserId,
       null,
-      "Badge one-shot: inviter un ami",
+      "Parrainage utile : première contribution confirmée de l'invité",
       REFERRAL_XP,
-      REFERRAL_BADGE_SOURCE_TABLE,
+      REFERRAL_CONTRIBUTION_SOURCE_TABLE,
       sourceId,
       {
-        referralCode: params.referralCode,
-        inviteUrl,
+        inviteeUserId: params.inviteeUserId,
+        contributionSourceTable: params.contributionSourceTable,
+        contributionSourceId: params.contributionSourceId,
       },
     );
 
     await broadcastGamificationAnnouncement(supabase, {
       type: "referral_invite_awarded",
-      userId: params.userId,
+      userId: inviterUserId,
       badgeId: REFERRAL_BADGE_EVENT_TYPE,
       xp: REFERRAL_XP,
-      referralCode: params.referralCode,
-      inviteUrl,
-      title: "Badge invité un ami",
-      message: "+2 XP pour la première invitation générée.",
+      title: "Parrainage utile",
+      message: "+2 XP : votre invité a réalisé sa première contribution utile confirmée.",
       icon: "share-2",
       source: "referrals",
-      dedupeKey: `referral_invite_awarded:${params.referralCode}`,
+      dedupeKey: `referral_invite_awarded:${inviterUserId}:${params.inviteeUserId}`,
     });
   }
 
-  return inserted;
+  return {
+    awarded: inserted,
+    inviterUserId,
+    inviteeUserId: params.inviteeUserId,
+  };
+}
+
+export async function removeReferralAwardForRejectedContribution(
+  supabase: SupabaseClient,
+  inviteeUserId: string,
+): Promise<string | null> {
+  const invitee = await loadReferralProfile(supabase, inviteeUserId);
+  const inviterUserId = invitee?.referred_by_profile_id?.trim() || null;
+
+  if (!inviterUserId || inviterUserId === inviteeUserId) {
+    return null;
+  }
+
+  const sourceId = `${REFERRAL_CONTRIBUTION_SOURCE_ID_PREFIX}${inviteeUserId}`;
+  const { error } = await supabase
+    .from("progression_events")
+    .delete()
+    .eq("user_id", inviterUserId)
+    .eq("event_type", REFERRAL_BADGE_EVENT_TYPE)
+    .eq("source_table", REFERRAL_CONTRIBUTION_SOURCE_TABLE)
+    .eq("source_id", sourceId)
+    .eq("status_phase", "validated");
+
+  if (error) {
+    throw error;
+  }
+
+  invalidateReferralCaches();
+  return inviterUserId;
 }
 
 async function loadReferralProfile(
@@ -174,10 +207,19 @@ export async function loadReferralSummary(
         .eq("id", profile.referred_by_profile_id)
         .maybeSingle()
     : Promise.resolve({ data: null, error: null });
+  const referralAwardsPromise = supabase
+    .from("progression_events")
+    .select("xp_awarded")
+    .eq("user_id", userId)
+    .eq("event_type", REFERRAL_BADGE_EVENT_TYPE)
+    .eq("source_table", REFERRAL_CONTRIBUTION_SOURCE_TABLE)
+    .eq("status_phase", "validated")
+    .limit(10000);
 
-  const [invitedUsersResult, inviterResult] = await Promise.all([
+  const [invitedUsersResult, inviterResult, referralAwardsResult] = await Promise.all([
     invitedUsersPromise,
     inviterPromise,
+    referralAwardsPromise,
   ]);
 
   if (invitedUsersResult.error) {
@@ -186,10 +228,15 @@ export async function loadReferralSummary(
   if (inviterResult.error) {
     throw inviterResult.error;
   }
+  if (referralAwardsResult.error) {
+    throw referralAwardsResult.error;
+  }
 
   const referralCode = normalizeReferralCode(profile?.referral_code);
-  const hasReferralBadge = Boolean(referralCode);
-  const awardedXp = hasReferralBadge ? REFERRAL_XP : 0;
+  const awardedXp = ((referralAwardsResult.data ?? []) as Array<{ xp_awarded: number | null }>).reduce(
+    (total, row) => total + Math.max(0, Number(row.xp_awarded) || 0),
+    0,
+  );
 
   return {
     referralCode: referralCode || null,
@@ -201,7 +248,7 @@ export async function loadReferralSummary(
           displayName: inviterResult.data.display_name || inviterResult.data.id,
         }
       : null,
-    badgeUnlocked: hasReferralBadge,
+    badgeUnlocked: awardedXp > 0,
     referralAwardedXp: awardedXp,
   };
 }
@@ -219,17 +266,6 @@ export async function ensureReferralInviteForUser(
   }
 
   if (normalizeReferralCode(profile.referral_code)) {
-    const referralCode = normalizeReferralCode(profile.referral_code);
-    await ensureReferralInviteAward(supabase, {
-      userId,
-      referralCode,
-    }).catch((error) => {
-      logWarning("Referrals", "Invite repair failed", {
-        userId,
-        reason: error instanceof Error ? error.message : String(error),
-      });
-    });
-
     return {
       summary: await loadReferralSummary(supabase, userId),
       created: false,
@@ -273,28 +309,14 @@ export async function ensureReferralInviteForUser(
   if (!updated) {
     const currentSummary = await loadReferralSummary(supabase, userId);
     if (currentSummary.referralCode) {
-      await ensureReferralInviteAward(supabase, {
-        userId,
-        referralCode: currentSummary.referralCode,
-      }).catch((error) => {
-        logWarning("Referrals", "Invite award repair failed", {
-          userId,
-          reason: error instanceof Error ? error.message : String(error),
-        });
-      });
-    return {
-      summary: await loadReferralSummary(supabase, userId),
-      created: false,
-    };
+      return {
+        summary: currentSummary,
+        created: false,
+      };
     }
 
     throw lastError ?? new Error("Impossible de créer le lien d'invitation.");
   }
-
-  await ensureReferralInviteAward(supabase, {
-    userId,
-    referralCode,
-  });
 
   invalidateReferralCaches();
 
