@@ -18,11 +18,11 @@ import { cn } from "@/lib/utils";
 import { formatScorePercent } from "@/lib/formatters/score";
 
 type RecyclingStats = {
-  totalKg: number;
-  wasteCoverageRate: number;
+  totalKg: number | null;
+  wasteCoverageRate: number | null;
   totalButts: number;
   withTrace: number;
-  mixedIndex: number;
+  mixedIndex: number | null;
 };
 
 type RecyclingStreamLine = {
@@ -52,9 +52,9 @@ export const RecyclingKpiGrid = memo(function RecyclingKpiGrid({
   const cards = [
     {
       label: fr
-        ? `Volume triable (${Math.round(stats.wasteCoverageRate)}% renseigné)`
-        : `Sortable volume (${Math.round(stats.wasteCoverageRate)}% reported)`,
-      value: `${stats.totalKg.toFixed(1)} kg`,
+        ? `Volume triable${stats.wasteCoverageRate === null ? "" : ` (${Math.round(stats.wasteCoverageRate)}% renseigné)`}`
+        : `Sortable volume${stats.wasteCoverageRate === null ? "" : ` (${Math.round(stats.wasteCoverageRate)}% reported)`}`,
+      value: stats.totalKg === null ? "Indisponible" : `${stats.totalKg.toFixed(1)} kg`,
       icon: Recycle,
       color: "text-emerald-400",
       bg: "bg-emerald-500/10",
@@ -78,7 +78,7 @@ export const RecyclingKpiGrid = memo(function RecyclingKpiGrid({
     },
     {
       label: fr ? "Indice tri propre" : "Clean sorting index",
-      value: formatScorePercent(stats.mixedIndex),
+        value: stats.mixedIndex === null ? "Indisponible" : formatScorePercent(stats.mixedIndex),
       icon: BarChart3,
       color: "text-purple-400",
       bg: "bg-purple-500/10",

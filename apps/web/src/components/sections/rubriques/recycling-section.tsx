@@ -17,6 +17,51 @@ import {
 import { AlertCircle, Recycle, Sparkles, MapPin, Search } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
+import type {
+  PublicSectionActionListResponse,
+  PublicSectionBreakdown,
+  PublicSectionInitialData,
+  PublicSectionMapResponse,
+} from "@/lib/sections/public-section-snapshot-contract";
+
+async function fetchRecyclingBreakdown(): Promise<PublicSectionBreakdown> {
+  const response = await fetch("/api/recycling/breakdown", {
+    method: "GET",
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error("breakdown_unavailable");
+  }
+  return (await response.json()) as PublicSectionBreakdown;
+}
+
+function buildRecyclingStats(
+  items: PublicSectionActionListResponse["items"],
+  mapItems: PublicSectionMapResponse["items"],
+  breakdown: PublicSectionBreakdown | undefined,
+) {
+  const totalKg = breakdown?.totalKg ?? null;
+  const totalButts = items.reduce(
+    (acc, item) => acc + Number(item.cigarette_butts || 0),
+    0,
+  );
+  const withTrace = mapItems.filter(
+    (item) => (item.contract?.geometry.kind ?? item.geometry_kind ?? "point") !== "point",
+  ).length;
+  const mixedIndex =
+    totalKg !== null && totalKg > 0
+      ? Math.max(0, 100 - Math.round((totalButts / Math.max(totalKg, 1)) * 0.8))
+      : null;
+
+  return {
+    totalKg,
+    totalButts,
+    withTrace,
+    mixedIndex,
+    count: items.length,
+    wasteCoverageRate: breakdown?.wasteCoverageRate ?? null,
+  };
+}
 
 const containerVariants = {
   hidden: { opacity: 1 },
@@ -31,61 +76,39 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 }
 };
 
-export function RecyclingSection() {
+export function RecyclingSection({
+  initialData,
+}: {
+  initialData?: PublicSectionInitialData["recycling"];
+}) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
   
-  const actions = useSWR(["section-recycling-actions"], () =>
-    fetchActions({ status: "approved", limit: 350 }),
+  const actions = useSWR<PublicSectionActionListResponse>(
+    ["section-recycling-actions"],
+    () => fetchActions({ status: "approved", limit: 350 }),
+    { fallbackData: initialData?.actions ?? undefined },
   );
-  const map = useSWR(["section-recycling-map"], () =>
-    fetchMapActions({ status: "approved", days: 365, limit: 300 }),
+  const map = useSWR<PublicSectionMapResponse>(
+    ["section-recycling-map"],
+    () => fetchMapActions({ status: "approved", days: 365, limit: 300 }),
+    { fallbackData: initialData?.map ?? undefined },
   );
   
-  const breakdown = useSWR("section-recycling-breakdown", async () => {
-    const response = await fetch("/api/recycling/breakdown", {
-      method: "GET",
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      throw new Error("breakdown_unavailable");
-    }
-    return (await response.json()) as {
-      totalKg: number;
-      wasteCoverageRate: number;
-      lines: Array<{
-        category: string;
-        kg: number;
-        sharePercent: number;
-        entries: number;
-      }>;
-      triQuality: { elevee: number; moyenne: number; faible: number };
-      generatedAt: string;
-    };
-  });
+  const breakdown = useSWR<PublicSectionBreakdown>(
+    "section-recycling-breakdown",
+    fetchRecyclingBreakdown,
+    { fallbackData: initialData?.breakdown ?? undefined },
+  );
 
-  const stats = useMemo(() => {
-    const items = actions.data?.items ?? [];
-    const totalKg = breakdown.data?.totalKg ?? 0;
-    const totalButts = items.reduce((acc, item) => acc + Number(item.cigarette_butts || 0), 0);
-    const avgKg = items.length > 0 ? totalKg / items.length : 0;
-    const withTrace = (map.data?.items ?? []).filter((item) =>
-      (item.contract?.geometry.kind ?? item.geometry_kind ?? "point") !== "point",
-    ).length;
-    const mixedIndex = totalKg > 0 ? Math.max(0, 100 - Math.round((totalButts / Math.max(totalKg, 1)) * 0.8)) : 0;
-    
-    return {
-      totalKg,
-      totalButts,
-      avgKg,
-      withTrace,
-      mixedIndex,
-      count: items.length,
-      wasteCoverageRate: breakdown.data?.wasteCoverageRate ?? 0,
-    };
-  }, [actions.data?.items, breakdown.data?.totalKg, breakdown.data?.wasteCoverageRate, map.data?.items]);
+  const stats = useMemo(
+    () => buildRecyclingStats(actions.data?.items ?? [], map.data?.items ?? [], breakdown.data),
+    [actions.data?.items, breakdown.data, map.data?.items],
+  );
 
-  const isLoading = actions.isLoading || map.isLoading || breakdown.isLoading;
+  // Breakdown is authenticated and may be unavailable anonymously. It must
+  // not block the public action/map snapshot from rendering server-side.
+  const isLoading = actions.isLoading || map.isLoading;
   // The question assistant is a public, local interaction. A private
   // breakdown failure must not hide it (the breakdown endpoint can correctly
   // return 401 for an anonymous visitor).

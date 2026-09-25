@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
-import type { ActionListResponse } from "@/lib/actions/types";
 import { computeClimateContext } from "@/lib/analytics/climate-context";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
@@ -18,6 +17,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, RefreshCw, Globe, Wind, ArrowRight, Info } from "lucide-react";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { CmmButton } from "@/components/ui/cmm-button";
+import type {
+  PublicSectionActionListResponse,
+  PublicSectionInitialData,
+} from "@/lib/sections/public-section-snapshot-contract";
 
 const containerVariants = {
   hidden: { opacity: 1 },
@@ -34,13 +37,19 @@ const itemVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
-export function ClimateSection() {
+export function ClimateSection({
+  initialData,
+}: {
+  initialData?: PublicSectionInitialData["climate"];
+}) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
   const [periodDays, setPeriodDays] = useState<30 | 90 | 365>(30);
   
-  const { data, isLoading, error, mutate } = useSWR<ActionListResponse>(["section-climate-v2"], () =>
-    fetchActions({ status: "approved", limit: 500 }),
+  const { data, isLoading, error, mutate } = useSWR<PublicSectionActionListResponse>(
+    ["section-climate-v2"],
+    () => fetchActions({ status: "approved", limit: 500 }),
+    { fallbackData: initialData?.actions ?? undefined },
   );
 
   const context = useMemo(() => {

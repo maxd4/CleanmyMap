@@ -2,9 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/dynamic", () => ({
-  default: () => function MockDeferredHomeFooter() {
-    return <div data-testid="global-footer" />;
-  },
+  default: () => function MockDeferredComponent() { return null; },
 }));
 
 vi.mock("next/navigation", () => ({
@@ -28,8 +26,9 @@ vi.mock("./deferred-global-chrome", async (importOriginal) => {
   };
 });
 
-import { DeferredGlobalFooter, isAuthSurfacePath } from "./deferred-global-chrome";
+import { isAuthSurfacePath } from "./deferred-global-chrome";
 import { RootLayoutChrome } from "./root-layout-chrome";
+import { HomeFooter } from "@/components/accueil/accueil-footer";
 import { readFileSync } from "node:fs";
 
 describe("global chrome on onboarding", () => {
@@ -39,10 +38,12 @@ describe("global chrome on onboarding", () => {
     expect(markup).toContain('data-testid="global-ribbon"');
   });
 
-  it("keeps the global footer mounted", () => {
-    const markup = renderToStaticMarkup(<DeferredGlobalFooter />);
+  it("keeps the semantic global footer in the server tree", () => {
+    const markup = renderToStaticMarkup(<HomeFooter />);
 
-    expect(markup).toContain('data-testid="global-footer"');
+    expect(markup).toContain("<footer");
+    expect(markup).toContain('href="/mentions-legales"');
+    expect(markup).toContain('href="/politique-cookies"');
   });
 
   it("recognizes auth routes for deferred non-critical chrome", () => {

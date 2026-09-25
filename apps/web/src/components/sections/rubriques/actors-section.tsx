@@ -10,6 +10,12 @@ import { SectionShell } from "@/components/sections/rubriques/shared";
 import { Users, MapPin, TrendingUp, Target, ListChecks, Gauge } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
+import type {
+  PublicSectionActionListResponse,
+  PublicSectionInitialData,
+  PublicSectionMapResponse,
+} from "@/lib/sections/public-section-snapshot-contract";
+import type { ActionListItem } from "@/lib/actions/types";
 
 function extractArea(label: string): string {
   const normalized = label.toLowerCase();
@@ -20,15 +26,23 @@ function extractArea(label: string): string {
   return `${matched[1]}e`;
 }
 
-export function ActorsSection() {
+export function ActorsSection({
+  initialData,
+}: {
+  initialData?: PublicSectionInitialData["actors"];
+}) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
   
-  const { data: mapData, isLoading: mapLoading } = useSWR(["section-actors-map"], () =>
-    fetchMapActions({ limit: 220, days: 365, status: "approved" }),
+  const { data: mapData, isLoading: mapLoading } = useSWR<PublicSectionMapResponse>(
+    ["section-actors-map"],
+    () => fetchMapActions({ limit: 220, days: 365, status: "approved" }),
+    { fallbackData: initialData?.map ?? undefined },
   );
-  const { data: actionsData, isLoading: actionsLoading } = useSWR(["section-actors-actions"], () =>
-    fetchActions({ status: "approved", limit: 250 }),
+  const { data: actionsData, isLoading: actionsLoading } = useSWR<PublicSectionActionListResponse>(
+    ["section-actors-actions"],
+    () => fetchActions({ status: "approved", limit: 250 }),
+    { fallbackData: initialData?.actions ?? undefined },
   );
 
   const hotspots = useMemo(() => {
@@ -41,7 +55,26 @@ export function ActorsSection() {
   }, [mapData?.items]);
 
   const actorActivityCards = useMemo(() => {
-    return buildActorActivityCards(actionsData?.items ?? []);
+    const items: ActionListItem[] = (actionsData?.items ?? []).map((item) => ({
+      id: item.id,
+      created_at: item.created_at,
+      actor_name: item.actor_name,
+      association_name: null,
+      organizer_type: null,
+      action_date: item.action_date,
+      location_label: item.location_label,
+      latitude: item.contract?.geometry.coordinates[0]?.[1] ?? null,
+      longitude: item.contract?.geometry.coordinates[0]?.[0] ?? null,
+      waste_kg: item.waste_kg,
+      cigarette_butts: item.cigarette_butts,
+      volunteers_count: item.volunteers_count,
+      duration_minutes: item.duration_minutes,
+      notes: null,
+      status: "approved",
+      contract: undefined,
+      source: item.source,
+    }));
+    return buildActorActivityCards(items);
   }, [actionsData?.items]);
 
   return (

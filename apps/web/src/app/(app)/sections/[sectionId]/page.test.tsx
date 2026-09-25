@@ -21,6 +21,10 @@ vi.mock("@/lib/server-preferences", () => ({
   getServerLocale: mocks.getServerLocale,
 }));
 
+vi.mock("@/lib/sections/public-section-snapshots", () => ({
+  loadPublicSectionInitialData: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/components/sections/rubriques/section-renderer", () => ({
   SectionRenderer: ({ section }: { section: { id: string } }) =>
     React.createElement("div", { "data-section-id": section.id }),

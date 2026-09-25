@@ -10,10 +10,12 @@ import {
 import { PendingSection } from "./shared";
 import type { FeedbackSectionProps } from "./feedback-section.shared";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import type { PublicSectionInitialData } from "@/lib/sections/public-section-snapshot-contract";
 
 type SectionRendererProps = {
   section: SectionRubriqueDefinition;
   fundingOnParticipeUrl?: string;
+  publicInitialData?: PublicSectionInitialData;
 };
 
 const CommunitySection = dynamic(() =>
@@ -100,7 +102,9 @@ export const FINALIZED_SECTION_RENDERERS = {
   community: () => <CommunitySection />,
   feedback: () => <FeedbackSection />,
   gamification: () => <GamificationSection />,
-  actors: () => <ActorsSection />,
+  actors: (_fundingOnParticipeUrl, initialData) => (
+    <ActorsSection initialData={initialData?.actors} />
+  ),
   annuaire: () => <AnnuaireSection />,
   "open-data": () => (
     <div className="space-y-12">
@@ -114,11 +118,13 @@ export const FINALIZED_SECTION_RENDERERS = {
   "trash-spotter": () => <TrashSpotterSection />,
   route: () => <RouteSection />,
   "rejoindre-une-action": () => <JoinFormSection />,
-  recycling: () => <RecyclingSection />,
+  recycling: (_fundingOnParticipeUrl, initialData) => (
+    <RecyclingSection initialData={initialData?.recycling} />
+  ),
   compost: () => <CompostSection />,
-  climate: () => (
+  climate: (_fundingOnParticipeUrl, initialData) => (
     <div className="space-y-12">
-      <ClimateSection />
+      <ClimateSection initialData={initialData?.climate} />
       <div className="space-y-6">
         <h3 className="px-4 text-[11px] font-black uppercase tracking-[0.3em] text-slate-500">
           Comparaison territoriale intégrée
@@ -130,9 +136,19 @@ export const FINALIZED_SECTION_RENDERERS = {
   weather: () => <WeatherSection />,
   messagerie: () => <ConnectSection defaultTab="discussions" />,
   elus: () => <ElusSection />,
-} satisfies Record<VisibleFinalizedSectionId, (fundingOnParticipeUrl?: string) => ReactNode>;
+} satisfies Record<
+  VisibleFinalizedSectionId,
+  (
+    fundingOnParticipeUrl?: string,
+    publicInitialData?: PublicSectionInitialData,
+  ) => ReactNode
+>;
 
-export function SectionRenderer({ section, fundingOnParticipeUrl }: SectionRendererProps) {
+export function SectionRenderer({
+  section,
+  fundingOnParticipeUrl,
+  publicInitialData,
+}: SectionRendererProps) {
   if (section.implementation === "pending") {
     return (
       <PendingSection
@@ -151,5 +167,5 @@ export function SectionRenderer({ section, fundingOnParticipeUrl }: SectionRende
       ? fundingOnParticipeUrl
       : undefined;
 
-  return <>{renderSection(exposeFundingUrl)}</>;
+  return <>{renderSection(exposeFundingUrl, publicInitialData)}</>;
 }

@@ -93,24 +93,3 @@ export function DeferredGlobalChrome() {
     </>
   );
 }
-
-const DeferredHomeFooter = dynamic(
-  () => import("@/components/accueil/home-footer-no-ssr").then((module) => module.HomeFooterNoSSR),
-  { ssr: false, loading: () => null },
-);
-
-export function DeferredGlobalFooter() {
-  const pathname = usePathname();
-  const isAuthSurface = isAuthSurfacePath(pathname);
-  const [shouldLoadFooter, setShouldLoadFooter] = useState(!isAuthSurface);
-
-  useEffect(() => {
-    if (!isAuthSurface || shouldLoadFooter) {
-      return;
-    }
-
-    return scheduleAfterIdle(() => setShouldLoadFooter(true));
-  }, [isAuthSurface, shouldLoadFooter]);
-
-  return shouldLoadFooter ? <DeferredHomeFooter /> : null;
-}
