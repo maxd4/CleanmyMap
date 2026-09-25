@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 import { broadcastGamificationAnnouncement } from "@/lib/gamification/announcements";
 import { auditXpAttribution } from "./notifications";
-import { insertProgressionEvent } from "./progression-data";
+import { reconcileReferralAward } from "./referral-reconciliation";
 
 export type ReferralSummary = {
   referralCode: string | null;
@@ -30,6 +30,13 @@ const REFERRAL_CONTRIBUTION_SOURCE_ID_PREFIX = "referral-contribution:";
 const REFERRAL_XP = 2;
 const REFERRAL_PATH = "/sign-up";
 const REFERRAL_EXPORT_CACHE_TAG = "admin-referral-lineage-export";
+const REFERRAL_RECONCILIATION_CONFIG = {
+  eventType: REFERRAL_BADGE_EVENT_TYPE,
+  sourceTable: REFERRAL_CONTRIBUTION_SOURCE_TABLE,
+  sourceIdPrefix: REFERRAL_CONTRIBUTION_SOURCE_ID_PREFIX,
+  xp: REFERRAL_XP,
+  cacheTag: REFERRAL_EXPORT_CACHE_TAG,
+} as const;
 
 function normalizeReferralCode(code: string | null | undefined): string {
   return (code ?? "").trim().toUpperCase();
@@ -78,30 +85,15 @@ export async function awardReferralForUsefulContribution(
     };
   }
 
-  // The source is the referral lineage, not the triggering contribution:
-  // later validated contributions by the same invitee must not award again.
-  const sourceId = `${REFERRAL_CONTRIBUTION_SOURCE_ID_PREFIX}${params.inviteeUserId}`;
-  const inserted = await insertProgressionEvent(supabase, {
-    userId: inviterUserId,
-    eventType: REFERRAL_BADGE_EVENT_TYPE,
-    sourceTable: REFERRAL_CONTRIBUTION_SOURCE_TABLE,
-    sourceId,
-    statusPhase: "validated",
-    weight: 1,
-    xpBase: REFERRAL_XP,
-    xpAwarded: REFERRAL_XP,
-    occurredOn: (params.occurredOn ?? new Date().toISOString()).slice(0, 10),
-    metadata: {
-      inviteeUserId: params.inviteeUserId,
-      contributionSourceTable: params.contributionSourceTable,
-      contributionSourceId: params.contributionSourceId,
-      referralAwardedXp: REFERRAL_XP,
-    },
-  });
+  const { inserted, proof } = await reconcileReferralAward(
+    supabase,
+    inviterUserId,
+    params.inviteeUserId,
+    REFERRAL_RECONCILIATION_CONFIG,
+    params.occurredOn,
+  );
 
   if (inserted) {
-    invalidateReferralCaches();
-
     await auditXpAttribution(
       supabase,
       inviterUserId,
@@ -109,11 +101,11 @@ export async function awardReferralForUsefulContribution(
       "Parrainage utile : première contribution confirmée de l'invité",
       REFERRAL_XP,
       REFERRAL_CONTRIBUTION_SOURCE_TABLE,
-      sourceId,
+      `${REFERRAL_CONTRIBUTION_SOURCE_ID_PREFIX}${params.inviteeUserId}`,
       {
         inviteeUserId: params.inviteeUserId,
-        contributionSourceTable: params.contributionSourceTable,
-        contributionSourceId: params.contributionSourceId,
+        contributionSourceTable: proof?.sourceTable,
+        contributionSourceId: proof?.sourceId,
       },
     );
 
@@ -148,21 +140,12 @@ export async function removeReferralAwardForRejectedContribution(
     return null;
   }
 
-  const sourceId = `${REFERRAL_CONTRIBUTION_SOURCE_ID_PREFIX}${inviteeUserId}`;
-  const { error } = await supabase
-    .from("progression_events")
-    .delete()
-    .eq("user_id", inviterUserId)
-    .eq("event_type", REFERRAL_BADGE_EVENT_TYPE)
-    .eq("source_table", REFERRAL_CONTRIBUTION_SOURCE_TABLE)
-    .eq("source_id", sourceId)
-    .eq("status_phase", "validated");
-
-  if (error) {
-    throw error;
-  }
-
-  invalidateReferralCaches();
+  await reconcileReferralAward(
+    supabase,
+    inviterUserId,
+    inviteeUserId,
+    REFERRAL_RECONCILIATION_CONFIG,
+  );
   return inviterUserId;
 }
 
