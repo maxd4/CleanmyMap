@@ -3,8 +3,8 @@
 <!-- PRODUCT_SURFACE_AUDIT:GENERATED:BEGIN -->
 ## En-tête
 
-`AUDIT_REF=cfcff540d000d367630c1fd2a41ff26f8c80fb74`
-`AUDIT_GENERATED_AT=2026-09-25T21:59:29.541Z`
+`AUDIT_REF=df358e9c4fdd9a05218d2cd1b48ddaa055aaa1dd`
+`AUDIT_GENERATED_AT=2026-09-25T22:10:39.282Z`
 `AUDIT_STATUS=CURRENT_AT_GENERATION`
 
 Commande :
@@ -31,7 +31,7 @@ décision automatique de suppression.
 | UNKNOWN | 7 |
 | ROUTES_RUNTIME | 72 |
 | REVIEW_FINDING | 0 |
-| INVARIANT_ERROR | 4 |
+| INVARIANT_ERROR | 0 |
 
 ## Table principale
 
@@ -84,7 +84,7 @@ décision automatique de suppression.
 | `/profil/impact` | SECONDARY_NAV | NO | 1 — apps/web/src/components/gamification/profile-gamification-summary.tsx | protected | CURRENT | consumer runtime hors ruban principal |
 | `/reglages` | SECONDARY_NAV | NO | 1 — apps/web/src/components/account/account-settings-section.tsx | protected | CURRENT | consumer runtime hors ruban principal |
 | `/reports` | PRIMARY_NAV | YES | 12 — apps/web/src/app/(app)/actions/history/page.tsx, apps/web/src/app/(app)/actions/map/page-client.tsx, apps/web/src/components/accueil/accueil-community-credibility.tsx (+7) | clerk-context | CURRENT | entrée visible du registre/navigation |
-| `/sections/[sectionId]` | DEEP_LINK | NO | 58 — apps/web/src/app/(app)/signalement/page.tsx, apps/web/src/app/learn/ressources/learn-ressources-client.data.ts, apps/web/src/components/accueil/accueil-community-credibility.tsx (+27) | public-visible | CURRENT | consumer de deep-link démontré |
+| `/sections/[sectionId]` | DEEP_LINK | NO | 59 — apps/web/src/app/(app)/signalement/page.tsx, apps/web/src/app/learn/ressources/learn-ressources-client.data.ts, apps/web/src/components/accueil/accueil-community-credibility.tsx (+28) | public-visible | CURRENT | consumer de deep-link démontré |
 | `/sections/actors` | SECONDARY_NAV | NO | 1 — apps/web/src/components/accueil/accueil-navigation-schema.tsx | public-visible | CURRENT | consumer runtime hors ruban principal |
 | `/sections/annuaire` | PRIMARY_NAV | YES | 3 — apps/web/src/components/sections/rubriques/community/community-section-components.tsx, apps/web/src/components/sections/rubriques/partners-network-section.tsx | public-visible | CURRENT | entrée visible du registre/navigation |
 | `/sections/climate` | SECONDARY_NAV | NO | 1 — apps/web/src/components/dashboard/business-alerts-panel.tsx | public-visible | CURRENT | consumer runtime hors ruban principal |
@@ -92,7 +92,7 @@ décision automatique de suppression.
 | `/sections/compost` | SECONDARY_NAV | NO | 5 — apps/web/src/app/learn/ressources/learn-ressources-client.data.ts, apps/web/src/components/learn/learn-practice-theme-tabs.data.ts, apps/web/src/components/learn/learn-tri-context-section.tsx (+1) | public-visible | CURRENT | consumer runtime hors ruban principal |
 | `/sections/dm` | REDIRECT_COMPAT | NO | — | public-visible | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
 | `/sections/elus` | SECONDARY_NAV | NO | 2 — apps/web/src/components/pilotage/access-screen/views/pilotage-overview-surface-tabs.tsx, apps/web/src/components/pilotage/decision-cluster-section.tsx | auth-disabled-gate | CURRENT | consumer runtime hors ruban principal |
-| `/sections/feedback` | PRIMARY_NAV | YES | 7 — apps/web/src/components/accueil/accueil-navigation-schema.tsx, apps/web/src/components/navigation/app-navigation-ribbon-menus.tsx, apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx (+1) | public-visible | CURRENT | entrée visible du registre/navigation |
+| `/sections/feedback` | PRIMARY_NAV | YES | 8 — apps/web/src/components/accueil/accueil-navigation-schema.tsx, apps/web/src/components/navigation/app-navigation-ribbon-menus.tsx, apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx (+2) | public-visible | CURRENT | entrée visible du registre/navigation |
 | `/sections/funding` | PRIMARY_NAV | YES | 3 — apps/web/src/components/sections/rubriques/feedback-section.shared.ts, apps/web/src/components/sections/rubriques/section-renderer.tsx, apps/web/src/lib/profiles-cta.ts | public-visible | CURRENT | entrée visible du registre/navigation |
 | `/sections/gamification` | PRIMARY_NAV | YES | 2 — apps/web/src/components/gamification/profile-gamification-summary.tsx, apps/web/src/lib/gamification/progression-leaderboard.ts | auth-disabled-gate | CURRENT | entrée visible du registre/navigation |
 | `/sections/guide` | REDIRECT_COMPAT | NO | — | UNKNOWN | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
@@ -176,10 +176,7 @@ Aucun.
 
 ### Invariants certains
 
-- `/charte` — INVARIANT_ERROR — apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.explorer.tsx.
-- `/documentation/features/quiz-authoring-guide.md` — INVARIANT_ERROR — apps/web/src/components/admin/quiz-pedagogical-metrics-panel.tsx, apps/web/src/lib/learning/quiz/school/quiz-school-workshop-activities.ts, apps/web/src/lib/learning/quiz/school/quiz-school-workshop-assessment.ts.
-- `/documentation/features/quiz-quality-control.md` — INVARIANT_ERROR — apps/web/src/components/admin/quiz-pedagogical-metrics-panel.tsx.
-- `/feedback` — INVARIANT_ERROR — apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.cards.tsx.
+Aucun.
 
 ## Graphe détaillé
 
