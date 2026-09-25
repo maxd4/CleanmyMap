@@ -2,33 +2,201 @@ import { parseDrawingFromNotes } from "@/lib/actions/geometry/drawing";
 import { parseDrawingFromGeoJson } from "@/lib/actions/geometry/derived-geometry";
 import { evaluateActionQuality, type ActionQualityGrade } from "@/lib/actions/quality/quality";
 import type { ActionDrawing, ActionListItem } from "@/lib/actions/types";
-import type { ActionRow, ProgressionEventType } from "./progression-types";
+import type {
+  ActionRow,
+  CurrentInfiniteProgressionId,
+  GamificationEventRegistration,
+  GamificationProgressionDefinition,
+  ProgressionEventType,
+} from "./progression-types";
 
-const EVENT_FAMILY_MAP: Record<ProgressionEventType, string> = {
-  action_declare_pending: "action",
-  action_declare_validation: "action",
-  action_monthly_regularity: "action",
-  collective_rsvp_yes_pending: "collectif",
-  collective_attendance_confirmed: "collectif",
-  spot_create_pending: "spotter",
-  spot_validation_bonus: "spotter",
-  community_ops_update: "communaute",
-  community_referral_invite: "communaute",
-  route_recommend_use: "itineraire",
-  infinite_waste_milestone: "impact",
-  infinite_butts_milestone: "impact",
-  new_place_discovered: "exploration",
-  new_place_milestone: "exploration",
-  quiz_question_type_milestone: "apprentissage",
-  quiz_question_type_balance_milestone: "apprentissage",
-  clean_zone_task: "spotter",
-  form_tier_unlock: "forms",
-  form_bonus: "forms",
-  participant_tier_unlock: "collectif",
-  explorer_tier_unlock: "exploration",
+export const CURRENT_INFINITE_PROGRESSIONS = [
+  {
+    id: "participation",
+    label: "Participation",
+    description: "Contributions et participations métier confirmées.",
+    metric: "participation_count",
+    sourceDomain: "actions, participations et signalements utiles",
+    badgeFamily: "participant",
+    scale: "participant",
+    infinite: true,
+  },
+  {
+    id: "organisation",
+    label: "Organisation",
+    description: "Organisation d'actions et opérations collectives utiles.",
+    metric: "organised_operations_count",
+    sourceDomain: "organisateurs d'actions et opérations collectives",
+    badgeFamily: "organisation",
+    scale: "gem",
+    infinite: true,
+  },
+  {
+    id: "exploration",
+    label: "Exploration",
+    description: "Découverte de lieux distincts et couverture cartographique.",
+    metric: "unique_places_visited",
+    sourceDomain: "user_visited_places",
+    badgeFamily: "explorer",
+    scale: "exploration",
+    infinite: true,
+  },
+  {
+    id: "clean_zones",
+    label: "Zones propres",
+    description: "Lieux propres validés ou nettoyés, dédoublonnés par zone.",
+    metric: "eligible_clean_zones",
+    sourceDomain: "trash_spotter_spots / clean_zones",
+    badgeFamily: "clean-zones",
+    scale: "atmosphere",
+    infinite: true,
+  },
+  {
+    id: "regularity",
+    label: "Régularité",
+    description: "Participation utile sur des mois calendaires consécutifs.",
+    metric: "consecutive_active_months",
+    sourceDomain: "actions par mois",
+    badgeFamily: "regularity",
+    scale: "gem",
+    infinite: true,
+  },
+  {
+    id: "versatility",
+    label: "Polyvalence",
+    description: "Diversité des contextes de contribution validés.",
+    metric: "validated_context_cycles",
+    sourceDomain: "actions et contextes de contribution",
+    badgeFamily: "versatility",
+    scale: "gem",
+    infinite: true,
+  },
+  {
+    id: "learning",
+    label: "Apprentissage",
+    description: "Réponses justes et progression des apprentissages utiles.",
+    metric: "validated_learning_events",
+    sourceDomain: "quiz_type_progress et contenus d'apprentissage",
+    badgeFamily: "learning",
+    scale: "learning",
+    infinite: true,
+  },
+] as const satisfies readonly GamificationProgressionDefinition[];
+
+const GAMIFICATION_EVENT_REGISTRY: Record<
+  ProgressionEventType,
+  GamificationEventRegistration
+> = {
+  action_declare_pending: {
+    classification: "progression",
+    progressionId: "participation",
+  },
+  action_declare_validation: {
+    classification: "progression",
+    progressionId: "participation",
+  },
+  action_monthly_regularity: {
+    classification: "progression",
+    progressionId: "regularity",
+  },
+  collective_rsvp_yes_pending: {
+    classification: "progression",
+    progressionId: "participation",
+  },
+  collective_attendance_confirmed: {
+    classification: "progression",
+    progressionId: "participation",
+  },
+  spot_create_pending: {
+    classification: "progression",
+    progressionId: "participation",
+  },
+  spot_validation_bonus: {
+    classification: "progression",
+    progressionId: "participation",
+  },
+  community_ops_update: {
+    classification: "progression",
+    progressionId: "organisation",
+  },
+  community_referral_invite: {
+    classification: "milestone",
+    milestoneId: "parrainage_utile",
+  },
+  route_recommend_use: {
+    classification: "non_progression",
+    reason: "Usage utilitaire d'itinéraire, à traiter hors des sept progressions.",
+  },
+  infinite_waste_milestone: {
+    classification: "non_progression",
+    reason: "Métrique d'impact historique, conservée hors de la taxonomie CURRENT.",
+  },
+  infinite_butts_milestone: {
+    classification: "non_progression",
+    reason: "Métrique d'impact historique, conservée hors de la taxonomie CURRENT.",
+  },
+  new_place_discovered: {
+    classification: "progression",
+    progressionId: "exploration",
+  },
+  new_place_milestone: {
+    classification: "progression",
+    progressionId: "exploration",
+  },
+  quiz_question_type_milestone: {
+    classification: "progression",
+    progressionId: "learning",
+  },
+  quiz_question_type_balance_milestone: {
+    classification: "progression",
+    progressionId: "learning",
+  },
+  clean_zone_task: {
+    classification: "progression",
+    progressionId: "clean_zones",
+  },
+  form_tier_unlock: {
+    classification: "non_progression",
+    reason: "Badge de compatibilité Forms, hors des sept progressions CURRENT.",
+  },
+  form_bonus: {
+    classification: "non_progression",
+    reason: "Bonus historique Forms, hors des sept progressions CURRENT.",
+  },
+  participant_tier_unlock: {
+    classification: "progression",
+    progressionId: "participation",
+  },
+  explorer_tier_unlock: {
+    classification: "progression",
+    progressionId: "exploration",
+  },
 };
 
-export function eventFamilyMap(): Readonly<Record<ProgressionEventType, string>> {
+export function currentInfiniteProgressions(): readonly GamificationProgressionDefinition[] {
+  return CURRENT_INFINITE_PROGRESSIONS;
+}
+
+export function gamificationEventRegistry(): Readonly<
+  Record<ProgressionEventType, GamificationEventRegistration>
+> {
+  return GAMIFICATION_EVENT_REGISTRY;
+}
+
+const EVENT_FAMILY_MAP: Readonly<
+  Record<ProgressionEventType, CurrentInfiniteProgressionId | null>
+> = Object.fromEntries(
+  Object.entries(GAMIFICATION_EVENT_REGISTRY).map(([eventType, registration]) => [
+    eventType,
+    registration.classification === "progression"
+      ? registration.progressionId
+      : null,
+  ]),
+) as Record<ProgressionEventType, CurrentInfiniteProgressionId | null>;
+
+export function eventFamilyMap(): Readonly<
+  Record<ProgressionEventType, CurrentInfiniteProgressionId | null>
+> {
   return EVENT_FAMILY_MAP;
 }
 

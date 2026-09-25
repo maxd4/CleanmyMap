@@ -107,7 +107,9 @@ Le parti pris est de montrer:
 - Ne pas injecter de compétition agressive dans les formulations UI.
 - Ne pas remplir artificiellement la vitrine de collections quand les données ne sont pas prêtes.
 - Garder les CTA de réglages reliés à de vraies préférences disponibles.
-- Les progressions quiz actives (`Progression quiz par type` et `Quiz équilibré`) doivent rester séparées visuellement pour que la logique XP reste lisible.
+- Les paliers quiz (`Progression quiz par type` et `Quiz équilibré`) sont deux
+  vues de la progression CURRENT `Apprentissage`, pas deux progressions
+  infinies autonomes.
 
 ## Références utiles
 

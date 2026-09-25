@@ -49,13 +49,17 @@ La rubrique gamification sert à rendre lisible la progression personnelle, la r
 - distinctions de confiance;
 - surfaces de lecture calmes, pas un jeu mobile.
 
-## Mécaniques récentes à garder visibles
+## Mécaniques CURRENT à garder visibles
 
-- `Actions créées` reste le badge infini de base pour la contribution validée.
-- `Équilibre des contextes` soutient l alternance entre spontané, association et entreprise avec des cycles croissants: 1, puis 2, puis 3 actions de chaque type, et remise à zéro entre chaque palier.
-- `Régularité mensuelle` suit les mois calendaires de participation et se recalcule si une action est rejetée.
-- `Zone sensible apaisée` compte les actions validées sur les zones critiques ou historiquement très sales.
-- Les progressions quiz actives couvrent `Progression quiz par type` et `Quiz équilibré` afin de séparer la maîtrise d un type de question et l entraînement sur l ensemble du catalogue.
+Les sept progressions infinies sont `Participation`, `Organisation`,
+`Exploration`, `Zones propres`, `Régularité`, `Polyvalence` et
+`Apprentissage`. Les paliers quiz par type et équilibrés sont rattachés à
+`Apprentissage`, pas exposés comme deux progressions supplémentaires.
+
+Les badges Forms, les indicateurs de confiance et de qualité, les compteurs
+d'impact kg/mégots et la zone sensible apaisée restent des surfaces de
+compatibilité ou d'impact jusqu'à leur traitement dédié ; ils ne doivent pas
+être comptés comme progressions infinies CURRENT.
 
 ## États à documenter
 

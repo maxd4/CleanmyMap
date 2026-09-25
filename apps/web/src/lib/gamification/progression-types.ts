@@ -29,6 +29,65 @@ export type ProgressionEventType =
   | "participant_tier_unlock"
   | "explorer_tier_unlock";
 
+export const CURRENT_INFINITE_PROGRESSION_IDS = [
+  "participation",
+  "organisation",
+  "exploration",
+  "clean_zones",
+  "regularity",
+  "versatility",
+  "learning",
+] as const;
+
+export type CurrentInfiniteProgressionId =
+  (typeof CURRENT_INFINITE_PROGRESSION_IDS)[number];
+
+export type GamificationBadgeScale =
+  | "participant"
+  | "gem"
+  | "exploration"
+  | "atmosphere"
+  | "learning";
+
+export type GamificationProgressionDefinition = {
+  id: CurrentInfiniteProgressionId;
+  label: string;
+  description: string;
+  metric: string;
+  sourceDomain: string;
+  badgeFamily: string;
+  scale: GamificationBadgeScale;
+  infinite: true;
+};
+
+export type GamificationBadgeReference = {
+  id: string;
+  label: string;
+};
+
+export type GamificationProgressionState = GamificationProgressionDefinition & {
+  currentValue: number;
+  currentBadge: GamificationBadgeReference | null;
+  nextBadge: GamificationBadgeReference | null;
+  progressPercent: number;
+  /** Contribution to the one global XP total; never an independent XP balance. */
+  xpContribution: number;
+};
+
+export type GamificationEventRegistration =
+  | {
+      classification: "progression";
+      progressionId: CurrentInfiniteProgressionId;
+    }
+  | {
+      classification: "milestone";
+      milestoneId: string;
+    }
+  | {
+      classification: "non_progression";
+      reason: string;
+    };
+
 export type ActionRow = {
   id: string;
   created_at: string;
