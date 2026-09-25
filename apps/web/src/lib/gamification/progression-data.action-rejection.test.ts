@@ -43,7 +43,7 @@ describe("syncUserActionProgression action rejection", () => {
 
     const syncOptions = {
       sensitiveAreas: [],
-      projectionState: { qualifications: [] },
+      projectionState: { qualifications: [], milestoneThresholds: [] },
     };
     const firstPass = await syncUserActionProgression(supabase, "user-1", syncOptions);
     const firstValidationEvents = insertedEvents.filter(
@@ -72,7 +72,7 @@ describe("syncUserActionProgression action rejection", () => {
     expect(secondValidationEvents).toHaveLength(0);
   });
 
-  it("writes one historical qualification and never creates a deprecated XP milestone", async () => {
+  it("writes one historical qualification and its specialized milestone", async () => {
     const actions = [
       {
         ...buildAction("approved"),
@@ -90,7 +90,7 @@ describe("syncUserActionProgression action rejection", () => {
 
     const firstOptions = {
       sensitiveAreas: ["10e"],
-      projectionState: { qualifications: [] },
+      projectionState: { qualifications: [], milestoneThresholds: [] },
       assessedAt: "2026-06-01T12:00:00.000Z",
     };
     await syncUserActionProgression(supabase, "user-1", firstOptions);
@@ -108,6 +108,17 @@ describe("syncUserActionProgression action rejection", () => {
               ruleVersion: "build-zones-120d-critique-normalized-score-v1",
             }),
           }),
+        }),
+      ]),
+    );
+    expect(insertedEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event_type: "sensitive_zone_milestone",
+          source_table: "sensitive_zone_milestones",
+          source_id: "sensitive-zone:threshold:1",
+          xp_base: 1,
+          xp_awarded: 1,
         }),
       ]),
     );
@@ -132,6 +143,7 @@ describe("syncUserActionProgression action rejection", () => {
             } }).sensitiveZone,
           },
         ],
+        milestoneThresholds: [1],
       },
       assessedAt: "2026-07-01T12:00:00.000Z",
     });

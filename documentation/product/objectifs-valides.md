@@ -51,9 +51,11 @@ métriques d'impact affichables, sans conversion en XP par unité.
 
 Mohs reste une échelle `LEGACY` de lecture historique déchets/mégots. Aucune
 nouvelle progression ne l'utilise. La zone sensible apaisée reste elle aussi
-hors des sept progressions infinies : sa contribution est traitée comme une
-métrique historique à preuve figée, sans nouvelle attribution XP. Les anciens
-paliers `sensitive_zone_milestone` sont conservés en `COMPATIBILITY/LEGACY`.
+hors des sept progressions infinies : sa qualification est historique et figée
+au moment de la validation, mais ses paliers gemme `1, 3, 5, 8, 10, 15, 20,
+puis +5` attribuent chacun `+1 XP` via `sensitive_zone_milestone`. Ces
+événements restent spécialisés, idempotents et sans solde XP propre ; une
+réjection ou annulation réconcilie les seuils devenus inéligibles.
 
 ## Règle de mémoire
 

@@ -392,12 +392,14 @@ Règles:
 - le calcul du badge lit ces preuves historiques. L'état environnemental
   courant d'une zone reste une projection distincte et ne révoque pas une
   contribution acquise;
-- aucune nouvelle attribution XP n'est dérivée de cette métrique. Les anciens
-  événements `sensitive_zone_milestone` restent conservés en
-  `COMPATIBILITY/LEGACY`, sans être recréés ni révoqués;
-- une action ne compte qu'une fois pour la preuve historique. Une réjection ou
-  annulation retire uniquement la preuve CURRENT correspondante; les
-  événements historiques de palier ne sont pas réécrits.
+- les seuils gemme `1, 3, 5, 8, 10, 15, 20`, puis les paliers de `5`, donnent
+  chacun `+1 XP` via un événement `sensitive_zone_milestone` unique par
+  utilisateur et seuil; cette mécanique reste hors de
+  `CURRENT_INFINITE_PROGRESSION_IDS` et ne crée pas de solde XP propre;
+- une action ne compte qu'une fois. Une réjection ou annulation supprime sa
+  preuve et réconcilie les paliers devenus inatteignables; les rejouements
+  restent idempotents. Une zone devenue propre après validation ne révoque
+  jamais la qualification ni les paliers déjà acquis.
 
 ### Inviter un ami
 

@@ -261,7 +261,7 @@ describe("syncUserActionProgression", () => {
 
     const validatedCount = await syncUserActionProgression(supabase, "user-co", {
       sensitiveAreas: [],
-      projectionState: { qualifications: [] },
+      projectionState: { qualifications: [], milestoneThresholds: [] },
     });
 
     expect(validatedCount).toBe(1);

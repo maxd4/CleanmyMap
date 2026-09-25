@@ -68,6 +68,7 @@ describe("progression event registry", () => {
       "quiz_question_type_milestone",
       "route_recommend_use",
       "sensitive_zone_action",
+      "sensitive_zone_milestone",
       "spot_create_pending",
       "spot_validation_bonus",
     ].sort());
@@ -239,7 +240,7 @@ describe("progression event registry", () => {
     expect(rebuild).not.toContain('eventType: "form_tier_unlock"');
   });
 
-  it("keeps deprecated forms and impact quantities outside CURRENT badge surfaces", () => {
+  it("keeps deprecated forms, sensitive-zone rewards, and impact quantities outside CURRENT badge surfaces", () => {
     const listing = readFileSync(
       new URL("./badges/listing.ts", import.meta.url),
       "utf8",
@@ -271,9 +272,10 @@ describe("progression event registry", () => {
     expect(sensitiveZoneCard).not.toContain("GamificationBadgePanel");
     expect(sensitiveZoneCard).not.toContain("progressPercent");
     expect(sensitiveZoneCard).not.toContain("Prochain palier");
-    expect(sensitiveZoneStore).not.toContain("SENSITIVE_ZONE_MILESTONE_EVENT_TYPE");
-    expect(sensitiveZoneStore).not.toContain("milestoneThresholdsToInsert");
-    expect(sensitiveZoneStore).not.toContain("milestoneThresholdsToRemove");
+    expect(sensitiveZoneStore).toContain("SENSITIVE_ZONE_MILESTONE_EVENT_TYPE");
+    expect(sensitiveZoneStore).toContain("milestoneThresholdsToInsert");
+    expect(sensitiveZoneStore).toContain("milestoneThresholdsToRemove");
+    expect(sensitiveZoneStore).not.toContain("CURRENT_INFINITE_PROGRESSION_IDS");
     expect(personalProgress).toContain("<MohsBadge");
     expect(mohsBadge).toContain("aucune progression XP");
     expect(mohsBadge).not.toContain('style={{ width: `${progressPct}%` }}');
