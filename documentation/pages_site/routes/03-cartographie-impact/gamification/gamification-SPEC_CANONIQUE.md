@@ -127,13 +127,14 @@ Règle d implémentation:
 | Régularité | Échelle gemme | `Observateur`, `Quartz`, `Topaze`, `Saphir`, `Rubis`, `Émeraude`, `Diamant`, `Opale`, `Pilier` | vocabulaire exploration, végétal, atmosphérique, Mohs |
 | Polyvalence | Échelle gemme | `Observateur`, `Quartz`, `Topaze`, `Saphir`, `Rubis`, `Émeraude`, `Diamant`, `Opale`, `Pilier` | vocabulaire exploration, végétal, atmosphérique, Mohs |
 | Apprentissage | Échelle pédagogique de learning | paliers d'apprentissage définis par le registre | quiz et contenus d'apprentissage | `learning` / Forms |
-| Mohs | Échelle minérale héritée | `Talc`, `Gypse`, `Calcite`, `Fluorite`, `Apatite`, `Orthose`, `Quartz`, `Topaze`, `Corindon`, `Diamant` | `Observateur`, `Quartz` gemme, `Pilier` |
 
 Règle d application:
 
 - chaque famille doit rester strictement sur son échelle autorisée;
 - si une famille non gemme affiche un grade, l UI doit le nommer par sa propre échelle;
 - `Mohs` reste explicitement héritée et distincte;
+- `Mohs` ne fait pas partie de cette matrice CURRENT : elle reste une lecture
+  historique secondaire des compteurs déchets et mégots;
 - `Participant` ne bascule jamais vers les gemmes même s il partage une logique de paliers;
 - `Explorer` garde son vocabulaire cartographique propre.
 
