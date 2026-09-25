@@ -1,12 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.hoisted(() => {
+vi.mock("@clerk/nextjs/server", () => {
   process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = `pk_test_${Buffer.from(
-    "local-dev.clerk.accounts.dev$",
-  ).toString("base64")}`;
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = `pk_test_${Buffer.from("local-dev.clerk.accounts.dev$").toString("base64")}`;
   process.env.CLERK_SECRET_KEY = "sk_test_local_dev_secret";
+  return {
+    clerkMiddleware: (handler: (auth: unknown, req: NextRequest, evt: unknown) => unknown) =>
+      async (req: NextRequest, evt: unknown) => handler({ protect: vi.fn() }, req, evt),
+  };
 });
 
 import {
@@ -20,6 +22,7 @@ import {
   isAnonymousSafeApiRequest,
   isClerkContextOnlyRoute,
   isProtectedAppPage,
+  proxy,
   PROTECTED_APP_PAGE_ROUTE_PREFIXES,
   PROXY_MATCHER_PATTERNS,
   SEO_HTTP_REDIRECT_MATCHER_PATTERNS,
@@ -145,6 +148,30 @@ describe("proxy route context", () => {
 
     expect(isAnonymousSafeApiRequest(getRequest)).toBe(true);
     expect(isAnonymousSafeApiRequest(postRequest)).toBe(false);
+  });
+
+  it("applies SEO redirects before the Clerk middleware", async () => {
+    const response = await proxy(
+      new NextRequest("http://localhost/en?source=legacy"),
+      {} as never,
+    );
+
+    if (!response) throw new Error("SEO proxy response is missing");
+
+    expect(response.status).toBe(308);
+    expect(new URL(response.headers.get("location") ?? "http://invalid").pathname).toBe("/");
+  });
+
+  it("keeps anonymous public map reads on the normal Next response path", async () => {
+    const response = await proxy(
+      new NextRequest("http://localhost/api/actions/map"),
+      {} as never,
+    );
+
+    if (!response) throw new Error("public map proxy response is missing");
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("x-robots-tag")).toBeNull();
   });
 
 });

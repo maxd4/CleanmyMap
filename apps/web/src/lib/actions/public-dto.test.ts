@@ -5,7 +5,9 @@ import {
 } from "./contracts/contract-mappers";
 import {
   toPublicActionListItem,
+  toPublicActionListResponse,
   toPublicActionMapItem,
+  toPublicActionMapResponse,
 } from "./public-dto";
 import { buildActionDataContract } from "./contracts/contract-model";
 
@@ -92,5 +94,32 @@ describe("public action DTO boundary", () => {
       latitude: 48.8566,
       longitude: 2.3522,
     });
+  });
+
+  it("sanitizes complete public responses, including nested identity fields", () => {
+    const listResponse = toPublicActionListResponse({
+      status: "ok",
+      count: 1,
+      items: [toActionListItem(buildContract())],
+      sourceHealth: {
+        partial: false,
+        failedSources: [],
+        availableSources: ["actions"],
+        warnings: [],
+      },
+      partialSource: false,
+    });
+    const mapResponse = toPublicActionMapResponse({
+      status: "ok",
+      count: 1,
+      daysWindow: 30,
+      items: [toActionMapItem(buildContract())],
+      partialSource: false,
+    });
+
+    expect(findPrivateIdentityKeys(listResponse)).toEqual([]);
+    expect(findPrivateIdentityKeys(mapResponse)).toEqual([]);
+    expect(listResponse.items[0]).toHaveProperty("actor_name", "Association publique");
+    expect(mapResponse.items[0]).toHaveProperty("location_label", "Quai public");
   });
 });

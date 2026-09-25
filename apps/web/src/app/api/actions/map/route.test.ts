@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const buildMapActionsRouteResultMock = vi.hoisted(() => vi.fn());
 const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
+const parseEntityTypesParamMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/actions/map/map-route", async () => ({
   ...(await vi.importActual<typeof import("@/lib/actions/map/map-route")>("@/lib/actions/map/map-route")),
@@ -9,7 +10,7 @@ vi.mock("@/lib/actions/map/map-route", async () => ({
 }));
 vi.mock("@/lib/actions/unified-source", () => ({
   fetchUnifiedActionContracts: vi.fn(),
-  parseEntityTypesParam: vi.fn(),
+  parseEntityTypesParam: parseEntityTypesParamMock,
 }));
 vi.mock("@/lib/actions/insights", () => ({ buildActionInsights: vi.fn() }));
 vi.mock("@/lib/actions/data-contract", () => ({
@@ -31,6 +32,7 @@ describe("GET /api/actions/map persistence boundary", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    parseEntityTypesParamMock.mockReturnValue(null);
     buildMapActionsRouteResultMock.mockResolvedValue({
       body: { status: "ok", count: 0, items: [], partialSource: false },
     });
@@ -69,6 +71,54 @@ describe("GET /api/actions/map persistence boundary", () => {
       expect(loadOrRefreshPublicSurfaceSnapshotMock).not.toHaveBeenCalled();
     },
   );
+
+  it("surfaces a partial-source warning on bounded public map reads", async () => {
+    buildMapActionsRouteResultMock.mockResolvedValueOnce({
+      body: {
+        status: "ok",
+        count: 0,
+        items: [],
+        partialSource: true,
+      },
+    });
+    const { GET } = await import("./route");
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/actions/map?south=12.34&west=56.78&north=12.35&east=56.79&zoom=15",
+      ),
+    );
+
+    expect(response.headers.get("x-data-warning")).toBe("Partial source data");
+  });
+
+  it("surfaces a partial-source warning from a persisted public snapshot", async () => {
+    loadOrRefreshPublicSurfaceSnapshotMock.mockResolvedValueOnce({
+      payload: {
+        status: "ok",
+        count: 0,
+        items: [],
+        partialSource: true,
+      },
+    });
+    const { GET } = await import("./route");
+
+    const response = await GET(new Request("http://localhost/api/actions/map"));
+
+    expect(response.headers.get("x-data-warning")).toBe("Partial source data");
+  });
+
+  it("keeps snapshot failures behind the API error boundary", async () => {
+    loadOrRefreshPublicSurfaceSnapshotMock.mockRejectedValueOnce(
+      new Error("snapshot unavailable"),
+    );
+    const { GET } = await import("./route");
+
+    const response = await GET(new Request("http://localhost/api/actions/map"));
+
+    expect(response.status).toBe(500);
+    expect(await response.text()).toContain("snapshot unavailable");
+  });
 
   it("keeps coordinates out of the persistent global snapshot key", async () => {
     const { GET } = await import("./route");
@@ -110,6 +160,17 @@ describe("GET /api/actions/map persistence boundary", () => {
 
     expect(loadOrRefreshPublicSurfaceSnapshotMock.mock.calls[0][0].version).toBe(
       "public-map-actions-v3",
+    );
+  });
+
+  it("keeps explicit public type filters in the snapshot key", async () => {
+    parseEntityTypesParamMock.mockReturnValue(["action"]);
+    const { GET } = await import("./route");
+
+    await GET(new Request("http://localhost/api/actions/map?types=action"));
+
+    expect(loadOrRefreshPublicSurfaceSnapshotMock.mock.calls[0][0].snapshotKey).toContain(
+      '"types":"action"',
     );
   });
 });
