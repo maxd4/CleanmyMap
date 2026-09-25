@@ -27,6 +27,14 @@ const TAB_TONES: Record<ConnectTab, TabTone> = {
   },
 };
 
+const CONNECT_TAB_ACTIVE_TRANSITION = {
+  type: "spring",
+  bounce: 0.2,
+  duration: 0.35,
+} as const;
+
+const CONNECT_TAB_STATIC_TRANSITION = { duration: 0 } as const;
+
 export const CONNECT_TABS: ConnectTabItem[] = [
   {
     id: "discussions",
@@ -60,7 +68,7 @@ export const ConnectTabs = memo(function ConnectTabs({
   const { displayMode } = useSitePreferences();
   const reducedMotion = useReducedMotion();
   const tabRefs = useRef<Partial<Record<ConnectTab, HTMLButtonElement | null>>>({});
-  const shouldAnimate = reducedMotion !== true && displayMode !== "sobre";
+  const isStaticMotion = reducedMotion === true || displayMode === "sobre";
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
@@ -112,12 +120,16 @@ export const ConnectTabs = memo(function ConnectTabs({
                 : cn("text-slate-700", tone.hoverText),
             )}
           >
-            {shouldAnimate && isActive ? (
+            {isActive ? (
               <motion.span
                 layoutId="connect-tab-active"
                 aria-hidden="true"
                 className="absolute inset-0 -z-10 rounded-[1.5rem]"
-                transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
+                transition={
+                  isStaticMotion
+                    ? CONNECT_TAB_STATIC_TRANSITION
+                    : CONNECT_TAB_ACTIVE_TRANSITION
+                }
               />
             ) : null}
             <tab.icon

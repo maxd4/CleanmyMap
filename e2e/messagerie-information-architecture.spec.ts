@@ -11,6 +11,25 @@ async function openMessagerie(page: Page, viewport: { width: number; height: num
 }
 
 test.describe("Messagerie — architecture d'information", () => {
+  test("la session authentifiée ne produit pas d'erreur d'hydratation", async ({ page }) => {
+    const hydrationErrors: string[] = [];
+    page.on("pageerror", (error) => {
+      if (/hydration|hydration failed|mismatch/i.test(String(error))) {
+        hydrationErrors.push(String(error));
+      }
+    });
+    page.on("console", (message) => {
+      if (message.type() === "error" && /hydration|mismatch/i.test(message.text())) {
+        hydrationErrors.push(message.text());
+      }
+    });
+
+    await openMessagerie(page, { width: 1280, height: 900 });
+
+    await expect(page.getByRole("tablist", { name: "Sections de la messagerie" })).toBeVisible();
+    expect(hydrationErrors).toEqual([]);
+  });
+
   test("restaure les sélections Discussions et DM avec Back puis Forward", async ({ page }) => {
     await openMessagerie(page, { width: 1280, height: 900 });
     await page.goto("/sections/messagerie?tab=discussions&channel=community");
