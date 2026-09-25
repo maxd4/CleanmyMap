@@ -11,6 +11,39 @@ vi.mock("swr", () => ({
 }));
 
 describe("FreePlanServicesPanel", () => {
+  it("renders canonical loading feedback", () => {
+    useSWRMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isValidating: true,
+      error: undefined,
+      mutate: vi.fn(),
+    });
+
+    const markup = renderToStaticMarkup(React.createElement(FreePlanServicesPanel));
+
+    expect(markup).toContain('role="status"');
+    expect(markup).toContain('aria-busy="true"');
+    expect(markup).toContain('data-skeleton-variant="card"');
+    expect(markup).not.toContain("animate-pulse");
+  });
+
+  it("renders a recoverable error state", () => {
+    useSWRMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isValidating: false,
+      error: new Error("unavailable"),
+      mutate: vi.fn(),
+    });
+
+    const markup = renderToStaticMarkup(React.createElement(FreePlanServicesPanel));
+
+    expect(markup).toContain('data-feedback-tone="error"');
+    expect(markup).toContain("Fiche des plans gratuits indisponible");
+    expect(markup).toContain("Réessayer");
+  });
+
   it("renders the free-tier services sheet", () => {
     const snapshots = [
       {

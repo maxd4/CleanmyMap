@@ -63,7 +63,9 @@ describe("StorageUsagePanel", () => {
     const markup = renderToStaticMarkup(React.createElement(StorageUsagePanel));
 
     expect(markup).toContain('data-title="Stockage Supabase"');
-    expect(markup).toContain("animate-pulse");
+    expect(markup).toContain('data-skeleton-variant="card"');
+    expect(markup).toContain('aria-busy="true"');
+    expect(markup).not.toContain("animate-pulse");
     expect(markup).not.toContain("Impossible de charger le suivi");
   });
 
@@ -78,7 +80,9 @@ describe("StorageUsagePanel", () => {
 
     const markup = renderToStaticMarkup(React.createElement(StorageUsagePanel));
 
+    expect(markup).toContain('data-feedback-tone="error"');
     expect(markup).toContain("Impossible de charger le suivi du stockage Supabase");
+    expect(markup).toContain("Réessayer");
     expect(markup).not.toContain("Aucun historique disponible");
   });
 

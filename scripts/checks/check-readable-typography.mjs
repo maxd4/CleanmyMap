@@ -71,6 +71,21 @@ const allowlist = [
     match: /flex items-center justify-between text-\[11px\]/,
     reason: "badge progress metadata preserves the existing compact gamification layout",
   },
+  {
+    file: "apps/web/src/components/admin/free-plan-services-panel.async.tsx",
+    rule: "small-text",
+    reason: "extracted admin metadata preserves the existing compact visual contract",
+  },
+  {
+    file: "apps/web/src/components/dashboard/storage-usage-panel.async.tsx",
+    rule: "small-text",
+    reason: "extracted admin metadata preserves the existing compact visual contract",
+  },
+  {
+    file: "apps/web/src/components/dashboard/storage-usage-panel.data.tsx",
+    rule: "small-text",
+    reason: "extracted admin metadata preserves the existing compact visual contract",
+  },
 ];
 
 const smallTextPattern = /text-\[((?:\d+(?:\.\d+)?|\.\d+))(px|rem)\]/g;
