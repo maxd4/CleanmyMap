@@ -235,7 +235,11 @@ describe("syncUserActionProgression action rejection", () => {
       }),
     } as unknown as SupabaseClient;
 
-    const firstPass = await syncUserActionProgression(supabase, "user-1");
+    const syncOptions = {
+      sensitiveAreas: [],
+      projectionState: { qualifications: [], milestoneThresholds: [] },
+    };
+    const firstPass = await syncUserActionProgression(supabase, "user-1", syncOptions);
     const firstValidationEvents = insertedEvents.filter(
       (row) => row["event_type"] === "action_declare_validation",
     );
@@ -253,12 +257,113 @@ describe("syncUserActionProgression action rejection", () => {
     actions[0] = buildAction("rejected");
     insertedEvents.length = 0;
 
-    const secondPass = await syncUserActionProgression(supabase, "user-1");
+    const secondPass = await syncUserActionProgression(supabase, "user-1", syncOptions);
     const secondValidationEvents = insertedEvents.filter(
       (row) => row["event_type"] === "action_declare_validation",
     );
 
     expect(secondPass).toBe(0);
     expect(secondValidationEvents).toHaveLength(0);
+  });
+
+  it("writes one historical qualification and one gem milestone, then keeps them on replay", async () => {
+    const actions = [
+      {
+        ...buildAction("approved"),
+        location_label: "Lyon 10e - Rue sensible",
+      },
+    ];
+    const insertedEvents: Array<Record<string, unknown>> = [];
+
+    const supabase = {
+      from: vi.fn((table: string) => {
+        if (table === "actions") {
+          return createActionQuery(() => actions);
+        }
+        if (table === "action_organizers") {
+          return createOrganizerChain();
+        }
+        if (table === "forms") {
+          return createFormsQuery();
+        }
+        if (table === "progression_events") {
+          return {
+            delete: () => createDeleteChain(),
+            insert: vi.fn(async (row: Record<string, unknown>) => {
+              insertedEvents.push(row);
+              return { error: null };
+            }),
+          };
+        }
+        if (table === "points_ledger" || table === "xp_audit") {
+          return {
+            insert: vi.fn(async () => ({ error: null })),
+            select: vi.fn(() => createDeleteChain()),
+          };
+        }
+        throw new Error(`Unexpected table: ${table}`);
+      }),
+    } as unknown as SupabaseClient;
+
+    const firstOptions = {
+      sensitiveAreas: ["10e"],
+      projectionState: { qualifications: [], milestoneThresholds: [] },
+      assessedAt: "2026-06-01T12:00:00.000Z",
+    };
+    await syncUserActionProgression(supabase, "user-1", firstOptions);
+
+    expect(insertedEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          event_type: "sensitive_zone_action",
+          source_table: "sensitive_zone_actions",
+          source_id: "action-1",
+          xp_awarded: 0,
+          metadata: expect.objectContaining({
+            sensitiveZone: expect.objectContaining({
+              qualified: true,
+              ruleVersion: "build-zones-120d-critique-normalized-score-v1",
+            }),
+          }),
+        }),
+        expect.objectContaining({
+          event_type: "sensitive_zone_milestone",
+          source_table: "sensitive_zone_milestones",
+          source_id: "sensitive-zone:threshold:1",
+          xp_awarded: 1,
+        }),
+      ]),
+    );
+
+    const proof = insertedEvents.find(
+      (row) => row.event_type === "sensitive_zone_action",
+    );
+    insertedEvents.length = 0;
+    await syncUserActionProgression(supabase, "user-1", {
+      sensitiveAreas: [],
+      projectionState: {
+        qualifications: [
+          {
+            sourceId: "action-1",
+            snapshot: (proof?.metadata as { sensitiveZone: {
+              actionId: string;
+              qualified: boolean;
+              area: string;
+              ruleVersion: "build-zones-120d-critique-normalized-score-v1";
+              assessedAt: string;
+              actionDate: string;
+            } }).sensitiveZone,
+          },
+        ],
+        milestoneThresholds: [1],
+      },
+      assessedAt: "2026-07-01T12:00:00.000Z",
+    });
+
+    expect(
+      insertedEvents.filter((row) =>
+        String(row.event_type).startsWith("sensitive_zone_"),
+      ),
+    ).toHaveLength(0);
   });
 });

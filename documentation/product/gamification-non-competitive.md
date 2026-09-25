@@ -168,7 +168,7 @@ Implication pour CleanMyMap:
 
 - **one-shot**: premiere action validee, premiere action collective, premier badge de confiance, premier lien d invitation utile;
 - **uniformes**: objectif mensuel simple, check-in de participation, quota de retours;
-- **infinis**: une meme logique qui continue a monter en paliers, avec un badge qui evolue graphiquement et change de nom a chaque seuil important; exemples: niveaux, regularite sur plusieurs mois, seuils de qualite, role de mentor, equilibre des contextes, zone sensible apaisée.
+- **infinis**: une meme logique qui continue a monter en paliers, avec un badge qui evolue graphiquement et change de nom a chaque seuil important; exemples: niveaux, regularite sur plusieurs mois, seuils de qualite, role de mentor et equilibre des contextes. La zone sensible apaisée conserve une échelle gemme historique, mais ses qualifications sont figées lors de la validation et ne forment pas une huitième progression CURRENT.
 
 ## Regles concretement recommandees
 
@@ -211,7 +211,7 @@ Une recompense doit toujours repondre a la question:
 ### Familles recentes retenues
 
 - `Régularité mensuelle`: progression de mois calendaires consecutifs, avec 1 XP au premier mois, 2 XP au deuxieme, puis +1 a chaque mois consécutif utile;
-- `Zone sensible apaisée`: progression sur les zones critiques ou historiquement tres sales, basee sur les actions validées et sur les paliers 1, 3, 5, 8, 10, 15, 20...;
+- `Zone sensible apaisée`: métrique historique sur les zones qualifiées sensibles au moment de la validation, avec preuve stable et paliers 1, 3, 5, 8, 10, 15, 20...;
 - `Inviter un ami`: badge one-shot qui genere un lien d invitation pour faire venir un nouveau membre, conserve la chaine de parrainage en base et donne +2 XP;
 - ces deux badges restent non competitifs, lisibles, et places dans le parcours personnel.
 

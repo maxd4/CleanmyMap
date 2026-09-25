@@ -38,10 +38,12 @@ unique et ne doublonnent pas le premier palier d'une progression.
 
 ## Hors taxonomie CURRENT
 
-Forms, niveau de confiance, palier de qualité, compteurs kg/mégots et zone
-sensible apaisée conservent leurs données ou leur rôle de compatibilité, mais
-ne sont pas des progressions infinies CURRENT. Leur traitement produit dédié
-sera décidé dans les lots suivants.
+Forms, niveau de confiance, palier de qualité et compteurs kg/mégots conservent
+leurs données ou leur rôle de compatibilité, mais ne sont pas des progressions
+infinies CURRENT. La zone sensible apaisée reste elle aussi hors des sept
+progressions infinies : sa contribution est traitée comme une métrique
+historique à preuve figée et ses paliers XP sont des événements idempotents
+distincts, sans solde XP propre.
 
 ## Règle de mémoire
 

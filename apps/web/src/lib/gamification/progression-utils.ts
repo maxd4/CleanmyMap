@@ -171,6 +171,15 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
     classification: "progression",
     progressionId: "exploration",
   },
+  sensitive_zone_action: {
+    classification: "non_progression",
+    reason:
+      "Preuve historique de qualification de zone, sans balance XP indépendante.",
+  },
+  sensitive_zone_milestone: {
+    classification: "milestone",
+    milestoneId: "zone_sensible_apaisement",
+  },
 };
 
 export function currentInfiniteProgressions(): readonly GamificationProgressionDefinition[] {

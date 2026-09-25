@@ -68,10 +68,6 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
   const sensitiveZoneApaisement = await loadSensitiveZoneApaisementSummary(
     supabase,
     userId,
-    {
-      userRows: actionRows,
-      validatedActionIds,
-    },
   ).catch(() => createFallbackSensitiveZoneApaisementSummary());
   const actionsCreated = validatedActionIds.size;
 

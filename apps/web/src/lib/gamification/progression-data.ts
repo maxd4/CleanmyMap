@@ -30,6 +30,7 @@ import { loadGamificationUserCounters } from "./counters";
 import { logFailure } from "@/lib/logging/failure-log";
 import { writeProgressionEventWithPolicy } from "./progression-event-write-policy";
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
+import { syncSensitiveZoneProjection, type SensitiveZoneSyncOptions } from "./sensitive-zone-progression-store";
 
 const SPONTANEOUS_ASSOCIATION_KEY = "action spontanee";
 const ACTION_FULL_COLUMNS =
@@ -580,6 +581,7 @@ export function actionListItemFromRow(row: ActionRow) {
 export async function syncUserActionProgression(
   supabase: SupabaseClient,
   userId: string,
+  options: SensitiveZoneSyncOptions = {},
 ): Promise<number> {
   const deleted = await supabase
     .from("progression_events")
@@ -594,6 +596,14 @@ export async function syncUserActionProgression(
   const actions = await loadActionRowsForUser(supabase, userId);
   const validatedActionIds = await loadValidatedActionIdsForUser(supabase, userId, {
     actionRows: actions,
+  });
+  await syncSensitiveZoneProjection({
+    supabase,
+    userId,
+    actions,
+    validatedActionIds,
+    options,
+    writeEvent: (params) => insertProgressionEvent(supabase, params),
   });
   let validatedActionCount = 0;
 

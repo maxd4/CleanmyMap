@@ -27,7 +27,9 @@ export type ProgressionEventType =
   | "form_tier_unlock"
   | "form_bonus"
   | "participant_tier_unlock"
-  | "explorer_tier_unlock";
+  | "explorer_tier_unlock"
+  | "sensitive_zone_action"
+  | "sensitive_zone_milestone";
 
 export const CURRENT_INFINITE_PROGRESSION_IDS = [
   "participation",

@@ -16,6 +16,8 @@ const RUNTIME_PROGRESSION_WRITERS = [
   "quiz-balance-progress.ts",
   "referrals.ts",
   "badges/rebuild.ts",
+  "sensitive-zone-progression.ts",
+  "sensitive-zone-progression-store.ts",
 ] as const;
 
 function readRuntimeWriter(path: string): string {
@@ -62,6 +64,8 @@ describe("progression event registry", () => {
       "quiz_question_type_balance_milestone",
       "quiz_question_type_milestone",
       "route_recommend_use",
+      "sensitive_zone_action",
+      "sensitive_zone_milestone",
       "spot_create_pending",
       "spot_validation_bonus",
     ].sort());
@@ -118,6 +122,8 @@ describe("progression event registry", () => {
       "quiz_question_type_balance_milestone",
       "quiz_question_type_milestone",
       "route_recommend_use",
+      "sensitive_zone_action",
+      "sensitive_zone_milestone",
       "spot_create_pending",
       "spot_validation_bonus",
     ].sort());
@@ -130,6 +136,11 @@ describe("progression event registry", () => {
     expect(registry.infinite_butts_milestone.classification).toBe("non_progression");
     expect(registry.form_tier_unlock.classification).toBe("non_progression");
     expect(registry.form_bonus.classification).toBe("non_progression");
+    expect(registry.sensitive_zone_action.classification).toBe("non_progression");
+    expect(registry.sensitive_zone_milestone).toEqual({
+      classification: "milestone",
+      milestoneId: "zone_sensible_apaisement",
+    });
     expect(registry.quiz_question_type_milestone).toEqual({
       classification: "progression",
       progressionId: "learning",
