@@ -11,6 +11,7 @@ export type ProgressionEventType =
   | "action_declare_validation"
   | "first_trace_utile"
   | "action_monthly_regularity"
+  | "action_balance_cycle"
   | "collective_rsvp_yes_pending"
   | "collective_attendance_confirmed"
   | "spot_create_pending"

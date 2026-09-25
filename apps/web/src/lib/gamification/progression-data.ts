@@ -25,13 +25,12 @@ import {
   toInt,
   toIsoDate,
 } from "./progression-utils";
-import { computeMonthlyRegularityAwards } from "./monthly-regularity";
 import { loadGamificationUserCounters } from "./counters";
 import { logFailure } from "@/lib/logging/failure-log";
 import { writeProgressionEventWithPolicy } from "./progression-event-write-policy";
 import { runActionQuery, runSingleActionQuery } from "@/lib/actions/query";
 import { syncSensitiveZoneProjection, type SensitiveZoneSyncOptions } from "./sensitive-zone-progression-store";
-
+import { writeActionProgressionEvents } from "./action-progression-events";
 const SPONTANEOUS_ASSOCIATION_KEY = "action spontanee";
 const ACTION_FULL_COLUMNS =
   "id, created_at, created_by_clerk_id, type, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source";
@@ -687,25 +686,11 @@ export async function syncUserActionProgression(
     validatedActionCount += 1;
   }
 
-  const monthlyAwards = computeMonthlyRegularityAwards(actions);
-  for (const award of monthlyAwards) {
-    await insertProgressionEvent(supabase, {
-      userId,
-      eventType: "action_monthly_regularity",
-      sourceTable: "actions",
-      sourceId: award.sourceId,
-      statusPhase: "validated",
-      weight: 1,
-      xpBase: award.xpAwarded,
-      xpAwarded: award.xpAwarded,
-      occurredOn: award.occurredOn,
-      metadata: {
-        monthKey: award.monthKey,
-        actionCount: award.actionCount,
-        streak: award.streak,
-      },
-    });
-  }
-
+  await writeActionProgressionEvents({
+    userId,
+    actions,
+    validatedActionIds,
+    writeEvent: (params) => insertProgressionEvent(supabase, params),
+  });
   return validatedActionCount;
 }

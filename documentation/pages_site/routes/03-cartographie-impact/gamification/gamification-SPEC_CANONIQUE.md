@@ -315,6 +315,12 @@ Règles:
 Le nom utilisateur de cette progression est `Polyvalence`; `Équilibre des
 contextes` est le terme technique autorisé pour décrire sa mécanique.
 
+La matérialisation technique de chaque cycle est l'événement typé
+`action_balance_cycle` dans `progression_events`, avec l'action déclenchante
+comme source stable et `cycleIndex` / `requiredPerType` dans les métadonnées.
+Cet événement porte directement l'XP du cycle; il ne génère aucune écriture
+dans `points_ledger`.
+
 ### Régularité
 
 But:
