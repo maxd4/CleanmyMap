@@ -121,7 +121,7 @@ Le garde-fou associé est `npm run check:surfaces`.
   - palette slate / gris clair / blanc
   - pas d esthétique marketing blocks
   - `LegalSection` comme brique commune possible
-- Système & Utilitaires : `/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429`
+- Système & Utilitaires : `/reglages`, `/form-comparison`, `/preview/actions/new`, `/error/429`
   - mood layer autonome par usage, jamais couleur de bloc
 - Admin & Super-admin : `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`
 - Print & Export : `/prints/report`
@@ -378,7 +378,7 @@ bg-gradient-to-r from-[accent-500] via-[accent-400] to-[accent-300]  /* 3px */
 ### Familles autonomes
 - Auth & Onboarding (`/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`) → `auth`
 - Institutionnel & Légal (`/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`) → `legal`
-- Système & Utilitaires (`/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429`) → `system` avec mood layer autonome par usage
+- Système & Utilitaires (`/reglages`, `/form-comparison`, `/preview/actions/new`, `/error/429`) → `system` avec mood layer autonome par usage
 - Admin & Super-admin (`/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`) → `admin`
 - Print & Export (`/prints/report`) → `print` documentaire autonome
 

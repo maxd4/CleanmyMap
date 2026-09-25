@@ -46,7 +46,6 @@ export const PRIVATE_APP_ROUTE_PREFIXES = [
 ] as const;
 
 const PUBLIC_NOINDEX_ROUTE_PREFIXES = [
-  "/declaration-simple",
   "/docs",
   "/error/429",
   "/explorer",

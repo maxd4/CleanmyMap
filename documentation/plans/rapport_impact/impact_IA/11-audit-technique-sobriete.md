@@ -447,7 +447,7 @@ Gain global plausible : **20 % à 40 %** de réduction des coûts numériques co
 
 Architecture recommandée :
 
-- **Core public léger** : accueil, déclaration simple, carte, rapports publics, méthodologie. Pages majoritairement Server Components.
+- **Core public léger** : accueil, parcours de déclaration d'action (`/actions/new`), carte, rapports publics, méthodologie. Pages majoritairement Server Components.
 
 - **Carte isolée** : segment dédié, import dynamique Leaflet, données par bbox, cluster serveur, vue liste par défaut mobile.
 

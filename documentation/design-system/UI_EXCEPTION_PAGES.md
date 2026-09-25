@@ -54,7 +54,7 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | Homepage autonome | `/`, `/accueil` | `home` | Identité de page indépendante |
 | Auth & Onboarding | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | `auth` | `/sign-in` et `/sign-up` utilisent le canvas emerald lumineux et les surfaces emerald d'Agir sans changer leur autonomie fonctionnelle ; l'onboarding conserve son contrat propre |
 | Institutionnel & Légal | `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*` | `legal` | Pages juridiques et institutionnelles, palette slate / gris clair / blanc, sans esthétique marketing blocks |
-| Système & Utilitaires | `/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429` | `system` | Pages outillage / support / prévisualisation, avec mood layer autonome par usage; les états système suivent une charte commune `SystemStateLayout` |
+| Système & Utilitaires | `/reglages`, `/form-comparison`, `/preview/actions/new`, `/error/429` | `system` | Pages outillage / support / prévisualisation, avec mood layer autonome par usage; les états système suivent une charte commune `SystemStateLayout` |
 | Admin & Super-admin | `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode` | `admin` | Console et supervision restreinte |
 | Print & Export | `/prints/report` | `print` | Rapport imprimable et export visuel, ambiance documentaire autonome |
 
@@ -106,7 +106,6 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | `/actions/new` | Canonique | Agir | non | Palette `emerald` |
 | `/actions/history` | Canonique | Agir | non | Palette `emerald` |
 | `/declaration` | Alias vers `/actions/new` | Agir | n/a | Redirection sans UI propre |
-| `/declaration-simple` | Canonique | Agir / utilitaire | non | Formulaire simplifié, même logique d'action |
 | `/missions/[id]` | Dynamique | Agir | non | Palette `emerald` |
 | `/parcours` | Canonique | Agir | non | Palette `emerald` |
 | `/parcours/[profile]` | Dynamique | Agir | non | Palette `emerald` |
@@ -165,7 +164,6 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | `/sections/guide` | Compatibilité vers `/actions/new?panel=meteo` | Agir | non | Redirection vers le panneau météo terrain |
 | `/sections/trash-spotter` | Canonique (section) | Terrain | non | Signalement de déchets |
 | `/form-comparison` | Canonique | Système & Utilitaires | non | Comparaison interne, mood layer analytique autonome |
-| `/declaration-simple` | Canonique | Système & Utilitaires | non | Déclaration rapide simplifiée, mood layer vert clair |
 | `/onboarding` | Canonique | Auth & Onboarding | non | Écran de démarrage |
 | `/onboarding/localisation` | Canonique | Auth & Onboarding | non | Étape de configuration |
 | `/reglages` | Canonique | Système & Utilitaires | non | Préférences et réglages, ambiance neutre autonome |

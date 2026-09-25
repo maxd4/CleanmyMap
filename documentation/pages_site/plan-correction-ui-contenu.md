@@ -252,7 +252,6 @@ Routes concernées:
 
 - `/form-comparison`
 - `/preview/actions/new`
-- `/declaration-simple`
 - `/reglages`
 - `/prints/report`
 
@@ -260,7 +259,6 @@ Fichiers à modifier:
 
 - `apps/web/src/app/form-comparison/page.tsx`
 - `apps/web/src/app/preview/actions/new/page.tsx`
-- `apps/web/src/app/declaration-simple/page.tsx`
 - `apps/web/src/app/reglages/page.tsx`
 - `apps/web/src/app/(app)/prints/report/page.tsx`
 
@@ -269,7 +267,6 @@ Palette attendue:
 - palette autonome avec mood layer légère selon l'usage
 - `/form-comparison` -> `indigo + cyan doux`
 - `/preview/actions/new` -> `vert + teal`
-- `/declaration-simple` -> `vert clair + neutres`
 - `/reglages` -> `slate + gris doux`
 - `/prints/report` -> `ardoise + bleu nuit + vert discret`
 - priorité à la lisibilité fonctionnelle et à l'impression
@@ -303,9 +300,8 @@ Ordre recommandé d'exécution:
 
 1. `/form-comparison`
 2. `/preview/actions/new`
-3. `/declaration-simple`
-4. `/reglages`
-5. `/prints/report`
+3. `/reglages`
+4. `/prints/report`
 
 ## Lot 5 — Pages légales / institutionnelles
 

@@ -58,7 +58,7 @@ Le stockage des photos, des logs et des caches doit rester strictement borné pa
 
 ## Architecture alternative plus sobre
 
-- **Core public léger** : accueil, déclaration simple, carte, rapports publics, méthodologie ;
+- **Core public léger** : accueil, parcours de déclaration d'action (`/actions/new`), carte, rapports publics, méthodologie ;
 - **carte isolée** : import dynamique Leaflet, données par bbox, cluster serveur, vue liste par défaut sur mobile ;
 - **API réduite** : lectures publiques avec cache court, `no-store` réservé au privé ;
 - **données sobres** : Supabase source de vérité, exports CSV/JSON simples, Google Sheets limité à l'import/export ;

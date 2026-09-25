@@ -45,7 +45,7 @@ flowchart LR
 
 - Auth & Onboarding : `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`
 - Institutionnel & Légal : `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`
-- Système & Utilitaires : `/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429`
+- Système & Utilitaires : `/reglages`, `/form-comparison`, `/preview/actions/new`, `/error/429`
 - Admin & Super-admin : `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`
 - Print & Export : `/prints/report`
 

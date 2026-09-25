@@ -7,7 +7,7 @@
 
 ## Pages couvertes
 
-- Déclaration simple
+- Le parcours de déclaration d'action est porté par `/actions/new`.
 - Erreur 429
 - Comparaison de formulaires
 - Preview déclaration
