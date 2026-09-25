@@ -1,15 +1,16 @@
 "use client";
 
+import { Suspense } from "react";
 import { LearnPracticeVisualIntro } from "@/components/learn/learn-practice-visual-intro";
 import { LearnBlockJourneySection } from "@/components/learn/learn-block-journey-section";
 import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
 import { QuizArchitectureStrip } from "@/components/learn/quiz/quiz-architecture-strip";
 import { DeferredEnvironmentalQuiz } from "@/components/learn/learn-deferred-panels";
+import { LearnSentrainerQuizEntry } from "@/components/learn/learn-sentrainer-quiz-entry";
 import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
 import { parseQuizSentrainerEntryState } from "@/lib/learning/quiz/quiz-entry-state";
 import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 
 export default function LearnSentrainerPage({
@@ -18,9 +19,8 @@ export default function LearnSentrainerPage({
   staticIntro?: ReactNode;
 }) {
   const { locale } = useSitePreferences();
-  const searchParams = useSearchParams();
   const practiceCard = LEARN_OVERVIEW_CARDS[locale][1];
-  const quizEntryState = parseQuizSentrainerEntryState(searchParams);
+  const defaultQuizEntryState = parseQuizSentrainerEntryState(null);
 
   return (
     <LearnRubricShell
@@ -80,7 +80,16 @@ export default function LearnSentrainerPage({
         </section>
 
         <section className="grid gap-8 lg:grid-cols-2">
-          <DeferredEnvironmentalQuiz {...quizEntryState} />
+          <Suspense
+            fallback={
+              <DeferredEnvironmentalQuiz
+                locale={locale}
+                {...defaultQuizEntryState}
+              />
+            }
+          >
+            <LearnSentrainerQuizEntry locale={locale} />
+          </Suspense>
         </section>
       </div>
     </LearnRubricShell>

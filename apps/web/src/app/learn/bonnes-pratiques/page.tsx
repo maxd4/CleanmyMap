@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getServerLocale } from "@/lib/server-preferences";
+import { LearnLocalizedHeading } from "@/components/learn/learn-localized-heading";
 import LearnBonnesPratiquesClient from "./client";
 
 export const metadata: Metadata = {
@@ -10,14 +10,11 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default async function LearnBonnesPratiquesPage() {
-  const locale = await getServerLocale();
+export default function LearnBonnesPratiquesPage() {
   return (
     <LearnBonnesPratiquesClient
       staticIntro={
-        <h1 className="cmm-page-header-title text-slate-950">
-          {locale === "fr" ? "Bonnes pratiques" : "Good practices"}
-        </h1>
+        <LearnLocalizedHeading fr="Bonnes pratiques" en="Good practices" />
       }
     />
   );
