@@ -205,12 +205,16 @@ Une recompense doit toujours repondre a la question:
 - tant qu aucun formulaire valide n est rattache a l action, **aucun XP** n est attribue aux organisateurs.
 - la repartition fine est portee par la **progression XP**; `points_ledger` et `user_points` restent des surfaces historiques de compatibilite et ne servent pas de source de verite pour les parts fractionnaires.
 - une action en attente peut compter provisoirement pour la regularite mensuelle, mais elle doit etre retiree retroactivement si elle finit rejetee et etait la seule action valide du mois.
-- pour les objectifs infinis a rythme croissant, le palier repart a zéro apres validation et l XP du palier correspond au rang courant du cycle (1, puis 2, puis 3, etc.).
+- pour les objectifs infinis a rythme croissant, l XP du palier correspond au
+  rang courant du cycle (1, puis 2, puis 3, etc.); les contributions
+  excédentaires restent disponibles pour le cycle suivant.
 - pour les objectifs infinis de type équilibre, l interface doit afficher clairement les types d actions encore manquants et leur quantité restante avant le prochain palier.
 
 ### Familles recentes retenues
 
-- `Régularité mensuelle`: progression de mois calendaires consecutifs, avec 1 XP au premier mois, 2 XP au deuxieme, puis +1 a chaque mois consécutif utile;
+- `Régularité mensuelle`: le badge permanent dépend du nombre total de mois
+  calendaires actifs; la série courante reste séparée et attribue 1 XP au
+  premier mois, 2 XP au deuxième, puis +1 à chaque mois consécutif utile;
 - `Zone sensible apaisée`: métrique historique sur les zones qualifiées sensibles au moment de la validation, avec preuve stable et paliers 1, 3, 5, 8, 10, 15, 20...;
 - `Inviter un ami`: badge one-shot qui genere un lien d invitation pour faire venir un nouveau membre, conserve la chaine de parrainage en base et donne +2 XP;
 - ces deux badges restent non competitifs, lisibles, et places dans le parcours personnel.

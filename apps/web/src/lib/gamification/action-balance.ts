@@ -112,8 +112,18 @@ export function computeActionBalanceSummary(
   rows: ActionBalanceRow[],
   validatedActionIds: Set<string>,
 ): ActionBalanceSummary {
+  const seenActionIds = new Set<string>();
   const eligibleRows = rows
-    .filter((row) => row.status === "approved" && validatedActionIds.has(row.id))
+    .filter((row) => {
+      if (row.status !== "approved" || !validatedActionIds.has(row.id)) {
+        return false;
+      }
+      if (seenActionIds.has(row.id)) {
+        return false;
+      }
+      seenActionIds.add(row.id);
+      return true;
+    })
     .slice()
     .sort(compareActionRows);
 
@@ -149,9 +159,9 @@ export function computeActionBalanceSummary(
       occurredOn: (row.action_date ?? row.created_at).slice(0, 10),
     });
 
-    spontaneous = 0;
-    association = 0;
-    enterprise = 0;
+    spontaneous -= target;
+    association -= target;
+    enterprise -= target;
   }
 
   const gradeState = computeGemProgression(

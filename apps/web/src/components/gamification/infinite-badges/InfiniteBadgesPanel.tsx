@@ -20,6 +20,9 @@ export function InfiniteBadgesPanel({
     organisationCount?: number;
     actionBalance?: ActionBalanceSummary;
     monthlyRegularity?: {
+      activeMonthsTotal: number;
+      currentStreakMonths: number;
+      longestStreakMonths: number;
       currentStreak: number;
       eligibleMonths: number;
       currentMonthHasEligibleAction: boolean;

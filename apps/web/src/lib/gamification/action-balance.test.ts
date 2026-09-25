@@ -194,6 +194,82 @@ it("ignores rejected or unvalidated actions", () => {
   expect(summary.nextGrade?.label).toBe("Topaze");
 });
 
+it("retains surplus context contributions for the next cycle", () => {
+  const rows = [
+    makeAction({
+      id: "s-1",
+      createdAt: "2026-06-01T08:00:00.000Z",
+      associationName: "Action spontanée",
+    }),
+    makeAction({
+      id: "s-2",
+      createdAt: "2026-06-01T08:01:00.000Z",
+      associationName: "Action spontanée",
+    }),
+    makeAction({
+      id: "a-1",
+      createdAt: "2026-06-01T08:02:00.000Z",
+      associationName: "Association Exemple",
+    }),
+    makeAction({
+      id: "a-2",
+      createdAt: "2026-06-01T08:03:00.000Z",
+      associationName: "Association Exemple",
+    }),
+    makeAction({
+      id: "e-1",
+      createdAt: "2026-06-01T08:04:00.000Z",
+      associationName: "Entreprise - ACME",
+    }),
+    makeAction({
+      id: "e-2",
+      createdAt: "2026-06-01T08:05:00.000Z",
+      associationName: "Entreprise - ACME",
+    }),
+  ];
+
+  const summary = computeActionBalanceSummary(rows, new Set(rows.map((row) => row.id)));
+
+  expect(summary.balancedCycles).toBe(1);
+  expect(summary.totalXpAwarded).toBe(1);
+  expect(summary.currentCycleTarget).toBe(2);
+  expect(summary.currentCycleProgress).toBe(1);
+  expect(summary.spontaneous).toBe(1);
+  expect(summary.association).toBe(1);
+  expect(summary.enterprise).toBe(1);
+  expect(summary.missingCounts).toEqual({
+    spontaneous: 1,
+    association: 1,
+    enterprise: 1,
+  });
+});
+
+it("is idempotent when the same validated facts are replayed", () => {
+  const rows = [
+    makeAction({
+      id: "s-1",
+      createdAt: "2026-06-01T08:00:00.000Z",
+      associationName: "Action spontanée",
+    }),
+    makeAction({
+      id: "a-1",
+      createdAt: "2026-06-01T08:01:00.000Z",
+      associationName: "Association Exemple",
+    }),
+    makeAction({
+      id: "e-1",
+      createdAt: "2026-06-01T08:02:00.000Z",
+      associationName: "Entreprise - ACME",
+    }),
+  ];
+  const validated = new Set(rows.map((row) => row.id));
+  const replayedRows = [...rows, rows[0]];
+
+  expect(computeActionBalanceSummary(replayedRows, validated)).toEqual(
+    computeActionBalanceSummary(rows, validated),
+  );
+});
+
 it("continues as pilier grades after the last gem grade", () => {
   const rows: Array<ReturnType<typeof makeAction>> = [];
   let minuteOffset = 0;

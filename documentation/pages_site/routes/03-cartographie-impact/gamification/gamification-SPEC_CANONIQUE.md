@@ -35,7 +35,7 @@ progressions infinies :
 | `organisation` | Organisation | `organised_operations_count` | organisateurs d'actions et opérations collectives | `organisation` / `gem` |
 | `exploration` | Exploration | `unique_places_visited` | `user_visited_places` | `explorer` / `exploration` |
 | `clean_zones` | Zones propres | `eligible_clean_zones` | `trash_spotter_spots` / `clean_zones` | `clean-zones` / `atmosphere` |
-| `regularity` | Régularité | `consecutive_active_months` | actions par mois | `regularity` / `gem` |
+| `regularity` | Régularité | `active_months_total` | actions par mois | `regularity` / `gem` |
 | `versatility` | Polyvalence | `validated_context_cycles` | actions et contextes de contribution | `versatility` / `gem` |
 | `learning` | Apprentissage | `validated_learning_events` | quiz et contenus d'apprentissage | `learning` / `learning` |
 
@@ -297,18 +297,23 @@ But:
 Règles:
 
 - seules les actions validées comptent;
-- une action en attente peut compter provisoirement pour la série, mais doit être retirée si elle est rejetée;
-- si un mois n a aucune action éligible, la série retombe à `0`;
+- chaque action canonique ne peut contribuer qu une fois, y compris lors d un
+  replay ou d une reconstruction;
 - le cycle fonctionne par paliers croissants:
   - 1 action de chaque type -> `+1 XP`;
   - 2 actions de chaque type -> `+2 XP`;
   - 3 actions de chaque type -> `+3 XP`;
   - etc.;
-- après validation d un cycle, le compteur repart à zéro;
+- la métrique de badge est le nombre de cycles équilibrés accomplis;
+- après validation d un cycle, les contributions excédentaires restent acquises
+  pour le cycle suivant; sa cible propre est appliquée sans double comptage;
 - l interface doit toujours montrer:
   - le grade actuel;
   - la progression vers le suivant;
   - les types et quantités encore manquants.
+
+Le nom utilisateur de cette progression est `Polyvalence`; `Équilibre des
+contextes` est le terme technique autorisé pour décrire sa mécanique.
 
 ### Régularité
 
@@ -318,10 +323,17 @@ But:
 
 Règles:
 
-- la série se calcule par mois calendaires consécutifs;
+- `activeMonthsTotal` compte les mois calendaires qui contiennent au moins une
+  contribution éligible et détermine le badge permanent;
+- `currentStreakMonths` mesure uniquement la série actuelle de mois calendaires
+  consécutifs;
+- `longestStreakMonths` conserve la meilleure série observée lorsque cette
+  dérivation est disponible;
 - le premier mois utile donne `1 XP`;
 - le deuxième mois consécutif donne `2 XP`;
 - le troisième donne `3 XP`, etc.;
+- une interruption remet la série courante et la prochaine série XP à zéro,
+  sans retirer les mois actifs ni un badge déjà acquis;
 - une action rejetée ne doit pas rester comptée;
 - une action `pending` peut être prise en compte provisoirement, puis retirée rétroactivement si elle finit rejetée;
 - la progression visuelle utilise l échelle gemme.
