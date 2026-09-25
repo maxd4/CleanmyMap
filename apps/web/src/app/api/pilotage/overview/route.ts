@@ -8,24 +8,9 @@ import {
 } from"@/lib/http/auth-responses";
 import { handleApiError } from"@/lib/http/api-errors";
 import { getCurrentUserEffectiveAccess } from "@/lib/authz";
+import { parsePositiveInteger } from "@/lib/http/query-params";
 
 export const runtime ="nodejs";
-
-function parsePositiveInteger(
- raw: string | null,
- min: number,
- max: number,
- fallback: number,
-): number {
- if (raw === null || raw.trim() ==="") {
- return fallback;
- }
- const parsed = Number(raw);
- if (!Number.isFinite(parsed)) {
- return fallback;
- }
- return Math.min(max, Math.max(min, Math.trunc(parsed)));
-}
 
 export async function GET(request: Request) {
  const { userId } = await auth();

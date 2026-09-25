@@ -42,6 +42,7 @@ import {
  COMMUNITY_EVENTS_CACHE_TAG,
  revalidateCommunityEventCaches,
 } from "@/lib/community/event-cache-invalidation";
+import { parsePositiveInteger } from "@/lib/http/query-params";
 
 const COMMUNITY_EVENTS_ANONYMOUS_CACHE_HEADERS = {
  "Cache-Control": "public, max-age=20, stale-while-revalidate=60",
@@ -51,22 +52,6 @@ const COMMUNITY_EVENTS_USER_CACHE_HEADERS = {
  "Cache-Control": "private, max-age=20, stale-while-revalidate=60",
  "Vary": "Cookie",
 };
-function parsePositiveInteger(
- raw: string | null,
- min: number,
- max: number,
- fallback: number,
-): number {
- if (raw === null || raw.trim() ==="") {
- return fallback;
- }
- const parsed = Number(raw);
- if (!Number.isFinite(parsed)) {
- return fallback;
- }
- return Math.min(max, Math.max(min, Math.trunc(parsed)));
-}
-
 function toEventResponseItem(
  event: CommunityEventRow,
  summary: {

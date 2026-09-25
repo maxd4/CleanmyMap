@@ -1,98 +1,63 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useId } from "react";
 import { ShieldCheck } from "lucide-react";
-import { announceGamificationGain } from "@/lib/gamification/announcements";
 import type { SensitiveZoneApaisementSummary } from "@/lib/gamification/sensitive-zone-badge";
 import {
   GamificationBadgePanel,
+  getGamificationBadgePanelStyleProps,
+  getGamificationProgressLabel,
+  getGamificationBadgeProgressProps,
+  getGamificationProgressFooter,
   getGamificationBadgeState,
+  getStandardGamificationCardTone,
 } from "@/components/gamification/badge-ui";
+import { useStandardGamificationBadgeCelebration } from "./use-gamification-badge-celebration";
 
 type SensitiveZoneBadgeProps = {
   summary: SensitiveZoneApaisementSummary;
 };
 
-const CARD_TONES: Record<
-  "stone" | "precious",
-  { shell: string; glow: string; progress: string; chip: string }
-> = {
-  stone: {
-    shell: "border-slate-500/20 bg-gradient-to-br from-slate-950 via-stone-900 to-emerald-950/80",
-    glow: "bg-emerald-400/10",
-    progress: "bg-gradient-to-r from-emerald-400 via-lime-300 to-teal-300",
-    chip: "border-slate-300/10 bg-white/5 text-slate-100",
-  },
-  precious: {
-    shell: "border-cyan-300/20 bg-gradient-to-br from-slate-950 via-cyan-950/50 to-fuchsia-950/70",
-    glow: "bg-cyan-400/15",
-    progress: "bg-gradient-to-r from-cyan-400 via-teal-300 to-fuchsia-400",
-    chip: "border-cyan-300/10 bg-cyan-500/10 text-cyan-50",
-  },
-};
-
 export function SensitiveZoneBadge({ summary }: SensitiveZoneBadgeProps) {
-  const [isCelebrating, setIsCelebrating] = useState(false);
-  const didMountRef = useRef(false);
-  const previousGradeIdRef = useRef<string | null>(null);
-  const previousCountRef = useRef<number | null>(null);
   const tooltipId = useId();
+  const isCelebrating = useStandardGamificationBadgeCelebration({
+    progressValue: summary.eligibleValidatedActions,
+    gradeId: summary.currentGrade.id,
+    title: "Zone sensible apaisée",
+    message: `${summary.currentGrade.label} débloqué par les validations en zone sensible.`,
+    icon: "shield-check",
+    source: "sensitive-zone-badge",
+    dedupeKey: `sensitive-zone:${summary.currentGrade.id}:${summary.eligibleValidatedActions}`,
+  });
 
-  const tone = summary.currentGrade.visualVariant === "precious" ? "precious" : "stone";
-  const palette = CARD_TONES[tone];
-
-  useEffect(() => {
-    const previousGradeId = previousGradeIdRef.current;
-    const previousCount = previousCountRef.current;
-    previousGradeIdRef.current = summary.currentGrade.id;
-    previousCountRef.current = summary.eligibleValidatedActions;
-
-    if (!didMountRef.current) {
-      didMountRef.current = true;
-      return;
-    }
-
-    if (
-      summary.eligibleValidatedActions > (previousCount ?? -1) &&
-      previousGradeId !== summary.currentGrade.id
-    ) {
-      let resetTimeout: number | undefined;
-      const celebrationTimeout = window.setTimeout(() => {
-        setIsCelebrating(true);
-        announceGamificationGain({
-          title: "Zone sensible apaisée",
-          message: `${summary.currentGrade.label} débloqué par les validations en zone sensible.`,
-          tone: "actions",
-          icon: "shield-check",
-          source: "sensitive-zone-badge",
-          dedupeKey: `sensitive-zone:${summary.currentGrade.id}:${summary.eligibleValidatedActions}`,
-        });
-
-        resetTimeout = window.setTimeout(() => setIsCelebrating(false), 900);
-      }, 0);
-
-      return () => {
-        window.clearTimeout(celebrationTimeout);
-        if (resetTimeout !== undefined) {
-          window.clearTimeout(resetTimeout);
-        }
-      };
-    }
-
-    return undefined;
-  }, [summary.currentGrade.id, summary.currentGrade.label, summary.eligibleValidatedActions]);
+  const palette = getStandardGamificationCardTone(summary.currentGrade.visualVariant);
 
   const remaining = summary.nextGrade
     ? Math.max(0, summary.nextGrade.threshold - summary.eligibleValidatedActions)
     : 0;
+  const progressFooter = getGamificationProgressFooter({
+    currentLabel: summary.currentGrade.label,
+    nextLabel: summary.nextLabel,
+    remaining,
+    remainingLabel: `action${remaining > 1 ? "s" : ""} à apaiser`,
+  });
+  const progressProps = getGamificationBadgeProgressProps({
+    value: summary.eligibleValidatedActions,
+    nextThreshold: summary.nextGrade?.threshold,
+    progressPercent: summary.progressPercent,
+    footer: progressFooter,
+  });
   const topSensitiveArea = summary.sensitiveAreas[0] ?? null;
+  const panelStyleProps = getGamificationBadgePanelStyleProps(palette, isCelebrating);
+  const metrics = [
+    { label: "Zones sensibles", value: summary.sensitiveAreaCount },
+    { label: "Zone repère", value: topSensitiveArea ?? "Aucune" },
+    { label: "Prochain palier", value: summary.nextLabel ?? "Infini" },
+  ];
 
   return (
     <GamificationBadgePanel
-      shellClassName={palette.shell}
-      glowClassName={palette.glow}
-      progressClassName={`${palette.progress} ${isCelebrating ? "cmm-gamification-progress" : ""}`}
-      celebrating={isCelebrating}
+      {...panelStyleProps}
       eyebrow={
         <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white">
           <ShieldCheck size={13} />
@@ -104,33 +69,9 @@ export function SensitiveZoneBadge({ summary }: SensitiveZoneBadgeProps) {
       summaryValue={summary.eligibleValidatedActions}
       summaryUnit="actions validées"
       state={getGamificationBadgeState(summary.eligibleValidatedActions, summary.currentGrade.threshold)}
-      metrics={[
-        {
-          label: "Zones sensibles",
-          value: summary.sensitiveAreaCount,
-        },
-        {
-          label: "Zone repère",
-          value: topSensitiveArea ?? "Aucune",
-        },
-        {
-          label: "Prochain palier",
-          value: summary.nextLabel ?? "Infini",
-        },
-      ]}
-      progressLabel={`Progression vers ${summary.nextGrade?.label ?? "le prochain palier"}`}
-      progressValue={`${summary.eligibleValidatedActions}${
-        summary.nextGrade ? ` / ${summary.nextGrade.threshold}` : ""
-      }`}
-      progressPercent={summary.progressPercent}
-      progressFooterLeft={`Palier actuel: ${summary.currentGrade.label}${
-        summary.nextLabel ? ` → ${summary.nextLabel}` : ""
-      }`}
-      progressFooterRight={
-        remaining > 0
-          ? `+${remaining} action${remaining > 1 ? "s" : ""} à apaiser`
-          : "Palier atteint"
-      }
+      metrics={metrics}
+      progressLabel={getGamificationProgressLabel(summary.nextGrade?.label)}
+      {...progressProps}
       tooltip={{
         id: tooltipId,
         label: "Détails du palier",

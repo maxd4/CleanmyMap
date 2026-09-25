@@ -28,7 +28,8 @@ import {
   unauthorizedJsonResponse,
 } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
-import { resolveReportQuery } from "@/lib/reports/csv";
+import { buildDateFloor, resolveReportQuery } from "@/lib/reports/csv";
+import { parsePositiveInteger } from "@/lib/http/query-params";
 import {
   verifyRateLimit,
   createServerRateLimitResponse,
@@ -54,29 +55,6 @@ function parseStatusParam(raw: string | null): ActionStatus | null {
   return ACTION_STATUSES.includes(raw as ActionStatus)
     ? (raw as ActionStatus)
     : null;
-}
-
-function parsePositiveInteger(
-  raw: string | null,
-  min: number,
-  max: number,
-  fallback: number,
-): number {
-  if (raw === null || raw.trim() === "") {
-    return fallback;
-  }
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) {
-    return fallback;
-  }
-  return Math.min(max, Math.max(min, Math.trunc(parsed)));
-}
-
-function buildDateFloor(daysWindow: number): string {
-  const now = new Date();
-  now.setUTCHours(0, 0, 0, 0);
-  now.setUTCDate(now.getUTCDate() - (daysWindow - 1));
-  return now.toISOString().slice(0, 10);
 }
 
 function parseQualityGradeParam(

@@ -11,6 +11,7 @@ import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
 import { createSignalement } from "@/lib/actions/signalement/create-signalement";
+import { parsePositiveInteger } from "@/lib/http/query-params";
 
 export const runtime ="nodejs";
 const SPOTS_CACHE_HEADERS = {
@@ -34,22 +35,6 @@ function parseStatusParam(raw: string | null): SpotStatus | null {
  return null;
  }
  return spotStatuses.includes(raw as SpotStatus) ? (raw as SpotStatus) : null;
-}
-
-function parsePositiveInteger(
- raw: string | null,
- min: number,
- max: number,
- fallback: number,
-): number {
- if (raw === null || raw.trim() ==="") {
- return fallback;
- }
- const parsed = Number(raw);
- if (!Number.isFinite(parsed)) {
- return fallback;
- }
- return Math.min(max, Math.max(min, Math.trunc(parsed)));
 }
 
 function buildSpotsCacheKey(limit: number, status: SpotStatus | null): string {

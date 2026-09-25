@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, useId } from "react";
+import { useId } from "react";
 import { SlidersHorizontal } from "lucide-react";
-import { announceGamificationGain } from "@/lib/gamification/announcements";
 import type { ActionBalanceSummary } from "@/lib/gamification/action-balance";
 import {
   GamificationBadgePanel,
   getGamificationBadgeState,
 } from "@/components/gamification/badge-ui";
+import { useGamificationBadgeCelebration } from "./use-gamification-badge-celebration";
 
 type ActionBalanceBadgeProps = {
   summary: ActionBalanceSummary;
@@ -41,55 +41,22 @@ const CARD_TONES: Record<"stone" | "precious", { shell: string; glow: string; pr
 };
 
 export function ActionBalanceBadge({ summary }: ActionBalanceBadgeProps) {
-  const [isCelebrating, setIsCelebrating] = useState(false);
-  const didMountRef = useRef(false);
-  const previousGradeIdRef = useRef<string | null>(null);
-  const previousCyclesRef = useRef<number | null>(null);
   const tooltipId = useId();
+  const isCelebrating = useGamificationBadgeCelebration({
+    progressValue: summary.balancedCycles,
+    gradeId: summary.currentGrade.id,
+    payload: {
+      title: "Polyvalence atteinte",
+      message: `${summary.currentGrade.label} débloqué. +${summary.balancedCycles} XP sur le dernier cycle.`,
+      tone: "actions",
+      icon: "sliders-horizontal",
+      source: "action-balance",
+      dedupeKey: `action-balance:${summary.currentGrade.id}:${summary.balancedCycles}`,
+    },
+  });
 
   const tone = summary.currentGrade.visualVariant === "precious" ? "precious" : "stone";
   const palette = CARD_TONES[tone];
-
-  useEffect(() => {
-    const previousGradeId = previousGradeIdRef.current;
-    const previousCycles = previousCyclesRef.current;
-    previousGradeIdRef.current = summary.currentGrade.id;
-    previousCyclesRef.current = summary.balancedCycles;
-
-    if (!didMountRef.current) {
-      didMountRef.current = true;
-      return;
-    }
-
-    if (
-      summary.balancedCycles > (previousCycles ?? -1) &&
-      previousGradeId !== summary.currentGrade.id
-    ) {
-      let resetTimeout: number | undefined;
-      const celebrationTimeout = window.setTimeout(() => {
-        setIsCelebrating(true);
-        announceGamificationGain({
-          title: "Polyvalence atteinte",
-          message: `${summary.currentGrade.label} débloqué. +${summary.balancedCycles} XP sur le dernier cycle.`,
-          tone: "actions",
-          icon: "sliders-horizontal",
-          source: "action-balance",
-          dedupeKey: `action-balance:${summary.currentGrade.id}:${summary.balancedCycles}`,
-        });
-
-        resetTimeout = window.setTimeout(() => setIsCelebrating(false), 900);
-      }, 0);
-
-      return () => {
-        window.clearTimeout(celebrationTimeout);
-        if (resetTimeout !== undefined) {
-          window.clearTimeout(resetTimeout);
-        }
-      };
-    }
-
-    return undefined;
-  }, [summary.balancedCycles, summary.currentGrade.id, summary.currentGrade.label]);
 
   const weakestContext =
     Object.entries({

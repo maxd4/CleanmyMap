@@ -15,11 +15,13 @@ import type { PersonalImpactMethodology } from"@/lib/gamification/progression-ty
 import { buildPilotageOverviewFromContracts } from"@/lib/pilotage/overview";
 import type { ZoneComparisonRow } from"@/lib/pilotage/prioritization";
 import { buildDeliverableHeaders } from"@/lib/reports/http";
+import { buildDateFloor } from "@/lib/reports/csv";
 import { filterActionContractsByScope } from"@/lib/reports/scope";
 import { requireAuthenticatedAccess } from"@/lib/authz";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { formatScorePercent } from "@/lib/formatters/score";
+import { parsePositiveInteger } from "@/lib/http/query-params";
 
 export const runtime ="nodejs";
 
@@ -30,34 +32,11 @@ const ELUS_DOSSIER_RESPONSE_CACHE_CONTROL =
 const ELUS_DOSSIER_PDF_REDIRECT_CACHE_CONTROL =
   "private, max-age=300, stale-while-revalidate=86400";
 
-function parsePositiveInteger(
- raw: string | null,
- min: number,
- max: number,
- fallback: number,
-): number {
- if (raw === null || raw.trim() ==="") {
- return fallback;
- }
- const parsed = Number(raw);
- if (!Number.isFinite(parsed)) {
- return fallback;
- }
- return Math.min(max, Math.max(min, Math.trunc(parsed)));
-}
-
 function parseExportFormat(raw: string | null): ExportFormat {
  if (raw ==="md" || raw ==="pdf") {
  return raw;
  }
  return"json";
-}
-
-function buildDateFloor(daysWindow: number): string {
- const now = new Date();
- now.setUTCHours(0, 0, 0, 0);
- now.setUTCDate(now.getUTCDate() - (daysWindow - 1));
- return now.toISOString().slice(0, 10);
 }
 
 function toFiniteNumber(value: unknown): number {
