@@ -3,8 +3,8 @@
 <!-- PRODUCT_SURFACE_AUDIT:GENERATED:BEGIN -->
 ## En-tête
 
-`AUDIT_REF=811e94c889a9e910ef8727eb1469d6b425441bcf`
-`AUDIT_GENERATED_AT=2026-09-25T20:44:52.025Z`
+`AUDIT_REF=46aa7cb634683dc6b73da35d1e995d576428f65e`
+`AUDIT_GENERATED_AT=2026-09-25T22:56:00.000Z`
 `AUDIT_STATUS=CURRENT_AT_GENERATION`
 
 Commande :
@@ -21,14 +21,14 @@ décision automatique de suppression.
 | STATUS | COUNT |
 | --- | ---: |
 | PRIMARY_NAV | 17 |
-| SECONDARY_NAV | 22 |
+| SECONDARY_NAV | 24 |
 | DEEP_LINK | 1 |
 | PROTECTED_TOOL | 8 |
 | QA_TOOL | 1 |
-| REDIRECT_COMPAT | 16 |
-| ORPHAN_ROUTE | 1 |
+| REDIRECT_COMPAT | 14 |
+| ORPHAN_ROUTE | 0 |
 | OBSOLETE | 0 |
-| UNKNOWN | 6 |
+| UNKNOWN | 7 |
 | ROUTES_RUNTIME | 72 |
 | LIENS_RUNTIME_NON_RESOLUS | 10 |
 | INVARIANTS_CERTAINS_EN_ERREUR | 10 |
@@ -65,7 +65,7 @@ décision automatique de suppression.
 | `/messagerie` | REDIRECT_COMPAT | NO | — | UNKNOWN | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
 | `/methodologie` | PRIMARY_NAV | YES | 24 — apps/web/src/app/(app)/actions/map/_components/map-sidebar-aid.tsx, apps/web/src/app/(app)/actions/map/page-client.tsx, apps/web/src/app/(app)/actions/map/page.tsx (+21) | public-visible | CURRENT | entrée visible du registre/navigation |
 | `/missions/[id]` | UNKNOWN | NO | — | protected | CURRENT | pattern dynamique ; les consumers concrets doivent être résolus séparément |
-| `/onboarding` | REDIRECT_COMPAT | NO | 1 — apps/web/src/components/account/account-completion-gate.tsx | protected | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
+| `/onboarding` | SECONDARY_NAV | NO | 1 — apps/web/src/components/account/account-completion-gate.tsx | protected | CURRENT | consumer runtime hors ruban principal |
 | `/onboarding/localisation` | REDIRECT_COMPAT | NO | 1 — apps/web/src/app/reglages/page.tsx | protected | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
 | `/open-data` | REDIRECT_COMPAT | NO | — | UNKNOWN | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
 | `/parcours` | UNKNOWN | NO | — | protected | CURRENT | preuve de reachability insuffisante |
@@ -82,9 +82,9 @@ décision automatique de suppression.
 | `/profil` | SECONDARY_NAV | NO | 1 — apps/web/src/components/accueil/accueil-community-credibility.tsx | protected | CURRENT | consumer runtime hors ruban principal |
 | `/profil/[profile]` | UNKNOWN | NO | — | protected | CURRENT | pattern dynamique ; les consumers concrets doivent être résolus séparément |
 | `/profil/impact` | UNKNOWN | NO | — | protected | CURRENT | preuve de reachability insuffisante |
-| `/reglages` | REDIRECT_COMPAT | NO | — | protected | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
+| `/reglages` | UNKNOWN | NO | — | protected | CURRENT | preuve de reachability insuffisante |
 | `/reports` | PRIMARY_NAV | YES | 12 — apps/web/src/app/(app)/actions/history/page.tsx, apps/web/src/app/(app)/actions/map/page-client.tsx, apps/web/src/components/accueil/accueil-community-credibility.tsx (+7) | clerk-context | CURRENT | entrée visible du registre/navigation |
-| `/sections/[sectionId]` | DEEP_LINK | NO | 62 — apps/web/src/app/learn/ressources/learn-ressources-client.data.ts, apps/web/src/components/accueil/accueil-community-credibility.tsx, apps/web/src/components/accueil/accueil-hero.tsx (+29) | public-visible | CURRENT | consumer de deep-link démontré |
+| `/sections/[sectionId]` | DEEP_LINK | NO | 63 — apps/web/src/app/(app)/signalement/page.tsx, apps/web/src/app/learn/ressources/learn-ressources-client.data.ts, apps/web/src/components/accueil/accueil-community-credibility.tsx (+30) | public-visible | CURRENT | consumer de deep-link démontré |
 | `/sections/actors` | SECONDARY_NAV | NO | 1 — apps/web/src/components/accueil/accueil-navigation-schema.tsx | public-visible | CURRENT | consumer runtime hors ruban principal |
 | `/sections/annuaire` | PRIMARY_NAV | YES | 3 — apps/web/src/components/sections/rubriques/community/community-section-components.tsx, apps/web/src/components/sections/rubriques/partners-network-section.tsx | public-visible | CURRENT | entrée visible du registre/navigation |
 | `/sections/climate` | SECONDARY_NAV | NO | 1 — apps/web/src/components/dashboard/business-alerts-panel.tsx | public-visible | CURRENT | consumer runtime hors ruban principal |
@@ -102,7 +102,7 @@ décision automatique de suppression.
 | `/sections/rejoindre-un-formulaire` | REDIRECT_COMPAT | NO | — | clerk-context | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
 | `/sections/rejoindre-une-action` | SECONDARY_NAV | NO | 5 — apps/web/src/components/accueil/accueil-community-credibility.tsx, apps/web/src/components/accueil/accueil-hero.tsx, apps/web/src/components/accueil/accueil-navigation-schema.tsx (+2) | public-visible | CURRENT | consumer runtime hors ruban principal |
 | `/sections/route` | REDIRECT_COMPAT | NO | 3 — apps/web/src/components/accueil/accueil-navigation-schema.tsx, apps/web/src/components/sections/rubriques/guide-section.tsx, apps/web/src/components/sections/rubriques/route-methodology-section.tsx | public-visible | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
-| `/sections/trash-spotter` | ORPHAN_ROUTE | NO | — | auth-blur-gate | CURRENT | aucun consumer runtime, redirect ou usage interne démontré |
+| `/sections/trash-spotter` | SECONDARY_NAV | NO | 1 — apps/web/src/app/(app)/signalement/page.tsx | auth-blur-gate | CURRENT | consumer runtime hors ruban principal |
 | `/sections/weather` | REDIRECT_COMPAT | NO | 2 — apps/web/src/components/sections/rubriques/guide-section.tsx, apps/web/src/lib/learning/quiz/quiz-personal-progress.ts | public-visible | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
 | `/sign-in` | SECONDARY_NAV | NO | 11 — apps/web/src/app/onboarding/page.tsx, apps/web/src/app/reglages/page.tsx, apps/web/src/app/sign-in/[[...sign-in]]/page.tsx (+7) | public-visible | CURRENT | consumer runtime hors ruban principal |
 | `/sign-up` | SECONDARY_NAV | NO | 2 — apps/web/src/app/sign-up/[[...sign-up]]/page.tsx, apps/web/src/components/navigation/app-navigation-ribbon-account.tsx | public-visible | CURRENT | consumer runtime hors ruban principal |
@@ -114,7 +114,7 @@ décision automatique de suppression.
 
 ### Candidats
 
-- `/sections/trash-spotter` — ORPHAN_ROUTE — aucun consumer runtime, redirect ou usage interne démontré.
+_Aucune route dans cette catégorie._
 
 ## Legacy et redirects à réexaminer
 
@@ -125,12 +125,10 @@ décision automatique de suppression.
 - `/en` — REDIRECT_COMPAT — alias ou redirect déclaré ; utilité externe à réexaminer.
 - `/gamification` — REDIRECT_COMPAT — alias ou redirect déclaré ; utilité externe à réexaminer.
 - `/messagerie` — REDIRECT_COMPAT — alias ou redirect déclaré ; utilité externe à réexaminer.
-- `/onboarding` — REDIRECT_COMPAT — alias ou redirect déclaré ; utilité externe à réexaminer.
 - `/onboarding/localisation` — REDIRECT_COMPAT — alias ou redirect déclaré ; utilité externe à réexaminer.
 - `/open-data` — REDIRECT_COMPAT — alias ou redirect déclaré ; utilité externe à réexaminer.
 - `/partners/network` — REDIRECT_COMPAT — alias ou redirect déclaré ; utilité externe à réexaminer.
 - `/partners/network/pepite` — REDIRECT_COMPAT — alias ou redirect déclaré ; utilité externe à réexaminer.
-- `/reglages` — REDIRECT_COMPAT — alias ou redirect déclaré ; utilité externe à réexaminer.
 - `/sections/dm` — REDIRECT_COMPAT — alias ou redirect déclaré ; utilité externe à réexaminer.
 - `/sections/guide` — REDIRECT_COMPAT — alias ou redirect déclaré ; utilité externe à réexaminer.
 - `/sections/rejoindre-un-formulaire` — REDIRECT_COMPAT — alias ou redirect déclaré ; utilité externe à réexaminer.
@@ -225,7 +223,7 @@ _Aucune route dans cette catégorie._
 | `/messagerie` | `apps/web/src/app/(app)/messagerie/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | INDEX_SANS_FICHE | REDIRECT_ONLY |
 | `/methodologie` | `apps/web/src/app/(app)/methodologie/page.tsx` | YES | YES | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/missions/[id]` | `apps/web/src/app/(app)/missions/[id]/page.tsx` | NO | NO | — | — | YES | NONE_DEMONSTRATED | CURRENT_INDEX | UNKNOWN |
-| `/onboarding` | `apps/web/src/app/onboarding/page.tsx` | NO | NO | — | /onboarding/localisation | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REDIRECT_ONLY |
+| `/onboarding` | `apps/web/src/app/onboarding/page.tsx` | NO | NO | — | /onboarding/localisation | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/onboarding/localisation` | `apps/web/src/app/onboarding/localisation/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | INDEX_SANS_FICHE | REDIRECT_ONLY |
 | `/open-data` | `apps/web/src/app/(app)/open-data/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | INDEX_SANS_FICHE | REDIRECT_ONLY |
 | `/parcours` | `apps/web/src/app/(app)/parcours/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | UNKNOWN |
@@ -242,7 +240,7 @@ _Aucune route dans cette catégorie._
 | `/profil` | `apps/web/src/app/(app)/profil/page.tsx` | YES | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/profil/[profile]` | `apps/web/src/app/(app)/profil/[profile]/page.tsx` | NO | NO | — | — | YES | NONE_DEMONSTRATED | CURRENT_INDEX | UNKNOWN |
 | `/profil/impact` | `apps/web/src/app/(app)/profil/impact/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | UNKNOWN |
-| `/reglages` | `apps/web/src/app/reglages/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REDIRECT_ONLY |
+| `/reglages` | `apps/web/src/app/reglages/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | UNKNOWN |
 | `/reports` | `apps/web/src/app/(app)/reports/page.tsx` | YES | YES | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/sections/[sectionId]` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` | YES | YES | apps/web/src/components/sections/rubriques/feedback-section.shared.ts | /community, /gamification, /messagerie (+5) | YES | NONE_DEMONSTRATED | INDEX_SANS_FICHE | DEEP_LINK_ONLY |
 | `/sections/actors` | `apps/web/src/lib/sections-registry/config.ts` | YES | YES | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
@@ -262,9 +260,9 @@ _Aucune route dans cette catégorie._
 | `/sections/rejoindre-un-formulaire` | `apps/web/src/lib/seo/indexability.ts` | NO | NO | — | — | NO | NONE_DEMONSTRATED | NOT_APPLICABLE | REDIRECT_ONLY |
 | `/sections/rejoindre-une-action` | `apps/web/src/lib/sections-registry/config.ts` | YES | YES | — | /sections/rejoindre-un-formulaire | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/sections/route` | `apps/web/src/app/(app)/sections/route/page.tsx` | YES | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REDIRECT_ONLY |
-| `/sections/trash-spotter` | `apps/web/src/lib/sections-registry/config.ts` | YES | YES | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | ORPHAN_CANDIDATE |
+| `/sections/trash-spotter` | `apps/web/src/lib/sections-registry/config.ts` | YES | YES | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/sections/weather` | `apps/web/src/lib/sections-registry/config.ts` | YES | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REDIRECT_ONLY |
-| `/sign-in` | `apps/web/src/app/sign-in/[[...sign-in]]/page.tsx` | NO | NO | — | /onboarding, /reglages | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
+| `/sign-in` | `apps/web/src/app/sign-in/[[...sign-in]]/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/sign-up` | `apps/web/src/app/sign-up/[[...sign-up]]/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/signalement` | `apps/web/src/app/(app)/signalement/page.tsx` | YES | YES | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/signaler-contenu-illicite` | `apps/web/src/app/signaler-contenu-illicite/page.tsx` | NO | YES | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
@@ -296,3 +294,69 @@ inexistantes et les incohérences certaines du registre. Une décision
 La génération normale est read-only ; utiliser `--write` explicitement pour
 actualiser ce fichier généré.
 <!-- PRODUCT_SURFACE_AUDIT:GENERATED:END -->
+
+
+<!-- PRODUCT_SURFACE_AUDIT:HUMAN_DECISIONS:BEGIN -->
+## Décisions humaines
+
+Ces décisions complètent le snapshot machine ci-dessus. Elles ne modifient ni
+les sources SEO, ni les redirects, ni les baselines des contrôles qualité.
+
+### Candidats audités
+
+| ROUTE | REACHABILITY_STATUS | DECISION | RATIONALE | MAIN_ENTRY_POINT | NEXT_ACTION |
+| --- | --- | --- | --- | --- | --- |
+| /sections/trash-spotter | REACHABLE | ADD_ENTRY_POINT | Surface réelle de consultation : registre, renderer, hook de données, tests et fiche canonique concordent. Elle ne crée pas d’observation et ne doit pas rejoindre le ruban principal ; son absence de consumer était un défaut de découverte, corrigé par le CTA contextuel de /signalement. | /signalement → « Consulter les signalements » | Mesurer l’usage du CTA ; conserver la surface en monitoring secondaire. |
+| /error/429 | INTERNAL_OR_QA | KEEP | Page d’état système destinée à être appelée par la gestion d’erreur, pas à être découverte par navigation. NOINDEX/INTERNAL_ONLY est cohérent avec son rôle. | Gestion d’erreur / limite de débit | Aucun. |
+| /missions/[id] | DEEP_LINK_ONLY | DOCUMENT_AS_DEEP_LINK | Route dynamique protégée de workflow ; les invitations et partages d’événements construisent des URLs /missions/<id>. L’absence d’entrée primaire est intentionnelle. | Partage ou invitation d’une mission | Conserver la fiche et vérifier périodiquement les callers de génération d’URL. |
+| /parcours | UNKNOWN | KEEP | Entrée de workflow authentifié qui affiche un aperçu puis redirige vers le profil actif ; l’absence de href littéral vient de la construction de route et ne prouve pas un abandon. | Parcours d’accueil / accès direct authentifié | Ajouter une preuve de consumer dynamique au prochain enrichissement de l’audit. |
+| /parcours/[profile] | UNKNOWN | KEEP | Variante paramétrée du même workflow ; elle valide le profil actif et redirige vers la surface de profil canonique. | /parcours | Aucun changement de navigation. |
+| /profil/[profile] | UNKNOWN | KEEP | Surface de profil réelle, consommée par les builders de routes et le dashboard ; le pattern dynamique ne doit pas être traité comme orphelin. | Dashboard / sélection de profil | Ajouter une preuve de consumer dynamique au générateur si elle reste nécessaire. |
+| /profil/impact | UNKNOWN | DEFER | Le code porte une carte d’impact personnelle exportable/partageable, mais aucun entry point runtime actuel n’a été démontré et /reports couvre une autre lecture d’impact. La décision exige un arbitrage produit entre ré-entrée dédiée et consolidation. | Aucun point d’entrée runtime démontré | Décider si la carte personnelle reste une surface dédiée ou rejoint /profil/[profile]/reports. |
+| /reglages | UNKNOWN | DEFER | Page protégée réelle, documentée et distincte des réglages inline du dashboard/profil ; le seul redirect vers sign-in est un garde d’authentification, pas un alias. L’utilité d’une URL autonome reste à confirmer par usage. | Accès direct / réglages inline | Mesurer les accès puis choisir MOVE_TO_SECONDARY_NAV ou consolidation. |
+
+### Compatibilités conservées sous réserve de preuve externe
+
+| ROUTE | REACHABILITY_STATUS | DECISION | RATIONALE | MAIN_ENTRY_POINT | NEXT_ACTION |
+| --- | --- | --- | --- | --- | --- |
+| /community | REDIRECT_ONLY | DEFER | Redirect explicite vers /sections/community ; aucun consumer runtime utilisateur actuel n’est démontré, mais l’audit local ne mesure ni backlinks ni trafic externe. | /sections/community | Vérifier analytics/backlinks avant retrait. |
+| /conditions-utilisation | REDIRECT_ONLY | DEFER | Ancien chemin vers les conditions générales ; aucun consumer courant local, mais une suppression pourrait casser des liens externes ou historiques encore actifs. | /conditions-generales-utilisation | Vérifier analytics/backlinks avant retrait. |
+| /en | REDIRECT_ONLY | DEFER | Alias documenté vers la racine, sans page anglaise canonique ; l’absence de consumer local ne prouve pas l’absence d’entrées externes. | / | Vérifier analytics/backlinks avant retrait. |
+| /gamification | REDIRECT_ONLY | DEFER | Ancien chemin vers /sections/gamification, surface actuelle encore dans le registre et le ruban. | /sections/gamification | Vérifier analytics/backlinks avant retrait. |
+| /messagerie | REDIRECT_ONLY | DEFER | Ancien chemin vers /sections/messagerie, encore actif comme surface canonique. | /sections/messagerie | Vérifier analytics/backlinks avant retrait. |
+| /open-data | REDIRECT_ONLY | DEFER | Ancien chemin vers /sections/open-data, encore public et navigable. | /sections/open-data | Vérifier analytics/backlinks avant retrait. |
+| /partners/network | REDIRECT_ONLY | DEFER | Ancien chemin vers l’espace partenaires de la communauté ; la cible existe et des références historiques sont documentées. | /sections/community?tab=partners | Vérifier analytics/backlinks avant retrait. |
+| /partners/network/pepite | REDIRECT_ONLY | DEFER | Variante historique vers le même espace partenaires ; aucune preuve locale suffisante pour borner le risque externe. | /sections/community?tab=partners | Vérifier analytics/backlinks avant retrait. |
+| /sections/dm | REDIRECT_ONLY | DOCUMENT_AS_DEEP_LINK | Deep-link historique vers l’onglet DM de /sections/messagerie ; la cible porte encore la fonction et le paramètre est sémantiquement utile. | /sections/messagerie?tab=dm | Conserver tant qu’aucune preuve externe ne justifie le retrait. |
+| /sections/guide | REDIRECT_ONLY | DOCUMENT_AS_DEEP_LINK | Compatibilité vers le panneau météo de /actions/new, encore référencée par la documentation et les parcours de guide. | /actions/new?panel=meteo | Conserver et ne pas présenter comme une page concurrente. |
+| /sections/rejoindre-un-formulaire | REDIRECT_ONLY | DEFER | Ancien libellé vers /sections/rejoindre-une-action ; la cible est canonique, mais l’usage externe n’est pas observable dans le dépôt. | /sections/rejoindre-une-action | Vérifier analytics/backlinks avant retrait. |
+| /sections/route | REDIRECT_ONLY | DOCUMENT_AS_DEEP_LINK | Compatibilité encore appelée par le guide, la navigation d’accueil et la méthodologie ; elle ouvre le panneau itinéraire canonique. | /actions/new?panel=itineraire | Conserver tant que ces callers existent. |
+| /sections/weather | REDIRECT_ONLY | DOCUMENT_AS_DEEP_LINK | Compatibilité appelée par le guide et le parcours de quiz ; elle ouvre le panneau météo canonique. | /actions/new?panel=meteo | Conserver tant que ces callers existent. |
+| /onboarding/localisation | REDIRECT_ONLY | KEEP | Compatibilité active : fallback Clerk, inscription et réglages la construisent encore ; elle conserve next et les paramètres utiles avant /onboarding. | Inscription, layout Clerk, réglages | Aucun retrait tant que ces callers existent. |
+
+### Outils internes et QA légitimes
+
+| ROUTE | REACHABILITY_STATUS | DECISION | RATIONALE | MAIN_ENTRY_POINT | NEXT_ACTION |
+| --- | --- | --- | --- | --- | --- |
+| /preview/actions/new | INTERNAL_OR_QA | DOCUMENT_AS_INTERNAL_TOOL | Charge le vrai ActionDeclarationForm pour le contrôle QA ; ce n’est pas un second parcours métier et NOINDEX/INTERNAL_ONLY est approprié. | Lien/outillage QA explicite | Garder la page et son contrat de preview. |
+| /actions/history | INTERNAL_OR_QA | DOCUMENT_AS_INTERNAL_TOOL | Historique protégé, appelé par plusieurs surfaces utilisateur et nécessaire au suivi des actions. | Dashboard, carte, formulaires | Aucun. |
+| /prints/report | INTERNAL_OR_QA | DOCUMENT_AS_INTERNAL_TOOL | Export imprimable protégé, appelé par profiles-cta ; son absence du ruban est cohérente avec une action secondaire. | CTA de profil selon rôle | Aucun. |
+| /admin, /admin/* | INTERNAL_OR_QA | DOCUMENT_AS_INTERNAL_TOOL | Surfaces d’administration protégées, documentées et gouvernées par les contrôles de rôle. | Cockpit admin / liens opérateur | Aucun. |
+
+### Résumé des décisions
+
+- **À supprimer** : aucune route ; aucune suppression n’est démontrée par le
+  dépôt seul.
+- **Compatibilités à retirer** : aucune à ce stade ; les 9 cas différés
+  nécessitent une preuve de trafic/backlinks externe, et les quatre deep-links
+  ont encore des callers ou une fonction documentée.
+- **Entrées utilisateur améliorées** : /sections/trash-spotter, depuis
+  /signalement, par un CTA secondaire contextuel.
+- **Routes secondaires/deep-links légitimes** : /missions/[id],
+  /sections/dm, /sections/guide, /sections/route et /sections/weather.
+- **Outils internes légitimes** : /preview/actions/new, /actions/history,
+  /prints/report et les routes /admin.
+- **Indécis** : /profil/impact, /reglages et les compatibilités marquées
+  DEFER ci-dessus.
+
+<!-- PRODUCT_SURFACE_AUDIT:HUMAN_DECISIONS:END -->
