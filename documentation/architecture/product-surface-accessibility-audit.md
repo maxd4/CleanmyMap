@@ -3,8 +3,8 @@
 <!-- PRODUCT_SURFACE_AUDIT:GENERATED:BEGIN -->
 ## En-tête
 
-`AUDIT_REF=be452f7383183c4b011364809fb8dedb5b36d353`
-`AUDIT_GENERATED_AT=2026-09-25T21:15:46.955Z`
+`AUDIT_REF=4f9369ef3becae0ed98ef836bf86907fd29eed60`
+`AUDIT_GENERATED_AT=2026-09-25T21:25:36.605Z`
 `AUDIT_STATUS=CURRENT_AT_GENERATION`
 
 Commande :
@@ -21,14 +21,14 @@ décision automatique de suppression.
 | STATUS | COUNT |
 | --- | ---: |
 | PRIMARY_NAV | 20 |
-| SECONDARY_NAV | 21 |
+| SECONDARY_NAV | 23 |
 | DEEP_LINK | 1 |
 | PROTECTED_TOOL | 5 |
 | QA_TOOL | 1 |
 | REDIRECT_COMPAT | 14 |
 | ORPHAN_ROUTE | 0 |
 | OBSOLETE | 0 |
-| UNKNOWN | 10 |
+| UNKNOWN | 8 |
 | ROUTES_RUNTIME | 72 |
 | REVIEW_FINDING | 0 |
 | INVARIANT_ERROR | 4 |
@@ -80,8 +80,8 @@ décision automatique de suppression.
 | `/preview/actions/new` | QA_TOOL | NO | — | public-visible | CURRENT | outil QA/support identifié |
 | `/prints/report` | PROTECTED_TOOL | NO | 3 — apps/web/src/lib/profiles-cta.ts | protected | CURRENT | surface interne protégée ; absence du ruban non probante |
 | `/profil` | SECONDARY_NAV | NO | 1 — apps/web/src/components/accueil/accueil-community-credibility.tsx | protected | CURRENT | consumer runtime hors ruban principal |
-| `/profil/[profile]` | UNKNOWN | NO | — | protected | CURRENT | pattern dynamique ; les consumers concrets doivent être résolus séparément |
-| `/profil/impact` | UNKNOWN | NO | — | protected | CURRENT | preuve de reachability insuffisante |
+| `/profil/[profile]` | SECONDARY_NAV | NO | 1 — apps/web/src/components/gamification/profile-gamification-summary.tsx | protected | CURRENT | consumer runtime hors ruban principal |
+| `/profil/impact` | SECONDARY_NAV | NO | 1 — apps/web/src/components/gamification/profile-gamification-summary.tsx | protected | CURRENT | consumer runtime hors ruban principal |
 | `/reglages` | UNKNOWN | NO | — | protected | CURRENT | preuve de reachability insuffisante |
 | `/reports` | PRIMARY_NAV | YES | 12 — apps/web/src/app/(app)/actions/history/page.tsx, apps/web/src/app/(app)/actions/map/page-client.tsx, apps/web/src/components/accueil/accueil-community-credibility.tsx (+7) | clerk-context | CURRENT | entrée visible du registre/navigation |
 | `/sections/[sectionId]` | DEEP_LINK | NO | 63 — apps/web/src/app/(app)/signalement/page.tsx, apps/web/src/app/learn/ressources/learn-ressources-client.data.ts, apps/web/src/components/accueil/accueil-community-credibility.tsx (+30) | public-visible | CURRENT | consumer de deep-link démontré |
@@ -228,8 +228,8 @@ Aucun.
 | `/preview/actions/new` | `apps/web/src/app/preview/actions/new/page.tsx` | NO | NO | — | — | NO | QA_TOOL | CURRENT_INDEX | INTERNAL_OR_QA |
 | `/prints/report` | `apps/web/src/app/(app)/prints/report/page.tsx` | NO | NO | — | — | NO | PROTECTED_TOOL | CURRENT_INDEX | INTERNAL_OR_QA |
 | `/profil` | `apps/web/src/app/(app)/profil/page.tsx` | YES | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
-| `/profil/[profile]` | `apps/web/src/app/(app)/profil/[profile]/page.tsx` | NO | NO | — | — | YES | NONE_DEMONSTRATED | CURRENT_INDEX | UNKNOWN |
-| `/profil/impact` | `apps/web/src/app/(app)/profil/impact/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | UNKNOWN |
+| `/profil/[profile]` | `apps/web/src/app/(app)/profil/[profile]/page.tsx` | NO | NO | — | — | YES | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
+| `/profil/impact` | `apps/web/src/app/(app)/profil/impact/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/reglages` | `apps/web/src/app/reglages/page.tsx` | NO | NO | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | UNKNOWN |
 | `/reports` | `apps/web/src/app/(app)/reports/page.tsx` | YES | YES | — | — | NO | NONE_DEMONSTRATED | CURRENT_INDEX | REACHABLE |
 | `/sections/[sectionId]` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` | YES | YES | apps/web/src/components/sections/rubriques/feedback-section.shared.ts | /community, /gamification, /messagerie (+5) | YES | NONE_DEMONSTRATED | INDEX_SANS_FICHE | DEEP_LINK_ONLY |
@@ -305,7 +305,7 @@ les sources SEO, ni les redirects, ni les baselines des contrôles qualité.
 | /parcours | UNKNOWN | KEEP | Entrée de workflow authentifié qui affiche un aperçu puis redirige vers le profil actif ; l’absence de href littéral vient de la construction de route et ne prouve pas un abandon. | Parcours d’accueil / accès direct authentifié | Ajouter une preuve de consumer dynamique au prochain enrichissement de l’audit. |
 | /parcours/[profile] | UNKNOWN | KEEP | Variante paramétrée du même workflow ; elle valide le profil actif et redirige vers la surface de profil canonique. | /parcours | Aucun changement de navigation. |
 | /profil/[profile] | UNKNOWN | KEEP | Surface de profil réelle, consommée par les builders de routes et le dashboard ; le pattern dynamique ne doit pas être traité comme orphelin. | Dashboard / sélection de profil | Ajouter une preuve de consumer dynamique au générateur si elle reste nécessaire. |
-| /profil/impact | UNKNOWN | DEFER | Le code porte une carte d’impact personnelle exportable/partageable, mais aucun entry point runtime actuel n’a été démontré et /reports couvre une autre lecture d’impact. La décision exige un arbitrage produit entre ré-entrée dédiée et consolidation. | Aucun point d’entrée runtime démontré | Décider si la carte personnelle reste une surface dédiée ou rejoint /profil/[profile]/reports. |
+| /profil/impact | SECONDARY_NAV | KEEP | Carte d’impact personnelle protégée, distincte des rapports collectifs ; le bloc « Progression & badges » du profil actif expose désormais un CTA contextuel dédié. | /profil/[profile] → « Progression & badges » → « Voir ma carte d’impact » | Conserver le CTA unique et vérifier périodiquement son usage. |
 | /reglages | UNKNOWN | DEFER | Page protégée réelle, documentée et distincte des réglages inline du dashboard/profil ; le seul redirect vers sign-in est un garde d’authentification, pas un alias. L’utilité d’une URL autonome reste à confirmer par usage. | Accès direct / réglages inline | Mesurer les accès puis choisir MOVE_TO_SECONDARY_NAV ou consolidation. |
 
 ### Compatibilités conservées sous réserve de preuve externe
@@ -344,12 +344,12 @@ les sources SEO, ni les redirects, ni les baselines des contrôles qualité.
   nécessitent une preuve de trafic/backlinks externe, et les quatre deep-links
   ont encore des callers ou une fonction documentée.
 - **Entrées utilisateur améliorées** : /sections/trash-spotter, depuis
-  /signalement, par un CTA secondaire contextuel.
+  /signalement, et /profil/impact, depuis le bloc « Progression & badges » du
+  profil actif, par des CTA secondaires contextuels.
 - **Routes secondaires/deep-links légitimes** : /missions/[id],
   /sections/dm, /sections/guide, /sections/route et /sections/weather.
 - **Outils internes légitimes** : /preview/actions/new, /actions/history,
   /prints/report et les routes /admin.
-- **Indécis** : /profil/impact, /reglages et les compatibilités marquées
-  DEFER ci-dessus.
+- **Indécis** : /reglages et les compatibilités marquées DEFER ci-dessus.
 
 <!-- PRODUCT_SURFACE_AUDIT:HUMAN_DECISIONS:END -->
