@@ -5,6 +5,7 @@ import {
   classifySurfaceRoute,
   collectRuntimeReferences,
   findUnresolvedRuntimeTargets,
+  isRedirectOnlyRouteSource,
   normalizeRouteTarget,
   routePatternMatches,
 } from "./generate-product-surface-audit.mjs";
@@ -55,4 +56,14 @@ test("signale les href internes qui ne correspondent à aucun pattern runtime", 
     findUnresolvedRuntimeTargets(references, new Set(["/actions/new", "/missions/[id]"])),
     ["/route-inexistante"],
   );
+});
+
+test("ne classe comme alias que les pages dont le seul rendu est une redirection", () => {
+  const files = new Map([
+    ["apps/web/src/app/legacy/page.tsx", 'import { permanentRedirect } from "next/navigation"; permanentRedirect("/actions/new");'],
+    ["apps/web/src/app/reglages/page.tsx", 'if (!userId) redirect("/sign-in"); return (<main>Réglages</main>);'],
+  ]);
+
+  assert.equal(isRedirectOnlyRouteSource("apps/web/src/app/legacy/page.tsx", files), true);
+  assert.equal(isRedirectOnlyRouteSource("apps/web/src/app/reglages/page.tsx", files), false);
 });

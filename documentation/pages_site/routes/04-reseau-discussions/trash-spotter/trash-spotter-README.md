@@ -16,6 +16,7 @@
 - **Objectif utilisateur principal** : Consulter l'état courant des signalements Trash Spotter et leur répartition sur la carte.
 - **Action principale attendue** : Lire les signalements `spot` approuvés sur la carte et dans la liste récente.
 - **Création** : aucune création n'est proposée ici. Pour saisir une observation et retrouver la boucle propriétaire « Mes observations », utiliser exclusivement [`/signalement`](/signalement).
+- **Découverte** : le CTA secondaire de `/signalement` ouvre cette surface de consultation ; elle ne rejoint pas le ruban principal.
 - **Palette attendue** : emerald / vert doux
 - **Scope** : flux public de signalements `spot` sur 180 jours, carte globale filtrée approuvée, liste récente et états de qualité des coordonnées.
 - **Terminée** : oui pour le périmètre de consultation/monitoring ; la saisie reste portée par `/signalement`.

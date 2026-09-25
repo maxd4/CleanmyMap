@@ -17,5 +17,7 @@ describe("canonical Trash Spotter entry coordinates", () => {
     expect(pageSource).toContain(
       'subtitle="Décrivez l’état observé : pollution constatée ou lieu constaté propre. Votre observation alimente la cartographie citoyenne."',
     );
+    expect(pageSource).toContain('href="/sections/trash-spotter"');
+    expect(pageSource).toContain("Consulter les signalements");
   });
 });
