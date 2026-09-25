@@ -4,8 +4,8 @@ Ce document est un snapshot du dépôt. Il décrit uniquement l’arbre Git
 identifié par `RADAR_REF`; le statut `CURRENT` signifie que ce snapshot a été
 généré depuis la ref annoncée, pas qu’un ancien SHA reste courant par nature.
 
-RADAR_REF=33c62778545ea02bd085e48ef7301b3c78aadf14
-RADAR_GENERATED_AT=2026-09-17T14:52:03.136+02:00
+RADAR_REF=e5913889e5115a1b23d1187c6d75b4f2bafba5bf
+RADAR_GENERATED_AT=2026-09-25T19:54:15.288+02:00
 RADAR_STATUS=CURRENT
 
 ## Politique et mesure
@@ -28,11 +28,11 @@ nombre de lignes mesuré sur le contenu exact de la ref.
 Commande de mesure utilisée :
 
 ```text
-node scripts/checks/check-top-heavy-files.mjs --ref=33c62778545ea02bd085e48ef7301b3c78aadf14 --top=25 --enforce
+node scripts/checks/check-top-heavy-files.mjs --ref=e5913889e5115a1b23d1187c6d75b4f2bafba5bf --top=25 --enforce
 ```
 
-Mesures de la ref : `2347` fichiers mesurés, `97` en `REVIEW_REQUIRED`, `0` en
-`HARD_LIMIT`. Le maximum est de `984` lignes et `36610` octets. La taille est
+Mesures de la ref : `2492` fichiers mesurés, `92` en `REVIEW_REQUIRED`, `0` en
+`HARD_LIMIT`. Le maximum est de `984` lignes et `32700` octets. La taille est
 un signal ; la décision architecturale dépend de la cohésion, des
 responsabilités, du couplage, de la testabilité et des contrats.
 
@@ -48,8 +48,9 @@ auditer :
 | PATH | LINES | BYTES | KIND |
 | --- | ---: | ---: | --- |
 | `apps/web/src/app/api/actions/[actionId]/route.ts` | 326 | 9731 | runtime |
-| `apps/web/src/lib/actions/store.ts` | 24 | 496 | runtime |
+| `apps/web/src/lib/actions/store.ts` | 27 | 580 | runtime |
 | `apps/web/src/lib/actions/participation/group-participation.ts` | 28 | 765 | runtime |
+| `apps/web/src/lib/auth/api-authorization-contract.ts` | 41 | 1891 | runtime |
 
 ## Décisions déjà prises
 
@@ -60,14 +61,13 @@ réinventées par la taille du snapshot.
 | PATH | LINES | BYTES | KIND | ARCHITECTURE_DECISION | RATIONALE |
 | --- | ---: | ---: | --- | --- | --- |
 | `apps/web/src/components/sections/rubriques/partners-network-section.tsx` | 511 | 22275 | runtime | `PROACTIVE_SPLIT` | Découpage déjà décidé pour un lot ultérieur. |
-| `apps/web/src/components/chat/chat-shell.tsx` | 945 | 31091 | runtime | `PROACTIVE_SPLIT` | Découpage déjà décidé ; préserver les responsabilités et la structure existantes. |
+| `apps/web/src/components/chat/chat-shell.tsx` | 881 | 29058 | runtime | `PROACTIVE_SPLIT` | Découpage déjà décidé ; préserver les responsabilités et la structure existantes. |
 | `apps/web/src/components/sections/rubriques/elus-section.tsx` | 513 | 28325 | runtime | `PROACTIVE_SPLIT` | Découpage déjà décidé pour un lot ultérieur. |
 | `apps/web/src/lib/geo/greater-paris-select.tsx` | 768 | 27711 | runtime | `PROACTIVE_SPLIT` | Découpage déjà décidé pour un lot ultérieur. |
 | `apps/web/src/components/sections/rubriques/feedback-section-dashboard.tsx` | 631 | 27107 | runtime | `PROACTIVE_SPLIT` | Découpage déjà décidé pour un lot ultérieur. |
-| `apps/web/src/lib/auth/api-authorization-contract.ts` | 884 | 36610 | runtime | `COHESIVE_SINGLE_FILE` | Contrat d’autorisation cohésif ; la taille seule ne justifie pas une extraction. |
 | `apps/web/src/app/learn/ressources/learn-ressources-client.data.ts` | 677 | 27122 | data/config | `COHESIVE_SINGLE_FILE` | Données du client Learn Ressources conservées comme unité cohésive. |
-| `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | 812 | 33483 | runtime | `COHESIVE_SINGLE_FILE` | Client de page cohésif ; aucune extraction mécanique par taille. |
-| `apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | 693 | 34061 | runtime | `ALREADY_MODULARIZED` | Module déjà structuré ; ne pas le requalifier sur le seul signal de taille. |
+| `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | 685 | 29441 | runtime | `COHESIVE_SINGLE_FILE` | Client de page cohésif ; aucune extraction mécanique par taille. |
+| `apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | 695 | 34077 | runtime | `ALREADY_MODULARIZED` | Module déjà structuré ; ne pas le requalifier sur le seul signal de taille. |
 
 ## Radar des fichiers à auditer
 
@@ -79,25 +79,25 @@ prescription de découpage.
 | PATH | LINES | BYTES | KIND | ARCHITECTURE_DECISION |
 | --- | ---: | ---: | --- | --- |
 | `apps/web/src/app/api/actions/[actionId]/route.test.ts` | 984 | 32700 | test | `REVIEW_REQUIRED` |
-| `apps/web/src/app/api/chat/route.test.ts` | 968 | 32291 | test | `REVIEW_REQUIRED` |
 | `apps/web/src/app/api/actions/route.submit.test.ts` | 968 | 30497 | test | `REVIEW_REQUIRED` |
-| `apps/web/src/lib/route/route-calibration.ts` | 928 | 32238 | runtime | `REVIEW_REQUIRED` |
-| `apps/web/src/components/actions/action-declaration/form/use-action-declaration-form.ts` | 845 | 30470 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/components/actions/action-declaration/form/use-action-declaration-form.ts` | 846 | 30491 | runtime | `REVIEW_REQUIRED` |
 | `apps/web/src/components/actions/action-declaration/steps/ActionStepLocation.tsx` | 832 | 33146 | runtime | `REVIEW_REQUIRED` |
-| `apps/web/src/components/actions/action-declaration/steps/ActionStepIdentity.tsx` | 794 | 35840 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/app/api/chat/route.test.ts` | 824 | 26342 | test | `REVIEW_REQUIRED` |
+| `apps/web/src/components/actions/action-declaration/steps/ActionStepIdentity.tsx` | 794 | 35880 | runtime | `REVIEW_REQUIRED` |
 | `apps/web/src/components/actions/map/action-popup-content-header.tsx` | 792 | 33740 | runtime | `REVIEW_REQUIRED` |
 | `apps/web/src/lib/learning/quiz/quiz-personal-progress.ts` | 759 | 25419 | runtime | `REVIEW_REQUIRED` |
 | `apps/web/src/components/actions/action-declaration/payload.test.ts` | 742 | 23446 | test | `REVIEW_REQUIRED` |
-| `apps/web/src/app/api/actions/[actionId]/group-join/route.post.test.ts` | 734 | 24299 | test | `REVIEW_REQUIRED` |
-| `apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx` | 732 | 32300 | runtime | `REVIEW_REQUIRED` |
-| `apps/web/src/lib/environmental-impact-estimator/constants.ts` | 721 | 26819 | data/config | `REVIEW_REQUIRED` |
+| `apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx` | 733 | 32321 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/app/api/route/recommend/route.response.test.ts` | 720 | 24339 | test | `REVIEW_REQUIRED` |
+| `apps/web/src/lib/environmental-impact-estimator/constants.ts` | 719 | 26388 | data/config | `REVIEW_REQUIRED` |
 | `apps/web/src/lib/supabase/storage-business-contribution.ts` | 718 | 24975 | runtime | `REVIEW_REQUIRED` |
-| `apps/web/src/lib/gamification/progression-data.ts` | 712 | 21079 | data/config | `REVIEW_REQUIRED` |
+| `apps/web/src/lib/gamification/progression-data.ts` | 704 | 20931 | data/config | `REVIEW_REQUIRED` |
 | `apps/web/src/lib/environmental-impact-estimator/project-signals.calculations.ts` | 703 | 22010 | runtime | `REVIEW_REQUIRED` |
-| `apps/web/src/app/docs/[...segments]/route.ts` | 690 | 19146 | runtime | `REVIEW_REQUIRED` |
 | `apps/web/src/app/api/admin/creator-inbox/route.test.ts` | 688 | 23251 | test | `REVIEW_REQUIRED` |
-| `apps/web/src/lib/environmental-impact-estimator/services/infrastructure.ts` | 685 | 25305 | runtime | `REVIEW_REQUIRED` |
-| `apps/web/src/app/api/actions/[actionId]/group-join/route.test.helpers.ts` | 684 | 23334 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx` | 679 | 25408 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/app/docs/[...segments]/route.ts` | 677 | 18727 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/components/reports/web-document/sections.tsx` | 674 | 26318 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/lib/actions/store.test.ts` | 673 | 19796 | test | `REVIEW_REQUIRED` |
 
 Le top 25 est un extrait traçable du radar. Les autres fichiers qui dépassent
 `REVIEW_THRESHOLD` restent à auditer sans statut architectural implicite ; leur
@@ -136,7 +136,7 @@ structure réelle ; aucun statut ne peut être déduit de la taille seule.
 ## Portée du lot
 
 Ce document ne refactore aucun candidat du radar. Il a été régénéré depuis la
-ref `RADAR_REF` après la clôture locale du lot `fix(web): restore server-only
-test boundaries`. Une nouvelle génération doit remplacer `RADAR_REF`,
-`RADAR_GENERATED_AT` et les mesures avec le SHA réellement scanné ; elle ne
-doit pas présenter un snapshot ancien comme l’état courant.
+ref `e5913889e5115a1b23d1187c6d75b4f2bafba5bf`, l’état Git courant de `main`.
+Une nouvelle génération doit remplacer `RADAR_REF`, `RADAR_GENERATED_AT` et
+les mesures avec le SHA réellement scanné ; elle ne doit pas présenter un
+snapshot ancien comme l’état courant.
