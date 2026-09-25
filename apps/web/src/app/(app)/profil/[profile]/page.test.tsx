@@ -7,7 +7,7 @@ describe("detailed profile gamification contract", () => {
   it("composes the compact summary from the page's existing data", () => {
     expect(pageSource).toContain("ProfileGamificationSummary");
     expect(pageSource).toContain("currentLevel={identity?.currentLevel ?? null}");
-    expect(pageSource).toContain("actionsCreated={infiniteTotals.actionsCreated}");
+    expect(pageSource).toContain("organisationCount={infiniteTotals.organisationCount}");
     expect(pageSource).toContain(
       "regularityLabel={infiniteTotals.monthlyRegularity.currentLabel}",
     );

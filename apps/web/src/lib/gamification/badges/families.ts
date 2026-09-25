@@ -15,7 +15,7 @@ export type GamificationExplorerSummary = {
   zonesToNext: number;
 };
 
-type ExplorerTier = {
+export type ExplorerTier = {
   min: number;
   max: number;
   id: string;

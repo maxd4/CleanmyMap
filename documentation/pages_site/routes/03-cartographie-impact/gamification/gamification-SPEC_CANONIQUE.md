@@ -211,6 +211,9 @@ Règles:
 - base `Observateur` à `0`;
 - paliers actuels: `0, 1, 3, 5, 10, 15, 20, 25, 30`;
 - XP de palier: `+1` à partir du premier palier utile, jamais sur le niveau `0`.
+- seuls les participants finaux `confirmed` comptent; une inscription future,
+  une présence communautaire ou un signalement en attente ne créditent pas
+  cette progression.
 
 ### Forms (compatibilité hors taxonomie CURRENT)
 
@@ -242,6 +245,9 @@ Règles:
 - les anciennes clés `spots` dans `progression_events` restent reconnues uniquement pour compatibilité historique et idempotence;
 - dédoublonnage par clé canonique de lieu;
 - cooldown de `24h` avant comptage;
+- le comptage courant et l'événement `clean_zone_task` sont dédoublonnés par
+  lieu canonique; `spot_validation_bonus` reste une compatibilité historique,
+  pas une seconde source de zones propres;
 - XP: `+1` par palier;
 - bonus décennal: `+2 XP` à 10, 20, 30, etc.
 
@@ -275,6 +281,8 @@ Règles:
 - tant qu aucun formulaire validé n est rattaché à l action, aucun XP n est attribué;
 - XP de base: `+1` par action créée valide;
 - si plusieurs organisateurs sont reconnus, l XP est divisée à parts égales;
+- la métrique canonique est le nombre d'actions organisées et validées, dédupliquées
+  par action; `action_declare_pending` n'est pas un crédit d'organisation;
 - la progression continue indéfiniment avec la logique `Pilier II`, `Pilier III`, etc.
 
 ### Polyvalence

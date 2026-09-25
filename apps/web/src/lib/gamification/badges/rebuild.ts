@@ -276,7 +276,7 @@ async function awardActionBadges(
     userId,
     sourceTable: "actions",
     sourceId: "first_trace_utile",
-    eventType: "action_declare_validation",
+    eventType: "first_trace_utile",
     statusPhase: "validated",
     xp: 1,
     metadata: { badge: "first_trace_utile", completeActionsCount },

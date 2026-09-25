@@ -12,7 +12,7 @@ Les objectifs déjà retenus dans le projet ne figurent pas ici.
 
 - `Première trace utile`;
 - `Trace fondatrice`;
-- `Actions créées`.
+- `Organisation` (ancien libellé d affichage: `Actions créées`).
 
 Les idées suivantes ont été reclassées dans les objectifs validés et ne doivent plus être traitées comme écartées:
 
@@ -32,7 +32,7 @@ Les formes de gamification suivantes ont été proposées puis non retenues à c
 
 | Objectif | Type | Pourquoi il n a pas été retenu | Statut mémoire |
 | --- | --- | --- | --- |
-| `Organisateur référent` | objectif infini | Trop proche de `Actions créées` et redondant avec la logique d attribution des organisateurs | Non retenu à ce stade |
+| `Organisateur référent` | objectif infini | Trop proche de `Organisation` et redondant avec la logique d attribution des organisateurs | Non retenu à ce stade |
 | `Qualité exemplaire` | objectif infini | Déjà couvert par les grades qualité, le niveau et les prérequis de progression | Non retenu à ce stade |
 | `Terrain couvert` | objectif infini | Chevauche déjà la logique `Explorateur` et la couverture cartographique | Non retenu à ce stade |
 | `Collectif solide` | régulier | Trop proche des mécaniques de collectif existantes; risque de doublonner les récompenses | Non retenu à ce stade |

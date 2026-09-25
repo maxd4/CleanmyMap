@@ -1,7 +1,7 @@
 import { BADGE_MAX_COUNTER } from "@/config/gamification.config";
 import {
   computeGemProgression,
-  type GemGradeDefinition,
+  ORGANISATION_GEM_CONFIG,
 } from "@/lib/gamification/gem-progression";
 
 export type BadgeFamily = "dechets" | "megots" | "lieux" | "actions";
@@ -120,23 +120,8 @@ export function computePlacesRank(level: number): PlacesBadgeRank {
 
 export type ActionCreationBadgeRank = BadgeRank & { icon: string; title: string };
 
-const ACTION_CREATION_GEM_CONFIG = {
-  idPrefix: "action-creation",
-  iconVariant: "users",
-  tooltip: (definition: GemGradeDefinition) =>
-    definition.key.startsWith("pilier-")
-      ? "Progression infinie des actions créées"
-      : definition.threshold === 0
-        ? "Aucune action créée"
-        : `${definition.threshold} actions créées`,
-  visualVariant: (definition: GemGradeDefinition) =>
-    definition.threshold < 5 ? "stone" : "precious",
-  xp: (definition: GemGradeDefinition) =>
-    definition.threshold === 0 ? 0 : 1,
-};
-
 export function computeActionCreationProgress(total: number) {
-  return computeGemProgression(total, ACTION_CREATION_GEM_CONFIG);
+  return computeGemProgression(total, ORGANISATION_GEM_CONFIG);
 }
 
 function actionCreationTier(threshold: number): BadgeTier {

@@ -9,6 +9,7 @@ export type ProgressionStatusPhase = "pending" | "validated" | "rejected";
 export type ProgressionEventType =
   | "action_declare_pending"
   | "action_declare_validation"
+  | "first_trace_utile"
   | "action_monthly_regularity"
   | "collective_rsvp_yes_pending"
   | "collective_attendance_confirmed"

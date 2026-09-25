@@ -57,6 +57,10 @@ Le code et les tests priment si une divergence apparaît.
   `GamificationProgressionState` : valeur courante, badge courant, prochain
   badge, pourcentage et contribution au total XP. Cette contribution n'est pas
   un solde séparé.
+- Les quatre progressions terrain principales sont matérialisées par les
+  métriques canoniques `participation`, `organisation`, `exploration` et
+  `clean_zones`; elles partagent ce contrat sans partager leur compteur ni
+  leur famille de badges.
 - L'XP globale est calculée à partir de la somme des événements actifs des
   sept progressions et des événements one-shot. Aucun `progression_id` SQL
   supplémentaire n'est requis : la classification est dérivée de manière
