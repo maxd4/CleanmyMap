@@ -3,8 +3,8 @@
 <!-- PRODUCT_SURFACE_AUDIT:GENERATED:BEGIN -->
 ## En-tête
 
-`AUDIT_REF=c41dde67e4835b923b9c9e75c199605e45fe9679`
-`AUDIT_GENERATED_AT=2026-09-25T21:44:09.874Z`
+`AUDIT_REF=cfcff540d000d367630c1fd2a41ff26f8c80fb74`
+`AUDIT_GENERATED_AT=2026-09-25T21:59:29.541Z`
 `AUDIT_STATUS=CURRENT_AT_GENERATION`
 
 Commande :
@@ -40,7 +40,7 @@ décision automatique de suppression.
 | `/` | SECONDARY_NAV | NO | 4 — apps/web/src/app/contact/page.tsx, apps/web/src/app/mentions-legales/page.tsx, apps/web/src/components/auth/auth-page-shell.tsx (+1) | public-visible | CURRENT | consumer runtime hors ruban principal |
 | `/actions/history` | PROTECTED_TOOL | NO | 12 — apps/web/src/components/accueil/accueil-community-credibility.tsx, apps/web/src/components/accueil/accueil-impact-summary.tsx, apps/web/src/components/actions/action-declaration/form/action-declaration-form.feedback.tsx (+7) | protected | CURRENT | surface interne protégée ; absence du ruban non probante |
 | `/actions/map` | PRIMARY_NAV | YES | 19 — apps/web/src/components/accueil/accueil-community-credibility.tsx, apps/web/src/components/accueil/accueil-hero.tsx, apps/web/src/components/accueil/accueil-navigation-schema.tsx (+12) | public-visible | CURRENT | entrée visible du registre/navigation |
-| `/actions/new` | PRIMARY_NAV | YES | 27 — apps/web/src/app/(app)/actions/history/page.tsx, apps/web/src/app/(app)/actions/map/page-client.tsx, apps/web/src/app/(app)/dashboard/page.tsx (+21) | clerk-context | CURRENT | entrée visible du registre/navigation |
+| `/actions/new` | PRIMARY_NAV | YES | 32 — apps/web/src/app/(app)/actions/history/page.tsx, apps/web/src/app/(app)/actions/map/page-client.tsx, apps/web/src/app/(app)/dashboard/page.tsx (+24) | clerk-context | CURRENT | entrée visible du registre/navigation |
 | `/admin` | PROTECTED_TOOL | YES | 2 — apps/web/src/components/admin/admin-creator-console.tsx, apps/web/src/components/pilotage/access-screen/views/pilotage-overview-support-sections.tsx | protected | CURRENT | surface interne protégée ; absence du ruban non probante |
 | `/admin/forms` | UNKNOWN | NO | — | protected | CURRENT | route protégée sans consumer, navigation ou usage interne démontré |
 | `/admin/gamification/xp-audit` | UNKNOWN | NO | — | protected | CURRENT | route protégée sans consumer, navigation ou usage interne démontré |
@@ -84,7 +84,7 @@ décision automatique de suppression.
 | `/profil/impact` | SECONDARY_NAV | NO | 1 — apps/web/src/components/gamification/profile-gamification-summary.tsx | protected | CURRENT | consumer runtime hors ruban principal |
 | `/reglages` | SECONDARY_NAV | NO | 1 — apps/web/src/components/account/account-settings-section.tsx | protected | CURRENT | consumer runtime hors ruban principal |
 | `/reports` | PRIMARY_NAV | YES | 12 — apps/web/src/app/(app)/actions/history/page.tsx, apps/web/src/app/(app)/actions/map/page-client.tsx, apps/web/src/components/accueil/accueil-community-credibility.tsx (+7) | clerk-context | CURRENT | entrée visible du registre/navigation |
-| `/sections/[sectionId]` | DEEP_LINK | NO | 63 — apps/web/src/app/(app)/signalement/page.tsx, apps/web/src/app/learn/ressources/learn-ressources-client.data.ts, apps/web/src/components/accueil/accueil-community-credibility.tsx (+30) | public-visible | CURRENT | consumer de deep-link démontré |
+| `/sections/[sectionId]` | DEEP_LINK | NO | 58 — apps/web/src/app/(app)/signalement/page.tsx, apps/web/src/app/learn/ressources/learn-ressources-client.data.ts, apps/web/src/components/accueil/accueil-community-credibility.tsx (+27) | public-visible | CURRENT | consumer de deep-link démontré |
 | `/sections/actors` | SECONDARY_NAV | NO | 1 — apps/web/src/components/accueil/accueil-navigation-schema.tsx | public-visible | CURRENT | consumer runtime hors ruban principal |
 | `/sections/annuaire` | PRIMARY_NAV | YES | 3 — apps/web/src/components/sections/rubriques/community/community-section-components.tsx, apps/web/src/components/sections/rubriques/partners-network-section.tsx | public-visible | CURRENT | entrée visible du registre/navigation |
 | `/sections/climate` | SECONDARY_NAV | NO | 1 — apps/web/src/components/dashboard/business-alerts-panel.tsx | public-visible | CURRENT | consumer runtime hors ruban principal |
@@ -101,9 +101,9 @@ décision automatique de suppression.
 | `/sections/recycling` | SECONDARY_NAV | NO | 12 — apps/web/src/app/learn/ressources/learn-ressources-client.data.ts, apps/web/src/components/learn/learn-practice-theme-tabs.data.ts, apps/web/src/components/learn/learn-tri-context-section.tsx (+4) | public-visible | CURRENT | consumer runtime hors ruban principal |
 | `/sections/rejoindre-un-formulaire` | REDIRECT_COMPAT | NO | — | clerk-context | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
 | `/sections/rejoindre-une-action` | PRIMARY_NAV | YES | 5 — apps/web/src/components/accueil/accueil-community-credibility.tsx, apps/web/src/components/accueil/accueil-hero.tsx, apps/web/src/components/accueil/accueil-navigation-schema.tsx (+2) | public-visible | CURRENT | entrée visible du registre/navigation |
-| `/sections/route` | REDIRECT_COMPAT | NO | 3 — apps/web/src/components/accueil/accueil-navigation-schema.tsx, apps/web/src/components/sections/rubriques/guide-section.tsx, apps/web/src/components/sections/rubriques/route-methodology-section.tsx | public-visible | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
+| `/sections/route` | REDIRECT_COMPAT | NO | — | public-visible | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
 | `/sections/trash-spotter` | SECONDARY_NAV | NO | 1 — apps/web/src/app/(app)/signalement/page.tsx | auth-blur-gate | CURRENT | consumer runtime hors ruban principal |
-| `/sections/weather` | REDIRECT_COMPAT | NO | 2 — apps/web/src/components/sections/rubriques/guide-section.tsx, apps/web/src/lib/learning/quiz/quiz-personal-progress.ts | public-visible | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
+| `/sections/weather` | REDIRECT_COMPAT | NO | — | public-visible | REDIRECT_COMPAT | alias ou redirect déclaré ; utilité externe à réexaminer |
 | `/sign-in` | SECONDARY_NAV | NO | 11 — apps/web/src/app/onboarding/page.tsx, apps/web/src/app/reglages/page.tsx, apps/web/src/app/sign-in/[[...sign-in]]/page.tsx (+7) | public-visible | CURRENT | consumer runtime hors ruban principal |
 | `/sign-up` | SECONDARY_NAV | NO | 2 — apps/web/src/app/sign-up/[[...sign-up]]/page.tsx, apps/web/src/components/navigation/app-navigation-ribbon-account.tsx | public-visible | CURRENT | consumer runtime hors ruban principal |
 | `/signalement` | PRIMARY_NAV | YES | 8 — apps/web/src/components/learn/learn-gestes-propres-collective-action-section.tsx, apps/web/src/components/learn/learn-practice-theme-tabs.data.ts, apps/web/src/components/learn/learn-tri-context-section.tsx (+3) | clerk-context | CURRENT | entrée visible du registre/navigation |
@@ -308,24 +308,24 @@ les sources SEO, ni les redirects, ni les baselines des contrôles qualité.
 | /profil/impact | SECONDARY_NAV | KEEP | Carte d’impact personnelle protégée, distincte des rapports collectifs ; le bloc « Progression & badges » du profil actif expose désormais un CTA contextuel dédié. | /profil/[profile] → « Progression & badges » → « Voir ma carte d’impact » | Conserver le CTA unique et vérifier périodiquement son usage. |
 | /reglages | SECONDARY_NAV | KEEP | Surface protégée canonique des préférences et paramètres de compte : contrôles de langue/mode d’affichage, nom affiché, localisation, confidentialité et demande de suppression. Les surfaces profil et dashboard exposent désormais un CTA vers cette page ; les notifications restent sur /dashboard#notifications. | /profil/[profile] ou /dashboard → « Ouvrir les réglages » | Conserver les deux CTA secondaires et le workflow de localisation compatible. |
 
-### Compatibilités conservées sous réserve de preuve externe
+### Audit des compatibilités
 
 | ROUTE | REACHABILITY_STATUS | DECISION | RATIONALE | MAIN_ENTRY_POINT | NEXT_ACTION |
 | --- | --- | --- | --- | --- | --- |
-| /community | REDIRECT_ONLY | DEFER | Redirect explicite vers /sections/community ; aucun consumer runtime utilisateur actuel n’est démontré, mais l’audit local ne mesure ni backlinks ni trafic externe. | /sections/community | Vérifier analytics/backlinks avant retrait. |
-| /conditions-utilisation | REDIRECT_ONLY | DEFER | Ancien chemin vers les conditions générales ; aucun consumer courant local, mais une suppression pourrait casser des liens externes ou historiques encore actifs. | /conditions-generales-utilisation | Vérifier analytics/backlinks avant retrait. |
-| /en | REDIRECT_ONLY | DEFER | Alias documenté vers la racine, sans page anglaise canonique ; l’absence de consumer local ne prouve pas l’absence d’entrées externes. | / | Vérifier analytics/backlinks avant retrait. |
-| /gamification | REDIRECT_ONLY | DEFER | Ancien chemin vers /sections/gamification, surface actuelle encore dans le registre et le ruban. | /sections/gamification | Vérifier analytics/backlinks avant retrait. |
-| /messagerie | REDIRECT_ONLY | DEFER | Ancien chemin vers /sections/messagerie, encore actif comme surface canonique. | /sections/messagerie | Vérifier analytics/backlinks avant retrait. |
-| /open-data | REDIRECT_ONLY | DEFER | Ancien chemin vers /sections/open-data, encore public et navigable. | /sections/open-data | Vérifier analytics/backlinks avant retrait. |
-| /partners/network | REDIRECT_ONLY | DEFER | Ancien chemin vers l’espace partenaires de la communauté ; la cible existe et des références historiques sont documentées. | /sections/community?tab=partners | Vérifier analytics/backlinks avant retrait. |
-| /partners/network/pepite | REDIRECT_ONLY | DEFER | Variante historique vers le même espace partenaires ; aucune preuve locale suffisante pour borner le risque externe. | /sections/community?tab=partners | Vérifier analytics/backlinks avant retrait. |
-| /sections/dm | REDIRECT_ONLY | DOCUMENT_AS_DEEP_LINK | Deep-link historique vers l’onglet DM de /sections/messagerie ; la cible porte encore la fonction et le paramètre est sémantiquement utile. | /sections/messagerie?tab=dm | Conserver tant qu’aucune preuve externe ne justifie le retrait. |
-| /sections/guide | REDIRECT_ONLY | DOCUMENT_AS_DEEP_LINK | Compatibilité vers le panneau météo de /actions/new, encore référencée par la documentation et les parcours de guide. | /actions/new?panel=meteo | Conserver et ne pas présenter comme une page concurrente. |
-| /sections/rejoindre-un-formulaire | REDIRECT_ONLY | DEFER | Ancien libellé vers /sections/rejoindre-une-action ; la cible est canonique, mais l’usage externe n’est pas observable dans le dépôt. | /sections/rejoindre-une-action | Vérifier analytics/backlinks avant retrait. |
-| /sections/route | REDIRECT_ONLY | DOCUMENT_AS_DEEP_LINK | Compatibilité encore appelée par le guide, la navigation d’accueil et la méthodologie ; elle ouvre le panneau itinéraire canonique. | /actions/new?panel=itineraire | Conserver tant que ces callers existent. |
-| /sections/weather | REDIRECT_ONLY | DOCUMENT_AS_DEEP_LINK | Compatibilité appelée par le guide et le parcours de quiz ; elle ouvre le panneau météo canonique. | /actions/new?panel=meteo | Conserver tant que ces callers existent. |
-| /onboarding/localisation | REDIRECT_ONLY | KEEP | Compatibilité active : fallback Clerk, inscription et réglages la construisent encore ; elle conserve next et les paramètres utiles avant /onboarding. | Inscription, layout Clerk, réglages | Aucun retrait tant que ces callers existent. |
+| /community | REDIRECT_ONLY | DEFER_EXTERNAL_EVIDENCE | Aucun caller runtime, email ou notification CURRENT n’est démontré. La recherche publique ciblée du 25/09/2026 ne fournit pas de backlink exploitable ; aucune donnée analytics/Vercel des chemins historiques n’est disponible localement. | /sections/community | Obtenir une fenêtre analytics ou un inventaire backlinks avant retrait. |
+| /conditions-utilisation | REDIRECT_ONLY | DEFER_EXTERNAL_EVIDENCE | Aucun caller CURRENT local ; il s’agit d’un ancien chemin juridique public dont l’usage externe ne peut pas être déduit de l’absence de références internes. | /conditions-generales-utilisation | Obtenir une preuve de trafic/backlinks avant retrait. |
+| /en | REDIRECT_ONLY | DEFER_EXTERNAL_EVIDENCE | Aucun caller CURRENT et aucune page anglaise canonique ; l’alias public peut toutefois rester dans des favoris ou backlinks non mesurés. | / | Obtenir une preuve de trafic/backlinks avant retrait. |
+| /gamification | REDIRECT_ONLY | DEFER_EXTERNAL_EVIDENCE | Aucun caller CURRENT ; la cible `/sections/gamification` reste une surface de progression active, donc la perte d’un ancien deep-link n’est pas démontrée sans mesure externe. | /sections/gamification | Obtenir une preuve de trafic/backlinks avant retrait. |
+| /messagerie | REDIRECT_ONLY | DEFER_EXTERNAL_EVIDENCE | Aucun caller CURRENT vers l’alias ; la messagerie canonique reste active et un ancien favori peut encore exister. | /sections/messagerie | Obtenir une preuve de trafic/backlinks avant retrait. |
+| /open-data | REDIRECT_ONLY | DEFER_EXTERNAL_EVIDENCE | Aucun caller CURRENT vers l’alias ; la cible reste publique et navigable. L’audit local ne mesure pas les entrées externes. | /sections/open-data | Obtenir une preuve de trafic/backlinks avant retrait. |
+| /partners/network | REDIRECT_ONLY | DEFER_EXTERNAL_EVIDENCE | Aucun caller CURRENT ; l’alias conserve une query `tab=partners` vers une surface communautaire active et des références historiques existent. | /sections/community?tab=partners | Vérifier trafic/backlinks et l’usage du paramètre avant retrait. |
+| /partners/network/pepite | REDIRECT_ONLY | DEFER_EXTERNAL_EVIDENCE | Aucun caller CURRENT ; variante historique partenaire sans preuve locale d’un trafic externe nul. | /sections/community?tab=partners | Vérifier trafic/backlinks et les liens partenaires avant retrait. |
+| /sections/dm | REDIRECT_ONLY | KEEP_ACTIVE_COMPAT | Aucun caller interne restant, mais le deep-link `/sections/messagerie?tab=dm` porte une intention précise et le paramètre reste sémantiquement utile. | /sections/messagerie?tab=dm | Conserver jusqu’à une revue externe des accès directs et backlinks. |
+| /sections/guide | REDIRECT_ONLY | DEFER_EXTERNAL_EVIDENCE | Aucun caller runtime CURRENT restant ; l’ancien libellé redirige vers le panneau météo, mais l’usage externe et la valeur distincte du nom ne sont pas mesurés. | /actions/new?panel=meteo | Vérifier trafic/backlinks avant retrait. |
+| /sections/rejoindre-un-formulaire | REDIRECT_ONLY | DEFER_EXTERNAL_EVIDENCE | Aucun caller CURRENT ; la cible canonique est stable, mais l’ancien libellé peut subsister dans des liens externes. | /sections/rejoindre-une-action | Obtenir une preuve de trafic/backlinks avant retrait. |
+| /sections/route | REDIRECT_ONLY | KEEP_ACTIVE_COMPAT | Les callers internes ont été migrés vers `/actions/new?panel=itineraire`. L’alias conserve toutefois un deep-link direct, ses paramètres utiles et une cible stable. | /actions/new?panel=itineraire | Conserver jusqu’à une revue externe des accès directs et backlinks. |
+| /sections/weather | REDIRECT_ONLY | KEEP_ACTIVE_COMPAT | Les callers internes ont été migrés vers `/actions/new?panel=meteo`. L’alias conserve un deep-link direct vers une fonction terrain toujours active. | /actions/new?panel=meteo | Conserver jusqu’à une revue externe des accès directs et backlinks. |
+| /onboarding/localisation | REDIRECT_ONLY | KEEP_ACTIVE_COMPAT | Compatibilité active : fallback Clerk, inscription et réglages la construisent encore ; `next`, referral et autres paramètres sont conservés avant `/onboarding`. | Inscription, layout Clerk, réglages | Aucun retrait tant que ces callers existent. |
 
 ### Outils internes et QA légitimes
 
@@ -339,18 +339,23 @@ les sources SEO, ni les redirects, ni les baselines des contrôles qualité.
 ### Résumé des décisions
 
 - **À supprimer** : aucune route ; aucune suppression n’est démontrée par le
-  dépôt seul.
-- **Compatibilités à retirer** : aucune à ce stade ; les 9 cas différés
-  nécessitent une preuve de trafic/backlinks externe, et les quatre deep-links
-  ont encore des callers ou une fonction documentée.
+  dépôt et les recherches publiques disponibles.
+- **Callers internes migrés** : les entrées UI, retours d’authentification et
+  recommandations quiz qui pointaient vers `/sections/route` ou
+  `/sections/weather` utilisent désormais directement les panneaux canoniques
+  de `/actions/new` ; les redirects restent disponibles pour les accès externes.
+- **Compatibilités à retirer** : aucune à ce stade ; 10 cas sont
+  `DEFER_EXTERNAL_EVIDENCE` et 4 restent `KEEP_ACTIVE_COMPAT` pour leur
+  sémantique de deep-link ou leurs callers actifs.
 - **Entrées utilisateur améliorées** : /sections/trash-spotter, depuis
   /signalement, /profil/impact depuis le bloc « Progression & badges », et
   /reglages depuis la configuration du profil et du dashboard, par des CTA
   secondaires contextuels.
 - **Routes secondaires/deep-links légitimes** : /missions/[id],
-  /sections/dm, /sections/guide, /sections/route et /sections/weather.
+  /sections/dm, /sections/route et /sections/weather.
 - **Outils internes légitimes** : /preview/actions/new, /actions/history,
   /prints/report et les routes /admin.
-- **Indécis** : les compatibilités marquées DEFER ci-dessus.
+- **Indécis** : les compatibilités marquées `DEFER_EXTERNAL_EVIDENCE` ci-dessus,
+  faute de fenêtre analytics/backlinks exploitable.
 
 <!-- PRODUCT_SURFACE_AUDIT:HUMAN_DECISIONS:END -->
