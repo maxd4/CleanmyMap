@@ -176,10 +176,12 @@ Implication pour CleanMyMap:
 
 - Une participation ne contribue a la progression personnelle et aux recompenses qu'une fois son statut `confirmed` etabli. Les statuts `pending`, `cancelled` et les demandes refusees ne generent ni progression ni credit.
 - Un claim post-action accepte suit exactement la meme source canonique de gamification qu'une participation confirmee normale; sa provenance `post_action_claim` ne change pas la valeur de la recompense.
-- Apres confirmation, la quote-part personnelle est une derivation de lecture, non une mesure scientifique individuelle : pour une metrique additive finale disponible, `quotePart = resultat collectif final / nombre de participants confirmes`.
+- Apres confirmation, la quote-part personnelle est une derivation de lecture, non une mesure scientifique individuelle lorsqu'aucune mesure individuelle n'existe. Pour une metrique additive finale disponible, les mesures individuelles confirmees remplacent uniquement la quote-part du participant concerne ; les autres participants se partagent le reliquat conservatif `remaining = totalAction - somme(mesures exactes)`.
 - Le denominateur est exclusivement `COUNT(action_participants WHERE participation_status = 'confirmed')`. Il exclut les demandes en attente, annulees ou refusees ainsi que les effectifs terrain et les `effectiveVolunteerUnits`.
 - Les metriques additives finales partageables sont la masse de dechets et les megots finaux, lorsqu'elles sont connues. La duree, la distance/route, les categories de benevoles et les scores ou ratios non additifs ne sont jamais divises.
 - La quote-part reste une attribution de profil et ne retroalimente jamais le resultat collectif. Elle est recalculee dynamiquement si le nombre de participants confirmes evolue; elle n'est pas persistee sans besoin demontre.
+- Si le total collectif est inconnu, les mesures individuelles connues sont conservees et les autres valeurs restent `NA`, jamais zero. Si les mesures exactes depassent le total collectif connu, la metrique est incoherente, aucun reliquat negatif n'est produit et aucun nouveau credit Mohs ne peut etre attribue pour cette metrique avant resolution.
+- L'equivalent sec des dechets est une hypothese de gamification versionnee `impact-terrain-2026-waste-moisture-v1` (`sec = 1,0`, `humide = 0,7`, `mouille = 0,4`). Elle ne remplace jamais la masse brute des resultats collectifs. Pour les megots, le moteur canonique `2500 megots/kg` et les facteurs `propre = 1`, `humide = 0,7`, `mouille = 0,4` restent la seule conversion ; un comptage explicite prime sur la masse.
 
 ### Contrainte produit temporaire (prioritaire)
 

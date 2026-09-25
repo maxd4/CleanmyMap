@@ -165,6 +165,20 @@ export const actionsAuthorizationContract = {
       ],
     },
   },
+  "actions/[actionId]/participant-impact": {
+    PATCH: {
+      expected: "Authenticated action organizer or admin/max records an individual measurement only for a confirmed target participation; ordinary participants are denied",
+      dimensions: ["authentication", "business permission", "ownership", "participant override", "audit"],
+      actual: "requireAuthenticatedAccess + shared resolveReviewerAccess + confirmed participant guard + appendActionModerationAudit",
+      evidence: [
+        "requireAuthenticatedAccess",
+        "resolveReviewerAccess",
+        "participation_status !== \"confirmed\"",
+        "appendActionModerationAudit",
+      ],
+      evidenceScope: "module",
+    },
+  },
   "actions/[actionId]": {
     GET: {
       expected: "Authenticated creator/organizer or admin/max action-management read",

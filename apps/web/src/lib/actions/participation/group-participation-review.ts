@@ -35,6 +35,7 @@ import {
   type ParticipationAuditValue,
   type ActionParticipationSearchItem,
 } from "./group-participation-contract";
+import { REVIEW_SELECT, toImpact } from "./individual-impact";
 
 type ParticipationRecord = {
   id: string;
@@ -67,16 +68,12 @@ export async function loadActionParticipationReviews(
 ): Promise<ActionParticipationReviewItem[]> {
   const reviewLimit = Math.max(1, Math.min(params.limit ?? 24, 100));
   const statuses = params.statuses ?? [PENDING_PARTICIPATION_STATUS];
-  const useRegistrations = usesRegistrationStore(params.actionPhase);
+  const useRegs = usesRegistrationStore(params.actionPhase);
   const result = await supabase
-    .from(useRegistrations ? "action_registrations" : "action_participants")
-    .select(
-      useRegistrations
-        ? "id, action_id, created_at, registered_at, updated_at, user_id, registration_status, registration_source"
-        : "id, action_id, created_at, joined_at, updated_at, user_id, participation_status, participation_source",
-    )
+    .from(useRegs ? "action_registrations" : "action_participants")
+    .select(useRegs ? "id, action_id, created_at, registered_at, updated_at, user_id, registration_status, registration_source" : REVIEW_SELECT)
     .eq("action_id", params.actionId)
-    .in(useRegistrations ? "registration_status" : "participation_status", statuses)
+    .in(useRegs ? "registration_status" : "participation_status", statuses)
     .order("created_at", { ascending: true })
     .limit(reviewLimit);
 
@@ -85,21 +82,18 @@ export async function loadActionParticipationReviews(
   }
 
   const rows = (result.data ?? []).map((row) => {
-    const value = row as Record<string, unknown>;
+    const value = row as unknown as Record<string, unknown>;
     return {
       id: String(value["id"]),
       action_id: String(value["action_id"]),
       created_at: String(value["created_at"]),
       updated_at: typeof value["updated_at"] === "string" ? value["updated_at"] : undefined,
       user_id: String(value["user_id"]),
-      status: (useRegistrations ? value["registration_status"] : value["participation_status"]) as ParticipationStatus,
-      source: (useRegistrations ? value["registration_source"] : value["participation_source"]) as ParticipationSource,
-      joined_at: String(
-        useRegistrations
-          ? value["registered_at"] ?? value["created_at"]
-          : value["joined_at"] ?? value["created_at"],
-      ),
-    } satisfies ParticipationRecord;
+      status: (useRegs ? value["registration_status"] : value["participation_status"]) as ParticipationStatus,
+      source: (useRegs ? value["registration_source"] : value["participation_source"]) as ParticipationSource,
+      joined_at: String(useRegs ? value["registered_at"] ?? value["created_at"] : value["joined_at"] ?? value["created_at"]),
+      individualImpact: useRegs ? null : toImpact(value),
+    };
   });
   if (rows.length === 0) {
     return [];
@@ -149,6 +143,7 @@ export async function loadActionParticipationReviews(
       wasRegisteredBeforeAction:
         row.source === POST_ACTION_CLAIM_PARTICIPATION_SOURCE &&
         registeredBeforeAction.has(row.user_id),
+      individualImpact: row.individualImpact ?? null,
     };
   });
 }

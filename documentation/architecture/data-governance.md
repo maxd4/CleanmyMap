@@ -450,6 +450,51 @@ documentée n'existe ; le volume reste alors présent et les dérivés restent
 `NULL`. Les champs historiques `cigaretteButtsKg` et `cigarette_butts` sont
 des projections de lecture/compatibilité, jamais une seconde source de vérité.
 
+## Attribution individuelle post-action
+
+`action_participants` reste l'unique source canonique des participations finales.
+La migration append-only `20260926000001_action_participant_individual_impact.sql`
+ajoute les mesures individuelles à la ligne de participation confirmée, sans
+créer de table métier parallèle. Les colonnes brutes sont :
+
+```txt
+individual_waste_kg
+individual_waste_condition = sec | humide | mouille
+individual_waste_measurement_method
+individual_waste_normalization_version
+individual_cigarette_butts_count
+individual_cigarette_butts_mass_kg
+individual_cigarette_butts_condition = propre | humide | mouille
+individual_cigarette_butts_provenance = counted | measured | derived
+individual_cigarette_butts_conversion_version
+individual_impact_measured_by
+individual_impact_measured_at
+```
+
+`NULL` reste distinct de zéro pour chaque mesure. La masse brute et le nombre
+brut ne sont jamais remplacés par leur dérivé. La méthode, l'auteur et la date
+de mesure sont contrôlés par le serveur et les changements sont journalisés
+avec la valeur avant, la valeur après, l'action et la participation cible.
+Seul l'organisateur réel de l'action ou un administrateur autorisé peut écrire
+ces colonnes ; un participant ordinaire ne peut pas les modifier.
+
+Pour chaque métrique additive, les participations `confirmed` ayant une mesure
+comparable utilisent leur valeur individuelle. Si le total collectif est
+connu, le reliquat est `totalAction - somme(mesures exactes)` et est réparti
+uniquement entre les confirmés sans mesure. Si le total est inconnu, les
+mesures connues restent affichées et les autres restent `NA`. Un dépassement
+du total collectif rend la métrique incohérente, interdit tout reliquat négatif
+et la rend inéligible aux nouveaux crédits Mohs tant qu'elle n'est pas résolue.
+Cette attribution ne modifie jamais le total collectif.
+
+Pour la seule gamification, l'équivalent sec des déchets est une hypothèse
+versionnée `impact-terrain-2026-waste-moisture-v1` : `sec = 1,0`,
+`humide = 0,7`, `mouille = 0,4`, donc `equivalentSecKg = masse_brute × facteur`.
+Cette dérivation ne remplace pas `wasteKg` dans les résultats collectifs ou
+les rapports. Les mégots réutilisent `impact-terrain-2026-butts-mass-v1` et
+`2500 mégots/kg`; un comptage explicite prime toujours sur une conversion de
+masse.
+
 ## Contrat temporel des actions
 
 Le contrat métier distingue exactement deux notions :

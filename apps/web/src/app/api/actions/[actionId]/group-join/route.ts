@@ -59,7 +59,7 @@ async function resolveGroupJoinUserId(operation: string): Promise<string | null>
   }
 }
 
-const resolveReviewerAccess: ReviewerAccessResolver = async (params) => {
+export const resolveReviewerAccess: ReviewerAccessResolver = async (params) => {
   const identity = await getCurrentUserIdentity();
   if (canOverrideActionParticipants(identity)) {
     return {

@@ -5,6 +5,7 @@ import type { AdminOperationAuditEntry } from "@/lib/admin/audit/operation-audit
 import type { ActionParticipationReviewItem } from "@/lib/actions/participation/group-participation";
 import { isSignalementRecordType } from "@/lib/actions/signalement/signalement-media-contract";
 import { SignalementMediaProofs } from "@/components/actions/signalement-media/signalement-media-proofs";
+import { ActionParticipantImpactManager } from "@/components/actions/action-participant-impact-manager";
 import { formatDate } from "./actions-history-list.helpers";
 import { formatScorePercent } from "@/lib/formatters/score";
 
@@ -255,6 +256,11 @@ export function ActionsHistoryListDetails({
           )}
         </div>
       ) : null}
+
+      <ActionParticipantImpactManager
+        actionId={selectedItem.id}
+        fr={fr}
+      />
 
       {selectedCanViewActionAudit ? (
         <div className="mt-3">
