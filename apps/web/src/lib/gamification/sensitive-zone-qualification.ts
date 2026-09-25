@@ -5,7 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const SENSITIVE_ZONE_RULE_VERSION =
   "build-zones-120d-critique-normalized-score-v1" as const;
-export const SENSITIVE_ZONE_SOURCE_WINDOW_DAYS = 240 as const;
+const SENSITIVE_ZONE_SOURCE_WINDOW_DAYS = 240 as const;
 
 export function deriveSensitiveAreasFromContracts(
   contracts: ActionDataContract[],

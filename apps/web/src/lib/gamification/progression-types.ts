@@ -46,7 +46,7 @@ export const CURRENT_INFINITE_PROGRESSION_IDS = [
 export type CurrentInfiniteProgressionId =
   (typeof CURRENT_INFINITE_PROGRESSION_IDS)[number];
 
-export type GamificationBadgeScale =
+type GamificationBadgeScale =
   | "participant"
   | "gem"
   | "exploration"

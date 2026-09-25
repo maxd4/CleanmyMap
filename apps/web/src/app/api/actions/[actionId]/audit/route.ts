@@ -6,28 +6,11 @@ import { runSingleActionQuery } from "@/lib/actions/query";
 import { canViewActionModerationAudit } from "@/lib/actions/permissions";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { parsePositiveInteger } from "@/lib/http/query-params";
 
 export const runtime = "nodejs";
 // Justification Vercel: le journal d'audit dépend de l'action et de l'utilisateur, donc il ne doit pas être caché.
 export const dynamic = "force-dynamic";
-
-function parsePositiveInteger(
-  raw: string | null,
-  min: number,
-  max: number,
-  fallback: number,
-): number {
-  if (raw === null || raw.trim() === "") {
-    return fallback;
-  }
-
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) {
-    return fallback;
-  }
-
-  return Math.min(max, Math.max(min, Math.trunc(parsed)));
-}
 
 async function canViewActionAudit(params: {
   actionId: string;

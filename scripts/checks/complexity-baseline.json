@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "sourceCommit": "4410cda3e9e717cf52328d25ae04350b072657e6",
+  "sourceCommit": "e5d843253aeaa558d8c049c00181c246973d529b",
   "policyFingerprint": "3c9633246333c6e06514fd434a29244e5b4e79d9ddffe3b5d15d6ccab87fb44f",
   "functionIdentitySchemeVersion": 2,
   "entries": [
@@ -9,8 +9,8 @@
       "path": "src/app/(app)/actions/new/page.tsx",
       "line": 50,
       "category": "React/JSX",
-      "ceiling": 24,
-      "status": "LEGACY",
+      "ceiling": 23,
+      "status": "IMPROVED",
       "functionIdentity": "named:NewActionPage#1"
     },
     {
@@ -900,8 +900,8 @@
       "path": "src/components/learn/learn-rubric-shell.tsx",
       "line": 35,
       "category": "React/JSX",
-      "ceiling": 40,
-      "status": "LEGACY",
+      "ceiling": 39,
+      "status": "IMPROVED",
       "functionIdentity": "named:LearnRubricShell#1"
     },
     {
@@ -1161,8 +1161,8 @@
       "path": "src/components/sections/rubriques/funding-section.tsx",
       "line": 9,
       "category": "React/JSX",
-      "ceiling": 25,
-      "status": "LEGACY",
+      "ceiling": 9,
+      "status": "IMPROVED",
       "functionIdentity": "named:FundingSection#1"
     },
     {
@@ -1863,8 +1863,8 @@
       "path": "src/lib/environmental-impact-estimator/services/infrastructure.ts",
       "line": 549,
       "category": "runtime/services/orchestration",
-      "ceiling": 21,
-      "status": "LEGACY",
+      "ceiling": 16,
+      "status": "IMPROVED",
       "functionIdentity": "named:buildInfrastructureEstimate#1"
     },
     {
@@ -5199,15 +5199,6 @@
     },
     {
       "metric": "functionLength",
-      "path": "src/lib/gamification/action-balance.ts",
-      "line": 279,
-      "category": "métier/domain pur",
-      "ceiling": 68,
-      "status": "LEGACY",
-      "functionIdentity": "named:computeActionBalanceSummary#1"
-    },
-    {
-      "metric": "functionLength",
       "path": "src/lib/gamification/annual-reset.ts",
       "line": 16,
       "category": "métier/domain pur",
@@ -5295,15 +5286,6 @@
       "ceiling": 92,
       "status": "LEGACY",
       "functionIdentity": "named:syncQuizQuestionTypeProgress#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "src/lib/gamification/referrals.ts",
-      "line": 62,
-      "category": "métier/domain pur",
-      "ceiling": 69,
-      "status": "LEGACY",
-      "functionIdentity": "named:ensureReferralInviteAward#1"
     },
     {
       "metric": "functionLength",

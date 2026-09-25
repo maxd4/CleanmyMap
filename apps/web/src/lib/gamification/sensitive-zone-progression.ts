@@ -39,7 +39,7 @@ export type SensitiveZoneProjectionPlan = {
   qualifiedActionCount: number;
 };
 
-export function buildSensitiveZoneQualificationSnapshot(
+function buildSensitiveZoneQualificationSnapshot(
   action: Pick<ActionRow, "id" | "location_label" | "action_date" | "created_at">,
   sensitiveAreas: Iterable<string>,
   assessedAt: string,

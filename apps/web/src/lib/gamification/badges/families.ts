@@ -53,9 +53,6 @@ export type LearningMilestoneFamily = {
   tiers: QuizProgressionTierDefinition[];
 };
 
-/** @deprecated Use LearningMilestoneFamily; retained for compatibility. */
-export type QuizProgressionFamily = LearningMilestoneFamily;
-
 type LegacyBadgeDefinition = {
   id: string;
   name: string;

@@ -7,7 +7,7 @@ export type QuizLearningProgressRow = {
   correct_count: number;
 };
 
-export type LearningProgressionTier = {
+type LearningProgressionTier = {
   id: string;
   label: string;
   description: string;

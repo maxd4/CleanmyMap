@@ -1,4 +1,4 @@
-import { computeActionBalanceSummary } from "./action-balance";
+import { computeActionBalanceSummary } from "./action-balance-calculation";
 import { computeMonthlyRegularityAwards } from "./monthly-regularity";
 import type { ActionRow, EventInsertParams } from "./progression-types";
 

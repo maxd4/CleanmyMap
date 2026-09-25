@@ -9,6 +9,84 @@ export type GamificationBadgeMetric = {
   caption?: ReactNode;
 };
 
+type GamificationCardTone = {
+  shell: string;
+  glow: string;
+  progress: string;
+  chip: string;
+};
+
+const STANDARD_CARD_TONES: Record<"stone" | "precious", GamificationCardTone> = {
+  stone: {
+    shell: "border-slate-500/20 bg-gradient-to-br from-slate-950 via-stone-900 to-emerald-950/80",
+    glow: "bg-emerald-400/10",
+    progress: "bg-gradient-to-r from-emerald-400 via-lime-300 to-teal-300",
+    chip: "border-slate-300/10 bg-white/5 text-slate-100",
+  },
+  precious: {
+    shell: "border-cyan-300/20 bg-gradient-to-br from-slate-950 via-cyan-950/50 to-fuchsia-950/70",
+    glow: "bg-cyan-400/15",
+    progress: "bg-gradient-to-r from-cyan-400 via-teal-300 to-fuchsia-400",
+    chip: "border-cyan-300/10 bg-cyan-500/10 text-cyan-50",
+  },
+};
+
+export function getStandardGamificationCardTone(visualVariant: string | undefined): GamificationCardTone {
+  return STANDARD_CARD_TONES[visualVariant === "precious" ? "precious" : "stone"];
+}
+
+export function getGamificationProgressFooter({
+  currentLabel,
+  nextLabel,
+  remaining,
+  remainingLabel,
+}: {
+  currentLabel: string;
+  nextLabel: string | null;
+  remaining: number;
+  remainingLabel: string;
+}) {
+  return {
+    left: `Palier actuel: ${currentLabel}${nextLabel ? ` → ${nextLabel}` : ""}`,
+    right: remaining > 0 ? `+${remaining} ${remainingLabel}` : "Palier atteint",
+  };
+}
+
+export function getGamificationBadgeProgressProps({
+  value,
+  nextThreshold,
+  progressPercent,
+  footer,
+}: {
+  value: number;
+  nextThreshold?: number;
+  progressPercent: number;
+  footer: { left: ReactNode; right: ReactNode };
+}) {
+  return {
+    progressValue: `${value}${nextThreshold === undefined ? "" : ` / ${nextThreshold}`}`,
+    progressPercent,
+    progressFooterLeft: footer.left,
+    progressFooterRight: footer.right,
+  };
+}
+
+export function getGamificationBadgePanelStyleProps(
+  palette: GamificationCardTone,
+  celebrating: boolean,
+) {
+  return {
+    shellClassName: palette.shell,
+    glowClassName: palette.glow,
+    progressClassName: `${palette.progress} ${celebrating ? "cmm-gamification-progress" : ""}`,
+    celebrating,
+  };
+}
+
+export function getGamificationProgressLabel(nextGradeLabel?: string | null): string {
+  return `Progression vers ${nextGradeLabel ?? "le prochain palier"}`;
+}
+
 export function getGamificationBadgeState(current: number, threshold: number): GamificationBadgeState {
   if (!Number.isFinite(current) || current <= 0) {
     return "vide";

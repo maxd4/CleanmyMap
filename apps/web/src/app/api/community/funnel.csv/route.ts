@@ -12,6 +12,7 @@ import type { CommunityEventRow } from"@/types/database";
 import { fetchUnifiedActionContracts } from"@/lib/actions/unified-source";
 import { toActionListItem } from"@/lib/actions/data-contract";
 import { buildDeliverableFilename } from"@/lib/reports/deliverable-name";
+import { parsePositiveInteger } from "@/lib/http/query-params";
 
 export const runtime ="nodejs";
 
@@ -23,22 +24,6 @@ function formatParisDate(date: Date): string {
  month:"2-digit",
  day:"2-digit",
  }).format(date);
-}
-
-function parsePositiveInteger(
- raw: string | null,
- min: number,
- max: number,
- fallback: number,
-): number {
- if (!raw || raw.trim() ==="") {
- return fallback;
- }
- const parsed = Number(raw);
- if (!Number.isFinite(parsed)) {
- return fallback;
- }
- return Math.min(max, Math.max(min, Math.trunc(parsed)));
 }
 
 export async function GET(request: Request) {

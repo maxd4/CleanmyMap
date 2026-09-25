@@ -3,24 +3,9 @@ import { requireAdminAccess } from"@/lib/authz";
 import { listAdminOperationAudit } from"@/lib/admin/audit/operation-audit";
 import { adminErrorResponse, newOperationId } from"@/lib/admin/response";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
+import { parsePositiveInteger } from "@/lib/http/query-params";
 
 export const runtime ="nodejs";
-
-function parsePositiveInteger(
- raw: string | null,
- min: number,
- max: number,
- fallback: number,
-): number {
- if (raw === null || raw.trim() ==="") {
- return fallback;
- }
- const parsed = Number(raw);
- if (!Number.isFinite(parsed)) {
- return fallback;
- }
- return Math.min(max, Math.max(min, Math.trunc(parsed)));
-}
 
 export async function GET(request: Request) {
  const operationId = newOperationId();

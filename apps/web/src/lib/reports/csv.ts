@@ -1,6 +1,9 @@
 import type { ActionListItem, ActionStatus } from "@/lib/actions/types";
+import { parsePositiveInteger } from "@/lib/http/query-params";
 import { buildDeliverableFilename } from "./deliverable-name";
 import type { ReportScope, ReportScopeKind } from "./scope";
+
+export { parsePositiveInteger } from "@/lib/http/query-params";
 
 export type ActionCsvRow = Pick<
   ActionListItem,
@@ -109,22 +112,6 @@ export function resolveReportScopeFromQuery(url: URL): ReportScope {
   return scopeKind === "global"
     ? { kind: "global", value: null }
     : { kind: scopeKind, value: scopeValue };
-}
-
-export function parsePositiveInteger(
-  raw: string | null,
-  min: number,
-  max: number,
-  fallback: number,
-): number {
-  if (raw === null || raw.trim() === "") {
-    return fallback;
-  }
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) {
-    return fallback;
-  }
-  return Math.min(max, Math.max(min, Math.trunc(parsed)));
 }
 
 export function resolveReportQuery(url: URL): ReportQuery {
