@@ -98,6 +98,24 @@ describe("Messagerie navigation shell", () => {
     }
   });
 
+  it("keeps the active indicator node in the initial DOM for every motion mode", () => {
+    for (const initialDisplayMode of ["exhaustif", "sobre"] as const) {
+      const markup = renderToStaticMarkup(
+        createElement(
+          SitePreferencesProvider,
+          { initialLocale: "fr", initialDisplayMode } as never,
+          createElement(ConnectTabs, {
+            activeTab: "discussions",
+            setActiveTab: () => undefined,
+            fr: true,
+          }),
+        ),
+      );
+
+      expect(markup).toContain('aria-hidden="true" class="absolute inset-0');
+    }
+  });
+
   it("keeps the public surface vocabulary aligned with the primary tabs", () => {
     expect(chatSidebarSource).not.toContain("Canaux Publics");
     expect(chatSidebarSource).toContain("Discussions");
