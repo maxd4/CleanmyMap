@@ -57,7 +57,7 @@ describe("syncUserActionProgression monthly regularity", () => {
 
     const syncOptions = {
       sensitiveAreas: [],
-      projectionState: { qualifications: [] },
+      projectionState: { qualifications: [], milestoneThresholds: [] },
     };
     const firstPass = await syncUserActionProgression(supabase, "user-1", syncOptions);
     const firstMonthlyEvents = insertedEvents.filter(
@@ -107,7 +107,7 @@ describe("syncUserActionProgression monthly regularity", () => {
     const persistedEvents: Array<Record<string, unknown>> = [];
     const syncOptions = {
       sensitiveAreas: [],
-      projectionState: { qualifications: [] },
+      projectionState: { qualifications: [], milestoneThresholds: [] },
     };
 
     const supabase = createProgressionSupabase({

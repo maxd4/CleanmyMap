@@ -38,10 +38,11 @@ Le code et les tests priment si une divergence apparaît.
   séparée et le script reste un outil de réparation historique.
 - les sources métier restent propriétaires de leurs données ; le journal XP ne remplace jamais la source métier.
 - la métrique `Zone sensible apaisée` reste hors des sept progressions infinies :
-  sa qualification est figée à la validation dans `progression_events` avec
-  `0 XP`. Les anciens événements `sensitive_zone_milestone` restent
-  `COMPATIBILITY/LEGACY` et ne sont ni recréés ni révoqués ; l'état courant
-  d'une zone ne révoque jamais la preuve historique.
+  sa qualification est figée à la validation dans `progression_events`, puis
+  ses seuils gemme canoniques `1, 3, 5, 8, 10, 15, 20, puis +5` sont projetés
+  par des événements idempotents `sensitive_zone_milestone` à `+1 XP` ; l'état
+  courant d'une zone ne révoque jamais la preuve historique. Cette mécanique
+  ne crée ni progression infinie ni solde XP indépendant.
 - les GET, loaders de page et lectures de profil sont read-only ; les
   attributions de progression sont déclenchées par une mutation métier ou par
   le rebuild serveur explicite `rebuildUserGamificationBadges`.
@@ -63,9 +64,10 @@ Le code et les tests priment si une divergence apparaît.
   `clean_zones`; elles partagent ce contrat sans partager leur compteur ni
   leur famille de badges.
 - L'XP globale est calculée à partir de la somme des événements actifs des
-  sept progressions et des événements one-shot. Aucun `progression_id` SQL
-  supplémentaire n'est requis : la classification est dérivée de manière
-  déterministe du registre des `event_type`.
+  sept progressions, des événements one-shot et des récompenses spécialisées
+  explicitement autorisées, comme `sensitive_zone_milestone`. Aucun
+  `progression_id` SQL supplémentaire n'est requis : la classification est
+  dérivée de manière déterministe du registre des `event_type`.
 - les lectures Clean Zones courantes utilisent `trash_spotter_spots`.
 - les anciennes identités d'événement liées à `spots` peuvent être reconnues uniquement pour préserver l'historique et empêcher une réattribution d'XP ; la table legacy n'est pas une source courante de candidats.
 - les formulaires restent une preuve de validation et une source de complétude;
