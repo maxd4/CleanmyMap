@@ -1,7 +1,17 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildChatSearchKey } from "./use-chat-search";
 
+const searchHookSource = readFileSync(new URL("./use-chat-search.ts", import.meta.url), "utf8");
+
 describe("chat search keys", () => {
+  it("debounces, deduplicates and aborts stale network searches", () => {
+    expect(searchHookSource).toContain("setTimeout");
+    expect(searchHookSource).toContain("CHAT_SEARCH_MIN_QUERY_LENGTH");
+    expect(searchHookSource).toContain("new AbortController()");
+    expect(searchHookSource).toContain("dedupingInterval: 30_000");
+  });
+
   it("keeps community search in the selected topic", () => {
     expect(
       buildChatSearchKey({

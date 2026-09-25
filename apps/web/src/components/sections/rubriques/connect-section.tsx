@@ -231,6 +231,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
               tone="light"
               fullHeight
               messagerieMode
+              surfaceActive={activeTab === "discussions"}
             />
           </motion.div>
         </div>
@@ -259,6 +260,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
               tone="light"
               fullHeight
               messagerieMode
+              surfaceActive={activeTab === "dm"}
             />
           </motion.div>
         </div>

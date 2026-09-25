@@ -48,6 +48,8 @@ describe("Messagerie navigation shell", () => {
     expect(connectSectionSource).toContain('data-connect-panel="dm"');
     expect(connectSectionSource).not.toContain("key={discussionShellKey}");
     expect(connectSectionSource).not.toContain("key={dmShellKey}");
+    expect(connectSectionSource).toContain('surfaceActive={activeTab === "discussions"}');
+    expect(connectSectionSource).toContain('surfaceActive={activeTab === "dm"}');
   });
 
   it("uses a shell navigation contract for URL synchronization and restoration", () => {

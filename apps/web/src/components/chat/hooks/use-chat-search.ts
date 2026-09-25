@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
@@ -13,6 +13,7 @@ import {
   type ChatSearchResult,
 } from "@/lib/chat/chat-search";
 import type { ChatHistoryCursor } from "@/lib/chat/chat-pagination";
+import { useChatSurfaceActivity } from "../chat-surface-activity-context";
 
 type ChatSearchParams = {
   activeChannelType: ChatChannelType;
@@ -28,8 +29,11 @@ type ChatSearchFetcherError = {
   message?: unknown;
 };
 
-async function fetchSearchResults(url: string): Promise<ChatSearchResponse> {
-  const response = await fetch(url);
+async function fetchSearchResults(
+  url: string,
+  signal?: AbortSignal,
+): Promise<ChatSearchResponse> {
+  const response = await fetch(url, { signal });
   const payload = (await response.json().catch(() => ({}))) as
     | ChatSearchResponse
     | ChatSearchFetcherError;
@@ -92,6 +96,7 @@ function buildSearchPageKey(
 }
 
 export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) {
+  const surfaceActive = useChatSurfaceActivity();
   const [debouncedQuery, setDebouncedQuery] = useState(() => normalizeChatSearchQuery(params.query));
   const [continuation, setContinuation] = useState<{
     searchKey: string | null;
@@ -109,6 +114,7 @@ export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) 
     loadMoreError: null,
   });
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const searchAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -119,7 +125,7 @@ export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) 
 
   const searchKey = useMemo(
     () =>
-      params.enabled === false
+      params.enabled === false || !surfaceActive
         ? null
         : buildChatSearchKey({
             activeChannelType: params.activeChannelType,
@@ -136,13 +142,42 @@ export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) 
       params.effectiveZone,
       params.enabled,
       params.selectedRecipientId,
+      surfaceActive,
       params.territoryFocus,
     ],
   );
+  const searchFetcher = useCallback(async (url: string) => {
+    searchAbortRef.current?.abort();
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+
+    try {
+      return await fetchSearchResults(url, controller.signal);
+    } finally {
+      if (searchAbortRef.current === controller) {
+        searchAbortRef.current = null;
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (searchKey) {
+      return;
+    }
+
+    searchAbortRef.current?.abort();
+  }, [searchKey]);
+
+  useEffect(() => () => searchAbortRef.current?.abort(), []);
+
   const { data, error, isLoading } = useSWR<ChatSearchResponse>(
     searchKey,
-    fetchSearchResults,
-    { revalidateOnFocus: false, revalidateOnReconnect: false },
+    searchFetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 30_000,
+    },
   );
 
   const continuationIsCurrent =
@@ -179,7 +214,7 @@ export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) 
       loadMoreError: null,
     }));
     try {
-      const nextPage = await fetchSearchResults(
+      const nextPage = await searchFetcher(
         buildSearchPageKey(searchKey, pagination.nextCursor),
       );
       setContinuation((current) => {
@@ -213,7 +248,7 @@ export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) 
     } finally {
       setIsLoadingMore(false);
     }
-  }, [continuationIsCurrent, data, isLoadingMore, pagination, searchKey]);
+  }, [continuationIsCurrent, data, isLoadingMore, pagination, searchFetcher, searchKey]);
 
   return {
     results: [...(data?.results ?? []), ...extraResults],

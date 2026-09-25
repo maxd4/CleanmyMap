@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useDeferredValue, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getChatFeedState, type ChatFeedState } from "../chat-feed-state";
+import { useChatSurfaceActivity } from "../chat-surface-activity-context";
+import { fetchChatJson, useChatUserSearch, useDebouncedChatQuery } from "./use-chat-user-search";
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicId } from "@/lib/chat/topics";
 import type { ChatMessageKind } from "@/lib/chat/announcements";
@@ -14,7 +16,6 @@ import type {
   ChatMessagesResponse,
   ChatMessage,
   ChatUser,
-  ChatUsersResponse,
 } from "../chat-types";
 import { sortByCreatedAtAsc } from "@/lib/chat/postgrest";
 import type { ChatHistoryCursor } from "@/lib/chat/chat-pagination";
@@ -33,6 +34,7 @@ type UseChatDataParams = {
   currentUserId?: string;
   canAccessProtectedChat?: boolean;
   supabase?: SupabaseClient | null;
+  surfaceActive?: boolean;
 };
 
 export type SendChatMessageParams = {
@@ -55,11 +57,6 @@ export type SendChatMessageParams = {
   };
 };
 
-type FetcherErrorPayload = {
-  hint?: unknown;
-  message?: unknown;
-};
-
 type ChatMessageChange = {
   channel_type?: string;
   sender_id?: string;
@@ -76,6 +73,7 @@ type ChatRefreshContext = {
   realtimeEnabled: boolean;
   isVisible: boolean;
   isOnline: boolean;
+  surfaceActive?: boolean;
 };
 
 const CHAT_REFRESH_INTERVALS_MS: Record<
@@ -98,31 +96,15 @@ export function getChatRefreshIntervalMs({
   realtimeEnabled,
   isVisible,
   isOnline,
+  surfaceActive = true,
 }: ChatRefreshContext): number {
-  if (!isOnline || !isVisible) {
+  if (!surfaceActive || !isOnline || !isVisible) {
     return 0;
   }
 
   const interval = CHAT_REFRESH_INTERVALS_MS[activeChannelType];
   return realtimeEnabled ? interval.realtime : interval.fallback;
 }
-
-const fetcher = async <T>(url: string): Promise<T> => {
-  const response = await fetch(url);
-  const payload = (await response.json().catch(() => ({}))) as FetcherErrorPayload;
-
-  if (!response.ok) {
-    const message =
-      typeof payload.hint === "string"
-        ? payload.hint
-        : typeof payload.message === "string"
-          ? payload.message
-          : "Le service de discussion est momentanément indisponible. Nous tentons de rétablir la connexion.";
-    throw new Error(message);
-  }
-
-  return payload as T;
-};
 
 export function buildMessagesKey({
   activeChannelType,
@@ -206,7 +188,10 @@ export function useChatData({
   currentUserId,
   canAccessProtectedChat = Boolean(currentUserId),
   supabase,
+  surfaceActive: requestedSurfaceActive = true,
 }: UseChatDataParams) {
+  const contextSurfaceActive = useChatSurfaceActivity();
+  const surfaceActive = requestedSurfaceActive && contextSurfaceActive;
   const [isPageVisible, setIsPageVisible] = useState(() =>
     typeof document === "undefined" ? true : document.visibilityState !== "hidden",
   );
@@ -215,9 +200,9 @@ export function useChatData({
   );
   const realtimeEnabled = isChatRealtimeEnabled();
   const canQueryProtectedChat = canAccessProtectedChat && Boolean(currentUserId);
-  const deferredMentionQuery = useDeferredValue(mentionQuery.trim());
-  const deferredRecipientQuery = useDeferredValue(recipientQuery.trim());
-  const messagesKey = canQueryProtectedChat
+  const deferredMentionQuery = useDebouncedChatQuery(mentionQuery);
+  const deferredRecipientQuery = useDebouncedChatQuery(recipientQuery);
+  const messagesKey = surfaceActive && canQueryProtectedChat
     ? buildMessagesKey({
         activeChannelType,
         activeActionId,
@@ -230,6 +215,7 @@ export function useChatData({
     : null;
 
   const mentionUsersKey =
+    surfaceActive &&
     canQueryProtectedChat &&
     showMentions &&
     deferredMentionQuery.length >= 2
@@ -237,6 +223,7 @@ export function useChatData({
       : null;
 
   const dmUsersKey =
+    surfaceActive &&
     canQueryProtectedChat &&
     activeChannelType === "dm"
       ? `/api/chat/users${
@@ -246,15 +233,17 @@ export function useChatData({
         }`
       : null;
 
-  const { data: mentionUsersData } = useSWR<ChatUsersResponse>(mentionUsersKey, fetcher);
-  const { data: dmUsersData } = useSWR<ChatUsersResponse>(dmUsersKey, fetcher);
+  const { mentionUsersData, dmUsersData } = useChatUserSearch({
+    mentionUsersKey,
+    dmUsersKey,
+  });
 
   const {
     data: messagesData,
     error: messagesError,
     isLoading,
     mutate: mutateMessages,
-  } = useSWR<ChatMessagesResponse>(messagesKey, fetcher, {
+  } = useSWR<ChatMessagesResponse>(messagesKey, fetchChatJson, {
     // Historical pages are merged explicitly; SWR must not replace them with the recent page.
     refreshWhenHidden: false,
     refreshWhenOffline: false,
@@ -273,7 +262,7 @@ export function useChatData({
       return;
     }
 
-    const recentData = await fetcher<ChatMessagesResponse>(
+    const recentData = await fetchChatJson<ChatMessagesResponse>(
       getRecentMessagesKey(messagesKey),
     );
     await mutateMessages(
@@ -350,6 +339,7 @@ export function useChatData({
       realtimeEnabled,
       isVisible: isPageVisible,
       isOnline,
+      surfaceActive,
     });
     const intervalId = refreshInterval
       // Vercel/polling justification: ce rafraîchissement borné sert de fallback au realtime ; il est désactivé hors ligne ou lorsque la page est masquée.
@@ -375,6 +365,7 @@ export function useChatData({
     messagesKey,
     realtimeEnabled,
     scheduleMessagesRefresh,
+    surfaceActive,
   ]);
 
   // Real-time subscription
@@ -481,7 +472,7 @@ export function useChatData({
       const url = new URL(getRecentMessagesKey(messagesKey), "http://chat.local");
       url.searchParams.set("beforeCreatedAt", cursor.createdAt);
       url.searchParams.set("beforeId", cursor.id);
-      const olderData = await fetcher<ChatMessagesResponse>(
+      const olderData = await fetchChatJson<ChatMessagesResponse>(
         `${url.pathname}${url.search}`,
       );
       await mutateMessages(
@@ -593,6 +584,6 @@ export function useChatData({
     mentionSuggestions,
     dmSuggestions,
     sendChatMessage,
-    isLive: !!supabase && canQueryProtectedChat && realtimeEnabled,
+    isLive: surfaceActive && !!supabase && canQueryProtectedChat && realtimeEnabled,
   };
 }

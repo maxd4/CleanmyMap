@@ -1,7 +1,19 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
 import { buildMessagesKey, getChatRefreshIntervalMs } from "./use-chat-data";
 
+const chatUserSearchSource = readFileSync(
+  new URL("./use-chat-user-search.ts", import.meta.url),
+  "utf8",
+);
+
 describe("getChatRefreshIntervalMs", () => {
+  it("debounces and aborts stale user searches with a short SWR cache", () => {
+    expect(chatUserSearchSource).toContain("CHAT_USER_QUERY_DEBOUNCE_MS = 250");
+    expect(chatUserSearchSource).toContain("new AbortController()");
+    expect(chatUserSearchSource).toContain("dedupingInterval: 30_000");
+  });
+
   it("pauses polling when the page is hidden or offline", () => {
     expect(
       getChatRefreshIntervalMs({
@@ -18,6 +30,16 @@ describe("getChatRefreshIntervalMs", () => {
         realtimeEnabled: false,
         isVisible: true,
         isOnline: false,
+      }),
+    ).toBe(0);
+
+    expect(
+      getChatRefreshIntervalMs({
+        activeChannelType: "community",
+        realtimeEnabled: true,
+        isVisible: true,
+        isOnline: true,
+        surfaceActive: false,
       }),
     ).toBe(0);
   });

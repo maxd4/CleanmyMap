@@ -6,6 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isChatRealtimeEnabled } from "@/lib/chat/chat-config";
 import { readAppErrorResponse } from "@/lib/errors/app-errors";
 import type { DmInboxResponse } from "../chat-types";
+import { useChatSurfaceActivity } from "../chat-surface-activity-context";
 
 type DmInboxParams = {
   enabled: boolean;
@@ -25,7 +26,8 @@ const fetchInbox = async (url: string): Promise<DmInboxResponse> => {
 };
 
 export function useDmInbox({ enabled, currentUserId, supabase }: DmInboxParams) {
-  const key = enabled && currentUserId ? "/api/chat/inbox" : null;
+  const surfaceActive = useChatSurfaceActivity();
+  const key = enabled && surfaceActive && currentUserId ? "/api/chat/inbox" : null;
   const realtimeEnabled = isChatRealtimeEnabled();
   const { data, error, isLoading, mutate } = useSWR<DmInboxResponse>(key, fetchInbox, {
     refreshWhenHidden: false,
@@ -38,7 +40,7 @@ export function useDmInbox({ enabled, currentUserId, supabase }: DmInboxParams) 
   const refreshInbox = useCallback(() => mutate(), [mutate]);
 
   useEffect(() => {
-    if (!supabase || !enabled || !currentUserId || !realtimeEnabled) {
+    if (!supabase || !enabled || !surfaceActive || !currentUserId || !realtimeEnabled) {
       return;
     }
 
@@ -70,7 +72,7 @@ export function useDmInbox({ enabled, currentUserId, supabase }: DmInboxParams) 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUserId, enabled, realtimeEnabled, refreshInbox, supabase]);
+  }, [currentUserId, enabled, realtimeEnabled, refreshInbox, surfaceActive, supabase]);
 
   const markConversationRead = useCallback(
     async (peerId: string) => {

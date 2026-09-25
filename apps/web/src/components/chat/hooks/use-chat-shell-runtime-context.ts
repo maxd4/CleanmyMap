@@ -14,6 +14,7 @@ import {
 import { buildClerkSupabaseAccessTokenProvider } from "@/lib/clerk-supabase-token";
 import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useChatSurfaceActivity } from "../chat-surface-activity-context";
 
 import {
   getClerkArrondissement,
@@ -24,15 +25,18 @@ import {
 type UseChatShellRuntimeContextParams = {
   selectedZone: string;
   initialArrondissement?: number | null;
+  enabled?: boolean;
 };
 
 export function useChatShellRuntimeContext({
   selectedZone,
   initialArrondissement,
+  enabled = true,
 }: UseChatShellRuntimeContextParams) {
   const { getToken, isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const userId = user?.id;
+  const surfaceActive = useChatSurfaceActivity();
 
   const supabase = useMemo(() => {
     try {
@@ -45,7 +49,7 @@ export function useChatShellRuntimeContext({
   }, [getToken]);
 
   const { data: currentAccountIdentity = null } = useSWR<CurrentAccountIdentity | null>(
-    userId ? ["current-account-identity", userId] : null,
+    enabled && surfaceActive && userId ? ["current-account-identity", userId] : null,
     fetchCurrentAccountIdentity,
   );
 

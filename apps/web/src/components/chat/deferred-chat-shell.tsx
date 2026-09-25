@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { MessageSquare } from "lucide-react";
 import { useInViewOnce } from "@/components/ui/use-in-view-once";
 import type { ChatShellProps } from "@/components/chat/chat-shell";
+import { ChatSurfaceActivityProvider } from "@/components/chat/chat-surface-activity-context";
 
 function ChatDeferredState({ fullHeight }: { fullHeight: boolean }) {
   return (
@@ -31,7 +32,7 @@ const DeferredChatShellComponent = dynamic(
   },
 );
 
-export function DeferredChatShell(props: ChatShellProps) {
+export function DeferredChatShell({ surfaceActive = true, ...props }: ChatShellProps & { surfaceActive?: boolean }) {
   const { ref, isInView } = useInViewOnce<HTMLDivElement>({
     rootMargin: "260px 0px",
   });
@@ -39,7 +40,9 @@ export function DeferredChatShell(props: ChatShellProps) {
   return (
     <div ref={ref} className={props.fullHeight ? "h-full min-h-0" : "min-h-[750px]"}>
       {isInView ? (
-        <DeferredChatShellComponent {...props} />
+        <ChatSurfaceActivityProvider active={surfaceActive}>
+          <DeferredChatShellComponent {...props} />
+        </ChatSurfaceActivityProvider>
       ) : (
         <ChatDeferredState fullHeight={props.fullHeight ?? false} />
       )}

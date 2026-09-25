@@ -10,6 +10,7 @@ import {
 } from "@/lib/chat/chat-notification-unreads";
 import type { ChatTopicId } from "@/lib/chat/topics";
 import { isChatRealtimeEnabled } from "@/lib/chat/chat-config";
+import { useChatSurfaceActivity } from "../chat-surface-activity-context";
 
 export type ChatNotificationReadScope =
   | {
@@ -36,7 +37,8 @@ export function useChatNotificationUnreads({
   currentUserId,
   supabase,
 }: UseChatNotificationUnreadsParams) {
-  const key = enabled && currentUserId && supabase
+  const surfaceActive = useChatSurfaceActivity();
+  const key = enabled && surfaceActive && currentUserId && supabase
     ? ["chat-notification-unreads", currentUserId]
     : null;
   const emptyCounts = useMemo(() => createEmptyChatNotificationUnreadCounts(), []);

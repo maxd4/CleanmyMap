@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import useSWR from "swr";
 import { useUser } from "@clerk/nextjs";
 import {
@@ -10,7 +10,6 @@ import {
 import { FRANCE_TERRITORY_CENTER } from "@/lib/geo/territory";
 import {
   getLocalGeoAddressSuggestions,
-  mergeGeoAddressSuggestions,
   type GeoAddressSuggestion,
 } from "@/lib/geo/address-suggestions";
 import { extractTerritoryLocationPreferenceFromMetadata } from "@/lib/user-location-preference";
@@ -22,6 +21,7 @@ import {
   readStoredWeatherLocation,
   storeWeatherLocation,
 } from "./weather-location-storage";
+import { useWeatherLocationSuggestions } from "./use-weather-location-suggestions";
 import type {
   WeatherDataStatus,
   WeatherLocation,
@@ -174,49 +174,8 @@ export function useWeatherData(
   const draftLocationRef = useRef<string | null>(null);
   const draftLocationLabel = draftContext?.locationLabel?.trim() ?? "";
   const draftActionDate = draftContext?.actionDate?.trim() ?? "";
-
-  const deferredLocationQuery = useDeferredValue(locationQuery.trim());
-
-  const locationSuggestions = useSWR(
-    deferredLocationQuery.length >= 3
-      ? ["section-weather-location-suggestions", deferredLocationQuery]
-      : null,
-    async () => {
-      const localSuggestions = getLocalGeoAddressSuggestions(deferredLocationQuery, 6);
-      if (localSuggestions.length >= 6) {
-        return { status: "ok", query: deferredLocationQuery, items: localSuggestions };
-      }
-
-      try {
-        const response = await fetch(
-          `/api/geo/address-suggestions?q=${encodeURIComponent(deferredLocationQuery)}&limit=6`,
-          {
-            method: "GET",
-            headers: { Accept: "application/json" },
-            cache: "no-store",
-            signal: AbortSignal.timeout(8_000),
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error("location_suggestions_unavailable");
-        }
-
-        const remote = (await response.json()) as AddressSuggestionsResponse;
-        return {
-          ...remote,
-          items: mergeGeoAddressSuggestions(localSuggestions, remote.items ?? [], 6),
-        };
-      } catch (error) {
-        if (localSuggestions.length > 0) {
-          return { status: "ok", query: deferredLocationQuery, items: localSuggestions };
-        }
-        throw error;
-      }
-    },
-    { ...swrRecentViewOptions, keepPreviousData: false },
-  );
-  const locationSuggestionsError = locationSuggestions.error ? "location_suggestions_unavailable" : null;
+  const { locationSuggestions, locationSuggestionsError } =
+    useWeatherLocationSuggestions(locationQuery);
 
   const { data, isLoading, error } = useSWR(
     ["section-weather-location", selectedLocation.latitude, selectedLocation.longitude],

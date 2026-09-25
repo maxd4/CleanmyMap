@@ -15,11 +15,3 @@ export const swrSupervisionOptions: SWRConfiguration = {
   ...swrRecentViewOptions,
   dedupingInterval: 300_000,
 };
-
-export const swrLiveFeedOptions: SWRConfiguration = {
-  ...swrRecentViewOptions,
-  revalidateOnFocus: true,
-  refreshWhenHidden: false,
-  refreshWhenOffline: false,
-  refreshInterval: 300_000, // Live feeds stay warm without retrying every couple of minutes.
-};
