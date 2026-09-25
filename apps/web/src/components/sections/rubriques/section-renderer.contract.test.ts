@@ -15,15 +15,16 @@ describe("composed Climate heading contract", () => {
     expect(compare).toContain('headingLevel="h2"');
   });
 
-  it("keeps Open Data primary and Funding secondary when composed", () => {
+  it("keeps Open Data primary and links to the dedicated Funding page", () => {
     const renderer = read("./section-renderer.tsx");
     const openData = read("./open-data-section.tsx");
     const funding = read("./funding-section.tsx");
 
     expect(renderer).toContain("<OpenDataSection />");
-    expect(renderer).toContain(
-      '<FundingSection onParticipeUrl={fundingOnParticipeUrl} headingLevel="h2" />',
-    );
+    const openDataRenderer = renderer.match(/"open-data": \(\) => \([\s\S]*?\n  \),\n  funding:/)?.[0] ?? "";
+    expect(openDataRenderer).toContain("<OpenDataFundingLink />");
+    expect(openDataRenderer).not.toContain("<FundingSection");
+    expect(renderer).toContain('href="/sections/funding"');
     expect(renderer).toContain(
       "funding: (fundingOnParticipeUrl?: string) => (\n    <FundingSection onParticipeUrl={fundingOnParticipeUrl} />",
     );

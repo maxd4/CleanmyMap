@@ -6,9 +6,10 @@ La page `Données publiques` est une page publique de présentation, disponible
 sur `/sections/open-data`. L’alias `/open-data` redirige vers cette surface
 canonique.
 
-Elle présente les possibilités de consultation et de réutilisation des données
-CleanMyMap. Elle ne constitue pas une page d’export autonome et ne promet pas
-une fonctionnalité qui n’est pas rendue par le runtime.
+Elle présente la projection publique des actions approuvées et cartographiées
+de CleanMyMap via l’API JSON. Elle ne constitue pas une page d’export autonome,
+ne promet pas de donnée personnelle et ne promet pas une fonctionnalité qui
+n’est pas rendue par le runtime.
 
 ## Consultation de l’API publique
 
@@ -16,26 +17,26 @@ La page permet d’ouvrir l’endpoint public suivant :
 
 `GET /api/actions/map`
 
-Cet endpoint est consultable en JSON et expose les actions cartographiées selon
-les paramètres publics pris en charge par la route. Le bouton de la page ouvre
-cette réponse JSON ; il ne déclenche pas un export CSV ni un autre téléchargement
-depuis la page de présentation.
+Cet endpoint est consultable en JSON et expose une projection publique des
+actions approuvées et cartographiées selon les paramètres publics pris en
+charge par la route. Le bouton de la page ouvre cette réponse JSON ; il ne
+déclenche pas un téléchargement depuis la page de présentation.
 
 CleanMyMap n’expose actuellement aucun Swagger ni document OpenAPI public pour
 cette API.
 
-## Formats et exports disponibles
+## Projection publique disponible
 
-Les formats réellement disponibles dans CleanMyMap sont :
+La donnée présentée sur cette page est une projection JSON publique des actions
+approuvées et cartographiées via `/api/actions/map`. Les éventuelles surfaces
+privées de rapport ou d’export restent hors du contrat Open Data et ne doivent
+pas être présentées comme publiques depuis cette page.
 
-- JSON, notamment via l’API publique `/api/actions/map` ;
-- JSON et CSV via les surfaces de rapports qui implémentent ces exports, avec
-  leurs propres règles d’accès et de disponibilité.
+## Financement
 
-La consultation de l’API publique et l’accès aux exports de rapports sont deux
-usages distincts. Les formats ou exports disponibles ailleurs ne doivent pas
-être présentés comme un téléchargement déclenché directement depuis la page
-`Données publiques`.
+La page Open Data renvoie vers `/sections/funding` pour le détail des besoins,
+contributions et usages du financement. Elle ne reprend pas le contenu complet
+de cette page dédiée.
 
 ## Présentation visuelle
 
@@ -46,9 +47,11 @@ présentation publique, lisible et orientée vers la réutilisation.
 ## Limites à préserver
 
 - ne pas inventer de CTA d’export sur cette page ;
+- ne pas promettre de donnée personnelle ni d’export privé dans la projection
+  publique ;
 - ne pas présenter l’API publique comme une documentation Swagger/OpenAPI ;
-- ne pas confondre consultation JSON et exports JSON/CSV des surfaces de
-  rapports ;
+- ne pas confondre la consultation JSON publique avec les surfaces privées de
+  rapport ;
 - conserver la distinction entre la présentation publique et les règles
   d’accès propres aux endpoints d’export.
 

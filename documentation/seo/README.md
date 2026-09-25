@@ -64,9 +64,10 @@ export const metadata: Metadata = {
    contenu utile existent dans le HTML rendu, et qu’un lien interne permet sa
    découverte lorsque c’est pertinent.
 5. **Schema JSON-LD** - N’en rendre un que si la page expose réellement le même
-   contenu. Les schemas globaux actuellement rendus sont `OrganizationJsonLd`
-   et `WebSiteJsonLd`; une FAQ JSON-LD nécessite une FAQ visible avec les mêmes
-   questions et réponses.
+   contenu. Le seul schema global actuellement rendu est `WebSiteJsonLd`;
+   aucune identité juridique `Organization` n’est rendue tant que CleanMyMap
+   est édité par une personne physique. Une FAQ JSON-LD nécessite une FAQ
+   visible avec les mêmes questions et réponses.
 
 6. **Tests et publication** - Ajouter ou adapter les tests d’indexabilité,
    sitemap et metadata, puis après publication d’une page stratégique prévoir
@@ -135,7 +136,9 @@ automatique de `metadata.keywords`.
 
 ### Schemas rendus actuellement
 
-- `OrganizationJsonLd` et `WebSiteJsonLd` sont rendus dans le layout racine.
+- `WebSiteJsonLd` est rendu dans le layout racine.
+- `OrganizationJsonLd` n’est pas rendu globalement ; aucun schema `Person`,
+  `LocalBusiness`, FAQ, HowTo, Article, Review ou Event ne le remplace.
 - Les autres helpers présents dans le code ne sont pas rendus actuellement et
   ne prouvent pas l'existence d'une FAQ, d'un avis, d'un événement, d'un
   article ou d'une vidéo publiés. Les relier à une page exige une source de

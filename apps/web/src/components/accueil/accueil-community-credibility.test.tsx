@@ -61,6 +61,8 @@ describe("HomeCommunityCredibility action hierarchy", () => {
     expect(markup.match(/data-credibility-ecosystem-step/g)).toHaveLength(4);
     expect(markup).toContain("Des partenariats progressifs");
     expect(markup).toContain("Le terrain nourrit la carte");
+    expect(markup).toContain('href="/methodologie#indicateurs-impact-terrain"');
+    expect(markup).toContain('href="https://github.com/maxd4/CleanMyMap"');
     expect(markup).not.toContain("Étapes de construction de l'écosystème");
   });
 

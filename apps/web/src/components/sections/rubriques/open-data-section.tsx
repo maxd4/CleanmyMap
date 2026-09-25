@@ -39,9 +39,9 @@ const FEATURE_CARDS: FeatureCard[] = [
     anchor: "formats",
     title: { fr: "Formats d'échange", en: "Exchange formats" },
     items: [
-      { fr: "Exports JSON/CSV auditables", en: "Auditable JSON/CSV exports" },
-      { fr: "Données géolocalisées", en: "Geolocated data" },
-      { fr: "Métadonnées de version", en: "Version metadata" },
+      { fr: "Projection publique en JSON", en: "Public JSON projection" },
+      { fr: "Actions approuvées", en: "Approved actions" },
+      { fr: "Filtres publics documentés", en: "Documented public filters" },
     ],
   },
   {
@@ -49,9 +49,9 @@ const FEATURE_CARDS: FeatureCard[] = [
     anchor: "acces-chercheurs",
     title: { fr: "Accès chercheurs", en: "Research access" },
     items: [
-      { fr: "API cartographiée en temps réel", en: "Real-time mapping API" },
-      { fr: "Indicateurs d'impact", en: "Impact indicators" },
-      { fr: "Historique utilisateur", en: "User history trends" },
+      { fr: "API JSON publique", en: "Public JSON API" },
+      { fr: "Actions approuvées et cartographiées", en: "Approved mapped actions" },
+      { fr: "Réutilisation des données publiques", en: "Public data reuse" },
     ],
   },
   {
@@ -149,8 +149,8 @@ export function OpenDataSection() {
               }
               subtitle={
                 fr
-                  ? "Accédez aux données opérationnelles et indicateurs d'impact pour la recherche et l'innovation."
-                  : "Access operational data and impact indicators for research and innovation."
+                  ? "Consultez la projection publique des actions approuvées et cartographiées via l’API JSON."
+                  : "Consult the public projection of approved mapped actions through the JSON API."
               }
             />
           </div>
@@ -167,12 +167,12 @@ export function OpenDataSection() {
                 <ShieldCheck size={28} />
               </div>
               <h2 className="max-w-lg text-[1.6rem] font-black leading-tight tracking-[-0.04em] text-[#2f1a78]">
-                {fr ? "Transparence totale" : "Total transparency"}
+                {fr ? "Projection publique" : "Public projection"}
               </h2>
               <p className="max-w-xl text-[0.98rem] leading-[1.7] text-slate-600">
                 {fr
-                  ? "Données ouvertes par défaut. API, export JSON et cadre réutilisable pour chercheurs et collectivités."
-                  : "Open data by default. API access, JSON exports and a reusable framework for researchers and cities."}
+                  ? "L’API JSON publique expose une projection des actions approuvées et cartographiées pour consultation et réutilisation."
+                  : "The public JSON API exposes a projection of approved mapped actions for consultation and reuse."}
               </p>
             </div>
           </div>
@@ -222,8 +222,8 @@ export function OpenDataSection() {
               </h3>
               <p className="max-w-2xl text-[0.96rem] leading-[1.7] text-slate-600">
                 {fr
-                  ? "L’API publique expose les actions cartographiées au format JSON. Les formats JSON/CSV disponibles facilitent l’analyse et la réutilisation des données."
-                  : "The public API exposes mapped actions in JSON. Available JSON/CSV formats support data analysis and reuse."}
+                  ? "L’API JSON publique expose une projection des actions approuvées et cartographiées. Elle est destinée à la consultation et à la réutilisation des données publiques."
+                  : "The public JSON API exposes a projection of approved mapped actions for public consultation and reuse."}
               </p>
             </div>
           </div>

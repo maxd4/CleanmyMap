@@ -61,6 +61,9 @@ describe("QuizSchoolKitPage", () => {
     expect(markup).toContain("Formats : quiz 30 min · atelier 60 min");
     expect(markup).not.toContain("Élèves de 4e et 3e.");
     expect(markup).toContain('href="/learn/sentrainer?mode=demo"');
+    expect(markup).toContain('href="/learn/bonnes-pratiques"');
+    expect(markup).toContain("Retour aux bonnes pratiques");
+    expect(markup).not.toContain("/learn/ressources");
     expect(markup.indexOf("Lancement immédiat")).toBeLessThan(markup.indexOf("Fiche enseignant"));
     expect(markup.indexOf("Repères de séance")).toBeLessThan(markup.indexOf("Public visé"));
     expect(markup.indexOf("Fiche enseignant")).toBeLessThan(markup.indexOf("Public visé"));
