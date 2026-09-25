@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 import {
   PRIVATE_APP_ROUTE_PREFIXES,
   PUBLIC_APP_SITEMAP_PATHS,
@@ -89,5 +90,26 @@ describe("security indexation invariants", () => {
     for (const route of getPublicNoindexSectionRoutes()) {
       expect(disallowed).not.toContain(route);
     }
+  });
+
+  it("blocks the observed training crawler without changing SEO crawler access", () => {
+    const rules = (Array.isArray(robots().rules)
+      ? robots().rules
+      : [robots().rules]) as Array<{
+      userAgent?: string | string[];
+      allow?: string | string[];
+      disallow?: string | string[];
+    }>;
+    const ruleFor = (userAgent: string) =>
+      rules.find(
+        (rule) => !Array.isArray(rule.userAgent) && rule.userAgent === userAgent,
+      );
+    const values = (value: string | string[] | undefined) =>
+      Array.isArray(value) ? value : value ? [value] : [];
+
+    expect(values(ruleFor("ClaudeBot")?.disallow)).toContain("/");
+    expect(values(ruleFor("Google-Extended")?.allow)).toContain("/");
+    expect(values(ruleFor("BingBot")?.allow)).toContain("/");
+    expect(values(ruleFor("ChatGPT-User")?.allow)).toContain(EXPLORER_ROUTE);
   });
 });
