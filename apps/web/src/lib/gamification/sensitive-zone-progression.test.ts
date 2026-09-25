@@ -10,7 +10,10 @@ import {
 } from "./sensitive-zone-progression-store";
 import { SENSITIVE_ZONE_RULE_VERSION } from "./sensitive-zone-qualification";
 
-function buildAction(id: string, status: "approved" | "rejected" = "approved") {
+function buildAction(
+  id: string,
+  status: "approved" | "rejected" | "cancelled" = "approved",
+) {
   return {
     id,
     location_label: "Lyon 10e - Rue A",
@@ -218,45 +221,48 @@ describe("sensitive zone progression", () => {
     expect(replayWrites).toEqual([]);
   });
 
-  it("deletes the proof and now-ineligible milestone after rejection", async () => {
-    const deleted: Array<{ table: string; sourceIds: string[] }> = [];
-    const supabase = {
-      from(table: string) {
-        const query = {
-          delete() {
-            return query;
-          },
-          eq() {
-            return query;
-          },
-          in(_column: string, sourceIds: string[]) {
-            deleted.push({ table, sourceIds });
-            return query;
-          },
-        };
-        return query;
-      },
-    } as unknown as SupabaseClient;
-
-    await syncSensitiveZoneProjection({
-      supabase,
-      userId: "user-1",
-      actions: [buildAction("action-1", "rejected")],
-      validatedActionIds: new Set(),
-      options: {
-        projectionState: {
-          qualifications: [buildQualification("action-1", true)],
-          milestoneThresholds: [1],
+  it.each(["rejected", "cancelled"] as const)(
+    "deletes the proof and now-ineligible milestone after %s",
+    async (status) => {
+      const deleted: Array<{ table: string; sourceIds: string[] }> = [];
+      const supabase = {
+        from(table: string) {
+          const query = {
+            delete() {
+              return query;
+            },
+            eq() {
+              return query;
+            },
+            in(_column: string, sourceIds: string[]) {
+              deleted.push({ table, sourceIds });
+              return query;
+            },
+          };
+          return query;
         },
-        sensitiveAreas: ["10e"],
-        assessedAt: "2026-06-03T12:00:00.000Z",
-      },
-      writeEvent: async () => true,
-    });
+      } as unknown as SupabaseClient;
 
-    expect(deleted).toEqual([
-      { table: "progression_events", sourceIds: ["action-1"] },
-      { table: "progression_events", sourceIds: ["sensitive-zone:threshold:1"] },
-    ]);
-  });
+      await syncSensitiveZoneProjection({
+        supabase,
+        userId: "user-1",
+        actions: [buildAction("action-1", status)],
+        validatedActionIds: new Set(),
+        options: {
+          projectionState: {
+            qualifications: [buildQualification("action-1", true)],
+            milestoneThresholds: [1],
+          },
+          sensitiveAreas: ["10e"],
+          assessedAt: "2026-06-03T12:00:00.000Z",
+        },
+        writeEvent: async () => true,
+      });
+
+      expect(deleted).toEqual([
+        { table: "progression_events", sourceIds: ["action-1"] },
+        { table: "progression_events", sourceIds: ["sensitive-zone:threshold:1"] },
+      ]);
+    },
+  );
 });
