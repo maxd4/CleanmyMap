@@ -37,6 +37,10 @@ Le code et les tests priment si une divergence apparaît.
   CURRENT ne les appelle ; leur retrait relève d'une décision de compatibilité
   séparée et le script reste un outil de réparation historique.
 - les sources métier restent propriétaires de leurs données ; le journal XP ne remplace jamais la source métier.
+- la métrique `Zone sensible apaisée` reste hors des sept progressions infinies :
+  sa qualification est figée à la validation dans `progression_events`, puis
+  ses seuils gemme sont projetés par des événements idempotents `+1 XP`;
+  l'état courant d'une zone ne révoque jamais cette preuve historique.
 - les GET, loaders de page et lectures de profil sont read-only ; les
   attributions de progression sont déclenchées par une mutation métier ou par
   le rebuild serveur explicite `rebuildUserGamificationBadges`.

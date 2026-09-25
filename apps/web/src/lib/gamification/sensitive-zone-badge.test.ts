@@ -4,6 +4,7 @@ import {
   computeSensitiveZoneApaisementSummary,
   deriveSensitiveAreasFromContracts,
 } from "./sensitive-zone-badge";
+import { SENSITIVE_ZONE_RULE_VERSION } from "./sensitive-zone-qualification";
 
 function buildContract(params: {
   id: string;
@@ -65,35 +66,48 @@ describe("deriveSensitiveAreasFromContracts", () => {
 describe("computeSensitiveZoneApaisementSummary", () => {
   it("counts only validated approved actions in sensitive zones and advances by gem thresholds", () => {
     const summary = computeSensitiveZoneApaisementSummary({
-      rows: [
+      qualifications: [
         {
-          id: "action-1",
-          location_label: "Lyon 10e - Rue A",
-          status: "approved",
+          actionId: "action-1",
+          qualified: true,
+          area: "10e",
+          ruleVersion: SENSITIVE_ZONE_RULE_VERSION,
+          assessedAt: "2026-01-01T00:00:00.000Z",
+          actionDate: "2026-01-01",
         },
         {
-          id: "action-2",
-          location_label: "Lyon 10e - Rue B",
-          status: "approved",
+          actionId: "action-2",
+          qualified: true,
+          area: "10e",
+          ruleVersion: SENSITIVE_ZONE_RULE_VERSION,
+          assessedAt: "2026-01-01T00:00:00.000Z",
+          actionDate: "2026-01-02",
         },
         {
-          id: "action-3",
-          location_label: "Lyon 10e - Rue C",
-          status: "approved",
+          actionId: "action-3",
+          qualified: true,
+          area: "10e",
+          ruleVersion: SENSITIVE_ZONE_RULE_VERSION,
+          assessedAt: "2026-01-01T00:00:00.000Z",
+          actionDate: "2026-01-03",
         },
         {
-          id: "action-4",
-          location_label: "Lyon 11e - Rue D",
-          status: "approved",
+          actionId: "action-4",
+          qualified: false,
+          area: "11e",
+          ruleVersion: SENSITIVE_ZONE_RULE_VERSION,
+          assessedAt: "2026-01-01T00:00:00.000Z",
+          actionDate: "2026-01-04",
         },
         {
-          id: "action-5",
-          location_label: "Lyon 10e - Rue E",
-          status: "rejected",
+          actionId: "action-5",
+          qualified: false,
+          area: "10e",
+          ruleVersion: SENSITIVE_ZONE_RULE_VERSION,
+          assessedAt: "2026-01-01T00:00:00.000Z",
+          actionDate: "2026-01-05",
         },
       ],
-      validatedActionIds: new Set(["action-1", "action-2", "action-3", "action-4"]),
-      sensitiveAreas: ["10e"],
     });
 
     expect(summary.eligibleValidatedActions).toBe(3);

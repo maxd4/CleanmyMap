@@ -203,7 +203,11 @@ describe("syncUserActionProgression monthly regularity", () => {
       }),
     } as unknown as SupabaseClient;
 
-    const firstPass = await syncUserActionProgression(supabase, "user-1");
+    const syncOptions = {
+      sensitiveAreas: [],
+      projectionState: { qualifications: [], milestoneThresholds: [] },
+    };
+    const firstPass = await syncUserActionProgression(supabase, "user-1", syncOptions);
     const firstMonthlyEvents = insertedEvents.filter(
       (row) => row["event_type"] === "action_monthly_regularity",
     );
@@ -221,7 +225,7 @@ describe("syncUserActionProgression monthly regularity", () => {
     actions[2] = buildAction("action-mar", "2026-03-10", "rejected");
     insertedEvents.length = 0;
 
-    const secondPass = await syncUserActionProgression(supabase, "user-1");
+    const secondPass = await syncUserActionProgression(supabase, "user-1", syncOptions);
     const secondMonthlyEvents = insertedEvents.filter(
       (row) => row["event_type"] === "action_monthly_regularity",
     );

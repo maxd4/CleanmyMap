@@ -318,19 +318,35 @@ Règles:
 - une action `pending` peut être prise en compte provisoirement, puis retirée rétroactivement si elle finit rejetée;
 - la progression visuelle utilise l échelle gemme.
 
-### Zone sensible apaisée (métrique conservée hors taxonomie CURRENT)
+### Zone sensible apaisée (métrique historique avec preuve figée)
 
 But:
 
-- récompenser les actions validées sur les zones critiques ou historiquement très sales.
+- récompenser les actions validées sur les zones critiques selon la règle CURRENT
+  des zones sensibles.
 
 Règles:
 
-- cette métrique reste lisible pour les usages d'impact et de compatibilité;
-- elle ne constitue pas une huitième progression infinie CURRENT;
-- son éventuel traitement en jalon ou en indicateur dédié relève d'un lot
-  ultérieur;
-- elle ne doit pas créer de solde XP indépendant.
+- elle ne constitue pas une huitième progression infinie CURRENT et ne crée pas
+  de solde XP indépendant;
+- au moment où une action devient validée, le moteur évalue sa zone avec
+  `buildZones` et enregistre dans `progression_events` une preuve stable par
+  action, avec l'identifiant de l'action, la zone, la date de l'action, la
+  date d'évaluation et la version de la règle;
+- la preuve est enregistrée pour une qualification positive comme négative :
+  une zone non sensible au moment de la validation ne pourra pas devenir
+  éligible rétroactivement si son état courant change;
+- « historiquement sensible » signifie donc « sensible au moment de l'action
+  validée », jamais « sensible aujourd'hui »;
+- le calcul du badge lit ces preuves historiques. L'état environnemental
+  courant d'une zone reste une projection distincte et ne révoque pas une
+  contribution acquise;
+- les seuils gemme `1, 3, 5, 8, 10, 15, 20`, puis les paliers de `5`, donnent
+  chacun `+1 XP` via un événement `sensitive_zone_milestone` unique par
+  utilisateur et seuil;
+- une action ne compte qu'une fois. Une réjection ou annulation supprime sa
+  preuve et réconcilie les paliers devenus inatteignables; les rejouements
+  restent idempotents.
 
 ### Inviter un ami
 

@@ -13,6 +13,7 @@ import {
 import {
   cancelFutureAction,
 } from "@/lib/actions/cancellation";
+import { refreshActionImpactProgressionDependents } from "../../../admin/moderation/route.action-progression";
 
 export const runtime = "nodejs";
 // Justification Vercel: l’annulation admin dépend de l’état courant de l’action et de l’utilisateur.
@@ -80,10 +81,16 @@ export async function POST(
   }
 
   try {
-    const result = await cancelFutureAction(getSupabaseAdminClient(), {
+    const supabase = getSupabaseAdminClient();
+    const result = await cancelFutureAction(supabase, {
       actionId,
       actorUserId: access.userId,
       reason: parsed.data.reason ?? null,
+    });
+
+    await refreshActionImpactProgressionDependents(supabase, {
+      actionId,
+      creatorUserId: null,
     });
 
     await appendActionModerationAudit({

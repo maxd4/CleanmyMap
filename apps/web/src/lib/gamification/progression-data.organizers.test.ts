@@ -259,7 +259,10 @@ describe("syncUserActionProgression", () => {
     const { supabase, progressionEventsInserted, pointsInsert, auditInsert } =
       createProgressionDataOrganizersScenario();
 
-    const validatedCount = await syncUserActionProgression(supabase, "user-co");
+    const validatedCount = await syncUserActionProgression(supabase, "user-co", {
+      sensitiveAreas: [],
+      projectionState: { qualifications: [], milestoneThresholds: [] },
+    });
 
     expect(validatedCount).toBe(1);
     const validationEvent = progressionEventsInserted.find(

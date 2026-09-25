@@ -4,11 +4,15 @@ const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const getSupabaseAdminClientMock = vi.hoisted(() => vi.fn());
 const appendActionModerationAuditMock = vi.hoisted(() => vi.fn());
 const cancelFutureActionMock = vi.hoisted(() => vi.fn());
+const refreshActionImpactProgressionDependentsMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({ requireAdminAccess: requireAdminAccessMock }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseAdminClient: getSupabaseAdminClientMock }));
 vi.mock("@/lib/actions/moderation-audit", () => ({ appendActionModerationAudit: appendActionModerationAuditMock }));
 vi.mock("@/lib/actions/cancellation", () => ({ cancelFutureAction: cancelFutureActionMock }));
+vi.mock("../../../admin/moderation/route.action-progression", () => ({
+  refreshActionImpactProgressionDependents: refreshActionImpactProgressionDependentsMock,
+}));
 
 function request(payload: unknown) {
   return new Request("http://localhost/api/actions/action-1/cancel", {
@@ -25,6 +29,7 @@ describe("POST /api/actions/:actionId/cancel", () => {
     requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
     getSupabaseAdminClientMock.mockReturnValue({});
     appendActionModerationAuditMock.mockResolvedValue(undefined);
+    refreshActionImpactProgressionDependentsMock.mockResolvedValue([]);
     cancelFutureActionMock.mockResolvedValue({
       id: "action-1",
       status: "cancelled",
@@ -94,6 +99,10 @@ describe("POST /api/actions/:actionId/cancel", () => {
       actorUserId: "admin-1",
       reason: "weather",
     });
+    expect(refreshActionImpactProgressionDependentsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      { actionId: "action-1", creatorUserId: null },
+    );
     expect(appendActionModerationAuditMock).toHaveBeenCalledWith(expect.objectContaining({
       operation: "cancel_action",
       targetActionId: "action-1",
