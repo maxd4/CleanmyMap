@@ -8,7 +8,7 @@ import {
   type QuizReviewTarget,
 } from "./quiz-review-targets.ts";
 import type { QuizQuestionCategory } from "@/lib/learning/quiz/quiz-question-categories";
-import { getSectionRubriqueById } from "@/lib/sections-registry";
+import { buildActionCreationPanelHref } from "@/lib/actions/action-creation-routes";
 
 export type QuizErrorSeverityId = "low" | "medium" | "high";
 
@@ -55,14 +55,9 @@ const BIO_KEYWORDS = /(biodégrad|compost)/i;
 const RECYCLING_KEYWORDS = /(recycl|recyclabilité|recyclage|réemploi)/i;
 
 const WEATHER_REVIEW_TARGET = (() => {
-  const weather = getSectionRubriqueById("weather");
-  if (!weather) {
-    throw new Error("La rubrique Weather doit être présente dans le registre des sections.");
-  }
-
   return {
-    label: weather.label.fr,
-    href: weather.route,
+    label: "Météo & conditions terrain",
+    href: buildActionCreationPanelHref("meteo"),
   } satisfies QuizReviewTarget;
 })();
 

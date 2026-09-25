@@ -178,7 +178,7 @@ quadrantChart
 - Utilite : capter rapidement une action de dépollution.
 - Impact : accélère l'augmentation du volume de données terrain et alimente la carte, les rapports et le pilotage.
 
-**Où agir** `/sections/route`
+**Où agir** `/actions/new?panel=itineraire`
 
 - Recommandations dynamiques : où agir aujourd'hui.
 - Utilite : transformer la data en parcours d'action.
@@ -190,13 +190,13 @@ quadrantChart
 - Utilite : détecter rapidement les zones critiques.
 - Impact : raccourcit le délai entre observation et traitement.
 
-**Météo** `/sections/weather`
+**Météo** `/actions/new?panel=meteo`
 
 - Conditions terrain et fenêtres d'action.
 - Utilite : choisir le bon moment, le bon niveau de sécurité et le bon kit avant de partir.
 - Impact : limite les sorties improductives et améliore la qualité opérationnelle.
 
-**Mode d'emploi / Guide terrain** `/sections/guide`
+**Mode d'emploi / Guide terrain** `/actions/new?panel=meteo`
 
 - Guide terrain et bonnes pratiques.
 - Utilite : réduire les erreurs de terrain.

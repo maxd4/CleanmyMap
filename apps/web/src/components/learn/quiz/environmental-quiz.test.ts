@@ -39,8 +39,8 @@ describe("EnvironmentalQuiz", () => {
           reviewTargetHref === QUIZ_REVIEW_TARGETS.bonnes_pratiques.href ||
           reviewTargetHref === "/methodologie" ||
           reviewTargetHref === "/sections/recycling" ||
-          reviewTargetHref === "/sections/weather" ||
-          reviewTargetHref === "/sections/route"
+          reviewTargetHref === "/actions/new?panel=meteo" ||
+          reviewTargetHref === "/actions/new?panel=itineraire"
         );
       }),
     ).toBe(true);

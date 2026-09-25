@@ -7,9 +7,9 @@ import {
 describe("buildSignInRedirectHref", () => {
   it("encodes an internal route with its query and hash as the sign-in return target", () => {
     expect(
-      buildSignInRedirectHref("/sections/route?tab=map&source=late-auth#draft"),
+      buildSignInRedirectHref("/actions/new?panel=itineraire&source=late-auth#draft"),
     ).toBe(
-      "/sign-in?redirect_url=%2Fsections%2Froute%3Ftab%3Dmap%26source%3Dlate-auth%23draft",
+      "/sign-in?redirect_url=%2Factions%2Fnew%3Fpanel%3Ditineraire%26source%3Dlate-auth%23draft",
     );
   });
 
@@ -21,8 +21,8 @@ describe("buildSignInRedirectHref", () => {
 
 describe("resolveSafeAuthRedirect", () => {
   it("keeps an internal path and its query/hash", () => {
-    expect(resolveSafeAuthRedirect("/sections/route?source=late-auth#draft")).toBe(
-      "/sections/route?source=late-auth#draft",
+    expect(resolveSafeAuthRedirect("/actions/new?panel=itineraire&source=late-auth#draft")).toBe(
+      "/actions/new?panel=itineraire&source=late-auth#draft",
     );
   });
 

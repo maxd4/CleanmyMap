@@ -63,7 +63,7 @@ describe("buildQuizSessionSummary", () => {
 
     expect(summary?.nextReviewTarget).toEqual({
       label: "Météo & conditions terrain",
-      href: "/sections/weather",
+      href: "/actions/new?panel=meteo",
     });
     expect(summary?.themesToReview[0]?.label).toBe("Météo & conditions terrain");
   });

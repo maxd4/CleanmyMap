@@ -35,7 +35,7 @@ const navigationPaths: NavigationPath[] = [
     icon: UsersRound,
     tone: "violet",
     links: [
-      { label: "Itinéraire", href: "/sections/route" },
+      { label: "Itinéraire", href: "/actions/new?panel=itineraire" },
       {
         label: "Rejoindre une action",
         href: "/sections/rejoindre-une-action",
