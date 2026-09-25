@@ -32,6 +32,8 @@ describe("detailed profile gamification contract", () => {
 
   it("keeps the existing profile and advanced-profile flow", () => {
     expect(pageSource).toContain("isAppProfile(normalized)");
+    expect(pageSource).not.toContain('normalized === "impact"');
+    expect(pageSource).not.toContain("ImpactProfilePage");
     expect(pageSource).toContain("getSwitchableProfiles(grantedRole)");
     expect(pageSource).toContain("redirect(buildProfileRoute(activeProfile))");
     expect(pageSource).toContain('id="parrainage"');

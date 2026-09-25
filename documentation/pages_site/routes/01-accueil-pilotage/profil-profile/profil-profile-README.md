@@ -10,7 +10,7 @@
 - **Statut** : dynamique
 - **Contexte nécessaire** : Paramètre `profile` valide et compte connecté ; un profil différent du rôle actif est redirigé, sauf sélection autorisée par l'accès administrateur.
 - **Objectif utilisateur principal** : Gérer les réglages, actions prioritaires, progression, badges et parrainage du profil actif.
-- **Action principale attendue** : Consulter sa progression ou configurer son compte depuis la surface de profil.
+- **Action principale attendue** : Consulter sa progression, ouvrir sa carte d’impact personnelle ou configurer son compte depuis la surface de profil.
 - **Palette attendue** : amber / orange
 - **Scope** : surface de profil dynamique avec réglages, actions par rôle, progression/badges, parrainage et sélection des profils explicitement autorisés.
 - **Terminée** : non
@@ -22,6 +22,7 @@
 - Titre de page
 - cartes métriques
 - CTA de navigation
+- Accès contextuel : le bloc « Progression & badges » expose « Voir ma carte d’impact » vers `/profil/impact`.
 - indicateurs prioritaires
 - **Textes à réduire ou supprimer** :
 - Rappels redondants

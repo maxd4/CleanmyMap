@@ -24,7 +24,7 @@ flowchart LR
   B3 --> METHODO["/methodologie"]
   B3 --> REP["/reports"]
   B3 --> BADGES["/sections/gamification"]
-  B3 --> IMPACT["/profil/impact"]
+  B3 --> IMPACT["/profil/impact — carte personnelle secondaire"]
 
   B4 --> COMM["/sections/community"]
   B4 --> MSG["/sections/messagerie"]
@@ -50,6 +50,11 @@ flowchart LR
 - Print & Export : `/prints/report`
 
 ## Correspondance bloc -> usage
+
+`/profil/impact` appartient au bloc Cartographie & Impact pour sa sémantique
+visuelle et métier, mais son accès utilisateur est contextuel : le profil actif
+ouvre la carte depuis « Progression & badges ». Elle ne rejoint pas le ruban
+principal et ne se confond pas avec `/reports`, qui reste collectif.
 
 | Bloc | Teinte | Rôle principal | Sortie attendue |
 |---|---|---|---|

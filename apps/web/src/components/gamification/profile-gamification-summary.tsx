@@ -66,7 +66,16 @@ export function ProfileGamificationSummary({
           </div>
         </dl>
 
-        <div className="border-t border-amber-200/14 pt-4">
+        <div className="flex flex-col gap-3 border-t border-amber-200/14 pt-4 sm:flex-row sm:flex-wrap">
+          <CmmButton
+            href="/profil/impact"
+            tone="secondary"
+            variant="pill"
+            className="w-full justify-center gap-2 px-5 text-sm font-black sm:w-auto"
+          >
+            Voir ma carte d’impact
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </CmmButton>
           <CmmButton
             href="/sections/gamification"
             tone="critical"

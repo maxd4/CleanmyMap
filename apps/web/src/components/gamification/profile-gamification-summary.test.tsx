@@ -20,6 +20,8 @@ describe("ProfileGamificationSummary", () => {
     expect(markup).toContain(">12<");
     expect(markup).toContain(">Régulier<");
     expect(markup).toContain(">Équilibré<");
+    expect(markup).toContain('href="/profil/impact"');
+    expect(markup).toContain("Voir ma carte d’impact");
     expect(markup).toContain('href="/sections/gamification"');
     expect(markup).toContain("Voir toute ma progression");
   });
