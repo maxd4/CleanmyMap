@@ -183,7 +183,7 @@ nécessaire, un cache HTTP privé.
 | Spots | `limit` 1..300 × statut borné, au plus ~1200 lanes théoriques | au plus 300 spots par lecture | 60 s | carte spots authentifiée ; tag `spots-map` invalidé à la création d'un signalement |
 | Leaderboard gamification | 2 scopes × 2 périodes, 4 clés | classement borné par le loader | 120 s | leaderboard authentifié ; tag de classement |
 | Labels progression | clé partagée unique | au plus 10000 lignes d'actions | 120 s | progression/gamification ; tag commun |
-| Export referrals admin | clé unique | export complet borné par le loader | 600 s | export admin ; tag `admin-referral-lineage-export` |
+| Export referrals admin | clé unique, sans dimension utilisateur | toutes les lignes de profils, paginées par lots de 1000 ; volume total dépendant du nombre de profils | 600 s | export admin ; tag `admin-referral-lineage-export` |
 
 Les invalidations métier utilisent `revalidateTag(..., "max")` : elles
 marquent les entrées périmées sans fabriquer une clé par utilisateur. Les
