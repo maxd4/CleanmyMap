@@ -94,12 +94,12 @@ export const QUIZ_SCHOOL_ACTIVITY_TYPE_LABELS: Readonly<Record<QuizSchoolActivit
 const ALL_LEVELS: readonly QuizSchoolLevel[] = ["6e", "5e", "4e", "3e"];
 const INTERNAL_PEDAGOGY_SOURCE: QuizSchoolActivitySource = {
   label: { fr: "CleanMyMap — guide d’écriture pédagogique du Quiz", en: "CleanMyMap — Quiz authoring guide" },
-  href: "/documentation/features/quiz-authoring-guide.md",
+  href: "/docs/features/quiz-authoring-guide.md",
   kind: "interne",
 };
 const EXAMPLE_DATA_SOURCE: QuizSchoolActivitySource = {
   label: { fr: "CleanMyMap — données d’exemple pour l’activité", en: "CleanMyMap — example data for the activity" },
-  href: "/documentation/features/quiz-authoring-guide.md",
+  href: "/docs/features/quiz-authoring-guide.md",
   kind: "donnees-exemple",
 };
 

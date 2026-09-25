@@ -91,7 +91,7 @@ export function HelpCard() {
           <p className="max-w-xs text-sm leading-relaxed text-slate-700">
             Consultez notre FAQ ou contactez-nous.
           </p>
-          <CmmButton href="/feedback" tone="secondary" variant="pill" size="sm" className="mt-2">
+          <CmmButton href="/sections/feedback" tone="secondary" variant="pill" size="sm" className="mt-2">
             Centre d&apos;aide
           </CmmButton>
         </div>
