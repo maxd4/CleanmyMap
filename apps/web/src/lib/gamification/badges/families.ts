@@ -41,13 +41,20 @@ type QuizProgressionTierDefinition = {
   icon: string;
 };
 
-export type QuizProgressionFamily = {
+/**
+ * Nested learning milestone display kept for API compatibility.
+ * It is not one of the seven top-level CURRENT infinite progressions.
+ */
+export type LearningMilestoneFamily = {
   id: string;
   name: string;
   description: string;
   status: "active";
   tiers: QuizProgressionTierDefinition[];
 };
+
+/** @deprecated Use LearningMilestoneFamily; retained for compatibility. */
+export type QuizProgressionFamily = LearningMilestoneFamily;
 
 type LegacyBadgeDefinition = {
   id: string;
@@ -145,7 +152,7 @@ export const QUIZ_BALANCE_PROGRESS_TIERS: readonly QuizProgressionTierDefinition
   },
 ] as const;
 
-export function buildQuizTypeProgression(): QuizProgressionFamily {
+export function buildQuizTypeProgression(): LearningMilestoneFamily {
   return {
     id: "quiz-type-progress",
     name: "Progression quiz par type",
@@ -155,7 +162,7 @@ export function buildQuizTypeProgression(): QuizProgressionFamily {
   };
 }
 
-export function buildQuizBalanceProgression(): QuizProgressionFamily {
+export function buildQuizBalanceProgression(): LearningMilestoneFamily {
   return {
     id: "quiz-balance-progress",
     name: "Quiz équilibré",

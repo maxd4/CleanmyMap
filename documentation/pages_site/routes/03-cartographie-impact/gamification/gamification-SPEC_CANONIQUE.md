@@ -23,6 +23,40 @@ Les autres documents de gamification restent utiles, mais ils sont désormais se
   CURRENT ne doit les utiliser pour attribuer, afficher ou dépenser la
   progression.
 
+## Taxonomie CURRENT
+
+Le registre typé de `apps/web/src/lib/gamification/progression-utils.ts` est la
+source canonique de classification des événements. Il expose exactement sept
+progressions infinies :
+
+| ID stable | Libellé | Métrique métier | Domaine source | Famille / échelle |
+| --- | --- | --- | --- | --- |
+| `participation` | Participation | `participation_count` | actions, participations et signalements utiles | `participant` / `participant` |
+| `organisation` | Organisation | `organised_operations_count` | organisateurs d'actions et opérations collectives | `organisation` / `gem` |
+| `exploration` | Exploration | `unique_places_visited` | `user_visited_places` | `explorer` / `exploration` |
+| `clean_zones` | Zones propres | `eligible_clean_zones` | `trash_spotter_spots` / `clean_zones` | `clean-zones` / `atmosphere` |
+| `regularity` | Régularité | `consecutive_active_months` | actions par mois | `regularity` / `gem` |
+| `versatility` | Polyvalence | `validated_context_cycles` | actions et contextes de contribution | `versatility` / `gem` |
+| `learning` | Apprentissage | `validated_learning_events` | quiz et contenus d'apprentissage | `learning` / `learning` |
+
+Chaque progression suit le contrat commun `GamificationProgressionState` :
+`id`, `label`, `description`, `metric`, `sourceDomain`, `badgeFamily`,
+`scale`, `infinite`, `currentValue`, `currentBadge`, `nextBadge`,
+`progressPercent` et `xpContribution`. `xpContribution` est une contribution
+calculée au total global ; il n'existe aucun solde XP indépendant par
+progression.
+
+Les autres catégories du registre sont séparées :
+
+- `milestone` : jalons uniques comme `Première trace utile`, `Trace fondatrice`
+  et `Parrainage utile` ;
+- `non_progression` : métriques d'impact, usage utilitaire et familles de
+  compatibilité conservées sans constituer une progression CURRENT.
+
+Le total XP global est la somme des `progression_events` actifs de toutes les
+progressions et des XP des jalons one-shot. Aucun event type ne crée un second
+ledger ou une balance par famille.
+
 ## Périmètre
 
 La section canonique concernée est `/sections/gamification`, vue dans le bloc Cartographie & Impact.
@@ -78,18 +112,17 @@ Règle d implémentation:
 
 ## Échelles communes
 
-### Matrice des échelles autorisées par famille
+### Matrice des échelles autorisées par progression CURRENT
 
 | Famille | Échelle autorisée | Vocabulaire autorisé | Vocabulaire interdit |
 |---|---|---|---|
-| Explorer | Échelle d exploration dédiée | `Observateur`, `Promeneur Local`, `Arpenteur`, `Éclaireur`, `Patrouilleur`, `Repéreur`, `Cartographe`, `Coordinateur`, `Sentinelle`, `Régulateur`, `Conservateur`, `Gardien`, `Maître des Cartes` | `Quartz`, `Topaze`, `Pilier` |
-| Participant | Échelle cartographique dédiée | `Observateur`, `Promeneur Local`, `Éclaireur`, `Patrouilleur`, `Cartographe`, `Coordinateur`, `Sentinelle`, `Conservateur`, `Gardien` | `Quartz`, `Topaze`, `Pilier` |
-| Forms | Échelle végétale dédiée | `Graine`, `Pousse`, `Jeune plante`, `Arbuste`, `Jeune arbre`, `Arbre mature`, `Bosquet`, `Forêt primaire` | `Quartz`, `Topaze`, `Pilier`, `Talc` |
-| Clean Zones | Échelle atmosphérique dédiée | `Brise`, `Horizon`, `Azur`, `Aurore`, `Zénith`, `Stratosphère`, `Éther`, `Hélios`, `Harmonie`, `Eden` | `Quartz`, `Topaze`, `Pilier`, `Talc` |
-| Actions créées | Échelle gemme | `Observateur`, `Quartz`, `Topaze`, `Saphir`, `Rubis`, `Émeraude`, `Diamant`, `Opale`, `Pilier` | vocabulaire exploration, végétal, atmosphérique, Mohs |
-| Équilibre des contextes | Échelle gemme | `Observateur`, `Quartz`, `Topaze`, `Saphir`, `Rubis`, `Émeraude`, `Diamant`, `Opale`, `Pilier` | vocabulaire exploration, végétal, atmosphérique, Mohs |
-| Régularité mensuelle | Échelle gemme | `Observateur`, `Quartz`, `Topaze`, `Saphir`, `Rubis`, `Émeraude`, `Diamant`, `Opale`, `Pilier` | vocabulaire exploration, végétal, atmosphérique, Mohs |
-| Zone sensible apaisée | Échelle gemme | `Observateur`, `Quartz`, `Topaze`, `Saphir`, `Rubis`, `Émeraude`, `Diamant`, `Opale`, `Pilier` | vocabulaire exploration, végétal, atmosphérique, Mohs |
+| Participation | Échelle cartographique dédiée | `Observateur`, `Promeneur Local`, `Éclaireur`, `Patrouilleur`, `Cartographe`, `Coordinateur`, `Sentinelle`, `Conservateur`, `Gardien` | `Quartz`, `Topaze`, `Pilier` |
+| Organisation | Échelle gemme | `Observateur`, `Quartz`, `Topaze`, `Saphir`, `Rubis`, `Émeraude`, `Diamant`, `Opale`, `Pilier` | vocabulaire Forms, impact brut, Mohs |
+| Exploration | Échelle d'exploration dédiée | `Observateur`, `Promeneur Local`, `Arpenteur`, `Éclaireur`, `Patrouilleur`, `Repéreur`, `Cartographe`, `Coordinateur`, `Sentinelle`, `Régulateur`, `Conservateur`, `Gardien`, `Maître des Cartes` | `Quartz`, `Topaze`, `Pilier` |
+| Zones propres | Échelle atmosphérique dédiée | `Brise`, `Horizon`, `Azur`, `Aurore`, `Zénith`, `Stratosphère`, `Éther`, `Hélios`, `Harmonie`, `Eden` | `Quartz`, `Topaze`, `Pilier`, `Talc` |
+| Régularité | Échelle gemme | `Observateur`, `Quartz`, `Topaze`, `Saphir`, `Rubis`, `Émeraude`, `Diamant`, `Opale`, `Pilier` | vocabulaire exploration, végétal, atmosphérique, Mohs |
+| Polyvalence | Échelle gemme | `Observateur`, `Quartz`, `Topaze`, `Saphir`, `Rubis`, `Émeraude`, `Diamant`, `Opale`, `Pilier` | vocabulaire exploration, végétal, atmosphérique, Mohs |
+| Apprentissage | Échelle pédagogique de learning | paliers d'apprentissage définis par le registre | quiz et contenus d'apprentissage | `learning` / Forms |
 | Mohs | Échelle minérale héritée | `Talc`, `Gypse`, `Calcite`, `Fluorite`, `Apatite`, `Orthose`, `Quartz`, `Topaze`, `Corindon`, `Diamant` | `Observateur`, `Quartz` gemme, `Pilier` |
 
 Règle d application:
@@ -116,10 +149,9 @@ L échelle commune des badges infinis et des badges à progression par paliers s
 
 Cette échelle sert de base à:
 
-- `Actions créées`;
-- `Équilibre des contextes`;
-- `Régularité mensuelle`;
-- `Zone sensible apaisée`;
+- `Organisation`;
+- `Polyvalence`;
+- `Régularité`;
 - la plupart des badges infinis de progression personnelle.
 
 ### Échelle d exploration dédiée
@@ -141,21 +173,16 @@ Les badges de couverture territoriale conservent une échelle propre, indépenda
 - elle n est pas la base du contrat `Observateur` des autres familles;
 - ses grades conservent leurs noms minéraux propres: `Talc`, `Gypse`, `Calcite`, `Fluorite`, `Apatite`, `Orthose`, `Quartz`, `Topaze`, `Corindon`, `Diamant`.
 
-### Progressions quiz actives
+### Apprentissage
 
-Deux progressions quiz alimentent désormais l XP actif et restent séparées pour éviter de mélanger les logiques pédagogiques.
-
-- statut métier: `active`;
-- familles canonisées:
-  - `Progression quiz par type` : `50 réponses justes -> 100 réponses justes`;
-  - `Quiz équilibré` : `10 réponses justes -> 50 réponses justes -> 100 réponses justes`;
-- la première récompense la maîtrise d un type de question donné;
-- la seconde récompense l entraînement équilibré sur tous les types de quiz;
-- elles comptent dans les attributions XP et dans les journaux d audit.
+Les paliers quiz par type et quiz équilibré sont des événements et des
+indicateurs rattachés à `learning`. Ils ne constituent pas deux progressions
+infinies supplémentaires : leur affichage actuel reste une surface de
+compatibilité jusqu'à la convergence UI dédiée.
 
 ## Familles de badges en V1
 
-### Explorer
+### Exploration
 
 But:
 
@@ -170,7 +197,7 @@ Règles:
 - XP de palier: `+1` par palier débloqué;
 - base: `Observateur`.
 
-### Participant
+### Participation
 
 But:
 
@@ -185,7 +212,7 @@ Règles:
 - paliers actuels: `0, 1, 3, 5, 10, 15, 20, 25, 30`;
 - XP de palier: `+1` à partir du premier palier utile, jamais sur le niveau `0`.
 
-### Forms
+### Forms (compatibilité hors taxonomie CURRENT)
 
 But:
 
@@ -199,6 +226,8 @@ Règles:
 - dédoublonnage par paire `(action_id, group_id)`;
 - XP: `+1` par palier;
 - bonus décennal: `+2 XP` à 10, 20, 30, etc.
+- ces badges et événements restent disponibles pour compatibilité, mais ne
+  constituent pas une progression infinie CURRENT;
 
 ### Clean Zones
 
@@ -231,7 +260,7 @@ Règles:
 - pas d XP supplémentaire;
 - sert de badge visuel de premier jalon.
 
-### Actions créées
+### Organisation
 
 But:
 
@@ -248,7 +277,7 @@ Règles:
 - si plusieurs organisateurs sont reconnus, l XP est divisée à parts égales;
 - la progression continue indéfiniment avec la logique `Pilier II`, `Pilier III`, etc.
 
-### Équilibre des contextes
+### Polyvalence
 
 But:
 
@@ -273,7 +302,7 @@ Règles:
   - la progression vers le suivant;
   - les types et quantités encore manquants.
 
-### Régularité mensuelle
+### Régularité
 
 But:
 
@@ -289,7 +318,7 @@ Règles:
 - une action `pending` peut être prise en compte provisoirement, puis retirée rétroactivement si elle finit rejetée;
 - la progression visuelle utilise l échelle gemme.
 
-### Zone sensible apaisée
+### Zone sensible apaisée (métrique conservée hors taxonomie CURRENT)
 
 But:
 
@@ -297,11 +326,11 @@ But:
 
 Règles:
 
-- base gemme;
-- paliers retenus: `1, 3, 5, 8, 10, 15, 20, ...`;
-- `+1 XP` à chaque palier atteint;
-- la progression est infinie;
-- le badge doit rester discret, lisible et non culpabilisant.
+- cette métrique reste lisible pour les usages d'impact et de compatibilité;
+- elle ne constitue pas une huitième progression infinie CURRENT;
+- son éventuel traitement en jalon ou en indicateur dédié relève d'un lot
+  ultérieur;
+- elle ne doit pas créer de solde XP indépendant.
 
 ### Inviter un ami
 

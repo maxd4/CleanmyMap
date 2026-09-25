@@ -15,14 +15,15 @@ import {
   buildParticipantBadges,
   type GamificationBadgeEntry,
   type GamificationExplorerSummary,
-  type QuizProgressionFamily,
+  type LearningMilestoneFamily,
 } from "./families";
 
 const CLEAN_ZONE_SOURCE_LIMIT = 1000;
 
 export type GamificationBadgesListPayload = {
   badges: GamificationBadgeEntry[];
-  quizProgressions: QuizProgressionFamily[];
+  /** Compatibility payload: nested learning milestones, not top-level progressions. */
+  quizProgressions: LearningMilestoneFamily[];
   unlockedCount: number;
   totalBadges: number;
   explorer: GamificationExplorerSummary;
