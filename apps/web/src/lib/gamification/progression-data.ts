@@ -43,6 +43,8 @@ const USER_LABEL_SUMMARY_LIMIT = 10000;
 const USER_LEVEL_RANKING_CACHE_REVALIDATE_SECONDS = 120;
 const USER_LEVEL_RANKING_CACHE_TAG = "gamification-user-level-ranking";
 
+type UserLabelSummaryCacheEntry = [string, UserLabelSummary];
+
 export type UserLevelRankingItem = {
   rank: number;
   userId: string;
@@ -386,7 +388,7 @@ export async function loadUserLabelSummary(
   supabase: SupabaseClient,
 ): Promise<Map<string, UserLabelSummary>> {
   const cached = unstable_cache(
-    async () => {
+    async (): Promise<UserLabelSummaryCacheEntry[]> => {
       const rows = await runActionQuery<{
         created_by_clerk_id: string;
         actor_name: string | null;
@@ -399,24 +401,29 @@ export async function loadUserLabelSummary(
           .limit(USER_LABEL_SUMMARY_LIMIT),
       );
 
-      const map = new Map<string, UserLabelSummary>();
+      const entries: UserLabelSummaryCacheEntry[] = [];
+      const seenUserIds = new Set<string>();
 
       for (const row of rows) {
         if (!isSpontaneousActionNotes(row.notes)) {
           continue;
         }
-        if (map.has(row.created_by_clerk_id)) {
+        if (seenUserIds.has(row.created_by_clerk_id)) {
           continue;
         }
+        seenUserIds.add(row.created_by_clerk_id);
         const metadata = extractActionMetadataFromNotes(row.notes);
-        map.set(row.created_by_clerk_id, {
-          actorName:
-            (row.actor_name ?? "").trim() || row.created_by_clerk_id || "Contributeur",
-          associationName: metadata.associationName?.trim() || "Sans association",
-        });
+        entries.push([
+          row.created_by_clerk_id,
+          {
+            actorName:
+              (row.actor_name ?? "").trim() || row.created_by_clerk_id || "Contributeur",
+            associationName: metadata.associationName?.trim() || "Sans association",
+          },
+        ]);
       }
 
-      return map;
+      return entries;
     },
     ["gamification-user-label-summary", `limit:${USER_LABEL_SUMMARY_LIMIT}`],
     {
@@ -425,7 +432,7 @@ export async function loadUserLabelSummary(
     },
   );
 
-  return cached();
+  return new Map(await cached());
 }
 
 export async function loadUserLevelRankingSummary(
