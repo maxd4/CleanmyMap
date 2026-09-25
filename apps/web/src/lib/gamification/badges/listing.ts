@@ -10,20 +10,23 @@ import {
   buildExplorerFamily,
   buildFormsBadges,
   buildActionBadges,
-  buildQuizBalanceProgression,
-  buildQuizTypeProgression,
   buildParticipantBadges,
   type GamificationBadgeEntry,
   type GamificationExplorerSummary,
-  type LearningMilestoneFamily,
 } from "./families";
+import {
+  loadQuizLearningProgression,
+  type LearningProgressionSummary,
+} from "../quiz-learning-progression";
 
 const CLEAN_ZONE_SOURCE_LIMIT = 1000;
 
 export type GamificationBadgesListPayload = {
   badges: GamificationBadgeEntry[];
-  /** Compatibility payload: nested learning milestones, not top-level progressions. */
-  quizProgressions: LearningMilestoneFamily[];
+  /** Canonical user-facing quiz progression: one learning axis. */
+  learningProgression: LearningProgressionSummary;
+  /** Compatibility field retained for clients that still read the old plural key. */
+  quizProgressions: LearningProgressionSummary[];
   unlockedCount: number;
   totalBadges: number;
   explorer: GamificationExplorerSummary;
@@ -107,9 +110,10 @@ export async function loadGamificationBadgesList(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<GamificationBadgesListPayload> {
-  const [counters, cleanZoneSources] = await Promise.all([
+  const [counters, cleanZoneSources, learningProgression] = await Promise.all([
     loadGamificationUserCounters(supabase, userId),
     loadCleanZoneSourcesForUser(supabase, userId),
+    loadQuizLearningProgression(supabase, userId),
   ]);
 
   const {
@@ -120,7 +124,6 @@ export async function loadGamificationBadgesList(
     participationCount,
   } = counters;
   const badges: GamificationBadgeEntry[] = [];
-  const quizProgressions = [buildQuizTypeProgression(), buildQuizBalanceProgression()];
 
   const explorerFamily = buildExplorerFamily(placesCount);
   appendBadges(badges, explorerFamily.badges);
@@ -140,7 +143,8 @@ export async function loadGamificationBadgesList(
 
   return {
     badges,
-    quizProgressions,
+    learningProgression,
+    quizProgressions: [learningProgression],
     unlockedCount,
     totalBadges: badges.length,
     explorer: explorerFamily.summary,

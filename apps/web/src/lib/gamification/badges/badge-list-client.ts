@@ -1,5 +1,7 @@
 "use client";
 
+import type { LearningProgressionSummary } from "../quiz-learning-progression";
+
 export type GamificationBadgeListItem = {
   id?: string;
   name?: string;
@@ -17,11 +19,12 @@ export type GamificationBadgeListResponse = {
   summary?: {
     currentPlaces?: number;
   };
+  learningProgression?: LearningProgressionSummary;
   badges?: GamificationBadgeListItem[];
-  quizProgressions?: Array<{
+  quizProgressions?: Array<LearningProgressionSummary | {
     id?: string;
     name?: string;
-    status?: "active";
+    status?: "compatibility";
     tiers?: Array<{
       id?: string;
       label?: string;

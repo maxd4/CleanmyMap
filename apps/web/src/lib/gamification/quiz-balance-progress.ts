@@ -4,12 +4,9 @@ import { insertProgressionEvent } from "./progression-data";
 import { refreshProgressionProfile } from "./progression-tracking";
 import { broadcastGamificationAnnouncement } from "./announcements";
 import { getQuizPedagogicalTypeLabel } from "@/lib/learning/quiz/quiz-taxonomy";
+import { QUIZ_BALANCE_MILESTONES } from "./quiz-milestones";
 
-export const QUIZ_BALANCE_MILESTONES = [
-  { threshold: 10, xp: 1, badgeId: "quiz-balance-10" },
-  { threshold: 50, xp: 1, badgeId: "quiz-balance-50" },
-  { threshold: 100, xp: 2, badgeId: "quiz-balance-100" },
-] as const;
+export { QUIZ_BALANCE_MILESTONES } from "./quiz-milestones";
 
 export type QuizBalanceMilestoneThreshold = (typeof QUIZ_BALANCE_MILESTONES)[number]["threshold"];
 

@@ -42,14 +42,14 @@ type QuizProgressionTierDefinition = {
 };
 
 /**
- * Nested learning milestone display kept for API compatibility.
+ * Legacy nested learning milestone display kept for API compatibility.
  * It is not one of the seven top-level CURRENT infinite progressions.
  */
 export type LearningMilestoneFamily = {
   id: string;
   name: string;
   description: string;
-  status: "active";
+  status: "compatibility";
   tiers: QuizProgressionTierDefinition[];
 };
 
@@ -157,7 +157,7 @@ export function buildQuizTypeProgression(): LearningMilestoneFamily {
     id: "quiz-type-progress",
     name: "Progression quiz par type",
     description: "Échelle active pour suivre les réponses justes par type de question.",
-    status: "active",
+    status: "compatibility",
     tiers: [...QUIZ_TYPE_PROGRESS_TIERS],
   };
 }
@@ -167,7 +167,7 @@ export function buildQuizBalanceProgression(): LearningMilestoneFamily {
     id: "quiz-balance-progress",
     name: "Quiz équilibré",
     description: "Échelle active pour encourager l'entraînement sur tous les types de questions.",
-    status: "active",
+    status: "compatibility",
     tiers: [...QUIZ_BALANCE_PROGRESS_TIERS],
   };
 }

@@ -94,6 +94,7 @@ describe("gamification badges listing", () => {
           table === "trash_spotter_spots" ||
           table === "spots" ||
           table === "progression_events" ||
+          table === "quiz_type_progress" ||
           table === "xp_audit"
         ) {
           return createEmptyQueryChain();
@@ -106,7 +107,19 @@ describe("gamification badges listing", () => {
 
     expect(payload).not.toHaveProperty("totalPoints");
     expect(payload.totalBadges).toBeGreaterThanOrEqual(0);
-    expect(payload.quizProgressions).toHaveLength(2);
+    expect(payload.quizProgressions).toHaveLength(1);
+    expect(payload.quizProgressions[0]?.id).toBe("learning");
+    expect(payload.quizProgressions.map((progression) => progression.id)).not.toEqual([
+      "quiz-type-progress",
+      "quiz-balance-progress",
+    ]);
+    expect(payload.learningProgression).toMatchObject({
+      id: "learning",
+      name: "Apprentissage",
+      totalCorrectAnswers: 0,
+      masteredQuestionTypes: 0,
+      balancedCorrectAnswers: 0,
+    });
     expect(supabase.rpc).toHaveBeenCalledWith(
       "load_gamification_user_counters",
       { p_user_id: "user-1" },
@@ -159,6 +172,9 @@ describe("gamification badges listing", () => {
         }
         if (table === "progression_events") {
           return createDataQueryChain([], progressionInserts);
+        }
+        if (table === "quiz_type_progress") {
+          return createDataQueryChain([], []);
         }
         if (table === "xp_audit") {
           return createDataQueryChain([], []);
