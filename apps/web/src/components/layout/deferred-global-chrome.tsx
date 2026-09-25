@@ -1,6 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const DeferredNetworkToastHost = dynamic(
   () => import("@/components/ui/network-toast").then((module) => module.NetworkToastHost),
@@ -44,13 +46,48 @@ const DeferredCookieConsentBanner = dynamic(
   { ssr: false, loading: () => null },
 );
 
+export function isAuthSurfacePath(pathname: string | null): boolean {
+  return pathname === "/sign-in" ||
+    pathname?.startsWith("/sign-in/") === true ||
+    pathname === "/sign-up" ||
+    pathname?.startsWith("/sign-up/") === true;
+}
+
+function scheduleAfterIdle(callback: () => void): () => void {
+  if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+    const idleCallback = window.requestIdleCallback(callback, { timeout: 2000 });
+    return () => window.cancelIdleCallback(idleCallback);
+  }
+
+  const timeout = setTimeout(callback, 1000);
+  return () => clearTimeout(timeout);
+}
+
 export function DeferredGlobalChrome() {
+  const pathname = usePathname();
+  const isAuthSurface = isAuthSurfacePath(pathname);
+  const [shouldLoadDeferredChrome, setShouldLoadDeferredChrome] = useState(
+    !isAuthSurface,
+  );
+
+  useEffect(() => {
+    if (!isAuthSurface || shouldLoadDeferredChrome) {
+      return;
+    }
+
+    return scheduleAfterIdle(() => setShouldLoadDeferredChrome(true));
+  }, [isAuthSurface, shouldLoadDeferredChrome]);
+
   return (
     <>
-      <DeferredNetworkToastHost />
-      <DeferredGamificationCelebrationHost />
-      <DeferredVibrantBackground />
-      <DeferredSiteTooltips />
+      {shouldLoadDeferredChrome ? (
+        <>
+          <DeferredNetworkToastHost />
+          <DeferredGamificationCelebrationHost />
+          <DeferredVibrantBackground />
+          <DeferredSiteTooltips />
+        </>
+      ) : null}
       <DeferredConditionalAnalytics />
       <DeferredCookieConsentBanner />
     </>
@@ -63,5 +100,17 @@ const DeferredHomeFooter = dynamic(
 );
 
 export function DeferredGlobalFooter() {
-  return <DeferredHomeFooter />;
+  const pathname = usePathname();
+  const isAuthSurface = isAuthSurfacePath(pathname);
+  const [shouldLoadFooter, setShouldLoadFooter] = useState(!isAuthSurface);
+
+  useEffect(() => {
+    if (!isAuthSurface || shouldLoadFooter) {
+      return;
+    }
+
+    return scheduleAfterIdle(() => setShouldLoadFooter(true));
+  }, [isAuthSurface, shouldLoadFooter]);
+
+  return shouldLoadFooter ? <DeferredHomeFooter /> : null;
 }

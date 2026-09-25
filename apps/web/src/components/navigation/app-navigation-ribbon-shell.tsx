@@ -54,8 +54,8 @@ function AppNavigationRibbonFrame({
   const [isScrolled, setIsScrolled] = useState(false);
   const [openSpaceId, setOpenSpaceId] = useState<NavigationSpace["id"] | null>(null);
   const { data: hydratedIdentity } = useSWR<CurrentAccountIdentity | null>(
-    authStateReady
-      ? ["current-account-identity", user?.id ?? "anonymous-session"]
+    authStateReady && user
+      ? ["current-account-identity", user.id]
       : null,
     fetchCurrentAccountIdentity,
     {
