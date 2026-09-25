@@ -340,8 +340,8 @@ les sources SEO, ni les redirects, ni les baselines des contrôles qualité.
 
 - **À supprimer** : aucune route ; aucune suppression n’est démontrée par le
   dépôt et les recherches publiques disponibles.
-- **Callers internes migrés** : les entrées UI, retours d’authentification et
-  recommandations quiz qui pointaient vers `/sections/route` ou
+- **Callers internes migrés** : les entrées UI et recommandations quiz qui
+  pointaient vers `/sections/route` ou
   `/sections/weather` utilisent désormais directement les panneaux canoniques
   de `/actions/new` ; les redirects restent disponibles pour les accès externes.
 - **Compatibilités à retirer** : aucune à ce stade ; 10 cas sont
