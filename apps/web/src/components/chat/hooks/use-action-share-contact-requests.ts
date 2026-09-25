@@ -7,6 +7,7 @@ import type {
   ActionShareContactRequest,
   ActionShareContactRequestsResponse,
 } from "../chat-types";
+import { useChatSurfaceActivity } from "../chat-surface-activity-context";
 
 type UseActionShareContactRequestsParams = {
   enabled: boolean;
@@ -25,7 +26,8 @@ export function useActionShareContactRequests({
   enabled,
   currentUserId,
 }: UseActionShareContactRequestsParams) {
-  const key = enabled && currentUserId ? "/api/chat/contact-requests" : null;
+  const surfaceActive = useChatSurfaceActivity();
+  const key = enabled && surfaceActive && currentUserId ? "/api/chat/contact-requests" : null;
   const { data, error, isLoading, mutate } = useSWR<ActionShareContactRequestsResponse>(
     key,
     fetchRequests,

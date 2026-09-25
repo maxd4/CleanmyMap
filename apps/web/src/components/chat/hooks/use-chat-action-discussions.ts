@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
 import { isActionStartInFuture } from "@/lib/actions/temporal";
 import type { ActionListItem } from "@/lib/actions/types";
+import { useChatSurfaceActivity } from "../chat-surface-activity-context";
 
 export function mergePublishedActionItems(
   groups: readonly (readonly ActionListItem[])[],
@@ -29,7 +30,8 @@ export function mergePublishedActionItems(
 }
 
 export function useChatActionDiscussions(enabled: boolean) {
-  const key = enabled ? ["chat-action-discussions"] : null;
+  const surfaceActive = useChatSurfaceActivity();
+  const key = enabled && surfaceActive ? ["chat-action-discussions"] : null;
   const { data, error, isLoading, mutate } = useSWR(
     key,
     async () => {
@@ -39,7 +41,14 @@ export function useChatActionDiscussions(enabled: boolean) {
       ]);
       return mergePublishedActionItems([published.items, future.items]);
     },
-    { revalidateOnFocus: false, refreshInterval: 300_000 },
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      refreshWhenHidden: false,
+      refreshWhenOffline: false,
+      refreshInterval: 300_000,
+      dedupingInterval: 300_000,
+    },
   );
 
   return useMemo(
