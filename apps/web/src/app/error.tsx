@@ -32,23 +32,29 @@ export default function Error({
  }, [error, isSentryConfigured]);
 
   return (
-  <div className="relative min-h-screen overflow-hidden p-6 font-outfit">
- <div className="relative z-10 flex min-h-screen items-center justify-center">
-  <ServerErrorCard
-    className="w-full max-w-[42rem]"
-    title="Une erreur technique bloque cette page."
-    message={
-      isSentryConfigured
-        ? "Le problème a été signalé automatiquement. Vous pouvez réessayer maintenant ou revenir à l'accueil."
-        : "Vous pouvez réessayer maintenant ou revenir à l'accueil."
-    }
-    referenceCode={error.digest}
-    onRetry={() => reset()}
-    supportHref={supportHref}
-    supportLabel="Contacter le support"
-  />
- </div>
+    <main className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-[linear-gradient(180deg,rgba(255,245,245,0.98)_0%,rgba(254,242,242,0.96)_56%,rgba(255,247,237,0.92)_100%)] px-4 py-10 sm:px-6 lg:px-8">
+      <div
+        aria-hidden="true"
+        className="absolute -left-24 top-16 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(244,63,94,0.12)_0%,rgba(244,63,94,0.05)_34%,rgba(244,63,94,0)_72%)] blur-[100px]"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(248,113,113,0.12)_0%,rgba(248,113,113,0.04)_34%,rgba(248,113,113,0)_72%)] blur-[100px]"
+      />
 
- </div>
- );
+      <ServerErrorCard
+        className="relative z-10 w-full max-w-[42rem]"
+        title="Une erreur technique bloque cette page."
+        message={
+          isSentryConfigured
+            ? "Le problème a été signalé automatiquement. Vous pouvez réessayer maintenant ou revenir à l'accueil."
+            : "Vous pouvez réessayer maintenant ou revenir à l'accueil."
+        }
+        referenceCode={error.digest}
+        onRetry={() => reset()}
+        supportHref={supportHref}
+        supportLabel="Contacter le support"
+      />
+    </main>
+  );
 }

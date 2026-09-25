@@ -48,6 +48,21 @@ retrouver.
   `surfaces.css`, `motion.css`), pas dans les branches migrées ;
 - les champs de formulaire gardent l’erreur dans `CmmField`.
 
+### États système de page
+
+Les surfaces système suivent la même composition, sans confondre leur tonalité :
+
+| Surface | Primitive | Variante | Contrat conservé |
+| --- | --- | --- | --- |
+| `/not-found` | `SystemState` | `empty` | destination fiable vers l’accueil |
+| `error.tsx` | `ServerErrorCard` composé de `SystemState` | `error` | retry, support, Sentry et référence d’erreur |
+| `global-error.tsx` | `ServerErrorCard` composé de `SystemState` | `error` | reset global, support, Sentry et référence d’erreur |
+| `/error/429` | `SystemState` | `warning` | retry, accueil, aide et tonalité amber |
+
+`ServerErrorCard` reste une façade de compatibilité pour ses consommateurs ; il
+ne maintient pas une seconde composition visuelle. Son ordre canonique est
+icône, titre, description, contexte facultatif, actions puis aide facultative.
+
 ## Modes d’affichage
 
 Les primitives suivent le contrat global de `DISPLAY_MODES_CANONICAL.md` :

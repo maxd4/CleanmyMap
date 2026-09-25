@@ -1,11 +1,18 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { RefreshCw, LifeBuoy } from "lucide-react";
+import { AlertTriangle, LifeBuoy, RefreshCw } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { CmmCard } from "@/components/ui/cmm-card";
-import { ErrorMessage } from "@/components/ui/error-message";
+import { CmmIcon } from "@/components/ui/cmm-icon";
 import { buildSupportHref } from "@/lib/errors/app-errors";
+import {
+  SystemStateAction,
+  SystemStateDescription,
+  SystemStateIcon,
+  SystemStateLayout,
+  SystemStateMeta,
+  SystemStateTitle,
+} from "@/components/ui/system-state";
 
 type ServerErrorCardProps = {
   title?: string;
@@ -30,37 +37,44 @@ export function ServerErrorCard({
   supportLabel = "Contacter le support",
   className,
 }: ServerErrorCardProps) {
+  const hasContext = Boolean(referenceCode || details);
+
   return (
-    <CmmCard tone="rose" variant="elevated" className={className}>
-      <ErrorMessage
-        kind="server"
-        title={title}
-        message={
-          <>
-            {message}
-            {referenceCode ? (
-              <span className="mt-2 block text-xs font-mono uppercase tracking-[0.16em] text-rose-700/80">
-                Référence: {referenceCode}
-              </span>
-            ) : null}
-            {details ? <span className="mt-2 block">{details}</span> : null}
-          </>
-        }
-        actions={
-          <>
-            {onRetry ? (
-              <CmmButton tone="primary" onClick={onRetry}>
-                <RefreshCw className="h-4 w-4" />
-                {retryLabel}
-              </CmmButton>
-            ) : null}
-            <CmmButton href={supportHref} tone="secondary">
-              <LifeBuoy className="h-4 w-4" />
-              {supportLabel}
-            </CmmButton>
-          </>
-        }
-      />
-    </CmmCard>
+    <SystemStateLayout variant="error" className={className}>
+      <SystemStateIcon variant="error">
+        <CmmIcon icon={AlertTriangle} size="xl" />
+      </SystemStateIcon>
+
+      <SystemStateTitle variant="error">{title}</SystemStateTitle>
+
+      <SystemStateDescription variant="error">{message}</SystemStateDescription>
+
+      {hasContext ? (
+        <SystemStateMeta
+          variant="error"
+          label={referenceCode ? "Référence de suivi" : "Contexte"}
+        >
+          {referenceCode ? (
+            <span className="font-mono text-xs uppercase tracking-[0.16em]">
+              {referenceCode}
+            </span>
+          ) : null}
+          {details ? <span className={referenceCode ? "mt-2 block" : undefined}>{details}</span> : null}
+        </SystemStateMeta>
+      ) : null}
+
+      <SystemStateAction>
+        {onRetry ? (
+          <CmmButton tone="primary" onClick={onRetry}>
+            <RefreshCw className="h-4 w-4" />
+            {retryLabel}
+          </CmmButton>
+        ) : null}
+        <CmmButton href={supportHref} tone="secondary">
+          <LifeBuoy className="h-4 w-4" />
+          {supportLabel}
+        </CmmButton>
+      </SystemStateAction>
+    </SystemStateLayout>
   );
 }
