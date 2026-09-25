@@ -1,4 +1,8 @@
 import type { ActionPhase } from "@/lib/actions/types";
+import type {
+  ActionParticipantImpactAttribution,
+  IndividualImpactMeasurement,
+} from "./individual-impact";
 import {
   resolveJoinedAt,
   resolveParticipationUpdatedAt,
@@ -92,7 +96,10 @@ export type JoinableActionItem = {
   pendingRequestsCount: number;
 };
 
-export type JoinableActionHistoryItem = JoinableActionItem;
+export type JoinableActionHistoryItem = JoinableActionItem & {
+  individualImpact?: IndividualImpactMeasurement | null;
+  personalImpactAttribution?: ActionParticipantImpactAttribution | null;
+};
 
 export type ActionParticipationReviewItem = {
   id: string;
@@ -105,6 +112,8 @@ export type ActionParticipationReviewItem = {
   participationSource: ParticipationSource;
   /** Context-only signal; it never accepts a claim or proves field presence. */
   wasRegisteredBeforeAction: boolean;
+  individualImpact: IndividualImpactMeasurement | null;
+  personalImpactAttribution?: ActionParticipantImpactAttribution | null;
 };
 
 export type ActionParticipationSearchItem = {

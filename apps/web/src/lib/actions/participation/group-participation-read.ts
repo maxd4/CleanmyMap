@@ -34,6 +34,11 @@ import type {
   JoinableActionItem,
 } from "./group-participation-contract";
 import { usesRegistrationStore } from "./action-phase";
+import {
+  INDIVIDUAL_IMPACT_SELECT,
+  allocateActionParticipantImpact,
+  toIndividualImpactMeasurement,
+} from "./individual-impact";
 
 export function isVisibleInGroupForms(
   action: Pick<
@@ -142,6 +147,63 @@ export async function loadJoinableActions(
   );
 }
 
+type ParticipantImpactRow = {
+  id: string;
+  participationStatus: string;
+  measurement: ReturnType<typeof toIndividualImpactMeasurement>;
+};
+
+function groupParticipantImpactRows(
+  data: unknown,
+): Map<string, ParticipantImpactRow[]> {
+  const rowsByActionId = new Map<string, ParticipantImpactRow[]>();
+  for (const row of (data ?? []) as Array<Record<string, unknown>>) {
+    const actionId = typeof row.action_id === "string" ? row.action_id : null;
+    const id = typeof row.user_id === "string" ? row.user_id : null;
+    if (!actionId || !id) continue;
+    const rows = rowsByActionId.get(actionId) ?? [];
+    rows.push({ id, participationStatus: String(row.participation_status ?? "confirmed"), measurement: toIndividualImpactMeasurement(row) });
+    rowsByActionId.set(actionId, rows);
+  }
+  return rowsByActionId;
+}
+
+function allocateParticipantImpactRows(
+  actionById: Map<string, ActionPreviewRow>,
+  actionIds: string[],
+  rowsByActionId: Map<string, ParticipantImpactRow[]>,
+): Map<string, ReturnType<typeof allocateActionParticipantImpact>> {
+  const output = new Map<string, ReturnType<typeof allocateActionParticipantImpact>>();
+  for (const actionId of actionIds) {
+    const action = actionById.get(actionId);
+    output.set(actionId, allocateActionParticipantImpact({
+      totalWasteKg: action?.waste_kg ?? null,
+      totalCigaretteButts: action?.cigarette_butts ?? null,
+      participants: rowsByActionId.get(actionId) ?? [],
+    }));
+  }
+  return output;
+}
+
+async function loadParticipantImpactAttributions(
+  supabase: SupabaseClient,
+  actionById: Map<string, ActionPreviewRow>,
+  finalActionIds: string[],
+): Promise<Map<string, ReturnType<typeof allocateActionParticipantImpact>>> {
+  if (finalActionIds.length === 0) return new Map();
+  const result = await supabase
+    .from("action_participants")
+    .select(`user_id, action_id, participation_status, ${INDIVIDUAL_IMPACT_SELECT}`)
+    .in("action_id", finalActionIds)
+    .eq("participation_status", ACTIVE_PARTICIPATION_STATUS);
+  if (result.error) return new Map();
+  return allocateParticipantImpactRows(
+    actionById,
+    finalActionIds,
+    groupParticipantImpactRows(result.data),
+  );
+}
+
 export async function loadUserParticipationHistory(
   supabase: SupabaseClient,
   params: {
@@ -166,7 +228,7 @@ export async function loadUserParticipationHistory(
         .limit(params.limit),
       supabase
         .from("action_participants")
-        .select("action_id, created_at, joined_at, updated_at, participation_status, participation_source")
+        .select(`user_id, action_id, created_at, joined_at, updated_at, participation_status, participation_source, ${INDIVIDUAL_IMPACT_SELECT}`)
         .eq("user_id", params.userId)
         .order("updated_at", { ascending: false })
         .order("joined_at", { ascending: false })
@@ -181,7 +243,7 @@ export async function loadUserParticipationHistory(
     }
 
     const registrationRows = (registrationResult.data ?? []) as ActionRegistrationStatusRow[];
-    const participationRows = (participationResult.data ?? []) as ActionParticipantRecordRow[];
+    const participationRows = (participationResult.data ?? []) as unknown as ActionParticipantRecordRow[];
 
     if (registrationRows.length === 0 && participationRows.length === 0) {
       return [];
@@ -197,6 +259,16 @@ export async function loadUserParticipationHistory(
       query.select(ACTION_PREVIEW_COLUMNS).in("id", actionIds),
     );
     const actionById = new Map(actions.map((action) => [action.id, action] as const));
+
+    const finalActionIds = actionIds.filter((actionId) => {
+      const action = actionById.get(actionId);
+      return action && !usesRegistrationStore(action.action_phase);
+    });
+    const participantImpactByActionId = await loadParticipantImpactAttributions(
+      supabase,
+      actionById,
+      finalActionIds,
+    );
 
     const participantCounts = new Map<string, number>();
     const participantSummaryByActionId = new Map<string, ActionParticipantSummary>();
@@ -230,6 +302,8 @@ export async function loadUserParticipationHistory(
             source: participation.participation_source,
             joinedAt: resolveJoinedAt(participation),
             updatedAt: resolveParticipationUpdatedAt(participation),
+            participantId: participation.user_id,
+            individualImpact: toIndividualImpactMeasurement(participation),
           }));
 
       return records.map((record) => {
@@ -255,6 +329,12 @@ export async function loadUserParticipationHistory(
             (participantSummaryByActionId.get(action.id)?.totalCount ?? 0) -
               (participantCounts.get(action.id) ?? 0),
           ),
+          individualImpact:
+            "individualImpact" in record ? record.individualImpact : null,
+          personalImpactAttribution:
+            "participantId" in record
+              ? participantImpactByActionId.get(action.id)?.get(record.participantId) ?? null
+              : null,
         } satisfies JoinableActionHistoryItem;
       });
     });

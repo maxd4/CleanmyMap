@@ -134,3 +134,26 @@ Le facteur par défaut configurable est `0,35 kgCO₂e/kWh` pour des serveurs ma
 ## Lecture correcte
 
 Le protocole n'a pas pour but de sur-vendre l'impact. Il sert a rendre l'impact comparable, discutable et ameliorable.
+
+## Attribution individuelle post-action
+
+Les participations finales proviennent exclusivement de `action_participants`.
+Une mesure individuelle saisie par l'organisateur autorisé de l'action ou par
+un administrateur reste une observation brute attachée à la participation :
+masse de déchets hors mégots, condition et méthode ; nombre de mégots et/ou
+masse, condition et provenance. Une mesure `NULL` n'est pas un zéro, et une
+valeur dérivée ne remplace jamais la valeur brute.
+
+La quote-part additive est conservatrice : les participations confirmées
+mesurées utilisent leur mesure exacte ; les confirmés non mesurés se partagent
+uniquement `totalAction - somme(mesures exactes)`. Si le total collectif est
+inconnu, les mesures connues restent disponibles et les autres valeurs sont
+`NA`. Un dépassement du total connu est une incohérence, sans reliquat négatif,
+et bloque l'éligibilité à de nouveaux crédits Mohs pour la métrique concernée.
+
+Pour la gamification uniquement, la masse brute de déchets reçoit l'hypothèse
+versionnée `impact-terrain-2026-waste-moisture-v1` : `sec = 1,0`, `humide =
+0,7`, `mouille = 0,4`. L'équivalent sec est donc `masse_brute × facteur` ; il
+ne modifie ni la masse collective ni les rapports. Les mégots réutilisent le
+moteur canonique `2500 mégots/kg`, avec les mêmes facteurs d'état ; un nombre
+compté explicitement est prioritaire sur toute conversion de masse.
