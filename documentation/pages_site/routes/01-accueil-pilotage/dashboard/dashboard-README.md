@@ -14,6 +14,7 @@
 - **Action principale attendue** : Créer une action ou ouvrir un raccourci utile du quotidien.
 - **Palette attendue** : amber / orange
 - **Scope** : cockpit privé avec résumé décisionnel, notifications paginées, action prioritaire et accès rapides.
+- **Configuration** : le dashboard expose un CTA secondaire vers `/reglages` ; les préférences, la confidentialité et la demande de suppression sont gérées sur cette surface canonique.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : amber — canvas #fff2df, halo rgba(249, 115, 22, 0.26)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.

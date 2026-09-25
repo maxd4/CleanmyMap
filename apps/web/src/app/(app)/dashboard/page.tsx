@@ -424,7 +424,7 @@ export default async function DashboardPage() {
               topBarContent={locale === "fr" ? "Configuration" : "Settings"}
               className="p-8 sm:p-10"
             >
-              <AccountSettingsSection />
+              <AccountSettingsSection compact />
             </FamilyRubriqueCard>
           </div>
 

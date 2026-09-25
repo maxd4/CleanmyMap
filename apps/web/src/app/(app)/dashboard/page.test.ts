@@ -51,9 +51,13 @@ vi.mock("@/components/dashboard/dashboard-entrance", () => ({
 }));
 
 vi.mock("@/components/account/account-settings-section", () => ({
-  AccountSettingsSection: () => React.createElement("div"),
+  AccountSettingsSection: ({ compact }: { compact?: boolean }) =>
+    React.createElement(
+      compact ? "a" : "div",
+      compact ? { href: "/reglages" } : undefined,
+      compact ? "Ouvrir les réglages" : undefined,
+    ),
 }));
-
 
 vi.mock("@/components/ui/clerk-required-gate", () => ({
   ClerkRequiredGate: ({ children, isAuthenticated }: { children: React.ReactNode; isAuthenticated: boolean }) =>
@@ -228,5 +232,15 @@ describe("/dashboard page contract", () => {
     expect(markup).not.toContain("/api/reports/actions.csv");
     expect(markup).not.toContain("/api/reports/actions.json");
     expect(markup).not.toContain("territory-map");
+  });
+
+  it("points account configuration to the canonical settings surface", async () => {
+    mocks.getSafeAuthSession.mockResolvedValue({ userId: "user-1", clerkReachable: true });
+
+    const markup = renderToStaticMarkup(await DashboardPage());
+
+    expect(markup).toContain('href="/reglages"');
+    expect(markup).toContain("Ouvrir les réglages");
+    expect(markup).not.toContain("Demander la suppression de mon compte");
   });
 });

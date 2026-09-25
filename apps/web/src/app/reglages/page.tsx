@@ -1,11 +1,13 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Settings, User, Bell, Eye, MapPin } from "lucide-react";
+import { ArrowLeft, Settings, User, Eye, MapPin } from "lucide-react";
 import type { Metadata } from "next";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
-import { getServerDisplayMode, getServerLocale } from "@/lib/server-preferences";
+import { getServerLocale } from "@/lib/server-preferences";
 import { DisplayNameModeSetting } from "@/components/account/display-name-mode-setting";
+import { AccountSettingsSection } from "@/components/account/account-settings-section";
+import { SitePreferencesControls } from "@/components/ui/site-preferences-controls";
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmPageLayout, CmmSectionGroup } from "@/components/ui/cmm-section";
 import { HOME_ROUTE } from "@/lib/home-routes";
@@ -22,6 +24,51 @@ export const metadata: Metadata = {
   },
 };
 
+const REGLAGES_COPY = {
+  fr: {
+    title: "Réglages",
+    subtitle: "Personnalisez votre expérience CleanMyMap selon vos préférences et besoins.",
+    back: "Retour au profil",
+    profileAccount: "Profil et compte",
+    personalInfo: "Informations personnelles",
+    displayName: "Nom d'affichage",
+    notDefined: "Non défini",
+    manageProfile: "Gérer le profil complet",
+    profileDetails: "Badges, progression, statistiques",
+    display: "Affichage",
+    displayDetails: "Interface et navigation",
+    location: "Localisation",
+    locationDetails: "Zone d'action préférée",
+    changeLocation: "Modifier la localisation",
+    locationActionDetails: "Arrondissement et type de zone d'intervention",
+    quickActions: "Actions rapides",
+    dashboard: "Mon espace",
+    profile: "Mon profil",
+    home: "Accueil",
+  },
+  en: {
+    title: "Settings",
+    subtitle: "Customize your CleanMyMap experience according to your preferences and needs.",
+    back: "Back to profile",
+    profileAccount: "Profile and account",
+    personalInfo: "Personal information",
+    displayName: "Display name",
+    notDefined: "Not set",
+    manageProfile: "Manage full profile",
+    profileDetails: "Badges, progress, statistics",
+    display: "Display",
+    displayDetails: "Interface and navigation",
+    location: "Location",
+    locationDetails: "Preferred action area",
+    changeLocation: "Change location",
+    locationActionDetails: "District and intervention area type",
+    quickActions: "Quick actions",
+    dashboard: "Dashboard",
+    profile: "My profile",
+    home: "Home",
+  },
+} as const;
+
 export default async function ReglagesPage() {
   const { userId } = await getSafeAuthSession();
   
@@ -29,14 +76,14 @@ export default async function ReglagesPage() {
     redirect("/sign-in");
   }
 
-  const [identity, displayMode, locale] = await Promise.all([
+  const [identity, locale] = await Promise.all([
     getCurrentUserIdentity(),
-    getServerDisplayMode(),
     getServerLocale(),
   ]);
 
-  const isFrench = locale === "fr";
+  const copy = REGLAGES_COPY[locale];
   const displayNameMode = identity?.displayNameMode ?? "full_name";
+  const displayName = identity?.displayName || copy.notDefined;
   const pageFamily = resolvePageFamily("/reglages");
 
   return (
@@ -49,19 +96,15 @@ export default async function ReglagesPage() {
       <CmmPageLayout>
           <PageHeader
             family={pageFamily}
-            title={isFrench ? "Réglages" : "Settings"}
-            subtitle={
-              isFrench
-                ? "Personnalisez votre expérience CleanMyMap selon vos préférences et besoins."
-                : "Customize your CleanMyMap experience according to your preferences and needs."
-            }
+            title={copy.title}
+            subtitle={copy.subtitle}
             action={
               <Link
                 href={PROFIL_ROUTE}
                 className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-2.5 text-sm font-black text-sky-800 transition hover:-translate-y-[1px] hover:bg-sky-50"
               >
                 <ArrowLeft className="h-4 w-4" />
-                {isFrench ? "Retour au profil" : "Back to profile"}
+                {copy.back}
               </Link>
             }
           />
@@ -77,10 +120,10 @@ export default async function ReglagesPage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">
-                    {isFrench ? "Profil et compte" : "Profile and account"}
+                    {copy.profileAccount}
                   </h2>
                   <p className="text-sm text-slate-600">
-                    {isFrench ? "Informations personnelles" : "Personal information"}
+                    {copy.personalInfo}
                   </p>
                 </div>
               </div>
@@ -88,16 +131,16 @@ export default async function ReglagesPage() {
               <div className="space-y-4">
                 <div className="rounded-xl border border-sky-100 bg-sky-50/60 p-4">
                   <p className="text-sm font-semibold text-slate-900">
-                    {isFrench ? "Nom d'affichage" : "Display name"}
+                    {copy.displayName}
                   </p>
                   <p className="text-sm text-slate-600 mt-1">
-                    {identity?.displayName || (isFrench ? "Non défini" : "Not set")}
+                    {displayName}
                   </p>
                 </div>
 
                 <DisplayNameModeSetting
                   currentMode={displayNameMode}
-                  displayName={identity?.displayName || (isFrench ? "Non défini" : "Not set")}
+                  displayName={displayName}
                   userId={identity?.userId || "unknown"}
                   locale={locale as "fr" | "en"}
                 />
@@ -107,10 +150,10 @@ export default async function ReglagesPage() {
                   className="block rounded-xl border border-sky-100 bg-white/80 p-4 transition-colors hover:border-sky-200 hover:bg-sky-50/70"
                 >
                   <p className="text-sm font-semibold text-slate-900">
-                    {isFrench ? "Gérer le profil complet" : "Manage full profile"}
+                    {copy.manageProfile}
                   </p>
                   <p className="text-sm text-slate-600 mt-1">
-                    {isFrench ? "Badges, progression, statistiques" : "Badges, progress, statistics"}
+                    {copy.profileDetails}
                   </p>
                 </Link>
               </div>
@@ -124,62 +167,15 @@ export default async function ReglagesPage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">
-                    {isFrench ? "Affichage" : "Display"}
+                    {copy.display}
                   </h2>
                   <p className="text-sm text-slate-600">
-                    {isFrench ? "Interface et navigation" : "Interface and navigation"}
+                    {copy.displayDetails}
                   </p>
                 </div>
               </div>
               
-              <div className="space-y-4">
-                <div className="rounded-xl border border-sky-100 bg-white/80 p-4">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {isFrench ? "Mode d'affichage" : "Display mode"}
-                  </p>
-                  <p className="text-sm text-slate-600 mt-1">
-                    {displayMode === "exhaustif"
-                      ? (isFrench ? "Exhaustif (toutes les options)" : "Exhaustive (all options)")
-                      : displayMode === "sobre"
-                        ? (isFrench ? "Sobre (police système locale)" : "Calm (local system font)")
-                        : (isFrench ? "Essentiel (options principales)" : "Essential (main options)")}
-                  </p>
-                </div>
-                
-                <div className="rounded-xl border border-sky-100 bg-white/80 p-4">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {isFrench ? "Langue" : "Language"}
-                  </p>
-                  <p className="text-sm text-slate-600 mt-1">
-                    {locale === "fr" ? "Français" : "English"}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            {/* Notifications */}
-            <section className="rounded-[2rem] border border-sky-200/60 bg-white/82 p-6 shadow-[0_18px_50px_-40px_rgba(14,165,233,0.35)] backdrop-blur-xl">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                  <Bell className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">
-                    {isFrench ? "Notifications" : "Notifications"}
-                  </h2>
-                  <p className="text-sm text-slate-600">
-                    {isFrench ? "Alertes et rappels" : "Alerts and reminders"}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="rounded-xl border border-dashed border-sky-200 bg-sky-50/60 p-4">
-                <p className="text-sm font-medium text-slate-600 text-center">
-                  {isFrench 
-                    ? "Section réservée pour une prochaine phase"
-                    : "Reserved section for a later phase"}
-                </p>
-              </div>
+              <SitePreferencesControls surface="light" />
             </section>
 
             {/* Localisation */}
@@ -190,10 +186,10 @@ export default async function ReglagesPage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">
-                    {isFrench ? "Localisation" : "Location"}
+                    {copy.location}
                   </h2>
                   <p className="text-sm text-slate-600">
-                    {isFrench ? "Zone d'action préférée" : "Preferred action area"}
+                    {copy.locationDetails}
                   </p>
                 </div>
               </div>
@@ -203,21 +199,21 @@ export default async function ReglagesPage() {
                 className="block rounded-xl border border-sky-100 bg-white/80 p-4 transition-colors hover:border-sky-200 hover:bg-sky-50/70"
               >
                 <p className="text-sm font-semibold text-slate-900">
-                  {isFrench ? "Modifier la localisation" : "Change location"}
+                  {copy.changeLocation}
                 </p>
                 <p className="text-sm text-slate-600 mt-1">
-                  {isFrench 
-                    ? "Arrondissement et type de zone d'intervention"
-                    : "District and intervention area type"}
+                  {copy.locationActionDetails}
                 </p>
               </Link>
             </section>
           </div>
 
+          <AccountSettingsSection />
+
           {/* Actions rapides */}
           <section className="rounded-[2rem] border border-sky-200/60 bg-white/82 p-6 shadow-[0_18px_50px_-40px_rgba(14,165,233,0.35)] backdrop-blur-xl">
             <h2 className="text-xl font-bold text-slate-900 mb-4">
-              {isFrench ? "Actions rapides" : "Quick actions"}
+              {copy.quickActions}
             </h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Link
@@ -229,7 +225,7 @@ export default async function ReglagesPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900">
-                    {isFrench ? "Mon espace" : "Dashboard"}
+                    {copy.dashboard}
                   </p>
                 </div>
               </Link>
@@ -243,7 +239,7 @@ export default async function ReglagesPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900">
-                    {isFrench ? "Mon profil" : "My profile"}
+                    {copy.profile}
                   </p>
                 </div>
               </Link>
@@ -257,7 +253,7 @@ export default async function ReglagesPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900">
-                    {isFrench ? "Accueil" : "Home"}
+                    {copy.home}
                   </p>
                 </div>
               </Link>

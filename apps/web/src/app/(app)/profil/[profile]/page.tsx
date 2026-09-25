@@ -208,13 +208,13 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
           </FamilyRubriqueCard>
         )}
 
-        {/* ── Paramètres ── */}
+        {/* ── Accès aux réglages ── */}
         <FamilyRubriqueCard
           withTopBar={true}
           topBarContent="Configuration"
           className="p-12"
         >
-          <AccountSettingsSection />
+          <AccountSettingsSection compact />
         </FamilyRubriqueCard>
       </div>
     </SectionShell>

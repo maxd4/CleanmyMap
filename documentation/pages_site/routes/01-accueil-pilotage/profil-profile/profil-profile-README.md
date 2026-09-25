@@ -9,10 +9,10 @@
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Statut** : dynamique
 - **Contexte nécessaire** : Paramètre `profile` valide et compte connecté ; un profil différent du rôle actif est redirigé, sauf sélection autorisée par l'accès administrateur.
-- **Objectif utilisateur principal** : Gérer les réglages, actions prioritaires, progression, badges et parrainage du profil actif.
+- **Objectif utilisateur principal** : Consulter l'identité active, les actions prioritaires, la progression, les badges et le parrainage du profil actif.
 - **Action principale attendue** : Consulter sa progression, ouvrir sa carte d’impact personnelle ou configurer son compte depuis la surface de profil.
 - **Palette attendue** : amber / orange
-- **Scope** : surface de profil dynamique avec réglages, actions par rôle, progression/badges, parrainage et sélection des profils explicitement autorisés.
+- **Scope** : surface de profil dynamique avec actions par rôle, progression/badges, parrainage, sélection des profils explicitement autorisés et accès secondaire vers `/reglages` pour les préférences et paramètres de compte.
 - **Terminée** : non
 - **Couleurs actuellement détectées** : amber — canvas #fff2df, halo rgba(249, 115, 22, 0.26)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
@@ -23,6 +23,7 @@
 - cartes métriques
 - CTA de navigation
 - Accès contextuel : le bloc « Progression & badges » expose « Voir ma carte d’impact » vers `/profil/impact`.
+- Configuration : le bloc « Configuration » expose « Ouvrir les réglages » vers `/reglages` ; la confidentialité, la suppression et les préférences ne sont pas dupliquées dans le profil.
 - indicateurs prioritaires
 - **Textes à réduire ou supprimer** :
 - Rappels redondants
