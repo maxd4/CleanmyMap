@@ -29,13 +29,22 @@ couplé peut justifier une extraction plus tôt.
 
 ## Politique des fichiers volumineux
 
-Deux seuils communs sont utilisés par les contrôles du dépôt :
+Les contrôles déterminent deux seuils par KIND via `classifyFileKind()` :
 
-- `REVIEW_THRESHOLD` : `>500` lignes ou `>40 KiB`, signal d'audit
-  `REVIEW_REQUIRED` sans split automatique ; le mode `--enforce` interdit
-  toutefois tout nouveau REVIEW et toute croissance au-delà de son plafond
-  numérique ratifié ;
-- `HARD_THRESHOLD` : `>1000` lignes ou `>50 KiB`, nouveau dépassement bloquant.
+| KIND | REVIEW | HARD |
+| --- | --- | --- |
+| runtime | `>500` lignes ou `>40 KiB` | `>1000` lignes ou `>50 KiB` |
+| test | `>1000` lignes ou `>50 KiB` | `>1500` lignes ou `>80 KiB` |
+| data/config | `>800` lignes ou `>50 KiB` | `>1500` lignes ou `>80 KiB` |
+| generated | informatif si réellement régénérable | informatif si réellement régénérable |
+
+`REVIEW_REQUIRED` reste un signal d'audit sans split automatique ; le mode
+`--enforce` interdit tout nouveau REVIEW/HARD et toute croissance au-delà du
+plafond numérique ratifié pour le KIND. Un fichier `generated` n'est exclu du
+radar architectural que si sa provenance régénérable est prouvée ; un fichier
+source manuel placé sous un chemin ressemblant à generated reste contrôlé.
+La taille d'un test signale la lisibilité et la cohésion des scénarios ; elle
+n'est pas assimilée à un monolithe runtime.
 
 Le seuil ne déclenche jamais un split automatique. La décision repose sur la
 cohésion, les responsabilités, le couplage, la testabilité et les contrats.
@@ -45,10 +54,13 @@ Les entrées numériques `review[]` de la baseline ne sont pas des décisions
 architecturales : un état `IMPROVED` conserve le plafond abaissé après une
 amélioration mesurée.
 
-Les statuts architecturaux sont `REVIEW_REQUIRED`, `PROACTIVE_SPLIT`,
+Les statuts architecturaux concernent prioritairement runtime et data/config et
+sont `REVIEW_REQUIRED`, `PROACTIVE_SPLIT`,
 `COHESIVE_SINGLE_FILE`, `ALREADY_MODULARIZED` et `DEFERRED_SPLIT`.
 `REVIEW_REQUIRED` est un état d'audit, pas une décision. `DEFERRED_SPLIT`
-exige une raison et un déclencheur de reprise explicite.
+exige une raison et un déclencheur de reprise explicite. Un test ne reçoit
+`PROACTIVE_SPLIT` que si plusieurs contrats ou scénarios indépendants ont une
+frontière naturelle de séparation démontrée.
 
 ## Signaux qui justifient une revue structurelle
 

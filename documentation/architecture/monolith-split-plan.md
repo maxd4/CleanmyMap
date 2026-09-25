@@ -5,25 +5,35 @@ identifié par `RADAR_REF`; le statut `CURRENT` signifie que ce snapshot a été
 généré depuis la ref annoncée, pas qu’un ancien SHA reste courant par nature.
 
 RADAR_REF=e5913889e5115a1b23d1187c6d75b4f2bafba5bf
-RADAR_GENERATED_AT=2026-09-25T19:54:15.288+02:00
+RADAR_GENERATED_AT=2026-09-25T21:03:06.465+02:00
 RADAR_STATUS=CURRENT
 
 ## Politique et mesure
 
-Le radar utilise le même moteur de mesure que `check-top-heavy-files.mjs` :
-fichiers `.ts` et `.tsx` suivis sous `apps/web/src`, octets des blobs Git et
-nombre de lignes mesuré sur le contenu exact de la ref.
+Le radar utilise le même moteur de mesure que `check-top-heavy-files.mjs` et
+réutilise `classifyFileKind()` : fichiers `.ts` et `.tsx` suivis sous
+`apps/web/src`, octets des blobs Git et nombre de lignes mesuré sur le contenu
+exact de la ref.
 
-- `REVIEW_THRESHOLD`: `>500` lignes ou `>40 KiB` — signal d’audit sans split
-  automatique ; `quality:top-heavy --enforce` empêche tout nouveau REVIEW et
-  toute croissance au-delà du plafond numérique ratifié.
-- `HARD_THRESHOLD`: `>1000` lignes ou `>50 KiB` — nouveau dépassement bloquant.
-- Baseline courante: `scripts/checks/heavy-files-baseline.json`, version `2`.
+| KIND | REVIEW | HARD | Usage radar |
+| --- | --- | --- | --- |
+| runtime | `>500` lignes ou `>40 KiB` | `>1000` lignes ou `>50 KiB` | radar architectural |
+| test | `>1000` lignes ou `>50 KiB` | `>1500` lignes ou `>80 KiB` | tests volumineux, signal secondaire |
+| data/config | `>800` lignes ou `>50 KiB` | `>1500` lignes ou `>80 KiB` | radar architectural |
+| generated | résumé informatif si régénérable | résumé informatif si régénérable | exclu seulement avec provenance prouvée |
+
+`REVIEW_REQUIRED` est un signal d’audit sans split automatique. En mode
+`--enforce`, `quality:top-heavy` bloque les nouveaux dépassements et la
+croissance au-delà du plafond ratifié propre au KIND. La taille d’un test
+reste un signal de lisibilité et de cohésion des scénarios ; elle n’est pas
+traitée comme un monolithe runtime. Un chemin `generated` sans preuve de
+régénérabilité reste contrôlé comme du code manuel.
+
+- Baseline courante: `scripts/checks/heavy-files-baseline.json`, version `3`.
   `allowed[]` reste réservé aux exceptions HARD portant une décision
   architecturale explicite ; `review[]` conserve les plafonds numériques des
-  fichiers REVIEW et ses entrées ne portent aucune décision d’architecture.
-  Un état `IMPROVED` conserve un plafond abaissé lorsqu’un fichier repasse sous
-  REVIEW.
+  fichiers REVIEW avec leur `kind`, sans décision d’architecture. Un état
+  `IMPROVED` conserve un plafond abaissé lorsqu’un fichier repasse sous REVIEW.
 
 Commande de mesure utilisée :
 
@@ -31,13 +41,11 @@ Commande de mesure utilisée :
 node scripts/checks/check-top-heavy-files.mjs --ref=e5913889e5115a1b23d1187c6d75b4f2bafba5bf --top=25 --enforce
 ```
 
-Mesures de la ref : `2492` fichiers mesurés, `92` en `REVIEW_REQUIRED`, `0` en
-`HARD_LIMIT`. Le maximum est de `984` lignes et `32700` octets. La taille est
-un signal ; la décision architecturale dépend de la cohésion, des
-responsabilités, du couplage, de la testabilité et des contrats.
-
-Le type informatif est `runtime`, `test`, `data/config` ou `generated`. Il ne
-modifie pas les seuils.
+Mesures de la ref : `2492` fichiers mesurés, `65` runtime/data-config en
+`REVIEW_REQUIRED`, `0` test volumineux, `0` generated, `0` en `HARD_LIMIT`. Le
+maximum pertinent du radar architectural est de `881` lignes et `29058`
+octets. La taille est un signal ; la décision architecturale dépend de la
+cohésion, des responsabilités, du couplage, de la testabilité et des contrats.
 
 ## Vérification des façades modularisées
 
@@ -69,40 +77,60 @@ réinventées par la taille du snapshot.
 | `apps/web/src/components/sections/rubriques/methodologie-page-client.tsx` | 685 | 29441 | runtime | `COHESIVE_SINGLE_FILE` | Client de page cohésif ; aucune extraction mécanique par taille. |
 | `apps/web/src/components/sections/rubriques/free-plan-services-methodology-visual.impact.tsx` | 695 | 34077 | runtime | `ALREADY_MODULARIZED` | Module déjà structuré ; ne pas le requalifier sur le seul signal de taille. |
 
-## Radar des fichiers à auditer
+## Radar architectural
 
-Les entrées suivantes font partie du top 25 mesuré sur cette ref et dépassent
-le seuil de revue sans être couvertes par une décision préexistante ci-dessus.
-Elles restent `REVIEW_REQUIRED`: ce statut décrit un état d’audit, pas une
-prescription de découpage.
+Les entrées suivantes font partie du top 25 runtime/data-config mesuré sur
+cette ref et dépassent le seuil de revue sans être couvertes par une décision
+préexistante ci-dessus. Elles restent `REVIEW_REQUIRED`: ce statut décrit un
+état d’audit, pas une prescription de découpage.
 
 | PATH | LINES | BYTES | KIND | ARCHITECTURE_DECISION |
 | --- | ---: | ---: | --- | --- |
-| `apps/web/src/app/api/actions/[actionId]/route.test.ts` | 984 | 32700 | test | `REVIEW_REQUIRED` |
-| `apps/web/src/app/api/actions/route.submit.test.ts` | 968 | 30497 | test | `REVIEW_REQUIRED` |
 | `apps/web/src/components/actions/action-declaration/form/use-action-declaration-form.ts` | 846 | 30491 | runtime | `REVIEW_REQUIRED` |
 | `apps/web/src/components/actions/action-declaration/steps/ActionStepLocation.tsx` | 832 | 33146 | runtime | `REVIEW_REQUIRED` |
-| `apps/web/src/app/api/chat/route.test.ts` | 824 | 26342 | test | `REVIEW_REQUIRED` |
 | `apps/web/src/components/actions/action-declaration/steps/ActionStepIdentity.tsx` | 794 | 35880 | runtime | `REVIEW_REQUIRED` |
 | `apps/web/src/components/actions/map/action-popup-content-header.tsx` | 792 | 33740 | runtime | `REVIEW_REQUIRED` |
-| `apps/web/src/lib/learning/quiz/quiz-personal-progress.ts` | 759 | 25419 | runtime | `REVIEW_REQUIRED` |
-| `apps/web/src/components/actions/action-declaration/payload.test.ts` | 742 | 23446 | test | `REVIEW_REQUIRED` |
 | `apps/web/src/components/actions/action-declaration/form/action-declaration-form.tsx` | 733 | 32321 | runtime | `REVIEW_REQUIRED` |
-| `apps/web/src/app/api/route/recommend/route.response.test.ts` | 720 | 24339 | test | `REVIEW_REQUIRED` |
-| `apps/web/src/lib/environmental-impact-estimator/constants.ts` | 719 | 26388 | data/config | `REVIEW_REQUIRED` |
 | `apps/web/src/lib/supabase/storage-business-contribution.ts` | 718 | 24975 | runtime | `REVIEW_REQUIRED` |
-| `apps/web/src/lib/gamification/progression-data.ts` | 704 | 20931 | data/config | `REVIEW_REQUIRED` |
 | `apps/web/src/lib/environmental-impact-estimator/project-signals.calculations.ts` | 703 | 22010 | runtime | `REVIEW_REQUIRED` |
-| `apps/web/src/app/api/admin/creator-inbox/route.test.ts` | 688 | 23251 | test | `REVIEW_REQUIRED` |
 | `apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx` | 679 | 25408 | runtime | `REVIEW_REQUIRED` |
 | `apps/web/src/app/docs/[...segments]/route.ts` | 677 | 18727 | runtime | `REVIEW_REQUIRED` |
 | `apps/web/src/components/reports/web-document/sections.tsx` | 674 | 26318 | runtime | `REVIEW_REQUIRED` |
-| `apps/web/src/lib/actions/store.test.ts` | 673 | 19796 | test | `REVIEW_REQUIRED` |
+| `apps/web/src/lib/pdf-export/simple-pdf.ts` | 668 | 19095 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/lib/validation/action.ts` | 664 | 24932 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/lib/geo/greater-paris.ts` | 660 | 16393 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/lib/actions/pollution/current-place-state.ts` | 647 | 20180 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/lib/actions/http.ts` | 642 | 18515 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/components/sections/rubriques/recycling-question-assistant/assistant-utils.ts` | 640 | 25009 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/lib/actions/participation/group-participation-review.ts` | 637 | 21448 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/lib/route/route-predicted-targets.ts` | 635 | 21960 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/lib/supabase/storage-usage.ts` | 635 | 18204 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/components/actions/map/actions-map-geometry.utils.ts` | 634 | 16787 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/lib/actions/pollution/local-repollution-calibration.ts` | 632 | 19017 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/components/actions/map/map-layers-shape-layers.tsx` | 631 | 24032 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/components/sections/rubriques/route/route-section.tsx` | 627 | 32382 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/components/reports/web-document/reports-web-document.shared.tsx` | 615 | 21754 | runtime | `REVIEW_REQUIRED` |
+| `apps/web/src/components/learn/quiz/environmental-quiz.tsx` | 606 | 22265 | runtime | `REVIEW_REQUIRED` |
 
-Le top 25 est un extrait traçable du radar. Les autres fichiers qui dépassent
-`REVIEW_THRESHOLD` restent à auditer sans statut architectural implicite ; leur
-présence dans `review[]` est uniquement un ratchet numérique et ne vaut jamais
-`COHESIVE_SINGLE_FILE`.
+## Tests volumineux
+
+La ref ne contient aucun test au-dessus de son seuil REVIEW (`>1000` lignes ou
+`>50 KiB`). Une future entrée dans cette section restera un signal de
+lisibilité et de cohésion des scénarios. `PROACTIVE_SPLIT` ne sera retenu que
+si plusieurs contrats ou scénarios indépendants ont une frontière naturelle
+de séparation démontrée.
+
+## Generated
+
+La ref ne contient aucun fichier `generated` mesuré sous `apps/web/src`. Cette
+section reste informative : l’exclusion du radar architectural exige une
+provenance générée et une régénérabilité démontrées ; le classement par chemin
+ne peut pas masquer du code source manuel.
+
+Le top 25 est un extrait traçable du radar architectural. Les autres fichiers
+qui dépassent le seuil REVIEW propre à leur KIND restent à auditer sans statut
+architectural implicite ; leur présence dans `review[]` est uniquement un
+ratchet numérique et ne vaut jamais `COHESIVE_SINGLE_FILE`.
 
 ## Grille d’audit future
 

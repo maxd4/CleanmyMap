@@ -12,14 +12,22 @@ export function isMeasuredFile(file) {
 
 export function measureContent(content) {
   const buffer = Buffer.isBuffer(content) ? content : Buffer.from(content, "utf8");
+  const normalizedText = buffer.toString("utf8").replaceAll("\r\n", "\n");
   return {
-    lines: buffer.toString("utf8").split(/\r?\n/).length,
-    bytes: buffer.length,
+    lines: normalizedText.split("\n").length,
+    bytes: Buffer.byteLength(normalizedText, "utf8"),
   };
 }
 
 export function measureRepositoryFile(view, file) {
-  return { file, ...measureContent(view.readBinary(file)) };
+  const content = view.readBinary(file);
+  const kind = classifyFileKind(file);
+  return {
+    file,
+    ...measureContent(content),
+    kind,
+    generated: isRegenerableGeneratedFile(file, content),
+  };
 }
 
 export function collectMeasuredRows(view, scanRoots) {
@@ -44,4 +52,16 @@ export function classifyFileKind(file) {
     return "data/config";
   }
   return "runtime";
+}
+
+const GENERATED_SOURCE_MARKER = /(?:@generated\b|generated\s+(?:file|source)|do not edit|ne pas modifier)/i;
+
+export function isRegenerableGeneratedFile(file, content = "") {
+  if (classifyFileKind(file) !== "generated") return false;
+
+  const normalized = file.replaceAll("\\", "/");
+  if (/(?:^|\/)next-env\.d\.ts$/i.test(normalized)) return true;
+
+  const text = Buffer.isBuffer(content) ? content.toString("utf8") : String(content);
+  return GENERATED_SOURCE_MARKER.test(text.slice(0, 4096));
 }

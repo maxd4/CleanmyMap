@@ -21,12 +21,16 @@ npm run quality:top-heavy
 Critere de succes:
 - toutes les commandes retournent `OK` (ou succes explicite),
 - aucun echec bloquant avant de poursuivre.
-- `quality:top-heavy` exécute exactement deux seuils :
-  - `REVIEW_THRESHOLD` : > `500` lignes ou > `40 KiB` = `REVIEW_REQUIRED`,
-    signal d'audit sans split automatique ; le mode `--enforce` bloque un
-    nouveau REVIEW ou une croissance au-delà du plafond numérique ratifié ;
-  - `HARD_THRESHOLD` : > `1000` lignes ou > `50 KiB` = nouveau dépassement
-    bloquant en mode `--enforce`.
+- `quality:top-heavy` applique les seuils par KIND de
+  `classifyFileKind()` : runtime REVIEW > `500` lignes ou > `40 KiB`, HARD >
+  `1000` lignes ou > `50 KiB` ; test REVIEW > `1000` lignes ou > `50 KiB`, HARD
+  > `1500` lignes ou > `80 KiB` ; data/config REVIEW > `800` lignes ou > `50
+  KiB`, HARD > `1500` lignes ou > `80 KiB`. Un `generated` réellement
+  régénérable est résumé informativement et exclu du radar architectural ; un
+  fichier manuel n'est jamais masqué par son chemin.
+  `REVIEW_REQUIRED` reste un signal sans split automatique ; `--enforce` bloque
+  les nouveaux dépassements et la croissance au-delà du plafond ratifié du
+  KIND.
   - la baseline canonique est `scripts/checks/heavy-files-baseline.json`;
     `allowed[]` ne reçoit une exception que si celle-ci est explicitement
     ratifiée, justifiée, référencée (`reviewedRef`) et bornée par
