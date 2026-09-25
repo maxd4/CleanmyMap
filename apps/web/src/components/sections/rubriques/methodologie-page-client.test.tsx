@@ -90,7 +90,7 @@ describe("RouteMethodologySection", () => {
     ]) {
       expect(markup).toContain(title);
     }
-    expect(markup).toContain('href="/sections/route"');
+    expect(markup).toContain('href="/actions/new?panel=itineraire"');
     expect(markup).toContain("Créer un itinéraire");
     expect(markup).toContain('href="/docs/architecture/methodologie-creation-itineraire.md"');
 
@@ -291,7 +291,7 @@ describe("ActionMapMethodologySection", () => {
     expect(map).toContain('href="/docs/product/methodologie-carte-actions.md"');
 
     expect(createAction).toContain("Méthodologie de création d’itinéraire");
-    expect(createAction).toContain('href="/sections/route"');
+    expect(createAction).toContain('href="/actions/new?panel=itineraire"');
     expect(createAction).toContain(
       'href="/docs/architecture/methodologie-creation-itineraire.md"',
     );

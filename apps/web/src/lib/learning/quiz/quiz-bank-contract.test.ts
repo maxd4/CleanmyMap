@@ -109,8 +109,8 @@ describe("quiz bank contract", () => {
           "/learn/bonnes-pratiques",
           "/methodologie",
           "/sections/recycling",
-          "/sections/weather",
-          "/sections/route",
+          "/actions/new?panel=meteo",
+          "/actions/new?panel=itineraire",
         ].includes(derivedTarget.href);
       }),
     ).toBe(true);

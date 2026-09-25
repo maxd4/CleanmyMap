@@ -268,14 +268,14 @@ export function GuideOperationalPanel() {
         <div className="relative z-10 pt-2">
           <CmmButtonGroup className="flex flex-col sm:flex-row gap-3">
             <CmmButton
-              href="/sections/route"
+              href="/actions/new?panel=itineraire"
               tone="primary"
               className="h-14 px-6 rounded-full font-black uppercase tracking-widest text-xs shadow-2xl shadow-emerald-500/20"
             >
               {fr ? "Planifier une action" : "Plan an action"}
             </CmmButton>
             <CmmButton
-              href="/sections/weather"
+              href="/actions/new?panel=meteo"
               tone="secondary"
               variant="pill"
               className="h-14 px-6 font-black uppercase tracking-widest text-xs"

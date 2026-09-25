@@ -73,11 +73,11 @@ const REVIEW_TARGET_FOLLOW_UP_BY_HREF: Record<
     modeId: "tri-securite",
     reason: "Le guide du tri recadre la filière réelle avant de rejouer la question.",
   },
-  "/sections/weather": {
+  "/actions/new?panel=meteo": {
     modeId: "terrain",
     reason: "La page terrain remet les contraintes du site et la sécurité au centre.",
   },
-  "/sections/route": {
+  "/actions/new?panel=itineraire": {
     modeId: "terrain",
     reason: "Le cadrage du parcours aide à reprendre les décisions de terrain.",
   },

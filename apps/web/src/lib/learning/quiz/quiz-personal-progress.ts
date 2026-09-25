@@ -3,25 +3,21 @@ import { QUIZ_ACCESS_TYPES, getQuizAccessType, type QuizAccessTypeId } from "./q
 import { getQuizReviewTarget, type QuizReviewTarget } from "./quiz-review-targets";
 import type { QuizQuestionCategory } from "@/lib/learning/quiz/quiz-question-categories";
 import type { QuizReasoningType } from "./quiz-reasoning-types";
-
 type QuizPersonalModeProgress = {
   sessions: number;
   correctAnswers: number;
   totalQuestions: number;
   lastPlayedAt: string;
 };
-
 type QuizPersonalSkillProgress = {
   attempts: number;
   correctAnswers: number;
   lastPlayedAt: string;
 };
-
 type QuizPersonalErrorProgress = {
   count: number;
   lastSeenAt: string;
 };
-
 type QuizPersonalReviewTargetProgress = {
   label: string;
   href: string;
@@ -29,7 +25,6 @@ type QuizPersonalReviewTargetProgress = {
   correctAnswers: number;
   lastSeenAt: string;
 };
-
 export type QuizPersonalProgressState = {
   version: 1;
   modes: Partial<Record<QuizAccessTypeId, QuizPersonalModeProgress>>;
@@ -44,7 +39,6 @@ export type QuizPersonalProgressState = {
     playedAt: string;
   }>;
 };
-
 export type QuizPersonalProgressQuestion = {
   id: string;
   category: QuizQuestionCategory;
@@ -487,8 +481,8 @@ function buildProgressBadges(
     buildBadgeFromStat({
       id: "quiz-security-terrain",
       label: "Sécurité terrain",
-      description: "Réflexes fiables pour les décisions de terrain et la sécurité.",
-      href: "/sections/weather",
+      description: "Réflexes fiables pour les décisions de terrain et la sécurité",
+      href: "/actions/new?panel=meteo",
       stat: skillLookup.get("terrain") ?? null,
       targetAttempts: 3,
       thresholdAccuracy: 0.75,

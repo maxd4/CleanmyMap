@@ -97,7 +97,7 @@ export function RouteMethodologySection() {
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <CmmButton
-            href="/sections/route"
+            href="/actions/new?panel=itineraire"
             tone="primary"
             variant="pill"
             className="justify-center px-5 py-3 text-[10px] font-black uppercase tracking-[0.18em]"

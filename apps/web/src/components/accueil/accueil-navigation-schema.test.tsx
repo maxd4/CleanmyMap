@@ -18,7 +18,7 @@ describe("HomeNavigationSchema", () => {
 
     for (const href of [
       "/actions/map",
-      "/sections/route",
+      "/actions/new?panel=itineraire",
       "/methodologie",
       "/sections/open-data",
       "https://github.com/maxd4/CleanMyMap",
