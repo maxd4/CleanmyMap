@@ -53,6 +53,13 @@ export function isAuthSurfacePath(pathname: string | null): boolean {
     pathname?.startsWith("/sign-up/") === true;
 }
 
+export function shouldLoadDeferredChrome(
+  pathname: string | null,
+  authIdleCompleted: boolean,
+): boolean {
+  return !isAuthSurfacePath(pathname) || authIdleCompleted;
+}
+
 function scheduleAfterIdle(callback: () => void): () => void {
   if (typeof window !== "undefined" && "requestIdleCallback" in window) {
     const idleCallback = window.requestIdleCallback(callback, { timeout: 2000 });
@@ -66,21 +73,22 @@ function scheduleAfterIdle(callback: () => void): () => void {
 export function DeferredGlobalChrome() {
   const pathname = usePathname();
   const isAuthSurface = isAuthSurfacePath(pathname);
-  const [shouldLoadDeferredChrome, setShouldLoadDeferredChrome] = useState(
-    !isAuthSurface,
+  const [authIdleCompleted, setAuthIdleCompleted] = useState(
+    () => !isAuthSurface,
   );
+  const shouldLoad = shouldLoadDeferredChrome(pathname, authIdleCompleted);
 
   useEffect(() => {
-    if (!isAuthSurface || shouldLoadDeferredChrome) {
+    if (!isAuthSurface || authIdleCompleted) {
       return;
     }
 
-    return scheduleAfterIdle(() => setShouldLoadDeferredChrome(true));
-  }, [isAuthSurface, shouldLoadDeferredChrome]);
+    return scheduleAfterIdle(() => setAuthIdleCompleted(true));
+  }, [isAuthSurface, authIdleCompleted]);
 
   return (
     <>
-      {shouldLoadDeferredChrome ? (
+      {shouldLoad ? (
         <>
           <DeferredNetworkToastHost />
           <DeferredGamificationCelebrationHost />

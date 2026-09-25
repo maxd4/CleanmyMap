@@ -26,7 +26,10 @@ vi.mock("./deferred-global-chrome", async (importOriginal) => {
   };
 });
 
-import { isAuthSurfacePath } from "./deferred-global-chrome";
+import {
+  isAuthSurfacePath,
+  shouldLoadDeferredChrome,
+} from "./deferred-global-chrome";
 import { RootLayoutChrome } from "./root-layout-chrome";
 import { HomeFooter } from "@/components/accueil/accueil-footer";
 import { readFileSync } from "node:fs";
@@ -50,6 +53,32 @@ describe("global chrome on onboarding", () => {
     expect(isAuthSurfacePath("/sign-in")).toBe(true);
     expect(isAuthSurfacePath("/sign-up/[[...sign-up]]")).toBe(true);
     expect(isAuthSurfacePath("/onboarding")).toBe(false);
+  });
+
+  it("restores deferred chrome when auth navigation leaves before idle", () => {
+    let authIdleCompleted = false;
+
+    expect(shouldLoadDeferredChrome("/sign-in", authIdleCompleted)).toBe(false);
+
+    const cancelPreviousIdleCallback = vi.fn();
+    expect(shouldLoadDeferredChrome("/sections/community", authIdleCompleted)).toBe(true);
+
+    cancelPreviousIdleCallback();
+    expect(shouldLoadDeferredChrome("/sections/community", authIdleCompleted)).toBe(true);
+    expect(shouldLoadDeferredChrome("/sign-in", authIdleCompleted)).toBe(false);
+
+    authIdleCompleted = true;
+    expect(shouldLoadDeferredChrome("/sign-in", authIdleCompleted)).toBe(true);
+    expect(cancelPreviousIdleCallback).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the consent banner outside the deferred chrome decision", () => {
+    const source = readFileSync(
+      new URL("./deferred-global-chrome.tsx", import.meta.url),
+      "utf8",
+    );
+
+    expect(source).toMatch(/\{shouldLoad \? [\s\S]*?: null\}\s*<DeferredCookieConsentBanner \/>/u);
   });
 
   it("does not request account identity for anonymous navigation", () => {
