@@ -105,6 +105,39 @@ describe("parseMapActionsParams", () => {
     expect(params.actionId).toBe("outside");
     expect(params.viewport).toBeUndefined();
   });
+
+  it("fails closed for malformed filters and viewport bounds", () => {
+    const params = parseMapActionsParams(
+      new URL(
+        "http://localhost/api/actions/map?limit=invalid&days=invalid&floorDate=  &qualityMin=invalid&impact=unknown&south=bad&west=2.2&north=48.9&east=2.4",
+      ),
+      () => [],
+    );
+
+    expect(params.limit).toBe(80);
+    expect(params.days).toBe(30);
+    expect(params.floorDate).toBeTruthy();
+    expect(params.types).toEqual([]);
+    expect(params.qualityMin).toBeNull();
+    expect(params.impact).toBeNull();
+    expect(params.viewport).toBeUndefined();
+  });
+
+  it.each([
+    "south=49&west=2.2&north=48.9&east=2.4",
+    "south=48.8&west=3&north=48.9&east=2.4",
+    "south=-91&west=2.2&north=48.9&east=2.4",
+    "south=48.8&west=2.2&north=91&east=2.4",
+    "south=48.8&west=-181&north=48.9&east=2.4",
+    "south=48.8&west=2.2&north=48.9&east=181",
+  ])("rejects each invalid viewport boundary: %s", (query) => {
+    const params = parseMapActionsParams(
+      new URL(`http://localhost/api/actions/map?${query}`),
+      () => null,
+    );
+
+    expect(params.viewport).toBeUndefined();
+  });
 });
 
 describe("buildMapActionsRouteResult", () => {
@@ -286,5 +319,84 @@ describe("buildMapActionsRouteResult", () => {
       "X-Data-Warning": "Partial source data",
     });
     expect(result.body.partialSource).toBe(true);
+  });
+
+  it("uses a fail-safe source health value and drops items without coordinates", async () => {
+    const deps = buildDeps({
+      fetchUnifiedActionContracts: vi.fn().mockResolvedValue({
+        items: [
+          { id: "valid", status: "approved" },
+          { id: "missing-coordinates", status: "approved" },
+        ],
+      }),
+      toActionMapItem: vi.fn().mockImplementation((contract: { id: string; status: string }) => ({
+        id: contract.id,
+        status: contract.status,
+        latitude: contract.id === "missing-coordinates" ? null : 48.8566,
+        longitude: contract.id === "missing-coordinates" ? null : 2.3522,
+      })),
+    });
+
+    const result = await buildMapActionsRouteResult(
+      new URL("http://localhost/api/actions/map"),
+      deps,
+    );
+
+    expect(result.body.items.map((item) => item.id)).toEqual(["valid"]);
+    expect(result.body.sourceHealth).toEqual({
+      partial: false,
+      failedSources: [],
+      availableSources: [],
+      warnings: [],
+    });
+  });
+
+  it("applies quality and impact filters before limiting public items", async () => {
+    const deps = buildDeps({
+      fetchUnifiedActionContracts: vi.fn().mockResolvedValue({
+        items: [
+          { id: "kept", status: "approved" },
+          { id: "wrong-impact", status: "approved" },
+          { id: "low-quality", status: "approved" },
+        ],
+        sourceHealth: {
+          partial: false,
+          failedSources: [],
+          availableSources: ["actions"],
+          warnings: [],
+        },
+      }),
+      buildActionInsights: vi.fn().mockImplementation((contract: { id: string }) => ({
+        qualityScore: contract.id === "low-quality" ? 40 : 90,
+        qualityGrade: "A",
+        qualityFlags: [],
+        qualityBreakdown: {
+          completeness: 90,
+          coherence: 90,
+          geoloc: 90,
+          traceability: 90,
+          freshness: 90,
+        },
+        toFixPriority: false,
+        impactLevel: contract.id === "wrong-impact" ? "faible" : "critique",
+      })),
+      toActionMapItem: vi.fn().mockImplementation(
+        (contract: { id: string; status: string }, insights: { qualityScore: number; impactLevel: string }) => ({
+          id: contract.id,
+          status: contract.status,
+          latitude: 48.8566,
+          longitude: 2.3522,
+          quality_score: insights.qualityScore,
+          impact_level: insights.impactLevel,
+        }),
+      ),
+    });
+
+    const result = await buildMapActionsRouteResult(
+      new URL("http://localhost/api/actions/map?qualityMin=80&impact=critique"),
+      deps,
+    );
+
+    expect(result.body.items.map((item) => item.id)).toEqual(["kept"]);
   });
 });
