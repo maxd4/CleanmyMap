@@ -10,7 +10,6 @@ import {
 import { Copy, QrCode, Share2, Users } from "lucide-react";
 import { QRCodeDialog } from "@/components/ui/qrcode-dialog";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { announceGamificationGain } from "@/lib/gamification/announcements";
 import type { ReferralSummary } from "@/lib/gamification/referrals";
 
 type ReferralInviteBadgeProps = {
@@ -87,17 +86,6 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
       }
 
       setCurrentSummary(payload.summary);
-
-      if (payload.created) {
-        announceGamificationGain({
-          title: "Badge invité un ami",
-          message: "+2 XP pour la première invitation générée.",
-          tone: "generic",
-          icon: "share-2",
-          source: "referral-invite",
-          dedupeKey: `referral-invite:${payload.summary.referralCode ?? currentSummary.inviteUrl ?? "created"}`,
-        });
-      }
     } catch (error) {
       console.error("Referral invite creation failed", error);
       setErrorMessage("Impossible de créer le lien d'invitation pour le moment.");
@@ -136,7 +124,7 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
       <div className="relative z-10 space-y-5">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-amber-50/80">
+            <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-amber-50/80">
               <Users size={13} />
               Inviter un ami
             </p>
@@ -145,18 +133,18 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
             </h3>
             <p className="mt-2 max-w-2xl text-sm font-semibold text-amber-50/75">
               Créez un lien d&apos;invitation pour permettre à un proche de rejoindre CleanMyMap.
-              La première génération du lien débloque +2 XP et enregistre la chaîne de parrainage dans la base.
+              Le lien et la filiation sont enregistrés dès l&apos;inscription, mais +2 XP sont attribués uniquement après la première contribution utile confirmée de chaque invité.
             </p>
           </div>
 
           <div className="shrink-0 text-right">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">
-              {currentSummary.badgeUnlocked ? "Débloqué" : "Disponible"}
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/50">
+              {currentSummary.badgeUnlocked ? "Acquis" : "À gagner"}
             </p>
             <p className="mt-1 text-3xl font-black tracking-tight text-white">
               +2
             </p>
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/50">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">
               XP
             </p>
           </div>
@@ -170,13 +158,13 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
 
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-center">
-            <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/45">
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-white/45">
               Parrainés
             </div>
             <div className="mt-1 text-lg font-black text-white">{currentSummary.invitedUsersCount}</div>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-center">
-            <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/45">
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-white/45">
               Parrainage
             </div>
             <div className="mt-1 text-lg font-black text-white">
@@ -184,7 +172,7 @@ export function ReferralInviteBadge({ summary }: ReferralInviteBadgeProps) {
             </div>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-center">
-            <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/45">
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-white/45">
               Statut
             </div>
             <div className="mt-1 text-lg font-black text-white">

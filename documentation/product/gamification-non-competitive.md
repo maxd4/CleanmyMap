@@ -216,7 +216,7 @@ Une recompense doit toujours repondre a la question:
   calendaires actifs; la série courante reste séparée et attribue 1 XP au
   premier mois, 2 XP au deuxième, puis +1 à chaque mois consécutif utile;
 - `Zone sensible apaisée`: métrique historique sur les zones qualifiées sensibles au moment de la validation, avec preuve stable et paliers 1, 3, 5, 8, 10, 15, 20...;
-- `Inviter un ami`: badge one-shot qui genere un lien d invitation pour faire venir un nouveau membre, conserve la chaine de parrainage en base et donne +2 XP;
+- `Inviter un ami`: badge one-shot qui conserve la chaîne de parrainage en base; la création du lien et l inscription donnent 0 XP, puis la première contribution utile confirmée de chaque invité donne +2 XP à l invitant;
 - ces deux badges restent non competitifs, lisibles, et places dans le parcours personnel.
 
 ### Regle de visibilite

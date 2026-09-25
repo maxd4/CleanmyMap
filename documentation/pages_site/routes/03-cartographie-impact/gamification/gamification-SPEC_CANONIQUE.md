@@ -381,14 +381,16 @@ Règles:
 
 But:
 
-- récompenser l invitation utile et la transmission du réseau.
+- récompenser une invitation devenue une contribution utile et confirmée.
 
 Règles:
 
-- one-shot;
-- `+2 XP`;
-- le lien d invitation doit persister;
-- la chaîne de parrainage doit être enregistrée;
+- la création et le partage du lien donnent `0 XP`;
+- l inscription via le lien donne `0 XP`;
+- la première contribution utile confirmée de l invité donne `+2 XP` à l invitant;
+- cette attribution est one-shot par filiation persistée et reste idempotente;
+- le lien d invitation et la chaîne de parrainage doivent persister;
+- une auto-filiation est refusée;
 - le badge doit rester non compétitif.
 
 ## Badges hérités

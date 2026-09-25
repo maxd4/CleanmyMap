@@ -16,7 +16,7 @@ Les objectifs écartés ne figurent pas ici. Si un objectif cesse d être pertin
 | --- | --- | --- | --- |
 | `Première trace utile` | one-shot | Première action validée avec données complètes; c est le jalon d entrée le plus clair. | À maintenir et à reproposer par défaut |
 | `Trace fondatrice` | one-shot | Premier jalon d une action complètement documentée; renforce la lecture de progression. | À maintenir et à reproposer par défaut |
-| `Inviter un ami` | one-shot | Génère un lien d invitation persistant, enregistre la chaîne de parrainage en base et donne +2 XP à la première création utile. | À maintenir et à reproposer par défaut |
+| `Inviter un ami` | one-shot | Génère un lien d invitation persistant, enregistre la chaîne de parrainage en base et donne +2 XP à l invitant lors de la première contribution utile confirmée de chaque invité; la création du lien et l inscription ne donnent pas d XP. | À maintenir et à reproposer par défaut |
 | `Participation` | objectif infini | Progression centrale des participations et contributions utiles confirmées. | À maintenir et à reproposer par défaut |
 | `Organisation` | objectif infini | Valorise l organisation d actions et les opérations collectives utiles. | À maintenir et à reproposer par défaut |
 | `Exploration` | objectif infini | Axe stable de couverture cartographique et de découverte de lieux distincts. | À maintenir et à reproposer par défaut |
@@ -31,7 +31,7 @@ Les objectifs écartés ne figurent pas ici. Si un objectif cesse d être pertin
 | --- | --- |
 | `Première trace utile` | Première action validée avec données complètes. |
 | `Trace fondatrice` | Premier jalon d'une action complètement documentée. |
-| `Parrainage utile` | Première invitation utile avec chaîne de parrainage persistée. |
+| `Parrainage utile` | Première contribution utile confirmée d un invité dont la chaîne de parrainage est persistée. |
 
 Les futurs jalons ne sont retenus que s'ils représentent une tâche réellement
 unique et ne doublonnent pas le premier palier d'une progression.

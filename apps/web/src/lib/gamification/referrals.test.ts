@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { expect, it, vi } from "vitest";
 import {
+  awardReferralForUsefulContribution,
   buildReferralInviteUrl,
   claimReferralInviteForUser,
   ensureReferralInviteForUser,
@@ -9,6 +10,17 @@ import {
 
 vi.mock("next/cache", () => ({
   revalidateTag: vi.fn(),
+}));
+
+const auditXpAttributionMock = vi.hoisted(() => vi.fn());
+const broadcastGamificationAnnouncementMock = vi.hoisted(() => vi.fn());
+
+vi.mock("./notifications", () => ({
+  auditXpAttribution: auditXpAttributionMock,
+}));
+
+vi.mock("@/lib/gamification/announcements", () => ({
+  broadcastGamificationAnnouncement: broadcastGamificationAnnouncementMock,
 }));
 
 type ReferralProfileRow = {
@@ -40,6 +52,11 @@ type ProfilesMaybeSingleQuery<T> = {
   };
 };
 
+type ReferralAwardsQuery = {
+  eq: (field: string, value: string) => ReferralAwardsQuery;
+  limit: (value: number) => Promise<{ data: Array<{ xp_awarded: number }>; error: null }>;
+};
+
 type ReferralUpdateChain = {
   eq: (field: string, value: string) => ReferralUpdateChain;
   is: (field: string, value: unknown) => ReferralUpdateChain;
@@ -64,6 +81,15 @@ function createMaybeSingleQuery<T>(data: T | null): ProfilesMaybeSingleQuery<T> 
       maybeSingle: vi.fn(async () => ({ data, error: null })),
     })),
   };
+}
+
+function createReferralAwardsQuery(
+  rows: Array<{ xp_awarded: number }> = [],
+): ReferralAwardsQuery {
+  const query = {} as ReferralAwardsQuery;
+  query.eq = vi.fn(() => query);
+  query.limit = vi.fn(async () => ({ data: rows, error: null }));
+  return query;
 }
 
 it("builds a referral url with the code in query string", () => {
@@ -110,6 +136,11 @@ it("loads a referral summary from profiles", async () => {
           ),
         };
       }
+      if (table === "progression_events") {
+        return {
+          select: vi.fn(() => createReferralAwardsQuery()),
+        };
+      }
       throw new Error(`Unexpected table ${table}`);
     }),
   } as unknown as SupabaseClient;
@@ -118,11 +149,12 @@ it("loads a referral summary from profiles", async () => {
   expect(summary.referralCode).toBe("ABC123");
   expect(summary.inviteUrl).toContain("/sign-up?ref=ABC123");
   expect(summary.invitedUsersCount).toBe(3);
-  expect(summary.badgeUnlocked).toBe(true);
+  expect(summary.badgeUnlocked).toBe(false);
+  expect(summary.referralAwardedXp).toBe(0);
   expect(summary.invitedBy?.displayName).toBe("Alice");
 });
 
-it("creates a referral code once and awards xp once", async () => {
+it("creates a referral code without awarding xp", async () => {
   const inserts: Array<Record<string, unknown>> = [];
   const updates: Array<{ referral_code: string }> = [];
   const profileRecord = {
@@ -165,14 +197,8 @@ it("creates a referral code once and awards xp once", async () => {
         };
       }
       if (table === "progression_events") {
-        const progressionLookupChain = {
-          eq: vi.fn(() => progressionLookupChain),
-          maybeSingle: vi
-            .fn()
-            .mockResolvedValue({ data: null, error: null }),
-        };
         return {
-          select: vi.fn(() => progressionLookupChain),
+          select: vi.fn(() => createReferralAwardsQuery()),
           insert: vi.fn(async (payload: Record<string, unknown>) => {
             inserts.push(payload);
             return { error: null };
@@ -207,11 +233,9 @@ it("creates a referral code once and awards xp once", async () => {
   expect(result.created).toBe(true);
   expect(result.summary.referralCode).toBeTruthy();
   expect(updates[0]).toHaveProperty("referral_code");
-  expect(inserts[0]).toMatchObject({
-    source_table: "referral_invites",
-    xp_awarded: 2,
-    xp_base: 2,
-  });
+  expect(inserts).toHaveLength(0);
+  expect(result.summary.badgeUnlocked).toBe(false);
+  expect(result.summary.referralAwardedXp).toBe(0);
 });
 
 it("claims a referral code once", async () => {
@@ -269,4 +293,116 @@ it("claims a referral code once", async () => {
   expect(updates[0]).toMatchObject({
     referred_by_profile_id: "inviter-1",
   });
+});
+
+it("awards the inviter only on the invitee's first useful contribution", async () => {
+  const events: Array<Record<string, unknown>> = [];
+  const profiles = new Map([
+    [
+      "invitee-1",
+      {
+        id: "invitee-1",
+        display_name: "Invité",
+        referral_code: null,
+        referred_by_profile_id: "inviter-1",
+        referred_at: "2026-09-25T10:00:00.000Z",
+      },
+    ],
+    [
+      "self-referred",
+      {
+        id: "self-referred",
+        display_name: "Auto",
+        referral_code: "AUTO123",
+        referred_by_profile_id: "self-referred",
+        referred_at: "2026-09-25T10:00:00.000Z",
+      },
+    ],
+  ]);
+  const supabaseMock = {
+    from: vi.fn((table: string) => {
+      if (table === "profiles") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn((_field: string, value: string) => ({
+              maybeSingle: vi.fn(async () => ({
+                data: profiles.get(value) ?? null,
+                error: null,
+              })),
+            })),
+          })),
+        };
+      }
+      if (table === "progression_events") {
+        return {
+          insert: vi.fn(async (payload: Record<string, unknown>) => {
+            const duplicate = events.some(
+              (event) =>
+                event.user_id === payload.user_id &&
+                event.event_type === payload.event_type &&
+                event.source_table === payload.source_table &&
+                event.source_id === payload.source_id &&
+                event.status_phase === payload.status_phase,
+            );
+            if (duplicate) {
+              return { error: { code: "23505", message: "duplicate" } };
+            }
+            events.push(payload);
+            return { error: null };
+          }),
+        };
+      }
+      throw new Error(`Unexpected table ${table}`);
+    }),
+  } as unknown as SupabaseClient;
+
+  const first = await awardReferralForUsefulContribution(supabaseMock, {
+    inviteeUserId: "invitee-1",
+    contributionSourceTable: "actions",
+    contributionSourceId: "action-1",
+    occurredOn: "2026-09-25",
+  });
+  const replay = await awardReferralForUsefulContribution(supabaseMock, {
+    inviteeUserId: "invitee-1",
+    contributionSourceTable: "actions",
+    contributionSourceId: "action-1",
+    occurredOn: "2026-09-25",
+  });
+  const secondContribution = await awardReferralForUsefulContribution(supabaseMock, {
+    inviteeUserId: "invitee-1",
+    contributionSourceTable: "actions",
+    contributionSourceId: "action-2",
+    occurredOn: "2026-09-26",
+  });
+  const selfReferral = await awardReferralForUsefulContribution(supabaseMock, {
+    inviteeUserId: "self-referred",
+    contributionSourceTable: "actions",
+    contributionSourceId: "action-self",
+  });
+
+  expect(first).toMatchObject({
+    awarded: true,
+    inviterUserId: "inviter-1",
+    inviteeUserId: "invitee-1",
+  });
+  expect(replay.awarded).toBe(false);
+  expect(secondContribution.awarded).toBe(false);
+  expect(selfReferral.awarded).toBe(false);
+  expect(events).toHaveLength(1);
+  expect(events[0]).toMatchObject({
+    user_id: "inviter-1",
+    event_type: "community_referral_invite",
+    source_table: "referral_contributions",
+    source_id: "referral-contribution:invitee-1",
+    status_phase: "validated",
+    xp_base: 2,
+    xp_awarded: 2,
+    metadata: {
+      inviteeUserId: "invitee-1",
+      contributionSourceTable: "actions",
+      contributionSourceId: "action-1",
+    },
+  });
+  expect(auditXpAttributionMock).toHaveBeenCalledTimes(1);
+  expect(broadcastGamificationAnnouncementMock).toHaveBeenCalledTimes(1);
 });
