@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ActionRow, EventInsertParams } from "./progression-types";
+import type { EventInsertParams } from "./progression-types";
 import {
   parseStoredSensitiveZoneQualification,
   planSensitiveZoneProjection,
@@ -7,6 +7,7 @@ import {
   SENSITIVE_ZONE_MILESTONE_SOURCE_TABLE,
   SENSITIVE_ZONE_PROOF_EVENT_TYPE,
   SENSITIVE_ZONE_PROOF_SOURCE_TABLE,
+  type SensitiveZoneAction,
   type SensitiveZoneProjectionState,
 } from "./sensitive-zone-progression";
 import {
@@ -66,10 +67,7 @@ async function loadSensitiveZoneProjectionState(
 export async function syncSensitiveZoneProjection(params: {
   supabase: SupabaseClient;
   userId: string;
-  actions: Pick<
-    ActionRow,
-    "id" | "location_label" | "action_date" | "created_at" | "status"
-  >[];
+  actions: SensitiveZoneAction[];
   validatedActionIds: Set<string>;
   options: SensitiveZoneSyncOptions;
   writeEvent: (params: EventInsertParams) => Promise<boolean>;

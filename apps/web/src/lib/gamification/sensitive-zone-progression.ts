@@ -37,6 +37,13 @@ export type SensitiveZoneProjectionPlan = {
   qualifiedActionCount: number;
 };
 
+export type SensitiveZoneAction = Omit<
+  Pick<ActionRow, "id" | "location_label" | "action_date" | "created_at" | "status">,
+  "status"
+> & {
+  status: "pending" | "approved" | "rejected" | "cancelled";
+};
+
 function buildSensitiveZoneQualificationSnapshot(
   action: Pick<ActionRow, "id" | "location_label" | "action_date" | "created_at">,
   sensitiveAreas: Iterable<string>,
@@ -122,10 +129,7 @@ export function sensitiveZoneMilestoneThresholds(maxCount: number): number[] {
 }
 
 export function planSensitiveZoneProjection(params: {
-  actions: Pick<
-    ActionRow,
-    "id" | "location_label" | "action_date" | "created_at" | "status"
-  >[];
+  actions: SensitiveZoneAction[];
   validatedActionIds: Set<string>;
   existing: SensitiveZoneProjectionState;
   sensitiveAreas: Iterable<string>;
