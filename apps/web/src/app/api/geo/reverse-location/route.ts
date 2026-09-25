@@ -1,11 +1,9 @@
-import { unstable_cache } from "next/cache";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 const REVERSE_LOCATION_CACHE_HEADERS = {
-  "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
+  "Cache-Control": "private, max-age=300, stale-while-revalidate=86400",
 };
-const REVERSE_LOCATION_REVALIDATE_SECONDS = 300;
 
 type ReverseLocation = {
   label: string;
@@ -57,10 +55,6 @@ function buildReverseUrl(lat: number, lon: number): string {
   return `https://data.geopf.fr/geocodage/reverse?${params.toString()}`;
 }
 
-function buildReverseLocationCacheKey(lat: number, lon: number): string {
-  return [`lat:${lat.toFixed(4)}`, `lon:${lon.toFixed(4)}`].join("|");
-}
-
 function formatReverseLocation(feature: GeoplateformeReverseFeature): ReverseLocation | null {
   const lon = feature.geometry?.coordinates?.[0];
   const lat = feature.geometry?.coordinates?.[1];
@@ -102,28 +96,14 @@ export async function GET(request: Request) {
   }
 
   try {
-    const cached = unstable_cache(
-      async () => {
-        const response = await fetch(buildReverseUrl(lat, lon), {
-          method: "GET",
-          headers: { Accept: "application/json" },
-        });
-
-        if (!response.ok) {
-          return null;
-        }
-
-        const body = (await response.json()) as { features?: GeoplateformeReverseFeature[] };
-        return body.features?.map(formatReverseLocation).find(Boolean) ?? null;
-      },
-      ["reverse-location", buildReverseLocationCacheKey(lat, lon)],
-      {
-        revalidate: REVERSE_LOCATION_REVALIDATE_SECONDS,
-        tags: ["reverse-location"],
-      },
-    );
-
-    const location = await cached();
+    const response = await fetch(buildReverseUrl(lat, lon), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+    const location = response.ok
+      ? ((await response.json()) as { features?: GeoplateformeReverseFeature[] })
+          .features?.map(formatReverseLocation).find(Boolean) ?? null
+      : null;
 
     return NextResponse.json({
       status: "ok",

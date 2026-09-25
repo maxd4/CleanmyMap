@@ -1,4 +1,3 @@
-import { unstable_cache } from "next/cache";
 import { NextResponse } from "next/server";
 import {
   getLocalGeoAddressSuggestions,
@@ -10,9 +9,8 @@ import { isWithinTerritoryBounds } from "@/lib/geo/territory";
 
 export const runtime = "nodejs";
 const ADDRESS_SUGGESTIONS_CACHE_HEADERS = {
-  "Cache-Control": "public, max-age=300, stale-while-revalidate=86400",
+  "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
 };
-const ADDRESS_SUGGESTIONS_REVALIDATE_SECONDS = 300;
 const ADDRESS_SUGGESTIONS_TIMEOUT_MS = 4_000;
 
 type GeoplateformeCompletionResult = {
@@ -36,10 +34,6 @@ function parseLimit(value: string | null): number {
     return 6;
   }
   return Math.min(8, parsed);
-}
-
-function buildAddressSuggestionsCacheKey(query: string, limit: number): string {
-  return [`q:${query.trim().toLowerCase()}`, `limit:${limit}`].join("|");
 }
 
 function buildGeoplateformeCompletionUrl(query: string, limit: number): string | null {
@@ -110,73 +104,62 @@ async function loadCachedRemoteAddressSuggestions(
   query: string,
   limit: number,
 ): Promise<GeoAddressSuggestion[]> {
-  const cached = unstable_cache(
-    async () => {
-      const geoplateformeUrl = buildGeoplateformeCompletionUrl(query, limit);
-      if (!geoplateformeUrl) {
-        return [];
-      }
+  const geoplateformeUrl = buildGeoplateformeCompletionUrl(query, limit);
+  if (!geoplateformeUrl) {
+    return [];
+  }
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), ADDRESS_SUGGESTIONS_TIMEOUT_MS);
-      let response: Response;
-      try {
-        response = await fetch(geoplateformeUrl, {
-          headers: {
-            Accept: "application/json",
-          },
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeout);
-      }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ADDRESS_SUGGESTIONS_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch(geoplateformeUrl, {
+      headers: {
+        Accept: "application/json",
+      },
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 
-      if (!response.ok) {
-        return [];
-      }
+  if (!response.ok) {
+    return [];
+  }
 
-      const data = (await response.json()) as { results?: GeoplateformeCompletionResult[] };
-      const seen = new Set<string>();
-      const items: GeoAddressSuggestion[] = [];
+  const data = (await response.json()) as { results?: GeoplateformeCompletionResult[] };
+  const seen = new Set<string>();
+  const items: GeoAddressSuggestion[] = [];
 
-      for (const item of data.results ?? []) {
-        if (
-          typeof item.x !== "number" ||
-          typeof item.y !== "number" ||
-          !Number.isFinite(item.x) ||
-          !Number.isFinite(item.y) ||
-          !isWithinTerritoryBounds(item.y, item.x)
-        ) {
-          continue;
-        }
+  for (const item of data.results ?? []) {
+    if (
+      typeof item.x !== "number" ||
+      typeof item.y !== "number" ||
+      !Number.isFinite(item.x) ||
+      !Number.isFinite(item.y) ||
+      !isWithinTerritoryBounds(item.y, item.x)
+    ) {
+      continue;
+    }
 
-        const label = formatGeoplateformeLabel(item);
-        const normalizedLabel = label.toLowerCase();
-        if (seen.has(normalizedLabel)) {
-          continue;
-        }
-        seen.add(normalizedLabel);
+    const label = formatGeoplateformeLabel(item);
+    const normalizedLabel = label.toLowerCase();
+    if (seen.has(normalizedLabel)) {
+      continue;
+    }
+    seen.add(normalizedLabel);
 
-        items.push({
-          label,
-          subtitle: formatGeoplateformeSubtitle(item),
-          latitude: item.y,
-          longitude: item.x,
-          importance: formatGeoplateformeImportance(item),
-        });
-      }
+    items.push({
+      label,
+      subtitle: formatGeoplateformeSubtitle(item),
+      latitude: item.y,
+      longitude: item.x,
+      importance: formatGeoplateformeImportance(item),
+    });
+  }
 
-      items.sort((left, right) => (right.importance ?? 0) - (left.importance ?? 0));
-      return items;
-    },
-    ["geo-address-suggestions", buildAddressSuggestionsCacheKey(query, limit)],
-    {
-      revalidate: ADDRESS_SUGGESTIONS_REVALIDATE_SECONDS,
-      tags: ["geo-address-suggestions"],
-    },
-  );
-
-  return cached();
+  items.sort((left, right) => (right.importance ?? 0) - (left.importance ?? 0));
+  return items;
 }
 
 export async function GET(request: Request) {

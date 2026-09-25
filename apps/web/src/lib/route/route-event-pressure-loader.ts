@@ -12,6 +12,10 @@ import {
   type RouteEventRecord,
   type RouteEventSignalContext,
 } from "./route-event-pressure";
+import {
+  ROUTE_EVENT_PRESSURE_CACHE_REVALIDATE_SECONDS,
+  ROUTE_EVENT_PRESSURE_CACHE_TAG,
+} from "@/lib/community/event-cache-invalidation";
 
 type RouteEventDatabaseRow = {
   id: string;
@@ -126,7 +130,10 @@ export async function loadCachedRouteEventSignalContext(
   const cached = unstable_cache(
     async () => loadRouteEventSnapshot(getSupabaseClient()),
     ["route-recommendation-event-snapshot"],
-   { revalidate: 300, tags: ["route-recommendation-event-pressure"] },
+   {
+    revalidate: ROUTE_EVENT_PRESSURE_CACHE_REVALIDATE_SECONDS,
+    tags: [ROUTE_EVENT_PRESSURE_CACHE_TAG],
+   },
  );
  return buildRouteEventSignalContext(await cached(), candidates, now);
 }

@@ -9,6 +9,12 @@ export type CommunityEventRsvpSummary = {
   myRsvpStatus: "yes" | "maybe" | "no" | null;
 };
 
+export function indexCommunityEventRsvpSummaries(
+  summaries: CommunityEventRsvpSummary[],
+): Map<string, CommunityEventRsvpSummary> {
+  return new Map(summaries.map((row) => [row.eventId, row] as const));
+}
+
 type CommunityEventRsvpSummaryRow = {
   event_id: string;
   yes_count: number | string | null;

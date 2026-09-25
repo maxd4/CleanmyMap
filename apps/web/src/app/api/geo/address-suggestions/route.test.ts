@@ -1,8 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/cache", () => ({
-  unstable_cache: (fn: unknown) => fn,
-}));
 vi.mock("@/lib/rate-limit/server", () => ({
   verifyRateLimit: vi.fn().mockResolvedValue({
     allowed: true,
@@ -46,6 +43,7 @@ describe("/api/geo/address-suggestions", () => {
 
     expect(body.status).toBe("ok");
     expect(body.query).toBe("Rivoli");
+    expect(response.headers.get("cache-control")).toContain("private");
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(body.items).toHaveLength(1);
     expect(body.items[0]).toMatchObject({

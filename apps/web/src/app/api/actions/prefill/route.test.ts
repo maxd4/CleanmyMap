@@ -4,7 +4,6 @@ const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const fetchRecentActionsByUserMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
-const unstableCacheMock = vi.hoisted(() => vi.fn((fn: () => Promise<unknown>) => fn));
 
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
@@ -17,10 +16,6 @@ vi.mock("@/lib/actions/store", () => ({
 
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
-}));
-
-vi.mock("next/cache", () => ({
-  unstable_cache: unstableCacheMock,
 }));
 
 describe("GET /api/actions/prefill", () => {
@@ -46,7 +41,7 @@ describe("GET /api/actions/prefill", () => {
     ]);
   });
 
-  it("returns a short cached prefill payload from recent actions", async () => {
+  it("returns a short private prefill payload from recent actions", async () => {
     const { GET } = await import("./route");
 
     const response = await GET();
