@@ -59,6 +59,8 @@ vi.mock("./hooks/use-route-data", () => ({
 }));
 
 import { EffectiveAuthStateProvider } from "@/lib/auth/use-effective-auth-state";
+import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
+import { buildActionCreationPanelHref } from "@/lib/actions/action-creation-routes";
 import { buildPlannerActionHref, RouteSection } from "./route-section";
 
 describe("RouteSection explainability wiring", () => {
@@ -83,6 +85,12 @@ describe("RouteSection explainability wiring", () => {
     expect(markup).toContain("data-route-event-selector");
     expect(markup).toContain("data-route-explanation");
     expect(markup).toContain("Calculer la recommandation");
+  });
+
+  it("returns unauthenticated route users to the canonical itinerary panel", () => {
+    expect(buildSignInRedirectHref(buildActionCreationPanelHref("itineraire"))).toBe(
+      "/sign-in?redirect_url=%2Factions%2Fnew%3Fpanel%3Ditineraire",
+    );
   });
 
   it("keeps an existing action id in the planner handoff navigation", () => {

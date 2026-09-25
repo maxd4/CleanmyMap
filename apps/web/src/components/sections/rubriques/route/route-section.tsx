@@ -1,5 +1,4 @@
 "use client";
-
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import Link from "next/link";
@@ -36,7 +35,6 @@ import {
   getRouteGroupVisualStyle,
   type RouteMultiRouteDisplayMode,
 } from "./route-types";
-
 const EMPTY_ROUTE_GEOMETRY: RouteGeometry = {
   isLoop: true,
   origin: null,
@@ -50,12 +48,10 @@ const EMPTY_ROUTE_GEOMETRY: RouteGeometry = {
   mode: "fallback",
   estimated: true,
 };
-
 const RouteMap = dynamic(
   () => import("./components/route-map").then((module) => module.RouteMap),
   { ssr: false },
 );
-
 export function buildPlannerActionHref(
   actionId: string | null | undefined,
   planningMode: { type: "free" } | { type: "event-centered"; eventId: string },
@@ -69,7 +65,6 @@ export function buildPlannerActionHref(
   }
   return `/actions/new?${params.toString()}`;
 }
-
 export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
   const router = useRouter();
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
@@ -115,7 +110,6 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
   const organizationMarginMinutes = data?.organizationMarginMinutes ?? null;
   const actionDurationLabel = formatBusinessDurationRangeMinutes(serviceMinutes);
   const operationalTotalLabel = formatBusinessDurationRangeMinutes(operationalTotalMinutes);
-
   const createActionFromRecommendation = () => {
     if (!data) return;
     writePlannerActionHandoff({
@@ -148,7 +142,6 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
               : "Degraded recommendation: the available data is not exhaustive."
       : null
     : null;
-
   return (
     <SectionShell
       id="route"
@@ -269,7 +262,7 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
                  </button>
                ) : (
                  <Link
-                   href={buildSignInRedirectHref("/sections/route")}
+                 href={buildSignInRedirectHref("/actions/new?panel=itineraire")}
                    className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl bg-emerald-500 px-4 py-3 text-center text-sm font-black uppercase tracking-widest text-slate-950 transition hover:bg-emerald-400"
                  >
                    {fr ? "Se connecter pour calculer" : "Sign in to calculate"}
@@ -291,7 +284,6 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
               fr={fr}
             />
           )}
-
           {isLoading && (
             <div className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6">
               <CmmSkeleton className="h-12 w-1/3 rounded-xl bg-white/5" />
@@ -302,7 +294,6 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
               <CmmSkeleton className="h-[400px] rounded-[2rem] bg-white/5" />
             </div>
           )}
-
           {error && (
             <motion.div 
               initial={{ opacity: 1, scale: 0.95 }}
@@ -317,7 +308,6 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
               </p>
             </motion.div>
           )}
-
           {dataStatusMessage && data && (
             <div
               role="status"
@@ -340,7 +330,6 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
               ))}
             </div>
           )}
-
           {data && (
             <p
               role="status"
@@ -351,7 +340,6 @@ export function RouteSection({ actionId }: { actionId?: string | null } = {}) {
               {getRouteOriginLabel(data.origin.source, fr)}
             </p>
           )}
-
           {data?.weatherContext ? (
             <RouteWeatherSummary context={data.weatherContext} fr={fr} />
           ) : null}
