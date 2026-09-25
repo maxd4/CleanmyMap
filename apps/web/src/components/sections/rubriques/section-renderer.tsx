@@ -7,7 +7,6 @@ import {
   type SectionRubriqueDefinition,
 } from "@/lib/sections-registry";
 import { PendingSection } from "./shared";
-import { RouteSection } from "./route";
 import type { FeedbackSectionProps } from "./feedback-section.shared";
 
 type SectionRendererProps = {
@@ -62,6 +61,13 @@ const JoinFormSection = dynamic(() =>
 );
 const ConnectSection = dynamic(() =>
   import("./connect-section").then((module) => module.ConnectSection),
+);
+const RouteSection = dynamic<{ actionId?: string | null }>(() =>
+  import("./route").then((module) => ({
+    default: (props: { actionId?: string | null }) => (
+      <module.RouteSection {...props} />
+    ),
+  })),
 );
 
 export const FINALIZED_SECTION_RENDERERS = {

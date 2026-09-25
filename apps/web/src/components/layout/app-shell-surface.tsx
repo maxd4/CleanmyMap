@@ -1,9 +1,9 @@
 "use client";
 
+import { DeferredWeatherWarningBar } from "@/components/ui/deferred-weather-warning-bar";
 import type { ReactNode } from "react";
 import { useUser } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
-import { WeatherWarningBar } from "@/components/ui/weather-warning-bar";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { resolveActiveProfileFromMetadata, type AppProfile } from "@/lib/profiles";
 
@@ -37,7 +37,7 @@ export function AppShellSurface({ children }: AppShellSurfaceProps) {
       data-display-mode={displayMode}
       data-user-profile={currentProfile}
     >
-      <WeatherWarningBar autoGeolocation={!isRouteRecommendationPath(pathname)} />
+      <DeferredWeatherWarningBar autoGeolocation={!isRouteRecommendationPath(pathname)} />
       <main className="flex-1">{children}</main>
     </div>
   );

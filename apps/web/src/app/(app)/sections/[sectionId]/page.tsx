@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
+import { Suspense } from "react";
 import { SectionRenderer } from "@/components/sections/rubriques/section-renderer";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
@@ -8,7 +9,6 @@ import {
   getSectionRubriqueById,
   getSectionRouteParams,
 } from "@/lib/sections-registry";
-import { getServerLocale } from "@/lib/server-preferences";
 import { buildSignInRedirectHref } from "@/lib/auth/redirect-url";
 import {
   buildLegacyJoinActionRedirect,
@@ -68,10 +68,8 @@ export async function generateMetadata({
     };
   }
 
-  const locale = await getServerLocale();
-  const localizedLabel = locale === "fr" ? section.label.fr : section.label.en;
-  const localizedDescription =
-    locale === "fr" ? section.description.fr : section.description.en;
+  const localizedLabel = section.label.fr;
+  const localizedDescription = section.description.fr;
   const isIndexable = PUBLIC_INDEXABLE_SECTION_IDS.has(section.id);
   const isPublicNoindex = PUBLIC_NOINDEX_SECTION_IDS.has(section.id);
   const robots = isIndexable
@@ -118,6 +116,19 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
   }
 
   const accessMode = section.anonymousPresentation;
+  const fundingOnParticipeUrl =
+    section.id === "funding" || section.id === "open-data"
+      ? env.FUNDING_ONPARTICIPE_URL
+      : undefined;
+
+  if (accessMode === "visible") {
+    return (
+      <Suspense fallback={null}>
+        <SectionRenderer section={section} fundingOnParticipeUrl={fundingOnParticipeUrl} />
+      </Suspense>
+    );
+  }
+
   const sectionSearchParams = await searchParams;
   const returnQuery = new URLSearchParams();
   for (const [key, value] of Object.entries(sectionSearchParams)) {
@@ -129,10 +140,6 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
   }
   const sectionReturnRoute = `/sections/${section.id}${returnQuery.size ? `?${returnQuery}` : ""}`;
   const signInHref = buildSignInRedirectHref(sectionReturnRoute);
-  const fundingOnParticipeUrl =
-    section.id === "funding" || section.id === "open-data"
-      ? env.FUNDING_ONPARTICIPE_URL
-      : undefined;
   const { userId } = await getSafeAuthSession();
 
   if (!userId && accessMode === "blur") {

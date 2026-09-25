@@ -44,7 +44,7 @@ describe("rubrique entrypoints", () => {
     expect(renderer).toContain('import("./climate")');
     expect(renderer).toContain('import("./compost")');
     expect(renderer).toContain('import("./feedback")');
-    expect(renderer).toContain('from "./route"');
+    expect(renderer).toContain('import("./route")');
     expect(renderer).toContain('import("./gamification")');
     expect(renderer).toContain('import("./actors-section")');
     expect(renderer).not.toContain('from "./community-section"');
