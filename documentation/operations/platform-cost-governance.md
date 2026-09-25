@@ -136,6 +136,34 @@ pour les Productions. Ces réglages relèvent des paramètres Vercel du projet o
 de l'équipe ; ils ne sont pas considérés comme configurés par la seule présence
 de cette règle dans le dépôt.
 
+### Configuration Vercel CURRENT
+
+La configuration versionnée actuelle est portée par
+[`apps/web/vercel.json`](../../apps/web/vercel.json) et le projet lié sous
+`.vercel/project.json` :
+
+- le `rootDirectory` Vercel est `apps/web` et les fonctions ciblent la région
+  `cdg1` ;
+- `main` et les autres branches restent activés par défaut, tandis que
+  `dependabot/**` est explicitement exclu des déploiements Git ;
+- le seul cron Vercel déclaré est `/api/cron/maintenance`, programmé à
+  `20 3 * * *` UTC ; le registre applicatif décide ensuite quels jobs sont dus ;
+- `ignoreCommand` est `node scripts/ignored-build-step.mjs` ;
+- le build expose `NEXT_PUBLIC_SOURCE_MAP=true`, conserve
+  `productionBrowserSourceMaps: true` et désactive
+  `experimental.serverSourceMaps` ;
+- le build web exécute ensuite `scripts/upload-sentry-sourcemaps.mjs`. Les maps
+  sont supprimées après upload hors Vercel, mais conservées sur le filesystem
+  de build Vercel pour éviter une erreur connue du collecteur d'artefacts. Cette
+  conservation reste intentionnelle tant qu'une réduction de Deployment
+  Storage officiellement supportée et vérifiée n'est pas démontrée.
+
+La homepage exporte `revalidate = 3600` dans
+[`apps/web/src/app/page.tsx`](../../apps/web/src/app/page.tsx). Cette fenêtre
+ISR concerne le rendu de la page ; l'activité récente de la homepage utilise
+son propre mécanisme borné et ne doit pas être assimilée à une seconde
+revalidation de la page.
+
 ### Rendu dynamique et cache
 
 Ne pas utiliser par défaut :

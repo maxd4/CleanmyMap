@@ -179,8 +179,20 @@ Logs:
 Statut observé au moment de cette passe:
 
 - le runtime Sentry reste actif dès que `NEXT_PUBLIC_SENTRY_DSN` est configuré;
-- les builds de production activent `experimental.serverSourceMaps` pour générer aussi les maps serveur;
-- l'upload des source maps est géré après `next build` via `sentry-cli` avec injection des debug IDs; l'étape ne pousse que les bundles JavaScript qui ont un `.map` correspondant, exclut les maps CSS tierces, et désactive la détection automatique des `sourceMappingURL` ainsi que le rewriting, ce qui évite les faux `missing sourcemap!` et les warnings de chunks non résolus;
+- `productionBrowserSourceMaps` reste activé pour permettre la génération et
+  l'upload des maps navigateur; `experimental.serverSourceMaps` est désactivé
+  dans la configuration actuelle, donc aucune map serveur n'est promise par
+  cette option;
+- l'upload des source maps est géré après `next build` via `sentry-cli` avec
+  injection des debug IDs; l'étape ne pousse que les bundles JavaScript qui ont
+  un `.map` correspondant, exclut les maps CSS tierces, et désactive la
+  détection automatique des `sourceMappingURL` ainsi que le rewriting, ce qui
+  évite les faux `missing sourcemap!` et les warnings de chunks non résolus;
+- sur Vercel, les maps originales sont conservées sur le build filesystem
+  après l'upload pour éviter les erreurs du collecteur d'artefacts; hors
+  Vercel, elles sont supprimées après un upload réussi. Aucune suppression
+  Vercel supplémentaire n'est donc activée sans preuve de compatibilité avec
+  le collecteur;
 - si `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` ou `SENTRY_PROJECT` manquent, l'upload est sauté sans bloquer le runtime.
 
 ### Resend
