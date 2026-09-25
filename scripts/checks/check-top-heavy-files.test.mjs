@@ -19,9 +19,10 @@ function writeFile(root, relativePath, content) {
   fs.writeFileSync(target, content, "utf8");
 }
 
-function reviewEntry(source, { status = "REVIEW", maxLines = source.split("\n").length, maxBytes = Buffer.byteLength(source) } = {}) {
+function reviewEntry(source, { path: entryPath = "apps/web/src/fixture.ts", kind = "runtime", status = "REVIEW", maxLines = source.split("\n").length, maxBytes = Buffer.byteLength(source) } = {}) {
   return {
-    path: "apps/web/src/fixture.ts",
+    path: entryPath,
+    kind,
     status,
     reviewedRef: "fixture-review-ref",
     maxLines,
@@ -29,9 +30,9 @@ function reviewEntry(source, { status = "REVIEW", maxLines = source.split("\n").
   };
 }
 
-function createFixture({ source = makeContent(1), baseline = { version: 2, allowed: [], review: [] }, extraFiles = {} } = {}) {
+function createFixture({ source = makeContent(1), sourcePath = "apps/web/src/fixture.ts", baseline = { version: 3, allowed: [], review: [] }, extraFiles = {} } = {}) {
   const root = fs.mkdtempSync(path.join(fixtureParent, "fixture-"));
-  writeFile(root, "apps/web/src/fixture.ts", source);
+  writeFile(root, sourcePath, source);
   writeFile(root, "scripts/checks/heavy-files-baseline.json", JSON.stringify(baseline, null, 2));
   for (const [relativePath, content] of Object.entries(extraFiles)) writeFile(root, relativePath, content);
   execFileSync("git", ["init", "-q"], { cwd: root, stdio: "ignore" });
@@ -68,7 +69,7 @@ test.after(() => fs.rmSync(fixtureParent, { recursive: true, force: true, maxRet
 
 test("un fichier REVIEW historique inchangé passe", () => {
   const source = makeContent(501);
-  withFixture({ source, baseline: { version: 2, allowed: [], review: [reviewEntry(source)] } }, (root) => {
+  withFixture({ source, baseline: { version: 3, allowed: [], review: [reviewEntry(source)] } }, (root) => {
     const result = runChecker(root, ["--enforce"]);
     assert.equal(result.status, 0, result.output);
     assert.match(result.output, /REVIEW_REQUIRED/);
@@ -80,7 +81,7 @@ test("un fichier REVIEW qui grossit au-delà de son plafond échoue", () => {
   const baselineSource = makeContent(501);
   withFixture({
     source: makeContent(502),
-    baseline: { version: 2, allowed: [], review: [reviewEntry(baselineSource)] },
+    baseline: { version: 3, allowed: [], review: [reviewEntry(baselineSource)] },
   }, (root) => {
     const result = runChecker(root, ["--enforce"]);
     assert.equal(result.status, 1, result.output);
@@ -101,14 +102,14 @@ test("une amélioration REVIEW acquise est reconnue", () => {
   const historicalSource = makeContent(501);
   withFixture({
     source,
-    baseline: { version: 2, allowed: [], review: [reviewEntry(historicalSource)] },
+    baseline: { version: 3, allowed: [], review: [reviewEntry(historicalSource)] },
   }, (root) => {
     const candidate = runChecker(root, ["--enforce"]);
     assert.equal(candidate.status, 0, candidate.output);
     assert.match(candidate.output, /Améliorations REVIEW détectées/);
 
     writeFile(root, "scripts/checks/heavy-files-baseline.json", JSON.stringify({
-      version: 2,
+      version: 3,
       allowed: [],
       review: [reviewEntry(source, { status: "IMPROVED" })],
     }, null, 2));
@@ -122,7 +123,7 @@ test("un retour au-dessus de REVIEW après amélioration échoue", () => {
   const baselineSource = makeContent(400);
   withFixture({
     source: makeContent(501),
-    baseline: { version: 2, allowed: [], review: [reviewEntry(baselineSource, { status: "IMPROVED" })] },
+    baseline: { version: 3, allowed: [], review: [reviewEntry(baselineSource, { status: "IMPROVED" })] },
   }, (root) => {
     const result = runChecker(root, ["--enforce"]);
     assert.equal(result.status, 1, result.output);
@@ -143,9 +144,10 @@ test("une exception COHESIVE ratifiée reste plafonnée", () => {
   withFixture({
     source,
     baseline: {
-      version: 2,
+      version: 3,
       allowed: [{
         path: "apps/web/src/fixture.ts",
+        kind: "runtime",
         decision: "COHESIVE_SINGLE_FILE",
         reason: "Responsabilité cohésive conservée en attendant une revue dédiée.",
         reviewedRef: "fixture-review-ref",
@@ -164,9 +166,10 @@ test("TOP_HEAVY_FAILURE_PATH_TEST: une exception qui dépasse maxLines échoue s
   withFixture({
     source: makeContent(1002),
     baseline: {
-      version: 2,
+      version: 3,
       allowed: [{
         path: "apps/web/src/fixture.ts",
+        kind: "runtime",
         decision: "DEFERRED_SPLIT",
         reason: "Découpage différé jusqu'à la caractérisation du contrat.",
         reviewedRef: "fixture-review-ref",
@@ -184,13 +187,14 @@ test("TOP_HEAVY_FAILURE_PATH_TEST: une exception qui dépasse maxLines échoue s
 });
 
 test("une exception qui dépasse maxBytes échoue", () => {
-  const source = makeContent(4, () => `export const payload = "${"x".repeat(80)}";`);
+  const source = makeContent(4, () => `export const payload = "${"x".repeat(20000)}";`);
   withFixture({
     source,
     baseline: {
-      version: 2,
+      version: 3,
       allowed: [{
         path: "apps/web/src/fixture.ts",
+        kind: "runtime",
         decision: "COHESIVE_SINGLE_FILE",
         reason: "Fichier cohésif conservé avec un plafond de taille explicite.",
         reviewedRef: "fixture-review-ref",
@@ -200,7 +204,7 @@ test("une exception qui dépasse maxBytes échoue", () => {
       review: [],
     },
   }, (root) => {
-    const result = runChecker(root, ["--enforce", "--warn-kb=0.05", "--max-kb=0.1"]);
+    const result = runChecker(root, ["--enforce"]);
     assert.equal(result.status, 1, result.output);
     assert.match(result.output, /plafonds ratifiés/);
   });
@@ -210,9 +214,10 @@ test("une exception redevenue sous HARD est stale et échoue", () => {
   withFixture({
     source: makeContent(501),
     baseline: {
-      version: 2,
+      version: 3,
       allowed: [{
         path: "apps/web/src/fixture.ts",
+        kind: "runtime",
         decision: "COHESIVE_SINGLE_FILE",
         reason: "Exception historique à réévaluer dès le retour sous HARD.",
         reviewedRef: "fixture-review-ref",
@@ -233,9 +238,10 @@ test("un chemin absent ou hors root invalide la baseline", () => {
     withFixture({
       extraFiles: { "README.md": "readme\n" },
       baseline: {
-        version: 2,
+        version: 3,
         allowed: [{
           path: entryPath,
+          kind: "runtime",
           decision: "COHESIVE_SINGLE_FILE",
           reason: "Entrée volontairement invalide pour le test de schéma.",
           reviewedRef: "fixture-review-ref",
@@ -260,6 +266,28 @@ test("une baseline v1 exige une migration explicite", () => {
   });
 });
 
+test("une baseline v2 historique est lue avec le KIND classifié", () => {
+  const source = makeContent(501);
+  withFixture({
+    source,
+    baseline: {
+      version: 2,
+      allowed: [],
+      review: [{
+        path: "apps/web/src/fixture.ts",
+        status: "REVIEW",
+        reviewedRef: "fixture-review-ref",
+        maxLines: 501,
+        maxBytes: Buffer.byteLength(source),
+      }],
+    },
+  }, (root) => {
+    const result = runChecker(root, ["--enforce"]);
+    assert.equal(result.status, 0, result.output);
+    assert.match(result.output, /PASS/);
+  });
+});
+
 test("une baseline malformée échoue explicitement", () => {
   withFixture({ baseline: { allowed: [] } }, (root) => {
     const result = runChecker(root, ["--enforce"]);
@@ -270,12 +298,55 @@ test("une baseline malformée échoue explicitement", () => {
 
 test("un scan --ref ne lit ni le worktree ni un fichier untracked", () => {
   const source = makeContent(501);
-  withFixture({ source, baseline: { version: 2, allowed: [], review: [reviewEntry(source)] } }, (root) => {
+  withFixture({ source, baseline: { version: 3, allowed: [], review: [reviewEntry(source)] } }, (root) => {
     writeFile(root, "apps/web/src/fixture.ts", makeContent(1001));
     writeFile(root, "apps/web/src/untracked.ts", makeContent(1001));
     const result = runChecker(root, ["--enforce", "--ref=HEAD"]);
     assert.equal(result.status, 0, result.output);
     assert.doesNotMatch(result.output, /untracked/);
     assert.doesNotMatch(result.output, /Nouveaux dépassements HARD/);
+  });
+});
+
+test("les seuils test et data/config sont plus larges que runtime", () => {
+  withFixture({
+    sourcePath: "apps/web/src/fixture.test.ts",
+    source: makeContent(1000),
+  }, (root) => {
+    const result = runChecker(root, ["--enforce"]);
+    assert.equal(result.status, 0, result.output);
+    assert.match(result.output, /PASS: 0 fichier\(s\) HARD, 0 fichier\(s\) REVIEW_REQUIRED/);
+  });
+
+  withFixture({
+    sourcePath: "apps/web/src/data/fixture.ts",
+    source: makeContent(800),
+  }, (root) => {
+    const result = runChecker(root, ["--enforce"]);
+    assert.equal(result.status, 0, result.output);
+    assert.match(result.output, /PASS: 0 fichier\(s\) HARD, 0 fichier\(s\) REVIEW_REQUIRED/);
+  });
+});
+
+test("un fichier généré marqué et régénérable est informatif mais non bloquant", () => {
+  withFixture({
+    sourcePath: "apps/web/src/generated/fixture.generated.ts",
+    source: `// @generated\n${makeContent(1600)}`,
+  }, (root) => {
+    const result = runChecker(root, ["--enforce"]);
+    assert.equal(result.status, 0, result.output);
+    assert.match(result.output, /Generated/);
+    assert.doesNotMatch(result.output, /Nouveaux dépassements HARD/);
+  });
+});
+
+test("un fichier manuel placé sous generated reste soumis au radar", () => {
+  withFixture({
+    sourcePath: "apps/web/src/generated/manual.ts",
+    source: makeContent(1001),
+  }, (root) => {
+    const result = runChecker(root, ["--enforce"]);
+    assert.equal(result.status, 1, result.output);
+    assert.match(result.output, /Nouveaux dépassements HARD/);
   });
 });

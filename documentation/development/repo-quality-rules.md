@@ -62,13 +62,18 @@ La source spécialisée est
 
 - Traiter une cible principale à la fois.
 - Conserver props, exports, routes et contrats publics sauf décision distincte.
-- `REVIEW_THRESHOLD` est `>500` lignes ou `>40 KiB` et produit
-  `REVIEW_REQUIRED`, un signal d'audit sans split automatique ; en mode
-  `--enforce`, le ratchet numérique bloque tout nouveau REVIEW et toute
-  croissance au-delà du plafond mesuré.
-- `HARD_THRESHOLD` est `>1000` lignes ou `>50 KiB`; un nouveau dépassement est
-  bloquant en mode `--enforce`.
+- Les seuils sont déterminés par `classifyFileKind()` : runtime REVIEW
+  `>500` lignes ou `>40 KiB`, HARD `>1000` lignes ou `>50 KiB` ; test REVIEW
+  `>1000` lignes ou `>50 KiB`, HARD `>1500` lignes ou `>80 KiB` ; data/config
+  REVIEW `>800` lignes ou `>50 KiB`, HARD `>1500` lignes ou `>80 KiB`.
+  `generated` reste informatif et n'est exclu que si sa régénérabilité est
+  prouvée.
+- `REVIEW_REQUIRED` est un signal d'audit sans split automatique ; en mode
+  `--enforce`, le ratchet numérique bloque tout nouveau REVIEW/HARD et toute
+  croissance au-delà du plafond mesuré pour son KIND.
 - Utiliser la taille comme signal, jamais comme décision d'extraction isolée.
+- La taille d'un test mesure la lisibilité et la cohésion des scénarios ; elle
+  n'est pas traitée comme un monolithe runtime.
 - Les statuts sont `REVIEW_REQUIRED`, `PROACTIVE_SPLIT`,
   `COHESIVE_SINGLE_FILE`, `ALREADY_MODULARIZED` et `DEFERRED_SPLIT`.
 - `DEFERRED_SPLIT` exige une raison et un déclencheur de reprise.

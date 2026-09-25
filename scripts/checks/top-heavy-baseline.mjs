@@ -1,4 +1,5 @@
 import { normalizeRepositoryPath } from "./repository-view.mjs";
+import { classifyFileKind } from "./top-heavy-measurement.mjs";
 
 const ALLOWED_BASELINE_DECISIONS = new Set([
   "COHESIVE_SINGLE_FILE",
@@ -42,12 +43,12 @@ export function loadHeavyFilesBaseline(view, baselinePath, scanRoots) {
 
   if (
     !isPlainObject(parsed) ||
-    parsed.version !== 2 ||
+    ![2, 3].includes(parsed.version) ||
     !Array.isArray(parsed.allowed) ||
     !Array.isArray(parsed.review)
   ) {
     throw new Error(
-      `baseline malformée (${baselinePath}): version 2, allowed[] et review[] sont requis (migration explicite depuis la version 1).`,
+      `baseline malformée (${baselinePath}): version 2 ou 3, allowed[] et review[] sont requis (migration explicite depuis la version 1).`,
     );
   }
 
@@ -71,12 +72,18 @@ export function loadHeavyFilesBaseline(view, baselinePath, scanRoots) {
 
     const entry = {
       path: file,
+      kind: parsed.version === 3
+        ? requireNonEmptyString(rawEntry.kind, "kind", index)
+        : classifyFileKind(file),
       decision: rawEntry.decision,
       reason: requireNonEmptyString(rawEntry.reason, "reason", index),
       reviewedRef: requireNonEmptyString(rawEntry.reviewedRef, "reviewedRef", index),
       maxLines: requirePositiveInteger(rawEntry.maxLines, "maxLines", index),
       maxBytes: requirePositiveInteger(rawEntry.maxBytes, "maxBytes", index),
     };
+    if (entry.kind !== classifyFileKind(file)) {
+      throw new Error(`entrée ${index}: kind incohérent pour ${file} (${entry.kind}).`);
+    }
     if (allowed.has(file)) {
       throw new Error(`entrée ${index}: path dupliqué (${file}).`);
     }
@@ -103,11 +110,17 @@ export function loadHeavyFilesBaseline(view, baselinePath, scanRoots) {
 
     const entry = {
       path: file,
+      kind: parsed.version === 3
+        ? requireNonEmptyString(rawEntry.kind, "kind", index)
+        : classifyFileKind(file),
       status: rawEntry.status,
       reviewedRef: requireNonEmptyString(rawEntry.reviewedRef, "reviewedRef", index),
       maxLines: requirePositiveInteger(rawEntry.maxLines, "maxLines", index),
       maxBytes: requirePositiveInteger(rawEntry.maxBytes, "maxBytes", index),
     };
+    if (entry.kind !== classifyFileKind(file)) {
+      throw new Error(`entrée review ${index}: kind incohérent pour ${file} (${entry.kind}).`);
+    }
     if (allowed.has(file) || review.has(file)) {
       throw new Error(`entrée review ${index}: path dupliqué (${file}).`);
     }

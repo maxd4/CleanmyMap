@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Rapport informatif des fichiers volumineux.
- * Les seuils et la mesure sont partagés avec le checker qualité.
+ * Les seuils, la mesure et la classification KIND sont partagés avec le
+ * checker qualité.
  */
 
 import { readFileSync, readdirSync } from "node:fs";
@@ -15,13 +16,15 @@ import { loadHeavyFilesBaseline } from "../checks/top-heavy-baseline.mjs";
 import {
   HEAVY_FILE_EXTENSIONS,
   classifyFileKind,
+  isRegenerableGeneratedFile,
   measureContent,
   collectMeasuredRows,
 } from "../checks/top-heavy-measurement.mjs";
 import {
-  HARD_THRESHOLD,
-  REVIEW_THRESHOLD,
-  isAboveThreshold,
+  FILE_KIND_POLICY,
+  isAboveHard,
+  isAboveReview,
+  isExcludedGeneratedRow,
 } from "../checks/top-heavy-policy.mjs";
 
 const SCAN_ROOTS = ["apps/web/src"];
@@ -32,6 +35,7 @@ export function analyzeFile(filePath) {
     const content = readFileSync(filePath);
     const measurement = measureContent(content);
     const text = content.toString("utf8");
+    const kind = classifyFileKind(filePath);
 
     return {
       path: filePath,
@@ -39,6 +43,8 @@ export function analyzeFile(filePath) {
       size: measurement.bytes,
       bytes: measurement.bytes,
       lines: measurement.lines,
+      kind,
+      generated: isRegenerableGeneratedFile(filePath, content),
       imports: (text.match(/^import /gm) || []).length,
       exports: (text.match(/^export /gm) || []).length,
     };
@@ -60,9 +66,7 @@ export function scanDirectory(dir, results = []) {
       HEAVY_FILE_EXTENSIONS.has(`.${entry.name.split(".").pop()}`.toLowerCase())
     ) {
       const analysis = analyzeFile(fullPath);
-      if (isAboveThreshold(analysis, REVIEW_THRESHOLD)) {
-        results.push(analysis);
-      }
+      if (isAboveReview(analysis)) results.push(analysis);
     }
   }
 
@@ -74,14 +78,38 @@ function formatBytes(bytes) {
 }
 
 function formatRow(row) {
-  return `- ${row.file} [${classifyFileKind(row.file)}] — ${row.lines} lignes / ${formatBytes(row.bytes)}`;
+  const generatedLabel = isExcludedGeneratedRow(row) ? ", généré/régénérable" : "";
+  return `- ${row.file ?? row.path} [${row.kind}${generatedLabel}] — ${row.lines} lignes / ${formatBytes(row.bytes)}`;
+}
+
+function formatPolicy() {
+  return Object.entries(FILE_KIND_POLICY)
+    .map(([kind, policy]) => policy.review === null
+      ? `- ${kind}: résumé informatif; exclusion seulement si provenance régénérable prouvée`
+      : `- ${kind}: REVIEW >${policy.review.lines} lignes ou >${policy.review.bytes / 1024} KiB ; HARD >${policy.hard.lines} lignes ou >${policy.hard.bytes / 1024} KiB`)
+    .join("\n");
+}
+
+export function getRadarGroups(rows) {
+  return {
+    architectural: rows
+      .filter((row) => !isExcludedGeneratedRow(row) && row.kind !== "test" && isAboveReview(row))
+      .sort((a, b) => b.lines - a.lines || b.bytes - a.bytes),
+    tests: rows
+      .filter((row) => row.kind === "test" && isAboveReview(row))
+      .sort((a, b) => b.lines - a.lines || b.bytes - a.bytes),
+    generated: rows
+      .filter((row) => row.kind === "generated")
+      .sort((a, b) => b.lines - a.lines || b.bytes - a.bytes),
+  };
 }
 
 function getRatchetFindings(rows, baseline) {
   if (baseline instanceof Error) return [`INVALID: ${baseline.message}`];
 
   const { allowed, review } = baseline;
-  const hardRows = rows.filter((row) => isAboveThreshold(row, HARD_THRESHOLD));
+  const checkedRows = rows.filter((row) => !isExcludedGeneratedRow(row));
+  const hardRows = checkedRows.filter(isAboveHard);
   const hardPaths = new Set(hardRows.map((row) => row.file));
   const findings = [];
   for (const row of hardRows) {
@@ -95,8 +123,9 @@ function getRatchetFindings(rows, baseline) {
   for (const entry of allowed.values()) {
     if (!hardPaths.has(entry.path)) findings.push(`STALE ${entry.path}`);
   }
-  const reviewPaths = new Set(rows.filter((row) => isAboveThreshold(row, REVIEW_THRESHOLD)).map((row) => row.file));
-  for (const row of rows.filter((candidate) => isAboveThreshold(candidate, REVIEW_THRESHOLD))) {
+  const reviewRows = checkedRows.filter(isAboveReview);
+  const reviewPaths = new Set(reviewRows.map((row) => row.file));
+  for (const row of reviewRows) {
     const entry = review.get(row.file);
     if (!entry && !allowed.has(row.file)) findings.push(`NEW_REVIEW ${formatRow(row)}`);
     if (entry && (row.lines > entry.maxLines || row.bytes > entry.maxBytes)) {
@@ -104,7 +133,9 @@ function getRatchetFindings(rows, baseline) {
     }
   }
   for (const entry of review.values()) {
-    if (!reviewPaths.has(entry.path)) findings.push(`STALE_REVIEW ${entry.path}`);
+    const row = rows.find((candidate) => candidate.file === entry.path);
+    if (!reviewPaths.has(entry.path) && entry.status === "REVIEW") findings.push(`STALE_REVIEW ${entry.path}`);
+    if (!row) findings.push(`MISSING_REVIEW ${entry.path}`);
   }
   return findings;
 }
@@ -118,10 +149,12 @@ export function analyzeRepository({ root = process.cwd(), ref = null } = {}) {
   } catch (error) {
     baseline = error;
   }
+  const groups = getRadarGroups(rows);
   return {
     rows,
-    reviewRows: rows.filter((row) => isAboveThreshold(row, REVIEW_THRESHOLD) && !isAboveThreshold(row, HARD_THRESHOLD)),
-    hardRows: rows.filter((row) => isAboveThreshold(row, HARD_THRESHOLD)),
+    ...groups,
+    reviewRows: [...groups.architectural, ...groups.tests],
+    hardRows: rows.filter(isAboveHard),
     baselineFindings: getRatchetFindings(rows, baseline),
     ref: ref ?? "WORKTREE",
   };
@@ -130,18 +163,19 @@ export function analyzeRepository({ root = process.cwd(), ref = null } = {}) {
 export function main(args = process.argv.slice(2)) {
   const ref = parseRepositoryRef(args);
   const report = analyzeRepository({ ref });
-  const sortedReview = [...report.reviewRows].sort((a, b) => b.lines - a.lines || b.bytes - a.bytes);
-  const sortedHard = [...report.hardRows].sort((a, b) => b.lines - a.lines || b.bytes - a.bytes);
 
   console.log(`Top-heavy informative report — REF=${report.ref}`);
-  console.log(`Policy: REVIEW >${REVIEW_THRESHOLD.lines} lines or >${REVIEW_THRESHOLD.bytes / 1024} KiB; HARD_LIMIT >${HARD_THRESHOLD.lines} lines or >${HARD_THRESHOLD.bytes / 1024} KiB`);
-  console.log("\nREVIEW");
-  console.log(sortedReview.length === 0 ? "- none" : sortedReview.map(formatRow).join("\n"));
-  console.log("\nHARD_LIMIT");
-  console.log(sortedHard.length === 0 ? "- none" : sortedHard.map(formatRow).join("\n"));
+  console.log("Politique par KIND:");
+  console.log(formatPolicy());
+  console.log("\nRADAR ARCHITECTURAL (runtime + data/config)");
+  console.log(report.architectural.length === 0 ? "- none" : report.architectural.map(formatRow).join("\n"));
+  console.log("\nTESTS VOLUMINEUX (signal de lisibilité/cohésion)");
+  console.log(report.tests.length === 0 ? "- none" : report.tests.map(formatRow).join("\n"));
+  console.log("\nGENERATED (résumé informatif; exclusion seulement si régénérabilité prouvée)");
+  console.log(report.generated.length === 0 ? "- none" : report.generated.map(formatRow).join("\n"));
   console.log("\nBASELINE_RATCHET");
   console.log(report.baselineFindings.length === 0 ? "- PASS: no finding" : report.baselineFindings.map((finding) => `- ${finding}`).join("\n"));
-  console.log("\nNo architectural decision or automatic split is produced by this report.");
+  console.log("\nCycles, complexity, dead-code, duplication et coverage restent des corrélations séparées; aucun score numérique ni décision architecturale n'est produit par ce rapport.");
 }
 
 const isDirectExecution =

@@ -135,20 +135,23 @@ le rapport porte `ALREADY_PROVEN`. `WORKTREE`, `STAGED`, `PUSH_CANDIDATE` et
 modes de validation. Les anciens alias (`checks:changed`, `checks`,
 `checks:global`) restent des compatibilités bornées vers les deux modes.
 
-La politique commune des fichiers volumineux est portée par
-`scripts/checks/check-top-heavy-files.mjs` : `REVIEW_THRESHOLD` est
-`>500` lignes ou `>40 KiB` et reste un signal d'audit sans split automatique ;
-`HARD_THRESHOLD` est `>1000` lignes ou `>50 KiB` et bloque tout nouveau
-dépassement en mode `--enforce`. Le même mode bloque désormais aussi tout
-nouveau REVIEW et toute croissance au-delà du plafond REVIEW mesuré. Le checker
-lit la baseline canonique `scripts/checks/heavy-files-baseline.json`.
+La politique des fichiers volumineux est portée par
+`scripts/checks/top-heavy-policy.mjs` et réutilise `classifyFileKind()` :
+runtime REVIEW `>500` lignes ou `>40 KiB`, HARD `>1000` lignes ou `>50 KiB` ;
+test REVIEW `>1000` lignes ou `>50 KiB`, HARD `>1500` lignes ou `>80 KiB` ;
+data/config REVIEW `>800` lignes ou `>50 KiB`, HARD `>1500` lignes ou `>80 KiB`.
+`generated` n'est exclu que si une provenance régénérable est prouvée ; sinon
+il reste soumis à un contrôle conservateur. `--enforce` bloque tout nouveau
+REVIEW ou HARD et toute croissance au-delà du plafond ratifié du KIND. Le
+checker lit la baseline canonique `scripts/checks/heavy-files-baseline.json`.
 
-La baseline versionnée v2 sépare les responsabilités : `allowed[]` reste un
+La baseline versionnée v3 sépare les responsabilités : `allowed[]` reste un
 inventaire d'exceptions HARD explicitement ratifiées, avec `path`, `decision`,
-`reason`, `reviewedRef`, `maxLines` et `maxBytes`; seuls
+`reason`, `kind`, `reviewedRef`, `maxLines` et `maxBytes`; seuls
 `COHESIVE_SINGLE_FILE` et `DEFERRED_SPLIT` sont autorisés. `review[]` contient
-uniquement des plafonds numériques REVIEW (`path`, `status`, `reviewedRef`,
-`maxLines`, `maxBytes`) et ne constitue aucune décision architecturale. Un
+uniquement des plafonds numériques REVIEW (`path`, `kind`, `status`,
+`reviewedRef`, `maxLines`, `maxBytes`) et ne constitue aucune décision
+architecturale. Un
 `status: IMPROVED` conserve le plafond abaissé après le retour sous REVIEW et
 bloque tout retour au-dessus de ce plafond. Les entrées disparues des fichiers
 mesurés ou des roots restent stale ; un fichier seulement repassé sous REVIEW

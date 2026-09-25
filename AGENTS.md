@@ -363,12 +363,15 @@ Server/Client. Toute restructuration importante suit :
 2. architecture logique, dépendances, responsabilités et testabilité ;
 3. garde-fous de gouvernance, dépendances et documentation canonique.
 
-La taille seule n'impose pas une extraction. La politique commune des fichiers
-volumineux comporte deux niveaux : `REVIEW_THRESHOLD` (`>500` lignes ou
-`>40 KiB`), signal d'audit uniquement, et `HARD_THRESHOLD` (`>1000` lignes ou
-`>50 KiB`), dont un nouveau dépassement est bloquant. Aucun de ces seuils ne
-déclenche un split automatique. La décision dépend de la cohésion, des
-responsabilités, du couplage, de la testabilité et des contrats.
+La taille seule n'impose pas une extraction. La politique des fichiers
+volumineux est déterminée par `classifyFileKind()` : runtime REVIEW `>500`
+lignes ou `>40 KiB`, HARD `>1000` lignes ou `>50 KiB` ; test REVIEW `>1000`
+lignes ou `>50 KiB`, HARD `>1500` lignes ou `>80 KiB` ; data/config REVIEW
+`>800` lignes ou `>50 KiB`, HARD `>1500` lignes ou `>80 KiB`. Un fichier
+generated n'est exclu du radar architectural que si sa provenance et sa
+régénérabilité sont prouvées ; un code source manuel reste contrôlé. Aucun de
+ces seuils ne déclenche un split automatique. La décision dépend de la
+cohésion, des responsabilités, du couplage, de la testabilité et des contrats.
 
 ### Modularité préventive
 
@@ -401,10 +404,10 @@ pendant l'implémentation.
 Les déclencheurs suivants imposent une revue de l'architecture avant de
 poursuivre :
 
-- `REVIEW_THRESHOLD` dépassé : `REVIEW_REQUIRED`, état d'audit sans décision
-  automatique ;
-- `HARD_THRESHOLD` dépassé : nouveau dépassement bloquant sauf exception
-  explicitement ratifiée par la baseline ;
+- Le seuil `REVIEW` propre au KIND est dépassé : `REVIEW_REQUIRED`, état
+  d'audit sans décision automatique ;
+- Le seuil `HARD` propre au KIND est dépassé : nouveau dépassement bloquant
+  sauf exception explicitement ratifiée par la baseline ;
 - lot ajoutant environ 250 lignes ou davantage dans un même fichier ;
 - fichier existant au-dessus d'environ 600 lignes auquel le lot ajoute une
   nouvelle responsabilité indépendante ;
