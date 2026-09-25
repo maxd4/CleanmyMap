@@ -103,6 +103,10 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
     classification: "progression",
     progressionId: "regularity",
   },
+  action_balance_cycle: {
+    classification: "progression",
+    progressionId: "versatility",
+  },
   collective_rsvp_yes_pending: {
     classification: "non_progression",
     reason: "Une inscription future ne constitue pas une participation confirmée.",

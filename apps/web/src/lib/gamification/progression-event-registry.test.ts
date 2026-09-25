@@ -9,6 +9,7 @@ import {
 import { CURRENT_INFINITE_PROGRESSION_IDS } from "./progression-types";
 
 const RUNTIME_PROGRESSION_WRITERS = [
+  "action-progression-events.ts",
   "progression-data.ts",
   "progression-backfill.ts",
   "progression-tracking.ts",
@@ -49,6 +50,7 @@ describe("progression event registry", () => {
     expect([...runtimeEventTypes].sort()).toEqual([
       "action_declare_pending",
       "action_declare_validation",
+      "action_balance_cycle",
       "action_monthly_regularity",
       "clean_zone_task",
       "collective_attendance_confirmed",
@@ -106,6 +108,7 @@ describe("progression event registry", () => {
     expect(Object.keys(registry).sort()).toEqual([
       "action_declare_pending",
       "action_declare_validation",
+      "action_balance_cycle",
       "action_monthly_regularity",
       "clean_zone_task",
       "collective_attendance_confirmed",
@@ -137,6 +140,10 @@ describe("progression event registry", () => {
     expect(registry.action_declare_validation).toEqual({
       classification: "progression",
       progressionId: "organisation",
+    });
+    expect(registry.action_balance_cycle).toEqual({
+      classification: "progression",
+      progressionId: "versatility",
     });
     expect(registry.action_declare_pending.classification).toBe("non_progression");
     expect(registry.collective_rsvp_yes_pending.classification).toBe("non_progression");
@@ -184,10 +191,10 @@ describe("progression event registry", () => {
         "exploration",
         "clean_zones",
         "regularity",
+        "versatility",
         "learning",
       ]),
     );
-    expect(registeredProgressions).not.toContain("versatility");
     expect(CURRENT_INFINITE_PROGRESSION_IDS).toContain("versatility");
   });
 
