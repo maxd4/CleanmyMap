@@ -72,6 +72,8 @@
     "quality:cycles": "node scripts/checks/check-cycles.mjs",
     "audit:modularity": "node scripts/reports/generate-modularity-radar.mjs --ref=HEAD",
     "audit:modularity:write": "node scripts/reports/generate-modularity-radar.mjs --ref=HEAD --write",
+    "audit:product-surface": "node scripts/audits/generate-product-surface-audit.mjs --ref=HEAD",
+    "audit:product-surface:write": "node scripts/audits/generate-product-surface-audit.mjs --ref=HEAD --write",
     "quality:mutation": "node scripts/checks/check-mutation.mjs",
     "check:root-files": "node scripts/checks/check-root-file-hygiene.mjs",
     "check:white-text": "node scripts/checks/check-white-text-variants.mjs",
