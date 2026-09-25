@@ -209,6 +209,29 @@ export function resolveActiveRole(params: {
     : params.grantedRole;
 }
 
+export function resolveActiveProfileFromMetadata(
+  metadata: Record<string, unknown> | null | undefined,
+  fallback: AppProfile = "benevole",
+): AppProfile {
+  const rawRole =
+    typeof metadata?.role === "string"
+      ? metadata.role
+      : typeof metadata?.profile === "string"
+        ? metadata.profile
+        : null;
+  const grantedRole = normalizeProfileRole(rawRole);
+
+  if (!grantedRole) {
+    return fallback;
+  }
+
+  const activeRole = metadata?.activeRole ?? metadata?.activeProfile;
+  return resolveActiveRole({
+    metadataActiveRole: typeof activeRole === "string" ? activeRole : null,
+    grantedRole,
+  });
+}
+
 /** @deprecated Use resolveActiveRole; retained for callers during migration. */
 export function resolveActiveProfile(params: {
   metadataActiveProfile: string | null | undefined;

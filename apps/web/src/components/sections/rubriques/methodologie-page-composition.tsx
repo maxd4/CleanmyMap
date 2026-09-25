@@ -1,9 +1,11 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
 import { PageHeader } from "@/components/ui/page-header";
 import { getNavigationSpacesForProfile } from "@/lib/navigation";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { resolveActiveProfileFromMetadata } from "@/lib/profiles";
 import {
   ActionMapMethodologySection,
   LegacyMethodologieContent,
@@ -20,7 +22,11 @@ export { ActionMapMethodologySection } from "./methodologie-page-client";
 export function MethodologiePageClient(props: MethodologiePageClientProps) {
   const { locale } = useSitePreferences();
   const { t } = useTranslation("methodologie");
-  const currentProfile = props.currentProfile ?? "benevole";
+  const { user } = useUser();
+  const currentProfile = resolveActiveProfileFromMetadata(
+    user?.publicMetadata as Record<string, unknown> | undefined,
+    props.currentProfile ?? "benevole",
+  );
   const isFrench = locale === "fr";
   const navigationSpaces = getNavigationSpacesForProfile(
     currentProfile,

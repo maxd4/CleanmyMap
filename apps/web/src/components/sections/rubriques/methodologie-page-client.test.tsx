@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ACTION_POLLUTION_COLOR_STOPS } from "@/components/actions/map-marker-categories";
 import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
 import {
@@ -14,6 +14,14 @@ import {
 import { MethodologiePageClient } from "./methodologie-page-composition";
 
 import { RouteMethodologySection } from "./route-methodology-section";
+
+const currentUser = vi.hoisted(() => ({
+  value: null as { publicMetadata?: Record<string, unknown> } | null,
+}));
+
+vi.mock("@clerk/nextjs", () => ({
+  useUser: () => ({ user: currentUser.value }),
+}));
 
 function renderMethodologyPage(currentProfile: "benevole" | "admin" = "benevole") {
   return renderToStaticMarkup(
@@ -47,6 +55,21 @@ function methodologyDisclosureSegment(markup: string, routeId: string): string {
   const next = markup.indexOf("data-methodology-route-id=", start + 1);
   return markup.slice(start, next === -1 ? undefined : next);
 }
+
+describe("MethodologiePageClient profile personalization", () => {
+  it("uses the Clerk active role on the client without changing the public fallback", () => {
+    currentUser.value = {
+      publicMetadata: { role: "admin", activeRole: "admin" },
+    };
+
+    try {
+      const markup = renderMethodologyPage("benevole");
+      expect(methodologyRouteIds(markup)).toContain("admin");
+    } finally {
+      currentUser.value = null;
+    }
+  });
+});
 
 describe("RouteMethodologySection", () => {
   it("présente les cinq étapes sans exposer les détails de calcul", () => {
