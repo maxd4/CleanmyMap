@@ -58,7 +58,7 @@ export function ProfileGamificationSummary({
           </div>
           <div className="rounded-xl border border-amber-200/14 bg-black/10 px-4 py-3">
             <dt className="text-[10px] font-bold uppercase tracking-[0.16em] text-amber-100/65">
-              Équilibre des contextes
+              Polyvalence
             </dt>
             <dd className="mt-1 truncate text-base font-black text-amber-100" title={actionBalanceLabel}>
               {actionBalanceLabel}

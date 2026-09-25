@@ -16,7 +16,12 @@ export type MonthlyRegularityMonthAward = {
 };
 
 export type MonthlyRegularitySummary = {
+  activeMonthsTotal: number;
+  currentStreakMonths: number;
+  longestStreakMonths: number;
+  /** Compatibility alias for existing consumers. */
   currentStreak: number;
+  /** Compatibility alias for activeMonthsTotal. */
   eligibleMonths: number;
   currentMonthHasEligibleAction: boolean;
   currentGrade: GemGrade;
@@ -35,7 +40,7 @@ const MONTHLY_REGULARITY_GEM_CONFIG = {
       ? "Progression infinie de la régularité mensuelle"
       : definition.threshold === 0
         ? "Aucune série mensuelle active"
-        : `${definition.threshold} mois consécutifs avec participation`,
+        : `${definition.threshold} mois actifs avec participation`,
   visualVariant: (definition: GemGradeDefinition) =>
     definition.threshold < 5 ? "stone" : "precious",
   xp: (definition: GemGradeDefinition) =>
@@ -157,14 +162,19 @@ export function computeMonthlyRegularitySummary(
     currentStreak = 0;
   }
 
-  const gradeState = computeGemProgression(
-    currentStreak,
-    MONTHLY_REGULARITY_GEM_CONFIG,
+  const activeMonthsTotal = awards.length;
+  const longestStreakMonths = awards.reduce(
+    (longest, award) => Math.max(longest, award.streak),
+    0,
   );
+  const gradeState = computeGemProgression(activeMonthsTotal, MONTHLY_REGULARITY_GEM_CONFIG);
 
   return {
+    activeMonthsTotal,
+    currentStreakMonths: currentStreak,
+    longestStreakMonths,
     currentStreak,
-    eligibleMonths: awards.length,
+    eligibleMonths: activeMonthsTotal,
     currentMonthHasEligibleAction,
     currentGrade: gradeState.currentGrade,
     nextGrade: gradeState.nextGrade,

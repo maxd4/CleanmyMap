@@ -35,7 +35,7 @@ export function MonthlyRegularityBadge({ summary }: MonthlyRegularityBadgeProps)
   const [isCelebrating, setIsCelebrating] = useState(false);
   const didMountRef = useRef(false);
   const previousGradeIdRef = useRef<string | null>(null);
-  const previousStreakRef = useRef<number | null>(null);
+  const previousActiveMonthsRef = useRef<number | null>(null);
   const tooltipId = useId();
 
   const tone = summary.currentGrade.visualVariant === "precious" ? "precious" : "stone";
@@ -43,9 +43,9 @@ export function MonthlyRegularityBadge({ summary }: MonthlyRegularityBadgeProps)
 
   useEffect(() => {
     const previousGradeId = previousGradeIdRef.current;
-    const previousStreak = previousStreakRef.current;
+    const previousActiveMonths = previousActiveMonthsRef.current;
     previousGradeIdRef.current = summary.currentGrade.id;
-    previousStreakRef.current = summary.currentStreak;
+    previousActiveMonthsRef.current = summary.activeMonthsTotal;
 
     if (!didMountRef.current) {
       didMountRef.current = true;
@@ -53,7 +53,7 @@ export function MonthlyRegularityBadge({ summary }: MonthlyRegularityBadgeProps)
     }
 
     if (
-      summary.currentStreak > (previousStreak ?? -1) &&
+      summary.activeMonthsTotal > (previousActiveMonths ?? -1) &&
       previousGradeId !== summary.currentGrade.id
     ) {
       let resetTimeout: number | undefined;
@@ -61,11 +61,11 @@ export function MonthlyRegularityBadge({ summary }: MonthlyRegularityBadgeProps)
         setIsCelebrating(true);
         announceGamificationGain({
           title: "Régularité mensuelle atteinte",
-          message: `${summary.currentGrade.label} débloqué pour la série mensuelle.`,
+          message: `${summary.currentGrade.label} débloqué pour ${summary.activeMonthsTotal} mois actifs.`,
           tone: "actions",
           icon: "calendar-days",
           source: "monthly-regularity",
-          dedupeKey: `monthly-regularity:${summary.currentGrade.id}:${summary.currentStreak}`,
+          dedupeKey: `monthly-regularity:${summary.currentGrade.id}:${summary.activeMonthsTotal}`,
         });
 
         resetTimeout = window.setTimeout(() => setIsCelebrating(false), 900);
@@ -80,10 +80,10 @@ export function MonthlyRegularityBadge({ summary }: MonthlyRegularityBadgeProps)
     }
 
     return undefined;
-  }, [summary.currentGrade.id, summary.currentGrade.label, summary.currentStreak]);
+  }, [summary.activeMonthsTotal, summary.currentGrade.id, summary.currentGrade.label]);
 
   const remaining = summary.nextGrade
-    ? Math.max(0, summary.nextGrade.threshold - summary.currentStreak)
+    ? Math.max(0, summary.nextGrade.threshold - summary.activeMonthsTotal)
     : 0;
 
   return (
@@ -98,15 +98,23 @@ export function MonthlyRegularityBadge({ summary }: MonthlyRegularityBadgeProps)
           Régularité mensuelle
         </div>
       }
-      description="1 XP au premier mois consécutif, puis 2 XP, 3 XP, et ainsi de suite tant qu&apos;au moins une action éligible est comptée chaque mois."
+      description="Le badge progresse avec les mois actifs. La série courante attribue 1 XP, puis 2 XP, 3 XP, et ainsi de suite tant qu&apos;une action éligible est comptée chaque mois."
       summaryLabel={summary.currentGrade.label}
-      summaryValue={summary.currentStreak}
-      summaryUnit="mois consécutifs"
-      state={getGamificationBadgeState(summary.currentStreak, summary.currentGrade.threshold)}
+      summaryValue={summary.activeMonthsTotal}
+      summaryUnit="mois actifs"
+      state={getGamificationBadgeState(summary.activeMonthsTotal, summary.currentGrade.threshold)}
       metrics={[
         {
           label: "Mois comptés",
-          value: summary.eligibleMonths,
+          value: summary.activeMonthsTotal,
+        },
+        {
+          label: "Série actuelle",
+          value: summary.currentStreakMonths,
+        },
+        {
+          label: "Meilleure série",
+          value: summary.longestStreakMonths,
         },
         {
           label: "Mois courant",
@@ -118,14 +126,14 @@ export function MonthlyRegularityBadge({ summary }: MonthlyRegularityBadgeProps)
         },
       ]}
       progressLabel={`Progression vers ${summary.nextGrade?.label ?? "le prochain palier"}`}
-      progressValue={`${summary.currentStreak}${summary.nextGrade ? ` / ${summary.nextGrade.threshold}` : ""}`}
+      progressValue={`${summary.activeMonthsTotal}${summary.nextGrade ? ` / ${summary.nextGrade.threshold}` : ""}`}
       progressPercent={summary.progressPercent}
       progressFooterLeft={`Palier actuel: ${summary.currentGrade.label}${
         summary.nextLabel ? ` → ${summary.nextLabel}` : ""
       }`}
       progressFooterRight={
         remaining > 0
-          ? `+${remaining} mois consécutif${remaining > 1 ? "s" : ""}`
+          ? `+${remaining} mois actif${remaining > 1 ? "s" : ""}`
           : "Palier atteint"
       }
       tooltip={{

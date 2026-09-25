@@ -69,7 +69,7 @@ export function ActionBalanceBadge({ summary }: ActionBalanceBadgeProps) {
       const celebrationTimeout = window.setTimeout(() => {
         setIsCelebrating(true);
         announceGamificationGain({
-          title: "Équilibre des contextes atteint",
+          title: "Polyvalence atteinte",
           message: `${summary.currentGrade.label} débloqué. +${summary.balancedCycles} XP sur le dernier cycle.`,
           tone: "actions",
           icon: "sliders-horizontal",
@@ -125,7 +125,7 @@ export function ActionBalanceBadge({ summary }: ActionBalanceBadgeProps) {
         eyebrow={
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white">
             <SlidersHorizontal size={13} />
-            Équilibre des contextes
+            Polyvalence
           </div>
         }
         description="Récompense les cycles complets où les trois contextes avancent ensemble: spontané, association et entreprise."
