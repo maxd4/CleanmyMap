@@ -106,6 +106,14 @@ web : les documents présents dans la registry documentaire publique peuvent
 déclencher un build ; les autres modifications de `documentation/` ne le
 déclenchent pas.
 
+La configuration versionnée `apps/web/vercel.json` désactive les déploiements Git
+automatiques pour les branches Dependabot avec la règle officielle
+`git.deploymentEnabled: { "dependabot/**": false }`. `main` et les branches non
+visées restent activés par défaut ; les previews utiles peuvent donc continuer
+à être créées pour les autres branches. Cette règle réduit uniquement le bruit
+des mises à jour Dependabot et ne modifie ni les mises à jour de sécurité ni la
+configuration Dependabot de GitHub.
+
 Après le moratoire, mesurer pendant quelques jours le ratio entre :
 
 - les commits intégrés sur `main` ;
