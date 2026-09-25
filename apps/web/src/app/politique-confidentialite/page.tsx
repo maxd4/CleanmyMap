@@ -48,7 +48,7 @@ export default function PolitiqueConfidentialitePage() {
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
   return (
-    <main>
+    <div>
       <CmmPageLayout>
       <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
         <CmmSectionGroup>
@@ -333,6 +333,6 @@ export default function PolitiqueConfidentialitePage() {
         </CmmSectionGroup>
       </div>
       </CmmPageLayout>
-    </main>
+    </div>
   );
 }

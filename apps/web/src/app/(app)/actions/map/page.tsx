@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { loadLandingSummary } from "@/lib/accueil/data";
 import {
@@ -39,6 +40,15 @@ export default function ActionsMapPage() {
             <h1 className={`cmm-page-header-title ${resolvePageFamily("/actions/map").hero.titleColor}`}>
               Cartographie des actions
             </h1>
+            <p className="cmm-page-header-subtitle max-w-4xl text-slate-700">
+              Cette carte expose les actions et les données publiques autorisées par le contrat
+              CleanMyMap. Selon le mode choisi, les couleurs peuvent représenter une observation
+              ou une projection ; une projection n&apos;est pas une mesure actuelle du terrain.
+              Les calculs et leurs limites sont documentés dans la{" "}
+              <Link href="/methodologie" className="font-semibold text-emerald-700 hover:underline">
+                méthodologie
+              </Link>.
+            </p>
           </div>
         </div>
       </header>

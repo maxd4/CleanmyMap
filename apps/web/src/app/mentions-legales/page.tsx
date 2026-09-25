@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 
 export default function MentionsLegalesPage() {
   return (
-    <main>
+    <div>
       <CmmPageLayout>
       {/* Navigation de retour */}
       <div>
@@ -193,6 +193,6 @@ export default function MentionsLegalesPage() {
         </CmmSectionGroup>
       </div>
       </CmmPageLayout>
-    </main>
+    </div>
   );
 }

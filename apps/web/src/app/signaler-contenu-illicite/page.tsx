@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function SignalerContenuIllicitePage() {
   return (
-    <main>
+    <div>
       <CmmPageLayout>
       <div className="rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
         <CmmSectionGroup>
@@ -43,6 +43,6 @@ export default function SignalerContenuIllicitePage() {
         </CmmSectionGroup>
       </div>
       </CmmPageLayout>
-    </main>
+    </div>
   );
 }

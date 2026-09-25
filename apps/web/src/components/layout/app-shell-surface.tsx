@@ -38,7 +38,7 @@ export function AppShellSurface({ children }: AppShellSurfaceProps) {
       data-user-profile={currentProfile}
     >
       <DeferredWeatherWarningBar autoGeolocation={!isRouteRecommendationPath(pathname)} />
-      <main className="flex-1">{children}</main>
+      <div className="flex-1">{children}</div>
     </div>
   );
 }

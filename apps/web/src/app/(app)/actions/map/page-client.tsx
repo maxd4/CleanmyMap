@@ -172,7 +172,7 @@ function ActionsMapPageContent({
   const surfaceCard = "rounded-[3rem] border border-sky-200/70 bg-sky-50/90 backdrop-blur-3xl transition-all duration-700 relative overflow-hidden shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]";
 
   return (
-    <main className="min-h-screen text-slate-950 pb-24">
+    <div className="min-h-screen text-slate-950 pb-24">
       <div className="cmm-page-width px-6 py-6 space-y-6">
         {/* Premium Header - Lecture Spatiale */}
         <header className="relative space-y-6 overflow-hidden pt-4 lg:pt-6">
@@ -183,10 +183,10 @@ function ActionsMapPageContent({
             title={null}
             subtitle={
               scoreScope === "department"
-                ? "Les couleurs montrent le score relatif réel de chaque action par rapport à la référence de son département. Ce score n'est pas projeté dans le temps."
+                ? "Comparaison départementale active."
                 : displayMode === "observed"
-                  ? "Les couleurs montrent la pollution observée ou mesurée pour chaque action. Aucune projection temporelle n'est utilisée dans ce mode."
-                  : "Les couleurs montrent une pollution projetée à partir de la dernière action. Cette estimation ne constitue pas une mesure actuelle du terrain."
+                  ? "Mode observation actif."
+                  : "Mode projection actif."
             }
             className="w-full"
           />
@@ -283,6 +283,6 @@ function ActionsMapPageContent({
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

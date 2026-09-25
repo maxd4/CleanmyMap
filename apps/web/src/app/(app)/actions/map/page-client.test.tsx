@@ -255,7 +255,7 @@ describe("ActionsMapPageClient initial viewport contract", () => {
     const markup = renderPage();
 
     expect(markup.match(/<h1\b/g) ?? []).toHaveLength(0);
-    expect(markup).toContain("pollution projetée");
+    expect(markup).toContain("Mode projection actif.");
   });
 
   it("keeps manual viewport interaction as the consumer priority", () => {

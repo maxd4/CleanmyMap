@@ -3,7 +3,7 @@ import { MapLoadingState } from "@/components/actions/map-feed/_layouts/map-load
 
 export default function Loading() {
   return (
-    <main className="min-h-screen pb-24 text-slate-950">
+    <div className="min-h-screen pb-24 text-slate-950">
       <div className="cmm-page-width space-y-10 px-6 py-8">
         <header className="relative space-y-8 pt-10 lg:pt-12">
           <div className="absolute -left-24 -top-24 h-[600px] w-[600px] rounded-full bg-sky-500/10 blur-[120px]" />
@@ -66,6 +66,6 @@ export default function Loading() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

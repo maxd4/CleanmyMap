@@ -287,7 +287,7 @@ export default function ConditionsGeneralesUtilisationPage() {
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#ffffff_0%,#f8fafc_56%,#eef2f7_100%)]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#ffffff_0%,#f8fafc_56%,#eef2f7_100%)]">
       <CmmPageLayout>
       <div className="rounded-[1.75rem] border border-slate-200/90 bg-white/95 p-5 shadow-[0_24px_70px_-34px_rgba(15,23,42,0.28)] sm:p-9 lg:p-10">
         <CmmSectionGroup>
@@ -330,6 +330,6 @@ export default function ConditionsGeneralesUtilisationPage() {
         </CmmSectionGroup>
       </div>
       </CmmPageLayout>
-    </main>
+    </div>
   );
 }

@@ -139,7 +139,7 @@ export default async function HomePage() {
       ? "Les données d’activité sont partiellement disponibles."
       : null);
   return (
-    <main
+    <div
       data-homepage-canvas
       className="relative isolate -mx-2 min-h-screen min-w-0 w-[calc(100%+1rem)] overflow-hidden bg-[radial-gradient(circle_at_78%_14%,rgba(167,139,250,0.18),transparent_24%),radial-gradient(circle_at_18%_57%,rgba(245,158,11,0.1),transparent_22%),radial-gradient(circle_at_82%_79%,rgba(16,185,129,0.14),transparent_30%),linear-gradient(180deg,#005743_0%,#087958_16%,#1ea876_28%,#75d3ad_37%,#c8f2df_50%,#f1fbf5_67%,#f7fcf8_84%,#edf8f1_100%)] font-sans text-[#082f24] sm:-mx-4 sm:w-[calc(100%+2rem)]"
     >
@@ -157,6 +157,6 @@ export default async function HomePage() {
           errorMessage={communityActivityError}
         />
       </div>
-    </main>
+    </div>
   );
 }
