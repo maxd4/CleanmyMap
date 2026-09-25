@@ -21,6 +21,12 @@ vi.mock("@/components/ui/weather-warning-bar", () => ({
     return null;
   },
 }));
+vi.mock("@/components/ui/deferred-weather-warning-bar", () => ({
+  DeferredWeatherWarningBar: (props: { autoGeolocation?: boolean }) => {
+    mocks.weather(props);
+    return null;
+  },
+}));
 
 import { AppShellSurface } from "./app-shell-surface";
 
