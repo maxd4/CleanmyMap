@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const source = readFileSync(new URL("./page-client.tsx", import.meta.url), "utf8");
 const serverSource = readFileSync(new URL("./page.tsx", import.meta.url), "utf8");
+const loadingSource = readFileSync(new URL("./loading.tsx", import.meta.url), "utf8");
 const controlTowerSource = readFileSync(
   new URL("./_components/map-control-tower.tsx", import.meta.url),
   "utf8",
@@ -16,6 +17,8 @@ describe("actions map public semantics", () => {
   it("keeps the primary heading in the server boundary and the subtitle dynamic in the client boundary", () => {
     expect(serverSource).toContain("<h1");
     expect(serverSource).toContain("Cartographie des actions");
+    expect(loadingSource).toContain("<h1");
+    expect(loadingSource).toContain("Cartographie des actions");
     expect(source).toContain("title={null}");
     expect(source).toContain("scoreScope === \"department\"");
     expect(source).toContain('displayMode === "observed"');
