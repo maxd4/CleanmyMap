@@ -20,6 +20,7 @@ test("normalise les liens internes dynamiques et les distingue des URLs externes
   assert.equal(routePatternMatches("/missions/[id]", "/missions/42/history"), false);
   assert.equal(routePatternMatches("/docs/[...segments]", "/docs/a.md"), true);
   assert.equal(routePatternMatches("/docs/[...segments]", "/docs/architecture/foo.md"), true);
+  assert.equal(routePatternMatches("/docs/[...segments]", "/docs/plans/foo/bar.md"), true);
   assert.equal(routePatternMatches("/docs/[...segments]", "/other/a.md"), false);
   assert.equal(routePatternMatches("/docs/[[...segments]]", "/docs"), true);
   assert.equal(routePatternMatches("/docs/[[...segments]]", "/docs/a.md"), true);
@@ -76,6 +77,25 @@ test("collecte un CTA interne et ignore les liens externes", () => {
   );
 });
 
+test("distingue un attribut de référence d'un href utilisateur", () => {
+  const references = collectRuntimeReferences(new Map([
+    ["apps/web/src/components/example.tsx", `
+      <Link href="/actions/new">Créer</Link>
+      const config = { path: "/dynamic-target" };
+      redirect("/missing-target");
+    `],
+  ]));
+
+  assert.deepEqual(
+    references.map(({ kind, target }) => ({ kind, target })),
+    [
+      { kind: "link", target: "/actions/new" },
+      { kind: "reference", target: "/dynamic-target" },
+      { kind: "redirect", target: "/missing-target" },
+    ],
+  );
+});
+
 test("signale les href internes qui ne correspondent à aucun pattern runtime", () => {
   const references = collectRuntimeReferences(new Map([
     ["apps/web/src/components/example.tsx", '<a href="/route-inexistante">Lien</a>'],
@@ -91,15 +111,17 @@ test("sépare un lien statique cassé d'un finding à revoir", () => {
   const findings = classifyUnresolvedRuntimeReferences([
     { source: "apps/web/src/components/example.tsx", kind: "link", target: "/charte" },
     { source: "apps/web/src/lib/example.ts", kind: "link", target: "/feedback" },
-    { source: "apps/web/src/lib/example.ts", kind: "path", target: "/dynamic-target" },
+    { source: "apps/web/src/lib/example.ts", kind: "reference", target: "/dynamic-target" },
+    { source: "apps/web/src/lib/example.ts", kind: "redirect", target: "/redirect-target" },
   ], new Set(["/actions/new"]));
 
   assert.deepEqual(
     findings.map(({ target, severity }) => ({ target, severity })),
     [
       { target: "/charte", severity: "INVARIANT_ERROR" },
-      { target: "/dynamic-target", severity: "FINDING_REVIEW" },
+      { target: "/dynamic-target", severity: "REVIEW_FINDING" },
       { target: "/feedback", severity: "INVARIANT_ERROR" },
+      { target: "/redirect-target", severity: "INVARIANT_ERROR" },
     ],
   );
 });

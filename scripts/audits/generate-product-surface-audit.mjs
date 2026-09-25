@@ -101,7 +101,8 @@ function sourceFilesToMap(files) {
 function collectReferenceMatches(source, content) {
   const matches = [];
   const patterns = [
-    { kind: "link", expression: /(?:href|route|path|url)\s*[:=]\s*\{?\s*(["'`])([^"'`]+)\1/g },
+    { kind: "link", expression: /href\s*[:=]\s*\{?\s*(["'`])([^"'`]+)\1/g },
+    { kind: "reference", expression: /(?:route|path|url)\s*[:=]\s*\{?\s*(["'`])([^"'`]+)\1/g },
     { kind: "navigation", expression: /\brouter\.(?:push|replace)\(\s*(["'`])([^"'`]+)\1/g },
     { kind: "redirect", expression: /\b(?:permanentRedirect|redirect)\(\s*(["'`])([^"'`]+)\1/g },
   ];
@@ -315,9 +316,9 @@ export function classifyUnresolvedRuntimeReferences(references, knownPatterns) {
   return [...grouped.entries()]
     .map(([target, items]) => ({
       target,
-      severity: items.every((item) => item.kind === "link" || item.kind === "navigation")
+      severity: items.every((item) => ["link", "navigation", "redirect"].includes(item.kind))
         ? "INVARIANT_ERROR"
-        : "FINDING_REVIEW",
+        : "REVIEW_FINDING",
       items,
     }))
     .sort((a, b) => a.target.localeCompare(b.target, "fr"));
@@ -478,7 +479,7 @@ function renderSummary(rows, findingsReview, invariantErrors) {
     "| --- | ---: |",
     ...statuses.map((status) => `| ${status} | ${rows.filter((row) => row.status === status).length} |`),
     `| ROUTES_RUNTIME | ${rows.filter((row) => row.canonicalStatus !== "DOCUMENTATION_ONLY").length} |`,
-    `| FINDING_REVIEW | ${findingsReview.length} |`,
+    `| REVIEW_FINDING | ${findingsReview.length} |`,
     `| INVARIANT_ERROR | ${invariantErrors.length} |`,
   ].join("\n");
 }
@@ -593,7 +594,7 @@ ${renderDetailedTable(rows)}
 - \`ORPHAN_ROUTE\` : aucun consumer runtime, redirect, deep-link ou usage interne démontré ; candidat d’audit, jamais suppression automatique.
 - \`OBSOLETE\` : réservé à une décision humaine confirmée ; le générateur ne l’infère pas.
 - \`UNKNOWN\` : preuve insuffisante, notamment pour les routes dynamiques, auth/callback et erreurs.
-- \`FINDING_REVIEW\` : cible non résolue statiquement ou attribution insuffisante ; nécessite un audit, sans preuve de casse.
+- \`REVIEW_FINDING\` : cible non résolue statiquement ou attribution insuffisante ; nécessite un audit, sans preuve de casse.
 - \`INVARIANT_ERROR\` : lien utilisateur statique vers une route inexistante, registry/runtime incohérent, redirect cassé ou fiche CURRENT réellement absente.
 
 Les URLs dynamiques non résolues restent \`UNKNOWN\`. Les tests, les références
@@ -610,7 +611,7 @@ inexistantes et les incohérences certaines du registre. Une décision
 La génération normale est read-only ; utiliser \`--write\` explicitement pour
 actualiser ce fichier généré.
 ${GENERATED_END}
-${humanDecisions ? `\n\n${humanDecisions.trim()}\n` : ""}
+${humanDecisions ? `\n\n${humanDecisions.trim()}` : ""}
 `;
 }
 
