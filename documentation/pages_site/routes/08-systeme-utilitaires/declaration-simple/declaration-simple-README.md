@@ -18,17 +18,14 @@
 - **Couleurs actuellement détectées** : emerald / pierre — fond clair, en-tête emerald et cartes neutres.
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec le rendu runtime actuel.
 - **Risque de conflit avec les couleurs existantes** : moyen : garder une mood layer autonome et éviter tout retour aux couleurs de bloc principales.
-- **Niveau de surcharge textuelle** : moyen
+- **Niveau de surcharge textuelle** : faible
 - **Textes à conserver** :
 - Contrôles
 - résultats
 - messages système
 - CTA utilitaires
-- **Textes à réduire ou supprimer** :
-- Explications longues
-- duplication d'état
-- cartes de contexte inutiles
-- **Bulles / cartes / contextes trop nombreux** : Les outils peuvent accumuler des états et des micro-interfaces.
+- **Textes à réduire ou supprimer** : Aucun identifié après retrait de la carte de contexte redondante.
+- **Bulles / cartes / contextes trop nombreux** : La page conserve la carte principale et le panneau d'actions, sans troisième carte de contexte redondante.
 - **Composants UI concernés** :
 - Outils
 - tableaux de bord

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ArrowRight, CheckCircle2, ClipboardList, Gauge, LayoutGrid, ShieldCheck } from "lucide-react";
+import { ArrowRight, CheckCircle2, ClipboardList, Gauge, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
@@ -140,27 +140,6 @@ export default function DeclarationSimplePage() {
               </div>
             </CmmCard>
 
-            <CmmCard tone="emerald" variant="outlined" size="lg" className="space-y-4">
-              <div className="flex items-center gap-3">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-200 bg-white text-emerald-700">
-                  <LayoutGrid size={18} />
-                </span>
-                <div>
-                  <p className="cmm-text-caption font-black uppercase tracking-[0.28em] text-emerald-700">
-                    Structure
-                  </p>
-                  <h2 className="mt-1 text-xl font-black tracking-tight text-stone-950">
-                    Surface de support, pas de surcharge
-                  </h2>
-                </div>
-              </div>
-
-              <p className="cmm-text-body">
-                La route reste autonome: elle sert à documenter un flux de déclaration simplifié
-                sans recopier la complexité du formulaire complet ni ajouter des contrôles
-                inutiles.
-              </p>
-            </CmmCard>
           </div>
         </div>
         </CmmSectionGroup>
