@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import {
   awardReferralForUsefulContribution,
   buildReferralInviteUrl,
@@ -14,6 +14,20 @@ vi.mock("next/cache", () => ({
 
 const auditXpAttributionMock = vi.hoisted(() => vi.fn());
 const broadcastGamificationAnnouncementMock = vi.hoisted(() => vi.fn());
+const insertProgressionEventMock = vi.hoisted(() => vi.fn());
+const loadActionRowsForUserMock = vi.hoisted(() => vi.fn());
+const loadValidatedActionIdsForUserMock = vi.hoisted(() => vi.fn());
+const refreshProgressionProfileMock = vi.hoisted(() => vi.fn());
+
+vi.mock("./progression-data", () => ({
+  insertProgressionEvent: insertProgressionEventMock,
+  loadActionRowsForUser: loadActionRowsForUserMock,
+  loadValidatedActionIdsForUser: loadValidatedActionIdsForUserMock,
+}));
+
+vi.mock("./progression-tracking", () => ({
+  refreshProgressionProfile: refreshProgressionProfileMock,
+}));
 
 vi.mock("./notifications", () => ({
   auditXpAttribution: auditXpAttributionMock,
@@ -68,6 +82,76 @@ type ReferralClaimUpdateChain = {
   eq: (field: string, value: string) => ReferralClaimUpdateChain;
   is: (field: string, value: unknown) => Promise<{ error: null }>;
 };
+
+function createReferralReconciliationSupabase(
+  events: Array<Record<string, unknown>>,
+  profiles: Map<string, ReferralProfileRow>,
+): SupabaseClient {
+  const createFilterQuery = () => {
+    const query = {} as {
+      eq: ReturnType<typeof vi.fn>;
+      limit: ReturnType<typeof vi.fn>;
+    };
+    query.eq = vi.fn(() => query);
+    query.limit = vi.fn(async () => ({ data: events, error: null }));
+    return query;
+  };
+  const createDeleteQuery = () => {
+    const query = {} as {
+      eq: ReturnType<typeof vi.fn>;
+      then: (resolve: (value: { error: null }) => unknown) => unknown;
+    };
+    query.eq = vi.fn(() => query);
+    query.then = (resolve) => {
+      events.length = 0;
+      return Promise.resolve(resolve({ error: null }));
+    };
+    return query;
+  };
+
+  return {
+    from: vi.fn((table: string) => {
+      if (table === "profiles") {
+        return {
+          select: vi.fn(() => ({
+            eq: vi.fn((_field: string, value: string) => ({
+              maybeSingle: vi.fn(async () => ({
+                data: profiles.get(value) ?? null,
+                error: null,
+              })),
+            })),
+          })),
+        };
+      }
+      if (table === "progression_events") {
+        return {
+          select: vi.fn(() => createFilterQuery()),
+          delete: vi.fn(() => createDeleteQuery()),
+        };
+      }
+      throw new Error(`Unexpected table ${table}`);
+    }),
+  } as unknown as SupabaseClient;
+}
+
+function buildReferralProfile(overrides?: Partial<ReferralProfileRow>): ReferralProfileRow {
+  return {
+    id: "invitee-1",
+    display_name: "Invité",
+    referral_code: null,
+    referred_by_profile_id: "inviter-1",
+    referred_at: "2026-09-25T10:00:00.000Z",
+    ...overrides,
+  };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  insertProgressionEventMock.mockResolvedValue(true);
+  loadActionRowsForUserMock.mockResolvedValue([]);
+  loadValidatedActionIdsForUserMock.mockResolvedValue(new Set<string>());
+  refreshProgressionProfileMock.mockResolvedValue(undefined);
+});
 
 function createCountQuery(count: number): ProfilesCountQuery {
   return {
@@ -298,63 +382,32 @@ it("claims a referral code once", async () => {
 it("awards the inviter only on the invitee's first useful contribution", async () => {
   const events: Array<Record<string, unknown>> = [];
   const profiles = new Map([
-    [
-      "invitee-1",
-      {
-        id: "invitee-1",
-        display_name: "Invité",
-        referral_code: null,
-        referred_by_profile_id: "inviter-1",
-        referred_at: "2026-09-25T10:00:00.000Z",
-      },
-    ],
+    ["invitee-1", buildReferralProfile()],
     [
       "self-referred",
-      {
+      buildReferralProfile({
         id: "self-referred",
         display_name: "Auto",
         referral_code: "AUTO123",
         referred_by_profile_id: "self-referred",
-        referred_at: "2026-09-25T10:00:00.000Z",
-      },
+      }),
     ],
   ]);
-  const supabaseMock = {
-    from: vi.fn((table: string) => {
-      if (table === "profiles") {
-        return {
-          select: vi.fn(() => ({
-            eq: vi.fn((_field: string, value: string) => ({
-              maybeSingle: vi.fn(async () => ({
-                data: profiles.get(value) ?? null,
-                error: null,
-              })),
-            })),
-          })),
-        };
-      }
-      if (table === "progression_events") {
-        return {
-          insert: vi.fn(async (payload: Record<string, unknown>) => {
-            const duplicate = events.some(
-              (event) =>
-                event.user_id === payload.user_id &&
-                event.event_type === payload.event_type &&
-                event.source_table === payload.source_table &&
-                event.source_id === payload.source_id &&
-                event.status_phase === payload.status_phase,
-            );
-            if (duplicate) {
-              return { error: { code: "23505", message: "duplicate" } };
-            }
-            events.push(payload);
-            return { error: null };
-          }),
-        };
-      }
-      throw new Error(`Unexpected table ${table}`);
-    }),
-  } as unknown as SupabaseClient;
+  const supabaseMock = createReferralReconciliationSupabase(events, profiles);
+  const firstAction = {
+    id: "action-1",
+    status: "approved",
+    action_date: "2026-09-25",
+    created_at: "2026-09-25",
+  };
+  loadActionRowsForUserMock.mockResolvedValue([firstAction]);
+  loadValidatedActionIdsForUserMock.mockResolvedValue(new Set(["action-1"]));
+  insertProgressionEventMock.mockImplementation(
+    async (_supabase: SupabaseClient, params: Record<string, unknown>) => {
+    events.push(params);
+    return true;
+    },
+  );
 
   const first = await awardReferralForUsefulContribution(supabaseMock, {
     inviteeUserId: "invitee-1",
@@ -368,6 +421,12 @@ it("awards the inviter only on the invitee's first useful contribution", async (
     contributionSourceId: "action-1",
     occurredOn: "2026-09-25",
   });
+
+  loadActionRowsForUserMock.mockResolvedValue([
+    firstAction,
+    { id: "action-2", status: "approved", action_date: "2026-09-26", created_at: "2026-09-26" },
+  ]);
+  loadValidatedActionIdsForUserMock.mockResolvedValue(new Set(["action-1", "action-2"]));
   const secondContribution = await awardReferralForUsefulContribution(supabaseMock, {
     inviteeUserId: "invitee-1",
     contributionSourceTable: "actions",
@@ -390,19 +449,20 @@ it("awards the inviter only on the invitee's first useful contribution", async (
   expect(selfReferral.awarded).toBe(false);
   expect(events).toHaveLength(1);
   expect(events[0]).toMatchObject({
-    user_id: "inviter-1",
-    event_type: "community_referral_invite",
-    source_table: "referral_contributions",
-    source_id: "referral-contribution:invitee-1",
-    status_phase: "validated",
-    xp_base: 2,
-    xp_awarded: 2,
+    userId: "inviter-1",
+    eventType: "community_referral_invite",
+    sourceTable: "referral_contributions",
+    sourceId: "referral-contribution:invitee-1",
+    statusPhase: "validated",
+    xpBase: 2,
+    xpAwarded: 2,
     metadata: {
       inviteeUserId: "invitee-1",
       contributionSourceTable: "actions",
       contributionSourceId: "action-1",
     },
   });
+  expect(refreshProgressionProfileMock).toHaveBeenCalledTimes(1);
   expect(auditXpAttributionMock).toHaveBeenCalledTimes(1);
   expect(broadcastGamificationAnnouncementMock).toHaveBeenCalledTimes(1);
 });

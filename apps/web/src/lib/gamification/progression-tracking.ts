@@ -198,14 +198,9 @@ export async function trackActionRejection(
 
   await syncOrganizersProgression(supabase, organizerIds);
 
-  const inviterIds = await Promise.all(
+  await Promise.all(
     organizerIds.map((inviteeUserId) =>
       removeReferralAwardForRejectedContribution(supabase, inviteeUserId),
-    ),
-  );
-  await Promise.all(
-    [...new Set(inviterIds.filter((userId): userId is string => Boolean(userId)))].map(
-      (inviterUserId) => refreshProgressionProfile(supabase, inviterUserId),
     ),
   );
 }
