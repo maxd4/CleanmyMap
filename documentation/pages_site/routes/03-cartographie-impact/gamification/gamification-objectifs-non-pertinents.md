@@ -14,10 +14,13 @@ Les objectifs déjà retenus dans le projet ne figurent pas ici.
 - `Trace fondatrice`;
 - `Organisation` (ancien libellé d affichage: `Actions créées`).
 
+La zone sensible apaisée n'est pas un objectif de progression CURRENT : elle
+est conservée comme métrique historique à preuve figée et ne doit pas être
+réintroduite comme axe XP.
+
 Les idées suivantes ont été reclassées dans les objectifs validés et ne doivent plus être traitées comme écartées:
 
 - `Régularité mensuelle`;
-- `Zone sensible apaisée`.
 
 Les formes de gamification suivantes ont été proposées puis non retenues à ce stade. Elles doivent rester écartées par défaut tant qu une décision produit explicite ne les réhabilite pas:
 

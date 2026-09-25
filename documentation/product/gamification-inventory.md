@@ -137,7 +137,8 @@ comme une progression infinie supplémentaire.
 - un seul objectif visible a la fois suffit dans la plupart des ecrans;
 - un badge doit toujours avoir un sens lisible par un humain;
 - un `objectif infini` doit toujours changer visuellement et verbalement a chaque palier important;
-- un seul des sept axes CURRENT peut produire une barre de progression infinie;
+- seuls les sept axes CURRENT peuvent produire une barre de progression
+  infinie;
 - Forms, confiance, qualité, kg, mégots et Mohs ne créent pas de barre infinie
   CURRENT; leurs lectures éventuelles restent informatives, historiques ou de
   compatibilité;
