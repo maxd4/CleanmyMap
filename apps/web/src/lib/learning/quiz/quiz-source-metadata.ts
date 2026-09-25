@@ -6,7 +6,7 @@ export type { QuizConfidenceLevel, QuizLocalScope, QuizSourceMetadata, QuizSourc
 const LAST_CHECKED_AT = "2026-06-21";
 
 const INTERNAL_PEDAGOGY_SOURCE: QuizSourceMetadata = {
-  sourceUrl: "/documentation/features/quiz-authoring-guide.md",
+  sourceUrl: "/docs/features/quiz-authoring-guide.md",
   sourceLabel: "CleanMyMap - Guide pédagogique du quiz",
   sourceType: "interne",
   confidenceLevel: "moyen",
@@ -17,7 +17,7 @@ const INTERNAL_PEDAGOGY_SOURCE: QuizSourceMetadata = {
 };
 
 const INTERNAL_TERRAIN_SOURCE: QuizSourceMetadata = {
-  sourceUrl: "/documentation/features/quiz-quality-control.md",
+  sourceUrl: "/docs/features/quiz-quality-control.md",
   sourceLabel: "CleanMyMap - Grille de contrôle du quiz",
   sourceType: "interne",
   confidenceLevel: "moyen",
@@ -28,7 +28,7 @@ const INTERNAL_TERRAIN_SOURCE: QuizSourceMetadata = {
 };
 
 const LOCAL_RULE_SOURCE: QuizSourceMetadata = {
-  sourceUrl: "/documentation/features/quiz-authoring-guide.md",
+  sourceUrl: "/docs/features/quiz-authoring-guide.md",
   sourceLabel: "CleanMyMap - Consignes locales de tri",
   sourceType: "interne",
   confidenceLevel: "moyen",
@@ -138,7 +138,7 @@ const UNEP_SOURCE: QuizSourceMetadata = {
 };
 
 const ESTIMATION_SOURCE: QuizSourceMetadata = {
-  sourceUrl: "/documentation/features/quiz-authoring-guide.md",
+  sourceUrl: "/docs/features/quiz-authoring-guide.md",
   sourceLabel: "CleanMyMap - Ordres de grandeur pédagogiques",
   sourceType: "estimation",
   confidenceLevel: "moyen",

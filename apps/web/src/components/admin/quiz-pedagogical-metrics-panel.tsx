@@ -290,10 +290,10 @@ export function QuizPedagogicalMetricsPanel({
             <li>• Les métriques restent agrégées, sans identifiant utilisateur ni réponse brute conservée.</li>
           </ul>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link href="/documentation/features/quiz-quality-control.md" className="rounded-full border border-stone-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-stone-600 transition hover:border-stone-300">
+            <Link href="/docs/features/quiz-quality-control.md" className="rounded-full border border-stone-200 bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-stone-600 transition hover:border-stone-300">
               Grille qualité
             </Link>
-            <Link href="/documentation/features/quiz-authoring-guide.md" className="rounded-full border border-stone-200 bg-white px-3 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-stone-600 transition hover:border-stone-300">
+            <Link href="/docs/features/quiz-authoring-guide.md" className="rounded-full border border-stone-200 bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-stone-600 transition hover:border-stone-300">
               Guide d&apos;authoring
             </Link>
           </div>

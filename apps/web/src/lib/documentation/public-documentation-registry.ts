@@ -18,6 +18,27 @@ export type PublicDocumentationEntry = {
  */
 export const PUBLIC_DOCUMENTATION: readonly PublicDocumentationEntry[] = [
   {
+    name: "Charte de sécurité et de comportement",
+    canonicalPath: "legal/charte-benevole.md",
+    docsPath: "legal/charte-benevole.md",
+    filename: "charte-benevole.md",
+    kind: "markdown",
+  },
+  {
+    name: "Guide d’authoring du quiz",
+    canonicalPath: "features/quiz-authoring-guide.md",
+    docsPath: "features/quiz-authoring-guide.md",
+    filename: "quiz-authoring-guide.md",
+    kind: "markdown",
+  },
+  {
+    name: "Grille de contrôle qualité du quiz",
+    canonicalPath: "features/quiz-quality-control.md",
+    docsPath: "features/quiz-quality-control.md",
+    filename: "quiz-quality-control.md",
+    kind: "markdown",
+  },
+  {
     name: "Graphique d'impact CO2e",
     canonicalPath: "plans/rapport_impact/graphique_impact_CO2e.md",
     apiRoutes: [{ slug: "graphique-impact-co2e", filename: "graphique_impact_CO2e.md" }],

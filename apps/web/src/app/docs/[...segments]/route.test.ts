@@ -19,6 +19,16 @@ describe("/docs/[...segments] GET", () => {
     expect(reportMainDocuments.every((entry) => entry.docsPath)).toBe(true);
   });
 
+  it("keeps the user-facing charter and quiz references on the canonical viewer", () => {
+    expect(publicDocuments.map((entry) => entry.docsPath)).toEqual(
+      expect.arrayContaining([
+        "legal/charte-benevole.md",
+        "features/quiz-authoring-guide.md",
+        "features/quiz-quality-control.md",
+      ]),
+    );
+  });
+
   it.each(publicDocuments.map((entry) => [entry.docsPath!] as const))(
     "serves every registered documentation route %s",
     async (documentPath) => {

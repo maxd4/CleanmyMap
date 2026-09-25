@@ -343,7 +343,7 @@ export function JoinFormExplorer(props: ExplorerProps) {
               ? "En participant, vous vous engagez à respecter la charte des bénévoles et les consignes de sécurité."
               : "By participating, you agree to follow the volunteer charter and safety instructions."}
           </p>
-          <Link href="/charte" className="ml-auto inline-flex shrink-0 items-center gap-2 font-semibold text-emerald-800">
+          <Link href="/docs/legal/charte-benevole.md" className="ml-auto inline-flex shrink-0 items-center gap-2 font-semibold text-emerald-800">
             {fr ? "Voir la charte" : "View charter"}
             <ExternalLink size={14} />
           </Link>

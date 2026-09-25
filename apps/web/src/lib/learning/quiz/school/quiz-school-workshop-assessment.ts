@@ -50,7 +50,7 @@ export const QUIZ_SCHOOL_WORKSHOP_POST_ASSESSMENT_SIZE = 10;
 const ALL_LEVELS: readonly QuizSchoolLevel[] = ["6e", "5e", "4e", "3e"];
 const SOURCE: QuizSchoolWorkshopAssessmentSource = {
   label: { fr: "CleanMyMap — guide d’écriture pédagogique du Quiz", en: "CleanMyMap — Quiz authoring guide" },
-  href: "/documentation/features/quiz-authoring-guide.md",
+  href: "/docs/features/quiz-authoring-guide.md",
   kind: "interne",
 };
 
