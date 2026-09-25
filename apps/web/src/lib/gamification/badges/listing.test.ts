@@ -106,6 +106,7 @@ describe("gamification badges listing", () => {
     const payload = await loadGamificationBadgesList(supabase, "user-1");
 
     expect(payload).not.toHaveProperty("totalPoints");
+    expect(payload.badges.some((badge) => badge.id.startsWith("forms-"))).toBe(false);
     expect(payload.totalBadges).toBeGreaterThanOrEqual(0);
     expect(payload.quizProgressions).toHaveLength(1);
     expect(payload.quizProgressions[0]?.id).toBe("learning");

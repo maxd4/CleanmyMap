@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   buildExplorerFamily,
-  buildFormsBadges,
   buildActionBadges,
   buildQuizBalanceProgression,
   buildQuizTypeProgression,
@@ -61,15 +60,6 @@ describe("gamification badge families", () => {
     });
   });
 
-  it("keeps forms badges ordered by the configured tiers", () => {
-    const badges = buildFormsBadges(3);
-
-    expect(badges.map((badge) => badge.id)).toContain("forms-seed");
-    expect(badges.find((badge) => badge.id === "forms-sprout")).toMatchObject({
-      unlocked: true,
-      progress: { current: 3, target: 3 },
-    });
-  });
 });
 
 describe("quiz badge families", () => {

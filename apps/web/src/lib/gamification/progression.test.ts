@@ -42,17 +42,24 @@ describe("gamification progression formulas", () => {
     expect(typeof syncUserActionProgression).toBe("function");
   });
 
-  it("does not award a mass badge from a partially measured population", () => {
-    expect(
-      deriveBadges({
-        currentLevel: 1,
-        qualityAverage: 90,
-        validationRatio: 1,
-        collectiveEvents: 0,
-        totalKg: 100,
-        totalButts: 0,
-        wasteCoverageRate: 50,
-      }),
-    ).not.toContain("Force de la Nature (Argent)");
+  it("keeps impact quantities out of the XP badge families", () => {
+    const badges = deriveBadges({
+      currentLevel: 1,
+      qualityAverage: 90,
+      validationRatio: 1,
+      collectiveEvents: 0,
+      totalKg: 500,
+      totalButts: 10_000,
+      wasteCoverageRate: 100,
+    });
+
+    expect(badges).not.toEqual(
+      expect.arrayContaining([
+        "Force de la Nature (Argent)",
+        "Héros du Nettoyage (Or)",
+        "Expert Mégots (Or)",
+      ]),
+    );
+    expect(badges).toContain("Sentinelle Exemplaire");
   });
 });

@@ -8,7 +8,6 @@ import { loadGamificationUserCounters } from "../counters";
 import {
   buildCleanZonesBadges,
   buildExplorerFamily,
-  buildFormsBadges,
   buildActionBadges,
   buildParticipantBadges,
   type GamificationBadgeEntry,
@@ -120,16 +119,12 @@ export async function loadGamificationBadgesList(
     approvedActionsCount: actionsCount,
     completeActionsCount,
     visitedPlacesCount: placesCount,
-    eligibleFormsCount,
     participationCount,
   } = counters;
   const badges: GamificationBadgeEntry[] = [];
 
   const explorerFamily = buildExplorerFamily(placesCount);
   appendBadges(badges, explorerFamily.badges);
-
-  const formsBadges = buildFormsBadges(eligibleFormsCount);
-  appendBadges(badges, formsBadges);
 
   appendBadges(badges, buildCleanZonesBadges(cleanZoneSources.length));
 

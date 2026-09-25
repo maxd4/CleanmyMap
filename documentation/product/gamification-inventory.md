@@ -40,7 +40,7 @@ comme une progression infinie supplémentaire.
 | --- | --- | --- | --- | --- |
 | Accueil perso | objectif infini + régulier | C est le point d entree naturel vers la progression personnelle | Niveau courant, niveau potentiel, prochaine etape, retour d impact | Barre de progression vers le prochain palier, badge de reprise de session, rappel d objectif du jour |
 | Dashboard | objectif infini + régulier | C est la synthese de la vie du compte | Barre de progression, badges, objectif du jour ou du mois | Bloc "prochain palier", carte de badge evolutif, resume d impact, regularite mensuelle et zone sensible apaisée |
-| Profil & impact | objectif infini + régulier | L impact personnel doit evoluer par paliers lisibles | Badges de progression, badges d impact, rangs de confiance | Les sept progressions CURRENT, les jalons one-shot et les indicateurs d impact conservés à part |
+| Profil & impact | objectif infini + régulier | L impact personnel doit rester lisible sans transformer les mesures en score | Progressions CURRENT, jalons et métriques d impact séparées | Les sept progressions CURRENT, les jalons one-shot et les indicateurs d impact conservés à part; pas de rang XP de confiance |
 | Connexion / inscription | one-shot | Le premier passage d activation est un jalon fort | Badge de premiere connexion utile, puis orientation vers la premiere action | Badge de demarrage, message de bienvenue, redirection vers l action suivante |
 | Onboarding localisation | one-shot | C est un jalon de mise en route, pas une habitude | Badge de configuration terminee, puis disparition du rappel | Badge de localisation validee, etat "pret a contribuer" |
 | Parcours | régulier | Le parcours utilisateur sert a maintenir le retour | Etape suivante, objectif de reprise, repere de session | Prochaine etape visible, compteur de progression de parcours, rappel de reprise |
@@ -66,11 +66,11 @@ comme une progression infinie supplémentaire.
 
 | Surface | Type | Pourquoi c est pertinent | Ce que je ferais | Gamification concrète |
 | --- | --- | --- | --- | --- |
-| Carte des actions | objectif infini | La carte doit valoriser la couverture et la progression territoriale | Paliers de zones couvertes, badges de territoire, niveaux de couverture | Badge de territoire, niveau de couverture locale, palier de zones completees, badge de zone sensible apaisée |
+| Carte des actions | objectif infini | La carte doit valoriser la couverture et la progression territoriale | Paliers de zones couvertes et niveaux de couverture | Progression Exploration / Zones propres; les preuves de zone sensible restent un repère historique séparé |
 | Carte d entrainement / sandbox | régulier | C est un espace de pratique, donc la repetition a du sens | Defis de test, objectifs de maitrise, usage recurrent sans pression | Badge de pratique, compteur d usages d entrainement, niveau de maitrise cartographique |
 | Observatoire public | autre | La lecture publique doit rester informative, pas ludifiee | Pas de score; seulement des repères de lecture et de qualite | Aucune gamification directe; seulement des repères de fiabilite et de lecture |
 | Rapports d impact | one-shot + objectif infini | Le rapport partageable est un jalon, mais la maitrise peut progresser | Badge de livrable genere, puis palier de qualite de restitution | Badge de rapport genere, badge de qualite de restitution, progression de niveau d impact |
-| Profil impact | objectif infini | L impact personnel doit suivre une progression ouverte | Paliers d impact, badges d evolution, visualisation du rang personnel | Badge evolutif d impact, paliers annuels, rang personnel non competitif |
+| Profil impact | autre | L impact personnel doit rester descriptif et traçable | Métriques d impact, couverture et méthodologie | Kg, mégots et proxies affichés comme mesures ou estimations, jamais comme unités XP |
 | Progression & Badges | objectif infini | C est la colonne vertébrale du systeme | Niveaux, badges evolutifs, contrat commun des sept progressions | Participation, Organisation, Exploration, Zones propres, Régularité, Polyvalence et Apprentissage |
 | Historique des actions | régulier | Le retour sur l historique soutient la retention et la relecture | Jalons de regularite, recap de periode, reflexion post-action | Recap mensuel, streak de contributions utiles, badge de regularité mensuelle |
 
@@ -137,6 +137,10 @@ comme une progression infinie supplémentaire.
 - un seul objectif visible a la fois suffit dans la plupart des ecrans;
 - un badge doit toujours avoir un sens lisible par un humain;
 - un `objectif infini` doit toujours changer visuellement et verbalement a chaque palier important;
+- un seul des sept axes CURRENT peut produire une barre de progression infinie;
+- Forms, confiance, qualité, kg, mégots et Mohs ne créent pas de barre infinie
+  CURRENT; leurs lectures éventuelles restent informatives, historiques ou de
+  compatibilité;
 - un `one-shot` doit cesser de s afficher comme action a completer une fois acquis;
 - un `régulier` doit rester sobre, sans surcharge de notifications;
 - un score seul ne suffit jamais a motiver durablement une communaute benevole.

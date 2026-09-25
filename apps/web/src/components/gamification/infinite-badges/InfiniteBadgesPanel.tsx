@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { InfiniteBadge } from "./InfiniteBadge";
-import { BADGE_STEP_DECHETS, BADGE_STEP_MEGOTS } from "@/config/gamification.config";
 import { announceGamificationGain } from "@/lib/gamification/announcements";
 import type { ActionBalanceSummary } from "@/lib/gamification/action-balance";
 import { ActionBalanceBadge } from "../action-balance-badge";
@@ -56,56 +55,13 @@ export function InfiniteBadgesPanel({
         sourceId: string;
       }>;
     };
-    sensitiveZoneApaisement?: {
-      eligibleValidatedActions: number;
-      sensitiveAreaCount: number;
-      sensitiveAreas: string[];
-      currentGrade: {
-        id: string;
-        label: string;
-        threshold: number;
-        iconVariant?: string;
-        visualVariant?: string;
-        tooltip?: string;
-        xp?: number;
-      };
-      nextGrade: {
-        id: string;
-        label: string;
-        threshold: number;
-        iconVariant?: string;
-        visualVariant?: string;
-        tooltip?: string;
-        xp?: number;
-      } | null;
-      progressPercent: number;
-      currentLabel: string;
-      nextLabel: string | null;
-    };
+    sensitiveZoneApaisement?: Parameters<typeof SensitiveZoneBadge>[0]["summary"];
   };
 }) {
   const { t } = useTranslation("gamification");
 
   const items = useMemo(
     () => [
-      {
-        key: "dechets",
-        icon: "leaf",
-        title: t("badge.dechets.title"),
-        description: t("badge.dechets.description"),
-        total: totals.wasteKg,
-        step: BADGE_STEP_DECHETS,
-        unitLabel: "kg",
-      },
-      {
-        key: "megots",
-        icon: "droplets",
-        title: t("badge.megots.title"),
-        description: t("badge.megots.description"),
-        total: totals.butts,
-        step: BADGE_STEP_MEGOTS,
-        unitLabel: "",
-      },
       {
         key: "lieux",
         icon: "map-pin",
@@ -126,7 +82,7 @@ export function InfiniteBadgesPanel({
         family: "actions" as const,
       },
     ],
-    [t, totals.organisationCount, totals.butts, totals.newPlaces, totals.wasteKg],
+    [totals.organisationCount, totals.newPlaces],
   );
 
   return (

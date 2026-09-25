@@ -38,12 +38,22 @@ unique et ne doublonnent pas le premier palier d'une progression.
 
 ## Hors taxonomie CURRENT
 
-Forms, niveau de confiance, palier de qualité et compteurs kg/mégots conservent
-leurs données ou leur rôle de compatibilité, mais ne sont pas des progressions
-infinies CURRENT. La zone sensible apaisée reste elle aussi hors des sept
-progressions infinies : sa contribution est traitée comme une métrique
-historique à preuve figée et ses paliers XP sont des événements idempotents
-distincts, sans solde XP propre.
+Forms sont une preuve et une condition de validation Organisation, jamais une
+progression utilisateur : aucune barre Forms ni attribution XP pour remplir un
+formulaire. Les événements historiques `form_tier_unlock` et `form_bonus` sont
+conservés en `COMPATIBILITY` sans nouvelle écriture CURRENT.
+
+Le niveau de confiance est une propriété dérivée de faits vérifiés, sans XP,
+monnaie ou droit achetable. La qualité est un critère transversal de
+complétude, de validation et de niveau global; une moyenne susceptible de
+baisser n'est pas une progression infinie. Les kg et les mégots restent des
+métriques d'impact affichables, sans conversion en XP par unité.
+
+Mohs reste une échelle `LEGACY` de lecture historique déchets/mégots. Aucune
+nouvelle progression ne l'utilise. La zone sensible apaisée reste elle aussi
+hors des sept progressions infinies : sa contribution est traitée comme une
+métrique historique à preuve figée, sans nouvelle attribution XP. Les anciens
+paliers `sensitive_zone_milestone` sont conservés en `COMPATIBILITY/LEGACY`.
 
 ## Règle de mémoire
 

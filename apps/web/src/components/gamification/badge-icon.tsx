@@ -69,6 +69,7 @@ const GAMIFICATION_LABEL_ICON_KEYS: Record<string, BadgeIconName> = {
 "Mentor local":"award",
 "Coordinateur fiable":"target",
 "Relais utile":"sparkles",
+// COMPATIBILITY/LEGACY labels retained for historical badge payloads only.
 "Expert Mégots (Or)":"droplets",
 "Chasseur de Mégots (Argent)":"droplets",
 "Ramasseur de Mégots (Bronze)":"droplets",

@@ -197,11 +197,11 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
   },
   form_tier_unlock: {
     classification: "non_progression",
-    reason: "Badge de compatibilité Forms, hors des sept progressions CURRENT.",
+    reason: "Événement Forms historique COMPATIBILITY, hors des sept progressions CURRENT.",
   },
   form_bonus: {
     classification: "non_progression",
-    reason: "Bonus historique Forms, hors des sept progressions CURRENT.",
+    reason: "Bonus Forms historique COMPATIBILITY, hors des sept progressions CURRENT.",
   },
   participant_tier_unlock: {
     classification: "progression",
@@ -323,16 +323,6 @@ export function inferActionWeight(row: ActionRow): number {
     return 3;
   }
   return 1;
-}
-
-export function qualityBonusRate(grade: ActionQualityGrade): number {
-  if (grade === "A") {
-    return 0.2;
-  }
-  if (grade === "B") {
-    return 0.1;
-  }
-  return 0;
 }
 
 export function computeActionPendingAward(weight: number): {
