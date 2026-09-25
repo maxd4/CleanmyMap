@@ -25,6 +25,7 @@ describe("ServerErrorCard", () => {
     expect(markup).toContain("Réessayer");
     expect(markup).toContain("Ouvrir le support");
     expect(markup).not.toContain("cmm-card");
-    expect(markup).not.toContain("role=\"alert\"");
+    expect(markup).toContain('role="alert"');
+    expect(markup).toContain('aria-live="polite"');
   });
 });
