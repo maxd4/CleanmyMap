@@ -1,16 +1,9 @@
 import { areaFromLabel } from "@/lib/pilotage/overview.utils";
 import type { ActionRow } from "./progression-types";
-import {
-  CANONICAL_GEM_GRADE_DEFINITIONS,
-} from "./gem-progression";
 import { SENSITIVE_ZONE_RULE_VERSION } from "./sensitive-zone-qualification";
 
 export const SENSITIVE_ZONE_PROOF_EVENT_TYPE = "sensitive_zone_action" as const;
-export const SENSITIVE_ZONE_MILESTONE_EVENT_TYPE =
-  "sensitive_zone_milestone" as const;
 export const SENSITIVE_ZONE_PROOF_SOURCE_TABLE = "sensitive_zone_actions" as const;
-export const SENSITIVE_ZONE_MILESTONE_SOURCE_TABLE =
-  "sensitive_zone_milestones" as const;
 
 export type SensitiveZoneQualificationSnapshot = {
   actionId: string;
@@ -28,14 +21,11 @@ export type StoredSensitiveZoneQualification = {
 
 export type SensitiveZoneProjectionState = {
   qualifications: StoredSensitiveZoneQualification[];
-  milestoneThresholds: number[];
 };
 
 export type SensitiveZoneProjectionPlan = {
   qualificationsToInsert: SensitiveZoneQualificationSnapshot[];
   qualificationSourceIdsToRemove: string[];
-  milestoneThresholdsToInsert: number[];
-  milestoneThresholdsToRemove: number[];
   qualifiedActionCount: number;
 };
 
@@ -102,25 +92,6 @@ export function parseStoredSensitiveZoneQualification(
       actionDate: candidate.actionDate,
     },
   };
-}
-
-export function sensitiveZoneMilestoneThresholds(maxCount: number): number[] {
-  const safeCount = Math.max(0, Math.trunc(maxCount));
-  const baseThresholds = CANONICAL_GEM_GRADE_DEFINITIONS
-    .map((definition) => definition.threshold)
-    .filter((threshold) => threshold > 0);
-  const thresholds = [...baseThresholds];
-  const lastBaseThreshold = thresholds.at(-1) ?? 0;
-
-  for (
-    let threshold = lastBaseThreshold + 5;
-    threshold <= safeCount;
-    threshold += 5
-  ) {
-    thresholds.push(threshold);
-  }
-
-  return thresholds.filter((threshold) => threshold <= safeCount);
 }
 
 export function planSensitiveZoneProjection(params: {
@@ -195,22 +166,9 @@ export function planSensitiveZoneProjection(params: {
   const qualifiedActionCount = finalQualifications.filter(
     (qualification) => qualification.snapshot.qualified,
   ).length;
-  const desiredMilestoneThresholds = new Set(
-    sensitiveZoneMilestoneThresholds(qualifiedActionCount),
-  );
-  const existingMilestoneThresholds = new Set(
-    params.existing.milestoneThresholds,
-  );
-
   return {
     qualificationsToInsert,
     qualificationSourceIdsToRemove,
-    milestoneThresholdsToInsert: [...desiredMilestoneThresholds].filter(
-      (threshold) => !existingMilestoneThresholds.has(threshold),
-    ),
-    milestoneThresholdsToRemove: [...existingMilestoneThresholds].filter(
-      (threshold) => !desiredMilestoneThresholds.has(threshold),
-    ),
     qualifiedActionCount,
   };
 }

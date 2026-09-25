@@ -79,17 +79,6 @@ export const EXPLORER_TIERS: readonly ExplorerTier[] = [
   { min: 50, max: Number.MAX_SAFE_INTEGER, id: "explorer-cosmic", title: "Maître des Cartes", icon: "🔭", texture: "/images/textures/cosmic-holo.svg" },
 ] as const;
 
-export const FORM_SUBMISSION_TIERS: readonly BadgeTierDefinition[] = [
-  { threshold: 1, id: "forms-seed", label: "Graine", iconVariant: "plant-seed", visualVariant: "stone", tooltip: "1 formulaire éligible", xp: 1 },
-  { threshold: 3, id: "forms-sprout", label: "Pousse", iconVariant: "plant-sprout", visualVariant: "stone", tooltip: "3 formulaires éligibles", xp: 1 },
-  { threshold: 5, id: "forms-seedling", label: "Jeune plante", iconVariant: "plant-seedling", visualVariant: "stone", tooltip: "5 formulaires éligibles", xp: 1 },
-  { threshold: 8, id: "forms-sapling", label: "Arbuste", iconVariant: "plant-sapling", visualVariant: "stone", tooltip: "8 formulaires éligibles", xp: 1 },
-  { threshold: 10, id: "forms-young-tree", label: "Jeune arbre", iconVariant: "plant-young-tree", visualVariant: "stone", tooltip: "10 formulaires éligibles", xp: 1 },
-  { threshold: 15, id: "forms-mature-tree", label: "Arbre mature", iconVariant: "plant-mature-tree", visualVariant: "precious", tooltip: "15 formulaires éligibles", xp: 1 },
-  { threshold: 20, id: "forms-grove", label: "Bosquet", iconVariant: "plant-grove", visualVariant: "precious", tooltip: "20 formulaires éligibles", xp: 1 },
-  { threshold: 25, id: "forms-primary-forest", label: "Forêt primaire", iconVariant: "plant-primary-forest", visualVariant: "precious", tooltip: "25 formulaires éligibles", xp: 1 },
-] as const;
-
 export const CLEAN_ZONES_TIERS: readonly BadgeTierDefinition[] = [
   { threshold: 1, id: "clean-zones-breeze", label: "Brise", iconVariant: "breeze", visualVariant: "atmosphere", tooltip: "1 zone propre validée ou nettoyée", xp: 1 },
   { threshold: 3, id: "clean-zones-horizon", label: "Horizon", iconVariant: "horizon", visualVariant: "atmosphere", tooltip: "3 zones propres validées ou nettoyées", xp: 1 },
@@ -247,11 +236,6 @@ export function buildExplorerFamily(currentPlaces: number): {
       zonesToNext,
     },
   };
-}
-
-export function buildFormsBadges(eligibleFormsCount: number): GamificationBadgeEntry[] {
-  const current = Math.max(0, Math.trunc(eligibleFormsCount));
-  return FORM_SUBMISSION_TIERS.map((tier) => buildTierBadge(tier, current));
 }
 
 export function buildCleanZonesBadges(cleanZonesCount: number): GamificationBadgeEntry[] {

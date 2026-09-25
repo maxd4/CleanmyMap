@@ -12,6 +12,7 @@ const BADGE_CONFIG: Record<string, { tone:"admin" |"role" |"profile" |"mode" |"g
 "Contributeur confirme": { tone:"gamification", description:"Atteindre le niveau 6" },
 "Pilier terrain": { tone:"gamification", description:"Atteindre le niveau 10" },
 "Referent impact": { tone:"gamification", description:"Atteindre le niveau 14" },
+// COMPATIBILITY/LEGACY labels retained for historical badge payloads only.
 "Expert Mégots (Or)": { tone:"gamification", description:"10 000+ mégots retirés" },
 "Chasseur de Mégots (Argent)": { tone:"gamification", description:"2 000+ mégots retirés" },
 "Ramasseur de Mégots (Bronze)": { tone:"gamification", description:"500+ mégots retirés" },

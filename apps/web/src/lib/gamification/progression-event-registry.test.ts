@@ -60,8 +60,6 @@ describe("progression event registry", () => {
       "community_ops_update",
       "community_referral_invite",
       "explorer_tier_unlock",
-      "form_bonus",
-      "form_tier_unlock",
       "first_trace_utile",
       "new_place_discovered",
       "new_place_milestone",
@@ -70,7 +68,6 @@ describe("progression event registry", () => {
       "quiz_question_type_milestone",
       "route_recommend_use",
       "sensitive_zone_action",
-      "sensitive_zone_milestone",
       "spot_create_pending",
       "spot_validation_bonus",
     ].sort());
@@ -238,5 +235,47 @@ describe("progression event registry", () => {
   it("does not leave the explicit badge rebuild with an untyped eventType escape hatch", () => {
     const rebuild = readRuntimeWriter("badges/rebuild.ts");
     expect(rebuild).not.toMatch(/eventType:\s*string/);
+    expect(rebuild).not.toContain('eventType: "form_bonus"');
+    expect(rebuild).not.toContain('eventType: "form_tier_unlock"');
+  });
+
+  it("keeps deprecated forms and impact quantities outside CURRENT badge surfaces", () => {
+    const listing = readFileSync(
+      new URL("./badges/listing.ts", import.meta.url),
+      "utf8",
+    );
+    const profilePanel = readFileSync(
+      new URL("../../components/gamification/infinite-badges/InfiniteBadgesPanel.tsx", import.meta.url),
+      "utf8",
+    );
+    const personalProgress = readFileSync(
+      new URL("../../components/sections/rubriques/gamification/personal-progress.tsx", import.meta.url),
+      "utf8",
+    );
+    const mohsBadge = readFileSync(
+      new URL("../../components/gamification/mohs-badge.tsx", import.meta.url),
+      "utf8",
+    );
+
+    expect(listing).not.toContain("buildFormsBadges");
+    expect(profilePanel).not.toContain('key: "dechets"');
+    expect(profilePanel).not.toContain('key: "megots"');
+    const sensitiveZoneCard = readFileSync(
+      new URL("../../components/gamification/sensitive-zone-badge.tsx", import.meta.url),
+      "utf8",
+    );
+    const sensitiveZoneStore = readFileSync(
+      new URL("./sensitive-zone-progression-store.ts", import.meta.url),
+      "utf8",
+    );
+    expect(sensitiveZoneCard).not.toContain("GamificationBadgePanel");
+    expect(sensitiveZoneCard).not.toContain("progressPercent");
+    expect(sensitiveZoneCard).not.toContain("Prochain palier");
+    expect(sensitiveZoneStore).not.toContain("SENSITIVE_ZONE_MILESTONE_EVENT_TYPE");
+    expect(sensitiveZoneStore).not.toContain("milestoneThresholdsToInsert");
+    expect(sensitiveZoneStore).not.toContain("milestoneThresholdsToRemove");
+    expect(personalProgress).toContain("<MohsBadge");
+    expect(mohsBadge).toContain("aucune progression XP");
+    expect(mohsBadge).not.toContain('style={{ width: `${progressPct}%` }}');
   });
 });

@@ -59,6 +59,7 @@ export function deriveBadges(params: {
   qualityAverage: number;
   validationRatio: number;
   collectiveEvents: number;
+  /** Compatibility inputs retained for the historical leaderboard payload. */
   totalKg: number;
   totalButts: number;
   wasteCoverageRate?: number;
@@ -67,20 +68,10 @@ export function deriveBadges(params: {
 
   addLevelBadges(badges, params.currentLevel);
 
-  // Tiers Mégots
-  if (params.totalButts >= 10000) badges.push("Expert Mégots (Or)");
-  else if (params.totalButts >= 2000) badges.push("Chasseur de Mégots (Argent)");
-  else if (params.totalButts >= 500) badges.push("Ramasseur de Mégots (Bronze)");
-
-  // Tiers Poids (Kg): a partial measured population cannot complete a mass badge.
-  const wasteMassComplete =
-    params.wasteCoverageRate === undefined || params.wasteCoverageRate >= 100;
-  if (wasteMassComplete) {
-    if (params.totalKg >= 500) badges.push("Héros du Nettoyage (Or)");
-    else if (params.totalKg >= 100) badges.push("Force de la Nature (Argent)");
-    else if (params.totalKg >= 10) badges.push("Bras Armé (Bronze)");
-  }
-
+  // Quality remains a cross-cutting signal and a level requirement, not an
+  // infinite badge axis. These fixed recognitions are retained as historical
+  // compatibility labels; they never award XP and can be absent when quality
+  // changes.
   addBadgeIfEligible(badges, params.qualityAverage >= 90, "Sentinelle Exemplaire");
   if (params.qualityAverage < 90) {
     addBadgeIfEligible(badges, params.qualityAverage >= 75, "Données de Qualité");

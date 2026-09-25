@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   planSensitiveZoneProjection,
-  sensitiveZoneMilestoneThresholds,
   type SensitiveZoneProjectionState,
 } from "./sensitive-zone-progression";
 import { SENSITIVE_ZONE_RULE_VERSION } from "./sensitive-zone-qualification";
@@ -32,11 +31,10 @@ function buildQualification(actionId: string, qualified: boolean) {
 
 const emptyProjection: SensitiveZoneProjectionState = {
   qualifications: [],
-  milestoneThresholds: [],
 };
 
 describe("sensitive zone progression", () => {
-  it("records a validated sensitive action and its first gem milestone", () => {
+  it("records a validated sensitive action without creating a current XP milestone", () => {
     const plan = planSensitiveZoneProjection({
       actions: [buildAction("action-1")],
       validatedActionIds: new Set(["action-1"]),
@@ -51,7 +49,7 @@ describe("sensitive zone progression", () => {
       area: "10e",
     });
     expect(plan.qualifiedActionCount).toBe(1);
-    expect(plan.milestoneThresholdsToInsert).toEqual([1]);
+    expect(plan).not.toHaveProperty("milestoneThresholdsToInsert");
   });
 
   it("keeps the acquired qualification when the zone is clean later", () => {
@@ -60,7 +58,6 @@ describe("sensitive zone progression", () => {
       validatedActionIds: new Set(["action-1"]),
       existing: {
         qualifications: [buildQualification("action-1", true)],
-        milestoneThresholds: [1],
       },
       sensitiveAreas: [],
       assessedAt: "2026-07-01T12:00:00.000Z",
@@ -69,8 +66,6 @@ describe("sensitive zone progression", () => {
     expect(plan.qualificationsToInsert).toEqual([]);
     expect(plan.qualificationSourceIdsToRemove).toEqual([]);
     expect(plan.qualifiedActionCount).toBe(1);
-    expect(plan.milestoneThresholdsToInsert).toEqual([]);
-    expect(plan.milestoneThresholdsToRemove).toEqual([]);
   });
 
   it("freezes a non-sensitive qualification and does not award a milestone", () => {
@@ -84,7 +79,6 @@ describe("sensitive zone progression", () => {
 
     expect(plan.qualificationsToInsert[0]?.qualified).toBe(false);
     expect(plan.qualifiedActionCount).toBe(0);
-    expect(plan.milestoneThresholdsToInsert).toEqual([]);
   });
 
   it("is idempotent on replay and removes the projection after rejection", () => {
@@ -102,7 +96,6 @@ describe("sensitive zone progression", () => {
         qualifications: [
           buildQualification("action-1", first.qualificationsToInsert[0].qualified),
         ],
-        milestoneThresholds: [1],
       },
       sensitiveAreas: ["10e"],
       assessedAt: "2026-06-02T12:00:00.000Z",
@@ -112,36 +105,30 @@ describe("sensitive zone progression", () => {
       validatedActionIds: new Set(),
       existing: {
         qualifications: [buildQualification("action-1", true)],
-        milestoneThresholds: [1],
       },
       sensitiveAreas: ["10e"],
       assessedAt: "2026-06-03T12:00:00.000Z",
     });
 
     expect(replay.qualificationsToInsert).toEqual([]);
-    expect(replay.milestoneThresholdsToInsert).toEqual([]);
     expect(rejection.qualificationSourceIdsToRemove).toEqual(["action-1"]);
-    expect(rejection.milestoneThresholdsToRemove).toEqual([1]);
     expect(rejection.qualifiedActionCount).toBe(0);
   });
 
-  it("uses the canonical gem thresholds and keeps their XP awards idempotent", () => {
-    expect(sensitiveZoneMilestoneThresholds(20)).toEqual([1, 3, 5, 8, 10, 15, 20]);
-    expect(sensitiveZoneMilestoneThresholds(25)).toEqual([1, 3, 5, 8, 10, 15, 20, 25]);
-
+  it("keeps historical qualifications useful without projecting threshold XP", () => {
     const qualifications = Array.from({ length: 5 }, (_, index) =>
       buildQualification(`action-${index + 1}`, true),
     );
     const plan = planSensitiveZoneProjection({
       actions: Array.from({ length: 5 }, (_, index) => buildAction(`action-${index + 1}`)),
       validatedActionIds: new Set(qualifications.map((item) => item.snapshot.actionId)),
-      existing: { qualifications, milestoneThresholds: [1, 3, 5] },
+      existing: { qualifications },
       sensitiveAreas: [],
       assessedAt: "2026-06-04T12:00:00.000Z",
     });
 
     expect(plan.qualifiedActionCount).toBe(5);
-    expect(plan.milestoneThresholdsToInsert).toEqual([]);
-    expect(plan.milestoneThresholdsToRemove).toEqual([]);
+    expect(plan).not.toHaveProperty("milestoneThresholdsToInsert");
+    expect(plan).not.toHaveProperty("milestoneThresholdsToRemove");
   });
 });

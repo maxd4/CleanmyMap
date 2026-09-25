@@ -27,15 +27,12 @@ const SENSITIVE_ZONE_GEM_CONFIG = {
   idPrefix: "sensitive-zone",
   iconVariant: "shield-check",
   tooltip: (definition: GemGradeDefinition) =>
-    definition.key.startsWith("pilier-")
-      ? "Progression infinie des zones sensibles apaisées"
-      : definition.threshold === 0
-        ? "Aucune zone sensible apaisée pour le moment"
-        : `${definition.threshold} actions validées dans des zones sensibles`,
+    definition.threshold === 0
+      ? "Aucune zone sensible apaisée pour le moment"
+      : `${definition.threshold} actions validées dans des zones sensibles (repère historique)`,
   visualVariant: (definition: GemGradeDefinition) =>
     definition.threshold < 5 ? "stone" : "precious",
-  xp: (definition: GemGradeDefinition) =>
-    definition.threshold === 0 ? 0 : 1,
+  xp: () => 0,
 };
 
 export const SENSITIVE_ZONE_GEM_GRADES = buildGemGradeCatalog(

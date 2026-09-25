@@ -1,4 +1,4 @@
-export type BadgeFamily = 'explorer' | 'participant' | 'forms';
+export type BadgeFamily = 'explorer' | 'participant';
 
 export type GemGrade = {
   id: string;

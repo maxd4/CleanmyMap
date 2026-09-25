@@ -226,7 +226,7 @@ Règles:
 
 But:
 
-- récompenser les formulaires d action éligibles et validés.
+- fournir la preuve et la condition de validation d'une action organisée.
 
 Règles:
 
@@ -234,10 +234,27 @@ Règles:
 - exclusion des brouillons, suppressions, tests et formulaires incomplets;
 - exclusion des actions de type `zone_propre`;
 - dédoublonnage par paire `(action_id, group_id)`;
-- XP: `+1` par palier;
-- bonus décennal: `+2 XP` à 10, 20, 30, etc.
-- ces badges et événements restent disponibles pour compatibilité, mais ne
-  constituent pas une progression infinie CURRENT;
+- la complétude du formulaire peut rendre l'action éligible à `Organisation` et
+  au jalon `Première trace utile`;
+- aucun badge Forms CURRENT, aucune barre Forms et aucun XP ne sont attribués
+  pour remplir ou multiplier des formulaires;
+- les événements historiques `form_tier_unlock` et `form_bonus` restent
+  lisibles dans le registre comme `COMPATIBILITY`, mais le rebuild CURRENT ne
+  les écrit plus;
+
+### Axes déclassés et métriques conservées
+
+- le niveau de confiance est une propriété dérivée de faits vérifiés et ne
+  constitue ni une progression XP, ni une monnaie, ni une récompense achetable
+  ou dépensable;
+- la qualité est un critère transversal de complétude, de validation et de
+  niveau global. Une moyenne qui peut baisser ne doit pas être affichée comme
+  une barre de progression infinie;
+- les kg de déchets et les mégots restent des métriques d'impact. Ils sont
+  affichables avec leur provenance et leur couverture, mais ils ne créent ni
+  XP principal ni palier `1 kg = XP` ou `100 mégots = XP`;
+- les anciennes identités de badges et d'événements peuvent rester présentes
+  pour l'historique, sans réactiver une attribution CURRENT;
 
 ### Clean Zones
 
@@ -374,12 +391,12 @@ Règles:
 - le calcul du badge lit ces preuves historiques. L'état environnemental
   courant d'une zone reste une projection distincte et ne révoque pas une
   contribution acquise;
-- les seuils gemme `1, 3, 5, 8, 10, 15, 20`, puis les paliers de `5`, donnent
-  chacun `+1 XP` via un événement `sensitive_zone_milestone` unique par
-  utilisateur et seuil;
-- une action ne compte qu'une fois. Une réjection ou annulation supprime sa
-  preuve et réconcilie les paliers devenus inatteignables; les rejouements
-  restent idempotents.
+- aucune nouvelle attribution XP n'est dérivée de cette métrique. Les anciens
+  événements `sensitive_zone_milestone` restent conservés en
+  `COMPATIBILITY/LEGACY`, sans être recréés ni révoqués;
+- une action ne compte qu'une fois pour la preuve historique. Une réjection ou
+  annulation retire uniquement la preuve CURRENT correspondante; les
+  événements historiques de palier ne sont pas réécrits.
 
 ### Inviter un ami
 
@@ -409,6 +426,8 @@ Règles:
 
 - badge compact d affichage secondaire;
 - échelle minérale propre;
+- lecture historique uniquement pour les déchets et les mégots; il ne produit
+  plus de barre dans les surfaces CURRENT;
 - usage hérité, pas modèle de conception pour les nouveaux badges;
 - il reste à part du contrat `Observateur` commun.
 

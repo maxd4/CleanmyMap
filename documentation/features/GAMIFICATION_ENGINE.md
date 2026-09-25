@@ -38,9 +38,10 @@ Le code et les tests priment si une divergence apparaît.
   séparée et le script reste un outil de réparation historique.
 - les sources métier restent propriétaires de leurs données ; le journal XP ne remplace jamais la source métier.
 - la métrique `Zone sensible apaisée` reste hors des sept progressions infinies :
-  sa qualification est figée à la validation dans `progression_events`, puis
-  ses seuils gemme sont projetés par des événements idempotents `+1 XP`;
-  l'état courant d'une zone ne révoque jamais cette preuve historique.
+  sa qualification est figée à la validation dans `progression_events` avec
+  `0 XP`. Les anciens événements `sensitive_zone_milestone` restent
+  `COMPATIBILITY/LEGACY` et ne sont ni recréés ni révoqués ; l'état courant
+  d'une zone ne révoque jamais la preuve historique.
 - les GET, loaders de page et lectures de profil sont read-only ; les
   attributions de progression sont déclenchées par une mutation métier ou par
   le rebuild serveur explicite `rebuildUserGamificationBadges`.
@@ -67,6 +68,12 @@ Le code et les tests priment si une divergence apparaît.
   déterministe du registre des `event_type`.
 - les lectures Clean Zones courantes utilisent `trash_spotter_spots`.
 - les anciennes identités d'événement liées à `spots` peuvent être reconnues uniquement pour préserver l'historique et empêcher une réattribution d'XP ; la table legacy n'est pas une source courante de candidats.
+- les formulaires restent une preuve de validation et une source de complétude;
+  les événements Forms historiques (`form_tier_unlock`, `form_bonus`) sont
+  `COMPATIBILITY` et ne sont plus écrits par le rebuild CURRENT;
+- les métriques de qualité, confiance, kg et mégots restent des faits dérivés
+  ou des indicateurs d'impact. Elles ne forment pas une famille de badges XP
+  CURRENT et ne doivent jamais être converties en XP par unité;
 - les règles détaillées de seuils, familles, scopes et attribution restent dans la spec canonique, pas dans ce document.
 
 ## Audit XP administratif

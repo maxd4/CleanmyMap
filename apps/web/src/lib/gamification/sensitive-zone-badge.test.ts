@@ -64,7 +64,7 @@ describe("deriveSensitiveAreasFromContracts", () => {
 });
 
 describe("computeSensitiveZoneApaisementSummary", () => {
-  it("counts only validated approved actions in sensitive zones and advances by gem thresholds", () => {
+  it("summarizes validated sensitive-zone evidence without an XP award", () => {
     const summary = computeSensitiveZoneApaisementSummary({
       qualifications: [
         {
@@ -115,5 +115,7 @@ describe("computeSensitiveZoneApaisementSummary", () => {
     expect(summary.currentGrade.label).toBe("Topaze");
     expect(summary.nextLabel).toBe("Saphir");
     expect(summary.progressPercent).toBe(0);
+    expect(summary.currentGrade.xp).toBe(0);
+    expect(summary.nextGrade?.xp).toBe(0);
   });
 });

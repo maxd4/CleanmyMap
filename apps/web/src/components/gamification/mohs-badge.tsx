@@ -1,3 +1,4 @@
+// LEGACY only: historical waste/butts reading, never a CURRENT progression.
 // Échelle Mohs héritée : 10 minéraux = 10 grades
 const MOHS_GRADES = [
   { grade: 1, name: "Talc",      emoji: "🪨" },
@@ -54,7 +55,7 @@ interface MohsBadgeProps {
 
 export function MohsBadge({ family, value, locale, showHistory = false }: MohsBadgeProps) {
   const stepPerGrade = family === "waste" ? 20 : 2000;
-  const { current, next, progressPct, remainingForNext } = getMohsGradeInfo(value, stepPerGrade);
+  const { current } = getMohsGradeInfo(value, stepPerGrade);
   const colors = GRADE_COLORS[current.grade];
 
   const unit = family === "waste" ? "kg" : (locale === "fr" ? "mégots" : "butts");
@@ -90,32 +91,11 @@ export function MohsBadge({ family, value, locale, showHistory = false }: MohsBa
         </div>
       </div>
 
-      {/* Barre de progression vers le grade suivant */}
-      {next ? (
-        <div>
-          <div className="flex justify-between mb-2">
-            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-              {locale === "fr" ? "Vers" : "Towards"} {next.name}
-            </span>
-            <span className={`text-[9px] font-black uppercase tracking-widest ${colors.text}`}>
-              {Math.round(progressPct)}%
-            </span>
-          </div>
-          <div className="h-1.5 w-full rounded-full bg-white/[0.04] overflow-hidden">
-            <div
-              className={`h-full rounded-full bg-gradient-to-r ${colors.bar} transition-all duration-700 shadow-sm`}
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-          <p className={`mt-2 text-[9px] font-black uppercase tracking-widest ${colors.text} opacity-80`}>
-            {remainingForNext.toLocaleString(locale)} {unit} avant {next.name} {next.emoji}
-          </p>
-        </div>
-      ) : (
-        <p className={`text-[9px] font-black uppercase tracking-widest ${colors.text}`}>
-          ✦ Grade maximum atteint
-        </p>
-      )}
+      <p className={`text-xs font-black uppercase tracking-widest ${colors.text}`}>
+        {locale === "fr"
+          ? "Repère historique — aucune progression XP"
+          : "Historical reference — no XP progression"}
+      </p>
 
       {/* Historique des grades franchis */}
       {showHistory && achievedGrades.length > 0 && (

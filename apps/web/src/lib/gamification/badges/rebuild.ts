@@ -10,10 +10,8 @@ import type {
 import { loadGamificationUserCounters } from "../counters";
 import {
   EXPLORER_TIERS,
-  FORM_SUBMISSION_TIERS,
   PARTICIPANT_TIERS,
   buildActionBadges,
-  buildFormsBadges,
 } from "./families";
 import { loadCleanZoneSourcesForUser } from "./listing";
 
@@ -132,64 +130,6 @@ async function awardCleanZoneEvents(
   return inserted;
 }
 
-async function awardFormEvents(
-  supabase: SupabaseClient,
-  userId: string,
-  eligibleFormsCount: number,
-): Promise<number> {
-  const formsBadges = buildFormsBadges(eligibleFormsCount);
-  let inserted = 0;
-
-  for (const tier of FORM_SUBMISSION_TIERS) {
-    if (!formsBadges.find((item) => item.id === tier.id)?.unlocked) {
-      continue;
-    }
-
-    inserted += Number(await awardProgressionEventIfMissing(supabase, {
-      userId,
-      sourceTable: "forms",
-      sourceId: `forms:${tier.id}`,
-      eventType: "form_tier_unlock",
-      statusPhase: "pending",
-      xp: 1,
-      metadata: { tier: tier.id, threshold: tier.threshold },
-      auditLabel: `Form tier ${tier.id} unlocked`,
-      notifyPayload: {
-        type: "form_tier_unlocked",
-        userId,
-        tierId: tier.id,
-        threshold: tier.threshold,
-        xp: 1,
-        dedupeKey: `form_tier_unlocked:${tier.id}`,
-      },
-    }));
-  }
-
-  const bonusCount = Math.floor(eligibleFormsCount / 10);
-  for (let index = 1; index <= bonusCount; index += 1) {
-    const bonus = index * 10;
-    inserted += Number(await awardProgressionEventIfMissing(supabase, {
-      userId,
-      sourceTable: "forms_bonus",
-      sourceId: `forms:bonus:${bonus}`,
-      eventType: "form_bonus",
-      statusPhase: "validated",
-      xp: 2,
-      metadata: { bonus_for: bonus },
-      auditLabel: `Forms decade bonus ${bonus}`,
-      notifyPayload: {
-        type: "form_bonus_unlocked",
-        userId,
-        bonus,
-        xp: 2,
-        dedupeKey: `form_bonus_unlocked:${bonus}`,
-      },
-    }));
-  }
-
-  return inserted;
-}
-
 async function awardParticipantEvents(
   supabase: SupabaseClient,
   userId: string,
@@ -300,7 +240,6 @@ export async function rebuildUserGamificationBadges(
 
   const inserted = await Promise.all([
     awardCleanZoneEvents(supabase, userId),
-    awardFormEvents(supabase, userId, counters.eligibleFormsCount),
     awardParticipantEvents(supabase, userId, counters.participationCount),
     awardExplorerEvents(supabase, userId, counters.visitedPlacesCount),
     awardActionBadges(supabase, userId, counters.completeActionsCount),
