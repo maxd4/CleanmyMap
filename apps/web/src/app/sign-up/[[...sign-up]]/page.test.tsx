@@ -12,6 +12,10 @@ vi.mock("@clerk/nextjs", () => ({
   ),
 }));
 vi.mock("@/components/auth/auth-page-shell", () => ({
+  AUTH_CLERK_APPEARANCE: {
+    variables: { colorPrimary: "#a06c00" },
+    elements: { footerAction: "hidden", headerSubtitle: "hidden" },
+  },
   AuthPageShell: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
 }));
 vi.mock("@/components/auth/clerk-hydration-gate", () => ({

@@ -52,7 +52,7 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | Famille | Routes principales | Tonalité de base | Note |
 |---|---|---|---|
 | Homepage autonome | `/`, `/accueil` | `home` | Identité de page indépendante |
-| Auth & Onboarding | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | `auth` | Fond lavande clair vers vert menthe clair; carte Clerk violet nuit / indigo foncé; accents verts uniquement pour validation; boutons inchangés |
+| Auth & Onboarding | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | `auth` | `/sign-in` et `/sign-up` utilisent le canvas emerald lumineux et les surfaces emerald d'Agir sans changer leur autonomie fonctionnelle ; l'onboarding conserve son contrat propre |
 | Institutionnel & Légal | `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*` | `legal` | Pages juridiques et institutionnelles, palette slate / gris clair / blanc, sans esthétique marketing blocks |
 | Système & Utilitaires | `/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429` | `system` | Pages outillage / support / prévisualisation, avec mood layer autonome par usage; les états système suivent une charte commune `SystemStateLayout` |
 | Admin & Super-admin | `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode` | `admin` | Console et supervision restreinte |
