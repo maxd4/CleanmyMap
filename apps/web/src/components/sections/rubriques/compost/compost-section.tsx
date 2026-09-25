@@ -106,7 +106,7 @@ export function CompostSection() {
                 {fr ? "Assistant Tri" : "Sorting Assistant"}
                 <ArrowRight size={16} />
               </CmmButton>
-              <CmmButton type="button" tone="primary" variant="pill" className="flex items-center gap-4 px-10 py-4 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all">
+              <CmmButton href="/signalement" tone="primary" variant="pill" className="flex items-center gap-4 px-10 py-4 cmm-text-caption font-black uppercase tracking-[0.2em] shadow-2xl transition-all">
                 {fr ? "Signaler un bac plein" : "Report full bin"}
                 <Zap size={16} />
               </CmmButton>

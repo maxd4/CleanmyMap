@@ -125,8 +125,8 @@ export function RecyclingSection() {
           </div>
 
           <div className="relative z-10 flex gap-4">
-             <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 group/search hover:border-emerald-500/30 transition-all cursor-pointer">
-                <Search size={16} className="group-hover/search:text-emerald-400 transition-colors" />
+             <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400">
+                <Search size={16} />
                 <span className="text-[10px] font-black uppercase tracking-widest">{fr ? "Rechercher une filière" : "Search a stream"}</span>
              </div>
           </div>
