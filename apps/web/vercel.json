@@ -6,6 +6,11 @@
       "NEXT_PUBLIC_SOURCE_MAP": "true"
     }
   },
+  "git": {
+    "deploymentEnabled": {
+      "dependabot/**": false
+    }
+  },
   "rewrites": [
     {
       "source": "/docs/visuels-rapport/data_pipeline.png",
