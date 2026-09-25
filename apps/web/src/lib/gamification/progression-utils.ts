@@ -93,7 +93,7 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
   },
   action_declare_validation: {
     classification: "progression",
-    progressionId: "participation",
+    progressionId: "versatility",
   },
   action_monthly_regularity: {
     classification: "progression",

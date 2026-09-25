@@ -43,7 +43,7 @@ describe("progression event registry", () => {
     }
 
     const families = eventFamilyMap();
-    expect(families.action_declare_validation).toBe("participation");
+    expect(families.action_declare_validation).toBe("versatility");
     expect([...runtimeEventTypes].sort()).toEqual([
       "action_declare_pending",
       "action_declare_validation",
@@ -140,6 +140,19 @@ describe("progression event registry", () => {
         expect(CURRENT_INFINITE_PROGRESSION_IDS).toContain(registration.progressionId);
       }
     }
+
+    expect(
+      new Set(
+        Object.values(registry)
+          .filter(
+            (registration): registration is Extract<
+              (typeof registry)[keyof typeof registry],
+              { classification: "progression" }
+            > => registration.classification === "progression",
+          )
+          .map((registration) => registration.progressionId),
+      ),
+    ).toEqual(new Set(CURRENT_INFINITE_PROGRESSION_IDS));
   });
 
   it("does not leave the explicit badge rebuild with an untyped eventType escape hatch", () => {
