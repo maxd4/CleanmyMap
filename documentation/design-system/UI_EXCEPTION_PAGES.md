@@ -54,7 +54,7 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | Homepage autonome | `/`, `/accueil` | `home` | Identité de page indépendante |
 | Auth & Onboarding | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | `auth` | `/sign-in` et `/sign-up` utilisent le canvas emerald lumineux et les surfaces emerald d'Agir sans changer leur autonomie fonctionnelle ; l'onboarding conserve son contrat propre |
 | Institutionnel & Légal | `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*` | `legal` | Pages juridiques et institutionnelles, palette slate / gris clair / blanc, sans esthétique marketing blocks |
-| Système & Utilitaires | `/reglages`, `/form-comparison`, `/preview/actions/new`, `/error/429` | `system` | Pages outillage / support / prévisualisation, avec mood layer autonome par usage; les états système suivent une charte commune `SystemStateLayout` |
+| Système & Utilitaires | `/reglages`, `/preview/actions/new`, `/error/429` | `system` | Pages outillage / support / prévisualisation QA, avec mood layer autonome par usage; les états système suivent une charte commune `SystemStateLayout` |
 | Admin & Super-admin | `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode` | `admin` | Console et supervision restreinte |
 | Print & Export | `/prints/report` | `print` | Rapport imprimable et export visuel, ambiance documentaire autonome |
 
@@ -105,7 +105,6 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 |---|---|---|---:|---|
 | `/actions/new` | Canonique | Agir | non | Palette `emerald` |
 | `/actions/history` | Canonique | Agir | non | Palette `emerald` |
-| `/declaration` | Alias vers `/actions/new` | Agir | n/a | Redirection sans UI propre |
 | `/missions/[id]` | Dynamique | Agir | non | Palette `emerald` |
 | `/parcours` | Canonique | Agir | non | Palette `emerald` |
 | `/parcours/[profile]` | Dynamique | Agir | non | Palette `emerald` |
@@ -163,13 +162,12 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | `/sections/weather` | Compatibilité vers `/actions/new?panel=meteo` | Agir | non | Redirection vers le panneau météo terrain |
 | `/sections/guide` | Compatibilité vers `/actions/new?panel=meteo` | Agir | non | Redirection vers le panneau météo terrain |
 | `/sections/trash-spotter` | Canonique (section) | Terrain | non | Signalement de déchets |
-| `/form-comparison` | Canonique | Système & Utilitaires | non | Comparaison interne, mood layer analytique autonome |
 | `/onboarding` | Canonique | Auth & Onboarding | non | Écran de démarrage |
 | `/onboarding/localisation` | Canonique | Auth & Onboarding | non | Étape de configuration |
 | `/reglages` | Canonique | Système & Utilitaires | non | Préférences et réglages, ambiance neutre autonome |
 | `/sign-in/[[...sign-in]]` | Canonique | Auth & Onboarding | non | Écran Clerk |
 | `/sign-up/[[...sign-up]]` | Canonique | Auth & Onboarding | non | Écran Clerk |
-| `/preview/actions/new` | Canonique | Système & Utilitaires | non | Prévisualisation publique, mood layer terrain |
+| `/preview/actions/new` | Outil QA | Système & Utilitaires | non | Prévisualisation publique du formulaire canonique, sans second parcours métier |
 | `/error/429` | Canonique | Système & Utilitaires | non | Page de limitation temporaire, palette d erreur dédiée: amber principal, red très léger, logique système commune |
 | `/contact` | Canonique | Institutionnel & Légal | non | Page institutionnelle |
 | `/conditions-generales-utilisation` | Canonique | Institutionnel & Légal | non | Page juridique |

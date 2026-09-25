@@ -29,7 +29,6 @@ describe("indexability helpers", () => {
 
     expect(publicSitemapPaths).not.toContain(DASHBOARD_ROUTE);
     expect(publicSitemapPaths).not.toContain(PROFIL_ROUTE);
-    expect(publicSitemapPaths).not.toContain("/form-comparison");
     expect(publicSitemapPaths).not.toContain("/sign-in");
     expect(publicSitemapPaths).not.toContain("/sign-up");
 
@@ -56,7 +55,6 @@ describe("indexability helpers", () => {
   });
 
   it("marks internal and unfinished routes as private", () => {
-    expect(isPrivateAppPath("/form-comparison")).toBe(true);
     expect(isPrivateAppPath("/onboarding")).toBe(true);
     expect(isPrivateAppPath("/reglages")).toBe(true);
     expect(isPrivateAppPath("/actions/new")).toBe(false);
@@ -64,7 +62,6 @@ describe("indexability helpers", () => {
     expect(isPrivateAppPath(DASHBOARD_ROUTE)).toBe(true);
 
     expect(isPrivateAppPath("/actions/map")).toBe(false);
-    expect(isPrivateAppPath("/declaration")).toBe(false);
     expect(isPrivateAppPath("/partners/network")).toBe(false);
     expect(isPrivateAppPath("/learn/ecole")).toBe(false);
     expect(isPublicNoindexPath("/sign-in")).toBe(true);

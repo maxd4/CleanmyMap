@@ -159,7 +159,6 @@ redirection :
 | --- |---|---|---|---|---|
 | /en | `/` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /conditions-utilisation | `/conditions-generales-utilisation` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
-| /declaration | `/actions/new` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /community | `/sections/community` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /open-data | `/sections/open-data` | `PUBLIC` | `NOINDEX` | `REDIRECT` | `TARGET` |
 | /messagerie | `/sections/messagerie` | `PRIVATE` | `NOINDEX` | `REDIRECT` | `TARGET` |
@@ -245,7 +244,6 @@ primaire du bloc Agir.
 
 | Route | Cible | Statut |
 |---|---|---|
-| `/declaration` | `/actions/new` | `redirect` |
 | `/sections/guide` | `/actions/new?panel=meteo` | `redirect` avec paramètres conservés |
 
 ## Cartographie & Impact
@@ -337,8 +335,7 @@ Note : aucune page canonique `/learn` n'est documentée dans l'état actuel. Le 
 | Route | Fiche | Accès | Source |
 |---|---|---|---|
 | `/error/429` | [Erreur 429](./routes/08-systeme-utilitaires/error-429/error-429-README.md) | `public-visible` | `apps/web/src/app/error/429/page.tsx` |
-| `/form-comparison` | [Comparaison de formulaires](./routes/08-systeme-utilitaires/form-comparison/form-comparison-README.md) | `protected` | `apps/web/src/app/form-comparison/page.tsx` |
-| `/preview/actions/new` | [Preview déclaration](./routes/08-systeme-utilitaires/preview-actions-new/preview-actions-new-README.md) | `standalone` | `apps/web/src/app/preview/actions/new/page.tsx` |
+| `/preview/actions/new` | [Prévisualisation QA du formulaire canonique](./routes/08-systeme-utilitaires/preview-actions-new/preview-actions-new-README.md) | `standalone` | `apps/web/src/app/preview/actions/new/page.tsx` |
 | `/reglages` | [Réglages](./routes/08-systeme-utilitaires/reglages/reglages-README.md) | `protected` | `apps/web/src/app/reglages/page.tsx` |
 | `/sections/[sectionId]` | pattern dynamique partagé — pas une page autonome | `dynamic` | `apps/web/src/app/(app)/sections/[sectionId]/page.tsx` |
 

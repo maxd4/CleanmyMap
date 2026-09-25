@@ -38,7 +38,7 @@ describe("proxy route context", () => {
     expect(isProtectedAppPage("/actions/new")).toBe(false);
     expect(isClerkContextOnlyRoute("/actions/new")).toBe(true);
 
-    for (const alias of ["/declaration", "/partners/network", "/partners/network/pepite"]) {
+    for (const alias of ["/partners/network", "/partners/network/pepite"]) {
       expect(isProtectedAppPage(alias)).toBe(false);
       expect(isClerkContextOnlyRoute(alias)).toBe(false);
     }

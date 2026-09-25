@@ -44,7 +44,6 @@ describe("page-families resolver", () => {
     expect(resolveBasePageFamilyId("/conditions-utilisation")).toBe(
       "juridique",
     );
-    expect(resolveBasePageFamilyId("/form-comparison")).toBe("systeme");
     expect(resolveBasePageFamilyId(ADMIN_ROUTE)).toBe("administration");
     expect(resolveBasePageFamilyId("/prints/report")).toBe("impression");
   });
