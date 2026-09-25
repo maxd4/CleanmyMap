@@ -11,6 +11,10 @@ export type {
   PostActionRetentionLoop,
   ProgressionEventType,
   ProgressionStatusPhase,
+  CurrentMilestoneId,
+  GamificationMilestoneState,
+  MilestoneDefinition,
+  ProgressionDefinition,
   UserProgressionStats,
 } from "./progression-types";
 
@@ -27,6 +31,16 @@ export {
   minDiversityTypes,
   minCollectiveEvents,
 } from "./progression-formulas";
+
+export {
+  CURRENT_INFINITE_PROGRESSIONS,
+  CURRENT_MILESTONES,
+  currentInfiniteProgressions,
+  currentMilestones,
+  gamificationEventRegistry,
+} from "./progression-utils";
+
+export { buildCurrentMilestones } from "./milestones";
 
 export {
   refreshProgressionProfile,

@@ -46,6 +46,14 @@ export const CURRENT_INFINITE_PROGRESSION_IDS = [
 export type CurrentInfiniteProgressionId =
   (typeof CURRENT_INFINITE_PROGRESSION_IDS)[number];
 
+export const CURRENT_MILESTONE_IDS = [
+  "premiere_trace_utile",
+  "trace_fondatrice",
+  "parrainage_utile",
+] as const;
+
+export type CurrentMilestoneId = (typeof CURRENT_MILESTONE_IDS)[number];
+
 type GamificationBadgeScale =
   | "participant"
   | "gem"
@@ -53,7 +61,7 @@ type GamificationBadgeScale =
   | "atmosphere"
   | "learning";
 
-export type GamificationProgressionDefinition = {
+export interface ProgressionDefinition {
   id: CurrentInfiniteProgressionId;
   label: string;
   description: string;
@@ -62,20 +70,40 @@ export type GamificationProgressionDefinition = {
   badgeFamily: string;
   scale: GamificationBadgeScale;
   infinite: true;
-};
+}
+
+export interface MilestoneDefinition {
+  id: CurrentMilestoneId;
+  legacyId?: string;
+  label: string;
+  description: string;
+  sourceDomain: string;
+  factKey: string;
+  xpAwarded: number;
+  oneShot: true;
+}
+
+/** Compatibility name retained for existing progression consumers. */
+export type GamificationProgressionDefinition = ProgressionDefinition;
 
 export type GamificationBadgeReference = {
   id: string;
   label: string;
 };
 
-export type GamificationProgressionState = GamificationProgressionDefinition & {
+export type GamificationProgressionState = ProgressionDefinition & {
   currentValue: number;
   currentBadge: GamificationBadgeReference | null;
   nextBadge: GamificationBadgeReference | null;
   progressPercent: number;
   /** Contribution to the one global XP total; never an independent XP balance. */
   xpContribution: number;
+};
+
+export type GamificationMilestoneState = MilestoneDefinition & {
+  unlocked: boolean;
+  recordedXp: number;
+  proofSourceId: string | null;
 };
 
 export type GamificationEventRegistration =
@@ -85,7 +113,7 @@ export type GamificationEventRegistration =
     }
   | {
       classification: "milestone";
-      milestoneId: string;
+      milestoneId: CurrentMilestoneId;
     }
   | {
       classification: "non_progression";

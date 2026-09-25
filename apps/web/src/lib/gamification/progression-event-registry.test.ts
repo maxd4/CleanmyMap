@@ -2,7 +2,9 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   CURRENT_INFINITE_PROGRESSIONS,
+  CURRENT_MILESTONES,
   currentInfiniteProgressions,
+  currentMilestones,
   eventFamilyMap,
   gamificationEventRegistry,
 } from "./progression-utils";
@@ -159,10 +161,7 @@ describe("progression event registry", () => {
     expect(registry.form_tier_unlock.classification).toBe("non_progression");
     expect(registry.form_bonus.classification).toBe("non_progression");
     expect(registry.sensitive_zone_action.classification).toBe("non_progression");
-    expect(registry.sensitive_zone_milestone).toEqual({
-      classification: "milestone",
-      milestoneId: "zone_sensible_apaisement",
-    });
+    expect(registry.sensitive_zone_milestone.classification).toBe("non_progression");
     expect(registry.quiz_question_type_milestone).toEqual({
       classification: "progression",
       progressionId: "learning",
@@ -196,6 +195,30 @@ describe("progression event registry", () => {
       ]),
     );
     expect(CURRENT_INFINITE_PROGRESSION_IDS).toContain("versatility");
+  });
+
+  it("exposes exactly the three CURRENT one-shot milestones without infinite progress", () => {
+    expect(currentMilestones()).toEqual(CURRENT_MILESTONES);
+    expect(currentMilestones().map((milestone) => milestone.id)).toEqual([
+      "premiere_trace_utile",
+      "trace_fondatrice",
+      "parrainage_utile",
+    ]);
+    expect(currentMilestones().every((milestone) => milestone.oneShot)).toBe(true);
+    expect(currentMilestones().every((milestone) => !("infinite" in milestone))).toBe(true);
+    expect(currentMilestones().map((milestone) => milestone.id)).not.toEqual(
+      expect.arrayContaining([
+        "premiere_participation",
+        "premiere_organisation",
+        "premier_lieu_explore",
+        "premiere_zone_propre",
+        "premier_quiz_reussi",
+      ]),
+    );
+    expect(
+      CURRENT_MILESTONES.filter((milestone) => milestone.factKey === "first_complete_action")
+        .reduce((total, milestone) => total + milestone.xpAwarded, 0),
+    ).toBe(1);
   });
 
   it("routes every active quiz XP event to the single learning progression", () => {
