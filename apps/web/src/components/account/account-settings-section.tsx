@@ -3,9 +3,31 @@
 import { useState } from "react";
 import { Settings, Trash2, Shield, Mail, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import { CmmButton } from "@/components/ui/cmm-button";
 
-export function AccountSettingsSection() {
+export function AccountSettingsSection({ compact = false }: { compact?: boolean }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  if (compact) {
+    return (
+      <div className="flex flex-col gap-3 rounded-2xl border border-amber-200/18 bg-[rgba(69,26,3,0.34)] p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-black text-white">Préférences et compte</h2>
+          <p className="mt-1 text-sm text-amber-100/75">
+            Langue, affichage, confidentialité, localisation et demande de suppression.
+          </p>
+        </div>
+        <CmmButton
+          href="/reglages"
+          tone="secondary"
+          variant="pill"
+          className="w-full justify-center px-5 text-sm font-black sm:w-auto"
+        >
+          Ouvrir les réglages
+        </CmmButton>
+      </div>
+    );
+  }
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-white/10">

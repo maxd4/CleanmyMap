@@ -37,6 +37,6 @@ describe("detailed profile gamification contract", () => {
     expect(pageSource).toContain("getSwitchableProfiles(grantedRole)");
     expect(pageSource).toContain("redirect(buildProfileRoute(activeProfile))");
     expect(pageSource).toContain('id="parrainage"');
-    expect(pageSource).toContain("<AccountSettingsSection />");
+    expect(pageSource).toContain("<AccountSettingsSection compact />");
   });
 });

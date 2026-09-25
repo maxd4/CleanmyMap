@@ -1,6 +1,6 @@
 # Système & Utilitaires
 
-Réglages, comparateurs, preview et routes techniques. Les pages standalone gardent une mood layer autonome par usage. La page `/reglages` reste une vraie page protégée, avec redirection vers `/sign-in` si le compte n'est pas connecté.
+Réglages, comparateurs, preview et routes techniques. Les pages standalone gardent une mood layer autonome par usage. La page `/reglages` est la surface secondaire canonique des préférences et paramètres de compte, protégée avec redirection vers `/sign-in` si le compte n'est pas connecté.
 
 ## Inventaire des pages
 

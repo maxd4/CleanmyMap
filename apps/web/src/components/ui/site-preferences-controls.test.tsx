@@ -30,4 +30,18 @@ describe("SitePreferencesControls", () => {
     expect(markup).toContain("gap-2 px-2.5 py-2");
     expect(markup).toContain("Comprendre les modes d&#x27;affichage");
   });
+
+  it("supports the light settings surface while keeping the same controls", () => {
+    const markup = renderToStaticMarkup(
+      <SitePreferencesProvider>
+        <SitePreferencesControls surface="light" />
+      </SitePreferencesProvider>,
+    );
+
+    expect(markup).toContain("border-slate-200 bg-white text-slate-900");
+    expect(markup).toContain('id="locale-switch"');
+    expect(markup).toContain('name="display-mode"');
+    expect(markup).toContain("Français");
+    expect(markup).toContain("Minimaliste");
+  });
 });

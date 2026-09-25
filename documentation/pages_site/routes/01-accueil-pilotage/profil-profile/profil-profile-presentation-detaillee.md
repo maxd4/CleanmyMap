@@ -2,7 +2,7 @@
 
 ## Rôle
 Surface du profil actif : progression, badges, actions prioritaires, parrainage,
-réglages et changement de profil lorsque l’accès l’autorise.
+configuration du compte via `/reglages`, et changement de profil lorsque l’accès l’autorise.
 
 ## Parcours
 - Le compte arrive sur `/profil/[profile]` avec un profil accepté par
@@ -15,3 +15,7 @@ réglages et changement de profil lorsque l’accès l’autorise.
 ## Points à clarifier
 - La route dynamique ne doit pas traiter `impact` comme un profil valide : la
   route statique `/profil/impact` porte seule cette surface.
+
+- Le bloc « Configuration » du profil ne rend pas les paramètres eux-mêmes : il
+  ouvre la surface secondaire canonique `/reglages`, qui porte les préférences,
+  la confidentialité et la demande de suppression.

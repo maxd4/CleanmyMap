@@ -9,10 +9,10 @@
 - **Famille / bloc fonctionnel** : Système & Utilitaires (hors bloc)
 - **Statut** : standalone
 - **Contexte nécessaire** : Compte connecté ; redirection vers `/sign-in` si la session est absente.
-- **Objectif utilisateur principal** : Gérer les préférences personnelles d'affichage, de notifications, de localisation et de compte.
-- **Action principale attendue** : Modifier une préférence puis revenir à l'espace personnel si nécessaire.
+- **Objectif utilisateur principal** : Gérer les préférences personnelles d'affichage, de langue, de localisation et de compte.
+- **Action principale attendue** : Modifier une préférence ou une donnée de compte depuis cette surface canonique.
 - **Palette attendue** : sky / slate
-- **Scope** : réglages authentifiés avec sections profil/compte, affichage, notifications, localisation et actions rapides ; absence de session redirigée vers `/sign-in`.
+- **Scope** : surface secondaire protégée avec contrôles `SitePreferencesControls` pour la langue et le mode d'affichage, choix du nom affiché, localisation, confidentialité et demande de suppression ; absence de session redirigée vers `/sign-in`.
 - **Terminée** : oui pour le périmètre actuellement livré
 - **Couleurs actuellement détectées** : sky / slate — fond clair sky et cartes de réglages neutres.
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec le rendu runtime actuel.
@@ -36,6 +36,14 @@
 - contrôles
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : critique
+
+## Accessibilité du parcours
+
+- La route n'est pas ajoutée au ruban principal.
+- Le profil actif et le dashboard proposent un CTA secondaire `Ouvrir les réglages`.
+- La localisation continue d'utiliser le workflow canonique `/onboarding/localisation`.
+- Les notifications ne sont pas présentées ici comme un réglage : leur lecture et
+  leur gestion restent portées par `/dashboard#notifications`.
 
 
 
