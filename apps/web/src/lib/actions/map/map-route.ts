@@ -49,7 +49,7 @@ export function isPublicFutureActionContract(
   );
 }
 
-function isPublicMapContract(contract: ActionDataContract, now: Date): boolean {
+export function isPublicMapContract(contract: ActionDataContract, now: Date): boolean {
   if (contract.metadata?.actionPhase === "pre_action") {
     return (
       Boolean(contract.publishedAt) &&
@@ -63,7 +63,7 @@ function isPublicMapContract(contract: ActionDataContract, now: Date): boolean {
   return contract.status === "approved";
 }
 
-function toPublicMapContract(contract: ActionDataContract, now: Date): ActionDataContract {
+export function toPublicMapContract(contract: ActionDataContract, now: Date): ActionDataContract {
   if (!isPublicFutureActionContract(contract, now)) {
     return contract;
   }

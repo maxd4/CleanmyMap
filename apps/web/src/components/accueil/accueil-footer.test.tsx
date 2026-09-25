@@ -33,7 +33,8 @@ describe("HomeFooter", () => {
       "xl:grid-cols-[minmax(0,7fr)_minmax(29rem,max-content)_minmax(0,15fr)]",
     );
     expect(html).toContain("cmm-footer-legal-links");
-    expect(html.match(/cmm-footer-contact-link/g)).toHaveLength(2);
+    expect(html.match(/cmm-footer-contact-link/g)).toHaveLength(3);
+    expect(html).toContain('href="https://github.com/maxd4/CleanMyMap"');
     expect(html).not.toContain("compact");
   });
 

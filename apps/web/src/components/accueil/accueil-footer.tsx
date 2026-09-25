@@ -1,10 +1,8 @@
-"use client";
-
 import Link from "next/link";
-import { Mail } from "lucide-react";
+import { GitBranch, Mail } from "lucide-react";
 import { BrandLogo } from "@/components/brand/brand-logo";
 import { resolvePublicContactEmail } from "@/lib/email-config";
-import { requestCookieConsentPreferences } from "@/lib/storage/ui-state-storage";
+import { CookiePreferencesButton } from "./cookie-preferences-button";
 
 function InstagramMark({
   className,
@@ -89,6 +87,19 @@ export function HomeFooter() {
                 @cleanmymap.fr
               </span>
             </a>
+            <a
+              href="https://github.com/maxd4/CleanMyMap"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cmm-footer-contact-link group rounded-xl border border-slate-700/80 bg-slate-950/55 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+            >
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80">
+                <GitBranch className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-white transition-colors group-hover:text-white">
+                GitHub
+              </span>
+            </a>
           </div>
 
           <nav
@@ -116,13 +127,7 @@ export function HomeFooter() {
             >
               Politique cookies
             </Link>
-            <button
-              type="button"
-              onClick={requestCookieConsentPreferences}
-              className="cmm-ribbon-text shrink-0 whitespace-nowrap font-semibold uppercase tracking-[0.1em] text-white transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
-            >
-              Gérer mes cookies
-            </button>
+            <CookiePreferencesButton />
             <div className="cmm-ribbon-text mt-2 shrink-0 whitespace-nowrap text-center text-white">
               <p className="font-bold">Cultivons l&apos;entraide</p>
               <p>© 2026 CleanMyMap</p>

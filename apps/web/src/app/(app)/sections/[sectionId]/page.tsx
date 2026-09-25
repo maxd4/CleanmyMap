@@ -19,6 +19,7 @@ import {
   PUBLIC_INDEXABLE_SECTION_IDS,
   PUBLIC_NOINDEX_SECTION_IDS,
 } from "@/lib/seo/indexability";
+import { loadPublicSectionInitialData } from "@/lib/sections/public-section-snapshots";
 
 type SectionPageProps = {
   params: Promise<{ sectionId: string }>;
@@ -120,11 +121,16 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
     section.id === "funding" || section.id === "open-data"
       ? env.FUNDING_ONPARTICIPE_URL
       : undefined;
+  const publicInitialData = await loadPublicSectionInitialData(section.id);
 
   if (accessMode === "visible") {
     return (
       <Suspense fallback={null}>
-        <SectionRenderer section={section} fundingOnParticipeUrl={fundingOnParticipeUrl} />
+        <SectionRenderer
+          section={section}
+          fundingOnParticipeUrl={fundingOnParticipeUrl}
+          publicInitialData={publicInitialData}
+        />
       </Suspense>
     );
   }
@@ -148,9 +154,19 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
         isAuthenticated={false}
         mode="blur"
         signInHref={signInHref}
-        lockedPreview={<SectionRenderer section={section} fundingOnParticipeUrl={fundingOnParticipeUrl} />}
+        lockedPreview={
+          <SectionRenderer
+            section={section}
+            fundingOnParticipeUrl={fundingOnParticipeUrl}
+            publicInitialData={publicInitialData}
+          />
+        }
       >
-        <SectionRenderer section={section} fundingOnParticipeUrl={fundingOnParticipeUrl} />
+        <SectionRenderer
+          section={section}
+          fundingOnParticipeUrl={fundingOnParticipeUrl}
+          publicInitialData={publicInitialData}
+        />
       </ClerkRequiredGate>
     );
   }
@@ -162,10 +178,20 @@ export default async function SectionPage({ params, searchParams }: SectionPageP
         mode="disabled"
         signInHref={signInHref}
       >
-        <SectionRenderer section={section} fundingOnParticipeUrl={fundingOnParticipeUrl} />
+        <SectionRenderer
+          section={section}
+          fundingOnParticipeUrl={fundingOnParticipeUrl}
+          publicInitialData={publicInitialData}
+        />
       </ClerkRequiredGate>
     );
   }
 
-  return <SectionRenderer section={section} fundingOnParticipeUrl={fundingOnParticipeUrl} />;
+  return (
+    <SectionRenderer
+      section={section}
+      fundingOnParticipeUrl={fundingOnParticipeUrl}
+      publicInitialData={publicInitialData}
+    />
+  );
 }

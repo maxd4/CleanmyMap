@@ -10,7 +10,9 @@ describe("composed Climate heading contract", () => {
     const renderer = read("./section-renderer.tsx");
     const compare = read("./compare-section.tsx");
 
-    expect(renderer).toContain("<ClimateSection />");
+    expect(renderer).toContain(
+      "<ClimateSection initialData={initialData?.climate} />",
+    );
     expect(renderer).toContain("<CompareSection />");
     expect(compare).toContain('headingLevel="h2"');
   });

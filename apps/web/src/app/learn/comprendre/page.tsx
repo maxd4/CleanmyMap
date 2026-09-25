@@ -16,6 +16,7 @@ import Link from "next/link";
 import { LearnPageVisitTracker } from "@/components/learn/learn-page-visit-tracker";
 import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { LearnComprendreSsrContent } from "@/components/learn/learn-comprendre-ssr-content";
 
 type ProgressCueProps = {
   eyebrow: string;
@@ -134,6 +135,8 @@ export default function LearnVulgarisationPage() {
           </div>
 
           <LearnVulgarisationPathSection locale={locale} />
+
+          <LearnComprendreSsrContent locale={locale} />
 
           <ProgressCue
             eyebrow={locale === "fr" ? "À retenir" : "Keep in mind"}

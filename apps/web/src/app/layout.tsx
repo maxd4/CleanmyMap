@@ -4,7 +4,7 @@ import { ClerkLocalizationProvider } from "@/components/auth/clerk-localization-
 import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
 import { WebSiteJsonLd } from "@/components/seo/structured-data/navigation-data";
 import { RootLayoutChrome } from "@/components/layout/root-layout-chrome";
-import { DeferredGlobalFooter } from "@/components/layout/deferred-global-chrome";
+import { HomeFooter } from "@/components/accueil/accueil-footer";
 import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { metadata as appMetadata } from "@/lib/metadata";
 import "./globals.css";
@@ -63,7 +63,7 @@ export default async function RootLayout({
               <main className="cmm-site-frame flex flex-1 flex-col pt-2 sm:pt-0">
                 {children}
               </main>
-              <DeferredGlobalFooter />
+              <HomeFooter />
             </PostHogProvider>
           </ClerkLocalizationProvider>
         </SitePreferencesProvider>
