@@ -85,6 +85,25 @@ describe("/api/chat/action-exclusions audit contract", () => {
     appendAuditMock.mockResolvedValue(undefined);
   });
 
+  it("refuse un utilisateur ordinaire qui fournit l'identifiant d'une action tierce", async () => {
+    authMock.mockResolvedValue({ userId: "member-2" });
+    identityMock.mockResolvedValue({ userId: "member-2", activeRole: "benevole" });
+    serverMock.mockReturnValue(buildSupabaseMock());
+    const { GET, POST } = await import("./route");
+
+    const getResponse = await GET(new Request(
+      "http://localhost/api/chat/action-exclusions?actionId=action-1",
+    ));
+    const postResponse = await POST(new Request("http://localhost/api/chat/action-exclusions", {
+      method: "POST",
+      body: JSON.stringify({ actionId: "action-1", userId: "target-1" }),
+    }));
+
+    expect(getResponse.status).toBe(403);
+    expect(postResponse.status).toBe(403);
+    expect(appendAuditMock).not.toHaveBeenCalled();
+  });
+
   it("audits exclusion, reintroduction, and a later exclusion independently", async () => {
     const supabase = buildSupabaseMock();
     serverMock.mockReturnValue(supabase);

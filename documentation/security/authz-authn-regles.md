@@ -39,6 +39,28 @@ identité
 + projection de données autorisée
 ```
 
+### Règle IDOR pour les ressources adressées par identifiant
+
+Toute route sensible qui reçoit un `resourceId`, un identifiant d'action, de
+message, de participant, de profil, de signalement, de rapport ou de fichier
+doit résoudre la cible côté serveur et ne jamais traiter cet identifiant comme
+une preuve d'accès. La décision doit vérifier, dans cet ordre logique :
+
+1. l'identité issue de la session serveur ;
+2. la capacité de l'opération ;
+3. le scope applicable ;
+4. l'ownership ou la relation canonique avec la ressource ;
+5. l'état métier autorisant l'opération ;
+6. la projection minimale nécessaire à la réponse.
+
+La requête ou la mutation doit rester contrainte par ces relations côté
+serveur, y compris lorsqu'un identifiant est remplacé manuellement par celui
+d'un autre utilisateur. Un accès public est une exception explicitement
+projetée, limitée aux données publiques et séparée des lectures privées. Une
+identité `service_role` peut exécuter une opération technique serveur après
+autorisation du handler, mais ne remplace jamais l'identité, la capacité ou
+l'ownership de l'utilisateur HTTP.
+
 ## Architecture
 
 ```mermaid
