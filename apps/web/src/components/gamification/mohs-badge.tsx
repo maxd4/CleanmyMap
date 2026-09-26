@@ -1,19 +1,12 @@
-// LEGACY only: historical waste/butts reading, never a CURRENT progression.
-// Échelle Mohs héritée : 10 minéraux = 10 grades
-const MOHS_GRADES = [
-  { grade: 1, name: "Talc",      emoji: "🪨" },
-  { grade: 2, name: "Gypse",     emoji: "🪨" },
-  { grade: 3, name: "Calcite",   emoji: "🪨" },
-  { grade: 4, name: "Fluorite",  emoji: "💎" },
-  { grade: 5, name: "Apatite",   emoji: "💎" },
-  { grade: 6, name: "Orthose",   emoji: "💎" },
-  { grade: 7, name: "Quartz",    emoji: "🔷" },
-  { grade: 8, name: "Topaze",    emoji: "🔷" },
-  { grade: 9, name: "Corindon",  emoji: "✨" },
-  { grade: 10, name: "Diamant",  emoji: "💠" },
-] as const;
+import {
+  getMohsGradeInfo,
+  MOHS_GRADES,
+  type MohsImpactFamily,
+} from "@/lib/gamification/mohs-progression";
 
-const GRADE_COLORS: Record<number, { text: string; border: string; bg: string; bar: string }> = {
+type GradeColors = { text: string; border: string; bg: string; bar: string };
+
+const GRADE_COLORS: Record<number, GradeColors> = {
   1:  { text: "text-slate-400",   border: "border-slate-600/30",  bg: "bg-slate-500/5",  bar: "from-slate-600 to-slate-500" },
   2:  { text: "text-slate-300",   border: "border-slate-500/30",  bg: "bg-slate-500/5",  bar: "from-slate-500 to-slate-400" },
   3:  { text: "text-stone-300",   border: "border-stone-500/30",  bg: "bg-stone-500/5",  bar: "from-stone-600 to-stone-400" },
@@ -26,95 +19,131 @@ const GRADE_COLORS: Record<number, { text: string; border: string; bg: string; b
   10: { text: "text-sky-300",     border: "border-sky-400/40",    bg: "bg-sky-400/10",   bar: "from-sky-400 to-cyan-300" },
 };
 
-// Paliers : chaque grade correspond à un seuil cumulatif
-// Déchets : 1 grade tous les 20 kg → grade 1 < 20kg, grade 2 = 20–39, …, grade 10 ≥ 180kg
-// Mégots  : 1 grade tous les 2 000 → grade 1 < 2000, …, grade 10 ≥ 18000
-
-export function getMohsGradeInfo(value: number, stepPerGrade: number) {
-  const gradeIndex = Math.min(9, Math.floor(value / stepPerGrade)); // 0-based
-  const current = MOHS_GRADES[gradeIndex];
-  const next = gradeIndex < 9 ? MOHS_GRADES[gradeIndex + 1] : null;
-
-  const currentThreshold = gradeIndex * stepPerGrade;
-  const nextThreshold = (gradeIndex + 1) * stepPerGrade;
-  const progressInGrade = value - currentThreshold;
-  const neededForNext = next ? stepPerGrade : 0;
-  const remainingForNext = next ? nextThreshold - value : 0;
-  const progressPct = next ? Math.min(100, (progressInGrade / neededForNext) * 100) : 100;
-
-  return { current, next, progressPct, remainingForNext, currentThreshold, nextThreshold };
-}
+export { getMohsGradeInfo } from "@/lib/gamification/mohs-progression";
 
 interface MohsBadgeProps {
-  family: "waste" | "butts";
+  family: MohsImpactFamily;
   value: number;
   locale: string;
+  rawValue?: number;
+  equivalentSecValue?: number;
+  unknownConditionCount?: number;
   /** Show last N past grades as history */
   showHistory?: boolean;
 }
 
-export function MohsBadge({ family, value, locale, showHistory = false }: MohsBadgeProps) {
-  const stepPerGrade = family === "waste" ? 20 : 2000;
-  const { current } = getMohsGradeInfo(value, stepPerGrade);
-  const colors = GRADE_COLORS[current.grade];
+function MohsWasteDetails({
+  locale,
+  rawValue,
+  equivalentSecValue,
+  unknownConditionCount,
+}: Pick<MohsBadgeProps, "locale" | "rawValue" | "equivalentSecValue" | "unknownConditionCount">) {
+  if (rawValue === undefined && !unknownConditionCount) return null;
+  const unknownLabel = locale === "fr"
+    ? `${unknownConditionCount} mesure${unknownConditionCount === 1 ? "" : "s"} sans condition d’humidité n’est pas reclassée en équivalent sec.`
+    : `${unknownConditionCount} measurement${unknownConditionCount === 1 ? "" : "s"} without a moisture condition is not reclassified as dry equivalent.`;
+  return (
+    <>
+      {rawValue !== undefined && (
+        <p className="text-xs font-semibold text-slate-400">
+          {locale === "fr" ? "Masse brute" : "Raw mass"}: {rawValue.toLocaleString(locale)} kg
+          {equivalentSecValue !== undefined
+            ? ` · ${locale === "fr" ? "équivalent sec" : "dry equivalent"}: ${equivalentSecValue.toLocaleString(locale)} kg`
+            : ""}
+        </p>
+      )}
+      <p className="text-xs leading-relaxed text-slate-300">
+        {unknownConditionCount ? unknownLabel : (locale === "fr"
+          ? "Mohs utilise l’équivalent sec versionné lorsqu’une condition est connue ; les quotes-parts sans condition restent identifiées comme masse collective brute."
+          : "Mohs uses the versioned dry equivalent when a condition is known; quote-parts without a condition remain identified as raw collective mass.")}
+      </p>
+    </>
+  );
+}
 
+function MohsProgress({
+  family,
+  locale,
+  colors,
+  grade,
+}: Pick<MohsBadgeProps, "family" | "locale"> & {
+  colors: GradeColors;
+  grade: ReturnType<typeof getMohsGradeInfo>;
+}) {
+  const unit = family === "waste" ? "kg" : (locale === "fr" ? "mégots" : "butts");
+  const nextLabel = grade.next
+    ? (locale === "fr" ? `Vers ${grade.next.name}` : `Next: ${grade.next.name}`)
+    : (locale === "fr" ? "Diamant atteint" : "Diamond reached");
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs font-black uppercase tracking-widest text-slate-500">
+        <span>{nextLabel}</span><span className={colors.text}>{Math.round(grade.progressPct)} %</span>
+      </div>
+      <div
+        className="h-2 w-full overflow-hidden rounded-full bg-white/[0.04]"
+        role="progressbar"
+        aria-label={locale === "fr" ? `Progression Mohs ${family === "waste" ? "déchets" : "mégots"}` : `Mohs progress for ${family}`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(grade.progressPct)}
+      >
+        <div className={`h-full rounded-full bg-gradient-to-r ${colors.bar}`} style={{ width: `${grade.progressPct}%` }} />
+      </div>
+      <p className="text-xs font-semibold text-slate-400">
+        {grade.next
+          ? `${grade.remainingForNext.toLocaleString(locale)} ${unit} ${locale === "fr" ? "restants · +" : "remaining · +"}${grade.nextXp} XP`
+          : (locale === "fr" ? "Tous les grades franchis · +0 XP" : "All grades reached · +0 XP")}
+      </p>
+    </div>
+  );
+}
+
+function MohsHistory({ value, stepPerGrade, locale, showHistory }: Pick<MohsBadgeProps, "value" | "locale" | "showHistory"> & { stepPerGrade: number }) {
+  if (!showHistory) return null;
+  const achievedGrades = MOHS_GRADES.slice(0, Math.min(9, Math.floor(value / stepPerGrade)));
+  if (achievedGrades.length === 0) return null;
+  return (
+    <div className="pt-3 border-t border-white/5">
+      <p className="text-xs font-black uppercase tracking-widest text-slate-500 mb-2">
+        {locale === "fr" ? "Grades franchis" : "Past grades"}
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {achievedGrades.map((grade) => (
+          <span key={grade.grade} className="text-xs font-black px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/5 text-slate-500 uppercase tracking-wider">
+            {grade.emoji} {grade.name}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function MohsBadge({ family, value, locale, rawValue, equivalentSecValue, unknownConditionCount = 0, showHistory = false }: MohsBadgeProps) {
+  const grade = getMohsGradeInfo(value, family);
+  const colors = GRADE_COLORS[grade.current.grade];
   const unit = family === "waste" ? "kg" : (locale === "fr" ? "mégots" : "butts");
   const label = family === "waste"
-    ? (locale === "fr" ? "Badge Déchets - Échelle Mohs héritée" : "Waste Badge - inherited Mohs scale")
-    : (locale === "fr" ? "Badge Mégots - Échelle Mohs héritée" : "Butts Badge - inherited Mohs scale");
-
-  // Grades franchis (pour l'historique)
-  const achievedGradeIndex = Math.min(9, Math.floor(value / stepPerGrade));
-  const achievedGrades = MOHS_GRADES.slice(0, achievedGradeIndex); // tous sauf le courant
-
+    ? (locale === "fr" ? "Impact déchets · progression Mohs" : "Waste impact · Mohs progression")
+    : (locale === "fr" ? "Impact mégots · progression Mohs" : "Butt impact · Mohs progression");
   return (
     <div className={`rounded-[2rem] border ${colors.border} ${colors.bg} p-5 flex flex-col gap-4`}>
-      {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">{label}</p>
-        <span className={`text-[9px] font-black uppercase tracking-widest ${colors.text}`}>
-          Grade {current.grade} / 10
-        </span>
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">{label}</p>
+        <span className={`text-xs font-black uppercase tracking-widest ${colors.text}`}>Grade {grade.current.grade} / 10</span>
       </div>
-
-      {/* Grade actuel */}
       <div className="flex items-center gap-3">
-        <span className="text-2xl">{current.emoji}</span>
+        <span className="text-2xl">{grade.current.emoji}</span>
         <div>
-          <p className={`text-xl font-black tracking-tight ${colors.text}`}>{current.name}</p>
-          <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-            {value.toLocaleString(locale)} {unit} collectés
+          <p className={`text-xl font-black tracking-tight ${colors.text}`}>{grade.current.name}</p>
+          <p className="text-xs font-black text-slate-500 uppercase tracking-widest">{value.toLocaleString(locale)} {unit} attribués</p>
+          <p className="mt-1 text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+            {locale === "fr" ? "Impact secondaire · distinct des 7 axes comportementaux" : "Secondary impact · distinct from the 7 behavioural axes"}
           </p>
-          <p className="mt-1 text-[8px] font-black uppercase tracking-[0.18em] text-slate-500">
-            Échelle minérale héritée distincte de la gemme
-          </p>
+          {family === "waste" && <MohsWasteDetails locale={locale} rawValue={rawValue} equivalentSecValue={equivalentSecValue} unknownConditionCount={unknownConditionCount} />}
         </div>
       </div>
-
-      <p className={`text-xs font-black uppercase tracking-widest ${colors.text}`}>
-        {locale === "fr"
-          ? "Repère historique — aucune progression XP"
-          : "Historical reference — no XP progression"}
-      </p>
-
-      {/* Historique des grades franchis */}
-      {showHistory && achievedGrades.length > 0 && (
-        <div className="pt-3 border-t border-white/5">
-          <p className="text-[8px] font-black uppercase tracking-widest text-slate-600 mb-2">
-            {locale === "fr" ? "Grades franchis" : "Past grades"}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {achievedGrades.map((g) => (
-              <span
-                key={g.grade}
-                className="text-[8px] font-black px-2 py-0.5 rounded-full bg-white/[0.03] border border-white/5 text-slate-500 uppercase tracking-wider"
-              >
-                {g.emoji} {g.name}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      <MohsProgress family={family} locale={locale} colors={colors} grade={grade} />
+      <MohsHistory value={value} stepPerGrade={grade.stepPerGrade} locale={locale} showHistory={showHistory} />
     </div>
   );
 }

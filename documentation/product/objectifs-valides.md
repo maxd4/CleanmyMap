@@ -49,8 +49,10 @@ complétude, de validation et de niveau global; une moyenne susceptible de
 baisser n'est pas une progression infinie. Les kg et les mégots restent des
 métriques d'impact affichables, sans conversion en XP par unité.
 
-Mohs reste une échelle `LEGACY` de lecture historique déchets/mégots. Aucune
-nouvelle progression ne l'utilise. La zone sensible apaisée reste elle aussi
+Mohs est une progression d'impact personnelle secondaire pour les déchets et
+les mégots, distincte des sept progressions comportementales. Elle utilise des
+seuils fixes et `+0,25 XP` par grade via `progression_events`, sans XP
+proportionnel et sans écriture `points_ledger`. La zone sensible apaisée reste elle aussi
 hors des sept progressions infinies : sa qualification est historique et figée
 au moment de la validation, mais ses paliers gemme `1, 3, 5, 8, 10, 15, 20,
 puis +5` attribuent chacun `+1 XP` via `sensitive_zone_milestone`. Ces

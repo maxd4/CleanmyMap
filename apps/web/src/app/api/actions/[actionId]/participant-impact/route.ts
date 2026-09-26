@@ -14,6 +14,7 @@ import {
   type IndividualImpactRow,
 } from "@/lib/actions/participation/individual-impact";
 import { resolveReviewerAccess } from "../group-join/route";
+import { refreshProgressionProfile } from "@/lib/gamification/progression-tracking";
 
 const wasteSchema = z.object({
   kg: z.number().min(0).max(100_000),
@@ -201,6 +202,7 @@ async function persistParticipantImpact(
     newValue: nextMeasurement,
     details: { participantId, actionId, measuredAt: measurementUpdate.measuredAt },
   });
+  await refreshProgressionProfile(supabase, context.participant.user_id).catch(() => null);
   return NextResponse.json({
     status: "ok",
     actionId,

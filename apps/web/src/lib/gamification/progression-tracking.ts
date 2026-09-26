@@ -17,6 +17,7 @@ import {
 import { broadcastGamificationAnnouncement } from "@/lib/gamification/announcements";
 import { logFailure } from "@/lib/logging/failure-log";
 import { rebuildUserGamificationBadges } from "./badges/rebuild";
+import { reconcileMohsImpactProgression } from "./mohs-impact-reconciliation";
 import {
   awardReferralForUsefulContribution,
   removeReferralAwardForRejectedContribution,
@@ -41,6 +42,10 @@ export async function refreshProgressionProfile(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<void> {
+  // Reconcile impact badge threshold facts before projecting the profile. The
+  // reconciler only writes progression_events; points_ledger is legacy and is
+  // intentionally never touched by CURRENT gamification.
+  await reconcileMohsImpactProgression(supabase, userId).catch(() => null);
   const [eventsResult, stats] = await Promise.all([
     supabase
       .from("progression_events")

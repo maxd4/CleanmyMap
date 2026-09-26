@@ -181,6 +181,8 @@ export type ActionParticipantImpactAttribution = {
   wasteKg: number | null;
   wasteKind: AllocationKind;
   wasteEquivalentSecKg: number | null;
+  wasteMohsValue: number | null;
+  wasteMohsSource: "equivalent_sec" | "quote_part_collective_raw" | null;
   cigaretteButts: number | null;
   cigaretteButtsKind: AllocationKind;
   cigaretteButtsProvenance: "counted" | "derived" | null;
@@ -233,17 +235,57 @@ function buildParticipantAttribution(
   const buttsValue = butts.get(participant.id);
   const measurement = participant.measurement;
   return {
+    ...buildWasteAttribution(wasteValue, measurement),
+    ...buildButtsAttribution(buttsValue, measurement),
+  };
+}
+
+function buildWasteAttribution(
+  wasteValue: ReturnType<typeof allocateMetric> extends Map<string, infer TValue> ? TValue | undefined : never,
+  measurement: IndividualImpactMeasurement | null,
+) {
+  const wasteMohs = resolveWasteMohsValue(wasteValue, measurement);
+  return {
     wasteKg: nullableValue(wasteValue?.value),
-    wasteKind: wasteValue?.kind ?? "unavailable",
+    wasteKind: wasteValue?.kind ?? "unavailable" as const,
     wasteEquivalentSecKg: individualMeasurementValue(wasteValue?.kind, measurement?.equivalentSecKg),
-    cigaretteButts: nullableValue(buttsValue?.value),
-    cigaretteButtsKind: buttsValue?.kind ?? "unavailable",
-    cigaretteButtsProvenance: individualMeasurementValue(buttsValue?.kind, measurement?.comparableButtsProvenance),
+    wasteMohsValue: wasteMohs.value,
+    wasteMohsSource: wasteMohs.source,
     wasteInconsistent: Boolean(wasteValue?.inconsistent),
+    wasteMohsEligible: !Boolean(wasteValue?.inconsistent) && wasteMohs.source !== null,
+  };
+}
+
+function buildButtsAttribution(
+  buttsValue: ReturnType<typeof allocateMetric> extends Map<string, infer TValue> ? TValue | undefined : never,
+  measurement: IndividualImpactMeasurement | null,
+) {
+  return {
+    cigaretteButts: nullableValue(buttsValue?.value),
+    cigaretteButtsKind: buttsValue?.kind ?? "unavailable" as const,
+    cigaretteButtsProvenance: individualMeasurementValue(buttsValue?.kind, measurement?.comparableButtsProvenance),
     cigaretteButtsInconsistent: Boolean(buttsValue?.inconsistent),
-    wasteMohsEligible: !Boolean(wasteValue?.inconsistent),
     cigaretteButtsMohsEligible: !Boolean(buttsValue?.inconsistent),
   };
+}
+
+function resolveWasteMohsValue(
+  wasteValue: ReturnType<typeof allocateMetric> extends Map<string, infer TValue>
+    ? TValue | undefined
+    : never,
+  measurement: IndividualImpactMeasurement | null,
+): {
+  value: number | null;
+  source: "equivalent_sec" | "quote_part_collective_raw" | null;
+} {
+  if (wasteValue?.kind === "individual") {
+    const value = nullableValue(measurement?.equivalentSecKg);
+    return { value, source: value === null ? null : "equivalent_sec" };
+  }
+  if (wasteValue?.kind === "quote_part" && wasteValue.value !== null) {
+    return { value: wasteValue.value, source: "quote_part_collective_raw" };
+  }
+  return { value: null, source: null };
 }
 
 function nullableValue<T>(value: T | null | undefined): T | null {

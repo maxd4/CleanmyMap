@@ -204,6 +204,73 @@ async function loadParticipantImpactAttributions(
   );
 }
 
+export type ConfirmedParticipantImpactAttribution = {
+  actionId: string;
+  actionDate: string;
+  userId: string;
+  attribution: ReturnType<typeof allocateActionParticipantImpact> extends Map<
+    string,
+    infer TValue
+  >
+    ? TValue
+    : never;
+};
+
+/**
+ * Loads the current user's personal impact from the confirmed participant
+ * roster. Children and form counters are intentionally absent from this
+ * contract: one confirmed account is one attribution unit.
+ */
+export async function loadConfirmedParticipantImpactAttributions(
+  supabase: SupabaseClient,
+  userId: string,
+  limit = 6000,
+): Promise<ConfirmedParticipantImpactAttribution[]> {
+  const participantResult = await supabase
+    .from("action_participants")
+    .select(`user_id, action_id, participation_status, ${INDIVIDUAL_IMPACT_SELECT}`)
+    .eq("user_id", userId)
+    .eq("participation_status", ACTIVE_PARTICIPATION_STATUS)
+    .limit(limit);
+  if (participantResult.error) {
+    throw new Error(participantResult.error.message);
+  }
+
+  const participantRows = (participantResult.data ?? []) as unknown as Array<Record<string, unknown>>;
+  const actionIds = [
+    ...new Set(
+      participantRows
+        .map((row) => (typeof row.action_id === "string" ? row.action_id : null))
+        .filter((actionId): actionId is string => Boolean(actionId)),
+    ),
+  ];
+  if (actionIds.length === 0) return [];
+
+  const actions = await runActionQuery<ActionPreviewRow>(supabase, (query) =>
+    query.select(ACTION_PREVIEW_COLUMNS).in("id", actionIds).limit(limit),
+  );
+  const actionById = new Map(actions.map((action) => [action.id, action] as const));
+  const finalActionIds = actions
+    .filter((action) => action.status === "approved" && !usesRegistrationStore(action.action_phase))
+    .map((action) => action.id);
+  const participantImpactByActionId = await loadParticipantImpactAttributions(
+    supabase,
+    actionById,
+    finalActionIds,
+  );
+
+  return participantRows.flatMap((row) => {
+    const actionId = typeof row.action_id === "string" ? row.action_id : null;
+    const participantUserId = typeof row.user_id === "string" ? row.user_id : null;
+    const action = actionId ? actionById.get(actionId) : null;
+    const attribution = actionId && participantUserId
+      ? participantImpactByActionId.get(actionId)?.get(participantUserId)
+      : null;
+    if (!actionId || !participantUserId || !action || !attribution) return [];
+    return [{ actionId, actionDate: action.action_date, userId: participantUserId, attribution }];
+  });
+}
+
 export async function loadUserParticipationHistory(
   supabase: SupabaseClient,
   params: {

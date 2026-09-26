@@ -54,6 +54,9 @@ export const CURRENT_MILESTONE_IDS = [
 
 export type CurrentMilestoneId = (typeof CURRENT_MILESTONE_IDS)[number];
 
+export const IMPACT_BADGE_IDS = ["mohs_waste", "mohs_butts"] as const;
+export type ImpactBadgeId = (typeof IMPACT_BADGE_IDS)[number];
+
 type GamificationBadgeScale =
   | "participant"
   | "gem"
@@ -118,6 +121,10 @@ export type GamificationEventRegistration =
   | {
       classification: "non_progression";
       reason: string;
+    }
+  | {
+      classification: "impact_badge";
+      impactBadgeId: ImpactBadgeId;
     };
 
 export type ActionRow = {
