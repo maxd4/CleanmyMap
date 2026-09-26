@@ -5,15 +5,26 @@ import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { trackCommunityRsvpYes } from"@/lib/gamification/progression";
 import { handleApiError, parseAuthenticatedJsonRequest } from"@/lib/http/api-errors";
 import { revalidateCommunityEventCaches } from"@/lib/community/event-cache-invalidation";
+import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 
 export const runtime ="nodejs";
 
 const communityRsvpSchema = z.object({
- eventId: z.string().trim().min(1),
+ eventId: z.string().trim().min(1).max(120),
  status: z.enum(["yes","maybe","no"]),
 });
 
 export async function POST(request: Request) {
+ const rateLimit = await verifyRateLimit(request, { limit: 30, window: 60 });
+ const rateLimitResponse = createServerRateLimitResponse(
+  rateLimit.allowed,
+  rateLimit.retryAfter,
+  rateLimit,
+ );
+ if (rateLimitResponse) {
+  return rateLimitResponse;
+ }
+
  const payload = await parseAuthenticatedJsonRequest(request, () => auth());
  if (!payload.ok) return payload.response;
  const { userId } = payload;

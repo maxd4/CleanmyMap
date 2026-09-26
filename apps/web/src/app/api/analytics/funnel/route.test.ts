@@ -200,6 +200,44 @@ describe("POST /api/analytics/funnel", () => {
       }),
     );
   });
+
+  it("rejects oversized or unbounded analytics metadata before writing", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/analytics/funnel", {
+        method: "POST",
+        body: JSON.stringify({
+          sessionId: "session-large",
+          step: "page_view",
+          mode: "complete",
+          meta: { pagePath: "x".repeat(70_000) },
+        }),
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    expect(response.status).toBe(413);
+    expect(appendFunnelEventMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects nested metadata values even when the body is small", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/analytics/funnel", {
+        method: "POST",
+        body: JSON.stringify({
+          sessionId: "session-nested",
+          step: "page_view",
+          mode: "complete",
+          meta: { nested: { unsupported: true } },
+        }),
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(appendFunnelEventMock).not.toHaveBeenCalled();
+  });
 });
 
 describe("GET /api/analytics/funnel", () => {

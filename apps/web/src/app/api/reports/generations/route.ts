@@ -14,8 +14,11 @@ import {
 } from "@/lib/reports/report-export-quota";
 import type { ReportGenerationHistoryInput } from "@/lib/reports/report-generation-history-contract";
 import { reportGenerationPayloadSchema } from "@/lib/reports/report-generation-payload";
+import { readJsonBodyWithLimit } from "@/lib/http/request-body";
+import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 
 export const runtime = "nodejs";
+const MAX_REPORT_GENERATION_REQUEST_BYTES = 2 * 1024 * 1024;
 
 const detailLevelSchema = z.enum(["concis", "default", "exhaustif"]);
 const scopeKindSchema = z.enum(["global", "account", "association", "arrondissement"]);
@@ -42,12 +45,20 @@ export async function POST(request: Request) {
     return unauthorizedJsonResponse({ hint: access.error });
   }
 
+  const rateLimit = await verifyRateLimit(request, { limit: 5, window: 60 });
+  const rateLimitResponse = createServerRateLimitResponse(
+    rateLimit.allowed,
+    rateLimit.retryAfter,
+    rateLimit,
+  );
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const operationId = `report-generation-${randomUUID()}`;
 
-  let rawPayload: unknown;
-  try {
-    rawPayload = await request.json();
-  } catch {
+  const body = await readJsonBodyWithLimit(request, MAX_REPORT_GENERATION_REQUEST_BYTES);
+  if (!body.ok) {
     await appendAdminOperationAudit({
       operationId,
       at: new Date().toISOString(),
@@ -57,11 +68,15 @@ export async function POST(request: Request) {
       details: {
         operation: "persist_report_generation",
         stage: "validation",
-        code: "invalid_json",
+        code: body.reason === "too_large" ? "payload_too_large" : "invalid_json",
       },
     });
-    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
+    return NextResponse.json(
+      { error: body.reason === "too_large" ? "Payload too large" : "Invalid JSON payload" },
+      { status: body.reason === "too_large" ? 413 : 400 },
+    );
   }
+  const rawPayload: unknown = body.data;
 
   const parsed = createPayloadSchema.safeParse(rawPayload);
   if (!parsed.success) {
