@@ -33,6 +33,21 @@ describe("createActionSchema", () => {
     ).toBe(false);
   });
 
+  it("rejects an organizer name that cannot be normalized", () => {
+    const result = createActionSchema.safeParse({
+      ...basePayload,
+      organizerType: "association",
+      organizerName: "•••",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.flatten().fieldErrors.organizerName).toContain(
+        "Le nom de l'organisateur doit contenir des caractères lisibles.",
+      );
+    }
+  });
+
   it("keeps the cigarette butt condition sent by the volunteer form", () => {
     const parsed = createActionSchema.parse({
       ...basePayload,
