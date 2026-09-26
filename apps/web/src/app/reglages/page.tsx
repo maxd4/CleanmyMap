@@ -14,20 +14,13 @@ import { HOME_ROUTE } from "@/lib/home-routes";
 import { DASHBOARD_ROUTE, PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 
-export const metadata: Metadata = {
-  title: "Réglages",
-  description: "Configurez vos préférences CleanMyMap : affichage, localisation et paramètres de compte.",
-  keywords: ["réglages", "paramètres", "préférences", "configuration", "CleanMyMap"],
-  robots: {
-    index: false, // Page privée
-    follow: false,
-  },
-};
-
 const REGLAGES_COPY = {
   fr: {
     title: "Réglages",
     subtitle: "Personnalisez votre expérience CleanMyMap selon vos préférences et besoins.",
+    metadataDescription:
+      "Configurez vos préférences CleanMyMap : affichage, localisation et paramètres de compte.",
+    metadataKeywords: ["réglages", "paramètres", "préférences", "configuration", "CleanMyMap"],
     back: "Retour au profil",
     profileAccount: "Profil et compte",
     personalInfo: "Informations personnelles",
@@ -49,6 +42,9 @@ const REGLAGES_COPY = {
   en: {
     title: "Settings",
     subtitle: "Customize your CleanMyMap experience according to your preferences and needs.",
+    metadataDescription:
+      "Configure your CleanMyMap preferences: display, location and account settings.",
+    metadataKeywords: ["settings", "preferences", "configuration", "CleanMyMap"],
     back: "Back to profile",
     profileAccount: "Profile and account",
     personalInfo: "Personal information",
@@ -68,6 +64,21 @@ const REGLAGES_COPY = {
     home: "Home",
   },
 } as const;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getServerLocale();
+  const copy = REGLAGES_COPY[locale];
+
+  return {
+    title: copy.title,
+    description: copy.metadataDescription,
+    keywords: [...copy.metadataKeywords],
+    robots: {
+      index: false, // Page privée
+      follow: false,
+    },
+  };
+}
 
 export default async function ReglagesPage() {
   const { userId } = await getSafeAuthSession();
@@ -90,7 +101,7 @@ export default async function ReglagesPage() {
     <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_rgba(186,230,253,0.45)_0%,_rgba(255,255,255,0.96)_52%,_rgba(248,250,252,1)_100%)]">
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-20 top-20 h-72 w-72 rounded-full bg-sky-400/10 blur-3xl" />
-        <div className="absolute -right-16 bottom-20 h-80 w-80 rounded-full bg-cyan-400/8 blur-3xl" />
+        <div className="absolute -right-16 bottom-20 h-80 w-80 rounded-full bg-sky-400/8 blur-3xl" />
       </div>
 
       <CmmPageLayout>
@@ -103,7 +114,7 @@ export default async function ReglagesPage() {
                 href={PROFIL_ROUTE}
                 className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-2.5 text-sm font-black text-sky-800 transition hover:-translate-y-[1px] hover:bg-sky-50"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                 {copy.back}
               </Link>
             }
@@ -116,7 +127,7 @@ export default async function ReglagesPage() {
             <section className="rounded-[2rem] border border-sky-200/60 bg-white/82 p-6 shadow-[0_18px_50px_-40px_rgba(14,165,233,0.35)] backdrop-blur-xl">
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
-                  <User className="h-5 w-5" />
+                  <User className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">
@@ -163,7 +174,7 @@ export default async function ReglagesPage() {
             <section className="rounded-[2rem] border border-sky-200/60 bg-white/82 p-6 shadow-[0_18px_50px_-40px_rgba(14,165,233,0.35)] backdrop-blur-xl">
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
-                  <Eye className="h-5 w-5" />
+                  <Eye className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">
@@ -181,8 +192,8 @@ export default async function ReglagesPage() {
             {/* Localisation */}
             <section className="rounded-[2rem] border border-sky-200/60 bg-white/82 p-6 shadow-[0_18px_50px_-40px_rgba(14,165,233,0.35)] backdrop-blur-xl">
               <div className="flex items-center gap-3 mb-6">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700">
-                  <MapPin className="h-5 w-5" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-700">
+                  <MapPin className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">
@@ -221,7 +232,7 @@ export default async function ReglagesPage() {
                 className="flex items-center gap-3 rounded-xl border border-sky-100 bg-sky-50/70 p-4 transition-colors hover:border-sky-200 hover:bg-sky-100/70"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
-                  <Settings className="h-4 w-4" />
+                  <Settings className="h-4 w-4" aria-hidden="true" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900">
@@ -235,7 +246,7 @@ export default async function ReglagesPage() {
                 className="flex items-center gap-3 rounded-xl border border-sky-100 bg-sky-50/70 p-4 transition-colors hover:border-sky-200 hover:bg-sky-100/70"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
-                  <User className="h-4 w-4" />
+                  <User className="h-4 w-4" aria-hidden="true" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900">
@@ -246,10 +257,10 @@ export default async function ReglagesPage() {
               
               <Link
                 href={HOME_ROUTE}
-                className="flex items-center gap-3 rounded-xl border border-sky-100 bg-amber-50/70 p-4 transition-colors hover:border-amber-200 hover:bg-amber-100/70"
+                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 transition-colors hover:border-slate-300 hover:bg-slate-100/70"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">
-                  <ArrowLeft className="h-4 w-4" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900">

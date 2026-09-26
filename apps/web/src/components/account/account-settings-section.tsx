@@ -16,7 +16,7 @@ const ACCOUNT_SETTINGS_COPY = {
     title: "Paramètres du compte",
     subtitle: "Gérez vos préférences et vos données",
     privacy: "Confidentialité",
-    privacyDescription: "Gérez comment vos données sont utilisées et partagées.",
+    privacyDescription: "Gérez la manière dont vos données sont utilisées et partagées.",
     privacyPolicy: "Politique de confidentialité",
     deletion: "Suppression du compte",
     deletionDescription:
@@ -122,7 +122,7 @@ export function AccountSettingsSection({
             </a>
           </div>
 
-          {/* Suppression */}
+          {/* Rose is reserved here for the destructive deletion action. */}
           <div className="rounded-2xl border border-rose-200 bg-rose-100/70 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)]">
             <div className="flex items-center gap-2.5 mb-2">
               <Trash2 size={17} className="text-rose-600 shrink-0" aria-hidden="true" />

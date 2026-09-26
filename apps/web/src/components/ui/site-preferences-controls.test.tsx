@@ -13,6 +13,7 @@ describe("SitePreferencesControls", () => {
 
     expect(markup).toContain('href="/methodologie#modes-affichage"');
     expect(markup).toContain('aria-label="En savoir plus sur les modes d&#x27;affichage"');
+    expect(markup).toContain('aria-label="Choisir la langue"');
     expect(markup).toContain("Exhaustif");
     expect(markup).toContain("Minimaliste");
     expect(markup).toContain("Sobre");
@@ -39,6 +40,7 @@ describe("SitePreferencesControls", () => {
     );
 
     expect(markup).toContain("border-slate-200 bg-white text-slate-900");
+    expect(markup).toContain("border-sky-500 bg-sky-50");
     expect(markup).toContain('id="locale-switch"');
     expect(markup).toContain('name="display-mode"');
     expect(markup).toContain("Français");
@@ -54,7 +56,19 @@ describe("SitePreferencesControls", () => {
     );
 
     expect(markup).toContain('aria-label="Switch to French"');
+    expect(markup).toContain('aria-label="Choose language"');
+    expect(markup).toContain("Display mode");
     expect(markup).toContain('aria-label="Learn more about display modes"');
     expect(markup).not.toContain("Comprendre les modes d&#x27;affichage");
+  });
+
+  it("keeps the French locale switch label in French", () => {
+    const markup = renderToStaticMarkup(
+      <SitePreferencesProvider initialLocale="fr">
+        <SitePreferencesControls variant="locale" />
+      </SitePreferencesProvider>,
+    );
+
+    expect(markup).toContain('aria-label="Passer à l&#x27;anglais"');
   });
 });
