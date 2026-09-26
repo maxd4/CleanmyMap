@@ -170,4 +170,29 @@ describe("ActionStepIdentity", () => {
     expect(html).toContain('value="Entreprise - ACME"');
     expect(html).not.toContain("World Cleanup Day France");
   });
+
+  it("does not expose a Solo/Duo/Trio selector for spontaneous actions", () => {
+    const form = createInitialFormState("Aperçu local", "action");
+    form.organizerType = "spontaneous";
+    form.associationName = "Action spontanée";
+    form.organizerName = "Aperçu local";
+    form.volunteersCount = "3";
+
+    const html = readableMarkup(renderToStaticMarkup(
+      React.createElement(ActionStepIdentity, {
+        form,
+        updateField: () => undefined,
+        updateFields: () => undefined,
+        userMetadata: { userId: "preview-local" },
+        recordType: "action",
+        hasAttemptedSubmit: false,
+      } as ComponentProps<typeof ActionStepIdentity>),
+    ));
+
+    expect(html).toContain('role="combobox"');
+    expect(html).not.toContain("Solo");
+    expect(html).not.toContain("Duo");
+    expect(html).not.toContain("Trio");
+    expect(html).not.toContain("Quintet");
+  });
 });

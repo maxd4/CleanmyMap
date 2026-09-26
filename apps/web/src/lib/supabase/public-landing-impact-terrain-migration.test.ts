@@ -33,4 +33,11 @@ describe("public landing Impact terrain aggregate migration", () => {
       "grant execute on function public.load_public_landing_action_summary(date) to service_role;",
     );
   });
+
+  it("derives spontaneous categories from volunteers without multiplying structure categories", () => {
+    expect(migration).toContain("when a.organizer_type = 'spontaneous' and a.volunteers = 3 then 'Trio'");
+    expect(migration).toContain("when a.organizer_type = 'company' then 'Entreprise'");
+    expect(migration).toContain("count(*)::bigint as action_count");
+    expect(migration).toContain("coalesce(sum(volunteers), 0::bigint) as participants_total");
+  });
 });
