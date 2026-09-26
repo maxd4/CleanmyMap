@@ -382,6 +382,28 @@ describe("POST /api/chat", () => {
     expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
   });
 
+  it("rejects video attachments explicitly before any message write", async () => {
+    const response = await (await import("./route")).POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          channelType: "community",
+          content: "Photo uniquement",
+          attachmentUrl: "https://cdn.example.test/clip.mp4",
+          attachmentType: "video/mp4",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(422);
+    const body = await response.json();
+    expect(body.details.attachmentType).toContain(
+      "Les vidéos ne sont pas prises en charge. Partagez plutôt une photo ou un lien vers la vidéo.",
+    );
+    expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+  });
+
   it.each([
     { attachmentUrl: "https://cdn.example.test/poll.pdf", attachmentType: "application/pdf" },
     { relatedEventId: "11111111-1111-4111-8111-111111111111" },

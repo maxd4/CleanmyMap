@@ -5,7 +5,7 @@ import { memo, useState } from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent, RefObject } from "react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
-import { CHAT_ATTACHMENT_ACCEPT, isSupportedChatAttachmentFile } from "@/lib/chat/chat-attachments";
+import { CHAT_ATTACHMENT_ACCEPT, getChatAttachmentUnsupportedMessage, isSupportedChatAttachmentFile } from "@/lib/chat/chat-attachments";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { ChatAvatar } from "./chat-avatar";
 import type { ChatUser } from "./chat-types";
@@ -127,8 +127,7 @@ export const ChatComposer = memo(function ChatComposer({
       onFileChange(null);
       notifyNetworkToast({
         title: "Format de fichier non pris en charge",
-        message:
-          "Ce type de fichier n'est pas autorisé ici. Utilise une image, un PDF ou un document courant.",
+        message: getChatAttachmentUnsupportedMessage(selectedFile),
       });
       e.target.value = "";
       return;
@@ -438,6 +437,7 @@ export const ChatComposer = memo(function ChatComposer({
               </button>
             ) : null}
             <ChatShareLinkAction
+              canAttach={canAttach}
               isLight={isLight}
               onClose={() => setIsToolsOpen(false)}
               onInsertLink={onInsertLink}

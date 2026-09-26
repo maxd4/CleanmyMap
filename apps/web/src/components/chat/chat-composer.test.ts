@@ -12,6 +12,10 @@ const shareLinkActionSource = readFileSync(
   new URL("./ui/chat-share-link-action.tsx", import.meta.url),
   "utf8",
 );
+const photoCaptureSource = readFileSync(
+  new URL("./ui/chat-photo-capture-action.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("ChatComposer progressive disclosure", () => {
   it("keeps the default composer focused on writing and sending", () => {
@@ -40,6 +44,17 @@ describe("ChatComposer progressive disclosure", () => {
     expect(source).not.toContain('role="menuitem"');
     expect(source).toContain('aria-expanded={isToolsOpen}');
     expect(source).toContain('aria-controls="chat-composer-options"');
+  });
+
+  it("offers native rear-camera capture with an image fallback", () => {
+    expect(photoCaptureSource).toContain('aria-label="Prendre une photo"');
+    expect(photoCaptureSource).toContain("CHAT_CAMERA_ACCEPT");
+    expect(photoCaptureSource).toContain('capture="environment"');
+    expect(photoCaptureSource).toContain("cameraInputRef.current?.click()");
+    expect(shareLinkActionSource).toContain("<ChatPhotoCaptureAction");
+    expect(shareLinkActionSource).toContain("CHAT_ATTACHMENT_ACCEPT");
+    expect(shareLinkActionSource).toContain("attachmentInput.dispatchEvent");
+    expect(source).toContain("canAttach={canAttach}");
   });
 
   it("opens the disclosure and closes it after selecting a composer mode", () => {
