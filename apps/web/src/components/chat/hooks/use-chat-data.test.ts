@@ -134,6 +134,35 @@ describe("chat topic feed keys", () => {
     ).toBe("/api/chat?channelType=admin_elu&topicId=suivi_decisions");
   });
 
+  it("encodes a presentation group as a persisted topic filter", () => {
+    expect(
+      buildMessagesKey({
+        activeChannelType: "community",
+        activeTopicId: "relais_associatif",
+        activeTopicIds: ["relais_associatif", "appel_aux_benevoles", "demande_diffusion"],
+        selectedRecipientId: null,
+        effectiveZone: "",
+        territoryFocus: null,
+      }),
+    ).toBe(
+      "/api/chat?channelType=community&topicIds=relais_associatif%2Cappel_aux_benevoles%2Cdemande_diffusion",
+    );
+  });
+
+  it("keeps a targeted legacy message in the grouped feed key", () => {
+    expect(
+      buildMessagesKey({
+        activeChannelType: "community",
+        activeTopicId: "appel_aux_benevoles",
+        activeTopicIds: ["relais_associatif", "appel_aux_benevoles", "demande_diffusion"],
+        selectedRecipientId: null,
+        effectiveZone: "",
+        territoryFocus: null,
+        initialMessageId: "11111111-1111-4111-8111-111111111111",
+      }),
+    ).toContain("messageId=11111111-1111-4111-8111-111111111111");
+  });
+
   it("carries a notification message target without changing the active scope", () => {
     expect(
       buildMessagesKey({

@@ -32,6 +32,8 @@ import {
   buildZoneContext,
   hasValidTerritoryContext,
   parseArrondissement,
+  applyChatTopicFilter,
+  resolveChatTopicRequest,
 } from "../route.shared";
 
 type CurrentProfileRow = {
@@ -147,10 +149,8 @@ export async function GET(request: Request) {
     );
   }
 
-  const topicId = requestedTopicId
-    ? parseChatTopicIdForChannel(channelType, requestedTopicId)
-    : null;
-  if (requestedTopicId && !topicId) {
+  const topicRequest = resolveChatTopicRequest(channelType, searchParams, requestedTopicId); const { topicId } = topicRequest;
+  if (topicRequest.error) {
     return NextResponse.json(
       { error: "Salon invalide", hint: "Ce salon n'est pas disponible dans ce canal." },
       { status: 400 },
@@ -169,122 +169,142 @@ export async function GET(request: Request) {
   }
 
   try {
-    const profile = await loadCurrentProfile(supabase, userId);
-    const profileZone = extractZoneContextFromMetadata(profile?.metadata ?? null);
-    const hasExplicitTerritoryContext =
-      requestedZoneName !== null || requestedArrondissement !== null;
-    const profileZoneContext = buildZoneContext(
-      profileZone.zoneName,
-      profile?.paris_arrondissement ?? profileZone.arrondissementId,
-    );
-    const requestedZoneContext = hasExplicitTerritoryContext
-      ? buildZoneContext(requestedZoneName, requestedArrondissement)
-      : null;
-    const zoneContext = requestedZoneContext ?? profileZoneContext;
-    const zoneName = zoneContext.zoneName;
-    const arrondissementId = zoneContext.arrondissementId;
-    const hasValidZone = hasValidTerritoryContext(zoneContext);
-    const hasGreaterParisZone = zoneName !== null;
-    const hasArrondissement =
-      arrondissementId !== null && arrondissementId >= 1 && arrondissementId <= 20;
+    const loadSearchAccessContext = async () => {
+      const profile = await loadCurrentProfile(supabase, userId);
+      const profileZone = extractZoneContextFromMetadata(profile?.metadata ?? null);
+      const hasExplicitTerritoryContext =
+        requestedZoneName !== null || requestedArrondissement !== null;
+      const profileZoneContext = buildZoneContext(
+        profileZone.zoneName,
+        profile?.paris_arrondissement ?? profileZone.arrondissementId,
+      );
+      const requestedZoneContext = hasExplicitTerritoryContext
+        ? buildZoneContext(requestedZoneName, requestedArrondissement)
+        : null;
+      const zoneContext = requestedZoneContext ?? profileZoneContext;
+      const zoneName = zoneContext.zoneName;
+      const arrondissementId = zoneContext.arrondissementId;
+      const hasValidZone = hasValidTerritoryContext(zoneContext);
+      const hasGreaterParisZone = zoneName !== null;
+      const hasArrondissement =
+        arrondissementId !== null && arrondissementId >= 1 && arrondissementId <= 20;
 
-    if (
-      !canAccessChatChannel(channelType, {
+      if (!canAccessChatChannel(channelType, {
         roleLabel: identity.activeRole,
         hasArrondissement,
         hasGreaterParisZone,
         zoneContext,
-      })
-    ) {
-      return NextResponse.json(
-        { error: "Canal inaccessible", hint: buildChannelAccessHint(channelType) },
-        { status: 403 },
-      );
-    }
-
-    if (channelType === "dm" && !recipientId) {
-      return NextResponse.json(
-        { error: "Destinataire requis", hint: "Choisissez une conversation privée à rechercher." },
-        { status: 400 },
-      );
-    }
-    if (channelType === "territory" && !hasValidZone) {
-      return NextResponse.json(
-        {
-          error: hasExplicitTerritoryContext ? "Zone invalide" : "Zone manquante",
-          hint: hasExplicitTerritoryContext
-            ? "Votre zone n'est pas reconnue. Choisissez un arrondissement parisien ou une commune de la région."
-            : "Choisissez un arrondissement parisien ou une commune de la région pour rechercher dans ce fil.",
-        },
-        { status: 400 },
-      );
-    }
+      })) {
+        return {
+          error: NextResponse.json(
+            { error: "Canal inaccessible", hint: buildChannelAccessHint(channelType) },
+            { status: 403 },
+          ),
+          zoneContext,
+          zoneName,
+        };
+      }
+      if (channelType === "dm" && !recipientId) {
+        return {
+          error: NextResponse.json(
+            { error: "Destinataire requis", hint: "Choisissez une conversation privée à rechercher." },
+            { status: 400 },
+          ),
+          zoneContext,
+          zoneName,
+        };
+      }
+      if (channelType === "territory" && !hasValidZone) {
+        return {
+          error: NextResponse.json(
+            {
+              error: hasExplicitTerritoryContext ? "Zone invalide" : "Zone manquante",
+              hint: hasExplicitTerritoryContext
+                ? "Votre zone n'est pas reconnue. Choisissez un arrondissement parisien ou une commune de la région."
+                : "Choisissez un arrondissement parisien ou une commune de la région pour rechercher dans ce fil.",
+            },
+            { status: 400 },
+          ),
+          zoneContext,
+          zoneName,
+        };
+      }
+      return { error: null, zoneContext, zoneName };
+    };
+    const accessContext = await loadSearchAccessContext();
+    if (accessContext.error) return accessContext.error;
+    const { zoneContext, zoneName } = accessContext;
 
     const pattern = `%${escapePostgrestLikePattern(query)}%`;
     const createSearchQuery = () =>
-      supabase
+      applyChatTopicFilter(supabase
         .from("app_messages")
         .select(searchSelect)
         .ilike("content", pattern)
         .order("created_at", { ascending: false })
-        .order("id", { ascending: false });
+        .order("id", { ascending: false }), topicRequest.topicIds);
     type SearchScopedQuery = ReturnType<typeof createSearchQuery>;
-    const scopeQueryFactories: Array<() => SearchScopedQuery> = [];
+    const buildScopeQueryFactories = (): Array<() => SearchScopedQuery> => {
+      const scopeQueryFactories: Array<() => SearchScopedQuery> = [];
 
-    if (channelType === "community") {
-      scopeQueryFactories.push(() => {
-        let scopedQuery = createSearchQuery().eq("channel_type", "community");
-        if (topicId) scopedQuery = scopedQuery.eq("topic_id", topicId);
-        return scopedQuery;
-      });
-    } else if (channelType === "dm") {
-      scopeQueryFactories.push(() =>
-        createSearchQuery()
-          .eq("channel_type", "dm")
-          .in("sender_id", [userId, recipientId])
-          .in("recipient_id", [userId, recipientId]),
-      );
-    } else if (channelType === "admin_elu") {
-      scopeQueryFactories.push(() => {
-        let scopedQuery = createSearchQuery().eq("channel_type", "admin_elu");
-        if (topicId) scopedQuery = scopedQuery.eq("topic_id", topicId);
-        return scopedQuery;
-      });
-    } else if (channelType === "territory") {
-      const territory = getTerritoryFilter(zoneContext);
-      if (zoneName) {
+      if (channelType === "community") {
         scopeQueryFactories.push(() => {
-          let scopedQuery = createSearchQuery()
-            .eq("channel_type", "territory")
-            .eq("zone_name", zoneName);
+          let scopedQuery = createSearchQuery().eq("channel_type", "community");
           if (topicId) scopedQuery = scopedQuery.eq("topic_id", topicId);
           return scopedQuery;
         });
-      }
-      if (territory.zoneNames?.length) {
+      } else if (channelType === "dm") {
+        scopeQueryFactories.push(() =>
+          createSearchQuery()
+            .eq("channel_type", "dm")
+            .in("sender_id", [userId, recipientId])
+            .in("recipient_id", [userId, recipientId]),
+        );
+      } else if (channelType === "admin_elu") {
         scopeQueryFactories.push(() => {
-          let scopedQuery = createSearchQuery()
-            .eq("channel_type", "territory")
-            .in("zone_name", territory.zoneNames ?? []);
+          let scopedQuery = createSearchQuery().eq("channel_type", "admin_elu");
           if (topicId) scopedQuery = scopedQuery.eq("topic_id", topicId);
           return scopedQuery;
         });
+      } else if (channelType === "territory") {
+        const territory = getTerritoryFilter(zoneContext);
+        if (zoneName) {
+          scopeQueryFactories.push(() => {
+            let scopedQuery = createSearchQuery()
+              .eq("channel_type", "territory")
+              .eq("zone_name", zoneName);
+            if (topicId) scopedQuery = scopedQuery.eq("topic_id", topicId);
+            return scopedQuery;
+          });
+        }
+        if (territory.zoneNames?.length) {
+          scopeQueryFactories.push(() => {
+            let scopedQuery = createSearchQuery()
+              .eq("channel_type", "territory")
+              .in("zone_name", territory.zoneNames ?? []);
+            if (topicId) scopedQuery = scopedQuery.eq("topic_id", topicId);
+            return scopedQuery;
+          });
+        }
+        if (territory.arrondissementIds?.length) {
+          scopeQueryFactories.push(() => {
+            let scopedQuery = createSearchQuery()
+              .eq("channel_type", "territory")
+              .in("arrondissement_id", territory.arrondissementIds ?? []);
+            if (topicId) scopedQuery = scopedQuery.eq("topic_id", topicId);
+            return scopedQuery;
+          });
+        }
+      } else if (channelType === "bug_report") {
+        scopeQueryFactories.push(
+          () => createSearchQuery().eq("channel_type", "bug_report").eq("sender_id", userId),
+          () => createSearchQuery().eq("channel_type", "bug_report").eq("recipient_id", userId),
+        );
       }
-      if (territory.arrondissementIds?.length) {
-        scopeQueryFactories.push(() => {
-          let scopedQuery = createSearchQuery()
-            .eq("channel_type", "territory")
-            .in("arrondissement_id", territory.arrondissementIds ?? []);
-          if (topicId) scopedQuery = scopedQuery.eq("topic_id", topicId);
-          return scopedQuery;
-        });
-      }
-    } else if (channelType === "bug_report") {
-      scopeQueryFactories.push(
-        () => createSearchQuery().eq("channel_type", "bug_report").eq("sender_id", userId),
-        () => createSearchQuery().eq("channel_type", "bug_report").eq("recipient_id", userId),
-      );
-    }
+
+      return scopeQueryFactories;
+    };
+    const scopeQueryFactories = buildScopeQueryFactories();
 
     if (scopeQueryFactories.length === 0) {
       return NextResponse.json({ results: [], nextCursor: null, hasMore: false, query });

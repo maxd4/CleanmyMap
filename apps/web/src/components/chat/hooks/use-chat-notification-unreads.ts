@@ -16,6 +16,7 @@ export type ChatNotificationReadScope =
   | {
       channelType: "community" | "territory" | "admin_elu";
       topicId: ChatTopicId | null;
+      topicIds?: readonly ChatTopicId[] | null;
     }
   | {
       channelType: "dm";
@@ -76,21 +77,32 @@ export function useChatNotificationUnreads({
         return 0;
       }
 
-      const { data: updatedCount, error: updateError } = await supabase.rpc(
-        "mark_my_chat_notifications_read",
-        {
-          p_channel_type: scope.channelType,
-          p_topic_id: scope.channelType === "dm" || scope.channelType === "action" ? null : scope.topicId,
-          p_dm_peer_id: scope.channelType === "dm" ? scope.peerId : null,
-          p_action_id: scope.channelType === "action" ? scope.actionId : null,
-        },
+      const topicIds =
+        scope.channelType === "community" ||
+        scope.channelType === "territory" ||
+        scope.channelType === "admin_elu"
+          ? scope.topicIds?.length
+            ? [...new Set(scope.topicIds)]
+            : [scope.topicId]
+          : [null];
+      const updatedCounts = await Promise.all(
+        topicIds.map(async (topicId) => {
+          const { data: updatedCount, error: updateError } = await supabase.rpc(
+            "mark_my_chat_notifications_read",
+            {
+              p_channel_type: scope.channelType,
+              p_topic_id: scope.channelType === "dm" || scope.channelType === "action" ? null : topicId,
+              p_dm_peer_id: scope.channelType === "dm" ? scope.peerId : null,
+              p_action_id: scope.channelType === "action" ? scope.actionId : null,
+            },
+          );
+          if (updateError) throw updateError;
+          return Number(updatedCount ?? 0) || 0;
+        }),
       );
-      if (updateError) {
-        throw updateError;
-      }
 
       await mutate();
-      return Number(updatedCount ?? 0) || 0;
+      return updatedCounts.reduce((total, count) => total + count, 0);
     },
     [mutate, supabase],
   );

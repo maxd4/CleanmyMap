@@ -8,10 +8,7 @@ import {
   getChatChannelDefinition,
   type ChatChannelType,
 } from "@/lib/chat/channels";
-import {
-  getDiscussionTopic,
-  getDiscussionTopics,
-} from "./discussion-guidance";
+import { getChatTopicPresentationGroup, getChatTopicPresentationGroups } from "@/lib/chat/topic-presentation";
 import { TopicNetworkGraph } from "./topic-network-graph";
 import { ChatComposer } from "./chat-composer";
 import { ChatHeader } from "./chat-header";
@@ -455,12 +452,9 @@ export function ChatShell({
     () => actionDiscussions.items.find((item) => item.id === selectedActionId) ?? null,
     [actionDiscussions.items, selectedActionId],
   );
-  const activeTopic = useMemo(
-    () => getDiscussionTopic(activeChannelType, activeTopicId),
-    [activeChannelType, activeTopicId],
-  );
+  const activeTopic = getChatTopicPresentationGroup(activeChannelType, activeTopicId);
   const channelTopics = useMemo(
-    () => getDiscussionTopics(activeChannelType),
+    () => getChatTopicPresentationGroups(activeChannelType),
     [activeChannelType],
   );
   const discussionGuidance = useMemo(

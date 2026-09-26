@@ -11,6 +11,7 @@ import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicId } from "@/lib/chat/topics";
 import type { ChatSearchResult } from "@/lib/chat/chat-search";
 import type { ChatUser } from "../chat-types";
+import { getChatTopicIdsForPresentationScope } from "@/lib/chat/topic-presentation";
 
 type UseChatShellSearchParams = {
   initialChannelType: ChatChannelType;
@@ -40,7 +41,8 @@ export function useChatShellSearch({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const navigationScopeKey = `${activeChannelType}:${activeTopicId ?? "global"}:${selectedRecipientId ?? "none"}:${initialMessageId ?? "none"}`;
+  const activeTopicIds = getChatTopicIdsForPresentationScope(activeChannelType, activeTopicId);
+  const navigationScopeKey = `${activeChannelType}:${activeTopicIds?.join(",") ?? "global"}:${selectedRecipientId ?? "none"}:${initialMessageId ?? "none"}`;
   const searchTargetMessageId =
     searchTarget?.scopeKey === navigationScopeKey ? searchTarget.messageId : null;
 
@@ -65,12 +67,12 @@ export function useChatShellSearch({
   const handleSelectSearchResult = useCallback((result: ChatSearchResult) => {
     setSearchTarget({
       messageId: result.messageId,
-      scopeKey: `${activeChannelType}:${activeTopicId ?? "global"}:${selectedRecipientId ?? "none"}:${initialMessageId ?? "none"}`,
+      scopeKey: `${activeChannelType}:${activeTopicIds?.join(",") ?? "global"}:${selectedRecipientId ?? "none"}:${initialMessageId ?? "none"}`,
     });
     setIsSearchOpen(false);
     setSearchQuery("");
     setViewMode("messages");
-  }, [activeChannelType, activeTopicId, initialMessageId, selectedRecipientId, setViewMode]);
+  }, [activeChannelType, activeTopicIds, initialMessageId, selectedRecipientId, setViewMode]);
 
   const resetSearch = useCallback(() => {
     setSearchTarget(null);

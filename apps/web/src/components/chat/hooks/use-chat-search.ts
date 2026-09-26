@@ -14,10 +14,12 @@ import {
 } from "@/lib/chat/chat-search";
 import type { ChatHistoryCursor } from "@/lib/chat/chat-pagination";
 import { useChatSurfaceActivity } from "../chat-surface-activity-context";
+import { getChatTopicIdsForPresentationScope } from "@/lib/chat/topic-presentation";
 
 type ChatSearchParams = {
   activeChannelType: ChatChannelType;
   activeTopicId: ChatTopicId | null;
+  activeTopicIds?: readonly ChatTopicId[] | null;
   selectedRecipientId: string | null;
   effectiveZone: string;
   territoryFocus: number | null;
@@ -53,6 +55,7 @@ async function fetchSearchResults(
 export function buildChatSearchKey({
   activeChannelType,
   activeTopicId,
+  activeTopicIds,
   selectedRecipientId,
   effectiveZone,
   territoryFocus,
@@ -74,7 +77,12 @@ export function buildChatSearchKey({
     channelType: activeChannelType,
     q: normalizedQuery,
   });
-  if (activeTopicId) params.set("topicId", activeTopicId);
+  if (activeTopicIds?.length) {
+    if (activeTopicIds.length === 1) params.set("topicId", activeTopicIds[0]);
+    else params.set("topicIds", activeTopicIds.join(","));
+  } else if (activeTopicId) {
+    params.set("topicId", activeTopicId);
+  }
   if (selectedRecipientId && activeChannelType === "dm") {
     params.set("recipientId", selectedRecipientId);
   }
@@ -130,6 +138,12 @@ export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) 
         : buildChatSearchKey({
             activeChannelType: params.activeChannelType,
             activeTopicId: params.activeTopicId,
+            activeTopicIds:
+              params.activeTopicIds ??
+              getChatTopicIdsForPresentationScope(
+                params.activeChannelType,
+                params.activeTopicId,
+              ),
             selectedRecipientId: params.selectedRecipientId,
             effectiveZone: params.effectiveZone,
             territoryFocus: params.territoryFocus,
@@ -139,6 +153,7 @@ export function useChatSearch(params: ChatSearchParams & { enabled?: boolean }) 
       debouncedQuery,
       params.activeChannelType,
       params.activeTopicId,
+      params.activeTopicIds,
       params.effectiveZone,
       params.enabled,
       params.selectedRecipientId,

@@ -123,6 +123,35 @@ describe("GET /api/chat", () => {
     expect(supabaseMock.messagesQuery.eq).toHaveBeenCalledWith("conversation_id", conversationId);
   }, 15000);
 
+  it("loads all persisted topics in a presentation group", async () => {
+    const supabaseMock = buildSupabaseMock({
+      profile: {
+        id: "user-1", display_name: "Alex", handle: "alex", paris_arrondissement: null,
+        role_label: "member", metadata: null,
+      },
+      messages: [
+        { id: "relay", created_at: "2026-05-01T09:00:00.000Z", content: "Relais", channel_type: "community", topic_id: "relais_associatif", sender_id: "user-2", recipient_id: null, arrondissement_id: null, zone_name: null },
+        { id: "volunteers", created_at: "2026-05-01T10:00:00.000Z", content: "Bénévoles", channel_type: "community", topic_id: "appel_aux_benevoles", sender_id: "user-2", recipient_id: null, arrondissement_id: null, zone_name: null },
+        { id: "resources", created_at: "2026-05-01T11:00:00.000Z", content: "Ressource", channel_type: "community", topic_id: "besoin_ressources", sender_id: "user-2", recipient_id: null, arrondissement_id: null, zone_name: null },
+      ],
+      insertedMessage: { id: "relay", created_at: "2026-05-01T09:00:00.000Z", content: "Relais", channel_type: "community", topic_id: "relais_associatif", sender_id: "user-2", recipient_id: null, arrondissement_id: null, zone_name: null },
+    });
+    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/chat?channelType=community&topicIds=relais_associatif,appel_aux_benevoles"),
+    );
+    const body = (await response.json()) as { messages: ChatMessageRow[] };
+
+    expect(response.status).toBe(200);
+    expect(body.messages.map((message) => message.id)).toEqual(["relay", "volunteers"]);
+    expect(supabaseMock.messagesQuery.in).toHaveBeenCalledWith(
+      "topic_id",
+      ["relais_associatif", "appel_aux_benevoles"],
+    );
+  }, 15000);
+
   it("resolves an old message in one targeted page and continues with a stable cursor", async () => {
     const messageId = (index: number) =>
       `00000000-0000-4000-8000-${index.toString(16).padStart(12, "0")}`;

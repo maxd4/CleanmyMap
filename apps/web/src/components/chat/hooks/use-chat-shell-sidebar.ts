@@ -7,9 +7,12 @@ import {
   CHAT_CHANNEL_ORDER,
   type ChatChannelType,
 } from "@/lib/chat/channels";
-import type { ChatNotificationUnreadCounts } from "@/lib/chat/chat-notification-unreads";
+import {
+  sumChatTopicUnreadCounts,
+  type ChatNotificationUnreadCounts,
+} from "@/lib/chat/chat-notification-unreads";
 import type { ChatTopicId } from "@/lib/chat/topics";
-import type { ChatTopicDefinition } from "../discussion-guidance";
+import type { ChatTopicPresentationGroup } from "@/lib/chat/topic-presentation";
 import { CHANNEL_VISUALS, getChannelTitle } from "../chat-shell.utils";
 
 type UseChatShellSidebarParams = {
@@ -22,7 +25,7 @@ type UseChatShellSidebarParams = {
   messagesCount: number;
   messagerieMode: boolean;
   chatNotificationUnreadCounts: ChatNotificationUnreadCounts;
-  channelTopics: ChatTopicDefinition[];
+  channelTopics: ChatTopicPresentationGroup[];
   activeTopicId: ChatTopicId | null;
   locale: string;
   resetComposerForChannelChange: () => void;
@@ -147,14 +150,14 @@ export function useChatShellSidebar({
           locale === "en"
             ? topic.starterPromptEn ?? topic.starterPrompt
             : topic.starterPrompt,
-        active: topic.id === activeTopicId,
+        active: topic.topicIds.includes(activeTopicId as ChatTopicId),
         unreadCount:
           activeChannelType === "community"
-            ? chatNotificationUnreadCounts.communityByTopic[topic.id]
+            ? sumChatTopicUnreadCounts(chatNotificationUnreadCounts.communityByTopic, topic.topicIds)
             : activeChannelType === "territory"
-              ? chatNotificationUnreadCounts.territoryByTopic[topic.id]
+              ? sumChatTopicUnreadCounts(chatNotificationUnreadCounts.territoryByTopic, topic.topicIds)
               : activeChannelType === "admin_elu"
-                ? chatNotificationUnreadCounts.adminEluByTopic[topic.id]
+                ? sumChatTopicUnreadCounts(chatNotificationUnreadCounts.adminEluByTopic, topic.topicIds)
                 : undefined,
       })),
     [activeChannelType, activeTopicId, channelTopics, chatNotificationUnreadCounts, locale],

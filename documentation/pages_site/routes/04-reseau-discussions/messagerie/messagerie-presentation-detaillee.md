@@ -9,7 +9,7 @@ La page `Messagerie` sert aux échanges publics thématiques et directs entre me
 - une liste de conversations ou de fils
 - des messages à lire et à répondre
 - une navigation primaire entre `Discussions` et `Messages privés`
-- une vue publique agrégée ou un salon thématique explicitement sélectionné
+- une vue publique agrégée ou un groupe de présentation qui relit les `topic_id` persistés correspondants
 - une recherche débouncée dans l’historique du scope ouvert, avec résultats paginés et ancrage sur le message ciblé
 - une composition `Message` ou `Annonce / Relai` ; les trois modèles de relais préparent un brouillon éditable et sélectionnent leur topic canonique
 - une composition `Sondage` dans `community` ou `admin_elu`, avec une question et 2 à 6 options éditables ; la publication conserve le topic courant et réinitialise uniquement le formulaire
@@ -26,6 +26,8 @@ La page `Messagerie` sert aux échanges publics thématiques et directs entre me
 - une séparation explicite entre l’inbox DM et la navigation publique
 - des états `loading`, `empty` et `access refused` propres
 - une navigation sans surcharge entre conversations et contenu
+- conserver les anciens `topicId` dans les URLs : ils sont résolus vers leur groupe d’affichage sans supprimer le ciblage d’un `messageId`
+- ne jamais traiter les groupes d’affichage comme une nouvelle granularité métier ou de persistance
 
 ## Points d'attention
 
@@ -34,7 +36,7 @@ La page `Messagerie` sert aux échanges publics thématiques et directs entre me
 - éviter une densité de cartes trop élevée
 - ne pas mélanger la messagerie avec les retours `Feedback`
 - ne pas afficher une sidebar DM dans l’onglet `Discussions`
-- laisser `Communauté globale` et `Territoire global` afficher les messages non classés ; un salon sélectionné ne montre que son `topic_id`
+- laisser `Communauté globale` et `Territoire global` afficher les messages non classés ; un groupe sélectionné filtre sur les `topic_id` persistés qui le composent, tandis que le fil territorial reste zone-driven et conserve les messages legacy/non classés
 - afficher sobrement le topic porté par un message dans une vue agrégée
 - conserver les annonces dans `app_messages` avec leur `message_kind` et ne publier un contexte événementiel qu'après résolution d'un `community_events.id` canonique
 - préserver les deep-links de relais `template`, `topicId` et `eventId` sans faire de l’URL une source de vérité pour le titre, la date ou le lieu
