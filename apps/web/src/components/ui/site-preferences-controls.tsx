@@ -20,26 +20,34 @@ const SURFACE_STYLES = {
   dark: {
     copy: "text-white",
     secondaryCopy: "text-slate-300",
+    icon: "text-slate-300",
+    input: "accent-emerald-400",
     select: "border-white/15 bg-slate-900/70 text-white",
     divider: "border-t border-white/12",
     activeOption: "border-emerald-400 bg-emerald-400/10",
     inactiveOption: "border-white/16 bg-white/[0.04] hover:border-white/30 hover:bg-white/[0.08]",
+    activeIndicator: "text-emerald-300",
+    focusRing: "focus-visible:ring-emerald-300",
     link: "text-emerald-200 hover:text-white",
   },
   light: {
     copy: "text-slate-900",
     secondaryCopy: "text-slate-600",
+    icon: "text-slate-500",
+    input: "accent-sky-500",
     select: "border-slate-200 bg-white text-slate-900",
     divider: "border-t border-slate-200",
-    activeOption: "border-emerald-500 bg-emerald-50",
+    activeOption: "border-sky-500 bg-sky-50",
     inactiveOption: "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
-    link: "text-emerald-700 hover:text-emerald-900",
+    activeIndicator: "text-sky-700",
+    focusRing: "focus-visible:ring-sky-300",
+    link: "text-sky-700 hover:text-sky-900",
   },
 } as const;
 
 const PREFERENCE_COPY = {
   fr: {
-    switchTo: "Passer en anglais",
+    switchTo: "Passer à l'anglais",
     shortLocale: "FR",
     chooseLocale: "Choisir la langue",
     locale: "Langue",
@@ -79,7 +87,7 @@ export function SitePreferencesControls({
         className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] px-4 py-2 cmm-text-caption font-bold uppercase tracking-[0.18em] cmm-text-primary shadow-sm shadow-cyan-950/10 backdrop-blur-xl transition hover:border-cyan-300/40 hover:bg-[color:var(--bg-muted)]"
         aria-label={copy.switchTo}
       >
-        <Languages size={14} className="cmm-text-secondary" />
+        <Languages size={14} className="cmm-text-secondary" aria-hidden="true" />
         <span>{copy.shortLocale}</span>
       </button>
     );
@@ -100,7 +108,8 @@ export function SitePreferencesControls({
         <div className="relative">
           <Languages
             className={cn(
-              "pointer-events-none absolute top-1/2 -translate-y-1/2 text-slate-300",
+              "pointer-events-none absolute top-1/2 -translate-y-1/2",
+              styles.icon,
               isCompact ? "left-2.5 h-3.5 w-3.5" : "left-3 h-4 w-4",
             )}
             aria-hidden="true"
@@ -121,7 +130,8 @@ export function SitePreferencesControls({
           </CmmSelect>
           <ChevronDown
             className={cn(
-              "pointer-events-none absolute top-1/2 -translate-y-1/2 text-slate-300",
+              "pointer-events-none absolute top-1/2 -translate-y-1/2",
+              styles.icon,
               isCompact ? "right-2.5 h-3.5 w-3.5" : "h-4 w-4",
               !isCompact && "right-3",
             )}
@@ -154,7 +164,7 @@ export function SitePreferencesControls({
                   value={mode}
                   checked={isActive}
                   onChange={() => setDisplayMode(mode)}
-                  className={cn("h-4 w-4 shrink-0 accent-emerald-400", isCompact ? "mt-0.5" : "mt-1")}
+                  className={cn("h-4 w-4 shrink-0", styles.input, isCompact ? "mt-0.5" : "mt-1")}
                 />
                 <span className="min-w-0">
                   <span className={cn("block text-sm font-bold", styles.copy)}>
@@ -165,7 +175,7 @@ export function SitePreferencesControls({
                   </span>
                 </span>
                 {isActive ? (
-                  <CheckCircle2 className="ml-auto mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
+                  <CheckCircle2 className={cn("ml-auto mt-0.5 h-4 w-4 shrink-0", styles.activeIndicator)} aria-hidden="true" />
                 ) : null}
               </label>
             );
@@ -177,7 +187,8 @@ export function SitePreferencesControls({
         href="/methodologie#modes-affichage"
         aria-label={copy.learnMore}
         className={cn(
-          "inline-flex items-center text-xs font-semibold underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300",
+          "inline-flex items-center text-xs font-semibold underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2",
+          styles.focusRing,
           styles.link,
           isCompact ? "gap-1.5" : "gap-2",
         )}

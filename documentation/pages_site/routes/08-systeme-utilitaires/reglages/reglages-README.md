@@ -14,8 +14,9 @@
 - **Palette attendue** : sky / slate
 - **Scope** : surface secondaire protégée avec contrôles `SitePreferencesControls` pour la langue et le mode d'affichage, choix du nom affiché, localisation, confidentialité et demande de suppression ; absence de session redirigée vers `/sign-in`.
 - **Terminée** : oui pour le périmètre actuellement livré
-- **Couleurs actuellement détectées** : sky / slate — fond clair sky et cartes de réglages neutres ; la variante complète de `AccountSettingsSection` suit cette palette.
+- **Couleurs actuellement détectées** : sky / slate — fond clair sky et cartes de réglages neutres ; `AccountSettingsSection` et la variante light de `SitePreferencesControls` suivent cette palette.
 - **Exception de couleur documentée** : la variante compacte de `AccountSettingsSection`, réutilisée dans les cartes dashboard/profil, conserve une ambiance ambre pour rester cohérente avec ces surfaces parentes ; elle n'est pas rendue sur `/reglages`.
+- **Exception sémantique documentée** : la suppression de compte conserve rose/rouge pour signaler une action destructive ; cette couleur ne constitue pas une seconde palette de page.
 - **Incohérences de couleurs** : Aucune incohérence sur la surface `/reglages`.
 - **Risque de conflit avec les couleurs existantes** : moyen : garder une mood layer autonome et éviter tout retour aux couleurs de bloc principales.
 - **Niveau de surcharge textuelle** : moyen
@@ -43,6 +44,7 @@
 - La route n'est pas ajoutée au ruban principal.
 - Le profil actif et le dashboard proposent un CTA secondaire `Ouvrir les réglages`.
 - La localisation continue d'utiliser le workflow canonique `/onboarding/localisation`.
+- Les libellés visibles et les textes d'assistance des contrôles sont disponibles en français et en anglais ; leurs aria-labels suivent la langue active.
 - Les notifications ne sont pas présentées ici comme un réglage : leur lecture et
   leur gestion restent portées par `/dashboard#notifications`.
 

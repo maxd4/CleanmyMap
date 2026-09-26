@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { DisplayNameMode } from "@/lib/profiles";
+import type { Locale } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
 
 type DisplayNameModeSettingProps = {
@@ -12,22 +13,47 @@ type DisplayNameModeSettingProps = {
   locale: "fr" | "en";
 };
 
-const MODE_COPY: Record<
-  DisplayNameMode,
-  {
-    label: string;
-    description: string;
-  }
-> = {
-  full_name: {
-    label: "Nom et prénom",
-    description: "Affiche votre identité complète quand elle est disponible.",
+const MODE_COPY: Record<Locale, Record<DisplayNameMode, { label: string; description: string }>> = {
+  fr: {
+    full_name: {
+      label: "Nom et prénom",
+      description: "Affiche votre identité complète quand elle est disponible.",
+    },
+    pseudo: {
+      label: "Pseudo",
+      description: "Affiche votre handle / nom court à la place.",
+    },
   },
-  pseudo: {
-    label: "Pseudo",
-    description: "Affiche votre handle / nom court à la place.",
+  en: {
+    full_name: {
+      label: "Full name",
+      description: "Shows your full identity when available.",
+    },
+    pseudo: {
+      label: "Username",
+      description: "Shows your handle or short name instead.",
+    },
   },
 };
+
+const DISPLAY_NAME_COPY = {
+  fr: {
+    title: "Nom affiché du compte",
+    description: "Choisissez comment votre compte apparaît dans l'interface.",
+    preview: "Aperçu actuel",
+    identifier: "Identifiant backend unique",
+    saved: (displayName: string) => `Affichage enregistré : ${displayName}`,
+    error: "Impossible de mettre à jour l'affichage du compte.",
+  },
+  en: {
+    title: "Account display name",
+    description: "Choose how your account appears in the interface.",
+    preview: "Current preview",
+    identifier: "Unique backend identifier",
+    saved: (displayName: string) => `Display saved: ${displayName}`,
+    error: "Unable to update the account display.",
+  },
+} as const;
 
 export function DisplayNameModeSetting({
   currentMode,
@@ -39,6 +65,8 @@ export function DisplayNameModeSetting({
   const [mode, setMode] = useState<DisplayNameMode>(currentMode);
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const copy = DISPLAY_NAME_COPY[locale];
+  const modeCopy = MODE_COPY[locale];
 
   const saveMode = (nextMode: DisplayNameMode) => {
     if (nextMode === mode || isPending) {
@@ -61,23 +89,17 @@ export function DisplayNameModeSetting({
             | null;
 
           if (!response.ok) {
-            throw new Error(payload?.error || "Impossible de mettre à jour l'affichage du compte.");
+            throw new Error(payload?.error || copy.error);
           }
 
           setMode(nextMode);
-          setMessage(
-            locale === "fr"
-              ? `Affichage enregistré: ${payload?.displayName || displayName}`
-              : `Display saved: ${payload?.displayName || displayName}`,
-          );
+          setMessage(copy.saved(payload?.displayName || displayName));
           router.refresh();
         } catch (error) {
           setMessage(
             error instanceof Error
               ? error.message
-              : locale === "fr"
-                ? "Impossible de mettre à jour l'affichage du compte."
-                : "Unable to update the account display.",
+              : copy.error,
           );
         }
       })();
@@ -88,23 +110,22 @@ export function DisplayNameModeSetting({
     <div className="space-y-4 rounded-xl border border-sky-100 bg-sky-50/70 p-4">
       <div className="space-y-1">
         <p className="text-sm font-semibold text-slate-900">
-          {locale === "fr" ? "Nom affiché du compte" : "Account display name"}
+          {copy.title}
         </p>
         <p className="text-sm text-slate-600">
-          {locale === "fr"
-            ? "Choisissez comment votre compte apparaît dans l'interface."
-            : "Choose how your account appears in the interface."}
+          {copy.description}
         </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {(Object.keys(MODE_COPY) as DisplayNameMode[]).map((option) => {
+        {(Object.keys(modeCopy) as DisplayNameMode[]).map((option) => {
           const active = mode === option;
           return (
             <button
               key={option}
               type="button"
               disabled={isPending}
+              aria-pressed={active}
               onClick={() => saveMode(option)}
                 className={cn(
                 "rounded-2xl border p-4 text-left transition-all",
@@ -114,8 +135,8 @@ export function DisplayNameModeSetting({
                 isPending && "opacity-70",
               )}
             >
-              <p className="text-sm font-bold text-slate-900">{MODE_COPY[option].label}</p>
-              <p className="mt-1 text-sm text-slate-600">{MODE_COPY[option].description}</p>
+              <p className="text-sm font-bold text-slate-900">{modeCopy[option].label}</p>
+              <p className="mt-1 text-sm text-slate-600">{modeCopy[option].description}</p>
             </button>
           );
         })}
@@ -123,13 +144,11 @@ export function DisplayNameModeSetting({
 
       <div className="rounded-xl border border-slate-200 bg-white/85 p-4">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
-          {locale === "fr" ? "Aperçu actuel" : "Current preview"}
+          {copy.preview}
         </p>
         <p className="mt-2 text-base font-semibold text-slate-900">{displayName}</p>
         <p className="mt-1 text-sm text-slate-600">
-          {locale === "fr"
-            ? `Identifiant backend unique: ${userId}`
-            : `Unique backend identifier: ${userId}`}
+          {copy.identifier}: {userId}
         </p>
       </div>
 

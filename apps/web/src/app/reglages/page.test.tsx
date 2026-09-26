@@ -19,9 +19,17 @@ describe("/reglages canonical settings contract", () => {
 
   it("keeps the metadata limited to settings actually managed on the page", () => {
     expect(pageSource).toContain(
-      'description: "Configurez vos préférences CleanMyMap : affichage, localisation et paramètres de compte.",',
+      'metadataDescription:\n      "Configurez vos préférences CleanMyMap : affichage, localisation et paramètres de compte.",',
     );
-    expect(pageSource).not.toContain("notifications");
+    expect(pageSource).toContain(
+      '"Configure your CleanMyMap preferences: display, location and account settings."',
+    );
+    expect(pageSource).not.toMatch(/notifications/i);
+  });
+
+  it("keeps the settings surface on the documented sky/slate palette", () => {
+    expect(pageSource).toContain("bg-slate-50/70");
+    expect(pageSource).not.toContain("bg-amber-50/70");
   });
 
   it("keeps localisation on the existing onboarding workflow", () => {

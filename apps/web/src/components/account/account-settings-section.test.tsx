@@ -33,8 +33,12 @@ describe("account settings surface contract", () => {
 
     expect(frMarkup).toContain("Paramètres du compte");
     expect(frMarkup).toContain("Confidentialité");
+    expect(frMarkup).toContain("Demander la suppression de mon compte");
+    expect(frMarkup).not.toContain("Account settings");
     expect(enMarkup).toContain("Account settings");
     expect(enMarkup).toContain("Privacy policy");
+    expect(enMarkup).toContain("Request account deletion");
     expect(enMarkup).not.toContain("Confidentialité");
+    expect(enMarkup).not.toContain("Paramètres du compte");
   });
 });
