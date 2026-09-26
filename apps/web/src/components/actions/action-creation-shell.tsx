@@ -14,7 +14,7 @@ import { EffectiveAuthStateProvider } from "@/lib/auth/use-effective-auth-state"
 import { INACTIVE_LOCAL_DEV_AUTH, type LocalDevAuthState } from "@/lib/auth/effective-auth-contract";
 import { cn } from "@/lib/utils";
 import { buildActionCreationTabHref, buildActionWorkflowStepHref, type ActionCreationPanelId, type ActionCreationTab } from "@/lib/actions/action-creation-routes";
-import { ACTION_WORKFLOW_STEPS, ACTION_WORKFLOW_STEP_LABELS, ACTION_WORKFLOW_STATUS_LABELS, createActionWorkflowState, invalidateActionWorkflow, loadActionWorkflowState, markActionWorkflowStep, saveActionWorkflowState, type ActionWorkflowState, type ActionWorkflowStepId } from "@/lib/actions/action-workflow";
+import { ACTION_WORKFLOW_STEPS, ACTION_WORKFLOW_STEP_LABELS, ACTION_WORKFLOW_STATUS_LABELS, createActionWorkflowState, invalidateActionWorkflow, loadActionWorkflowState, markActionWorkflowStep, saveActionWorkflowState, setActionWorkflowStepStatus, type ActionWorkflowState, type ActionWorkflowStepId } from "@/lib/actions/action-workflow";
 import { updateAction } from "@/lib/actions/http";
 import type { FormState } from "./action-declaration/form/model";
 import { JoinActionTabs } from "@/components/sections/rubriques/rejoindre-une-action.tabs";
@@ -179,7 +179,7 @@ export function ActionCreationShell({ initialPanel, initialTab = "before", tabSe
     setCurrentActionId(actionId);
     setWorkflow((current) => ({ ...current, actionId, activeStep: "preformulaire", statuses: { ...current.statuses, preformulaire: "done" } }));
   }, []);
-  const handlePreparationValidated = useCallback((validated: boolean) => { setPreparationValidated(validated); if (validated) setWorkflow((current) => markActionWorkflowStep(current, "preparation")); }, []);
+  const handlePreparationValidated = useCallback((validated: boolean) => { setPreparationValidated(validated); if (validated) setWorkflow((current) => setActionWorkflowStepStatus(current, "preparation", "done")); }, []);
   const handleFormalitiesReadiness = useCallback((readiness: { known: boolean; blocked: boolean }) => {
     setFormalitiesReadiness(!readiness.known ? "unknown" : readiness.blocked ? "blocked" : "ready");
     if (readiness.known) setWorkflow((current) => ({ ...current, statuses: { ...current.statuses, paris: readiness.blocked ? "review" : "done" } }));

@@ -3,6 +3,7 @@ import {
   createActionWorkflowState,
   invalidateActionWorkflow,
   markActionWorkflowStep,
+  setActionWorkflowStepStatus,
 } from "./action-workflow";
 
 describe("action workflow contract", () => {
@@ -20,6 +21,19 @@ describe("action workflow contract", () => {
 
     expect(next.activeStep).toBe("preformulaire");
     expect(next.statuses.preformulaire).toBe("done");
+  });
+
+  it("completes preparation without navigating, then advances only on the explicit next action", () => {
+    const state = createActionWorkflowState("action-1", "preparation");
+    const validated = setActionWorkflowStepStatus(state, "preparation", "done");
+
+    expect(validated.statuses.preparation).toBe("done");
+    expect(validated.activeStep).toBe("preparation");
+
+    const next = markActionWorkflowStep(validated, "preparation");
+    expect(next.statuses.preparation).toBe("done");
+    expect(next.activeStep).toBe("preformulaire");
+    expect(next.statuses.preformulaire).toBe("in_progress");
   });
 
   it("invalidates only dependent steps", () => {
