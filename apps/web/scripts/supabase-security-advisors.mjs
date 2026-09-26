@@ -20,7 +20,7 @@ const RLS_ADVISOR_NAMES = new Set([
   "policy_exists_rls_disabled",
 ]);
 
-const ALLOWED_SERVER_ONLY_RLS_INFO_TABLES = new Set([
+export const ALLOWED_SERVER_ONLY_RLS_INFO_TABLES = Object.freeze([
   "action_conversation_exclusions",
   "action_share_contact_requests",
   "legal_content_reports",
@@ -30,6 +30,8 @@ const ALLOWED_SERVER_ONLY_RLS_INFO_TABLES = new Set([
   "user_badge_totals",
   "badge_events",
 ]);
+
+const allowedServerOnlyRlsInfoTables = new Set(ALLOWED_SERVER_ONLY_RLS_INFO_TABLES);
 
 function normalizeAdvisorName(value) {
   return String(value ?? "")
@@ -103,7 +105,7 @@ function isAllowedServerOnlyRlsInfo(finding) {
     name === "rls_enabled_no_policy" &&
     level === "INFO" &&
     metadata?.type === "table" &&
-    ALLOWED_SERVER_ONLY_RLS_INFO_TABLES.has(tableName) &&
+    allowedServerOnlyRlsInfoTables.has(tableName) &&
     detail === `Table \`public.${tableName}\` has RLS enabled, but no policies exist`
   );
 }

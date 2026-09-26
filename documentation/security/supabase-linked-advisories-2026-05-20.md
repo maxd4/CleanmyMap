@@ -13,7 +13,7 @@ nommé `supabase-vercel-codex`. Le `project ref` doit être confirmé dans
 `apps/web/supabase/config.toml` et dans le Dashboard avant de lancer un audit
 lié. Cette information ne remplace pas une authentification CLI valide.
 
-## État courant — ré-audit linked-only du 20 septembre 2026
+## État courant — ré-audit linked-only du 26 septembre 2026
 
 Cette section est la référence courante. Les sections datées plus bas sont
 conservées comme historique et ne doivent pas être interprétées comme l'état
@@ -56,6 +56,17 @@ pas été modifiés par ce dernier lot.
 ### Advisors sécurité linked actuels
 
 - **Sécurité : 3 WARN, 0 ERROR, 8 INFO acceptés et documentés**.
+- Les huit INFO `rls_enabled_no_policy` acceptés sont exactement :
+  `public.action_conversation_exclusions`,
+  `public.action_share_contact_requests`,
+  `public.legal_content_reports`,
+  `public.legal_content_report_decisions`,
+  `public.user_points`, `public.points_ledger`,
+  `public.user_badge_totals` et `public.badge_events`.
+- Pour ces huit tables, le contrat server-only est explicite : RLS activée,
+  aucune policy, aucun privilège de table pour `anon` ou `authenticated`, et
+  privilèges réservés à `service_role`. Ce lot ne crée aucune policy permissive
+  et ne déplace aucune de ces tables pour faire disparaître les INFO.
 - Les trois WARN concernent `SECURITY DEFINER` sur
   `can_insert_action_message_reference(uuid)`,
   `can_post_action_conversation(uuid)` et
@@ -74,8 +85,16 @@ pas été modifiés par ce dernier lot.
   `authenticated` seul pour ces trois helpers : `service_role` contourne les
   policies RLS et n'a pas besoin de les appeler directement. Le prédicat de
   référence vérifie en plus `auth.role()` pour rester fermé si un grant dérive.
-  Cette réduction est versionnée mais n'est pas une preuve d'application
-  distante tant que l'audit linked n'a pas pu être rejoué.
+  Cette réduction était versionnée mais n'était pas une preuve d'application
+  distante. Le nouveau lot local
+  `20260926122042_relocate_action_chat_rls_helpers.sql` déplace les trois
+  helpers dans `private`, recrée les policies avec ces références internes,
+  restaure la distinction lecture/écriture des discussions annulées et retire
+  les fonctions `public.*` devenues inutiles. Le schéma `private` n'est pas
+  ajouté à `[api].schemas` et l'accès est borné à l'évaluation authentifiée des
+  policies. Cette correction reste locale : les trois WARN distants ne peuvent
+  être déclarés résolus qu'après application de la migration et nouveau replay
+  des Advisors linked.
 
 - Les quatre INFO `rls_enabled_no_policy` sont intentionnels :
   `public.action_conversation_exclusions`,
@@ -95,10 +114,18 @@ pas été modifiés par ce dernier lot.
   reste le contrat actuel. Ne pas ajouter de policy permissive pour faire
   disparaître ces INFO.
 
-Le garde-fou local accepte ces huit seules informations server-only. La
-présence de la migration dans Git ne constitue pas une preuve que la migration
-a déjà été appliquée au projet Supabase distant ; l'audit linked doit être
-rejoué après son application distante.
+Le garde-fou local accepte ces huit seules informations server-only et échoue
+si un neuvième `rls_enabled_no_policy` apparaît, si la sévérité ou le payload
+change, ou si le contrat de migration d'une de ces tables cesse de conserver
+RLS sans policy et sans privilège client.
+
+Le replay linked demandé après le hardening a été tenté le 26 septembre 2026,
+mais l'API Advisors a répondu `403 LegacyDbConfigLoginRoleStatusError` pour
+l'identité CLI courante (`advisors_read` manquant). Il n'y a donc pas de nouveau
+payload distant permettant de déclarer **ERROR=0, WARN=0** après application :
+la cible versionnée reste **0 ERROR, 0 WARN et exactement ces 8 INFO**, à
+confirmer dès que la migration est appliquée au projet linked et que le replay
+réussit. Aucune migration distante n'a été appliquée dans ce lot.
 
 La vérification directe du catalogue par `npx supabase db query --linked` est
 restée indisponible pour l'identité CLI réauthentifiée (`403` sur le rôle de
