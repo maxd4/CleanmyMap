@@ -3,9 +3,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export async function createChatNotificationsForMessage(
   supabase: SupabaseClient,
   messageId: string,
+  actorUserId: string,
 ): Promise<number> {
   const { data, error } = await supabase.rpc("create_chat_notifications_for_message", {
     p_message_id: messageId,
+    p_actor_user_id: actorUserId,
   });
 
   if (error) {
