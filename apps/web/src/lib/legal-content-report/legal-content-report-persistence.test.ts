@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRuntimeStoreModule } from "../persistence/__tests__/runtime-store-mock";
 
 const canUseSupabaseServerPersistenceMock = vi.hoisted(() => vi.fn());
 const allowLocalFileStoreFallbackMock = vi.hoisted(() => vi.fn());
@@ -9,6 +10,7 @@ const mkdirMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/persistence/runtime-store", () => ({
+  ...createRuntimeStoreModule(),
   allowLocalFileStoreFallback: allowLocalFileStoreFallbackMock,
   assertPersistenceAvailable: assertPersistenceAvailableMock,
   canUseSupabaseServerPersistence: canUseSupabaseServerPersistenceMock,

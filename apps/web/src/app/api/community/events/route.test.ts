@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRateLimitModule, rateLimitMocks } from "@/app/api/test-helpers";
 
 const authMock = vi.hoisted(() => vi.fn());
 const getSafeAuthSessionMock = vi.hoisted(() => vi.fn());
@@ -9,8 +10,6 @@ const getClerkServiceMock = vi.hoisted(() => vi.fn());
 const unstableCacheMock = vi.hoisted(() =>
   vi.fn((callback: () => unknown) => callback),
 );
-const verifyRateLimitMock = vi.hoisted(() => vi.fn());
-const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 const reserveDiscussionMessageSlotMock = vi.hoisted(() => vi.fn());
 const revalidateCommunityEventCachesMock = vi.hoisted(() => vi.fn());
 
@@ -44,10 +43,7 @@ vi.mock("@/lib/services/clerk", () => ({
   getClerkService: getClerkServiceMock,
 }));
 
-vi.mock("@/lib/rate-limit/server", () => ({
-  verifyRateLimit: verifyRateLimitMock,
-  createServerRateLimitResponse: createServerRateLimitResponseMock,
-}));
+vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
 
 vi.mock("@/lib/community/discussion-rate-limit", () => ({
   reserveDiscussionMessageSlot: reserveDiscussionMessageSlotMock,
@@ -140,8 +136,8 @@ describe("GET /api/community/events", () => {
       state: "anonymous",
     });
     configurePublicRead();
-    verifyRateLimitMock.mockResolvedValue({ allowed: true, retryAfter: 0 });
-    createServerRateLimitResponseMock.mockReturnValue(null);
+    rateLimitMocks.verifyRateLimit.mockResolvedValue({ allowed: true, retryAfter: 0 });
+    rateLimitMocks.createServerRateLimitResponse.mockReturnValue(null);
     reserveDiscussionMessageSlotMock.mockResolvedValue({ allowed: true });
   });
 
@@ -231,8 +227,8 @@ describe("POST /api/community/events", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: null });
-    verifyRateLimitMock.mockResolvedValue({ allowed: true, retryAfter: 0 });
-    createServerRateLimitResponseMock.mockReturnValue(null);
+    rateLimitMocks.verifyRateLimit.mockResolvedValue({ allowed: true, retryAfter: 0 });
+    rateLimitMocks.createServerRateLimitResponse.mockReturnValue(null);
     reserveDiscussionMessageSlotMock.mockResolvedValue({ allowed: true });
   });
 

@@ -63,6 +63,7 @@ vi.mock("@/lib/http/auth-responses", () => ({
 
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
+  getSupabaseAdminClient: getSupabaseServerClientMock,
 }));
 
 vi.mock("@/lib/actions/unified-source", () => ({

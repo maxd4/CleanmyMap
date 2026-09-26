@@ -16,6 +16,7 @@ const allowLocalFileStoreFallbackMock = vi.hoisted(() => vi.fn(() => false));
 
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
+  getSupabaseAdminClient: getSupabaseServerClientMock,
 }));
 
 vi.mock("@/lib/persistence/runtime-store", () => ({

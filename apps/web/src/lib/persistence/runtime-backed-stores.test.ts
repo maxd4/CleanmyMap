@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRuntimeStoreModule } from "./__tests__/runtime-store-mock";
 
 const canUseSupabaseServerPersistenceMock = vi.hoisted(() => vi.fn());
 const assertPersistenceAvailableMock = vi.hoisted(() => vi.fn());
@@ -10,6 +11,7 @@ const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const appendPublishedPartnerAnnuaireEntryMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/persistence/runtime-store", () => ({
+  ...createRuntimeStoreModule(),
   assertPersistenceAvailable: assertPersistenceAvailableMock,
   canUseSupabaseServerPersistence: canUseSupabaseServerPersistenceMock,
   isVercelRuntime: isVercelRuntimeMock,

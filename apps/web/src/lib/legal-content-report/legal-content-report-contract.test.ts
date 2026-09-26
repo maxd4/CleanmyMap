@@ -16,9 +16,8 @@ describe("legal content report public contracts", () => {
     expect(route).not.toContain("requireBotIdHuman");
     expect(route).toContain("const { userId } = await auth()");
     expect(route).toContain("submittedByUserId: userId ?? null");
-    expect(route).toContain("verifyRateLimit");
-    expect(route).toContain("hasHoneypotSignal");
-    expect(route).toContain("hasRecentSubmission");
+    expect(route).toContain("enforceServerRateLimit");
+    expect(route).toContain("rejectPublicFormAbuse");
     expect(route).toContain("submittedAt");
     expect(route).toContain("appendLegalContentReport");
     expect(route).toContain("sendLegalContentReportAcknowledgement");

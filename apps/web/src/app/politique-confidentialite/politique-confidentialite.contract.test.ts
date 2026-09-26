@@ -66,7 +66,7 @@ describe("privacy policy contract", () => {
   it("routes account deletion to the canonical reviewed RGPD request", () => {
     expect(accountSettings).toContain("Demander la suppression de mon compte");
     expect(accountSettings).toContain('href="/contact"');
-    expect(accountSettings).toContain("demande, et non d&apos;une suppression immédiate");
+    expect(accountSettings).toContain("demande, et non d'une suppression immédiate");
     expect(accountSettings).not.toContain("Supprimer mon compte");
     expect(accountSettings).not.toContain("définitivement toutes vos données");
     expect(accountSettings).not.toContain("irréversible");

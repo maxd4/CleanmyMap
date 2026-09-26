@@ -19,6 +19,7 @@ export const chatAuthorizationContract = {
         "canAccessChatChannel",
         "sender_id",
       ],
+      evidenceScope: "module",
     },
     POST: {
       expected:
@@ -37,6 +38,7 @@ export const chatAuthorizationContract = {
         "canAccessChatChannel",
         "sender_id",
       ],
+      evidenceScope: "module",
     },
   },
   "chat/action-exclusions": {
@@ -159,8 +161,7 @@ export const chatAuthorizationContract = {
         "auth()",
         "getCurrentUserIdentity",
         "getSupabaseClerkRlsClient",
-        "loadCurrentProfile",
-        "canAccessChatChannel",
+        "loadChatAccessContext",
         "getTerritoryFilter",
         "sender_id",
         "recipient_id",

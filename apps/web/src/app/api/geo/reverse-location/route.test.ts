@@ -1,12 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createRateLimitModule, rateLimitMocks } from "@/app/api/test-helpers";
 
-const verifyRateLimitMock = vi.hoisted(() => vi.fn());
-const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
-
-vi.mock("@/lib/rate-limit/server", () => ({
-  verifyRateLimit: verifyRateLimitMock,
-  createServerRateLimitResponse: createServerRateLimitResponseMock,
-}));
+vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
 
 import { GET } from "./route";
 
@@ -17,13 +12,13 @@ describe("/api/geo/reverse-location", () => {
   });
 
   beforeEach(() => {
-    verifyRateLimitMock.mockResolvedValue({
+    rateLimitMocks.verifyRateLimit.mockResolvedValue({
       allowed: true,
       limit: 60,
       remaining: 59,
       reset: Date.now() + 60_000,
     });
-    createServerRateLimitResponseMock.mockReturnValue(null);
+    rateLimitMocks.createServerRateLimitResponse.mockReturnValue(null);
   });
 
   it("returns a selected city from geoplateforme reverse geocoding", async () => {
@@ -105,14 +100,14 @@ describe("/api/geo/reverse-location", () => {
   });
 
   it("returns 429 without calling the external geocoder when rate limited", async () => {
-    verifyRateLimitMock.mockResolvedValueOnce({
+    rateLimitMocks.verifyRateLimit.mockResolvedValueOnce({
       allowed: false,
       limit: 60,
       remaining: 0,
       reset: Date.now() + 60_000,
       retryAfter: 60,
     });
-    createServerRateLimitResponseMock.mockReturnValueOnce(
+    rateLimitMocks.createServerRateLimitResponse.mockReturnValueOnce(
       new Response(JSON.stringify({ status: "rate_limited" }), { status: 429 }),
     );
     const fetchMock = vi.fn();
