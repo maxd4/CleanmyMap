@@ -14,8 +14,9 @@
 - **Palette attendue** : sky / slate
 - **Scope** : surface secondaire protégée avec contrôles `SitePreferencesControls` pour la langue et le mode d'affichage, choix du nom affiché, localisation, confidentialité et demande de suppression ; absence de session redirigée vers `/sign-in`.
 - **Terminée** : oui pour le périmètre actuellement livré
-- **Couleurs actuellement détectées** : sky / slate — fond clair sky et cartes de réglages neutres.
-- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec le rendu runtime actuel.
+- **Couleurs actuellement détectées** : sky / slate — fond clair sky et cartes de réglages neutres ; la variante complète de `AccountSettingsSection` suit cette palette.
+- **Exception de couleur documentée** : la variante compacte de `AccountSettingsSection`, réutilisée dans les cartes dashboard/profil, conserve une ambiance ambre pour rester cohérente avec ces surfaces parentes ; elle n'est pas rendue sur `/reglages`.
+- **Incohérences de couleurs** : Aucune incohérence sur la surface `/reglages`.
 - **Risque de conflit avec les couleurs existantes** : moyen : garder une mood layer autonome et éviter tout retour aux couleurs de bloc principales.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :

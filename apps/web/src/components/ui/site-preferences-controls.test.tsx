@@ -12,7 +12,7 @@ describe("SitePreferencesControls", () => {
     );
 
     expect(markup).toContain('href="/methodologie#modes-affichage"');
-    expect(markup).toContain('aria-label="Comprendre les modes d&#x27;affichage"');
+    expect(markup).toContain('aria-label="En savoir plus sur les modes d&#x27;affichage"');
     expect(markup).toContain("Exhaustif");
     expect(markup).toContain("Minimaliste");
     expect(markup).toContain("Sobre");
@@ -28,7 +28,7 @@ describe("SitePreferencesControls", () => {
 
     expect(markup).toContain("min-h-10");
     expect(markup).toContain("gap-2 px-2.5 py-2");
-    expect(markup).toContain("Comprendre les modes d&#x27;affichage");
+    expect(markup).toContain("En savoir plus sur les modes d&#x27;affichage");
   });
 
   it("supports the light settings surface while keeping the same controls", () => {
@@ -43,5 +43,18 @@ describe("SitePreferencesControls", () => {
     expect(markup).toContain('name="display-mode"');
     expect(markup).toContain("Français");
     expect(markup).toContain("Minimaliste");
+  });
+
+  it("keeps the English switch and explanation labels in English", () => {
+    const markup = renderToStaticMarkup(
+      <SitePreferencesProvider initialLocale="en">
+        <SitePreferencesControls variant="locale" />
+        <SitePreferencesControls surface="light" />
+      </SitePreferencesProvider>,
+    );
+
+    expect(markup).toContain('aria-label="Switch to French"');
+    expect(markup).toContain('aria-label="Learn more about display modes"');
+    expect(markup).not.toContain("Comprendre les modes d&#x27;affichage");
   });
 });

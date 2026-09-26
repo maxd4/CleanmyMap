@@ -13,8 +13,15 @@ describe("/reglages canonical settings contract", () => {
   it("renders the canonical editable preferences and account controls", () => {
     expect(pageSource).toContain('<SitePreferencesControls surface="light" />');
     expect(pageSource).toContain("<DisplayNameModeSetting");
-    expect(pageSource).toContain("<AccountSettingsSection />");
+    expect(pageSource).toContain("<AccountSettingsSection locale={locale} />");
     expect(pageSource).not.toContain("Section réservée pour une prochaine phase");
+  });
+
+  it("keeps the metadata limited to settings actually managed on the page", () => {
+    expect(pageSource).toContain(
+      'description: "Configurez vos préférences CleanMyMap : affichage, localisation et paramètres de compte.",',
+    );
+    expect(pageSource).not.toContain("notifications");
   });
 
   it("keeps localisation on the existing onboarding workflow", () => {
