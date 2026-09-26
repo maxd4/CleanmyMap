@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, ClipboardList, CloudSun, FileWarning, Navigation } from "lucide-react";
 import { ActionBeforeDeclarationForm } from "./action-declaration/before/form";
@@ -143,16 +143,25 @@ export function ActionCreationShell({ initialPanel, initialTab = "before", tabSe
   const [currentActionId, setCurrentActionId] = useState<string | null>(initialActionId);
   const [workflow, setWorkflow] = useState<ActionWorkflowState>(() => {
     const step = initialWorkflowStep(initialPanel, initialActionId, tabSearchParams);
-    const saved = loadActionWorkflowState();
-    return saved && saved.actionId === initialActionId ? { ...saved, activeStep: step } : createActionWorkflowState(initialActionId, step);
+    return createActionWorkflowState(initialActionId, step);
   });
+  const [workflowHydrated, setWorkflowHydrated] = useState(false);
   const [draftContext, setDraftContext] = useState<{ locationLabel?: string; actionDate?: string }>({});
   const [preparationValidated, setPreparationValidated] = useState(false);
   const [formalitiesReadiness, setFormalitiesReadiness] = useState<"unknown" | "ready" | "blocked">("unknown");
   const [transitionError, setTransitionError] = useState<string | null>(null);
   const previousContext = useRef(draftContext);
 
-  useEffect(() => saveActionWorkflowState(workflow), [workflow]);
+  useEffect(() => {
+    const saved = loadActionWorkflowState();
+    startTransition(() => {
+      if (saved && saved.actionId === initialActionId) setWorkflow((current) => ({ ...saved, activeStep: current.activeStep }));
+      setWorkflowHydrated(true);
+    });
+  }, [initialActionId]);
+  useEffect(() => {
+    if (workflowHydrated) saveActionWorkflowState(workflow);
+  }, [workflow, workflowHydrated]);
   const setActiveStep = useCallback((step: ActionWorkflowStepId) => setWorkflow((current) => ({ ...current, activeStep: step })), []);
   const navigateToStep = useCallback((step: ActionWorkflowStepId) => {
     setActiveStep(step);
