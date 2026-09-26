@@ -50,11 +50,11 @@ Le code et les tests priment si une divergence apparaît.
   lecture publique ou un rendu de page.
 - les écritures d'audit et notifications sont des effets secondaires et ne doivent pas devenir la preuve métier.
 - Le registre CURRENT de `apps/web/src/lib/gamification/progression-utils.ts`
-  classe tous les `event_type` dans exactement trois catégories : une des sept
+  classe tous les `event_type` dans quatre catégories : une des sept
   progressions infinies (`participation`, `organisation`, `exploration`,
   `clean_zones`, `regularity`, `versatility`, `learning`), `milestone` pour les
-  jalons one-shot ou `non_progression` pour les métriques et compatibilités
-  hors taxonomie.
+  jalons one-shot, `impact_badge` pour Mohs Déchets/Mégots, ou
+  `non_progression` pour les métriques et compatibilités hors taxonomie.
 - Chaque progression expose le contrat typé commun
   `GamificationProgressionState` : valeur courante, badge courant, prochain
   badge, pourcentage et contribution au total XP. Cette contribution n'est pas
@@ -73,9 +73,10 @@ Le code et les tests priment si une divergence apparaît.
 - les formulaires restent une preuve de validation et une source de complétude;
   les événements Forms historiques (`form_tier_unlock`, `form_bonus`) sont
   `COMPATIBILITY` et ne sont plus écrits par le rebuild CURRENT;
-- les métriques de qualité, confiance, kg et mégots restent des faits dérivés
-  ou des indicateurs d'impact. Elles ne forment pas une famille de badges XP
-  CURRENT et ne doivent jamais être converties en XP par unité;
+- les métriques de qualité et de confiance restent des faits dérivés. Les kg
+  et mégots peuvent alimenter les deux `impact_badge` Mohs via les attributions
+  personnelles confirmées, avec des seuils fixes et `+0,25 XP` par grade ; ils
+  ne doivent jamais être convertis en XP proportionnel à la quantité;
 - les règles détaillées de seuils, familles, scopes et attribution restent dans la spec canonique, pas dans ce document.
 
 ## Audit XP administratif

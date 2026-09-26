@@ -168,12 +168,12 @@ const GAMIFICATION_EVENT_REGISTRY: Record<
     reason: "Usage utilitaire d'itinéraire, à traiter hors des sept progressions.",
   },
   infinite_waste_milestone: {
-    classification: "non_progression",
-    reason: "Métrique d'impact historique, conservée hors de la taxonomie CURRENT.",
+    classification: "impact_badge",
+    impactBadgeId: "mohs_waste",
   },
   infinite_butts_milestone: {
-    classification: "non_progression",
-    reason: "Métrique d'impact historique, conservée hors de la taxonomie CURRENT.",
+    classification: "impact_badge",
+    impactBadgeId: "mohs_butts",
   },
   new_place_discovered: {
     classification: "progression",

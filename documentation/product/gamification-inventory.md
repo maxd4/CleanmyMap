@@ -137,11 +137,12 @@ comme une progression infinie supplémentaire.
 - un seul objectif visible a la fois suffit dans la plupart des ecrans;
 - un badge doit toujours avoir un sens lisible par un humain;
 - un `objectif infini` doit toujours changer visuellement et verbalement a chaque palier important;
-- seuls les sept axes CURRENT peuvent produire une barre de progression
-  infinie;
-- Forms, confiance, qualité, kg, mégots et Mohs ne créent pas de barre infinie
-  CURRENT; leurs lectures éventuelles restent informatives, historiques ou de
-  compatibilité;
+- seuls les sept axes CURRENT produisent les progressions comportementales
+  infinies;
+- Mohs Déchets et Mohs Mégots sont des badges d'impact personnels secondaires :
+  ils affichent une barre finie de dix grades et produisent `+0,25 XP` par
+  seuil, sans devenir un huitième ou neuvième axe et sans XP proportionnel aux
+  kg ou aux mégots. Forms, confiance et qualité restent hors progression;
 - un `one-shot` doit cesser de s afficher comme action a completer une fois acquis;
 - un `régulier` doit rester sobre, sans surcharge de notifications;
 - un score seul ne suffit jamais a motiver durablement une communaute benevole.

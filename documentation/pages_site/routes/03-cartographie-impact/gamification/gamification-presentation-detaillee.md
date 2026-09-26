@@ -59,9 +59,11 @@ Les sept progressions infinies sont `Participation`, `Organisation`,
 Les formulaires sont des preuves de validation et de complétude, pas une
 progression utilisateur : aucun badge Forms CURRENT ni XP de remplissage. Les
 indicateurs de confiance et de qualité restent dérivés des faits vérifiés, et
-les compteurs kg/mégots restent des métriques d'impact ; aucune de ces surfaces
-ne produit une barre infinie CURRENT. Mohs reste une lecture `LEGACY` des
-anciens compteurs. La zone sensible apaisée dispose d'une preuve historique
+les compteurs kg/mégots restent des métriques d'impact ; ils alimentent
+désormais les deux badges Mohs personnels secondaires à seuils fixes, sans
+créer une huitième ou neuvième progression comportementale. Mohs ne produit
+pas de progression infinie CURRENT et ne reclassifie pas silencieusement les
+anciens compteurs à humidité inconnue. La zone sensible apaisée dispose d'une preuve historique
 dédiée : une qualification est figée au moment de la validation de l'action et
 l'état courant de la zone ne peut pas révoquer cette contribution. Elle ne
 produit pas de nouvelle attribution XP ; les anciens événements de palier sont

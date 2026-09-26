@@ -369,6 +369,14 @@ dénominateur. Ainsi, deux comptes confirmés avec deux enfants et `20 kg`
 produisent `10 kg` par compte ; modifier le nombre d'enfants ne change aucune
 quote-part tant que le roster confirmé ne change pas.
 
+Cette séparation vaut aussi pour les badges d'impact Mohs : le nombre physique
+de personnes présentes reste celui de `participantsCount`, tandis que les
+comptes confirmés sont les seules unités éligibles aux attributions et au
+calcul des seuils personnels. Les seuils Mohs utilisent l'équivalent sec
+versionné lorsqu'une condition de déchets est connue et conservent une
+provenance explicite pour les quotes-parts sans condition ; les compteurs
+legacy à humidité inconnue ne sont pas reclassés silencieusement.
+
 Pour chaque métrique additive, la répartition applique exclusivement les
 comptes du roster confirmé :
 

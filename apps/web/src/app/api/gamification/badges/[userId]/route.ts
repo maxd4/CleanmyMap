@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { forbiddenJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { loadPersonalMohsImpactTotals } from "@/lib/gamification/mohs-impact-reconciliation";
 
 export const runtime = "nodejs";
 
@@ -26,17 +27,11 @@ export async function GET(
   try {
     // The API enforces ownership; this endpoint must remain read-only.
     const supabase = getSupabaseServerClient(true);
-    const { data: row, error } = await supabase
-      .from("user_badge_totals")
-      .select("user_id, waste_kg, butts")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    if (error) throw error;
+    const totals = await loadPersonalMohsImpactTotals(supabase, userId);
 
     const payload: BadgeTotals = {
-      wasteKg: Number(row?.waste_kg ?? 0),
-      butts: Number(row?.butts ?? 0),
+      wasteKg: totals.wasteMohsKg,
+      butts: totals.butts,
     };
 
     return NextResponse.json({ status: "ok", totals: payload });

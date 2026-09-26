@@ -154,8 +154,14 @@ describe("progression event registry", () => {
       classification: "milestone",
       milestoneId: "premiere_trace_utile",
     });
-    expect(registry.infinite_waste_milestone.classification).toBe("non_progression");
-    expect(registry.infinite_butts_milestone.classification).toBe("non_progression");
+    expect(registry.infinite_waste_milestone).toEqual({
+      classification: "impact_badge",
+      impactBadgeId: "mohs_waste",
+    });
+    expect(registry.infinite_butts_milestone).toEqual({
+      classification: "impact_badge",
+      impactBadgeId: "mohs_butts",
+    });
     expect(registry.form_tier_unlock.classification).toBe("non_progression");
     expect(registry.form_bonus.classification).toBe("non_progression");
     expect(registry.sensitive_zone_action.classification).toBe("non_progression");
@@ -277,7 +283,8 @@ describe("progression event registry", () => {
     expect(sensitiveZoneStore).toContain("milestoneThresholdsToRemove");
     expect(sensitiveZoneStore).not.toContain("CURRENT_INFINITE_PROGRESSION_IDS");
     expect(personalProgress).toContain("<MohsBadge");
-    expect(mohsBadge).toContain("aucune progression XP");
-    expect(mohsBadge).not.toContain('style={{ width: `${progressPct}%` }}');
+    expect(mohsBadge).toContain("nextXp");
+    expect(mohsBadge).toContain('style={{ width: `${grade.progressPct}%` }}');
+    expect(mohsBadge).toContain("Impact secondaire");
   });
 });

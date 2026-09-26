@@ -27,8 +27,9 @@ Les autres documents de gamification restent utiles, mais ils sont désormais se
 
 Les registres typés de `apps/web/src/lib/gamification/progression-utils.ts` sont
 la source canonique de classification des événements. `ProgressionDefinition`
-décrit les sept progressions infinies et `MilestoneDefinition` les trois
-jalons one-shot CURRENT ; leurs IDs et leurs faits sources sont distincts.
+décrit les sept progressions infinies, `MilestoneDefinition` les trois
+jalons one-shot CURRENT et `impact_badge` les progressions d'impact secondaires.
+Ces catégories ont des IDs et des faits sources distincts.
 
 Les sept progressions infinies sont :
 
@@ -56,10 +57,18 @@ Les autres catégories du registre sont séparées :
   progression infinie ;
 - `non_progression` : métriques d'impact, usage utilitaire et familles de
   compatibilité conservées sans constituer une progression CURRENT.
+- `impact_badge` : badges d'impact personnels hors des sept axes
+  comportementaux, alimentés par `action_participants` confirmés et contribuant
+  au total XP global sans créer de balance ou de `diversityTypes` propre.
 
-Le total XP global est la somme des `progression_events` actifs de toutes les
-progressions et des XP des jalons one-shot. Aucun event type ne crée un second
-ledger ou une balance par famille.
+Mohs Déchets et Mohs Mégots sont les deux `impact_badge` CURRENT réactivés.
+Ils ne sont donc ni une huitième ou neuvième progression comportementale, ni
+une échelle gemme. Leurs événements restent dans `progression_events`, jamais
+dans `points_ledger`.
+
+Le total XP global est la somme des `progression_events` actifs des sept
+progressions, des jalons one-shot et des `impact_badge` explicitement autorisés.
+Aucun event type ne crée un second ledger ou une balance par famille.
 
 ## Périmètre
 
@@ -424,20 +433,40 @@ Règles:
 
 ## Badges hérités
 
-### Mohs
+### Mohs — progression d'impact secondaire
 
-But:
+Mohs est une progression d'impact personnelle secondaire, distincte des sept
+axes comportementaux CURRENT. Elle conserve les noms minéraux et son échelle
+propre, mais ne devient pas une échelle gemme.
 
-- conserver la lecture historique des compteurs déchets et mégots.
+Les faits sont recalculés depuis les attributions personnelles du contrat
+participant : une ligne `action_participants` confirmée vaut une unité, les
+mesures individuelles priment et le reliquat est partagé entre les comptes
+confirmés sans mesure. Les enfants, les compteurs du formulaire,
+`volunteersCount`, `participantsCount` et `effectiveVolunteerUnits` ne sont
+jamais le dénominateur.
 
-Règles:
+- Déchets : Mohs utilise `equivalentSecKg` avec la version
+  `impact-terrain-2026-waste-moisture-v1` lorsqu'une condition est connue.
+  Une quote-part sans condition reste explicitement une quote-part de masse
+  collective brute ; une ancienne mesure dont l'humidité est inconnue n'est
+  jamais reclassée silencieusement.
+- Mégots : le comptage individuel prime ; à défaut, le nombre dérivé par le
+  moteur masse/condition `impact-terrain-2026-butts-mass-v1` est utilisé.
+- Talc est le niveau initial à `0 XP`. Chaque grade suivant franchi attribue
+  `+0,25 XP`, jamais une quantité proportionnelle aux kg ou aux mégots.
+- Les pas sont `20 kg` pour les déchets et `2 000 mégots` jusqu'à Diamant :
+  chaque famille est plafonnée à `2,25 XP`.
+- Les événements réutilisent `infinite_waste_milestone` et
+  `infinite_butts_milestone`, avec `classification = impact_badge` et une
+  identité stable `mohs:<famille>:grade:<grade>`.
+- La réconciliation retire les seuils devenus inéligibles après correction et
+  recalcule `progression_profiles`. Elle n'écrit jamais `points_ledger` et ne
+  supprime pas les compteurs historiques legacy.
 
-- badge compact d affichage secondaire;
-- échelle minérale propre;
-- lecture historique uniquement pour les déchets et les mégots; il ne produit
-  plus de barre dans les surfaces CURRENT;
-- usage hérité, pas modèle de conception pour les nouveaux badges;
-- il reste à part du contrat `Observateur` commun.
+L'interface affiche le grade courant, le prochain grade, la barre, la quantité
+restante et l'XP du prochain palier. Pour les déchets, elle distingue la masse
+brute de l'équivalent sec utilisé par Mohs.
 
 ## Règles d attribution XP
 

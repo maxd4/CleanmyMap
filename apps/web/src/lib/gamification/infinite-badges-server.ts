@@ -16,6 +16,7 @@ import {
   type TerrainProgressionEvent,
 } from "./terrain-progressions";
 import { buildCurrentMilestones, type MilestoneEvent } from "./milestones";
+import { loadPersonalMohsImpactTotals } from "./mohs-impact-reconciliation";
 
 function createFallbackActionBalanceSummary(): Awaited<ReturnType<typeof loadActionBalanceSummary>> {
   return {
@@ -53,6 +54,9 @@ function createFallbackActionBalanceSummary(): Awaited<ReturnType<typeof loadAct
 export async function getInfiniteBadgeTotals(userId: string): Promise<{
   wasteKg: number;
   butts: number;
+  wasteRawKg: number;
+  wasteEquivalentSecKg: number;
+  wasteUnknownConditionCount: number;
   newPlaces: number;
   participationCount: number;
   organisationCount: number;
@@ -108,32 +112,14 @@ export async function getInfiniteBadgeTotals(userId: string): Promise<{
     events: (eventsResult.data ?? []) as MilestoneEvent[],
   });
 
-  const row = await supabase
-    .from("user_badge_totals")
-    .select("waste_kg, butts, places_count")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (row.error) throw row.error;
-  if (!row.data) {
-    return {
-      wasteKg: 0,
-      butts: 0,
-      newPlaces: 0,
-      participationCount: counters.participationCount,
-      organisationCount,
-      cleanZonesCount,
-      terrainProgressions,
-      milestones,
-      actionBalance,
-      monthlyRegularity,
-      sensitiveZoneApaisement,
-    };
-  }
+  const personalMohs = await loadPersonalMohsImpactTotals(supabase, userId);
 
   return {
-    wasteKg: Number(row.data.waste_kg ?? 0),
-    butts: Number(row.data.butts ?? 0),
+    wasteKg: personalMohs.wasteMohsKg,
+    butts: personalMohs.butts,
+    wasteRawKg: personalMohs.wasteRawKg,
+    wasteEquivalentSecKg: personalMohs.wasteEquivalentSecKg,
+    wasteUnknownConditionCount: personalMohs.wasteUnknownConditionCount,
     newPlaces: counters.visitedPlacesCount,
     participationCount: counters.participationCount,
     organisationCount,

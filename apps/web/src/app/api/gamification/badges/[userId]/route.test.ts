@@ -42,15 +42,17 @@ describe("GET /api/gamification/badges/:userId", () => {
 
     const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: null });
     const insert = vi.fn();
+    const participantLimit = vi.fn().mockResolvedValue({ data: [], error: null });
     const supabaseMock = {
-      from: vi.fn(() => ({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            maybeSingle,
-          })),
-        })),
-        insert,
-      })),
+      from: vi.fn((table: string) => table === "action_participants"
+        ? {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => ({ limit: participantLimit })),
+              })),
+            })),
+          }
+        : { select: vi.fn(() => ({ eq: vi.fn(() => ({ maybeSingle })) })), insert }),
     };
     getSupabaseServerClientMock.mockReturnValue(supabaseMock);
 

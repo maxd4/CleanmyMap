@@ -188,6 +188,17 @@ describe("individual action impact attribution", () => {
     })).toMatchObject({ wasteKg: 10, equivalentSecKg: 10, wasteNormalizationVersion: WASTE_MOISTURE_NORMALIZATION_VERSION });
     expect(toIndividualImpactMeasurement({ individual_waste_kg: 10, individual_waste_condition: "humide" })).toMatchObject({ equivalentSecKg: 7 });
     expect(toIndividualImpactMeasurement({ individual_waste_kg: 10, individual_waste_condition: "mouille" })).toMatchObject({ equivalentSecKg: 4 });
+    const attribution = allocateActionParticipantImpact({
+      totalWasteKg: 10,
+      totalCigaretteButts: null,
+      participants: [participant("wet", toIndividualImpactMeasurement({ individual_waste_kg: 10, individual_waste_condition: "humide" }))],
+    });
+    expect(attribution.get("wet")).toMatchObject({
+      wasteKg: 10,
+      wasteEquivalentSecKg: 7,
+      wasteMohsValue: 7,
+      wasteMohsSource: "equivalent_sec",
+    });
   });
 
   it("prefers counted butts over mass conversion and uses the canonical engine otherwise", () => {
@@ -201,6 +212,16 @@ describe("individual action impact attribution", () => {
       individual_cigarette_butts_mass_kg: 1,
       individual_cigarette_butts_condition: "humide",
     })).toMatchObject({ comparableButtsCount: 1_750, comparableButtsProvenance: "derived", cigaretteButtsConversionVersion: "impact-terrain-2026-butts-mass-v1" });
+    const counted = allocateActionParticipantImpact({
+      totalWasteKg: null,
+      totalCigaretteButts: 7,
+      participants: [participant("counted", toIndividualImpactMeasurement({
+        individual_cigarette_butts_count: 7,
+        individual_cigarette_butts_mass_kg: 1,
+        individual_cigarette_butts_condition: "humide",
+      }))],
+    });
+    expect(counted.get("counted")).toMatchObject({ cigaretteButts: 7, cigaretteButtsProvenance: "counted" });
   });
 
   it("distinguishes null from an explicit zero", () => {

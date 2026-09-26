@@ -15,7 +15,13 @@ interface PersonalProgressProps {
   loading: boolean;
   error: unknown;
   locale: string;
-  badgeTotals?: { wasteKg: number; butts: number };
+  badgeTotals?: {
+    wasteKg: number;
+    butts: number;
+    wasteRawKg?: number;
+    wasteEquivalentSecKg?: number;
+    wasteUnknownConditionCount?: number;
+  };
   badgeTotalsLoading?: boolean;
   badgeTotalsError?: unknown;
 }
@@ -133,6 +139,9 @@ export function PersonalProgress({
                   family="waste"
                   value={badgeTotals.wasteKg}
                   locale={locale}
+                  rawValue={badgeTotals.wasteRawKg}
+                  equivalentSecValue={badgeTotals.wasteEquivalentSecKg}
+                  unknownConditionCount={badgeTotals.wasteUnknownConditionCount}
                   showHistory
                 />
                 <MohsBadge

@@ -11,6 +11,10 @@ vi.mock("./progression-data", () => ({
   syncUserActionProgression: vi.fn(),
 }));
 
+vi.mock("@/lib/actions/participation/group-participation-read", () => ({
+  loadConfirmedParticipantImpactAttributions: vi.fn(async () => []),
+}));
+
 import { refreshProgressionProfile } from "./progression-tracking";
 
 it("includes action balance XP in the validated profile total", async () => {
