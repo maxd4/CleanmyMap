@@ -167,8 +167,8 @@ export function validateMessageKind(
   attachmentUrl: string | undefined,
   pollOptions: string[] | undefined,
 ): { error?: string } {
-  if (channelType === "action" && messageKind !== "message") {
-    return { error: "Les discussions d'action acceptent uniquement les messages standard." };
+  if (channelType === "action" && !["message", "poll"].includes(messageKind)) {
+    return { error: "Les discussions d'action acceptent les messages et les sondages." };
   }
 
   if (messageKind === "message") {
@@ -194,8 +194,14 @@ export function validateMessageKind(
     return {};
   }
 
-  if (channelType !== "community" && channelType !== "admin_elu") {
-    return { error: "Les sondages sont disponibles dans la communauté et le canal Admin & élus." };
+  if (![
+    "community",
+    "admin_elu",
+    "territory",
+    "action",
+    "dm",
+  ].includes(channelType)) {
+    return { error: "Les sondages ne sont pas disponibles dans ce canal." };
   }
 
   if (relatedEventId || attachmentUrl) {

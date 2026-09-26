@@ -3,31 +3,16 @@ import { NextResponse } from "next/server";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
-import {
-  canAccessChatChannel,
-  buildChannelAccessHint,
-  extractZoneContextFromMetadata,
-} from "@/lib/chat/channels";
+import { canAccessChatChannel, buildChannelAccessHint, extractZoneContextFromMetadata } from "@/lib/chat/channels";
 import { type ChatRelatedEvent } from "@/lib/chat/announcements";
-import { normalizeChatPollOptionLabels } from "@/lib/chat/polls";
-import {
-  isSupportedChatAttachmentMimeType,
-} from "@/lib/chat/chat-attachments";
+import { isSupportedChatAttachmentMimeType } from "@/lib/chat/chat-attachments";
 import { createChatNotificationsForMessage } from "@/lib/chat/chat-notifications";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
-import {
-  reserveDiscussionMessageSlot,
-  toDiscussionRateLimitErrorPayload,
-} from "@/lib/community/discussion-rate-limit";
+import { reserveDiscussionMessageSlot, toDiscussionRateLimitErrorPayload } from "@/lib/community/discussion-rate-limit";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
-import {
-  getCommunityBugReportById,
-} from "@/lib/community/bug-reports-store";
-import {
-  isPublicActionReferenceAvailable,
-  resolveActionTerritoryDestination,
-} from "@/lib/chat/action-sharing";
+import { getCommunityBugReportById } from "@/lib/community/bug-reports-store";
+import { isPublicActionReferenceAvailable, resolveActionTerritoryDestination } from "@/lib/chat/action-sharing";
 import { createActionShareRequest } from "@/lib/chat/action-share-requests";
 import {
   messageSelect,
@@ -44,6 +29,8 @@ import {
   hasExistingDmConversation,
   loadMessageById,
   loadRelatedCommunityEvent,
+  pollCtx,
+  pollOpts,
   resolveBugReportRecipientId,
 } from "./route.data";
 
@@ -464,10 +451,10 @@ export async function POST(request: Request) {
           p_channel_type: parsed.data.channelType,
           p_content: parsed.data.content,
           p_topic_id: topicValidation.topicId,
-          p_option_labels: normalizeChatPollOptionLabels(parsed.data.pollOptions ?? []),
+          ...pollOpts(parsed.data.pollOptions),
+          ...pollCtx(recipientId, actionConversationId, targetArrondissementId, targetZoneName),
         },
       );
-
       if (pollError) return handleApiError(pollError, "POST /api/chat (poll insert)");
       if (typeof pollMessageId !== "string") {
         return handleApiError(

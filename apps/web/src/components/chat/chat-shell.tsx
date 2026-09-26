@@ -43,6 +43,7 @@ import type { SendChatMessageParams } from "./hooks/use-chat-data";
 import { ChatMessageFeed } from "./ui/chat-message-feed";
 import {
   CHANNEL_VISUALS,
+  chatComposerModes,
   getChannelPlaceholder,
   getChannelTitle,
   getEmptyStateCopy,
@@ -837,13 +838,13 @@ export function ChatShell({
                 announcementEventError={announcementEventError}
                 pollOptions={pollOptions}
                 onPollOptionsChange={setPollOptions}
-                showModeTabs={activeChannelType === "community" || activeChannelType === "admin_elu"}
+                showModeTabs={activeChannelType !== "bug_report"}
                 composerModes={
                   activeChannelType === "community"
                     ? ["message", "announcement", "poll"]
                     : activeChannelType === "admin_elu"
                       ? ["message", "poll"]
-                      : ["message"]
+                      : chatComposerModes(activeChannelType)
                 }
                 userId={userId}
                 message={message}

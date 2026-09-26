@@ -45,7 +45,7 @@ async function loadVisiblePoll(
   if (
     !message ||
     message.message_kind !== "poll" ||
-    !["community", "admin_elu"].includes(message.channel_type)
+    !["community", "admin_elu", "territory", "action", "dm"].includes(message.channel_type)
   ) {
     return null;
   }
