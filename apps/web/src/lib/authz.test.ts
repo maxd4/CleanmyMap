@@ -38,6 +38,22 @@ describe("authz helpers", () => {
       ),
     ).toBe("admin");
   });
+
+  it("ignores privileged active metadata when the server-resolved role is benevole", () => {
+    expect(
+      resolveIdentityActiveRole(
+        {
+          publicMetadata: {
+            role: "max",
+            activeRole: "max",
+            activeProfile: "admin",
+          },
+          privateMetadata: { role: "admin", activeRole: "max" },
+        } as never,
+        "benevole",
+      ),
+    ).toBe("benevole");
+  });
   it("accepts admin role from public metadata", () => {
     expect(
       isAdminRole({ publicMetadata: { role: "admin" }, privateMetadata: {} }),

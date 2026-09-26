@@ -43,6 +43,17 @@ describe("dev auth bypass helpers", () => {
     expect(isDevAuthBypassEnabled("localhost:3000")).toBe(false);
   });
 
+  it("rejects the bypass on a Vercel production host even if NODE_ENV is misconfigured", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("CMM_DEV_AUTH_BYPASS", "1");
+
+    expect(isDevAuthBypassEnabled("localhost:3000")).toBe(false);
+    expect(
+      shouldUseDevAuthBypass({ hostname: "localhost:3000", clerkUserId: null }),
+    ).toBe(false);
+  });
+
   it("rejects the synthetic bypass inside GitHub Codespaces", () => {
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("CODESPACES", "true");
