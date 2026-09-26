@@ -5,6 +5,8 @@ const persistReportGenerationMock = vi.hoisted(() => vi.fn());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 const reserveReportExportSlotMock = vi.hoisted(() => vi.fn());
 const releaseReportExportSlotMock = vi.hoisted(() => vi.fn());
+const verifyRateLimitMock = vi.hoisted(() => vi.fn());
+const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAuthenticatedAccess: requireAuthenticatedAccessMock,
@@ -21,6 +23,11 @@ vi.mock("@/lib/admin/audit/operation-audit", () => ({
 vi.mock("@/lib/reports/report-export-quota", () => ({
   reserveReportExportSlot: reserveReportExportSlotMock,
   releaseReportExportSlot: releaseReportExportSlotMock,
+}));
+
+vi.mock("@/lib/rate-limit/server", () => ({
+  verifyRateLimit: verifyRateLimitMock,
+  createServerRateLimitResponse: createServerRateLimitResponseMock,
 }));
 
 import { POST } from "./route";
@@ -60,6 +67,13 @@ describe("POST /api/reports/generations", () => {
     appendAdminOperationAuditMock.mockResolvedValue(undefined);
     reserveReportExportSlotMock.mockResolvedValue({ allowed: true, quotaDay: "2026-08-27" });
     releaseReportExportSlotMock.mockResolvedValue(undefined);
+    verifyRateLimitMock.mockResolvedValue({
+      allowed: true,
+      limit: 5,
+      remaining: 4,
+      reset: Date.now() + 60_000,
+    });
+    createServerRateLimitResponseMock.mockReturnValue(null);
   });
 
   it("denies anonymous callers before persistence", async () => {
@@ -124,6 +138,31 @@ describe("POST /api/reports/generations", () => {
     );
   });
 
+  it("returns 429 before reading a costly snapshot when rate limited", async () => {
+    verifyRateLimitMock.mockResolvedValueOnce({
+      allowed: false,
+      limit: 5,
+      remaining: 0,
+      reset: Date.now() + 60_000,
+      retryAfter: 60,
+    });
+    createServerRateLimitResponseMock.mockReturnValueOnce(
+      new Response(JSON.stringify({ code: "RATE_LIMIT_EXCEEDED" }), { status: 429 }),
+    );
+
+    const response = await POST(
+      new Request("http://localhost/api/reports/generations", {
+        method: "POST",
+        body: JSON.stringify(validPayload),
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    expect(appendAdminOperationAuditMock).not.toHaveBeenCalled();
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
+  });
+
   it("rejects malformed snapshots without persistence", async () => {
     const response = await POST(
       new Request("http://localhost/api/reports/generations", {
@@ -166,7 +205,7 @@ describe("POST /api/reports/generations", () => {
     });
   });
 
-  it("does not impose a browser snapshot size policy", async () => {
+  it("rejects an oversized snapshot before reserving or persisting quota", async () => {
     const response = await POST(
       new Request("http://localhost/api/reports/generations", {
         method: "POST",
@@ -176,15 +215,25 @@ describe("POST /api/reports/generations", () => {
             ...validPayload.payload,
             data: {
               ...validPayload.payload.data,
-              summary: ["x".repeat(2_000_001)],
+              summary: ["x".repeat(2_200_000)],
             },
           },
         }),
       }),
     );
 
-    expect(response.status).toBe(200);
-    expect(persistReportGenerationMock).toHaveBeenCalledTimes(1);
+    expect(response.status).toBe(413);
+    expect(reserveReportExportSlotMock).not.toHaveBeenCalled();
+    expect(persistReportGenerationMock).not.toHaveBeenCalled();
+    expect(appendAdminOperationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        details: expect.objectContaining({
+          stage: "validation",
+          code: "payload_too_large",
+        }),
+      }),
+    );
   });
 
   it("audits persistence failures without exposing the report", async () => {

@@ -2,6 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
 
 export const PROFILE_AVATAR_BUCKET = "avatars";
+const CLERK_AVATAR_HOSTS = new Set(["img.clerk.com", "images.clerk.dev"]);
+const PROFILE_AVATAR_MAX_BYTES = 5 * 1024 * 1024;
+const PROFILE_AVATAR_TIMEOUT_MS = 4_000;
 
 function isHttpUrl(value: string | null | undefined): value is string {
   if (!value) {
@@ -21,8 +24,14 @@ function isClerkHostedAvatarUrl(value: string | null | undefined): value is stri
     return false;
   }
 
-  const host = new URL(value).hostname.toLowerCase();
-  return host.includes("clerk");
+  const parsed = new URL(value);
+  return (
+    parsed.protocol === "https:" &&
+    parsed.port === "" &&
+    !parsed.username &&
+    !parsed.password &&
+    CLERK_AVATAR_HOSTS.has(parsed.hostname.toLowerCase())
+  );
 }
 
 function isSupabaseAvatarPublicUrl(value: string | null | undefined): boolean {
@@ -82,6 +91,71 @@ function resolveAvatarExtension(contentType: string | null, fallbackUrl: string)
   return "jpg";
 }
 
+async function readAvatarBlobWithLimit(
+  response: Response,
+  contentType: string,
+): Promise<Blob | null> {
+  if (!response.body) {
+    const blob = await response.blob();
+    return blob.size > 0 && blob.size <= PROFILE_AVATAR_MAX_BYTES ? blob : null;
+  }
+
+  const reader = response.body.getReader();
+  const chunks: ArrayBuffer[] = [];
+  let totalBytes = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (!value) continue;
+
+    totalBytes += value.byteLength;
+    if (totalBytes > PROFILE_AVATAR_MAX_BYTES) {
+      await reader.cancel().catch(() => undefined);
+      return null;
+    }
+    const copied = new Uint8Array(value.byteLength);
+    copied.set(value);
+    chunks.push(copied.buffer);
+  }
+
+  return totalBytes > 0
+    ? new Blob(chunks, { type: contentType })
+    : null;
+}
+
+async function loadTrustedClerkAvatar(sourceUrl: string): Promise<{
+  contentType: string;
+  blob: Blob;
+} | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), PROFILE_AVATAR_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(sourceUrl, {
+      redirect: "error",
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+
+    const contentType = response.headers.get("content-type");
+    const declaredSize = Number(response.headers.get("content-length") ?? "");
+    if (
+      !contentType?.toLowerCase().startsWith("image/") ||
+      (Number.isFinite(declaredSize) && declaredSize > PROFILE_AVATAR_MAX_BYTES)
+    ) {
+      return null;
+    }
+
+    const blob = await readAvatarBlobWithLimit(response, contentType);
+    return blob ? { contentType, blob } : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function prepareProfileAvatarUrl(params: {
   supabase: SupabaseClient;
   userId: string;
@@ -97,22 +171,20 @@ export async function prepareProfileAvatarUrl(params: {
   }
 
   try {
-    const response = await fetch(params.sourceUrl);
-    if (!response.ok) {
+    const avatar = await loadTrustedClerkAvatar(params.sourceUrl);
+    if (!avatar) {
       return params.existingAvatarUrl ?? params.sourceUrl;
     }
 
-    const contentType = response.headers.get("content-type");
-    const extension = resolveAvatarExtension(contentType, params.sourceUrl);
+    const extension = resolveAvatarExtension(avatar.contentType, params.sourceUrl);
     const filePath = `profiles/${params.userId}/avatar.${extension}`;
-    const avatarBlob = await response.blob();
     const { error } = await params.supabase.storage.from(PROFILE_AVATAR_BUCKET).upload(
       filePath,
-      avatarBlob,
+      avatar.blob,
       {
         upsert: true,
         cacheControl: "86400",
-        contentType: contentType ?? "image/jpeg",
+        contentType: avatar.contentType,
         metadata: buildStorageBusinessMetadata({
           businessDomain: "donnees_utilisateur",
           sourceTable: "profiles",

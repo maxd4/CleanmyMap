@@ -6,6 +6,8 @@ const pickTraceableActorNameMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const createSignalementMock = vi.hoisted(() => vi.fn());
 const hasAnalyticsConsentCookieMock = vi.hoisted(() => vi.fn());
+const verifyRateLimitMock = vi.hoisted(() => vi.fn());
+const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   getCurrentUserIdentity: getCurrentUserIdentityMock,
@@ -21,6 +23,10 @@ vi.mock("@/lib/actions/signalement/create-signalement", () => ({
 vi.mock("@/lib/analytics-consent", () => ({
   hasAnalyticsConsentCookie: hasAnalyticsConsentCookieMock,
 }));
+vi.mock("@/lib/rate-limit/server", () => ({
+  verifyRateLimit: verifyRateLimitMock,
+  createServerRateLimitResponse: createServerRateLimitResponseMock,
+}));
 
 describe("POST /api/spots", () => {
   beforeEach(() => {
@@ -34,6 +40,13 @@ describe("POST /api/spots", () => {
     getCurrentUserIdentityMock.mockResolvedValue({ displayName: "Test User" });
     pickTraceableActorNameMock.mockReturnValue("Test User");
     hasAnalyticsConsentCookieMock.mockReturnValue(true);
+    verifyRateLimitMock.mockResolvedValue({
+      allowed: true,
+      limit: 10,
+      remaining: 9,
+      reset: Date.now() + 300_000,
+    });
+    createServerRateLimitResponseMock.mockReturnValue(null);
     createSignalementMock.mockResolvedValue({
       id: "spot-test-1",
       created_at: "2026-04-22T00:00:00Z",
@@ -173,5 +186,39 @@ describe("POST /api/spots", () => {
 
     expect(response.status).toBe(401);
     expect(createSignalementMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects an abusive authenticated burst before creating a signalement", async () => {
+    verifyRateLimitMock.mockResolvedValueOnce({
+      allowed: false,
+      limit: 10,
+      remaining: 0,
+      reset: Date.now() + 300_000,
+      retryAfter: 120,
+    });
+    createServerRateLimitResponseMock.mockReturnValueOnce(
+      new Response(JSON.stringify({ code: "RATE_LIMIT_EXCEEDED" }), { status: 429 }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/spots", {
+        method: "POST",
+        body: JSON.stringify({
+          type: "spot",
+          label: "Spot répété",
+          latitude: 48.8566,
+          longitude: 2.3522,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    expect(requireAuthenticatedAccessMock).not.toHaveBeenCalled();
+    expect(createSignalementMock).not.toHaveBeenCalled();
+    expect(verifyRateLimitMock).toHaveBeenCalledWith(
+      expect.any(Request),
+      { limit: 10, window: 300 },
+    );
   });
 });

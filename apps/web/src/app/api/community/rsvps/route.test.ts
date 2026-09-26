@@ -4,6 +4,8 @@ const authMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const trackCommunityRsvpYesMock = vi.hoisted(() => vi.fn());
 const revalidateCommunityEventCachesMock = vi.hoisted(() => vi.fn());
+const verifyRateLimitMock = vi.hoisted(() => vi.fn());
+const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", async () =>
   (await import("@/app/api/test-helpers")).createClerkAuthModule(authMock),
@@ -21,11 +23,23 @@ vi.mock("@/lib/community/event-cache-invalidation", () => ({
   revalidateCommunityEventCaches: revalidateCommunityEventCachesMock,
 }));
 
+vi.mock("@/lib/rate-limit/server", () => ({
+  verifyRateLimit: verifyRateLimitMock,
+  createServerRateLimitResponse: createServerRateLimitResponseMock,
+}));
+
 describe("POST /api/community/rsvps", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: "user-1" });
+    verifyRateLimitMock.mockResolvedValue({
+      allowed: true,
+      limit: 30,
+      remaining: 29,
+      reset: Date.now() + 60_000,
+    });
+    createServerRateLimitResponseMock.mockReturnValue(null);
   });
 
   it("keeps SQLi-like event identifiers as data and returns a sanitized error", async () => {
@@ -93,6 +107,31 @@ describe("POST /api/community/rsvps", () => {
     );
 
     expect(response.status).toBe(401);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 429 before authentication-backed mutation when the actor is rate limited", async () => {
+    verifyRateLimitMock.mockResolvedValueOnce({
+      allowed: false,
+      limit: 30,
+      remaining: 0,
+      reset: Date.now() + 60_000,
+      retryAfter: 60,
+    });
+    createServerRateLimitResponseMock.mockReturnValueOnce(
+      new Response(JSON.stringify({ code: "RATE_LIMIT_EXCEEDED" }), { status: 429 }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/community/rsvps", {
+        method: "POST",
+        body: JSON.stringify({ eventId: "event-1", status: "yes" }),
+      }),
+    );
+
+    expect(response.status).toBe(429);
+    expect(authMock).not.toHaveBeenCalled();
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
   });
 });

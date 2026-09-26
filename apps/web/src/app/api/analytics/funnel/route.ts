@@ -10,18 +10,36 @@ import { computeFunnelMetricsWithBaseline } from "@/lib/analytics/funnel-metrics
 import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
 import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
+import { readJsonBodyWithLimit } from "@/lib/http/request-body";
 
 export const runtime = "nodejs";
 
 const FUNNEL_SNAPSHOT_TTL_MINUTES = 60;
 const FUNNEL_SNAPSHOT_VERSION = "public-analytics-funnel-v1";
+const MAX_FUNNEL_REQUEST_BYTES = 64 * 1024;
+const MAX_FUNNEL_META_KEYS = 20;
+const MAX_FUNNEL_META_STRING_LENGTH = 200;
+
+const funnelMetaSchema = z
+  .record(
+    z.string().max(MAX_FUNNEL_META_STRING_LENGTH),
+    z.union([
+      z.string().max(MAX_FUNNEL_META_STRING_LENGTH),
+      z.number().finite(),
+      z.boolean(),
+      z.null(),
+    ]),
+  )
+  .refine((value) => Object.keys(value).length <= MAX_FUNNEL_META_KEYS, {
+    message: "Too many metadata fields",
+  });
 
 const funnelEventSchema = z.object({
   sessionId: z.string().min(6).max(120).optional(),
   at: z.string().datetime().optional(),
   step: z.enum(["view_new", "page_view", "start_form", "submit_success"]),
   mode: z.enum(["quick", "complete"]),
-  meta: z.record(z.string(), z.unknown()).optional(),
+  meta: funnelMetaSchema.optional(),
 });
 
 const payloadSchema = z.union([
@@ -100,15 +118,16 @@ export async function POST(request: Request) {
     return rateLimitResponse;
   }
 
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
+  const body = await readJsonBodyWithLimit(request, MAX_FUNNEL_REQUEST_BYTES);
+  if (!body.ok) {
     return NextResponse.json(
-      { error: "Invalid JSON payload" },
-      { status: 400 },
+      {
+        error: body.reason === "too_large" ? "Payload too large" : "Invalid JSON payload",
+      },
+      { status: body.reason === "too_large" ? 413 : 400 },
     );
   }
+  const payload: unknown = body.data;
 
   const parsed = payloadSchema.safeParse(payload);
   if (!parsed.success) {

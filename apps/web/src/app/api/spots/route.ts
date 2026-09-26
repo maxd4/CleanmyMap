@@ -12,6 +12,7 @@ import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
 import { createSignalement } from "@/lib/actions/signalement/create-signalement";
 import { parsePositiveInteger } from "@/lib/http/query-params";
+import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 
 export const runtime ="nodejs";
 const SPOTS_CACHE_HEADERS = {
@@ -102,6 +103,16 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+ const rateLimit = await verifyRateLimit(request, { limit: 10, window: 300 });
+ const rateLimitResponse = createServerRateLimitResponse(
+  rateLimit.allowed,
+  rateLimit.retryAfter,
+  rateLimit,
+ );
+ if (rateLimitResponse) {
+  return rateLimitResponse;
+ }
+
  const access = await requireAuthenticatedAccess();
  if (!access.ok) {
  return unauthorizedJsonResponse();
