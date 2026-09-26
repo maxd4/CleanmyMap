@@ -25,6 +25,9 @@ vi.mock("@/lib/actions/http", () => ({ updateAction: updateActionMock }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: routerReplaceMock }),
 }));
+vi.mock("@/components/ui/site-preferences-provider", () => ({
+  useSitePreferences: () => ({ locale: "fr" }),
+}));
 vi.mock("./action-creation-legal-panel", () => ({
   ActionCreationLegalPanel: ({ actionId }: { actionId?: string | null }) => (
     <div data-testid="formalities-action-id">{actionId ?? "none"}</div>
@@ -95,7 +98,7 @@ describe("ActionCreationShell", () => {
     );
   });
 
-  it("initializes the Formalités panel with the existing action id", () => {
+  it("opens the Paris step with the existing action id", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ActionCreationShell, {
         actorNameOptions: ["Test"],
@@ -104,13 +107,14 @@ describe("ActionCreationShell", () => {
         userMetadata: { userId: "test" },
         initialActionId: "action-42",
         initialPanel: "formalites",
+        tabSearchParams: { step: "paris" },
       } as ComponentProps<typeof ActionCreationShell>),
     );
 
     expect(markup).toContain('data-testid="formalities-action-id">action-42</div>');
   });
 
-  it("exposes exactly the four independent panels and opens the requested one", () => {
+  it("exposes the four guided steps and opens the requested one", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ActionCreationShell, {
         actorNameOptions: ["Test"],
@@ -118,25 +122,23 @@ describe("ActionCreationShell", () => {
         isAuthenticated: false,
         userMetadata: { userId: "test" },
         initialPanel: "itineraire",
+        tabSearchParams: { step: "itineraire" },
       } as ComponentProps<typeof ActionCreationShell>),
     );
 
-    expect(
-      markup.match(/id="action-creation-panel-(pre-formulaire|itineraire|meteo|formalites)"/g),
-    ).toHaveLength(4);
+    expect(markup).toContain('data-testid="action-workflow-stepper"');
     expect(markup).toContain("Pré-formulaire");
-    expect(markup).toContain("<h1 class=\"text-[clamp(2rem,4vw,3.4rem)] font-black tracking-tight text-emerald-950\">Créer une action</h1>");
+    expect(markup).toContain("Organiser une action");
     expect(markup).toContain("Itinéraire");
-    expect(markup).toContain("Météo &amp; conditions terrain");
-    expect(markup).toContain("Formalités &amp; autorisations locales");
-    expect(markup).toContain('data-open-panel="itineraire"');
+    expect(markup).toContain("Paris");
+    expect(markup).toContain("Préparation");
+    expect(markup).toContain('data-workflow-step="itineraire"');
     expect(markup).toContain('data-testid="route-engine"');
     expect(markup).not.toContain('data-testid="weather-engine"');
     expect(markup).not.toContain('data-testid="pre-formulaire-engine"');
-    expect(markup).not.toContain('data-testid="formalities-action-id"');
   });
 
-  it("keeps the pre-form direct when no panel is supplied", () => {
+  it("starts a new guided preparation on the route step", () => {
     const markup = renderToStaticMarkup(
       React.createElement(ActionCreationShell, {
         actorNameOptions: ["Test"],
@@ -147,11 +149,8 @@ describe("ActionCreationShell", () => {
       } as ComponentProps<typeof ActionCreationShell>),
     );
 
-    expect(markup).toContain('data-open-panel="pre-formulaire"');
-    expect(markup).toContain('data-testid="pre-formulaire-engine"');
-    expect(markup).not.toContain('data-testid="route-engine"');
-    expect(markup).not.toContain('data-testid="weather-engine"');
-    expect(markup).toContain('hidden=""');
+    expect(markup).toContain('data-workflow-step="itineraire"');
+    expect(markup).toContain('data-testid="route-engine"');
   });
 
   it("renders the shared before/after tabs with an independent panel query", () => {

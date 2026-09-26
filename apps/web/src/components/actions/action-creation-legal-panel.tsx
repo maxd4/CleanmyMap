@@ -4,7 +4,13 @@ import { CmmPill } from "@/components/ui/cmm-pill";
 import { AdministrativeRequirementsStatus } from "./administrative-requirements-status";
 import { ActionFormalitiesWorkflowPanel } from "./action-formalities-workflow-panel";
 
-export function ActionCreationLegalPanel({ actionId }: { actionId?: string | null }) {
+export function ActionCreationLegalPanel({
+  actionId,
+  onReadinessChange,
+}: {
+  actionId?: string | null;
+  onReadinessChange?: (readiness: { known: boolean; blocked: boolean }) => void;
+}) {
   return (
     <CmmCard tone="amber" variant="glass" size="lg">
       <div className="space-y-4">
@@ -30,7 +36,7 @@ export function ActionCreationLegalPanel({ actionId }: { actionId?: string | nul
           cleanwalk sans installation ne vaut pas automatiquement AOT ; la
           Ville de Paris n&apos;est pas supposée compétente pour tous les lieux.
         </p>
-        <ActionFormalitiesWorkflowPanel actionId={actionId} />
+        <ActionFormalitiesWorkflowPanel actionId={actionId} onReadinessChange={onReadinessChange} />
         <div className="border-t border-amber-200/70 pt-4">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-800/70">
             État technique de la pré-action

@@ -32,6 +32,8 @@ export type ActionBeforeDeclarationFormProps = {
   onActionPersisted?: (actionId: string) => void;
   signInHref?: string;
   signUpHref?: string;
+  guidedWorkflow?: boolean;
+  guidedReadiness?: "unknown" | "ready" | "blocked";
 };
 
 export type PublicationSummaryItem = {

@@ -32,6 +32,42 @@ const BEFORE_VALIDATION_FIELD_IDS: Record<string, string> = {
   eventStartTime: "before-action-event-start",
 };
 
+function GuidedPreActionSummary({
+  createdId,
+  readiness,
+  summary,
+}: {
+  createdId: string | null;
+  readiness?: "unknown" | "ready" | "blocked";
+  summary: ReturnType<typeof buildPublicationSummary>;
+}) {
+  const isReady = readiness === "ready";
+  return (
+    <div className="space-y-6 px-4 py-6 md:px-6 lg:px-8">
+      <div className="cmm-page-width">
+        <CmmCard tone={isReady ? "emerald" : "amber"} variant="glass" size="lg">
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <CmmPill tone={isReady ? "emerald" : "amber"} size="sm">{isReady ? "Prêt à publier" : "À revoir"}</CmmPill>
+              <span className="text-sm font-semibold text-emerald-950">{isReady ? "Préformulaire prêt à publier" : "Pré-action enregistrée"}</span>
+            </div>
+            <h2 className="text-3xl font-black tracking-tight text-emerald-950">{isReady ? "Préformulaire prêt à publier" : "Pré-action enregistrée — vérification à terminer"}</h2>
+            <p className="cmm-text-body cmm-text-primary max-w-2xl">{isReady ? "Les éléments obligatoires du contrat administratif sont traités. La publication reste une action explicite, hors de ce parcours." : "La même action peut être reprise. Revenez à l’étape Paris pour qualifier les formalités réellement applicables avant toute publication."}</p>
+            {createdId ? <p className="text-xs font-mono text-emerald-900/60">Référence: {createdId}</p> : null}
+            <dl className="grid gap-3 sm:grid-cols-2" data-testid="guided-pre-action-summary">
+              {summary.map((item) => <div key={item.label} className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3"><dt className="text-xs font-black uppercase tracking-[0.12em] text-emerald-700">{item.label}</dt><dd className="mt-1 whitespace-pre-line text-sm leading-6 text-emerald-950">{item.value}</dd></div>)}
+            </dl>
+          </div>
+        </CmmCard>
+      </div>
+    </div>
+  );
+}
+
+function publicationVisibilityLabel(isPublished: boolean): string { return isPublished ? "Publié" : "Privé"; }
+function publicationStatusLabel(isPublished: boolean): string { return isPublished ? "Action prête et publiée" : "Pré-action prête à publier"; }
+function publicationReviewTitle(isPublished: boolean): string { return isPublished ? "Action prête et publiée" : "Vérifier avant publication"; }
+
 export function ActionBeforeDeclarationForm({
   actorNameOptions,
   defaultActorName,
@@ -45,6 +81,8 @@ export function ActionBeforeDeclarationForm({
   onActionPersisted,
   signInHref,
   signUpHref,
+  guidedWorkflow = false,
+  guidedReadiness = "unknown",
 }: ActionBeforeDeclarationFormProps) {
   const [shareActionId, setShareActionId] = useState<string | null>(null);
   const {
@@ -145,6 +183,7 @@ export function ActionBeforeDeclarationForm({
   if (submissionState === "success") {
     const isPublished = Boolean(publishedAt);
     const publicationSummary = buildPublicationSummary(publishedAction ?? form);
+    if (guidedWorkflow) return <GuidedPreActionSummary createdId={createdId} readiness={guidedReadiness} summary={publicationSummary} />;
     return (
       <div className="space-y-6 px-4 py-6 md:px-6 lg:px-8">
         <div className="cmm-page-width">
@@ -153,14 +192,14 @@ export function ActionBeforeDeclarationForm({
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <CmmPill tone="emerald" size="sm">
-                    {isPublished ? "Publié" : "Privé"}
+                    {publicationVisibilityLabel(isPublished)}
                   </CmmPill>
                   <span className="text-sm font-semibold text-emerald-950">
-                    {isPublished ? "Action prête et publiée" : "Pré-action prête à publier"}
+                    {publicationStatusLabel(isPublished)}
                   </span>
                 </div>
                 <h2 className="text-3xl font-black tracking-tight text-emerald-950">
-                  {isPublished ? "Action prête et publiée" : "Vérifier avant publication"}
+                  {publicationReviewTitle(isPublished)}
                 </h2>
                 <p className="max-w-2xl text-sm leading-6 text-emerald-900/68">
                   {isPublished

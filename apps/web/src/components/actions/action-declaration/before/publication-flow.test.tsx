@@ -129,6 +129,23 @@ describe("ActionBeforeDeclarationForm publication flow", () => {
     expect(html).toContain("Annuler");
   });
 
+  it("keeps the guided workflow at a pre-action recap without publication or recruitment controls", () => {
+    useBeforeActionFormMock.mockReturnValue(buildHookState({ publishedAt: null, publicationState: "idle" }));
+
+    const html = renderToStaticMarkup(
+      React.createElement(ActionBeforeDeclarationForm, {
+        ...props,
+        guidedWorkflow: true,
+        guidedReadiness: "ready",
+      }),
+    );
+
+    expect(html).toContain("Préformulaire prêt à publier");
+    expect(html).not.toContain("Publier cette action");
+    expect(html).not.toContain("Partager dans la messagerie");
+    expect(html).not.toContain("Rejoindre une action");
+  });
+
   it.each([
     ["rejected", "Pré-action rejetée"],
     ["cancelled", "Action annulée"],
