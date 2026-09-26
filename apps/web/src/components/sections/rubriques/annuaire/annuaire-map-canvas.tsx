@@ -14,6 +14,7 @@ import L from "leaflet";
 import { cn } from "@/lib/utils";
 import type { AnnuaireEntry } from "@/lib/partners/annuaire-types";
 import { getAssociationProfile, getAssociationStructureBadge, getEntryTrustState } from "./annuaire-helpers";
+import { buildAnnuaireBubbleIconHtml } from "./annuaire-map-icon";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CARTO_BASEMAPS } from "@/lib/maps/basemaps";
 
@@ -24,27 +25,9 @@ const createBubbleIcon = (
   entry: AnnuaireEntry,
   highlighted = false,
 ) => {
-  const primaryType = entry.types[0];
-  let color = "#8b5cf6"; // violet default
-  if (primaryType === "environnemental") color = "#8b5cf6"; // violet
-  if (primaryType === "social") color = "#7c3aed"; // violet
-  if (primaryType === "humanitaire") color = "#7c3aed"; // violet deeper
-
-  const initials = entry.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
-
   return L.divIcon({
     className: "custom-bubble-icon",
-    html: `
-      <div class="group relative flex items-center gap-2 transition-all duration-300 ${highlighted ? 'scale-110 z-[1000]' : 'hover:scale-105'}">
-        <div class="flex items-center justify-center w-10 h-10 rounded-full border-2 border-white shadow-lg shadow-black/10 transition-transform overflow-hidden" 
-             style="background-color: ${color}; color: #FFFFFF; font-weight: bold; font-size: 12px;">
-          ${initials}
-        </div>
-        <div class="pointer-events-none opacity-0 transition-opacity group-hover:opacity-100 whitespace-nowrap rounded-xl border border-violet-300/16 bg-[rgba(24,17,54,0.98)] px-3 py-1.5 shadow-xl backdrop-blur-sm">
-          <p class="text-[11px] font-bold text-white">${entry.name}</p>
-        </div>
-      </div>
-    `,
+    html: buildAnnuaireBubbleIconHtml(entry, highlighted),
     iconSize: [40, 40],
     iconAnchor: [20, 20],
   });

@@ -17,6 +17,14 @@ const bucketMigration = readFileSync(
   "utf8",
 ).replace(/\s+/g, " ").trim().toLowerCase();
 
+const svgMigration = readFileSync(
+  new URL(
+    "../../../supabase/migrations/20260926000003_restrict_chat_attachment_mimes.sql",
+    import.meta.url,
+  ),
+  "utf8",
+).replace(/\s+/g, " ").trim().toLowerCase();
+
 const submitHook = readFileSync(
   new URL("../../components/chat/hooks/use-chat-submit.ts", import.meta.url),
   "utf8",
@@ -47,5 +55,13 @@ describe("chat attachment privacy contract", () => {
   it("keeps Storage MIME allowlisting free of video types", () => {
     expect(bucketMigration).toContain("allowed_mime_types");
     expect(bucketMigration).not.toMatch(/video\//i);
+  });
+
+  it("removes SVG from the effective MIME allowlist without rewriting legacy rows", () => {
+    expect(svgMigration).toContain("update storage.buckets");
+    expect(svgMigration).toContain("array_remove");
+    expect(svgMigration).toContain("'image/svg+xml'");
+    expect(svgMigration).toContain("where id = 'chat-attachments'");
+    expect(svgMigration).toContain("existing attachment rows remain readable");
   });
 });

@@ -28,6 +28,7 @@ import {
   computeEnvironmentalProxyMetrics,
   computeMapCoverageMetrics,
 } from "./metrics";
+import { safeImageSource } from "@/lib/security/html-escape";
 
 function toActionImpactInput(item: ActionListItem): ActionImpactInput {
   return item.contract ?? {
@@ -363,7 +364,9 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
       label: item.location_label,
       kg: computeActionImpactKpis(toActionImpactInput(item)).wasteKg,
       butts: computeActionImpactKpis(toActionImpactInput(item)).butts,
-      photos: item.contract?.metadata.photos?.map((p) => p.dataUrl) ?? [],
+      photos: item.contract?.metadata.photos
+        ?.map((photo) => safeImageSource(photo.dataUrl))
+        .filter((url): url is string => Boolean(url)) ?? [],
     }));
 
   const highlightPhotos: Array<{ url: string; label: string; date: string }> = [];

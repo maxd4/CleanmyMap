@@ -150,4 +150,31 @@ describe("generatePdfHtml", () => {
     expect(html).toContain(".master-pack-container { background: #fff; }");
     expect(html).toContain("window.addEventListener(\"afterprint\"");
   });
+
+  it("escapes report strings and rejects executable image sources", () => {
+    const unsafeReport = {
+      ...report,
+      areas: [{ ...report.areas[0], area: "<script>alert(1)</script>" }],
+      community: {
+        ...report.community,
+        topLeaderboard: [{ name: '<img src=x onerror="alert(2)">', actions: 1, kg: 1, butts: 0 }],
+      },
+      highlightPhotos: [
+        { url: "javascript:alert(3)", label: "<img src=x>", date: "2026-08-01" },
+      ],
+    } as ReportModel;
+
+    const html = generatePdfHtml(
+      unsafeReport,
+      '<img src=x onerror="alert(4)">',
+      "paris",
+      "RPT-2026-002",
+    );
+
+    expect(html).not.toContain('<img src=x onerror="alert(4)">');
+    expect(html).not.toContain("<script>alert(1)</script>");
+    expect(html).not.toContain("javascript:alert(3)");
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+    expect(html).toContain("&lt;img src=x onerror=&quot;alert(2)&quot;&gt;");
+  });
 });

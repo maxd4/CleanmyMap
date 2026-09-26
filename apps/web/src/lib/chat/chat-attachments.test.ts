@@ -28,7 +28,9 @@ describe("isSafeChatAttachmentUrl", () => {
 describe("Chat image capture and video contract", () => {
   it("keeps camera capture image-only and excludes video from attachments", () => {
     expect(CHAT_CAMERA_ACCEPT).toBe("image/*");
-    expect(CHAT_ATTACHMENT_ACCEPT).toContain("image/*");
+    expect(CHAT_ATTACHMENT_ACCEPT).toContain("image/jpeg");
+    expect(CHAT_ATTACHMENT_ACCEPT).not.toContain("image/svg+xml");
+    expect(CHAT_ATTACHMENT_ACCEPT).not.toContain(".svg");
     expect(CHAT_ATTACHMENT_ACCEPT).not.toContain("video/*");
     expect(CHAT_ATTACHMENT_ACCEPT).not.toMatch(/video\//i);
   });
@@ -43,5 +45,12 @@ describe("Chat image capture and video contract", () => {
     expect(isUnsupportedChatVideoFile({ name: "clip.mp4", type: "" } as File)).toBe(true);
     expect(isSupportedChatAttachmentFile({ name: "clip.webm", type: "" } as File)).toBe(false);
     expect(isSupportedChatAttachmentFile({ name: "photo.jpg", type: "image/jpeg" } as File)).toBe(true);
+  });
+
+  it("rejects SVG uploads, including deceptive MIME/extension combinations", () => {
+    expect(isSupportedChatAttachmentMimeType("image/svg+xml")).toBe(false);
+    expect(isSupportedChatAttachmentFile({ name: "payload.svg", type: "image/svg+xml" } as File)).toBe(false);
+    expect(isSupportedChatAttachmentFile({ name: "payload.svg", type: "image/png" } as File)).toBe(false);
+    expect(isSupportedChatAttachmentFile({ name: "payload.jpg", type: "image/svg+xml" } as File)).toBe(false);
   });
 });

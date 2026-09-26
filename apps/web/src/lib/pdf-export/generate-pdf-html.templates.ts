@@ -1,4 +1,5 @@
 import { buildOfficialReportCss } from "./report-pdf-theme";
+import { escapeHtml } from "@/lib/security/html-escape";
 
 export function buildPdfChapterHeader(
   kicker: string,
@@ -7,9 +8,9 @@ export function buildPdfChapterHeader(
 ): string {
   return `
     <div style="margin-bottom: 40px; border-bottom: 1px solid #e2e8f0; padding-bottom: 24px;">
-      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 12px;">${kicker}</div>
-      <h2 style="font-family: 'Outfit'; font-size: 36px; font-weight: 700; color: #1e293b; margin: 0; letter-spacing: -0.02em;">${title}</h2>
-      <p style="font-size: 14px; color: #64748b; margin-top: 8px; line-height: 1.5;">${subtitle}</p>
+      <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 12px;">${escapeHtml(kicker)}</div>
+      <h2 style="font-family: 'Outfit'; font-size: 36px; font-weight: 700; color: #1e293b; margin: 0; letter-spacing: -0.02em;">${escapeHtml(title)}</h2>
+      <p style="font-size: 14px; color: #64748b; margin-top: 8px; line-height: 1.5;">${escapeHtml(subtitle)}</p>
     </div>
   `;
 }

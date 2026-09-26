@@ -28,6 +28,7 @@ import {
   hasRecentSubmission,
   is24HourTimeString,
 } from"@/lib/security/validation";
+import { escapeHtml } from "@/lib/security/html-escape";
 
 export const runtime ="nodejs";
 
@@ -88,16 +89,16 @@ async function tryNotifyAdmins(
 ) {
 const html = `
 <h2>Nouvelle demande onboarding commercant engage</h2>
-<p><strong>Organisation:</strong> ${payload.organizationName}</p>
-<p><strong>Type:</strong> ${payload.organizationType}</p>
- <p><strong>Portée:</strong> ${formatPartnerScopeLabel(payload.partnerScope)}</p>
-<p><strong>Identité légale :</strong> ${payload.legalIdentity}</p>
- <p><strong>Zone:</strong> ${payload.partnerScope === "local" ? formatCoverageSummary(payload.coverage) : formatPartnerScopeLabel(payload.partnerScope)}</p>
-<p><strong>Contributions:</strong> ${payload.contributionTypes.join(",")}</p>
- <p><strong>Actions de relais:</strong> ${payload.relayActions}</p>
-<p><strong>Disponibilité :</strong> ${formatAvailabilitySummary(payload.availability)}</p>
-<p><strong>Contact:</strong> ${payload.contactName} - ${payload.contactChannel} (${payload.contactDetails})</p>
-<p><strong>Motivation:</strong> ${payload.motivation}</p>
+<p><strong>Organisation:</strong> ${escapeHtml(payload.organizationName)}</p>
+<p><strong>Type:</strong> ${escapeHtml(payload.organizationType)}</p>
+ <p><strong>Portée:</strong> ${escapeHtml(formatPartnerScopeLabel(payload.partnerScope))}</p>
+<p><strong>Identité légale :</strong> ${escapeHtml(payload.legalIdentity)}</p>
+ <p><strong>Zone:</strong> ${escapeHtml(payload.partnerScope === "local" ? formatCoverageSummary(payload.coverage) : formatPartnerScopeLabel(payload.partnerScope))}</p>
+<p><strong>Contributions:</strong> ${escapeHtml(payload.contributionTypes.join(","))}</p>
+ <p><strong>Actions de relais:</strong> ${escapeHtml(payload.relayActions)}</p>
+<p><strong>Disponibilité :</strong> ${escapeHtml(formatAvailabilitySummary(payload.availability))}</p>
+<p><strong>Contact:</strong> ${escapeHtml(`${payload.contactName} - ${payload.contactChannel} (${payload.contactDetails})`)}</p>
+<p><strong>Motivation:</strong> ${escapeHtml(payload.motivation)}</p>
  `;
 
  await sendEmail({

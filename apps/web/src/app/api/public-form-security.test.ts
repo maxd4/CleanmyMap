@@ -191,4 +191,37 @@ describe("public form security guardrails", () => {
     );
     expect(promotionResponse.status).toBe(401);
   });
+
+  it("escapes partner onboarding content before sending the admin HTML email", async () => {
+    sendEmailMock.mockClear();
+    authMock.mockResolvedValueOnce({ userId: "user-1" });
+    const onboarding = await import("./partners/onboarding-requests/route");
+    const response = await onboarding.POST(
+      new Request("http://localhost/api/partners/onboarding-requests", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          organizationName: '<img src=x onerror="alert(1)">',
+          organizationType: "commerce",
+          partnerScope: "local",
+          legalIdentity: "Structure de test XSS",
+          coverage: { arrondissements: [10], quartiers: [] },
+          contributionTypes: ["communication"],
+          relayActions: '<script>alert("relay")</script>',
+          availability: { slots: [{ day: "tue", start: "10:00", end: "18:00" }] },
+          contactName: "Testeur",
+          contactChannel: "Email",
+          contactDetails: "test@example.org",
+          motivation: "Une motivation suffisamment longue pour passer la validation.",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    const emailCall = sendEmailMock.mock.calls.at(0) as [{ html?: unknown }] | undefined;
+    const html = String(emailCall?.[0]?.html ?? "");
+    expect(html).toContain("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+    expect(html).toContain("&lt;script&gt;alert(&quot;relay&quot;)&lt;/script&gt;");
+    expect(html).not.toContain('<img src=x onerror="alert(1)">');
+  });
 });
