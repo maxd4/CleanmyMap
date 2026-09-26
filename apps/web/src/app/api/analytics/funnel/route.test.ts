@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createAdminAuthResponseModule, createAdminAuthzModule, createApiErrorModule, createPublicSnapshotModule, createRateLimitModule, rateLimitMocks } from "@/app/api/test-helpers";
 
 const authMock = vi.hoisted(() => vi.fn());
 const appendFunnelEventMock = vi.hoisted(() => vi.fn());
@@ -6,8 +7,7 @@ const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const listFunnelEventsMock = vi.hoisted(() => vi.fn());
 const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
 const hasAnalyticsConsentCookieMock = vi.hoisted(() => vi.fn());
-const verifyRateLimitMock = vi.hoisted(() => vi.fn());
-const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
+const { verifyRateLimit: verifyRateLimitMock, createServerRateLimitResponse: createServerRateLimitResponseMock } = rateLimitMocks;
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -18,42 +18,34 @@ vi.mock("@/lib/analytics/funnel-store", () => ({
   listFunnelEvents: listFunnelEventsMock,
 }));
 
-vi.mock("@/lib/authz", () => ({
-  requireAdminAccess: requireAdminAccessMock,
-}));
+vi.mock("@/lib/authz", () => createAdminAuthzModule(requireAdminAccessMock));
 
-vi.mock("@/lib/http/auth-responses", () => ({
-  adminAccessErrorJsonResponse: () => new Response("forbidden", { status: 403 }),
-}));
+vi.mock("@/lib/http/auth-responses", () => createAdminAuthResponseModule());
 
-vi.mock("@/lib/http/api-errors", () => ({
-  handleApiError: (error: unknown) =>
-    new Response(error instanceof Error ? error.message : "error", { status: 500 }),
-}));
+vi.mock("@/lib/http/api-errors", () => createApiErrorModule());
 
-vi.mock("@/lib/public-surface-snapshot-service", () => ({
-  loadOrRefreshPublicSurfaceSnapshot: loadOrRefreshPublicSurfaceSnapshotMock,
-}));
+vi.mock("@/lib/public-surface-snapshot-service", () => createPublicSnapshotModule(loadOrRefreshPublicSurfaceSnapshotMock));
 
 vi.mock("@/lib/analytics-consent", () => ({
   hasAnalyticsConsentCookie: hasAnalyticsConsentCookieMock,
 }));
 
-vi.mock("@/lib/rate-limit/server", () => ({
-  verifyRateLimit: verifyRateLimitMock,
-  createServerRateLimitResponse: createServerRateLimitResponseMock,
-}));
+vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
+
+function resetFunnelMocks() {
+  vi.resetModules();
+  vi.clearAllMocks();
+  authMock.mockResolvedValue({ userId: "user-1" });
+  requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
+  listFunnelEventsMock.mockResolvedValue([]);
+  loadOrRefreshPublicSurfaceSnapshotMock.mockResolvedValue({
+    payload: { status: "ok" },
+  });
+}
 
 describe("POST /api/analytics/funnel", () => {
   beforeEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
-    authMock.mockResolvedValue({ userId: "user-1" });
-    requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
-    listFunnelEventsMock.mockResolvedValue([]);
-    loadOrRefreshPublicSurfaceSnapshotMock.mockResolvedValue({
-      payload: { status: "ok" },
-    });
+    resetFunnelMocks();
     hasAnalyticsConsentCookieMock.mockReturnValue(true);
     verifyRateLimitMock.mockResolvedValue({
       allowed: true,
@@ -242,14 +234,7 @@ describe("POST /api/analytics/funnel", () => {
 
 describe("GET /api/analytics/funnel", () => {
   beforeEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
-    authMock.mockResolvedValue({ userId: "user-1" });
-    requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
-    listFunnelEventsMock.mockResolvedValue([]);
-    loadOrRefreshPublicSurfaceSnapshotMock.mockResolvedValue({
-      payload: { status: "ok" },
-    });
+    resetFunnelMocks();
   });
 
   afterEach(() => {

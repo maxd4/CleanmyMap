@@ -24,6 +24,106 @@ export function canUseSupabaseServerPersistence(): boolean {
   );
 }
 
+export function prependBoundedRecord<T>(
+  record: T,
+  records: readonly T[],
+  limit = 2000,
+): T[] {
+  return [record, ...records].slice(0, limit);
+}
+
+export function mapSupabaseRecords<T>(
+  data: readonly unknown[] | null | undefined,
+  parse: (row: Record<string, unknown>) => T | null,
+): T[] {
+  return (data ?? [])
+    .map((row) => parse(row as Record<string, unknown>))
+    .filter((record): record is T => Boolean(record));
+}
+
+export async function readSupabaseRecords<T>(
+  query: PromiseLike<{
+    data: readonly unknown[] | null;
+    error: { message: string } | null;
+  }>,
+  parse: (row: Record<string, unknown>) => T | null,
+): Promise<T[]> {
+  const result = await query;
+  if (result.error) throw new Error(result.error.message);
+  return mapSupabaseRecords(result.data, parse);
+}
+
+export async function readSupabaseRecord<T>(
+  query: PromiseLike<{
+    data: unknown;
+    error: { message: string } | null;
+  }>,
+  parse: (row: Record<string, unknown>) => T | null,
+): Promise<T | null> {
+  const result = await query;
+  if (result.error) throw new Error(result.error.message);
+  return result.data ? parse(result.data as Record<string, unknown>) : null;
+}
+
+export async function persistSupabaseRecord<T>(
+  query: PromiseLike<{
+    data: unknown;
+    error: { message: string } | null;
+  }>,
+  parse: (row: Record<string, unknown>) => T | null,
+  message: string,
+): Promise<T> {
+  return requirePersistedRecord(await readSupabaseRecord(query, parse), message);
+}
+
+export function requirePersistedRecord<T>(record: T | null, message: string): T {
+  if (!record) throw new Error(message);
+  return record;
+}
+
+export function replaceRecordInList<T>(
+  records: readonly T[],
+  matches: (record: T) => boolean,
+  update: (record: T) => T,
+): { records: T[]; record: T } | null {
+  const index = records.findIndex(matches);
+  const current = index >= 0 ? records[index] : undefined;
+  if (!current) return null;
+  const nextRecords = [...records];
+  const record = update(current);
+  nextRecords[index] = record;
+  return { records: nextRecords, record };
+}
+
+export function findRecordInList<T>(
+  records: readonly T[],
+  matches: (record: T) => boolean,
+): T | null {
+  return records.find(matches) ?? null;
+}
+
+export async function replaceAndPersistRecord<T>(
+  records: readonly T[],
+  matches: (record: T) => boolean,
+  update: (record: T) => T,
+  persist: (records: T[]) => Promise<void>,
+): Promise<T | null> {
+  const replacement = replaceRecordInList(records, matches, update);
+  if (!replacement) return null;
+  await persist(replacement.records);
+  return replacement.record;
+}
+
+export function getRecentTimeWindow(periodDays: number): {
+  nowMs: number;
+  floor: number;
+  floorIso: string;
+} {
+  const nowMs = Date.now();
+  const floor = nowMs - periodDays * 24 * 60 * 60 * 1000;
+  return { nowMs, floor, floorIso: new Date(floor).toISOString() };
+}
+
 export function isVercelRuntime(): boolean {
   return process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV?.trim());
 }

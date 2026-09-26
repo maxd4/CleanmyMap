@@ -176,6 +176,27 @@ export async function verifyRateLimit(
   return checkServerRateLimit(request, options);
 }
 
+export async function enforceServerRateLimit(
+  request: Request,
+  options: ServerRateLimitOptions = {},
+) {
+  const result = await verifyRateLimit(request, options);
+  return createServerRateLimitResponse(
+    result.allowed,
+    result.retryAfter,
+    result,
+  );
+}
+
+export async function withServerRateLimit<T extends Response>(
+  request: Request,
+  options: ServerRateLimitOptions,
+  handler: () => Promise<T>,
+): Promise<Response | T> {
+  const response = await enforceServerRateLimit(request, options);
+  return response ?? handler();
+}
+
 export function createServerRateLimitResponse(
   allowed: boolean,
   retryAfter?: number,

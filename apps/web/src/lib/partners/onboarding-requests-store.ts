@@ -4,7 +4,12 @@ import { randomUUID } from "node:crypto";
 import {
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
+  findRecordInList,
   isVercelRuntime,
+  persistSupabaseRecord,
+  readSupabaseRecord,
+  readSupabaseRecords,
+  replaceAndPersistRecord,
 } from "@/lib/persistence/runtime-store";
 import {
   normalizePartnerAvailability,
@@ -262,19 +267,15 @@ export async function appendPartnerOnboardingRequest(params: {
 
   let persistedRecord = record;
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
-      .from("partner_onboarding_requests")
-      .insert(toSupabaseRow(record))
-      .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
-      .single();
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    const persisted = fromSupabaseRow(result.data as Record<string, unknown>);
-    if (!persisted) {
-      throw new Error("Supabase returned an invalid partner onboarding request.");
-    }
-    persistedRecord = persisted;
+    persistedRecord = await persistSupabaseRecord(
+      getSupabaseServerClient(true)
+        .from("partner_onboarding_requests")
+        .insert(toSupabaseRow(record))
+        .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
+        .single(),
+      fromSupabaseRow,
+      "Supabase returned an invalid partner onboarding request.",
+    );
   } else {
     const store = await readStore();
     const records = [record, ...store.records].slice(0, 2000);
@@ -303,19 +304,14 @@ export async function listPartnerOnboardingRequests(
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
-      .from("partner_onboarding_requests")
-      .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
-      .order("created_at", { ascending: false })
-      .limit(normalizedLimit);
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return (result.data ?? [])
-      .map((row) => fromSupabaseRow(row as Record<string, unknown>))
-      .filter(
-        (record): record is PartnerOnboardingRequestRecord => Boolean(record),
-      );
+    return readSupabaseRecords(
+      getSupabaseServerClient(true)
+        .from("partner_onboarding_requests")
+        .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
+        .order("created_at", { ascending: false })
+        .limit(normalizedLimit),
+      fromSupabaseRow,
+    );
   }
 
   const store = await readStore();
@@ -328,21 +324,18 @@ export async function getPartnerOnboardingRequestById(
   assertPersistenceAvailable("partner_onboarding_requests");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
-      .from("partner_onboarding_requests")
-      .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
-      .eq("id", requestId)
-      .maybeSingle();
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return result.data
-      ? fromSupabaseRow(result.data as Record<string, unknown>)
-      : null;
+    return readSupabaseRecord(
+      getSupabaseServerClient(true)
+        .from("partner_onboarding_requests")
+        .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
+        .eq("id", requestId)
+        .maybeSingle(),
+      fromSupabaseRow,
+    );
   }
 
   const store = await readStore();
-  return store.records.find((record) => record.id === requestId) ?? null;
+  return findRecordInList(store.records, (record) => record.id === requestId);
 }
 
 export async function countPartnerOnboardingRequests(): Promise<number> {
@@ -375,18 +368,15 @@ export async function updatePartnerOnboardingRequestStatus(params: {
         : params.status === "rejected"
           ? "rejected"
           : "pending";
-    const result = await getSupabaseServerClient(true)
-      .from("partner_onboarding_requests")
-      .update({ status: params.status, creator_state: creatorState })
-      .eq("id", params.requestId)
-      .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
-      .maybeSingle();
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return result.data
-      ? fromSupabaseRow(result.data as Record<string, unknown>)
-      : null;
+    return readSupabaseRecord(
+      getSupabaseServerClient(true)
+        .from("partner_onboarding_requests")
+        .update({ status: params.status, creator_state: creatorState })
+        .eq("id", params.requestId)
+        .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
+        .maybeSingle(),
+      fromSupabaseRow,
+    );
   }
 
   const store = await readStore();
@@ -424,40 +414,24 @@ export async function updatePartnerOnboardingRequestCreatorState(params: {
   assertPersistenceAvailable("partner_onboarding_requests");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
-      .from("partner_onboarding_requests")
-      .update({ creator_state: params.creatorState })
-      .eq("id", params.requestId)
-      .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
-      .maybeSingle();
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return result.data
-      ? fromSupabaseRow(result.data as Record<string, unknown>)
-      : null;
+    return readSupabaseRecord(
+      getSupabaseServerClient(true)
+        .from("partner_onboarding_requests")
+        .update({ creator_state: params.creatorState })
+        .eq("id", params.requestId)
+        .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
+        .maybeSingle(),
+      fromSupabaseRow,
+    );
   }
 
   const store = await readStore();
-  const index = store.records.findIndex((record) => record.id === params.requestId);
-  if (index < 0) {
-    return null;
-  }
-
-  const current = store.records[index];
-  if (!current) {
-    return null;
-  }
-
-  const updated: PartnerOnboardingRequestRecord = {
-    ...current,
-    creatorState: params.creatorState,
-  };
-
-  const records = [...store.records];
-  records[index] = updated;
-  await writeStore({ updatedAt: new Date().toISOString(), records });
-  return updated;
+  return replaceAndPersistRecord(
+    store.records,
+    (record) => record.id === params.requestId,
+    (current) => ({ ...current, creatorState: params.creatorState }),
+    (records) => writeStore({ updatedAt: new Date().toISOString(), records }),
+  );
 }
 
 export async function deletePartnerOnboardingRequest(

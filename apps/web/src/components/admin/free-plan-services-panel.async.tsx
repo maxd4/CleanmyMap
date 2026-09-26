@@ -1,9 +1,9 @@
 "use client";
 
-import { RefreshCcw, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
-import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+import { AsyncPanelCardLoadingState } from "@/components/ui/async-panel-controls";
 import { FreePlanServicesVisual } from "@/components/admin/free-plan-services-visual";
 import type { ServicesPayload } from "@/lib/dashboard/status";
 import { cn } from "@/lib/utils";
@@ -16,51 +16,8 @@ import {
 } from "./free-plan-services-panel.model";
 import { FreePlanServicesRiskCards } from "./free-plan-services-risk-cards";
 
-export function FreePlanRefreshButton({
-  isRefreshing,
-  onRefresh,
-}: {
-  isRefreshing: boolean;
-  onRefresh: () => void;
-}) {
-  return (
-    <CmmButton
-      type="button"
-      tone="tertiary"
-      size="sm"
-      loading={isRefreshing}
-      onClick={onRefresh}
-      className="!border-white/10 !bg-white/5 !text-white hover:!bg-white/10"
-    >
-      <RefreshCcw
-        size={12}
-        aria-hidden="true"
-        className={isRefreshing ? "motion-safe:animate-spin" : undefined}
-      />
-      {isRefreshing ? "Rafraîchissement" : "Rafraîchir"}
-    </CmmButton>
-  );
-}
 export function FreePlanLoadingState() {
-  return (
-    <div
-      className="grid gap-4 md:grid-cols-4"
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-      aria-label="Chargement de la fiche des plans gratuits"
-    >
-      {Array.from({ length: 4 }, (_, index) => (
-        <CmmSkeleton
-          key={index}
-          variant="card"
-          animation="pulse"
-          className="h-28 rounded-3xl bg-white/5"
-          aria-hidden="true"
-        />
-      ))}
-    </div>
-  );
+  return <AsyncPanelCardLoadingState ariaLabel="Chargement de la fiche des plans gratuits" />;
 }
 
 export function FreePlanErrorState({

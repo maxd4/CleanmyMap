@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 const PLACEHOLDER_HOSTS = new Set([
   "example.com",
@@ -140,6 +141,47 @@ export function hasRecentSubmission(
 
 export function hasHoneypotSignal(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+export function rejectPublicFormAbuse(payload: {
+  honeypot?: unknown;
+  submittedAt?: unknown;
+}, message = "Impossible d'envoyer la demande pour le moment."): ReturnType<typeof createPublicRateLimitResponse> | null {
+  if (hasHoneypotSignal(payload.honeypot) || hasRecentSubmission(payload.submittedAt)) {
+    return createPublicRateLimitResponse(message);
+  }
+  return null;
+}
+
+export async function parseJsonBodyWithSchema<Schema extends z.ZodType>(
+  request: Request,
+  schema: Schema,
+): Promise<
+  | { ok: true; data: z.infer<Schema> }
+  | { ok: false; response: ReturnType<typeof NextResponse.json> }
+> {
+  let payload: unknown;
+  try {
+    payload = await request.json();
+  } catch {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 }),
+    };
+  }
+
+  const parsed = schema.safeParse(payload);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: "Invalid payload", details: parsed.error.flatten().fieldErrors },
+        { status: 400 },
+      ),
+    };
+  }
+
+  return { ok: true, data: parsed.data };
 }
 
 export function buildPublicRateLimitPayload(

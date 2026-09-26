@@ -14,12 +14,12 @@ export const MOHS_GRADES = [
 export const MOHS_IMPACT_FAMILIES = ["waste", "butts"] as const;
 export type MohsImpactFamily = (typeof MOHS_IMPACT_FAMILIES)[number];
 
-export const MOHS_STEP_BY_FAMILY: Record<MohsImpactFamily, number> = {
+const MOHS_STEP_BY_FAMILY: Record<MohsImpactFamily, number> = {
   waste: 20,
   butts: 2_000,
 };
 
-export const MOHS_XP_PER_GRADE = 0.25;
+const MOHS_XP_PER_GRADE = 0.25;
 export const MOHS_MAX_XP = 2.25;
 export const MOHS_PROGRESSION_VERSION = "mohs-impact-v1" as const;
 

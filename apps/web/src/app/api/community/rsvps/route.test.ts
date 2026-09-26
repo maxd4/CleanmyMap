@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRateLimitModule, mockAllowedRateLimit, mockRejectedRateLimit } from "@/app/api/test-helpers";
 
 const authMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const trackCommunityRsvpYesMock = vi.hoisted(() => vi.fn());
 const revalidateCommunityEventCachesMock = vi.hoisted(() => vi.fn());
-const verifyRateLimitMock = vi.hoisted(() => vi.fn());
-const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", async () =>
   (await import("@/app/api/test-helpers")).createClerkAuthModule(authMock),
@@ -23,23 +22,14 @@ vi.mock("@/lib/community/event-cache-invalidation", () => ({
   revalidateCommunityEventCaches: revalidateCommunityEventCachesMock,
 }));
 
-vi.mock("@/lib/rate-limit/server", () => ({
-  verifyRateLimit: verifyRateLimitMock,
-  createServerRateLimitResponse: createServerRateLimitResponseMock,
-}));
+vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
 
 describe("POST /api/community/rsvps", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
     authMock.mockResolvedValue({ userId: "user-1" });
-    verifyRateLimitMock.mockResolvedValue({
-      allowed: true,
-      limit: 30,
-      remaining: 29,
-      reset: Date.now() + 60_000,
-    });
-    createServerRateLimitResponseMock.mockReturnValue(null);
+    mockAllowedRateLimit(30);
   });
 
   it("keeps SQLi-like event identifiers as data and returns a sanitized error", async () => {
@@ -111,16 +101,7 @@ describe("POST /api/community/rsvps", () => {
   });
 
   it("returns 429 before authentication-backed mutation when the actor is rate limited", async () => {
-    verifyRateLimitMock.mockResolvedValueOnce({
-      allowed: false,
-      limit: 30,
-      remaining: 0,
-      reset: Date.now() + 60_000,
-      retryAfter: 60,
-    });
-    createServerRateLimitResponseMock.mockReturnValueOnce(
-      new Response(JSON.stringify({ code: "RATE_LIMIT_EXCEEDED" }), { status: 429 }),
-    );
+    mockRejectedRateLimit(30);
 
     const { POST } = await import("./route");
     const response = await POST(

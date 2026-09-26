@@ -14,26 +14,35 @@ function readableMarkup(html: string): string {
   return html.replaceAll("&#x27;", "'").replaceAll("&amp;", "&");
 }
 
+function renderIdentity(
+  form: ComponentProps<typeof ActionStepIdentity>["form"],
+  userMetadata: ComponentProps<typeof ActionStepIdentity>["userMetadata"] = {
+    userId: "preview-local",
+  },
+): string {
+  return readableMarkup(renderToStaticMarkup(
+    React.createElement(ActionStepIdentity, {
+      form,
+      updateField: () => undefined,
+      updateFields: () => undefined,
+      userMetadata,
+      recordType: "action",
+      hasAttemptedSubmit: false,
+    } as ComponentProps<typeof ActionStepIdentity>),
+  ));
+}
+
 describe("ActionStepIdentity", () => {
   it("shows manual members without exposing the publication control in the complete form", () => {
     const form = createInitialFormState("Aperçu local", "action");
     form.associationName = "Action spontanée";
     form.participantAccounts = ["user-manual-1"];
 
-    const html = renderToStaticMarkup(
-      React.createElement(ActionStepIdentity, {
-        form,
-        updateField: () => undefined,
-        updateFields: () => undefined,
-        userMetadata: {
-          userId: "preview-local",
-          username: "preview-local",
-          displayName: "Aperçu local",
-        },
-        recordType: "action",
-        hasAttemptedSubmit: false,
-      } as ComponentProps<typeof ActionStepIdentity>),
-    );
+    const html = renderIdentity(form, {
+      userId: "preview-local",
+      username: "preview-local",
+      displayName: "Aperçu local",
+    });
 
     expect(html).toContain("Membres de l");
     expect(html).toContain("Type de structure");
@@ -45,16 +54,7 @@ describe("ActionStepIdentity", () => {
 
   it("keeps clean-place out of the action entry form", () => {
     const form = createInitialFormState("Aperçu local", "action");
-    const html = renderToStaticMarkup(
-      React.createElement(ActionStepIdentity, {
-        form,
-        updateField: () => undefined,
-        updateFields: () => undefined,
-        userMetadata: { userId: "preview-local" },
-        recordType: "action",
-        hasAttemptedSubmit: false,
-      } as ComponentProps<typeof ActionStepIdentity>),
-    );
+    const html = renderIdentity(form);
 
     expect(html).not.toContain("Type d&#x27;action");
     expect(html).not.toContain("Action terrain");
@@ -63,16 +63,7 @@ describe("ActionStepIdentity", () => {
 
   it("explains the unified action time and event window", () => {
     const form = createInitialFormState("Aperçu local", "action");
-    const html = readableMarkup(renderToStaticMarkup(
-      React.createElement(ActionStepIdentity, {
-        form,
-        updateField: () => undefined,
-        updateFields: () => undefined,
-        userMetadata: { userId: "preview-local" },
-        recordType: "action",
-        hasAttemptedSubmit: false,
-      } as ComponentProps<typeof ActionStepIdentity>),
-    ));
+    const html = renderIdentity(form);
 
     expect(html).toContain("Participants & temps d’action");
     expect(html).toContain("marche, le ramassage, le tri et la pesée");
@@ -87,16 +78,7 @@ describe("ActionStepIdentity", () => {
       form.associationName = organizerType === "spontaneous" ? "Action spontanée" : "";
       form.organizerName = organizerType === "spontaneous" ? "Aperçu local" : "";
 
-      const html = readableMarkup(renderToStaticMarkup(
-        React.createElement(ActionStepIdentity, {
-          form,
-          updateField: () => undefined,
-          updateFields: () => undefined,
-          userMetadata: { userId: "preview-local" },
-          recordType: "action",
-          hasAttemptedSubmit: false,
-        } as ComponentProps<typeof ActionStepIdentity>),
-      ));
+       const html = renderIdentity(form);
 
       expect(html).toContain('role="combobox"');
       if (organizerType === "spontaneous") {
@@ -118,16 +100,7 @@ describe("ActionStepIdentity", () => {
     nationalForm.organizerType = "association";
     nationalForm.associationName = nationalEntry!.value;
     nationalForm.organizerName = nationalEntry!.name;
-    const nationalHtml = readableMarkup(renderToStaticMarkup(
-      React.createElement(ActionStepIdentity, {
-        form: nationalForm,
-        updateField: () => undefined,
-        updateFields: () => undefined,
-        userMetadata: { userId: "preview-local" },
-        recordType: "action",
-        hasAttemptedSubmit: false,
-      } as ComponentProps<typeof ActionStepIdentity>),
-    ));
+    const nationalHtml = renderIdentity(nationalForm);
 
     expect(nationalHtml).toContain(nationalEntry!.name);
 
@@ -135,16 +108,7 @@ describe("ActionStepIdentity", () => {
     legacyForm.organizerType = "association";
     legacyForm.associationName = "Paris Clean Walk";
     legacyForm.organizerName = "Paris Clean Walk";
-    const legacyHtml = readableMarkup(renderToStaticMarkup(
-      React.createElement(ActionStepIdentity, {
-        form: legacyForm,
-        updateField: () => undefined,
-        updateFields: () => undefined,
-        userMetadata: { userId: "preview-local" },
-        recordType: "action",
-        hasAttemptedSubmit: false,
-      } as ComponentProps<typeof ActionStepIdentity>),
-    ));
+    const legacyHtml = renderIdentity(legacyForm);
 
     expect(legacyHtml).toContain('value="Paris Clean Walk"');
   });
@@ -155,16 +119,7 @@ describe("ActionStepIdentity", () => {
     form.associationName = "Entreprise";
     form.organizerName = "Entreprise - ACME";
 
-    const html = readableMarkup(renderToStaticMarkup(
-      React.createElement(ActionStepIdentity, {
-        form,
-        updateField: () => undefined,
-        updateFields: () => undefined,
-        userMetadata: { userId: "preview-local" },
-        recordType: "action",
-        hasAttemptedSubmit: false,
-      } as ComponentProps<typeof ActionStepIdentity>),
-    ));
+    const html = renderIdentity(form);
 
     expect(html).toContain('role="combobox"');
     expect(html).toContain('value="Entreprise - ACME"');
@@ -178,16 +133,7 @@ describe("ActionStepIdentity", () => {
     form.organizerName = "Aperçu local";
     form.volunteersCount = "3";
 
-    const html = readableMarkup(renderToStaticMarkup(
-      React.createElement(ActionStepIdentity, {
-        form,
-        updateField: () => undefined,
-        updateFields: () => undefined,
-        userMetadata: { userId: "preview-local" },
-        recordType: "action",
-        hasAttemptedSubmit: false,
-      } as ComponentProps<typeof ActionStepIdentity>),
-    ));
+    const html = renderIdentity(form);
 
     expect(html).toContain('role="combobox"');
     expect(html).not.toContain("Solo");

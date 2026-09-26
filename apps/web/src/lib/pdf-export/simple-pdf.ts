@@ -1,4 +1,5 @@
 import { normalizeDeliverableRubrique } from "@/lib/reports/deliverable-name";
+import { formatPdfValue } from "./format-pdf-value";
 
 export type PdfReportColumn = {
   key: string;
@@ -62,14 +63,6 @@ export function hasPdfReportData(data: PdfReportData | null | undefined): boolea
   return false;
 }
 
-function formatValue(value: unknown): string {
-  if (value == null) return "";
-  if (typeof value === "number") {
-    return Number.isInteger(value) ? String(value) : value.toFixed(1);
-  }
-  return String(value);
-}
-
 export function buildPdfReportLines(payload: PdfReportPayload): string[] {
   const generatedAt = payload.data.generatedAt ?? new Date().toISOString();
   const generatedLabel = new Intl.DateTimeFormat("fr-FR", {
@@ -105,7 +98,7 @@ export function buildPdfReportLines(payload: PdfReportPayload): string[] {
     lines.push("Indicateurs");
     for (const stat of payload.data.stats) {
       const detail = stat.detail ? ` (${stat.detail})` : "";
-      lines.push(`- ${stat.label}: ${formatValue(stat.value)}${detail}`);
+      lines.push(`- ${stat.label}: ${formatPdfValue(stat.value)}${detail}`);
     }
     lines.push("");
   }
@@ -127,7 +120,7 @@ export function buildPdfReportLines(payload: PdfReportPayload): string[] {
       if (chapter.stats?.length) {
         for (const stat of chapter.stats) {
           const detail = stat.detail ? ` (${stat.detail})` : "";
-          lines.push(`  • ${stat.label}: ${formatValue(stat.value)}${detail}`);
+          lines.push(`  • ${stat.label}: ${formatPdfValue(stat.value)}${detail}`);
         }
       }
       if (chapter.rows?.length) {
@@ -135,7 +128,7 @@ export function buildPdfReportLines(payload: PdfReportPayload): string[] {
           chapter.columns ?? Object.keys(chapter.rows[0] ?? {}).map((key) => ({ key, label: key }));
         lines.push(`  ${chapterColumns.map((column) => column.label).join(" | ")}`);
         for (const row of chapter.rows.slice(0, 40)) {
-          lines.push(`  ${chapterColumns.map((column) => formatValue(row[column.key])).join(" | ")}`);
+          lines.push(`  ${chapterColumns.map((column) => formatPdfValue(row[column.key])).join(" | ")}`);
         }
       }
       lines.push("");
@@ -146,7 +139,7 @@ export function buildPdfReportLines(payload: PdfReportPayload): string[] {
     lines.push("Donnees visibles");
     lines.push(columns.map((column) => column.label).join(" | "));
     for (const row of payload.data.rows.slice(0, 80)) {
-      lines.push(columns.map((column) => formatValue(row[column.key])).join(" | "));
+      lines.push(columns.map((column) => formatPdfValue(row[column.key])).join(" | "));
     }
     if (payload.data.rows.length > 80) {
       lines.push(`... ${payload.data.rows.length - 80} ligne(s) supplementaire(s) non affichee(s).`);

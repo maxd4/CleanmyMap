@@ -9,6 +9,7 @@ import {
   type ImpactMagnitudeInputs,
 } from "@/lib/learning/impact-magnitude";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { formatLearnNumber } from "@/lib/learning/format-learn-number";
 
 type LearnVulgarisationMagnitudeComparatorProps = {
   className?: string;
@@ -63,12 +64,6 @@ const SCENARIOS: Record<MagnitudeScenarioId, MagnitudeScenario> = {
 
 const SCENARIO_ORDER: MagnitudeScenarioId[] = ["petit", "terrain", "collectif"];
 
-function formatMagnitude(locale: "fr" | "en", value: number): string {
-  return new Intl.NumberFormat(locale === "fr" ? "fr-FR" : "en-US", {
-    maximumFractionDigits: 1,
-  }).format(Number.isInteger(value) ? value : Number(value.toFixed(1)));
-}
-
 export function LearnVulgarisationMagnitudeComparator({
   className,
 }: LearnVulgarisationMagnitudeComparatorProps) {
@@ -83,34 +78,34 @@ export function LearnVulgarisationMagnitudeComparator({
   const rawCards = [
     {
       label: locale === "fr" ? "Mégots" : "Butts",
-      value: formatMagnitude(locale, snapshot.cigaretteButts),
+      value: formatLearnNumber(locale, snapshot.cigaretteButts),
     },
     {
       label: locale === "fr" ? "Déchets" : "Waste",
-      value: `${formatMagnitude(locale, snapshot.wasteKg)} kg`,
+      value: `${formatLearnNumber(locale, snapshot.wasteKg)} kg`,
     },
     {
       label: locale === "fr" ? "Temps" : "Time",
-      value: `${formatMagnitude(locale, snapshot.volunteerMinutes)} min`,
+      value: `${formatLearnNumber(locale, snapshot.volunteerMinutes)} min`,
     },
   ];
 
   const translatedCards = [
     {
       label: locale === "fr" ? "Eau mobilisée" : "Water mobilized",
-      value: `${formatMagnitude(locale, snapshot.waterLiters)} L`,
+      value: `${formatLearnNumber(locale, snapshot.waterLiters)} L`,
     },
     {
       label: locale === "fr" ? "CO2eq" : "CO2eq",
-      value: `${formatMagnitude(locale, snapshot.co2Kg)} kg`,
+      value: `${formatLearnNumber(locale, snapshot.co2Kg)} kg`,
     },
     {
       label: locale === "fr" ? "Surface lue" : "Area read",
-      value: `${formatMagnitude(locale, snapshot.surfaceM2FromWaste)} m²`,
+      value: `${formatLearnNumber(locale, snapshot.surfaceM2FromWaste)} m²`,
     },
     {
       label: locale === "fr" ? "Fourchette de valorisation" : "Valuation range",
-      value: `${formatMagnitude(locale, snapshot.streetCleaningSavings.lowerBoundEuros)}–${formatMagnitude(locale, snapshot.streetCleaningSavings.upperBoundEuros)} €`,
+      value: `${formatLearnNumber(locale, snapshot.streetCleaningSavings.lowerBoundEuros)}–${formatLearnNumber(locale, snapshot.streetCleaningSavings.upperBoundEuros)} €`,
     },
   ];
 

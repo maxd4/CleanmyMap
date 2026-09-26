@@ -19,13 +19,7 @@ const requireAdminAccessMock = vi.hoisted(() =>
   vi.fn(async () => ({ ok: true, userId: "admin-1" })),
 );
 
-vi.mock("@/lib/authz", () => ({
-  requireAdminAccess: requireAdminAccessMock,
-}));
-
-vi.mock("@/lib/http/auth-responses", () => ({
-  adminAccessErrorJsonResponse: () => new Response("forbidden", { status: 403 }),
-}));
+vi.mock("@/lib/authz", () => ({ requireAdminAccess: requireAdminAccessMock })); vi.mock("@/lib/http/auth-responses", () => ({ adminAccessErrorJsonResponse: () => new Response("forbidden", { status: 403 }) }));
 
 vi.mock("@/lib/environmental-impact-estimator/dashboard-capture", () => ({
   loadEnvironmentalImpactDashboardSnapshotOnly: loadEnvironmentalImpactDashboardSnapshotOnlyMock,

@@ -15,7 +15,11 @@ import {
   RecyclingQualitySummary
 } from "./recycling-components";
 import { AlertCircle, Recycle, Sparkles, MapPin, Search } from "lucide-react";
-import { SectionShell } from "@/components/sections/rubriques/shared";
+import {
+  RUBRIQUE_CONTAINER_VARIANTS,
+  RUBRIQUE_ITEM_VARIANTS,
+  SectionShell,
+} from "@/components/sections/rubriques/shared";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import type {
   PublicSectionActionListResponse,
@@ -62,19 +66,6 @@ function buildRecyclingStats(
     wasteCoverageRate: breakdown?.wasteCoverageRate ?? null,
   };
 }
-
-const containerVariants = {
-  hidden: { opacity: 1 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 1, y: 20 },
-  visible: { opacity: 1, y: 0 }
-};
 
 export function RecyclingSection({
   initialData,
@@ -178,17 +169,17 @@ export function RecyclingSection({
           </div>
         ) : (
           <motion.div 
-            variants={containerVariants}
+            variants={RUBRIQUE_CONTAINER_VARIANTS}
             initial="hidden"
             animate="visible"
             className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start"
           >
             <div className="lg:col-span-8 space-y-16">
-              <motion.div variants={itemVariants}>
+              <motion.div variants={RUBRIQUE_ITEM_VARIANTS}>
                 <RecyclingKpiGrid stats={stats} fr={fr} />
               </motion.div>
 
-              <motion.div variants={itemVariants}>
+              <motion.div variants={RUBRIQUE_ITEM_VARIANTS}>
                 <RecyclingStreamTable breakdown={breakdown.data} fr={fr} />
               </motion.div>
 

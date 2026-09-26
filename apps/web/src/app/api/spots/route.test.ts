@@ -1,32 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { authenticatedRouteMocks, createAnalyticsConsentModule, createAuthenticatedRouteAuthzModule, createRateLimitModule, createSignalementModule, createSupabaseServerModule, mockAllowedRateLimit, mockRejectedRateLimit, rateLimitMocks } from "@/app/api/test-helpers";
 
-const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
-const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
-const pickTraceableActorNameMock = vi.hoisted(() => vi.fn());
-const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
-const createSignalementMock = vi.hoisted(() => vi.fn());
-const hasAnalyticsConsentCookieMock = vi.hoisted(() => vi.fn());
-const verifyRateLimitMock = vi.hoisted(() => vi.fn());
-const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
+const { requireAuthenticatedAccess: requireAuthenticatedAccessMock, getCurrentUserIdentity: getCurrentUserIdentityMock, pickTraceableActorName: pickTraceableActorNameMock, getSupabaseServerClient: getSupabaseServerClientMock, createSignalement: createSignalementMock, hasAnalyticsConsentCookie: hasAnalyticsConsentCookieMock } = authenticatedRouteMocks;
+const verifyRateLimitMock = rateLimitMocks.verifyRateLimit;
 
-vi.mock("@/lib/authz", () => ({
-  getCurrentUserIdentity: getCurrentUserIdentityMock,
-  pickTraceableActorName: pickTraceableActorNameMock,
-  requireAuthenticatedAccess: requireAuthenticatedAccessMock,
-}));
-vi.mock("@/lib/supabase/server", () => ({
-  getSupabaseServerClient: getSupabaseServerClientMock,
-}));
-vi.mock("@/lib/actions/signalement/create-signalement", () => ({
-  createSignalement: createSignalementMock,
-}));
-vi.mock("@/lib/analytics-consent", () => ({
-  hasAnalyticsConsentCookie: hasAnalyticsConsentCookieMock,
-}));
-vi.mock("@/lib/rate-limit/server", () => ({
-  verifyRateLimit: verifyRateLimitMock,
-  createServerRateLimitResponse: createServerRateLimitResponseMock,
-}));
+vi.mock("@/lib/authz", () => createAuthenticatedRouteAuthzModule());
+vi.mock("@/lib/supabase/server", () => createSupabaseServerModule(getSupabaseServerClientMock));
+vi.mock("@/lib/actions/signalement/create-signalement", () => createSignalementModule());
+vi.mock("@/lib/analytics-consent", () => createAnalyticsConsentModule());
+vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
 
 describe("POST /api/spots", () => {
   beforeEach(() => {
@@ -40,13 +22,7 @@ describe("POST /api/spots", () => {
     getCurrentUserIdentityMock.mockResolvedValue({ displayName: "Test User" });
     pickTraceableActorNameMock.mockReturnValue("Test User");
     hasAnalyticsConsentCookieMock.mockReturnValue(true);
-    verifyRateLimitMock.mockResolvedValue({
-      allowed: true,
-      limit: 10,
-      remaining: 9,
-      reset: Date.now() + 300_000,
-    });
-    createServerRateLimitResponseMock.mockReturnValue(null);
+    mockAllowedRateLimit(10, 300_000);
     createSignalementMock.mockResolvedValue({
       id: "spot-test-1",
       created_at: "2026-04-22T00:00:00Z",
@@ -189,16 +165,7 @@ describe("POST /api/spots", () => {
   });
 
   it("rejects an abusive authenticated burst before creating a signalement", async () => {
-    verifyRateLimitMock.mockResolvedValueOnce({
-      allowed: false,
-      limit: 10,
-      remaining: 0,
-      reset: Date.now() + 300_000,
-      retryAfter: 120,
-    });
-    createServerRateLimitResponseMock.mockReturnValueOnce(
-      new Response(JSON.stringify({ code: "RATE_LIMIT_EXCEEDED" }), { status: 429 }),
-    );
+    mockRejectedRateLimit(10, 120, 300_000);
 
     const { POST } = await import("./route");
     const response = await POST(

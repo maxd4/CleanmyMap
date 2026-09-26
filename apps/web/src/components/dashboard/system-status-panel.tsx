@@ -11,14 +11,7 @@ import {
   type UptimePayload,
 } from "@/lib/dashboard/status";
 import { swrSupervisionOptions } from "@/lib/swr-config";
-
-const fetcher = async <T,>(url: string): Promise<T> => {
-  const response = await fetch(url, { method: "GET" });
-  if (!response.ok) {
-    throw new Error(`Erreur API (${response.status}) sur ${url}`);
-  }
-  return (await response.json()) as T;
-};
+import { fetchJson } from "@/lib/http/fetch-json";
 
 type UptimeSummary = ReturnType<typeof summarizeUptime>;
 
@@ -284,8 +277,8 @@ function SystemStatusDataView({
 }
 
 export function SystemStatusPanel() {
-  const uptime = useSWR<UptimePayload>("/api/uptime", fetcher, swrSupervisionOptions);
-  const services = useSWR<ServicesPayload>("/api/services", fetcher, swrSupervisionOptions);
+  const uptime = useSWR<UptimePayload>("/api/uptime", fetchJson, swrSupervisionOptions);
+  const services = useSWR<ServicesPayload>("/api/services", fetchJson, swrSupervisionOptions);
   const isLoading = uptime.isLoading || services.isLoading;
   const isRefreshing = uptime.isValidating || services.isValidating;
   const hasError = Boolean(uptime.error || services.error);

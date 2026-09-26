@@ -15,11 +15,10 @@ import {
  reserveDiscussionMessageSlot,
  toDiscussionRateLimitErrorPayload,
 } from"@/lib/community/discussion-rate-limit";
-import { createServerRateLimitResponse, verifyRateLimit } from"@/lib/rate-limit/server";
+import { withServerRateLimit } from"@/lib/rate-limit/server";
 import {
- createPublicRateLimitResponse,
- hasHoneypotSignal,
- hasRecentSubmission,
+ parseJsonBodyWithSchema,
+ rejectPublicFormAbuse,
 } from"@/lib/security/validation";
 import { logWarning } from "@/lib/logging/failure-log";
 
@@ -71,16 +70,54 @@ function canonicalTargetUserId(value: unknown): string | undefined {
  return normalized && normalized !== "unknown" ? normalized : undefined;
 }
 
-export async function POST(request: Request) {
- const writeRateLimit = await verifyRateLimit(request, { limit: 4, window: 300 });
- const writeRateLimitResponse = createServerRateLimitResponse(
-  writeRateLimit.allowed,
-  writeRateLimit.retryAfter,
-  writeRateLimit,
- );
- if (writeRateLimitResponse) {
-  return writeRateLimitResponse;
+async function notifyBugReportCreated(
+ created: Awaited<ReturnType<typeof appendCommunityBugReport>>,
+ userId: string,
+ identity: Awaited<ReturnType<typeof getCurrentUserIdentity>>,
+): Promise<void> {
+ try {
+ const notificationLabel =
+ parsedReportTypeLabel(created.reportType);
+ await sendCreatorInboxEmail({
+  actorUserId: userId,
+ subject: `[CleanMyMap] Nouveau feedback - ${notificationLabel}`,
+ title: "Nouveau feedback reçu",
+ intro: "Un questionnaire feedback vient d'arriver dans la file créateur.",
+ lines: [
+ { label:"Type", value: notificationLabel },
+ { label:"Source", value: created.source },
+ { label:"Auteur", value: identity?.displayName ?? userId },
+ { label:"Email", value: identity?.email ?? "non communiqué" },
+ { label:"Rôle", value: identity?.role ?? "non communiqué" },
+ { label:"Page", value: created.pagePath ?? "non communiquée" },
+ { label:"Titre", value: created.title },
+ { label:"Statut", value: created.status },
+ { label:"Contenu", value: created.description },
+ ],
+ footer: "Le retour est enregistré dans l'espace créateur avec la date et la source de soumission.",
+ });
+ } catch (error) {
+ logWarning("CommunityBugReports", "Creator inbox notification failed", {
+  reportId: created.id,
+  reason: error instanceof Error ? error.message : String(error),
+ });
  }
+}
+
+function parsedReportTypeLabel(
+ reportType: "bug" | "idea" | "improvement" | "collaboration",
+): string {
+ return reportType === "bug"
+ ? "Bug"
+ : reportType === "improvement"
+ ? "Amélioration"
+ : reportType === "collaboration"
+ ? "Collaboration"
+ : "Idée";
+}
+
+export async function POST(request: Request) {
+ return withServerRateLimit(request, { limit: 4, window: 300 }, async () => {
 
  const { userId } = await auth();
  if (!userId) {
@@ -88,31 +125,11 @@ export async function POST(request: Request) {
  }
  const identity = await getCurrentUserIdentity();
 
- let payload: unknown;
- try {
- payload = await request.json();
- } catch {
- return NextResponse.json({ error:"Invalid JSON payload" }, { status: 400 });
- }
+ const parsed = await parseJsonBodyWithSchema(request, payloadSchema);
+ if (!parsed.ok) return parsed.response;
 
- const parsed = payloadSchema.safeParse(payload);
- if (!parsed.success) {
-  return NextResponse.json(
- {
- error:"Invalid payload",
- details: parsed.error.flatten().fieldErrors,
- },
-    { status: 400 },
-   );
- }
-
- if (hasHoneypotSignal(parsed.data.honeypot)) {
-  return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
- }
-
- if (hasRecentSubmission(parsed.data.submittedAt)) {
-  return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
- }
+ const abuseResponse = rejectPublicFormAbuse(parsed.data);
+ if (abuseResponse) return abuseResponse;
 
  const supabase = getSupabaseServerClient(true);
  const quota = await reserveDiscussionMessageSlot(supabase, {
@@ -139,39 +156,7 @@ export async function POST(request: Request) {
  },
  });
 
- try {
- const notificationLabel =
- parsed.data.reportType ==="bug"
- ? "Bug"
- : parsed.data.reportType ==="improvement"
- ? "Amélioration"
- : parsed.data.reportType ==="collaboration"
- ? "Collaboration"
- : "Idée";
- await sendCreatorInboxEmail({
-  actorUserId: userId,
- subject: `[CleanMyMap] Nouveau feedback - ${notificationLabel}`,
- title: "Nouveau feedback reçu",
- intro: "Un questionnaire feedback vient d'arriver dans la file créateur.",
- lines: [
- { label:"Type", value: notificationLabel },
- { label:"Source", value: created.source },
- { label:"Auteur", value: identity?.displayName ?? userId },
- { label:"Email", value: identity?.email ?? "non communiqué" },
- { label:"Rôle", value: identity?.role ?? "non communiqué" },
- { label:"Page", value: created.pagePath ?? "non communiquée" },
- { label:"Titre", value: created.title },
- { label:"Statut", value: created.status },
- { label:"Contenu", value: created.description },
- ],
- footer: "Le retour est enregistré dans l'espace créateur avec la date et la source de soumission.",
- });
- } catch (error) {
- logWarning("CommunityBugReports", "Creator inbox notification failed", {
-  reportId: created.id,
-  reason: error instanceof Error ? error.message : String(error),
- });
- }
+ await notifyBugReportCreated(created, userId, identity);
 
  return NextResponse.json(
   {
@@ -181,6 +166,7 @@ export async function POST(request: Request) {
   },
   { status: 201 },
  );
+ });
 }
 
 export async function PATCH(request: Request) {

@@ -7,18 +7,13 @@ import {
   type ImpactMagnitudeInputs,
 } from "@/lib/learning/impact-magnitude";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { formatLearnNumber } from "@/lib/learning/format-learn-number";
 
 const COMPARATOR_INPUTS: ImpactMagnitudeInputs = {
   cigaretteButts: 10,
   wasteKg: 20,
   volunteerMinutes: 30,
 };
-
-function formatValue(locale: LearnLocale, value: number): string {
-  return new Intl.NumberFormat(locale === "fr" ? "fr-FR" : "en-US", {
-    maximumFractionDigits: 1,
-  }).format(Number.isInteger(value) ? value : Number(value.toFixed(1)));
-}
 
 function getBoundaryStatusLabel(
   locale: LearnLocale,
@@ -153,10 +148,10 @@ export function LearnComprendreSsrContent({ locale }: { locale: LearnLocale }) {
               : "For an example of 10 cigarette butts, 20 kg of waste and 30 minutes of volunteering, the model translates inputs into water, CO₂, area and value cues."}
           </p>
           <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <div className="rounded-xl bg-white/80 p-3"><dt>Eau</dt><dd className="font-black">{formatValue(locale, comparator.waterLiters)} L</dd></div>
-            <div className="rounded-xl bg-white/80 p-3"><dt>CO₂eq</dt><dd className="font-black">{formatValue(locale, comparator.co2Kg)} kg</dd></div>
-            <div className="rounded-xl bg-white/80 p-3"><dt>{fr ? "Surface" : "Area"}</dt><dd className="font-black">{formatValue(locale, comparator.surfaceM2FromWaste)} m²</dd></div>
-            <div className="rounded-xl bg-white/80 p-3"><dt>{fr ? "Valorisation" : "Value"}</dt><dd className="font-black">{formatValue(locale, comparator.streetCleaningSavings.lowerBoundEuros)}–{formatValue(locale, comparator.streetCleaningSavings.upperBoundEuros)} €</dd></div>
+            <div className="rounded-xl bg-white/80 p-3"><dt>Eau</dt><dd className="font-black">{formatLearnNumber(locale, comparator.waterLiters)} L</dd></div>
+            <div className="rounded-xl bg-white/80 p-3"><dt>CO₂eq</dt><dd className="font-black">{formatLearnNumber(locale, comparator.co2Kg)} kg</dd></div>
+            <div className="rounded-xl bg-white/80 p-3"><dt>{fr ? "Surface" : "Area"}</dt><dd className="font-black">{formatLearnNumber(locale, comparator.surfaceM2FromWaste)} m²</dd></div>
+            <div className="rounded-xl bg-white/80 p-3"><dt>{fr ? "Valorisation" : "Value"}</dt><dd className="font-black">{formatLearnNumber(locale, comparator.streetCleaningSavings.lowerBoundEuros)}–{formatLearnNumber(locale, comparator.streetCleaningSavings.upperBoundEuros)} €</dd></div>
           </dl>
           <p className="mt-4 border-t border-amber-200 pt-3 text-xs text-slate-600">
             {fr

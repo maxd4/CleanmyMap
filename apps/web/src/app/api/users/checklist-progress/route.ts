@@ -6,6 +6,7 @@ import {
  upsertChecklistProgress,
 } from"@/lib/sections/checklist-progress-store";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
+import { parseJsonBodyWithSchema } from"@/lib/security/validation";
 
 export const runtime ="nodejs";
 
@@ -37,23 +38,8 @@ export async function POST(request: Request) {
  return unauthorizedJsonResponse();
  }
 
- let payload: unknown;
- try {
- payload = await request.json();
- } catch {
- return NextResponse.json(
- { error:"Invalid JSON payload" },
- { status: 400 },
- );
- }
-
- const parsed = payloadSchema.safeParse(payload);
- if (!parsed.success) {
- return NextResponse.json(
- { error:"Invalid payload", details: parsed.error.flatten().fieldErrors },
- { status: 400 },
- );
- }
+ const parsed = await parseJsonBodyWithSchema(request, payloadSchema);
+ if (!parsed.ok) return parsed.response;
 
  const entry = await upsertChecklistProgress(
  userId,

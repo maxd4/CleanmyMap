@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
+import { withServerRateLimit } from "@/lib/rate-limit/server";
 
 export const runtime = "nodejs";
 const REVERSE_LOCATION_CACHE_HEADERS = {
@@ -94,15 +94,7 @@ function formatReverseLocation(feature: GeoplateformeReverseFeature): ReverseLoc
 }
 
 export async function GET(request: Request) {
-  const rateLimit = await verifyRateLimit(request, { limit: 60, window: 60 });
-  const rateLimitResponse = createServerRateLimitResponse(
-    rateLimit.allowed,
-    rateLimit.retryAfter,
-    rateLimit,
-  );
-  if (rateLimitResponse) {
-    return rateLimitResponse;
-  }
+  return withServerRateLimit(request, { limit: 60, window: 60 }, async () => {
 
   const url = new URL(request.url);
   const rawLat = url.searchParams.get("lat");
@@ -160,4 +152,5 @@ export async function GET(request: Request) {
   } finally {
     clearTimeout(timeout);
   }
+  });
 }

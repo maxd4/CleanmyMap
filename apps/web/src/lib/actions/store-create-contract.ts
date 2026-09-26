@@ -30,6 +30,19 @@ import {
 } from "./store-notes";
 import { resolveParticipantsCount } from "@/lib/actions/volunteer-participation";
 
+export function resolveCreateActionRouteTopology(payload: CreateActionPayload) {
+  const recordType = payload.recordType ?? "action";
+  return {
+    recordType,
+    routeTopology: resolveActionRouteTopology({
+      topology: payload.routeTopology ?? payload.preparationData?.routeTopology,
+      arrivalLocationLabel:
+        payload.arrivalLocationLabel ?? payload.preparationData?.zoneCiblePrevue,
+      recordType,
+    }),
+  };
+}
+
 function confidenceForGeometrySource(source: ActionGeometrySource): number | null {
   switch (source) {
     case "manual":
@@ -82,13 +95,7 @@ export function buildActionInsertPayload(params: {
   routeGeometry?: RouteGeometry | null;
   status: Exclude<ActionStatus, "cancelled"> | undefined;
 }) {
-  const recordType = params.payload.recordType ?? "action";
-  const routeTopology = resolveActionRouteTopology({
-    topology: params.payload.routeTopology ?? params.payload.preparationData?.routeTopology,
-    arrivalLocationLabel:
-      params.payload.arrivalLocationLabel ?? params.payload.preparationData?.zoneCiblePrevue,
-    recordType,
-  });
+  const { recordType, routeTopology } = resolveCreateActionRouteTopology(params.payload);
   const normalizedInputPreparationData = normalizeActionPreparationData({
     ...(params.payload.preparationData ?? {}),
     routeTopology,

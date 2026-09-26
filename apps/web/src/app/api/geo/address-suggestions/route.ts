@@ -4,7 +4,7 @@ import {
   mergeGeoAddressSuggestions,
   type GeoAddressSuggestion,
 } from "@/lib/geo/address-suggestions";
-import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
+import { withServerRateLimit } from "@/lib/rate-limit/server";
 import { isWithinTerritoryBounds } from "@/lib/geo/territory";
 
 export const runtime = "nodejs";
@@ -163,15 +163,7 @@ async function loadCachedRemoteAddressSuggestions(
 }
 
 export async function GET(request: Request) {
-  const rateLimit = await verifyRateLimit(request, { limit: 60, window: 60 });
-  const rateLimitResponse = createServerRateLimitResponse(
-    rateLimit.allowed,
-    rateLimit.retryAfter,
-    rateLimit,
-  );
-  if (rateLimitResponse) {
-    return rateLimitResponse;
-  }
+  return withServerRateLimit(request, { limit: 60, window: 60 }, async () => {
 
   const url = new URL(request.url);
   const query = url.searchParams.get("q")?.trim() ?? "";
@@ -209,4 +201,5 @@ export async function GET(request: Request) {
       headers: ADDRESS_SUGGESTIONS_CACHE_HEADERS,
     });
   }
+  });
 }

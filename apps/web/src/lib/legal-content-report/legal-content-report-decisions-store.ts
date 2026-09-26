@@ -4,6 +4,8 @@ import { dirname, join } from "node:path";
 import {
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
+  mapSupabaseRecords,
+  readSupabaseRecord,
 } from "@/lib/persistence/runtime-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -254,9 +256,7 @@ export async function listLegalContentReportDecisions(
     if (result.error) {
       throw new Error(result.error.message);
     }
-    return (result.data ?? [])
-      .map((row) => fromSupabaseRow(row as Record<string, unknown>))
-      .filter((record): record is LegalContentReportDecisionRecord => Boolean(record));
+    return mapSupabaseRecords(result.data, fromSupabaseRow);
   }
 
   const store = await readStore();
@@ -308,54 +308,48 @@ export async function appendLegalContentReportDecision(
   return record;
 }
 
+async function updateDecisionRecord(
+  decisionId: string,
+  buildUpdated: (
+    current: LegalContentReportDecisionRecord,
+  ) => LegalContentReportDecisionRecord,
+): Promise<LegalContentReportDecisionRecord | null> {
+  assertPersistenceAvailable("legal_content_report_decisions");
+
+  if (canUseSupabaseServerPersistence()) {
+    const current = await getSupabaseDecisionById(decisionId);
+    if (!current) return null;
+    const updated = buildUpdated(current);
+    return readSupabaseRecord(
+      getSupabaseServerClient(true)
+        .from("legal_content_report_decisions")
+        .update(toSupabaseRow(updated))
+        .eq("id", decisionId)
+        .select(SUPABASE_DECISION_COLUMNS)
+        .maybeSingle(),
+      fromSupabaseRow,
+    );
+  }
+
+  const store = await readStore();
+  const index = store.records.findIndex((record) => record.id === decisionId);
+  if (index < 0) return null;
+  const current = store.records[index];
+  if (!current) return null;
+  const updated = buildUpdated(current);
+  const records = [...store.records];
+  records[index] = updated;
+  await writeStore({ updatedAt: new Date().toISOString(), records });
+  return updated;
+}
+
 export async function updateLegalContentReportDecisionNotifications(params: {
   decisionId: string;
   notifierNotificationStatus?: LegalContentReportNotificationStatus;
   authorNotificationStatus?: LegalContentReportNotificationStatus;
   notificationError?: string | null;
 }): Promise<LegalContentReportDecisionRecord | null> {
-  assertPersistenceAvailable("legal_content_report_decisions");
-
-  if (canUseSupabaseServerPersistence()) {
-    const current = await getSupabaseDecisionById(params.decisionId);
-    if (!current) return null;
-    const updated: LegalContentReportDecisionRecord = {
-      ...current,
-      ...(params.notifierNotificationStatus
-        ? { notifierNotificationStatus: params.notifierNotificationStatus }
-        : {}),
-      ...(params.authorNotificationStatus
-        ? { authorNotificationStatus: params.authorNotificationStatus }
-        : {}),
-      ...(params.notificationError !== undefined
-        ? {
-            notificationError: normalizeOptionalReportText(
-              params.notificationError,
-              LEGAL_CONTENT_REPORT_DECISION_MAX_ERROR_LENGTH,
-            ),
-          }
-        : {}),
-    };
-    const result = await getSupabaseServerClient(true)
-      .from("legal_content_report_decisions")
-      .update(toSupabaseRow(updated))
-      .eq("id", params.decisionId)
-      .select(SUPABASE_DECISION_COLUMNS)
-      .maybeSingle();
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return result.data
-      ? fromSupabaseRow(result.data as Record<string, unknown>)
-      : null;
-  }
-
-  const store = await readStore();
-  const index = store.records.findIndex((record) => record.id === params.decisionId);
-  if (index < 0) return null;
-  const current = store.records[index];
-  if (!current) return null;
-  const updated: LegalContentReportDecisionRecord = {
+  return updateDecisionRecord(params.decisionId, (current) => ({
     ...current,
     ...(params.notifierNotificationStatus
       ? { notifierNotificationStatus: params.notifierNotificationStatus }
@@ -371,11 +365,7 @@ export async function updateLegalContentReportDecisionNotifications(params: {
           ),
         }
       : {}),
-  };
-  const records = [...store.records];
-  records[index] = updated;
-  await writeStore({ updatedAt: new Date().toISOString(), records });
-  return updated;
+  }));
 }
 
 export async function updateLegalContentReportDecisionStates(params: {
@@ -385,48 +375,9 @@ export async function updateLegalContentReportDecisionStates(params: {
   executionStatus?: LegalContentReportDecisionExecutionStatus;
   executionErrorCode?: LegalContentReportDecisionExecutionErrorCode | null;
 }): Promise<LegalContentReportDecisionRecord | null> {
-  assertPersistenceAvailable("legal_content_report_decisions");
-
-  if (canUseSupabaseServerPersistence()) {
-    const current = await getSupabaseDecisionById(params.decisionId);
-    if (!current) return null;
+  return updateDecisionRecord(params.decisionId, (current) => {
     const executionStatus = params.executionStatus ?? current.executionStatus;
-    const updated = {
-      ...current,
-      beforeState:
-        params.beforeState === undefined
-          ? current.beforeState
-          : normalizeSnapshot(params.beforeState),
-      afterState:
-        params.afterState === undefined
-          ? current.afterState
-          : normalizeSnapshot(params.afterState),
-      executionStatus,
-      executionErrorCode:
-        executionStatus === "failed"
-          ? params.executionErrorCode ?? current.executionErrorCode
-          : null,
-    } satisfies LegalContentReportDecisionRecord;
-    const result = await getSupabaseServerClient(true)
-      .from("legal_content_report_decisions")
-      .update(toSupabaseRow(updated))
-      .eq("id", params.decisionId)
-      .select(SUPABASE_DECISION_COLUMNS)
-      .maybeSingle();
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return result.data
-      ? fromSupabaseRow(result.data as Record<string, unknown>)
-      : null;
-  }
-
-  const store = await readStore();
-  const index = store.records.findIndex((record) => record.id === params.decisionId);
-  if (index < 0) return null;
-  const current = store.records[index];
-  if (!current) return null;
-  const updated = {
+    return {
     ...current,
     beforeState:
       params.beforeState === undefined
@@ -438,12 +389,9 @@ export async function updateLegalContentReportDecisionStates(params: {
         : normalizeSnapshot(params.afterState),
     executionStatus: params.executionStatus ?? current.executionStatus,
     executionErrorCode:
-      (params.executionStatus ?? current.executionStatus) === "failed"
+      executionStatus === "failed"
         ? params.executionErrorCode ?? current.executionErrorCode
         : null,
-  };
-  const records = [...store.records];
-  records[index] = updated;
-  await writeStore({ updatedAt: new Date().toISOString(), records });
-  return updated;
+    };
+  });
 }

@@ -1,4 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createReportScopeModule,
+  createReportActionDataset,
+  createReportStorageSupabaseMock,
+  createReportUnifiedSourceModule,
+  prepareReportTestEnvironment,
+} from "@/app/api/test-route-setup";
 
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
@@ -7,70 +14,14 @@ const filterActionContractsByScopeMock = vi.hoisted(() => vi.fn());
 const buildActionsCsvMock = vi.hoisted(() => vi.fn());
 const buildActionsCsvFilenameMock = vi.hoisted(() => vi.fn());
 
-function createSupabaseMock(options?: {
-  cacheHit?: boolean;
-}) {
-  const createSignedUrlMock = vi.fn();
-  if (options?.cacheHit) {
-    createSignedUrlMock.mockResolvedValue({
-      data: {
-        signedUrl:
-          "https://supabase.test/storage/v1/object/sign/reports/actions-csv/cache.csv?token=abc123",
-      },
-      error: null,
-    });
-  } else {
-    createSignedUrlMock
-      .mockResolvedValueOnce({
-        data: null,
-        error: { message: "not found" },
-      })
-      .mockResolvedValueOnce({
-        data: {
-          signedUrl:
-            "https://supabase.test/storage/v1/object/sign/reports/actions-csv/cache.csv?token=abc123",
-        },
-        error: null,
-      });
-  }
+const createSupabaseMock = (options?: { cacheHit?: boolean }) =>
+  createReportStorageSupabaseMock("csv", options);
 
-  const uploadMock = vi.fn(async () => ({
-    data: { path: "actions-csv/cache.csv" },
-    error: null,
-  }));
-
-  return {
-    storage: {
-      from: vi.fn(() => ({
-        createSignedUrl: createSignedUrlMock,
-        upload: uploadMock,
-      })),
-    },
-    createSignedUrlMock,
-    uploadMock,
-  };
-}
-
-vi.mock("@/lib/authz", () => ({
-  requireAdminAccess: requireAdminAccessMock,
-}));
-
-vi.mock("@/lib/http/auth-responses", () => ({
-  adminAccessErrorJsonResponse: () => new Response("forbidden", { status: 403 }),
-}));
-
-vi.mock("@/lib/supabase/server", () => ({
-  getSupabaseServerClient: getSupabaseServerClientMock,
-}));
-
-vi.mock("@/lib/actions/unified-source", () => ({
-  fetchUnifiedActionContracts: fetchUnifiedActionContractsMock,
-  parseEntityTypesParam: () => null,
-}));
-
-vi.mock("@/lib/reports/scope", () => ({
-  filterActionContractsByScope: filterActionContractsByScopeMock,
-}));
+vi.mock("@/lib/authz", () => ({ requireAdminAccess: requireAdminAccessMock }));
+vi.mock("@/lib/http/auth-responses", () => ({ adminAccessErrorJsonResponse: () => new Response("forbidden", { status: 403 }) }));
+vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: getSupabaseServerClientMock }));
+vi.mock("@/lib/actions/unified-source", () => createReportUnifiedSourceModule(fetchUnifiedActionContractsMock));
+vi.mock("@/lib/reports/scope", () => createReportScopeModule(filterActionContractsByScopeMock));
 
 vi.mock("@/lib/reports/csv", async () => {
   const actual = await vi.importActual<typeof import("@/lib/reports/csv")>(
@@ -85,38 +36,10 @@ vi.mock("@/lib/reports/csv", async () => {
 
 describe("GET /api/reports/actions.csv", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-05-13T12:00:00Z"));
-    vi.resetModules();
-    vi.clearAllMocks();
+    prepareReportTestEnvironment();
     requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
     getSupabaseServerClientMock.mockReturnValue(createSupabaseMock());
-    fetchUnifiedActionContractsMock.mockResolvedValue({
-      items: [
-        {
-          id: "action-1",
-          dates: { createdAt: "2026-05-01", observedAt: "2026-05-02" },
-          metadata: {
-            actorName: "Alice",
-            associationName: "Clean team",
-            wasteKg: 12,
-            cigaretteButts: 50,
-            volunteersCount: 4,
-            durationMinutes: 90,
-            notes: "ok",
-            notesPlain: "ok",
-            manualDrawing: null,
-          },
-          location: { label: "Paris", latitude: 48.85, longitude: 2.35 },
-          status: "approved",
-          type: "action",
-          source: "supabase",
-          geometry: { kind: "point", geojson: null, confidence: "high" },
-        },
-      ],
-      isTruncated: true,
-      sourceHealth: { partial: true, warnings: ["sheet lag"] },
-    });
+    fetchUnifiedActionContractsMock.mockResolvedValue(createReportActionDataset());
     filterActionContractsByScopeMock.mockImplementation((items) => items);
     buildActionsCsvMock.mockReturnValue("id\naction-1");
     buildActionsCsvFilenameMock.mockReturnValue("export_actions_cmm_13-05-2026.csv");

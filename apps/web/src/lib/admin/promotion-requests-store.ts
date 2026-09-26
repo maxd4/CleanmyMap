@@ -4,6 +4,10 @@ import { dirname, join } from "node:path";
 import {
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
+  findRecordInList,
+  prependBoundedRecord,
+  readSupabaseRecord,
+  requirePersistedRecord,
 } from "@/lib/persistence/runtime-store";
 import type { AppProfile } from "@/lib/profiles";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -247,16 +251,31 @@ export async function appendPromotionRequest(params: {
       throw new Error(result.error.message);
     }
     const persisted = fromSupabaseRow(result.data as Record<string, unknown>);
-    if (!persisted) {
-      throw new Error("Supabase returned an invalid promotion request.");
-    }
-    return persisted;
+    return requirePersistedRecord(persisted, "Supabase returned an invalid promotion request.");
   }
 
   const store = await readStore();
-  const records = [record, ...store.records].slice(0, 2000);
+  const records = prependBoundedRecord(record, store.records);
   await writeStore({ updatedAt: new Date().toISOString(), records });
   return record;
+}
+
+async function loadPromotionRequestsFromSupabase(
+  limit: number,
+  submittedByUserId?: string,
+): Promise<PromotionRequestRecord[]> {
+  const baseQuery = getSupabaseServerClient(true)
+    .from("promotion_requests")
+    .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  const result = submittedByUserId
+    ? await baseQuery.eq("submitted_by_user_id", submittedByUserId)
+    : await baseQuery;
+  if (result.error) throw new Error(result.error.message);
+  return (result.data ?? [])
+    .map((row) => fromSupabaseRow(row as Record<string, unknown>))
+    .filter((record): record is PromotionRequestRecord => Boolean(record));
 }
 
 export async function listPromotionRequests(
@@ -266,17 +285,7 @@ export async function listPromotionRequests(
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
-      .from("promotion_requests")
-      .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
-      .order("created_at", { ascending: false })
-      .limit(normalizedLimit);
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return (result.data ?? [])
-      .map((row) => fromSupabaseRow(row as Record<string, unknown>))
-      .filter((record): record is PromotionRequestRecord => Boolean(record));
+    return loadPromotionRequestsFromSupabase(normalizedLimit);
   }
 
   const store = await readStore();
@@ -300,18 +309,7 @@ export async function listPromotionRequestsForUser(
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
-      .from("promotion_requests")
-      .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
-      .eq("submitted_by_user_id", normalizedUserId)
-      .order("created_at", { ascending: false })
-      .limit(normalizedLimit);
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return (result.data ?? [])
-      .map((row) => fromSupabaseRow(row as Record<string, unknown>))
-      .filter((record): record is PromotionRequestRecord => Boolean(record));
+    return loadPromotionRequestsFromSupabase(normalizedLimit, normalizedUserId);
   }
 
   const store = await readStore();
@@ -330,50 +328,44 @@ export async function updatePromotionRequestStatus(params: {
 
   if (canUseSupabaseServerPersistence()) {
     const reviewedAt = new Date().toISOString();
-    const result = await getSupabaseServerClient(true)
-      .from("promotion_requests")
-      .update({
-        status: params.status,
-        reviewed_at: reviewedAt,
-        reviewed_by_user_id: params.reviewedByUserId,
-        reviewed_by_role: params.reviewedByRole,
-        creator_state: params.status,
-      })
-      .eq("id", params.requestId)
-      .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
-      .maybeSingle();
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return result.data
-      ? fromSupabaseRow(result.data as Record<string, unknown>)
-      : null;
+    return readSupabaseRecord(
+      getSupabaseServerClient(true)
+        .from("promotion_requests")
+        .update({
+          status: params.status,
+          reviewed_at: reviewedAt,
+          reviewed_by_user_id: params.reviewedByUserId,
+          reviewed_by_role: params.reviewedByRole,
+          creator_state: params.status,
+        })
+        .eq("id", params.requestId)
+        .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
+        .maybeSingle(),
+      fromSupabaseRow,
+    );
   }
 
-  const store = await readStore();
-  const index = store.records.findIndex((record) => record.id === params.requestId);
-  if (index < 0) {
-    return null;
-  }
-
-  const current = store.records[index];
-  if (!current) {
-    return null;
-  }
-
-  const updated: PromotionRequestRecord = {
+  return updateLocalPromotionRequest(params.requestId, (current) => ({
     ...current,
     status: params.status,
     reviewedAt: new Date().toISOString(),
     reviewedByUserId: params.reviewedByUserId,
     reviewedByRole: params.reviewedByRole,
     creatorState: params.status,
-  };
+  }));
+}
 
+async function updateLocalPromotionRequest(
+  requestId: string,
+  update: (current: PromotionRequestRecord) => PromotionRequestRecord,
+): Promise<PromotionRequestRecord | null> {
+  const store = await readStore();
+  const index = store.records.findIndex((record) => record.id === requestId);
+  if (index < 0 || !store.records[index]) return null;
   const records = [...store.records];
-  records[index] = updated;
+  records[index] = update(store.records[index]);
   await writeStore({ updatedAt: new Date().toISOString(), records });
-  return updated;
+  return records[index];
 }
 
 export async function updatePromotionRequestCreatorState(params: {
@@ -397,26 +389,10 @@ export async function updatePromotionRequestCreatorState(params: {
       : null;
   }
 
-  const store = await readStore();
-  const index = store.records.findIndex((record) => record.id === params.requestId);
-  if (index < 0) {
-    return null;
-  }
-
-  const current = store.records[index];
-  if (!current) {
-    return null;
-  }
-
-  const updated: PromotionRequestRecord = {
+  return updateLocalPromotionRequest(params.requestId, (current) => ({
     ...current,
     creatorState: params.creatorState,
-  };
-
-  const records = [...store.records];
-  records[index] = updated;
-  await writeStore({ updatedAt: new Date().toISOString(), records });
-  return updated;
+  }));
 }
 
 export async function getPromotionRequestById(
@@ -425,21 +401,18 @@ export async function getPromotionRequestById(
   assertPersistenceAvailable("promotion_requests");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
-      .from("promotion_requests")
-      .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
-      .eq("id", requestId)
-      .maybeSingle();
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return result.data
-      ? fromSupabaseRow(result.data as Record<string, unknown>)
-      : null;
+    return readSupabaseRecord(
+      getSupabaseServerClient(true)
+        .from("promotion_requests")
+        .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
+        .eq("id", requestId)
+        .maybeSingle(),
+      fromSupabaseRow,
+    );
   }
 
   const store = await readStore();
-  return store.records.find((record) => record.id === requestId) ?? null;
+  return findRecordInList(store.records, (record) => record.id === requestId);
 }
 
 export async function deletePromotionRequest(

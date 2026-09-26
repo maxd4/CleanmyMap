@@ -1,14 +1,21 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createPublicValidationModule,
+  createServerRateLimitModule,
+} from "@/app/api/test-route-setup";
 
-const authMock = vi.hoisted(() => vi.fn());
-const appendContactRequestMock = vi.hoisted(() => vi.fn());
-const updateContactRequestStatusMock = vi.hoisted(() => vi.fn());
-const sendCreatorInboxEmailMock = vi.hoisted(() => vi.fn());
-const verifyRateLimitMock = vi.hoisted(() => vi.fn());
-const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
-const createPublicRateLimitResponseMock = vi.hoisted(() => vi.fn());
-const hasHoneypotSignalMock = vi.hoisted(() => vi.fn());
-const hasRecentSubmissionMock = vi.hoisted(() => vi.fn());
+const contactMocks = vi.hoisted(() => ({
+  auth: vi.fn(),
+  appendContactRequest: vi.fn(),
+  updateContactRequestStatus: vi.fn(),
+  sendCreatorInboxEmail: vi.fn(),
+  verifyRateLimit: vi.fn(),
+  createServerRateLimitResponse: vi.fn(),
+  createPublicRateLimitResponse: vi.fn(),
+  hasHoneypotSignal: vi.fn(),
+  hasRecentSubmission: vi.fn(),
+}));
+const { auth: authMock, appendContactRequest: appendContactRequestMock, updateContactRequestStatus: updateContactRequestStatusMock, sendCreatorInboxEmail: sendCreatorInboxEmailMock, verifyRateLimit: verifyRateLimitMock, createServerRateLimitResponse: createServerRateLimitResponseMock, createPublicRateLimitResponse: createPublicRateLimitResponseMock, hasHoneypotSignal: hasHoneypotSignalMock, hasRecentSubmission: hasRecentSubmissionMock } = contactMocks;
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -23,16 +30,8 @@ vi.mock("@/lib/contact/contact-requests-store", () => ({
   updateContactRequestStatus: updateContactRequestStatusMock,
 }));
 
-vi.mock("@/lib/rate-limit/server", () => ({
-  createServerRateLimitResponse: createServerRateLimitResponseMock,
-  verifyRateLimit: verifyRateLimitMock,
-}));
-
-vi.mock("@/lib/security/validation", () => ({
-  createPublicRateLimitResponse: createPublicRateLimitResponseMock,
-  hasHoneypotSignal: hasHoneypotSignalMock,
-  hasRecentSubmission: hasRecentSubmissionMock,
-}));
+vi.mock("@/lib/rate-limit/server", () => createServerRateLimitModule({ verifyRateLimit: verifyRateLimitMock, createServerRateLimitResponse: createServerRateLimitResponseMock }));
+vi.mock("@/lib/security/validation", () => createPublicValidationModule({ createPublicRateLimitResponse: createPublicRateLimitResponseMock, hasHoneypotSignal: hasHoneypotSignalMock, hasRecentSubmission: hasRecentSubmissionMock }));
 
 describe("POST /api/contact", () => {
   const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);

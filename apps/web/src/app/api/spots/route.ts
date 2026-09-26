@@ -9,10 +9,10 @@ import {
 } from"@/lib/authz";
 import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
-import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
+import { handleApiError, parseJsonBodyWithValidation } from"@/lib/http/api-errors";
 import { createSignalement } from "@/lib/actions/signalement/create-signalement";
 import { parsePositiveInteger } from "@/lib/http/query-params";
-import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
+import { enforceServerRateLimit } from "@/lib/rate-limit/server";
 
 export const runtime ="nodejs";
 const SPOTS_CACHE_HEADERS = {
@@ -103,12 +103,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
- const rateLimit = await verifyRateLimit(request, { limit: 10, window: 300 });
- const rateLimitResponse = createServerRateLimitResponse(
-  rateLimit.allowed,
-  rateLimit.retryAfter,
-  rateLimit,
- );
+ const rateLimitResponse = await enforceServerRateLimit(request, { limit: 10, window: 300 });
  if (rateLimitResponse) {
   return rateLimitResponse;
  }
@@ -119,20 +114,8 @@ export async function POST(request: Request) {
  }
  const { userId } = access;
 
- let payload: unknown;
- try {
- payload = await request.json();
- } catch {
- return NextResponse.json(
- { error:"Invalid JSON payload" },
- { status: 400 },
- );
- }
-
- const parsed = createSpotSchema.safeParse(payload);
- if (!parsed.success) {
- return validationErrorResponse(parsed.error.flatten().fieldErrors);
- }
+ const parsed = await parseJsonBodyWithValidation(request, createSpotSchema);
+ if (!parsed.ok) return parsed.response;
 
  try {
  const supabase = getSupabaseServerClient(true);

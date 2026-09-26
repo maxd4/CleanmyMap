@@ -1,7 +1,6 @@
 import {
   ActionRecordType,
   ActionSubmissionMode,
-  ActionPhase,
   ActionPreparationData,
   ActionRouteTopology,
   ActionWasteBreakdown,
@@ -16,7 +15,6 @@ import {
 import type { ActionGeometrySource } from "../types";
 import type { RouteCalibrationContext } from "@/lib/route/route-calibration";
 import type { RoutePlannerProof } from "@/lib/route/route-planner-proof-contract";
-import type { OrganizerType } from "../organizer-type";
 import type {
   RawCigaretteButtsMeasurementInput,
 } from "@/lib/waste/cigarette-butts";
@@ -48,17 +46,19 @@ export type ActionContractCreatePayload = {
     eventStartTime?: string | null;
     eventEndTime?: string | null;
   };
-  metadata: {
-    actorName?: string;
-    associationName?: string;
-    organizerType?: OrganizerType | null;
-    organizerId?: string | null;
-    organizerName?: string | null;
-    organizerAccounts?: string[];
-    participantAccounts?: string[];
-    groupJoinEnabled?: boolean;
-    actionPhase?: ActionPhase;
-    preparationData?: ActionPreparationData | null;
+  metadata: Pick<
+    CreateActionPayload,
+    | "actorName"
+    | "associationName"
+    | "organizerType"
+    | "organizerId"
+    | "organizerName"
+    | "organizerAccounts"
+    | "participantAccounts"
+    | "groupJoinEnabled"
+    | "actionPhase"
+    | "preparationData"
+  > & {
     plannerSnapshotProof?: RoutePlannerProof | null;
     placeType?: string;
     wasteKg?: number | null;

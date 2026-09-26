@@ -5,27 +5,20 @@ import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
 import {
   StorageErrorState,
   StorageLoadingState,
-  StorageRefreshButton,
 } from "./storage-usage-panel.async";
+import { AsyncPanelRefreshButton } from "@/components/ui/async-panel-controls";
 import { StorageUsageDataView } from "./storage-usage-panel.data";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import {
   buildStorageUsageViewModel,
   type StorageUsageResponse,
 } from "@/lib/dashboard/storage-usage-view-model";
-
-const fetcher = async <T,>(url: string): Promise<T> => {
-  const response = await fetch(url, { method: "GET", cache: "no-store" });
-  if (!response.ok) {
-    throw new Error(`Erreur API (${response.status}) sur ${url}`);
-  }
-  return (await response.json()) as T;
-};
+import { fetchJson } from "@/lib/http/fetch-json";
 
 export function StorageUsagePanel() {
   const usage = useSWR<StorageUsageResponse>(
     ["/api/admin/storage-usage"],
-    () => fetcher<StorageUsageResponse>("/api/admin/storage-usage"),
+    () => fetchJson<StorageUsageResponse>("/api/admin/storage-usage", { method: "GET", cache: "no-store" }),
     swrRecentViewOptions,
   );
 
@@ -56,7 +49,7 @@ export function StorageUsagePanel() {
     <AdminPanelShell
       title="Stockage Supabase"
       subtitle="Vue quota, consommation, historique mensuel et contribution métier du stockage."
-      headerAction={<StorageRefreshButton isRefreshing={isRefreshing} onRefresh={refresh} />}
+      headerAction={<AsyncPanelRefreshButton isRefreshing={isRefreshing} onRefresh={refresh} />}
     >
       {isLoading ? <StorageLoadingState /> : null}
       {hasError ? <StorageErrorState isRefreshing={isRefreshing} onRetry={refresh} /> : null}

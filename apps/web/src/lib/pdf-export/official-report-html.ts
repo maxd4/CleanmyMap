@@ -1,16 +1,9 @@
 import { buildOfficialReportCss } from "./report-pdf-theme";
 import type { PdfReportChapter, PdfReportPayload } from "./simple-pdf";
 import { escapeHtml } from "@/lib/security/html-escape";
+import { formatPdfValue } from "./format-pdf-value";
 
 type CalloutKind = "note" | "important" | "limite";
-
-function formatValue(value: unknown): string {
-  if (value == null) return "";
-  if (typeof value === "number") {
-    return Number.isInteger(value) ? String(value) : value.toFixed(1);
-  }
-  return String(value);
-}
 
 function formatGeneratedAt(value: string | undefined): string {
   const date = value ? new Date(value) : new Date();
@@ -137,7 +130,7 @@ function renderStats(payload: PdfReportPayload): string {
             (stat) => `
               <article class="cmm-card">
                 <div class="cmm-card-label">${escapeHtml(stat.label)}</div>
-                <div class="cmm-card-value">${escapeHtml(formatValue(stat.value))}</div>
+                <div class="cmm-card-value">${escapeHtml(formatPdfValue(stat.value))}</div>
                 ${stat.detail ? `<p class="cmm-muted">${escapeHtml(stat.detail)}</p>` : ""}
               </article>
             `,
@@ -169,7 +162,7 @@ function renderRows(payload: PdfReportPayload): string {
               .map(
                 (row) => `
                   <tr>
-                    ${columns.map((column) => `<td>${escapeHtml(formatValue(row[column.key]))}</td>`).join("")}
+                    ${columns.map((column) => `<td>${escapeHtml(formatPdfValue(row[column.key]))}</td>`).join("")}
                   </tr>
                 `,
               )
@@ -216,7 +209,7 @@ function renderChapter(chapter: PdfReportChapter, index: number): string {
                     (stat) => `
                       <article class="cmm-card">
                         <div class="cmm-card-label">${escapeHtml(stat.label)}</div>
-                        <div class="cmm-card-value">${escapeHtml(formatValue(stat.value))}</div>
+                        <div class="cmm-card-value">${escapeHtml(formatPdfValue(stat.value))}</div>
                         ${stat.detail ? `<p class="cmm-muted">${escapeHtml(stat.detail)}</p>` : ""}
                       </article>
                     `,
@@ -240,7 +233,7 @@ function renderChapter(chapter: PdfReportChapter, index: number): string {
                       .map(
                         (row) => `
                           <tr>
-                            ${columns.map((column) => `<td>${escapeHtml(formatValue(row[column.key]))}</td>`).join("")}
+                            ${columns.map((column) => `<td>${escapeHtml(formatPdfValue(row[column.key]))}</td>`).join("")}
                           </tr>
                         `,
                       )
@@ -277,7 +270,7 @@ function renderWebHero(chapter: PdfReportChapter, payload: PdfReportPayload): st
               (stat) => `
                 <article class="cmm-card">
                   <div class="cmm-card-label">${escapeHtml(stat.label)}</div>
-                  <div class="cmm-card-value">${escapeHtml(formatValue(stat.value))}</div>
+                  <div class="cmm-card-value">${escapeHtml(formatPdfValue(stat.value))}</div>
                   ${stat.detail ? `<p class="cmm-muted">${escapeHtml(stat.detail)}</p>` : ""}
                 </article>
               `,
@@ -370,7 +363,7 @@ export function buildOfficialReportHtml(payload: PdfReportPayload): string {
                   (stat) => `
                     <article class="cmm-card">
                       <div class="cmm-card-label">${escapeHtml(stat.label)}</div>
-                      <div class="cmm-card-value">${escapeHtml(formatValue(stat.value))}</div>
+                      <div class="cmm-card-value">${escapeHtml(formatPdfValue(stat.value))}</div>
                       ${stat.detail ? `<p class="cmm-muted">${escapeHtml(stat.detail)}</p>` : ""}
                     </article>
                   `,

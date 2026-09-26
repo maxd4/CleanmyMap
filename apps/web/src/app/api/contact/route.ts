@@ -3,11 +3,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sendCreatorInboxEmail } from "@/lib/community/creator-inbox-email";
 import { appendContactRequest, updateContactRequestStatus } from "@/lib/contact/contact-requests-store";
-import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
+import { enforceServerRateLimit } from "@/lib/rate-limit/server";
 import {
-  createPublicRateLimitResponse,
-  hasHoneypotSignal,
-  hasRecentSubmission,
+  parseJsonBodyWithSchema,
+  rejectPublicFormAbuse,
 } from "@/lib/security/validation";
 import { logWarning } from "@/lib/logging/failure-log";
 import { requireBotIdHuman } from "@/lib/botid/server";
@@ -37,46 +36,21 @@ export async function POST(request: Request) {
   const botIdResponse = await requireBotIdHuman();
   if (botIdResponse) return botIdResponse;
 
-  const writeRateLimit = await verifyRateLimit(request, {
+  const writeRateLimitResponse = await enforceServerRateLimit(request, {
     limit: 3,
     window: 300,
   });
-  const writeRateLimitResponse = createServerRateLimitResponse(
-    writeRateLimit.allowed,
-    writeRateLimit.retryAfter,
-    writeRateLimit,
-  );
   if (writeRateLimitResponse) {
     return writeRateLimitResponse;
   }
 
   const { userId } = await auth();
 
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
-  }
+  const parsed = await parseJsonBodyWithSchema(request, requestSchema);
+  if (!parsed.ok) return parsed.response;
 
-  const parsed = requestSchema.safeParse(payload);
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: "Invalid payload",
-        details: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 },
-    );
-  }
-
-  if (hasHoneypotSignal(parsed.data.honeypot)) {
-    return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
-  }
-
-  if (hasRecentSubmission(parsed.data.submittedAt)) {
-    return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
-  }
+  const abuseResponse = rejectPublicFormAbuse(parsed.data);
+  if (abuseResponse) return abuseResponse;
 
   const normalizedEmail = parsed.data.email.trim().toLowerCase();
   const created = await appendContactRequest({

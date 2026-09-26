@@ -1,7 +1,10 @@
 import { z } from "zod";
 import type { UserIdentity } from "@/lib/authz";
 import type { ActionModerationAuditParams } from "@/lib/actions/moderation-audit";
+import { runSingleActionQuery } from "@/lib/actions/query";
 import type { getSupabaseServerClient } from "@/lib/supabase/server";
+import { normalizeActionId } from "@/lib/actions/action-id";
+import { parseJsonBodyWithValidation, validationErrorResponse } from "@/lib/http/api-errors";
 
 export const toggleSchema = z.object({
   groupJoinEnabled: z.boolean(),
@@ -32,6 +35,49 @@ export type GroupJoinRouteContext = {
   params: Promise<{ actionId: string }>;
 };
 
+export type GroupJoinModerationParams = {
+  userId: string;
+  resolveReviewerAccess: ReviewerAccessResolver;
+  canOverrideActionParticipants: (identity: UserIdentity | null | undefined) => boolean;
+  appendActionModerationAudit: ModerationAuditAppender;
+  resolveAdminAuditIdentity: (fallbackUserId?: string) => Promise<{ actorUserId: string } | null>;
+};
+
+export function resolveGroupJoinActionId(actionId: string) {
+  const normalized = normalizeActionId(actionId);
+  return normalized
+    ? { ok: true as const, value: normalized }
+    : {
+        ok: false as const,
+        response: validationErrorResponse({
+          actionId: ["Identifiant d'action manquant."],
+        }),
+      };
+}
+
+function parseGroupJoinBody<Schema extends z.ZodType>(
+  request: Request,
+  schema: Schema,
+) {
+  return parseJsonBodyWithValidation(request, schema);
+}
+
+export async function resolveGroupJoinRequestContext<Schema extends z.ZodType>(
+  request: Request,
+  ctx: GroupJoinRouteContext,
+  schema: Schema,
+): Promise<
+  | { ok: true; parsed: z.infer<Schema>; trimmedActionId: string }
+  | { ok: false; response: Response }
+> {
+  const body = await parseGroupJoinBody(request, schema);
+  if (!body.ok) return { ok: false, response: body.response };
+  const { actionId } = await ctx.params;
+  const actionIdResult = resolveGroupJoinActionId(actionId);
+  if (!actionIdResult.ok) return { ok: false, response: actionIdResult.response };
+  return { ok: true, parsed: body.data, trimmedActionId: actionIdResult.value };
+}
+
 export type GroupJoinAuditErrorStage =
   | "lookup"
   | "update"
@@ -39,6 +85,26 @@ export type GroupJoinAuditErrorStage =
   | "post_update";
 
 export type GroupJoinSupabaseClient = ReturnType<typeof getSupabaseServerClient>;
+
+export type GroupJoinAction = {
+  id: string;
+  created_by_clerk_id: string | null;
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  action_phase: "pre_action" | "post_action_draft" | "post_action_complete";
+  notes: string | null;
+};
+
+export function loadGroupJoinAction(
+  supabase: GroupJoinSupabaseClient,
+  actionId: string,
+) {
+  return runSingleActionQuery<GroupJoinAction>(supabase, (query) =>
+    query
+      .select("id, created_by_clerk_id, status, action_phase, notes")
+      .eq("id", actionId)
+      .maybeSingle(),
+  );
+}
 
 export type ReviewerAccess =
   | { ok: true; identity: UserIdentity | null }

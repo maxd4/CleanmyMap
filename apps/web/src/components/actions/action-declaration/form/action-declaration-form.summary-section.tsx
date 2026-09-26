@@ -1,7 +1,7 @@
 import type { FormState } from"./model";
 import { CmmField, CmmTextarea } from "@/components/ui/cmm-field";
 import { formatBusinessDurationMinutes } from "@/lib/actions/time-contract";
-import { normalizeVolunteerParticipation } from "@/lib/actions/volunteer-participation";
+import { normalizeVolunteerParticipationFromForm } from "@/lib/actions/volunteer-participation";
 
 type ActionDeclarationSummarySectionProps = {
  form: FormState;
@@ -18,11 +18,7 @@ export function ActionDeclarationSummarySection({
  photoCount,
  onNotesChange,
 }: ActionDeclarationSummarySectionProps) {
- const volunteerParticipation = normalizeVolunteerParticipation({
-  childrenCount: form.childrenCount.trim() === "" ? null : Number(form.childrenCount),
-  adultCount: form.adultCount.trim() === "" ? null : Number(form.adultCount),
-  retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount),
- });
+ const volunteerParticipation = normalizeVolunteerParticipationFromForm(form);
  return (
  <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
  <div className="flex flex-wrap items-start justify-between gap-3">

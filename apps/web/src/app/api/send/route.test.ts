@@ -1,43 +1,34 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createEmailServiceModule,
+  createEnvironmentModule,
+} from "@/app/api/test-route-setup";
 
-const authMock = vi.hoisted(() => vi.fn());
-const requireAdminAccessMock = vi.hoisted(() => vi.fn());
-const sendEmailMock = vi.hoisted(() => vi.fn());
-const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
-
-const envMock = vi.hoisted(() => ({
-  RESEND_API_KEY: "re_test_key",
-  EMAIL_FROM: "CleanMyMap <noreply@cleanmymap.fr>" as string | undefined,
-  CONTACT_EMAIL: "contact@cleanmymap.fr" as string | undefined,
-  RESEND_TEST_TOKEN: "local-token" as string | undefined,
+const sendRouteMocks = vi.hoisted(() => ({
+  auth: vi.fn(),
+  requireAdminAccess: vi.fn(),
+  sendEmail: vi.fn(),
+  appendAdminOperationAudit: vi.fn(),
+  env: {
+    RESEND_API_KEY: "re_test_key",
+    EMAIL_FROM: "CleanMyMap <noreply@cleanmymap.fr>" as string | undefined,
+    CONTACT_EMAIL: "contact@cleanmymap.fr" as string | undefined,
+    RESEND_TEST_TOKEN: "local-token" as string | undefined,
+  },
 }));
+const { auth: authMock, requireAdminAccess: requireAdminAccessMock, sendEmail: sendEmailMock, appendAdminOperationAudit: appendAdminOperationAuditMock, env: envMock } = sendRouteMocks;
 
-vi.mock("@clerk/nextjs/server", () => ({
-  auth: authMock,
-}));
-
-vi.mock("@/lib/authz", () => ({
-  requireAdminAccess: requireAdminAccessMock,
-}));
-
+vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
+vi.mock("@/lib/authz", () => ({ requireAdminAccess: requireAdminAccessMock }));
 vi.mock("@/lib/http/auth-responses", () => ({
-  adminAccessErrorJsonResponse: () =>
-    new Response("forbidden", { status: 403 }),
+  adminAccessErrorJsonResponse: () => new Response("forbidden", { status: 403 }),
 }));
-
-vi.mock("@/lib/env", () => ({
-  env: envMock,
-}));
-
-vi.mock("@/lib/services/email", () => ({
-  sendEmail: sendEmailMock,
-  isEmailQuotaExceededError: (error: unknown) =>
-    error instanceof Error && error.name === "EmailQuotaExceededError",
-}));
-
+vi.mock("@/lib/env", () => createEnvironmentModule(envMock));
+vi.mock("@/lib/services/email", () => createEmailServiceModule(sendEmailMock));
 vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: appendAdminOperationAuditMock,
 }));
+
 
 describe("POST /api/send", () => {
   beforeEach(() => {

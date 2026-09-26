@@ -1,13 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { communityRequestMocks, createRateLimitModule, rateLimitMocks } from "@/app/api/test-helpers";
 
-const authMock = vi.hoisted(() => vi.fn());
-const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
-const getCurrentUserRoleLabelMock = vi.hoisted(() => vi.fn());
+const { auth: authMock, getCurrentUserIdentity: getCurrentUserIdentityMock, getCurrentUserRoleLabel: getCurrentUserRoleLabelMock } = communityRequestMocks;
 const appendPromotionRequestMock = vi.hoisted(() => vi.fn());
 const listPromotionRequestsForUserMock = vi.hoisted(() => vi.fn());
 const sendCreatorInboxEmailMock = vi.hoisted(() => vi.fn());
-const verifyRateLimitMock = vi.hoisted(() => vi.fn());
-const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
+const { verifyRateLimit: verifyRateLimitMock, createServerRateLimitResponse: createServerRateLimitResponseMock } = rateLimitMocks;
 
 vi.mock("@clerk/nextjs/server", () => ({ auth: authMock }));
 vi.mock("@/lib/authz", () => ({
@@ -21,10 +19,7 @@ vi.mock("@/lib/admin/promotion-requests-store", () => ({
 vi.mock("@/lib/community/creator-inbox-email", () => ({
   sendCreatorInboxEmail: sendCreatorInboxEmailMock,
 }));
-vi.mock("@/lib/rate-limit/server", () => ({
-  verifyRateLimit: verifyRateLimitMock,
-  createServerRateLimitResponse: createServerRateLimitResponseMock,
-}));
+vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
 
 function makeRequest(requestedRole: "elu" | "admin" = "elu") {
   return new Request("http://localhost/api/community/promotion-requests", {

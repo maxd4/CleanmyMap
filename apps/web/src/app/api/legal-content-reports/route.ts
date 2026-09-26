@@ -12,11 +12,10 @@ import {
   sendLegalContentReportCreatorNotification,
 } from "@/lib/legal-content-report/legal-content-report-service";
 import { logWarning } from "@/lib/logging/failure-log";
-import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
+import { enforceServerRateLimit } from "@/lib/rate-limit/server";
 import {
-  createPublicRateLimitResponse,
-  hasHoneypotSignal,
-  hasRecentSubmission,
+  parseJsonBodyWithSchema,
+  rejectPublicFormAbuse,
 } from "@/lib/security/validation";
 
 export const runtime = "nodejs";
@@ -78,50 +77,9 @@ const payloadSchema = z
     }
   });
 
-function badPayloadResponse(error: { flatten: () => { fieldErrors: Record<string, unknown> } }) {
-  return NextResponse.json(
-    { error: "Invalid payload", details: error.flatten().fieldErrors },
-    { status: 400 },
-  );
-}
-
-export async function POST(request: Request) {
-  const writeRateLimit = await verifyRateLimit(request, { limit: 3, window: 300 });
-  const rateLimitResponse = createServerRateLimitResponse(
-    writeRateLimit.allowed,
-    writeRateLimit.retryAfter,
-    writeRateLimit,
-  );
-  if (rateLimitResponse) return rateLimitResponse;
-
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
-  }
-
-  const parsed = payloadSchema.safeParse(payload);
-  if (!parsed.success) return badPayloadResponse(parsed.error);
-  if (hasHoneypotSignal(parsed.data.honeypot) || hasRecentSubmission(parsed.data.submittedAt)) {
-    return createPublicRateLimitResponse("Impossible d'envoyer la notification pour le moment.");
-  }
-
-  const { userId } = await auth();
-  const created = await appendLegalContentReport({
-    submittedByUserId: userId ?? null,
-    notifierName: parsed.data.notifierName || null,
-    notifierEmail: parsed.data.notifierEmail.toLowerCase() || null,
-    identityExceptionReason: parsed.data.identityException
-      ? parsed.data.identityExceptionReason || null
-      : null,
-    contentUrl: normalizeLegalContentReportUrl(parsed.data.contentUrl)!,
-    contentType: parsed.data.contentType || null,
-    contentId: parsed.data.contentId || null,
-    allegationReason: parsed.data.allegationReason,
-    goodFaithConfirmed: true,
-  });
-
+async function sendLegalReportNotifications(
+  created: Awaited<ReturnType<typeof appendLegalContentReport>>,
+): Promise<{ acknowledgement: "sent" | "failed" | "not_requested"; creatorInbox: "sent" | "failed" }> {
   let acknowledgement: "sent" | "failed" | "not_requested" = "not_requested";
   if (created.notifierEmail) {
     try {
@@ -146,6 +104,38 @@ export async function POST(request: Request) {
       reason: error instanceof Error ? error.message : String(error),
     });
   }
+  return { acknowledgement, creatorInbox };
+}
+
+export async function POST(request: Request) {
+  const rateLimitResponse = await enforceServerRateLimit(request, { limit: 3, window: 300 });
+  if (rateLimitResponse) return rateLimitResponse;
+
+  const parsed = await parseJsonBodyWithSchema(request, payloadSchema);
+  if (!parsed.ok) return parsed.response;
+  const abuseResponse = rejectPublicFormAbuse(
+    parsed.data,
+    "Impossible d'envoyer la notification pour le moment.",
+  );
+  if (abuseResponse) return abuseResponse;
+
+  const { userId } = await auth();
+  const created = await appendLegalContentReport({
+    submittedByUserId: userId ?? null,
+    notifierName: parsed.data.notifierName || null,
+    notifierEmail: parsed.data.notifierEmail.toLowerCase() || null,
+    identityExceptionReason: parsed.data.identityException
+      ? parsed.data.identityExceptionReason || null
+      : null,
+    contentUrl: normalizeLegalContentReportUrl(parsed.data.contentUrl)!,
+    contentType: parsed.data.contentType || null,
+    contentId: parsed.data.contentId || null,
+    allegationReason: parsed.data.allegationReason,
+    goodFaithConfirmed: true,
+  });
+
+  const { acknowledgement, creatorInbox } =
+    await sendLegalReportNotifications(created);
 
   return NextResponse.json(
     {

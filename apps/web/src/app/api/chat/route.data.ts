@@ -13,6 +13,7 @@ import {
   type CurrentProfileRow,
   messageSelect,
   normalizeChatMessageRow,
+  resolveChatAccessContext,
 } from "./route.shared";
 
 export async function runMessageQuery(query: ChatQueryResult<ChatMessageRow>): Promise<ChatMessageRow[]> {
@@ -132,6 +133,19 @@ export async function loadCurrentProfile(
   }
 
   return (data ?? null) as CurrentProfileRow | null;
+}
+
+export async function loadChatAccessContext(
+  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
+  userId: string,
+  params: Omit<Parameters<typeof resolveChatAccessContext>[0], "profileMetadata" | "profileArrondissement">,
+) {
+  const profile = await loadCurrentProfile(supabase, userId);
+  return resolveChatAccessContext({
+    ...params,
+    profileMetadata: profile?.metadata,
+    profileArrondissement: profile?.paris_arrondissement,
+  });
 }
 
 export async function loadRelatedCommunityEvent(

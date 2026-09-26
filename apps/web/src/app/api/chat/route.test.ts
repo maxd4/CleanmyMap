@@ -16,6 +16,44 @@ import {
   verifyRateLimitMock,
 } from "./route.test.mocks";
 
+function configurePollSupabase(
+  pollMessage: ChatMessageRow,
+  actionConversation: { id: string; action_id: string } | null = null,
+) {
+  const supabaseMock = buildSupabaseMock({
+    profile: {
+      id: "user-1",
+      display_name: "Alex",
+      handle: "alex",
+      paris_arrondissement: null,
+      role_label: "member",
+      metadata: null,
+    },
+    messages: [pollMessage],
+    insertedMessage: pollMessage,
+    pollMessage,
+    actionConversation,
+  });
+  getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
+  getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
+  return supabaseMock;
+}
+
+async function postAttachment(payload: Record<string, unknown>) {
+  return postChatPayload(payload);
+}
+
+async function postChatPayload(payload: Record<string, unknown>) {
+  const { POST } = await import("./route");
+  return POST(
+    new Request("http://localhost/api/chat", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  );
+}
+
 describe("POST /api/chat", () => {
   beforeEach(() => {
     resetChatRouteMocks();
@@ -383,18 +421,12 @@ describe("POST /api/chat", () => {
   });
 
   it("rejects video attachments explicitly before any message write", async () => {
-    const response = await (await import("./route")).POST(
-      new Request("http://localhost/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          channelType: "community",
-          content: "Photo uniquement",
-          attachmentUrl: "https://cdn.example.test/clip.mp4",
-          attachmentType: "video/mp4",
-        }),
-      }),
-    );
+    const response = await postAttachment({
+      channelType: "community",
+      content: "Photo uniquement",
+      attachmentUrl: "https://cdn.example.test/clip.mp4",
+      attachmentType: "video/mp4",
+    });
 
     expect(response.status).toBe(422);
     const body = await response.json();
@@ -405,18 +437,12 @@ describe("POST /api/chat", () => {
   });
 
   it("rejects SVG attachments explicitly before any message write", async () => {
-    const response = await (await import("./route")).POST(
-      new Request("http://localhost/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          channelType: "community",
-          content: "Image uniquement",
-          attachmentUrl: "https://cdn.example.test/payload.svg",
-          attachmentType: "image/svg+xml",
-        }),
-      }),
-    );
+    const response = await postAttachment({
+      channelType: "community",
+      content: "Image uniquement",
+      attachmentUrl: "https://cdn.example.test/payload.svg",
+      attachmentType: "image/svg+xml",
+    });
 
     expect(response.status).toBe(422);
     expect((await response.json()).details.attachmentType).toEqual(
@@ -586,20 +612,14 @@ describe("POST /api/chat", () => {
     getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
     getSupabaseServerClientMock.mockReturnValue({ service: true });
 
-    const { GET, POST } = await import("./route");
-    const response = await POST(
-      new Request("http://localhost/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          channelType: "community",
-          topicId: "demande_diffusion",
-          messageKind: "announcement",
-          relatedEventId: eventId,
-          content: "Venez relayer cette action.",
-        }),
-      }),
-    );
+    const { GET } = await import("./route");
+    const response = await postChatPayload({
+      channelType: "community",
+      topicId: "demande_diffusion",
+      messageKind: "announcement",
+      relatedEventId: eventId,
+      content: "Venez relayer cette action.",
+    });
 
     expect(response.status).toBe(201);
     expect(supabaseMock.relatedEventQuery.eq).toHaveBeenCalledWith("id", eventId);
@@ -705,36 +725,16 @@ describe("POST /api/chat", () => {
         { id: "option-1", position: 1, label: "Samedi" },
       ],
     };
-    const supabaseMock = buildSupabaseMock({
-      profile: {
-        id: "user-1",
-        display_name: "Alex",
-        handle: "alex",
-        paris_arrondissement: null,
-        role_label: "member",
-        metadata: null,
-      },
-      messages: [pollMessage],
-      insertedMessage: pollMessage,
-      pollMessage,
-    });
-    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
+    const supabaseMock = configurePollSupabase(pollMessage);
 
-    const { GET, POST } = await import("./route");
-    const response = await POST(
-      new Request("http://localhost/api/chat", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          channelType: "community",
-          topicId: "coordination_secteur",
-          messageKind: "poll",
-          pollOptions: ["Samedi", "Dimanche"],
-          content: "Quel créneau préférez-vous ?",
-        }),
-      }),
-    );
+    const { GET } = await import("./route");
+    const response = await postChatPayload({
+      channelType: "community",
+      topicId: "coordination_secteur",
+      messageKind: "poll",
+      pollOptions: ["Samedi", "Dimanche"],
+      content: "Quel créneau préférez-vous ?",
+    });
 
     expect(response.status).toBe(201);
     expect(supabaseMock.supabase.rpc).toHaveBeenCalledWith(
@@ -862,25 +862,12 @@ describe("POST /api/chat", () => {
         { id: `option-${channelType}-2`, position: 2, label: "Non" },
       ],
     };
-    const supabaseMock = buildSupabaseMock({
-      profile: {
-        id: "user-1",
-        display_name: "Alex",
-        handle: "alex",
-        paris_arrondissement: null,
-        role_label: "member",
-        metadata: null,
-      },
-      messages: [pollMessage],
-      insertedMessage: pollMessage,
+    const supabaseMock = configurePollSupabase(
       pollMessage,
-      actionConversation:
-        channelType === "action"
-          ? { id: expected.p_conversation_id!, action_id: extra.actionId! }
-          : null,
-    });
-    getSupabaseClerkRlsClientMock.mockResolvedValue(supabaseMock.supabase);
-    getSupabaseServerClientMock.mockReturnValue(supabaseMock.serviceSupabase);
+      channelType === "action"
+        ? { id: expected.p_conversation_id!, action_id: extra.actionId! }
+        : null,
+    );
 
     const response = await (await import("./route")).POST(
       new Request("http://localhost/api/chat", {

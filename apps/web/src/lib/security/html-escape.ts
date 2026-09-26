@@ -32,12 +32,3 @@ export function safeImageSource(value: unknown): string | null {
     return null;
   }
 }
-
-export function filterSafeImageSources<T extends { url: string }>(
-  items: T[],
-): Array<T & { url: string }> {
-  return items.flatMap((item) => {
-    const source = safeImageSource(item.url);
-    return source ? [{ ...item, url: source }] : [];
-  });
-}

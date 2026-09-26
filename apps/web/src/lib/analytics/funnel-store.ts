@@ -9,6 +9,8 @@ import {
   allowLocalFileStoreFallback,
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
+  getRecentTimeWindow,
+  prependBoundedRecord,
 } from "@/lib/persistence/runtime-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -112,7 +114,7 @@ export async function appendFunnelEvent(event: FunnelEvent): Promise<void> {
   }
 
   const store = await readStore();
-  const records = [event, ...store.records].slice(0, 12000);
+  const records = prependBoundedRecord(event, store.records, 12000);
   await writeStore({ updatedAt: new Date().toISOString(), records });
 }
 
@@ -121,13 +123,11 @@ export async function listFunnelEvents(
 ): Promise<FunnelEvent[]> {
   assertPersistenceAvailable("funnel_events");
 
-  const nowMs = Date.now();
-  const floor = nowMs - periodDays * 24 * 60 * 60 * 1000;
+  const { nowMs, floor, floorIso } = getRecentTimeWindow(periodDays);
 
   if (canUseSupabaseServerPersistence()) {
     try {
       const supabase = getSupabaseServerClient(true);
-      const floorIso = new Date(floor).toISOString();
       const result = await supabase
         .from("funnel_events")
         .select("at, session_id, user_id, step, mode, meta")

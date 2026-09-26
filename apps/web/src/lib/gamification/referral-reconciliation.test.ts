@@ -1,23 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { beforeEach, expect, it, vi } from "vitest";
 import { removeReferralAwardForRejectedContribution } from "./referrals";
+import {
+  createProfileLookupSelect,
+  createProgressionEventQueries,
+  resetReferralProgressionMocks,
+  referralProgressionMocks,
+} from "./__tests__/referral-test-helpers";
 
+const { insertProgressionEvent: insertProgressionEventMock, loadActionRowsForUser: loadActionRowsForUserMock, loadValidatedActionIdsForUser: loadValidatedActionIdsForUserMock, refreshProgressionProfile: refreshProgressionProfileMock } = referralProgressionMocks;
+vi.mock("./progression-data", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionDataModule());
+vi.mock("./progression-tracking", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionTrackingModule());
 vi.mock("next/cache", () => ({ revalidateTag: vi.fn() }));
-
-const insertProgressionEventMock = vi.hoisted(() => vi.fn());
-const loadActionRowsForUserMock = vi.hoisted(() => vi.fn());
-const loadValidatedActionIdsForUserMock = vi.hoisted(() => vi.fn());
-const refreshProgressionProfileMock = vi.hoisted(() => vi.fn());
-
-vi.mock("./progression-data", () => ({
-  insertProgressionEvent: insertProgressionEventMock,
-  loadActionRowsForUser: loadActionRowsForUserMock,
-  loadValidatedActionIdsForUser: loadValidatedActionIdsForUserMock,
-}));
-
-vi.mock("./progression-tracking", () => ({
-  refreshProgressionProfile: refreshProgressionProfileMock,
-}));
 
 type Profile = {
   id: string;
@@ -38,35 +32,12 @@ function buildProfile(): Profile {
 }
 
 function createSupabase(events: Array<Record<string, unknown>>): SupabaseClient {
-  const query = () => {
-    const chain = {} as { eq: ReturnType<typeof vi.fn>; limit: ReturnType<typeof vi.fn> };
-    chain.eq = vi.fn(() => chain);
-    chain.limit = vi.fn(async () => ({ data: events, error: null }));
-    return chain;
-  };
-  const deleteQuery = () => {
-    const chain = {} as {
-      eq: ReturnType<typeof vi.fn>;
-      then: (resolve: (value: { error: null }) => unknown) => unknown;
-    };
-    chain.eq = vi.fn(() => chain);
-    chain.then = (resolve) => {
-      events.length = 0;
-      return Promise.resolve(resolve({ error: null }));
-    };
-    return chain;
-  };
+  const { createFilterQuery, createDeleteQuery } = createProgressionEventQueries(events);
   return {
     from: vi.fn((table: string) => {
-      if (table === "profiles") {
-        return {
-          select: vi.fn(() => ({
-            eq: vi.fn(() => ({ maybeSingle: vi.fn(async () => ({ data: buildProfile(), error: null })) })),
-          })),
-        };
-      }
+      if (table === "profiles") return createProfileLookupSelect(() => buildProfile());
       if (table === "progression_events") {
-        return { select: vi.fn(query), delete: vi.fn(deleteQuery) };
+        return { select: vi.fn(createFilterQuery), delete: vi.fn(createDeleteQuery) };
       }
       throw new Error(`Unexpected table ${table}`);
     }),
@@ -84,11 +55,7 @@ function buildEvent(sourceId: string): Record<string, unknown> {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  insertProgressionEventMock.mockResolvedValue(true);
-  loadActionRowsForUserMock.mockResolvedValue([]);
-  loadValidatedActionIdsForUserMock.mockResolvedValue(new Set<string>());
-  refreshProgressionProfileMock.mockResolvedValue(undefined);
+  resetReferralProgressionMocks();
 });
 
 it("supprime le parrainage et rafraîchit le profil quand la contribution unique est rejetée", async () => {

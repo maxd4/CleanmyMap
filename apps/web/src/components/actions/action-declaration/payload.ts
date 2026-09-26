@@ -1,5 +1,4 @@
 import { appendEventRefToNotes } from"../../../lib/actions/event-link";
-import { PLACE_TYPE_OPTIONS } from"../../../lib/actions/place-type-options";
 import type {
  ActionDrawing,
  ActionGeometrySource,
@@ -15,6 +14,7 @@ import {
  type FinalActionGeometry,
 } from "@/lib/actions/geometry/final-geometry";
 import type { DeclarationMode, FormState } from"./types";
+import { initialState } from "./form/model";
 import { normalizeActionDrawing } from"../map/actions-map-geometry.utils";
 import { formatWasteGuidanceLines } from "@/lib/waste";
 import {
@@ -58,84 +58,11 @@ export function normalizeParticipantAccounts(
  ];
 }
 
-const BASE_FORM_STATE: FormState = {
- actorName:"",
- associationName: "Action spontanée",
-  organizerType:"",
- organizerId: null,
- organizerName:"",
- organizerAccounts:"",
- participantAccounts:[],
- groupJoinEnabled: false,
- wasteCategories: [],
- actionTitle:"",
- shortDescription:"",
- communeZoneLabel:"",
- actionDate: new Date().toISOString().slice(0, 10),
- meetingTime:"",
- departureTime:"",
- locationLabel:"",
- departureLocationLabel:"",
- arrivalLocationLabel:"",
- routeTopology:"loop",
- routeStyle:"souple",
- routeAdjustmentMessage:"",
- plannedObjective:"nettoyage",
- estimatedDifficulty:"moderee",
- accessibility:"",
- safetyInstructions:"",
- recommendedMaterials:"",
- participantMessage:"",
- creatorRole:"organisateur",
- preparationState:"brouillon",
- logisticsNotes:"",
- checklistBeforeDeparture:"",
- recordType:"action",
- latitude:"",
- longitude:"",
- wasteKg:"",
- wasteMeasurementMethod:"",
- wasteRecyclablesKg:"",
- wasteGlassKg:"",
- wasteHouseholdKg:"",
- wasteOtherKg:"",
- wasteUnusualObjects:"",
- wasteSpecialHandlingWaste:"",
-  cigaretteButts:"",
- cigaretteButtsCount:"", // Optionnel par défaut
- cigaretteButtsCondition:"propre", // État par défaut
- cigaretteButtsVolumeLiters:"",
- volunteersCount:"1",
- childrenCount:"0",
- adultCount:"1",
- retiredCount:"0",
- durationMinutes:"60",
- routeTargetDistanceKm:"1",
- routeTargetDistanceKmManuallySet:false,
- midRouteCoordinates: null,
- arrivalCoordinates: null,
- eventStartTime:"",
- eventEndTime:"",
- notes:"",
-  wasteMegotsKg:"",
- wasteMegotsCondition:"propre",
- wastePlastiqueKg:"",
- wasteVerreKg:"",
- wasteMetalKg:"",
- wasteMixteKg:"",
- triQuality:"moyenne",
- placeType: PLACE_TYPE_OPTIONS[0],
- visionBagsCount:"",
- visionFillLevel:"",
- visionDensity:"",
- gpxImport: null,
-};
-
 export function createInitialFormState(
  actorName: string,
  recordType: FormState["recordType"] = "action",
 ): FormState {
- return { ...BASE_FORM_STATE, actorName, recordType };
+ return { ...initialState, actorName, recordType };
 }
 
 export function buildPreparationDataFromForm(
@@ -321,7 +248,7 @@ export function applyPreparationDataToForm(
 
 export function getFormResetState(previous: FormState): FormState {
  return {
- ...BASE_FORM_STATE,
+ ...initialState,
  actorName: previous.actorName,
  associationName: previous.associationName,
  organizerId: previous.organizerId,

@@ -80,6 +80,18 @@ function currentSnapshot(overrides: Record<string, unknown> = {}) {
   });
 }
 
+async function expectSnapshotRegenerated(snapshot: ReturnType<typeof currentSnapshot>) {
+  expect(isCurrentPublicImpactSnapshot(snapshot, NOW)).toBe(false);
+  readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+  const result = await generateAndPersistPublicImpactSnapshot({ now: NOW });
+
+  expect(result.persisted).toBe(true);
+  expect(result.reused).toBe(false);
+  expect(loadIncrementalAggregateMock).toHaveBeenCalledOnce();
+  expect(upsertSnapshotMock).toHaveBeenCalledOnce();
+}
+
 describe("public monthly impact snapshot", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -186,15 +198,7 @@ describe("public monthly impact snapshot", () => {
       },
     });
 
-    expect(isCurrentPublicImpactSnapshot(snapshot, NOW)).toBe(false);
-    readLatestSnapshotMock.mockResolvedValue(snapshot);
-
-    const result = await generateAndPersistPublicImpactSnapshot({ now: NOW });
-
-    expect(result.persisted).toBe(true);
-    expect(result.reused).toBe(false);
-    expect(loadIncrementalAggregateMock).toHaveBeenCalledOnce();
-    expect(upsertSnapshotMock).toHaveBeenCalledOnce();
+    await expectSnapshotRegenerated(snapshot);
   });
 
   it("rejects a same-month snapshot when its period is incoherent with its generation date", async () => {
@@ -218,15 +222,7 @@ describe("public monthly impact snapshot", () => {
       },
     };
 
-    expect(isCurrentPublicImpactSnapshot(snapshot, NOW)).toBe(false);
-    readLatestSnapshotMock.mockResolvedValue(snapshot);
-
-    const result = await generateAndPersistPublicImpactSnapshot({ now: NOW });
-
-    expect(result.persisted).toBe(true);
-    expect(result.reused).toBe(false);
-    expect(loadIncrementalAggregateMock).toHaveBeenCalledOnce();
-    expect(upsertSnapshotMock).toHaveBeenCalledOnce();
+    await expectSnapshotRegenerated(snapshot);
   });
 
   it("persists one month-start snapshot when the month has no valid snapshot", async () => {

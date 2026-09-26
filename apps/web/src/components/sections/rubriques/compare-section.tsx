@@ -8,7 +8,11 @@ import { computeZoneCompare } from "@/lib/analytics/compare-zones";
 import { formatSigned } from "@/components/sections/rubriques/helpers";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { dashboardPeriodStorage } from "@/lib/storage/ui-state-storage";
-import { SectionShell } from "@/components/sections/rubriques/shared";
+import {
+  RUBRIQUE_CONTAINER_VARIANTS,
+  RUBRIQUE_ITEM_VARIANTS,
+  SectionShell,
+} from "@/components/sections/rubriques/shared";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { 
   BarChart3, 
@@ -25,19 +29,6 @@ import {
   Sparkles,
   ArrowRight
 } from "lucide-react";
-
-const containerVariants = {
-  hidden: { opacity: 1 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 1, y: 20 },
-  visible: { opacity: 1, y: 0 }
-};
 
 export function CompareSection() {
   const [periodDays, setPeriodDays] = useState<30 | 90 | 365>(() => {
@@ -131,13 +122,13 @@ export function CompareSection() {
           </div>
         ) : (
           <motion.div 
-            variants={containerVariants}
+            variants={RUBRIQUE_CONTAINER_VARIANTS}
             initial="hidden"
             animate="visible"
             className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start"
           >
             {/* Main Comparison Table */}
-            <motion.div variants={itemVariants} className="lg:col-span-8 space-y-8">
+            <motion.div variants={RUBRIQUE_ITEM_VARIANTS} className="lg:col-span-8 space-y-8">
               <div className="rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl overflow-hidden">
                 <div className="p-8 border-b border-white/10 flex items-center justify-between">
                   <div>
@@ -222,7 +213,7 @@ export function CompareSection() {
             {/* Side Insights */}
             <div className="lg:col-span-4 space-y-12">
               {/* Leaderboard Card */}
-              <motion.div variants={itemVariants} className="p-8 rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-8 relative overflow-hidden">
+              <motion.div variants={RUBRIQUE_ITEM_VARIANTS} className="p-8 rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-8 relative overflow-hidden">
                 <div className="absolute -top-10 -right-10 p-12 opacity-5 text-amber-400">
                   <Trophy size={140} />
                 </div>
@@ -254,7 +245,7 @@ export function CompareSection() {
               </motion.div>
 
               {/* Priority Zones Card */}
-              <motion.div variants={itemVariants} className="p-8 rounded-[3rem] bg-gradient-to-br from-rose-500/20 to-orange-500/10 border border-rose-500/20 shadow-2xl space-y-8 relative overflow-hidden group">
+              <motion.div variants={RUBRIQUE_ITEM_VARIANTS} className="p-8 rounded-[3rem] bg-gradient-to-br from-rose-500/20 to-orange-500/10 border border-rose-500/20 shadow-2xl space-y-8 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-10 opacity-10 text-rose-400">
                   <Zap size={100} className="group-hover:animate-pulse" />
                 </div>
@@ -285,7 +276,7 @@ export function CompareSection() {
               </motion.div>
 
               {/* Quick Pulse Stats */}
-              <motion.div variants={itemVariants} className="grid grid-cols-1 gap-4">
+              <motion.div variants={RUBRIQUE_ITEM_VARIANTS} className="grid grid-cols-1 gap-4">
                 <div className="p-6 rounded-[2.5rem] bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-between group">
                   <div className="flex items-center gap-4">
                     <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">

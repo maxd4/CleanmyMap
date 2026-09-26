@@ -1,12 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createRateLimitModule, mockAllowedRateLimit, mockRejectedRateLimit } from "@/app/api/test-helpers";
 
 const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
 const persistReportGenerationMock = vi.hoisted(() => vi.fn());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
 const reserveReportExportSlotMock = vi.hoisted(() => vi.fn());
 const releaseReportExportSlotMock = vi.hoisted(() => vi.fn());
-const verifyRateLimitMock = vi.hoisted(() => vi.fn());
-const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/authz", () => ({
   requireAuthenticatedAccess: requireAuthenticatedAccessMock,
@@ -25,10 +24,7 @@ vi.mock("@/lib/reports/report-export-quota", () => ({
   releaseReportExportSlot: releaseReportExportSlotMock,
 }));
 
-vi.mock("@/lib/rate-limit/server", () => ({
-  verifyRateLimit: verifyRateLimitMock,
-  createServerRateLimitResponse: createServerRateLimitResponseMock,
-}));
+vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
 
 import { POST } from "./route";
 
@@ -67,13 +63,7 @@ describe("POST /api/reports/generations", () => {
     appendAdminOperationAuditMock.mockResolvedValue(undefined);
     reserveReportExportSlotMock.mockResolvedValue({ allowed: true, quotaDay: "2026-08-27" });
     releaseReportExportSlotMock.mockResolvedValue(undefined);
-    verifyRateLimitMock.mockResolvedValue({
-      allowed: true,
-      limit: 5,
-      remaining: 4,
-      reset: Date.now() + 60_000,
-    });
-    createServerRateLimitResponseMock.mockReturnValue(null);
+    mockAllowedRateLimit(5);
   });
 
   it("denies anonymous callers before persistence", async () => {
@@ -139,16 +129,7 @@ describe("POST /api/reports/generations", () => {
   });
 
   it("returns 429 before reading a costly snapshot when rate limited", async () => {
-    verifyRateLimitMock.mockResolvedValueOnce({
-      allowed: false,
-      limit: 5,
-      remaining: 0,
-      reset: Date.now() + 60_000,
-      retryAfter: 60,
-    });
-    createServerRateLimitResponseMock.mockReturnValueOnce(
-      new Response(JSON.stringify({ code: "RATE_LIMIT_EXCEEDED" }), { status: 429 }),
-    );
+    mockRejectedRateLimit(5);
 
     const response = await POST(
       new Request("http://localhost/api/reports/generations", {

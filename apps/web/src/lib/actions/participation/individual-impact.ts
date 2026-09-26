@@ -1,19 +1,17 @@
 import {
-  BUTTS_PER_KG_REFERENCE,
   CIGARETTE_BUTTS_MASS_CONVERSION_VERSION,
   computeButtsCount,
-  CONDITION_WEIGHT_FACTORS,
 } from "@/lib/impact/impact-terrain-2026";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
 
 export const WASTE_MOISTURE_NORMALIZATION_VERSION =
   "impact-terrain-2026-waste-moisture-v1" as const;
 
-export const WASTE_MOISTURE_CONDITIONS = ["sec", "humide", "mouille"] as const;
-export type WasteMoistureCondition = (typeof WASTE_MOISTURE_CONDITIONS)[number];
-export type IndividualButtsProvenance = "counted" | "measured" | "derived";
+const WASTE_MOISTURE_CONDITIONS = ["sec", "humide", "mouille"] as const;
+type WasteMoistureCondition = (typeof WASTE_MOISTURE_CONDITIONS)[number];
+type IndividualButtsProvenance = "counted" | "measured" | "derived";
 
-export type IndividualImpactMeasurement = {
+type IndividualImpactFields = {
   wasteKg: number | null;
   wasteCondition: WasteMoistureCondition | null;
   wasteMeasurementMethod: string | null;
@@ -25,6 +23,9 @@ export type IndividualImpactMeasurement = {
   cigaretteButtsConversionVersion: string | null;
   measuredBy: string | null;
   measuredAt: string | null;
+};
+
+export type IndividualImpactMeasurement = IndividualImpactFields & {
   equivalentSecKg: number | null;
   comparableButtsCount: number | null;
   comparableButtsProvenance: "counted" | "derived" | null;
@@ -41,19 +42,7 @@ export type IndividualImpactMeasurementInput = {
   measuredAt?: string | null;
 };
 
-export type StoredIndividualImpactMeasurement = {
-  wasteKg: number | null;
-  wasteCondition: WasteMoistureCondition | null;
-  wasteMeasurementMethod: string | null;
-  wasteNormalizationVersion: string | null;
-  cigaretteButtsCount: number | null;
-  cigaretteButtsMassKg: number | null;
-  cigaretteButtsCondition: ActionMegotsCondition | null;
-  cigaretteButtsProvenance: IndividualButtsProvenance | null;
-  cigaretteButtsConversionVersion: string | null;
-  measuredBy: string | null;
-  measuredAt: string | null;
-};
+export type StoredIndividualImpactMeasurement = IndividualImpactFields;
 
 export type IndividualImpactRow = {
   individual_waste_kg?: number | string | null;
@@ -172,8 +161,6 @@ export function toIndividualImpactMeasurement(
           : null,
   };
 }
-
-export const toImpact = toIndividualImpactMeasurement;
 
 type AllocationKind = "individual" | "quote_part" | "unavailable";
 
@@ -321,7 +308,7 @@ export function allocateActionParticipantImpact(params: {
   ]));
 }
 
-export const INDIVIDUAL_IMPACT_COLUMN_LIST = [
+const INDIVIDUAL_IMPACT_COLUMN_LIST = [
   "individual_waste_kg",
   "individual_waste_condition",
   "individual_waste_measurement_method",
@@ -337,5 +324,3 @@ export const INDIVIDUAL_IMPACT_COLUMN_LIST = [
 
 export const INDIVIDUAL_IMPACT_SELECT = INDIVIDUAL_IMPACT_COLUMN_LIST.join(", ");
 export const REVIEW_SELECT = `id, action_id, created_at, joined_at, updated_at, user_id, participation_status, participation_source, ${INDIVIDUAL_IMPACT_SELECT}`;
-
-export { BUTTS_PER_KG_REFERENCE, CONDITION_WEIGHT_FACTORS };

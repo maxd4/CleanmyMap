@@ -1,4 +1,4 @@
-export const ACTION_WORKFLOW_SCHEMA_VERSION = "action-workflow-v1" as const;
+const ACTION_WORKFLOW_SCHEMA_VERSION = "action-workflow-v1" as const;
 
 export const ACTION_WORKFLOW_STEPS = [
   "itineraire",
@@ -60,13 +60,6 @@ export function createActionWorkflowState(
       preformulaire: "todo",
     },
   };
-}
-
-export function normalizeActionWorkflowStep(value: string | string[] | undefined): ActionWorkflowStepId {
-  const candidate = Array.isArray(value) ? value[0] : value;
-  return ACTION_WORKFLOW_STEPS.includes(candidate as ActionWorkflowStepId)
-    ? (candidate as ActionWorkflowStepId)
-    : "itineraire";
 }
 
 export function markActionWorkflowStep(

@@ -1,6 +1,14 @@
 import { z } from "zod";
+import { NextResponse } from "next/server";
 import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
-import { type ChatChannelType, type ZoneContext, getTerritoryFilter } from "@/lib/chat/channels";
+import {
+  type ChatChannelType,
+  type ZoneContext,
+  buildChannelAccessHint,
+  canAccessChatChannel,
+  extractZoneContextFromMetadata,
+  getTerritoryFilter,
+} from "@/lib/chat/channels";
 import { extractParisArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
 import {
   isChatTopicId,
@@ -303,4 +311,128 @@ export function buildZoneContext(
 export function hasValidTerritoryContext(zoneContext: ZoneContext | null): boolean {
   const filter = getTerritoryFilter(zoneContext);
   return Boolean(filter.arrondissementIds?.length || filter.zoneNames?.length);
+}
+
+export function resolveChatZoneContext(params: {
+  profileMetadata: Record<string, unknown> | null | undefined;
+  profileArrondissement: number | null | undefined;
+  requestedZoneName: string | null;
+  requestedArrondissement: number | null;
+}) {
+  const profileMetadataZone = extractZoneContextFromMetadata(params.profileMetadata ?? null);
+  const hasExplicitTerritoryContext =
+    params.requestedZoneName !== null || params.requestedArrondissement !== null;
+  const profileZoneContext = buildZoneContext(
+    profileMetadataZone.zoneName,
+    params.profileArrondissement ?? profileMetadataZone.arrondissementId,
+  );
+  const requestedZoneContext = hasExplicitTerritoryContext
+    ? buildZoneContext(params.requestedZoneName, params.requestedArrondissement)
+    : null;
+  const zoneContext = requestedZoneContext ?? profileZoneContext;
+  const zoneName = zoneContext.zoneName;
+  const arrondissementId = zoneContext.arrondissementId;
+  return {
+    hasExplicitTerritoryContext,
+    zoneContext,
+    zoneName,
+    arrondissementId,
+    hasValidZone: hasValidTerritoryContext(zoneContext),
+    hasGreaterParisZone: zoneName !== null,
+    hasArrondissement:
+      arrondissementId !== null && arrondissementId >= 1 && arrondissementId <= 20,
+  };
+}
+
+function buildChatChannelAccessError(
+  channelType: ChatChannelType,
+  roleLabel: string | null | undefined,
+  context: Omit<ReturnType<typeof resolveChatZoneContext>, "arrondissementId">,
+) {
+  return canAccessChatChannel(channelType, {
+    roleLabel,
+    hasArrondissement: context.hasArrondissement,
+    hasGreaterParisZone: context.hasGreaterParisZone,
+    zoneContext: context.zoneContext,
+  })
+    ? null
+    : NextResponse.json(
+        { error: "Canal inaccessible", hint: buildChannelAccessHint(channelType) },
+        { status: 403 },
+      );
+}
+
+export function resolveChatAccessContext(params: {
+  profileMetadata: Record<string, unknown> | null | undefined;
+  profileArrondissement: number | null | undefined;
+  requestedZoneName: string | null;
+  requestedArrondissement: number | null;
+  channelType: ChatChannelType;
+  roleLabel: string | null | undefined;
+}) {
+  const zone = resolveChatZoneContext(params);
+  return {
+    ...zone,
+    error: buildChatChannelAccessError(params.channelType, params.roleLabel, zone),
+  };
+}
+
+export function validateActionChannelParams(
+  channelType: ChatChannelType,
+  requestedActionId: string | null,
+): Response | null {
+  if (channelType === "action" && !requestedActionId) {
+    return NextResponse.json(
+      { error: "Action requise", hint: "Sélectionnez une action publiée." },
+      { status: 400 },
+    );
+  }
+  if (channelType !== "action" && requestedActionId) {
+    return NextResponse.json(
+      { error: "Paramètre action invalide", hint: "actionId est réservé au canal action." },
+      { status: 400 },
+    );
+  }
+  return null;
+}
+
+export function buildEmptyChatResponse(requestedMessageId: string | null) {
+  return NextResponse.json({
+    messages: [],
+    previousCursor: null,
+    hasMore: false,
+    ...(requestedMessageId
+      ? { targetMessageId: requestedMessageId, targetStatus: "unavailable" as const }
+      : {}),
+  });
+}
+
+type ChatFilterableQuery<T> = {
+  eq: (column: string, value: unknown) => T;
+  in: (column: string, values: readonly unknown[]) => T;
+};
+
+export function buildChatDirectScopeFactories<T extends ChatFilterableQuery<T>>(params: {
+  channelType: ChatChannelType;
+  createQuery: () => T;
+  userId: string;
+  recipientId: string;
+  topicId: string | null;
+}): Array<() => T> {
+  if (params.channelType === "dm") {
+    return [() =>
+      params.createQuery()
+        .eq("channel_type", "dm")
+        .in("sender_id", [params.userId, params.recipientId])
+        .in("recipient_id", [params.userId, params.recipientId])
+    ];
+  }
+  if (params.channelType === "admin_elu") {
+    return [() => {
+      let query = params.createQuery().eq("channel_type", "admin_elu");
+      if (params.topicId) query = query.eq("topic_id", params.topicId);
+      return query;
+    }];
+  }
+  return [];
 }

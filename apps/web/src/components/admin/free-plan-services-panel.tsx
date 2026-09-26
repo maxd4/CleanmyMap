@@ -5,9 +5,9 @@ import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
 import {
   FreePlanErrorState,
   FreePlanLoadingState,
-  FreePlanRefreshButton,
   FreePlanServicesDataView,
 } from "./free-plan-services-panel.async";
+import { AsyncPanelRefreshButton } from "@/components/ui/async-panel-controls";
 import { swrSupervisionOptions } from "@/lib/swr-config";
 import type { ServicesPayload } from "@/lib/dashboard/status";
 import type {
@@ -16,6 +16,7 @@ import type {
   EnvironmentalImpactProjectSignals,
 } from "@/lib/environmental-impact-estimator";
 import { buildFreePlanServicesPanelModel } from "./free-plan-services-panel.model";
+import { fetchJson } from "@/lib/http/fetch-json";
 
 type FreePlanServicesResponse = {
   status: "ok" | "error";
@@ -27,23 +28,15 @@ type FreePlanServicesResponse = {
   details?: string;
 };
 
-const fetcher = async <T,>(url: string): Promise<T> => {
-  const response = await fetch(url, { method: "GET" });
-  if (!response.ok) {
-    throw new Error(`Erreur API (${response.status}) sur ${url}`);
-  }
-  return (await response.json()) as T;
-};
-
 export function FreePlanServicesPanel() {
   const freePlan = useSWR<FreePlanServicesResponse>(
     ["/api/admin/free-plan-services"],
-    () => fetcher<FreePlanServicesResponse>("/api/admin/free-plan-services?historyLimit=8"),
+    () => fetchJson<FreePlanServicesResponse>("/api/admin/free-plan-services?historyLimit=8", { method: "GET" }),
     swrSupervisionOptions,
   );
   const servicesHealth = useSWR<ServicesPayload>(
     ["/api/services"],
-    () => fetcher<ServicesPayload>("/api/services"),
+    () => fetchJson<ServicesPayload>("/api/services", { method: "GET" }),
     swrSupervisionOptions,
   );
 
@@ -66,7 +59,7 @@ export function FreePlanServicesPanel() {
     <AdminPanelShell
       title="Plans gratuits surveillés"
       subtitle="Fiche de pilotage des coûts proxy, du quota gratuit et des dérives mensuelles pour Vercel, Supabase, Resend et les autres services externes."
-      headerAction={<FreePlanRefreshButton isRefreshing={isRefreshing} onRefresh={refresh} />}
+      headerAction={<AsyncPanelRefreshButton isRefreshing={isRefreshing} onRefresh={refresh} />}
     >
       {isLoading ? <FreePlanLoadingState /> : null}
       {hasError ? <FreePlanErrorState isRefreshing={isRefreshing} onRetry={refresh} /> : null}

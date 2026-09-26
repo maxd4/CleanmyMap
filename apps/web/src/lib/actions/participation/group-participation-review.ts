@@ -35,7 +35,7 @@ import {
   type ParticipationAuditValue,
   type ActionParticipationSearchItem,
 } from "./group-participation-contract";
-import { REVIEW_SELECT, toImpact } from "./individual-impact";
+import { REVIEW_SELECT, toIndividualImpactMeasurement } from "./individual-impact";
 
 type ParticipationRecord = {
   id: string;
@@ -92,7 +92,7 @@ export async function loadActionParticipationReviews(
       status: (useRegs ? value["registration_status"] : value["participation_status"]) as ParticipationStatus,
       source: (useRegs ? value["registration_source"] : value["participation_source"]) as ParticipationSource,
       joined_at: String(useRegs ? value["registered_at"] ?? value["created_at"] : value["joined_at"] ?? value["created_at"]),
-      individualImpact: useRegs ? null : toImpact(value),
+      individualImpact: useRegs ? null : toIndividualImpactMeasurement(value),
     };
   });
   if (rows.length === 0) {

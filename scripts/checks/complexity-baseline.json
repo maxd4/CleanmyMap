@@ -81,7 +81,7 @@
       "path": "src/app/api/actions/[actionId]/route.ts",
       "line": 109,
       "category": "routes API",
-      "ceiling": 39,
+      "ceiling": 31,
       "status": "LEGACY",
       "functionIdentity": "named:PATCH#1"
     },
@@ -135,7 +135,7 @@
       "path": "src/app/api/chat/route.post.ts",
       "line": 50,
       "category": "routes API",
-      "ceiling": 137,
+      "ceiling": 136,
       "status": "LEGACY",
       "functionIdentity": "named:POST#1"
     },
@@ -144,7 +144,7 @@
       "path": "src/app/api/chat/search/route.ts",
       "line": 107,
       "category": "routes API",
-      "ceiling": 47,
+      "ceiling": 20,
       "status": "LEGACY",
       "functionIdentity": "named:GET#1"
     },
@@ -252,7 +252,7 @@
       "path": "src/app/reglages/page.tsx",
       "line": 25,
       "category": "React/JSX",
-      "ceiling": 41,
+      "ceiling": 8,
       "status": "LEGACY",
       "functionIdentity": "named:ReglagesPage#1"
     },
@@ -324,7 +324,7 @@
       "path": "src/components/actions/action-declaration/form/action-declaration-form-confirmation.tsx",
       "line": 32,
       "category": "React/JSX",
-      "ceiling": 34,
+      "ceiling": 33,
       "status": "LEGACY",
       "functionIdentity": "named:ActionDeclarationFormConfirmation#1"
     },
@@ -351,7 +351,7 @@
       "path": "src/components/actions/action-declaration/form/action-declaration-form.tsx",
       "line": 83,
       "category": "React/JSX",
-      "ceiling": 53,
+      "ceiling": 52,
       "status": "LEGACY",
       "functionIdentity": "named:ActionDeclarationForm#1"
     },
@@ -369,7 +369,7 @@
       "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
       "line": 476,
       "category": "hooks",
-      "ceiling": 28,
+      "ceiling": 21,
       "status": "LEGACY",
       "functionIdentity": "named:updateForm#1"
     },
@@ -405,7 +405,7 @@
       "path": "src/components/actions/action-declaration/payload.ts",
       "line": 388,
       "category": "React/JSX",
-      "ceiling": 62,
+      "ceiling": 55,
       "status": "LEGACY",
       "functionIdentity": "named:buildCreateActionPayload#1"
     },
@@ -639,7 +639,7 @@
       "path": "src/components/admin/free-plan-services-panel.tsx",
       "line": 42,
       "category": "React/JSX",
-      "ceiling": 23,
+      "ceiling": 16,
       "status": "LEGACY",
       "functionIdentity": "named:FreePlanServicesPanel#1"
     },
@@ -693,7 +693,7 @@
       "path": "src/components/admin/role-management-panel.tsx",
       "line": 191,
       "category": "React/JSX",
-      "ceiling": 39,
+      "ceiling": 37,
       "status": "LEGACY",
       "functionIdentity": "named:renderRow#1"
     },
@@ -738,7 +738,7 @@
       "path": "src/components/chat/chat-shell.tsx",
       "line": 99,
       "category": "React/JSX",
-      "ceiling": 93,
+      "ceiling": 92,
       "status": "LEGACY",
       "functionIdentity": "named:ChatShell#1"
     },
@@ -747,7 +747,7 @@
       "path": "src/components/chat/chat-shell.tsx",
       "line": 478,
       "category": "React/JSX",
-      "ceiling": 22,
+      "ceiling": 1,
       "status": "LEGACY",
       "functionIdentity": "callback:useMemo:0:#8"
     },
@@ -756,7 +756,7 @@
       "path": "src/components/chat/chat-sidebar.tsx",
       "line": 55,
       "category": "React/JSX",
-      "ceiling": 30,
+      "ceiling": 29,
       "status": "LEGACY",
       "functionIdentity": "named:ChatSidebar#1"
     },
@@ -783,7 +783,7 @@
       "path": "src/components/chat/hooks/use-chat-shell-composer.ts",
       "line": 44,
       "category": "hooks",
-      "ceiling": 26,
+      "ceiling": 25,
       "status": "LEGACY",
       "functionIdentity": "named:canSubmitChatMessage#1"
     },
@@ -801,7 +801,7 @@
       "path": "src/components/chat/ui/chat-message-item.tsx",
       "line": 55,
       "category": "React/JSX",
-      "ceiling": 82,
+      "ceiling": 81,
       "status": "LEGACY",
       "functionIdentity": "named:ChatMessageItem#1"
     },
@@ -819,7 +819,7 @@
       "path": "src/components/dashboard/storage-usage-panel.tsx",
       "line": 106,
       "category": "React/JSX",
-      "ceiling": 38,
+      "ceiling": 20,
       "status": "LEGACY",
       "functionIdentity": "named:StorageUsagePanel#1"
     },
@@ -828,7 +828,7 @@
       "path": "src/components/dashboard/system-status-panel.tsx",
       "line": 20,
       "category": "React/JSX",
-      "ceiling": 47,
+      "ceiling": 15,
       "status": "LEGACY",
       "functionIdentity": "named:SystemStatusPanel#1"
     },
@@ -873,7 +873,7 @@
       "path": "src/components/learn/learn-numerique-theme-panel.tsx",
       "line": 50,
       "category": "React/JSX",
-      "ceiling": 25,
+      "ceiling": 21,
       "status": "LEGACY",
       "functionIdentity": "named:LearnNumeriqueThemePanel#1"
     },
@@ -1188,7 +1188,7 @@
       "path": "src/components/sections/rubriques/gamification/personal-progress.tsx",
       "line": 25,
       "category": "React/JSX",
-      "ceiling": 35,
+      "ceiling": 32,
       "status": "LEGACY",
       "functionIdentity": "named:PersonalProgress#1"
     },
@@ -1242,7 +1242,7 @@
       "path": "src/components/sections/rubriques/promotion-request-form.tsx",
       "line": 64,
       "category": "React/JSX",
-      "ceiling": 24,
+      "ceiling": 22,
       "status": "LEGACY",
       "functionIdentity": "named:submitRequest#1"
     },
@@ -1431,7 +1431,7 @@
       "path": "src/components/ui/site-preferences-controls.tsx",
       "line": 18,
       "category": "React/JSX",
-      "ceiling": 21,
+      "ceiling": 16,
       "status": "LEGACY",
       "functionIdentity": "named:SitePreferencesControls#1"
     },
@@ -1476,7 +1476,7 @@
       "path": "src/lib/actions/create-submission.ts",
       "line": 67,
       "category": "métier/domain pur",
-      "ceiling": 25,
+      "ceiling": 21,
       "status": "LEGACY",
       "functionIdentity": "named:createActionSubmission#1"
     },
@@ -2385,7 +2385,7 @@
       "path": "src/lib/ui/page-families/resolve-page-family.ts",
       "line": 59,
       "category": "métier/domain pur",
-      "ceiling": 46,
+      "ceiling": 44,
       "status": "LEGACY",
       "functionIdentity": "named:resolveBasePageFamilyId#1"
     },
@@ -2457,7 +2457,7 @@
       "path": "src/lib/actions/organizer-directory-registry.ts",
       "line": 112,
       "category": "métier/domain pur",
-      "ceiling": 18,
+      "ceiling": 11,
       "status": "LEGACY",
       "functionIdentity": "named:resolveActionOrganizer#1"
     },

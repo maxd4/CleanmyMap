@@ -52,19 +52,7 @@ const requireAdminAccessMock = vi.hoisted(() =>
   vi.fn(async () => ({ ok: true, userId: "admin-1" })),
 );
 
-vi.mock("@/lib/authz", () => ({
-  requireAdminAccess: requireAdminAccessMock,
-}));
-
-vi.mock("@/lib/http/auth-responses", () => ({
-  adminAccessErrorJsonResponse: () => new Response("forbidden", { status: 403 }),
-}));
-
-vi.mock("@/lib/admin/audit/operation-audit", () => ({
-  appendAdminOperationAudit: appendAdminOperationAuditMock,
-}));
-
-vi.mock("@/lib/supabase/storage-usage-service", () => ({
+vi.mock("@/lib/authz", async () => (await import("@/app/api/test-helpers")).createAdminAuthzModule(requireAdminAccessMock)); vi.mock("@/lib/http/auth-responses", async () => (await import("@/app/api/test-helpers")).createAdminAuthResponseModule()); vi.mock("@/lib/admin/audit/operation-audit", async () => (await import("@/app/api/test-helpers")).createAdminAuditModule(appendAdminOperationAuditMock)); vi.mock("@/lib/supabase/storage-usage-service", () => ({
   captureStorageUsageReport: captureStorageUsageReportMock,
   loadStorageUsageReport: loadStorageUsageReportMock,
   StorageUsageCaptureError: StorageUsageCaptureErrorMock,

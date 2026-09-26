@@ -1,9 +1,8 @@
 "use client";
 
-import { RefreshCcw } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmFeedback } from "@/components/ui/cmm-feedback";
-import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+import { AsyncPanelCardLoadingState } from "@/components/ui/async-panel-controls";
 import { formatStorageUsagePercent as formatPercent } from "@/lib/dashboard/storage-usage-view-model";
 import {
   formatStorageBytes,
@@ -11,52 +10,8 @@ import {
 } from "@/lib/supabase/storage-usage";
 import { cn } from "@/lib/utils";
 
-export function StorageRefreshButton({
-  isRefreshing,
-  onRefresh,
-}: {
-  isRefreshing: boolean;
-  onRefresh: () => void;
-}) {
-  return (
-    <CmmButton
-      type="button"
-      tone="tertiary"
-      size="sm"
-      loading={isRefreshing}
-      onClick={onRefresh}
-      className="!border-white/10 !bg-white/5 !text-white hover:!bg-white/10"
-    >
-      <RefreshCcw
-        size={12}
-        aria-hidden="true"
-        className={isRefreshing ? "motion-safe:animate-spin" : undefined}
-      />
-      {isRefreshing ? "Rafraîchissement" : "Rafraîchir"}
-    </CmmButton>
-  );
-}
-
 export function StorageLoadingState() {
-  return (
-    <div
-      className="grid gap-4 md:grid-cols-4"
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-      aria-label="Chargement du suivi du stockage"
-    >
-      {Array.from({ length: 4 }, (_, index) => (
-        <CmmSkeleton
-          key={index}
-          variant="card"
-          animation="pulse"
-          className="h-28 rounded-3xl bg-white/5"
-          aria-hidden="true"
-        />
-      ))}
-    </div>
-  );
+  return <AsyncPanelCardLoadingState ariaLabel="Chargement du suivi du stockage" />;
 }
 
 export function StorageErrorState({
