@@ -4,6 +4,8 @@ import {
   createGroupJoinAction,
   createGroupJoinSupabaseMock,
   groupJoinMocks,
+  invokeGroupJoinRoute,
+  invokeGroupJoinRouteJson,
   seedGroupJoinTestDefaults,
 } from "./route.test.helpers";
 
@@ -34,19 +36,12 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
   });
 
   it("lets the organizer close the group form after publication", async () => {
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-1/group-join", {
-        method: "PATCH",
-        body: JSON.stringify({ groupJoinEnabled: false }),
-      }),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
-
-    const body = (await response.json()) as {
+    const { response, body } = await invokeGroupJoinRouteJson<{
       status?: string;
       groupJoinEnabled?: boolean;
-    };
+    }>("PATCH", {
+      body: { groupJoinEnabled: false },
+    });
 
     expect(response.status).toBe(200);
     expect(body.status).toBe("ok");
@@ -57,14 +52,9 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
   it("rejects an unauthenticated toggle", async () => {
     authMock.mockResolvedValueOnce({ userId: null });
 
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-1/group-join", {
-        method: "PATCH",
-        body: JSON.stringify({ groupJoinEnabled: false }),
-      }),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeGroupJoinRoute("PATCH", {
+      body: { groupJoinEnabled: false },
+    });
 
     expect(response.status).toBe(401);
   }, 15000);
@@ -80,19 +70,12 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-1/group-join", {
-        method: "PATCH",
-        body: JSON.stringify({ groupJoinEnabled: true }),
-      }),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
-
-    const body = (await response.json()) as {
+    const { response, body } = await invokeGroupJoinRouteJson<{
       status?: string;
       groupJoinEnabled?: boolean;
-    };
+    }>("PATCH", {
+      body: { groupJoinEnabled: true },
+    });
 
     expect(response.status).toBe(200);
     expect(body.groupJoinEnabled).toBe(true);
@@ -115,19 +98,13 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-old/group-join", {
-        method: "PATCH",
-        body: JSON.stringify({ groupJoinEnabled: false }),
-      }),
-      { params: Promise.resolve({ actionId: "action-old" }) },
-    );
-
-    const body = (await response.json()) as {
+    const { response, body } = await invokeGroupJoinRouteJson<{
       status?: string;
       groupJoinEnabled?: boolean;
-    };
+    }>("PATCH", {
+      requestActionId: "action-old",
+      body: { groupJoinEnabled: false },
+    });
 
     expect(response.status).toBe(200);
     expect(body.groupJoinEnabled).toBe(false);
@@ -163,14 +140,9 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-1/group-join", {
-        method: "PATCH",
-        body: JSON.stringify({ groupJoinEnabled: true }),
-      }),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeGroupJoinRoute("PATCH", {
+      body: { groupJoinEnabled: true },
+    });
 
     expect(response.status).toBe(200);
     expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
@@ -198,14 +170,10 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/missing-action/group-join", {
-        method: "PATCH",
-        body: JSON.stringify({ groupJoinEnabled: true }),
-      }),
-      { params: Promise.resolve({ actionId: "missing-action" }) },
-    );
+    const response = await invokeGroupJoinRoute("PATCH", {
+      requestActionId: "missing-action",
+      body: { groupJoinEnabled: true },
+    });
 
     expect(response.status).toBe(404);
     expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
@@ -238,14 +206,9 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-1/group-join", {
-        method: "PATCH",
-        body: JSON.stringify({ groupJoinEnabled: false }),
-      }),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeGroupJoinRoute("PATCH", {
+      body: { groupJoinEnabled: false },
+    });
 
     expect(response.status).toBe(500);
     expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
@@ -265,14 +228,9 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
     authMock.mockResolvedValueOnce({ userId: "user-3" });
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce(["user-2"]);
 
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-1/group-join", {
-        method: "PATCH",
-        body: JSON.stringify({ groupJoinEnabled: false }),
-      }),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeGroupJoinRoute("PATCH", {
+      body: { groupJoinEnabled: false },
+    });
 
     expect(response.status).toBe(403);
   }, 15000);
@@ -289,19 +247,13 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-2/group-join", {
-        method: "PATCH",
-        body: JSON.stringify({ groupJoinEnabled: false }),
-      }),
-      { params: Promise.resolve({ actionId: "action-2" }) },
-    );
-
-    const body = (await response.json()) as {
+    const { response, body } = await invokeGroupJoinRouteJson<{
       status?: string;
       groupJoinEnabled?: boolean;
-    };
+    }>("PATCH", {
+      requestActionId: "action-2",
+      body: { groupJoinEnabled: false },
+    });
 
     expect(response.status).toBe(200);
     expect(body.status).toBe("ok");
@@ -309,14 +261,9 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
   }, 15000);
 
   it("returns a validation response for malformed JSON", async () => {
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-1/group-join", {
-        method: "PATCH",
-        body: "not-json",
-      }),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeGroupJoinRoute("PATCH", {
+      body: "not-json",
+    });
 
     expect(response.status).toBe(400);
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
@@ -333,14 +280,9 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-1/group-join", {
-        method: "PATCH",
-        body: JSON.stringify({ groupJoinEnabled: false }),
-      }),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeGroupJoinRoute("PATCH", {
+      body: { groupJoinEnabled: false },
+    });
 
     expect(response.status).toBe(422);
   }, 15000);
@@ -362,14 +304,9 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-1/group-join", {
-        method: "PATCH",
-        body: JSON.stringify({ groupJoinEnabled: false }),
-      }),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeGroupJoinRoute("PATCH", {
+      body: { groupJoinEnabled: false },
+    });
 
     expect(response.status).toBe(500);
     expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
@@ -386,14 +323,9 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
       throw new Error("client unavailable");
     });
 
-    const { PATCH } = await import("./route");
-    const response = await PATCH(
-      new Request("http://localhost/api/actions/action-1/group-join", {
-        method: "PATCH",
-        body: JSON.stringify({ groupJoinEnabled: false }),
-      }),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeGroupJoinRoute("PATCH", {
+      body: { groupJoinEnabled: false },
+    });
 
     expect(response.status).toBe(500);
     expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
