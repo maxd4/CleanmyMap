@@ -47,7 +47,7 @@ const PREFERENCE_COPY = {
     learnMore: "En savoir plus sur les modes d'affichage",
   },
   en: {
-    switchTo: "Pass to French",
+    switchTo: "Switch to French",
     shortLocale: "EN",
     chooseLocale: "Choose language",
     locale: "Language",
@@ -175,7 +175,7 @@ export function SitePreferencesControls({
 
       <Link
         href="/methodologie#modes-affichage"
-        aria-label="Comprendre les modes d'affichage"
+        aria-label={copy.learnMore}
         className={cn(
           "inline-flex items-center text-xs font-semibold underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300",
           styles.link,

@@ -128,3 +128,4 @@ apps/web/data/local-db/*.json
 
 # Codex-local environment actions
 .codex/environments/environment.toml
+.codex/config.toml

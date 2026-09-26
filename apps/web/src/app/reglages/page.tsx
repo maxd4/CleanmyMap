@@ -16,7 +16,7 @@ import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export const metadata: Metadata = {
   title: "Réglages",
-  description: "Configurez vos préférences CleanMyMap : notifications, affichage, localisation et paramètres de compte.",
+  description: "Configurez vos préférences CleanMyMap : affichage, localisation et paramètres de compte.",
   keywords: ["réglages", "paramètres", "préférences", "configuration", "CleanMyMap"],
   robots: {
     index: false, // Page privée
@@ -208,7 +208,7 @@ export default async function ReglagesPage() {
             </section>
           </div>
 
-          <AccountSettingsSection />
+          <AccountSettingsSection locale={locale} />
 
           {/* Actions rapides */}
           <section className="rounded-[2rem] border border-sky-200/60 bg-white/82 p-6 shadow-[0_18px_50px_-40px_rgba(14,165,233,0.35)] backdrop-blur-xl">
