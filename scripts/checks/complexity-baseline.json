@@ -879,15 +879,6 @@
     },
     {
       "metric": "complexity",
-      "path": "src/components/gamification/FormsBadge.tsx",
-      "line": 16,
-      "category": "React/JSX",
-      "ceiling": 26,
-      "status": "LEGACY",
-      "functionIdentity": "named:FormsBadge#1"
-    },
-    {
-      "metric": "complexity",
       "path": "src/components/learn/learn-numerique-theme-panel.tsx",
       "line": 50,
       "category": "React/JSX",
