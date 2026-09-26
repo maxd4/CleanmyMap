@@ -24,7 +24,7 @@ import { ActionParticipantPicker } from "../../action-participant-picker";
 import {
   formatBusinessDurationMinutes,
 } from "@/lib/actions/time-contract";
-import { normalizeVolunteerParticipation } from "@/lib/actions/volunteer-participation";
+import { normalizeVolunteerParticipationFromForm } from "@/lib/actions/volunteer-participation";
 
 const PLACE_TYPE_TILE_OPTIONS = [
   {
@@ -112,6 +112,44 @@ function Field({ icon: Icon, children, className }: { icon: LucideIcon; children
   );
 }
 
+function OrganizerSelection({
+  form,
+  isActionMode,
+  missingAssociation,
+  associationErrorId,
+  onChange,
+  className,
+  errorClassName,
+}: {
+  form: FormState;
+  isActionMode: boolean;
+  missingAssociation: boolean;
+  associationErrorId: string;
+  onChange: (selection: { id: string | null; name: string }) => void;
+  className: string;
+  errorClassName?: string;
+}) {
+  return (
+    <div className={className}>
+      <OrganizerCombobox
+        id="action-organizer-structure"
+        organizerType={form.organizerType}
+        organizerId={form.organizerId}
+        value={form.organizerName || (form.organizerType === "spontaneous" ? form.actorName : "")}
+        onChange={onChange}
+        required={isActionMode}
+        invalid={missingAssociation}
+        describedBy={missingAssociation ? associationErrorId : undefined}
+      />
+      {missingAssociation ? (
+        <p id={associationErrorId} className={cn("text-xs font-medium text-rose-700", errorClassName)}>
+          Renseignez un organisateur.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 // The legacy form still renders several independently gated modes in one surface;
 // organizer ownership is now delegated to OrganizerCombobox while this decomposition remains pending.
 /* eslint complexity: 0 -- legacy multi-mode surface remains pending decomposition. */
@@ -127,7 +165,7 @@ export function ActionStepIdentity({
   const isActionMode = recordType === "action";
   const isSpontaneousAction = form.organizerType === "spontaneous";
   const missingDate = hasAttemptedSubmit && !form.actionDate;
-  const missingAssociation = hasAttemptedSubmit && !form.associationName;
+  const missingAssociation = Boolean(hasAttemptedSubmit && !form.associationName);
   const missingOrganizerType = hasAttemptedSubmit && isActionMode && !form.organizerType;
   const associationErrorId = "action-association-error";
   const organizerTypeErrorId = "action-organizer-type-error";
@@ -137,11 +175,7 @@ export function ActionStepIdentity({
     actionDurationMinutes: Number(form.durationMinutes),
     eventDurationMinutes: event.eventDurationMinutes,
   });
-  const volunteerParticipation = normalizeVolunteerParticipation({
-    childrenCount: form.childrenCount.trim() === "" ? null : Number(form.childrenCount),
-    adultCount: form.adultCount.trim() === "" ? null : Number(form.adultCount),
-    retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount),
-  });
+  const volunteerParticipation = normalizeVolunteerParticipationFromForm(form);
 
   function handleAssociationChange(selection: { id: string | null; name: string }) {
     updateFields({
@@ -212,21 +246,14 @@ export function ActionStepIdentity({
           </div>
 
           {form.organizerType ? (
-            <div className="space-y-1.5">
-              <OrganizerCombobox
-                id="action-organizer-structure"
-                organizerType={form.organizerType}
-                organizerId={form.organizerId}
-                value={form.organizerName || (form.organizerType === "spontaneous" ? form.actorName : "")}
-                onChange={handleAssociationChange}
-                required={isActionMode}
-                invalid={missingAssociation}
-                describedBy={missingAssociation ? associationErrorId : undefined}
-              />
-              {missingAssociation ? (
-                <p id={associationErrorId} className="text-xs font-medium text-rose-700">Renseignez un organisateur.</p>
-              ) : null}
-            </div>
+            <OrganizerSelection
+              form={form}
+              isActionMode={isActionMode}
+              missingAssociation={missingAssociation}
+              associationErrorId={associationErrorId}
+              onChange={handleAssociationChange}
+              className="space-y-1.5"
+            />
           ) : null}
         </div>
       );
@@ -401,21 +428,15 @@ export function ActionStepIdentity({
               </div>
 
               {form.organizerType ? (
-                <div className="space-y-1">
-                  <OrganizerCombobox
-                    id="action-organizer-structure"
-                    organizerType={form.organizerType}
-                    organizerId={form.organizerId}
-                    value={form.organizerName || (form.organizerType === "spontaneous" ? form.actorName : "")}
-                    onChange={handleAssociationChange}
-                    required={isActionMode}
-                    invalid={missingAssociation}
-                    describedBy={missingAssociation ? associationErrorId : undefined}
-                  />
-                  {missingAssociation && (
-                    <p id={associationErrorId} className="pl-1 text-xs font-medium text-rose-700">Renseignez un organisateur.</p>
-                  )}
-                </div>
+                <OrganizerSelection
+                  form={form}
+                  isActionMode={isActionMode}
+                  missingAssociation={missingAssociation}
+                  associationErrorId={associationErrorId}
+                  onChange={handleAssociationChange}
+                  className="space-y-1"
+                  errorClassName="pl-1"
+                />
               ) : null}
 
               <div className="space-y-1">

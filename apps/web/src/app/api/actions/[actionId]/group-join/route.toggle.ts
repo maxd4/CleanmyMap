@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
-import { runSingleActionQuery } from "@/lib/actions/query";
 import {
   extractActionMetadataFromNotes,
   setActionGroupJoinEnabledInNotes,
 } from "@/lib/actions/metadata";
 import {
   type GroupJoinRouteContext,
+  type GroupJoinModerationParams,
   type ModerationAuditAppender,
-  type ReviewerAccessResolver,
   toggleSchema,
   resolveCanonicalClerkUserId,
+  loadGroupJoinAction,
+  resolveGroupJoinRequestContext,
 } from "./route.shared";
-import type { UserIdentity } from "@/lib/authz";
 
 type ToggleAuditContext = {
   actorUserId: string;
@@ -22,50 +22,62 @@ type ToggleAuditContext = {
   newValue: { groupJoinEnabled: boolean };
 };
 
+async function recordToggleError({
+  actionId,
+  actionKnown,
+  appendAudit,
+  auditContext,
+  resolveAdminAuditIdentity,
+  userId,
+}: {
+  actionId: string;
+  actionKnown: boolean;
+  appendAudit: ModerationAuditAppender;
+  auditContext: ToggleAuditContext | null;
+  resolveAdminAuditIdentity: GroupJoinModerationParams["resolveAdminAuditIdentity"];
+  userId: string;
+}) {
+  if (auditContext) {
+    await appendAudit({
+      operationId: `action-group-join-toggle-${actionId}-${Date.now()}`,
+      actorUserId: auditContext.actorUserId,
+      targetActionId: actionId,
+      operation: "toggle_group_join",
+      outcome: "error",
+      previousValue: auditContext.previousValue,
+      newValue: auditContext.newValue,
+      ...(auditContext.targetUserId
+        ? { targetUserId: auditContext.targetUserId }
+        : {}),
+      details: { stage: "update", partialMutation: false },
+    });
+    return;
+  }
+  if (!actionKnown) {
+    const adminIdentity = await resolveAdminAuditIdentity(userId);
+    if (adminIdentity) {
+      await appendAudit({
+        operationId: `action-group-join-toggle-${actionId}-${Date.now()}`,
+        actorUserId: adminIdentity.actorUserId,
+        targetActionId: actionId,
+        operation: "toggle_group_join",
+        outcome: "error",
+        details: { stage: "lookup", partialMutation: false },
+      });
+    }
+  }
+}
+
 export async function handleGroupJoinToggle(
   request: Request,
   ctx: GroupJoinRouteContext,
-  params: {
-    userId: string;
-    resolveReviewerAccess: ReviewerAccessResolver;
-    canOverrideActionParticipants: (
-      identity: UserIdentity | null | undefined,
-    ) => boolean;
-    appendActionModerationAudit: ModerationAuditAppender;
-    resolveAdminAuditIdentity: (
-      fallbackUserId?: string,
-    ) => Promise<{ actorUserId: string } | null>;
-  },
+  params: GroupJoinModerationParams,
 ) {
-  const {
-    userId,
-    resolveReviewerAccess,
-    canOverrideActionParticipants,
-    appendActionModerationAudit,
-    resolveAdminAuditIdentity,
-  } = params;
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON payload" },
-      { status: 400 },
-    );
-  }
-
-  const parsed = toggleSchema.safeParse(payload);
-  if (!parsed.success) {
-    return validationErrorResponse(parsed.error.flatten().fieldErrors);
-  }
-
-  const { actionId } = await ctx.params;
-  const trimmedActionId = actionId.trim();
-  if (!trimmedActionId) {
-    return validationErrorResponse({
-      actionId: ["Identifiant d'action manquant."],
-    });
-  }
+  const { userId, resolveReviewerAccess, canOverrideActionParticipants, appendActionModerationAudit, resolveAdminAuditIdentity } = params;
+  const context = await resolveGroupJoinRequestContext(request, ctx, toggleSchema);
+  if (!context.ok) return context.response;
+  const parsed = { success: true as const, data: context.parsed };
+  const { trimmedActionId } = context;
 
   let toggleAdminAuditRecorded = false;
   let toggleAdminAuditContext: ToggleAuditContext | null = null;
@@ -80,15 +92,7 @@ export async function handleGroupJoinToggle(
 
   try {
     const supabase = getSupabaseServerClient(true);
-    const actionResult = await runSingleActionQuery<{
-      id: string;
-      created_by_clerk_id: string | null;
-      status: "pending" | "approved" | "rejected" | "cancelled";
-      action_phase: "pre_action" | "post_action_draft" | "post_action_complete";
-      notes: string | null;
-    }>(supabase, (query) =>
-      query.select("id, created_by_clerk_id, status, action_phase, notes").eq("id", trimmedActionId).maybeSingle(),
-    );
+    const actionResult = await loadGroupJoinAction(supabase, trimmedActionId);
 
     if (!actionResult) {
       const adminIdentity = await resolveAdminAuditIdentity(userId);
@@ -197,33 +201,14 @@ export async function handleGroupJoinToggle(
       groupJoinEnabled: updatedMetadata.groupJoinEnabled,
     });
   } catch (error) {
-    if (toggleAdminAuditContext) {
-      await appendToggleAuditOnce({
-        operationId: `action-group-join-toggle-${trimmedActionId}-${Date.now()}`,
-        actorUserId: toggleAdminAuditContext.actorUserId,
-        targetActionId: trimmedActionId,
-        operation: "toggle_group_join",
-        outcome: "error",
-        previousValue: toggleAdminAuditContext.previousValue,
-        newValue: toggleAdminAuditContext.newValue,
-        ...(toggleAdminAuditContext.targetUserId
-          ? { targetUserId: toggleAdminAuditContext.targetUserId }
-          : {}),
-        details: { stage: "update", partialMutation: false },
-      });
-    } else if (!toggleActionKnown) {
-      const adminIdentity = await resolveAdminAuditIdentity(userId);
-      if (adminIdentity) {
-        await appendToggleAuditOnce({
-          operationId: `action-group-join-toggle-${trimmedActionId}-${Date.now()}`,
-          actorUserId: adminIdentity.actorUserId,
-          targetActionId: trimmedActionId,
-          operation: "toggle_group_join",
-          outcome: "error",
-          details: { stage: "lookup", partialMutation: false },
-        });
-      }
-    }
+    await recordToggleError({
+      actionId: trimmedActionId,
+      actionKnown: toggleActionKnown,
+      appendAudit: appendToggleAuditOnce,
+      auditContext: toggleAdminAuditContext,
+      resolveAdminAuditIdentity,
+      userId,
+    });
     return handleApiError(error, "PATCH /api/actions/:actionId/group-join");
   }
 }

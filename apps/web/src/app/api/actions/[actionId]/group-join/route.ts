@@ -4,6 +4,7 @@ import {
   requireAuthenticatedAccess,
 } from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { normalizeActionId } from "@/lib/actions/action-id";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import {
@@ -154,7 +155,7 @@ export async function DELETE(
   const { userId } = access;
 
   const { actionId } = await ctx.params;
-  const trimmedActionId = actionId.trim();
+  const trimmedActionId = normalizeActionId(actionId);
   if (!trimmedActionId) {
     return validationErrorResponse({
       actionId: ["Identifiant d'action manquant."],

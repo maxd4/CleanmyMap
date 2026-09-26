@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import {
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
+  persistSupabaseRecord,
 } from "@/lib/persistence/runtime-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -176,19 +177,15 @@ export async function appendLegalContentReport(
   };
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
-      .from("legal_content_reports")
-      .insert(toSupabaseRow(record))
-      .select(SUPABASE_REPORT_COLUMNS)
-      .single();
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    const persisted = fromSupabaseRow(result.data as Record<string, unknown>);
-    if (!persisted) {
-      throw new Error("Supabase returned an invalid legal content report.");
-    }
-    return persisted;
+    return persistSupabaseRecord(
+      getSupabaseServerClient(true)
+        .from("legal_content_reports")
+        .insert(toSupabaseRow(record))
+        .select(SUPABASE_REPORT_COLUMNS)
+        .single(),
+      fromSupabaseRow,
+      "Supabase returned an invalid legal content report.",
+    );
   }
 
   const store = await readStore();

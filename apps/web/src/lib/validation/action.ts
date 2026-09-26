@@ -487,7 +487,7 @@ function addGpxImportIssue(
   }
 }
 
-const createActionLegacyBaseSchema = z.object({
+const commonActionIdentitySchemaFields = {
   actorName: z.string().min(1).max(120).optional(),
   associationName: associationNameSchema,
   organizerType: organizerTypeSchema.nullable().optional(),
@@ -496,6 +496,10 @@ const createActionLegacyBaseSchema = z.object({
   organizerAccounts: z.array(z.string().min(1).max(120)).max(20).optional(),
   participantAccounts: accountTokensSchema,
   groupJoinEnabled: z.boolean().optional(),
+};
+
+const createActionLegacyBaseSchema = z.object({
+  ...commonActionIdentitySchemaFields,
   recordType: z.enum(["action", "clean_place", "spot"]).optional(),
   placeType: z.string().max(80).optional(),
   actionDate: z.string().date(),
@@ -574,14 +578,7 @@ const createActionContractSchema = z.object({
     eventEndTime: eventTimeSchema,
   }),
     metadata: z.object({
-    actorName: z.string().min(1).max(120).optional(),
-    associationName: associationNameSchema,
-    organizerType: organizerTypeSchema.nullable().optional(),
-    organizerId: organizerIdSchema,
-    organizerName: organizerNameSchema.optional(),
-    organizerAccounts: z.array(z.string().min(1).max(120)).max(20).optional(),
-    participantAccounts: accountTokensSchema,
-    groupJoinEnabled: z.boolean().optional(),
+      ...commonActionIdentitySchemaFields,
     placeType: z.string().max(80).optional(),
       wasteKg: wasteMassSchema.nullable().optional(),
       cigaretteButtsMeasurements: cigaretteButtsMeasurementsSchema,

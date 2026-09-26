@@ -105,7 +105,7 @@ export const ASSOCIATION_SELECTION_OPTIONS = [
 export type AssociationSelectionOption =
   (typeof ASSOCIATION_SELECTION_OPTIONS)[number];
 
-export const ENTREPRISE_ASSOCIATION_OPTION = "Entreprise" as const;
+const ENTREPRISE_ASSOCIATION_OPTION = "Entreprise" as const;
 export const ENTREPRISE_UNSPECIFIED_ASSOCIATION_LABEL =
   "Entreprise - Non precise" as const;
 const ENTREPRISE_ASSOCIATION_PREFIX = `${ENTREPRISE_ASSOCIATION_OPTION} - `;
@@ -185,7 +185,7 @@ export function buildEntrepriseAssociationName(enterpriseName: string): string {
   return `${ENTREPRISE_ASSOCIATION_PREFIX}${enterpriseName.trim().slice(0, 100)}`;
 }
 
-export function extractEntrepriseName(value: string): string | null {
+function extractEntrepriseName(value: string): string | null {
   if (!value.startsWith(ENTREPRISE_ASSOCIATION_PREFIX)) {
     return null;
   }

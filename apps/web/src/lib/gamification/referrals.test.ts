@@ -7,27 +7,17 @@ import {
   ensureReferralInviteForUser,
   loadReferralSummary,
 } from "./referrals";
+import * as referralTestHelpers from "./__tests__/referral-test-helpers";
 
-vi.mock("next/cache", () => ({
-  revalidateTag: vi.fn(),
-}));
+const { createProfileMaybeSingleSelect, createProfileLookupSelect, createProgressionEventQueries, resetReferralProgressionMocks, referralProgressionMocks } = referralTestHelpers;
 
 const auditXpAttributionMock = vi.hoisted(() => vi.fn());
 const broadcastGamificationAnnouncementMock = vi.hoisted(() => vi.fn());
-const insertProgressionEventMock = vi.hoisted(() => vi.fn());
-const loadActionRowsForUserMock = vi.hoisted(() => vi.fn());
-const loadValidatedActionIdsForUserMock = vi.hoisted(() => vi.fn());
-const refreshProgressionProfileMock = vi.hoisted(() => vi.fn());
 
-vi.mock("./progression-data", () => ({
-  insertProgressionEvent: insertProgressionEventMock,
-  loadActionRowsForUser: loadActionRowsForUserMock,
-  loadValidatedActionIdsForUser: loadValidatedActionIdsForUserMock,
-}));
-
-vi.mock("./progression-tracking", () => ({
-  refreshProgressionProfile: refreshProgressionProfileMock,
-}));
+const { insertProgressionEvent: insertProgressionEventMock, loadActionRowsForUser: loadActionRowsForUserMock, loadValidatedActionIdsForUser: loadValidatedActionIdsForUserMock, refreshProgressionProfile: refreshProgressionProfileMock } = referralProgressionMocks;
+vi.mock("next/cache", () => ({ revalidateTag: vi.fn() }));
+vi.mock("./progression-data", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionDataModule());
+vi.mock("./progression-tracking", async () => (await import("./__tests__/referral-test-helpers")).createReferralProgressionTrackingModule());
 
 vi.mock("./notifications", () => ({
   auditXpAttribution: auditXpAttributionMock,
@@ -87,46 +77,17 @@ function createReferralReconciliationSupabase(
   events: Array<Record<string, unknown>>,
   profiles: Map<string, ReferralProfileRow>,
 ): SupabaseClient {
-  const createFilterQuery = () => {
-    const query = {} as {
-      eq: ReturnType<typeof vi.fn>;
-      limit: ReturnType<typeof vi.fn>;
-    };
-    query.eq = vi.fn(() => query);
-    query.limit = vi.fn(async () => ({ data: events, error: null }));
-    return query;
-  };
-  const createDeleteQuery = () => {
-    const query = {} as {
-      eq: ReturnType<typeof vi.fn>;
-      then: (resolve: (value: { error: null }) => unknown) => unknown;
-    };
-    query.eq = vi.fn(() => query);
-    query.then = (resolve) => {
-      events.length = 0;
-      return Promise.resolve(resolve({ error: null }));
-    };
-    return query;
-  };
+  const { createFilterQuery, createDeleteQuery } = createProgressionEventQueries(events);
 
   return {
     from: vi.fn((table: string) => {
       if (table === "profiles") {
-        return {
-          select: vi.fn(() => ({
-            eq: vi.fn((_field: string, value: string) => ({
-              maybeSingle: vi.fn(async () => ({
-                data: profiles.get(value) ?? null,
-                error: null,
-              })),
-            })),
-          })),
-        };
+        return createProfileLookupSelect((value) => profiles.get(value) ?? null);
       }
       if (table === "progression_events") {
         return {
-          select: vi.fn(() => createFilterQuery()),
-          delete: vi.fn(() => createDeleteQuery()),
+          select: vi.fn(createFilterQuery),
+          delete: vi.fn(createDeleteQuery),
         };
       }
       throw new Error(`Unexpected table ${table}`);
@@ -146,11 +107,7 @@ function buildReferralProfile(overrides?: Partial<ReferralProfileRow>): Referral
 }
 
 beforeEach(() => {
-  vi.clearAllMocks();
-  insertProgressionEventMock.mockResolvedValue(true);
-  loadActionRowsForUserMock.mockResolvedValue([]);
-  loadValidatedActionIdsForUserMock.mockResolvedValue(new Set<string>());
-  refreshProgressionProfileMock.mockResolvedValue(undefined);
+  resetReferralProgressionMocks();
 });
 
 function createCountQuery(count: number): ProfilesCountQuery {
@@ -252,14 +209,7 @@ it("creates a referral code without awarding xp", async () => {
     from: vi.fn((table: string) => {
       if (table === "profiles") {
         return {
-          select: vi.fn(() => ({
-            eq: vi.fn(() => ({
-              maybeSingle: vi.fn().mockResolvedValue({
-                data: { ...profileRecord },
-                error: null,
-              }),
-            })),
-          })),
+          ...createProfileMaybeSingleSelect({ ...profileRecord }),
           update: vi.fn((payload: { referral_code: string }) => {
             const chain = {} as ReferralUpdateChain;
             chain.eq = vi.fn(() => chain);

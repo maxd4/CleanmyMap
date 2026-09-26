@@ -3,6 +3,8 @@ import { dirname, join } from "node:path";
 import {
   allowLocalFileStoreFallback,
   canUseSupabaseServerPersistence,
+  getRecentTimeWindow,
+  prependBoundedRecord,
 } from "@/lib/persistence/runtime-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -22,6 +24,55 @@ export type ServiceEmailEvent = {
   messageId: string | null;
   meta?: Record<string, unknown>;
 };
+
+function filterServiceEmailEventsForActorSince(
+  records: readonly ServiceEmailEvent[],
+  params: { actorUserId: string; sinceIso: string; statuses: ServiceEmailEventStatus[] },
+): ServiceEmailEvent[] {
+  const sinceMs = new Date(params.sinceIso).getTime();
+  return records.filter((entry) => {
+    const eventMs = new Date(entry.at).getTime();
+    return (
+      entry.actorUserId === params.actorUserId &&
+      params.statuses.includes(entry.status) &&
+      Number.isFinite(eventMs) &&
+      eventMs >= sinceMs
+    );
+  });
+}
+
+async function readServiceEmailCountFromSupabase(
+  load: (supabase: ReturnType<typeof getSupabaseServerClient>) => Promise<number | null>,
+): Promise<number | null> {
+  if (!canUseSupabaseServerPersistence()) return null;
+  try {
+    const value = await load(getSupabaseServerClient(true));
+    if (value !== null) return value;
+    return allowLocalFileStoreFallback() ? null : 0;
+  } catch {
+    return allowLocalFileStoreFallback() ? null : 0;
+  }
+}
+
+async function countServiceEmailRecords(
+  params: { actorUserId: string; sinceIso: string; statuses?: ServiceEmailEventStatus[] },
+  load: (
+    supabase: ReturnType<typeof getSupabaseServerClient>,
+    statuses: ServiceEmailEventStatus[],
+  ) => Promise<number | null>,
+  fromLocal: (
+    records: readonly ServiceEmailEvent[],
+    params: { actorUserId: string; sinceIso: string; statuses: ServiceEmailEventStatus[] },
+  ) => number,
+): Promise<number> {
+  const statuses = params.statuses ?? ["sent"];
+  const supabaseCount = await readServiceEmailCountFromSupabase((supabase) =>
+    load(supabase, statuses),
+  );
+  if (supabaseCount !== null) return supabaseCount;
+  const store = await readStore();
+  return fromLocal(store.records, { ...params, statuses });
+}
 
 type ServiceEmailStore = {
   updatedAt: string;
@@ -118,20 +169,18 @@ export async function appendServiceEmailEvent(event: ServiceEmailEvent): Promise
   }
 
   const store = await readStore();
-  const records = [event, ...store.records].slice(0, 12000);
+  const records = prependBoundedRecord(event, store.records, 12000);
   await writeStore({ updatedAt: new Date().toISOString(), records });
 }
 
 export async function listServiceEmailEvents(
   periodDays: number,
 ): Promise<ServiceEmailEvent[]> {
-  const nowMs = Date.now();
-  const floor = nowMs - periodDays * 24 * 60 * 60 * 1000;
+  const { nowMs, floor, floorIso } = getRecentTimeWindow(periodDays);
 
   if (canUseSupabaseServerPersistence()) {
     try {
       const supabase = getSupabaseServerClient(true);
-      const floorIso = new Date(floor).toISOString();
       const result = await supabase
         .from("service_email_events")
         .select("created_at, provider, actor_user_id, recipient_count, subject, status, message_id, meta")
@@ -169,11 +218,7 @@ export async function countServiceEmailEventsForActorSince(params: {
   sinceIso: string;
   statuses?: ServiceEmailEventStatus[];
 }): Promise<number> {
-  const statuses = params.statuses ?? ["sent"];
-
-  if (canUseSupabaseServerPersistence()) {
-    try {
-      const supabase = getSupabaseServerClient(true);
+  return countServiceEmailRecords(params, async (supabase, statuses) => {
       const result = await supabase
         .from("service_email_events")
         .select("created_at", { count: "exact", head: true })
@@ -184,26 +229,10 @@ export async function countServiceEmailEventsForActorSince(params: {
       if (!result.error) {
         return Number(result.count ?? 0);
       }
-      if (!allowLocalFileStoreFallback()) {
-        return 0;
-      }
-    } catch {
-      if (!allowLocalFileStoreFallback()) {
-        return 0;
-      }
-    }
-  }
-
-  const store = await readStore();
-  return store.records.filter((entry) => {
-    const ms = new Date(entry.at).getTime();
-    return (
-      entry.actorUserId === params.actorUserId &&
-      statuses.includes(entry.status) &&
-      Number.isFinite(ms) &&
-      ms >= new Date(params.sinceIso).getTime()
-    );
-  }).length;
+      return null;
+    }, (records, filterParams) =>
+      filterServiceEmailEventsForActorSince(records, filterParams).length,
+  );
 }
 
 export async function countServiceEmailRecipientsForActorSince(params: {
@@ -211,11 +240,7 @@ export async function countServiceEmailRecipientsForActorSince(params: {
   sinceIso: string;
   statuses?: ServiceEmailEventStatus[];
 }): Promise<number> {
-  const statuses = params.statuses ?? ["sent"];
-
-  if (canUseSupabaseServerPersistence()) {
-    try {
-      const supabase = getSupabaseServerClient(true);
+  return countServiceEmailRecords(params, async (supabase, statuses) => {
       const result = await supabase.rpc("sum_service_email_recipients_for_actor_since", {
         p_actor_user_id: params.actorUserId,
         p_since: params.sinceIso,
@@ -226,28 +251,9 @@ export async function countServiceEmailRecipientsForActorSince(params: {
         const recipients = Number(result.data ?? 0);
         return Number.isFinite(recipients) ? recipients : 0;
       }
-      if (!allowLocalFileStoreFallback()) {
-        return 0;
-      }
-    } catch {
-      if (!allowLocalFileStoreFallback()) {
-        return 0;
-      }
-    }
-  }
-
-  const store = await readStore();
-  return store.records.reduce((acc, entry) => {
-    const ms = new Date(entry.at).getTime();
-    if (
-      entry.actorUserId !== params.actorUserId ||
-      !statuses.includes(entry.status) ||
-      !Number.isFinite(ms) ||
-      ms < new Date(params.sinceIso).getTime()
-    ) {
-      return acc;
-    }
-
-    return acc + (Number.isFinite(entry.recipientCount) ? entry.recipientCount : 0);
-  }, 0);
+      return null;
+    }, (records, filterParams) =>
+      filterServiceEmailEventsForActorSince(records, filterParams)
+        .reduce((total, entry) => total + (Number.isFinite(entry.recipientCount) ? entry.recipientCount : 0), 0),
+  );
 }

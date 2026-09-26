@@ -31,10 +31,10 @@ export const FILE_KIND_POLICY = Object.freeze({
 // Compatibilité de lecture pour les rapports qui n'ont pas encore migré vers
 // getPolicyForRow(). Le checker et le radar utilisent toujours la politique
 // déterminée par KIND.
-export const REVIEW_THRESHOLD = RUNTIME_REVIEW;
-export const HARD_THRESHOLD = RUNTIME_HARD;
+const REVIEW_THRESHOLD = RUNTIME_REVIEW;
+const HARD_THRESHOLD = RUNTIME_HARD;
 
-export function getPolicyForRow(row) {
+function getPolicyForRow(row) {
   if (row.kind === "generated" && !isExcludedGeneratedRow(row)) return FILE_KIND_POLICY.runtime;
   return FILE_KIND_POLICY[row.kind] ?? FILE_KIND_POLICY.runtime;
 }
@@ -51,6 +51,6 @@ export function isAboveHard(row) {
   return !isExcludedGeneratedRow(row) && isAboveThreshold(row, getPolicyForRow(row).hard);
 }
 
-export function isAboveThreshold(row, threshold) {
+function isAboveThreshold(row, threshold) {
   return row.lines > threshold.lines || row.bytes > threshold.bytes;
 }

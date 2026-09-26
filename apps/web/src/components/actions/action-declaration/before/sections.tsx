@@ -23,7 +23,7 @@ import {
   deriveOrganizationMinutes,
   formatBusinessDurationMinutes,
 } from "@/lib/actions/time-contract";
-import { normalizeVolunteerParticipation } from "@/lib/actions/volunteer-participation";
+import { normalizeVolunteerParticipationFromForm } from "@/lib/actions/volunteer-participation";
 import { cn } from "@/lib/utils";
 
 type BaseSectionProps = {
@@ -187,11 +187,7 @@ export function PlannedActionSection({ form, updateField, hasAttemptedSubmit, va
     actionDurationMinutes: Number(form.durationMinutes),
     eventDurationMinutes: event.eventDurationMinutes,
   });
-  const volunteerParticipation = normalizeVolunteerParticipation({
-    childrenCount: form.childrenCount.trim() === "" ? null : Number(form.childrenCount),
-    adultCount: form.adultCount.trim() === "" ? null : Number(form.adultCount),
-    retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount),
-  });
+  const volunteerParticipation = normalizeVolunteerParticipationFromForm(form);
   const totalVolunteers =
     volunteerParticipation.participantsCount ??
     (form.volunteersCount.trim() || "—");

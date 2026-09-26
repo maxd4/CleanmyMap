@@ -1,4 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createPublicValidationModule,
+  createServerRateLimitModule,
+} from "@/app/api/test-route-setup";
 
 const authMock = vi.hoisted(() => vi.fn());
 const appendMock = vi.hoisted(() => vi.fn());
@@ -19,16 +23,8 @@ vi.mock("@/lib/legal-content-report/legal-content-report-service", () => ({
   sendLegalContentReportAcknowledgement: acknowledgementMock,
   sendLegalContentReportCreatorNotification: creatorNotificationMock,
 }));
-vi.mock("@/lib/rate-limit/server", () => ({
-  createServerRateLimitResponse: createServerRateLimitResponseMock,
-  verifyRateLimit: verifyRateLimitMock,
-}));
-vi.mock("@/lib/security/validation", () => ({
-  createPublicRateLimitResponse: createPublicRateLimitResponseMock,
-  hasHoneypotSignal: hasHoneypotSignalMock,
-  hasRecentSubmission: hasRecentSubmissionMock,
-  isPlaceholderHost: () => false,
-}));
+vi.mock("@/lib/rate-limit/server", () => createServerRateLimitModule({ verifyRateLimit: verifyRateLimitMock, createServerRateLimitResponse: createServerRateLimitResponseMock }));
+vi.mock("@/lib/security/validation", () => createPublicValidationModule({ createPublicRateLimitResponse: createPublicRateLimitResponseMock, hasHoneypotSignal: hasHoneypotSignalMock, hasRecentSubmission: hasRecentSubmissionMock, isPlaceholderHost: () => false }));
 vi.mock("@/lib/logging/failure-log", () => ({ logWarning: logWarningMock }));
 
 const record = {

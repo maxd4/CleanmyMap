@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createAdminAuthResponseModule, createAdminAuthzModule } from "@/app/api/test-helpers";
 
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
@@ -91,13 +92,9 @@ const buildMonthlyMock = vi.hoisted(() =>
   })),
 );
 
-vi.mock("@/lib/authz", () => ({
-  requireAdminAccess: requireAdminAccessMock,
-}));
+vi.mock("@/lib/authz", () => createAdminAuthzModule(requireAdminAccessMock));
 
-vi.mock("@/lib/http/auth-responses", () => ({
-  adminAccessErrorJsonResponse: () => new Response("forbidden", { status: 403 }),
-}));
+vi.mock("@/lib/http/auth-responses", () => createAdminAuthResponseModule());
 
 vi.mock("@/lib/admin/audit/operation-audit", () => ({
   appendAdminOperationAudit: appendAdminOperationAuditMock,

@@ -4,6 +4,10 @@ import { dirname, join } from "node:path";
 import {
   assertPersistenceAvailable,
   canUseSupabaseServerPersistence,
+  prependBoundedRecord,
+  requirePersistedRecord,
+  readSupabaseRecord,
+  replaceRecordInList,
 } from "@/lib/persistence/runtime-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -209,14 +213,11 @@ export async function appendContactRequest(params: {
       throw new Error(result.error.message);
     }
     const persisted = fromSupabaseRow(result.data as Record<string, unknown>);
-    if (!persisted) {
-      throw new Error("Supabase returned an invalid contact request.");
-    }
-    return persisted;
+    return requirePersistedRecord(persisted, "Supabase returned an invalid contact request.");
   }
 
   const store = await readStore();
-  const records = [record, ...store.records].slice(0, 2000);
+  const records = prependBoundedRecord(record, store.records);
   await writeStore({ updatedAt: new Date().toISOString(), records });
   return record;
 }
@@ -229,44 +230,33 @@ export async function updateContactRequestStatus(params: {
   assertPersistenceAvailable("contact_requests");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient(true)
-      .from("contact_requests")
-      .update({
-        status: params.status,
-        notification_error: params.notificationError ?? null,
-      })
-      .eq("id", params.requestId)
-      .select(SUPABASE_CONTACT_REQUEST_COLUMNS)
-      .maybeSingle();
-    if (result.error) {
-      throw new Error(result.error.message);
-    }
-    return result.data
-      ? fromSupabaseRow(result.data as Record<string, unknown>)
-      : null;
+    return readSupabaseRecord(
+      getSupabaseServerClient(true)
+        .from("contact_requests")
+        .update({
+          status: params.status,
+          notification_error: params.notificationError ?? null,
+        })
+        .eq("id", params.requestId)
+        .select(SUPABASE_CONTACT_REQUEST_COLUMNS)
+        .maybeSingle(),
+      fromSupabaseRow,
+    );
   }
 
   const store = await readStore();
-  const index = store.records.findIndex((record) => record.id === params.requestId);
-  if (index < 0) {
-    return null;
-  }
-
-  const current = store.records[index];
-  if (!current) {
-    return null;
-  }
-
-  const updated: ContactRequestRecord = {
-    ...current,
-    status: params.status,
-    notificationError: params.notificationError ?? null,
-  };
-
-  const records = [...store.records];
-  records[index] = updated;
-  await writeStore({ updatedAt: new Date().toISOString(), records });
-  return updated;
+  const replacement = replaceRecordInList(
+    store.records,
+    (record) => record.id === params.requestId,
+    (current) => ({
+      ...current,
+      status: params.status,
+      notificationError: params.notificationError ?? null,
+    }),
+  );
+  if (!replacement) return null;
+  await writeStore({ updatedAt: new Date().toISOString(), records: replacement.records });
+  return replacement.record;
 }
 
 export async function deleteContactRequest(requestId: string): Promise<boolean> {

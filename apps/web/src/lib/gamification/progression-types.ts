@@ -46,16 +46,12 @@ export const CURRENT_INFINITE_PROGRESSION_IDS = [
 export type CurrentInfiniteProgressionId =
   (typeof CURRENT_INFINITE_PROGRESSION_IDS)[number];
 
-export const CURRENT_MILESTONE_IDS = [
-  "premiere_trace_utile",
-  "trace_fondatrice",
-  "parrainage_utile",
-] as const;
+type CurrentMilestoneId =
+  | "premiere_trace_utile"
+  | "trace_fondatrice"
+  | "parrainage_utile";
 
-export type CurrentMilestoneId = (typeof CURRENT_MILESTONE_IDS)[number];
-
-export const IMPACT_BADGE_IDS = ["mohs_waste", "mohs_butts"] as const;
-export type ImpactBadgeId = (typeof IMPACT_BADGE_IDS)[number];
+type ImpactBadgeId = "mohs_waste" | "mohs_butts";
 
 type GamificationBadgeScale =
   | "participant"
@@ -64,7 +60,7 @@ type GamificationBadgeScale =
   | "atmosphere"
   | "learning";
 
-export interface ProgressionDefinition {
+interface ProgressionDefinition {
   id: CurrentInfiniteProgressionId;
   label: string;
   description: string;

@@ -9,6 +9,12 @@ import {
   resetChatRouteMocks,
 } from "./route.test.mocks";
 
+async function expectChatMessages(response: Response, ids: string[]) {
+  const body = (await response.json()) as { messages: ChatMessageRow[] };
+  expect(response.status).toBe(200);
+  expect(body.messages.map((message) => message.id)).toEqual(ids);
+}
+
 describe("GET /api/chat", () => {
   beforeEach(() => {
     resetChatRouteMocks();
@@ -142,10 +148,7 @@ describe("GET /api/chat", () => {
     const response = await GET(
       new Request("http://localhost/api/chat?channelType=community&topicIds=relais_associatif,appel_aux_benevoles"),
     );
-    const body = (await response.json()) as { messages: ChatMessageRow[] };
-
-    expect(response.status).toBe(200);
-    expect(body.messages.map((message) => message.id)).toEqual(["relay", "volunteers"]);
+    await expectChatMessages(response, ["relay", "volunteers"]);
     expect(supabaseMock.messagesQuery.in).toHaveBeenCalledWith(
       "topic_id",
       ["relais_associatif", "appel_aux_benevoles"],
@@ -261,10 +264,7 @@ describe("GET /api/chat", () => {
         `http://localhost/api/chat?channelType=dm&recipientId=user-2&beforeCreatedAt=${encodeURIComponent("2026-05-01T10:00:00.000Z")}&beforeId=${secondId}`,
       ),
     );
-    const body = (await response.json()) as { messages: ChatMessageRow[] };
-
-    expect(response.status).toBe(200);
-    expect(body.messages.map((message) => message.id)).toEqual([firstId]);
+    await expectChatMessages(response, [firstId]);
     expect(supabaseMock.messagesQuery.in).toHaveBeenCalledWith("sender_id", ["user-1", "user-2"]);
     expect(supabaseMock.messagesQuery.in).toHaveBeenCalledWith("recipient_id", ["user-1", "user-2"]);
   }, 15000);

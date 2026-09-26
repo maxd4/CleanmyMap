@@ -373,6 +373,34 @@ export type CreateActionPayload = {
   };
 };
 
+type OptionalActionMapFields = Partial<
+  Pick<
+    ActionListItem,
+    | "source_status"
+    | "volunteers_count"
+    | "duration_minutes"
+    | "notes_plain"
+    | "source"
+    | "organizer_type"
+    | "geometry_kind"
+    | "geometry_geojson"
+    | "geometry_confidence"
+    | "geometry_source"
+    | "manual_drawing"
+    | "manual_drawing_geojson"
+    | "submission_mode"
+    | "quality_score"
+    | "quality_grade"
+    | "quality_flags"
+    | "quality_breakdown"
+    | "to_fix_priority"
+    | "impact_level"
+    | "waste_breakdown"
+    | "waste_categories"
+    | "data_quality"
+  >
+>;
+
 export type ActionMapItem = Pick<
   ActionListItem,
   | "id"
@@ -387,85 +415,11 @@ export type ActionMapItem = Pick<
   | "post_action_pollution_score"
   | "status"
   | "created_by_clerk_id"
-> & {
-  source_status?: string | null;
-  volunteers_count?: number | null;
-  duration_minutes?: number | null;
-  notes_plain?: string | null;
-  record_type?: ActionRecordType | LegacyActionRecordType;
-  source?: string;
-  organizer_type?: OrganizerType | null;
-  geometry_kind?: ActionGeometryKind | null;
-  geometry_geojson?: string | null;
-  geometry_confidence?: number | null;
-  geometry_source?: ActionGeometrySource | null;
-  manual_drawing?: ActionDrawing | null;
-  manual_drawing_geojson?: string | null;
-  submission_mode?: ActionSubmissionMode | null;
-  quality_score?: number;
-  quality_grade?: ActionQualityGrade;
-  quality_flags?: string[];
-  quality_breakdown?: ActionQualityBreakdown;
-  to_fix_priority?: boolean;
-  impact_level?: ActionImpactLevel;
-  waste_breakdown?: ActionWasteBreakdown | null;
-  waste_categories?: WasteCategorySlug[] | null;
-  data_quality?: ActionDataQualitySummary;
-  contract?: {
-    id: string;
-    type: ActionRecordType;
-    status: ActionStatus;
-    source: string;
-    location: {
-      label: string;
-      latitude: number | null;
-      longitude: number | null;
-      departmentCode?: string | null;
-      departmentName?: string | null;
-    };
-    geometry: {
-      kind: ActionGeometryKind;
-      coordinates: [number, number][];
-      geojson: string | null;
-      confidence: number | null;
-      geometrySource: ActionGeometrySource;
-      origin: ActionGeometryOrigin;
-    };
-    dates: {
-      observedAt: string;
-      createdAt: string | null;
-      importedAt: string | null;
-      validatedAt: string | null;
-      eventStartTime?: string | null;
-      eventEndTime?: string | null;
-    };
-    metadata: {
-      actorName: string | null;
-      associationName?: string | null;
-      organizerType?: OrganizerType | null;
-      organizerId?: string | null;
-      organizerName?: string | null;
-      departureLocationLabel?: string | null;
-      arrivalLocationLabel?: string | null;
-      notes: string | null;
-      notesPlain: string | null;
-      groupJoinEnabled: boolean | null;
-      actionPhase?: ActionPhase | null;
-      preparationData?: ActionPreparationData | null;
-      wasteKg: number | null;
-      cigaretteButts: number | null;
-      postActionPollutionScore?: number | null;
-      wasteCategories?: WasteCategorySlug[] | null;
-      volunteerParticipation?: ActionVolunteerParticipation | null;
-      volunteersCount: number;
-      durationMinutes: number;
-      manualDrawing: ActionDrawing | null;
-      placeType?: string | null;
-      photos?: ActionPhotoAsset[] | null;
-      visionEstimate?: ActionVisionEstimate | null;
-    };
+> &
+  OptionalActionMapFields & {
+    record_type?: ActionRecordType | LegacyActionRecordType;
+    contract?: ActionListItem["contract"];
   };
-};
 
 export type ActionMapResponse = {
   status: "ok";

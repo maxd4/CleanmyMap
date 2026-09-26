@@ -20,13 +20,12 @@ import {
 import { getCurrentUserIdentity } from"@/lib/authz";
 import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
 import { ensureEmailQuotaAvailable, sendEmail } from "@/lib/services/email";
-import { createServerRateLimitResponse, verifyRateLimit } from"@/lib/rate-limit/server";
+import { withServerRateLimit } from"@/lib/rate-limit/server";
 import { parsePositiveInteger } from"@/lib/reports/csv";
 import {
-  createPublicRateLimitResponse,
-  hasHoneypotSignal,
-  hasRecentSubmission,
-  is24HourTimeString,
+ is24HourTimeString,
+ parseJsonBodyWithSchema,
+ rejectPublicFormAbuse,
 } from"@/lib/security/validation";
 import { escapeHtml } from "@/lib/security/html-escape";
 
@@ -128,15 +127,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
- const writeRateLimit = await verifyRateLimit(request, { limit: 3, window: 300 });
- const writeRateLimitResponse = createServerRateLimitResponse(
-  writeRateLimit.allowed,
-  writeRateLimit.retryAfter,
-  writeRateLimit,
- );
- if (writeRateLimitResponse) {
-  return writeRateLimitResponse;
- }
+ return withServerRateLimit(request, { limit: 3, window: 300 }, async () => {
 
  const { userId } = await auth();
  if (!userId) {
@@ -144,31 +135,11 @@ export async function POST(request: Request) {
  }
  const identity = await getCurrentUserIdentity();
 
- let payload: unknown;
- try {
- payload = await request.json();
- } catch {
- return NextResponse.json({ error:"Invalid JSON payload" }, { status: 400 });
- }
+ const parsed = await parseJsonBodyWithSchema(request, onboardingSchema);
+ if (!parsed.ok) return parsed.response;
 
- const parsed = onboardingSchema.safeParse(payload);
- if (!parsed.success) {
- return NextResponse.json(
- {
- error:"Invalid payload",
- details: parsed.error.flatten().fieldErrors,
-    },
-    { status: 400 },
-   );
- }
-
-  if (hasHoneypotSignal(parsed.data.honeypot)) {
-    return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
-  }
-
-  if (hasRecentSubmission(parsed.data.submittedAt)) {
-    return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
-  }
+ const abuseResponse = rejectPublicFormAbuse(parsed.data);
+ if (abuseResponse) return abuseResponse;
 
  const created = await appendPartnerOnboardingRequest({
   submittedByUserId: userId,
@@ -209,4 +180,5 @@ export async function POST(request: Request) {
  { status:"queued", requestId: created.id, item: created },
  { status: 201 },
  );
+ });
 }

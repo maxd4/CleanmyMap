@@ -1,9 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import {
-  canAccessChatChannel,
-  buildChannelAccessHint,
-  extractZoneContextFromMetadata,
   getTerritoryFilter,
   isChatChannelType,
   type ChatChannelType,
@@ -28,18 +25,13 @@ import {
 } from "@/lib/chat/chat-search";
 import { isChatMessageKind, type ChatMessageKind } from "@/lib/chat/announcements";
 import { parseChatTopicIdForChannel } from "@/lib/chat/topics";
+import { loadChatAccessContext } from "../route.data";
 import {
-  buildZoneContext,
-  hasValidTerritoryContext,
   parseArrondissement,
   applyChatTopicFilter,
   resolveChatTopicRequest,
+  buildChatDirectScopeFactories,
 } from "../route.shared";
-
-type CurrentProfileRow = {
-  paris_arrondissement: number | null;
-  metadata: Record<string, unknown> | null;
-};
 
 type SearchMessageRow = {
   id: string;
@@ -66,19 +58,6 @@ type SearchQueryResult = PromiseLike<{
 
 const searchSelect =
   "id, created_at, content, channel_type, topic_id, message_kind, sender:profiles!sender_id(display_name, handle, avatar_url)";
-
-async function loadCurrentProfile(
-  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
-  userId: string,
-): Promise<CurrentProfileRow | null> {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("paris_arrondissement, metadata")
-    .eq("id", userId)
-    .maybeSingle();
-  if (error) throw error;
-  return (data ?? null) as CurrentProfileRow | null;
-}
 
 async function runSearchQuery(query: SearchQueryResult): Promise<SearchMessageRow[]> {
   const { data, error } = await query;
@@ -170,40 +149,25 @@ export async function GET(request: Request) {
 
   try {
     const loadSearchAccessContext = async () => {
-      const profile = await loadCurrentProfile(supabase, userId);
-      const profileZone = extractZoneContextFromMetadata(profile?.metadata ?? null);
-      const hasExplicitTerritoryContext =
-        requestedZoneName !== null || requestedArrondissement !== null;
-      const profileZoneContext = buildZoneContext(
-        profileZone.zoneName,
-        profile?.paris_arrondissement ?? profileZone.arrondissementId,
-      );
-      const requestedZoneContext = hasExplicitTerritoryContext
-        ? buildZoneContext(requestedZoneName, requestedArrondissement)
-        : null;
-      const zoneContext = requestedZoneContext ?? profileZoneContext;
-      const zoneName = zoneContext.zoneName;
-      const arrondissementId = zoneContext.arrondissementId;
-      const hasValidZone = hasValidTerritoryContext(zoneContext);
-      const hasGreaterParisZone = zoneName !== null;
-      const hasArrondissement =
-        arrondissementId !== null && arrondissementId >= 1 && arrondissementId <= 20;
-
-      if (!canAccessChatChannel(channelType, {
+      const accessContext = await loadChatAccessContext(supabase, userId, {
+        requestedZoneName,
+        requestedArrondissement,
+        channelType,
         roleLabel: identity.activeRole,
-        hasArrondissement,
-        hasGreaterParisZone,
-        zoneContext,
-      })) {
+      });
+      if (accessContext.error) {
         return {
-          error: NextResponse.json(
-            { error: "Canal inaccessible", hint: buildChannelAccessHint(channelType) },
-            { status: 403 },
-          ),
-          zoneContext,
-          zoneName,
+          error: accessContext.error,
+          zoneContext: accessContext.zoneContext,
+          zoneName: accessContext.zoneName,
         };
       }
+      const {
+        hasExplicitTerritoryContext,
+        zoneContext,
+        zoneName,
+        hasValidZone,
+      } = accessContext;
       if (channelType === "dm" && !recipientId) {
         return {
           error: NextResponse.json(
@@ -254,18 +218,21 @@ export async function GET(request: Request) {
           return scopedQuery;
         });
       } else if (channelType === "dm") {
-        scopeQueryFactories.push(() =>
-          createSearchQuery()
-            .eq("channel_type", "dm")
-            .in("sender_id", [userId, recipientId])
-            .in("recipient_id", [userId, recipientId]),
-        );
+        scopeQueryFactories.push(...buildChatDirectScopeFactories({
+          channelType,
+          createQuery: createSearchQuery,
+          userId,
+          recipientId: recipientId ?? "",
+          topicId,
+        }));
       } else if (channelType === "admin_elu") {
-        scopeQueryFactories.push(() => {
-          let scopedQuery = createSearchQuery().eq("channel_type", "admin_elu");
-          if (topicId) scopedQuery = scopedQuery.eq("topic_id", topicId);
-          return scopedQuery;
-        });
+        scopeQueryFactories.push(...buildChatDirectScopeFactories({
+          channelType,
+          createQuery: createSearchQuery,
+          userId,
+          recipientId: recipientId ?? "",
+          topicId,
+        }));
       } else if (channelType === "territory") {
         const territory = getTerritoryFilter(zoneContext);
         if (zoneName) {

@@ -1,8 +1,7 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { communityRequestMocks } from "@/app/api/test-helpers";
 
-const authMock = vi.hoisted(() => vi.fn());
-const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
-const getCurrentUserRoleLabelMock = vi.hoisted(() => vi.fn());
+const { auth: authMock, getCurrentUserIdentity: getCurrentUserIdentityMock, getCurrentUserRoleLabel: getCurrentUserRoleLabelMock } = communityRequestMocks;
 const appendCommunityBugReportMock = vi.hoisted(() => vi.fn());
 const updateCommunityBugReportStatusMock = vi.hoisted(() => vi.fn());
 const sendCreatorInboxEmailMock = vi.hoisted(() => vi.fn());
@@ -52,12 +51,24 @@ vi.mock("@/lib/community/discussion-rate-limit", () => ({
 vi.mock("@/lib/rate-limit/server", () => ({
   createServerRateLimitResponse: createServerRateLimitResponseMock,
   verifyRateLimit: verifyRateLimitMock,
+  withServerRateLimit: async (
+    _request: Request,
+    _options: { limit?: number; window?: number },
+    handler: () => Promise<Response>,
+  ) => handler(),
 }));
 
 vi.mock("@/lib/security/validation", () => ({
   createPublicRateLimitResponse: createPublicRateLimitResponseMock,
   hasHoneypotSignal: hasHoneypotSignalMock,
   hasRecentSubmission: hasRecentSubmissionMock,
+  parseJsonBodyWithSchema: async (request: Request, schema: { safeParse: (value: unknown) => { success: boolean; data?: unknown } }) => {
+    const parsed = schema.safeParse(await request.json());
+    return parsed.success
+      ? { ok: true, data: parsed.data }
+      : { ok: false, response: new Response("invalid", { status: 400 }) };
+  },
+  rejectPublicFormAbuse: () => null,
 }));
 
 describe("POST /api/community/bug-reports", () => {

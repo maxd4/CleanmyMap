@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
-import { runSingleActionQuery } from "@/lib/actions/query";
+import { handleApiError } from "@/lib/http/api-errors";
 import {
   loadActionParticipationReviews,
   searchActionParticipationCandidates,
 } from "@/lib/actions/participation/group-participation";
 import {
   type GroupJoinRouteContext,
+  loadGroupJoinAction,
   type ReviewerAccessResolver,
+  resolveGroupJoinActionId,
   searchSchema,
 } from "./route.shared";
 
@@ -28,27 +29,15 @@ export async function handleGroupJoinQueue(
   });
 
   const { actionId } = await ctx.params;
-  const trimmedActionId = actionId.trim();
-  if (!trimmedActionId) {
-    return validationErrorResponse({
-      actionId: ["Identifiant d'action manquant."],
-    });
+  const actionIdResult = resolveGroupJoinActionId(actionId);
+  if (!actionIdResult.ok) {
+    return actionIdResult.response;
   }
+  const trimmedActionId = actionIdResult.value;
 
   try {
     const supabase = getSupabaseServerClient(true);
-    const actionResult = await runSingleActionQuery<{
-      id: string;
-      created_by_clerk_id: string | null;
-      status: "pending" | "approved" | "rejected" | "cancelled";
-      action_phase: "pre_action" | "post_action_draft" | "post_action_complete";
-      notes: string | null;
-    }>(supabase, (query) =>
-      query
-        .select("id, created_by_clerk_id, status, action_phase, notes")
-        .eq("id", trimmedActionId)
-        .maybeSingle(),
-    );
+    const actionResult = await loadGroupJoinAction(supabase, trimmedActionId);
 
     if (
       !actionResult ||

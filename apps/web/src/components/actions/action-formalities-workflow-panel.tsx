@@ -269,12 +269,15 @@ export function ActionFormalitiesWorkflowPanel({
     [facts],
   );
 
-  async function saveFacts() {
-    if (!actionId || !facts || isSaving) return;
+  async function persistFormalitiesUpdate(
+    update: Parameters<typeof updateActionFormalities>[1],
+    fallbackMessage: string,
+  ) {
+    if (!actionId || isSaving) return;
     setIsSaving(true);
     setError(null);
     try {
-      const next = await updateActionFormalities(actionId, { facts });
+      const next = await updateActionFormalities(actionId, update);
       setData(next);
       setFacts(next.facts);
       onReadinessChange?.({
@@ -282,42 +285,28 @@ export function ActionFormalitiesWorkflowPanel({
         blocked: isFormalitiesPublicationBlocked(next.qualification, next.workflow),
       });
     } catch (reason: unknown) {
-      setError(
-        reason instanceof Error && reason.message
-          ? reason.message
-          : "Impossible d'enregistrer les faits de qualification.",
-      );
+      setError(reason instanceof Error && reason.message ? reason.message : fallbackMessage);
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function saveFacts() {
+    if (!facts) return;
+    await persistFormalitiesUpdate(
+      { facts },
+      "Impossible d'enregistrer les faits de qualification.",
+    );
   }
 
   async function applyTransition(
     formalityId: string,
     kind: "mark_prepared" | "declare_sent",
   ) {
-    if (!actionId || isSaving) return;
-    setIsSaving(true);
-    setError(null);
-    try {
-      const next = await updateActionFormalities(actionId, {
-        transition: { formalityId, kind },
-      });
-      setData(next);
-      setFacts(next.facts);
-      onReadinessChange?.({
-        known: true,
-        blocked: isFormalitiesPublicationBlocked(next.qualification, next.workflow),
-      });
-    } catch (reason: unknown) {
-      setError(
-        reason instanceof Error && reason.message
-          ? reason.message
-          : "Impossible d'enregistrer cet état de formalité.",
-      );
-    } finally {
-      setIsSaving(false);
-    }
+    await persistFormalitiesUpdate(
+      { transition: { formalityId, kind } },
+      "Impossible d'enregistrer cet état de formalité.",
+    );
   }
 
   if (!actionId) {

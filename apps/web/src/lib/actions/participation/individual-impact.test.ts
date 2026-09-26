@@ -11,6 +11,11 @@ function participant(id: string, measurement: ReturnType<typeof toIndividualImpa
   return { id, participationStatus: "confirmed", measurement };
 }
 
+function expectTwoQuoteParts(attribution: Map<string, { wasteKg: number | null }>) {
+  expect(attribution.size).toBe(2);
+  expect([...attribution.values()].map((value) => value.wasteKg)).toEqual([10, 10]);
+}
+
 function allocateForPhysicalCounts(params: {
   childrenCount: number;
   adultCount: number;
@@ -48,8 +53,7 @@ describe("individual action impact attribution", () => {
     });
 
     expect(physicalParticipation.participantsCount).toBe(12);
-    expect(attribution.size).toBe(2);
-    expect([...attribution.values()].map((value) => value.wasteKg)).toEqual([10, 10]);
+    expectTwoQuoteParts(attribution);
   });
 
   it("does not change quotes when childrenCount changes and the confirmed roster is stable", () => {
@@ -78,8 +82,7 @@ describe("individual action impact attribution", () => {
     });
 
     expect(physicalParticipation.participantsCount).toBe(150);
-    expect(attribution.size).toBe(2);
-    expect([...attribution.values()].map((value) => value.wasteKg)).toEqual([10, 10]);
+    expectTwoQuoteParts(attribution);
   });
 
   it("gives Bob the exact remaining 8 kg after Alice measured 12 kg, regardless of children", () => {

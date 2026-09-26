@@ -11,6 +11,16 @@ import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export type L10n = { fr: string; en: string } | string;
 
+export const RUBRIQUE_CONTAINER_VARIANTS = {
+  hidden: { opacity: 1 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+
+export const RUBRIQUE_ITEM_VARIANTS = {
+  hidden: { opacity: 1, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
 export function t(locale: "fr" | "en", value: L10n): string {
   if (typeof value === "string") return value;
   return value[locale];

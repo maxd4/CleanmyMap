@@ -9,11 +9,10 @@ import {
   listPromotionRequestsForUser,
 } from "@/lib/admin/promotion-requests-store";
 import { canRequestPromotionRole } from "@/lib/account/promotion-request-contract";
-import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
+import { enforceServerRateLimit } from "@/lib/rate-limit/server";
 import {
-  createPublicRateLimitResponse,
-  hasHoneypotSignal,
-  hasRecentSubmission,
+  parseJsonBodyWithSchema,
+  rejectPublicFormAbuse,
 } from "@/lib/security/validation";
 
 export const runtime = "nodejs";
@@ -26,15 +25,8 @@ const payloadSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const writeRateLimit = await verifyRateLimit(request, { limit: 3, window: 300 });
-  const writeRateLimitResponse = createServerRateLimitResponse(
-    writeRateLimit.allowed,
-    writeRateLimit.retryAfter,
-    writeRateLimit,
-  );
-  if (writeRateLimitResponse) {
-    return writeRateLimitResponse;
-  }
+  const rateLimitResponse = await enforceServerRateLimit(request, { limit: 3, window: 300 });
+  if (rateLimitResponse) return rateLimitResponse;
 
   const { userId } = await auth();
   if (!userId) {
@@ -56,31 +48,11 @@ export async function POST(request: Request) {
     );
   }
 
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
-  }
+  const parsed = await parseJsonBodyWithSchema(request, payloadSchema);
+  if (!parsed.ok) return parsed.response;
 
-  const parsed = payloadSchema.safeParse(payload);
-  if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: "Invalid payload",
-        details: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 },
-    );
-  }
-
-  if (hasHoneypotSignal(parsed.data.honeypot)) {
-    return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
-  }
-
-  if (hasRecentSubmission(parsed.data.submittedAt)) {
-    return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
-  }
+  const abuseResponse = rejectPublicFormAbuse(parsed.data);
+  if (abuseResponse) return abuseResponse;
 
   if (!canRequestPromotionRole(identity.role, parsed.data.requestedRole)) {
     return NextResponse.json(

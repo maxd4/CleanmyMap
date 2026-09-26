@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import * as Sentry from "@sentry/nextjs";
 import { isSentryEnabled } from "@/lib/observability/sentry";
 import { unauthorizedJsonResponse } from "./auth-responses";
@@ -149,6 +150,27 @@ export function validationErrorResponse(details: Record<string, string[]>) {
     },
     { status: 422 }
   );
+}
+
+export async function parseJsonBodyWithValidation<Schema extends z.ZodType>(
+  request: Request,
+  schema: Schema,
+): Promise<
+  | { ok: true; data: z.infer<Schema> }
+  | { ok: false; response: NextResponse }
+> {
+  const body = await parseJsonRequest(request);
+  if (!body.ok) return body;
+
+  const parsed = schema.safeParse(body.data);
+  return parsed.success
+    ? { ok: true, data: parsed.data }
+    : {
+        ok: false,
+        response: validationErrorResponse(
+          parsed.error.flatten().fieldErrors as Record<string, string[]>,
+        ),
+      };
 }
 
 async function parseJsonRequest(

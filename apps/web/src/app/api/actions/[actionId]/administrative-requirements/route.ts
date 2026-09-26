@@ -15,19 +15,28 @@ export const runtime = "nodejs";
 // Justification Vercel: la validation dépend de l'identité, de la relation organisateur et de l'état frais de l'action.
 export const dynamic = "force-dynamic";
 
+async function loadAdministrativeAction(actionId: string) {
+  const supabase = getSupabaseServerClient(true);
+  return { supabase, current: await loadActionById(supabase, actionId) };
+}
+
+function resolveAdministrativeActionId(actionId: string): string | NextResponse {
+  const normalized = actionId.trim();
+  return normalized || validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
+}
+
 export async function GET(
   _request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
   const { actionId } = await ctx.params;
-  const trimmedActionId = actionId.trim();
-  if (!trimmedActionId) {
-    return validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
+  const trimmedActionId = resolveAdministrativeActionId(actionId);
+  if (trimmedActionId instanceof Response) {
+    return trimmedActionId;
   }
 
   try {
-    const supabase = getSupabaseServerClient(true);
-    const current = await loadActionById(supabase, trimmedActionId);
+    const { supabase, current } = await loadAdministrativeAction(trimmedActionId);
     if (!current || current.action_phase !== "pre_action") {
       return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
     }
@@ -88,14 +97,13 @@ export async function POST(
   }
 
   const { actionId } = await ctx.params;
-  const trimmedActionId = actionId.trim();
-  if (!trimmedActionId) {
-    return validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
+  const trimmedActionId = resolveAdministrativeActionId(actionId);
+  if (trimmedActionId instanceof Response) {
+    return trimmedActionId;
   }
 
   try {
-    const supabase = getSupabaseServerClient(true);
-    const current = await loadActionById(supabase, trimmedActionId);
+    const { supabase, current } = await loadAdministrativeAction(trimmedActionId);
     if (!current) {
       return NextResponse.json({ error: "Action introuvable." }, { status: 404 });
     }

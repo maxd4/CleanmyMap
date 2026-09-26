@@ -32,7 +32,7 @@ export function normalizeOrganizerName(value: string): string {
     .replace(/\s+/g, " ");
 }
 
-export function isCatalogOrganizerType(
+function isCatalogOrganizerType(
   value: OrganizerType | "" | null | undefined,
 ): value is Exclude<OrganizerType, "spontaneous"> {
   return Boolean(value && value !== "spontaneous");
@@ -69,7 +69,7 @@ export function getStaticOrganizerSuggestions(
     .map(staticSuggestion);
 }
 
-export function getStaticOrganizerById(id: string | null | undefined) {
+function getStaticOrganizerById(id: string | null | undefined) {
   if (!id?.trim()) return null;
   return ORGANIZER_DIRECTORY.find((entry) => entry.id === id.trim()) ?? null;
 }

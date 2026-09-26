@@ -30,7 +30,7 @@ import {
 } from"@/lib/community/event-rsvp-summaries";
 import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
 import { getClerkService, type ClerkUserIdentity as OrganizerIdentity } from"@/lib/services/clerk";
-import { createServerRateLimitResponse, verifyRateLimit } from"@/lib/rate-limit/server";
+import { enforceServerRateLimit } from"@/lib/rate-limit/server";
 import { isIsoDateString } from"@/lib/security/validation";
 import {
  communityEventLocationToDatabase,
@@ -300,12 +300,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
- const writeRateLimit = await verifyRateLimit(request, { limit: 6, window: 60 });
- const writeRateLimitResponse = createServerRateLimitResponse(
-  writeRateLimit.allowed,
-  writeRateLimit.retryAfter,
-  writeRateLimit,
- );
+ const writeRateLimitResponse = await enforceServerRateLimit(request, { limit: 6, window: 60 });
  if (writeRateLimitResponse) {
   return writeRateLimitResponse;
  }

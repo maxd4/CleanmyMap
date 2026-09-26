@@ -1,47 +1,33 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { authenticatedRouteMocks, createAnalyticsConsentModule, createAuthenticatedRouteAuthzModule, createRateLimitModule, createSignalementModule, createSupabaseServerModule, rateLimitMocks } from "@/app/api/test-helpers";
 import { toContractCreatePayload } from "@/lib/actions/data-contract";
 import {
   buildCreateActionPayload,
   createInitialFormState,
 } from "@/components/actions/action-declaration/payload";
 
-const requireAuthenticatedAccessMock = vi.hoisted(() => vi.fn());
-const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
-const pickTraceableActorNameMock = vi.hoisted(() => vi.fn());
+const { requireAuthenticatedAccess: requireAuthenticatedAccessMock, getCurrentUserIdentity: getCurrentUserIdentityMock, pickTraceableActorName: pickTraceableActorNameMock, getSupabaseServerClient: getSupabaseServerClientMock, createSignalement: createSignalementMock, hasAnalyticsConsentCookie: hasAnalyticsConsentCookieMock } = authenticatedRouteMocks;
 const buildPostActionRetentionLoopMock = vi.hoisted(() => vi.fn());
 const trackServerEventMock = vi.hoisted(() => vi.fn());
-const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const createActionMock = vi.hoisted(() => vi.fn());
 const invalidateSnapshotsMock = vi.hoisted(() => vi.fn());
-const createSignalementMock = vi.hoisted(() => vi.fn());
 const resolveActionOrganizersMock = vi.hoisted(() => vi.fn());
 const resolveActionOrganizerMock = vi.hoisted(() => vi.fn());
 const resolveActionParticipantsMock = vi.hoisted(() => vi.fn());
 const resolveDefaultActionOrganizerIdsMock = vi.hoisted(() => vi.fn());
 const emitActionCreatedMock = vi.hoisted(() => vi.fn());
 const emitSpotCreatedMock = vi.hoisted(() => vi.fn());
-const hasAnalyticsConsentCookieMock = vi.hoisted(() => vi.fn());
-const verifyRateLimitMock = vi.hoisted(() => vi.fn());
-const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn());
+const { verifyRateLimit: verifyRateLimitMock, createServerRateLimitResponse: createServerRateLimitResponseMock } = rateLimitMocks;
 
-vi.mock("@/lib/authz", () => ({
-  getCurrentUserIdentity: getCurrentUserIdentityMock,
-  pickTraceableActorName: pickTraceableActorNameMock,
-  requireAuthenticatedAccess: requireAuthenticatedAccessMock,
-}));
+vi.mock("@/lib/authz", () => createAuthenticatedRouteAuthzModule());
 
-vi.mock("@/lib/rate-limit/server", () => ({
-  verifyRateLimit: verifyRateLimitMock,
-  createServerRateLimitResponse: createServerRateLimitResponseMock,
-}));
+vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
 
 vi.mock("@/lib/gamification/progression", () => ({
   buildPostActionRetentionLoop: buildPostActionRetentionLoopMock,
 }));
 
-vi.mock("@/lib/analytics-consent", () => ({
-  hasAnalyticsConsentCookie: hasAnalyticsConsentCookieMock,
-}));
+vi.mock("@/lib/analytics-consent", () => createAnalyticsConsentModule());
 
 vi.mock("@/lib/events/emit", () => ({
   emitActionCreated: emitActionCreatedMock,
@@ -52,9 +38,7 @@ vi.mock("@/lib/analytics.server", () => ({
   trackServerEvent: trackServerEventMock,
 }));
 
-vi.mock("@/lib/supabase/server", () => ({
-  getSupabaseServerClient: getSupabaseServerClientMock,
-}));
+vi.mock("@/lib/supabase/server", () => createSupabaseServerModule(getSupabaseServerClientMock));
 
 vi.mock("@/lib/actions/store", () => ({
   createAction: createActionMock,
@@ -64,9 +48,7 @@ vi.mock("@/lib/public-surface-snapshots", () => ({
   invalidatePublicSurfaceSnapshotsByRoute: invalidateSnapshotsMock,
 }));
 
-vi.mock("@/lib/actions/signalement/create-signalement", () => ({
-  createSignalement: createSignalementMock,
-}));
+vi.mock("@/lib/actions/signalement/create-signalement", () => createSignalementModule());
 
 vi.mock("@/lib/actions/participation/organizers", () => ({
   resolveActionOrganizers: resolveActionOrganizersMock,

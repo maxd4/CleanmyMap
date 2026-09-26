@@ -1,37 +1,29 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  createEmailServiceModule,
+  createEnvironmentModule,
+} from "@/app/api/test-route-setup";
 
-const requireAdminAccessMock = vi.hoisted(() => vi.fn());
-const sendEmailMock = vi.hoisted(() => vi.fn());
-const appendAdminOperationAuditMock = vi.hoisted(() => vi.fn());
-
-const envMock = vi.hoisted(() => ({
-  RESEND_API_KEY: "re_test_key" as string | undefined,
-  EMAIL_FROM: "CleanMyMap <noreply@cleanmymap.fr>" as string | undefined,
-  CONTACT_EMAIL: "contact@cleanmymap.fr" as string | undefined,
+const emailTestMocks = vi.hoisted(() => ({
+  requireAdminAccess: vi.fn(),
+  sendEmail: vi.fn(),
+  appendAdminOperationAudit: vi.fn(),
+  env: {
+    RESEND_API_KEY: "re_test_key" as string | undefined,
+    EMAIL_FROM: "CleanMyMap <noreply@cleanmymap.fr>" as string | undefined,
+    CONTACT_EMAIL: "contact@cleanmymap.fr" as string | undefined,
+  },
 }));
+const { requireAdminAccess: requireAdminAccessMock, sendEmail: sendEmailMock, appendAdminOperationAudit: appendAdminOperationAuditMock, env: envMock } = emailTestMocks;
 
-vi.mock("@/lib/authz", () => ({
-  requireAdminAccess: requireAdminAccessMock,
-}));
-
+vi.mock("@/lib/authz", () => ({ requireAdminAccess: requireAdminAccessMock }));
+vi.mock("@/lib/admin/audit/operation-audit", () => ({ appendAdminOperationAudit: appendAdminOperationAuditMock }));
 vi.mock("@/lib/http/auth-responses", () => ({
-  adminAccessErrorJsonResponse: () =>
-    new Response("forbidden", { status: 403 }),
+  adminAccessErrorJsonResponse: () => new Response("forbidden", { status: 403 }),
 }));
+vi.mock("@/lib/services/email", () => createEmailServiceModule(sendEmailMock));
+vi.mock("@/lib/env", () => createEnvironmentModule(envMock));
 
-vi.mock("@/lib/env", () => ({
-  env: envMock,
-}));
-
-vi.mock("@/lib/services/email", () => ({
-  sendEmail: sendEmailMock,
-  isEmailQuotaExceededError: (error: unknown) =>
-    error instanceof Error && error.name === "EmailQuotaExceededError",
-}));
-
-vi.mock("@/lib/admin/audit/operation-audit", () => ({
-  appendAdminOperationAudit: appendAdminOperationAuditMock,
-}));
 
 describe("POST /api/email/test", () => {
   beforeEach(() => {

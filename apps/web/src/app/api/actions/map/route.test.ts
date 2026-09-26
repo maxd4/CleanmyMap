@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createApiErrorModule, createPublicSnapshotModule } from "@/app/api/test-helpers";
 
 const buildMapActionsRouteResultMock = vi.hoisted(() => vi.fn());
 const loadOrRefreshPublicSurfaceSnapshotMock = vi.hoisted(() => vi.fn());
@@ -20,13 +21,8 @@ vi.mock("@/lib/actions/data-contract", () => ({
 }));
 vi.mock("@/lib/reports/scope", () => ({ filterActionContractsByScope: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ getSupabaseServerClient: vi.fn() }));
-vi.mock("@/lib/http/api-errors", () => ({
-  handleApiError: (error: unknown) =>
-    new Response(error instanceof Error ? error.message : "error", { status: 500 }),
-}));
-vi.mock("@/lib/public-surface-snapshot-service", () => ({
-  loadOrRefreshPublicSurfaceSnapshot: loadOrRefreshPublicSurfaceSnapshotMock,
-}));
+vi.mock("@/lib/http/api-errors", () => createApiErrorModule());
+vi.mock("@/lib/public-surface-snapshot-service", () => createPublicSnapshotModule(loadOrRefreshPublicSurfaceSnapshotMock));
 
 describe("GET /api/actions/map persistence boundary", () => {
   beforeEach(() => {

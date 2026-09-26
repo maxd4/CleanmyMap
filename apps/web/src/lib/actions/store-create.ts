@@ -37,6 +37,7 @@ import {
 import {
   buildActionInsertPayload,
   buildCreateActionGeometry,
+  resolveCreateActionRouteTopology,
 } from "./store-create-contract";
 import { resolveCanonicalCreateActionPayload } from "./organizer-directory-registry";
 
@@ -174,13 +175,7 @@ export async function createAction(
     payload: params.payload,
     createdByClerkId: params.userId,
   });
-  const recordType = params.payload.recordType ?? "action";
-  const routeTopology = resolveActionRouteTopology({
-    topology: params.payload.routeTopology ?? params.payload.preparationData?.routeTopology,
-    arrivalLocationLabel:
-      params.payload.arrivalLocationLabel ?? params.payload.preparationData?.zoneCiblePrevue,
-    recordType,
-  });
+  const { recordType, routeTopology } = resolveCreateActionRouteTopology(params.payload);
   const preparationData = clearActionRouteArrivalForLoop(
     {
       ...(params.payload.preparationData ?? {}),

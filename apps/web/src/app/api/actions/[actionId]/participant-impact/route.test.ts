@@ -27,6 +27,29 @@ async function patchParticipantImpact(payload: Record<string, unknown>) {
   );
 }
 
+function createParticipantWithStatus(participation_status: "pending" | "confirmed") {
+  return createGroupJoinParticipant({
+    id: "participant-1",
+    action_id: "action-1",
+    user_id: "participant-user",
+    created_at: "2026-09-26T10:00:00.000Z",
+    participation_status,
+  });
+}
+
+function configureParticipantImpactSupabase(
+  participants: ReturnType<typeof createGroupJoinParticipant>[],
+  createdByClerkId?: string,
+) {
+  getSupabaseServerClientMock.mockReturnValue(createGroupJoinSupabaseMock({
+    action: createGroupJoinAction({
+      ...(createdByClerkId ? { createdByClerkId } : {}),
+      status: "approved",
+    }),
+    participants,
+  }));
+}
+
 describe("PATCH /api/actions/:actionId/participant-impact", () => {
   beforeEach(() => {
     seedGroupJoinTestDefaults();
@@ -88,17 +111,8 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
     authMock.mockResolvedValue({ userId: "admin-1" });
     getCurrentUserIdentityMock.mockResolvedValue({ userId: "admin-1", role: "admin", activeRole: "admin" });
     loadActionOrganizerIdsForActionMock.mockResolvedValue([]);
-    const participants = [createGroupJoinParticipant({
-      id: "participant-1",
-      action_id: "action-1",
-      user_id: "participant-user",
-      created_at: "2026-09-26T10:00:00.000Z",
-      participation_status: "pending",
-    })];
-    getSupabaseServerClientMock.mockReturnValue(createGroupJoinSupabaseMock({
-      action: createGroupJoinAction({ status: "approved" }),
-      participants,
-    }));
+    const participants = [createParticipantWithStatus("pending")];
+    configureParticipantImpactSupabase(participants);
 
     const response = await patchParticipantImpact({
       participantId: "participant-1",
@@ -113,17 +127,8 @@ describe("PATCH /api/actions/:actionId/participant-impact", () => {
     authMock.mockResolvedValue({ userId: "participant-user" });
     getCurrentUserIdentityMock.mockResolvedValue({ userId: "participant-user", role: "benevole", activeRole: "benevole" });
     loadActionOrganizerIdsForActionMock.mockResolvedValue([]);
-    const participants = [createGroupJoinParticipant({
-      id: "participant-1",
-      action_id: "action-1",
-      user_id: "participant-user",
-      created_at: "2026-09-26T10:00:00.000Z",
-      participation_status: "confirmed",
-    })];
-    getSupabaseServerClientMock.mockReturnValue(createGroupJoinSupabaseMock({
-      action: createGroupJoinAction({ createdByClerkId: "organizer-1", status: "approved" }),
-      participants,
-    }));
+    const participants = [createParticipantWithStatus("confirmed")];
+    configureParticipantImpactSupabase(participants, "organizer-1");
 
     const response = await patchParticipantImpact({
       participantId: "participant-1",

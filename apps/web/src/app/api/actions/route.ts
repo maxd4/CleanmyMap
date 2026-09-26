@@ -27,12 +27,11 @@ import {
   forbiddenJsonResponse,
   unauthorizedJsonResponse,
 } from "@/lib/http/auth-responses";
-import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
+import { handleApiError, parseJsonBodyWithValidation, validationErrorResponse } from "@/lib/http/api-errors";
 import { buildDateFloor, resolveReportQuery } from "@/lib/reports/csv";
 import { parsePositiveInteger } from "@/lib/http/query-params";
 import {
-  verifyRateLimit,
-  createServerRateLimitResponse,
+  enforceServerRateLimit,
 } from "@/lib/rate-limit/server";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
 import { loadOrRefreshPublicSurfaceSnapshot } from "@/lib/public-surface-snapshot-service";
@@ -123,6 +122,15 @@ function buildActionsSnapshotKey(params: {
   });
 }
 
+function resolveActionListFilters(url: URL) {
+  return {
+    types: parseEntityTypesParam(url.searchParams.get("types")),
+    qualityGrade: parseQualityGradeParam(url.searchParams.get("qualityGrade")),
+    toFixPriority: parseBooleanFlag(url.searchParams.get("toFixPriority")),
+    impact: parseImpactParam(url.searchParams.get("impact")),
+  };
+}
+
 async function buildActionsRoutePayload(
   url: URL,
   statusOverride: ActionStatus | null,
@@ -136,12 +144,7 @@ async function buildActionsRoutePayload(
   const days =
     daysRaw === null ? null : parsePositiveInteger(daysRaw, 1, 3650, 90);
   const floorDate = futureOnly ? null : days === null ? null : buildDateFloor(days);
-  const types = parseEntityTypesParam(url.searchParams.get("types"));
-  const qualityGrade = parseQualityGradeParam(
-    url.searchParams.get("qualityGrade"),
-  );
-  const toFixPriority = parseBooleanFlag(url.searchParams.get("toFixPriority"));
-  const impact = parseImpactParam(url.searchParams.get("impact"));
+  const { types, qualityGrade, toFixPriority, impact } = resolveActionListFilters(url);
 
   const supabase = getSupabaseServerClient(true);
   const result = await fetchUnifiedActionContracts(supabase, {
@@ -257,12 +260,7 @@ export async function GET(request: Request) {
     const daysRaw = url.searchParams.get("days");
     const days =
       daysRaw === null ? null : parsePositiveInteger(daysRaw, 1, 3650, 90);
-    const types = parseEntityTypesParam(url.searchParams.get("types"));
-    const qualityGrade = parseQualityGradeParam(
-      url.searchParams.get("qualityGrade"),
-    );
-    const toFixPriority = parseBooleanFlag(url.searchParams.get("toFixPriority"));
-    const impact = parseImpactParam(url.searchParams.get("impact"));
+    const { types, qualityGrade, toFixPriority, impact } = resolveActionListFilters(url);
 
     const snapshotKey = buildActionsSnapshotKey({
       reportQuery,
@@ -337,16 +335,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const rateLimit = await verifyRateLimit(request, {
+  const rateLimitResponse = await enforceServerRateLimit(request, {
     limit: 10,
     window: 60,
   });
-
-  const rateLimitResponse = createServerRateLimitResponse(
-    rateLimit.allowed,
-    rateLimit.retryAfter,
-    rateLimit,
-  );
   if (rateLimitResponse) {
     return rateLimitResponse;
   }
@@ -357,20 +349,8 @@ export async function POST(request: Request) {
   }
   const { userId } = access;
 
-  let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON payload" },
-      { status: 400 },
-    );
-  }
-
-  const parsed = createActionSchema.safeParse(payload);
-  if (!parsed.success) {
-    return validationErrorResponse(parsed.error.flatten().fieldErrors);
-  }
+  const parsed = await parseJsonBodyWithValidation(request, createActionSchema);
+  if (!parsed.ok) return parsed.response;
 
   if ((parsed.data.recordType ?? "action") === "action" && !parsed.data.organizerType) {
     return validationErrorResponse({
