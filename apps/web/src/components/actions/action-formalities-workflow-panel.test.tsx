@@ -43,6 +43,7 @@ describe("ActionFormalitiesQualificationView", () => {
     expect(markup).toContain("La Ville de Paris décrit une AOT préalable");
     expect(markup).toContain("Délai indicatif");
     expect(markup).toContain("2 mois");
+    expect(markup).toContain("Message préparé");
     expect(markup).toContain("https://www.paris.fr/pages/evenements-dans-l-espace-public-33659");
   });
 });

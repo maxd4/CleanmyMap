@@ -15,6 +15,7 @@ import type {
   ActionFormalitiesQualification,
 } from "@/lib/actions/formalities-qualification";
 import type { ActionFormalitiesWorkflowState } from "@/lib/actions/formalities-workflow";
+import { isFormalitiesPublicationBlocked } from "@/lib/actions/formalities-workflow";
 
 type TernaryFact = boolean | "unknown";
 
@@ -67,6 +68,12 @@ function userStatusLabel(status: "not_started" | "prepared" | "sent"): string {
 
 function deadlineUnitLabel(unit: "days" | "months"): string {
   return unit === "months" ? "mois" : "jours";
+}
+
+function preparedMessage(recipient: string | null): string {
+  return recipient
+    ? `À adresser à ${recipient}. Joignez les informations et pièces listées ci-dessus via le canal officiel.`
+    : "Destinataire à identifier avant tout envoi. Aucun message n’est envoyé par ce parcours.";
 }
 
 function SelectField({
@@ -159,6 +166,10 @@ export function ActionFormalitiesQualificationView({
                   ) : formality.officialChannel.label}
                 </p>
               ) : null}
+              <div className="rounded-xl border border-sky-100 bg-sky-50/60 px-3 py-2 text-xs text-sky-950">
+                <p className="font-semibold">Message préparé</p>
+                <p className="mt-1 leading-5">{preparedMessage(formality.recipient)}</p>
+              </div>
               {formality.requestedInformation.length || formality.requestedDocuments.length ? (
                 <div className="grid gap-3 text-xs text-emerald-900/75 sm:grid-cols-2">
                   {formality.requestedInformation.length ? <div><p className="font-semibold">Informations demandées</p><ul className="mt-1 list-disc space-y-1 pl-4">{formality.requestedInformation.map((item) => <li key={item}>{item}</li>)}</ul></div> : null}
@@ -198,8 +209,10 @@ export function ActionFormalitiesQualificationView({
 
 export function ActionFormalitiesWorkflowPanel({
   actionId,
+  onReadinessChange,
 }: {
   actionId?: string | null;
+  onReadinessChange?: (readiness: { known: boolean; blocked: boolean }) => void;
 }) {
   const [data, setData] = useState<ActionFormalitiesResponse | null>(null);
   const [facts, setFacts] = useState<ActionFormalitiesFacts | null>(null);
@@ -208,6 +221,7 @@ export function ActionFormalitiesWorkflowPanel({
 
   useEffect(() => {
     if (!actionId) {
+      onReadinessChange?.({ known: false, blocked: false });
       return;
     }
 
@@ -217,6 +231,10 @@ export function ActionFormalitiesWorkflowPanel({
         if (!active) return;
         setData(next);
         setFacts(next.facts);
+        onReadinessChange?.({
+          known: true,
+          blocked: isFormalitiesPublicationBlocked(next.qualification, next.workflow),
+        });
         setError(null);
       })
       .catch((reason: unknown) => {
@@ -231,7 +249,7 @@ export function ActionFormalitiesWorkflowPanel({
     return () => {
       active = false;
     };
-  }, [actionId]);
+  }, [actionId, onReadinessChange]);
 
   const hasUnknownFacts = useMemo(
     () =>
@@ -259,6 +277,10 @@ export function ActionFormalitiesWorkflowPanel({
       const next = await updateActionFormalities(actionId, { facts });
       setData(next);
       setFacts(next.facts);
+      onReadinessChange?.({
+        known: true,
+        blocked: isFormalitiesPublicationBlocked(next.qualification, next.workflow),
+      });
     } catch (reason: unknown) {
       setError(
         reason instanceof Error && reason.message
@@ -283,6 +305,10 @@ export function ActionFormalitiesWorkflowPanel({
       });
       setData(next);
       setFacts(next.facts);
+      onReadinessChange?.({
+        known: true,
+        blocked: isFormalitiesPublicationBlocked(next.qualification, next.workflow),
+      });
     } catch (reason: unknown) {
       setError(
         reason instanceof Error && reason.message

@@ -72,7 +72,11 @@ ready
 ## Statut documentaire
 
 ```txt
-Le moteur météo reste en place et est réutilisé dans le shell canonique.
+Le moteur météo reste en place et est réutilisé par l’étape `Préparation` du
+workflow canonique `/actions/new`. `/sections/weather` est son point d’entrée
+d’orchestration ; il ne crée ni second moteur météo ni second modèle d’action.
+La checklist de matériel est validable et l’indisponibilité météo reste un
+état dégradé explicite, sans donnée inventée.
 Les anciennes URLs sont conservées comme redirections de compatibilité.
 ```
 

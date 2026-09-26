@@ -1,0 +1,30 @@
+import { describe, expect, it } from "vitest";
+import {
+  createActionWorkflowState,
+  invalidateActionWorkflow,
+  markActionWorkflowStep,
+} from "./action-workflow";
+
+describe("action workflow contract", () => {
+  it("starts on the route and advances one canonical step at a time", () => {
+    const state = createActionWorkflowState();
+    const next = markActionWorkflowStep(state, "itineraire");
+    expect(next.statuses.itineraire).toBe("done");
+    expect(next.activeStep).toBe("paris");
+    expect(next.statuses.paris).toBe("in_progress");
+  });
+
+  it("invalidates only dependent steps", () => {
+    const state = createActionWorkflowState("action-1", "preformulaire");
+    expect(invalidateActionWorkflow(state, "date_time").statuses).toMatchObject({
+      preparation: "review",
+      paris: "todo",
+      itineraire: "todo",
+    });
+    expect(invalidateActionWorkflow(state, "text")).toEqual(state);
+    expect(invalidateActionWorkflow(state, "location").statuses).toMatchObject({
+      paris: "review",
+      preparation: "review",
+    });
+  });
+});

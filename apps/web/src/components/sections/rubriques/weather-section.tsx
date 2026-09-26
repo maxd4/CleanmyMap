@@ -18,8 +18,12 @@ const itemVariants = {
 
 export function WeatherSection({
   draftContext,
+  onPreparationValidated,
+  initialPreparationValidated,
 }: {
   draftContext?: { locationLabel?: string; actionDate?: string };
+  onPreparationValidated?: (validated: boolean) => void;
+  initialPreparationValidated?: boolean;
 }) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
@@ -91,6 +95,8 @@ export function WeatherSection({
               prepProgress={kit.kitProgress}
               packItems={kit.packItems}
               fr={fr}
+              onPreparationValidated={onPreparationValidated}
+              initialPreparationValidated={initialPreparationValidated}
             />
           </motion.div>
         </div>

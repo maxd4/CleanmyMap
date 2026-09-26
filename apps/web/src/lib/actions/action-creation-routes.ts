@@ -6,6 +6,12 @@ export type ActionCreationPanelId =
 
 export type ActionCreationTab = "before" | "after";
 
+export type ActionWorkflowStepId =
+  | "itineraire"
+  | "paris"
+  | "preparation"
+  | "preformulaire";
+
 export const ACTION_CREATION_ROUTE = "/actions/new";
 
 export function normalizeActionCreationPanel(
@@ -80,5 +86,36 @@ export function buildActionCreationPanelHref(
     }
   }
 
+  return `${ACTION_CREATION_ROUTE}?${params.toString()}`;
+}
+
+export function normalizeActionWorkflowStep(
+  value: string | string[] | undefined,
+): ActionWorkflowStepId {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  switch (candidate) {
+    case "itineraire":
+    case "paris":
+    case "preparation":
+    case "preformulaire":
+      return candidate;
+    default:
+      return "itineraire";
+  }
+}
+
+export function buildActionWorkflowStepHref(
+  step: ActionWorkflowStepId,
+  searchParams: Record<string, string | string[] | undefined> = {},
+): string {
+  const params = new URLSearchParams({ step });
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (key === "step" || value === undefined) continue;
+    if (Array.isArray(value)) {
+      value.forEach((item) => params.append(key, item));
+    } else {
+      params.append(key, value);
+    }
+  }
   return `${ACTION_CREATION_ROUTE}?${params.toString()}`;
 }
