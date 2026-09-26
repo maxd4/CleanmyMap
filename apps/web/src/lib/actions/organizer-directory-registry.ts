@@ -58,6 +58,25 @@ function matchesQuery(name: string, query: string): boolean {
   return !normalizedQuery || normalizeOrganizerName(name).includes(normalizedQuery);
 }
 
+function resolvedOrganizer(row: PersistedOrganizerRow) {
+  return { organizerId: row.id, organizerName: row.name, legacyAssociationName: row.name };
+}
+
+async function loadNamedOrganizer(
+  supabase: SupabaseClient,
+  organizerType: Exclude<OrganizerType, "spontaneous">,
+  normalizedName: string,
+) {
+  const existing = await supabase
+    .from("organizer_directory_entries")
+    .select("id, name, normalized_name, organizer_type")
+    .eq("organizer_type", organizerType)
+    .eq("normalized_name", normalizedName)
+    .maybeSingle();
+  if (existing.error) throw existing.error;
+  return existing.data ? resolvedOrganizer(existing.data as PersistedOrganizerRow) : null;
+}
+
 export function getStaticOrganizerSuggestions(
   organizerType: OrganizerType | "" | null | undefined,
   query = "",
@@ -167,17 +186,13 @@ async function resolveNamedOrganizer(
     return { organizerId: staticMatch.id, organizerName: staticMatch.name, legacyAssociationName: staticMatch.name };
   }
   const normalizedName = normalizeOrganizerName(enteredName);
-  const existing = await supabase
-    .from("organizer_directory_entries")
-    .select("id, name, normalized_name, organizer_type")
-    .eq("organizer_type", organizerType)
-    .eq("normalized_name", normalizedName)
-    .maybeSingle();
-  if (existing.error) throw existing.error;
-  if (existing.data) {
-    const row = existing.data as PersistedOrganizerRow;
-    return { organizerId: row.id, organizerName: row.name, legacyAssociationName: row.name };
+  if (!normalizedName) {
+    throw new Error("Validation: le nom de l'organisateur doit contenir des caractères lisibles.");
   }
+
+  const existing = await loadNamedOrganizer(supabase, organizerType, normalizedName);
+  if (existing) return existing;
+
   const created = await supabase
     .from("organizer_directory_entries")
     .insert({
@@ -189,9 +204,15 @@ async function resolveNamedOrganizer(
     })
     .select("id, name, normalized_name, organizer_type")
     .single();
-  if (created.error) throw created.error;
+  if (created.error) {
+    if (created.error.code === "23505") {
+      const raced = await loadNamedOrganizer(supabase, organizerType, normalizedName);
+      if (raced) return raced;
+    }
+    throw created.error;
+  }
   const row = created.data as PersistedOrganizerRow;
-  return { organizerId: row.id, organizerName: row.name, legacyAssociationName: row.name };
+  return resolvedOrganizer(row);
 }
 
 export async function resolveCanonicalCreateActionPayload(params: {

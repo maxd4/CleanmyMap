@@ -4,6 +4,7 @@ import {
   type ActionContractCreatePayload,
 } from "@/lib/actions/data-contract";
 import { isOrganizerType, type OrganizerType } from "@/lib/actions/organizer-type";
+import { normalizeOrganizerName } from "@/lib/actions/organizer-directory-registry";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import { ACTION_GEOMETRY_SOURCES } from "@/lib/actions/types";
 import { isWasteCategorySlug } from "@/lib/waste";
@@ -222,7 +223,7 @@ const associationNameSchema = z
   .min(1)
   .max(120);
 
-const organizerNameSchema = z.string().trim().min(1).max(120);
+const organizerNameSchema = z.string().trim().min(1).max(120).refine((value) => Boolean(normalizeOrganizerName(value)), "Le nom de l'organisateur doit contenir des caractères lisibles.");
 const organizerIdSchema = z.string().trim().min(1).max(120).nullable().optional();
 
 const organizerTypeSchema = z.custom<OrganizerType>(

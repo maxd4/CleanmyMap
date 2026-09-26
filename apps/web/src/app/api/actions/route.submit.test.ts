@@ -56,7 +56,10 @@ vi.mock("@/lib/actions/participation/organizers", () => ({
   resolveDefaultActionOrganizerIds: resolveDefaultActionOrganizerIdsMock,
 }));
 
-vi.mock("@/lib/actions/organizer-directory-registry", () => ({
+vi.mock("@/lib/actions/organizer-directory-registry", async () => ({
+  ...(await vi.importActual<typeof import("@/lib/actions/organizer-directory-registry")>(
+    "@/lib/actions/organizer-directory-registry",
+  )),
   resolveActionOrganizer: resolveActionOrganizerMock,
 }));
 
