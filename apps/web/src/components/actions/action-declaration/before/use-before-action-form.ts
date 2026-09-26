@@ -28,8 +28,8 @@ import {
   type BeforeActionFieldUpdater,
   type TerminalPreActionStatus,
 } from "./model";
-import { ENTREPRISE_ASSOCIATION_OPTION } from "@/lib/actions/association-options";
 import { getTimeContractValidationMessage } from "@/lib/actions/time-contract";
+import { applyOrganizerFormUpdates } from "./organizer-form-state";
 
 type BeforeValidationField =
   | "actionTitle"
@@ -169,6 +169,8 @@ export function useBeforeActionForm({
           actorName: action.actorName ?? hydrated.actorName,
           associationName: action.associationName ?? hydrated.associationName,
           organizerType: action.organizerType ?? hydrated.organizerType,
+          organizerId: action.organizerId ?? hydrated.organizerId,
+          organizerName: action.organizerName ?? action.associationName ?? hydrated.organizerName,
           actionDate: action.actionDate,
           locationLabel: action.locationLabel,
           departureLocationLabel:
@@ -232,7 +234,7 @@ export function useBeforeActionForm({
     : null;
   const summaryNote = useMemo(() => buildPreActionSummaryNote(form), [form]);
 
-  const updateField: BeforeActionFieldUpdater = (key, value) => {
+  const updateFields = (updates: Partial<FormState>) => {
     if (!hasTrackedStartRef.current) {
       hasTrackedStartRef.current = true;
       trackFunnel("start_form", "quick", {
@@ -244,13 +246,11 @@ export function useBeforeActionForm({
       }).catch(() => undefined);
     }
 
-    const nextForm = sanitizePreActionForm({ ...form, [key]: value } as FormState);
-    if (key === "routeStyle") {
+    const nextForm = sanitizePreActionForm({ ...form, ...updates } as FormState);
+    if ("routeStyle" in updates) {
       nextForm.routeStyle = "souple";
     }
-    if (key === "associationName" && value !== ENTREPRISE_ASSOCIATION_OPTION) {
-      nextForm.enterpriseName = "";
-    }
+    applyOrganizerFormUpdates(nextForm, form, updates);
 
     setForm(nextForm);
     onFormChange?.(nextForm);
@@ -261,6 +261,10 @@ export function useBeforeActionForm({
       setValidationIssues([]);
       setValidationIssueFields([]);
     }
+  };
+
+  const updateField: BeforeActionFieldUpdater = (key, value) => {
+    updateFields({ [key]: value } as Partial<FormState>);
   };
 
   async function handleSubmit(event?: FormEvent<HTMLFormElement>) {
@@ -306,10 +310,10 @@ export function useBeforeActionForm({
     const payload = buildCreateActionPayload({
       form: normalizedForm,
       declarationMode: "quick",
+      isEntrepriseMode: false,
       effectiveManualDrawingEnabled: false,
       drawingIsValid: false,
       manualDrawing: null,
-      isEntrepriseMode: normalizedForm.associationName === ENTREPRISE_ASSOCIATION_OPTION,
       linkedEventId,
       photos: [] as ActionPhotoAsset[],
       visionEstimate: null as ActionVisionEstimate | null,
@@ -414,6 +418,7 @@ export function useBeforeActionForm({
     shareLink,
     summaryNote,
     updateField,
+    updateFields,
     handleSubmit,
     requestPublish,
     cancelPublication,

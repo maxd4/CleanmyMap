@@ -1,63 +1,6 @@
-import { ActionDeclarationIdentityFields } from"./action-declaration-form.identity-fields";
-import type { FormState } from"./model";
-import { CmmField, CmmInput } from "@/components/ui/cmm-field";
-
-type ActionDeclarationIdentitySectionProps = {
- resolvedActorOptions: string[];
- form: FormState;
- onActorNameChange: (value: string) => void;
- onAssociationNameChange: (value: string) => void;
- onEnterpriseNameChange: (value: string) => void;
- onOrganizerAccountsChange: (value: string) => void;
- onActionDateChange: (value: string) => void;
-};
-
-export function ActionDeclarationIdentitySection({
- resolvedActorOptions,
- form,
- onActorNameChange,
- onAssociationNameChange,
- onEnterpriseNameChange,
- onOrganizerAccountsChange,
- onActionDateChange,
-}: ActionDeclarationIdentitySectionProps) {
- return (
- <section className="md:col-span-2 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 shadow-sm">
- <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
- <div>
- <p className="cmm-text-caption uppercase tracking-[0.14em] cmm-text-muted">
- Identité / acteur
- </p>
- <h3 className="text-lg font-semibold cmm-text-primary">
- Qui a réalisé l&apos;action ?
- </h3>
- </div>
- <span className="rounded-full bg-emerald-50 px-3 py-1 cmm-text-caption font-semibold text-emerald-900">
- 1. Localiser
- </span>
- </div>
- <div className="grid gap-4 md:grid-cols-2">
- <ActionDeclarationIdentityFields
- resolvedActorOptions={resolvedActorOptions}
- recordType={form.recordType}
- actorName={form.actorName}
- associationName={form.associationName}
- enterpriseName={form.enterpriseName}
- organizerAccounts={form.organizerAccounts}
- onActorNameChange={onActorNameChange}
- onAssociationNameChange={onAssociationNameChange}
- onEnterpriseNameChange={onEnterpriseNameChange}
- onOrganizerAccountsChange={onOrganizerAccountsChange}
- />
-
- <CmmField label="Date de l&apos;action" required>
- <CmmInput
- type="date"
- value={form.actionDate}
- onChange={(event) => onActionDateChange(event.target.value)}
- />
- </CmmField>
- </div>
- </section>
- );
-}
+/**
+ * Compatibility path kept for the Forms & Controls inventory.
+ * Identity presentation now lives in the guided action identity step.
+ */
+export { OrganizerCombobox as ActionDeclarationIdentitySection } from "@/components/actions/organizer-combobox";
+export { CmmField } from "@/components/ui/cmm-field";

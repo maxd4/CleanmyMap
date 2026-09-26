@@ -16,7 +16,8 @@ export type FormState = {
  actorName: string;
  associationName: string;
  organizerType: OrganizerType | "";
- enterpriseName: string;
+ organizerId: string | null;
+ organizerName: string;
  organizerAccounts: string;
  participantAccounts: string[];
  groupJoinEnabled: boolean;
@@ -93,9 +94,10 @@ export type DeclarationMode = "quick" | "complete";
 
 export type ValidationIssue = {
  field:
- |"associationName"
- |"organizerType"
- |"enterpriseName"
+|"associationName"
+|"organizerType"
+ |"organizerId"
+ |"organizerName"
  |"actionDate"
  |"locationLabel"
  |"manualDrawing"

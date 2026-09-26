@@ -76,13 +76,12 @@ describe("sanitizePreActionForm", () => {
     const sanitized = sanitizePreActionForm({
       ...form,
       associationName: "Entreprise - Veolia",
-      enterpriseName: "  autre valeur ",
       participantAccounts: [" @alice ", "alice", "@bob"],
       volunteersCount: "",
     });
 
     expect(sanitized.associationName).toBe("Entreprise");
-    expect(sanitized.enterpriseName).toBe("Veolia");
+    expect(sanitized.organizerName).toBe("Entreprise - Veolia");
     expect(sanitized.participantAccounts).toEqual(["alice", "bob"]);
     expect(sanitized.volunteersCount).toBe("1");
   });

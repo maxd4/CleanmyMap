@@ -61,6 +61,8 @@ export function buildActionEditorPayload(row: ActionRow | null) {
     submissionMode: metadata.submissionMode,
     associationName: metadata.associationName,
     organizerType: row.organizer_type,
+    organizerId: row.organizer_id ?? null,
+    organizerName: row.organizer_name ?? metadata.associationName,
     groupJoinEnabled: metadata.groupJoinEnabled,
     placeType: metadata.placeType,
     departureLocationLabel: metadata.departureLocationLabel,

@@ -1,8 +1,4 @@
 import { appendEventRefToNotes } from"../../../lib/actions/event-link";
-import {
- ASSOCIATION_SELECTION_OPTIONS,
- buildEntrepriseAssociationName,
-} from"../../../lib/actions/association-options";
 import { PLACE_TYPE_OPTIONS } from"../../../lib/actions/place-type-options";
 import type {
  ActionDrawing,
@@ -25,6 +21,7 @@ import {
  normalizeVolunteerParticipation,
 } from "@/lib/actions/volunteer-participation";
 import type { VolunteerParticipationInput } from "@/lib/actions/volunteer-participation";
+import { buildOrganizerPayloadFields, resolveOrganizerPayload } from "./organizer-payload";
 import {
  resolveRouteTargetDistance,
 } from "@/lib/actions/route-target-distance";
@@ -63,9 +60,10 @@ export function normalizeParticipantAccounts(
 
 const BASE_FORM_STATE: FormState = {
  actorName:"",
- associationName: ASSOCIATION_SELECTION_OPTIONS[0],
- organizerType:"",
- enterpriseName:"",
+ associationName: "Action spontanée",
+  organizerType:"",
+ organizerId: null,
+ organizerName:"",
  organizerAccounts:"",
  participantAccounts:[],
  groupJoinEnabled: false,
@@ -326,6 +324,8 @@ export function getFormResetState(previous: FormState): FormState {
  ...BASE_FORM_STATE,
  actorName: previous.actorName,
  associationName: previous.associationName,
+ organizerId: previous.organizerId,
+ organizerName: previous.organizerName,
  organizerAccounts: previous.organizerAccounts,
  participantAccounts: previous.participantAccounts,
  actionDate: previous.actionDate,
@@ -454,12 +454,7 @@ export function buildCreateActionPayload(params: {
  longitude = centroid.longitude;
  }
 
- const associationName = isEntrepriseMode
- ? buildEntrepriseAssociationName(form.enterpriseName)
- : form.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE
- ? "Action spontanée"
- : form.associationName;
- const isSpontaneousAction = associationName === "Action spontanée";
+ const { isSpontaneousAction, organizerName, associationName } = resolveOrganizerPayload(form, isEntrepriseMode);
   const enteredMegotsKg = toOptionalNumber(form.wasteMegotsKg) ?? null;
   const enteredButtsCount = toOptionalNumber(form.cigaretteButtsCount) ?? null;
   const enteredVolumeLiters =
@@ -484,7 +479,7 @@ export function buildCreateActionPayload(params: {
  return {
     actorName: form.actorName.trim() || undefined,
     associationName,
-    organizerType: form.organizerType || undefined,
+    ...buildOrganizerPayloadFields(form, organizerName),
     groupJoinEnabled: form.groupJoinEnabled,
     actionPhase: declarationMode === "quick" ? "pre_action" : "post_action_complete",
     preparationData: buildPreparationDataFromForm(form, finalGeometry),

@@ -345,6 +345,8 @@ export type ActionEditorRecord = {
   submissionMode: "quick" | "complete" | null;
   associationName: string | null;
   organizerType?: OrganizerType | null;
+  organizerId?: string | null;
+  organizerName?: string | null;
   groupJoinEnabled: boolean;
   participantAccounts: string[];
   placeType: string | null;

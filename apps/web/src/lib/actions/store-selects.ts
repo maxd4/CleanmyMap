@@ -5,6 +5,8 @@ export const ACTION_BASE_SELECT_FIELDS = [
   "created_by_clerk_id",
   "actor_name",
   "organizer_type",
+  "organizer_id",
+  "organizer_name",
   "action_date",
   "location_label",
   "department_code",
@@ -86,8 +88,10 @@ export function isMissingActionColumnError(error: unknown): boolean {
   const normalized = message.toLowerCase();
 
   return (
-    normalized.includes("does not exist") &&
+      normalized.includes("does not exist") &&
     (normalized.includes("action_phase") ||
+      normalized.includes("organizer_id") ||
+      normalized.includes("organizer_name") ||
       normalized.includes("preparation_data") ||
       normalized.includes("moderation_visibility") ||
       normalized.includes("hidden_at") ||

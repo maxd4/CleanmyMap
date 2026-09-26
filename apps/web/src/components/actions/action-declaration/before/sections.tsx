@@ -2,11 +2,8 @@
 
 import { Clock3, ClipboardList, PencilLine, Sparkles } from "lucide-react";
 import { PLACE_TYPE_FORM_OPTIONS } from "@/lib/actions/place-type-options";
-import {
-  ASSOCIATION_SELECTION_OPTIONS,
-  ENTREPRISE_ASSOCIATION_OPTION,
-} from "@/lib/actions/association-options";
 import { ORGANIZER_TYPE_OPTIONS } from "@/lib/actions/organizer-type";
+import { OrganizerCombobox } from "@/components/actions/organizer-combobox";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmDisclosure } from "@/components/ui/cmm-disclosure";
 import { ActionFormDisclosureSummary } from "../action-form-disclosure-summary";
@@ -32,6 +29,7 @@ import { cn } from "@/lib/utils";
 type BaseSectionProps = {
   form: FormState;
   updateField: BeforeActionFieldUpdater;
+  updateFields?: (updates: Partial<FormState>) => void;
   hasAttemptedSubmit?: boolean;
   validationIssueFields?: readonly string[];
 };
@@ -59,6 +57,7 @@ type IdentityAndSharingSectionProps = BaseSectionProps & {
 export function IdentityAndSharingSection({
   form,
   updateField,
+  updateFields,
   actorNameOptions,
   userMetadata,
   showGroupJoinHelp,
@@ -68,6 +67,9 @@ export function IdentityAndSharingSection({
 }: IdentityAndSharingSectionProps) {
   const missingOrganizerType = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "organizerType"));
   const missingAssociation = Boolean(hasAttemptedSubmit && hasValidationIssue(validationIssueFields, "associationName"));
+  const organizerName = form.organizerType === "spontaneous"
+    ? form.organizerName || form.actorName
+    : form.organizerName;
   return (
             <CmmCard tone="emerald" variant="glass" size="lg">
               <div className="space-y-6">
@@ -114,39 +116,21 @@ export function IdentityAndSharingSection({
                     {missingOrganizerType ? <span id="before-organizer-type-error" className="block text-xs font-medium text-rose-700">Sélectionnez un type de structure.</span> : null}
                   </FieldShell>
 
-                  <FieldShell label={<span>Structure ou cadre<RequiredMark /></span>}>
-                    <select
+                  <FieldShell label="">
+                    <OrganizerCombobox
                       id="before-organizer-structure"
-                      value={form.associationName}
-                      onChange={(event) => updateField("associationName", event.target.value)}
-                      aria-invalid={missingAssociation}
-                      aria-describedby={missingAssociation ? "before-organizer-structure-error" : undefined}
-                      className={cn("w-full rounded-2xl border bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white", missingAssociation ? "border-rose-400 ring-2 ring-rose-400/20" : "border-emerald-200/70")}
-                    >
-                      {ASSOCIATION_SELECTION_OPTIONS.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                    {missingAssociation ? <span id="before-organizer-structure-error" className="block text-xs font-medium text-rose-700">Sélectionnez une structure ou un cadre.</span> : null}
+                      organizerType={form.organizerType}
+                      organizerId={form.organizerId}
+                      value={organizerName}
+                      onChange={({ id, name }) => {
+                        updateFields?.({ organizerId: id, organizerName: name });
+                      }}
+                      required
+                      invalid={missingAssociation}
+                      describedBy={missingAssociation ? "before-organizer-structure-error" : undefined}
+                    />
+                    {missingAssociation ? <span id="before-organizer-structure-error" className="block text-xs font-medium text-rose-700">Renseignez un organisateur.</span> : null}
                   </FieldShell>
-
-                  {form.associationName === ENTREPRISE_ASSOCIATION_OPTION ? (
-                    <FieldShell label="Nom de l'entreprise" hint="Utilisé pour nommer le cadre d'engagement.">
-                      <input
-                        type="text"
-                        value={form.enterpriseName}
-                        onChange={(event) => {
-                          const enterpriseName = event.target.value;
-                          updateField("enterpriseName", enterpriseName);
-                        }}
-                        className="w-full rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm font-medium text-emerald-950 outline-none transition focus:border-emerald-400 focus:bg-white"
-                        placeholder="Ex. Veolia"
-                        maxLength={100}
-                      />
-                    </FieldShell>
-                  ) : null}
 
                   <SelectShell
                     label="Rôle du créateur"

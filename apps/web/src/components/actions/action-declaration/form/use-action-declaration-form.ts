@@ -6,10 +6,6 @@ import {
   type ActionEditorRecord,
 } from "@/lib/actions/http";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
-import {
-  ENTREPRISE_ASSOCIATION_OPTION,
-  extractEntrepriseName,
-} from "@/lib/actions/association-options";
 import type {
   ActionDrawing,
   ActionGeometrySource,
@@ -39,6 +35,7 @@ import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/
 import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart-assist";
 import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
 import { getTimeContractValidationMessage } from "@/lib/actions/time-contract";
+import { applyOrganizerFormUpdates } from "../organizer-form-state";
 import { resolveActionRouteTopology } from "@/lib/actions/route-topology";
 import {
   hydrateActionEditorGeometry,
@@ -216,9 +213,9 @@ export function useActionDeclarationForm({
           ...preparedForm,
           actorName: action.actorName ?? preparedForm.actorName,
           associationName: action.associationName ?? preparedForm.associationName,
-          enterpriseName:
-            extractEntrepriseName(action.associationName ?? "") ??
-            preparedForm.enterpriseName,
+          organizerId: action.organizerId ?? preparedForm.organizerId,
+          organizerName:
+            action.organizerName ?? action.associationName ?? preparedForm.organizerName,
           organizerType: action.organizerType ?? preparedForm.organizerType,
           participantAccounts: action.participantAccounts ?? preparedForm.participantAccounts,
           groupJoinEnabled: action.groupJoinEnabled,
@@ -357,10 +354,6 @@ export function useActionDeclarationForm({
   }, [createCleanForm, initialActionId]);
 
   const drawingIsValid = isDrawingValid(manualDrawing);
-  const isEntrepriseMode =
-    form.organizerType === "company" ||
-    form.associationName === ENTREPRISE_ASSOCIATION_OPTION ||
-    form.associationName.startsWith("Entreprise - ");
   const routePreviewInput = form.departureLocationLabel.trim() || form.locationLabel.trim();
   const manualDrawingValidation = summarizeActionDrawingValidation(manualDrawing);
   const activeFinalGeometry = resolveFinalActionGeometry({
@@ -386,19 +379,19 @@ export function useActionDeclarationForm({
       buildCreateActionPayload({
         form,
         declarationMode,
+        isEntrepriseMode: false,
         effectiveManualDrawingEnabled: manualDrawingEnabled,
         drawingIsValid,
         manualDrawing,
         manualDrawingSource,
         routePreviewDrawing: effectiveRoutePreviewDrawing,
         routePreviewSource: activeFinalGeometry?.source,
-        isEntrepriseMode,
         linkedEventId,
         photos: photoAssets,
         visionEstimate,
         userMetadata,
       }),
-    [activeFinalGeometry?.source, declarationMode, drawingIsValid, effectiveRoutePreviewDrawing, manualDrawingEnabled, form, isEntrepriseMode, linkedEventId, manualDrawing, manualDrawingSource, photoAssets, visionEstimate, userMetadata]
+    [activeFinalGeometry?.source, declarationMode, drawingIsValid, effectiveRoutePreviewDrawing, manualDrawingEnabled, form, linkedEventId, manualDrawing, manualDrawingSource, photoAssets, visionEstimate, userMetadata]
   );
 
   const dataQuality = useMemo(
@@ -521,6 +514,7 @@ export function useActionDeclarationForm({
     if (updates.associationName === "Action spontanée") {
       nextForm.organizerAccounts = "";
     }
+    applyOrganizerFormUpdates(nextForm, form, updates);
     if (!pendingDraft && submissionState !== "success") {
       const activeDraftGeometry = draftGeometry === undefined
         ? nextForm.gpxImport && manualDrawingSource === "gpx_import" && manualDrawing
@@ -691,13 +685,13 @@ export function useActionDeclarationForm({
       const submissionPayload = await prepareCreateActionPayload({
         form: normalizedForm,
         declarationMode,
+        isEntrepriseMode: false,
         effectiveManualDrawingEnabled: manualDrawingEnabled,
         drawingIsValid: manualDrawingValidation.isValid,
         manualDrawing,
         manualDrawingSource,
         routePreviewDrawing: effectiveRoutePreviewDrawing,
         routePreviewSource: activeFinalGeometry?.source,
-        isEntrepriseMode,
         linkedEventId,
         photos: photoAssets,
         visionEstimate,
@@ -797,7 +791,7 @@ function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
   if (!form.associationName.trim()) {
     issues.push({
       field: "associationName",
-      message: "Sélectionnez une structure ou “Autre bénévole” avant l’envoi.",
+      message: "Renseignez un organisateur après avoir choisi le type de structure.",
     });
   }
 

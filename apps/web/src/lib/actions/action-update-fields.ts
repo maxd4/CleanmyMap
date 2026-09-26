@@ -99,6 +99,8 @@ function buildTimingFields(
   if (body.eventStartTime !== undefined) updateData["event_start_time"] = body.eventStartTime;
   if (body.eventEndTime !== undefined) updateData["event_end_time"] = body.eventEndTime;
   if (body.organizerType !== undefined) updateData["organizer_type"] = body.organizerType;
+  if (body.organizerId !== undefined) updateData["organizer_id"] = body.organizerId;
+  if (body.organizerName !== undefined) updateData["organizer_name"] = body.organizerName?.trim() || null;
   return updateData;
 }
 

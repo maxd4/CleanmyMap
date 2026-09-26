@@ -7,9 +7,6 @@ import type {
  ActionRouteTopology,
  ActionWasteMeasurementMethod,
 } from"@/lib/actions/types";
-import {
- ASSOCIATION_SELECTION_OPTIONS,
-} from"@/lib/actions/association-options";
 import { PLACE_TYPE_OPTIONS } from"@/lib/actions/place-type-options";
 import { normalizeActionDrawing } from"../../map/actions-map-geometry.utils";
 import type { WasteCategorySlug } from "@/lib/waste";
@@ -23,7 +20,8 @@ export type FormState = {
  actorName: string;
  associationName: string;
  organizerType: OrganizerType | "";
- enterpriseName: string;
+ organizerId: string | null;
+ organizerName: string;
  organizerAccounts: string;
  participantAccounts: string[];
  groupJoinEnabled: boolean;
@@ -97,9 +95,10 @@ export type FormState = {
 
 export const initialState: FormState = {
  actorName:"",
- associationName: ASSOCIATION_SELECTION_OPTIONS[0],
+ associationName: "Action spontanée",
  organizerType:"",
- enterpriseName:"",
+ organizerId: null,
+ organizerName:"",
  organizerAccounts:"",
  participantAccounts:[],
  groupJoinEnabled: false,
@@ -225,7 +224,6 @@ export type ValidationIssue = {
  field:
  |"associationName"
  |"organizerType"
- |"enterpriseName"
  |"actionDate"
  |"locationLabel"
  |"arrivalLocationLabel"

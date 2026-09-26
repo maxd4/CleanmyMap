@@ -3,9 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { ComponentProps } from "react";
 import { describe, expect, it } from "vitest";
 import {
-  getOrganizerDirectoryEntries,
   ORGANIZER_DIRECTORY,
 } from "@/lib/actions/association-options";
+import { getStaticOrganizerSuggestions } from "@/lib/actions/organizer-directory-registry";
 import { ORGANIZER_TYPE_VALUES } from "@/lib/actions/organizer-type";
 import { createInitialFormState } from "../payload";
 import { ActionStepIdentity } from "./ActionStepIdentity";
@@ -80,11 +80,12 @@ describe("ActionStepIdentity", () => {
     expect(html).toContain("Fin de l’événement");
   });
 
-  it("renders the catalogue selected by each organizer type and no structure selector for spontaneous actions", () => {
+  it("renders one accessible organizer combobox per organizer type", () => {
     for (const organizerType of ORGANIZER_TYPE_VALUES) {
       const form = createInitialFormState("Aperçu local", "action");
       form.organizerType = organizerType;
       form.associationName = organizerType === "spontaneous" ? "Action spontanée" : "";
+      form.organizerName = organizerType === "spontaneous" ? "Aperçu local" : "";
 
       const html = readableMarkup(renderToStaticMarkup(
         React.createElement(ActionStepIdentity, {
@@ -97,14 +98,12 @@ describe("ActionStepIdentity", () => {
         } as ComponentProps<typeof ActionStepIdentity>),
       ));
 
+      expect(html).toContain('role="combobox"');
       if (organizerType === "spontaneous") {
-        expect(html).not.toContain('data-testid="action-organizer-structure"');
-        continue;
-      }
-
-      expect(html).toContain('data-testid="action-organizer-structure"');
-      for (const entry of getOrganizerDirectoryEntries(organizerType)) {
-        expect(html).toContain(`value="${entry.value}"`);
+        expect(html).toContain("Nom ou pseudo du référent");
+      } else {
+        expect(getStaticOrganizerSuggestions(organizerType).every((entry) => entry.organizerType === organizerType)).toBe(true);
+        expect(html).not.toContain("World Cleanup Day France");
       }
     }
   });
@@ -118,6 +117,7 @@ describe("ActionStepIdentity", () => {
     const nationalForm = createInitialFormState("Aperçu local", "action");
     nationalForm.organizerType = "association";
     nationalForm.associationName = nationalEntry!.value;
+    nationalForm.organizerName = nationalEntry!.name;
     const nationalHtml = readableMarkup(renderToStaticMarkup(
       React.createElement(ActionStepIdentity, {
         form: nationalForm,
@@ -130,18 +130,11 @@ describe("ActionStepIdentity", () => {
     ));
 
     expect(nationalHtml).toContain(nationalEntry!.name);
-    const nationalOptionStart = nationalHtml.indexOf(
-      `<option value="${nationalEntry!.value}"`,
-    );
-    const nationalOption = nationalHtml.slice(
-      nationalOptionStart,
-      nationalHtml.indexOf("</option>", nationalOptionStart),
-    );
-    expect(nationalOption).not.toContain("Paris");
 
     const legacyForm = createInitialFormState("Aperçu local", "action");
     legacyForm.organizerType = "association";
     legacyForm.associationName = "Paris Clean Walk";
+    legacyForm.organizerName = "Paris Clean Walk";
     const legacyHtml = readableMarkup(renderToStaticMarkup(
       React.createElement(ActionStepIdentity, {
         form: legacyForm,
@@ -153,13 +146,14 @@ describe("ActionStepIdentity", () => {
       } as ComponentProps<typeof ActionStepIdentity>),
     ));
 
-    expect(legacyHtml).toContain("Paris Clean Walk — valeur historique");
+    expect(legacyHtml).toContain('value="Paris Clean Walk"');
   });
 
-  it("shows known companies and the free company field", () => {
+  it("uses the same combobox for companies and free names", () => {
     const form = createInitialFormState("Aperçu local", "action");
     form.organizerType = "company";
     form.associationName = "Entreprise";
+    form.organizerName = "Entreprise - ACME";
 
     const html = readableMarkup(renderToStaticMarkup(
       React.createElement(ActionStepIdentity, {
@@ -172,8 +166,8 @@ describe("ActionStepIdentity", () => {
       } as ComponentProps<typeof ActionStepIdentity>),
     ));
 
-    expect(html).toContain("Nom de l'entreprise");
-    expect(html).toContain('value="Entreprise - ');
+    expect(html).toContain('role="combobox"');
+    expect(html).toContain('value="Entreprise - ACME"');
     expect(html).not.toContain("World Cleanup Day France");
   });
 });

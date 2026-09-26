@@ -170,6 +170,8 @@ export function buildActionInsertPayload(params: {
     created_by_clerk_id: params.userId,
     actor_name: params.payload.actorName ?? null,
     organizer_type: params.payload.organizerType ?? null,
+    organizer_id: params.payload.organizerId ?? null,
+    organizer_name: params.payload.organizerName ?? params.payload.associationName ?? null,
     action_date: params.payload.actionDate,
     location_label: params.payload.locationLabel,
     department_code: params.payload.departmentCode ?? null,
