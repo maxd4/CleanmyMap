@@ -7,7 +7,7 @@ import {
 } from "./volunteer-participation";
 
 describe("volunteer participation contract", () => {
-  it("derives real participants and operational units from the three sources", () => {
+  it("keeps children in the physical participantsCount for statistics", () => {
     const result = normalizeVolunteerParticipation({
       childrenCount: 2,
       adultCount: 4,
@@ -15,6 +15,15 @@ describe("volunteer participation contract", () => {
     });
 
     expect(result.participantsCount).toBe(8);
+  });
+
+  it("derives operational units separately from the physical participant count", () => {
+    const result = normalizeVolunteerParticipation({
+      childrenCount: 2,
+      adultCount: 4,
+      retiredCount: 2,
+    });
+
     expect(result.effectiveVolunteerUnits).toBe(6);
     expect(result.effectiveVolunteerUnitsFormulaVersion).toBe(
       EFFECTIVE_VOLUNTEER_UNITS_FORMULA_VERSION,

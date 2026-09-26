@@ -369,6 +369,24 @@ dénominateur. Ainsi, deux comptes confirmés avec deux enfants et `20 kg`
 produisent `10 kg` par compte ; modifier le nombre d'enfants ne change aucune
 quote-part tant que le roster confirmé ne change pas.
 
+Pour chaque métrique additive, la répartition applique exclusivement les
+comptes du roster confirmé :
+
+```text
+eligibleAccounts = comptes action_participants confirmed
+exactAccounts = comptes confirmed avec une mesure individuelle pour la métrique
+remainingAccounts = comptes confirmed sans mesure individuelle
+remaining = total collectif - somme des mesures individuelles exactes
+quotePart = remaining / COUNT(remainingAccounts)
+```
+
+Les mesures de `exactAccounts` sont conservées telles quelles. `quotePart` est
+attribuée uniquement aux `remainingAccounts` ; lorsque ce dénominateur vaut
+zéro, aucune division n'est effectuée. Les compteurs `adultCount` et
+`retiredCount`, comme `childrenCount`, décrivent la présence physique du
+formulaire et ne remplacent jamais les lignes confirmées de
+`action_participants`.
+
 ## Contrat de mesure des déchets hors mégots
 
 `wasteKg` désigne exclusivement la masse totale des déchets hors mégots,
