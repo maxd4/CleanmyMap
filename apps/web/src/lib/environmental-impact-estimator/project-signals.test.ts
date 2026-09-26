@@ -6,6 +6,7 @@ import {
   PROJECT_SIGNAL_ROW_LIMIT,
 } from "./project-signals";
 import { normalizeCanonicalSpotRows } from "./project-signals.calculations";
+import { summarizeFunnelRows } from "./project-signals-funnel";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 vi.mock("./codex-usage-store", async () => {
@@ -237,6 +238,78 @@ it("builds project-specific site, user and monthly usage inputs", () => {
   expectProjectSignalsRows(signals);
 });
 
+it("keeps the environmental signal result identical for the bounded funnel aggregate", () => {
+  const generatedAt = projectSignalsNow.toISOString();
+  const currentWindowFromMs = subDays(projectSignalsNow, 30).getTime();
+  const previousWindowFromMs = subDays(projectSignalsNow, 60).getTime();
+  const previousWindowUntilMs = currentWindowFromMs - 1;
+  const inWindow = (fromMs: number, untilMs: number) =>
+    projectSignalsRows.funnelEvents.filter((row) => {
+      const at = new Date(row.at).getTime();
+      return at >= fromMs && at <= untilMs;
+    });
+
+  const aggregateRows = {
+    ...projectSignalsRows,
+    funnelEvents: [],
+    funnelSignalSummary: {
+      userId: projectSignalsUserId,
+      allTime: summarizeFunnelRows(projectSignalsRows.funnelEvents),
+      current: summarizeFunnelRows(inWindow(currentWindowFromMs, projectSignalsNow.getTime())),
+      previous: summarizeFunnelRows(inWindow(previousWindowFromMs, previousWindowUntilMs)),
+      user: summarizeFunnelRows(
+        projectSignalsRows.funnelEvents.filter((row) => row.user_id === projectSignalsUserId),
+      ),
+      currentWindowFromMs,
+      currentWindowUntilMs: projectSignalsNow.getTime(),
+      previousWindowFromMs,
+      previousWindowUntilMs,
+    },
+  };
+
+  const rawSignals = buildEnvironmentalImpactProjectSignals(projectSignalsRows, {
+    generatedAt,
+    userId: projectSignalsUserId,
+  });
+  const aggregateSignals = buildEnvironmentalImpactProjectSignals(aggregateRows, {
+    generatedAt,
+    userId: projectSignalsUserId,
+  });
+
+  expect(aggregateSignals.launchedAt).toBe(rawSignals.launchedAt);
+  expect(aggregateSignals.accountCreatedAt).toBe(rawSignals.accountCreatedAt);
+  expect(aggregateSignals.siteInput).toEqual(rawSignals.siteInput);
+  expect(aggregateSignals.userInput).toEqual(rawSignals.userInput);
+  expect(aggregateSignals.signalBreakdown).toEqual(rawSignals.signalBreakdown);
+  expect(aggregateSignals.infrastructureInput.usage).toEqual(rawSignals.infrastructureInput.usage);
+});
+
+it("keeps the legacy view_new fallback in the aggregate path", () => {
+  const legacyRows = projectSignalsRows.funnelEvents.filter((row) => row.step === "view_new");
+  const signals = buildEnvironmentalImpactProjectSignals(
+    {
+      ...projectSignalsRows,
+      funnelEvents: [],
+      funnelSignalSummary: {
+        userId: null,
+        allTime: summarizeFunnelRows(legacyRows),
+        current: summarizeFunnelRows(legacyRows),
+        previous: summarizeFunnelRows([]),
+        user: null,
+        currentWindowFromMs: subDays(projectSignalsNow, 30).getTime(),
+        currentWindowUntilMs: projectSignalsNow.getTime(),
+        previousWindowFromMs: subDays(projectSignalsNow, 60).getTime(),
+        previousWindowUntilMs: subDays(projectSignalsNow, 30).getTime() - 1,
+      },
+    },
+    { generatedAt: projectSignalsNow.toISOString(), userId: null },
+  );
+
+  expect(signals.siteInput.pageViews).toBe(2);
+  expect(signals.signalBreakdown?.traffic.pageViewEvents).toBe(0);
+  expect(signals.signalBreakdown?.traffic.legacyPageViewEvents).toBe(2);
+});
+
 function expectProjectSignalsRows(
   signals: ReturnType<typeof buildEnvironmentalImpactProjectSignals>,
 ): void {
@@ -316,13 +389,7 @@ it("loads project signals with deterministic ordering under the cap", async () =
       { column: "created_at", ascending: false },
       { column: "id", ascending: false },
     ]);
-    expect(orderingsByTable.get("funnel_events")).toEqual([
-      { column: "at", ascending: false },
-      { column: "session_id", ascending: false },
-      { column: "step", ascending: false },
-      { column: "mode", ascending: false },
-      { column: "user_id", ascending: false },
-    ]);
+    expect(orderingsByTable.has("funnel_events")).toBe(false);
 });
 
 it("counts canonical signalements and removes duplicate canonical IDs", () => {
@@ -542,6 +609,39 @@ function createProjectSignalsLoadSupabaseMock(orderingsByTable: Map<string, Arra
 
             throw new Error(`Unexpected table: ${table}`);
         }
+      }),
+      rpc: vi.fn((name: string, params: { p_user_id: string | null; p_now: string }) => {
+        if (name !== "load_environmental_funnel_signal_summary") {
+          throw new Error(`Unexpected RPC: ${name}`);
+        }
+        const rows = [
+          {
+            at: "2026-05-05T12:00:00Z",
+            user_id: "user-2",
+            session_id: "session-b",
+            step: "page_view",
+            mode: "complete",
+            meta: { pagePath: "/b" },
+          },
+          {
+            at: "2026-05-05T12:00:00Z",
+            user_id: "user-1",
+            session_id: "session-a",
+            step: "page_view",
+            mode: "complete",
+            meta: { pagePath: "/a" },
+          },
+        ];
+        const allTime = summarizeFunnelRows(rows);
+        const current = summarizeFunnelRows(rows);
+        const previous = summarizeFunnelRows([]);
+        const user = params.p_user_id
+          ? summarizeFunnelRows(rows.filter((row) => row.user_id === params.p_user_id))
+          : null;
+        return Promise.resolve({
+          data: { allTime, current, previous, user },
+          error: null,
+        });
       }),
     },
     getProfilesQueryCount: () => profilesQueryCount,

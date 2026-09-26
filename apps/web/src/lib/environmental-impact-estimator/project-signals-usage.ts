@@ -3,6 +3,7 @@ import { buildCodexMonthlyUsageEstimate } from "./codex-usage-store";
 import {
   buildScopeInputFromRows,
   clamp,
+  getFunnelEventCount,
   round6,
   type ProjectSignalRows,
 } from "./project-signals.calculations";
@@ -94,7 +95,7 @@ export function calculateMonthlyUsageInput(
   const hasAnyCurrentSignal =
     currentRows.actions.length +
       currentRows.spots.length +
-      currentRows.funnelEvents.length +
+      getFunnelEventCount(currentRows) +
       currentRows.progressionEvents.length +
       currentRows.reports.length +
       currentRows.trainingExamples.length +
