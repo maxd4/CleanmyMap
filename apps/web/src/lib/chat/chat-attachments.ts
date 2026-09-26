@@ -76,9 +76,12 @@ const SUPPORTED_EXTENSIONS = new Map([
 
 const SAFE_ATTACHMENT_PROTOCOLS = new Set(["http:", "https:"]);
 
+export const CHAT_ATTACHMENT_MAX_SIZE_BYTES = 8 * 1024 * 1024;
 export const CHAT_CAMERA_ACCEPT = "image/*";
 export const CHAT_VIDEO_UNSUPPORTED_MESSAGE =
   "Les vidéos ne sont pas prises en charge. Partagez plutôt une photo ou un lien vers la vidéo.";
+export const CHAT_ATTACHMENT_TOO_LARGE_MESSAGE =
+  "Cette pièce jointe dépasse la limite de 8 Mio (8 MiB). Choisis un fichier plus léger.";
 
 export function getChatAttachmentUnsupportedMessage(file: File): string {
   return isUnsupportedChatVideoFile(file)
@@ -158,6 +161,24 @@ export function isSupportedChatAttachmentFile(file: File): boolean {
   }
 
   return IMAGE_EXTENSIONS.has(extension) || SUPPORTED_EXTENSIONS.has(extension);
+}
+
+export function isChatImageFile(file: File): boolean {
+  return inferChatAttachmentType(file)?.startsWith("image/") ?? false;
+}
+
+export function getChatAttachmentSizeError(file: File): string | null {
+  return file.size > CHAT_ATTACHMENT_MAX_SIZE_BYTES
+    ? CHAT_ATTACHMENT_TOO_LARGE_MESSAGE
+    : null;
+}
+
+export function getChatAttachmentValidationError(file: File): string | null {
+  if (!isSupportedChatAttachmentFile(file)) {
+    return getChatAttachmentUnsupportedMessage(file);
+  }
+
+  return getChatAttachmentSizeError(file);
 }
 
 export function isUnsupportedChatVideoFile(file: File): boolean {

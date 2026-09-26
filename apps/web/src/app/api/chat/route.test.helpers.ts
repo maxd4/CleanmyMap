@@ -22,6 +22,8 @@ export type ChatMessageRow = {
   message_kind?: "message" | "announcement" | "poll";
   related_event_id?: string | null;
   conversation_id?: string | null;
+  attachment_url?: string | null;
+  attachment_type?: string | null;
   action_id?: string | null;
   related_event?: {
     id: string;

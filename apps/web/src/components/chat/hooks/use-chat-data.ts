@@ -53,6 +53,7 @@ export type SendChatMessageParams = {
     zoneName?: string;
     attachmentUrl?: string;
     attachmentType?: string;
+    attachmentSize?: number;
     actionId?: string;
     feedbackId?: string;
     operationId?: string;

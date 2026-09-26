@@ -3,18 +3,17 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { useUser } from "@clerk/nextjs";
 import { isAppError, toAppError } from "@/lib/errors/app-errors";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
-import { compressImageFile } from "@/lib/media/image-compression";
-import {
-  inferChatAttachmentExtension,
-  inferChatAttachmentType,
-} from "@/lib/chat/chat-attachments";
 import type { ChatMessage, ChatUser } from "../chat-types";
 import type { ChatChannelType } from "@/lib/chat/channels";
 import type { ChatTopicId } from "@/lib/chat/topics";
 import type { ChatMessageKind, ChatRelatedEvent } from "@/lib/chat/announcements";
 import type { ChatPollOption } from "@/lib/chat/polls";
-import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
 import type { SendChatMessageParams } from "./use-chat-data";
+import {
+  getChatSubmitPreconditionError,
+  reportChatAttachmentError,
+  uploadChatAttachmentIfNeeded,
+} from "./use-chat-submit.helpers";
 
 type UseChatSubmitParams = {
   submitLockRef: React.MutableRefObject<boolean>;
@@ -101,6 +100,78 @@ export function buildOptimisticChatMessage({
   };
 }
 
+async function sendPreparedChatMessage(params: {
+  userId: string;
+  currentMessage: string;
+  activeChannelType: ChatChannelType;
+  activeActionId?: string | null;
+  activeTopicId: ChatTopicId | null;
+  messageKind: ChatMessageKind;
+  pollOptions: string[];
+  relatedEvent: ChatRelatedEvent | null;
+  selectedRecipient: ChatUser | null;
+  effectiveZone: string;
+  territoryFocus: number | null;
+  senderDisplayName: string;
+  senderHandle: string;
+  user: ReturnType<typeof useUser>["user"];
+  attachmentUrl?: string;
+  attachmentType?: string;
+  attachmentSize?: number;
+  feedbackId?: string | null;
+  feedbackOperationIdRef: React.MutableRefObject<string | null>;
+  sendChatMessage: (params: SendChatMessageParams) => Promise<ChatMessage>;
+}): Promise<void> {
+  const optimisticMessage = buildOptimisticChatMessage({
+    id: `opt-${Date.now()}`,
+    senderId: params.userId,
+    content: params.currentMessage,
+    channelType: params.activeChannelType,
+    topicId: params.activeTopicId,
+    messageKind: params.messageKind,
+    pollOptions: params.pollOptions,
+    relatedEvent: params.relatedEvent,
+    attachmentUrl: params.attachmentUrl,
+    createdAt: new Date().toISOString(),
+    sender: {
+      display_name: params.senderDisplayName,
+      handle: params.senderHandle,
+      avatar_url: params.user?.imageUrl || "",
+    },
+  });
+  const feedbackOperationId =
+    params.activeChannelType === "dm" && params.feedbackId
+      ? (params.feedbackOperationIdRef.current ??= createFeedbackOperationId())
+      : undefined;
+
+  await params.sendChatMessage({
+    optimisticMessage,
+    body: {
+      channelType: params.activeChannelType,
+      actionId: params.activeChannelType === "action" ? params.activeActionId ?? undefined : undefined,
+      messageKind: params.messageKind,
+      pollOptions: params.messageKind === "poll" ? params.pollOptions : undefined,
+      relatedEventId: params.relatedEvent?.id,
+      topicId: params.activeTopicId ?? undefined,
+      content: params.currentMessage,
+      recipientId: params.activeChannelType === "dm" ? params.selectedRecipient?.id : undefined,
+      arrondissementId:
+        params.activeChannelType === "territory" && !params.effectiveZone
+          ? params.territoryFocus ?? undefined
+          : undefined,
+      zoneName:
+        params.activeChannelType === "territory" && params.effectiveZone
+          ? params.effectiveZone
+          : undefined,
+      attachmentUrl: params.attachmentUrl,
+      attachmentType: params.attachmentType,
+      attachmentSize: params.attachmentSize,
+      feedbackId: params.activeChannelType === "dm" ? params.feedbackId ?? undefined : undefined,
+      operationId: feedbackOperationId,
+    },
+  });
+}
+
 export function useChatSubmit({
   submitLockRef,
   userId,
@@ -138,38 +209,25 @@ export function useChatSubmit({
   }, []);
 
   const submitChatMessage = useCallback(async () => {
-    if (submitLockRef.current) {
-      setSendError("Un envoi est déjà en cours. Réessayez dans un instant.");
-      return;
-    }
-
     const currentMessage = message.trim();
-
-    if (!userId) {
-      setSendError("Connectez-vous pour envoyer un message.");
+    const preconditionError = getChatSubmitPreconditionError({
+      submitLocked: submitLockRef.current,
+      userId,
+      currentMessage,
+      file,
+      isSending,
+      isUploading,
+      activeChannelType,
+      selectedRecipient,
+      activeActionId,
+      effectiveZone,
+      territoryFocus,
+    });
+    if (preconditionError !== null) {
+      if (preconditionError) setSendError(preconditionError);
       return;
     }
-
-    if ((!currentMessage && !file) || isSending || isUploading) {
-      return;
-    }
-
-    if (activeChannelType === "dm" && !selectedRecipient) {
-      setSendError("Choisissez un destinataire pour envoyer un message privé.");
-      return;
-    }
-
-    if (activeChannelType === "action" && !activeActionId) {
-      setSendError("Sélectionnez une action publiée avant d'écrire.");
-      return;
-    }
-
-    if (activeChannelType === "territory" && !effectiveZone && territoryFocus === null) {
-      setSendError(
-        "Choisissez une zone (arrondissement ou commune) avant d'écrire dans ce canal.",
-      );
-      return;
-    }
+    if (!userId) return;
 
     submitLockRef.current = true;
     setIsSending(true);
@@ -177,137 +235,51 @@ export function useChatSubmit({
 
     let attachmentUrl: string | undefined;
     let attachmentType: string | undefined;
+    let attachmentSize: number | undefined;
 
+    try {
+      let uploadedAttachment: { url: string; type: string | undefined; size: number } | null;
       try {
-        if (file) {
-          if (!supabase) {
-            setSendError("Les pièces jointes nécessitent une configuration Supabase locale valide.");
-            return;
-          }
-
-          setIsUploading(true);
-
-          try {
-          const preparedFile = file.type.startsWith("image/")
-            ? await compressImageFile(file, {
-                maxWidth: 1600,
-                maxHeight: 1600,
-                quality: 0.8,
-              })
-            : file;
-          const inferredAttachmentType = inferChatAttachmentType(preparedFile);
-          const fileExt = inferChatAttachmentExtension(preparedFile) ?? "bin";
-          const fileName = `${userId}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-          const filePath = `${activeChannelType}/${fileName}`;
-          const attachmentMimeType =
-            inferredAttachmentType ?? preparedFile.type ?? file.type ?? null;
-          const businessDomain = inferredAttachmentType?.startsWith("image/")
-            ? "pieces_jointes_photo"
-            : inferredAttachmentType
-              ? "pieces_jointes_document"
-              : "messages";
-
-          const { error: uploadError } = await supabase.storage
-            .from("chat-attachments")
-            .upload(filePath, preparedFile, {
-              metadata: buildStorageBusinessMetadata({
-                businessDomain,
-                sourceTable: "messages",
-                businessContext: "chat_attachment",
-                extra: {
-                  channelType: activeChannelType,
-                  attachmentType: attachmentMimeType,
-                },
-              }),
-            });
-
-          if (uploadError) {
-            throw uploadError;
-          }
-
-          const { data: signedUrl, error: signedUrlError } = await supabase.storage
-            .from("chat-attachments")
-            .createSignedUrl(filePath, 120 * 24 * 60 * 60);
-
-          if (signedUrlError || !signedUrl?.signedUrl) {
-            throw signedUrlError ?? new Error("La signature de la pièce jointe a échoué.");
-          }
-
-          attachmentUrl = signedUrl.signedUrl;
-          attachmentType = inferredAttachmentType ?? (preparedFile.type || file.type || undefined);
-        } catch (uploadError) {
-          const appError = isAppError(uploadError)
-            ? uploadError
-            : toAppError(uploadError, {
-                kind: "network",
-                message:
-                  "L'ajout de la pièce jointe a échoué. Vérifie la connexion puis réessaie.",
-              });
-
-          setSendError(appError.message);
-          notifyNetworkToast({
-            title: "Pièce jointe indisponible",
-            message: appError.message,
-            retryLabel: "Réessayer l'upload",
-            onRetry: retrySubmitChatMessage,
-            refreshLabel: "Rafraîchir",
-            onRefresh: () => window.location.reload(),
-          });
-          return;
-        } finally {
-          setIsUploading(false);
-        }
+        uploadedAttachment = await uploadChatAttachmentIfNeeded({
+          file,
+          supabase,
+          userId,
+          activeChannelType,
+          setIsUploading,
+        });
+      } catch (uploadError) {
+        reportChatAttachmentError(uploadError, {
+          setSendError,
+          retrySubmitChatMessage,
+        });
+        return;
       }
 
-      const optimisticMsg = buildOptimisticChatMessage({
-        id: `opt-${Date.now()}`,
-        senderId: userId,
-        content: currentMessage,
-        channelType: activeChannelType,
-        topicId: activeTopicId,
+      attachmentUrl = uploadedAttachment?.url;
+      attachmentType = uploadedAttachment?.type;
+      attachmentSize = uploadedAttachment?.size;
+
+      await sendPreparedChatMessage({
+        userId,
+        currentMessage,
+        activeChannelType,
+        activeActionId,
+        activeTopicId,
         messageKind,
         pollOptions,
         relatedEvent,
+        selectedRecipient,
+        effectiveZone,
+        territoryFocus,
+        senderDisplayName,
+        senderHandle,
+        user,
         attachmentUrl,
-        createdAt: new Date().toISOString(),
-        sender: {
-          display_name: senderDisplayName,
-          handle: senderHandle,
-          avatar_url: user?.imageUrl || "",
-        },
-      });
-
-      const feedbackOperationId =
-        activeChannelType === "dm" && feedbackId
-          ? (feedbackOperationIdRef.current ??=
-              createFeedbackOperationId())
-          : undefined;
-
-      await sendChatMessage({
-        optimisticMessage: optimisticMsg,
-        body: {
-          channelType: activeChannelType,
-          actionId: activeChannelType === "action" ? activeActionId ?? undefined : undefined,
-          messageKind,
-          pollOptions: messageKind === "poll" ? pollOptions : undefined,
-          relatedEventId: relatedEvent?.id,
-          topicId: activeTopicId ?? undefined,
-          content: currentMessage,
-          recipientId:
-            activeChannelType === "dm" ? selectedRecipient?.id : undefined,
-          arrondissementId:
-            activeChannelType === "territory" && !effectiveZone
-              ? territoryFocus ?? undefined
-              : undefined,
-          zoneName:
-            activeChannelType === "territory" && effectiveZone
-              ? effectiveZone
-              : undefined,
-          attachmentUrl,
-          attachmentType,
-          feedbackId: activeChannelType === "dm" ? feedbackId ?? undefined : undefined,
-          operationId: feedbackOperationId,
-        },
+        attachmentType,
+        attachmentSize,
+        feedbackId,
+        feedbackOperationIdRef,
+        sendChatMessage,
       });
 
       if (feedbackId) {
