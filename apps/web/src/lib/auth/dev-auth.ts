@@ -39,7 +39,8 @@ export function isLocalhostHost(hostname: string | null | undefined): boolean {
 }
 
 export function isDevAuthBypassEnabled(hostname: string | null | undefined): boolean {
-  if (process.env.NODE_ENV !== "development") {
+  const vercelEnvironment = process.env.VERCEL_ENV?.trim().toLowerCase();
+  if (process.env.NODE_ENV !== "development" || vercelEnvironment === "production") {
     return false;
   }
 

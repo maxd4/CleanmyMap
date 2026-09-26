@@ -61,6 +61,7 @@ describe("POST /api/account/active-profile", () => {
     {},
     { activeRole: "not-a-role" },
     { activeRole: "admin", activeProfile: "admin" },
+    { role: "max", activeRole: "max" },
   ])("rejects invalid payload %j", async (payload) => {
     const response = await post(payload);
     expect(response.status).toBe(400);

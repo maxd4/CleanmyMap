@@ -180,8 +180,10 @@ Invariants de non-régression :
   production doit donc utiliser une vraie session Clerk et le contrôle serveur
   habituel.
 - Le bypass `CMM_DEV_AUTH_BYPASS_*` est strictement limité au développement et
-  aux hôtes locaux prévus pour les tests. Il ne doit jamais être accepté comme
-  mécanisme d'authentification en production.
+  aux hôtes locaux prévus pour les tests. Il est refusé si `NODE_ENV` n'est pas
+  `development` ou si `VERCEL_ENV=production`, même lorsqu'un flag de bypass
+  est présent. Il ne doit jamais être accepté comme mécanisme d'authentification
+  en production.
 - Les tests navigateur locaux peuvent sélectionner, selon la surface testée,
   chacun des rôles canoniques : `benevole`, `coordinateur`, `scientifique`,
   `entreprise`, `elu`, `admin` et `max`. Ils doivent privilégier l'identité qui
