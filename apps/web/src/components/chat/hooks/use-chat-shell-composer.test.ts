@@ -43,4 +43,31 @@ describe("canSubmitChatMessage", () => {
       }),
     ).toBe(false);
   });
+
+  it.each([
+    ["community", {}],
+    ["admin_elu", {}],
+    ["territory", { effectiveZone: "Paris 1er" }],
+    ["action", { activeActionId: "22222222-2222-4222-8222-222222222222" }],
+    [
+      "dm",
+      {
+        selectedRecipient: {
+          id: "user-2",
+          display_name: "Sam",
+          handle: "sam",
+          avatar_url: null,
+        },
+      },
+    ],
+  ] as const)("allows a valid poll in %s", (activeChannelType, extra) => {
+    expect(
+      canSubmitChatMessage({
+        ...baseParams,
+        activeChannelType,
+        composerMode: "poll",
+        ...extra,
+      }),
+    ).toBe(true);
+  });
 });

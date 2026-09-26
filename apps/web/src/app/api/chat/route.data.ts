@@ -3,7 +3,7 @@ import {
   normalizeChatPollVoteSummaryRows,
   type ChatPollVoteSummary,
 } from "@/lib/chat/poll-votes";
-import { type ChatPollOption } from "@/lib/chat/polls";
+import { normalizeChatPollOptionLabels, type ChatPollOption } from "@/lib/chat/polls";
 import { type ChatRelatedEvent } from "@/lib/chat/announcements";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
@@ -23,6 +23,24 @@ export async function runMessageQuery(query: ChatQueryResult<ChatMessageRow>): P
   return (data ?? []) as ChatMessageRow[];
 }
 
+export function pollOpts(options: readonly string[] | undefined) {
+  return { p_option_labels: normalizeChatPollOptionLabels(options ?? []) };
+}
+
+export function pollCtx(
+  recipientId: string | null,
+  conversationId: string | null,
+  arrondissementId: number | null,
+  zoneName: string | null,
+) {
+  return {
+    p_recipient_id: recipientId,
+    p_conversation_id: conversationId,
+    p_arrondissement_id: arrondissementId,
+    p_zone_name: zoneName,
+  };
+}
+
 export async function loadVisiblePollIds(
   supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
   candidateIds: string[],
@@ -36,7 +54,7 @@ export async function loadVisiblePollIds(
     .select("id")
     .in("id", candidateIds)
     .eq("message_kind", "poll")
-    .in("channel_type", ["community", "admin_elu"]);
+    .in("channel_type", ["community", "admin_elu", "territory", "action", "dm"]);
 
   if (error) {
     throw error;

@@ -78,7 +78,7 @@ export function canSubmitChatMessage({
       (!announcementMode || !announcementEventError) &&
       !(activeChannelType === "dm" && !selectedRecipient) &&
       !(activeChannelType === "territory" && !effectiveZone && territoryFocus === null) &&
-      !(activeChannelType === "action" && (!activeActionId || composerMode !== "message")),
+      !(activeChannelType === "action" && !activeActionId),
   );
 }
 

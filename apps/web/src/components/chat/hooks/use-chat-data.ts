@@ -445,7 +445,7 @@ export function useChatData({
           table: "chat_poll_votes",
         },
         () => {
-          if (activeChannelType === "community" || activeChannelType === "admin_elu") {
+          if (["community", "admin_elu", "territory", "action", "dm"].includes(activeChannelType)) {
             scheduleMessagesRefresh();
           }
         },

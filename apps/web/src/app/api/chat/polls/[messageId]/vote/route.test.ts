@@ -26,7 +26,10 @@ const OTHER_OPTION = "55555555-5555-4555-8555-555555555555";
 function buildSupabaseMock({
   visible = true,
   channelType = "community",
-}: { visible?: boolean; channelType?: "community" | "admin_elu" } = {}) {
+}: {
+  visible?: boolean;
+  channelType?: "community" | "admin_elu" | "territory" | "action" | "dm";
+} = {}) {
   const votes = new Map<string, string>();
   const options = [
     { id: OPTION_YES, position: 1, label: "Oui", message_id: MESSAGE_ID },
@@ -156,8 +159,10 @@ describe("/api/chat/polls/[messageId]/vote", () => {
     );
   });
 
-  it("changes and removes the current user's vote idempotently", async () => {
-    const mock = buildSupabaseMock();
+  it.each(["community", "admin_elu", "territory", "action", "dm"] as const)(
+    "changes and removes the current user's vote idempotently in %s",
+    async (channelType) => {
+    const mock = buildSupabaseMock({ channelType });
     getSupabaseClerkRlsClientMock.mockResolvedValue(mock.supabase);
     getSupabaseServerClientMock.mockReturnValue(mock.serviceSupabase);
     const { PUT, DELETE } = await import("./route");
@@ -191,11 +196,14 @@ describe("/api/chat/polls/[messageId]/vote", () => {
       new Request("http://localhost/api/chat/polls/111/vote", { method: "DELETE" }),
       { params: Promise.resolve({ messageId: MESSAGE_ID }) },
     );
-    expect((await removedAgain.json()).totalVotes).toBe(0);
-  });
+      expect((await removedAgain.json()).totalVotes).toBe(0);
+    },
+  );
 
-  it("uses the same vote engine for a visible admin_elu poll", async () => {
-    const mock = buildSupabaseMock({ channelType: "admin_elu" });
+  it.each(["admin_elu", "territory", "action", "dm"] as const)(
+    "uses the same vote engine for a visible %s poll",
+    async (channelType) => {
+    const mock = buildSupabaseMock({ channelType });
     getSupabaseClerkRlsClientMock.mockResolvedValue(mock.supabase);
     getSupabaseServerClientMock.mockReturnValue(mock.serviceSupabase);
     const { PUT } = await import("./route");
@@ -210,7 +218,8 @@ describe("/api/chat/polls/[messageId]/vote", () => {
 
     expect(response.status).toBe(200);
     expect((await response.json()).selectedOptionId).toBe(OPTION_YES);
-  });
+    },
+  );
 
   it("rejects an option belonging to another poll before writing", async () => {
     const mock = buildSupabaseMock();

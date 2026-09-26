@@ -12,9 +12,9 @@ La page `Messagerie` sert aux échanges publics thématiques et directs entre me
 - une vue publique agrégée ou un groupe de présentation qui relit les `topic_id` persistés correspondants
 - une recherche débouncée dans l’historique du scope ouvert, avec résultats paginés et ancrage sur le message ciblé
 - une composition `Message` ou `Annonce / Relai` ; les trois modèles de relais préparent un brouillon éditable et sélectionnent leur topic canonique
-- une composition `Sondage` dans `community` ou `admin_elu`, avec une question et 2 à 6 options éditables ; la publication conserve le topic courant et réinitialise uniquement le formulaire
+- une composition `Sondage` dans `community`, `admin_elu`, `territory`, `action` ou `dm`, avec une question et 2 à 6 options éditables ; la publication conserve le contexte canonique du canal et réinitialise uniquement le formulaire
 - un vote réel dans chaque sondage : choix, changement ou retrait, compteurs par option et proportions agrégées, sans exposer l'identité des votants
-- pour `admin_elu`, une audience limitée à `admin`, `max` et `elu`, avec un topic facultatif ; la visibilité du message, des options, du vote et des agrégats reste décidée par la RLS
+- pour `admin_elu`, une audience limitée à `admin`, `max` et `elu`, avec un topic facultatif ; en DM, seuls les deux participants peuvent lire ou voter ; pour `territory` et `action`, les mêmes règles d'accès que les messages du canal s'appliquent ; la visibilité du message, des options, du vote et des agrégats reste décidée par la RLS
 - un contexte d'événement minimal lorsqu'une annonce est liée à un cleanup existant
 - des états de chargement, d'accès et de participation
 - un contexte minimal intégré au fil actif, sans panneau secondaire concurrent

@@ -17,6 +17,14 @@ export type ChannelVisual = {
   chipClass: string;
 };
 
+export function chatComposerModes(channelType: ChatChannelType) {
+  return channelType === "community"
+    ? ["message", "announcement", "poll"] as const
+    : channelType === "bug_report"
+      ? ["message"] as const
+      : ["message", "poll"] as const;
+}
+
 export const CHANNEL_VISUALS: Record<ChatChannelType, ChannelVisual> = {
   community: {
     icon: Users,
