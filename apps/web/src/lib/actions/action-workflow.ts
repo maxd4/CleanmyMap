@@ -62,16 +62,25 @@ export function createActionWorkflowState(
   };
 }
 
+export function setActionWorkflowStepStatus(
+  state: ActionWorkflowState,
+  step: ActionWorkflowStepId,
+  status: ActionWorkflowStepStatus,
+): ActionWorkflowState {
+  return { ...state, statuses: { ...state.statuses, [step]: status } };
+}
+
 export function markActionWorkflowStep(
   state: ActionWorkflowState,
   step: ActionWorkflowStepId,
   status: ActionWorkflowStepStatus = "done",
 ): ActionWorkflowState {
   const index = ACTION_WORKFLOW_STEPS.indexOf(step);
-  const statuses = { ...state.statuses, [step]: status };
+  const nextState = setActionWorkflowStepStatus(state, step, status);
+  const statuses = { ...nextState.statuses };
   const nextStep = ACTION_WORKFLOW_STEPS[index + 1];
   if (nextStep && statuses[nextStep] === "todo") statuses[nextStep] = "in_progress";
-  return { ...state, activeStep: nextStep ?? step, statuses };
+  return { ...nextState, activeStep: nextStep ?? step, statuses };
 }
 
 export function invalidateActionWorkflow(
