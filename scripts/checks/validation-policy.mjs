@@ -103,6 +103,8 @@ export function isBuildRelevantFile(file) {
     normalized === "package-lock.json" ||
     normalized === "apps/web/package.json" ||
     normalized === "apps/web/package-lock.json" ||
+    normalized === "apps/web/vercel.json" ||
+    normalized === "apps/web/.vercelignore" ||
     normalized.startsWith("apps/web/public/") ||
     normalized.startsWith("apps/web/scripts/") ||
     (normalized.startsWith("apps/web/src/") && !normalized.includes("/__tests__/")) ||
