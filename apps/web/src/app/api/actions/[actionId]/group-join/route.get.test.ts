@@ -98,6 +98,36 @@ describe("GET /api/actions/:actionId/group-join", () => {
     expect(body.confirmedParticipants?.[0]?.displayName).toBe("Bob");
   }, 15000);
 
+  it("returns empty moderation queues when there are no registrations", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "user-1",
+      role: "admin",
+      activeRole: "admin",
+    });
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+        participants: [],
+      }),
+    );
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/group-join"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.pendingRequests).toEqual([]);
+    expect(body.confirmedParticipants).toEqual([]);
+    expect(body.canReview).toBe(true);
+  }, 15000);
+
   it("returns pending and confirmed participants for action organizers", async () => {
     const participants = [
       createGroupJoinParticipant({
@@ -374,5 +404,91 @@ describe("GET /api/actions/:actionId/group-join", () => {
     expect(body.mode).toBe("search");
     expect(body.canReview).toBe(true);
     expect(body.count).toBe(1);
+  }, 15000);
+
+  it("rejects account searches when the current user cannot review the action", async () => {
+    getCurrentUserIdentityMock.mockResolvedValueOnce(null);
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+      }),
+    );
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/group-join?q=alice"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(403);
+  }, 15000);
+
+  it("rejects an empty action id before loading the queue", async () => {
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions//group-join"),
+      { params: Promise.resolve({ actionId: "  " }) },
+    );
+
+    expect(response.status).toBe(422);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("keeps the public queue available when Clerk lookup fails", async () => {
+    getCurrentUserIdentityMock.mockRejectedValueOnce(new Error("Clerk unavailable"));
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+      }),
+    );
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/group-join"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).canReview).toBe(false);
+  }, 15000);
+
+  it("rejects a queue for a cancelled action", async () => {
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({ status: "cancelled" }),
+      }),
+    );
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/group-join"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(404);
+  }, 15000);
+
+  it("rejects a queue for a rejected non-pre-action", async () => {
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({ status: "rejected", actionPhase: "post_action_draft" }),
+      }),
+    );
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/actions/action-1/group-join"),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(404);
   }, 15000);
 });

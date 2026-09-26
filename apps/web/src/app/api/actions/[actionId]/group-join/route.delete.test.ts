@@ -33,6 +33,29 @@ describe("DELETE /api/actions/:actionId/group-join", () => {
     expect(response.status).toBe(401);
   }, 15000);
 
+  it("rejects an empty action id before cancelling participation", async () => {
+    const { DELETE } = await import("./route");
+    const response = await DELETE(new Request("http://localhost/api/actions//group-join"), {
+      params: Promise.resolve({ actionId: "  " }),
+    });
+
+    expect(response.status).toBe(422);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("returns a server error when the cancellation client cannot be created", async () => {
+    getSupabaseServerClientMock.mockImplementationOnce(() => {
+      throw new Error("client unavailable");
+    });
+
+    const { DELETE } = await import("./route");
+    const response = await DELETE(new Request("http://localhost/api/actions/action-1/group-join"), {
+      params: Promise.resolve({ actionId: "action-1" }),
+    });
+
+    expect(response.status).toBe(500);
+  }, 15000);
+
   it("cancels a pending request without changing confirmed counts", async () => {
     const participants = [
       createGroupJoinParticipant({

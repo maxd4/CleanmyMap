@@ -54,6 +54,21 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
     expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
   }, 15000);
 
+  it("rejects an unauthenticated toggle", async () => {
+    authMock.mockResolvedValueOnce({ userId: null });
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "PATCH",
+        body: JSON.stringify({ groupJoinEnabled: false }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(401);
+  }, 15000);
+
   it("lets the organizer reopen the group form", async () => {
     getSupabaseServerClientMock.mockReturnValueOnce(
       createGroupJoinSupabaseMock({
@@ -291,5 +306,101 @@ describe("PATCH /api/actions/:actionId/group-join", () => {
     expect(response.status).toBe(200);
     expect(body.status).toBe("ok");
     expect(body.groupJoinEnabled).toBe(false);
+  }, 15000);
+
+  it("returns a validation response for malformed JSON", async () => {
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "PATCH",
+        body: "not-json",
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("rejects toggles for cancelled actions", async () => {
+    getSupabaseServerClientMock.mockReturnValueOnce(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-1",
+          status: "cancelled",
+          groupJoinEnabled: true,
+        }),
+      }),
+    );
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "PATCH",
+        body: JSON.stringify({ groupJoinEnabled: false }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(422);
+  }, 15000);
+
+  it("records no second audit when the first toggle audit fails", async () => {
+    authMock.mockResolvedValueOnce({ userId: "admin-1" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "admin-1",
+      role: "admin",
+      activeRole: "admin",
+    });
+    appendActionModerationAuditMock.mockRejectedValueOnce(new Error("audit unavailable"));
+    getSupabaseServerClientMock.mockReturnValueOnce(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          groupJoinEnabled: true,
+        }),
+      }),
+    );
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "PATCH",
+        body: JSON.stringify({ groupJoinEnabled: false }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
+  }, 15000);
+
+  it("audits a lookup failure when the server client cannot be created", async () => {
+    authMock.mockResolvedValueOnce({ userId: "admin-1" });
+    getCurrentUserIdentityMock.mockResolvedValueOnce({
+      userId: "admin-1",
+      role: "admin",
+      activeRole: "admin",
+    });
+    getSupabaseServerClientMock.mockImplementationOnce(() => {
+      throw new Error("client unavailable");
+    });
+
+    const { PATCH } = await import("./route");
+    const response = await PATCH(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "PATCH",
+        body: JSON.stringify({ groupJoinEnabled: false }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        details: { stage: "lookup", partialMutation: false },
+      }),
+    );
   }, 15000);
 });
