@@ -13,17 +13,22 @@ assert.deepEqual(
 );
 
 assert.equal(
-  auditWorkflowContent(`steps:\n  - uses: ${pinned}\n    with:\n      fetch-depth: 0\n`)[0].includes("persist-credentials: false"),
+  auditWorkflowContent("name: missing-permissions\njobs:\n  test:\n    runs-on: ubuntu-latest\n")[0].includes("explicit top-level permissions"),
   true,
 );
 
 assert.equal(
-  auditWorkflowContent("on:\n  pull_request_target:\n    types: [opened]\n").length,
+  auditWorkflowContent(`permissions: {}\nsteps:\n  - uses: ${pinned}\n    with:\n      fetch-depth: 0\n`)[0].includes("persist-credentials: false"),
+  true,
+);
+
+assert.equal(
+  auditWorkflowContent("permissions: {}\non:\n  pull_request_target:\n    types: [opened]\n").length,
   1,
 );
 
 assert.equal(
-  auditWorkflowContent("steps:\n  - uses: actions/checkout@v4\n")[0].includes("full commit SHA"),
+  auditWorkflowContent("permissions: {}\nsteps:\n  - uses: actions/checkout@v4\n")[0].includes("full commit SHA"),
   true,
 );
 
@@ -33,12 +38,12 @@ assert.equal(
 );
 
 assert.equal(
-  auditWorkflowContent("env:\n  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n")[0].includes("server secret name"),
+  auditWorkflowContent("permissions: {}\nenv:\n  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}\n")[0].includes("server secret name"),
   true,
 );
 
 assert.equal(
-  auditWorkflowContent("- uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02\n  with:\n    path: artifacts/playwright\n", ".github/workflows/e2e-supabase.yml")[0].includes("raw Playwright"),
+  auditWorkflowContent("permissions: {}\n- uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02\n  with:\n    path: artifacts/playwright\n", ".github/workflows/e2e-supabase.yml").some((issue) => issue.includes("raw Playwright")),
   true,
 );
 
