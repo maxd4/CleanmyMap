@@ -1,3 +1,5 @@
+import { escapeHtml } from "@/lib/security/html-escape";
+
 export type RadarPoint = {
   label: string;
   value: number; // 0 to 100
@@ -24,7 +26,7 @@ export function generateRadarChartSvg(points: RadarPoint[], size = 300): string 
   const labels = points.map((p, i) => {
     const x = center + (radius + 20) * Math.cos(i * angleStep - Math.PI / 2);
     const y = center + (radius + 20) * Math.sin(i * angleStep - Math.PI / 2);
-    return `<text x="${x}" y="${y}" text-anchor="middle" font-family="Outfit" font-size="10" fill="#64748b" font-weight="600">${p.label}</text>`;
+    return `<text x="${x}" y="${y}" text-anchor="middle" font-family="Outfit" font-size="10" fill="#64748b" font-weight="600">${escapeHtml(p.label)}</text>`;
   }).join("");
 
   // Shape

@@ -43,6 +43,27 @@ d'une base ou d'une source tierce doit être échappée pour le contexte HTML ou
 texte correspondant avant génération. Les scripts de contrôle d'impression et
 de fermeture peuvent rester statiques.
 
+Les frontières HTML actuellement contrôlées par le runtime utilisent la même
+primitive `apps/web/src/lib/security/html-escape.ts` : générateurs PDF/HTML,
+emails HTML et HTML brut nécessaire aux marqueurs Leaflet. Un marqueur ou un
+email n'est pas un contexte React ; toute donnée de profil, d'annuaire,
+d'action ou de formulaire qui y entre doit donc passer par cet échappement.
+Les attributs `src` d'image ne sont pas seulement échappés : ils sont acceptés
+uniquement pour `http:`, `https:` ou une data URL base64 d'image raster
+explicitement autorisée. Aucun aperçu distant n'est déclenché par cette
+validation.
+
+## 5. Chat et pièces jointes
+
+Le contenu Chat reste du texte React. Les liens sont limités à `http:` et
+`https:` ; `javascript:`, `data:`, les protocoles inconnus et les HTML fournis
+par l'utilisateur ne sont jamais rendus comme markup. Les documents restent
+des téléchargements de fichiers et ne sont pas exécutés par l'interface.
+Les nouveaux uploads SVG sont refusés par le client, l'API et l'allowlist MIME
+du bucket privé `chat-attachments`. Les messages historiques qui référencent
+déjà un SVG restent lisibles selon leur contrat de lecture ; cette compatibilité
+ne réautorise pas un nouvel upload.
+
 ## Checklist
 
 - [ ] source de chaque valeur identifiée ;
@@ -50,6 +71,8 @@ de fermeture peuvent rester statiques.
 - [ ] script/style statique séparé et documenté ;
 - [ ] sérialisation `<script>` encodée pour son contexte ;
 - [ ] HTML d'export échappé avant génération ;
+- [ ] URLs d'image vérifiées par protocole et type de data URL ;
+- [ ] nouveaux SVG Chat refusés à chaque frontière ;
 - [ ] tests négatifs présents lorsqu'une frontière est sensible.
 
 Références :

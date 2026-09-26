@@ -1,16 +1,8 @@
 import { buildOfficialReportCss } from "./report-pdf-theme";
 import type { PdfReportChapter, PdfReportPayload } from "./simple-pdf";
+import { escapeHtml } from "@/lib/security/html-escape";
 
 type CalloutKind = "note" | "important" | "limite";
-
-function escapeHtml(value: unknown): string {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 function formatValue(value: unknown): string {
   if (value == null) return "";

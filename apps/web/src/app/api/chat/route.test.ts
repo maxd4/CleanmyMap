@@ -404,6 +404,29 @@ describe("POST /api/chat", () => {
     expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
   });
 
+  it("rejects SVG attachments explicitly before any message write", async () => {
+    const response = await (await import("./route")).POST(
+      new Request("http://localhost/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          channelType: "community",
+          content: "Image uniquement",
+          attachmentUrl: "https://cdn.example.test/payload.svg",
+          attachmentType: "image/svg+xml",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(422);
+    expect((await response.json()).details.attachmentType).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Ce format de pièce jointe n'est pas autorisé"),
+      ]),
+    );
+    expect(getSupabaseClerkRlsClientMock).not.toHaveBeenCalled();
+  });
+
   it.each([
     { attachmentUrl: "https://cdn.example.test/poll.pdf", attachmentType: "application/pdf" },
     { relatedEventId: "11111111-1111-4111-8111-111111111111" },

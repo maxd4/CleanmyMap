@@ -21,7 +21,6 @@ const IMAGE_EXTENSIONS = new Map([
   ["jpeg", "image/jpeg"],
   ["jpg", "image/jpeg"],
   ["png", "image/png"],
-  ["svg", "image/svg+xml"],
   ["webp", "image/webp"],
 ]);
 
@@ -53,7 +52,6 @@ const MIME_TO_EXTENSION = new Map<string, string>([
   ["image/gif", "gif"],
   ["image/jpeg", "jpg"],
   ["image/png", "png"],
-  ["image/svg+xml", "svg"],
   ["image/webp", "webp"],
   ["text/csv", "csv"],
   ["text/markdown", "md"],
@@ -89,7 +87,7 @@ export function getChatAttachmentUnsupportedMessage(file: File): string {
 }
 
 export const CHAT_ATTACHMENT_ACCEPT = [
-  "image/*",
+  ...Array.from(IMAGE_EXTENSIONS.values()),
   ...SUPPORTED_MIME_TYPES,
   ...Array.from(SUPPORTED_EXTENSIONS.keys()).map((extension) => `.${extension}`),
 ].join(",");
@@ -121,6 +119,10 @@ export function isSupportedChatAttachmentMimeType(mimeType: string): boolean {
     return false;
   }
 
+  if (normalized === "image/svg+xml") {
+    return false;
+  }
+
   if (normalized.startsWith("image/")) {
     return true;
   }
@@ -146,11 +148,15 @@ export function isSupportedChatAttachmentFile(file: File): boolean {
     return false;
   }
 
+  const extension = getFileExtension(file.name);
+  if (extension === "svg" || normalizeMimeType(file.type) === "image/svg+xml") {
+    return false;
+  }
+
   if (isSupportedChatAttachmentMimeType(file.type)) {
     return true;
   }
 
-  const extension = getFileExtension(file.name);
   return IMAGE_EXTENSIONS.has(extension) || SUPPORTED_EXTENSIONS.has(extension);
 }
 
@@ -167,11 +173,15 @@ export function inferChatAttachmentType(file: File): string | null {
     return null;
   }
 
+  const extension = getFileExtension(file.name);
+  if (extension === "svg" || normalizeMimeType(file.type) === "image/svg+xml") {
+    return null;
+  }
+
   if (isSupportedChatAttachmentMimeType(file.type)) {
     return file.type.toLowerCase();
   }
 
-  const extension = getFileExtension(file.name);
   const inferredImageMimeType = IMAGE_EXTENSIONS.get(extension);
   if (inferredImageMimeType) {
     return inferredImageMimeType;

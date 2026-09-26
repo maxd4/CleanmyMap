@@ -5,6 +5,8 @@ import { buildPdfChapterContent } from "./generate-pdf-html.chapters";
 import { buildPdfCover } from "./generate-pdf-html.cover";
 import { buildPdfTableOfContents } from "./generate-pdf-html.toc";
 import { buildPdfPrintStyles } from "./generate-pdf-html.templates";
+import { escapeHtml } from "@/lib/security/html-escape";
+import { sanitizeExecutiveNarrative, sanitizeReportForPdfHtml } from "./generate-pdf-html.safe-data";
 
 export function collectHeadStyles(): string {
   if (typeof document === "undefined") return "";
@@ -19,7 +21,10 @@ export function generatePdfHtml(
   selectedOrg: string,
   deliverableId: string,
 ): string {
-  const executive = reportData ? computeExecutiveNarrative(reportData) : null;
+  const executive = sanitizeExecutiveNarrative(
+    reportData ? computeExecutiveNarrative(reportData) : null,
+  );
+  const safeReportData = sanitizeReportForPdfHtml(reportData);
   const printContainer = document.createElement("div");
   printContainer.className = "master-pack-container";
 
@@ -39,7 +44,7 @@ export function generatePdfHtml(
     page.className = "page-break";
     page.id = `chapter-${chapter.id}`;
     page.style.padding = "60px";
-    page.innerHTML = buildPdfChapterContent(chapter, reportData, executive);
+    page.innerHTML = buildPdfChapterContent(chapter, safeReportData, executive);
     printContainer.appendChild(page);
   });
 
@@ -50,7 +55,7 @@ export function generatePdfHtml(
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
-  <title>Master Pack - ${organizationName}</title>
+  <title>Master Pack - ${escapeHtml(organizationName)}</title>
   ${styles}
   <style>${printStyles}</style>
 </head>

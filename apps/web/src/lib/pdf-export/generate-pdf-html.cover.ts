@@ -1,3 +1,5 @@
+import { escapeHtml } from "@/lib/security/html-escape";
+
 export function buildPdfCover(
   organizationName: string,
   selectedOrg: string,
@@ -14,12 +16,12 @@ export function buildPdfCover(
       </svg>
     </div>
     <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center;">
-      <div style="font-family: monospace; font-size: 10px; color: #475569; letter-spacing: 0.2em; margin-bottom: 20px;">LIVRABLE OFFICIEL #${deliverableId}</div>
+      <div style="font-family: monospace; font-size: 10px; color: #475569; letter-spacing: 0.2em; margin-bottom: 20px;">LIVRABLE OFFICIEL #${escapeHtml(deliverableId)}</div>
       <h1 style="font-family: 'Inter'; font-size: 48px; font-weight: 750; color: #FFFFFF; margin: 0;">Master Pack</h1>
       <h2 style="font-family: 'Inter'; font-size: 26px; font-weight: 500; color: #cbd5e1; margin: 8px 0 0 0;">Rapport d'impact institutionnel</h2>
       <div style="margin-top: 60px; padding: 20px; border-left: 4px solid #10b981; background: rgba(255,255,255,0.03);">
         <div style="color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;">Périmètre d'Analyse</div>
-        <div style="font-size: 24px; color: #FFFFFF; margin-top: 8px; font-family: 'Outfit';">${organizationName}</div>
+        <div style="font-size: 24px; color: #FFFFFF; margin-top: 8px; font-family: 'Outfit';">${escapeHtml(organizationName)}</div>
         <div style="color: #94a3b8; font-size: 14px; margin-top: 4px;">Période Annuelle ${new Date().getFullYear()}</div>
       </div>
     </div>
