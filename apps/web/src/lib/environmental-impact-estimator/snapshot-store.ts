@@ -107,7 +107,7 @@ export async function upsertEnvironmentalImpactSnapshot(
 ): Promise<void> {
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase.from("environmental_impact_snapshots").upsert(
         {
           snapshot_key: snapshot.snapshotKey,
@@ -163,7 +163,7 @@ export async function listEnvironmentalImpactSnapshots(
 ): Promise<EnvironmentalImpactSnapshotRecord[]> {
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase
         .from("environmental_impact_snapshots")
         .select(

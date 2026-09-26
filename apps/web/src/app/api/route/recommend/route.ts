@@ -73,7 +73,7 @@ export async function POST(request: Request) {
     });
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const eventPressurePromise = loadRouteEventPressure(supabase);
     const [locationPreference, eventPressureContext] = await Promise.all([
       getCurrentUserLocationPreference(),

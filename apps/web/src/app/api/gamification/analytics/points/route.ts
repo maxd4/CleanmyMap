@@ -22,7 +22,7 @@ async function loadGamificationPointsAnalyticsForUser(
   userId: string,
   dateFloor: string | null,
 ) {
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   return loadGamificationPointsAnalytics(supabase, userId, dateFloor);
 }
 

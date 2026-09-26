@@ -55,7 +55,7 @@ export async function GET(request: Request) {
 
   try {
     const userId = await resolveUserIdForGroupJoin();
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const items = await loadJoinableActions(supabase, {
       limit: parsed.data.limit,
       userId: userId ?? null,
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const joined = await joinActionParticipation(supabase, {
       actionId: parsed.data.actionId,
       userId,

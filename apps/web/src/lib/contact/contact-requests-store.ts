@@ -200,7 +200,7 @@ export async function appendContactRequest(params: {
   };
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("contact_requests")
       .insert(toSupabaseRow(record))
       .select(SUPABASE_CONTACT_REQUEST_COLUMNS)
@@ -229,7 +229,7 @@ export async function updateContactRequestStatus(params: {
   assertPersistenceAvailable("contact_requests");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("contact_requests")
       .update({
         status: params.status,
@@ -273,7 +273,7 @@ export async function deleteContactRequest(requestId: string): Promise<boolean> 
   assertPersistenceAvailable("contact_requests");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("contact_requests")
       .delete()
       .eq("id", requestId)

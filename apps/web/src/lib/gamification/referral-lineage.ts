@@ -320,7 +320,7 @@ export async function loadReferralLineageView(
 export async function loadCachedReferralLineageView(
   focusProfileId: string,
 ): Promise<ReferralLineageView | null> {
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   return loadReferralLineageView(supabase, focusProfileId);
 }
 

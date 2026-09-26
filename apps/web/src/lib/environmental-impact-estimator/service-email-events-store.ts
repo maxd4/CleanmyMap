@@ -93,7 +93,7 @@ function normalizeServiceEmailEventRow(row: ServiceEmailEventRow): ServiceEmailE
 export async function appendServiceEmailEvent(event: ServiceEmailEvent): Promise<void> {
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase.from("service_email_events").insert({
         created_at: event.at,
         provider: event.provider,
@@ -130,7 +130,7 @@ export async function listServiceEmailEvents(
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const floorIso = new Date(floor).toISOString();
       const result = await supabase
         .from("service_email_events")
@@ -173,7 +173,7 @@ export async function countServiceEmailEventsForActorSince(params: {
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase
         .from("service_email_events")
         .select("created_at", { count: "exact", head: true })
@@ -215,7 +215,7 @@ export async function countServiceEmailRecipientsForActorSince(params: {
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase.rpc("sum_service_email_recipients_for_actor_since", {
         p_actor_user_id: params.actorUserId,
         p_since: params.sinceIso,

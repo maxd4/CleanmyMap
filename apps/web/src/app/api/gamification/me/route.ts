@@ -16,7 +16,7 @@ export async function GET() {
  }
 
  try {
- const progression = await getUserProgression(getSupabaseServerClient(), userId);
+ const progression = await getUserProgression(getSupabaseServerClient(true), userId);
  return NextResponse.json({
  status:"ok",
  progression,

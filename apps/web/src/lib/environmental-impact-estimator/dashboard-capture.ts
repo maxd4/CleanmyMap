@@ -40,7 +40,7 @@ async function buildLiveEnvironmentalImpactDashboard(params: {
 }): Promise<EnvironmentalImpactCaptureResult> {
   const generatedAt = params.generatedAt ?? new Date().toISOString();
   const historyLimit = params.historyLimit ?? 8;
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   const githubRepositoryStats =
     params.githubRepositoryStats === undefined
       ? await loadGitHubRepositoryStats("maxd4/CleanmyMap")

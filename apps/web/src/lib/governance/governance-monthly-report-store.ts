@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { allowLocalFileStoreFallback, canUseSupabaseServerPersistence } from "@/lib/persistence/runtime-store";
 import type { ServiceThresholdAlert } from "@/lib/environmental-impact-estimator/service-risk";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import type { StorageBusinessContributionReport } from "@/lib/supabase/storage-business-contribution";
 
 export type GovernanceMonthlyReportPayload = {
@@ -399,7 +399,7 @@ function toRecord(row: GovernanceMonthlyReportRow): GovernanceMonthlyReportRecor
 }
 
 async function readSupabaseRecords(limit: number): Promise<GovernanceMonthlyReportRecord[]> {
-  const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseAdminClient();
   const result = await supabase
     .from("governance_monthly_reports")
     .select("id,report_key,report_month,generated_at,version,title,payload")
@@ -417,7 +417,7 @@ async function readSupabaseRecords(limit: number): Promise<GovernanceMonthlyRepo
 async function readSupabaseReport(
   reportMonth?: string | null,
 ): Promise<GovernanceMonthlyReportRecord | null> {
-  const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseAdminClient();
   let query = supabase
     .from("governance_monthly_reports")
     .select("id,report_key,report_month,generated_at,version,title,payload")
@@ -449,7 +449,7 @@ export async function upsertGovernanceMonthlyReport(
 ): Promise<void> {
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseAdminClient();
       const result = await supabase.from("governance_monthly_reports").upsert(
         {
           report_key: record.reportKey,

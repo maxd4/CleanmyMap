@@ -31,7 +31,7 @@ async function bestEffort<T>(fallback: T, task: () => Promise<T>): Promise<T> {
 }
 
 async function persistGovernanceMonthlyReportPdf(record: GovernanceMonthlyReportRecord): Promise<string | null> {
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   const recentReports = await listGovernanceMonthlyReports(3);
   const pdfBytes = buildSimplePdf(buildGovernanceMonthlyReportLines(record, recentReports));
   const pdfPath = buildGovernanceMonthlyReportPdfPath(record.reportMonth);

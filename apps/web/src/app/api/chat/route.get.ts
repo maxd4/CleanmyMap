@@ -156,7 +156,7 @@ export async function GET(request: Request) {
   try {
     let actionConversationId: string | null = null;
     if (channelType === "action" && requestedActionId) {
-      const serviceSupabase = getSupabaseServerClient();
+      const serviceSupabase = getSupabaseServerClient(true);
       const { resolveActionDiscussionAccess } =
         await import("@/lib/chat/action-conversations");
       // The service preflight gives excluded users a stable explicit state;
@@ -346,7 +346,7 @@ export async function GET(request: Request) {
       pageGroups.some((group) => group.length > CHAT_PAGE_SIZE);
     const messages = await enrichPollVoteSummaries(
       supabase,
-      getSupabaseServerClient(),
+      getSupabaseServerClient(true),
       userId,
       sortChatMessages(pageRows),
     );

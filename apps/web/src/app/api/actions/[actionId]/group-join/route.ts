@@ -162,7 +162,7 @@ export async function DELETE(
   }
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const result = await cancelActionParticipation(supabase, {
       actionId: trimmedActionId,
       userId,

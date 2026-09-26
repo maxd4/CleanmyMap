@@ -28,7 +28,7 @@ export async function GET(
   try {
     const { actionId } = await context.params;
     const normalizedActionId = actionId.trim();
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const action = await loadActionById(supabase, normalizedActionId);
 
     if (!action || !isPublicActionReferenceAvailable(action)) {

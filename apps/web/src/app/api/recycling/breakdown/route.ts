@@ -26,7 +26,7 @@ export async function GET() {
       version: RECYCLING_BREAKDOWN_VERSION,
       ttlMinutes: RECYCLING_BREAKDOWN_TTL_MINUTES,
       buildPayload: async () => {
-        const supabase = getSupabaseServerClient();
+        const supabase = getSupabaseServerClient(true);
         const { items: contracts } = await fetchUnifiedActionContracts(supabase, {
           limit: 2000,
           status: "approved",

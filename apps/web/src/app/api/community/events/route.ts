@@ -139,7 +139,7 @@ async function loadCachedCommunityEvents(
  eventId: string | null,
 ): Promise<CommunityEventsSuccessPayload> {
  const load = async () => {
-   const supabase = getSupabaseServerClient();
+   const supabase = getSupabaseServerClient(true);
 
    let eventsQuery = supabase
     .from("community_events")
@@ -215,7 +215,7 @@ async function loadCachedCommunityEvents(
  const personalStatuses = new Map<string, "yes" | "maybe" | "no" | null>();
  if (userId && cachedPayload.items.length > 0) {
   const summaries = await loadCommunityEventRsvpSummaries(
-   getSupabaseServerClient(),
+   getSupabaseServerClient(true),
    {
     eventIds: cachedPayload.items.map(({ event }) => event.id),
     userId,
@@ -341,7 +341,7 @@ export async function POST(request: Request) {
   return validationErrorResponse({ location: ["Coordonnées invalides."] });
  }
 
- const supabase = getSupabaseServerClient();
+ const supabase = getSupabaseServerClient(true);
 
  try {
  const quota = await reserveDiscussionMessageSlot(supabase, {

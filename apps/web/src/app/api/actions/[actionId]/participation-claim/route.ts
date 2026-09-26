@@ -47,7 +47,7 @@ export async function POST(_request: Request, ctx: ClaimRouteContext) {
   const actionId = parsedActionId.data;
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const claim = await claimFinishedActionParticipation(supabase, {
       actionId,
       userId: access.userId,

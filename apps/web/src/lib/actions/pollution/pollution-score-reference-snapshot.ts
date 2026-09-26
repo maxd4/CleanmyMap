@@ -175,7 +175,7 @@ export async function runPollutionScoreReferencesJob(params: {
   }
 
   const loadReferences = params.loadReferences ?? (() =>
-    fetchActionPollutionScoreReferences(getSupabaseServerClient()));
+    fetchActionPollutionScoreReferences(getSupabaseServerClient(true)));
   const references = await loadReferences();
   if (!references) {
     throw new Error("Aucune référence globale V2 valide à capturer.");
@@ -221,7 +221,7 @@ export async function loadPollutionScoreReferencesForMap(params: {
   }
 
   const loadFallback = params.loadFallback ?? (() =>
-    fetchActionPollutionScoreReferences(getSupabaseServerClient()));
+    fetchActionPollutionScoreReferences(getSupabaseServerClient(true)));
   const references = await loadFallback();
   return {
     references: references?.global && isValidGlobalReference(references.global)

@@ -31,7 +31,7 @@ async function getModerationContext(actionId: string) {
   const identity = await getCurrentUserIdentity();
   if (!identity) return { identity: null, action: null, supabase: null };
 
-  const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
   const action = await loadActionById(supabase, actionId);
   if (!action || !isActionDiscussionAvailable(action)) {
     return { identity, action: null, supabase };

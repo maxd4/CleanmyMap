@@ -103,7 +103,7 @@ async function queryProfilesByFilter(
 }
 
 export async function listManagedRoleAccounts(): Promise<RoleAccountRecord[]> {
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   const profilesQuery = supabase.from("profiles") as unknown as ProfileArrayQuery;
   const { data, error } = await profilesQuery
     .select(PROFILE_SELECT)
@@ -126,7 +126,7 @@ export async function searchManagedRoleAccounts(
     return [];
   }
 
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   const [byId, byHandle] = await Promise.all([
     queryProfilesByFilter(supabase, (query) => query.eq("id", term)),
     queryProfilesByFilter(supabase, (query) => query.eq("handle", term)),
@@ -155,7 +155,7 @@ export async function searchManagedRoleAccounts(
 export async function getManagedRoleAccountById(
   userId: string,
 ): Promise<RoleAccountRecord | null> {
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   const profilesQuery = supabase.from("profiles") as unknown as ProfileSingleQuery;
   const { data, error } = await profilesQuery
     .select(PROFILE_SELECT)

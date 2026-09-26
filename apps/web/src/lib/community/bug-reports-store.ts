@@ -249,7 +249,7 @@ export async function appendCommunityBugReport(params: {
   };
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("community_bug_reports")
       .insert(toSupabaseRow(record))
       .select(SUPABASE_BUG_REPORT_COLUMNS)
@@ -277,7 +277,7 @@ export async function listCommunityBugReports(
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("community_bug_reports")
       .select(SUPABASE_BUG_REPORT_COLUMNS)
       .order("created_at", { ascending: false })
@@ -300,7 +300,7 @@ export async function getCommunityBugReportById(
   assertPersistenceAvailable("community_bug_reports");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("community_bug_reports")
       .select(SUPABASE_BUG_REPORT_COLUMNS)
       .eq("id", reportId)
@@ -330,7 +330,7 @@ export async function updateCommunityBugReportStatus(params: {
         : params.status === "treated"
           ? "treated"
           : "archived";
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("community_bug_reports")
       .update({ status: params.status, creator_state: creatorState })
       .eq("id", params.reportId)
@@ -378,7 +378,7 @@ export async function deleteCommunityBugReport(
   assertPersistenceAvailable("community_bug_reports");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("community_bug_reports")
       .delete()
       .eq("id", reportId)
@@ -405,7 +405,7 @@ export async function updateCommunityBugReportCreatorState(params: {
   assertPersistenceAvailable("community_bug_reports");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("community_bug_reports")
       .update({ creator_state: params.creatorState })
       .eq("id", params.reportId)

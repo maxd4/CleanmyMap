@@ -112,7 +112,7 @@ export async function loadPublicSectionInitialData(
   }
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const now = new Date();
     const [actionsResult, mapResult] = await Promise.all([
       fetchUnifiedActionContracts(supabase, {

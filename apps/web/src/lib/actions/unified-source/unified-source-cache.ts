@@ -37,7 +37,7 @@ export async function fetchCachedUnifiedActionContracts(
 }> {
   const cached = unstable_cache(
     async () => {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       return fetchUnifiedActionContracts(supabase, params);
     },
     ["unified-action-contracts", buildUnifiedActionContractsCacheKey(params)],

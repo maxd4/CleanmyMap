@@ -44,7 +44,7 @@ function buildSpotsCacheKey(limit: number, status: SpotStatus | null): string {
 async function loadCachedSpots(limit: number, status: SpotStatus | null) {
  const cached = unstable_cache(
   async () => {
-   const supabase = getSupabaseServerClient();
+   const supabase = getSupabaseServerClient(true);
    let query = supabase
    .from("trash_spotter_spots")
    .select(
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
  }
 
  try {
- const supabase = getSupabaseServerClient();
+ const supabase = getSupabaseServerClient(true);
  const identity = await getCurrentUserIdentity();
  const actorName = pickTraceableActorName(identity, undefined) ?? userId;
  const inserted = await createSignalement(supabase, {

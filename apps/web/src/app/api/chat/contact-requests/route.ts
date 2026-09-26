@@ -49,7 +49,7 @@ export async function GET() {
   if (!currentUser) return unauthorizedJsonResponse();
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const { data, error } = await supabase.rpc(
       "list_action_share_requests_for_recipient",
       { p_recipient_id: currentUser.userId },
@@ -101,7 +101,7 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const result = await respondToActionShareRequest(getSupabaseServerClient(), {
+    const result = await respondToActionShareRequest(getSupabaseServerClient(true), {
       requestId: parsed.data.requestId,
       recipientId: currentUser.userId,
       decision: parsed.data.decision,

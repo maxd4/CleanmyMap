@@ -51,7 +51,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const action = await loadActionById(getSupabaseServerClient(), actionId);
+    const action = await loadActionById(getSupabaseServerClient(true), actionId);
     const shareKind = action ? getPublicActionShareKind(action) : null;
     if (!action || !shareKind) {
       return NextResponse.json(

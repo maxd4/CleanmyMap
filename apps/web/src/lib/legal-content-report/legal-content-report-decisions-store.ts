@@ -225,7 +225,7 @@ function toSupabaseRow(record: LegalContentReportDecisionRecord): Record<string,
 async function getSupabaseDecisionById(
   decisionId: string,
 ): Promise<LegalContentReportDecisionRecord | null> {
-  const result = await getSupabaseServerClient()
+  const result = await getSupabaseServerClient(true)
     .from("legal_content_report_decisions")
     .select(SUPABASE_DECISION_COLUMNS)
     .eq("id", decisionId)
@@ -244,7 +244,7 @@ export async function listLegalContentReportDecisions(
   assertPersistenceAvailable("legal_content_report_decisions");
 
   if (canUseSupabaseServerPersistence()) {
-    let query = getSupabaseServerClient()
+    let query = getSupabaseServerClient(true)
       .from("legal_content_report_decisions")
       .select(SUPABASE_DECISION_COLUMNS)
       .order("created_at", { ascending: false })
@@ -285,7 +285,7 @@ export async function appendLegalContentReportDecision(
   };
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("legal_content_report_decisions")
       .insert(toSupabaseRow(record))
       .select(SUPABASE_DECISION_COLUMNS)
@@ -336,7 +336,7 @@ export async function updateLegalContentReportDecisionNotifications(params: {
           }
         : {}),
     };
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("legal_content_report_decisions")
       .update(toSupabaseRow(updated))
       .eq("id", params.decisionId)
@@ -407,7 +407,7 @@ export async function updateLegalContentReportDecisionStates(params: {
           ? params.executionErrorCode ?? current.executionErrorCode
           : null,
     } satisfies LegalContentReportDecisionRecord;
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("legal_content_report_decisions")
       .update(toSupabaseRow(updated))
       .eq("id", params.decisionId)

@@ -138,7 +138,7 @@ function describeBackgroundSyncError(error: unknown): string {
 
 export async function loadUserCurrentLevel(userId: string): Promise<number> {
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const result = await supabase.from("progression_profiles").select("current_level").eq("user_id", userId).maybeSingle();
     if (result.error) {
       return 1;
@@ -158,7 +158,7 @@ type StoredProfileRow = {
 
 export async function loadStoredProfile(userId: string): Promise<StoredProfileRow | null> {
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const result = await supabase
       .from("profiles")
       .select("display_name, display_name_mode, handle")

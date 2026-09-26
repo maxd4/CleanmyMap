@@ -21,7 +21,7 @@ export function buildLandingFloorDate(now = new Date()): string {
 export async function loadPublicLandingActionSummary(
   floorDate: string,
 ): Promise<PublicLandingActionSummaryRow> {
-  const result = await getSupabaseServerClient().rpc(
+  const result = await getSupabaseServerClient(true).rpc(
     "load_public_landing_action_summary",
     { p_floor_date: floorDate },
   );
@@ -43,7 +43,7 @@ async function callImpactStateRpc(
   | "rebuild_public_impact_action_state",
   args: Record<string, unknown> = {},
 ): Promise<unknown> {
-  const result = await getSupabaseServerClient().rpc(functionName, args);
+  const result = await getSupabaseServerClient(true).rpc(functionName, args);
   if (result.error) {
     throw result.error;
   }

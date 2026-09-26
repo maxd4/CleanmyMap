@@ -34,8 +34,12 @@ export function isSupabaseConfigured(): boolean {
 /**
  * Returns a Supabase client for server-side usage.
  * @param useServiceRole If true, uses the SUPABASE_SERVICE_ROLE_KEY (bypasses RLS).
+ *
+ * The safe default is the publishable anon key. Callers that have already
+ * completed their server-side authorization must opt into the service role
+ * explicitly, preferably through getSupabaseAdminClient().
  */
-export function getSupabaseServerClient(useServiceRole = true) {
+export function getSupabaseServerClient(useServiceRole = false) {
   const url = env.NEXT_PUBLIC_SUPABASE_URL;
   const key = useServiceRole
     ? env.SUPABASE_SERVICE_ROLE_KEY
@@ -84,7 +88,6 @@ export function getSupabaseServerClient(useServiceRole = true) {
 
 /**
  * Explicit helper for administrative operations that REQUIRE bypassing RLS.
- * Identical to getSupabaseServerClient(true).
  */
 export function getSupabaseAdminClient() {
   return getSupabaseServerClient(true);

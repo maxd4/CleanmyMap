@@ -19,7 +19,7 @@ import { buildDateFloor } from "@/lib/reports/csv";
 import { filterActionContractsByScope } from"@/lib/reports/scope";
 import { requireAuthenticatedAccess } from"@/lib/authz";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
-import { getSupabaseServerClient } from"@/lib/supabase/server";
+import { getSupabaseAdminClient } from"@/lib/supabase/server";
 import { formatScorePercent } from "@/lib/formatters/score";
 import { parsePositiveInteger } from "@/lib/http/query-params";
 
@@ -316,7 +316,7 @@ export async function GET(request: Request) {
   scopeValue,
   legacyAssociation,
  });
- const supabase = getSupabaseServerClient();
+ const supabase = getSupabaseAdminClient();
  const cacheDay = new Date().toISOString().slice(0, 10);
  const cachedPdfPath = buildElusDossierPdfStoragePath({
   generatedAt: cacheDay,

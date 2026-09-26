@@ -36,7 +36,7 @@ export async function GET(request: Request) {
         { status: 400 },
       );
     }
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const { fetchUnifiedActionContracts } = await import("@/lib/actions/unified-source");
     const { items, sourceHealth } = await fetchUnifiedActionContracts(supabase, {
       limit: 2000,
@@ -85,7 +85,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   const { data, error } = await supabase.storage
     .from(GOVERNANCE_MONTHLY_REPORT_PDF_BUCKET)
     .createSignedUrl(pdfStoragePath, GOVERNANCE_MONTHLY_REPORT_PDF_SIGNED_URL_TTL_SECONDS, {

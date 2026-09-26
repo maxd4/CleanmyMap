@@ -82,7 +82,7 @@ export async function loadCachedReportCommunityEvents(
   const normalizedLimit = clampLimit(limit);
   const cached = unstable_cache(
     async () => {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const eventsResult = await supabase
         .from("community_events")
         .select(

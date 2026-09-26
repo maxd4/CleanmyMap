@@ -89,7 +89,7 @@ export async function appendFunnelEvent(event: FunnelEvent): Promise<void> {
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase.from("funnel_events").insert({
         at: event.at,
         session_id: event.sessionId,
@@ -126,7 +126,7 @@ export async function listFunnelEvents(
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const floorIso = new Date(floor).toISOString();
       const result = await supabase
         .from("funnel_events")

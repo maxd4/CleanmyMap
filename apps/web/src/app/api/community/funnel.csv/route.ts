@@ -45,7 +45,7 @@ export async function GET(request: Request) {
  );
 
  try {
- const supabase = getSupabaseServerClient();
+ const supabase = getSupabaseServerClient(true);
  const eventsResult = eventId && eventId.trim() !==""
  ? await supabase
  .from("community_events")

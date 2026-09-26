@@ -233,7 +233,7 @@ export async function PATCH(request: Request, ctx: ParticipantImpactRouteContext
   }
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const context = await loadImpactContext(supabase, trimmedActionId, parsed.data.participantId, access.userId);
     if (context instanceof NextResponse) return context;
     return persistParticipantImpact(supabase, trimmedActionId, parsed.data.participantId, parsed.data, context);

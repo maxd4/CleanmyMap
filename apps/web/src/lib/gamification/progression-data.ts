@@ -440,7 +440,7 @@ export async function loadUserLevelRankingSummary(
 ): Promise<UserLevelRankingSummary> {
   const cached = unstable_cache(
     async () => {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const [profilesResult, labelsByUser] = await Promise.all([
         supabase
           .from("progression_profiles")

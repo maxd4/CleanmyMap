@@ -61,7 +61,7 @@ export async function GET(
   }
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const row = await loadActionById(supabase, trimmedActionId);
     if (!row) {
       return NextResponse.json(
@@ -159,7 +159,7 @@ export async function PATCH(
   };
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const current = await loadActionById(supabase, trimmedActionId);
     if (!current) {
       return NextResponse.json(

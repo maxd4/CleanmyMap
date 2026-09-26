@@ -166,7 +166,7 @@ async function upsertVote(request: Request, context: VoteRouteContext) {
 
     return NextResponse.json(
       await loadPollVoteResponse(
-        getSupabaseServerClient(),
+        getSupabaseServerClient(true),
         userId,
         messageId,
         poll.options,
@@ -225,7 +225,7 @@ export async function DELETE(_request: Request, context: VoteRouteContext) {
 
     return NextResponse.json(
       await loadPollVoteResponse(
-        getSupabaseServerClient(),
+        getSupabaseServerClient(true),
         userId,
         messageId,
         poll.options,

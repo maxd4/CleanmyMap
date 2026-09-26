@@ -10,6 +10,10 @@ const discussionMigration = readFileSync(
   resolve(process.cwd(), "supabase/migrations/20260915000011_action_discussion_access_contract.sql"),
   "utf8",
 );
+const hardeningMigration = readFileSync(
+  resolve(process.cwd(), "supabase/migrations/20260926000000_harden_privileged_supabase_boundaries.sql"),
+  "utf8",
+);
 
 describe("action sharing and discussion SQL contracts", () => {
   it("keeps RLS definer predicates bounded to the required roles", () => {
@@ -57,5 +61,23 @@ describe("action sharing and discussion SQL contracts", () => {
     expect(discussionMigration).toContain("(select auth.role()) = 'service_role'");
     expect(discussionMigration).toContain("(select auth.role()) = 'authenticated'");
     expect(discussionMigration).toContain("action_conversation_exclusions e");
+  });
+
+  it("keeps the RLS-only helpers executable only by authenticated policy callers", () => {
+    expect(hardeningMigration).toContain("(select auth.role()) in ('authenticated', 'service_role')");
+    expect(hardeningMigration).toContain(
+      "revoke all on function public.can_insert_action_message_reference(uuid)\n  from public, anon, service_role;",
+    );
+    expect(hardeningMigration).toContain(
+      "grant execute on function public.can_insert_action_message_reference(uuid)\n  to authenticated;",
+    );
+    expect(hardeningMigration).toContain(
+      "revoke all on function public.can_view_action_conversation(uuid)\n  from public, anon, service_role;",
+    );
+    expect(hardeningMigration).toContain(
+      "revoke all on function public.can_post_action_conversation(uuid)\n  from public, anon, service_role;",
+    );
+    expect(hardeningMigration).not.toContain("grant execute on function public.can_view_action_conversation(uuid)\n  to service_role;");
+    expect(hardeningMigration).not.toContain("grant execute on function public.can_post_action_conversation(uuid)\n  to service_role;");
   });
 });

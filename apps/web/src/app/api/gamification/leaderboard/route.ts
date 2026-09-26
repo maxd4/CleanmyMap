@@ -29,7 +29,7 @@ async function loadCachedGamificationLeaderboard(
 ) {
  const cached = unstable_cache(
   async () => {
-   const supabase = getSupabaseServerClient();
+   const supabase = getSupabaseServerClient(true);
    return getGamificationLeaderboard(supabase, scope, period);
   },
   ["gamification-leaderboard", buildLeaderboardCacheKey(scope, period)],

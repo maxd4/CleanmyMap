@@ -93,7 +93,7 @@ export async function GET(request: Request) {
     query,
     types,
   });
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
 
   try {
     const cachedRedirect = await createJsonRedirect({

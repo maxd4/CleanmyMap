@@ -14,7 +14,7 @@ export async function GET() {
   }
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const payload = await loadGamificationBadgesList(supabase, userId);
     return NextResponse.json({
       status: "ok",
