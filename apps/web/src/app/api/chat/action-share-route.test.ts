@@ -58,7 +58,11 @@ describe("POST /api/chat action shares", () => {
     const response = await POST(new Request("http://localhost/api/chat", { method: "POST", body: JSON.stringify({ channelType: "community", actionId, content: "Partage" }) }));
     expect(response.status).toBe(201);
     expect(supabaseMock.appMessagesTable.insert).toHaveBeenCalledWith(expect.objectContaining({ action_id: actionId, channel_type: "community" }));
-    expect(notificationsMock).toHaveBeenCalledWith(supabaseMock.serviceSupabase, "shared-1");
+    expect(notificationsMock).toHaveBeenCalledWith(
+      supabaseMock.serviceSupabase,
+      "shared-1",
+      "user-1",
+    );
   });
 
   it("refuses an unavailable action before writing", async () => {

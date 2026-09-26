@@ -530,9 +530,9 @@ export async function POST(request: Request) {
     }
 
     try {
-      await createChatNotificationsForMessage(serviceSupabase, message.id);
-    } catch (notificationError) {
-      console.warn("[POST /api/chat] Notification fan-out failed:", notificationError);
+      await createChatNotificationsForMessage(serviceSupabase, message.id, userId);
+    } catch (error) {
+      console.warn("[POST /api/chat] Notification fan-out failed:", error);
     }
 
     return NextResponse.json({ status: "sent", message }, { status: 201 });

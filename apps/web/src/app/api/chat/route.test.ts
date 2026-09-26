@@ -103,6 +103,7 @@ describe("POST /api/chat", () => {
         body: JSON.stringify({
           channelType: "community",
           content: "Bonjour tout le monde",
+          actorUserId: "spoofed-browser-actor",
         }),
       }),
     );
@@ -150,6 +151,7 @@ describe("POST /api/chat", () => {
     expect(createChatNotificationsForMessageMock).toHaveBeenCalledWith(
       { service: true },
       "message-42",
+      "user-1",
     );
     expect(loadActionByIdMock).not.toHaveBeenCalled();
   }, 15000);
