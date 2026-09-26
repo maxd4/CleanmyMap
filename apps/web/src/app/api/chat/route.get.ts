@@ -27,7 +27,10 @@ import {
   messageSelect,
   parseArrondissement,
   sortChatMessages,
-  validateTopicForChannel,
+  applyChatTopicFilter,
+  getChatTopicIdsFromValidation,
+  getChatTopicRequestParam,
+  validateTopicRequestForChannel,
 } from "./route.shared";
 import {
   enrichPollVoteSummaries,
@@ -46,7 +49,7 @@ export async function GET(request: Request) {
   const channelTypeRaw = searchParams.get("channelType");
   const channelType = isChatChannelType(channelTypeRaw) ? channelTypeRaw : null;
   const recipientId = searchParams.get("recipientId");
-  const requestedTopicId = searchParams.get("topicId");
+  const requestedTopicId = getChatTopicRequestParam(searchParams);
   const requestedArrondissement = parseArrondissement(searchParams.get("arrondissementId"));
   const requestedZoneName = searchParams.get("zoneName")?.trim() || null;
   const requestedMessageId = searchParams.get("messageId")?.trim() || null;
@@ -75,7 +78,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const topicValidation = validateTopicForChannel(channelType, requestedTopicId);
+  const topicValidation = validateTopicRequestForChannel(channelType, requestedTopicId);
   if (requestedTopicId && topicValidation.error) {
     return NextResponse.json(
       {
@@ -86,6 +89,7 @@ export async function GET(request: Request) {
     );
   }
   const topicId = topicValidation.topicId;
+  const topicIds = getChatTopicIdsFromValidation(topicValidation);
 
   if (channelType === "action" && !requestedActionId) {
     return NextResponse.json(
@@ -182,11 +186,11 @@ export async function GET(request: Request) {
     }
 
     const createMessageQuery = () =>
-      supabase
+      applyChatTopicFilter(supabase
         .from("app_messages")
         .select(messageSelect)
         .order("created_at", { ascending: false })
-        .order("id", { ascending: false });
+        .order("id", { ascending: false }), topicIds);
     type ChatScopedQuery = ReturnType<typeof createMessageQuery>;
     const scopeQueryFactories: Array<() => ChatScopedQuery> = [];
 

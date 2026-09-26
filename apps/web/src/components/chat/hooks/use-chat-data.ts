@@ -19,11 +19,13 @@ import type {
 } from "../chat-types";
 import { sortByCreatedAtAsc } from "@/lib/chat/postgrest";
 import type { ChatHistoryCursor } from "@/lib/chat/chat-pagination";
+import { getChatTopicIdsForPresentationScope } from "@/lib/chat/topic-presentation";
 
 type UseChatDataParams = {
   activeChannelType: ChatChannelType;
   activeActionId?: string | null;
   activeTopicId: ChatTopicId | null;
+  activeTopicIds?: readonly ChatTopicId[] | null;
   selectedRecipientId: string | null;
   effectiveZone: string;
   territoryFocus: number | null;
@@ -110,6 +112,7 @@ export function buildMessagesKey({
   activeChannelType,
   activeActionId,
   activeTopicId,
+  activeTopicIds,
   selectedRecipientId,
   effectiveZone,
   territoryFocus,
@@ -119,13 +122,21 @@ export function buildMessagesKey({
   | "activeChannelType"
   | "activeActionId"
   | "activeTopicId"
+  | "activeTopicIds"
   | "selectedRecipientId"
   | "effectiveZone"
   | "territoryFocus"
   | "initialMessageId"
 >): string | null {
-  const topicParam = activeTopicId
-    ? `&topicId=${encodeURIComponent(activeTopicId)}`
+  const effectiveTopicIds = activeTopicIds?.length
+    ? activeTopicIds
+    : activeTopicId
+      ? [activeTopicId]
+      : null;
+  const topicParam = effectiveTopicIds
+    ? effectiveTopicIds.length === 1
+      ? `&topicId=${encodeURIComponent(effectiveTopicIds[0])}`
+      : `&topicIds=${encodeURIComponent(effectiveTopicIds.join(","))}`
     : "";
   const messageParam = initialMessageId
     ? `&messageId=${encodeURIComponent(initialMessageId)}`
@@ -178,6 +189,7 @@ export function useChatData({
   activeChannelType,
   activeActionId,
   activeTopicId,
+  activeTopicIds = getChatTopicIdsForPresentationScope(activeChannelType, activeTopicId),
   selectedRecipientId,
   effectiveZone,
   territoryFocus,
@@ -207,6 +219,7 @@ export function useChatData({
         activeChannelType,
         activeActionId,
         activeTopicId,
+        activeTopicIds,
         selectedRecipientId,
         effectiveZone,
         territoryFocus,
@@ -398,17 +411,16 @@ export function useChatData({
                 scheduleMessagesRefresh();
               }
             } else if (activeChannelType === "community") {
-              if (!activeTopicId || newMsg.topic_id === activeTopicId) {
+              if (!activeTopicIds?.length || activeTopicIds.includes(newMsg.topic_id as ChatTopicId)) {
                 scheduleMessagesRefresh();
               }
             } else if (activeChannelType === "admin_elu") {
-              if (!activeTopicId || newMsg.topic_id === activeTopicId) {
+              if (!activeTopicIds?.length || activeTopicIds.includes(newMsg.topic_id as ChatTopicId)) {
                 scheduleMessagesRefresh();
               }
             } else if (activeChannelType === "territory") {
               // Match by zone or arrondissement
               if (
-                (!activeTopicId || newMsg.topic_id === activeTopicId) &&
                 ((newMsg.zone_name && newMsg.zone_name === effectiveZone) ||
                   (newMsg.arrondissement_id && newMsg.arrondissement_id === territoryFocus))
               ) {
@@ -450,6 +462,7 @@ export function useChatData({
     activeChannelType,
     activeActionId,
     activeTopicId,
+    activeTopicIds,
     selectedRecipientId,
     currentUserId,
     effectiveZone,

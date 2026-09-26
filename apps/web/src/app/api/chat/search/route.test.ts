@@ -236,6 +236,33 @@ describe("GET /api/chat/search", () => {
     expect(supabaseMock.calls.eq).toHaveBeenCalledWith("topic_id", "arbitrages");
   });
 
+  it("searches all persisted topics in an aggregate group", async () => {
+    const supabaseMock = buildSupabaseMock({
+      rows: [
+        buildRow(1, { channel_type: "admin_elu", content: "Arbitrage important", topic_id: "arbitrages" }),
+        buildRow(2, { channel_type: "admin_elu", content: "Priorité importante", topic_id: "priorites" }),
+        buildRow(3, { channel_type: "admin_elu", content: "Suivi important", topic_id: "suivi_decisions" }),
+      ],
+    });
+    identityMock.mockResolvedValueOnce({ activeRole: "elu" });
+    rlsClientMock.mockResolvedValue(supabaseMock.supabase);
+
+    const response = await GET(
+      new Request(
+        "http://localhost/api/chat/search?channelType=admin_elu&topicIds=arbitrages,priorites&q=important",
+      ),
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.results).toHaveLength(2);
+    expect(body.results.map((result: { topicId: string }) => result.topicId)).toEqual([
+      "priorites",
+      "arbitrages",
+    ]);
+    expect(supabaseMock.calls.in).toHaveBeenCalledWith("topic_id", ["arbitrages", "priorites"]);
+  });
+
   it("keeps DM search inside the selected conversation", async () => {
     const supabaseMock = buildSupabaseMock({
       rows: [

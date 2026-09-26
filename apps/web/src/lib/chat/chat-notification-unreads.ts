@@ -18,6 +18,13 @@ export type ChatNotificationUnreadCounts = {
   actions: number;
 };
 
+export function sumChatTopicUnreadCounts(
+  byTopic: Partial<Record<ChatTopicId, number>>,
+  topicIds: readonly ChatTopicId[],
+): number {
+  return topicIds.reduce((total, topicId) => total + (byTopic[topicId] ?? 0), 0);
+}
+
 export function createEmptyChatNotificationUnreadCounts(): ChatNotificationUnreadCounts {
   return {
     community: 0,

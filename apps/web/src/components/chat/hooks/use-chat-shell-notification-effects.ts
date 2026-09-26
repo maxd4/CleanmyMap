@@ -7,6 +7,7 @@ import type { ChatTopicId } from "@/lib/chat/topics";
 import type { ChatFeedState } from "../chat-feed-state";
 import type { ChatUser, DmConversation } from "../chat-types";
 import type { ChatNotificationReadScope } from "./use-chat-notification-unreads";
+import { getChatTopicIdsForPresentationScope } from "@/lib/chat/topic-presentation";
 
 type UseChatShellNotificationEffectsParams = {
   activeChannelType: ChatChannelType;
@@ -35,6 +36,7 @@ export function useChatShellNotificationEffects({
   markChatNotificationsRead,
   messages,
 }: UseChatShellNotificationEffectsParams) {
+  const activeTopicIds = getChatTopicIdsForPresentationScope(activeChannelType, activeTopicId);
   useEffect(() => {
     if (activeChannelType !== "dm" || !selectedRecipient) {
       return;
@@ -107,7 +109,7 @@ export function useChatShellNotificationEffects({
       return;
     }
 
-    const markKey = `${activeChannelType}:${activeTopicId ?? "global"}`;
+    const markKey = `${activeChannelType}:${activeTopicIds?.join(",") ?? activeTopicId ?? "global"}`;
     if (lastMarkedChatNotificationRef.current === markKey) {
       return;
     }
@@ -115,7 +117,8 @@ export function useChatShellNotificationEffects({
     lastMarkedChatNotificationRef.current = markKey;
     void markChatNotificationsRead({
       channelType: activeChannelType,
-      topicId: activeTopicId,
+      topicId: activeTopicIds?.length === 1 ? activeTopicIds[0] : null,
+      topicIds: activeTopicIds,
     }).catch(() => {
       if (lastMarkedChatNotificationRef.current === markKey) {
         lastMarkedChatNotificationRef.current = null;
@@ -124,6 +127,7 @@ export function useChatShellNotificationEffects({
   }, [
     activeChannelType,
     activeTopicId,
+    activeTopicIds,
     feedState,
     markChatNotificationsRead,
     messagerieMode,

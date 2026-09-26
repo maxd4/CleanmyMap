@@ -5,7 +5,8 @@ import type { LucideIcon } from "lucide-react";
 import { Leaf } from "lucide-react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
-import type { ChatTopicDefinition, ChatTopicId } from "./discussion-guidance";
+import type { ChatTopicId } from "./discussion-guidance";
+import type { ChatTopicPresentationGroup } from "@/lib/chat/topic-presentation";
 import { ChannelButton } from "./ui/channel-button";
 import { ChatActionSurface } from "./chat-action-surface";
 import { ChatTerritorySelector } from "./chat-territory-selector";
@@ -26,7 +27,7 @@ export type ChatSidebarChannel = {
   isLocked: boolean;
 };
 
-export type ChatSidebarTopic = ChatTopicDefinition & {
+export type ChatSidebarTopic = ChatTopicPresentationGroup & {
   active: boolean;
   unreadCount?: number;
 };
@@ -193,7 +194,8 @@ export const ChatSidebar = memo(function ChatSidebar({
               compact={isMessagerie}
             />
           ) : null}
-          {currentChannelType === "territory" ? renderTopics() : null}
+          {/* Territory keeps one zone-driven thread; legacy topic IDs are not
+              exposed as separate navigation entries. */}
 
         </div>
       </section>

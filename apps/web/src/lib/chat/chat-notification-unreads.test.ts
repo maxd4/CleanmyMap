@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { normalizeChatNotificationUnreadCounts } from "./chat-notification-unreads";
+import {
+  normalizeChatNotificationUnreadCounts,
+  sumChatTopicUnreadCounts,
+} from "./chat-notification-unreads";
 
 describe("chat notification unread aggregation", () => {
   it("keeps aggregate counts while exposing only valid per-topic counts", () => {
@@ -23,5 +26,14 @@ describe("chat notification unread aggregation", () => {
       dm: 5,
       actions: 0,
     });
+  });
+
+  it("sums raw topic counts without changing their persisted granularity", () => {
+    expect(
+      sumChatTopicUnreadCounts(
+        { arbitrages: 2, priorites: 3, suivi_decisions: 7 },
+        ["arbitrages", "priorites"],
+      ),
+    ).toBe(5);
   });
 });

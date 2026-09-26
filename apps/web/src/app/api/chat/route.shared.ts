@@ -70,7 +70,7 @@ export type ChatMessageRow = {
 export function validateTopicForChannel(
   channelType: ChatChannelType,
   topicId: string | null | undefined,
-): { topicId: ChatTopicId | null; error?: string } {
+): { topicId: ChatTopicId | null; topicIds?: ChatTopicId[]; error?: string } {
   if (!topicId) {
     return { topicId: null };
   }
@@ -84,6 +84,79 @@ export function validateTopicForChannel(
   }
 
   return { topicId };
+}
+
+type ChatTopicRequestValidation = {
+  topicId: ChatTopicId | null;
+  topicIds: ChatTopicId[] | null;
+  error?: string;
+};
+
+export function validateTopicRequestForChannel(
+  channelType: ChatChannelType,
+  topicId: string | null | undefined,
+): ChatTopicRequestValidation {
+  if (!topicId || !topicId.includes(",")) {
+    const validation = validateTopicForChannel(channelType, topicId);
+    return {
+      topicId: validation.topicId,
+      topicIds: validation.topicId ? [validation.topicId] : null,
+      error: validation.error,
+    };
+  }
+
+  const topicIds = [...new Set(topicId.split(",").map((value) => value.trim()).filter(Boolean))];
+  const results = topicIds.map((value) => validateTopicForChannel(channelType, value));
+  if (results.length === 0 || results.some((result) => result.error || !result.topicId)) {
+    return { topicId: null, topicIds: null, error: "Ce groupe de salons n'est pas disponible dans ce canal." };
+  }
+  return {
+    topicId: null,
+    topicIds: results.map((result) => result.topicId as ChatTopicId),
+  };
+}
+
+export function getChatTopicRequestParam(searchParams: URLSearchParams): string | null {
+  return searchParams.get("topicIds") || searchParams.get("topicId");
+}
+
+export function getChatTopicIdsFromValidation(
+  validation: ChatTopicRequestValidation,
+): ChatTopicId[] | null {
+  if (validation.topicIds) return validation.topicIds;
+  return validation.topicId ? [validation.topicId] : null;
+}
+
+export function resolveChatTopicRequest(
+  channelType: ChatChannelType,
+  searchParams: URLSearchParams,
+  legacyTopicId: string | null = null,
+): {
+  topicId: ChatTopicId | null;
+  topicIds: ChatTopicId[] | null;
+  error?: string;
+} {
+  const requestedTopicId = searchParams.get("topicIds") || legacyTopicId || searchParams.get("topicId");
+  const validation = validateTopicRequestForChannel(channelType, requestedTopicId);
+  return {
+    topicId: validation.topicId,
+    topicIds: getChatTopicIdsFromValidation(validation),
+    error: validation.error,
+  };
+}
+
+export function applyChatTopicFilter<T>(
+  query: T,
+  topicIds: readonly ChatTopicId[] | null,
+): T {
+  if (!topicIds) return query;
+  const filterable = query as {
+    eq: (field: string, value: unknown) => unknown;
+    in: (field: string, values: unknown[]) => unknown;
+  };
+  if (topicIds.length === 1) filterable.eq("topic_id", topicIds[0]);
+  else filterable.in("topic_id", [...topicIds]);
+  return query;
 }
 
 export function validateMessageKind(

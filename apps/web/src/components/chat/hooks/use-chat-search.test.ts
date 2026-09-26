@@ -40,6 +40,22 @@ describe("chat search keys", () => {
     ).toBeNull();
   });
 
+  it("searches every persisted topic in an aggregate presentation group", () => {
+    expect(
+      buildChatSearchKey({
+        activeChannelType: "admin_elu",
+        activeTopicId: "arbitrages",
+        activeTopicIds: ["arbitrages", "priorites"],
+        selectedRecipientId: null,
+        effectiveZone: "",
+        territoryFocus: null,
+        query: "priorité",
+      }),
+    ).toBe(
+      "/api/chat/search?channelType=admin_elu&q=priorit%C3%A9&topicIds=arbitrages%2Cpriorites",
+    );
+  });
+
   it("preserves territory context in the search key", () => {
     expect(
       buildChatSearchKey({
