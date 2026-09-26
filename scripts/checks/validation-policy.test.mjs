@@ -64,6 +64,20 @@ test("runtime and configuration changes require the build, test-only changes do 
   assert.ok(testPlan.targetedVitestFiles.includes("src/lib/example.test.ts"));
 });
 
+test("Vercel configuration changes use the same build-relevant scope", () => {
+  const vercelPlan = createValidationPlan({
+    scope: "changed",
+    changedFiles: ["apps/web/vercel.json"],
+  });
+  const testPlan = createValidationPlan({
+    scope: "changed",
+    changedFiles: ["apps/web/src/lib/example.test.ts"],
+  });
+
+  assert.equal(vercelPlan.buildRelevant, true);
+  assert.equal(testPlan.buildRelevant, false);
+});
+
 test("heavy commands are excluded from parallel static phases", () => {
   const plan = createValidationPlan({ scope: "full" });
   const parallel = new Set(plan.parallelStatic.labels);

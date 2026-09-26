@@ -30,7 +30,7 @@ test("pre-commit uses the changed-surface guard and fast global controls", async
   assert.doesNotMatch(guard, /pre_push_guard\.ps1|npm run build|vercel build|-IncludeBuild/);
 });
 
-test("CI reports independent structural gates after setup and dependency installation", async () => {
+test("CI reports independent gates after setup and dependency installation", async () => {
   const workflow = await readRepoFile(".github/workflows/ci.yml");
   const webValidation = workflow.slice(workflow.indexOf("  web-validation:"), workflow.indexOf("  mobile-validation:"));
   for (const gate of [
@@ -44,6 +44,24 @@ test("CI reports independent structural gates after setup and dependency install
     assert.match(step, /steps\.setup-node\.outcome == 'success'/, gate);
     assert.match(step, /steps\.install-node-dependencies\.outcome == 'success'/, gate);
   }
+  for (const gate of [
+    "npm run lint",
+    "node scripts/checks/validation-policy.mjs --assert-full-suite",
+    "npm run quality:coverage",
+  ]) {
+    const step = webValidation.slice(webValidation.indexOf(gate) - 600, webValidation.indexOf(gate));
+    assert.match(step, /if: always\(\)/, gate);
+    assert.match(step, /steps\.setup-node\.outcome == 'success'/, gate);
+    assert.match(step, /steps\.install-node-dependencies\.outcome == 'success'/, gate);
+  }
+  for (const gate of ["npm run audit:vercel:ci", "npm run build"]) {
+    const step = webValidation.slice(webValidation.indexOf(gate) - 700, webValidation.indexOf(gate));
+    assert.match(step, /if: always\(\)/, gate);
+    assert.match(step, /needs\.scope\.outputs\.build_relevant == 'true'/, gate);
+  }
+  assert.match(workflow, /build_relevant: \$\{\{ steps\.detect-scope\.outputs\.build_relevant \}\}/);
+  assert.match(workflow, /validation-policy\.mjs --scope changed --json/);
+  assert.doesNotMatch(webValidation, /continue-on-error:/);
   assert.match(webValidation, /steps\.install-gitnexus\.outcome == 'success'[\s\S]*?npm run quality:cycles/);
 });
 

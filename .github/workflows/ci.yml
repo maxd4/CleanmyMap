@@ -27,6 +27,7 @@ jobs:
       docs_only: ${{ steps.detect-scope.outputs.docs_only }}
       web_code_relevant: ${{ steps.detect-scope.outputs.web_code_relevant }}
       mobile_code_relevant: ${{ steps.detect-scope.outputs.mobile_code_relevant }}
+      build_relevant: ${{ steps.detect-scope.outputs.build_relevant }}
 
     steps:
       - name: Checkout
@@ -64,9 +65,12 @@ jobs:
           docs_only=true
           web_code_relevant=false
           mobile_code_relevant=false
+          policy_args=(scripts/checks/validation-policy.mjs --scope changed --json)
 
           while IFS= read -r file; do
             [[ -z "$file" ]] && continue
+
+            policy_args+=(--changed-file "$file")
 
             case "$file" in
               documentation/*|*.md)
@@ -91,9 +95,13 @@ jobs:
             esac
           done <<< "$changed_files"
 
+          policy_json="$(node "${policy_args[@]}")"
+          build_relevant="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).buildRelevant))' "$policy_json")"
+
           echo "docs_only=$docs_only" >> "$GITHUB_OUTPUT"
           echo "web_code_relevant=$web_code_relevant" >> "$GITHUB_OUTPUT"
           echo "mobile_code_relevant=$mobile_code_relevant" >> "$GITHUB_OUTPUT"
+          echo "build_relevant=$build_relevant" >> "$GITHUB_OUTPUT"
 
   web-governance:
     needs: scope
@@ -219,18 +227,23 @@ jobs:
         run: npm run quality:cycles
 
       - name: Web lint
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run lint
 
       - name: Web test policy
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: node scripts/checks/validation-policy.mjs --assert-full-suite
 
       - name: Web Vitest tests and coverage ratchet
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success'
         run: npm run quality:coverage
 
       - name: Vercel audit
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success' && needs.scope.outputs.build_relevant == 'true'
         run: npm run audit:vercel:ci
 
       - name: Web production build
+        if: always() && steps.setup-node.outcome == 'success' && steps.install-node-dependencies.outcome == 'success' && needs.scope.outputs.build_relevant == 'true'
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
