@@ -10,9 +10,12 @@ import type { ChatMessageKind, ChatRelatedEvent } from "@/lib/chat/announcements
 import type { ChatPollOption } from "@/lib/chat/polls";
 import type { SendChatMessageParams } from "./use-chat-data";
 import {
+  ChatAttachmentUploadError,
   getChatSubmitPreconditionError,
   reportChatAttachmentError,
+  sendChatMessageWithAttachmentLifecycle,
   uploadChatAttachmentIfNeeded,
+  removeChatAttachment,
 } from "./use-chat-submit.helpers";
 
 type UseChatSubmitParams = {
@@ -233,54 +236,56 @@ export function useChatSubmit({
     setIsSending(true);
     setSendError(null);
 
-    let attachmentUrl: string | undefined;
-    let attachmentType: string | undefined;
-    let attachmentSize: number | undefined;
-
     try {
-      let uploadedAttachment: { url: string; type: string | undefined; size: number } | null;
       try {
-        uploadedAttachment = await uploadChatAttachmentIfNeeded({
-          file,
-          supabase,
-          userId,
-          activeChannelType,
-          setIsUploading,
+        await sendChatMessageWithAttachmentLifecycle({
+          uploadAttachment: () =>
+            uploadChatAttachmentIfNeeded({
+              file,
+              supabase,
+              userId,
+              activeChannelType,
+              setIsUploading,
+            }),
+          sendMessage: (uploadedAttachment) =>
+            sendPreparedChatMessage({
+              userId,
+              currentMessage,
+              activeChannelType,
+              activeActionId,
+              activeTopicId,
+              messageKind,
+              pollOptions,
+              relatedEvent,
+              selectedRecipient,
+              effectiveZone,
+              territoryFocus,
+              senderDisplayName,
+              senderHandle,
+              user,
+              attachmentUrl: uploadedAttachment?.url,
+              attachmentType: uploadedAttachment?.type,
+              attachmentSize: uploadedAttachment?.size,
+              feedbackId,
+              feedbackOperationIdRef,
+              sendChatMessage,
+            }),
+          removeAttachment: (attachment) =>
+            removeChatAttachment({
+              supabase: supabase as SupabaseClient,
+              attachment,
+            }),
         });
       } catch (uploadError) {
-        reportChatAttachmentError(uploadError, {
-          setSendError,
-          retrySubmitChatMessage,
-        });
-        return;
+        if (uploadError instanceof ChatAttachmentUploadError) {
+          reportChatAttachmentError(uploadError.cause, {
+            setSendError,
+            retrySubmitChatMessage,
+          });
+          return;
+        }
+        throw uploadError;
       }
-
-      attachmentUrl = uploadedAttachment?.url;
-      attachmentType = uploadedAttachment?.type;
-      attachmentSize = uploadedAttachment?.size;
-
-      await sendPreparedChatMessage({
-        userId,
-        currentMessage,
-        activeChannelType,
-        activeActionId,
-        activeTopicId,
-        messageKind,
-        pollOptions,
-        relatedEvent,
-        selectedRecipient,
-        effectiveZone,
-        territoryFocus,
-        senderDisplayName,
-        senderHandle,
-        user,
-        attachmentUrl,
-        attachmentType,
-        attachmentSize,
-        feedbackId,
-        feedbackOperationIdRef,
-        sendChatMessage,
-      });
 
       if (feedbackId) {
         feedbackOperationIdRef.current = null;

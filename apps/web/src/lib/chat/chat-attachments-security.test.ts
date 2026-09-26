@@ -82,7 +82,7 @@ describe("chat attachment privacy contract", () => {
     expect(sizeMigration).toContain("update storage.buckets");
     expect(sizeMigration).toContain("set file_size_limit = 8 * 1024 * 1024");
     expect(sizeMigration).toContain("where id = 'chat-attachments'");
-    expect(submitHook).toContain(".from(\"chat-attachments\")");
+    expect(submitHook).toContain('CHAT_ATTACHMENTS_BUCKET = "chat-attachments"');
     expect(submitHook).not.toContain("/api/chat/upload");
   });
 });

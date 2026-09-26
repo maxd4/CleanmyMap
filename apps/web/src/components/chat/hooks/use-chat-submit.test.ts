@@ -104,7 +104,7 @@ describe("useChatSubmit retry wiring", () => {
     expect(validationPosition).toBeGreaterThanOrEqual(0);
     expect(uploadStatePosition).toBeGreaterThan(validationPosition);
     expect(source).toContain("attachmentSize");
-    expect(source).toContain('.from("chat-attachments")');
+    expect(source).toContain('CHAT_ATTACHMENTS_BUCKET = "chat-attachments"');
     expect(source).not.toContain("/api/chat/upload");
   });
 
