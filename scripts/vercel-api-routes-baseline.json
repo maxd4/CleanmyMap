@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-14T23:30:46.968Z",
-  "apiRouteCount": 98,
+  "generatedAt": "2026-09-26T11:35:00.000Z",
+  "apiRouteCount": 100,
   "apiRoutes": [
     "apps/web/src/app/api/%5F%5Fclerk/[[...path]]/route.ts",
     "apps/web/src/app/api/account/active-profile/route.ts",
@@ -12,6 +12,7 @@
     "apps/web/src/app/api/actions/[actionId]/cancel/route.ts",
     "apps/web/src/app/api/actions/[actionId]/formalities/route.ts",
     "apps/web/src/app/api/actions/[actionId]/group-join/route.ts",
+    "apps/web/src/app/api/actions/[actionId]/participant-impact/route.ts",
     "apps/web/src/app/api/actions/[actionId]/participation-claim/route.ts",
     "apps/web/src/app/api/actions/[actionId]/public/route.ts",
     "apps/web/src/app/api/actions/[actionId]/publish/route.ts",
@@ -21,6 +22,7 @@
     "apps/web/src/app/api/actions/map/initial-nearest/route.ts",
     "apps/web/src/app/api/actions/map/pollution-score-references/route.ts",
     "apps/web/src/app/api/actions/map/route.ts",
+    "apps/web/src/app/api/actions/organizers/route.ts",
     "apps/web/src/app/api/actions/prefill/route.ts",
     "apps/web/src/app/api/actions/route.ts",
     "apps/web/src/app/api/admin/codex-usage/route.ts",

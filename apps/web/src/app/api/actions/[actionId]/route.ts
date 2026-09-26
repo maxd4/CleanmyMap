@@ -36,6 +36,7 @@ import {
   runActionUpdatePostProcessing,
   type AdminOverrideErrorStage,
 } from "@/lib/actions/action-update-post-processing";
+import { resolveActionUpdateOrganizer } from "@/lib/actions/action-update-organizer";
 
 export const runtime = "nodejs";
 // Vercel: force dynamic because this route serves authenticated action edits with fresh reads.
@@ -201,7 +202,7 @@ export async function PATCH(
       );
     }
 
-    const parsedBody: ActionUpdateInput = parsed.data;
+    const parsedBody: ActionUpdateInput = await resolveActionUpdateOrganizer({ supabase, body: parsed.data, current });
     const validatedImpactCorrection =
       current.status === "approved" && hasActionImpactUpdate(parsedBody);
     if (validatedImpactCorrection && !canEditValidatedImpact(identity)) {

@@ -30,7 +30,6 @@ import { useActionDeclarationForm } from "./use-action-declaration-form";
 const ACTION_VALIDATION_FIELD_IDS: Record<string, string> = {
   organizerType: "action-organizer-type",
   associationName: "action-organizer-structure",
-  enterpriseName: "action-enterprise-name",
   actionDate: "action-action-date",
   arrivalLocationLabel: "arrival",
   manualDrawing: "action-disclosure-route",
@@ -151,7 +150,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
   const hasValidationIssue = (fields: string[]) =>
     validationIssues.some((issue) => fields.includes(issue.field));
   const organizationNeedsAttention =
-    hasValidationIssue(["associationName", "organizerType", "enterpriseName"]) ||
+    hasValidationIssue(["associationName", "organizerName", "organizerType"]) ||
     (form.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE && !form.actorName.trim());
   const collectionNeedsAttention =
     hasValidationIssue(["wasteKg"]);
@@ -166,7 +165,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
       ? `${form.participantAccounts.length} participant${form.participantAccounts.length > 1 ? "s" : ""}`
       : null,
     form.organizerAccounts.trim() ? "comptes associés" : null,
-    form.enterpriseName.trim() ? "entreprise renseignée" : null,
   ]
     .filter(Boolean)
     .join(" · ");

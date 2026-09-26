@@ -113,6 +113,8 @@ export type ActionRow = {
   created_by_clerk_id: string;
   actor_name: string | null;
   organizer_type?: OrganizerType | null;
+  organizer_id?: string | null;
+  organizer_name?: string | null;
   action_date: string;
   location_label: string;
   department_code?: string | null;

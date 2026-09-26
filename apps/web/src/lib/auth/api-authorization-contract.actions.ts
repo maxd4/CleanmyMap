@@ -66,6 +66,15 @@ export const actionsAuthorizationContract = {
       evidenceScope: "module",
     },
   },
+  "actions/organizers": {
+    GET: {
+      expected: "Authenticated type-scoped organizer suggestions",
+      dimensions: ["authentication", "ownership"],
+      actual: "requireAuthenticatedAccess + type-scoped directory read; the service client is explicit after authentication",
+      evidence: ["requireAuthenticatedAccess", "searchOrganizerDirectory"],
+      evidenceScope: "module",
+    },
+  },
   actions: {
     GET: {
       expected: "Public approved view; non-public statuses require central moderation permission",

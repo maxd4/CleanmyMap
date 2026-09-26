@@ -29,7 +29,6 @@ type DraftSnapshotCacheEntry = {
 const FORM_STATE_KEYS = [
   "actorName",
   "associationName",
-  "enterpriseName",
   "organizerAccounts",
   "participantAccounts",
   "groupJoinEnabled",

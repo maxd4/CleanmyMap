@@ -100,9 +100,6 @@ export function ActionDeclarationFormConfirmation({
             <p className="cmm-text-small cmm-text-secondary mt-2 font-semibold">
               Type de structure : {getOrganizerTypeLabel(payload.organizerType)}
             </p>
-            {form.enterpriseName && (
-              <p className="cmm-text-small cmm-text-secondary mt-1">{form.enterpriseName}</p>
-            )}
             {payload.recordType === "action" && (
               <p className="cmm-text-small cmm-text-secondary mt-2">
                 {payload.associationName === "Action spontanée"

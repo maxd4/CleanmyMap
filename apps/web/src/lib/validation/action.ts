@@ -3,7 +3,6 @@ import {
   normalizeCreatePayload,
   type ActionContractCreatePayload,
 } from "@/lib/actions/data-contract";
-import { isValidAssociationName } from "@/lib/actions/association-options";
 import { isOrganizerType, type OrganizerType } from "@/lib/actions/organizer-type";
 import type { CreateActionPayload } from "@/lib/actions/types";
 import { ACTION_GEOMETRY_SOURCES } from "@/lib/actions/types";
@@ -221,8 +220,10 @@ const visionEstimateSchema = z.object({
 const associationNameSchema = z
   .string()
   .min(1)
-  .max(120)
-  .refine((value) => isValidAssociationName(value), "Association invalide.");
+  .max(120);
+
+const organizerNameSchema = z.string().trim().min(1).max(120);
+const organizerIdSchema = z.string().trim().min(1).max(120).nullable().optional();
 
 const organizerTypeSchema = z.custom<OrganizerType>(
   isOrganizerType,
@@ -490,6 +491,8 @@ const createActionLegacyBaseSchema = z.object({
   actorName: z.string().min(1).max(120).optional(),
   associationName: associationNameSchema,
   organizerType: organizerTypeSchema.nullable().optional(),
+  organizerId: organizerIdSchema,
+  organizerName: organizerNameSchema.optional(),
   organizerAccounts: z.array(z.string().min(1).max(120)).max(20).optional(),
   participantAccounts: accountTokensSchema,
   groupJoinEnabled: z.boolean().optional(),
@@ -574,6 +577,8 @@ const createActionContractSchema = z.object({
     actorName: z.string().min(1).max(120).optional(),
     associationName: associationNameSchema,
     organizerType: organizerTypeSchema.nullable().optional(),
+    organizerId: organizerIdSchema,
+    organizerName: organizerNameSchema.optional(),
     organizerAccounts: z.array(z.string().min(1).max(120)).max(20).optional(),
     participantAccounts: accountTokensSchema,
     groupJoinEnabled: z.boolean().optional(),
@@ -654,6 +659,8 @@ export const createActionSchema = z
 export const updateActionSchema = createActionLegacyBaseSchema
   .partial()
   .extend({
+  organizerId: organizerIdSchema,
+  organizerName: organizerNameSchema.optional(),
   actionPhase: actionPhaseSchema.optional(),
   preparationData: preparationDataSchema.nullable().optional(),
   reason: z.string().trim().max(500).optional(),

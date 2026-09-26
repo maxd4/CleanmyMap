@@ -15,6 +15,7 @@ const createActionMock = vi.hoisted(() => vi.fn());
 const invalidateSnapshotsMock = vi.hoisted(() => vi.fn());
 const createSignalementMock = vi.hoisted(() => vi.fn());
 const resolveActionOrganizersMock = vi.hoisted(() => vi.fn());
+const resolveActionOrganizerMock = vi.hoisted(() => vi.fn());
 const resolveActionParticipantsMock = vi.hoisted(() => vi.fn());
 const resolveDefaultActionOrganizerIdsMock = vi.hoisted(() => vi.fn());
 const emitActionCreatedMock = vi.hoisted(() => vi.fn());
@@ -73,11 +74,20 @@ vi.mock("@/lib/actions/participation/organizers", () => ({
   resolveDefaultActionOrganizerIds: resolveDefaultActionOrganizerIdsMock,
 }));
 
+vi.mock("@/lib/actions/organizer-directory-registry", () => ({
+  resolveActionOrganizer: resolveActionOrganizerMock,
+}));
+
 describe("POST /api/actions", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
     getSupabaseServerClientMock.mockReturnValue({});
+    resolveActionOrganizerMock.mockImplementation(async (params: { organizerId?: string | null; organizerName?: string | null; organizerType: string }) => ({
+      organizerId: params.organizerType === "spontaneous" ? null : params.organizerId ?? "directory-test-1",
+      organizerName: params.organizerName?.trim() || (params.organizerType === "spontaneous" ? "Action spontanée" : "Structure de test"),
+      legacyAssociationName: params.organizerType === "spontaneous" ? "Action spontanée" : params.organizerName?.trim() || "Structure de test",
+    }));
     createActionMock.mockResolvedValue({ id: "action-test-1" });
     invalidateSnapshotsMock.mockResolvedValue(undefined);
     createSignalementMock.mockResolvedValue({

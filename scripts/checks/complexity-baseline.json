@@ -81,7 +81,7 @@
       "path": "src/app/api/actions/[actionId]/route.ts",
       "line": 109,
       "category": "routes API",
-      "ceiling": 31,
+      "ceiling": 39,
       "status": "LEGACY",
       "functionIdentity": "named:PATCH#1"
     },
@@ -360,7 +360,7 @@
       "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
       "line": 202,
       "category": "hooks",
-      "ceiling": 49,
+      "ceiling": 50,
       "status": "LEGACY",
       "functionIdentity": "callback:fetchActionById ( initialActionId ) . then:0:#1"
     },
@@ -369,7 +369,7 @@
       "path": "src/components/actions/action-declaration/form/use-action-declaration-form.ts",
       "line": 476,
       "category": "hooks",
-      "ceiling": 21,
+      "ceiling": 28,
       "status": "LEGACY",
       "functionIdentity": "named:updateForm#1"
     },
@@ -405,18 +405,9 @@
       "path": "src/components/actions/action-declaration/payload.ts",
       "line": 388,
       "category": "React/JSX",
-      "ceiling": 58,
+      "ceiling": 62,
       "status": "LEGACY",
       "functionIdentity": "named:buildCreateActionPayload#1"
-    },
-    {
-      "metric": "complexity",
-      "path": "src/components/actions/action-declaration/steps/ActionStepIdentity.tsx",
-      "line": 128,
-      "category": "React/JSX",
-      "ceiling": 92,
-      "status": "LEGACY",
-      "functionIdentity": "named:ActionStepIdentity#1"
     },
     {
       "metric": "complexity",
@@ -702,7 +693,7 @@
       "path": "src/components/admin/role-management-panel.tsx",
       "line": 191,
       "category": "React/JSX",
-      "ceiling": 37,
+      "ceiling": 39,
       "status": "LEGACY",
       "functionIdentity": "named:renderRow#1"
     },
@@ -882,7 +873,7 @@
       "path": "src/components/learn/learn-numerique-theme-panel.tsx",
       "line": 50,
       "category": "React/JSX",
-      "ceiling": 21,
+      "ceiling": 25,
       "status": "LEGACY",
       "functionIdentity": "named:LearnNumeriqueThemePanel#1"
     },
@@ -1197,7 +1188,7 @@
       "path": "src/components/sections/rubriques/gamification/personal-progress.tsx",
       "line": 25,
       "category": "React/JSX",
-      "ceiling": 32,
+      "ceiling": 35,
       "status": "LEGACY",
       "functionIdentity": "named:PersonalProgress#1"
     },
@@ -1251,7 +1242,7 @@
       "path": "src/components/sections/rubriques/promotion-request-form.tsx",
       "line": 64,
       "category": "React/JSX",
-      "ceiling": 22,
+      "ceiling": 24,
       "status": "LEGACY",
       "functionIdentity": "named:submitRequest#1"
     },
@@ -1467,7 +1458,7 @@
       "path": "src/lib/actions/contracts/contract-builders.ts",
       "line": 198,
       "category": "métier/domain pur",
-      "ceiling": 37,
+      "ceiling": 39,
       "status": "LEGACY",
       "functionIdentity": "named:normalizeContractCreatePayload#1"
     },
@@ -1485,7 +1476,7 @@
       "path": "src/lib/actions/create-submission.ts",
       "line": 67,
       "category": "métier/domain pur",
-      "ceiling": 21,
+      "ceiling": 25,
       "status": "LEGACY",
       "functionIdentity": "named:createActionSubmission#1"
     },
@@ -1674,7 +1665,7 @@
       "path": "src/lib/actions/store-create-contract.ts",
       "line": 77,
       "category": "runtime/services/orchestration",
-      "ceiling": 32,
+      "ceiling": 35,
       "status": "LEGACY",
       "functionIdentity": "named:buildActionInsertPayload#1"
     },
@@ -1701,7 +1692,7 @@
       "path": "src/lib/actions/store-selects.ts",
       "line": 77,
       "category": "runtime/services/orchestration",
-      "ceiling": 22,
+      "ceiling": 24,
       "status": "LEGACY",
       "functionIdentity": "named:isMissingActionColumnError#1"
     },
@@ -2444,6 +2435,33 @@
       "functionIdentity": "named:isPlannerWeatherOperationalAssessment#1"
     },
     {
+      "metric": "complexity",
+      "path": "src/components/actions/action-declaration/before/use-before-action-form.ts",
+      "line": 143,
+      "category": "hooks",
+      "ceiling": 21,
+      "status": "LEGACY",
+      "functionIdentity": "callback:fetchActionById ( initialActionId ) . then:0:#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/action-editor-payload.ts",
+      "line": 9,
+      "category": "métier/domain pur",
+      "ceiling": 16,
+      "status": "LEGACY",
+      "functionIdentity": "named:buildActionEditorPayload#1"
+    },
+    {
+      "metric": "complexity",
+      "path": "src/lib/actions/organizer-directory-registry.ts",
+      "line": 112,
+      "category": "métier/domain pur",
+      "ceiling": 18,
+      "status": "LEGACY",
+      "functionIdentity": "named:resolveActionOrganizer#1"
+    },
+    {
       "metric": "functionLength",
       "path": "src/app/(app)/actions/map/page-client.tsx",
       "line": 45,
@@ -3153,15 +3171,6 @@
       "ceiling": 175,
       "status": "LEGACY",
       "functionIdentity": "named:ActionDeclarationLocationSection#1"
-    },
-    {
-      "metric": "functionLength",
-      "path": "src/components/actions/action-declaration/form/action-declaration-form.main-fields.tsx",
-      "line": 40,
-      "category": "React/JSX",
-      "ceiling": 171,
-      "status": "LEGACY",
-      "functionIdentity": "named:ActionDeclarationMainFields#1"
     },
     {
       "metric": "functionLength",

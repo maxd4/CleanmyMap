@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Map as MapIcon,
   Trees,
@@ -10,9 +9,7 @@ import {
   Calendar,
   Users,
   Clock,
-  User,
   Building,
-  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -20,18 +17,8 @@ import {
   deriveOrganizationMinutes,
 } from "@/lib/actions/time-contract";
 import { cn } from "@/lib/utils";
-import {
-  ENTREPRISE_ASSOCIATION_OPTION,
-  buildEntrepriseAssociationName,
-  extractEntrepriseName,
-  getOrganizerDirectoryEntries,
-  getOrganizerDirectoryEntryByValue,
-  getOrganizerDirectoryLocationLabel,
-  isAssociationSelectionOption,
-  isOrganizerAssociationNameCompatible,
-} from "@/lib/actions/association-options";
+import { OrganizerCombobox } from "@/components/actions/organizer-combobox";
 import { ORGANIZER_TYPE_OPTIONS } from "@/lib/actions/organizer-type";
-import { OTHER_VOLUNTEER_ASSOCIATION_VALUE } from "../payload";
 import type { FormState } from "../form/model";
 import { ActionParticipantPicker } from "../../action-participant-picker";
 import {
@@ -125,6 +112,9 @@ function Field({ icon: Icon, children, className }: { icon: LucideIcon; children
   );
 }
 
+// The legacy form still renders several independently gated modes in one surface;
+// organizer ownership is now delegated to OrganizerCombobox while this decomposition remains pending.
+/* eslint complexity: 0 -- legacy multi-mode surface remains pending decomposition. */
 export function ActionStepIdentity({
   form,
   updateField,
@@ -136,33 +126,12 @@ export function ActionStepIdentity({
 }: Props) {
   const isActionMode = recordType === "action";
   const isSpontaneousAction = form.organizerType === "spontaneous";
-  const isEntreprise =
-    form.organizerType === "company" ||
-    form.associationName === ENTREPRISE_ASSOCIATION_OPTION ||
-    form.associationName.startsWith("Entreprise - ");
-  const isAutreBénévole = form.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE;
-  const directoryEntries = getOrganizerDirectoryEntries(form.organizerType);
-  const currentDirectoryEntry = getOrganizerDirectoryEntryByValue(form.associationName);
-  const currentLegacyAssociation =
-    form.organizerType !== "company" &&
-    !currentDirectoryEntry &&
-    isAssociationSelectionOption(form.associationName) &&
-    isOrganizerAssociationNameCompatible(form.organizerType, form.associationName)
-      ? form.associationName
-      : null;
-  const structureSelectValue =
-    form.organizerType === "company" && currentDirectoryEntry?.organizerType !== "company"
-      ? ""
-      : form.associationName;
   const missingDate = hasAttemptedSubmit && !form.actionDate;
   const missingAssociation = hasAttemptedSubmit && !form.associationName;
   const missingOrganizerType = hasAttemptedSubmit && isActionMode && !form.organizerType;
-  const missingOtherVolunteerName =
-    hasAttemptedSubmit && isAutreBénévole && !form.actorName.trim();
   const associationErrorId = "action-association-error";
   const organizerTypeErrorId = "action-organizer-type-error";
   const dateErrorId = "action-date-error";
-  const otherVolunteerErrorId = "action-other-volunteer-error";
   const event = deriveEventDurationMinutes(form.eventStartTime, form.eventEndTime);
   const organization = deriveOrganizationMinutes({
     actionDurationMinutes: Number(form.durationMinutes),
@@ -174,58 +143,20 @@ export function ActionStepIdentity({
     retiredCount: form.retiredCount.trim() === "" ? null : Number(form.retiredCount),
   });
 
-  const [autreBenevoleName, setAutreBenevoleName] = useState(isAutreBénévole ? form.actorName : "");
-
-  function handleAssociationChange(val: string) {
-    const nextAssociationName =
-      form.organizerType === "company" && !val
-        ? ENTREPRISE_ASSOCIATION_OPTION
-        : val;
+  function handleAssociationChange(selection: { id: string | null; name: string }) {
     updateFields({
-      associationName: nextAssociationName,
-      enterpriseName:
-        form.organizerType === "company"
-          ? extractEntrepriseName(nextAssociationName) ?? ""
-          : "",
-      ...(nextAssociationName !== OTHER_VOLUNTEER_ASSOCIATION_VALUE
-        ? { actorName: userMetadata.displayName ?? userMetadata.handle ?? userMetadata.username ?? "" }
-        : {}),
+      organizerId: selection.id,
+      organizerName: selection.name,
+      associationName: form.organizerType === "spontaneous" ? "Action spontanée" : selection.name,
     });
   }
 
   function handleOrganizerTypeChange(nextType: FormState["organizerType"]) {
-    const keepsCurrentAssociation = isOrganizerAssociationNameCompatible(
-      nextType,
-      form.associationName,
-    );
-    const nextAssociationName =
-      nextType === "spontaneous"
-        ? "Action spontanée"
-        : keepsCurrentAssociation
-          ? form.associationName
-          : "";
-
     updateFields({
       organizerType: nextType,
-      associationName: nextAssociationName,
-      enterpriseName:
-        nextType === "company"
-          ? extractEntrepriseName(nextAssociationName) ?? ""
-          : "",
-    });
-  }
-
-  function handleAutreBenevoleName(val: string) {
-    setAutreBenevoleName(val);
-    updateField("actorName", val);
-  }
-
-  function handleEntrepriseName(val: string) {
-    updateFields({
-      enterpriseName: val,
-      associationName: val.trim()
-        ? buildEntrepriseAssociationName(val)
-        : ENTREPRISE_ASSOCIATION_OPTION,
+      organizerId: null,
+      organizerName: nextType === "spontaneous" ? userMetadata.displayName ?? userMetadata.handle ?? userMetadata.username ?? "" : "",
+      associationName: nextType === "spontaneous" ? "Action spontanée" : "",
     });
   }
 
@@ -280,39 +211,20 @@ export function ActionStepIdentity({
             ) : null}
           </div>
 
-          {form.organizerType && !isSpontaneousAction ? (
+          {form.organizerType ? (
             <div className="space-y-1.5">
-              <label htmlFor="action-organizer-structure" className="text-xs font-semibold text-emerald-900/75">
-                Structure <span aria-hidden="true">*</span><span className="ml-2 text-xs font-semibold text-rose-700">Obligatoire</span>
-              </label>
-              <select
+              <OrganizerCombobox
                 id="action-organizer-structure"
-                data-testid="action-organizer-structure"
-                className={cn(compactInputCls, "appearance-none cursor-pointer", missingAssociation && inputErrCls)}
-                value={isAutreBénévole ? OTHER_VOLUNTEER_ASSOCIATION_VALUE : structureSelectValue}
-                onChange={(event) => handleAssociationChange(event.target.value)}
-                aria-invalid={missingAssociation}
-                aria-describedby={missingAssociation ? associationErrorId : undefined}
-              >
-                <option value="">
-                  {form.organizerType === "company" ? "Choisissez une entreprise" : "Sélectionnez une structure"}
-                </option>
-                {currentLegacyAssociation ? (
-                  <option value={currentLegacyAssociation}>{currentLegacyAssociation} — valeur historique</option>
-                ) : null}
-                {directoryEntries.map((entry) => {
-                  const location = getOrganizerDirectoryLocationLabel(entry);
-                  return (
-                    <option key={entry.id} value={entry.value}>
-                      {entry.name}{location ? ` — ${location}` : ""}
-                    </option>
-                  );
-                })}
-              </select>
+                organizerType={form.organizerType}
+                organizerId={form.organizerId}
+                value={form.organizerName || (form.organizerType === "spontaneous" ? form.actorName : "")}
+                onChange={handleAssociationChange}
+                required={isActionMode}
+                invalid={missingAssociation}
+                describedBy={missingAssociation ? associationErrorId : undefined}
+              />
               {missingAssociation ? (
-                <p id={associationErrorId} className="text-xs font-medium text-rose-700">
-                  Sélectionnez une structure.
-                </p>
+                <p id={associationErrorId} className="text-xs font-medium text-rose-700">Renseignez un organisateur.</p>
               ) : null}
             </div>
           ) : null}
@@ -413,12 +325,6 @@ export function ActionStepIdentity({
 
     return (
       <div className="space-y-4">
-        {mode !== "collection" && isEntreprise ? (
-          <div className="space-y-1.5">
-            <label htmlFor="action-enterprise-name" className="text-xs font-semibold text-emerald-900/75">Nom de l’entreprise</label>
-            <input id="action-enterprise-name" type="text" className={compactInputCls} value={form.enterpriseName} onChange={(event) => handleEntrepriseName(event.target.value)} maxLength={100} />
-          </div>
-        ) : null}
         {mode !== "collection" && isActionMode && !isSpontaneousAction ? (
           <div className="space-y-1.5">
             <label htmlFor="action-organizer-accounts" className="text-xs font-semibold text-emerald-900/75">Organisateurs associés</label>
@@ -432,13 +338,6 @@ export function ActionStepIdentity({
             onChange={(next) => updateField("participantAccounts", next)}
             description="Ajoutez les participants connus avant l’envoi du formulaire complet."
           />
-        ) : null}
-        {mode !== "collection" && isAutreBénévole ? (
-          <div className="space-y-1.5">
-            <label htmlFor="action-other-volunteer-name" className="text-xs font-semibold text-emerald-900/75">Nom ou pseudo du bénévole</label>
-            <input id="action-other-volunteer-name" type="text" className={cn(compactInputCls, missingOtherVolunteerName && inputErrCls)} value={autreBenevoleName} onChange={(event) => handleAutreBenevoleName(event.target.value)} maxLength={80} aria-invalid={missingOtherVolunteerName} />
-            {missingOtherVolunteerName ? <p id={otherVolunteerErrorId} className="text-xs font-medium text-rose-700">Renseignez le nom ou pseudo du bénévole.</p> : null}
-          </div>
         ) : null}
         {mode !== "organization" && isActionMode ? (
           <div>
@@ -501,45 +400,20 @@ export function ActionStepIdentity({
                 )}
               </div>
 
-              {form.organizerType && !isSpontaneousAction ? (
+              {form.organizerType ? (
                 <div className="space-y-1">
-                  <label htmlFor="action-organizer-structure" className="pl-1 text-xs font-semibold text-emerald-900/70">
-                    Structure <span aria-hidden="true">*</span>
-                  </label>
-                  <Field icon={ChevronDown}>
-                    <select
-                      id="action-organizer-structure"
-                      data-testid="action-organizer-structure"
-                      className={cn(inputCls, "appearance-none cursor-pointer", missingAssociation && inputErrCls)}
-                      value={isAutreBénévole ? OTHER_VOLUNTEER_ASSOCIATION_VALUE : structureSelectValue}
-                      onChange={(e) => handleAssociationChange(e.target.value)}
-                      aria-invalid={missingAssociation}
-                      aria-describedby={missingAssociation ? associationErrorId : undefined}
-                    >
-                      <option value="">
-                        {form.organizerType === "company"
-                          ? "Saisissez ou choisissez une entreprise"
-                          : "Sélectionnez une structure"}
-                      </option>
-                      {currentLegacyAssociation ? (
-                        <option value={currentLegacyAssociation}>
-                          {currentLegacyAssociation} — valeur historique
-                        </option>
-                      ) : null}
-                      {directoryEntries.map((entry) => {
-                        const location = getOrganizerDirectoryLocationLabel(entry);
-                        return (
-                          <option key={entry.id} value={entry.value}>
-                            {entry.name}{location ? ` — ${location}` : ""}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </Field>
+                  <OrganizerCombobox
+                    id="action-organizer-structure"
+                    organizerType={form.organizerType}
+                    organizerId={form.organizerId}
+                    value={form.organizerName || (form.organizerType === "spontaneous" ? form.actorName : "")}
+                    onChange={handleAssociationChange}
+                    required={isActionMode}
+                    invalid={missingAssociation}
+                    describedBy={missingAssociation ? associationErrorId : undefined}
+                  />
                   {missingAssociation && (
-                    <p id={associationErrorId} className="pl-1 text-xs font-medium text-rose-700">
-                      Sélectionnez une structure ou renseignez une structure libre.
-                    </p>
+                    <p id={associationErrorId} className="pl-1 text-xs font-medium text-rose-700">Renseignez un organisateur.</p>
                   )}
                 </div>
               ) : null}
@@ -563,23 +437,6 @@ export function ActionStepIdentity({
               </div>
             </div>
 
-            {isEntreprise && (
-              <div className="mt-3 space-y-1">
-                <Field icon={Building}>
-                  <input
-                    type="text"
-                    className={inputCls}
-                    placeholder="Nom de l'entreprise"
-                    value={form.enterpriseName}
-                    onChange={(e) => handleEntrepriseName(e.target.value)}
-                    maxLength={100}
-                  />
-                </Field>
-                <p className="text-xs text-emerald-900/55 pl-1">
-                  Les données seront rattachées à cette entreprise et aux rapports d&apos;impact collectifs.
-                </p>
-              </div>
-            )}
 
             {isActionMode && !isSpontaneousAction && (
               <div className="mt-3 space-y-1">
@@ -610,31 +467,6 @@ export function ActionStepIdentity({
               </div>
             )}
 
-            {isAutreBénévole && (
-              <div className="mt-3 space-y-1">
-                <Field icon={User}>
-                  <input
-                    type="text"
-                    className={cn(inputCls, missingOtherVolunteerName && inputErrCls)}
-                    placeholder="Nom ou pseudo du bénévole"
-                    value={autreBenevoleName}
-                    onChange={(e) => handleAutreBenevoleName(e.target.value)}
-                    maxLength={80}
-                    aria-invalid={missingOtherVolunteerName}
-                    aria-describedby={
-                      missingOtherVolunteerName ? otherVolunteerErrorId : undefined
-                    }
-                  />
-                </Field>
-                {missingOtherVolunteerName ? (
-                  <p id={otherVolunteerErrorId} className="pl-1 text-xs font-medium text-rose-700">
-                    Renseignez le nom ou pseudo du bénévole pour éviter une déclaration anonyme.
-                  </p>
-                ) : (
-                  <p className="text-xs text-emerald-900/55 pl-1">Vous déclarez cette action au nom d&apos;un autre bénévole.</p>
-                )}
-              </div>
-            )}
 
             {isActionMode && (
               <div className="space-y-6 pt-2">

@@ -38,6 +38,7 @@ import {
   buildActionInsertPayload,
   buildCreateActionGeometry,
 } from "./store-create-contract";
+import { resolveCanonicalCreateActionPayload } from "./organizer-directory-registry";
 
 export { buildActionInsertPayload, buildCreateActionGeometry } from "./store-create-contract";
 
@@ -168,6 +169,11 @@ export async function createAction(
     };
   },
 ): Promise<{ id: string }> {
+  params.payload = await resolveCanonicalCreateActionPayload({
+    supabase,
+    payload: params.payload,
+    createdByClerkId: params.userId,
+  });
   const recordType = params.payload.recordType ?? "action";
   const routeTopology = resolveActionRouteTopology({
     topology: params.payload.routeTopology ?? params.payload.preparationData?.routeTopology,

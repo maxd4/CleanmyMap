@@ -260,6 +260,8 @@ export type ActionListItem = {
       actorName: string | null;
       associationName?: string | null;
       organizerType?: OrganizerType | null;
+      organizerId?: string | null;
+      organizerName?: string | null;
       notes: string | null;
       notesPlain: string | null;
       groupJoinEnabled: boolean | null;
@@ -314,6 +316,8 @@ export type CreateActionPayload = {
   actorName?: string;
   associationName?: string;
   organizerType?: OrganizerType | null;
+  organizerId?: string | null;
+  organizerName?: string | null;
   organizerAccounts?: string[];
   participantAccounts?: string[];
   groupJoinEnabled?: boolean;
@@ -439,6 +443,8 @@ export type ActionMapItem = Pick<
       actorName: string | null;
       associationName?: string | null;
       organizerType?: OrganizerType | null;
+      organizerId?: string | null;
+      organizerName?: string | null;
       departureLocationLabel?: string | null;
       arrivalLocationLabel?: string | null;
       notes: string | null;

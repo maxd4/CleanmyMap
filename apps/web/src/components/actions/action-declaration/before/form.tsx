@@ -102,6 +102,7 @@ export function ActionBeforeDeclarationForm({
     showGroupJoinHelp,
     setShowGroupJoinHelp,
     updateField,
+    updateFields,
     handleSubmit,
     requestPublish,
     cancelPublication,
@@ -328,6 +329,7 @@ export function ActionBeforeDeclarationForm({
             <IdentityAndSharingSection
               form={form}
               updateField={updateField}
+              updateFields={updateFields}
               actorNameOptions={actorNameOptions}
               userMetadata={userMetadata}
               showGroupJoinHelp={showGroupJoinHelp}
