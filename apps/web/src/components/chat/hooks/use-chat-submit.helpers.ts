@@ -13,7 +13,24 @@ import type { ChatUser } from "../chat-types";
 import type { ChatChannelType } from "@/lib/chat/channels";
 import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
 
+export const CHAT_ATTACHMENTS_BUCKET = "chat-attachments" as const;
+
 export class ChatAttachmentValidationError extends Error {}
+
+export class ChatAttachmentUploadError extends Error {
+  constructor(public readonly cause: unknown) {
+    super("La pièce jointe n'a pas pu être téléversée.");
+    this.name = "ChatAttachmentUploadError";
+  }
+}
+
+export type ChatAttachmentUpload = {
+  bucketId: typeof CHAT_ATTACHMENTS_BUCKET;
+  objectPath: string;
+  url: string;
+  type: string | undefined;
+  size: number;
+};
 
 async function prepareChatAttachment(file: File): Promise<{
   file: File;
@@ -44,7 +61,7 @@ async function uploadPreparedChatAttachment(params: {
   userId: string;
   activeChannelType: ChatChannelType;
   setIsUploading: (value: boolean) => void;
-}): Promise<{ url: string; type: string | undefined; size: number }> {
+}): Promise<ChatAttachmentUpload> {
   const fileExt = inferChatAttachmentExtension(params.preparedFile) ?? "bin";
   const fileName = `${params.userId}-${Math.random().toString(36).slice(2)}.${fileExt}`;
   const filePath = `${params.activeChannelType}/${fileName}`;
@@ -57,9 +74,10 @@ async function uploadPreparedChatAttachment(params: {
       : "messages";
 
   params.setIsUploading(true);
+  let objectCreated = false;
   try {
     const { error: uploadError } = await params.supabase.storage
-      .from("chat-attachments")
+      .from(CHAT_ATTACHMENTS_BUCKET)
       .upload(filePath, params.preparedFile, {
         metadata: buildStorageBusinessMetadata({
           businessDomain,
@@ -70,21 +88,36 @@ async function uploadPreparedChatAttachment(params: {
             attachmentType: attachmentMimeType,
           },
         }),
-      });
+    });
     if (uploadError) throw uploadError;
+    objectCreated = true;
 
     const { data: signedUrl, error: signedUrlError } = await params.supabase.storage
-      .from("chat-attachments")
+      .from(CHAT_ATTACHMENTS_BUCKET)
       .createSignedUrl(filePath, 120 * 24 * 60 * 60);
     if (signedUrlError || !signedUrl?.signedUrl) {
       throw signedUrlError ?? new Error("La signature de la pièce jointe a échoué.");
     }
 
     return {
+      bucketId: CHAT_ATTACHMENTS_BUCKET,
+      objectPath: filePath,
       url: signedUrl.signedUrl,
       type: params.inferredAttachmentType ?? (params.preparedFile.type || params.originalFile.type || undefined),
       size: params.preparedFile.size,
     };
+  } catch (error) {
+    if (objectCreated) {
+      try {
+        const { error: cleanupError } = await params.supabase.storage
+          .from(CHAT_ATTACHMENTS_BUCKET)
+          .remove([filePath]);
+        if (cleanupError) throw cleanupError;
+      } catch (cleanupError) {
+        console.warn("Nettoyage de la pièce jointe Chat impossible après échec de signature.", cleanupError);
+      }
+    }
+    throw error;
   } finally {
     params.setIsUploading(false);
   }
@@ -96,7 +129,7 @@ async function uploadChatAttachment(params: {
   userId: string;
   activeChannelType: ChatChannelType;
   setIsUploading: (value: boolean) => void;
-}): Promise<{ url: string; type: string | undefined; size: number }> {
+}): Promise<ChatAttachmentUpload> {
   const prepared = await prepareChatAttachment(params.file);
   return uploadPreparedChatAttachment({
     originalFile: params.file,
@@ -143,7 +176,7 @@ export async function uploadChatAttachmentIfNeeded(params: {
   userId: string;
   activeChannelType: ChatChannelType;
   setIsUploading: (value: boolean) => void;
-}): Promise<{ url: string; type: string | undefined; size: number } | null> {
+}): Promise<ChatAttachmentUpload | null> {
   if (!params.file) return null;
   if (!params.supabase) {
     throw new ChatAttachmentValidationError(
@@ -157,6 +190,44 @@ export async function uploadChatAttachmentIfNeeded(params: {
     activeChannelType: params.activeChannelType,
     setIsUploading: params.setIsUploading,
   });
+}
+
+export async function removeChatAttachment(params: {
+  supabase: SupabaseClient;
+  attachment: ChatAttachmentUpload;
+}): Promise<void> {
+  const { error } = await params.supabase.storage
+    .from(params.attachment.bucketId)
+    .remove([params.attachment.objectPath]);
+  if (error) throw error;
+}
+
+export async function sendChatMessageWithAttachmentLifecycle<T>(params: {
+  uploadAttachment: () => Promise<ChatAttachmentUpload | null>;
+  sendMessage: (attachment: ChatAttachmentUpload | null) => Promise<T>;
+  removeAttachment: (attachment: ChatAttachmentUpload) => Promise<void>;
+}): Promise<T> {
+  let uploadedAttachment: ChatAttachmentUpload | null = null;
+  try {
+    uploadedAttachment = await params.uploadAttachment();
+  } catch (error) {
+    throw new ChatAttachmentUploadError(error);
+  }
+
+  try {
+    const result = await params.sendMessage(uploadedAttachment);
+    uploadedAttachment = null;
+    return result;
+  } catch (error) {
+    if (uploadedAttachment) {
+      try {
+        await params.removeAttachment(uploadedAttachment);
+      } catch (cleanupError) {
+        console.warn("Nettoyage de la pièce jointe Chat impossible après échec du message.", cleanupError);
+      }
+    }
+    throw error;
+  }
 }
 
 export function reportChatAttachmentError(
