@@ -66,6 +66,9 @@ describe("useChatSubmit retry wiring", () => {
     const source = readFileSync(
       fileURLToPath(new URL("./use-chat-submit.ts", import.meta.url)),
       "utf8",
+    ) + readFileSync(
+      fileURLToPath(new URL("./use-chat-submit.helpers.ts", import.meta.url)),
+      "utf8",
     );
 
     expect(source).toContain("submitChatMessageRef");
@@ -83,6 +86,26 @@ describe("useChatSubmit retry wiring", () => {
     expect(source).toContain("feedbackOperationIdRef.current ??=");
     expect(source).toContain("operationId: feedbackOperationId");
     expect(source).toContain("feedbackOperationIdRef.current = null");
+  });
+
+  it("validates the prepared attachment before the direct Storage upload", () => {
+    const source = readFileSync(
+      fileURLToPath(new URL("./use-chat-submit.ts", import.meta.url)),
+      "utf8",
+    ) + readFileSync(
+      fileURLToPath(new URL("./use-chat-submit.helpers.ts", import.meta.url)),
+      "utf8",
+    );
+    const validationPosition = source.indexOf(
+      "getChatAttachmentValidationError(preparedFile)",
+    );
+    const uploadStatePosition = source.indexOf("setIsUploading(true)");
+
+    expect(validationPosition).toBeGreaterThanOrEqual(0);
+    expect(uploadStatePosition).toBeGreaterThan(validationPosition);
+    expect(source).toContain("attachmentSize");
+    expect(source).toContain('.from("chat-attachments")');
+    expect(source).not.toContain("/api/chat/upload");
   });
 
   it("consumes feedback context after success and drops it when the recipient changes", () => {

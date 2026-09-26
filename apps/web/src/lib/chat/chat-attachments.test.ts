@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   CHAT_ATTACHMENT_ACCEPT,
+  CHAT_ATTACHMENT_MAX_SIZE_BYTES,
+  CHAT_ATTACHMENT_TOO_LARGE_MESSAGE,
   CHAT_CAMERA_ACCEPT,
+  getChatAttachmentSizeError,
+  getChatAttachmentValidationError,
+  isChatImageFile,
   CHAT_VIDEO_UNSUPPORTED_MESSAGE,
   isSafeChatAttachmentUrl,
   isSupportedChatAttachmentFile,
@@ -52,5 +57,18 @@ describe("Chat image capture and video contract", () => {
     expect(isSupportedChatAttachmentFile({ name: "payload.svg", type: "image/svg+xml" } as File)).toBe(false);
     expect(isSupportedChatAttachmentFile({ name: "payload.svg", type: "image/png" } as File)).toBe(false);
     expect(isSupportedChatAttachmentFile({ name: "payload.jpg", type: "image/svg+xml" } as File)).toBe(false);
+  });
+
+  it("centralizes the 8 MiB boundary and keeps image detection extension-aware", () => {
+    const document = { name: "document.pdf", type: "application/pdf", size: CHAT_ATTACHMENT_MAX_SIZE_BYTES } as File;
+    const oversizedDocument = { ...document, size: CHAT_ATTACHMENT_MAX_SIZE_BYTES + 1 } as File;
+    const imageWithoutMime = { name: "photo.jpg", type: "", size: 1 } as File;
+
+    expect(getChatAttachmentSizeError(document)).toBeNull();
+    expect(getChatAttachmentValidationError(document)).toBeNull();
+    expect(getChatAttachmentSizeError(oversizedDocument)).toBe(
+      CHAT_ATTACHMENT_TOO_LARGE_MESSAGE,
+    );
+    expect(isChatImageFile(imageWithoutMime)).toBe(true);
   });
 });

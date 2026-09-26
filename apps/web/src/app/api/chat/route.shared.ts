@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { NextResponse } from "next/server";
 import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
 import {
@@ -16,7 +15,6 @@ import {
   type ChatTopicId,
 } from "@/lib/chat/topics";
 import {
-  CHAT_MESSAGE_KINDS,
   isCommunityAnnouncementTopicId,
   type ChatMessageKind,
 } from "@/lib/chat/announcements";
@@ -24,50 +22,8 @@ import {
   getChatPollOptionsValidationError,
   type ChatPollOption,
 } from "@/lib/chat/polls";
-import {
-  CHAT_VIDEO_UNSUPPORTED_MESSAGE,
-  isSafeChatAttachmentUrl,
-  isUnsupportedChatVideoMimeType,
-} from "@/lib/chat/chat-attachments";
 import { sortByCreatedAtAsc } from "@/lib/chat/postgrest";
-
-export const CHANNEL_TYPES = [
-  "community",
-  "dm",
-  "admin_elu",
-  "territory",
-  "bug_report",
-  "action",
-] as const satisfies readonly ChatChannelType[];
-
-export const sendMessageSchema = z.object({
-  channelType: z.enum(CHANNEL_TYPES),
-  content: z.string().min(1).max(2000),
-  messageKind: z.enum(CHAT_MESSAGE_KINDS).optional().default("message"),
-  pollOptions: z.array(z.string()).optional(),
-  relatedEventId: z.string().uuid().optional(),
-  topicId: z.string().optional(),
-  actionId: z.string().uuid().optional(),
-  feedbackId: z.string().trim().min(1).max(200).optional(),
-  operationId: z.string().trim().min(1).max(200).optional(),
-  recipientId: z.string().optional(),
-  arrondissementId: z.number().int().min(1).max(20).optional(),
-  zoneName: z.string().optional(),
-  attachmentUrl: z
-    .string()
-    .trim()
-    .url()
-    .refine(isSafeChatAttachmentUrl, {
-      message: "L'URL de la pièce jointe doit utiliser http(s).",
-    })
-    .optional(),
-  attachmentType: z
-    .string()
-    .refine((value) => !isUnsupportedChatVideoMimeType(value), {
-      message: CHAT_VIDEO_UNSUPPORTED_MESSAGE,
-    })
-    .optional(),
-});
+export { CHANNEL_TYPES, sendMessageSchema } from "./route.validation";
 
 export type CurrentProfileRow = {
   id: string;

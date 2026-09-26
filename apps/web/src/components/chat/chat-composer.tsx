@@ -5,7 +5,13 @@ import { memo, useState } from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent, RefObject } from "react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
-import { CHAT_ATTACHMENT_ACCEPT, getChatAttachmentUnsupportedMessage, isSupportedChatAttachmentFile } from "@/lib/chat/chat-attachments";
+import {
+  CHAT_ATTACHMENT_ACCEPT,
+  getChatAttachmentSizeError,
+  getChatAttachmentUnsupportedMessage,
+  isChatImageFile,
+  isSupportedChatAttachmentFile,
+} from "@/lib/chat/chat-attachments";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { ChatAvatar } from "./chat-avatar";
 import type { ChatUser } from "./chat-types";
@@ -21,7 +27,6 @@ import {
 } from "@/lib/chat/polls";
 import { ChatShareLinkAction } from "./ui/chat-share-link-action";
 
-const MAX_ATTACHMENT_SIZE_BYTES = 8 * 1024 * 1024;
 type ChatComposerMode = "message" | "announcement" | "poll";
 
 type ChatComposerProps = {
@@ -132,11 +137,14 @@ export const ChatComposer = memo(function ChatComposer({
       e.target.value = "";
       return;
     }
-    if (selectedFile && selectedFile.size > MAX_ATTACHMENT_SIZE_BYTES) {
+    const sizeError = selectedFile && !isChatImageFile(selectedFile)
+      ? getChatAttachmentSizeError(selectedFile)
+      : null;
+    if (sizeError) {
       onFileChange(null);
       notifyNetworkToast({
         title: "Pièce jointe trop volumineuse",
-        message: "Ce fichier dépasse 8 Mo. Choisis une pièce jointe plus légère.",
+        message: sizeError,
         retryLabel: "Choisir un autre fichier",
         onRetry: () => fileInputRef.current?.click(),
       });

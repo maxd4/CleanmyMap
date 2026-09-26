@@ -25,9 +25,22 @@ const svgMigration = readFileSync(
   "utf8",
 ).replace(/\s+/g, " ").trim().toLowerCase();
 
+const sizeMigration = readFileSync(
+  new URL(
+    "../../../supabase/migrations/20260927000005_chat_attachment_size_limit.sql",
+    import.meta.url,
+  ),
+  "utf8",
+).replace(/\s+/g, " ").trim().toLowerCase();
+
 const submitHook = readFileSync(
   new URL("../../components/chat/hooks/use-chat-submit.ts", import.meta.url),
   "utf8",
+).concat(
+  readFileSync(
+    new URL("../../components/chat/hooks/use-chat-submit.helpers.ts", import.meta.url),
+    "utf8",
+  ),
 );
 
 describe("chat attachment privacy contract", () => {
@@ -63,5 +76,13 @@ describe("chat attachment privacy contract", () => {
     expect(svgMigration).toContain("'image/svg+xml'");
     expect(svgMigration).toContain("where id = 'chat-attachments'");
     expect(svgMigration).toContain("existing attachment rows remain readable");
+  });
+
+  it("enforces the 8 MiB business limit at the private Storage boundary", () => {
+    expect(sizeMigration).toContain("update storage.buckets");
+    expect(sizeMigration).toContain("set file_size_limit = 8 * 1024 * 1024");
+    expect(sizeMigration).toContain("where id = 'chat-attachments'");
+    expect(submitHook).toContain(".from(\"chat-attachments\")");
+    expect(submitHook).not.toContain("/api/chat/upload");
   });
 });
