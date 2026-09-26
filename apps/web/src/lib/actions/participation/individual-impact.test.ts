@@ -5,12 +5,107 @@ import {
   toIndividualImpactMeasurement,
   WASTE_MOISTURE_NORMALIZATION_VERSION,
 } from "./individual-impact";
+import { normalizeVolunteerParticipation } from "../volunteer-participation";
 
 function participant(id: string, measurement: ReturnType<typeof toIndividualImpactMeasurement> = null) {
   return { id, participationStatus: "confirmed", measurement };
 }
 
+function allocateForPhysicalCounts(params: {
+  childrenCount: number;
+  adultCount: number;
+  retiredCount: number;
+  participants?: ReturnType<typeof participant>[];
+}) {
+  const physicalParticipation = normalizeVolunteerParticipation(params);
+  const attribution = allocateActionParticipantImpact({
+    totalWasteKg: 20,
+    totalCigaretteButts: null,
+    participants: params.participants ?? [participant("alice"), participant("bob")],
+  });
+
+  return { attribution, physicalParticipation };
+}
+
 describe("individual action impact attribution", () => {
+  it("uses confirmed accounts instead of children for a 20 kg quote-part", () => {
+    const { attribution, physicalParticipation } = allocateForPhysicalCounts({
+      childrenCount: 2,
+      adultCount: 2,
+      retiredCount: 0,
+    });
+
+    expect(physicalParticipation.participantsCount).toBe(4);
+    expect(attribution.get("alice")).toMatchObject({ wasteKg: 10, wasteKind: "quote_part" });
+    expect(attribution.get("bob")).toMatchObject({ wasteKg: 10, wasteKind: "quote_part" });
+  });
+
+  it("keeps two confirmed accounts as the denominator with ten children", () => {
+    const { attribution, physicalParticipation } = allocateForPhysicalCounts({
+      childrenCount: 10,
+      adultCount: 2,
+      retiredCount: 0,
+    });
+
+    expect(physicalParticipation.participantsCount).toBe(12);
+    expect(attribution.size).toBe(2);
+    expect([...attribution.values()].map((value) => value.wasteKg)).toEqual([10, 10]);
+  });
+
+  it("does not change quotes when childrenCount changes and the confirmed roster is stable", () => {
+    const withTwoChildren = allocateForPhysicalCounts({
+      childrenCount: 2,
+      adultCount: 2,
+      retiredCount: 0,
+    });
+    const withTenChildren = allocateForPhysicalCounts({
+      childrenCount: 10,
+      adultCount: 2,
+      retiredCount: 0,
+    });
+
+    expect(withTwoChildren.physicalParticipation.participantsCount).not.toBe(
+      withTenChildren.physicalParticipation.participantsCount,
+    );
+    expect(withTwoChildren.attribution).toEqual(withTenChildren.attribution);
+  });
+
+  it("does not replace the confirmed roster with adult or retired form counts", () => {
+    const { attribution, physicalParticipation } = allocateForPhysicalCounts({
+      childrenCount: 0,
+      adultCount: 100,
+      retiredCount: 50,
+    });
+
+    expect(physicalParticipation.participantsCount).toBe(150);
+    expect(attribution.size).toBe(2);
+    expect([...attribution.values()].map((value) => value.wasteKg)).toEqual([10, 10]);
+  });
+
+  it("gives Bob the exact remaining 8 kg after Alice measured 12 kg, regardless of children", () => {
+    const alice = toIndividualImpactMeasurement({
+      individual_waste_kg: 12,
+      individual_waste_condition: "sec",
+    });
+    const participants = [participant("alice", alice), participant("bob")];
+    const withTwoChildren = allocateForPhysicalCounts({
+      childrenCount: 2,
+      adultCount: 2,
+      retiredCount: 0,
+      participants,
+    });
+    const withTenChildren = allocateForPhysicalCounts({
+      childrenCount: 10,
+      adultCount: 2,
+      retiredCount: 0,
+      participants,
+    });
+
+    expect(withTwoChildren.attribution.get("alice")).toMatchObject({ wasteKg: 12, wasteKind: "individual" });
+    expect(withTwoChildren.attribution.get("bob")).toMatchObject({ wasteKg: 8, wasteKind: "quote_part" });
+    expect(withTenChildren.attribution).toEqual(withTwoChildren.attribution);
+  });
+
   it("keeps the existing equal quote-part when no exact measurement exists", () => {
     const result = allocateActionParticipantImpact({
       totalWasteKg: 100,
