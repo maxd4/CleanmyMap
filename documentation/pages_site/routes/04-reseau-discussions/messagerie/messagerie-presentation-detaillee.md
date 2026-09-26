@@ -12,6 +12,7 @@ La page `Messagerie` sert aux échanges publics thématiques et directs entre me
 - une vue publique agrégée ou un groupe de présentation qui relit les `topic_id` persistés correspondants
 - une recherche débouncée dans l’historique du scope ouvert, avec résultats paginés et ancrage sur le message ciblé
 - une composition `Message` ou `Annonce / Relai` ; les trois modèles de relais préparent un brouillon éditable et sélectionnent leur topic canonique
+- des liens `http(s)` rendus cliquables directement depuis le texte des messages, sans aperçu distant ; le menu `+` propose `Partager un lien` pour insérer l’URL courante dans le brouillon
 - une composition `Sondage` dans `community`, `admin_elu`, `territory`, `action` ou `dm`, avec une question et 2 à 6 options éditables ; la publication conserve le contexte canonique du canal et réinitialise uniquement le formulaire
 - un vote réel dans chaque sondage : choix, changement ou retrait, compteurs par option et proportions agrégées, sans exposer l'identité des votants
 - pour `admin_elu`, une audience limitée à `admin`, `max` et `elu`, avec un topic facultatif ; en DM, seuls les deux participants peuvent lire ou voter ; pour `territory` et `action`, les mêmes règles d'accès que les messages du canal s'appliquent ; la visibilité du message, des options, du vote et des agrégats reste décidée par la RLS
@@ -39,6 +40,7 @@ La page `Messagerie` sert aux échanges publics thématiques et directs entre me
 - laisser `Communauté globale` et `Territoire global` afficher les messages non classés ; un groupe sélectionné filtre sur les `topic_id` persistés qui le composent, tandis que le fil territorial reste zone-driven et conserve les messages legacy/non classés
 - afficher sobrement le topic porté par un message dans une vue agrégée
 - conserver les annonces dans `app_messages` avec leur `message_kind` et ne publier un contexte événementiel qu'après résolution d'un `community_events.id` canonique
+- conserver les URLs uniquement dans `app_messages.content` ; interdire les protocoles non autorisés et tout HTML utilisateur, sans crawler, proxy, metadata distante ni nouvelle persistance
 - préserver les deep-links de relais `template`, `topicId` et `eventId` sans faire de l’URL une source de vérité pour le titre, la date ou le lieu
 - préserver les deep-links DM `tab=dm`, `recipientId`, `recipientLabel`, `recipientHandle` et `messageId` ; une recherche sélectionnée réutilise le même ancrage que les notifications
 - ne pas présenter de multi-choix, d’expiration ou de clôture tant que ces lots ne sont pas livrés ; les compteurs et proportions du vote simple sont désormais disponibles

@@ -8,6 +8,8 @@
 - `apps/web/src/app/(app)/sections/[sectionId]/page.tsx`
 - `apps/web/src/components/sections/rubriques/connect-section.tsx`
 - `apps/web/src/components/chat/chat-shell.tsx`
+- `apps/web/src/components/chat/ui/chat-message-content.tsx`
+- `apps/web/src/lib/chat/chat-links.ts`
 - `apps/web/src/app/api/chat/inbox/route.ts`
 - `apps/web/src/app/api/chat/search/route.ts`
 - `apps/web/supabase/migrations/20260825210000_chat_dm_inbox_read_state.sql`
@@ -45,6 +47,7 @@
 - **Résultat d'une discussion** : un fil ou un topic peut documenter un échange, un arbitrage ou un suivi, mais ne constitue jamais à lui seul une décision officielle et ne remplace pas le journal d'audit admin.
 - **Lecture des canaux publics** : la vue globale de `community` ou `territory` inclut les messages legacy et tous les topics autorisés pour les comptes connectés ; une vue topic ne retourne que le topic sélectionné.
 - **Lecture** : le compteur ne compte que les messages DM entrants après le curseur propre à `(user_id, peer_id)`. Pour un sondage, les options retournent `voteCount`, le poll retourne `totalVotes` et `selectedOptionId`.
+- **Liens dans les messages** : le `content` texte reste la seule source canonique. Les URLs `http://` et `https://` sont détectées côté client et rendues cliquables, avec échappement React, protection `noopener noreferrer`, ponctuation et retours à la ligne préservés. Le menu `+` peut insérer l’URL courante dans le brouillon. Aucun crawler, aperçu distant, proxy, fetch serveur ou table de liens n’est utilisé.
 - **Notifications** : `app_notifications.read_at` reste la source canonique des non-lus de notification. Les notifications chat portent `channelType`, `messageId`, `messageKind` et `topicId` lorsqu'il existe. Les compteurs communauté/territoire/admin_elu sont lus en batch par canal et topic persisté puis additionnés dans les groupes de présentation ; l'ouverture d'un groupe marque chaque topic persisté concerné, sans modifier la granularité des notifications. Le ciblage territorial automatique conserve uniquement la préférence persistée du profil et sa logique de voisinage ; une zone choisie ponctuellement ne notifie pas tous les utilisateurs et n'élargit pas l'audience future.
 - **Navigation** : `tab=dm`, `recipientId`, `recipientLabel` et `recipientHandle` restent compatibles avec les deep-links existants. Un deep-link `admin_elu` transporte `channel=admin_elu`, `topicId=<topic>` lorsqu'un topic existe et `messageId=<message>` ; le topic reste optionnel et un message sans topic reste navigable. `topicId` peut ouvrir un salon public stable ; son absence signifie la vue agrégée.
 - **Navigation action** : `channel=action&actionId=<uuid>` ouvre la discussion canonique de l'action publiée ; l'identifiant de l'action est le seul lien transporté par l'URL.

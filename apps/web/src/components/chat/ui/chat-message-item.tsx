@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { isSafeChatAttachmentUrl } from "@/lib/chat/chat-attachments";
 import { ChatAvatar } from "@/components/chat/chat-avatar";
 import { ChatActionReferenceCard } from "./chat-action-reference-card";
+import { ChatMessageContent } from "./chat-message-content";
 
 import type { ChatMessage } from "../chat-types";
 import { getDiscussionTopic } from "../discussion-guidance";
@@ -153,9 +154,7 @@ export function ChatMessageItem({
 
         {/* Content */}
         <div className="pl-[52px]">
-          <p className={`whitespace-pre-wrap cmm-text-small leading-relaxed mb-3 ${isLight ? "text-slate-700" : "text-slate-300"}`}>
-            {message.content}
-          </p>
+          <ChatMessageContent content={message.content} tone={tone} />
 
           {message.action_id ? (
             <ChatActionReferenceCard actionId={message.action_id} tone={tone} />
