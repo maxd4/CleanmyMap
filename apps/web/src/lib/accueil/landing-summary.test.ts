@@ -152,6 +152,7 @@ describe("landing summary loading", () => {
     });
     expect(loadLatestPublicImpactSnapshotMock).toHaveBeenCalledOnce();
     expect(fetchCachedUnifiedActionContractsMock).not.toHaveBeenCalled();
+    expect(storageListMock).not.toHaveBeenCalled();
   });
 
   it("does not rebuild the monthly KPI aggregate when a snapshot is available", async () => {
@@ -160,6 +161,7 @@ describe("landing summary loading", () => {
     expect(summary.participantsTotal).toBe(31);
     expect(loadLatestPublicImpactSnapshotMock).toHaveBeenCalledOnce();
     expect(fetchCachedUnifiedActionContractsMock).not.toHaveBeenCalled();
+    expect(storageListMock).not.toHaveBeenCalled();
   });
 
   it("falls back to canonical approved contracts and exposes degraded source health", async () => {

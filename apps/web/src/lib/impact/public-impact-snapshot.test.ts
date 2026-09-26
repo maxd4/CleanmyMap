@@ -30,6 +30,7 @@ import {
 } from "./public-impact-snapshot";
 
 const NOW = new Date("2026-09-08T03:00:00.000Z");
+const LATER_IN_SAME_MONTH = new Date("2026-09-26T12:00:00.000Z");
 
 const aggregate = {
   visible_actions: 3,
@@ -146,6 +147,37 @@ describe("public monthly impact snapshot", () => {
     expect(upsertSnapshotMock).not.toHaveBeenCalled();
   });
 
+  it("réutilise un snapshot valide généré plus tôt dans le même mois", async () => {
+    const snapshot = currentSnapshot();
+
+    expect(isCurrentPublicImpactSnapshot(snapshot, LATER_IN_SAME_MONTH)).toBe(true);
+    readLatestSnapshotMock.mockResolvedValue(snapshot);
+
+    const result = await generateAndPersistPublicImpactSnapshot({
+      now: LATER_IN_SAME_MONTH,
+    });
+
+    expect(result.reused).toBe(true);
+    expect(result.persisted).toBe(false);
+    expect(advanceStateMock).toHaveBeenCalledWith("2026-09-26");
+    expect(loadIncrementalAggregateMock).not.toHaveBeenCalled();
+    expect(upsertSnapshotMock).not.toHaveBeenCalled();
+  });
+
+  it("rejette explicitement une version publique obsolète", () => {
+    const snapshot = currentSnapshot({
+      version: "impact-terrain-public-2026.09-v1",
+    });
+
+    expect(isCurrentPublicImpactSnapshot(snapshot, LATER_IN_SAME_MONTH)).toBe(false);
+  });
+
+  it("rejette un snapshot d'un autre mois", () => {
+    const snapshot = currentSnapshot({ snapshotDate: "2026-08-01" });
+
+    expect(isCurrentPublicImpactSnapshot(snapshot, LATER_IN_SAME_MONTH)).toBe(false);
+  });
+
   it("rejects a same-month snapshot when its formula version is stale", async () => {
     const snapshot = currentSnapshot({
       payload: {
@@ -165,7 +197,7 @@ describe("public monthly impact snapshot", () => {
     expect(upsertSnapshotMock).toHaveBeenCalledOnce();
   });
 
-  it("rejects a same-month snapshot when its rolling period is stale", async () => {
+  it("rejects a same-month snapshot when its period is incoherent with its generation date", async () => {
     const valid = currentSnapshot();
     const snapshot = {
       ...valid,
