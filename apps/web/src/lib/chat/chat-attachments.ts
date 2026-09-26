@@ -25,6 +25,18 @@ const IMAGE_EXTENSIONS = new Map([
   ["webp", "image/webp"],
 ]);
 
+const VIDEO_EXTENSIONS = new Set([
+  "avi",
+  "m4v",
+  "mkv",
+  "mov",
+  "mp4",
+  "mpeg",
+  "mpg",
+  "webm",
+  "wmv",
+]);
+
 const MIME_TO_EXTENSION = new Map<string, string>([
   ["application/pdf", "pdf"],
   ["application/msword", "doc"],
@@ -66,6 +78,16 @@ const SUPPORTED_EXTENSIONS = new Map([
 
 const SAFE_ATTACHMENT_PROTOCOLS = new Set(["http:", "https:"]);
 
+export const CHAT_CAMERA_ACCEPT = "image/*";
+export const CHAT_VIDEO_UNSUPPORTED_MESSAGE =
+  "Les vidéos ne sont pas prises en charge. Partagez plutôt une photo ou un lien vers la vidéo.";
+
+export function getChatAttachmentUnsupportedMessage(file: File): string {
+  return isUnsupportedChatVideoFile(file)
+    ? CHAT_VIDEO_UNSUPPORTED_MESSAGE
+    : "Ce type de fichier n'est pas autorisé ici. Utilise une image, un PDF ou un document courant.";
+}
+
 export const CHAT_ATTACHMENT_ACCEPT = [
   "image/*",
   ...SUPPORTED_MIME_TYPES,
@@ -95,11 +117,19 @@ export function isSupportedChatAttachmentMimeType(mimeType: string): boolean {
     return false;
   }
 
+  if (normalized.startsWith("video/")) {
+    return false;
+  }
+
   if (normalized.startsWith("image/")) {
     return true;
   }
 
   return SUPPORTED_MIME_TYPES.has(normalized);
+}
+
+export function isUnsupportedChatVideoMimeType(mimeType: string): boolean {
+  return normalizeMimeType(mimeType).startsWith("video/");
 }
 
 export function isSafeChatAttachmentUrl(value: string | null | undefined): boolean {
@@ -112,6 +142,10 @@ export function isSafeChatAttachmentUrl(value: string | null | undefined): boole
 }
 
 export function isSupportedChatAttachmentFile(file: File): boolean {
+  if (isUnsupportedChatVideoFile(file)) {
+    return false;
+  }
+
   if (isSupportedChatAttachmentMimeType(file.type)) {
     return true;
   }
@@ -120,7 +154,19 @@ export function isSupportedChatAttachmentFile(file: File): boolean {
   return IMAGE_EXTENSIONS.has(extension) || SUPPORTED_EXTENSIONS.has(extension);
 }
 
+export function isUnsupportedChatVideoFile(file: File): boolean {
+  if (isUnsupportedChatVideoMimeType(file.type)) {
+    return true;
+  }
+
+  return VIDEO_EXTENSIONS.has(getFileExtension(file.name));
+}
+
 export function inferChatAttachmentType(file: File): string | null {
+  if (isUnsupportedChatVideoFile(file)) {
+    return null;
+  }
+
   if (isSupportedChatAttachmentMimeType(file.type)) {
     return file.type.toLowerCase();
   }

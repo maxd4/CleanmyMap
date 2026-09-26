@@ -16,7 +16,11 @@ import {
   getChatPollOptionsValidationError,
   type ChatPollOption,
 } from "@/lib/chat/polls";
-import { isSafeChatAttachmentUrl } from "@/lib/chat/chat-attachments";
+import {
+  CHAT_VIDEO_UNSUPPORTED_MESSAGE,
+  isSafeChatAttachmentUrl,
+  isUnsupportedChatVideoMimeType,
+} from "@/lib/chat/chat-attachments";
 import { sortByCreatedAtAsc } from "@/lib/chat/postgrest";
 
 export const CHANNEL_TYPES = [
@@ -49,7 +53,12 @@ export const sendMessageSchema = z.object({
       message: "L'URL de la pièce jointe doit utiliser http(s).",
     })
     .optional(),
-  attachmentType: z.string().optional(),
+  attachmentType: z
+    .string()
+    .refine((value) => !isUnsupportedChatVideoMimeType(value), {
+      message: CHAT_VIDEO_UNSUPPORTED_MESSAGE,
+    })
+    .optional(),
 });
 
 export type CurrentProfileRow = {

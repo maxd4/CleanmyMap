@@ -9,6 +9,14 @@ const migration = readFileSync(
   "utf8",
 ).replace(/\s+/g, " ").trim().toLowerCase();
 
+const bucketMigration = readFileSync(
+  new URL(
+    "../../../supabase/migrations/20260531000005_create_chat_attachments_bucket.sql",
+    import.meta.url,
+  ),
+  "utf8",
+).replace(/\s+/g, " ").trim().toLowerCase();
+
 const submitHook = readFileSync(
   new URL("../../components/chat/hooks/use-chat-submit.ts", import.meta.url),
   "utf8",
@@ -34,5 +42,10 @@ describe("chat attachment privacy contract", () => {
   it("uses expiring signed URLs instead of public object URLs", () => {
     expect(submitHook).toContain("createSignedUrl(filePath, 120 * 24 * 60 * 60)");
     expect(submitHook).not.toContain("getPublicUrl(filePath)");
+  });
+
+  it("keeps Storage MIME allowlisting free of video types", () => {
+    expect(bucketMigration).toContain("allowed_mime_types");
+    expect(bucketMigration).not.toMatch(/video\//i);
   });
 });
