@@ -80,6 +80,21 @@ describe("action participant aggregation", () => {
     ]);
   });
 
+  it("derives spontaneous group names without multiplying structured categories", () => {
+    const result = aggregatePublicActionMetrics([
+      action("spontaneous", 3, 20),
+      action("company", 5, 30),
+    ]);
+
+    expect(result.participantsTotal).toBe(8);
+    expect(result.actionDistribution).toEqual([
+      { key: "spontaneous:3", category: "Trio", count: 1 },
+      { key: "company", category: "Entreprise", count: 1 },
+    ]);
+    expect(result.actionDistribution.reduce((sum, entry) => sum + entry.count, 0)).toBe(2);
+    expect(result.actionDistribution.some((entry) => entry.category === "Quintet")).toBe(false);
+  });
+
   it("classifies legacy and incoherent types as Autres with an administrative warning", () => {
     const result = aggregatePublicActionMetrics([
       action(undefined, 0, 5),
