@@ -4,6 +4,23 @@ import type {
   EnvironmentalImpactProjectSignal,
   EnvironmentalImpactScopeInput,
 } from "./types";
+import {
+  buildTopPageViewRouteCounts,
+  summarizeFunnelRows,
+  type FunnelRow,
+  type FunnelSignalAggregate,
+  type FunnelSignalSummary,
+} from "./project-signals-funnel";
+
+export type { FunnelRow, FunnelSignalAggregate, FunnelSignalSummary } from "./project-signals-funnel";
+export {
+  buildTopPageViewRoutes,
+  buildTopPageViewRouteCounts,
+  countProjectPageViewRoutes,
+  countProjectPageViews,
+  getFunnelMetaString,
+  getFunnelPagePath,
+} from "./project-signals-funnel";
 
 export type BaseTimelineRow = {
   created_at: string;
@@ -12,15 +29,6 @@ export type BaseTimelineRow = {
 export type ProjectSignalQueryBuilder = {
   order(column: string, options?: { ascending?: boolean }): ProjectSignalQueryBuilder;
   limit(limit: number): ProjectSignalQueryBuilder;
-};
-
-export type FunnelRow = {
-  at: string;
-  user_id: string | null;
-  session_id: string;
-  step: string;
-  mode: string;
-  meta?: Record<string, unknown> | null;
 };
 
 export type ProgressionRow = {
@@ -138,6 +146,8 @@ export type ProjectSignalRows = {
   actions: ActionRow[];
   spots: SpotRow[];
   funnelEvents: FunnelRow[];
+  funnelAggregate?: FunnelSignalAggregate;
+  funnelSignalSummary?: FunnelSignalSummary;
   progressionEvents: ProgressionRow[];
   reports: ReportRow[];
   trainingExamples: TrainingRow[];
@@ -208,71 +218,8 @@ export function countDistinct(values: Array<string | null | undefined>): number 
   ).size;
 }
 
-export function getFunnelMetaString(row: FunnelRow, keys: string[]): string | null {
-  if (!row.meta) {
-    return null;
-  }
-
-  for (const key of keys) {
-    const value = row.meta[key];
-    if (typeof value === "string" && value.trim().length > 0) {
-      return value.trim();
-    }
-  }
-
-  return null;
-}
-
-export function getFunnelPagePath(row: FunnelRow): string | null {
-  return getFunnelMetaString(row, ["pagePath", "pathname", "routePath"]);
-}
-
-export function countProjectPageViews(rows: FunnelRow[]): number {
-  const detailedPageViews = rows.filter((row) => row.step === "page_view").length;
-  if (detailedPageViews > 0) {
-    return detailedPageViews;
-  }
-
-  return rows.filter((row) => row.step === "view_new").length;
-}
-
-export function countProjectPageViewRoutes(rows: FunnelRow[]): number {
-  return countDistinct(
-    rows
-      .filter((row) => row.step === "page_view" || row.step === "view_new" || row.step === "start_form")
-      .map((row) => getFunnelPagePath(row)),
-  );
-}
-
 export function countProjectUnreadNotifications(rows: AppNotificationRow[]): number {
   return rows.filter((row) => row.read_at === null).length;
-}
-
-export function buildTopPageViewRoutes(rows: FunnelRow[]): Array<{ path: string; count: number }> {
-  const counts = new Map<string, number>();
-
-  for (const row of rows) {
-    if (row.step !== "page_view" && row.step !== "view_new") {
-      continue;
-    }
-
-    const path = getFunnelPagePath(row);
-    if (!path) {
-      continue;
-    }
-
-    counts.set(path, (counts.get(path) ?? 0) + 1);
-  }
-
-  return Array.from(counts.entries())
-    .map(([path, count]) => ({ path, count }))
-    .sort((left, right) => {
-      if (right.count !== left.count) {
-        return right.count - left.count;
-      }
-      return left.path.localeCompare(right.path, "fr");
-    })
-    .slice(0, 5);
 }
 
 export function countTrainingPhotos(raw: unknown): number {
@@ -301,7 +248,7 @@ export function totalRowsForApiRequests(rows: ProjectSignalRows): number {
   return (
     rows.actions.length +
     rows.spots.length +
-    rows.funnelEvents.length +
+    getFunnelEventCount(rows) +
     rows.progressionEvents.length +
     rows.reports.length +
     rows.trainingExamples.length +
@@ -310,6 +257,24 @@ export function totalRowsForApiRequests(rows: ProjectSignalRows): number {
     rows.eventRsvps.length +
     rows.appNotifications.length
   );
+}
+
+export function getFunnelEventCount(rows: ProjectSignalRows): number {
+  return rows.funnelAggregate?.eventCount ?? rows.funnelSignalSummary?.allTime.eventCount ?? rows.funnelEvents.length;
+}
+
+function selectScopeFunnelAggregate(
+  rows: ProjectSignalRows,
+  userId: string | null,
+  funnelRows: FunnelRow[],
+): FunnelSignalAggregate {
+  if (userId) {
+    if (rows.funnelSignalSummary?.userId === userId && rows.funnelSignalSummary.user) {
+      return rows.funnelSignalSummary.user;
+    }
+    return summarizeFunnelRows(funnelRows);
+  }
+  return rows.funnelAggregate ?? rows.funnelSignalSummary?.allTime ?? summarizeFunnelRows(funnelRows);
 }
 
 export function buildScopeInputFromRows(
@@ -357,7 +322,11 @@ export function buildScopeInputFromRows(
     return ownerId === userId;
   });
 
-  const pageViews = countProjectPageViews(funnelRows);
+  const funnelAggregate = selectScopeFunnelAggregate(rows, userId, funnelRows);
+  const pageViews =
+    funnelAggregate.detailedPageViewCount > 0
+      ? funnelAggregate.detailedPageViewCount
+      : funnelAggregate.legacyPageViewCount;
   const storedImages = trainingRows.reduce(
     (acc, row) => acc + countTrainingPhotos(row.photos),
     0,
@@ -374,9 +343,9 @@ export function buildScopeInputFromRows(
 
     return acc + Math.max(0, Number(row.recipient_count ?? 0));
   }, 0);
-  const sessionCount = countDistinct(funnelRows.map((row) => row.session_id));
+  const sessionCount = funnelAggregate.sessionCount;
   const activeUserCount = countDistinct([
-    ...funnelRows.map((row) => row.user_id),
+    ...funnelAggregate.userIds,
     ...progressionRows.map((row) => row.user_id),
     ...actionRows.map((row) => row.created_by_clerk_id),
     ...spotRows.map((row) => row.created_by_clerk_id),
@@ -388,7 +357,7 @@ export function buildScopeInputFromRows(
     ...notificationRows.map((row) => row.user_id),
   ]);
   const apiRequests =
-    funnelRows.length +
+    funnelAggregate.eventCount +
     progressionRows.length +
     actionRows.length +
     spotRows.length +
@@ -453,8 +422,8 @@ export function buildProjectSignalsHighlights(
   rows: ProjectSignalRows,
 ): EnvironmentalImpactProjectSignal[] {
   const actionById = new Map(rows.actions.map((row) => [row.id, row.created_by_clerk_id]));
-  const detailedPageViews = rows.funnelEvents.filter((row) => row.step === "page_view");
-  const legacyPageViews = rows.funnelEvents.filter((row) => row.step === "view_new");
+  const funnelAggregate =
+    rows.funnelAggregate ?? rows.funnelSignalSummary?.allTime ?? summarizeFunnelRows(rows.funnelEvents);
 
   const allTrainingPhotos = rows.trainingExamples.reduce(
     (acc, row) => acc + countTrainingPhotos(row.photos),
@@ -471,19 +440,22 @@ export function buildProjectSignalsHighlights(
   const rsvpCount = rows.eventRsvps.length;
   const notificationCount = rows.appNotifications.length;
   const unreadNotificationCount = countProjectUnreadNotifications(rows.appNotifications);
-  const routeCount = countProjectPageViewRoutes(rows.funnelEvents);
+  const routeCount = funnelAggregate.distinctRouteCount;
 
   return [
     {
       label: "Pages vues CleanMyMap",
-      value: detailedPageViews.length > 0 ? detailedPageViews.length : legacyPageViews.length,
+      value:
+        funnelAggregate.detailedPageViewCount > 0
+          ? funnelAggregate.detailedPageViewCount
+          : funnelAggregate.legacyPageViewCount,
       detail:
         "Signal route-level prioritaire via page_view, avec fallback sur les vues de tunnel view_new.",
       basis: "all_time",
     },
     {
       label: "Pages vues tunnel",
-      value: legacyPageViews.length,
+      value: funnelAggregate.legacyPageViewCount,
       detail: "Vues de démarrage de formulaire conservées pour l'audit historique.",
       basis: "all_time",
     },
@@ -550,7 +522,7 @@ export function buildProjectSignalsHighlights(
     {
       label: "Utilisateurs actifs",
       value: countDistinct([
-        ...rows.funnelEvents.map((row) => row.user_id),
+        ...funnelAggregate.userIds,
         ...rows.progressionEvents.map((row) => row.user_id),
         ...rows.actions.map((row) => row.created_by_clerk_id),
         ...rows.spots.map((row) => row.created_by_clerk_id),
@@ -565,8 +537,8 @@ export function buildProjectSignalsHighlights(
 }
 
 export function buildProjectSignalBreakdown(rows: ProjectSignalRows) {
-  const detailedPageViews = rows.funnelEvents.filter((row) => row.step === "page_view").length;
-  const legacyPageViews = rows.funnelEvents.filter((row) => row.step === "view_new").length;
+  const funnelAggregate =
+    rows.funnelAggregate ?? rows.funnelSignalSummary?.allTime ?? summarizeFunnelRows(rows.funnelEvents);
   const communityEventCount = rows.communityEvents.length;
   const rsvpCount = rows.eventRsvps.length;
   const notificationCount = rows.appNotifications.length;
@@ -582,10 +554,10 @@ export function buildProjectSignalBreakdown(rows: ProjectSignalRows) {
 
   return {
     traffic: {
-      pageViewEvents: detailedPageViews,
-      legacyPageViewEvents: legacyPageViews,
-      distinctRoutes: countProjectPageViewRoutes(rows.funnelEvents),
-      topRoutes: buildTopPageViewRoutes(rows.funnelEvents),
+      pageViewEvents: funnelAggregate.detailedPageViewCount,
+      legacyPageViewEvents: funnelAggregate.legacyPageViewCount,
+      distinctRoutes: funnelAggregate.distinctRouteCount,
+      topRoutes: buildTopPageViewRouteCounts(funnelAggregate.routeCounts),
     },
     community: {
       events: communityEventCount,

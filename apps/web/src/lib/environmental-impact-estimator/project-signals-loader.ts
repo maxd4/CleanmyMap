@@ -8,7 +8,6 @@ import {
   type AppNotificationRow,
   type CommunityEventRow,
   type EventRsvpRow,
-  type FunnelRow,
   type ProfileCreatedAtRow,
   type ProgressionRow,
   type ProjectSignalRows,
@@ -17,11 +16,13 @@ import {
   type SpotRow,
   type TrainingRow,
 } from "./project-signals.calculations";
+import { parseFunnelSignalSummary } from "./project-signals-funnel";
 import type { EnvironmentalImpactCodexUsageWeeklySnapshotRecord } from "./types";
 import type { ProjectSignalRowsInput } from "./project-signals-scope";
 
 export type ProjectSignalLoadParams = {
   userId: string | null;
+  generatedAt?: string;
 };
 
 export type LoadedProjectSignalData = {
@@ -70,12 +71,13 @@ export async function loadProjectSignalData(
   supabase: SupabaseClient,
   params: ProjectSignalLoadParams,
 ): Promise<LoadedProjectSignalData> {
+  const funnelSummaryReference = params.generatedAt ?? new Date().toISOString();
   const [
     oldestProfileCreatedAt,
     accountCreatedAt,
     actions,
     canonicalSpots,
-    funnelEvents,
+    funnelSummary,
     progressionEvents,
     reports,
     trainingExamples,
@@ -103,19 +105,10 @@ export async function loadProjectSignalData(
         .limit(PROJECT_SIGNAL_ROW_LIMIT),
       [["created_at", false], ["id", false]],
     ),
-    orderProjectSignalRows<FunnelRow>(
-      supabase
-        .from("funnel_events")
-        .select("at, user_id, session_id, step, mode, meta")
-        .limit(PROJECT_SIGNAL_ROW_LIMIT),
-      [
-        ["at", false],
-        ["session_id", false],
-        ["step", false],
-        ["mode", false],
-        ["user_id", false],
-      ],
-    ),
+    supabase.rpc("load_environmental_funnel_signal_summary", {
+      p_user_id: params.userId,
+      p_now: funnelSummaryReference,
+    }),
     orderProjectSignalRows<ProgressionRow>(
       supabase
         .from("progression_events")
@@ -201,18 +194,23 @@ export async function loadProjectSignalData(
     ),
   ]);
   const codexSnapshots = await listCodexUsageWeeklySnapshots(12);
-  const error = [actions.error, canonicalSpots.error, funnelEvents.error,
+  const error = [actions.error, canonicalSpots.error, funnelSummary.error,
     progressionEvents.error, reports.error, trainingExamples.error, serviceEmails.error,
     communityEvents.error, eventRsvps.error, appNotifications.error].find(Boolean);
   if (error) {
     throw new Error(error?.message ?? "Impossible de charger les signaux environnementaux du projet.");
   }
 
+  const parsedFunnelSummary = parseFunnelSignalSummary(funnelSummary.data, {
+    userId: params.userId,
+    now: funnelSummaryReference,
+  });
   const rows: ProjectSignalRowsInput = {
     profiles: [],
     actions: (actions.data ?? []) as ActionRow[],
     spots: normalizeCanonicalSpotRows((canonicalSpots.data ?? []) as SpotRow[]),
-    funnelEvents: (funnelEvents.data ?? []) as FunnelRow[],
+    funnelEvents: [],
+    funnelSignalSummary: parsedFunnelSummary,
     progressionEvents: (progressionEvents.data ?? []) as ProgressionRow[],
     reports: (reports.data ?? []) as ReportRow[],
     trainingExamples: (trainingExamples.data ?? []) as TrainingRow[],

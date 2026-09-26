@@ -18,6 +18,7 @@ export async function loadEnvironmentalImpactProjectSignals(
   const generatedAt = params.generatedAt ?? new Date().toISOString();
   const loaded = await loadProjectSignalData(supabase, {
     userId: params.userId,
+    generatedAt,
   });
 
   return buildEnvironmentalImpactProjectSignals(
