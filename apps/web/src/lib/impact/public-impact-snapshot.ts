@@ -158,6 +158,44 @@ function isPublicImpactSnapshotPayload(
   );
 }
 
+function isValidUtcDate(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return (
+    Number.isFinite(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === value
+  );
+}
+
+function isCurrentImpactSnapshotPeriod(
+  snapshot: PublicImpactSnapshotRecord,
+  now: Date,
+): boolean {
+  return (
+    snapshot.snapshotDate === getImpactSnapshotMonthDate(now.toISOString()) &&
+    snapshot.snapshotDate === getImpactSnapshotMonthDate(snapshot.generatedAt)
+  );
+}
+
+function hasCoherentImpactSnapshotPeriod(
+  snapshot: PublicImpactSnapshotRecord,
+  payload: PublicImpactSnapshotPayload,
+  generatedDate: string,
+  generatedFloorDate: string,
+): boolean {
+  return (
+    isValidUtcDate(snapshot.snapshotDate) &&
+    isValidUtcDate(payload.period.fromDate) &&
+    isValidUtcDate(payload.period.toDate) &&
+    payload.period.toDate === generatedDate &&
+    payload.period.fromDate === generatedFloorDate &&
+    payload.provenance.scope.floorDate === generatedFloorDate
+  );
+}
+
 export function isCurrentPublicImpactSnapshot(
   snapshot: PublicImpactSnapshotRecord | null | undefined,
   now = new Date(),
@@ -170,22 +208,25 @@ export function isCurrentPublicImpactSnapshot(
     return false;
   }
 
-  const currentDate = getPublicSurfaceSnapshotDate(now.toISOString());
-  const currentFloorDate = buildLandingFloorDate(now);
+  const generatedAt = new Date(snapshot.generatedAt);
+  const generatedDate = getPublicSurfaceSnapshotDate(snapshot.generatedAt);
+  const generatedFloorDate = buildLandingFloorDate(generatedAt);
   const payload = snapshot.payload;
 
   return (
     snapshot.snapshotKey === PUBLIC_IMPACT_SNAPSHOT_KEY &&
-    snapshot.snapshotDate === getImpactSnapshotMonthDate(now.toISOString()) &&
+    isCurrentImpactSnapshotPeriod(snapshot, now) &&
     snapshot.version === PUBLIC_IMPACT_SNAPSHOT_VERSION &&
     snapshot.generatedAt === payload.generatedAt &&
-    getPublicSurfaceSnapshotDate(snapshot.generatedAt) === currentDate &&
+    hasCoherentImpactSnapshotPeriod(
+      snapshot,
+      payload,
+      generatedDate,
+      generatedFloorDate,
+    ) &&
     payload.methodologyVersion === IMPACT_PROXY_CONFIG.version &&
     payload.resultsContractVersion ===
-      IMPACT_TERRAIN_2026_RESULTS_CONTRACT_VERSION &&
-    payload.period.fromDate === currentFloorDate &&
-    payload.period.toDate === currentDate &&
-    payload.provenance.scope.floorDate === currentFloorDate
+      IMPACT_TERRAIN_2026_RESULTS_CONTRACT_VERSION
   );
 }
 
