@@ -16,6 +16,10 @@ const FORBIDDEN_SECRET_NAMES = [
 export function auditWorkflowContent(content, filePath = "workflow") {
   const issues = [];
 
+  if (!/^permissions:\s*/m.test(content)) {
+    issues.push(`${filePath}: workflow must declare explicit top-level permissions (use permissions: {} and grant only job-scoped rights).`);
+  }
+
   if (/^\s*pull_request_target\s*:/m.test(content)) {
     issues.push(`${filePath}: pull_request_target is forbidden for repository workflows.`);
   }

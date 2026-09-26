@@ -17,8 +17,10 @@ GitHub lus à distance. Il décrit le contrat courant sans exposer de secret.
   n’est ajoutée.
 - Les références `uses:` sont contrôlées par `npm run check:github-actions` et
   doivent être épinglées sur un commit SHA complet.
-- `pull_request_target` et les permissions globales `read-all`/`write-all` sont
-  refusés par le contrôle local.
+- Chaque workflow doit déclarer explicitement des permissions top-level,
+  normalement `permissions: {}`, puis accorder uniquement les droits
+  nécessaires au niveau du job. `pull_request_target` et les permissions
+  globales `read-all`/`write-all` sont refusés par le contrôle local.
 - Les valeurs de SHA utilisées par le script de détection de périmètre CI passent
   par des variables d'environnement plutôt que par interpolation directe dans le
   shell.
