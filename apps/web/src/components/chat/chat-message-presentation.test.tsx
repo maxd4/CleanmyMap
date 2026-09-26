@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { ChatEmptyStateCopy } from "./chat-shell.utils";
 import { ChatDegradedState, ChatEmptyState } from "./ui/chat-feed-states";
+import { ChatMessageContent } from "./ui/chat-message-content";
 
 const messageItemSource = readFileSync(
   new URL("./ui/chat-message-item.tsx", import.meta.url),
@@ -38,6 +39,21 @@ describe("Chat message presentation", () => {
     expect(messageItemSource).toContain("hasStructuredCard");
     expect(messageItemSource).toContain("message.message_kind");
     expect(messageItemSource).toContain("message.action_id");
+  });
+
+  it("renders safe links without interpreting user HTML and keeps external-link protections", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ChatMessageContent, {
+        content: "Voir <img src=x onerror=alert(1)> https://example.com/a.",
+        tone: "light",
+      }),
+    );
+
+    expect(markup).toContain("&lt;img src=x onerror=alert(1)&gt;");
+    expect(markup).toContain('href="https://example.com/a"');
+    expect(markup).toContain('target="_blank"');
+    expect(markup).toContain('rel="noopener noreferrer"');
+    expect(markup).not.toContain("<img src=x");
   });
 
   it("shows a short empty state with at most three suggestions", () => {

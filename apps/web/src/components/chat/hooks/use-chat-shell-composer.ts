@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
+import { isSafeChatAttachmentUrl } from "@/lib/chat/chat-attachments";
 import {
   buildAnnouncementDraft,
   getAnnouncementTopicId,
@@ -18,6 +19,17 @@ import type { ChatTopicId } from "@/lib/chat/topics";
 import type { ChatUser } from "../chat-types";
 
 export type ChatShellComposerMode = "message" | "announcement" | "poll";
+
+export function appendChatLinkToMessage(message: string, url: string): string {
+  const normalizedUrl = url.trim();
+  if (!isSafeChatAttachmentUrl(normalizedUrl)) {
+    return message;
+  }
+  if (!message.trim()) {
+    return normalizedUrl;
+  }
+  return `${message}${message.endsWith("\n") ? "" : "\n"}${normalizedUrl}`;
+}
 
 type CanSubmitChatMessageParams = {
   userId?: string;
@@ -188,6 +200,14 @@ export function useChatShellComposer({
     [announcementMode, setActiveTopicId],
   );
 
+  const handleInsertLink = useCallback(
+    (url: string) => {
+      setMessage((current) => appendChatLinkToMessage(current, url));
+      setSendError(null);
+    },
+    [setMessage, setSendError],
+  );
+
   const resetComposerForChannelChange = useCallback(() => {
     setComposerMode("message");
     setAnnouncementTemplate(null);
@@ -248,6 +268,7 @@ export function useChatShellComposer({
     composerMode,
     handleAnnouncementTemplateChange,
     handleComposerModeChange,
+    handleInsertLink,
     handleSelectTopic,
     pollOptions,
     relatedEvent,

@@ -5,10 +5,7 @@ import { memo, useState } from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent, RefObject } from "react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
-import {
-  CHAT_ATTACHMENT_ACCEPT,
-  isSupportedChatAttachmentFile,
-} from "@/lib/chat/chat-attachments";
+import { CHAT_ATTACHMENT_ACCEPT, isSupportedChatAttachmentFile } from "@/lib/chat/chat-attachments";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { ChatAvatar } from "./chat-avatar";
 import type { ChatUser } from "./chat-types";
@@ -22,6 +19,7 @@ import {
   CHAT_POLL_MAX_OPTIONS,
   getChatPollOptionsValidationError,
 } from "@/lib/chat/polls";
+import { ChatShareLinkAction } from "./ui/chat-share-link-action";
 
 const MAX_ATTACHMENT_SIZE_BYTES = 8 * 1024 * 1024;
 type ChatComposerMode = "message" | "announcement" | "poll";
@@ -55,6 +53,7 @@ type ChatComposerProps = {
   showMentions: boolean;
   mentionSuggestions: ChatUser[];
   onInsertMention: (handle: string) => void;
+  onInsertLink?: (url: string) => void;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
   canSubmit: boolean;
 };
@@ -72,6 +71,8 @@ export function selectChatComposerMode(
   closeTools();
 }
 
+export { getCurrentChatShareLink } from "./ui/chat-share-link-action";
+
 export const ChatComposer = memo(function ChatComposer({
   activeChannelType,
   composerPlaceholder,
@@ -88,6 +89,7 @@ export const ChatComposer = memo(function ChatComposer({
   showMentions,
   mentionSuggestions,
   onInsertMention,
+  onInsertLink,
   onSubmit,
   canSubmit,
   tone = "dark",
@@ -435,6 +437,11 @@ export const ChatComposer = memo(function ChatComposer({
                 <Paperclip size={16} aria-hidden="true" /> Pièce jointe
               </button>
             ) : null}
+            <ChatShareLinkAction
+              isLight={isLight}
+              onClose={() => setIsToolsOpen(false)}
+              onInsertLink={onInsertLink}
+            />
             {canChooseAnnouncement ? (
               <button
                 type="button"

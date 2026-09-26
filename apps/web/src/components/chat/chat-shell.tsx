@@ -325,7 +325,7 @@ export function ChatShell({
         try {
           await refreshInbox();
         } catch {
-          // The message was already accepted by the API; inbox refresh is best-effort.
+          // API accepted; inbox refresh is best-effort.
         }
       }
       return sentMessage;
@@ -339,6 +339,7 @@ export function ChatShell({
     composerMode,
     handleAnnouncementTemplateChange,
     handleComposerModeChange,
+    handleInsertLink,
     handleSelectTopic,
     pollOptions,
     relatedEvent,
@@ -859,13 +860,13 @@ export function ChatShell({
                 showMentions={showMentions}
                 mentionSuggestions={mentionSuggestions}
                 onInsertMention={insertMention}
+                onInsertLink={handleInsertLink}
                 onSubmit={handleSend}
                 canSubmit={canSubmitMessage}
               />
             </>
           )}
         </div>
-        {/* Right Context Sidebar */}
         {!messagerieMode && activeChannelType !== "dm" && activeChannelType !== "bug_report" ? (
           <ChatContextSidebar tone={isLight ? "light" : "dark"} />
         ) : null}
