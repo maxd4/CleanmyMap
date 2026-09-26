@@ -157,3 +157,12 @@ versionnée `impact-terrain-2026-waste-moisture-v1` : `sec = 1,0`, `humide =
 ne modifie ni la masse collective ni les rapports. Les mégots réutilisent le
 moteur canonique `2500 mégots/kg`, avec les mêmes facteurs d'état ; un nombre
 compté explicitement est prioritaire sur toute conversion de masse.
+
+Le total physique de présence reste séparé de cette attribution :
+`participantsCount = childrenCount + adultCount + retiredCount` inclut les
+enfants pour les statistiques de participation. Il ne constitue jamais le
+dénominateur d'une quote-part personnelle. Celui-ci compte uniquement les
+comptes `action_participants` confirmés, une ligne confirmée représentant une
+unité d'attribution ; les enfants accompagnants, `volunteersCount`,
+`effectiveVolunteerUnits`, `adultCount` et `retiredCount` en sont exclus. La
+contribution d'un enfant est comprise dans celle du compte accompagnateur.

@@ -344,6 +344,31 @@ pas reconstruire la répartition générationnelle ni supposer que les participa
 borné à `500` participants ; une saisie partielle reste autorisée et conserve
 les catégories inconnues.
 
+### Présence physique et attribution personnelle
+
+Le nombre physique de personnes présentes et le nombre de comptes éligibles à
+une attribution personnelle sont deux notions différentes. Lorsque le
+formulaire bénévole renseigne les trois catégories, `participantsCount` reste
+calculé comme suit et continue d'alimenter les statistiques physiques :
+
+```text
+participantsCount = childrenCount + adultCount + retiredCount
+```
+
+Les enfants sont inclus dans ce total physique, mais sont strictement exclus de
+toute répartition personnelle des déchets ou des mégots. Leur contribution de
+terrain est incluse dans celle du compte utilisateur qui les accompagne.
+
+Le dénominateur d'une quote-part personnelle est exclusivement constitué des
+lignes `action_participants` dont `participation_status = 'confirmed'`. Chaque
+ligne confirmée représente une unité d'attribution personnelle, quel que soit
+le nombre d'enfants accompagnant ce compte. `volunteersCount`,
+`participantsCount`, `childrenCount`, `adultCount`, `retiredCount` et
+`effectiveVolunteerUnits` ne peuvent ni remplacer ce roster ni modifier ce
+dénominateur. Ainsi, deux comptes confirmés avec deux enfants et `20 kg`
+produisent `10 kg` par compte ; modifier le nombre d'enfants ne change aucune
+quote-part tant que le roster confirmé ne change pas.
+
 ## Contrat de mesure des déchets hors mégots
 
 `wasteKg` désigne exclusivement la masse totale des déchets hors mégots,
