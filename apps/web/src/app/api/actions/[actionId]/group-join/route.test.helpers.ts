@@ -45,6 +45,67 @@ export type GroupJoinSupabaseErrors = { actionLookup?: string; actionUpdate?: st
 type GroupJoinRegistrationSource = "group_form" | "admin" | "admin_override" | "import";
 function toRegistrationSource(source: GroupJoinParticipantRow["participation_source"] | GroupJoinRegistrationSource | undefined): GroupJoinRegistrationSource { return source === "post_action_claim" || !source ? "group_form" : source; }
 export const groupJoinMocks = { authMock,requireAuthenticatedAccessMock,getCurrentUserIdentityMock,getSupabaseServerClientMock,loadActionOrganizerIdsForActionMock,rebuildUserGamificationBadgesMock,refreshProgressionProfileMock,appendActionModerationAuditMock };
+type GroupJoinRouteMethod = "DELETE" | "GET" | "PATCH" | "POST";
+type GroupJoinRouteCallOptions = {
+  requestActionId?: string;
+  paramsActionId?: string;
+  query?: string;
+  body?: string | Record<string, unknown>;
+};
+
+export async function invokeGroupJoinRoute(
+  method: GroupJoinRouteMethod,
+  options: GroupJoinRouteCallOptions = {},
+): Promise<Response> {
+  const requestActionId = options.requestActionId ?? "action-1";
+  const paramsActionId = options.paramsActionId ?? requestActionId;
+  const request = new Request(
+    `http://localhost/api/actions/${requestActionId}/group-join${options.query ?? ""}`,
+    options.body === undefined
+      ? { method }
+      : {
+          method,
+          body: typeof options.body === "string" ? options.body : JSON.stringify(options.body),
+        },
+  );
+  const context = { params: Promise.resolve({ actionId: paramsActionId }) };
+  const route = await import("./route");
+  switch (method) {
+    case "DELETE":
+      return callDelete(route, request, context);
+    case "GET":
+      return callGet(route, request, context);
+    case "PATCH":
+      return callPatch(route, request, context);
+    case "POST":
+      return callPost(route, request, context);
+  }
+}
+
+export async function invokeGroupJoinRouteJson<T>(
+  method: GroupJoinRouteMethod,
+  options: GroupJoinRouteCallOptions = {},
+): Promise<{ response: Response; body: T }> {
+  const response = await invokeGroupJoinRoute(method, options);
+  return { response, body: (await response.json()) as T };
+}
+
+function callDelete(route: typeof import("./route"), request: Request, context: { params: Promise<{ actionId: string }> }) {
+  return route.DELETE(request, context);
+}
+
+function callGet(route: typeof import("./route"), request: Request, context: { params: Promise<{ actionId: string }> }) {
+  return route.GET(request, context);
+}
+
+function callPatch(route: typeof import("./route"), request: Request, context: { params: Promise<{ actionId: string }> }) {
+  return route.PATCH(request, context);
+}
+
+function callPost(route: typeof import("./route"), request: Request, context: { params: Promise<{ actionId: string }> }) {
+  return route.POST(request, context);
+}
+
 export function createGroupJoinAction(params: { id?: string; createdByClerkId?: string | null; status?: GroupJoinActionRow["status"]; notes?: string | null; groupJoinEnabled?: boolean; actionPhase?: GroupJoinActionRow["action_phase"]; actionDate?: string; eventStartTime?: string | null; moderationVisibility?: GroupJoinActionRow["moderation_visibility"] }): GroupJoinActionRow {
   return {
     id: params.id ?? "action-1",

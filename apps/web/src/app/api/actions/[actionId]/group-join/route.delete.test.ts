@@ -4,6 +4,8 @@ import {
   createGroupJoinParticipant,
   createGroupJoinSupabaseMock,
   groupJoinMocks,
+  invokeGroupJoinRoute,
+  invokeGroupJoinRouteJson,
   seedGroupJoinTestDefaults,
 } from "./route.test.helpers";
 
@@ -13,6 +15,53 @@ const {
   getSupabaseServerClientMock,
   refreshProgressionProfileMock,
 } = groupJoinMocks;
+
+function seedDeleteParticipants(
+  statuses: Array<"pending" | "confirmed">,
+): ReturnType<typeof createGroupJoinParticipant>[] {
+  const participants = statuses.map((participationStatus, index) =>
+    createGroupJoinParticipant({
+      id: `participant-${index + 1}`,
+      created_at: `2026-06-0${index + 1}T10:00:00Z`,
+      joined_at: `2026-06-0${index + 1}T10:00:00Z`,
+      updated_at: `2026-06-0${index + 3}T10:00:00Z`,
+      participation_status: participationStatus,
+      participation_source: "group_form",
+      action_id: "action-1",
+      user_id: `user-${index + 1}`,
+    }),
+  );
+  getSupabaseServerClientMock.mockReturnValueOnce(
+    createGroupJoinSupabaseMock({
+      action: createGroupJoinAction({
+        createdByClerkId: "user-1",
+        status: "approved",
+        groupJoinEnabled: true,
+      }),
+      participants,
+    }),
+  );
+  return participants;
+}
+
+async function deleteAndReadResponse() {
+  return invokeGroupJoinRouteJson<{
+    alreadyCancelled?: boolean;
+    participationStatus?: string;
+    participantsCount?: number;
+  }>("DELETE");
+}
+
+function expectSuccessfulDelete(
+  response: Response,
+  body: Awaited<ReturnType<typeof deleteAndReadResponse>>["body"],
+  participantsCount: number,
+) {
+  expect(response.status).toBe(200);
+  expect(body.alreadyCancelled).toBe(false);
+  expect(body.participationStatus).toBe("cancelled");
+  expect(body.participantsCount).toBe(participantsCount);
+}
 
 describe("DELETE /api/actions/:actionId/group-join", () => {
   beforeEach(() => {
@@ -25,18 +74,15 @@ describe("DELETE /api/actions/:actionId/group-join", () => {
   it("rejects anonymous requests", async () => {
     authMock.mockResolvedValueOnce({ userId: null });
 
-    const { DELETE } = await import("./route");
-    const response = await DELETE(new Request("http://localhost/api/actions/action-1/group-join"), {
-      params: Promise.resolve({ actionId: "action-1" }),
-    });
+    const response = await invokeGroupJoinRoute("DELETE");
 
     expect(response.status).toBe(401);
   }, 15000);
 
   it("rejects an empty action id before cancelling participation", async () => {
-    const { DELETE } = await import("./route");
-    const response = await DELETE(new Request("http://localhost/api/actions//group-join"), {
-      params: Promise.resolve({ actionId: "  " }),
+    const response = await invokeGroupJoinRoute("DELETE", {
+      requestActionId: "",
+      paramsActionId: "  ",
     });
 
     expect(response.status).toBe(422);
@@ -48,106 +94,25 @@ describe("DELETE /api/actions/:actionId/group-join", () => {
       throw new Error("client unavailable");
     });
 
-    const { DELETE } = await import("./route");
-    const response = await DELETE(new Request("http://localhost/api/actions/action-1/group-join"), {
-      params: Promise.resolve({ actionId: "action-1" }),
-    });
+    const response = await invokeGroupJoinRoute("DELETE");
 
     expect(response.status).toBe(500);
   }, 15000);
 
   it("cancels a pending request without changing confirmed counts", async () => {
-    const participants = [
-      createGroupJoinParticipant({
-        id: "participant-1",
-        created_at: "2026-06-01T10:00:00Z",
-        joined_at: "2026-06-01T10:00:00Z",
-        updated_at: "2026-06-03T10:00:00Z",
-        participation_status: "pending",
-        participation_source: "group_form",
-        action_id: "action-1",
-        user_id: "user-1",
-      }),
-    ];
-    getSupabaseServerClientMock.mockReturnValueOnce(
-      createGroupJoinSupabaseMock({
-        action: createGroupJoinAction({
-          createdByClerkId: "user-1",
-          status: "approved",
-          groupJoinEnabled: true,
-        }),
-        participants,
-      }),
-    );
+    const participants = seedDeleteParticipants(["pending"]);
 
-    const { DELETE } = await import("./route");
-    const response = await DELETE(new Request("http://localhost/api/actions/action-1/group-join"), {
-      params: Promise.resolve({ actionId: "action-1" }),
-    });
-
-    const body = (await response.json()) as {
-      alreadyCancelled?: boolean;
-      participationStatus?: string;
-      participantsCount?: number;
-    };
-
-    expect(response.status).toBe(200);
-    expect(body.alreadyCancelled).toBe(false);
-    expect(body.participationStatus).toBe("cancelled");
-    expect(body.participantsCount).toBe(0);
+    const { response, body } = await deleteAndReadResponse();
+    expectSuccessfulDelete(response, body, 0);
     expect(participants[0]?.participation_status).toBe("cancelled");
     expect(refreshProgressionProfileMock).toHaveBeenCalledWith(expect.anything(), "user-1");
   }, 15000);
 
   it("lets a participant leave an accepted form", async () => {
-    const participants = [
-      createGroupJoinParticipant({
-        id: "participant-1",
-        created_at: "2026-06-01T10:00:00Z",
-        joined_at: "2026-06-01T10:00:00Z",
-        updated_at: "2026-06-03T10:00:00Z",
-        participation_status: "confirmed",
-        participation_source: "group_form",
-        action_id: "action-1",
-        user_id: "user-1",
-      }),
-      createGroupJoinParticipant({
-        id: "participant-2",
-        created_at: "2026-06-02T10:00:00Z",
-        joined_at: "2026-06-02T10:00:00Z",
-        updated_at: "2026-06-04T10:00:00Z",
-        participation_status: "confirmed",
-        participation_source: "group_form",
-        action_id: "action-1",
-        user_id: "user-2",
-      }),
-    ];
-    getSupabaseServerClientMock.mockReturnValueOnce(
-      createGroupJoinSupabaseMock({
-        action: createGroupJoinAction({
-          createdByClerkId: "user-1",
-          status: "approved",
-          groupJoinEnabled: true,
-        }),
-        participants,
-      }),
-    );
+    const participants = seedDeleteParticipants(["confirmed", "confirmed"]);
 
-    const { DELETE } = await import("./route");
-    const response = await DELETE(new Request("http://localhost/api/actions/action-1/group-join"), {
-      params: Promise.resolve({ actionId: "action-1" }),
-    });
-
-    const body = (await response.json()) as {
-      alreadyCancelled?: boolean;
-      participationStatus?: string;
-      participantsCount?: number;
-    };
-
-    expect(response.status).toBe(200);
-    expect(body.alreadyCancelled).toBe(false);
-    expect(body.participationStatus).toBe("cancelled");
-    expect(body.participantsCount).toBe(1);
+    const { response, body } = await deleteAndReadResponse();
+    expectSuccessfulDelete(response, body, 1);
     expect(participants[0]?.participation_status).toBe("cancelled");
     expect(participants[1]?.participation_status).toBe("confirmed");
   }, 15000);

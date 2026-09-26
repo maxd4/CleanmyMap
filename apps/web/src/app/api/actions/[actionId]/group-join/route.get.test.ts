@@ -5,6 +5,8 @@ import {
   createGroupJoinProfile,
   createGroupJoinSupabaseMock,
   groupJoinMocks,
+  invokeGroupJoinRoute,
+  invokeGroupJoinRouteJson,
   seedGroupJoinTestDefaults,
 } from "./route.test.helpers";
 
@@ -15,6 +17,54 @@ const {
   loadActionOrganizerIdsForActionMock,
   refreshProgressionProfileMock,
 } = groupJoinMocks;
+
+type GroupJoinListingBody = {
+  status?: string;
+  count?: number;
+  pendingRequests?: Array<{ id?: string; displayName?: string }>;
+  confirmedParticipants?: Array<{ id?: string; displayName?: string }>;
+  canReview?: boolean;
+};
+
+function seedGroupJoinListing(
+  participants: ReturnType<typeof createGroupJoinParticipant>[],
+  profiles: ReturnType<typeof createGroupJoinProfile>[],
+  createdByClerkId: string,
+) {
+  getSupabaseServerClientMock.mockReturnValue(
+    createGroupJoinSupabaseMock({
+      action: createGroupJoinAction({
+        createdByClerkId,
+        status: "approved",
+        groupJoinEnabled: true,
+      }),
+      participants,
+      profiles,
+    }),
+  );
+}
+
+function expectVisibleGroupJoinListing(body: {
+  status?: string;
+  count?: number;
+  canReview?: boolean;
+}) {
+  expect(body.status).toBe("ok");
+  expect(body.count).toBe(1);
+  expect(body.canReview).toBe(true);
+}
+
+function expectSearchResult(body: {
+  status?: string;
+  mode?: string;
+  count?: number;
+  canReview?: boolean;
+}) {
+  expect(body.status).toBe("ok");
+  expect(body.mode).toBe("search");
+  expect(body.canReview).toBe(true);
+  expect(body.count).toBe(1);
+}
 
 describe("GET /api/actions/:actionId/group-join", () => {
   beforeEach(() => {
@@ -51,47 +101,19 @@ describe("GET /api/actions/:actionId/group-join", () => {
         user_id: "user-3",
       }),
     ];
-    getSupabaseServerClientMock.mockReturnValue(
-      createGroupJoinSupabaseMock({
-        action: createGroupJoinAction({
-          createdByClerkId: "user-1",
-          status: "approved",
-          groupJoinEnabled: true,
-        }),
-        participants,
-        profiles: [
-          createGroupJoinProfile({
-            id: "user-2",
-            display_name: "Alice",
-            handle: "alice",
-          }),
-          createGroupJoinProfile({
-            id: "user-3",
-            display_name: "Bob",
-            handle: "bob",
-          }),
-        ],
-      }),
+    seedGroupJoinListing(
+      participants,
+      [
+        createGroupJoinProfile({ id: "user-2", display_name: "Alice", handle: "alice" }),
+        createGroupJoinProfile({ id: "user-3", display_name: "Bob", handle: "bob" }),
+      ],
+      "user-1",
     );
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      new Request("http://localhost/api/actions/action-1/group-join"),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
-
-    const body = (await response.json()) as {
-      status?: string;
-      count?: number;
-      pendingRequests?: Array<{ id?: string; displayName?: string }>;
-      confirmedParticipants?: Array<{ id?: string; displayName?: string }>;
-      canReview?: boolean;
-    };
+    const { response, body } = await invokeGroupJoinRouteJson<GroupJoinListingBody>("GET");
 
     expect(response.status).toBe(200);
-    expect(body.status).toBe("ok");
-    expect(body.count).toBe(1);
-    expect(body.canReview).toBe(true);
+    expectVisibleGroupJoinListing(body);
     expect(body.pendingRequests?.[0]?.id).toBe("participant-1");
     expect(body.pendingRequests?.[0]?.displayName).toBe("Alice");
     expect(body.confirmedParticipants?.[0]?.id).toBe("participant-2");
@@ -115,11 +137,7 @@ describe("GET /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      new Request("http://localhost/api/actions/action-1/group-join"),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeGroupJoinRoute("GET");
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -154,41 +172,21 @@ describe("GET /api/actions/:actionId/group-join", () => {
       role: "benevole",
     });
     loadActionOrganizerIdsForActionMock.mockResolvedValueOnce(["user-1"]);
-    getSupabaseServerClientMock.mockReturnValue(
-      createGroupJoinSupabaseMock({
-        action: createGroupJoinAction({
-          createdByClerkId: "user-owner",
-          status: "approved",
-          groupJoinEnabled: true,
-        }),
-        participants,
-        profiles: [
-          createGroupJoinProfile({
-            id: "user-2",
-            display_name: "Alice",
-            handle: "alice",
-          }),
-          createGroupJoinProfile({
-            id: "user-3",
-            display_name: "Bob",
-            handle: "bob",
-          }),
-        ],
-      }),
+    seedGroupJoinListing(
+      participants,
+      [
+        createGroupJoinProfile({ id: "user-2", display_name: "Alice", handle: "alice" }),
+        createGroupJoinProfile({ id: "user-3", display_name: "Bob", handle: "bob" }),
+      ],
+      "user-owner",
     );
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      new Request("http://localhost/api/actions/action-1/group-join"),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
-
-    const body = (await response.json()) as {
+    const { response, body } = await invokeGroupJoinRouteJson<{
       count?: number;
       pendingRequests?: Array<{ id?: string }>;
       confirmedParticipants?: Array<{ id?: string }>;
       canReview?: boolean;
-    };
+    }>("GET");
 
     expect(response.status).toBe(200);
     expect(body.count).toBe(1);
@@ -243,14 +241,9 @@ describe("GET /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      new Request("http://localhost/api/actions/action-1/group-join"),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
-    const body = (await response.json()) as {
+    const { response, body } = await invokeGroupJoinRouteJson<{
       pendingRequests?: Array<{ id?: string; wasRegisteredBeforeAction?: boolean }>;
-    };
+    }>("GET");
 
     expect(response.status).toBe(200);
     expect(body.pendingRequests).toEqual([
@@ -292,19 +285,7 @@ describe("GET /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      new Request("http://localhost/api/actions/action-1/group-join"),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
-
-    const body = (await response.json()) as {
-      status?: string;
-      count?: number;
-      pendingRequests?: Array<{ id?: string; displayName?: string }>;
-      confirmedParticipants?: Array<{ id?: string; displayName?: string }>;
-      canReview?: boolean;
-    };
+    const { response, body } = await invokeGroupJoinRouteJson<GroupJoinListingBody>("GET");
 
     expect(response.status).toBe(200);
     expect(body.status).toBe("ok");
@@ -341,25 +322,16 @@ describe("GET /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      new Request("http://localhost/api/actions/action-1/group-join?q=alice"),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
-
-    const body = (await response.json()) as {
+    const { response, body } = await invokeGroupJoinRouteJson<{
       status?: string;
       mode?: string;
       count?: number;
       items?: Array<{ userId?: string; displayName?: string }>;
       canReview?: boolean;
-    };
+    }>("GET", { query: "?q=alice" });
 
     expect(response.status).toBe(200);
-    expect(body.status).toBe("ok");
-    expect(body.mode).toBe("search");
-    expect(body.canReview).toBe(true);
-    expect(body.count).toBe(1);
+    expectSearchResult(body);
     expect(body.items?.[0]?.userId).toBe("user-2");
   }, 15000);
 
@@ -386,24 +358,15 @@ describe("GET /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      new Request("http://localhost/api/actions/action-1/group-join?q=alice"),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
-
-    const body = (await response.json()) as {
+    const { response, body } = await invokeGroupJoinRouteJson<{
       status?: string;
       mode?: string;
       count?: number;
       canReview?: boolean;
-    };
+    }>("GET", { query: "?q=alice" });
 
     expect(response.status).toBe(200);
-    expect(body.status).toBe("ok");
-    expect(body.mode).toBe("search");
-    expect(body.canReview).toBe(true);
-    expect(body.count).toBe(1);
+    expectSearchResult(body);
   }, 15000);
 
   it("rejects account searches when the current user cannot review the action", async () => {
@@ -418,21 +381,16 @@ describe("GET /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      new Request("http://localhost/api/actions/action-1/group-join?q=alice"),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeGroupJoinRoute("GET", { query: "?q=alice" });
 
     expect(response.status).toBe(403);
   }, 15000);
 
   it("rejects an empty action id before loading the queue", async () => {
-    const { GET } = await import("./route");
-    const response = await GET(
-      new Request("http://localhost/api/actions//group-join"),
-      { params: Promise.resolve({ actionId: "  " }) },
-    );
+    const response = await invokeGroupJoinRoute("GET", {
+      requestActionId: "",
+      paramsActionId: "  ",
+    });
 
     expect(response.status).toBe(422);
     expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
@@ -450,11 +408,7 @@ describe("GET /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      new Request("http://localhost/api/actions/action-1/group-join"),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeGroupJoinRoute("GET");
 
     expect(response.status).toBe(200);
     expect((await response.json()).canReview).toBe(false);
@@ -467,11 +421,7 @@ describe("GET /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      new Request("http://localhost/api/actions/action-1/group-join"),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeGroupJoinRoute("GET");
 
     expect(response.status).toBe(404);
   }, 15000);
@@ -483,11 +433,7 @@ describe("GET /api/actions/:actionId/group-join", () => {
       }),
     );
 
-    const { GET } = await import("./route");
-    const response = await GET(
-      new Request("http://localhost/api/actions/action-1/group-join"),
-      { params: Promise.resolve({ actionId: "action-1" }) },
-    );
+    const response = await invokeGroupJoinRoute("GET");
 
     expect(response.status).toBe(404);
   }, 15000);
