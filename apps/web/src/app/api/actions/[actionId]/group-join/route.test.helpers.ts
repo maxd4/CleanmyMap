@@ -38,7 +38,7 @@ vi.mock("@/lib/actions/moderation-audit", () => ({
     return normalized;
   },
 }));
-export type GroupJoinActionRow = { id: string; created_by_clerk_id: string | null; status: "pending" | "approved" | "rejected"; notes: string | null; action_phase?: "pre_action" | "post_action_draft" | "post_action_complete"; published_at?: string | null; moderation_visibility?: "visible" | "hidden" | null; action_date?: string; event_start_time?: string | null };
+export type GroupJoinActionRow = { id: string; created_by_clerk_id: string | null; status: "pending" | "approved" | "rejected" | "cancelled"; notes: string | null; action_phase?: "pre_action" | "post_action_draft" | "post_action_complete"; published_at?: string | null; moderation_visibility?: "visible" | "hidden" | null; action_date?: string; event_start_time?: string | null };
 export type GroupJoinParticipantRow = { id: string; created_at: string; updated_at?: string; action_id: string; user_id: string; joined_at?: string; participation_status?: "pending" | "confirmed" | "cancelled"; participation_source?: "group_form" | "admin" | "admin_override" | "import" | "post_action_claim"; registered_at?: string; registration_status?: "pending" | "confirmed" | "cancelled"; registration_source?: "group_form" | "admin" | "admin_override" | "import" };
 export type GroupJoinProfileRow = { id: string; display_name: string | null; handle: string | null };
 export type GroupJoinSupabaseErrors = { actionLookup?: string; actionUpdate?: string; participantLookup?: string; participantUpdate?: string; participantInsert?: string; participantCount?: string };
@@ -138,7 +138,7 @@ function createActionsChain(
     maybeSingle: () => Promise<SingleResult<{
       id: string;
       created_by_clerk_id: string | null;
-      status: "pending" | "approved" | "rejected";
+      status: "pending" | "approved" | "rejected" | "cancelled";
       notes: string | null;
       action_phase?: GroupJoinActionRow["action_phase"];
       published_at?: string | null;

@@ -14,6 +14,14 @@ describe("action workflow contract", () => {
     expect(next.statuses.paris).toBe("in_progress");
   });
 
+  it("keeps the active step when the last step is completed", () => {
+    const state = createActionWorkflowState("action-1", "preformulaire");
+    const next = markActionWorkflowStep(state, "preformulaire");
+
+    expect(next.activeStep).toBe("preformulaire");
+    expect(next.statuses.preformulaire).toBe("done");
+  });
+
   it("invalidates only dependent steps", () => {
     const state = createActionWorkflowState("action-1", "preformulaire");
     expect(invalidateActionWorkflow(state, "date_time").statuses).toMatchObject({
@@ -26,5 +34,12 @@ describe("action workflow contract", () => {
       paris: "review",
       preparation: "review",
     });
+    expect(invalidateActionWorkflow(state, "route").statuses).toMatchObject({
+      paris: "review",
+      preparation: "review",
+    });
+    expect(invalidateActionWorkflow(state, "preparation").statuses.preparation).toBe(
+      "review",
+    );
   });
 });

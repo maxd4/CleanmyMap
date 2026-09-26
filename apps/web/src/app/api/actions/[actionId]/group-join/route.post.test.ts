@@ -464,9 +464,135 @@ describe("POST /api/actions/:actionId/group-join", () => {
     );
   }, 15000);
 
+  it("rejects an unauthenticated moderation request", async () => {
+    authMock.mockResolvedValueOnce({ userId: null });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({ participantId: "participant-1", decision: "accept" }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(401);
+  }, 15000);
+
+  it("reviews a pending pre-action through the pre-action eligibility branch", async () => {
+    const participants = [
+      createGroupJoinParticipant({
+        id: "participant-pending-action",
+        created_at: "2026-06-01T10:00:00Z",
+        action_id: "action-1",
+        user_id: "user-2",
+        participation_status: "pending",
+        participation_source: "group_form",
+      }),
+    ];
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          status: "pending",
+          actionPhase: "pre_action",
+          groupJoinEnabled: true,
+        }),
+        participants,
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({
+          participantId: "participant-pending-action",
+          decision: "accept",
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).participationStatus).toBe("confirmed");
+  }, 15000);
+
+  it("keeps an already confirmed participant idempotent", async () => {
+    const participants = [
+      createGroupJoinParticipant({
+        id: "participant-confirmed",
+        created_at: "2026-06-01T10:00:00Z",
+        action_id: "action-1",
+        user_id: "user-2",
+        participation_status: "confirmed",
+        participation_source: "group_form",
+      }),
+    ];
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+        participants,
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({ participantId: "participant-confirmed", decision: "accept" }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.participationStatus).toBe("confirmed");
+    expect(rebuildUserGamificationBadgesMock).toHaveBeenCalledWith(expect.anything(), "user-2");
+  }, 15000);
+
+  it("keeps an existing admin override add idempotent", async () => {
+    const participants = [
+      createGroupJoinParticipant({
+        id: "participant-admin",
+        created_at: "2026-06-01T10:00:00Z",
+        action_id: "action-1",
+        user_id: "user-2",
+        participation_status: "confirmed",
+        participation_source: "admin_override",
+      }),
+    ];
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+        participants,
+      }),
+    );
+
+    const response = await postActionGroupJoin({
+      participantUserId: "user-2",
+      reason: "Déjà ajouté par le référent.",
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.participationStatus).toBe("confirmed");
+    expect(participants).toHaveLength(1);
+  }, 15000);
+
   it("lets an action organizer accept a pending request without admin audit", async () => {
     authMock.mockResolvedValueOnce({ userId: "organizer-1" });
-    getCurrentUserIdentityMock.mockResolvedValueOnce({ role: "benevole", activeRole: "benevole" });
+    getCurrentUserIdentityMock
+      .mockResolvedValueOnce({ role: "benevole", activeRole: "benevole" })
+      .mockResolvedValueOnce({ role: "benevole", activeRole: "benevole" });
     const participants = [
       createGroupJoinParticipant({
         id: "participant-1",
@@ -596,6 +722,172 @@ describe("POST /api/actions/:actionId/group-join", () => {
 
     expect(response.status).toBe(403);
     expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("rejects malformed JSON before loading the action", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: "not-json",
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("rejects an empty action id after validating the moderation body", async () => {
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/group-join", {
+        method: "POST",
+        body: JSON.stringify({ participantUserId: "user-2" }),
+      }),
+      { params: Promise.resolve({ actionId: "  " }) },
+    );
+
+    expect(response.status).toBe(422);
+    expect(getSupabaseServerClientMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("returns not found when the reviewed participant does not exist", async () => {
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+        participants: [],
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({ participantId: "missing", decision: "accept" }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(404);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        details: { stage: "lookup", partialMutation: false },
+      }),
+    );
+  }, 15000);
+
+  it("returns a validation error when a participant was already cancelled", async () => {
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+        participants: [
+          createGroupJoinParticipant({
+            id: "participant-cancelled",
+            created_at: "2026-06-01T10:00:00Z",
+            action_id: "action-1",
+            user_id: "user-2",
+            participation_status: "cancelled",
+            participation_source: "group_form",
+          }),
+        ],
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({ participantId: "participant-cancelled", decision: "accept" }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(422);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        outcome: "error",
+        details: { stage: "lookup", partialMutation: false },
+      }),
+    );
+  }, 15000);
+
+  it("handles a missing participant for an organizer without an admin audit identity", async () => {
+    authMock.mockResolvedValueOnce({ userId: "organizer-1" });
+    getCurrentUserIdentityMock
+      .mockResolvedValueOnce({ role: "benevole", activeRole: "benevole" })
+      .mockResolvedValueOnce({ role: "benevole", activeRole: "benevole" });
+    groupJoinMocks.loadActionOrganizerIdsForActionMock.mockResolvedValueOnce(["organizer-1"]);
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+        participants: [],
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({ participantId: "missing", decision: "accept" }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(404);
+    expect(appendActionModerationAuditMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("does not duplicate an audit when the first success audit fails", async () => {
+    appendActionModerationAuditMock.mockRejectedValueOnce(new Error("audit unavailable"));
+    const participants = [
+      createGroupJoinParticipant({
+        id: "participant-audit-error",
+        created_at: "2026-06-01T10:00:00Z",
+        action_id: "action-1",
+        user_id: "user-2",
+        participation_status: "pending",
+        participation_source: "group_form",
+      }),
+    ];
+    getSupabaseServerClientMock.mockReturnValue(
+      createGroupJoinSupabaseMock({
+        action: createGroupJoinAction({
+          createdByClerkId: "user-owner",
+          status: "approved",
+          groupJoinEnabled: true,
+        }),
+        participants,
+      }),
+    );
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/action-1/group-join", {
+        method: "POST",
+        body: JSON.stringify({
+          participantId: "participant-audit-error",
+          decision: "accept",
+        }),
+      }),
+      { params: Promise.resolve({ actionId: "action-1" }) },
+    );
+
+    expect(response.status).toBe(500);
+    expect(appendActionModerationAuditMock).toHaveBeenCalledTimes(1);
   }, 15000);
 });
 
