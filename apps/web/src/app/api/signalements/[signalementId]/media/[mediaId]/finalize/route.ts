@@ -37,7 +37,7 @@ export async function POST(
   }
   const { signalementId, mediaId } = await context.params;
   try {
-    const result = await finalizeSignalementMedia(getSupabaseServerClient(), {
+    const result = await finalizeSignalementMedia(getSupabaseServerClient(true), {
       userId: access.userId,
       signalementId,
       mediaId,

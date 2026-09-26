@@ -160,7 +160,7 @@ export async function POST(request: Request) {
   );
  }
 
- const supabase = getSupabaseServerClient();
+ const supabase = getSupabaseServerClient(true);
  const eventResult = await supabase
  .from("community_events")
  .select(

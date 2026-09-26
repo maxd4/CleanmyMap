@@ -153,7 +153,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const serviceSupabase = getSupabaseServerClient();
+    const serviceSupabase = getSupabaseServerClient(true);
 
     let feedbackReplyContext: {
       feedbackId: string;

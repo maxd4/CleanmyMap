@@ -100,7 +100,7 @@ export async function listRunbookChecks(options?: {
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase
         .from("runbook_checks")
         .select("profile, status, duration_seconds, last_run_at, notes")
@@ -159,7 +159,7 @@ export async function upsertRunbookCheck(input: {
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase
         .from("runbook_checks")
         .upsert(

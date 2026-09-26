@@ -68,8 +68,14 @@ pas été modifiés par ce dernier lot.
   exclusions actives ; `can_post` délègue à `can_view` et refuse les actions
   annulées.
 - Les migrations révoquent `EXECUTE` pour `public` et `anon` et ne le
-  conservent que pour `authenticated` et `service_role`, ce qui correspond au
-  besoin des policies RLS et au chemin serveur.
+  conservent que pour `authenticated` et `service_role`, ce qui correspondait
+  au besoin historique des policies RLS et du chemin serveur. Le lot local
+  `20260926000000_harden_privileged_supabase_boundaries.sql` conserve
+  `authenticated` seul pour ces trois helpers : `service_role` contourne les
+  policies RLS et n'a pas besoin de les appeler directement. Le prédicat de
+  référence vérifie en plus `auth.role()` pour rester fermé si un grant dérive.
+  Cette réduction est versionnée mais n'est pas une preuve d'application
+  distante tant que l'audit linked n'a pas pu être rejoué.
 
 - Les quatre INFO `rls_enabled_no_policy` sont intentionnels :
   `public.action_conversation_exclusions`,

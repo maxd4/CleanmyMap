@@ -36,7 +36,7 @@ export async function handleGroupJoinQueue(
   }
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const actionResult = await runSingleActionQuery<{
       id: string;
       created_by_clerk_id: string | null;

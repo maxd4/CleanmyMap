@@ -28,7 +28,7 @@ export async function GET(
   const { signalementId } = await context.params;
   try {
     const { userId } = await auth();
-    const items = await listSignalementMedia(getSupabaseServerClient(), {
+    const items = await listSignalementMedia(getSupabaseServerClient(true), {
       signalementId,
       userId,
     });

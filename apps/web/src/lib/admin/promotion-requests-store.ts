@@ -238,7 +238,7 @@ export async function appendPromotionRequest(params: {
   };
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("promotion_requests")
       .insert(toSupabaseRow(record))
       .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
@@ -266,7 +266,7 @@ export async function listPromotionRequests(
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("promotion_requests")
       .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
       .order("created_at", { ascending: false })
@@ -300,7 +300,7 @@ export async function listPromotionRequestsForUser(
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("promotion_requests")
       .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
       .eq("submitted_by_user_id", normalizedUserId)
@@ -330,7 +330,7 @@ export async function updatePromotionRequestStatus(params: {
 
   if (canUseSupabaseServerPersistence()) {
     const reviewedAt = new Date().toISOString();
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("promotion_requests")
       .update({
         status: params.status,
@@ -383,7 +383,7 @@ export async function updatePromotionRequestCreatorState(params: {
   assertPersistenceAvailable("promotion_requests");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("promotion_requests")
       .update({ creator_state: params.creatorState })
       .eq("id", params.requestId)
@@ -425,7 +425,7 @@ export async function getPromotionRequestById(
   assertPersistenceAvailable("promotion_requests");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("promotion_requests")
       .select(SUPABASE_PROMOTION_REQUEST_COLUMNS)
       .eq("id", requestId)
@@ -448,7 +448,7 @@ export async function deletePromotionRequest(
   assertPersistenceAvailable("promotion_requests");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("promotion_requests")
       .delete()
       .eq("id", requestId)

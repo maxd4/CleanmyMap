@@ -56,7 +56,7 @@ function pickMostFrequentLabel(counts: Map<string, number>): string | null {
 }
 
 async function loadCachedRecentActionsForPrefill(userId: string) {
- const supabase = getSupabaseServerClient();
+ const supabase = getSupabaseServerClient(true);
  return fetchRecentActionsByUser(supabase, {
   userId,
   limit: 25,

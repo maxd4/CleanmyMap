@@ -51,7 +51,7 @@ export async function getChecklistProgress(
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase
         .from("checklist_progress")
         .select("user_id, checklist_id, checks, updated_at")
@@ -104,7 +104,7 @@ export async function upsertChecklistProgress(
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase
         .from("checklist_progress")
         .upsert(

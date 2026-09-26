@@ -109,7 +109,7 @@ function toStorageObjectsQuery(supabase: ReturnType<typeof getSupabaseServerClie
 }
 
 async function readStorageUsageSnapshotRecords(
-  supabase = getSupabaseServerClient(),
+  supabase = getSupabaseServerClient(true),
   limit = getStorageHistoryLimit(),
 ): Promise<StorageUsageSnapshotRow[]> {
   const { data, error } = await supabase
@@ -130,7 +130,7 @@ async function readStorageUsageSnapshotRecords(
 async function buildStorageUsageReport(params: {
   persistSnapshot: boolean;
 }): Promise<StorageUsageReport> {
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   const quotaInfo = resolveSupabaseStorageQuotaInfo();
   const generatedAt = new Date().toISOString();
   const snapshotMonth = getCurrentSnapshotMonth(new Date(generatedAt));
@@ -257,7 +257,7 @@ async function buildStoredStorageUsageReport(): Promise<StorageUsageReport> {
   const snapshotMonth = getCurrentSnapshotMonth(new Date(generatedAt));
   const cron = buildStorageUsageCronStatus(isCronSecretConfigured(), new Date(generatedAt));
   const historyLimit = getStorageHistoryLimit();
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   const historyRecords = await readStorageUsageSnapshotRecords(supabase, historyLimit);
 
   if (historyRecords.length === 0) {

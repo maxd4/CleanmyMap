@@ -262,7 +262,7 @@ export async function appendPartnerOnboardingRequest(params: {
 
   let persistedRecord = record;
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("partner_onboarding_requests")
       .insert(toSupabaseRow(record))
       .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
@@ -303,7 +303,7 @@ export async function listPartnerOnboardingRequests(
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("partner_onboarding_requests")
       .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
       .order("created_at", { ascending: false })
@@ -328,7 +328,7 @@ export async function getPartnerOnboardingRequestById(
   assertPersistenceAvailable("partner_onboarding_requests");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("partner_onboarding_requests")
       .select(SUPABASE_PARTNER_ONBOARDING_REQUEST_COLUMNS)
       .eq("id", requestId)
@@ -349,7 +349,7 @@ export async function countPartnerOnboardingRequests(): Promise<number> {
   assertPersistenceAvailable("partner_onboarding_requests");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("partner_onboarding_requests")
       .select("id", { count: "exact", head: true });
     if (result.error) {
@@ -375,7 +375,7 @@ export async function updatePartnerOnboardingRequestStatus(params: {
         : params.status === "rejected"
           ? "rejected"
           : "pending";
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("partner_onboarding_requests")
       .update({ status: params.status, creator_state: creatorState })
       .eq("id", params.requestId)
@@ -424,7 +424,7 @@ export async function updatePartnerOnboardingRequestCreatorState(params: {
   assertPersistenceAvailable("partner_onboarding_requests");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("partner_onboarding_requests")
       .update({ creator_state: params.creatorState })
       .eq("id", params.requestId)
@@ -466,7 +466,7 @@ export async function deletePartnerOnboardingRequest(
   assertPersistenceAvailable("partner_onboarding_requests");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("partner_onboarding_requests")
       .delete()
       .eq("id", requestId)

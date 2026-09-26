@@ -63,7 +63,7 @@ export async function POST(
   }
 
   try {
-    const intent = await createSignalementMediaUploadIntent(getSupabaseServerClient(), {
+    const intent = await createSignalementMediaUploadIntent(getSupabaseServerClient(true), {
       ...parsed.data,
       userId: access.userId,
       signalementId,

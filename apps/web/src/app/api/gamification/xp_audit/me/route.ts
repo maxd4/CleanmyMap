@@ -12,7 +12,7 @@ export async function GET() {
   if (!userId) return unauthorizedJsonResponse();
 
   try {
-    const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
     const { data, error } = await supabase
       .from('xp_audit')
       .select('id, created_at, actor_id, reason, xp_change, source_table, source_id, metadata')

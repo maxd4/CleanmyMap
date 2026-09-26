@@ -27,7 +27,7 @@ export async function POST(
   }
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const current = await loadActionById(supabase, actionId);
     if (!current) {
       return NextResponse.json({ error: "Action introuvable." }, { status: 404 });

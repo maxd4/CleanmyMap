@@ -166,7 +166,7 @@ export async function upsertCodexUsageWeeklySnapshot(
 ): Promise<void> {
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase.from("codex_usage_weekly_snapshots").upsert(
         {
           snapshot_key: snapshot.snapshotKey,
@@ -260,7 +260,7 @@ export async function getCodexUsageWeeklySnapshot(
 ): Promise<EnvironmentalImpactCodexUsageWeeklySnapshotRecord | null> {
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase
         .from("codex_usage_weekly_snapshots")
         .select(CODEX_USAGE_SELECT)
@@ -296,7 +296,7 @@ export async function listCodexUsageWeeklySnapshots(
 ): Promise<EnvironmentalImpactCodexUsageWeeklySnapshotRecord[]> {
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase
         .from("codex_usage_weekly_snapshots")
         .select(CODEX_USAGE_SELECT)

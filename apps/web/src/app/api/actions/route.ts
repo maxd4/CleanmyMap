@@ -143,7 +143,7 @@ async function buildActionsRoutePayload(
   const toFixPriority = parseBooleanFlag(url.searchParams.get("toFixPriority"));
   const impact = parseImpactParam(url.searchParams.get("impact"));
 
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   const result = await fetchUnifiedActionContracts(supabase, {
     limit: Math.max(limit * 2, limit),
     status,
@@ -379,7 +379,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const {
       ActionCreationValidationError,
       createActionSubmission,

@@ -15,7 +15,13 @@
 - [ ] les policies restent permissives uniquement pour les rôles attendus
 - [ ] aucun `service_role` n'est ajouté côté client
 - [ ] les accès publics restent minimaux et lisibles
+- [ ] `getSupabaseServerClient()` utilise la clé anon par défaut ; chaque
+  besoin de bypass RLS est explicite (`getSupabaseServerClient(true)` ou
+  `getSupabaseAdminClient()`) et intervient après l'AuthZ serveur
 - [ ] les fonctions RPC sensibles ont un `search_path` explicite et des permissions limitées
+- [ ] une fonction `SECURITY DEFINER` appelée uniquement par une policy RLS
+  ne conserve pas de grant `service_role` inutile ; son corps vérifie aussi
+  le rôle/JWT attendu lorsque cela réduit le risque d'appel direct
 
 ## Storage
 
@@ -54,4 +60,3 @@
 - [ ] le rapport de risque par table n'a pas introduit de hotspot nouveau ou injustifié
 - [ ] les tests liés à la table ou à la route modifiée passent
 - [ ] les migrations associées sont cohérentes avec l'usage applicatif
-

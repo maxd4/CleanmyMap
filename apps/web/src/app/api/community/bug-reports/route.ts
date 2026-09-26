@@ -114,7 +114,7 @@ export async function POST(request: Request) {
   return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
  }
 
- const supabase = getSupabaseServerClient();
+ const supabase = getSupabaseServerClient(true);
  const quota = await reserveDiscussionMessageSlot(supabase, {
  userId,
  channel:"bug_report",

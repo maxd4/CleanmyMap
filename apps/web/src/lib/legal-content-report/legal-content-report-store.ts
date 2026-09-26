@@ -176,7 +176,7 @@ export async function appendLegalContentReport(
   };
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("legal_content_reports")
       .insert(toSupabaseRow(record))
       .select(SUPABASE_REPORT_COLUMNS)
@@ -204,7 +204,7 @@ export async function listLegalContentReports(limit = 200): Promise<LegalContent
   const normalizedLimit = Math.max(1, Math.min(500, Math.trunc(limit)));
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("legal_content_reports")
       .select(SUPABASE_REPORT_COLUMNS)
       .order("created_at", { ascending: false })
@@ -238,7 +238,7 @@ export async function getLegalContentReportById(
   assertPersistenceAvailable("legal_content_reports");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("legal_content_reports")
       .select(SUPABASE_REPORT_COLUMNS)
       .eq("id", reportId)
@@ -282,7 +282,7 @@ export async function updateLegalContentReportState(params: {
     const update = updatedStatus
       ? { creator_state: params.creatorState, status: updatedStatus }
       : { creator_state: params.creatorState };
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("legal_content_reports")
       .update(update)
       .eq("id", params.reportId)
@@ -327,7 +327,7 @@ export async function deleteLegalContentReport(reportId: string): Promise<boolea
   assertPersistenceAvailable("legal_content_reports");
 
   if (canUseSupabaseServerPersistence()) {
-    const result = await getSupabaseServerClient()
+    const result = await getSupabaseServerClient(true)
       .from("legal_content_reports")
       .delete()
       .eq("id", reportId)

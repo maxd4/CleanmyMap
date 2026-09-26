@@ -72,7 +72,7 @@ export async function GET(
   }
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const actionResult = await runSingleActionQuery<{
       created_by_clerk_id: string | null;
     }>(supabase, (query) =>

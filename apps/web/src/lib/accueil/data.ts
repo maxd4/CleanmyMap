@@ -295,7 +295,7 @@ async function resolveActionPreviewImageUrl(
 ): Promise<string | null> {
   try {
     const { getSupabaseServerClient } = await import("@/lib/supabase/server");
-    const storage = getSupabaseServerClient().storage.from("action-photos");
+    const storage = getSupabaseServerClient(true).storage.from("action-photos");
     const result = await storage.list(actionId, {
       limit: 1,
       offset: 0,

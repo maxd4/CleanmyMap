@@ -13,7 +13,7 @@ const GAMIFICATION_FUNNEL_VERSION = "public-gamification-funnel-v1";
 
 export async function GET() {
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const snapshot = await loadOrRefreshPublicSurfaceSnapshot({
       snapshotKey: "gamification-analytics-funnel",
       title: "Tunnel gamification",

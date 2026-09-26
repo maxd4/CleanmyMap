@@ -180,9 +180,13 @@ et ne constitue jamais une identité HTTP de production ni un remplacement de
 Clerk.
 
 En production, Clerk reste obligatoire : une requête sans session conserve la
-réponse `401`. `service_role` est réservé aux opérations serveur de maintenance
-ou de nettoyage précisément bornées ; il ne doit jamais être utilisé comme
-substitut d'une session utilisateur HTTP.
+réponse `401`. `service_role` est réservé aux opérations serveur précisément
+bornées ; il ne doit jamais être utilisé comme substitut d'une session
+utilisateur HTTP. Le client Supabase serveur générique utilise la clé anon par
+défaut. Un bypass RLS doit être demandé explicitement (`true` ou le helper
+administratif dédié) après la décision AuthN/AuthZ du serveur ; l'anon key ne
+porte toutefois pas à elle seule un JWT Clerk et ne remplace donc pas le
+client RLS Clerk pour une lecture authentifiée.
 
 État de vérification au 25 août 2026 : les contrats d'authentification et les
 tests offline des flux canonical passent. Le smoke production authentifié a

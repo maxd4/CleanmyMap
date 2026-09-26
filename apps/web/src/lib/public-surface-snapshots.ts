@@ -115,7 +115,7 @@ export async function upsertPublicSurfaceSnapshot<TPayload>(
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase.from("public_surface_snapshots").upsert(
         {
           snapshot_key: snapshot.snapshotKey,
@@ -172,7 +172,7 @@ export async function readLatestPublicSurfaceSnapshot<TPayload>(
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase
         .from("public_surface_snapshots")
         .select("id, snapshot_key, snapshot_date, generated_at, version, title, payload, meta")
@@ -219,7 +219,7 @@ export async function listPublicSurfaceSnapshots<TPayload>(
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase
         .from("public_surface_snapshots")
         .select("id, snapshot_key, snapshot_date, generated_at, version, title, payload, meta")
@@ -277,7 +277,7 @@ export async function invalidatePublicSurfaceSnapshotsByRoute(
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       for (const route of normalizedRoutes) {
         const result = await supabase
           .from("public_surface_snapshots")

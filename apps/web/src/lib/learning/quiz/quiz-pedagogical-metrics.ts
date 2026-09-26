@@ -327,7 +327,7 @@ export function buildQuizPedagogicalMetricsSnapshot(
 export async function loadQuizPedagogicalMetricsSnapshot(
   questions: readonly QuizQuestion[],
 ): Promise<QuizPedagogicalMetricsSnapshot> {
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
 
   try {
     const { data, error } = await supabase

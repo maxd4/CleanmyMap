@@ -120,7 +120,7 @@ async function loadActorLabelsByUserId(
     return labels;
   }
 
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   const result = await supabase
     .from("profiles")
     .select("id, display_name, handle")
@@ -157,7 +157,7 @@ export async function appendAdminOperationAudit(
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       const result = await supabase.from("admin_operations_audit").insert({
         operation_id: normalizedEntry.operationId,
         at: normalizedEntry.at,
@@ -196,7 +196,7 @@ export async function listAdminOperationAudit(
 
   if (canUseSupabaseServerPersistence()) {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(true);
       let query = supabase
         .from("admin_operations_audit")
         .select(

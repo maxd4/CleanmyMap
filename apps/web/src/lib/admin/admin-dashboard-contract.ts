@@ -74,7 +74,7 @@ async function loadPendingActions(): Promise<{
   items: PendingActionModerationRow[];
   count: number;
 }> {
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   const [itemsResult, countResult] = await Promise.all([
     runActionQuery<PendingActionModerationRow>(supabase, (query) =>
       query
@@ -102,7 +102,7 @@ async function loadPendingActions(): Promise<{
 }
 
 async function loadPendingGroupJoinRequests(): Promise<{ count: number }> {
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   const result = await supabase
     .from("action_registrations")
     .select("id", { count: "exact", head: true })
@@ -119,7 +119,7 @@ async function loadPendingSignalements(): Promise<{
   items: ModeratableSignalement[];
   count: number;
 }> {
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   return listModeratableSignalements(supabase, { status: "new", limit: 6 });
 }
 

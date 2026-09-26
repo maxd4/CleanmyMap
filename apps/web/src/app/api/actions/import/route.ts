@@ -378,7 +378,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(true);
     const organizer = adminImportOrganizer(access.userId);
     stage = "item_write";
     for (const [index, item] of preparedItems.entries()) {

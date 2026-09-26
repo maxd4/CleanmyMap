@@ -29,7 +29,7 @@ export async function POST(request: Request) {
  );
  }
 
- const supabase = getSupabaseServerClient();
+ const supabase = getSupabaseServerClient(true);
 
  try {
  const upsertedResult = await supabase

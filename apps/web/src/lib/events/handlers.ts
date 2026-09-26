@@ -116,7 +116,7 @@ const PROGRESSION_EVENT_HANDLERS: Partial<Record<Event["type"], ProgressionEvent
 };
 
 export async function handleProgressionEvent(event: Event): Promise<void> {
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
   const handler = PROGRESSION_EVENT_HANDLERS[event.type];
   if (!handler) {
     return;
@@ -126,7 +126,7 @@ export async function handleProgressionEvent(event: Event): Promise<void> {
 }
 
 export async function handleNotificationEvent(event: Event): Promise<void> {
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseServerClient(true);
 
   switch (event.type) {
     case "ACTION_VALIDATED": {

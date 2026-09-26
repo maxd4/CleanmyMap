@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const items = await listMyObservations(getSupabaseServerClient(), {
+    const items = await listMyObservations(getSupabaseServerClient(true), {
       userId: access.userId,
       limit: parseLimit(request),
     });
