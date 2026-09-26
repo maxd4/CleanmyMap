@@ -10,6 +10,17 @@ function streamRequest(stream: ReadableStream<Uint8Array>, headers?: HeadersInit
   } as RequestInit & { duplex: "half" });
 }
 
+function singleChunkRequest(body: string): Request {
+  const bytes = new TextEncoder().encode(body);
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(bytes);
+      controller.close();
+    },
+  });
+  return streamRequest(stream);
+}
+
 describe("readJsonBodyWithLimit", () => {
   it("rejects from Content-Length before consuming the body", async () => {
     let getReaderCalled = false;
@@ -54,7 +65,9 @@ describe("readJsonBodyWithLimit", () => {
       },
     });
 
-    const result = await readJsonBodyWithLimit(streamRequest(stream), 3);
+    const request = streamRequest(stream);
+    expect(request.headers.has("content-length")).toBe(false);
+    const result = await readJsonBodyWithLimit(request, 3);
 
     expect(result).toEqual({ ok: false, reason: "too_large" });
     expect(cancelled).toBe(true);
@@ -62,10 +75,8 @@ describe("readJsonBodyWithLimit", () => {
   });
 
   it("preserves invalid_json for a body within the byte limit", async () => {
-    const request = new Request("http://localhost/api/test", {
-      method: "POST",
-      body: "{",
-    });
+    const request = singleChunkRequest("{");
+    expect(request.headers.has("content-length")).toBe(false);
 
     await expect(readJsonBodyWithLimit(request, 10)).resolves.toEqual({
       ok: false,
@@ -74,10 +85,8 @@ describe("readJsonBodyWithLimit", () => {
   });
 
   it("parses a valid JSON body within the byte limit", async () => {
-    const request = new Request("http://localhost/api/test", {
-      method: "POST",
-      body: JSON.stringify({ value: true }),
-    });
+    const request = singleChunkRequest(JSON.stringify({ value: true }));
+    expect(request.headers.has("content-length")).toBe(false);
 
     await expect(readJsonBodyWithLimit(request, 100)).resolves.toEqual({
       ok: true,
