@@ -212,9 +212,9 @@ export const actionsAuthorizationContract = {
     GET: {
       expected: "Public future pre-actions expose only administrative status; admin/max/elu and canonical organizers also receive canValidate",
       dimensions: ["public-safe", "business permission", "ownership"],
-      actual: "service-side action visibility check + isPublishedFuturePreAction + canValidateActionAdministrativeRequirements; only status, validatedAt and canValidate are returned",
+      actual: "loadAdministrativeAction service-side visibility check + isPublishedFuturePreAction + canValidateActionAdministrativeRequirements; only status, validatedAt and canValidate are returned",
       evidence: [
-        "loadActionById",
+        "loadAdministrativeAction",
         "isPublishedFuturePreAction",
         "canValidateActionAdministrativeRequirements",
         "loadCanonicalActionOrganizerIdsForAction",

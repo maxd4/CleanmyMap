@@ -71,7 +71,10 @@ export function createRateLimitModule() {
     request: Request,
     options: { limit?: number; window?: number } = {},
   ) => {
-    const result = await rateLimitMocks.verifyRateLimit(request, options);
+    const result = (await rateLimitMocks.verifyRateLimit(request, options)) ?? {
+      allowed: true,
+      retryAfter: undefined,
+    };
     return rateLimitMocks.createServerRateLimitResponse(
       result.allowed,
       result.retryAfter,

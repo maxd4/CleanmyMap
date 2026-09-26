@@ -1,14 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createRateLimitModule } from "@/app/api/test-helpers";
 
-vi.mock("@/lib/rate-limit/server", () => ({
-  verifyRateLimit: vi.fn().mockResolvedValue({
-    allowed: true,
-    limit: 60,
-    remaining: 59,
-    reset: Date.now() + 60_000,
-  }),
-  createServerRateLimitResponse: vi.fn().mockReturnValue(null),
-}));
+vi.mock("@/lib/rate-limit/server", () => createRateLimitModule());
 
 import { GET } from "./route";
 

@@ -4,12 +4,35 @@ import { clearRateLimitStore } from "@/lib/rate-limit/store";
 const authMock = vi.hoisted(() =>
   vi.fn(async (): Promise<{ userId: string | null }> => ({ userId: "user-1" })),
 );
-const verifyRateLimitMock = vi.hoisted(() => vi.fn(async () => ({
-  allowed: true,
-  limit: 1,
-  remaining: 1,
-})));
-const createServerRateLimitResponseMock = vi.hoisted(() => vi.fn(() => null));
+type RateLimitResult = {
+  allowed: boolean;
+  limit: number;
+  remaining: number;
+  retryAfter?: number;
+};
+const verifyRateLimitMock = vi.hoisted(() =>
+  vi.fn(async (...args: unknown[]): Promise<RateLimitResult> => {
+    void args;
+    return { allowed: true, limit: 1, remaining: 1 };
+  }),
+);
+const createServerRateLimitResponseMock = vi.hoisted(() =>
+  vi.fn((allowed: boolean, retryAfter?: number, result?: RateLimitResult) => {
+    void allowed;
+    void retryAfter;
+    void result;
+    return null;
+  }),
+);
+const enforceServerRateLimitMock = async (request: Request, options: { limit?: number; window?: number }) => {
+  const result = await verifyRateLimitMock(request, options);
+  return createServerRateLimitResponseMock(result.allowed, result.retryAfter, result);
+};
+const withServerRateLimitMock = async <T extends Response>(
+  request: Request,
+  options: { limit?: number; window?: number },
+  handler: () => Promise<T>,
+) => (await enforceServerRateLimitMock(request, options)) ?? handler();
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn(() => ({
   from: vi.fn(),
 })));
@@ -38,6 +61,8 @@ vi.mock("@/lib/authz", () => ({
 vi.mock("@/lib/rate-limit/server", () => ({
   verifyRateLimit: verifyRateLimitMock,
   createServerRateLimitResponse: createServerRateLimitResponseMock,
+  enforceServerRateLimit: enforceServerRateLimitMock,
+  withServerRateLimit: withServerRateLimitMock,
 }));
 
 vi.mock("@/lib/supabase/server", () => ({

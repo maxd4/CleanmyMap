@@ -35,6 +35,9 @@ describe("public documentation registry", () => {
     expect(
       PUBLIC_DOCUMENTATION.filter((entry) => entry.docsPath).map((entry) => entry.docsPath),
     ).toEqual([
+      "legal/charte-benevole.md",
+      "features/quiz-authoring-guide.md",
+      "features/quiz-quality-control.md",
       "plans/journal_impact_DU.md",
       "plans/rapport_impact/impact_carbone_methodologie.md",
       "plans/rapport_impact/impact_IA.md",
