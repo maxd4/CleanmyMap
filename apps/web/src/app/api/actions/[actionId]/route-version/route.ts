@@ -5,6 +5,7 @@ import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadActionById } from "@/lib/actions/store";
+import { normalizeActionId } from "@/lib/actions/action-id";
 import { canManageAction } from "@/lib/actions/permissions";
 import { loadActionOrganizerIdsForAction } from "@/lib/actions/participation/organizers";
 import { isPublishedFuturePreAction } from "@/lib/actions/temporal";
@@ -156,6 +157,32 @@ async function loadAuthorizedFutureAction(params: {
   return { kind: "ok", current, supabase: params.supabase };
 }
 
+async function loadRouteVersionAction(params: {
+  actionId: string;
+  userId: string;
+}): Promise<
+  | { kind: "ok"; current: NonNullable<Awaited<ReturnType<typeof loadActionById>>>; supabase: ReturnType<typeof getSupabaseServerClient> }
+  | { kind: "response"; response: Response }
+> {
+  const supabase = getSupabaseServerClient(true);
+  const authorized = await loadAuthorizedFutureAction({ ...params, supabase });
+  if (authorized.kind === "response") return authorized;
+  return { kind: "ok", current: authorized.current, supabase };
+}
+
+async function loadRouteVersionRequestContext(ctx: { params: Promise<{ actionId: string }> }) {
+  const access = await requireAuthenticatedAccess();
+  if (!access.ok) return unauthorizedJsonResponse();
+
+  const { actionId } = await ctx.params;
+  const trimmedActionId = normalizeActionId(actionId);
+  if (!trimmedActionId) {
+    return validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
+  }
+
+  return { access, trimmedActionId };
+}
+
 function validateRouteVersionProposal(params: {
   current: NonNullable<Awaited<ReturnType<typeof loadActionById>>>;
   proposal: z.infer<typeof routeVersionApplySchema>;
@@ -227,14 +254,9 @@ export async function POST(
   request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const access = await requireAuthenticatedAccess();
-  if (!access.ok) return unauthorizedJsonResponse();
-
-  const { actionId } = await ctx.params;
-  const trimmedActionId = actionId.trim();
-  if (!trimmedActionId) {
-    return validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
-  }
+  const requestContext = await loadRouteVersionRequestContext(ctx);
+  if (requestContext instanceof Response) return requestContext;
+  const { access, trimmedActionId } = requestContext;
 
   let rawPayload: unknown;
   try {
@@ -248,14 +270,12 @@ export async function POST(
   }
 
   try {
-    const supabase = getSupabaseServerClient(true);
-    const authorized = await loadAuthorizedFutureAction({
-      supabase,
+    const authorized = await loadRouteVersionAction({
       actionId: trimmedActionId,
       userId: access.userId,
     });
     if (authorized.kind === "response") return authorized.response;
-    const { current } = authorized;
+    const { current, supabase } = authorized;
     const [participantSummary] = await loadActionParticipantSummaries(supabase, {
       actionIds: [trimmedActionId],
       userId: access.userId,
@@ -331,25 +351,18 @@ export async function GET(
   _request: Request,
   ctx: { params: Promise<{ actionId: string }> },
 ) {
-  const access = await requireAuthenticatedAccess();
-  if (!access.ok) return unauthorizedJsonResponse();
-
-  const { actionId } = await ctx.params;
-  const trimmedActionId = actionId.trim();
-  if (!trimmedActionId) {
-    return validationErrorResponse({ actionId: ["Identifiant d'action manquant."] });
-  }
+  const requestContext = await loadRouteVersionRequestContext(ctx);
+  if (requestContext instanceof Response) return requestContext;
+  const { access, trimmedActionId } = requestContext;
 
   try {
-    const supabase = getSupabaseServerClient(true);
-    const authorized = await loadAuthorizedFutureAction({
-      supabase,
+    const authorized = await loadRouteVersionAction({
       actionId: trimmedActionId,
       userId: access.userId,
     });
     if (authorized.kind === "response") return authorized.response;
 
-    const { current } = authorized;
+    const { current, supabase } = authorized;
     const preparationData = current.preparation_data ?? {};
     const currentVersioningValue = preparationData.routeVersioning;
     if (currentVersioningValue && !isActionRouteVersioning(currentVersioningValue)) {

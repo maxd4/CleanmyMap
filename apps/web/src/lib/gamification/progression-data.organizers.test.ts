@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { syncUserActionProgression } from "./progression-data";
 
-type QueryResult<T> = {
+type OrganizerQueryResult<T> = {
   data: T[];
   error: null;
 };
@@ -13,17 +13,17 @@ type QueryState = {
   in: Record<string, string[]>;
 };
 
-type QueryChain<T> = {
-  select: (columns: string) => QueryChain<T>;
-  eq: (field: string, value: string) => QueryChain<T>;
-  in: (field: string, values: string[]) => QueryChain<T>;
-  neq: (field: string, value: string) => QueryChain<T>;
-  is: (field: string, value: boolean | null) => QueryChain<T>;
-  order: (field: string, options?: { ascending?: boolean }) => QueryChain<T>;
-  limit: (value: number) => Promise<QueryResult<T>>;
+type OrganizerQueryChain<T> = {
+  select: (columns: string) => OrganizerQueryChain<T>;
+  eq: (field: string, value: string) => OrganizerQueryChain<T>;
+  in: (field: string, values: string[]) => OrganizerQueryChain<T>;
+  neq: (field: string, value: string) => OrganizerQueryChain<T>;
+  is: (field: string, value: boolean | null) => OrganizerQueryChain<T>;
+  order: (field: string, options?: { ascending?: boolean }) => OrganizerQueryChain<T>;
+  limit: (value: number) => Promise<OrganizerQueryResult<T>>;
   maybeSingle: () => Promise<{ data: T | null; error: null }>;
   then: (
-    resolve: (value: QueryResult<T>) => void,
+    resolve: (value: OrganizerQueryResult<T>) => void,
     reject: (reason: unknown) => void,
   ) => Promise<void>;
 };
@@ -58,8 +58,8 @@ function buildAction(overrides: Partial<Record<string, unknown>> = {}) {
 }
 
 function createQueryChain<T>(
-  resolver: (state: QueryState) => Promise<QueryResult<T>> | QueryResult<T>,
-): QueryChain<T> {
+  resolver: (state: QueryState) => Promise<OrganizerQueryResult<T>> | OrganizerQueryResult<T>,
+): OrganizerQueryChain<T> {
   const state = {
     eq: {} as Record<string, string>,
     in: {} as Record<string, string[]>,
@@ -83,11 +83,11 @@ function createQueryChain<T>(
       return { data: result.data[0] ?? null, error: result.error };
     }),
     then: (
-      resolve: (value: QueryResult<T>) => void,
+      resolve: (value: OrganizerQueryResult<T>) => void,
       reject: (reason: unknown) => void,
     ) =>
       Promise.resolve(resolver(state)).then(resolve, reject),
-  } as QueryChain<T>;
+  } as OrganizerQueryChain<T>;
   return chain;
 }
 

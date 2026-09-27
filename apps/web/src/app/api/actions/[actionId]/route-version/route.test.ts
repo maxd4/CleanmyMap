@@ -79,7 +79,10 @@ function operationalRouteForSnapshot(currentSnapshot: ReturnType<typeof snapshot
   });
 }
 
-function actionWithSnapshot(currentSnapshot: ReturnType<typeof snapshot>) {
+function actionWithSnapshot(
+  currentSnapshot: ReturnType<typeof snapshot>,
+  options: { updatedAt?: string | null } = {},
+) {
   const operationalRoute = operationalRouteForSnapshot(currentSnapshot);
   return {
     id: "action-1",
@@ -88,7 +91,7 @@ function actionWithSnapshot(currentSnapshot: ReturnType<typeof snapshot>) {
     status: "approved",
     moderation_visibility: "visible",
     published_at: "2026-09-20T10:00:00.000Z",
-    updated_at: "2026-09-27T09:00:00.000Z",
+    updated_at: options.updatedAt === undefined ? "2026-09-27T09:00:00.000Z" : options.updatedAt,
     action_date: "9999-12-31",
     event_start_time: "10:00",
     location_label: "Paris",
@@ -115,6 +118,53 @@ function actionWithSnapshot(currentSnapshot: ReturnType<typeof snapshot>) {
       zoneCiblePrevue: "Paris",
     },
   };
+}
+
+type RouteVersionPayload = {
+  operationalRoute: ReturnType<typeof operationalRouteForSnapshot>;
+  plannerSnapshot: ReturnType<typeof snapshot>;
+  plannerProof: ReturnType<typeof createRoutePlannerProof>;
+};
+
+function routeVersionPayload(
+  plannerSnapshot: ReturnType<typeof snapshot>,
+  proofSnapshot = plannerSnapshot,
+): RouteVersionPayload {
+  return {
+    operationalRoute: operationalRouteForSnapshot(plannerSnapshot),
+    plannerSnapshot,
+    plannerProof: createRoutePlannerProof({ snapshot: proofSnapshot, now: new Date() }),
+  };
+}
+
+async function postRouteVersion(payload: RouteVersionPayload) {
+  const { POST } = await import("./route");
+  return POST(new Request("http://localhost", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }), { params: Promise.resolve({ actionId: "action-1" }) });
+}
+
+function preparePostScenario(
+  currentSnapshot: ReturnType<typeof snapshot>,
+  options: {
+    confirmedParticipants?: number;
+    updatedAt?: string | null;
+    updateResult?: { data: unknown; error: unknown };
+  } = {},
+) {
+  const current = actionWithSnapshot(currentSnapshot, { updatedAt: options.updatedAt });
+  loadActionMock.mockResolvedValueOnce(current);
+  if (options.confirmedParticipants !== undefined) {
+    participantSummariesMock.mockResolvedValueOnce([{
+      actionId: "action-1",
+      activeCount: options.confirmedParticipants,
+    }]);
+  }
+  const supabase = updateClient(options.updateResult ?? { data: { id: "action-1" }, error: null });
+  supabaseMock.mockReturnValue(supabase);
+  return { current, supabase };
 }
 
 function updateClient(result: { data: unknown; error: unknown }) {
@@ -148,27 +198,69 @@ describe("POST /api/actions/:actionId/route-version", () => {
 
     const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
     loadActionMock.mockResolvedValueOnce({ ...actionWithSnapshot(currentSnapshot), action_date: "2020-09-01" });
-    const past = await POST(new Request("http://localhost", { method: "POST", body: "{}" }), {
+    const past = await postRouteVersion(routeVersionPayload(currentSnapshot));
+    expect(past.status).toBe(409);
+  });
+
+  it("rejects invalid JSON, invalid payloads and missing action ids", async () => {
+    const { POST, GET } = await import("./route");
+    const invalidJson = await POST(new Request("http://localhost", {
+      method: "POST",
+      body: "not-json",
+    }), { params: Promise.resolve({ actionId: "action-1" }) });
+    expect(invalidJson.status).toBe(400);
+
+    const invalidPayload = await POST(new Request("http://localhost", {
+      method: "POST",
+      body: JSON.stringify({}),
+    }), { params: Promise.resolve({ actionId: "action-1" }) });
+    expect(invalidPayload.status).toBe(422);
+
+    const missingActionId = await GET(new Request("http://localhost", { method: "GET" }), {
+      params: Promise.resolve({ actionId: "   " }),
+    });
+    expect(missingActionId.status).toBe(422);
+  });
+
+  it("returns not found when the action no longer exists", async () => {
+    loadActionMock.mockResolvedValueOnce(null);
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost", { method: "GET" }), {
       params: Promise.resolve({ actionId: "action-1" }),
     });
-    expect(past.status).toBe(422);
+
+    expect(response.status).toBe(404);
+  });
+
+  it("rejects incoherent and unusable active route data", async () => {
+    const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
+    const current = actionWithSnapshot(currentSnapshot);
+    loadActionMock.mockResolvedValueOnce({
+      ...current,
+      preparation_data: {
+        ...current.preparation_data,
+        routeVersioning: { invalid: true },
+      },
+    });
+    const { GET } = await import("./route");
+    const incoherent = await GET(new Request("http://localhost", { method: "GET" }), {
+      params: Promise.resolve({ actionId: "action-1" }),
+    });
+    expect(incoherent.status).toBe(409);
+
+    loadActionMock.mockResolvedValueOnce({ ...current, preparation_data: {} });
+    const unusable = await GET(new Request("http://localhost", { method: "GET" }), {
+      params: Promise.resolve({ actionId: "action-1" }),
+    });
+    expect(unusable.status).toBe(409);
   });
 
   it("applies an explicit proposal and keeps the initial context and action id", async () => {
     const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
     const nextSnapshot = snapshot("2026-09-27T09:00:00.000Z", 3);
-    const current = actionWithSnapshot(currentSnapshot);
-    loadActionMock.mockResolvedValueOnce(current);
+    const { current, supabase } = preparePostScenario(currentSnapshot);
     const nextOperationalRoute = operationalRouteForSnapshot(nextSnapshot);
-    const supabase = updateClient({ data: { id: "action-1" }, error: null });
-    supabaseMock.mockReturnValue(supabase);
-    const proof = createRoutePlannerProof({ snapshot: nextSnapshot, now: new Date() });
-    const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ operationalRoute: nextOperationalRoute, plannerSnapshot: nextSnapshot, plannerProof: proof }),
-    }), { params: Promise.resolve({ actionId: "action-1" }) });
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
     const body = await response.json();
     expect(response.status).toBe(200);
     expect(body.status).toBe("applied");
@@ -190,21 +282,8 @@ describe("POST /api/actions/:actionId/route-version", () => {
   it("accepts a participant refresh when the server confirms the proposed volunteer count", async () => {
     const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
     const nextSnapshot = snapshot("2026-09-27T09:00:00.000Z", 3, { volunteers: 5 });
-    const current = actionWithSnapshot(currentSnapshot);
-    loadActionMock.mockResolvedValueOnce(current);
-    participantSummariesMock.mockResolvedValueOnce([{ actionId: "action-1", activeCount: 5 }]);
-    supabaseMock.mockReturnValue(updateClient({ data: { id: "action-1" }, error: null }));
-    const proof = createRoutePlannerProof({ snapshot: nextSnapshot, now: new Date() });
-    const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        operationalRoute: operationalRouteForSnapshot(nextSnapshot),
-        plannerSnapshot: nextSnapshot,
-        plannerProof: proof,
-      }),
-    }), { params: Promise.resolve({ actionId: "action-1" }) });
+    preparePostScenario(currentSnapshot, { confirmedParticipants: 5 });
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
 
     expect(response.status).toBe(200);
     expect((await response.json()).status).toBe("applied");
@@ -213,22 +292,8 @@ describe("POST /api/actions/:actionId/route-version", () => {
   it("rejects a forged volunteer count that differs from the current server count", async () => {
     const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
     const nextSnapshot = snapshot("2026-09-27T09:00:00.000Z", 3, { volunteers: 4 });
-    const current = actionWithSnapshot(currentSnapshot);
-    loadActionMock.mockResolvedValueOnce(current);
-    participantSummariesMock.mockResolvedValueOnce([{ actionId: "action-1", activeCount: 5 }]);
-    const supabase = updateClient({ data: { id: "action-1" }, error: null });
-    supabaseMock.mockReturnValue(supabase);
-    const proof = createRoutePlannerProof({ snapshot: nextSnapshot, now: new Date() });
-    const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        operationalRoute: operationalRouteForSnapshot(nextSnapshot),
-        plannerSnapshot: nextSnapshot,
-        plannerProof: proof,
-      }),
-    }), { params: Promise.resolve({ actionId: "action-1" }) });
+    const { supabase } = preparePostScenario(currentSnapshot, { confirmedParticipants: 5 });
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
 
     expect(response.status).toBe(409);
     expect(supabase.from).not.toHaveBeenCalled();
@@ -237,21 +302,8 @@ describe("POST /api/actions/:actionId/route-version", () => {
   it("accepts a compatible group split while keeping structural planner parameters stable", async () => {
     const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
     const nextSnapshot = snapshot("2026-09-27T09:00:00.000Z", 3, { groupCount: 2 });
-    const current = actionWithSnapshot(currentSnapshot);
-    loadActionMock.mockResolvedValueOnce(current);
-    participantSummariesMock.mockResolvedValueOnce([{ actionId: "action-1", activeCount: 3 }]);
-    supabaseMock.mockReturnValue(updateClient({ data: { id: "action-1" }, error: null }));
-    const proof = createRoutePlannerProof({ snapshot: nextSnapshot, now: new Date() });
-    const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        operationalRoute: operationalRouteForSnapshot(nextSnapshot),
-        plannerSnapshot: nextSnapshot,
-        plannerProof: proof,
-      }),
-    }), { params: Promise.resolve({ actionId: "action-1" }) });
+    preparePostScenario(currentSnapshot, { confirmedParticipants: 3 });
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
 
     expect(response.status).toBe(200);
   });
@@ -259,22 +311,8 @@ describe("POST /api/actions/:actionId/route-version", () => {
   it("rejects an incompatible group split", async () => {
     const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
     const nextSnapshot = snapshot("2026-09-27T09:00:00.000Z", 3, { groupCount: 4 });
-    const current = actionWithSnapshot(currentSnapshot);
-    loadActionMock.mockResolvedValueOnce(current);
-    participantSummariesMock.mockResolvedValueOnce([{ actionId: "action-1", activeCount: 3 }]);
-    const supabase = updateClient({ data: { id: "action-1" }, error: null });
-    supabaseMock.mockReturnValue(supabase);
-    const proof = createRoutePlannerProof({ snapshot: nextSnapshot, now: new Date() });
-    const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        operationalRoute: operationalRouteForSnapshot(nextSnapshot),
-        plannerSnapshot: nextSnapshot,
-        plannerProof: proof,
-      }),
-    }), { params: Promise.resolve({ actionId: "action-1" }) });
+    const { supabase } = preparePostScenario(currentSnapshot, { confirmedParticipants: 3 });
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
 
     expect(response.status).toBe(409);
     expect(supabase.from).not.toHaveBeenCalled();
@@ -284,22 +322,8 @@ describe("POST /api/actions/:actionId/route-version", () => {
     const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
     const changedSnapshot = snapshot("2026-09-27T09:00:00.000Z", 3);
     changedSnapshot.parameters = { ...changedSnapshot.parameters, maxStops: 4 };
-    const current = actionWithSnapshot(currentSnapshot);
-    loadActionMock.mockResolvedValueOnce(current);
-    participantSummariesMock.mockResolvedValueOnce([{ actionId: "action-1", activeCount: 3 }]);
-    const supabase = updateClient({ data: { id: "action-1" }, error: null });
-    supabaseMock.mockReturnValue(supabase);
-    const proof = createRoutePlannerProof({ snapshot: currentSnapshot, now: new Date() });
-    const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        operationalRoute: operationalRouteForSnapshot(changedSnapshot),
-        plannerSnapshot: changedSnapshot,
-        plannerProof: proof,
-      }),
-    }), { params: Promise.resolve({ actionId: "action-1" }) });
+    const { supabase } = preparePostScenario(currentSnapshot, { confirmedParticipants: 3 });
+    const response = await postRouteVersion(routeVersionPayload(changedSnapshot, currentSnapshot));
 
     expect(response.status).toBe(409);
     expect(supabase.from).not.toHaveBeenCalled();
@@ -308,22 +332,30 @@ describe("POST /api/actions/:actionId/route-version", () => {
   it("rejects a proposal whose proof does not match its snapshot", async () => {
     const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
     const nextSnapshot = snapshot("2026-09-27T09:00:00.000Z", 3);
-    const current = actionWithSnapshot(currentSnapshot);
-    loadActionMock.mockResolvedValueOnce(current);
-    participantSummariesMock.mockResolvedValueOnce([{ actionId: "action-1", activeCount: 3 }]);
-    const supabase = updateClient({ data: { id: "action-1" }, error: null });
-    supabaseMock.mockReturnValue(supabase);
-    const proof = createRoutePlannerProof({ snapshot: currentSnapshot, now: new Date() });
-    const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        operationalRoute: operationalRouteForSnapshot(nextSnapshot),
-        plannerSnapshot: nextSnapshot,
-        plannerProof: proof,
-      }),
-    }), { params: Promise.resolve({ actionId: "action-1" }) });
+    const { supabase } = preparePostScenario(currentSnapshot, { confirmedParticipants: 3 });
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot, currentSnapshot));
+
+    expect(response.status).toBe(409);
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("rejects a changed volunteer count when the server count is unavailable", async () => {
+    const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
+    const nextSnapshot = snapshot("2026-09-27T09:00:00.000Z", 3, { volunteers: 5 });
+    const { supabase } = preparePostScenario(currentSnapshot);
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+
+    expect(response.status).toBe(409);
+    expect(supabase.from).not.toHaveBeenCalled();
+  });
+
+  it("rejects an operational route that does not match the planner snapshot", async () => {
+    const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
+    const nextSnapshot = snapshot("2026-09-27T09:00:00.000Z", 3);
+    const { supabase } = preparePostScenario(currentSnapshot, { confirmedParticipants: 3 });
+    const payload = routeVersionPayload(nextSnapshot);
+    payload.operationalRoute = { ...payload.operationalRoute, routes: [] };
+    const response = await postRouteVersion(payload);
 
     expect(response.status).toBe(409);
     expect(supabase.from).not.toHaveBeenCalled();
@@ -332,25 +364,40 @@ describe("POST /api/actions/:actionId/route-version", () => {
   it("returns a conflict when updated_at changed before the compare-and-swap", async () => {
     const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
     const nextSnapshot = snapshot("2026-09-27T09:00:00.000Z", 3);
-    const current = actionWithSnapshot(currentSnapshot);
-    loadActionMock.mockResolvedValueOnce(current);
-    participantSummariesMock.mockResolvedValueOnce([{ actionId: "action-1", activeCount: 3 }]);
-    const supabase = updateClient({ data: null, error: null });
-    supabaseMock.mockReturnValue(supabase);
-    const proof = createRoutePlannerProof({ snapshot: nextSnapshot, now: new Date() });
-    const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        operationalRoute: operationalRouteForSnapshot(nextSnapshot),
-        plannerSnapshot: nextSnapshot,
-        plannerProof: proof,
-      }),
-    }), { params: Promise.resolve({ actionId: "action-1" }) });
+    preparePostScenario(currentSnapshot, {
+      confirmedParticipants: 3,
+      updateResult: { data: null, error: null },
+    });
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
 
     expect(response.status).toBe(409);
     expect((await response.json()).code).toBe("state_conflict");
+  });
+
+  it("returns an internal error when persistence fails", async () => {
+    const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
+    const nextSnapshot = snapshot("2026-09-27T09:00:00.000Z", 3);
+    const { supabase } = preparePostScenario(currentSnapshot, {
+      confirmedParticipants: 3,
+      updateResult: { data: null, error: new Error("database unavailable") },
+    });
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+
+    expect(response.status).toBe(500);
+    expect(supabase.chain.update).toHaveBeenCalledOnce();
+  });
+
+  it("returns a conflict when the loaded action has no updated_at token", async () => {
+    const currentSnapshot = snapshot("2026-09-01T09:00:00.000Z", 2);
+    const nextSnapshot = snapshot("2026-09-27T09:00:00.000Z", 3);
+    const { supabase } = preparePostScenario(currentSnapshot, {
+      confirmedParticipants: 3,
+      updatedAt: null,
+    });
+    const response = await postRouteVersion(routeVersionPayload(nextSnapshot));
+
+    expect(response.status).toBe(409);
+    expect(supabase.from).not.toHaveBeenCalled();
   });
 
   it("returns unchanged without writing when the proposal has the active snapshot", async () => {
@@ -359,14 +406,7 @@ describe("POST /api/actions/:actionId/route-version", () => {
     loadActionMock.mockResolvedValueOnce(current);
     const supabase = { from: vi.fn() };
     supabaseMock.mockReturnValue(supabase);
-    const operationalRoute = current.preparation_data.operationalRoute;
-    const proof = createRoutePlannerProof({ snapshot: currentSnapshot, now: new Date() });
-    const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ operationalRoute, plannerSnapshot: currentSnapshot, plannerProof: proof }),
-    }), { params: Promise.resolve({ actionId: "action-1" }) });
+    const response = await postRouteVersion(routeVersionPayload(currentSnapshot));
     const body = await response.json();
 
     expect(response.status).toBe(200);
@@ -380,14 +420,7 @@ describe("POST /api/actions/:actionId/route-version", () => {
     loadActionMock.mockResolvedValueOnce(current);
     authMock.mockResolvedValueOnce({ ok: true, userId: "intruder-1" });
     identityMock.mockResolvedValueOnce({ userId: "intruder-1", role: null, activeRole: null });
-    const proof = createRoutePlannerProof({ snapshot: currentSnapshot, now: new Date() });
-    const operationalRoute = current.preparation_data.operationalRoute;
-    const { POST } = await import("./route");
-    const response = await POST(new Request("http://localhost", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ operationalRoute, plannerSnapshot: currentSnapshot, plannerProof: proof }),
-    }), { params: Promise.resolve({ actionId: "action-1" }) });
+    const response = await postRouteVersion(routeVersionPayload(currentSnapshot));
 
     expect(response.status).toBe(403);
   });
