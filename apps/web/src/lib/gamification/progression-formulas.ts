@@ -4,30 +4,30 @@ import type {
   UserProgressionStats,
 } from "./progression-types";
 import { findBadgeDefinition } from "./badge-catalog";
-import { PROGRESSION_RULES_V1 } from "./progression-rules";
+import { PROGRESSION_RULES_V2 } from "./progression-rules";
 
 export {
-  PROGRESSION_RULES_V1,
+  PROGRESSION_RULES_V2,
 } from "./progression-rules";
 
 export function xpStep(level: number): number {
-  return PROGRESSION_RULES_V1.xpStep(level);
+  return PROGRESSION_RULES_V2.xpStep(level);
 }
 
 export function xpRequired(level: number): number {
-  return PROGRESSION_RULES_V1.xpRequired(level);
+  return PROGRESSION_RULES_V2.xpRequired(level);
 }
 
 export function minVerifiedContributions(level: number): number {
-  return PROGRESSION_RULES_V1.minVerifiedContributions(level);
+  return PROGRESSION_RULES_V2.minVerifiedContributions(level);
 }
 
 export function minDiversityTypes(level: number): number {
-  return PROGRESSION_RULES_V1.minDiversityTypes(level);
+  return PROGRESSION_RULES_V2.minDiversityTypes(level);
 }
 
 export function minCollectiveEvents(level: number): number {
-  return PROGRESSION_RULES_V1.minCollectiveEvents(level);
+  return PROGRESSION_RULES_V2.minCollectiveEvents(level);
 }
 
 function buildRequirementConditions(
@@ -38,11 +38,11 @@ function buildRequirementConditions(
   conditions: LevelRequirementCondition[];
 } {
   const thresholds = {
-    minVerifiedContributions: PROGRESSION_RULES_V1.minVerifiedContributions(level),
-    minDiversityTypes: PROGRESSION_RULES_V1.minDiversityTypes(level),
-    minCollectiveEvents: PROGRESSION_RULES_V1.minCollectiveEvents(level),
-    minQualityAverage: PROGRESSION_RULES_V1.minQualityAverage(level),
-    minValidationRatio: PROGRESSION_RULES_V1.minValidationRatio(level),
+    minVerifiedContributions: PROGRESSION_RULES_V2.minVerifiedContributions(level),
+    minDiversityTypes: PROGRESSION_RULES_V2.minDiversityTypes(level),
+    minCollectiveEvents: PROGRESSION_RULES_V2.minCollectiveEvents(level),
+    minQualityAverage: PROGRESSION_RULES_V2.minQualityAverage(level),
+    minValidationRatio: PROGRESSION_RULES_V2.minValidationRatio(level),
   };
   const conditions: LevelRequirementCondition[] = [
     {
@@ -126,7 +126,7 @@ function computeCurrentLevelFromPotential(
 ): number {
   let current = 1;
   for (let candidate = 2; candidate <= potentialLevel; candidate += 1) {
-    if (xpTotal < PROGRESSION_RULES_V1.xpRequired(candidate)) {
+    if (xpTotal < PROGRESSION_RULES_V2.xpRequired(candidate)) {
       break;
     }
     if (!assessContributionRequirements(candidate, stats).met) {
@@ -198,10 +198,10 @@ export function assessLevelRequirements(
   const contributionAssessment = assessContributionRequirements(level, stats);
   const potentialLevel = computePotentialLevel(xpTotal);
   const currentLevel = computeCurrentLevelFromPotential(xpTotal, stats, potentialLevel);
-  const requiredXp = PROGRESSION_RULES_V1.xpRequired(level);
+  const requiredXp = PROGRESSION_RULES_V2.xpRequired(level);
 
   return {
-    rulesVersion: PROGRESSION_RULES_V1.version,
+    rulesVersion: PROGRESSION_RULES_V2.version,
     level,
     eligible: xpTotal >= requiredXp && contributionAssessment.met,
     met: contributionAssessment.met,
@@ -231,8 +231,8 @@ export function assessLevelRequirements(
 export function computePotentialLevel(xpTotal: number): number {
   let level = 1;
   while (
-    xpTotal >= PROGRESSION_RULES_V1.xpRequired(level + 1) &&
-    level < PROGRESSION_RULES_V1.maxLevel
+    xpTotal >= PROGRESSION_RULES_V2.xpRequired(level + 1) &&
+    level < PROGRESSION_RULES_V2.maxLevel
   ) {
     level += 1;
   }

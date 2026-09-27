@@ -36,9 +36,11 @@ interprétées comme trois noms pour la même progression :
 
 ### Contrat CURRENT des règles de niveau
 
-Le contrat versionné `ProgressionRulesV1` est exposé par
+Le contrat CURRENT versionné `ProgressionRulesV2` est exposé par
 `apps/web/src/lib/gamification/progression-rules.ts` sous la version stable
-`progression-rules-v1`. Il conserve le calcul XP triangulaire et remplace le
+`progression-rules-v2`. Le contrat historique `progression-rules-v1` reposait
+sur `minValidatedActions` et n'est plus l'identité du runtime CURRENT. V2
+conserve le calcul XP triangulaire et remplace le
 garde-fou spécifique au créateur d'actions par des `verifiedContributions` :
 des faits métier canoniques, validés et dédupliqués. Les familles CURRENT
 vérifiables sont la participation confirmée, l'organisation validée, les Clean
@@ -61,8 +63,10 @@ et réel, le nombre de contributions vérifiées, les familles vérifiées et le
 conditions satisfaites et manquantes sous forme d'identifiants et de valeurs.
 Les libellés traduits restent dans les surfaces UI ; ils ne font pas partie du
 calcul métier. Le niveau global mesure ainsi un engagement vérifié transversal,
-et non le seul nombre d'actions créées. Cette version est le contrat CURRENT
-d'audit et de projection ; aucune `ProgressionRulesV2` n'est définie.
+et non le seul nombre d'actions créées. V2 conserve les seuils numériques et
+les formules CURRENT ; le changement de version identifie une évolution de
+sémantique du contrat d'audit et de projection, pas une nouvelle monnaie XP ni
+un nouveau ledger.
 
 Le catalogue de badges porte une identité stable, une famille, le statut
 `CURRENT` ou `LEGACY`, l'échelle, la métrique, la source métier, la visibilité,

@@ -19,7 +19,7 @@ export {
 } from "./monthly-regularity";
 
 export {
-  PROGRESSION_RULES_V1,
+  PROGRESSION_RULES_V2,
   assessLevelRequirements,
   computeCurrentLevel,
   computePotentialLevel,

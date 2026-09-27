@@ -1,4 +1,4 @@
-const PROGRESSION_RULES_VERSION = "progression-rules-v1" as const;
+const PROGRESSION_RULES_VERSION = "progression-rules-v2" as const;
 
 export type ProgressionRulesVersion = typeof PROGRESSION_RULES_VERSION;
 
@@ -13,7 +13,7 @@ const VERIFIED_CONTRIBUTION_FAMILIES = [
 export type VerifiedContributionFamily =
   (typeof VERIFIED_CONTRIBUTION_FAMILIES)[number];
 
-export type ProgressionRulesV1 = Readonly<{
+export type ProgressionRulesV2 = Readonly<{
   version: ProgressionRulesVersion;
   maxLevel: number;
   xpStep: (level: number) => number;
@@ -27,7 +27,7 @@ export type ProgressionRulesV1 = Readonly<{
 }>;
 
 /** CURRENT contract for global user levels. */
-export const PROGRESSION_RULES_V1: ProgressionRulesV1 = Object.freeze({
+export const PROGRESSION_RULES_V2: ProgressionRulesV2 = Object.freeze({
   version: PROGRESSION_RULES_VERSION,
   maxLevel: 500,
   verifiedContributionFamilies: VERIFIED_CONTRIBUTION_FAMILIES,
