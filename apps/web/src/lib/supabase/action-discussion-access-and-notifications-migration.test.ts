@@ -6,6 +6,10 @@ const migration = readFileSync(
   resolve(process.cwd(), "supabase/migrations/20260927000008_action_discussion_access_and_notifications.sql"),
   "utf8",
 );
+const profilePrivilegesMigration = readFileSync(
+  resolve(process.cwd(), "supabase/migrations/20260830000000_harden_profiles_column_privileges.sql"),
+  "utf8",
+);
 
 describe("current action discussion access and notification contract", () => {
   it("requires a real action relationship for reading and writing", () => {
@@ -15,11 +19,24 @@ describe("current action discussion access and notification contract", () => {
     expect(migration).toContain("ap.participation_status = 'confirmed'");
     expect(migration).toContain("create or replace function public.get_action_notification_audience");
     expect(migration).toContain("current_profile_active_role() in ('admin', 'max')");
+    expect(migration).toContain("active_role_label is null or active_role_label in");
     expect(migration).not.toContain("p.role_label in ('admin', 'max')");
     expect(migration).toContain("active_role_label text");
     expect(migration).toContain("profiles_active_role_label_check");
     expect(migration).toContain("private.can_view_action_conversation(p_conversation_id)");
     expect(migration).toContain("a.status = 'cancelled'");
+  });
+
+  it("keeps ACTIVE_ROLE server-owned and fail-closed for authenticated clients", () => {
+    expect(profilePrivilegesMigration).toContain(
+      "revoke insert, update on table public.profiles from anon, authenticated;",
+    );
+    const authenticatedUpdate = profilePrivilegesMigration.slice(
+      profilePrivilegesMigration.indexOf("grant update ("),
+      profilePrivilegesMigration.indexOf(")\non table public.profiles\nto authenticated;", profilePrivilegesMigration.indexOf("grant update (")) + 1,
+    );
+    expect(authenticatedUpdate).not.toContain("active_role_label");
+    expect(migration).toContain("current_profile_active_role() in ('admin', 'max')");
   });
 
   it("keeps pending post-action claims out of access and notifications", () => {

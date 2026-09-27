@@ -327,7 +327,7 @@ async function resolveChatIdentity(): Promise<
 > {
   const { userId } = await auth();
   if (!userId) return unauthorizedJsonResponse();
-  const identity = await getCurrentUserIdentity();
+  const identity = await getCurrentUserIdentity({ syncActiveRole: true });
   if (!identity) return unauthorizedJsonResponse();
   return { userId, identity };
 }

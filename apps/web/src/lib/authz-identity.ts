@@ -24,6 +24,7 @@ import {
 import { buildFallbackHandle } from "./auth/identity-handle";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
+import { syncActiveRoleProjectionToSupabase } from "@/lib/auth/active-role-projection";
 import {
   getDisplayNameModeCookieOverride,
   getDisplayNameModeOverride,
@@ -389,6 +390,7 @@ function buildResolvedIdentity(params: {
 
 async function buildAuthenticatedIdentity(
   userId: string,
+  options: { syncActiveRole?: boolean } = {},
 ): Promise<UserIdentity | null> {
   try {
     const client = await clerkClient();
@@ -397,9 +399,13 @@ async function buildAuthenticatedIdentity(
       loadUserCurrentLevel(userId),
       loadStoredProfile(userId),
     ]);
-    syncClerkUserToSupabase(fetchedUser, { allowServiceRoleFallback: false }).catch((err) => {
-      console.warn(`[Authz] Background sync skipped for ${userId}: ${describeBackgroundSyncError(err)}`);
-    });
+    if (options.syncActiveRole) {
+      await syncActiveRoleProjectionToSupabase(fetchedUser);
+    } else {
+      syncClerkUserToSupabase(fetchedUser, { allowServiceRoleFallback: false }).catch((err) => {
+        console.warn(`[Authz] Background sync skipped for ${userId}: ${describeBackgroundSyncError(err)}`);
+      });
+    }
 
     return buildResolvedIdentity({
       userId,
@@ -414,7 +420,7 @@ async function buildAuthenticatedIdentity(
 }
 
 export async function getCurrentUserIdentity(
-  options?: { userId?: string | null },
+  options?: { userId?: string | null; syncActiveRole?: boolean },
 ): Promise<UserIdentity | null> {
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
@@ -429,7 +435,7 @@ export async function getCurrentUserIdentity(
     return null;
   }
 
-  return buildAuthenticatedIdentity(userId);
+  return buildAuthenticatedIdentity(userId, options);
 }
 
 export function pickTraceableActorName(
